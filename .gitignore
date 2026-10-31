@@ -1,0 +1,60 @@
+# Build output
+/bin/
+/dist/
+/out/
+*.test
+*.out
+coverage.*
+*.prof
+
+# Go workspace files are local by choice
+go.work
+go.work.sum
+
+# Website (Astro Starlight source is site/; only its build output is ignored)
+/site/dist/
+/site/.astro/
+/site/.wrangler/
+.lycheecache
+.cache/
+
+# Node tooling
+node_modules/
+.pnpm-store/
+.yarn/*
+!.yarn/releases/
+!.yarn/plugins/
+**/.yarn/*
+!**/.yarn/releases/
+!**/.yarn/plugins/
+.pnp.*
+
+# Local environment
+.env
+.env.*
+!.env.example
+*.local
+.direnv/
+.devbox/
+
+# Key material never belongs in this repository
+*.key
+*.pem
+*.p12
+*.pfx
+*.asc
+*.gpg
+!docs/**/*.asc
+!testdata/**/*.asc
+
+# Editors and operating systems
+.idea/
+.vscode/
+*.swp
+*~
+.DS_Store
+Thumbs.db
+
+# Scratch
+/tmp/
+*.log
