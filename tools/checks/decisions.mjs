@@ -168,7 +168,7 @@ for (const rec of records.values()) {
     const at = secs.indexOf(hits[0]);
     if (at < prev) E(`${where}:${hits[0].n}: "## ${s}" is out of the template's order (${SECTIONS.join(', ')})`);
     prev = at;
-    if (!hits[0].body.some((l) => l.line.trim() && !/^<!--.*-->$/.test(l.line.trim()))) E(`${where}:${hits[0].n}: "## ${s}" is empty`);
+    if (!hits[0].body.some((l) => l.line.trim() && !/^<!--.*--!?>$/.test(l.line.trim()))) E(`${where}:${hits[0].n}: "## ${s}" is empty`);
   }
 
   const roads = secs.find((x) => x.title === ROADS);
