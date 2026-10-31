@@ -1,0 +1,34 @@
+---
+title: Contributing
+description: How to take part in ritueel, for people and AI agents alike. The working rules, one page per task, and the repository files that hold the rest.
+---
+
+People and AI agents work on ritueel by the same rules. The rules are written once, on the pages below; the files in the repository point here instead of repeating them.
+
+Who decides what is in [GOVERNANCE.md](https://github.com/truvity/ritueel/blob/main/GOVERNANCE.md). How to propose a feature or a decision is in [CONTRIBUTING.md](https://github.com/truvity/ritueel/blob/main/CONTRIBUTING.md). A suspected vulnerability goes through [SECURITY.md](https://github.com/truvity/ritueel/blob/main/SECURITY.md), never through an issue or a pull request. Questions and ideas are welcome as [issues](https://github.com/truvity/ritueel/issues).
+
+## The pages
+
+Read the page for what you are about to do, then do it.
+
+| Before you | Read |
+|---|---|
+| create a branch, commit, push, open a pull request or answer a review | [Branches and pull requests](/contributing/workflow/) |
+| run a build, a test or a check, or add a tool | [Tools, checks and verification](/contributing/tools/) |
+| propose, write or rewrite a decision record | [Decision records](/contributing/decisions/) |
+| run a spike or write up research | [Spikes and research](/contributing/research/) |
+| create or edit a page of this site | [Pages](/contributing/pages/) and [Writing style](/contributing/writing/) |
+| write a name, an address, an id or anything secret | [Public content and secrets](/contributing/public-content/) |
+| contribute with an AI agent, or run a team of agents | [AI agents](/contributing/agents/) |
+
+## The repository files
+
+- `CONTRIBUTING.md`: the entry for a new contributor, and how to propose a feature or a decision.
+- `GOVERNANCE.md`: roles, how a decision is made, review rules and the release numbering.
+- `SECURITY.md`: how to report a vulnerability privately.
+- `CHANGELOG.md`: what changed for the person who uses a release.
+- `AGENTS.md`: the short form of these pages for an AI agent, with the page to read before each kind of change. `CLAUDE.md` loads it for Claude Code.
+- `.claude/skills/` and `.claude/agents/`: task and role wrappers for Claude Code that point back to these pages. They hold no rules of their own.
+- `docs/decisions/README.md`: the format of the decision records.
+
+When a repository file and a page disagree, the page is the rule and the file is fixed.

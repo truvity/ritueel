@@ -1,0 +1,19 @@
+# Normalise line endings: text files are stored with LF.
+* text=auto eol=lf
+
+# Scripts must keep LF even on Windows checkouts.
+*.sh text eol=lf
+
+# Binary assets are not kept in this repository yet. If images or fonts arrive,
+# decide in a pull request whether they go to Git LFS; Go module downloads do not
+# resolve LFS objects, so nothing that code embeds or ships may be in LFS.
+
+# Text formats that stay in git and diff normally.
+*.svg  text
+*.md   text
+*.yaml text
+*.json text
+
+# Generated files: collapsed in GitHub diffs.
+**/*.pb.go                  linguist-generated=true
+**/gen/**                   linguist-generated=true
