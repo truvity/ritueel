@@ -1,0 +1,69 @@
+name: Bug
+description: Something does not work as documented.
+labels: ["type:bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Do not report vulnerabilities here. Use the private security advisory link on the issue chooser.
+        Do not paste real keys, PINs, passphrases, tokens, hostnames or personal data.
+  - type: input
+    id: release
+    attributes:
+      label: Release tag or commit
+      description: The exact release tag or commit you tested.
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - core
+        - x509
+        - openpgp
+        - backend
+        - ceremony
+        - trust
+        - contract
+        - cli
+        - web
+        - docs
+        - not sure
+    validations:
+      required: true
+  - type: dropdown
+    id: store
+    attributes:
+      label: Key store involved
+      options:
+        - software
+        - YubiKey
+        - AWS KMS
+        - none
+        - not sure
+  - type: textarea
+    id: happened
+    attributes:
+      label: What happened
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      description: The smallest steps that show the problem, on a test key or a test device.
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs or output
+      description: Remove secrets and personal data first.
+      render: text

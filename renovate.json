@@ -1,0 +1,35 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "description": "Overrides beyond the shared truvity/ci-workflows preset. platformAutomerge stays false: a ruleset bypass keys on the actor that performs the merge, and GitHub-native auto-merge does not carry it.",
+  "extends": [
+    "github>truvity/ci-workflows"
+  ],
+  "osvVulnerabilityAlerts": true,
+  "labels": [
+    "dependencies"
+  ],
+  "automerge": true,
+  "automergeType": "pr",
+  "automergeStrategy": "rebase",
+  "platformAutomerge": false,
+  "packageRules": [
+    {
+      "description": "Group all non-major updates together",
+      "matchUpdateTypes": [
+        "minor",
+        "patch",
+        "digest"
+      ],
+      "groupName": "all non-major dependencies",
+      "groupSlug": "all-minor-patch"
+    },
+    {
+      "description": "Do not automerge major updates",
+      "matchUpdateTypes": [
+        "major"
+      ],
+      "automerge": false
+    }
+  ],
+  "constraintsFiltering": "strict"
+}

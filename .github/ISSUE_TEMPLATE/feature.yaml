@@ -1,0 +1,52 @@
+name: Feature request
+description: Ask for new behaviour.
+labels: ["type:feature"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ritueel owns root keys and root transitions, and runs the ceremonies for intermediates. It does not sign online, issue leaf certificates or store secrets. New scope needs a decision first.
+        If you are not sure whether your idea fits, use the Decision proposal form.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: Who has the problem? What do they do today?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: What you would like
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - core
+        - x509
+        - openpgp
+        - backend
+        - ceremony
+        - trust
+        - contract
+        - cli
+        - web
+        - docs
+        - not sure
+    validations:
+      required: true
+  - type: dropdown
+    id: contribute
+    attributes:
+      label: Could you build it?
+      options:
+        - "Yes"
+        - "With guidance"
+        - "No"
