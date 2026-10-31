@@ -6,6 +6,41 @@ set shell := ["bash", "-euo", "pipefail", "-c"]
 default:
     @just --list
 
+# Install the site's dependencies exactly as the lockfile says.
+site-install:
+    cd site && yarn install --immutable
+
+# The site on http://localhost:4321 with live reload.
+site-dev: site-install
+    cd site && yarn dev
+
+# A strict build into site/dist: no warnings, no broken internal link, and the built
+# output has what it must (search index, headers, the pages, a page per decision record).
+site-build: site-install
+    site/scripts/strict-build.sh
+    site/scripts/check-built.sh site/dist
+
+# Front-matter descriptions of 40 to 160 characters on every page in docs/.
+site-lint:
+    site/scripts/check-descriptions.mjs
+
+# Every link in the built site, internal and external (lychee.toml). Needs `just site-build`.
+site-links:
+    lychee --config lychee.toml --root-dir "$PWD/site/dist" --no-progress 'site/dist/**/*.html'
+
+# What a pull request must pass for the site.
+site-check: site-lint site-build site-links
+
+# The Worker's dry-run deploy: `wrangler deploy --dry-run` on the built site in site/dist. It
+# uploads nothing and needs no Cloudflare credential. Needs `just site-build`.
+site-workers:
+    cd site && WRANGLER_SEND_METRICS=false yarn wrangler deploy --dry-run
+
+# Deploy the build in site/dist to Cloudflare. Only the deploy job of site.yaml runs this, on a
+# strict build of `main`. Needs CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID.
+site-deploy:
+    cd site && WRANGLER_SEND_METRICS=false yarn wrangler deploy
+
 # Repository rules (tools/checks/). Each check fails when it finds nothing to check.
 
 # Decision records in docs/decisions/: NNNN-kebab-case.md names, the template's
@@ -45,4 +80,4 @@ check-selftest:
 check-rules: check-selftest check-decisions check-public check-yaml-ext check-agent-links
 
 # Everything a pull request must pass.
-check: check-rules
+check: check-rules site-check site-workers
