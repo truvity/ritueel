@@ -42,7 +42,7 @@ check-selftest:
     tools/checks/selftest.mjs
 
 # Every repository rule.
-check-rules: check-selftest check-public check-yaml-ext check-agent-links
+check-rules: check-selftest check-decisions check-public check-yaml-ext check-agent-links
 
 # Everything a pull request must pass.
 check: check-rules

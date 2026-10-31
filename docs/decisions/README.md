@@ -39,3 +39,4 @@ Every record has these parts, in this order:
 
 | ADR | Decision | Status |
 |-----|----------|--------|
+| [0001](0001-scope-roots-and-transitions-systems-like-sluis-hold-intermediates.md) | Scope: roots and transitions; systems like sluis hold intermediates | Accepted |

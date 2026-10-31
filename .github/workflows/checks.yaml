@@ -33,7 +33,7 @@ jobs:
   # so. While the repository variable DENYLIST_REQUIRED is `true`, an empty list fails on this
   # repository's own branches and in the merge queue.
   rules:
-    name: rules (public content, file names, agent links)
+    name: rules (decisions, public content, file names, agent links)
     runs-on: ubuntu-latest
     timeout-minutes: 10
     env:
