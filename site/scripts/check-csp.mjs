@@ -31,7 +31,7 @@ const bad = (m) => problems.push(m);
 const DATA_TYPES = /^(application\/(ld\+)?json|importmap|speculationrules|text\/(template|html|plain))$/i;
 const inlineScripts = (html) => {
   const out = [];
-  for (const m of html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script\s*>/gi)) {
+  for (const m of html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script[^>]*>/gi)) {
     if (/\bsrc\s*=/i.test(m[1])) continue;
     const type = /\btype\s*=\s*"([^"]*)"/i.exec(m[1])?.[1];
     if (type && DATA_TYPES.test(type.trim())) continue;
