@@ -23,7 +23,7 @@
 // 8000 bytes) are not: images and other Git LFS objects are not scanned.
 //
 // usage: tools/checks/public-content.mjs [repo-root]
-import { lstatSync, readFileSync } from 'node:fs';
+import { closeSync, constants, fstatSync, openSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { denyList, genericHits, reporter, repoRoot, trackedFiles } from './lib.mjs';
 
@@ -38,10 +38,18 @@ trackedFiles(root).forEach((path, k) => {
   const label = hidden ? `file #${k + 1}` : path;
   if (hidden) r.error(`a tracked path matches a deny-listed term (${label})`);
   const abs = join(root, path);
-  let st;
-  try { st = lstatSync(abs); } catch { return; } // deleted in the working tree
-  if (!st.isFile()) return;
-  const buf = readFileSync(abs);
+  // Open without following a symbolic link, then look at the open file: nothing between
+  // the check and the read can swap the path.
+  let buf;
+  try {
+    const fd = openSync(abs, constants.O_RDONLY | constants.O_NOFOLLOW);
+    try {
+      if (!fstatSync(fd).isFile()) return;
+      buf = readFileSync(fd);
+    } finally {
+      closeSync(fd);
+    }
+  } catch { return; } // deleted in the working tree, or a symbolic link
   if (buf.subarray(0, 8000).includes(0)) return;
   scanned++;
   buf.toString('utf8').split('\n').forEach((line, i) => {
