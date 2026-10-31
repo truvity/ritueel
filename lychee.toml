@@ -1,0 +1,23 @@
+# Link check for the built site (`just site-links`). In-site links and anchors are held by the
+# build itself (starlight-links-validator); this is for every link, including the ones that
+# leave the site.
+
+cache = true
+max_cache_age = "1d"
+max_retries = 3
+retry_wait_time = 5
+timeout = 30
+max_concurrency = 8
+# 429 is a host asking for patience, not a dead link.
+accept = ["200..=204", "429"]
+user_agent = "Mozilla/5.0 (compatible; ritueel-docs-link-check)"
+
+exclude = [
+  # The site's own absolute URLs (canonical, sitemap, Open Graph) point at the deployed copy,
+  # which does not have this build yet.
+  '^https://ritueel\.id/',
+  # Pages that exist only once a pull request is merged; the site links to them by their final path.
+  '^https://github\.com/truvity/ritueel/(blob|tree|edit)/',
+  # Needs a token or a session.
+  '^https://(www\.)?linkedin\.com',
+]

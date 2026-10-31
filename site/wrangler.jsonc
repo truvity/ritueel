@@ -1,0 +1,22 @@
+// The Worker that serves ritueel.id: static assets only, no Worker code, no KV, no routes.
+// `astro build` writes the site to dist/; the deploy job of .github/workflows/site.yaml runs
+// `wrangler deploy` on this file. The repository holds no account id and no Cloudflare hostname.
+// The Worker, its routes and the custom domain are declared outside this repository; a deploy
+// uploads a new version of the Worker and changes none of them.
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "ritueel-site",
+  // Compatibility date: not newer than two weeks before it was chosen.
+  "compatibility_date": "2026-10-15",
+  // BOTH OFF FOR GOOD. Wrangler's defaults turn them on: every deploy would publish a
+  // <worker>.<account-subdomain>.workers.dev hostname, and previews would publish one per
+  // version. That hostname names the operator's account, and pull requests are public. Pull
+  // requests are judged by GitHub CI and by `wrangler dev`. Do not turn these on.
+  "workers_dev": false,
+  "preview_urls": false,
+  "assets": {
+    "directory": "./dist",
+    // A page that does not exist gets the site's own 404.html with status 404.
+    "not_found_handling": "404-page"
+  }
+}

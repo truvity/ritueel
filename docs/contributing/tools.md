@@ -23,14 +23,30 @@ The `Justfile` holds the recipes, and CI runs the same recipes. Run the recipe, 
 
 | Recipe | What it checks |
 |---|---|
-| `just check` | Everything a pull request must pass: `check-rules` and, once the site is in, `site-check` |
+| `just check` | Everything a pull request must pass: `check-rules`, `site-check` and `site-workers` |
 | `just check-rules` | The repository rules, below, after a self-test of the checks |
 | `just check-decisions` | The decision records: file names, the template's sections, the status, the index rows |
 | `just check-public` | Content that must not be public, in every tracked text file |
 | `just check-yaml-ext` | YAML files use `.yaml` |
 | `just check-agent-links` | `AGENTS.md` exists, `CLAUDE.md` imports it, and every path that they and the skills point to exists |
+| `just site-check` | The site: `site-lint`, `site-build` and `site-links` |
+| `just site-lint` | Page descriptions of 40 to 160 characters |
+| `just site-build` | A strict site build: no warning and no broken internal link, and the built output has what it must |
+| `just site-links` | Every link in the built site, internal and external |
+| `just site-workers` | `wrangler deploy --dry-run` on the build: uploads nothing, needs no Cloudflare credential |
 
 Read the recipe, and the workflow in `.github/workflows/` that calls it, to know what CI really runs. Build and test recipes for the code arrive with the code, and this table grows with them.
+
+## The site
+
+The site is built from `docs/` and `site/` with Astro Starlight, and every page is prerendered into static files in `site/dist`. `docs/` is linked into the site at `site/src/content/docs`, so a page reads the same on GitHub as on ritueel.id. The decision records are indexed by the site, not rendered as ordinary pages.
+
+- `just site-dev` serves it on `http://localhost:4321` with live reload.
+- `just site-build` makes the strict build, the same build CI checks.
+- `site/public/_headers` holds the Content-Security-Policy and the other security headers. Inline scripts are listed by hash, and `site/scripts/check-csp.mjs` (run by `check-built.sh`) fails when a page runs one that is not listed, or a listed one is gone, and prints the hashes to paste.
+- **Where it is served.** `site/wrangler.jsonc` names the Worker `ritueel-site` and serves `site/dist` as static assets. It declares no routes, no KV and no account, and `workers_dev` and `preview_urls` are off for good: Wrangler turns both on by default, and each publishes a hostname that contains the operator's account subdomain. There is no preview per pull request for that reason; a pull request is judged by `just site-check` and `just site-workers` in CI, and you can serve the same build with `yarn wrangler dev` in `site/`.
+- **The deploy** is the `deploy` job of `.github/workflows/site.yaml`. It runs on a push to `main` and on a manual run from `main`, after the `build` job has passed, and never on a pull request. It rebuilds the site, then runs `just site-deploy`, which is `yarn wrangler deploy` in `site/`. No build artifact is uploaded to GitHub. The job runs in the GitHub environment `cloudflare`, which allows deployments from `main` only and has no required reviewers. It holds two secrets: `CLOUDFLARE_API_TOKEN`, a token limited to deploying this one Worker, and `CLOUDFLARE_ACCOUNT_ID`. The job gives each secret to the one step that needs it. While the token is not set, the job says so in a notice and skips, and `main` stays green. The maintainer creates and rotates the token; a deploy that fails with an authentication error is the sign that it has expired.
+- The Worker, its routes and the domain are declared in the operator's own infrastructure code, outside this repository. The deploy uploads a new version of the Worker and changes none of them.
 
 ## Commands from an agent shell
 

@@ -1,0 +1,52 @@
+---
+import StarlightPage from '@astrojs/starlight/components/StarlightPage.astro';
+import { decisionFacts, listDecisions } from '../../lib-decisions';
+
+// The status and date come from each record's own header lines, so the index always says
+// what the record says. The template (0000) is not a record.
+const records = (await listDecisions()).map(decisionFacts);
+---
+
+<StarlightPage
+  frontmatter={{
+    title: 'Decisions',
+    description:
+      'The architecture decision records for ritueel: what was decided, why, and which options were set aside. The index is built from docs/decisions.',
+  }}
+>
+  <p>
+    Significant choices are recorded as architecture decision records (ADRs) in
+    <a href="https://github.com/truvity/ritueel/tree/main/docs/decisions"><code>docs/decisions/</code></a>
+    in the repository. This index is built from that directory on every build; each status is the one the record states.
+  </p>
+  {
+    records.length === 0 ? (
+      <p>
+        <em>No decision records have been published yet.</em>
+      </p>
+    ) : (
+      <table>
+        <thead>
+          <tr>
+            <th scope="col">Record</th>
+            <th scope="col">Decision</th>
+            <th scope="col">Status</th>
+            <th scope="col">Date</th>
+          </tr>
+        </thead>
+        <tbody>
+          {records.map((r) => (
+            <tr data-record={r.id}>
+              <td>{r.number}</td>
+              <td>
+                <a href={`/decisions/${r.id}/`}>{r.title}</a>
+              </td>
+              <td>{r.status}</td>
+              <td>{r.date ?? '—'}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    )
+  }
+</StarlightPage>

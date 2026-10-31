@@ -1,0 +1,34 @@
+---
+import StarlightPage from '@astrojs/starlight/components/StarlightPage.astro';
+import { render } from 'astro:content';
+import { decisionFacts, listDecisions, sourceUrl } from '../../lib-decisions';
+
+export async function getStaticPaths() {
+  const entries = await listDecisions();
+  return entries.map((entry) => ({ params: { id: entry.id }, props: { entry } }));
+}
+
+const { entry } = Astro.props;
+const { Content } = await render(entry);
+const facts = decisionFacts(entry);
+---
+
+<StarlightPage
+  frontmatter={{
+    title: `${facts.number}: ${facts.title}`,
+    description: `Architecture decision record ${facts.number} for ritueel: ${facts.title}.`,
+  }}
+>
+  <Content />
+  <p>
+    <a href={sourceUrl(entry)}>View this record on GitHub</a>
+  </p>
+</StarlightPage>
+
+<style>
+  /* A record opens with its own level-one heading ("# 0001 — ..."); the page already shows
+     the title, so the heading in the body is hidden. */
+  :global(.sl-markdown-content > h1:first-child) {
+    display: none;
+  }
+</style>
