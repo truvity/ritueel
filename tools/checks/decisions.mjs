@@ -85,7 +85,7 @@ for (const l of tplRoads?.body ?? []) {
   if (m) LABELS.push(m[1]);
 }
 // The lines of the template's instructions comment; a record keeps none of them.
-const tplComment = (/<!--([\s\S]*?)-->/.exec(template)?.[1] ?? '').split('\n').map((l) => l.trim()).filter((l) => l.length >= 12);
+const tplComment = (/<!--([\s\S]*?)--!?>/.exec(template)?.[1] ?? '').split('\n').map((l) => l.trim()).filter((l) => l.length >= 12);
 if (!FIELDS.includes('Status') || !FIELDS.includes('Date')) E(`${TEMPLATE}: no **Status:** and **Date:** fields found`);
 if (!SECTIONS.length) E(`${TEMPLATE}: no ## sections found`);
 if (!SECTIONS.includes(ROADS)) E(`${TEMPLATE}: no "## ${ROADS}" section`);
