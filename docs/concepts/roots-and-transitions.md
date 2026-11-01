@@ -32,6 +32,8 @@ The most common ceremony is giving an intermediate its authority:
 3. ritueel checks the proof, shows the person what they are about to authorise (fingerprints, key store, lifetime), and asks for the touch or the confirmation.
 4. The root signs. For X.509 that gives an intermediate CA certificate; for OpenPGP, a binding signature on the subkey. The result goes back to the system, which installs it.
 
+The files that travel, and the checks on each side, are in the [hand-off contract](/reference/hand-off-contract/).
+
 ## Why more than one root
 
 One root is a single point of failure. A card breaks, a cloud account is locked, a passphrase is forgotten, and every client that trusts only that root is stranded.

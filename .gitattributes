@@ -17,3 +17,6 @@
 # Generated files: collapsed in GitHub diffs.
 **/*.pb.go                  linguist-generated=true
 **/gen/**                   linguist-generated=true
+
+# OpenPGP packet files in the test vectors are binary: no end-of-line conversion.
+*.pgp binary
