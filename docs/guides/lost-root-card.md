@@ -1,6 +1,6 @@
 ---
 title: A lost root card
-description: What to do when a root card is lost, stolen or compromised: revoke, publish the new root list and keyring, add a replacement root, and re-certify the boards.
+description: What to do when a root card is lost, stolen or compromised. Revoke it, publish the new root list and keyring, add a replacement root, and re-certify the boards.
 sidebar:
   order: 1
 ---
