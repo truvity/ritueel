@@ -16,9 +16,9 @@
 # - frame-ancestors 'none' is what stops framing; X-Frame-Options repeats it for old browsers.
 #
 # Strict-Transport-Security: the Cloudflare zone's HSTS setting is authoritative and replaces
-# the value in this file, so the value here repeats what the zone serves (max-age=15552000;
-# includeSubDomains). Raising it to one year with preload is a later, deliberate step taken in
-# the zone, not in this file; change this line to match only after the zone changes.
+# the value in this file, so the value here repeats what the zone serves (max-age=31536000;
+# includeSubDomains; preload: one year, every subdomain, and eligible for the browsers' preload
+# list). The zone was raised to this first; change this line only to match the zone.
 #
 # Cache-Control: only /_astro/* is cached for a year and marked immutable, because Astro puts a
 # content hash in those file names. HTML, /pagefind/* (some entry files have no hash), the
@@ -31,7 +31,7 @@
   Referrer-Policy: strict-origin-when-cross-origin
   Permissions-Policy: accelerometer=(), autoplay=(), camera=(), display-capture=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), payment=(), publickey-credentials-get=(), usb=(), interest-cohort=()
   Cross-Origin-Opener-Policy: same-origin
-  Strict-Transport-Security: max-age=15552000; includeSubDomains
+  Strict-Transport-Security: max-age=31536000; includeSubDomains; preload
 
 /_astro/*
   Cache-Control: public, max-age=31536000, immutable
