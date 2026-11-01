@@ -11,7 +11,7 @@ A release is a file that people download, and an apt or rpm repository is a set 
 
 [0002](/decisions/0002-every-key-is-born-in-its-store-two-roots-one-holder-yearly-alternation/) puts two independent OpenPGP primaries on the two root cards. A primary is used once a year, so it cannot sign releases. The signing is done by a system that holds intermediates, with a subkey that a primary has bound ([0001](/decisions/0001-scope-roots-and-transitions-systems-like-sluis-hold-intermediates/)). The binding is the hand-off for an OpenPGP subkey in the [hand-off contract](https://github.com/truvity/ritueel/blob/main/docs/reference/hand-off-contract.md).
 
-This record fixes what ritueel contributes to release signing: the keys, the keyring package that carries them to users, the role of Sigstore, and what signs before any hardware system exists. ritueel is not in the signing path. It makes the keys that others sign with, and the package that others verify with.
+This record fixes what ritueel contributes to release signing: the keys, the keyring package that carries them to users, the role of Sigstore, and the order in which things happen: the card roots first, then the first signed release. ritueel is not in the signing path. It makes the keys that others sign with, and the package that others verify with.
 
 Facts from tests, which the choices rest on:
 
@@ -25,16 +25,21 @@ Facts from tests, which the choices rest on:
 
 ### The keys
 
-- **Two primaries, one on each root card,** generated on the card, certify-only, never copies of each other, both authoritative ([0002](/decisions/0002-every-key-is-born-in-its-store-two-roots-one-holder-yearly-alternation/)). Version 4 keys, ECDSA on P-384, signatures with SHA-384. The expiry of a primary follows the root expiry decision of ADR 0003 ([issue #27](https://github.com/truvity/ritueel/issues/27)).
-- **A dedicated release identity.** Both primaries carry the same user ID, a release address of the project, and no person's name. The identity is a role; whoever holds the cards is not in it.
+- **Two primaries, one on each root card,** generated on the card, certify-only, never copies of each other, both authoritative ([0002](/decisions/0002-every-key-is-born-in-its-store-two-roots-one-holder-yearly-alternation/)). Version 4 keys, ECDSA on P-384, signatures with SHA-384. A primary is valid for about three years, and a new self-signature at each use of its card extends it ([0002](/decisions/0002-every-key-is-born-in-its-store-two-roots-one-holder-yearly-alternation/), [0003](/decisions/0003-ceremonies-plan-confirm-reserve-sign-record-and-the-ritueel-commands/)). Each primary lives in a PIV slot, and ritueel builds the OpenPGP packets itself.
+- **A dedicated release identity.** Both primaries carry the same user ID, a release address of the project, and no person's name. The identity is a role; whoever holds the cards is not in it. **No personal key certifies a release primary:** nobody's own key vouches for it, so release trust does not depend on a key that is usually in software.
 - **Signing subkeys.** The holder of an intermediate generates a signing-only subkey where it lives (a YubiKey slot or a KMS key). A primary binds it with a type `0x18` signature that carries the subkey's own `0x19` back-signature, expires after about 13 months, and is renewed at the yearly ceremony, so years overlap. The primary of the year binds; a subkey is revoked by the primary of the year.
 - **The keyring keeps expired subkeys.** A signature made while a subkey was valid keeps verifying after it expires, because `gpgv` and `sqv` judge a signature at its own time. Dropping expired subkeys would break the verification of old releases. A revoked subkey stays too, with its revocation.
 
-### What signs before any hardware system exists
+### No signed release until the card roots exist
 
-The first user is a project whose releases are signed through its signing service with a subkey held in a cloud key service (AWS KMS). That answers the question: **a KMS-held subkey signs, bound by a primary through the same hand-off as any other.** There is no special bootstrap key, and no release is signed by a primary or by a person's key.
+**The order is fixed: the first root ceremony and a drill come first, then the first signed release.** The maintainer decided to go first with the adoption and the drill of the root keys, and only then sign a release.
 
-The primary that binds it has to exist when the first release is signed. Until the root cards exist, it is a primary of a **software root** (ADR 0003, `ritueel init --store software`), which the first keyring carries and marks as provisional in its fingerprint list. When the card roots exist, the transition is the ordinary one: the new primaries are created, certified by the provisional one, carried together with it in a new keyring package signed by an old key, and the provisional primary is retired in a later package. This makes the first transition a real one, and it is what the guides teach. The alternative is to publish no release until the cards exist; it is in the open parts.
+- There is no provisional software primary, no special bootstrap key, and no release signed by a primary or by a person's key. A software root never anchors a release keyring.
+- When the cards exist, the first signed release is made the ordinary way: the signing subkey lives in a cloud key service (AWS KMS) or a card slot, is bound by the primary of the year through the same hand-off as any other, and the first keyring already carries the two final primaries.
+- The first keyring is the final one. The first transition that users see is a real one, between real roots.
+- Until then, no release is signed.
+
+The roadmap and the guides carry the same order.
 
 ### The keyring package
 
@@ -59,7 +64,7 @@ The primary that binds it has to exist when the first release is signed. Until t
 ### Revocation
 
 - A subkey is revoked by the primary of the year. The revocation is a signature inside the keyring and reaches users in the next package.
-- A primary is revoked with the escrowed revocation signature made when it was born (ADR 0003, [issue #27](https://github.com/truvity/ritueel/issues/27)). RFC 9580 deprecates the designated-revoker subpacket, so it is not relied on.
+- A primary is revoked with the pre-made revocation signature, made when it was born and stored apart from the card (RFC 9580, section 13.9; [0002](/decisions/0002-every-key-is-born-in-its-store-two-roots-one-holder-yearly-alternation/)). RFC 9580 (section 5.2.3.23) deprecates the designated-revoker subpacket and says applications must not generate it, so it is not used.
 - The time from a theft to a verifier's refusal is the time to run the ceremony and to publish the package. Each guide says so.
 
 ### Sigstore
@@ -71,18 +76,21 @@ The primary that binds it has to exist when the first release is signed. Until t
 
 ECDSA on P-384, version 4 keys, SHA-384, for primaries and subkeys. It works on every store, with every verifier tested, and on a PIV slot. Ed25519 and version 6 keys are not used: a PIV slot cannot sign an artifact with Ed25519, and GnuPG 2.4 does not handle version 6. A post-quantum primary is [issue #32](https://github.com/truvity/ritueel/issues/32).
 
+### Old releases
+
+**Nothing is done for old releases in the first version.** A superseded primary is dropped from the keyring, so a signature made under it does not verify with the new keyring. To verify an old signature, a user needs the keyring version of that time. A separate historical package is not part of the first version.
+
 ### Open
 
-- **The first primary** (above). **Recommendation:** start with a provisional software primary and make the first transition real. A release made before the cards exist is marked provisional in the fingerprint list and in the guide.
-- **Publication channels and the personal key** ([issue #28](https://github.com/truvity/ritueel/issues/28)): which channels publish the keyring (keyservers, WKD, DNS OPENPGPKEY, the project site, the repository's security file), and whether the maintainer's personal key certifies each primary. **Recommendation on the personal key: no.** It ties release trust to a key that is usually in software, against the dedicated identity. It can be revisited when #28 reports.
-- **Old releases after a supersede.** The keyring drops a superseded primary, so a release signed under it does not verify with the new keyring. Options: nothing (a user keeps the old package); a separate `<name>-keyring-historical` package with retired primaries and their revocations. The first is cheaper; the second helps people who verify archives. **Recommendation:** the first for the first version.
+- **Publication channels** ([issue #28](https://github.com/truvity/ritueel/issues/28)): which channels publish the keyring (keyservers, WKD, DNS OPENPGPKEY, the project site, the repository's security file). The personal-key question is decided above.
 - **Older rpm** and a combined armoured file. Importing one file with two certificates was tested on rpm 6.0 only (2026-10-29); the package ships one file for each primary to avoid the question. The matrix of older releases is for issue #15.
-- **Who writes the archives** (issue #15).
+- **Who writes the archives** ([issue #15](https://github.com/truvity/ritueel/issues/15)).
 
 ## Consequences
 
 - Users install one package, and it carries both roots. A user who has only one primary's certificate cannot verify a release, and the instructions say so.
-- A release can be signed from day one, by a KMS subkey, without waiting for hardware, at the price of one provisional primary and one real transition.
+- No release is signed until the card roots exist and a drill has run. In return, the first keyring is the final one, and no provisional key is ever trusted.
+- A user who keeps an old keyring version can verify old releases with it; one who upgrades cannot verify a release signed under a primary that a later package dropped.
 - The keyring grows by one subkey per signer per year. Expired subkeys stay for as long as a primary is active.
 - Because a package that adds a primary is signed by an old key, a user who skips the transition (a very old keyring) cannot verify it and must fetch the new keyring by one of the published channels. The channels in #28 matter for them.
 - ritueel needs OpenPGP code of its own: binding, certification, revocation, and a keyring writer that produces certificates other tools accept. The test matrix is `gpg`, `gpgv`, `sqv`, apt and rpm, and it belongs to issue #25.
@@ -139,8 +147,20 @@ ECDSA on P-384, version 4 keys, SHA-384, for primaries and subkeys. It works on 
 - Cons: a PIV slot cannot sign an artifact with Ed25519; GnuPG 2.4 does not read version 6; the verifier matrix shrinks.
 - Why not: P-384 works everywhere that matters today. A later record can add a profile.
 
-### Wait for hardware before any release
+### A provisional software primary that binds the first KMS subkey
 
-- Pros: no provisional primary; the first keyring is the final one.
-- Cons: no signed release until the card back end exists (milestone M2); the first transition is not exercised in earnest.
-- Why not (as the default): it is the alternative in the open parts, and the maintainer decides.
+- Pros: the first release is signed before the cards exist; the first transition is exercised in earnest.
+- Cons: a key that can be copied is carried by the first keyring and trusted by early users; every early user lives through a transition that has no purpose but to retire it; the guides teach a path the final design does not need.
+- Why not: the maintainer chose to adopt and drill the root keys first and sign a release only afterwards. The transition is rehearsed in a drill on test keys instead.
+
+### A personal key certifies each release primary
+
+- Pros: users who already trust the person have a path to the release key.
+- Cons: it ties release trust to a key that is usually in software, against the dedicated identity; it puts a person in the chain.
+- Why not: the release identity is a role. The channels in issue #28 carry the primaries' fingerprints.
+
+### A historical keyring package for old releases
+
+- Pros: helps people who verify archives long after a supersede.
+- Cons: one more package to build, publish and keep trusted; it carries retired primaries and their revocations.
+- Why not: the first version does without; a user keeps the keyring version of the time. A later record may add it.

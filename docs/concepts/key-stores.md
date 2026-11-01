@@ -23,7 +23,7 @@ A root key has to live somewhere. The three places ritueel supports differ in on
 
 ## The trade-offs in plain words
 
-**Software is the easiest to start and the easiest to lose.** It is the right store for a drill, for a test root and for the first version of anything. It is the wrong store for a root you expect others to rely on for years, because a copy leaves no trace. ritueel still supports it, and treats it as the first store, because every other store is reached by a transition *from* software, and because a system that needs a certified intermediate on day one needs a root that exists on day one.
+**Software is the easiest to start and the easiest to lose.** It is the right store for a drill, for a test root and for the first version of anything. It is the wrong store for a root you expect others to rely on for years, because a copy leaves no trace. ritueel still supports it, and treats it as the first store, because every other store is reached by a transition *from* software, and because a system that needs a certified intermediate on day one needs a root that exists on day one. A software root never anchors a signed release: no release is signed until the card roots exist.
 
 **A YubiKey makes the key physical.** The key is generated on the token, so it never exists in your computer's memory, and a thief needs the token, its PIN and a touch. The token can attest the key: it hands out a certificate, signed by a key the maker's published root vouches for, saying that a key in a certain slot was made inside this token, with this firmware, with this touch and PIN policy. Imported keys cannot be attested. Two measured facts that matter in practice (2026-10-31, firmware 5.8):
 
@@ -32,7 +32,9 @@ A root key has to live somewhere. The three places ritueel supports differ in on
 
 A token has no backup. That is why the model asks for more than one independent root.
 
-**AWS KMS makes the key a permission.** The key is as safe as the account's access control, and every use is in the audit trail. There is no card to lose, but there is an account to lose, and a deletion that is only reversible for a waiting period. A root that is "present" because a role was assumed is weaker than a touch unless you make the role hard to assume. ritueel's answer is to gate the role with multi-factor authentication and to let the person confirm the use, so that the cloud key behaves like a card with a touch. KMS keys do not attest in the YubiKey sense; ritueel reads the key's description and policy instead, and records both.
+**AWS KMS makes the key a permission.** The key is as safe as the account's access control, and every use is in the audit trail. There is no card to lose, but there is an account to lose, and a deletion that is only reversible for a waiting period. A root that is "present" because a role was assumed is weaker than a touch unless you make the role hard to assume. ritueel's answer is to gate the role with multi-factor authentication and to let the person confirm the use, so that the cloud key behaves like a card with a touch. KMS keys do not attest in the YubiKey sense; ritueel reads the key's description and policy instead, and records both. For a key in another account, the owner grants ritueel read access to the key's description, and ritueel reads the public key from the service itself; it does not accept a copy of either.
+
+A KMS root has the same rule as a card root: **two roots, independent.** A company setup has a second KMS root in a separate account, as the model has two cards. A multi-Region replica of a KMS key is the same key, so it adds availability and not independence; a lost account, a deleted key or a stolen role takes every copy. Whether each root gets an account of its own is not decided yet.
 
 ## Choosing
 
@@ -40,7 +42,7 @@ A token has no backup. That is why the model asks for more than one independent 
 |---|---|
 | You are learning, or testing a pipeline | Software, on a throw-away root, with a drill. |
 | One person or a small team holds the roots, and no cloud is involved | Two independent YubiKey roots, in two places. |
-| An organisation already runs on AWS and wants audited, policy-gated roots | AWS KMS roots with an MFA-gated role, plus at least one root on a different store so that a lost account does not strand your clients. |
+| An organisation already runs on AWS and wants audited, policy-gated roots | Two AWS KMS roots with an MFA-gated role, the second in a separate account, or at least one root on a different store, so that a lost account does not strand your clients. |
 | You want the strongest story | Roots on different kinds of store: for example one YubiKey and one KMS key. A failure of one kind does not take out the other. |
 
 ## Moving between stores

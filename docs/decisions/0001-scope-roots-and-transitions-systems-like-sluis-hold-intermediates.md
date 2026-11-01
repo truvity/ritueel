@@ -21,8 +21,8 @@ The maintainer decided on 2026-11-01 to make roots and their transitions a separ
 - *vouch* for a new root from an existing one, by an X.509 cross-certificate or an OpenPGP certification;
 - *overlap* the old and the new, so that clients that know either keep working;
 - *supersede* the old root by the new one;
-- *revoke* a root, with revocation certificates made in advance and designated revokers (OpenPGP) named when the root is born;
-- *expire* a root, and warn before it happens.
+- *revoke* a root, with revocation signatures made in advance and stored apart from the card when the root is born;
+- *expire* a root, extend it at each use, and warn before it lapses.
 
 **Ceremonies for intermediates.** ritueel runs the ceremonies that give an intermediate its authority: it verifies where the key lives (a YubiKey attestation chain, or the description of a cloud KMS key), signs a PKCS#10 certificate request into an intermediate CA certificate, and binds an OpenPGP subkey to a primary after checking the subkey's back-signature.
 

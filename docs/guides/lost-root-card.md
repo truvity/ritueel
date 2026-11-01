@@ -11,7 +11,7 @@ Until the revocation reaches outsiders, whoever holds the card **and** its PIN c
 
 ## Steps
 
-1. **Revoke the root.** Publish a root list signed by the surviving root, with a higher version and without the lost root. For OpenPGP, publish the revocation certificate that was made when the primary was born and stored apart from the card; the surviving primary is its designated revoker. Result: clients that fetch the root list stop trusting the lost root.
+1. **Revoke the root.** Publish a root list signed by the surviving root, with a higher version and without the lost root. For OpenPGP, publish the revocation signature that was made when the primary was born and stored apart from the card. Result: clients that fetch the root list stop trusting the lost root.
 2. **Publish new trust products without the lost root.** A new CA bundle, and a new keyring package signed by the surviving key. Result: new installs and package updates carry only the surviving root.
 3. **Add a replacement root.** Generate it on a fresh card or in a cloud key service (`root add`). The surviving root vouches for it with an X.509 cross-certificate, and its primary is certified by the surviving primary. Result: two roots again.
 4. **Re-certify what chained only to the lost root.** With alternating years this is the normal case: the boards' intermediates of the year the lost card certified are certified again by the surviving card, without replacing any board key. Result: no board has a certificate that depends on the lost root.

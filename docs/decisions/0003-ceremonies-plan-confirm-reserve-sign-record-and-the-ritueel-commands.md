@@ -3,7 +3,7 @@
 **Status:** Proposed
 **Date:** 2026-11-01
 
-Proposal: [issue #27](https://github.com/truvity/ritueel/issues/27). The commands are built in [issue #30](https://github.com/truvity/ritueel/issues/30), the records in [issue #9](https://github.com/truvity/ritueel/issues/9), the transitions in [issue #13](https://github.com/truvity/ritueel/issues/13), and the software-root mode in [issue #8](https://github.com/truvity/ritueel/issues/8). The record stays `Proposed` while the open parts at the end are undecided; they are tracked in issues #26 and #27.
+Proposal: [issue #27](https://github.com/truvity/ritueel/issues/27). The commands are built in [issue #30](https://github.com/truvity/ritueel/issues/30), the records in [issue #9](https://github.com/truvity/ritueel/issues/9), the transitions in [issue #13](https://github.com/truvity/ritueel/issues/13), and the software-root mode in [issue #8](https://github.com/truvity/ritueel/issues/8). The record stays `Proposed` while the open parts at the end are undecided; they are tracked in issues #14, #26 and #27.
 
 ## Context
 
@@ -67,7 +67,7 @@ The slot map is a table inside ritueel with a version number, not a file the hol
 | Purpose | Place |
 |---|---|
 | X.509 root key | PIV slot 9c |
-| OpenPGP primary | Open: see the card layer below |
+| OpenPGP primary | A retired PIV slot (82 to 95); the number is fixed when the slot map is built, and recorded |
 | Root list signing | Not assigned: it follows [issue #14](https://github.com/truvity/ritueel/issues/14) |
 
 The version in use is written in every record. A holder who edits slots by hand is outside the design; ritueel then refuses, because a slot it did not reserve is occupied.
@@ -88,13 +88,14 @@ The registry holds, for each known card, the serial, its role and the fingerprin
 ### Who signs, and when
 
 - The root of the year signs a yearly ceremony. The default is the root that did not sign the previous yearly ceremony, found in the records. `--root` overrides it, and the reason is recorded. If a root is retired or revoked, the other signs.
-- **When.** Intermediates last 13 calendar months. The yearly ceremony is held in month 12 of their life, when the earliest expiry is 60 to 30 days away. `status` warns at 60, 30 and 14 days (configurable), the same days a system that holds intermediates warns on its side; its exit code is 0, 10, 11 or 12 for nothing due, notice, alert and critical.
+- **When.** Intermediates last 13 calendar months. The yearly ceremony is held in month 12 of their life, when the earliest expiry is 60 to 30 days away. `status` warns about an intermediate at 60, 30 and 14 days (configurable), the same days a system that holds intermediates warns on its side; its exit code is 0, 10, 11 or 12 for nothing due, notice, alert and critical.
+- **Root expiry.** `status` also warns about a root, at **6 months, 3 months and 30 days** before it expires, with the same exit codes 10, 11 and 12 (the highest of all findings is returned). Why: a root is extended at every use of its card and the cards alternate, so a healthy root always has at least about a year left, and a warning at 6 months means an extension was missed while there is still time for a ceremony, an overlap and a transition.
 - **Pending requests.** `yearly` takes one request for every registered system. It stops when one is missing, because that system would then expire, unless the person passes `--allow-missing NAME`, which is recorded.
 
 ### Revocation readiness
 
 - When a root is born, `init` makes a **revocation signature** for its OpenPGP primary, and the person stores it apart from the card. Its digest goes into the record.
-- OpenPGP offers two ways to let another key revoke: the *Revocation Key* subpacket (the designated revoker), and an escrowed revocation signature. RFC 9580 (section 5.2.3.23) deprecates the first: applications **must not generate** it, and calls the second preferred (section 13.9). 0002 asks for designated revokers. This record proposes to keep the escrowed signature as the mechanism, and to treat the designated revoker as a legacy extra to be tested, not generated. See the open parts.
+- **The designated revoker is not used.** RFC 9580 (section 5.2.3.23) deprecates the *Revocation Key* subpacket: applications **must not generate** it. The mechanism is the escrowed revocation signature (section 13.9), made with the card at hand and stored apart from it. 0002 is amended to say so.
 - **X.509.** `root revoke` signs a root list without the root, with the surviving root. Clients that fetch the list stop trusting it. A CRL for the intermediates a revoked root issued is produced by the surviving root.
 - The test that `gpg`, `gpgv`, `sqv`, apt and rpm honour a pre-made revocation certificate runs before a guide claims it ([issue #24](https://github.com/truvity/ritueel/issues/24)).
 
@@ -108,12 +109,12 @@ The registry holds, for each known card, the serial, its role and the fingerprin
 
 - Software mode runs the same commands and the same six steps. Its root is a passphrase-protected file. The first output of `init`, every confirmation and every record say that **a software root can be copied**.
 - A script drives it with `--passphrase-fd N` and `--confirm DIGEST`. For a test harness there is `--test-root`, which makes a root with no passphrase. A test root is marked in its certificate name (`TEST ONLY`) and in every record, and `bundle build` and `keyring build` **refuse to put a test root and a real root in the same product**, so a development root cannot ship by mistake.
-- The software root is the first store that exists, and the first consumer of ritueel depends on it.
+- The software root is the first store that exists, and the first consumer of ritueel depends on it. It is for tests, drills and development. It does not anchor a release keyring: no signed release is made until the card roots exist ([0004](/decisions/0004-release-keys-primaries-on-the-roots-signing-subkeys-and-the-keyring-package/)).
 - A test that needs hardware is tagged, skipped by default, selects its card by serial from the environment, and resets the card when it ends.
 
 ### KMS roots
 
-A KMS root follows the same steps. The confirmation is the typed digest plus a role that needs multi-factor authentication; ritueel uses the credentials of the caller's standard chain and stores none. The record holds the key ARN, the digest of the key policy and the role session. The company model is one KMS root with a replica in a second Region. A replica of a multi-Region key is the same key, so it adds availability and not independence; whether that is enough is open.
+A KMS root follows the same steps. The confirmation is the typed digest plus a role that needs multi-factor authentication; ritueel uses the credentials of the caller's standard chain and stores none. The record holds the key ARN, the digest of the key policy and the role session. The company model has two independent KMS roots, like the two cards: a second KMS root **in a separate account**. A replica of a multi-Region key is the same key, so it adds availability and not independence, and is never counted as the second root. Whether each root gets an account of its own is open. For a key held by a system that asks for an intermediate, the certifier reads the key itself, never a copy, as the hand-off contract says.
 
 ### Wizards
 
@@ -127,21 +128,27 @@ The CLI wizard and the web wizard ([16](https://github.com/truvity/ritueel/issue
 
 `init` prints it, and the record says it was shown: whoever holds one root card and its PIN can sign things that outsiders trust, until that root is revoked and the update reaches them. A stolen card without its PIN locks after three tries.
 
+### The card layer
+
+The card library is **go-piv/piv-go** (v2.6.0, Apache-2.0, released 2026-04-15, bundles the maker's current attestation root). **Both root keys live in PIV slots:** the X.509 root in 9c and the OpenPGP primary in a retired slot. ritueel builds the OpenPGP packets itself, and the card signs digests. There is one applet, one library, one binary, no `gpg` and no second language, and attestation works the same for both keys. The spike showed a PIV key makes back-signatures that `gpg`, `gpgv` and `sqv` accept (2026-10-31).
+
+- **The OpenPGP applet stays free** for the holder's own daily use. `gpg --card-status` shows nothing of the root.
+- **The creation time of the primary is not on the card.** ritueel chooses it, and the directory keeps it ([issue #11](https://github.com/truvity/ritueel/issues/11) is reworded for PIV).
+- **Still to be shown:** that certifications and bindings made by a primary held in a PIV slot are accepted by `gpg`, `gpgv`, `sqv`, apt and rpm. The spike is [issue #26](https://github.com/truvity/ritueel/issues/26); a failure there reopens this choice.
+
+### Root validity
+
+A root is valid for about three years, and **each use extends it** (0002, which also records why a fixed ten-year root or no expiry was not taken). The extension is part of the yearly ceremony and of any ceremony that uses the card:
+
+- **OpenPGP.** A new self-signature on the primary moves its expiry.
+- **X.509.** The root certificate is re-issued over the same key and the same subject, with a new validity and a new serial number. The signed root list pins public keys, not certificates, so the re-issue does not break pinning, and the list's version still only increases.
+- **The extension is planned like any signature.** It is in the plan, shown before the touch, and recorded. The CA bundle and the keyring change at each extension, and carry the next trust sequence.
+
 ### Open
 
-- **The card layer** ([issue #26](https://github.com/truvity/ritueel/issues/26)). The options are below. **Recommendation: A.**
-
-  | | Option | Pros | Cons |
-  |---|---|---|---|
-  | A | Go with a PIV library (go-piv/piv-go v2.6.0, Apache-2.0, released 2026-04-15, bundles the maker's current attestation root); **both root keys in PIV slots**: the X.509 root in 9c and the OpenPGP primary in a retired slot; ritueel builds the OpenPGP packets and the card signs digests | One applet, one library, one binary, no `gpg`, no second language. Attestation works the same for both keys. The spike showed a PIV key makes back-signatures that `gpg`, `gpgv` and `sqv` accept (2026-10-31). | The OpenPGP applet of the card stays unused, so `gpg --card-status` shows nothing. The primary's certification and binding signatures by a PIV key are the same operation but were not yet tested. The key's creation time is not on the card. It changes issue #11, which names the OpenPGP applet. |
-  | B | Go with PIV for X.509 and ritueel's own code over PC/SC for the OpenPGP applet | Keeps the OpenPGP applet in use. | The PC/SC binding for Go that is most used (`ebfe/scard`) was last pushed on 2024-12-14; applet code to write and keep. |
-  | C | Go builds the packets and uses `gpg-agent` only as the card signer | Works today (595 lines in the spike). | Needs `gpg`, `gpg-agent` and `scdaemon` at run time; `gpg` 2.2 sent two wrong PINs to a test card. |
-  | D | A Rust helper (`openpgp-card` with rPGP) | Did every step in the spike (340 lines). | A second language and a helper to package and sign, for key handling that no longer keeps a key in memory. |
-
-- **Root expiry.** Options: none; about three years, extended at each use; fixed ten years with expiry treated as a scheduled transition. *None*: no churn, no signal of a root nobody uses. *Three years, extended*: a dead card shows itself, but the root certificate changes each year, so CA bundles change each year and a client that pins the certificate breaks. *Ten years*: stable, the expiry is a plan, and `status` warns at 12, 6 and 3 months. **Recommendation: ten years, no extension.**
-- **The designated revoker.** Amend 0002 to drop the *Revocation Key* subpacket, as RFC 9580 requires, and keep the escrowed revocation signature. Pro: the standard's own route. Con: the holder must store the escrowed signature apart from the card, and it can be lost.
 - **`board`**, the name of a system that holds intermediates in the commands. Options: keep it (0002 uses it); use a general word such as `holder`. Keeping is cheaper now; the general word is clearer in a generic product.
-- **Lifetimes.** Settled: 13 calendar months for intermediates, ceremony in month 12, warnings at 60, 30 and 14 days. Not settled here: the lifetime of the signed root list ([issue #14](https://github.com/truvity/ritueel/issues/14)) and the PIV touch policy of the root key (always, as 0002 says, or cached).
+- **Lifetimes.** Settled: 13 calendar months for intermediates, ceremony in month 12, warnings at 60, 30 and 14 days; about three years for a root, extended at each use, warnings at 6 months, 3 months and 30 days. Not settled here: the lifetime of the signed root list ([issue #14](https://github.com/truvity/ritueel/issues/14)) and the PIV touch policy of the root key (always, as 0002 says, or cached).
+- **The layout of KMS roots.** The second root is in a separate account. Whether each root gets an account of its own is open ([issue #27](https://github.com/truvity/ritueel/issues/27)).
 
 ## Consequences
 
@@ -150,11 +157,31 @@ The CLI wizard and the web wizard ([16](https://github.com/truvity/ritueel/issue
 - A crash after the first signature leaves a record of it. The cost is a step, `records close`, that a person must take.
 - Writing the plan and the record is code that exists only for the ceremony. In return, there is one shape to test, teach and check.
 - The directory is the holder's to back up. Losing it loses the registry and the fingerprints' creation times; the published keyring and root list still hold the public material.
-- If option A of the card layer wins, there is one card library to keep up and no OpenPGP applet code, and the OpenPGP tests of 2026-10-31 must be extended to the primary's own signatures.
+- There is one card library to keep up and no OpenPGP applet code. The OpenPGP tests of 2026-10-31 must be extended to the primary's own signatures (issue #26).
+- A root changes at every use: the extension is one more signature in each ceremony, and the CA bundle and the keyring are rebuilt every year.
+- The stored revocation signature can be lost, and nothing else can revoke a primary whose card and PIN are gone. The guide says where to keep it.
 - Typing a digest prefix per ceremony is slower than pressing a key, by a few seconds, once a year.
 - The touches per ceremony grow with the number of systems; the plan prints the count.
 
 ## Roads not taken
+
+### The card layer: own code over PC/SC for the OpenPGP applet
+
+- Pros: keeps the OpenPGP applet in use.
+- Cons: the most used PC/SC binding for Go (`ebfe/scard`) was last pushed on 2024-12-14; applet code to write and keep.
+- Why not: piv-go with both keys in PIV slots is one applet, one library and one binary, and the OpenPGP applet stays free for the holder.
+
+### The card layer: Go builds the packets and `gpg-agent` is the card signer
+
+- Pros: works today (595 lines in the spike).
+- Cons: needs `gpg`, `gpg-agent` and `scdaemon` at run time; `gpg` 2.2 sent two wrong PINs to a test card.
+- Why not: a ceremony tool should not depend on a PIN dialogue it does not control.
+
+### The card layer: a Rust helper
+
+- Pros: did every step in the spike (340 lines), with `openpgp-card` and rPGP.
+- Cons: a second language and a helper to package and sign, for key handling that no longer keeps a key in memory.
+- Why not: the reason for a memory-safe helper is gone when every key is born on the card.
 
 ### One command with no plan step
 

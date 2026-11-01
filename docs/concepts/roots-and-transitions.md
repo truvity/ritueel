@@ -70,11 +70,11 @@ The overlap is the part that is easy to get wrong. It must last as long as the s
 
 ### Revocation is made in advance
 
-A revocation certificate made after a key is lost cannot be made at all, and one made in a hurry is made on the worst day. So ritueel makes revocation material when a root is created, and stores it apart from the key. For OpenPGP it also names a *designated revoker* when the primary is created: another key that is allowed to revoke this one. A root can then be revoked even if its own card and passphrase are gone.
+A revocation certificate made after a key is lost cannot be made at all, and one made in a hurry is made on the worst day. So ritueel makes revocation material when a root is created, and the holder stores it apart from the key. For OpenPGP this is a pre-made *revocation signature* for the primary, made while the card is at hand. A root can then be revoked even if its own card and PIN are gone. ritueel does not name a *designated revoker*: the standard deprecates that mechanism ([RFC 9580](https://datatracker.ietf.org/doc/html/rfc9580), section 5.2.3.23, says applications must not generate it) and prefers the stored revocation signature (section 13.9).
 
 ### Expiry is a transition too
 
-A root that expires is a transition that is already scheduled. An expiring root, treated as an emergency on the last day, is a failure of planning. ritueel tracks expiry and warns before it, with enough lead time to run the overlap.
+A root that expires is a transition that is already scheduled. An expiring root, treated as an emergency on the last day, is a failure of planning. A root lasts about three years, and each use extends it: the next yearly ceremony that uses its card gives it a new validity of about three years (see [the ceremony](/concepts/ceremonies/#root-validity-and-its-extension)). A root whose card is dead or lost is not extended, so it shows itself by running out. ritueel tracks expiry and warns well before it, with enough lead time to run the overlap.
 
 ## What outsiders install
 
