@@ -14,6 +14,16 @@
 # - img-src data: is for inline SVG backgrounds.
 # - no external origin is allowed anywhere: the site loads nothing from outside.
 # - frame-ancestors 'none' is what stops framing; X-Frame-Options repeats it for old browsers.
+#
+# Strict-Transport-Security: the Cloudflare zone's HSTS setting is authoritative and replaces
+# the value in this file, so the value here repeats what the zone serves (max-age=15552000;
+# includeSubDomains). Raising it to one year with preload is a later, deliberate step taken in
+# the zone, not in this file; change this line to match only after the zone changes.
+#
+# Cache-Control: only /_astro/* is cached for a year and marked immutable, because Astro puts a
+# content hash in those file names. HTML, /pagefind/* (some entry files have no hash), the
+# favicon and everything else keep the Workers static assets default (revalidate on every load).
+# site/scripts/check-built.sh fails when the rule is missing or applies to any other path.
 /*
   Content-Security-Policy: default-src 'self'; script-src 'self' 'wasm-unsafe-eval' 'sha256-7eCV4jtsr4t4knb3c4FCRPeu7GGZeOUGE3XvWix0XOQ=' 'sha256-GkZBRnvSuhtx/cvzvukVkX2JJZW+DdPlVr7BX8Tefqo=' 'sha256-VWo5Wp4aqSj6nSgMpeAp9cKieaoIfwFUAunAVugI5gA=' 'sha256-VgrgcKBvIM3XpiLJ6fEv1Vy6YHBwlKLkYtFdfBMouTo=' 'sha256-f/zAUE74ucc3JYp4r4QQvkJofoQdkOIhHYK+jeZ6eko=' 'sha256-hP48sUywTAXyg22qvpdOC/cYIA8MfPdKEbPC/mvGk4M=' 'sha256-nVO98WGdJA5yup1/MAdukGqUlS6Psuf7JJFF5ikWqbQ=' 'sha256-ucPfdYc9FPIvbmnn9ECv3eLKYLt8/heMPFQ+hNTn6jY=' 'sha256-wX2yOADeV+NMngflD5uYi3vl50SHC4sfM1EmylVjlX4='; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'
   X-Content-Type-Options: nosniff
@@ -21,4 +31,7 @@
   Referrer-Policy: strict-origin-when-cross-origin
   Permissions-Policy: accelerometer=(), autoplay=(), camera=(), display-capture=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), payment=(), publickey-credentials-get=(), usb=(), interest-cohort=()
   Cross-Origin-Opener-Policy: same-origin
-  Strict-Transport-Security: max-age=31536000
+  Strict-Transport-Security: max-age=15552000; includeSubDomains
+
+/_astro/*
+  Cache-Control: public, max-age=31536000, immutable

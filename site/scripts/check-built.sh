@@ -24,6 +24,20 @@ done
 [ -s "$dist/_headers" ] || bad "no _headers: site/public/_headers did not reach the output"
 site/scripts/check-csp.mjs "$dist" || bad "the Content-Security-Policy does not match the pages (above)"
 
+# Fingerprinted assets (/_astro/*, content-hashed file names) are cached for a year and nothing
+# else is: the immutable Cache-Control must sit under /_astro/* and under no other path.
+awk '
+  /^[^ \t#]/ { path = $0; next }
+  /^[ \t]+[Cc]ache-[Cc]ontrol:/ {
+    v = $0; sub(/^[ \t]+[Cc]ache-[Cc]ontrol:[ \t]*/, "", v); sub(/[ \t\r]+$/, "", v)
+    if (v ~ /immutable/) {
+      if (path == "/_astro/*" && v == "public, max-age=31536000, immutable") ok = 1
+      else stray = 1
+    }
+  }
+  END { exit (ok && !stray) ? 0 : 1 }
+' "$dist/_headers" || bad "$dist/_headers must give /_astro/* (and only it) 'Cache-Control: public, max-age=31536000, immutable'"
+
 # The Worker configuration: neither workers.dev nor preview URLs, no routes, no KV, no secrets.
 cfg=site/wrangler.jsonc
 grep -q '"workers_dev": false' "$cfg" || bad "$cfg does not set workers_dev false"
