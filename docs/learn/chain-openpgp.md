@@ -26,12 +26,16 @@ A signature proves that the key made it. It does not tell the verifier whose key
 
 | Way | How it works | Good for | Weak because |
 |---|---|---|---|
-| **Web of trust** | People sign each other's keys after checking identity; a verifier follows signatures from keys it already trusts. | A community that meets and signs keys. | Few people maintain it; trust paths are hard to explain; many tools no longer rely on it. |
+| **Web of trust** | People sign each other's keys after checking identity; a verifier follows signatures from keys it already trusts. | A community that meets and signs keys. | Few people maintain it; trust paths are hard to explain. It is a trust model and not a delivery channel: it does not tell a stranger where to get your key. The main public key server no longer distributes third-party certifications by default. |
 | **A channel you already trust** | You publish the fingerprint where verifiers already go: your project's website over HTTPS, the release notes, a signed message. | One project, one fingerprint. | Only as safe as the channel. An attacker who changes the page changes the fingerprint. |
 | **A keyring package** | Your distribution ships the public keys as a package that a package manager installs and updates. | Software releases. | Needs a package and a pipeline; a verifier must install it from a trusted place first. |
-| **A key directory (WKD)** | A mail domain publishes the keys of its users at a standard address, found from the email address. | Email and mail-based identities. | Trusts the domain's web server and DNS. |
+| **A key directory (WKD)** | A mail domain publishes the keys of its users at a standard address, found from the email address. | Email and mail-based identities. | Trusts the domain's web server and DNS. Its specification is still an Internet-Draft (version 22, July 2026), not an RFC. |
 
-For software releases, ritueel recommends the keyring package and a fingerprint published on the project's own site, and not the web of trust. Both are in the [keyring package reference](/reference/keyring-package/).
+For software releases, ritueel recommends the keyring package and a fingerprint published on the project's own site, and not the web of trust.
+
+## Which version of OpenPGP
+
+Publish **version 4** certificates today. Version 6 (RFC 9580) works with Sequoia-based tools only: GnuPG 2.4 refuses to read a version 6 certificate (measured 2026-11-01), and the hosting platforms do not document support. Use a current GnuPG: the 2.4 branch reached end of life on 2026-06-30, and a certification-forgery bug that gave full trust under the TOFU models was fixed in 2.5.22 (current stable 2.5.24, read 2026-11-01). Both are in the [keyring package reference](/reference/keyring-package/).
 
 ## Revocation
 

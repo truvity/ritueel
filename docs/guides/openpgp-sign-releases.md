@@ -43,6 +43,14 @@ Give your users these steps:
 
 **Never treat the exit status of `gpg --verify` as the decision.** Measured on 2026-11-01, `gpg` reports a good signature for a revoked key, and `gpgv` and apt ignore revocations. See [OpenPGP release keys](/learn/openpgp-release-keys/#revocation).
 
+## How others publish it
+
+- **The Linux kernel** signs each release and tells users to find the signer's key through the Web Key Directory: `gpg2 --locate-keys user@kernel.org`.
+- **Tor** tells users to import its key with `gpg --auto-key-locate nodefault,wkd --locate-keys torbrowser@torproject.org`, and check with `gpgv --keyring ./tor.keyring file.asc file`.
+- **Smaller tools** often use minisign or signify, with a short public key printed on the site. They are simpler, and no package manager reads them.
+
+Read from the projects' pages on 2026-11-01. Publish **version 4** certificates, as GitHub, GitLab, apt and rpm consumers need ([the OpenPGP chain](/learn/chain-openpgp/)).
+
 ## Where the key lives
 
 A release key that sits in a file on a build server can be copied. Prefer a subkey held in a card or a cloud key service, so that signing is a call that CI makes with its own identity and audit trail, and the private key cannot be taken. The key is replaced, not copied, when custody changes ([Rotate](/learn/rotate/)). Compare the options in [Where a key lives](/learn/key-stores/).

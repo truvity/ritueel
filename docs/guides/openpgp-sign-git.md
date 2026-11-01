@@ -33,13 +33,21 @@ A platform cannot see your master key or your card. It checks three things:
 | The key's user ID includes the email of the committer. | The email in the key must be one you also use in git. |
 | That email is verified on the account. | Verify the email on the platform first. |
 
-GitHub and GitLab show a "Verified" badge when all three hold. If you rotate the subkey, upload the new public key; if you revoke one, upload the revocation too, so the platform stops treating it as good. Signatures made earlier may stay shown as verified or turn unverified depending on the platform and the revocation reason, so choose a soft reason (*superseded*) for retirement and a hard one (*compromised*) for theft ([Revoke](/learn/revoke/)).
+GitHub and GitLab show a "Verified" badge when all three hold. If you rotate the subkey, upload the new public key. What happens to old commits differs, so do not assume (read from the platforms' documentation, 2026-11-01):
+
+| | GitHub | GitLab |
+|---|---|---|
+| When the check happens | At push time. The result is stored and never re-checked. | When the page is shown, against the keys on the account. |
+| After a key expires, is revoked or is rotated | Old commits keep their status. Expired and revoked keys can be uploaded to keep old commits verified, and then show as expired or revoked. | Revoking a key in GitLab makes past and future commits unverified. Deleting a key leaves old commits verified. |
+| Commits made in the web interface | Signed by GitHub's own key, which rotated on 2024-01-16, so older ones show an expired key. | Not applicable. |
+
+So a platform's badge is a convenience, not a record of trust. Choose a soft revocation reason (*superseded*) for retirement and a hard one (*compromised*) for theft ([Revoke](/learn/revoke/)), and keep your own list of which keys signed which period.
 
 Some platforms offer *vigilant mode*, which marks unsigned commits as unverified instead of leaving them unmarked. Turn it on: an attacker's commit in your name is then visible.
 
 ## SSH signing as an alternative
 
-Newer git can sign with an SSH key (`gpg.format ssh`). Platforms show it as verified as well, once the SSH public key is registered as a signing key. It is simpler, and it ties the signature to the key and not to an OpenPGP identity. Prefer OpenPGP when you also sign releases with the same identity; prefer SSH signing when git is all you sign.
+Git 2.34 and later can sign with an SSH key (`gpg.format ssh`). Both platforms show it as verified once the SSH public key is registered as a signing key; an authentication-only key does not verify on GitLab, which wants a key whose usage includes signing. Locally, `ssh-keygen -Y verify` with an `allowed_signers` file checks a signature, and its options can limit a key to a namespace and a time window, which the platforms do not document. It is simpler, and it ties the signature to the key and not to an OpenPGP identity. Prefer OpenPGP when you also sign releases with the same identity; prefer SSH signing when git is all you sign.
 
 ## How you know it worked
 

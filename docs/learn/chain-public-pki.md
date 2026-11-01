@@ -19,10 +19,14 @@ You hold only the last key. Everything above it is trusted because your visitors
 
 ## What you do not control
 
-- **The CA/Browser Forum rules.** The Baseline Requirements set how a CA must validate a name, how it must protect its keys, and how long a TLS certificate may live. The maximum lifetime is falling in steps, from 398 days to 200 days in March 2026, and lower after that (checked 2026-11-01; read the current ballot before you plan a renewal schedule). Plan for automatic renewal, not for a calendar reminder.
+- **The CA/Browser Forum rules.** The Baseline Requirements (version 2.3.1, effective 2026-10-04) set how a CA must validate a name, how it must protect its keys, and how long a TLS certificate may live. The maximum lifetime is falling in steps: 398 days before 2026-03-15, **200 days** from that date, **100 days** from 2027-03-15 and **47 days** from 2029-03-15. The time a CA may reuse a domain validation falls with it, to 10 days from 2029-03-15. Plan for automatic renewal, not for a calendar reminder.
+- **How the root was born.** For a root key, the CA must follow a written key-generation script, and a qualified auditor must witness the ceremony or it must be recorded on video, with the auditor's report that the script was followed. Mozilla's root store policy (3.1, effective 2026-07-01) asks for that report before it includes a root, and Chrome's root program (version 1.8) sets its own term limits and wants server-authentication hierarchies kept apart. You rely on all of this and see none of it.
+- **Revocation cadence.** A CA that issues CA certificates must publish a new CRL at least every 12 months and within 24 hours of a revocation. OCSP is optional since March 2024, and Let's Encrypt shut its responders down in August 2025. Short lifetimes are replacing revocation.
 - **Certificate Transparency.** Browsers expect every certificate to be logged in public, append-only logs. A certificate you request will appear there, with its names. Do not put a secret in a hostname.
 - **The root programs.** Browser and operating system vendors can remove a root, or distrust a CA after a failure. Your certificate stops working for those clients on the day they decide, whatever you did.
 - **The CA itself.** If it is compromised or mis-issues, you learn from the news.
+
+All figures are from the Baseline Requirements and the root programs' published policies, read on 2026-11-01. They change; read the current text before you plan.
 
 ## What you do control
 

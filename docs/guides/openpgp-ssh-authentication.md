@@ -25,11 +25,19 @@ This is the usual way. `gpg-agent` speaks the SSH agent protocol and uses the ca
 4. **Export the public half.** `gpg --export-ssh-key <fingerprint>!` prints the line to put in `authorized_keys`, or to hand to the CA that signs SSH certificates ([SSH](/learn/chain-ssh/)). The `!` selects that exact subkey.
 5. **Log in.** `ssh host`. The agent asks for the PIN, and touches follow your card's policy.
 
+What `gpg-agent` offers over SSH (read from the GnuPG manual and source, 2026-11-01): it uses the authentication (`A`) key; it speaks Ed25519, RSA, ECDSA (P-256, P-384, P-521) and certificates of those types; it does **not** speak the FIDO `sk-*` key types. Keys on an active OpenPGP card are used without listing them; the `sshcontrol` file that lists keygrips by hand is deprecated in favour of a `Use-for-ssh` attribute on the key.
+
 ## Way 2: the card through PKCS#11
 
 An SSH client can also load a PKCS#11 module that talks to the card directly, with `PKCS11Provider` in `~/.ssh/config` or `ssh -I`. Which module you need depends on the card: OpenSC's module reads OpenPGP cards, and a YubiKey's PIV applet has its own module. The key then comes from whatever the module exposes, not from `gpg`.
 
+For a YubiKey's PIV applet, the usual module is `libykcs11`: `ssh -I libykcs11.so user@host` for one login, `ssh-add -s libykcs11.so` to put the card's keys in the agent, and `ssh-keygen -D libykcs11.so -e` to export the public keys. PIV slot 9a asks for the PIN once for a session and slot 9c for every signature.
+
 Choose this when you do not want `gpg-agent` in the loop. Know the cost: a module and `scdaemon` both want the card, and a program that holds it keeps the others out. Do not run both at once, and keep the root cards, which are used only at ceremonies, away from your daily card.
+
+## A third way: a FIDO2 key
+
+OpenSSH can also make a key on a FIDO2 token (`ssh-keygen -t ed25519-sk`), with options for a resident key and for requiring the PIN. It does not use your OpenPGP key at all, and `gpg-agent` cannot serve it. Choose it when you want an SSH key that is separate from your OpenPGP identity.
 
 ## How you know it worked
 
