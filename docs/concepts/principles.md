@@ -1,30 +1,39 @@
 ---
 title: Design principles
-description: The rules ritueel's design follows, from where a key is born to what is public, each in a sentence or two with the records and pages that follow from it.
+description: What ritueel is and is not, and the rules its design follows: shared with systems that hold intermediates, particular to ritueel, and those that do not apply.
 sidebar:
   order: 6
 ---
 
-*Design phase: these principles are the ones the design follows today. They are shared with other systems that hold intermediates; each is decided in a record or a page that the link names. Dates are the day a measurement or a decision was made.*
+*Design phase: these are the principles the design follows today. Each links to the record or page that decides it.*
 
-1. **Every key is born in its store and never leaves it.** A transition makes a new key, and the old one vouches for it; nothing is exported or imported. See [ADR 0002](/decisions/0002-every-key-is-born-in-its-store-two-roots-one-holder-yearly-alternation/) and [Roots, intermediates and transitions](/concepts/roots-and-transitions/).
+## What ritueel is, and is not
 
-2. **Trust is layered, and redundancy answers loss, not compromise.** Roots stay offline, intermediates are re-signed yearly, and key material is replaced only on an event or at most every 3 years. There are two root cards because a card cannot be copied, and one KMS root plus a replica because KMS can replicate its key. A compromise is answered by revocation and a transition. See [Renewal and replacement](/decisions/0002-every-key-is-born-in-its-store-two-roots-one-holder-yearly-alternation/#renewal-and-replacement) and [Two roots in practice](/concepts/two-roots/).
+- **A command-line tool and documentation, not a network service.** It holds no online keys. See [ADR 0001](/decisions/0001-scope-roots-and-transitions-systems-like-sluis-hold-intermediates/).
+- **It owns roots, root ceremonies and root transitions** for X.509, SSH CA key lists ([issue #31](https://github.com/truvity/ritueel/issues/31)) and OpenPGP, personal OpenPGP keys included. See [ADR 0001](/decisions/0001-scope-roots-and-transitions-systems-like-sluis-hold-intermediates/) and [ADR 0003](/decisions/0003-ceremonies-plan-confirm-reserve-sign-record-and-the-ritueel-commands/#key-stores-one-ceremony-many-stores).
+- **It never holds an intermediate's private key.** Systems like [sluis](https://sluis.id) hold intermediates, and meet ritueel only through the [hand-off contract](/reference/hand-off-contract/).
+- **Its records are files the operator keeps:** ceremony records, root lists, and keyring packages that ritueel builds and the user's own pipeline publishes. See [ADR 0003](/decisions/0003-ceremonies-plan-confirm-reserve-sign-record-and-the-ritueel-commands/#records-and-transcripts) and [ADR 0004](/decisions/0004-release-keys-primaries-on-the-roots-signing-subkeys-and-the-keyring-package/).
 
-3. **One key, one purpose.** Keys are shared only where audience, lifetime, revocation coupling and callers are all equal and the store itself separates the uses. See [the slot map](/decisions/0003-ceremonies-plan-confirm-reserve-sign-record-and-the-ritueel-commands/#the-slot-map-of-a-root-card) and the [hand-off contract](/reference/hand-off-contract/), where a key that signs tokens is kept apart from an intermediate.
+## Shared with systems that hold intermediates
 
-4. **Verify; never trust a claim.** Attest what can be attested, re-read KMS keys and their policies from the service, and accept no copy of either. A check that cannot run is reported as not run, and never as passed. See [What the tool checks](/concepts/ceremonies/#what-the-tool-checks) and [the proof file](/reference/hand-off-contract/#the-proof-file).
+1. **Every key is born in its store and never leaves it.** A transition makes a new key, and the old one vouches for it. See [ADR 0002](/decisions/0002-every-key-is-born-in-its-store-two-roots-one-holder-yearly-alternation/) and [Roots, intermediates and transitions](/concepts/roots-and-transitions/).
+2. **Trust is layered, and redundancy answers loss, not compromise.** There are two root cards because a card cannot be copied, and one KMS root plus a replica because KMS can replicate its key. A compromise is answered by revocation and a transition. See [ADR 0002](/decisions/0002-every-key-is-born-in-its-store-two-roots-one-holder-yearly-alternation/#keys) and [Two roots in practice](/concepts/two-roots/).
+3. **One key, one purpose.** Keys are shared only where audience, lifetime, revocation coupling and callers are all equal and the store itself separates the uses. See [the slot map](/decisions/0003-ceremonies-plan-confirm-reserve-sign-record-and-the-ritueel-commands/#the-slot-map-of-a-root-card).
+4. **Verify; never trust a claim.** Attest what can be attested, re-read KMS keys and their policies from the service, and accept no copy of either. A check that cannot run is reported as not run, never as passed. See [What the tool checks](/concepts/ceremonies/#what-the-tool-checks) and [the proof file](/reference/hand-off-contract/#the-proof-file).
+5. **Open standards, as their consumers implement them.** OpenPGP keys are version 4 while `gpg` has no version 6, and a revoked key leaves the keyring package because `gpgv` ignores revocations. See [ADR 0004](/decisions/0004-release-keys-primaries-on-the-roots-signing-subkeys-and-the-keyring-package/#algorithm).
+6. **A written contract and test vectors, not shared code; things are named for what they are.** The word is `intermediate`, not `board`. See the [hand-off contract](/reference/hand-off-contract/) and [ADR 0003](/decisions/0003-ceremonies-plan-confirm-reserve-sign-record-and-the-ritueel-commands/).
+7. **Nothing without a consumer.** During design, a record is rewritten in place and not extended by amendments. See the [roadmap](/roadmap/) and [how decisions are made](/contributing/decisions/).
+8. **Measure, and date the measurement.** A claim about a tool, a card or a service carries the day it was measured. See [what was tested](/concepts/openpgp-release-keys/#what-was-tested).
+9. **Public by default, private where it protects.** The design, the reasons and the roads not taken are public; secrets and private deployment details are not. See [Public content and secrets](/contributing/public-content/).
 
-5. **Open standards, as their consumers actually implement them.** OpenPGP keys are version 4 while `gpg` has no version 6, and a revoked key leaves the keyring package because `gpgv` ignores revocations. See [ADR 0004](/decisions/0004-release-keys-primaries-on-the-roots-signing-subkeys-and-the-keyring-package/#algorithm) and [OpenPGP release keys](/concepts/openpgp-release-keys/#revocation).
+## Particular to ritueel
 
-6. **Generic products, joined by a written contract and test vectors, not by shared code.** Things are named for what they are: `intermediate`, not `board`. See [ADR 0001](/decisions/0001-scope-roots-and-transitions-systems-like-sluis-hold-intermediates/) and the [hand-off contract](/reference/hand-off-contract/).
+10. **Roots are offline and rare, but not air-gapped.** A ceremony runs on an ordinary workstation, because the key never leaves its card or KMS; the checks exist because that workstation can still lie about what is signed. See [ADR 0002](/decisions/0002-every-key-is-born-in-its-store-two-roots-one-holder-yearly-alternation/#the-yearly-ceremony).
+11. **A person is present at every root use, and everything else is automated.** A touch on a card and a typed digest of the plan need a person; routine work reads public files only. See [ADR 0003](/decisions/0003-ceremonies-plan-confirm-reserve-sign-record-and-the-ritueel-commands/#every-ceremony-has-the-same-six-steps) and [The ceremony](/concepts/ceremonies/).
+12. **One ceremony, many key stores:** software, PIV, OpenPGP card and AWS KMS. Only the store and the key's consumer differ, and each store is proven on real hardware or a real account. See [ADR 0003](/decisions/0003-ceremonies-plan-confirm-reserve-sign-record-and-the-ritueel-commands/#key-stores-one-ceremony-many-stores) and [Where a key lives](/concepts/key-stores/).
+13. **Renewal re-signs.** A key is replaced on an event or at most every 3 years, and every transition makes a new key, never a copy. See [Renewal and replacement](/decisions/0002-every-key-is-born-in-its-store-two-roots-one-holder-yearly-alternation/#renewal-and-replacement).
+14. **ritueel is a teaching product.** Every ceremony is explained, every road not taken is recorded, and a guide walks through each transition. See [ADR 0001](/decisions/0001-scope-roots-and-transitions-systems-like-sluis-hold-intermediates/) and [A lost root card](/guides/lost-root-card/).
 
-7. **A person only where a person adds safety.** A touch on a card and a typed digest of the plan need a person; routine work is automated. See [ADR 0003](/decisions/0003-ceremonies-plan-confirm-reserve-sign-record-and-the-ritueel-commands/) and [The ceremony](/concepts/ceremonies/).
+## Not applicable to ritueel
 
-8. **Nothing without a consumer; during design, rewrite rather than accumulate.** A feature waits for something that uses it, and a record that is still in design is rewritten in place, not extended by amendments. See the [roadmap](/roadmap/) and [how decisions are made](/contributing/decisions/).
-
-9. **Measure before deciding, and date the measurement.** A claim about a tool, a card or a service carries the day it was measured, and is checked again before it is relied on. See [what was tested](/concepts/openpgp-release-keys/#what-was-tested).
-
-10. **One ceremony, many key stores.** The ceremony makes or binds a key; only the store (`software`, `piv`, `openpgp-card`, `aws-kms`) and the key's consumer differ. Each store is proven on real hardware or a real account. See [Key stores](/decisions/0003-ceremonies-plan-confirm-reserve-sign-record-and-the-ritueel-commands/#key-stores-one-ceremony-many-stores) and [Where a key lives](/concepts/key-stores/).
-
-11. **Public by default, private where it protects; ritueel is a teaching product.** The design, the reasons and the roads not taken are public, and no secret or private deployment detail is. See [Public content and secrets](/contributing/public-content/) and [ADR 0001](/decisions/0001-scope-roots-and-transitions-systems-like-sluis-hold-intermediates/).
+A reader who knows a system that holds intermediates will not find these here, because ritueel is a command-line tool and documentation and not a running service: reference installations with tenants, an audit record format, and serverless or Kubernetes runtimes. Its record is the ceremony record of [ADR 0003](/decisions/0003-ceremonies-plan-confirm-reserve-sign-record-and-the-ritueel-commands/#records-and-transcripts).

@@ -14,7 +14,7 @@ ritueel is a teaching product, so the ideas come first. Read these pages in orde
 | [Two roots in practice](/concepts/two-roots/) | What public CAs do, how clients behave when an intermediate has two certificates, and how the two cards alternate by year. |
 | [OpenPGP release keys and the keyring](/concepts/openpgp-release-keys/) | The primaries, an intermediate's subkey, the back-signature, the keyring package, and what gpg, sqv, apt and rpm were tested to accept. |
 | [The ceremony](/concepts/ceremonies/) | What a person does at a ceremony, what the tool checks before each touch, which code talks to the cards, how a root is extended, and how intermediates are renewed. |
-| [Design principles](/concepts/principles/) | The rules the design follows, each with the records and pages that follow from it. |
+| [Design principles](/concepts/principles/) | What ritueel is and is not, and the rules the design follows, each linked to the record that decides it. |
 
 :::note[Design phase]
 ritueel has no release yet. These pages describe the model that the tools will follow ([ADR 0001](/decisions/0001-scope-roots-and-transitions-systems-like-sluis-hold-intermediates/)). Where a page says what a tool does, the tool is planned unless the page says it is built; the [roadmap](/roadmap/) has the order.
