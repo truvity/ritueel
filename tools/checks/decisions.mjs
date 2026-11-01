@@ -4,8 +4,6 @@
 // The format is read from the repository, not written down here:
 //   - the header fields (`**Status:**`, `**Date:**`) and the sections (`## Context` ...) are the
 //     ones 0000-template.md has, in its order;
-//   - the labels each road not taken carries (`Pros:`, `Cons:`, `Why not:`) are the ones the
-//     template's first option has;
 //   - the allowed statuses are the backticked values of the README's "Status." bullet, and the
 //     template's comment must list the same set; NNNN in a status is a record number that must exist;
 //   - the parts the README's "Format" list names must be the template's fields and sections.
@@ -16,10 +14,11 @@
 //   - each header field appears once, before the first section, in the template's order;
 //     the status is an allowed value and the date a real YYYY-MM-DD day;
 //   - each section appears exactly once, in the template's order, and is not empty;
-//   - "Roads not taken" has at least one `###` option, and each option has a bullet for every label
-//     (`- Pros: ...`, `- **Pros:** ...` or `- **Pros**: ...`) with text after the colon or on an
-//     indented next line. Before the colon a label may carry a qualifier in parentheses
-//     ("Why not (inferred):") or one from QUALIFIERS ("Why not first:");
+//   - "Roads not taken" is a list of one-line bullets, one per option weighed, each a bold name and
+//     the reason it lost (`- **Option.** What it gives, what it costs, why it lost.`), at least one;
+//   - "Follow-ups" is `None.`, or a list of one-line bullets, each linking the issue that carries
+//     it: tasks that verify or implement the decision and cannot change it;
+//   - an `Accepted` record has no part marked open: no `Open` heading and no `:::caution[Open]`;
 //   - no line of the template's instructions comment (<!-- ... -->) is left;
 //   - the README index has exactly one row for it, linking the file, with the same status.
 // And the index has no row without a file.
@@ -63,9 +62,10 @@ function sections(text) {
 }
 
 const FIELD = /^\*\*([A-Z][A-Za-z ]*):\*\*\s*(.*?)\s*$/;
-const LABEL = /^\s*-\s+(?:\*\*)?([A-Z][A-Za-z ]*?)(?:\*\*)?:(?:\*\*)?(?:\s|$)/;
-// Words a label may carry before its colon, besides a parenthesised note.
-const QUALIFIERS = ['first'];
+// A road not taken: a bold option name, then the reason, on one line.
+const ROAD = /^- \*\*([^*]+?)\*\*[.:]?\s+(\S.{9,})$/;
+// A follow-up: a bullet that links an issue of a GitHub repository.
+const FOLLOW_UP = /^- \S.*\]\(https:\/\/github\.com\/[\w.-]+\/[\w.-]+\/issues\/\d+\)/;
 
 // ---- the format, from the template
 if (!existsSync(join(dir, TEMPLATE))) {
@@ -77,19 +77,12 @@ const tpl = sections(template);
 const FIELDS = tpl.head.map((l) => FIELD.exec(l.line)?.[1]).filter(Boolean);
 const SECTIONS = tpl.secs.map((s) => s.title);
 const ROADS = 'Roads not taken';
-const tplRoads = tpl.secs.find((s) => s.title === ROADS);
-const LABELS = [];
-for (const l of tplRoads?.body ?? []) {
-  if (/^### /.test(l.line)) { if (LABELS.length) break; continue; }
-  const m = LABEL.exec(l.line);
-  if (m) LABELS.push(m[1]);
-}
+const FOLLOW = 'Follow-ups';
 // The lines of the template's instructions comment; a record keeps none of them.
 const tplComment = (/<!--([\s\S]*?)--!?>/.exec(template)?.[1] ?? '').split('\n').map((l) => l.trim()).filter((l) => l.length >= 12);
 if (!FIELDS.includes('Status') || !FIELDS.includes('Date')) E(`${TEMPLATE}: no **Status:** and **Date:** fields found`);
 if (!SECTIONS.length) E(`${TEMPLATE}: no ## sections found`);
-if (!SECTIONS.includes(ROADS)) E(`${TEMPLATE}: no "## ${ROADS}" section`);
-if (!LABELS.length) E(`${TEMPLATE}: no option labels (- Pros:, ...) under "## ${ROADS}"`);
+for (const want of [ROADS, FOLLOW]) if (!SECTIONS.includes(want)) E(`${TEMPLATE}: no "## ${want}" section`);
 
 // ---- the allowed statuses, from the README, cross-checked with the template comment
 const readme = existsSync(join(dir, 'README.md')) ? read('README.md') : '';
@@ -171,25 +164,21 @@ for (const rec of records.values()) {
     if (!hits[0].body.some((l) => l.line.trim() && !/^<!--[\s\S]*--!?>$/.test(l.line.trim()))) E(`${where}:${hits[0].n}: "## ${s}" is empty`);
   }
 
-  const roads = secs.find((x) => x.title === ROADS);
-  if (roads) {
-    const options = [];
-    for (const l of roads.body) {
-      const h = /^### (.+)$/.exec(l.line);
-      if (h) options.push({ title: h[1], n: l.n, text: '' });
-      else if (options.length) options[options.length - 1].text += `${l.line}\n`;
+  const body = (title) => (secs.find((x) => x.title === title)?.body ?? []).filter((l) => l.line.trim() && !/^<!--[\s\S]*--!?>$/.test(l.line.trim()));
+  const roads = body(ROADS);
+  if (secs.some((x) => x.title === ROADS) && !roads.length) E(`${where}: "## ${ROADS}" lists no option; every other option weighed is listed`);
+  for (const l of roads) {
+    if (!ROAD.test(l.line)) E(`${where}:${l.n}: a road not taken is one line, "- **Option.** what it gives, what it costs, why it lost"`);
+  }
+  const follow = body(FOLLOW);
+  if (!(follow.length === 1 && follow[0].line.trim() === 'None.')) {
+    for (const l of follow) {
+      if (!FOLLOW_UP.test(l.line)) E(`${where}:${l.n}: a follow-up is a bullet that links its issue, or the section is "None."`);
     }
-    if (!options.length) E(`${where}:${roads.n}: "## ${ROADS}" has no "### <option>"; every other option weighed is listed`);
-    const qual = `(?:\\s+\\([^()\\n]{1,40}\\)|${QUALIFIERS.map((q) => `\\s+${esc(q)}`).join('|')})?`;
-    for (const o of options) {
-      const body = o.text.split('\n');
-      for (const label of LABELS) {
-        const rx = new RegExp(`^\\s*-\\s+(?:\\*\\*)?${esc(label)}${qual}(?:\\*\\*)?:(?:\\*\\*)?(.*)$`);
-        const at = body.findIndex((l) => rx.test(l));
-        if (at < 0) { E(`${where}:${o.n}: option "${o.title}" has no "- ${label}:" bullet`); continue; }
-        const value = rx.exec(body[at])[1].trim();
-        if (!value && !/^\s+\S/.test(body[at + 1] ?? '')) E(`${where}:${o.n}: option "${o.title}" has an empty "${label}:"`);
-      }
+  }
+  if (rec.Status === 'Accepted') {
+    for (const l of lines(text)) {
+      if (/^#{2,6}\s+Open\b/.test(l.line) || /^:::caution\[Open\]/.test(l.line.trim())) E(`${where}:${l.n}: an Accepted record has no open part; decide it, or move a task that cannot change the decision to "## ${FOLLOW}"`);
     }
   }
 

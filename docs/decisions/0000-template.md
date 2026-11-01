@@ -8,6 +8,8 @@ Copy this file to NNNN-short-title.md and fill it in. Delete these comments.
 Status: Proposed, Accepted, Rejected, Superseded by NNNN, or Accepted; amended by NNNN.
 Keep the text public and generic: no private deployment, account, hostname, ticket
 or person other than the maintainer. Use example.com, acme and globex.
+Keep it short: a record holds the choice and its reasons. Measurements are cited
+from docs/research/, formats and command tables live in docs/reference/.
 -->
 
 ## Context
@@ -26,16 +28,9 @@ standards register)? Say what it costs.
 
 ## Roads not taken
 
-One entry for each other option that was weighed.
+- **Option A.** What it would have given, what it costs, and why it lost, in one line.
+- **Option B.** The same, for the next option weighed.
 
-### Option A
+## Follow-ups
 
-- Pros:
-- Cons:
-- Why not:
-
-### Option B
-
-- Pros:
-- Cons:
-- Why not:
+- A task that verifies or implements this decision and cannot change it, with its issue ([#1](https://github.com/truvity/ritueel/issues/1)).

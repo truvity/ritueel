@@ -5,7 +5,7 @@ sidebar:
   order: 4
 ---
 
-*Design phase: this page teaches the model of [ADR 0002](/decisions/0002-every-key-is-born-in-its-store-two-roots-one-holder-yearly-alternation/) and [ADR 0004](/decisions/0004-release-keys-primaries-on-the-roots-signing-subkeys-and-the-keyring-package/). No release is signed until the card roots exist and a drill has run. The tests were run on 2026-10-29 (software keys), 2026-10-31 (two YubiKey 5 test cards, firmware 5.8.0, OpenPGP applet 3.4, and a Nano-size YubiKey) and 2026-11-01 (a primary in a PIV slot, and AWS KMS keys). The tools that carry out each step are planned.*
+*Design phase: this page teaches the model of [ADR 0002](/decisions/0002-key-custody-every-key-is-born-in-its-store-two-root-cards-or-one-kms-root-and-a-replica/) and [ADR 0004](/decisions/0006-release-keys-and-the-keyring-package/). No release is signed until the card roots exist and a drill has run. The tests were run on 2026-10-29 (software keys), 2026-10-31 (two YubiKey 5 test cards, firmware 5.8.0, OpenPGP applet 3.4, and a Nano-size YubiKey) and 2026-11-01 (a primary in a PIV slot, and AWS KMS keys). The tools that carry out each step are planned.*
 
 OpenPGP has no certificate chains. It has a primary key, subkeys that the primary binds, and certifications. A release is signed by a subkey that a primary has bound, and users verify with a keyring that holds the primaries.
 
@@ -40,11 +40,11 @@ What follows:
 - **For apt users, the effective revocation is a new keyring package without the key.** The revocation signature still goes out, for the users of `gpg` and Sequoia, but a user of apt is protected only when the new package arrives.
 - **Never treat the exit status of `gpg --verify` as a trust decision.** A script that must refuse a revoked key reads `gpg --status-fd` and rejects `REVKEYSIG`, or uses `sqv`.
 - **A soft reason is for retirement, a hard one for theft.** Use "superseded" or "retired" when the key was safe and old signatures should stay valid. Use "compromised" when they should not.
-- **Open:** whether to give primaries and subkeys a shorter expiry as well, so that a key nobody revoked stops working sooner. It was not tested against `gpgv` and is not decided ([ADR 0004](/decisions/0004-release-keys-primaries-on-the-roots-signing-subkeys-and-the-keyring-package/)).
+- **Open:** whether to give primaries and subkeys a shorter expiry as well, so that a key nobody revoked stops working sooner. It was not tested against `gpgv` and is not decided ([ADR 0004](/decisions/0006-release-keys-and-the-keyring-package/)).
 
 ## Version 4 now, version 6 later
 
-The maintainer decided on 2026-11-01 that release keys are OpenPGP **version 4** now and **version 6** later, once the verifiers people use accept it. GnuPG implements no version 6 in any release: `gpg` 2.4.8, the current one, refuses to parse a version 6 certificate ("unknown version 6"), and `gpgv` with it. Sequoia (`sqv`, `sq`) accepts it, and honours its revocations. A release key that `gpg` and apt cannot read does not serve its users. The reasons and the road not taken are in [ADR 0004](/decisions/0004-release-keys-primaries-on-the-roots-signing-subkeys-and-the-keyring-package/).
+The maintainer decided on 2026-11-01 that release keys are OpenPGP **version 4** now and **version 6** later, once the verifiers people use accept it. GnuPG implements no version 6 in any release: `gpg` 2.4.8, the current one, refuses to parse a version 6 certificate ("unknown version 6"), and `gpgv` with it. Sequoia (`sqv`, `sq`) accepts it, and honours its revocations. A release key that `gpg` and apt cannot read does not serve its users. The reasons and the road not taken are in [ADR 0004](/decisions/0006-release-keys-and-the-keyring-package/).
 
 ## How others do it
 
@@ -81,7 +81,7 @@ The first two tests bound the subkey under both primaries. The model binds it un
 
 ## Packet rules
 
-Every version 4 signature carries both the Issuer Fingerprint and the Issuer Key ID subpacket. go-crypto v1.5.2 writes only the fingerprint, and `gpg` 2.2.27 rejects a certificate made of such signatures on import, so ritueel always adds the key ID too ([ADR 0004](/decisions/0004-release-keys-primaries-on-the-roots-signing-subkeys-and-the-keyring-package/)).
+Every version 4 signature carries both the Issuer Fingerprint and the Issuer Key ID subpacket. go-crypto v1.5.2 writes only the fingerprint, and `gpg` 2.2.27 rejects a certificate made of such signatures on import, so ritueel always adds the key ID too ([ADR 0004](/decisions/0006-release-keys-and-the-keyring-package/)).
 
 ## Personal GPG
 

@@ -22,7 +22,7 @@ A key has to live somewhere. The places ritueel supports differ in one question 
 | Who uses the key afterwards | Tests and drills; a person's own primary. | A service's key-holder; the root cards. | `gpg`, for a person's daily signing subkey. | A service, or a company root. |
 | Good for | Learning, drills, test roots, and the first bootstrap before anything else exists. | Roots held by a person or a small team, without a cloud dependency. | A person's daily key, born on the card. | Roots in an organisation that already runs on that cloud and wants its access control and audit. |
 
-One ceremony, many stores: ritueel's ceremony makes a key in a store, or binds a key that a store holds. Only the store and the consumer of the key differ. Each store is proven on real hardware or a real account before it is called supported ([ADR 0003](/decisions/0003-ceremonies-plan-confirm-reserve-sign-record-and-the-ritueel-commands/)).
+One ceremony, many stores: ritueel's ceremony makes a key in a store, or binds a key that a store holds. Only the store and the consumer of the key differ. Each store is proven on real hardware or a real account before it is called supported ([ADR 0003](/decisions/0004-ceremonies-plan-confirm-reserve-sign-verify-record/)).
 
 ## The trade-offs in plain words
 
