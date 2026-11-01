@@ -33,7 +33,7 @@ The root certificates of the active roots in one PEM file, with the trust sequen
 
 ### The format
 
-The exact members, the encoding and the signature format of the root list and the SSH CA key list are a reference page with test vectors, delivered with [issue #14](https://github.com/truvity/ritueel/issues/14). They follow this record and cannot change it.
+The exact members, the encoding and the signature format of the root list and the CA bundle are [a reference page](/reference/root-list/) with test vectors, in M1, because the first system that holds intermediates reads the root list before anything else exists. The SSH CA key list gets its page in the same shape in M3. Both follow this record and cannot change it.
 
 ## Consequences
 
@@ -54,4 +54,5 @@ The exact members, the encoding and the signature format of the root list and th
 
 ## Follow-ups
 
-- The reference page and test vectors of the root list and the SSH CA key list, with rollback, expiry, unknown signer and tamper cases ([#14](https://github.com/truvity/ritueel/issues/14)).
+- Build the root list and the CA bundle to [their reference page](/reference/root-list/), passing its test vectors, in M1 ([#14](https://github.com/truvity/ritueel/issues/14)).
+- The reference page and test vectors of the SSH CA key list, with rollback, expiry, unknown signer and tamper cases, in M3 ([#55](https://github.com/truvity/ritueel/issues/55)).

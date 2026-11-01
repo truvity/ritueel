@@ -195,6 +195,16 @@ expect('an artifact digest that differs', 'vectors', vec({ artifact: hex('other'
 expect('an accepted case with a reason', 'vectors', vec({ reason: 'policy' }), 'fail', { has: ['expects accept with a reason'] });
 expect('no vectors at all', 'vectors', { 'README.md': 'x\n' }, 'fail', { has: ['empty sweep'] });
 
+// ---- root list vectors: the committed set, copied, then broken one way at a time
+const rlDir = join(repo, 'testdata', 'root-list', 'v1');
+const rl = Object.fromEntries(execFileSync('git', ['-C', rlDir, 'ls-files', '-z'], { encoding: 'utf8' }).split('\0').filter(Boolean)
+  .map((p) => [`testdata/set/v1/${p}`, readFileSync(join(rlDir, p))]));
+const rlWith = (path, edit) => ({ ...rl, [`testdata/set/v1/${path}`]: edit(rl[`testdata/set/v1/${path}`].toString('utf8')) });
+expect('a root list set that matches its manifest', 'vectors', rl, 'pass', { has: ['vector files, no errors'] });
+expect('a root list changed after signing', 'vectors', rlWith('lists/seq7-a.json', (t) => t.replace('"sequence":7', '"sequence":8')), 'fail', { has: ['list seq7-a: the signature does not verify'] });
+expect('a CA bundle with another trust sequence', 'vectors', rlWith('bundles/ca-bundle-7.pem', (t) => t.replace('trust-sequence: 7', 'trust-sequence: 6')), 'fail', { has: ['bundle ca-bundle-7: the first line'] });
+expect('a root pin that is not the certificate\'s key', 'vectors', rlWith('manifest.json', (t) => t.replace(/"x509_spki_sha256": "[0-9a-f]{64}"/, `"x509_spki_sha256": "${hex('other')}"`)), 'fail', { has: ['root A: x509_spki_sha256 is not the SPKI hash'] });
+
 rmSync(scratch, { recursive: true, force: true });
 if (failures) {
   console.error(`selftest: ${failures} of ${cases} cases failed`);

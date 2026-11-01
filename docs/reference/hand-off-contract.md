@@ -230,7 +230,7 @@ Add the packets to the primary's certificate to get the updated certificate, wit
 cat test-primary-a.pgp pgp-piv-valid.bound.pgp > updated.pgp
 ```
 
-A verifier then needs nothing from ritueel. The first set of vectors was checked this way with `sqv` on 2026-11-01: a signature made by an accepted subkey verifies against `updated.pgp`, and one made by a subkey whose answer lacks the embedded back-signature, or was bound by another primary, does not. The ritueel keyring package carries the same certificates ([issue #15](https://github.com/truvity/ritueel/issues/15)).
+A verifier then needs nothing from ritueel. The first set of vectors was checked this way with `sqv` on 2026-11-01, and the set regenerated with the root list vectors with `gpgv` 2.4.8 the same day: a signature made by an accepted subkey verifies against `updated.pgp`, and one made by a subkey whose answer lacks the embedded back-signature, or was bound by another primary, does not. The ritueel keyring package carries the same certificates ([issue #15](https://github.com/truvity/ritueel/issues/15)).
 
 ### What the requester checks before it installs
 
@@ -278,18 +278,18 @@ A refused answer holds no artifacts and no secret. The codes:
 
 The answer does not say which part of a policy failed. The certifier's output and its ceremony record do.
 
-**Trust products.** The CA bundle, the keyring and the signed root list are not part of this contract, and the certifier publishes them as it does for everyone ([ADR 0005](/decisions/0005-trust-products-the-root-list-the-ca-bundle-the-ssh-ca-key-list-and-the-trust-sequence/)). The contract fixes one thing about them: they carry the **trust sequence**, one integer that grows by one each time any of them changes, and `trust_sequence` in the answer says which one the answer needs. The root list's own format is [issue #14](https://github.com/truvity/ritueel/issues/14).
+**Trust products.** The CA bundle, the keyring and the signed root list are not part of this contract, and the certifier publishes them as it does for everyone ([ADR 0005](/decisions/0005-trust-products-the-root-list-the-ca-bundle-the-ssh-ca-key-list-and-the-trust-sequence/)). The contract fixes one thing about them: they carry the **trust sequence**, one integer that grows by one each time any of them changes, and `trust_sequence` in the answer says which one the answer needs. The root list's own format, and the CA bundle's, are in [the root list reference](/reference/root-list/), with vectors made from the same test roots as these.
 
 ## What the certifier records
 
-The ceremony record ([issue #9](https://github.com/truvity/ritueel/issues/9)) gets, for each request: the digests of the request and the proof; the store; the fingerprint of the key; for a YubiKey the serial, firmware, PIN and touch policy and form factor read from the attestation; for KMS the ARN, the key's description and the digest of its policy; the policy that was applied; the result and the digests of the artifacts. It never holds a PIN, a passphrase or a key. The record does not decide anything on this page.
+The ceremony record ([its format](/reference/ceremony-record/#the-record), [issue #9](https://github.com/truvity/ritueel/issues/9)) gets, for each request: the digests of the request and the proof; the store; the fingerprint of the key; for a YubiKey the serial, firmware, PIN and touch policy and form factor read from the attestation; for KMS the ARN, the key's description and the digest of its policy; the policy that was applied; the result and the digests of the artifacts. It never holds a PIN, a passphrase or a key. The record does not decide anything on this page.
 
 ## Test vectors
 
 The vectors are in [`testdata/hand-off/v1/`](https://github.com/truvity/ritueel/tree/main/testdata/hand-off/v1). They are public material only: CSRs, certificates, public subkeys, signatures and JSON files. Every key was made in software by [`generate.py`](https://github.com/truvity/ritueel/blob/main/testdata/hand-off/generate.py), and its private half was never written down. The attestation hierarchy is a made-up "Example Test" hierarchy, not the maker's, and the certifier's roots are test roots.
 
 - `manifest.json` lists every case with its files, the policy configuration it runs under, and the expected outcome and reason. A test in the Go code will read it ([issue #7](https://github.com/truvity/ritueel/issues/7), done when).
-- `pki/` holds the pinned test attestation root and intermediates (one for the PIV applet, one for the OpenPGP applet), and the certifier's test roots: A and B are on the signed root list, each an X.509 root and an OpenPGP primary, as on two root cards; Z is on no list.
+- `pki/` holds the pinned test attestation root and intermediates (one for the PIV applet, one for the OpenPGP applet), and the certifier's test roots: A and B are on the signed root list, each an X.509 root and an OpenPGP primary, as on two root cards; Z is on no list. The roots follow the [root profiles](/reference/directory/#the-root-certificate). The signed root list of trust sequence 7, which every answer here carries, is `seq7-a` in [the root list vectors](/reference/root-list/#test-vectors).
 - The clock of every vector is `2026-11-15T12:00:00Z`. A test fixes its clock to that time, so the vectors do not expire.
 - Two configurations: `production` (a PIV, OpenPGP-card or KMS key; software refused) and `development` (software allowed). Both use the reference policy above, and both list the read-only role for the one other account the KMS vectors use (`kms_read_roles`).
 - A KMS case comes with `<case>.kms-stub.json`: the answers of `DescribeKey`, `GetPublicKey` and `GetKeyPolicy` that a test replays instead of calling AWS. For a key in another account the stub starts with `assume_role`, the role the certifier must assume first, and its answers are the ones that role gets.

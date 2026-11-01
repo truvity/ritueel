@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-"""Generate the hand-off test vectors of version 1 into testdata/hand-off/v1/.
+"""Generate the hand-off test vectors of version 1 into testdata/hand-off/v1/, and the root list
+and CA bundle vectors of version 1 into testdata/root-list/v1/, from one test trust set.
 
 Test fixtures only. Every key here is a throw-away software key made by this script;
 its private half is never written to disk, so the output holds public material only:
@@ -10,11 +11,14 @@ script is the record of how they were made.
 
 The test trust set has two roots, A and B, as on two root cards: each has an X.509 root
 and an OpenPGP primary, and both are active on the signed root list. A third root, Z, is
-on no list; it makes the "untrusted issuer" and "unknown primary" cases.
+on no list; it makes the "untrusted issuer" and "unknown primary" cases. The roots follow the
+root profile of docs/reference/directory.md, and the root lists and CA bundles that name them
+follow docs/reference/root-list.md. Both sets are made in one run because the root lists are
+signed by the same throw-away root keys that issue the hand-off answers.
 
 Made with Python 3.14 and cryptography 46.0.5.
 
-usage: generate.py OUTDIR
+usage: generate.py HANDOFF_OUTDIR ROOTLIST_OUTDIR
 """
 import base64, datetime as dt, hashlib, json, os, secrets, struct, sys
 from cryptography import x509
@@ -24,6 +28,7 @@ from cryptography.hazmat.primitives.asymmetric.utils import Prehashed, decode_ds
 from cryptography.x509.oid import NameOID, ObjectIdentifier
 
 OUT = sys.argv[1]
+RL_OUT = sys.argv[2]
 UTC = dt.timezone.utc
 CLOCK = dt.datetime(2026, 11, 15, 12, 0, 0, tzinfo=UTC)   # the ceremony time used by every vector
 UNTIL = dt.datetime(2027, 12, 15, 12, 0, 0, tzinfo=UTC)   # 13 calendar months later
@@ -34,15 +39,15 @@ POINT = (serialization.Encoding.X962, serialization.PublicFormat.UncompressedPoi
 HOST = "example.org"
 
 
-def w(path, data):
-    path = os.path.join(OUT, path)
+def w(path, data, out=None):
+    path = os.path.join(out or OUT, path)
     os.makedirs(os.path.dirname(path), exist_ok=True)
     with open(path, "wb" if isinstance(data, bytes) else "w") as f:
         f.write(data)
 
 
-def wj(path, obj):
-    w(path, json.dumps(obj, indent=2) + "\n")
+def wj(path, obj, out=None):
+    w(path, json.dumps(obj, indent=2) + "\n", out)
 
 
 b64 = lambda b: base64.b64encode(b).decode()
@@ -80,6 +85,7 @@ KU_CA = x509.KeyUsage(False, False, False, False, False, True, True, False, Fals
 
 
 def root(cn):
+    """A made-up maker's attestation root (not a ritueel root): ten years, with an organisation."""
     k = ec384()
     n = name(cn)
     c = ca_cert(n, k, n, k, dt.datetime(2026, 1, 1, tzinfo=UTC), dt.datetime(2036, 1, 1, tzinfo=UTC), None,
@@ -87,10 +93,23 @@ def root(cn):
     return k, c
 
 
+T_ROOTS = dt.datetime(2026, 1, 1, tzinfo=UTC)          # when the test roots were made (their `init`)
+T_ROOTS_UNTIL = dt.datetime(2029, 1, 1, tzinfo=UTC)    # 36 calendar months later
+
+
+def ritueel_root(label):
+    """A ritueel test root in the root profile: self-signed, the subject one common name `<name> Root <label>`
+    with ` (TEST ONLY)` for a test root, basic constraints critical with no path length, key usage critical
+    keyCertSign and cRLSign, a subject key identifier, no authority key identifier, 36 months."""
+    k = ec384()
+    n = x509.Name([x509.NameAttribute(NameOID.COMMON_NAME, f"Example Test Root {label} (TEST ONLY)")])
+    return k, ca_cert(n, k, n, k, T_ROOTS, T_ROOTS_UNTIL, None, extra=[(KU_CA, True)])
+
+
 # the certifier's test roots (what ritueel would hold): A and B are on the root list, Z is not (the "untrusted issuer")
-ROOT_A_KEY, ROOT_A = root("Example Test Root A (TEST ONLY)")
-ROOT_B_KEY, ROOT_B = root("Example Test Root B (TEST ONLY)")
-ROOT_Z_KEY, ROOT_Z = root("Example Test Root Z, not listed (TEST ONLY)")
+ROOT_A_KEY, ROOT_A = ritueel_root("A")
+ROOT_B_KEY, ROOT_B = ritueel_root("B")
+ROOT_Z_KEY, ROOT_Z = ritueel_root("Z")
 w("pki/test-root-a.pem", ROOT_A.public_bytes(PEM))
 w("pki/test-root-b.pem", ROOT_B.public_bytes(PEM))
 w("pki/test-root-z.pem", ROOT_Z.public_bytes(PEM))
@@ -307,10 +326,14 @@ def issuer(k):
     return sub(33, b"\x04" + k.fpr), sub(16, k.fpr[-8:])
 
 
+T_PRIMARY_UNTIL = int(T_ROOTS_UNTIL.timestamp())
+
+
 def primary_cert(k, uid):
-    """The public certificate of a test primary: key, user id, self-certification (certify only, expires in ten years)."""
+    """The public certificate of a test primary: key, the release identity, a positive certification (certify only,
+    expiring 36 months after it was made, as the root profile says)."""
     ih, iu = issuer(k)
-    hashed = sub(2, struct.pack(">I", T_PRIMARY + 1)) + sub(27, b"\x01") + sub(9, struct.pack(">I", 10 * 365 * 86400), True) + ih
+    hashed = sub(2, struct.pack(">I", T_PRIMARY + 1)) + sub(27, b"\x01") + sub(9, struct.pack(">I", T_PRIMARY_UNTIL - k.created), True) + ih
     cert = sig_body(0x13, hashed, iu, keyhash(k.body) + b"\xb4" + struct.pack(">I", len(uid)) + uid, k.sign_digest)
     return pkt(6, k.body) + pkt(13, uid) + pkt(2, cert)
 
@@ -332,9 +355,10 @@ def binding(sk, primary, back, until=T_UNTIL, embed=True, when=T_CEREMONY):
 
 
 PRIM_A, PRIM_B, PRIM_Z = PgpKey(T_PRIMARY), PgpKey(T_PRIMARY), PgpKey(T_PRIMARY)
-w("pki/test-primary-a.pgp", primary_cert(PRIM_A, b"Example Test Release Root A <release-a@example.org>"))
-w("pki/test-primary-b.pgp", primary_cert(PRIM_B, b"Example Test Release Root B <release-b@example.org>"))
-w("pki/test-primary-z.pgp", primary_cert(PRIM_Z, b"Example Test Release Root Z, not listed <release-z@example.org>"))
+PRIMARY_CERTS = {lbl: primary_cert(k, f"Example Test Release Root {lbl} (TEST ONLY) <release@example.org>".encode())
+                 for lbl, k in (("A", PRIM_A), ("B", PRIM_B), ("Z", PRIM_Z))}
+for lbl in "ABZ":
+    w(f"pki/test-primary-{lbl.lower()}.pgp", PRIMARY_CERTS[lbl])
 ACTIVE = [PRIM_A, PRIM_B]   # the active primaries on the test root list, in its order
 
 # ---------------------------------------------------------------- cases
@@ -565,3 +589,138 @@ wj("manifest.json", {
     "responses": responses,
 })
 print("cases:", len(cases), "responses:", len(responses))
+
+
+# ================================================================ root list and CA bundle vectors, version 1
+# The same roots A, B and Z as above. The hand-off answers carry trust sequence 7, and the list `seq7-a` is the
+# root list of that trust set: a requester that holds it can install them.
+def canonical(obj):
+    """RFC 8785 canonical JSON for the values used here: ASCII member names and strings, integers, no floats.
+    For those, sorted keys, no whitespace and JSON.stringify's escaping are the whole of the scheme."""
+    return json.dumps(obj, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode()
+
+
+b64u = lambda b: base64.urlsafe_b64encode(b).rstrip(b"=").decode()
+ROOTS = {"A": (ROOT_A_KEY, ROOT_A, PRIM_A), "B": (ROOT_B_KEY, ROOT_B, PRIM_B), "Z": (ROOT_Z_KEY, ROOT_Z, PRIM_Z)}
+spki_hex = lambda lbl: sha(spki(ROOTS[lbl][1].public_key()))
+
+
+def months13(t):
+    """13 calendar months later, same day and time, or the last day of the month if it has none."""
+    y, m = divmod(t.month - 1 + 13, 12)
+    y, m = t.year + y, m + 1
+    last = (dt.datetime(y + (m == 12), m % 12 + 1, 1, tzinfo=UTC) - dt.timedelta(days=1)).day
+    return t.replace(year=y, month=m, day=min(t.day, last))
+
+
+def entry(lbl):
+    return {"label": lbl, "x509_spki_sha256": spki_hex(lbl), "openpgp_fingerprint": ROOTS[lbl][2].fpr.hex()}
+
+
+def jws(signer, payload):
+    """A detached JWS (RFC 7515, appendix F) in compact form: header..signature. ES384 over the payload's bytes."""
+    key, cert, _ = ROOTS[signer]
+    header = canonical({"alg": "ES384", "kid": spki_hex(signer), "typ": "root-list+json", "x5c": [b64(cert.public_bytes(DER))]})
+    signing_input = (b64u(header) + "." + b64u(payload)).encode()
+    r, s_ = decode_dss_signature(key.sign(signing_input, ec.ECDSA(hashes.SHA384())))
+    return b64u(header) + ".." + b64u(r.to_bytes(48, "big") + s_.to_bytes(48, "big"))
+
+
+RECORDS = {n: sha(f"example ceremony record {n}\n".encode()) for n in range(1, 10)}   # made-up record digests
+lists = []
+
+
+def root_list(stem, signer, sequence, roots, signed_at, version=1, last_record=True, extra=None, tamper=None):
+    doc = {"version": version, "sequence": sequence, "signed_at": ts(signed_at), "expires_at": ts(months13(signed_at)),
+           "roots": [entry(r) for r in roots]}
+    if last_record:
+        doc["last_record_sha256"] = RECORDS[sequence - 1]
+    if extra:
+        doc.update(extra)
+    payload = canonical(doc)
+    sig = jws(signer, payload)
+    if tamper:
+        payload = canonical(tamper(doc))
+    w(f"lists/{stem}.json", payload, RL_OUT)
+    w(f"lists/{stem}.jws", sig, RL_OUT)
+    lists.append({"id": stem, "signer": signer, "files": [f"lists/{stem}.json", f"lists/{stem}.jws"]})
+
+
+T_INIT, T_SEQ6, T_SEQ8, T_SEQ9 = T_ROOTS, dt.datetime(2026, 6, 1, 12, tzinfo=UTC), dt.datetime(2026, 12, 1, 12, tzinfo=UTC), dt.datetime(2026, 12, 2, 12, tzinfo=UTC)
+root_list("init-a", "A", 1, "AB", T_INIT, last_record=False)            # the first list, made by `init`: no record before it
+root_list("seq6-b", "B", 6, "AB", T_SEQ6)
+root_list("seq7-a", "A", 7, "AB", CLOCK)                                # the trust set of the hand-off answers
+root_list("seq7-b", "B", 7, "AB", CLOCK)
+root_list("seq8-b-without-a", "B", 8, "B", T_SEQ8)                      # root A revoked: signed by the surviving root
+root_list("seq9-a", "A", 9, "AB", T_SEQ9)                               # signed by the revoked root
+root_list("seq8-z", "Z", 8, "AB", T_SEQ8)                               # signed by a root on no list
+root_list("seq8-a-version-2", "A", 8, "AB", T_SEQ8, version=2)
+root_list("seq8-a-unknown-member", "A", 8, "AB", T_SEQ8, extra={"comment": "not a member of version 1"})
+
+
+def swap_b_for_z(doc):
+    doc = json.loads(json.dumps(doc))
+    doc["roots"][1] = entry("Z")
+    return doc
+
+
+root_list("seq7-a-tampered", "A", 7, "AB", CLOCK, tamper=swap_b_for_z)   # root B replaced by Z after signing
+
+rl_cases = []
+
+
+def rl_case(cid, held, candidate, expect, reason=None, clock=None, warning=None):
+    c = {"id": cid, "held": held, "candidate": candidate}
+    if clock:
+        c["clock"] = ts(clock)
+    c["expect"] = expect
+    if reason:
+        c["reason"] = reason
+    if warning:
+        c["warning"] = warning
+    rl_cases.append(c)
+
+
+rl_case("first-list", None, "seq7-a", "accept")
+rl_case("first-list-from-init", None, "init-a", "accept")
+rl_case("update", "seq6-b", "seq7-a", "accept")
+rl_case("update-by-the-other-root", "init-a", "seq7-b", "accept")
+rl_case("revoke-a-root", "seq7-a", "seq8-b-without-a", "accept", clock=T_SEQ8)
+rl_case("same-list-again", "seq7-a", "seq7-a", "accept")
+rl_case("rollback", "seq7-a", "seq6-b", "refuse", "rollback")
+rl_case("signed-by-a-revoked-root", "seq8-b-without-a", "seq9-a", "refuse", "unknown-signer", clock=T_SEQ9)
+rl_case("unknown-signer", "seq7-a", "seq8-z", "refuse", "unknown-signer", clock=T_SEQ8)
+rl_case("tampered", "seq6-b", "seq7-a-tampered", "refuse", "signature-invalid")
+rl_case("expired", "init-a", "seq6-b", "refuse", "expired", clock=dt.datetime(2027, 8, 1, tzinfo=UTC))
+rl_case("version-2", "seq7-a", "seq8-a-version-2", "refuse", "version-unsupported", clock=T_SEQ8)
+rl_case("unknown-member", "seq7-a", "seq8-a-unknown-member", "refuse", "malformed", clock=T_SEQ8)
+rl_case("held-list-expired", "seq7-a", None, "warn", clock=dt.datetime(2028, 1, 1, tzinfo=UTC), warning="expired")
+
+# CA bundles: the trust sequence in the first line, then each root's certificate in the order of the root list
+bundles = []
+
+
+def ca_bundle(sequence, roots):
+    body = f"# trust-sequence: {sequence}\n".encode() + b"".join(ROOTS[r][1].public_bytes(PEM) for r in roots)
+    path = f"bundles/ca-bundle-{sequence}.pem"
+    w(path, body, RL_OUT)
+    bundles.append({"id": f"ca-bundle-{sequence}", "file": path, "sequence": sequence, "roots": list(roots)})
+
+
+ca_bundle(7, "AB")
+ca_bundle(8, "B")
+
+for lbl in "ABZ":
+    w(f"pki/test-root-{lbl.lower()}.pem", ROOTS[lbl][1].public_bytes(PEM), RL_OUT)
+    w(f"pki/test-primary-{lbl.lower()}.pgp", PRIMARY_CERTS[lbl], RL_OUT)
+wj("manifest.json", {
+    "root_list": 1,
+    "clock": ts(CLOCK),
+    "roots": [{"label": lbl, "certificate": f"pki/test-root-{lbl.lower()}.pem", "openpgp": f"pki/test-primary-{lbl.lower()}.pgp",
+               "x509_spki_sha256": spki_hex(lbl), "openpgp_fingerprint": ROOTS[lbl][2].fpr.hex()} for lbl in "ABZ"],
+    "initial_pins": ["A", "B"],
+    "lists": lists,
+    "cases": rl_cases,
+    "bundles": bundles,
+}, RL_OUT)
+print("root lists:", len(lists), "cases:", len(rl_cases), "bundles:", len(bundles))
