@@ -1,0 +1,112 @@
+---
+// The band that ties the two answers together: the ledger (the memory) and the four rituals that
+// use it again and again. The introduction is Markdown from the page; the rituals are props.
+interface Ritual {
+  name: string;
+  line: string;
+  learn: string;
+  steps: string;
+}
+interface Props {
+  rituals: Ritual[];
+}
+const { rituals } = Astro.props;
+---
+
+<section class="not-content rituals">
+  <div class="intro"><slot /></div>
+  <ul>
+    {rituals.map((r) => (
+      <li>
+        <a class="name" href={r.learn}>{r.name}</a>
+        <span class="line">{r.line}</span>
+        <a class="steps" href={r.steps} aria-label={`${r.name}: the steps`}>Steps</a>
+      </li>
+    ))}
+  </ul>
+</section>
+
+<style>
+  .rituals {
+    display: grid;
+    gap: 1.6rem 2.5rem;
+    margin: 0;
+    padding: 1.6rem 1.6rem 1.7rem;
+    border-block: 1px solid color-mix(in srgb, var(--rt-ink) 45%, var(--sl-color-bg));
+    background: color-mix(in srgb, var(--rt-ink) 6%, var(--sl-color-bg));
+  }
+  @media (min-width: 62rem) {
+    .rituals {
+      grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+      align-items: center;
+      padding: 2rem 2.2rem;
+    }
+  }
+  .intro :global(h3) {
+    margin: 0 0 0.6rem;
+    font-family: var(--rt-serif);
+    font-size: 1.5rem;
+    font-weight: 600;
+    line-height: 1.2;
+    color: var(--sl-color-white);
+  }
+  .intro :global(p) {
+    margin: 0 0 0.7rem;
+    line-height: 1.55;
+    max-width: 44ch;
+  }
+  .intro :global(p:last-child) { margin-bottom: 0; }
+  .intro :global(a) {
+    color: var(--sl-color-white);
+    text-decoration-color: var(--rt-ink);
+    text-decoration-thickness: 2px;
+    text-underline-offset: 0.18em;
+  }
+  ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.7rem;
+  }
+  li {
+    margin: 0;
+    padding: 0.85rem 1rem 0.8rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+    background: var(--sl-color-bg);
+    border: 1px solid color-mix(in srgb, var(--rt-ink) 38%, var(--sl-color-bg));
+    border-radius: 0.5rem;
+  }
+  .name {
+    font-family: var(--rt-serif);
+    font-size: 1.3rem;
+    font-weight: 600;
+    line-height: 1.2;
+    color: var(--sl-color-white);
+    text-decoration: none;
+  }
+  .name:hover { text-decoration: underline; text-decoration-color: var(--rt-ink); text-decoration-thickness: 2px; }
+  .line {
+    font-size: 0.88rem;
+    line-height: 1.4;
+    color: var(--sl-color-gray-2);
+    flex: 1;
+  }
+  .steps {
+    align-self: flex-start;
+    margin-top: 0.2rem;
+    font-size: 0.88rem;
+    font-weight: 600;
+    color: var(--sl-color-white);
+    text-decoration-color: var(--rt-ink);
+    text-decoration-thickness: 2px;
+    text-underline-offset: 0.18em;
+  }
+  a:focus-visible {
+    outline: 3px solid var(--sl-color-text-accent);
+    outline-offset: 2px;
+  }
+</style>

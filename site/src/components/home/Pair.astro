@@ -1,0 +1,25 @@
+---
+// One column of Pairs: a cloud, then its answer. On a wide screen the two columns share their
+// rows, so the two answers start on the same line however tall each cloud is.
+---
+
+<div class="pair"><slot /></div>
+
+<style>
+  .pair {
+    display: flex;
+    flex-direction: column;
+    gap: 1.6rem;
+    min-width: 0;
+  }
+  @media (min-width: 62rem) {
+    @supports (grid-template-rows: subgrid) {
+      .pair {
+        display: grid;
+        grid-row: span 2;
+        grid-template-rows: subgrid;
+        row-gap: 1.6rem;
+      }
+    }
+  }
+</style>

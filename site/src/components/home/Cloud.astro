@@ -1,0 +1,222 @@
+---
+// One "cloud" of the home page: the reader's pain as scattered chips of varying weight, each with
+// a short caption and a link to the page that answers it. Two tones:
+//   concept   - the ideas nobody explained (proportional type, rounded chips)
+//   mechanic  - the commands and chores that fight back (command-line type, square chips)
+// Icons are inlined SVGs, never loaded: GnuPG and Yubico marks from simple-icons (CC0),
+// used nominatively, to say which tool the chip is about. No remote asset of any kind.
+import gnupg from './icons/gnupg.svg?raw';
+import yubico from './icons/yubico.svg?raw';
+
+interface Item {
+  term: string;
+  note: string;
+  href: string;
+  /** Visual weight, 4 (heaviest) to 1. */
+  w?: 1 | 2 | 3 | 4;
+  icon?: 'gnupg' | 'yubico';
+  /** The term is a command, set in command-line type. */
+  cmd?: boolean;
+}
+interface Props {
+  tone: 'concept' | 'mechanic';
+  title: string;
+  voice: string;
+  items: Item[];
+}
+const { tone, title, voice, items } = Astro.props;
+
+// Strip the SVG's own <title> and role (the chip's text names it) and hide it from assistive tech.
+const marks = Object.fromEntries(
+  Object.entries({ gnupg, yubico }).map(([k, v]) => [
+    k,
+    v.replace(/<title>.*?<\/title>/, '').replace(' role="img"', ' aria-hidden="true" focusable="false"'),
+  ]),
+);
+// A fixed scatter, so the build is reproducible: how far each chip sits off the baseline, in rem.
+const scatter = [0, 0.55, 0.15, 0.8, 0.3, 0.05, 0.65, 0.2, 0.45, 0.1, 0.7, 0.35];
+const scatterX = [0, 0.5, 0, 1.1, 0.3, 0, 0.9, 0.2, 0, 0.7, 0.4, 0];
+const id = `cloud-${tone}`;
+---
+
+<section class={`not-content cloud ${tone}`} aria-labelledby={id}>
+  <header>
+    <svg class="stamp" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      {tone === 'concept'
+        ? <><circle cx="12" cy="12" r="10" /><path d="M9.2 9.3a2.9 2.9 0 1 1 4.3 2.5c-.9.5-1.5 1-1.5 2.1" /><circle cx="12" cy="17.4" r=".6" class="dot" /></>
+        : <><path d="M12 3 22 20H2z" /><path d="M12 9.5v5" /><circle cx="12" cy="17.3" r=".6" class="dot" /></>}
+    </svg>
+    <h3 id={id}>{title}</h3>
+    <p class="voice">{voice}</p>
+  </header>
+  <ul>
+    {items.map((it, i) => (
+      <li class={`chip w${it.w ?? 2}`} style={`--dy:${scatter[i % scatter.length]}rem;--dx:${scatterX[i % scatterX.length]}rem`}>
+        <a href={it.href}>
+          <span class="term" class:list={{ cmd: it.cmd }}>
+            {it.icon && <span class="mark" set:html={marks[it.icon]} />}
+            <span>{it.term}</span>
+          </span>
+          <span class="note">{it.note}</span>
+        </a>
+      </li>
+    ))}
+  </ul>
+</section>
+
+<style>
+  .cloud {
+    --tone: var(--rt-pain);
+    margin: 0;
+    padding: 0;
+  }
+  header {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    column-gap: 0.7rem;
+    align-items: center;
+    margin-bottom: 1.1rem;
+  }
+  .stamp {
+    width: 1.7rem;
+    height: 1.7rem;
+    fill: none;
+    stroke: var(--tone);
+    stroke-width: 1.7;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+  .stamp .dot {
+    fill: var(--tone);
+    stroke-width: 1.2;
+  }
+  h3 {
+    margin: 0;
+    font-family: var(--rt-serif);
+    font-size: clamp(1.35rem, 1.1rem + 1vw, 1.75rem);
+    font-weight: 600;
+    line-height: 1.15;
+    color: var(--sl-color-white);
+  }
+  .voice {
+    grid-column: 1 / -1;
+    margin: 0.55rem 0 0;
+    font-family: var(--rt-serif);
+    font-style: italic;
+    font-size: 1.05rem;
+    line-height: 1.45;
+    color: var(--sl-color-gray-2);
+    max-width: 38ch;
+  }
+  ul {
+    list-style: none;
+    margin: 0;
+    padding: 0 0 0.9rem;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: 1.4rem 0.8rem;
+  }
+  li {
+    margin: 0;
+    padding: 0;
+    position: relative;
+    top: var(--dy, 0);
+    margin-inline-start: var(--dx, 0);
+    min-width: 0;
+    max-width: 100%;
+  }
+  a {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+    height: 100%;
+    box-sizing: border-box;
+    color: var(--sl-color-white);
+    text-decoration: none;
+    background: color-mix(in srgb, var(--tone) 8%, var(--sl-color-bg));
+    border: 1px solid color-mix(in srgb, var(--tone) 42%, var(--sl-color-bg));
+    transition: background-color 0.15s, border-color 0.15s;
+  }
+  a:hover {
+    background: color-mix(in srgb, var(--tone) 17%, var(--sl-color-bg));
+    border-color: var(--tone);
+  }
+  a:focus-visible {
+    outline: 3px solid var(--sl-color-text-accent);
+    outline-offset: 2px;
+  }
+  .term {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    font-weight: 650;
+    line-height: 1.2;
+    overflow-wrap: anywhere;
+  }
+  .mark {
+    display: inline-flex;
+    flex: none;
+    color: var(--tone);
+  }
+  .mark :global(svg) {
+    width: 1.15em;
+    height: 1.15em;
+    fill: currentColor;
+  }
+  .note {
+    font-size: 0.82rem;
+    line-height: 1.35;
+    color: var(--sl-color-gray-2);
+    max-width: 26ch;
+  }
+
+  /* Weight: how loudly the thing shouts at a newcomer. */
+  .w4 a { padding: 1.05rem 1.35rem; }
+  .w4 .term { font-size: 1.55rem; }
+  .w4 .note { font-size: 0.95rem; max-width: 30ch; }
+  .w3 a { padding: 0.85rem 1.1rem; }
+  .w3 .term { font-size: 1.25rem; }
+  .w3 .note { font-size: 0.87rem; }
+  .w2 a { padding: 0.65rem 0.9rem; }
+  .w2 .term { font-size: 1.05rem; }
+  .w1 a { padding: 0.5rem 0.8rem; }
+  .w1 .term { font-size: 0.93rem; font-weight: 600; }
+
+  /* Concepts: rounded, set in the page's reading type. */
+  .concept a { border-radius: 1.1rem; }
+  .concept .w1 a { border-radius: 999px; }
+
+  /* Mechanics: square-cornered, command-line type, a bar on the left like a terminal margin. */
+  .mechanic a {
+    border-radius: 0.3rem;
+    border-left-width: 4px;
+    border-left-color: var(--tone);
+  }
+  .mechanic .term { font-family: var(--rt-mono); font-weight: 600; letter-spacing: -0.01em; }
+  .mechanic .w4 .term { font-size: 1.3rem; }
+  .mechanic .w3 .term { font-size: 1.12rem; }
+  .mechanic .w2 .term { font-size: 0.98rem; }
+  .mechanic .w1 .term { font-size: 0.88rem; }
+  /* A chore, not a command: ordinary type. */
+  .mechanic .term:not(.cmd) { font-family: inherit; letter-spacing: 0; }
+
+  /* On a phone the cloud becomes a grid: two columns, the heaviest chips across both. */
+  @media (max-width: 40rem) {
+    ul {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 0.55rem;
+      padding-bottom: 0;
+    }
+    li { top: 0; margin-inline-start: 0; }
+    .w4 { grid-column: 1 / -1; }
+    .note, .w4 .note { max-width: none; }
+    .w4 .term, .w3 .term { font-size: 1.05rem; }
+    .w2 .term { font-size: 0.97rem; }
+    .w1 .term { font-size: 0.93rem; }
+    .mechanic .w4 .term, .mechanic .w3 .term { font-size: 0.92rem; }
+    .mechanic .w2 .term, .mechanic .w1 .term { font-size: 0.86rem; }
+    .w4 a, .w3 a, .w2 a, .w1 a { padding: 0.6rem 0.75rem; }
+  }
+</style>
