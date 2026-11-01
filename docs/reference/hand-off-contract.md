@@ -342,6 +342,7 @@ These need the maintainer's decision. The issue each belongs to is linked; the o
 :::
 
 - **The format and expiry of the root list**, and so the rule for `trust_sequence`. [Issue #14](https://github.com/truvity/ritueel/issues/14).
+- **The test vectors** in `testdata/hand-off/v1/` are regenerated before the contract is accepted: the `primaries` member, one back-signature for every primary, the Issuer Key ID subpacket, and an `openpgp-card` case.
 - **The attestation of an OpenPGP-card key.** The encoding of the extensions under `1.3.6.1.4.1.41482.5`, and the policy rules that read them, are not measured yet.
 - **GnuPG** was not run on the OpenPGP vectors. A test with `gpg` and `gpgv` should join the verifier matrix ([issue #24](https://github.com/truvity/ritueel/issues/24)).
 

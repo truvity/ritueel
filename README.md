@@ -15,6 +15,7 @@ ritueel makes those moves ordinary: a few commands, a guided wizard, a record of
 | Area | What it covers |
 |---|---|
 | Roots | Create, vouch (X.509 cross-certificate or OpenPGP certification), overlap, supersede, revoke and expire X.509 CA roots and OpenPGP primary keys, across key stores. Revocation signatures are made in advance and stored apart from the card. |
+| SSH CA key lists | A list of SSH CA public keys that hosts trust, signed by a root and versioned, and the break-glass SSH CA, which ritueel holds offline ([issue #31](https://github.com/truvity/ritueel/issues/31)). |
 | Intermediate ceremonies | Verify where a key lives (a YubiKey attestation, an AWS KMS key), sign a certificate request into an intermediate CA certificate, and bind an OpenPGP subkey after checking its back-signature. |
 | Trust artifacts | CA bundles, keyrings and signed root lists. The automation and the CLI that build keyring `.deb` and `.rpm` packages; your own pipeline publishes them. |
 | Records | A ceremony record for every ceremony. |
