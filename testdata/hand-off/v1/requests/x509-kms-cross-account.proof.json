@@ -1,10 +1,10 @@
 {
   "handoff": 1,
   "type": "x509-intermediate",
-  "request_sha256": "3c29fd2a3d770f6b5b197748eb570ffdbe79f334f5c467d9faade9df500b65db",
+  "request_sha256": "c104457de0a79abf0debcc06a6c303af76ce921318f8795a2c82a1c6576e58e9",
   "store": "aws-kms",
   "evidence": {
     "key_arn": "arn:aws:kms:eu-west-1:111122223333:key/66666666-7777-8888-9999-000000000000",
-    "public_key": "MHYwEAYHKoZIzj0CAQYFK4EEACIDYgAEqTsE68WHTkKhMQ4nuL+vKgf0vD2YczmYLDDllx0/tr8b3IavQVN/GIZbDsjO5BvSjcXYzuy7HQptWmIcDMgN5e/rk0gOPSo4va4lnHHawr7khPD3zmbthjgErWv+ZW8S"
+    "public_key": "MHYwEAYHKoZIzj0CAQYFK4EEACIDYgAEaSGszNBj7/I3n4rz86qaTLIPJbV6vKU6xgvDpGcOXyTjD4xf7lpPG8HwmUwgjFFu3YQQes8h4drHod1nDAs6VydLPMBTvYp4ia+gnkzGesLWzYIcV3M1FeLF1S73fQru"
   }
 }

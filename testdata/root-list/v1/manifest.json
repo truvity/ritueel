@@ -6,22 +6,22 @@
       "label": "A",
       "certificate": "pki/test-root-a.pem",
       "openpgp": "pki/test-primary-a.pgp",
-      "x509_spki_sha256": "67a5221a737ec2620e81c6bbc6584b6a4d0951f20db7caab6f1e10d3ca2d2d87",
-      "openpgp_fingerprint": "5f537c01a043b741da1e3c5ad98f958b18d68bbd"
+      "x509_spki_sha256": "2d5286ae78432f9b31417ca25a12e843dce66aed276c268032d09b9f486803aa",
+      "openpgp_fingerprint": "597693af86b7850a381d71489b22b2b3c1a8c55b"
     },
     {
       "label": "B",
       "certificate": "pki/test-root-b.pem",
       "openpgp": "pki/test-primary-b.pgp",
-      "x509_spki_sha256": "c65d3251ef4d2f754055589b3e90f45cad710e8bb57be899f53b766911147337",
-      "openpgp_fingerprint": "eea77abed0b0abe6ede337b5f0d204538ab9ded1"
+      "x509_spki_sha256": "ab3f13d1742cdd3559b6ac004585871226c05fddc040e15294c3897e3f240668",
+      "openpgp_fingerprint": "b99dd5377b46478716694fb96f866164ea69b224"
     },
     {
       "label": "Z",
       "certificate": "pki/test-root-z.pem",
       "openpgp": "pki/test-primary-z.pgp",
-      "x509_spki_sha256": "ebeaf9973bfa665c60c61ad6af3a4f7deee0ce163df5d8d7fda0c5af9155bae9",
-      "openpgp_fingerprint": "040703b9b8773680bc5e7b35dbee8893db2ff6fa"
+      "x509_spki_sha256": "9505a0de371e7b75fa6e5175bc45443d6c5302ddf7dcf9a834cf82b68df2b384",
+      "openpgp_fingerprint": "27be53b64ff3f2eddd3d2fb21f8453ac8a23696c"
     }
   ],
   "initial_pins": [
@@ -108,6 +108,14 @@
         "lists/seq7-a-tampered.json",
         "lists/seq7-a-tampered.jws"
       ]
+    },
+    {
+      "id": "seq7-a-without-b",
+      "signer": "A",
+      "files": [
+        "lists/seq7-a-without-b.json",
+        "lists/seq7-a-without-b.jws"
+      ]
     }
   ],
   "cases": [
@@ -154,6 +162,13 @@
       "candidate": "seq6-b",
       "expect": "refuse",
       "reason": "rollback"
+    },
+    {
+      "id": "same-sequence-different-content",
+      "held": "seq7-a",
+      "candidate": "seq7-a-without-b",
+      "expect": "refuse",
+      "reason": "sequence-conflict"
     },
     {
       "id": "signed-by-a-revoked-root",

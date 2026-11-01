@@ -42,7 +42,7 @@ Each member of `roots`:
 
 | Member | Required | Meaning |
 |---|---|---|
-| `label` | yes | The root's label, as in its certificate's subject: `A` and `B` for the two roots `init` makes. 1 to 16 characters, upper-case letters and digits. |
+| `label` | yes | The root's label, as in its certificate's subject: one upper-case letter. `init` names its roots `A` and `B`, and `root add` takes the next free letter (`C`, `D`, and so on) whatever the key store. A label names a root, never its store, and is never reused. |
 | `x509_spki_sha256` | yes | The SHA-256 of the DER `SubjectPublicKeyInfo` of the root's X.509 key: the pin. It is the `issuer` member of a hand-off answer for X.509. |
 | `openpgp_fingerprint` | yes | The fingerprint of the root's OpenPGP primary, 40 hexadecimal digits (version 4). It is a member of `primaries` in a hand-off request. |
 
@@ -88,13 +88,16 @@ A host holds one list: the last good one. Before its first list it holds **initi
 | 4 | `version` is known. | `version-unsupported` |
 | 5 | `root-list.json` follows the JSON rules and members above: no unknown or repeated member, `roots` not empty. | `malformed` |
 | 6 | `sequence` is not lower than the `sequence` of the list the host holds. Initial pins have no sequence. | `rollback` |
-| 7 | The host's clock is before `expires_at`. | `expired` |
+| 7 | When `sequence` equals the held list's, `root-list.json` is byte for byte the held list's `root-list.json`. | `sequence-conflict` |
+| 8 | The host's clock is before `expires_at`. | `expired` |
 
-The host verifies the bytes it received and does not re-serialise them. When every check passes, the new list replaces the one it holds, and its roots are the host's pins from then on. A list with the same sequence as the one held passes check 6: receiving the current list again is not an error. The signer need not be on the new list: a root that retires may sign the list that removes it, because check 2 reads the list the host held.
+The host verifies the bytes it received and does not re-serialise them. When every check passes, the new list replaces the one it holds, and its roots are the host's pins from then on. Receiving the current list again is not an error: a list at the same sequence passes when its `root-list.json` is byte-identical to the held one, whichever active root signed it, and is refused with `sequence-conflict` when its content differs, because one sequence names one set of roots. The signer need not be on the new list: a root that retires may sign the list that removes it, because check 2 reads the list the host held.
 
 **When the list a host holds expires** and no newer one has arrived, it keeps the list, goes on trusting its roots, and raises a warning. It does not drop its roots ([ADR 0005](/decisions/0005-trust-products-the-root-list-the-ca-bundle-the-ssh-ca-key-list-and-the-trust-sequence/#the-signed-root-list)).
 
 These codes belong to the host and are not sent anywhere. The vectors fix the outcome and the code, not the wording of a message.
+
+**The command.** `ritueel root-list verify FILE` runs these checks on the list `FILE` (its `root-list.json`; the signature is the `.jws` file beside it), against the list the host holds (`--held FILE`) or its initial pins (`--pin SHA256`, once for each). `--bundle FILE` also checks a CA bundle against the list: its first line names the list's `sequence`, and its certificates are the keys of the list's `roots`, in that order, or it is refused with `bundle-mismatch`. It signs and writes nothing ([Commands](/reference/cli/#the-first-versions-commands)).
 
 ## The CA bundle
 
@@ -119,7 +122,7 @@ The vectors are in [`testdata/root-list/v1/`](https://github.com/truvity/ritueel
 | Group | Cases |
 |---|---|
 | Accepted | A first list against the initial pins, and the list `init` makes; an update; an update signed by the other root; a list signed by B without A, which revokes A; the same list again. |
-| Refused | A lower sequence (`rollback`); a list signed by the revoked root A after it left the list, and one signed by Z (`unknown-signer`); a list changed after signing (`signature-invalid`); an expired list (`expired`); version 2 (`version-unsupported`); an unknown member (`malformed`). |
+| Refused | A lower sequence (`rollback`); another list at the same sequence (`sequence-conflict`); a list signed by the revoked root A after it left the list, and one signed by Z (`unknown-signer`); a list changed after signing (`signature-invalid`); an expired list (`expired`); version 2 (`version-unsupported`); an unknown member (`malformed`). |
 | Warned | The held list expired and no newer one came. |
 | CA bundles | Sequence 7 with A and B; sequence 8 with B only. |
 
@@ -140,11 +143,6 @@ CI checks that the manifest names every file of the set, that the pins match the
 
 - The code: writing, signing and reading the list and the bundle, with the host rules, and a test that the same inputs give the same bytes ([issue #14](https://github.com/truvity/ritueel/issues/14)).
 - The SSH CA key list in the same shape, with its own `typ` and vectors ([issue #55](https://github.com/truvity/ritueel/issues/55)).
-
-:::caution[Open]
-- **The command a host runs to check a list.** Issue #14 asks for a verification command with the host rules; its name and arguments are not fixed yet, and the [commands page](/reference/cli/) leaves it out until they are ([issue #14](https://github.com/truvity/ritueel/issues/14)).
-- **The label of a root that `root add` makes,** and of a cloud root: `init` names its roots `A` and `B`; the rule for later roots comes with the transitions ([issue #13](https://github.com/truvity/ritueel/issues/13)).
-:::
 
 ## Standards
 

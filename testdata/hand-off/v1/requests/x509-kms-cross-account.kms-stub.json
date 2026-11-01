@@ -20,7 +20,7 @@
   "get_public_key": {
     "KeyId": "arn:aws:kms:eu-west-1:111122223333:key/66666666-7777-8888-9999-000000000000",
     "KeySpec": "ECC_NIST_P384",
-    "PublicKey": "MHYwEAYHKoZIzj0CAQYFK4EEACIDYgAEqTsE68WHTkKhMQ4nuL+vKgf0vD2YczmYLDDllx0/tr8b3IavQVN/GIZbDsjO5BvSjcXYzuy7HQptWmIcDMgN5e/rk0gOPSo4va4lnHHawr7khPD3zmbthjgErWv+ZW8S"
+    "PublicKey": "MHYwEAYHKoZIzj0CAQYFK4EEACIDYgAEaSGszNBj7/I3n4rz86qaTLIPJbV6vKU6xgvDpGcOXyTjD4xf7lpPG8HwmUwgjFFu3YQQes8h4drHod1nDAs6VydLPMBTvYp4ia+gnkzGesLWzYIcV3M1FeLF1S73fQru"
   },
   "get_key_policy": {
     "PolicyName": "default",

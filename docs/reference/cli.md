@@ -54,7 +54,7 @@ A PIN is never a flag or an environment variable; the holder types it at the ter
 | 3 | Refused by a check or by the policy. |
 | 4 | Refused by the card or its PIN state. |
 | 5 | Not confirmed. |
-| 10, 11, 12 | `status` only: notice, alert and critical. Intermediates warn at 60, 30 and 14 days, the root list at 60, 30 and 14 days, roots at 6 months, 3 months and 30 days. The highest finding wins. |
+| 10, 11, 12 | `status` only: notice, alert and critical. Intermediates warn at 60, 30 and 14 days, the root list at 60, 30 and 14 days, roots at 6 months, 3 months and 30 days. An unresolved attempt is critical, because it may mean a signature that was made and never recorded. The highest finding wins. |
 
 ## The first version's commands
 
@@ -71,19 +71,21 @@ M1 builds these, with the software store only ([issue #8](https://github.com/tru
 | `ritueel records verify` | The directory. | Nothing. | 0, 1, 2, 3 |
 | `ritueel records close CEREMONY --reason TEXT` | `attempts/CEREMONY.json`. | A closing record and its transcript. | 0, 1, 2, 3, 5 |
 | `ritueel bundle build [--out FILE]` | The roots and the newest root list. | The CA bundle, to `FILE` or standard output. | 0, 1, 2, 3 |
+| `ritueel root-list verify FILE (--held FILE \| --pin SHA256...) [--bundle FILE]` | A root list, the list the host holds or its initial pins, and a CA bundle. | Nothing. | 0, 1, 2, 3 |
 
 - **`init`** makes `--roots N` roots, 2 by default, 1 allowed for a software root. It refuses a directory that already has a root, and a key directory that already has key files. The passphrase is asked once for each root, or read from `--passphrase-fd`; `--test-root` asks none. It prints the accepted limit, and the record says so.
-- **`intermediate add`** refuses a `NAME` that `ritueel.yaml` does not declare, or that an earlier record registered, and a request whose type is not the entry's `type` or whose stem already has an answer. It runs the contract's checks 1 to 9, then the six steps; the person's confirmation is check 10. A request refused by a check gets `answers/STEM.result.json` with `outcome` `refused` and its code, and nothing else is written: no plan, no attempt, no record (exit code 3).
+- **`intermediate add`** refuses a `NAME` that `ritueel.yaml` does not declare, or that an earlier record registered, and a request whose type is not the entry's `type` or whose stem already has an answer. It runs the contract's checks 1 to 9, then the six steps; the person's confirmation is check 10, and a person may [decline](/reference/ceremony-record/#declining) the request instead (`--decline REASON` with `--plan FILE` from a script), which writes the answer with the code `declined` and a record (exit code 3). A plan that no longer matches the directory is refused with `plan-stale` (exit code 3). A request refused by a check gets `answers/STEM.result.json` with `outcome` `refused` and its code, and nothing else is written: no plan, no attempt, no record (exit code 3).
 - **`handoff check`** runs checks 1 to 9 of the [hand-off contract](/reference/hand-off-contract/#what-the-certifier-checks) and signs nothing. Without `--intermediate`, the rules that belong to one intermediate (name constraints, KMS read roles) are reported as not run, never as passed. It exits 0 when every check that ran passed, and 3 with the code when one refused.
-- **`status`** exits with the highest finding ([Exit codes](/reference/cli/#exit-codes)).
+- **`status`** exits with the highest finding ([Exit codes](/reference/cli/#exit-codes)). An unresolved attempt is critical (12).
 - **`records verify`** checks the [hash chain](/reference/ceremony-record/#the-hash-chain); a break is exit code 3.
 - **`records close`** shows the attempt and asks the person to type the first eight characters of its plan digest, or takes `--confirm DIGEST`. Its record says that signatures may exist from that plan.
 - **`bundle build`** gives the bytes of `products/<sequence>/ca-bundle.pem` for the newest sequence, and refuses to mix test and real roots.
+- **`root-list verify`** is the host's side: it runs [the host's checks](/reference/root-list/#how-a-host-reads-it) on `FILE` (a `root-list.json`, with its `.jws` beside it) against `--held FILE`, the list the host holds, or `--pin`, its initial pins. `--bundle FILE` also checks a CA bundle against the list. It exits 0 when the list is accepted and 3 with the code when it is refused; a held list that has expired is a warning in the output. It needs no directory.
 
 `yearly`, `intermediate replace` and `revoke`, the `root` commands, `keyring build` and `wizard` come with M2 to M4.
 
 :::note[Proposed]
-`init` reads a `ritueel.yaml` the operator wrote rather than taking the name, the release address and the policy as flags, so that ritueel never rewrites that file. `--key-dir`, `handoff check --intermediate`, `records close --reason` and `bundle build --out` are the arguments this page adds to the commands of ADR 0004.
+`init` reads a `ritueel.yaml` the operator wrote rather than taking the name, the release address and the policy as flags, so that ritueel never rewrites that file. `--key-dir`, `handoff check --intermediate`, `records close --reason`, `bundle build --out`, `--decline` and the arguments of `root-list verify` are the arguments this page adds to the commands of ADR 0004.
 :::
 
 ### A script's ceremony
@@ -109,7 +111,7 @@ Every object has these members:
 | `command` | The command, as in the plan: `intermediate add`. |
 | `exit_code` | The exit code the command returns. |
 | `outcome` | `done`, `refused`, `not-confirmed`, `usage` or `failed`, matching the exit code. |
-| `reasons` | When refused: the codes, as in the [hand-off contract](/reference/hand-off-contract/#the-answer) or the [root list](/reference/root-list/#how-a-host-reads-it) where they apply. |
+| `reasons` | When refused: the codes, as in the [hand-off contract](/reference/hand-off-contract/#the-answer) or the [root list](/reference/root-list/#how-a-host-reads-it) where they apply, and `plan-stale` for a plan that no longer matches the directory. |
 | `error` | When failed or a usage error: a message for a person. Its wording is not part of the format. |
 
 And these where they apply:
@@ -129,8 +131,3 @@ And these where they apply:
 | `records` | `records list` | A list of `{ "ceremony", "command", "outcome", "sha256" }`, in chain order. |
 
 The members are named with lower-case words and underscores, times and digests are written as in the [hand-off contract](/reference/hand-off-contract/#messages-and-files), and the object is not in canonical form. A new member is not a new version, so a reader ignores a member it does not know; a member renamed, removed or changed in meaning is version 2.
-
-:::caution[Open]
-- **The level of an unresolved attempt in `status`.** ADR 0004 says `status` lists it until a person closes it; which exit code it raises is not decided ([issue #9](https://github.com/truvity/ritueel/issues/9)).
-- **A person who declines a request.** A wrong or missing confirmation writes nothing (exit code 5); whether a person can decline a request so that the answer says `declined` is not decided ([issue #8](https://github.com/truvity/ritueel/issues/8)).
-:::
