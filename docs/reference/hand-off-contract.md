@@ -113,6 +113,8 @@ No `evidence`. A software key proves nothing about where it lives. The certifier
 
 Any other extension is refused with `policy`.
 
+**A key that signs tokens is not certified here.** Version 1 issues CA certificates only, and needs no other profile. A requester that also signs tokens keeps that key apart from its intermediate. The intermediate has path length 0, which lets it issue end-entity certificates, so it certifies the token key itself with a non-CA certificate that allows signing only, and the key set publishes the chain token certificate, intermediate, root. Nothing of that crosses the hand-off. sluis does this (decided 2026-11-01); the token key is never the intermediate's key.
+
 The certifier **issues exactly what was asked, or refuses**. The request is the requester's statement of how much power it needs, and the policy of the certifier says how much it may have. A request for more than the policy allows is refused, not trimmed. Validity is the one thing the request does not carry: the certifier decides it.
 
 ### What the certifier checks
@@ -324,7 +326,6 @@ The issue left these to the specification. Each is a proposal.
 These need the maintainer's decision. The issue each belongs to is linked; the options are in the pull request description.
 :::
 
-- **Non-CA signing certificates** (for keys that sign tokens and are published with a chain). Version 1 issues CA certificates only. Options: add a second profile in version 1; allow `digitalSignature` without `keyCertSign` in this one; wait for a later version. [Issue #7](https://github.com/truvity/ritueel/issues/7).
 - **How the requester learns the target primary.** Options: the person tells it, from the keyring; the certifier's plan prints the command; the request covers every active primary. [Issue #7](https://github.com/truvity/ritueel/issues/7).
 - **The key policy of a key in another account.** The certifier reads the description and the public key across accounts, but `GetKeyPolicy` does not work across accounts, so the single-principal rule of the reference policy cannot be checked the same way. Options: apply the rule to keys in the certifier's own account only, and record that the policy of another account's key was not checked; refuse a key in another account under the reference policy. [Issue #12](https://github.com/truvity/ritueel/issues/12).
 - **The format and expiry of the root list**, and so the rule for `trust_sequence`. [Issue #14](https://github.com/truvity/ritueel/issues/14).
