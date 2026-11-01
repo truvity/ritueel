@@ -39,7 +39,7 @@ A software key is generated in memory and written **directly into its store, nev
 | Backend | Role | Said plainly |
 |---|---|---|
 | Encrypted file | The default for drills and tests. | A copy by nature. A backup is another copy. |
-| 1Password | **Proposed as the persistent store** for software keys. | Its sync gives redundancy against loss, not against compromise (principle 2). Whoever unlocks the vault has the key. |
+| 1Password | **Recommended as the persistent store** for software keys: test roots, intermediates, subkeys, and passphrases of keys that are already encrypted. | Its sync gives redundancy against loss, not against compromise (principle 2). Whoever unlocks the vault has the key, and a recovery group can reach every vault. A production root or master key belongs on a pair of hardware tokens or in a cloud key with a replica. |
 | OS keyring, through `github.com/zalando/go-keyring` | Offered, with a warning in the creation output, in every record and on the site. | It can be insecure: programs of the same user can read it, and it has no copy. ritueel refuses to fall back to a file when no keyring exists. |
 
 ritueel **never exports a key from a card or a cloud key** for backup. For cards, backup means two independent cards. For a cloud key, it means a replica that the service keeps. A software root remains unfit for a root that others rely on ([0002](/decisions/0002-key-custody-every-key-is-born-in-its-store-two-root-cards-or-one-kms-root-and-a-replica/)): it serves tests, drills, development and a person's own key.

@@ -39,11 +39,11 @@ One rule holds for every store ([principle 1](/principles/)): **a key is born in
 - **Recovery needs the account password and the Secret Key.** The vendor cannot recover data if both are lost, and the Emergency Kit that holds the Secret Key is itself a secret.
 - **The item type matters.** An SSH Key item accepts only Ed25519 and RSA, not ECDSA P-384, so ritueel stores its key in a Document item or a Secure Note.
 
-So 1Password is a good place for a drill's key, for an encrypted copy of an intermediate's key or a subkey, and for a passphrase. It is not a home for a root that others rely on. Use a vault only you can open, and lock the app when you step away. ritueel never sees your account password.
+This is the current recommendation: use 1Password for the software keys of **test roots, intermediates and subkeys,** and for **passphrases of keys that are already encrypted.** For a production root or an OpenPGP master key, use a pair of hardware tokens, or a cloud key with a replica. Use a vault only you can open, and lock the app when you step away. ritueel never sees your account password.
 
 **The operating system's keyring can be insecure, and ritueel says so every time.** It is offered through [github.com/zalando/go-keyring](https://github.com/zalando/go-keyring) (v0.2.8, read 2026-11-01) because it is already there and needs no account. The warning ritueel shows reads:
 
-> The OS keyring is not a safe home for a root or master key. Any program running as your user can usually read it without a prompt, it is often synced or backed up, and it cannot be made non-exportable. Use it only for a throw-away test key or for the passphrase of an already encrypted key. Keep real root keys offline, on a hardware token or in a key service.
+> WARNING: the OS keyring is not a safe home for a root or master key. Any program running as your user can usually read it without a prompt, it is often synced or backed up, and it cannot be made non-exportable. Use it only for a throwaway test key or for the passphrase of an already encrypted key. Keep real root keys offline, on a hardware token or in an HSM.
 
 The details behind it:
 
@@ -73,7 +73,7 @@ These are not supported and not scheduled. Each arrives with its first real inst
 |---|---|---|
 | Google Cloud KMS | The same model as AWS KMS in another provider. It signs a SHA-384 digest with P-384 at the HSM level and documents an attestation that a key was made in the HSM. About 2.50 USD per HSM key per month (computed from list prices, 2026-11-01). | Signing a real certificate and a real OpenPGP signature, importing a P-384 key, and how a key in another project is read. |
 | Azure Key Vault | The same model for a company on Azure. P-384 signing with a supplied hash. A Premium HSM-protected key costs about 5 USD per month for the first 250 keys, and a Managed HSM about 2,300 USD per month (Azure price API, West Europe, 2026-11-01). No key attestation was found. | The signature encoding (probably raw r and s, which needs conversion), and the difference between the vault and a Managed HSM. |
-| Nitrokey | Hardware with open firmware, at about 65 EUR for a Nitrokey 3 (shop, 2026-11-01). The Nitrokey 3 has an OpenPGP card with P-384 and touch confirmation, and a PIV applet with P-384 since firmware 1.8.2. **It cannot attest a key** in either (read from its source, 2026-11-01), so a ceremony with it has no hardware evidence. | Per-key touch policy for PIV, behaviour with the PIV and OpenPGP card libraries, and how it matures. |
+| Nitrokey | Hardware with open firmware, at about 65 EUR for a Nitrokey 3 (shop, 2026-11-01). The Nitrokey 3 has an OpenPGP card with P-384 and touch confirmation, and a PIV applet with P-384 since firmware 1.8.2. **It could not attest a key** in either: the PIV applet answers the attestation command with "function not supported", and no attestation was found in the OpenPGP code (read from its source, 2026-11-01). A ceremony with it has no hardware evidence. | Per-key touch policy for PIV, behaviour with the PIV and OpenPGP card libraries, and how it matures. |
 | Other tokens and HSMs | A company may already own them. | Whatever the first real installation needs. |
 
 A page on which keys to buy for testing the hardware stores follows with the research behind it.
