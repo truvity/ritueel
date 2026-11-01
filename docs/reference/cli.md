@@ -13,14 +13,14 @@ sidebar:
 |---|---|---|
 | `ritueel init` | Creates the directory, the roots (`--roots N`, default 2, both cards present) with their attestations and revocation signatures, and the first trust products. | Yes |
 | `ritueel yearly` | The yearly ceremony: renews every registered intermediate by re-signing, with the root of the year, extends that root, and publishes the next trust sequence. | Yes |
-| `ritueel intermediate add NAME` | Registers an intermediate and certifies its first request. | Yes |
+| `ritueel intermediate add NAME --request STEM` | Registers an intermediate and certifies its first request. | Yes |
 | `ritueel intermediate replace NAME` | The event path: certifies a new key for a registered intermediate. `--revoke` also revokes the old one, with a reason. | Yes |
 | `ritueel intermediate revoke NAME` | Revokes the certificate and subkey binding of an intermediate, with a reason, without a replacement. | Yes |
 | `ritueel root add` | Creates a new root in a store and has an existing root vouch for it. This starts an overlap. | Yes |
 | `ritueel root retire ROOT` | Ends an overlap: removes the root from the next trust products. | Yes |
 | `ritueel root revoke ROOT` | Revokes a lost, stolen or compromised root, and builds the trust products without it. | Yes |
 | `ritueel status` | Lists roots, intermediates, the root list and unresolved attempts, with what expires when. | No |
-| `ritueel handoff check REQUEST` | Runs every check of the [hand-off contract](/reference/hand-off-contract/) on a request, and signs nothing. | No |
+| `ritueel handoff check STEM` | Runs every check of the [hand-off contract](/reference/hand-off-contract/) on the request `STEM`, and signs nothing. | No |
 | `ritueel bundle build`, `ritueel keyring build` | Build the CA bundle and the [keyring package](/reference/keyring-package/) from the directory. Same directory, same bytes. | No |
 | `ritueel records list`, `records verify`, `records close` | Read the ceremony records, check their hash chain, and close an unresolved attempt. | `close` only |
 | `ritueel wizard` | A guided front end to the commands above, in the terminal or in a browser on localhost. | Yes |
