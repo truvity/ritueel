@@ -76,8 +76,13 @@ check-agent-links:
 check-selftest:
     tools/checks/selftest.mjs
 
+# Test vectors in testdata/*/v*/: every file the manifest names is tracked, every tracked file is
+# named, and the digests in the proofs and results match the files.
+check-vectors:
+    tools/checks/vectors.mjs
+
 # Every repository rule.
-check-rules: check-selftest check-decisions check-public check-yaml-ext check-agent-links
+check-rules: check-selftest check-decisions check-public check-yaml-ext check-agent-links check-vectors
 
 # Everything a pull request must pass.
 check: check-rules site-check site-workers

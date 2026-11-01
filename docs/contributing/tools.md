@@ -28,6 +28,7 @@ The `Justfile` holds the recipes, and CI runs the same recipes. Run the recipe, 
 | `just check-decisions` | The decision records: file names, the template's sections, the status, the index rows |
 | `just check-public` | Content that must not be public, in every tracked text file |
 | `just check-yaml-ext` | YAML files use `.yaml` |
+| `just check-vectors` | The test vectors in `testdata/`: the manifest names every tracked file, every file it names is tracked, and the digests match |
 | `just check-agent-links` | `AGENTS.md` exists, `CLAUDE.md` imports it, and every path that they and the skills point to exists |
 | `just site-check` | The site: `site-lint`, `site-build` and `site-links` |
 | `just site-lint` | Page descriptions of 40 to 160 characters |

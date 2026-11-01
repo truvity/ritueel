@@ -1,16 +1,16 @@
 {
   "handoff": 1,
   "type": "openpgp-subkey",
-  "request_sha256": "60a725e88ed507a79395d5b95b028f5495359a7a215bef22d52af1f36fa12350",
+  "request_sha256": "18a2cfbbc63a583ba5feb5e75eaba213ab0284d938602bee9278dd6c22f7bcfb",
   "outcome": "issued",
   "artifacts": [
     {
       "name": "pgp-kms-valid.bound.pgp",
-      "sha256": "8b2d799a1d46e0ad9654173f7dbd8cb67e8050c50999a74fdff4c028c085133f"
+      "sha256": "63fda517baccd836a0b3c408900a869345de563eadc054074b6ea2cd2734bc00"
     }
   ],
   "valid_from": "2026-11-15T12:00:00Z",
   "valid_until": "2027-12-15T12:00:00Z",
-  "issuer": "b0328dd22f790688dd7825d62a27d75e1d53f2af",
+  "issuer": "7b3b1d210ab54df31be330ffe8b7adbc305c8903",
   "trust_sequence": 7
 }

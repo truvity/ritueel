@@ -45,7 +45,9 @@ node_modules/
 *.asc
 *.gpg
 !docs/**/*.asc
+# Test vectors are public material made with throw-away keys (testdata/hand-off/README.md)
 !testdata/**/*.asc
+!testdata/**/*.pem
 
 # Editors and operating systems
 .idea/
