@@ -1,6 +1,6 @@
 ---
 title: Design principles
-description: What ritueel is and is not, and the rules its design follows: shared with systems that hold intermediates, particular to ritueel, and those that do not apply.
+description: What ritueel is and is not, and the rules its design follows. Some are shared with systems that hold intermediates, some are ritueel only, some do not apply.
 sidebar:
   order: 6
 ---
