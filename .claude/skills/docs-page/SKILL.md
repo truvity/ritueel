@@ -3,7 +3,7 @@ name: docs-page
 description: Use when creating or editing a page of the ritueel site under docs/ (not docs/decisions/), including how it says what is built, asides and diagrams.
 ---
 
-Read `docs/contributing/pages.md` and `docs/contributing/writing.md` and follow them. For any name, address or id, also read `docs/contributing/public-content.md`.
+Read `docs/contributing/pages.md` and follow it. For any name, address or id, also read `docs/contributing/public-content.md`.
 
 Checklist:
 

@@ -17,7 +17,7 @@ Read the page for what you are about to do, then do it.
 | run a build, a test or a check, or add a tool | [Tools, checks and verification](/contributing/tools/) |
 | propose, write or rewrite a decision record | [Decision records](/contributing/decisions/) |
 | run a spike or write up research | [Spikes and research](/contributing/research/) |
-| create or edit a page of this site | [Pages](/contributing/pages/) and [Writing style](/contributing/writing/) |
+| create or edit a page of this site | [Pages and writing](/contributing/pages/) |
 | write a name, an address, an id or anything secret | [Public content and secrets](/contributing/public-content/) |
 | contribute with an AI agent, or run a team of agents | [AI agents](/contributing/agents/) |
 

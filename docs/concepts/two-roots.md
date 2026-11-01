@@ -2,12 +2,12 @@
 title: Two roots in practice
 description: Why a chain of trust runs two roots at once, what public CAs do, how clients behave when an intermediate has two certificates, and how the cards alternate.
 sidebar:
-  order: 3
+  order: 4
 ---
 
 *Design phase: this page teaches the model of [ADR 0002](/decisions/0002-key-custody-every-key-is-born-in-its-store-two-root-cards-or-one-kms-root-and-a-replica/). Checks of other projects were made on 2026-10-29; check again before you rely on one.*
 
-Two roots are redundancy, not control. One holder operates both cards, which are stored in two separate locations, and the cards alternate by year. This page shows that the practice is ordinary, and what to expect from clients. It is about cards, which cannot be copied; a company root in a cloud key service is one root and a replica, as [Where a key lives](/concepts/key-stores/) says.
+Two roots are redundancy, not control. One holder operates both cards, which are stored in two separate locations, and the cards alternate by year. This page shows that the practice is ordinary, and what to expect from clients. It is about cards, which cannot be copied; a cloud root is one key and a replica ([ADR 0002](/decisions/0002-key-custody-every-key-is-born-in-its-store-two-root-cards-or-one-kms-root-and-a-replica/)).
 
 ## What others do
 
@@ -42,4 +42,4 @@ The effects below appear during an overlap and whenever a cross-certificate exis
 
 ## The limit you accept
 
-Whoever holds one root card and its PIN can sign things that outsiders trust, until that root is revoked and the update reaches them. Standard tools cannot require two roots to agree. A stolen card without its PIN locks after three wrong tries. Do not describe the second card as a spare, and do not describe the custody as two-person control.
+Whoever holds one root card and its PIN can sign things that outsiders trust, until that root is revoked and the update reaches them ([the accepted limit](/decisions/0002-key-custody-every-key-is-born-in-its-store-two-root-cards-or-one-kms-root-and-a-replica/#the-accepted-limit)). Standard tools cannot require two roots to agree. Do not describe the second card as a spare, and do not describe the custody as two-person control.

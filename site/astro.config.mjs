@@ -28,6 +28,7 @@ export default defineConfig({
         { label: 'Concepts', items: [{ autogenerate: { directory: 'concepts' } }] },
         { label: 'Guides', items: [{ autogenerate: { directory: 'guides' } }] },
         { label: 'Reference', items: [{ autogenerate: { directory: 'reference' } }] },
+        { label: 'Research', items: [{ autogenerate: { directory: 'research' } }] },
         { label: 'Roadmap', slug: 'roadmap' },
         { label: 'Decisions', link: '/decisions/' },
         {
@@ -37,7 +38,8 @@ export default defineConfig({
       ],
       plugins: [
         // Fails the build on a broken internal link or anchor. The decision pages are
-        // generated in src/pages from docs/decisions (custom pages the validator cannot see).
+        // generated in src/pages from docs/decisions (custom pages the validator cannot see);
+        // site/scripts/check-anchors.mjs checks their links in the built site instead.
         starlightLinksValidator({
           errorOnRelativeLinks: false,
           exclude: ['/decisions/', '/decisions/**'],

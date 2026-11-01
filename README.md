@@ -2,38 +2,27 @@
 
 ritueel keeps the roots of trust: the X.509 CA roots and OpenPGP primary keys that every other key depends on. It creates them, vouches for the next one, overlaps the old and the new, supersedes, revokes, and runs the ceremonies where a person is present. It is open source (MIT), written in Go, and a teaching product: the site at [ritueel.id](https://ritueel.id) explains the model before the tools do it for you.
 
-> **Status as of 2026-11-01: design phase.** There is no release and no code yet. The site is live at [ritueel.id](https://ritueel.id). The scope is decided ([ADR 0001](docs/decisions/0001-scope-roots-and-transitions-systems-like-sluis-hold-intermediates.md)), the concepts are written, the hand-off contract is specified, and ADR 0003 and ADR 0004 are Proposed. The first version is planned in the [roadmap](docs/roadmap.md). The work items are the open [issues](https://github.com/truvity/ritueel/issues).
-
-## The problem
-
-A chain of trust has a few keys that almost never change (the roots) and many that do (the intermediates). The roots are used once a year or less, by a person who has to be present, and they move: from a file to a YubiKey, from a YubiKey to a cloud key service, from an old root to a new one. Each move is easy to get wrong and expensive to repair, because every client that trusts the old root has to learn about the new one.
-
-ritueel makes those moves ordinary: a few commands, a guided wizard, a record of what was done, and a page that explains why.
+> **Status as of 2026-11-01: design phase, no code yet.** The decision records are accepted and the code starts with milestone M1 of the [roadmap](docs/roadmap.md).
 
 ## What ritueel does
 
 | Area | What it covers |
 |---|---|
-| Roots | Create, vouch (X.509 cross-certificate or OpenPGP certification), overlap, supersede, revoke and expire X.509 CA roots and OpenPGP primary keys, across key stores. Revocation signatures are made in advance and stored apart from the card. |
-| SSH CA key lists | A list of SSH CA public keys that hosts trust, signed by a root and versioned, and the break-glass SSH CA, which ritueel holds offline ([issue #31](https://github.com/truvity/ritueel/issues/31)). |
-| Intermediate ceremonies | Verify where a key lives (a YubiKey attestation, an AWS KMS key), sign a certificate request into an intermediate CA certificate, and bind an OpenPGP subkey after checking its back-signature. |
-| Trust artifacts | CA bundles, keyrings and signed root lists. The automation and the CLI that build keyring `.deb` and `.rpm` packages; your own pipeline publishes them. |
-| Records | A ceremony record for every ceremony. |
-| Personal GPG | A primary key, subkeys, cards and keyring upkeep for one person. Company-wide GPG management comes later. |
-| Wizards | A CLI wizard, and a web wizard that listens on localhost only. A ceremony is one to three commands; routine work is fully automated. |
-| Teaching | Concepts, one guide per transition (software, YubiKey, AWS KMS, in every direction) and drills on test keys. |
+| Roots | Create, vouch for, overlap, supersede, revoke and expire X.509 CA roots and OpenPGP primary keys, across key stores. |
+| Intermediate ceremonies | Verify where an intermediate key lives, sign its certificate request, and bind its OpenPGP subkey. |
+| Trust products | CA bundles, signed root lists, SSH CA key lists, and keyring `.deb` and `.rpm` packages that your own pipeline publishes. |
+| Records | A hash-chained record of every ceremony. |
+| Personal OpenPGP | A primary key, a daily subkey born on a card, and keyring upkeep. |
+| Teaching | Concepts, one guide per transition, and drills on test keys. |
 
-The first version supports four key stores behind one ceremony: software, PIV, the OpenPGP card and AWS KMS.
-
-## What ritueel does not do
-
-ritueel does not sign online, issue leaf certificates or store secrets. A system that holds intermediates does that. [sluis](https://sluis.id) is one such system; ritueel does not depend on it, and it does not depend on ritueel. They exchange standard formats: PKCS#10 certificate requests, X.509 certificates, OpenPGP packets and attestation certificates.
+ritueel does not sign online, issue leaf certificates or store secrets. A system that holds intermediates, such as [sluis](https://sluis.id), does that; the two exchange standard formats through a versioned contract and depend on neither each other nor shared code.
 
 ## Read
 
-- [Concepts](docs/concepts/index.md): roots, intermediates and transitions; where a key lives.
-- [ADR 0001](docs/decisions/0001-scope-roots-and-transitions-systems-like-sluis-hold-intermediates.md): the scope, with the roads not taken.
-- [Roadmap](docs/roadmap.md): the milestones of the first version.
+- [Concepts](docs/concepts/index.md), starting with the [design principles](docs/concepts/principles.md).
+- [Decision records](docs/decisions/README.md): six records, each with the roads not taken.
+- [Hand-off contract](docs/reference/hand-off-contract.md): what a system that holds intermediates sends and gets back, with [test vectors](testdata/hand-off/).
+- [Roadmap](docs/roadmap.md).
 
 ## Take part
 

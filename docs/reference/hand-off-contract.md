@@ -5,13 +5,9 @@ sidebar:
   order: 1
 ---
 
-*Design phase: not built yet. This page is the proposed specification for [issue #7](https://github.com/truvity/ritueel/issues/7). Every choice that the issue left open is listed in [Choices made](#choices-made), and what is still undecided is in [Open](#open).*
+*Design phase: no certifier or requester is built yet. This is version 1 of the specification ([issue #7](https://github.com/truvity/ritueel/issues/7)), and its [test vectors](/reference/hand-off-contract/#test-vectors) match it. The choices that had a real alternative are in [Choices made](/reference/hand-off-contract/#choices-made).*
 
-:::note[Proposed]
-The contract stays proposed until its test vectors match it, which they do since 2026-11-01 ([issue #46](https://github.com/truvity/ritueel/issues/46)). They were made with software keys and checked on 2026-11-01 with OpenSSL 3.5 (certificates, requests, attestation chains) and an independent packet parser (every back-signature and binding). GnuPG and Sequoia were not run on this set yet.
-:::
-
-A system that holds intermediate keys, called the **requester** on this page, and ritueel, called the **certifier**, depend on neither product nor shared code. They meet at standard formats, and this page is the one place that says exactly which. A requester can be built from this page alone, and so can a certifier. The reasons are in [ADR 0001](https://github.com/truvity/ritueel/blob/main/docs/decisions/0001-scope-roots-and-transitions-systems-like-sluis-hold-intermediates.md). The vocabulary (root, intermediate, ceremony) is in [Roots, intermediates and transitions](/concepts/roots-and-transitions/).
+A system that holds intermediate keys, called the **requester** on this page, and ritueel, called the **certifier**, depend on neither product nor shared code. They meet at standard formats, and this page is the one place that says exactly which. A requester can be built from this page alone, and so can a certifier. The reasons are in [ADR 0001](/decisions/0001-scope-roots-and-transitions-systems-like-sluis-hold-intermediates/). The vocabulary (root, intermediate, ceremony) is in [Roots, intermediates and transitions](/concepts/roots-and-transitions/).
 
 ## What travels
 
@@ -86,7 +82,7 @@ Firmware 5.7 and newer chain to the maker's *current* attestation root; older to
 { "attestation": ["<key certificate, Base64 DER>", "<card certificate, Base64 DER>"] }
 ```
 
-The key lives in the OpenPGP applet of a card, and the card attests it with its own command (on a YubiKey, `80 FB 01 00`, after the user PIN is verified). The list holds the certificate the card returns for the key, then the card's own attestation certificate that signed it, leaf first. The certifier chains them to a pinned root of the maker through the maker's intermediates, from its own pinned copies, as for `piv`; on firmware 5.8 the chain passes through the intermediate "Yubico OPGP Attestation B2 1" (measured 2026-11-01). The extensions of the certificate are under the OID arc `1.3.6.1.4.1.41482.5`. Their encoding, and so the policy rules that read them, are not specified yet (see [Open](/reference/hand-off-contract/#open)); a certifier that cannot read them records the key as attested and does not enforce a PIN or touch policy. This store is the one a person's daily subkey uses, with the person's own card as the requester.
+The key lives in the OpenPGP applet of a card, and the card attests it with its own command (on a YubiKey, `80 FB 01 00`, after the user PIN is verified). The list holds the certificate the card returns for the key, then the card's own attestation certificate that signed it, leaf first. The certifier chains them to a pinned root of the maker through the maker's intermediates, from its own pinned copies, as for `piv`; on firmware 5.8 the chain passes through the intermediate "Yubico OPGP Attestation B2 1" (measured 2026-11-01). The extensions of the certificate are under the OID arc `1.3.6.1.4.1.41482.5`. Their encoding, and so the policy rules that read them, are not specified yet (see [Follow-ups](/reference/hand-off-contract/#follow-ups)); a certifier that cannot read them records the key as attested and does not enforce a PIN or touch policy. This store is the one a person's daily subkey uses, with the person's own card as the requester.
 
 ### `aws-kms`
 
@@ -121,8 +117,6 @@ No `evidence`. A software key proves nothing about where it lives. The certifier
 
 Any other extension is refused with `policy`.
 
-**A key that signs tokens is not certified here.** Version 1 issues CA certificates only, and needs no other profile. A requester that also signs tokens keeps that key apart from its intermediate. The intermediate has path length 0, which lets it issue end-entity certificates, so it certifies the token key itself with a non-CA certificate that allows signing only, and the key set publishes the chain token certificate, intermediate, root. Nothing of that crosses the hand-off. sluis does this (decided 2026-11-01); the token key is never the intermediate's key.
-
 The certifier **issues exactly what was asked, or refuses**. The request is the requester's statement of how much power it needs, and the policy of the certifier says how much it may have. A request for more than the policy allows is refused, not trimmed. Validity is the one thing the request does not carry: the certifier decides it.
 
 ### What the certifier checks
@@ -142,9 +136,9 @@ In this order. The first check that fails gives the reason code; the others are 
 | 9 | The policy accepts the request, as below. | `policy` |
 | 10 | The person at the ceremony confirms. | `declined` |
 
-**Evidence for a YubiKey (check 7).** Both certificates parse. The chain from the slot certificate through the token's certificate and the maker's intermediates leads to a pinned root, with every certificate valid at the time of the ceremony; the token's certificate is a CA with path length 0. The slot certificate's subject is `YubiKey PIV Attestation <slot>`, where the slot is one of 9a, 9c, 9d, 9e or 82 to 95, and the extensions `.3`, `.7` and `.8` are present. **Evidence for KMS (check 7).** The key's state is `Enabled`, its usage `SIGN_VERIFY`, its spec `ECC_NIST_P384`, its origin `AWS_KMS` and its manager `CUSTOMER`, and the ARN in the proof is the ARN KMS reports.
+**Evidence for a PIV key (check 7).** Both certificates parse. The chain from the slot certificate through the token's certificate and the maker's intermediates leads to a pinned root, with every certificate valid at the time of the ceremony; the token's certificate is a CA with path length 0. The slot certificate's subject is `YubiKey PIV Attestation <slot>`, where the slot is one of 9a, 9c, 9d, 9e or 82 to 95, and the extensions `.3`, `.7` and `.8` are present. **Evidence for an OpenPGP-card key (check 7).** Both certificates parse, and the chain from the key's certificate through the card's certificate and the maker's OpenPGP intermediates leads to a pinned root, with every certificate valid at the time of the ceremony. **Evidence for KMS (check 7).** The key's state is `Enabled`, its usage `SIGN_VERIFY`, its spec `ECC_NIST_P384`, its origin `AWS_KMS` and its manager `CUSTOMER`, and the ARN in the proof is the ARN KMS reports.
 
-**Key match (check 8).** The attested public key (YubiKey), the key KMS returns, and the `public_key` in the proof, where one is given, are all the key in the request.
+**Key match (check 8).** The attested public key (PIV or OpenPGP card), the key KMS returns, and the `public_key` in the proof, where one is given, are all the key in the request.
 
 **Policy (check 9).** The policy is the certifier's, and is not part of the wire format. The reference policy of the test vectors has these rules, and a certifier may add more:
 
@@ -196,7 +190,7 @@ Each failure gives one of these codes. They belong to the requester and are not 
 
 ### Keys and hashes
 
-Version 1 uses version 4 keys: the primary and the subkey are ECDSA on P-384 (algorithm 19, curve OID `1.3.132.0.34`). RFC 9580 (section 5.2.3.2) wants a digest of at least 384 bits for P-384. Every signature of the contract uses **SHA-384**, which is also the 48-byte digest a YubiKey or a KMS key signs as it is given; a KMS P-384 key accepts no other digest length. Other algorithms are refused with `algorithm-unsupported`. OpenPGP version 6 keys wait for a later version of the contract: the maintainer decided on 2026-11-01 to use version 4 now and version 6 once the verifiers people use accept it, because GnuPG (`gpg` 2.4.8) refuses to parse a version 6 certificate.
+Version 1 uses version 4 keys: the primary and the subkey are ECDSA on P-384 (algorithm 19, curve OID `1.3.132.0.34`). RFC 9580 (section 5.2.3.2) wants a digest of at least 384 bits for P-384. Every signature of the contract uses **SHA-384**, which is also the 48-byte digest a YubiKey or a KMS key signs as it is given; a KMS P-384 key accepts no other digest length. Other algorithms are refused with `algorithm-unsupported`. OpenPGP version 6 keys wait for a later version of the contract, once the verifiers people use accept them; GnuPG (`gpg` 2.4.8) refuses to parse a version 6 certificate ([ADR 0006](/decisions/0006-release-keys-and-the-keyring-package/#the-keys)).
 
 ### The request
 
@@ -205,7 +199,7 @@ Version 1 uses version 4 keys: the primary and the subkey are ECDSA on P-384 (al
 1. A **Public-Subkey packet** (tag 14) with the subkey.
 2. One **Signature packet** (tag 2) of type `0x19` for every active primary, in the order of `primaries`: the primary key binding, also called the **back-signature**. Each is made by the subkey, and says that the subkey agrees to belong to that primary (RFC 9580, section 5.2.1.9). It signs the primary key and then the subkey, each as `0x99`, a two-byte length and the packet body, followed by the usual signature trailer. Its hashed area has the signature creation time and the issuer fingerprint of the subkey. Its unhashed area has the issuer key ID of the subkey (see [Issuer key ID](/reference/hand-off-contract/#issuer-key-id)).
 
-Because a back-signature covers the primary's key, it must exist before that primary can bind the subkey. **The request therefore back-signs for every active primary** (decided 2026-11-01). The requester reads the signed root list it already trusts, takes the active primaries from it, and makes one back-signature for each, in one request. Either root card can then make the binding: the card of the year, the other card next year, or the surviving card after one is lost, with no second request. The binding itself is made by one primary, the one the ceremony uses.
+Because a back-signature covers the primary's key, it must exist before that primary can bind the subkey. **The request therefore back-signs for every active primary.** The requester reads the signed root list it already trusts, takes the active primaries from it, and makes one back-signature for each, in one request. Either root card can then make the binding: the card of the year, the other card next year, or the surviving card after one is lost, with no second request. The binding itself is made by one primary, the one the ceremony uses.
 
 A subkey with a back-signature that is missing for a listed primary, of another type, made over another primary, without the issuer key ID, or damaged is refused with `possession-invalid`. GnuPG and Sequoia refuse a signing subkey without a good back-signature, so the certifier does not bind one.
 
@@ -250,7 +244,7 @@ A verifier then needs nothing from ritueel. The first set of vectors was checked
 
 ### Issuer key ID
 
-Every version 4 signature ritueel writes, and every back-signature it accepts, carries **both** the Issuer Fingerprint subpacket (type 33, hashed) and the Issuer Key ID subpacket (type 16, unhashed). go-crypto v1.5.2 writes a version 4 signature with the fingerprint only, and `gpg` 2.2.27 rejects a certificate made of such signatures on import, so a signature without the key ID is not safe to ship (measured 2026-11-01). The rule is in [ADR 0004](/decisions/0006-release-keys-and-the-keyring-package/) too.
+Every version 4 signature ritueel writes, and every back-signature it accepts, carries **both** the Issuer Fingerprint subpacket (type 33, hashed) and the Issuer Key ID subpacket (type 16, unhashed). go-crypto v1.5.2 writes a version 4 signature with the fingerprint only, and `gpg` 2.2.27 rejects a certificate made of such signatures on import, so a signature without the key ID is not safe to ship (measured 2026-11-01). The rule is in [ADR 0006](/decisions/0006-release-keys-and-the-keyring-package/#the-keys) too.
 
 ## The answer
 
@@ -284,7 +278,7 @@ A refused answer holds no artifacts and no secret. The codes:
 
 The answer does not say which part of a policy failed. The certifier's output and its ceremony record do.
 
-**Trust products.** The CA bundle, the keyring and the signed root list are not part of this contract, and the certifier publishes them as it does for everyone. Their formats are [issue #14](https://github.com/truvity/ritueel/issues/14) and [issue #15](https://github.com/truvity/ritueel/issues/15). The contract fixes one thing about them: they carry a **trust sequence**, one integer that grows by one each time any of them changes, and `trust_sequence` in the answer says which one the answer needs.
+**Trust products.** The CA bundle, the keyring and the signed root list are not part of this contract, and the certifier publishes them as it does for everyone ([ADR 0005](/decisions/0005-trust-products-the-root-list-the-ca-bundle-the-ssh-ca-key-list-and-the-trust-sequence/)). The contract fixes one thing about them: they carry the **trust sequence**, one integer that grows by one each time any of them changes, and `trust_sequence` in the answer says which one the answer needs. The root list's own format is [issue #14](https://github.com/truvity/ritueel/issues/14).
 
 ## What the certifier records
 
@@ -313,37 +307,23 @@ A certifier passes when its outcome and reason code match the manifest for every
 
 ## Choices made
 
-The issue left these to the specification. Each is a proposal.
+The choices that had a real alternative, with the reason each alternative lost.
 
 | Choice | Chosen | Other options | Why |
 |---|---|---|---|
 | Encoding of the proof file | JSON, with certificates and keys as Base64 DER. | CBOR; ASN.1 DER; one PEM file with headers; a TAR holding everything. | Readable by a person who must compare it with what they expect. Every language has a strict parser. The `x5c` precedent covers the encoding of certificates. CBOR and DER are smaller and harder to read; PEM headers have no standard shape. |
-| File names | `<stem>.csr.pem`, `<stem>.subkey.pgp`, `<stem>.proof.json`, `<stem>.result.json`, `<stem>.cert.pem`, `<stem>.bound.pgp`. | A directory per request with fixed names. | A stem lets several requests share a directory, and the extension says the format. A directory is cleaner for one request. |
-| Version | One integer in every JSON file. Unknown versions are refused. | `major.minor` with ignorable additions; a media type. | A security contract should not skip what it does not understand. Strict members mean every addition is a new version, and the window makes that cheap. |
 | Compatibility window | Read the previous version for 24 months after its successor first ships. | A fixed 12 months; "any older version, always". | Ceremonies are yearly. A year is not enough for a missed one. |
 | Unknown members | Refused. | Ignored. | An ignored member is a field one side thinks it understands. |
-| Binding of proof to request | `request_sha256`. | Nothing; a signature by the key over the proof. | It catches swapped files without a second signature, and the request is already signed by its key. |
-| KMS key reference | The full ARN. | The bare key identifier. | The ARN carries Region and account, which the certifier needs to read the key. |
-| KMS key in another account | The certifier assumes a small read-only role inside the key's account (`DescribeKey`, `GetPublicKey`, `GetKeyPolicy`) and reads the key and its policy as a same-account caller (decided 2026-11-01). | Grant the certifier's principal access in the key policy, which `GetKeyPolicy` does not honour across accounts; accept a snapshot of the description in the proof and mark it unverified; apply the policy rule to same-account keys only. | A copy is a claim, and the contract's rule is that the certifier reads the key itself. Only a role in the key's account can read the policy, so the rule is checked for every key. |
-| Chain file | The issued certificate only; the root is named in `result.json`. | The chain with the root included. | A root in a file invites trusting it. |
+| KMS key in another account | The certifier assumes a small read-only role inside the key's account (`DescribeKey`, `GetPublicKey`, `GetKeyPolicy`) and reads the key and its policy as a same-account caller | Grant the certifier's principal access in the key policy, which `GetKeyPolicy` does not honour across accounts; accept a snapshot of the description in the proof and mark it unverified; apply the policy rule to same-account keys only. | A copy is a claim, and the contract's rule is that the certifier reads the key itself. Only a role in the key's account can read the policy, so the rule is checked for every key. |
+| Certificate file | The issued certificate only; the root is named in `result.json`. | The chain with the root included. | A root in a file invites trusting it. |
 | Who decides validity and constraints | The certifier decides validity. The requester asks for constraints in the CSR, and the certifier issues them exactly or refuses. | The certifier overrides the request; the requester asks for validity. | Silent change is the failure to avoid: the requester then installs something it did not ask for. |
-| OpenPGP request | The subkey and a back-signature for every active primary, plus the proof naming the primaries (decided 2026-11-01). | One primary per request, with a second request for the second root; the whole primary certificate in the request. | Either root card can make the binding, with no second request, and the requester need not know whose year it is. The certifier already holds the primaries. Cost: one more signature in the request for each active primary. |
-| OpenPGP answer | The subkey and its binding, to be appended to the primary's certificate. | The complete updated certificate. | The answer is small and checkable by concatenation. The keyring package carries complete certificates. |
-| Embedded back-signature | In the unhashed area of the binding. | In the hashed area. | The way GnuPG, Sequoia and `sqv` were tested and measured on 2026-10-31 and 2026-11-01. Both areas are legal (RFC 9580, section 5.2.3.34). |
-| Order of checks | Fixed, with one code. | Report every failure. | The vectors then have one right answer, and a person sees the first problem to fix. |
-| Store names | `piv`, `openpgp-card`, `aws-kms`, `software`. | `yubikey-piv`, the name of the first vectors. | A name says what the thing is: the store is a PIV applet, whoever makes the card. |
-| Algorithm | ECDSA P-384, SHA-384, version 4 keys. | P-256; Ed25519; version 6 keys. | P-384 works on every store and with GnuPG, `gpgv`, `sqv`, apt and rpm (tested 2026-10-29 and 2026-10-31). A PIV slot signs a whole Ed25519 message and refuses more than about 3 KiB, so it cannot sign an artifact. GnuPG implements no version 6 (`gpg` 2.4.8 refuses to parse it), and Sequoia accepts it; version 6 comes when the verifiers do. |
-| Fixture generator | A Python script, kept next to the fixtures. | Go, with the first test; none. | It was the fastest way to make fixtures with independent code. It should become Go once the module exists, so that one toolchain builds everything. |
+| OpenPGP request | The subkey and a back-signature for every active primary, plus the proof naming the primaries. | One primary per request, with a second request for the second root; the whole primary certificate in the request. | Either root card can make the binding, with no second request, and the requester need not know whose year it is. The certifier already holds the primaries. Cost: one more signature in the request for each active primary. |
 
-## Open
+## Follow-ups
 
-:::caution[Open]
-These need the maintainer's decision. The issue each belongs to is linked; the options are in the pull request description.
-:::
-
-- **The format and expiry of the root list**, and so the rule for `trust_sequence`. [Issue #14](https://github.com/truvity/ritueel/issues/14).
-- **The attestation of an OpenPGP-card key.** The encoding of the extensions under `1.3.6.1.4.1.41482.5`, and the policy rules that read them, are not measured yet.
-- **GnuPG** was not run on the OpenPGP vectors. A test with `gpg` and `gpgv` should join the verifier matrix ([issue #24](https://github.com/truvity/ritueel/issues/24)).
+- **The attestation of an OpenPGP-card key.** The encoding of the extensions under `1.3.6.1.4.1.41482.5`, and the policy rules that read them, are not measured yet; until then a certifier records the key as attested and enforces no PIN or touch policy from it ([issue #18](https://github.com/truvity/ritueel/issues/18)).
+- **GnuPG on the vectors.** `gpg` and `gpgv` join the verifier matrix for the OpenPGP vectors ([issue #25](https://github.com/truvity/ritueel/issues/25)).
+- **The fixture generator** becomes Go once the module exists, so one toolchain builds everything ([issue #10](https://github.com/truvity/ritueel/issues/10)).
 
 ## Standards
 

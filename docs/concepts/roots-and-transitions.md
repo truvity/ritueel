@@ -2,7 +2,7 @@
 title: Roots, intermediates and transitions
 description: What a root of trust is, why there are several, how a new root takes over from an old one without breaking anyone, and what outsiders install.
 sidebar:
-  order: 1
+  order: 2
 ---
 
 *Design phase: this page teaches the model. The tools that carry out each step are planned; see the [roadmap](/roadmap/).*
@@ -36,16 +36,9 @@ The files that travel, and the checks on each side, are in the [hand-off contrac
 
 ## Why more than one root
 
-One root is a single point of failure. A card breaks, a cloud account is locked, a passphrase is forgotten, and every client that trusts only that root is stranded.
+One root is a single point of failure: a card breaks, an account is locked, and every client that trusts only that root is stranded. So there is a second, *independent* root, a different key made separately, and outsiders install both at once. Any one of them can authorise intermediates.
 
-The remedy is two or more *independent* roots: separate keys, made separately, stored in different places, ideally on different kinds of store. Outsiders are given all of them at once, as one CA bundle or one keyring. Any one of them can authorise intermediates, so losing one does not stop you.
-
-How many roots depends on the store. A card cannot be copied, so redundancy means a second, independent card. A cloud key service can replicate its key, so a company root in AWS KMS is **one root and a multi-Region replica**, in one dedicated account. **Redundancy protects against loss, not compromise.** A replica covers a lost Region and is the same key; a compromise of any root is answered by revocation and a transition.
-
-Two limits are worth knowing.
-
-- Redundancy is not control. With standard tools, any single root that a client trusts can sign anything that client will accept. Standard X.509 and OpenPGP clients cannot ask for "two roots agreed". Protect each root as if it were the only one.
-- A root key that is copied is not a second root, it is a second place to steal the same key. A second root means a different key. A replica of a cloud key is a copy kept by the service for availability, and it is not counted as a root.
+How many roots depends on the store, because **redundancy protects against loss, not against compromise**. A card cannot be copied, so cards come in two; a cloud key service can replicate its key, so a cloud root is one key with a replica, which is the same key and not a second root ([ADR 0002](/decisions/0002-key-custody-every-key-is-born-in-its-store-two-root-cards-or-one-kms-root-and-a-replica/)). Redundancy is not control either: any one root a client trusts can sign anything that client accepts, so protect each root as if it were the only one.
 
 ## Moving from one root to another
 
@@ -57,7 +50,7 @@ Roots change: a key store is replaced, an algorithm ages, a root nears its expir
 | **Vouch** | Let the old root vouch for the new one. For X.509 the old root issues a *cross-certificate* for the new root's key. For OpenPGP the old primary *certifies* the new primary. Now a client that trusts only the old root can still validate things signed under the new one. |
 | **Overlap** | Run both. New intermediates are issued under the new root, while the old root stays trusted. Outsiders receive a bundle or keyring that holds both. |
 | **Supersede** | Once every client has had time to learn the new root, publish a bundle or keyring without the old one. The old root is retired: no new intermediates, and it is removed from what you ship. |
-| **Revoke** | The emergency exit. The old root is declared untrustworthy now. For OpenPGP this is a *revocation certificate*, plus a keyring without the old key, because some verifiers ignore the certificate; for X.509, revocation of the cross-certificate and of the root through whatever channel your clients check. |
+| **Revoke** | The emergency exit. The old root is declared untrustworthy now. For OpenPGP this is a *revocation signature*, plus a keyring without the old key, because some verifiers ignore the signature; for X.509, a signed root list without the old root, signed by a surviving root. |
 
 A transition, as it looks to an outsider:
 
@@ -72,7 +65,7 @@ The overlap is the part that is easy to get wrong. It must last as long as the s
 
 ### Revocation is made in advance
 
-A revocation certificate made after a key is lost cannot be made at all, and one made in a hurry is made on the worst day. So ritueel makes revocation material when a root is created, and the holder stores it apart from the key. For OpenPGP this is a pre-made *revocation signature* for the primary, made while the card is at hand. A root can then be revoked even if its own card and PIN are gone. The signature does not reach everyone: `gpgv`, and so apt, ignores revocation signatures, and `gpg --verify` still exits 0 for a revoked key (measured 2026-11-01). For a user of apt, the revocation is the new keyring package that no longer holds the key; the signature goes out as well, for the users of `gpg` and Sequoia, whose `sqv` rejects a revoked key. ([OpenPGP release keys](/concepts/openpgp-release-keys/#revocation) has the table.) ritueel does not name a *designated revoker*: the standard deprecates that mechanism ([RFC 9580](https://datatracker.ietf.org/doc/html/rfc9580), section 5.2.3.23, says applications must not generate it) and prefers the stored revocation signature (section 13.9).
+A revocation made after a key is lost cannot be made at all, and one made in a hurry is made on the worst day. So when a root is born, ritueel makes a revocation signature for its OpenPGP primary, and the holder stores it apart from the card. The root can then be revoked even if its card and PIN are gone. A revocation signature does not reach every verifier: for apt users the revocation is the new keyring package without the key ([the table](/concepts/openpgp-release-keys/#revocation)). ritueel names no *designated revoker*, which the standard deprecates ([RFC 9580](https://datatracker.ietf.org/doc/html/rfc9580), section 5.2.3.23).
 
 ### Expiry is a transition too
 
@@ -80,13 +73,14 @@ A root that expires is a transition that is already scheduled. An expiring root,
 
 ## What outsiders install
 
-Outsiders should need only the tools they already have.
+Outsiders need only the tools they already have. Every product carries one *trust sequence*, an integer that grows by one whenever any of them changes, so a client can tell whether it is current ([ADR 0005](/decisions/0005-trust-products-the-root-list-the-ca-bundle-the-ssh-ca-key-list-and-the-trust-sequence/)).
 
 | For | They install | How it is made |
 |---|---|---|
 | TLS and other X.509 clients | A *CA bundle*: the root certificates in one PEM file, in the system or application trust store. | ritueel builds it from the current roots. |
-| Package managers and `gpg` | A *keyring*: the public OpenPGP primary keys, usually delivered as a `.deb` or `.rpm` package that places them where the package manager looks. | ritueel provides the automation and the CLI that build the package. Your pipeline publishes it. |
-| Systems that update their own trust | A *signed root list*: the current set of roots, with a version and an expiry, signed by a root that the client already trusts. A client refuses a list that is older than the one it has, or expired. | ritueel produces it. The client verifies it. |
+| Package managers and `gpg` | A *keyring*: the public OpenPGP primary keys and their subkeys, delivered as a `.deb` or `.rpm` package that places them where the package manager looks. | ritueel builds the package. Your pipeline signs and publishes it. |
+| Systems that update their own trust | A *signed root list*: the current roots pinned by their public keys, with the trust sequence and an expiry 13 months after signing, signed by one root. It is re-signed at every yearly ceremony and every transition. A client refuses an older list; when its list expires with no newer one, it keeps the last good list and warns. | ritueel produces it. The client verifies it. |
+| SSH hosts | An *SSH CA key list*: the SSH CA public keys that hosts trust, including the break-glass SSH CA that ritueel holds offline, signed and versioned like the root list. | ritueel produces it. The host verifies it. |
 
 A keyring package is also how a new OpenPGP root reaches people: the new package, signed by an old key, carries both keys during the overlap, and a package that drops the old key is the supersede step.
 
