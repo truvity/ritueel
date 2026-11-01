@@ -16,9 +16,9 @@
   },
   "dependencies": {
     "@astrojs/starlight": "0.42.7",
-    "astro": "7.4.2",
+    "astro": "7.4.4",
     "sharp": "0.35.5",
     "starlight-links-validator": "0.27.0",
-    "wrangler": "4.151.0"
+    "wrangler": "4.155.0"
   }
 }
