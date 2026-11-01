@@ -26,6 +26,7 @@ export default defineConfig({
       ],
       sidebar: [
         { label: 'Concepts', items: [{ autogenerate: { directory: 'concepts' } }] },
+        { label: 'Guides', items: [{ autogenerate: { directory: 'guides' } }] },
         { label: 'Roadmap', slug: 'roadmap' },
         { label: 'Decisions', link: '/decisions/' },
         {
