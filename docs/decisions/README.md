@@ -41,3 +41,4 @@ Every record has these parts, in this order:
 |-----|----------|--------|
 | [0001](0001-scope-roots-and-transitions-systems-like-sluis-hold-intermediates.md) | Scope: roots and transitions; systems like sluis hold intermediates | Accepted |
 | [0002](0002-every-key-is-born-in-its-store-two-roots-one-holder-yearly-alternation.md) | Every key is born in its store; two roots, one holder, yearly alternation | Accepted |
+| [0004](0004-release-keys-primaries-on-the-roots-signing-subkeys-and-the-keyring-package.md) | Release keys: primaries on the roots, signing subkeys, and the keyring package | Proposed |
