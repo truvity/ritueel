@@ -7,7 +7,7 @@ sidebar:
 
 *Not built yet. This is the layout the M1 code writes ([issue #8](https://github.com/truvity/ritueel/issues/8), [issue #9](https://github.com/truvity/ritueel/issues/9)); the rules it follows are in [ADR 0004](/decisions/0004-ceremonies-plan-confirm-reserve-sign-verify-record/#the-directory-and-the-records).*
 
-ritueel keeps everything it knows in **one directory of plain files** that the holder keeps in version control and backs up. It holds public material only: never a private key, a PIN, a passphrase or a revocation signature. Losing it loses the registry, the attestations and the OpenPGP creation times, so it is part of every key's identity ([ADR 0003](/decisions/0003-key-stores-and-the-card-layer/#consequences)). A software root's private keys live in **key files outside it**.
+ritueel keeps everything it knows in **one directory of plain files** that the holder keeps in version control and backs up. This directory is the *ledger* that [Learn](/learn/the-ledger/) advises on: where to keep it, and how to back it up and restore it. It holds public material only: never a private key, a PIN, a passphrase or a revocation signature. Losing it loses the registry, the attestations and the OpenPGP creation times, so it is part of every key's identity ([ADR 0003](/decisions/0003-key-stores-and-the-card-layer/#consequences)). A software root's private keys live in **key files outside it**.
 
 ## The layout
 

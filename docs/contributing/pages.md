@@ -5,7 +5,7 @@ sidebar:
   order: 6
 ---
 
-The pages on this site teach the model of roots and transitions first, and then say what the tools do. Everything in this repository is written for an engineer who has not followed the discussion: pages, decision records, research, pull requests and commit messages.
+The pages on this site teach first: the logic of handling roots and intermediates securely, then what the tools do to simplify it. Everything in this repository is written for an engineer who has not followed the discussion: pages, decision records, research, pull requests and commit messages.
 
 ## Where a page lives
 
@@ -13,8 +13,10 @@ Docs live in `docs/`, next to the thing they describe. When the thing changes, i
 
 | Kind | Where | For |
 |---|---|---|
-| Concepts | `docs/concepts/` | The model: what a root is, why there are several, what outsiders install. Written before any tool exists, and kept true after. |
-| Guides | `docs/guides/` | One guide per ceremony or transition, step by step, with its drill on test keys. |
+| Learn | `docs/learn/` | The teaching: what a root is, why it stays offline, the custody chain, the key stores compared, the life of a root. Written before any tool exists, and kept true after. It comes first on the site. |
+| Guides | `docs/guides/` | One guide per ritual, ceremony or transition, step by step, with its drill on test keys. A guide says how; the matching Learn page says why and when. |
+| Tools | `docs/tools/` | What the command line and the wizard do, and whether each is built. |
+| Principles | `docs/principles.md` | The rules the design follows, each linked to the record that decides it. |
 | Reference | `docs/reference/` | Commands, file formats and the hand-off contract. Exact, versioned, no reasoning. |
 | Research | `docs/research/` | Dated results of spikes and research, verdict first ([Spikes and research](/contributing/research/)). The name ends in the date. |
 | Decisions | `docs/decisions/` | The decision records. They cite research and reference pages and do not repeat them. |
@@ -33,7 +35,7 @@ Use a table or a short numbered list rather than a diagram. A Mermaid diagram (a
 
 ## Links
 
-A link to another page uses its site path with a trailing slash, `/concepts/key-stores/`. A link to a heading, on the same page or another, uses the full form `/concepts/key-stores/#the-four-stores`: the link check is strict and resolves both.
+A link to another page uses its site path with a trailing slash, `/learn/key-stores/`. A link to a heading, on the same page or another, uses the full form `/learn/key-stores/#choosing`: the link check is strict and resolves both.
 
 ## Plain and short
 

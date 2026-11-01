@@ -1,6 +1,6 @@
 # 0003 — Key stores and the card layer
 
-**Status:** Accepted
+**Status:** Accepted; amended by 0007
 **Date:** 2026-11-01
 
 ## Context
@@ -15,7 +15,7 @@ The card layer was the subject of a spike ([issue #26](https://github.com/truvit
 
 | Store | Driver | Holds | Evidence of where the key lives |
 |---|---|---|---|
-| `software` | A passphrase-protected file | Test, drill and development roots; a person's own primary | None; every record says the key can be copied |
+| `software` | An encrypted file, 1Password or the OS keyring ([below](/decisions/0003-key-stores-and-the-card-layer/#the-software-store)) | Test, drill and development roots; a person's own primary | None; every record says the key can be copied |
 | `piv` | piv-go | Root keys on a root card; an intermediate in a card slot | The slot's attestation certificate and the card's certificate |
 | `openpgp-card` | A vendored, patched fork of go-openpgp-card | A person's daily signing subkey | The card's attestation of the key, by its own command |
 | `aws-kms` | The AWS SDK | A company root; an intermediate in a KMS key | The key's description, its policy and the audit trail, read from the service |
@@ -43,6 +43,18 @@ The six steps, the plan, the checks and the records are the same for every store
 - **The driver is a vendored, patched fork of go-openpgp-card behind a small interface.** The fork carries the supported-algorithm fix, writes the correct ECDSA fingerprint to the card with PUT DATA, verifies the user PIN in each process, and adds the attestation command (`80 FB 01 00` on a YubiKey). The fallback is a small driver of our own on go-iso7816, and after that `scdaemon`.
 - **Attestation of an `openpgp-card` key** chains to the maker's root through its OpenPGP intermediate. Until the encoding of its extensions is measured, ritueel records the key as attested and enforces no PIN or touch policy from it.
 
+### The software store
+
+The `software` store has three backends, chosen when the root is made ([0007](/decisions/0007-ritueel-teaches-and-its-tools-simplify-the-ceremonies/)). The key is generated in memory and written directly into the backend, never to a file on disk.
+
+- **An encrypted file,** protected by a passphrase: the default for drills and tests.
+- **1Password,** the proposed persistent store. Its sync is redundancy against loss, not against compromise.
+- **The OS keyring,** through `github.com/zalando/go-keyring`, with a warning in the creation output and in every record that it can be insecure and has no copy. ritueel refuses to fall back to a file when no keyring exists.
+
+### Planned stores
+
+Google Cloud KMS, Azure Key Vault and other hardware such as Nitrokey are planned. Each arrives with its first real installation, and is supported only after it is proven on real hardware or a real account. The site compares them and says which device to buy for testing.
+
 ### Rules for every store
 
 - **SHA-384 on every backend.** A KMS P-384 key signs only 48-byte SHA-384 digests, and one hash makes a card, a KMS key and a file behave alike.
@@ -68,6 +80,7 @@ The six steps, the plan, the checks and the records are the same for every store
 - **One card for the roots and daily `gpg`.** Fewer objects, but the shared PC/SC lock, a PIN prompt per operation in shared mode, and one reset that affects both.
 - **A third key to sign the root list.** Separates list signing from certificate signing, but costs a slot and a touch on each card for a key with the same audience, lifetime and revocation.
 - **Upstream a signer API to go-crypto, or write the packets ourselves.** Removes the bypass, but waits on review or adds security-critical code to keep; the pinned, tested bypass is enough.
+- **Exporting a key from a card or KMS for backup.** An easy restore, but a key that was copied out can be stolen from the copy. Backup means two cards, or a KMS replica ([0007](/decisions/0007-ritueel-teaches-and-its-tools-simplify-the-ceremonies/)).
 - **A different ceremony for each store.** Each keeps its own shape, but plan, confirmation, records and refusals would be written and taught four times.
 - **A slot map the holder edits.** Fits an odd card, but turns a collision into a user error that overwrites a key.
 

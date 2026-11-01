@@ -7,7 +7,7 @@ sidebar:
 
 ## Question
 
-Which OpenPGP keys, signatures and revocations do the verifiers that users have accept? The answers shape [ADR 0006](/decisions/0006-release-keys-and-the-keyring-package/) and the [revocation table](/concepts/openpgp-release-keys/#revocation).
+Which OpenPGP keys, signatures and revocations do the verifiers that users have accept? The answers shape [ADR 0006](/decisions/0006-release-keys-and-the-keyring-package/) and the [revocation table](/learn/openpgp-release-keys/#revocation).
 
 ## When
 

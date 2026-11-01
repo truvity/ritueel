@@ -10,3 +10,13 @@
 
 # Contributing pages merged on 2026-11-01.
 /contributing/writing/ /contributing/pages/ 301
+
+# The concepts became Learn, and the principles and the tools got their own places on
+# 2026-11-01, when the site was rebuilt around the mission (ADR 0007).
+/concepts/ /learn/ 301
+/concepts/principles/ /principles/ 301
+/concepts/roots-and-transitions/ /learn/root-and-intermediate/ 301
+/concepts/key-stores/ /learn/key-stores/ 301
+/concepts/two-roots/ /learn/two-roots/ 301
+/concepts/openpgp-release-keys/ /learn/openpgp-release-keys/ 301
+/concepts/ceremonies/ /learn/ceremonies/ 301

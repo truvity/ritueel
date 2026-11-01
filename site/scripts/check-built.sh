@@ -10,8 +10,8 @@ fail=0
 bad() { echo "check-built: $*" >&2; fail=1; }
 
 for f in index.html 404.html sitemap-index.xml robots.txt \
-         concepts/index.html concepts/roots-and-transitions/index.html concepts/key-stores/index.html \
-         guides/index.html reference/index.html reference/cli/index.html research/index.html \
+         learn/index.html learn/what-is-a-root/index.html learn/custody-chain/index.html learn/key-stores/index.html \
+         learn/life-of-a-root/index.html guides/index.html tools/index.html tools/wizard/index.html principles/index.html reference/index.html reference/cli/index.html research/index.html \
          roadmap/index.html contributing/index.html decisions/index.html; do
   [ -s "$dist/$f" ] || bad "missing or empty: $f"
 done

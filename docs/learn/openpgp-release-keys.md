@@ -2,7 +2,7 @@
 title: OpenPGP release keys and the keyring
 description: How an OpenPGP root and an intermediate's subkey sign releases, what a keyring package carries, and what a revocation reaches in gpg, sqv, apt and rpm.
 sidebar:
-  order: 5
+  order: 12
 ---
 
 *Design phase: this page teaches the model of [ADR 0006](/decisions/0006-release-keys-and-the-keyring-package/). No release is signed until the card roots exist and the adoption drill has run. The measurements are in [the verifier matrix](/research/openpgp-verifier-matrix-2026-11/).*
@@ -54,7 +54,7 @@ Checked on 2026-10-29.
 
 ## Personal OpenPGP
 
-A person's daily signing subkey is born on the card's OpenPGP applet, so `gpg` uses it directly, and an offline software primary binds it: the card makes the subkey and its back-signature, and the primary makes the binding. A software primary can be copied, and ritueel says so in every record. Where it fits among the stores is in [Where a key lives](/concepts/key-stores/).
+A person's daily signing subkey is born on the card's OpenPGP applet, so `gpg` uses it directly, and an offline software primary binds it: the card makes the subkey and its back-signature, and the primary makes the binding. A software primary can be copied, and ritueel says so in every record. Where it fits among the stores is in [Where a key lives](/learn/key-stores/).
 
 ## Old releases
 
