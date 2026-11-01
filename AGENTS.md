@@ -19,7 +19,7 @@ Instructions for AI agents working in this repository. People follow the same ru
 |---|---|
 | create or edit a file in `docs/decisions/` | `docs/contributing/decisions.md` |
 | run a spike or write up research | `docs/contributing/research.md` |
-| create or edit any other page under `docs/` | `docs/contributing/pages.md` and `docs/contributing/writing.md` |
+| create or edit any other page under `docs/` | `docs/contributing/pages.md` |
 | create a branch, commit, push, open or merge a pull request | `docs/contributing/workflow.md` |
 | run a build, a test or a check | `docs/contributing/tools.md` |
 | implement a protocol, a format or an algorithm | "Standards first" in `docs/contributing/tools.md` |

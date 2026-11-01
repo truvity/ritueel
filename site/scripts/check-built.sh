@@ -11,6 +11,7 @@ bad() { echo "check-built: $*" >&2; fail=1; }
 
 for f in index.html 404.html sitemap-index.xml robots.txt \
          concepts/index.html concepts/roots-and-transitions/index.html concepts/key-stores/index.html \
+         guides/index.html reference/index.html reference/cli/index.html research/index.html \
          roadmap/index.html contributing/index.html decisions/index.html; do
   [ -s "$dist/$f" ] || bad "missing or empty: $f"
 done
@@ -40,6 +41,20 @@ if [ -s "$dist/decisions/index.html" ]; then
     [ "$name" = "0000-template" ] && continue
     [ -s "$dist/decisions/$name/index.html" ] || bad "no page for the decision record $name"
   done
+fi
+
+# Links in the decision pages, which the build's link validator cannot see: every in-site
+# link leads to a built page, and every #anchor to an id on it.
+site/scripts/check-anchors.mjs "$dist" || bad "a decision page links a missing page or anchor (above)"
+
+# The redirects file reached the output, and each target is a built page.
+if [ -s "$dist/_redirects" ]; then
+  while read -r from to code; do
+    case "$from" in ''|'#'*) continue ;; esac
+    [ -s "$dist${to%/}/index.html" ] || bad "_redirects: $from points to $to, which is not a built page"
+  done < "$dist/_redirects"
+else
+  bad "no _redirects: site/public/_redirects did not reach the output"
 fi
 
 # The landing page says what ritueel is and that it is in the design phase.

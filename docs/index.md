@@ -22,7 +22,7 @@ ritueel is also a teaching product. The pages explain the model first, then the 
 
 ## Status
 
-ritueel is in the **design phase**. There is no release yet. The scope is recorded in [ADR 0001](/decisions/0001-scope-roots-and-transitions-systems-like-sluis-hold-intermediates/), the [concepts](/concepts/) are written, and the [roadmap](/roadmap/) lists the milestones of the first version. The first version supports three key stores: software, YubiKey and AWS KMS.
+ritueel is in the **design phase**. There is no release yet. The [decision records](/decisions/) are accepted, the [concepts](/concepts/) and the [hand-off contract](/reference/hand-off-contract/) are written, and the [roadmap](/roadmap/) lists the milestones of the first version. Which key stores it supports, and why, is in [Where a key lives](/concepts/key-stores/).
 
 ritueel is a separate product from [sluis](https://sluis.id), which holds intermediates and signs online. The two do not depend on each other and exchange standard formats only.
 

@@ -7,3 +7,6 @@
 /decisions/0002-every-key-is-born-in-its-store-two-roots-one-holder-yearly-alternation/ /decisions/0002-key-custody-every-key-is-born-in-its-store-two-root-cards-or-one-kms-root-and-a-replica/ 301
 /decisions/0003-ceremonies-plan-confirm-reserve-sign-record-and-the-ritueel-commands/ /decisions/0004-ceremonies-plan-confirm-reserve-sign-verify-record/ 301
 /decisions/0004-release-keys-primaries-on-the-roots-signing-subkeys-and-the-keyring-package/ /decisions/0006-release-keys-and-the-keyring-package/ 301
+
+# Contributing pages merged on 2026-11-01.
+/contributing/writing/ /contributing/pages/ 301

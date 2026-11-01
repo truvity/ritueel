@@ -34,7 +34,7 @@ Read the page for what you are about to do:
 | run a build, a test or a check | [Tools, checks and verification](docs/contributing/tools.md) |
 | write or rewrite a decision record | [Decision records](docs/contributing/decisions.md) |
 | run a spike or write up research | [Spikes and research](docs/contributing/research.md) |
-| create or edit a page of the site | [Pages](docs/contributing/pages.md) and [Writing style](docs/contributing/writing.md) |
+| create or edit a page of the site | [Pages and writing](docs/contributing/pages.md) |
 | write a name, an address, an id or anything secret | [Public content and secrets](docs/contributing/public-content.md) |
 | contribute with an AI agent | [AI agents](docs/contributing/agents.md) and [AGENTS.md](AGENTS.md) |
 

@@ -68,7 +68,7 @@ Whoever holds one root card and its PIN, or the role that uses a cloud root, can
 - **A designated revoker, each root for the other.** Revocation without the stored signature, but RFC 9580 deprecates it and it widens what one stolen card can do.
 - **A fixed ten-year root, or no expiry.** No yearly change, but a dead card stays silent for years.
 - **A second, independent cloud root in another account.** Two keys like the two cards, but a second account to secure, both still on one provider, and the loss it covers is already covered by the replica.
-- **A cloud key service as the only kind of store.** One anchor and full audit, but one provider, no attestation, and no use to an installation on small boards.
+- **A cloud key service as the only kind of store.** One anchor and full audit, but one provider, no attestation, and no use to an installation on single-board computers.
 - **Replace every intermediate key every year.** Short-lived keys, but a key ceremony per holder per year moves a sound key for no gain.
 
 ## Follow-ups
