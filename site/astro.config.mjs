@@ -24,6 +24,16 @@ export default defineConfig({
         { tag: 'meta', attrs: { property: 'og:site_name', content: 'ritueel' } },
         { tag: 'meta', attrs: { property: 'og:type', content: 'website' } },
       ],
+      // TwoColumnContent and PageSidebar drop the right-hand "On this page" column
+      // for the dropdown at the top of the content; src/styles/layout.css sets the
+      // wide column; the route middleware drops the bar from pages with fewer than
+      // two headings.
+      components: {
+        TwoColumnContent: './src/components/TwoColumnContent.astro',
+        PageSidebar: './src/components/PageSidebar.astro',
+      },
+      customCss: ['./src/styles/layout.css'],
+      routeMiddleware: './src/route-middleware.ts',
       sidebar: [
         { label: 'Concepts', items: [{ autogenerate: { directory: 'concepts' } }] },
         { label: 'Guides', items: [{ autogenerate: { directory: 'guides' } }] },
