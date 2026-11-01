@@ -1,84 +1,38 @@
 ---
-// Starlight's Hero, replaced for the home page (the only page with `hero:` front matter): a
-// left-aligned headline and lede in the page's reading type, and three plain links. The headline,
-// lede and links come from the front matter of docs/index.mdx. Upgrade note: the default component
-// also renders a hero image and a draft notice; the home page uses neither.
+// Starlight's Hero, replaced for the home page (the only page with `hero:` front matter): a short
+// title and one line, so the reader's pains (the clouds in the page body) are on the first screen.
+// Title and line come from the front matter of docs/index.mdx. The call-to-action links follow
+// the answers, further down the page (home/Actions.astro). Upgrade note: the default component
+// also renders a hero image, actions and a draft notice; the home page uses none of them.
 const { data } = Astro.locals.starlightRoute.entry;
-const { title = data.title, tagline, actions = [] } = data.hero || {};
+const { title = data.title, tagline } = data.hero || {};
 ---
 
 <div class="home-hero">
   <h1 id="_top" data-page-title set:html={title} />
   {tagline && <p class="lede" set:html={tagline} />}
-  {
-    actions.length > 0 && (
-      <p class="actions">
-        {actions.map(({ link: href, text, variant }) => (
-          <a {href} class:list={["btn", variant ?? "primary"]}>
-            {text}
-          </a>
-        ))}
-      </p>
-    )
-  }
 </div>
 
 <style>
   .home-hero {
-    max-width: 50rem;
-    padding: 0.5rem 0 1rem;
+    max-width: 52rem;
+    padding: 0;
   }
   h1 {
     margin: 0;
     font-family: var(--rt-serif);
-    font-size: clamp(2.1rem, 1.3rem + 3.6vw, 3.6rem);
+    font-size: clamp(1.9rem, 1.4rem + 2vw, 2.7rem);
     font-weight: 600;
-    line-height: 1.08;
+    line-height: 1.1;
     letter-spacing: -0.015em;
     color: var(--sl-color-white);
     text-wrap: balance;
   }
   .lede {
-    margin: 1.2rem 0 0;
-    max-width: 38rem;
-    font-size: clamp(1.05rem, 1rem + 0.35vw, 1.25rem);
-    line-height: 1.55;
+    margin: 0.5rem 0 0;
+    font-size: clamp(1rem, 0.95rem + 0.25vw, 1.15rem);
+    line-height: 1.45;
     color: var(--sl-color-text);
     text-wrap: pretty;
-  }
-  .actions {
-    margin: 1.7rem 0 0;
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 0.7rem 0.9rem;
-  }
-  .btn {
-    display: inline-block;
-    padding: 0.65rem 1.25rem;
-    border: 2px solid var(--rt-ink);
-    border-radius: 0.3rem;
-    font-weight: 650;
-    line-height: 1.2;
-    text-decoration: none;
-    color: var(--sl-color-white);
-  }
-  .btn.primary {
-    background: var(--rt-ink);
-    color: var(--rt-ink-on);
-  }
-  .btn.primary:hover { background: color-mix(in srgb, var(--rt-ink) 85%, var(--sl-color-white)); }
-  .btn.secondary:hover { background: color-mix(in srgb, var(--rt-ink) 14%, transparent); }
-  .btn.minimal {
-    border-color: transparent;
-    padding-inline: 0.4rem;
-    text-decoration: underline;
-    text-decoration-color: var(--rt-ink);
-    text-decoration-thickness: 2px;
-    text-underline-offset: 0.2em;
-  }
-  .btn:focus-visible {
-    outline: 3px solid var(--sl-color-text-accent);
-    outline-offset: 3px;
   }
 </style>

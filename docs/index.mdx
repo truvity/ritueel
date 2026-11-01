@@ -3,18 +3,8 @@ title: "ritueel: manage the root of your PKI and the master key of OpenPGP"
 description: ritueel teaches how to keep a PKI root and an OpenPGP master key safe, and gives tools that simplify the ceremonies, while you stay in charge. Open source.
 template: splash
 hero:
-  title: The keys you use once a year are the ones that matter most.
-  tagline: A PKI root. An OpenPGP master key. You touch them rarely, by hand, with tools that assume you remember last time. ritueel teaches the logic first, then gives you tools that remember for you.
-  actions:
-    - text: Start learning
-      link: /learn/
-      variant: primary
-    - text: The custody chain
-      link: /learn/custody-chain/
-      variant: secondary
-    - text: View on GitHub
-      link: https://github.com/truvity/ritueel
-      variant: minimal
+  title: Does this sound familiar?
+  tagline: Two kinds of trouble, one cause. You do this rarely, and the manual assumes you do it daily.
 ---
 
 import Mission from '../site/src/components/home/Mission.astro';
@@ -23,18 +13,7 @@ import Pair from '../site/src/components/home/Pair.astro';
 import Cloud from '../site/src/components/home/Cloud.astro';
 import Answer from '../site/src/components/home/Answer.astro';
 import Rituals from '../site/src/components/home/Rituals.astro';
-
-## Our mission
-
-<Mission>
-ritueel teaches people to manage the root of a PKI and the master key of OpenPGP smoothly and safely, and gives them tools that simplify each ritual, from creating a root to signing intermediates and subkeys onto cards, while the person stays in charge.
-</Mission>
-
-Almost everything built on keys hangs from a few keys that are used rarely: the root of a certificate hierarchy, the master key of an OpenPGP identity. Using them is a manual ritual, a *ceremony*, done by a person, and most people do it once or twice in their life. ritueel exists to make that experience smooth and safe.
-
-## Does this sound familiar?
-
-Two kinds of trouble, and most people meet both in the same afternoon. Both come from one fact: you do this rarely, and the manual assumes you do it daily. Each chip leads to the page that deals with it.
+import Actions from '../site/src/components/home/Actions.astro';
 
 <Pairs>
 <Pair>
@@ -97,6 +76,22 @@ A command line plans each step, checks the card, asks you to confirm, and writes
 </Answer>
 </Pair>
 </Pairs>
+
+<Actions
+  actions={[
+    { text: 'Start learning', href: '/learn/', variant: 'primary' },
+    { text: 'The custody chain', href: '/learn/custody-chain/', variant: 'secondary' },
+    { text: 'View on GitHub', href: 'https://github.com/truvity/ritueel', variant: 'minimal' },
+  ]}
+/>
+
+## Our mission
+
+<Mission>
+ritueel teaches people to manage the root of a PKI and the master key of OpenPGP smoothly and safely, and gives them tools that simplify each ritual, from creating a root to signing intermediates and subkeys onto cards, while the person stays in charge.
+</Mission>
+
+Almost everything built on keys hangs from a few keys that are used rarely: the root of a certificate hierarchy, the master key of an OpenPGP identity. Using them is a manual ritual, a *ceremony*, done by a person, and most people do it once or twice in their life. ritueel exists to make that experience smooth and safe.
 
 ## The ledger and the four rituals
 

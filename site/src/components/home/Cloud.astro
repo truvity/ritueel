@@ -34,7 +34,7 @@ const marks = Object.fromEntries(
   ]),
 );
 // A fixed scatter, so the build is reproducible: how far each chip sits off the baseline, in rem.
-const scatter = [0, 0.55, 0.15, 0.8, 0.3, 0.05, 0.65, 0.2, 0.45, 0.1, 0.7, 0.35];
+const scatter = [0, 0.4, 0.1, 0.6, 0.2, 0.05, 0.5, 0.15, 0.35, 0.1, 0.5, 0.25];
 const scatterX = [0, 0.5, 0, 1.1, 0.3, 0, 0.9, 0.2, 0, 0.7, 0.4, 0];
 const id = `cloud-${tone}`;
 ---
@@ -46,9 +46,10 @@ const id = `cloud-${tone}`;
         ? <><circle cx="12" cy="12" r="10" /><path d="M9.2 9.3a2.9 2.9 0 1 1 4.3 2.5c-.9.5-1.5 1-1.5 2.1" /><circle cx="12" cy="17.4" r=".6" class="dot" /></>
         : <><path d="M12 3 22 20H2z" /><path d="M12 9.5v5" /><circle cx="12" cy="17.3" r=".6" class="dot" /></>}
     </svg>
-    <h3 id={id}>{title}</h3>
+    <h2 id={id}>{title}</h2>
     <p class="voice">{voice}</p>
   </header>
+  <input type="checkbox" class="more" id={`${id}-more`} />
   <ul>
     {items.map((it, i) => (
       <li class={`chip w${it.w ?? 2}`} style={`--dy:${scatter[i % scatter.length]}rem;--dx:${scatterX[i % scatterX.length]}rem`}>
@@ -62,6 +63,9 @@ const id = `cloud-${tone}`;
       </li>
     ))}
   </ul>
+  <label class="fold" for={`${id}-more`}>
+    <span class="open">Show all {items.length}</span><span class="close">Show fewer</span>
+  </label>
 </section>
 
 <style>
@@ -75,7 +79,7 @@ const id = `cloud-${tone}`;
     grid-template-columns: auto 1fr;
     column-gap: 0.7rem;
     align-items: center;
-    margin-bottom: 1.1rem;
+    margin-bottom: 0.9rem;
   }
   .stamp {
     width: 1.7rem;
@@ -90,7 +94,7 @@ const id = `cloud-${tone}`;
     fill: var(--tone);
     stroke-width: 1.2;
   }
-  h3 {
+  h2 {
     margin: 0;
     font-family: var(--rt-serif);
     font-size: clamp(1.35rem, 1.1rem + 1vw, 1.75rem);
@@ -100,22 +104,22 @@ const id = `cloud-${tone}`;
   }
   .voice {
     grid-column: 1 / -1;
-    margin: 0.55rem 0 0;
+    margin: 0.35rem 0 0;
     font-family: var(--rt-serif);
     font-style: italic;
-    font-size: 1.05rem;
+    font-size: 1rem;
     line-height: 1.45;
     color: var(--sl-color-gray-2);
-    max-width: 38ch;
+    max-width: 60ch;
   }
   ul {
     list-style: none;
     margin: 0;
-    padding: 0 0 0.9rem;
+    padding: 0 0 0.6rem;
     display: flex;
     flex-wrap: wrap;
     align-items: flex-start;
-    gap: 1.4rem 0.8rem;
+    gap: 0.95rem 0.7rem;
   }
   li {
     margin: 0;
@@ -172,15 +176,15 @@ const id = `cloud-${tone}`;
   }
 
   /* Weight: how loudly the thing shouts at a newcomer. */
-  .w4 a { padding: 1.05rem 1.35rem; }
-  .w4 .term { font-size: 1.55rem; }
+  .w4 a { padding: 0.8rem 1.15rem; }
+  .w4 .term { font-size: 1.4rem; }
   .w4 .note { font-size: 0.95rem; max-width: 30ch; }
-  .w3 a { padding: 0.85rem 1.1rem; }
-  .w3 .term { font-size: 1.25rem; }
+  .w3 a { padding: 0.65rem 0.95rem; }
+  .w3 .term { font-size: 1.15rem; }
   .w3 .note { font-size: 0.87rem; }
-  .w2 a { padding: 0.65rem 0.9rem; }
-  .w2 .term { font-size: 1.05rem; }
-  .w1 a { padding: 0.5rem 0.8rem; }
+  .w2 a { padding: 0.5rem 0.8rem; }
+  .w2 .term { font-size: 1rem; }
+  .w1 a { padding: 0.4rem 0.7rem; }
   .w1 .term { font-size: 0.93rem; font-weight: 600; }
 
   /* Concepts: rounded, set in the page's reading type. */
@@ -194,12 +198,15 @@ const id = `cloud-${tone}`;
     border-left-color: var(--tone);
   }
   .mechanic .term { font-family: var(--rt-mono); font-weight: 600; letter-spacing: -0.01em; }
-  .mechanic .w4 .term { font-size: 1.3rem; }
-  .mechanic .w3 .term { font-size: 1.12rem; }
+  .mechanic .w4 .term { font-size: 1.2rem; }
+  .mechanic .w3 .term { font-size: 1.05rem; }
   .mechanic .w2 .term { font-size: 0.98rem; }
   .mechanic .w1 .term { font-size: 0.88rem; }
   /* A chore, not a command: ordinary type. */
   .mechanic .term:not(.cmd) { font-family: inherit; letter-spacing: 0; }
+
+  /* The fold control exists on a phone only. */
+  .more, .fold { display: none; }
 
   /* On a phone the cloud becomes a grid: two columns, the heaviest chips across both. */
   @media (max-width: 40rem) {
@@ -210,7 +217,39 @@ const id = `cloud-${tone}`;
       padding-bottom: 0;
     }
     li { top: 0; margin-inline-start: 0; }
-    .w4 { grid-column: 1 / -1; }
+    /* The heaviest chips first, across both columns; the light ones fold away until asked for. */
+    .w4 { grid-column: 1 / -1; order: 1; }
+    .w3 { order: 2; }
+    .w2 { order: 3; }
+    .w1 { order: 4; }
+    .more:not(:checked) ~ ul :is(.w1, .w2) { display: none; }
+    .more {
+      display: block;
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      margin: -1px;
+      overflow: hidden;
+      clip-path: inset(50%);
+    }
+    .cloud { position: relative; }
+    .fold {
+      display: inline-block;
+      margin-top: 0.7rem;
+      padding: 0.35rem 0.85rem;
+      border: 1px solid color-mix(in srgb, var(--tone) 55%, var(--sl-color-bg));
+      border-radius: 999px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: var(--sl-color-white);
+      cursor: pointer;
+    }
+    .fold .close, .more:checked ~ .fold .open { display: none; }
+    .more:checked ~ .fold .close { display: inline; }
+    .more:focus-visible ~ .fold {
+      outline: 3px solid var(--sl-color-text-accent);
+      outline-offset: 2px;
+    }
     .note, .w4 .note { max-width: none; }
     .w4 .term, .w3 .term { font-size: 1.05rem; }
     .w2 .term { font-size: 0.97rem; }
