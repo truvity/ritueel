@@ -13,7 +13,7 @@ export default defineConfig({
     starlight({
       title: 'ritueel',
       description:
-        'ritueel keeps the roots of trust: it creates, vouches for, overlaps, supersedes and revokes X.509 and OpenPGP roots. Open source, taught in the open.',
+        'ritueel teaches how to keep the root of a PKI and the master key of OpenPGP safe, and gives tools that simplify the ceremonies. Open source, taught in the open.',
       favicon: '/favicon.svg',
       social: [{ icon: 'github', label: 'GitHub', href: 'https://github.com/truvity/ritueel' }],
       editLink: { baseUrl: 'https://github.com/truvity/ritueel/edit/main/docs/' },
@@ -35,12 +35,15 @@ export default defineConfig({
       customCss: ['./src/styles/layout.css'],
       routeMiddleware: './src/route-middleware.ts',
       sidebar: [
-        { label: 'Concepts', items: [{ autogenerate: { directory: 'concepts' } }] },
+        // Learn comes first: the site teaches, and the tools simplify the rituals.
+        { label: 'Learn', items: [{ autogenerate: { directory: 'learn' } }] },
         { label: 'Guides', items: [{ autogenerate: { directory: 'guides' } }] },
+        { label: 'Tools', items: [{ autogenerate: { directory: 'tools' } }] },
         { label: 'Reference', items: [{ autogenerate: { directory: 'reference' } }] },
+        { label: 'Decisions', link: '/decisions/' },
+        { label: 'Principles', slug: 'principles' },
         { label: 'Research', items: [{ autogenerate: { directory: 'research' } }] },
         { label: 'Roadmap', slug: 'roadmap' },
-        { label: 'Decisions', link: '/decisions/' },
         {
           label: 'Contributing',
           items: [{ label: 'Overview', slug: 'contributing' }, { autogenerate: { directory: 'contributing' } }],

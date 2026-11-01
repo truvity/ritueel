@@ -23,7 +23,7 @@ The verdicts of [the verifier matrix](/research/openpgp-verifier-matrix-2026-11/
 - **A revocation signature is published for the users who read it** (`gpg`, Sequoia): for a subkey, by the root of the year; for a primary, the one made at its birth and stored apart.
 - **What is revoked hard is dropped from the next keyring package:** a revoked primary, and a subkey revoked as compromised. Its revocation signature is published beside the package, not in it. For apt users, the new package is the revocation.
 - **What is retired softly stays,** with its revocation inside the package: a subkey superseded or retired keeps its old signatures valid. Expired subkeys stay too, because a signature is judged at its own time.
-- **The exit status of `gpg --verify` is never a trust decision;** the guides say to use `sqv`, or `gpg --status-fd` and reject `REVKEYSIG`. The table of what each verifier does is on [OpenPGP release keys](/concepts/openpgp-release-keys/#revocation).
+- **The exit status of `gpg --verify` is never a trust decision;** the guides say to use `sqv`, or `gpg --status-fd` and reject `REVKEYSIG`. The table of what each verifier does is on [OpenPGP release keys](/learn/openpgp-release-keys/#revocation).
 - **No shorter expiry as a second line.** The 13-month subkey bindings and the root extension already bound how long an unrevoked key stays usable.
 
 ### No signed release before the gate

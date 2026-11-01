@@ -5,7 +5,7 @@ sidebar:
   order: 2
 ---
 
-*Design phase: not built yet. The revocation behaviour of the verifiers was measured on 2026-11-01 (see [OpenPGP release keys](/concepts/openpgp-release-keys/#revocation)); the drill has not run. This page is the plan that the `root revoke` and `root add` commands will follow, and the drill that will rehearse it.*
+*Design phase: not built yet. The revocation behaviour of the verifiers was measured on 2026-11-01 (see [OpenPGP release keys](/learn/openpgp-release-keys/#revocation)); the drill has not run. This page is the plan that the `root revoke` and `root add` commands will follow, and the drill that will rehearse it.*
 
 Until the revocation reaches outsiders, whoever holds the card **and** its PIN can sign things they trust. A card without its PIN locks after three wrong tries, which limits the exposure. Act in this order.
 

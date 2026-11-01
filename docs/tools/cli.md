@@ -1,13 +1,13 @@
 ---
-title: The ceremony
-description: What happens when a person uses a root, which checks the tool makes before each touch, and how a yearly renewal differs from an intermediate change.
+title: The command line
+description: What the ritueel command line will do at a ceremony, the six steps it runs, the checks it makes before each touch, and how it handles PINs, touches and expiry.
 sidebar:
-  order: 6
+  order: 1
 ---
 
-*Design phase: no ceremony command exists yet. This page describes what the commands will do ([ADR 0004](/decisions/0004-ceremonies-plan-confirm-reserve-sign-verify-record/)); the commands and their exit codes are in [the command reference](/reference/cli/).*
+*Not built yet: no ceremony command exists. This page describes what the commands will do ([ADR 0004](/decisions/0004-ceremonies-plan-confirm-reserve-sign-verify-record/)); the commands and their exit codes are in [the command reference](/reference/cli/). To learn what a ceremony is before you meet the tool, read [What a ceremony is](/learn/ceremonies/).*
 
-A ceremony is a scripted, reviewable use of a root. It runs on the holder's ordinary workstation, with no live CD and no air gap, because the root keys never leave their cards: a compromised workstation cannot copy a key it never holds. It can still try to trick the holder, which is why the checks below exist.
+The command line is the first face of the ceremony engine ([the second is the wizard](/tools/wizard/)). A ceremony is a scripted, reviewable use of a root. It runs on the holder's ordinary workstation, with no live CD and no air gap, because the root keys never leave their cards: a compromised workstation cannot copy a key it never holds. It can still try to trick the holder, which is why the checks below exist.
 
 ## Six steps
 

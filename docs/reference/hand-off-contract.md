@@ -7,7 +7,7 @@ sidebar:
 
 *Design phase: no certifier or requester is built yet. This is version 1 of the specification ([issue #7](https://github.com/truvity/ritueel/issues/7)), and its [test vectors](/reference/hand-off-contract/#test-vectors) match it. The choices that had a real alternative are in [Choices made](/reference/hand-off-contract/#choices-made).*
 
-A system that holds intermediate keys, called the **requester** on this page, and ritueel, called the **certifier**, depend on neither product nor shared code. They meet at standard formats, and this page is the one place that says exactly which. A requester can be built from this page alone, and so can a certifier. The reasons are in [ADR 0001](/decisions/0001-scope-roots-and-transitions-systems-like-sluis-hold-intermediates/). The vocabulary (root, intermediate, ceremony) is in [Roots, intermediates and transitions](/concepts/roots-and-transitions/).
+A system that holds intermediate keys, called the **requester** on this page, and ritueel, called the **certifier**, depend on neither product nor shared code. They meet at standard formats, and this page is the one place that says exactly which. A requester can be built from this page alone, and so can a certifier. The reasons are in [ADR 0001](/decisions/0001-scope-roots-and-transitions-systems-like-sluis-hold-intermediates/). The vocabulary (root, intermediate, ceremony) is in [Root and intermediate](/learn/root-and-intermediate/).
 
 ## What travels
 
