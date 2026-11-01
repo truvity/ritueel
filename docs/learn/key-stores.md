@@ -2,7 +2,7 @@
 title: Where a key lives
 description: Key stores compared in the open, with software and its backends, YubiKey PIV and OpenPGP card, AWS KMS and planned stores, and what each protects and costs.
 sidebar:
-  order: 7
+  order: 12
 ---
 
 *Design phase: this page teaches the trade-offs. None of the stores is built yet; a store is called supported only after it is proven on real hardware or a real account ([ADR 0003](/decisions/0003-key-stores-and-the-card-layer/)). The first version targets software, PIV, the OpenPGP card and AWS KMS. The measurements behind the card choices are in [Card libraries and tooling](/research/card-libraries-and-tooling-2026-11-01/).*

@@ -2,7 +2,7 @@
 title: The ledger
 description: The ledger is the record of what you did with your roots. Where it should live, how to back it up and restore it, and what must never be in it.
 sidebar:
-  order: 8
+  order: 13
 ---
 
 *Design phase: the layout described here is what the first version will write ([the directory](/reference/directory/)). The advice is ritueel's opinion; the reasons are in [ADR 0007](/decisions/0007-ritueel-teaches-and-its-tools-simplify-the-ceremonies/).*

@@ -2,7 +2,7 @@
 title: The life of a root
 description: A root from birth to recovery in order. Create, sign intermediates or subkeys, record, back up, re-sign, rotate, revoke and recover, and when each step happens.
 sidebar:
-  order: 9
+  order: 14
 ---
 
 A root lives for years, and most of what happens to it is waiting. This page follows one root through every ritual it will meet, in the order it meets them, and says when each is done. The steps are the same for an X.509 root and an OpenPGP master key; where they differ, the page says so.
@@ -55,7 +55,7 @@ Then practise getting it back. A restore drill on a clean machine is the proof.
 
 Re-signing is the ordinary yearly ritual. The **same key** gets a **new validity**. A certificate for an intermediate is issued again over the same public key, or a binding is signed again with a later expiry. The root itself is extended at the same time, because each use of the root extends it by about three years.
 
-Re-signing is cheap, and it changes nothing for anyone who already trusts the key. It keeps validity short, so a lost or forgotten key ages out, and it keeps the ceremony practised. The rule: **re-sign every year.**
+Re-signing is cheap, and it changes nothing for anyone who already trusts the key. It keeps validity short, so a lost or forgotten key ages out, and it keeps the ceremony practised. The rule: **re-sign every year.** See [re-sign](/learn/re-sign/) for the reasons.
 
 ## Rotate
 
@@ -64,14 +64,14 @@ Rotating is different: a **new key** replaces the old one. It is a larger event,
 - **On an event.** A suspected compromise, a change of store, a change of algorithm, a change of custody.
 - **After at most three years,** whatever else happened. Three years is the top of the usual lifetime for a private signing key, and a forced rotation keeps the rotate path exercised.
 
-The rule: **re-sign yearly; rotate on an event or after at most three years.**
+The rule: **re-sign yearly; rotate on an event or after at most three years.** See [rotate](/learn/rotate/).
 
 ## Revoke
 
-Revoking declares a key untrustworthy now. It is the emergency exit, and its material is made in advance: an OpenPGP revocation certificate made when the key was born, and for X.509 a signed list that leaves the root out (for an intermediate, a CRL signed by the root). A revocation reaches different verifiers differently; see [what a revocation reaches](/learn/openpgp-release-keys/#revocation).
+Revoking declares a key untrustworthy now. It is the emergency exit, and its material is made in advance: an OpenPGP revocation certificate made when the key was born, and for X.509 a signed list that leaves the root out (for an intermediate, a CRL signed by the root). A revocation reaches different verifiers differently; see [what a revocation reaches](/learn/openpgp-release-keys/#revocation). See [revoke](/learn/revoke/).
 
 ## Recover
 
-Recovering is what you do after a loss: a card broken, stolen or forgotten in a taxi. It is a revocation, a replacement root, and a re-signing of whatever chained only to the lost one. See [moving from one root to another](/learn/transitions/).
+Recovering is what you do after a loss: a card broken, stolen or forgotten in a taxi. It is a revocation, a replacement root, and a re-signing of whatever chained only to the lost one. See [recover](/learn/recover/) and [moving from one root to another](/learn/transitions/).
 
 Next: [moving from one root to another](/learn/transitions/).

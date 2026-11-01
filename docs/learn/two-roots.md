@@ -2,7 +2,7 @@
 title: Two roots in practice
 description: Why a chain of trust runs two roots at once, what public CAs do, how clients behave when an intermediate has two certificates, and how the cards alternate.
 sidebar:
-  order: 11
+  order: 20
 ---
 
 *Design phase: this page teaches the model of [ADR 0002](/decisions/0002-key-custody-every-key-is-born-in-its-store-two-root-cards-or-one-kms-root-and-a-replica/). Checks of other projects were made on 2026-10-29; check again before you rely on one.*

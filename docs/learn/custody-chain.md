@@ -58,13 +58,6 @@ The ledger covers the links down to the intermediates that ritueel certifies. Be
 
 ## Different chains
 
-The same four questions apply to every kind of chain, and the answers differ:
+The same four questions apply to every kind of chain, and the answers differ. [Custody chains compared](/learn/custody-chains/) puts public PKI, private PKI, OpenPGP and SSH side by side, with a page for each.
 
-| Chain | Root | Middle | End | What you do not control |
-|---|---|---|---|---|
-| Public PKI | A public CA's root, in browser and system stores. | The CA's intermediates. | TLS certificates for your sites. | The CA/Browser Forum rules, Certificate Transparency, and the CA itself. |
-| Private PKI | Your own root. | Per-environment intermediates, with name constraints. | Workload and host certificates. | Little; but you must put your root into every trust store yourself. |
-| OpenPGP | A master key that only certifies. | Signing, encryption and authentication subkeys, on a card. | Signatures, encrypted messages, SSH logins. | How a verifier learns your fingerprint: the web of trust, a keyring package or a key directory. |
-| SSH | An SSH certificate authority key. | None, or one per environment. | User and host certificates. | Which hosts trust the CA key, and for how long. |
-
-Next: [where a key lives](/learn/key-stores/).
+Next: [custody chains compared](/learn/custody-chains/).
