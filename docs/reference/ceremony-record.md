@@ -41,7 +41,8 @@ A **key fingerprint** in these files is the SHA-256 of the DER `SubjectPublicKey
 | `requests` | A list, one for each request the ceremony answers: `{ "stem", "type", "request_sha256", "proof_sha256", "store", "key" }`, where `key` is the fingerprint of the requester's key. |
 | `signatures` | The ordered list of every signature the ceremony makes, below. |
 | `touches` | The number of touches the holder will give: one for each signature by a card, 0 for a software root. |
-| `trust_sequence` | The trust sequence of the trust products the ceremony writes. |
+| `base_sequence` | The trust sequence of the newest trust products when the plan was made, the state it was made against. |
+| `trust_sequence` | The trust sequence of the trust products the ceremony writes: `base_sequence` plus one. |
 
 Each member of `signatures`:
 
@@ -65,7 +66,11 @@ The **plan digest** is the SHA-256 of the bytes of the plan file, shown as 64 lo
 - **A script** passes `--confirm DIGEST` with all 64 digits, which it can only have by reading the plan ritueel wrote (`--plan-only --output json` prints it, see [Commands](/reference/cli/#machine-readable-output)).
 - **A wrong or missing confirmation is refused before the attempt is written** (exit code 5). Nothing is signed and nothing is reserved.
 
-`--plan FILE` runs from a plan made earlier: ritueel re-reads every file of `inputs` and the newest record, and refuses the plan when any digest differs. A confirmation never replaces a touch.
+`--plan FILE` runs from a plan made earlier. **A plan is bound to the state it was made against, not to a clock:** ritueel refuses it with the reason code `plan-stale` (exit code 3) when the newest trust sequence is no longer `base_sequence`, the newest record is no longer `last_record_sha256`, or any file of `inputs` has another digest. A plan that still matches runs however old it is, with its own `ceremony_time`. A confirmation never replaces a touch.
+
+### Declining
+
+A person who has read the plan may **decline** a request instead of confirming: by typing `decline` at the confirmation prompt, then a reason, or with `--decline REASON` and `--plan FILE` from a script. Declining is a deliberate act and is recorded: ritueel writes the answer `answers/<stem>.result.json` with `outcome` `refused` and the code `declined` ([the contract's check 10](/reference/hand-off-contract/#what-the-certifier-checks)), and a record with `outcome` `declined` that holds the reason. No attempt is written and nothing is signed; the exit code is 3. A wrong or missing confirmation is not a decline: it writes nothing and exits 5.
 
 ## The attempt
 
@@ -77,7 +82,7 @@ The **plan digest** is the SHA-256 of the bytes of the plan file, shown as 64 lo
 | `root` | The label of the root that signs. |
 | `started_at` | When the attempt was written. |
 
-ritueel creates the file only if it does not exist (exclusive create), writes it to disk, and only then makes the first signature. An existing attempt for a plan means its serials may be used: ritueel refuses to run that plan again. An attempt is **resolved** when a record names its ceremony: the ceremony's own record, or a closing record from `records close`. `status` lists every unresolved attempt.
+ritueel creates the file only if it does not exist (exclusive create), writes it to disk, and only then makes the first signature. An existing attempt for a plan means its serials may be used: ritueel refuses to run that plan again. An attempt is **resolved** when a record names its ceremony: the ceremony's own record, or a closing record from `records close`. `status` reports every unresolved attempt as **critical** (exit code 12): a reserved but unrecorded attempt may mean a signature that was made and never recorded.
 
 ## The record
 
@@ -85,7 +90,7 @@ ritueel creates the file only if it does not exist (exclusive create), writes it
 |---|---|
 | `version` | `1`. |
 | `ceremony`, `command`, `arguments` | As in the plan. |
-| `outcome` | `completed`, or `closed` for a closing record. |
+| `outcome` | `completed`; `declined` when the person declined the request ([Declining](/reference/ceremony-record/#declining)); or `closed` for a closing record. |
 | `plan_sha256` | The plan digest. Absent in a closing record, which has no plan of its own. |
 | `prev_record_sha256` | The SHA-256 of the record before it in the chain. Absent in the first record of the directory, and only there. |
 | `started_at`, `finished_at` | When the attempt was written, and when the record was. |
@@ -98,13 +103,14 @@ ritueel creates the file only if it does not exist (exclusive create), writes it
 | `artifacts` | A list of `{ "path", "sha256" }`: every file the ceremony wrote other than the plan, the attempt, the record and the transcript, in path order. The trust products are among them. |
 | `trust_sequence` | As in the plan. |
 | `transcript_sha256` | The SHA-256 of the transcript. |
+| `declined` | A declining record only: `{ "stem", "reason" }`, the request declined and the reason the person gave. Such a record has no `signatures`, and its `artifacts` are the refused answer. |
 | `closes` | A closing record only: `{ "ceremony", "attempt_sha256", "reason" }`, the attempt it resolves, its digest, and the reason the person gave. |
 
 Each member of `requests` holds what the [hand-off contract records](/reference/hand-off-contract/#what-the-certifier-records): `stem`, `type`, `request_sha256`, `proof_sha256`, `store`, `key`, `evidence`, `policy`, `outcome` and `artifacts`.
 
 - `evidence` holds what was read from the proof and checked. For a software key it is `{ "unprotected": true }`: the key proves nothing about where it lives. The members for `piv` (serial, firmware, PIN and touch policy, form factor, slot), `aws-kms` (the ARN, the key's description and the digest of its policy) and `openpgp-card` are fixed with those stores, in M2 and M4.
 - `policy` is a copy of the policy applied to the request: the `policy` block of `ritueel.yaml` and the intermediate's entry ([the directory](/reference/directory/#ritueelyaml)).
-- `outcome` is `issued`, and `artifacts` the answer's files with their digests, as in `result.json`.
+- `outcome` is `issued`, and `artifacts` the answer's files with their digests, as in `result.json`; in a declining record, `outcome` is `refused` with the code `declined`.
 
 ### The hash chain
 
@@ -134,10 +140,6 @@ The records are not signed by a root. The digest of the newest record goes into 
 
 - The code that writes and checks these files, with the tests of issue #9's done-when ([issue #9](https://github.com/truvity/ritueel/issues/9)).
 - The `evidence` members of the `piv` and `aws-kms` stores ([issue #11](https://github.com/truvity/ritueel/issues/11), [issue #12](https://github.com/truvity/ritueel/issues/12)), and of `openpgp-card` ([issue #18](https://github.com/truvity/ritueel/issues/18)).
-
-:::caution[Open]
-- **How old a plan may be** when `--plan FILE` runs it. A plan fixes `ceremony_time`, so a plan run days later signs with a time in the past; whether ritueel refuses a plan older than a limit is not decided ([issue #9](https://github.com/truvity/ritueel/issues/9)).
-:::
 
 ## Standards
 

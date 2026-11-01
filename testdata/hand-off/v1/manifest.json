@@ -139,6 +139,18 @@
       "reason": "store-not-allowed"
     },
     {
+      "id": "x509-software-declined",
+      "type": "x509-intermediate",
+      "config": "development",
+      "files": [
+        "requests/x509-software-valid.csr.pem",
+        "requests/x509-software-valid.proof.json"
+      ],
+      "confirmation": "declined",
+      "expect": "refuse",
+      "reason": "declined"
+    },
+    {
       "id": "x509-csr-bad-signature",
       "type": "x509-intermediate",
       "config": "development",

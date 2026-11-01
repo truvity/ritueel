@@ -123,7 +123,7 @@ Two rules the schema cannot state: intermediate names are unique, and an `x509-i
 | Member | Meaning |
 |---|---|
 | `version` | `1`. |
-| `label` | The root's label: `A` and `B` for the two roots `init` makes. |
+| `label` | The root's label: one upper-case letter, `A` and `B` for the two roots `init` makes, then the next free letter for each root `root add` makes, whatever its key store. It never names the store and is never reused. |
 | `store` | `software`, `piv` or `aws-kms`. |
 | `test` | True for a root made with `--test-root`. |
 | `created_at` | When the root was made: the time of its ceremony. |

@@ -452,6 +452,9 @@ x509_response("x509-software-valid", "x509-software-valid", issue(c), "install",
 src = cases[-1]
 cases.append({"id": "x509-software-in-production", "type": "x509-intermediate", "config": "production", "files": src["files"],
               "expect": "refuse", "reason": "store-not-allowed"})
+# the same files again, passing every check, but the person at the ceremony declines the request (check 10)
+cases.append({"id": "x509-software-declined", "type": "x509-intermediate", "config": "development", "files": src["files"],
+              "confirmation": "declined", "expect": "refuse", "reason": "declined"})
 
 k = ec384(); c = make_csr(k)
 x509_case("x509-csr-bad-signature", key=k, csr=c, csr_der=tamper_csr(c), cfg="development", store="software", reason="possession-invalid")
@@ -665,6 +668,7 @@ def swap_b_for_z(doc):
 
 
 root_list("seq7-a-tampered", "A", 7, "AB", CLOCK, tamper=swap_b_for_z)   # root B replaced by Z after signing
+root_list("seq7-a-without-b", "A", 7, "A", CLOCK)                      # a second, different list at sequence 7
 
 rl_cases = []
 
@@ -688,6 +692,7 @@ rl_case("update-by-the-other-root", "init-a", "seq7-b", "accept")
 rl_case("revoke-a-root", "seq7-a", "seq8-b-without-a", "accept", clock=T_SEQ8)
 rl_case("same-list-again", "seq7-a", "seq7-a", "accept")
 rl_case("rollback", "seq7-a", "seq6-b", "refuse", "rollback")
+rl_case("same-sequence-different-content", "seq7-a", "seq7-a-without-b", "refuse", "sequence-conflict")
 rl_case("signed-by-a-revoked-root", "seq8-b-without-a", "seq9-a", "refuse", "unknown-signer", clock=T_SEQ9)
 rl_case("unknown-signer", "seq7-a", "seq8-z", "refuse", "unknown-signer", clock=T_SEQ8)
 rl_case("tampered", "seq6-b", "seq7-a-tampered", "refuse", "signature-invalid")

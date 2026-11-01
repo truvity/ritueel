@@ -20,7 +20,7 @@ The **trust sequence** is one integer that grows by one whenever any trust produ
 - **What it holds.** The active roots, each pinned by the SHA-256 of its public key (`SubjectPublicKeyInfo`) and, for OpenPGP, the primary's fingerprint; the `sequence`; when it was signed; when it expires; and the digest of the last ceremony record ([0004](/decisions/0004-ceremonies-plan-confirm-reserve-sign-verify-record/)). It pins keys, never certificates.
 - **Who signs.** Any one active root (1 of n), with its X.509 root key: the root used at that ceremony. The key whose public key hosts pin is the key that tells them which roots to pin; the slot is in [0003](/decisions/0003-key-stores-and-the-card-layer/).
 - **When.** It is re-signed at every yearly ceremony and at every transition, and so at least once a year. It expires 13 months after it is signed, like an intermediate, so a list that stopped being renewed shows itself. `status` warns at 60, 30 and 14 days before it expires.
-- **How a host reads it.** A host refuses a list with a lower `sequence` than the one it holds, a bad signature, a signer that is not an active root of the list it holds, or one already expired. When the list it holds passes its expiry and no newer one has arrived, it keeps the last good list and raises a warning; it does not drop its roots.
+- **How a host reads it.** A host refuses a list with a lower `sequence` than the one it holds, a list with the same `sequence` whose content differs from the one it holds (only the same list again is accepted, so one sequence names one set of roots), a bad signature, a signer that is not an active root of the list it holds, or one already expired. When the list it holds passes its expiry and no newer one has arrived, it keeps the last good list and raises a warning; it does not drop its roots.
 - **Revoking a root** is a new list, signed by a surviving root, without the revoked one, with new trust products beside it.
 
 ### The SSH CA key list
@@ -47,6 +47,7 @@ The exact members, the encoding and the signature format of the root list and th
 
 - **Full TUF, with separate roles and thresholds.** Mature freeze and rollback protection, but standard verifiers cannot count signatures and one holder cannot staff separate roles.
 - **A counter per product.** Each product moves alone, but a requester would need three numbers to tell whether it is current.
+- **Accept any list at an equal sequence.** Simpler to check, but two different root sets could then carry one sequence, and a host could not tell which one it holds.
 - **Pin root certificates.** Easier to compare, but the yearly re-issue would break every pin.
 - **A root list with no expiry.** Nothing to renew, but a list that stopped being signed cannot be told from a current one.
 - **Fail closed when the list expires.** Stronger on paper, but a missed ceremony would cut every host off its roots at once.
