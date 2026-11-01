@@ -51,7 +51,7 @@ The site is built from `docs/` and `site/` with Astro Starlight, and every page 
 
 ## How a consumer gets ritueel
 
-The first consumer is the test harness of a system that holds intermediates, such as [sluis](https://sluis.id), which runs ritueel's software-root mode in its CI ([principle 8](/concepts/principles/#shared-with-systems-that-hold-intermediates)). It needs a build it can pin. Not built yet: the release workflow comes with the Go module ([issue #10](https://github.com/truvity/ritueel/issues/10)).
+The first consumer is the test harness of a system that holds intermediates, such as [sluis](https://sluis.id), which runs ritueel's software-root mode in its CI ([principle 8](/principles/#shared-with-systems-that-hold-intermediates)). It needs a build it can pin. Not built yet: the release workflow comes with the Go module ([issue #10](https://github.com/truvity/ritueel/issues/10)).
 
 - **What a release is.** A tag `vX.Y.Z` on `main`. GoReleaser (version 2) builds the binary for Linux and macOS, on amd64 and arm64, into one `.tar.gz` for each platform, and writes `SHA256SUMS` with the digest of each. The files go on the repository's GitHub Releases page.
 - **Checksums only, before the gate.** No release is signed until the real roots are adopted and drilled ([ADR 0006](/decisions/0006-release-keys-and-the-keyring-package/#no-signed-release-before-the-gate)). Until then a consumer's trust in a build is the digest it pinned, not a signature.

@@ -16,7 +16,7 @@ Four key stores behind one ceremony: software, PIV, the OpenPGP card and AWS KMS
 | **M1: Hand-off and software roots** | A system that holds intermediates gets a certified intermediate or a bound subkey from a software root, through the hand-off contract, and the signed root list and CA bundle it checks them with. | The Go module and CLI skeleton. The ceremony engine and its records: plan, confirm, reserve, sign, verify, record. The software store and software-root mode, passing the contract's vectors. The signed root list and the CA bundle, passing their vectors. |
 | **M2: Hardware and cloud roots** | The same ceremonies with the roots on two cards or in an AWS KMS root account, with proof of where every key lives, and a way to revoke an intermediate certificate. | The `piv` store (both root keys in PIV slots, the slot map, the attestation bundle). The `aws-kms` store (the root account, the read-only role for other accounts). The ceremony commands, with the [CRL](/reference/crl/) each root signs and `intermediate revoke`. |
 | **M3: Transitions and trust products** | A root can be replaced without breaking anyone, and outsiders get standard artifacts. Ends with **the real roots adopted and the adoption drill passed.** | Root add, retire and revoke, with the yearly root extension and renewal by re-signing. The [SSH CA key list](/reference/ssh-ca-key-list/), with the `ssh-ca-key` hand-off request and the break-glass SSH CA. The [keyring package](/reference/keyring-package/) builder. The release-key guide and its verifier tests. The lost-card drill. Root adoption on the two cards, and the adoption drill. |
-| **M4: Wizards, personal OpenPGP and teaching** | Adopting ritueel is guided, and the teaching material is complete. | The CLI wizard and the localhost web wizard. The `openpgp-card` store and personal OpenPGP: a daily subkey born on the card, bound by a software primary. One guide per transition. The remaining drills. |
+| **M4: Wizards, personal OpenPGP and teaching** | Adopting ritueel is guided, and the teaching material is complete. | The CLI wizard and the localhost web wizard, both faces of the one ceremony engine ([ADR 0007](/decisions/0007-ritueel-teaches-and-its-tools-simplify-the-ceremonies/)). The software backends 1Password ([issue #59](https://github.com/truvity/ritueel/issues/59)) and the OS keyring ([issue #60](https://github.com/truvity/ritueel/issues/60)). The `openpgp-card` store and personal OpenPGP: a daily subkey born on the card, bound by a software primary. One guide per ritual and transition. The remaining drills, with the backup and restore drill. |
 
 ### The gate before the first signed release
 
@@ -32,7 +32,7 @@ No release is signed until the real roots exist and a drill has shown they can b
 ## After the first version
 
 - Company-wide OpenPGP, with its own decision record. Its first item is the delegation a company root makes, by a domain-scoped trust signature at a ritueel ceremony, to an online certifier.
-- More key stores, each with a record: other clouds, HSMs, TPMs and other cards.
+- More key stores, each arriving with its first real installation: Google Cloud KMS, Azure Key Vault and Nitrokey are planned, then other clouds, HSMs, TPMs and other cards. The site compares them and says which to buy for testing.
 - A post-quantum root ([issue #32](https://github.com/truvity/ritueel/issues/32)).
 
 None of these is planned in detail. Each starts as a decision proposal.
