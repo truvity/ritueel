@@ -1,6 +1,6 @@
 ---
 title: OpenPGP release keys and the keyring
-description: How an OpenPGP root and a board subkey sign releases, what a keyring package carries, how revocation works, and what gpg, sqv, apt and rpm were tested to accept.
+description: How an OpenPGP root and a board subkey sign releases, what a keyring package carries, how revocation works, and what gpg, sqv, apt and rpm accept.
 sidebar:
   order: 4
 ---

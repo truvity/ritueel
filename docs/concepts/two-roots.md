@@ -1,6 +1,6 @@
 ---
 title: Two roots in practice
-description: Why a chain of trust runs two roots at once, what public CAs and Debian do, how clients behave when an intermediate has two certificates, and how the cards alternate.
+description: Why a chain of trust runs two roots at once, what public CAs do, how clients behave when an intermediate has two certificates, and how the cards alternate.
 sidebar:
   order: 3
 ---
