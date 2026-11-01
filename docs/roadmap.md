@@ -5,7 +5,26 @@ description: The milestones of the first version of ritueel, in the order they a
 
 The plan is public and small. Each milestone delivers something a person can use, and each work item is an [issue](https://github.com/truvity/ritueel/issues) with a "done when". Dates are not promised; the order is.
 
-Status on 2026-11-01: design phase. The scope is decided in [ADR 0001](/decisions/0001-scope-roots-and-transitions-systems-like-sluis-hold-intermediates/), the [concepts](/concepts/) are written, and the site is being set up. No milestone is started.
+Status as of 2026-11-01: design phase. There is no code yet, and no milestone is started. The site is live at [ritueel.id](https://ritueel.id), on Worker custom domains with DNSSEC.
+
+What is done, as of 2026-11-01:
+
+- The scope is decided in [ADR 0001](/decisions/0001-scope-roots-and-transitions-systems-like-sluis-hold-intermediates/), and the [concepts](/concepts/) are written.
+- The hand-off contract, version 1, is specified.
+- [ADR 0003](/decisions/0003-ceremonies-plan-confirm-reserve-sign-record-and-the-ritueel-commands/) and [ADR 0004](/decisions/0004-release-keys-primaries-on-the-roots-signing-subkeys-and-the-keyring-package/) are written, with the root decisions.
+- The card spike is done. Its findings: the card is driven as OpenPGP v4.
+- The token key of a system that holds intermediates is certified by its intermediate.
+- A ceremony makes one request for every active primary. A read-only role covers KMS keys in other accounts. A compromised subkey is dropped from the keyring. The commands are `intermediate add`, `replace` and `revoke`. A company KMS root is one root with a replica. There are four pluggable key stores. The Issuer Key ID subpacket is used. Renewing means re-signing. SSH CA key lists are in scope.
+
+Still open, as of 2026-11-01:
+
+- [#46](https://github.com/truvity/ritueel/issues/46): regenerate the test vectors for the decisions of 2026-11-01.
+- [#28](https://github.com/truvity/ritueel/issues/28): research on publication channels.
+- [#15](https://github.com/truvity/ritueel/issues/15): the keyring builder, including older `rpm` versions and archives.
+- [#24](https://github.com/truvity/ritueel/issues/24): the requirements catalogue.
+- The touch-policy test on the card.
+
+ADR 0003 and ADR 0004 stay `Proposed` until these are done. The code starts with the CLI skeleton ([#10](https://github.com/truvity/ritueel/issues/10)) and the software-root mode ([#8](https://github.com/truvity/ritueel/issues/8)).
 
 ## The first version
 
