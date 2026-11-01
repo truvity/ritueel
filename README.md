@@ -2,7 +2,7 @@
 
 ritueel keeps the roots of trust: the X.509 CA roots and OpenPGP primary keys that every other key depends on. It creates them, vouches for the next one, overlaps the old and the new, supersedes, revokes, and runs the ceremonies where a person is present. It is open source (MIT), written in Go, and a teaching product: the site at [ritueel.id](https://ritueel.id) explains the model before the tools do it for you.
 
-> **Status: design phase.** There is no release yet. The scope is decided ([ADR 0001](docs/decisions/0001-scope-roots-and-transitions-systems-like-sluis-hold-intermediates.md)), the concepts are written, and the first version is planned in the [roadmap](docs/roadmap.md). The work items are the open [issues](https://github.com/truvity/ritueel/issues).
+> **Status as of 2026-11-01: design phase.** There is no release and no code yet. The site is live at [ritueel.id](https://ritueel.id). The scope is decided ([ADR 0001](docs/decisions/0001-scope-roots-and-transitions-systems-like-sluis-hold-intermediates.md)), the concepts are written, the hand-off contract is specified, and ADR 0003 and ADR 0004 are Proposed. The first version is planned in the [roadmap](docs/roadmap.md). The work items are the open [issues](https://github.com/truvity/ritueel/issues).
 
 ## The problem
 
