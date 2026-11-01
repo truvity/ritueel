@@ -1,6 +1,6 @@
 ---
 title: Reference
-description: The specifications of ritueel: hand-off contract, root list, SSH CA key list, CRLs, ceremony files, directory, commands and the keyring package.
+description: The specifications of ritueel, with the hand-off contract, root list, SSH CA key list, CRLs, ceremony files, directory, commands and the keyring package.
 sidebar:
   label: Overview
   order: 0
