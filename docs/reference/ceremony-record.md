@@ -16,7 +16,7 @@ Every ceremony writes four kinds of file into [the directory](/reference/directo
 | `records/<ceremony>.json` | Step 6, record | What was checked, signed and written. |
 | `transcripts/<ceremony>.txt` | Step 6, record | What ritueel printed. |
 
-`<ceremony>` is the ceremony's name: its time as `YYYYMMDDThhmmssZ` in UTC, a hyphen, and the command with its words joined by hyphens, for example `20261115T120000Z-intermediate-add`. The time is the plan's `ceremony_time`.
+`<ceremony>` is the ceremony's name: its time as `YYYYMMDDThhmmssZ` in UTC, a hyphen, and the command with its words joined by hyphens, for example `20261115T120000Z-intermediate-add`. The time is the plan's `ceremony_time`, or for a closing record of `records close`, which has no plan, the time it is written.
 
 ## Common rules
 
@@ -89,7 +89,7 @@ ritueel creates the file only if it does not exist (exclusive create), writes it
 | `plan_sha256` | The plan digest. Absent in a closing record, which has no plan of its own. |
 | `prev_record_sha256` | The SHA-256 of the record before it in the chain. Absent in the first record of the directory, and only there. |
 | `started_at`, `finished_at` | When the attempt was written, and when the record was. |
-| `root`, `root_reason` | As in the plan. |
+| `root`, `root_reason` | As in the plan. Absent in a closing record. |
 | `slot_map_version` | For a root on a card: the version of the slot map ([ADR 0003](/decisions/0003-key-stores-and-the-card-layer/#the-piv-store-and-the-root-cards)). Absent for a software root. |
 | `confirmation` | `{ "by", "at" }`: `typed` or `flag`, and when. |
 | `limit_shown` | `init` only: true, because `init` prints the [accepted limit](/decisions/0002-key-custody-every-key-is-born-in-its-store-two-root-cards-or-one-kms-root-and-a-replica/#the-accepted-limit). |
