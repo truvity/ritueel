@@ -39,4 +39,4 @@ The master key's revocation certificate is made when the key is born and kept ap
 
 ## Where ritueel fits
 
-ritueel creates the master key in its store, makes the revocation certificate, binds the subkeys, including onto a card, extends the expiry each year and builds the keyring package. How to use the subkeys day to day, for SSH, for git and for releases, is in the guides on [using OpenPGP in practice](/guides/).
+ritueel creates the master key in its store, makes the revocation certificate, binds the subkeys, including onto a card, extends the expiry each year and builds the keyring package. How to use the subkeys day to day is in the guides: [SSH login](/guides/openpgp-ssh-authentication/), [signing git commits and tags](/guides/openpgp-sign-git/), [signing releases](/guides/openpgp-sign-releases/), and [OpenPGP or Sigstore](/guides/openpgp-and-sigstore/).

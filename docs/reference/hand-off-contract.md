@@ -117,7 +117,7 @@ No `evidence`. A software key proves nothing about where it lives. The certifier
 |---|---|
 | Basic constraints | Critical. `cA` true, path length 0. |
 | Key usage | Critical. `keyCertSign` is required. `cRLSign` and `digitalSignature` may be added. |
-| Name constraints | Critical. At least one permitted subtree. |
+| Name constraints | Critical. At least one permitted subtree. (Planned: permitted and excluded DNS subtrees and excluded IP ranges as policy, beyond the URI hosts the policy can list today.) |
 | Extended key usage | Optional. |
 
 Any other extension is refused with `policy`.

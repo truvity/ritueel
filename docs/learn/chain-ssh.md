@@ -47,4 +47,4 @@ Because hosts hold the CA's public key directly, rotating a CA key means updatin
 
 ## Where ritueel fits
 
-ritueel holds the break-glass SSH CA offline, like a root, and publishes the signed **SSH CA key list** ([reference](/reference/ssh-ca-key-list/)). The CA keys that issue day-to-day certificates stay with the system that holds them. An OpenPGP authentication subkey can also serve as an SSH key; see [chain OpenPGP](/learn/chain-openpgp/) and the guide on using it.
+ritueel holds the break-glass SSH CA offline, like a root, and publishes the signed **SSH CA key list** ([reference](/reference/ssh-ca-key-list/)). The CA keys that issue day-to-day certificates stay with the system that holds them. An OpenPGP authentication subkey can also serve as an SSH key; see [the OpenPGP chain](/learn/chain-openpgp/) and the [guide](/guides/openpgp-ssh-authentication/).

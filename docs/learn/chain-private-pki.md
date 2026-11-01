@@ -22,7 +22,7 @@ A break in one environment should not reach the others. If staging has its own i
 **Name constraints** are how an intermediate is limited. The intermediate's certificate says which names it may issue for, for example only `*.staging.example.com`. A client that follows the constraint rejects a certificate for any other name, even if the signature is valid. Two cautions:
 
 - The constraint is only as good as the client's support. Test it with every library and platform you use, and treat a client that ignores it as a reason to keep the intermediate narrow in other ways too.
-- A constraint is set at the ceremony. ritueel's policy can require name constraints on every X.509 intermediate it signs ([the policy](/reference/directory/#ritueelyaml)), and refuse a request that is wider than the allowed hosts.
+- A constraint is set at the ceremony. ritueel's policy can require name constraints on every X.509 intermediate it signs ([the policy](/reference/directory/#ritueelyaml)), and refuse a request that is wider than the allowed hosts. Today the policy can list URI hosts only; permitted and excluded DNS subtrees, and excluded IP ranges, are planned, because an intermediate that issues for DNS names and one environment that must not reach another need them.
 
 Other limits worth setting: a path length of zero below the intermediate, and extended key usage so that a server-authentication intermediate cannot sign client certificates.
 
