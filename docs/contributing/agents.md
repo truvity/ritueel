@@ -35,7 +35,7 @@ When several agents work on one change, each has one role, and the roles stay se
 | docs | docs, `README`, `CONTRIBUTING.md`, `AGENTS.md`, `CLAUDE.md`, the agent files in `.claude/` | keeps the pages and the agent wiring in step with the change |
 | devops | CI workflows in `.github/workflows/`, the repository checks in `tools/checks/`, the `Justfile`, `devbox.json`, release configuration | keeps the checks and the release path working |
 
-The review agent of [GOVERNANCE.md](https://github.com/truvity/ritueel/blob/main/GOVERNANCE.md) is a different agent from the one that wrote the change. For Claude Code the roles are defined in `.claude/agents/`, and the common tasks have skills in `.claude/skills/` that point back to these pages.
+The review agent of [GOVERNANCE.md](https://github.com/truvity/ritueel/blob/main/GOVERNANCE.md) is a different agent from the one that wrote the change. For Claude Code the roles are defined in `.claude/agents/`, and the common tasks have skills in `.claude/skills/` that point back to these pages: `docs-page`, `teaching-page`, `new-decision`, `open-pr`, `site-change` and `maintainer-script`.
 
 ## What an agent reports
 

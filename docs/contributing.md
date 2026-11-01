@@ -15,6 +15,7 @@ Read the page for what you are about to do, then do it.
 |---|---|
 | create a branch, commit, push, open a pull request or answer a review | [Branches and pull requests](/contributing/workflow/) |
 | run a build, a test or a check, or add a tool | [Tools, checks and verification](/contributing/tools/) |
+| answer a design question, or judge a new page or feature against the mission | [How we design](/contributing/design/) |
 | propose, write or rewrite a decision record | [Decision records](/contributing/decisions/) |
 | run a spike or write up research | [Spikes and research](/contributing/research/) |
 | create or edit a page of this site | [Pages and writing](/contributing/pages/) |

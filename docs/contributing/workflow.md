@@ -24,15 +24,29 @@ sidebar:
 
 ## One topic per pull request
 
-- Keep a pull request to one change. Do not stack pull requests on each other.
+- Keep a pull request to one change. Do not stack pull requests on each other: with rebase-only merging, every merge changes the commits under the next pull request, and a stack collapses (four stacked pull requests once became one). Put dependent work in one linear pull request, one commit per part.
 - A change comes with its tests and its documentation in the same pull request. Changes to a file format, a stored record or the hand-off contract also keep the compatibility rules in [GOVERNANCE.md](https://github.com/truvity/ritueel/blob/main/GOVERNANCE.md).
 - Open a draft pull request early if you want feedback. Mark it ready when the checks are green.
-- Rebase onto the current `main` before you ask for the merge. A green pull request on a stale base can still break `main`.
-- After someone has reviewed the branch, do not rewrite the commits they read. Add commits instead, and let the rebase merge tidy them; rebase only to catch up with `main`.
+- Be on the current `main` before you ask for the merge. A green pull request on a stale base can still break `main`. If `main` moved, rebuild the branch (below).
+- After someone has reviewed the branch, do not rewrite the commits they read. Add commits instead, and let the rebase merge tidy them.
+- Two pull requests that change the same generated file collide when merged back to back. Run the generator again on the second branch after the first lands.
+
+## Rebuild instead of rewriting
+
+Merging is by rebase only, so history is linear and a branch holds no merge commit ("This branch can't be rebased" is the sign of one). Never force-push. When `main` moved under your pull request, or the branch has a merge commit, rebuild it:
+
+1. Fetch, and make a new branch off the current `origin/main`.
+2. Bring the work over with `git cherry-pick <commits>`, or with `git diff <base> <head> | git apply -3` and a new commit.
+3. Push the new branch and open a new pull request that links the old one.
+4. Close the old pull request with a pointer to the new one.
 
 ## Merging
 
-Merge is by rebase. The maintainer merges. An agent working for the maintainer may merge its own pull request when the checks are green and review is done: `gh pr merge <n> --rebase --admin --match-head-commit <sha>`, with the sha of the commit the checks ran on. It never merges another author's pull request. The rule is in the review rules of [GOVERNANCE.md](https://github.com/truvity/ritueel/blob/main/GOVERNANCE.md).
+Merge is by rebase, and the maintainer merges: a review is required, so the maintainer merges as an administrator. An agent does not merge, and never uses `--admin` or any other way past a required check or review. It ends its work with the pull request URL, the head sha the checks ran on and the CI result. The maintainer then merges with `gh pr merge <n> --rebase --match-head-commit <sha>` (and `--admin` where the required review is theirs to give), so that what was reviewed is what lands. Another push makes the sha stale: report the new one.
+
+### After the merge
+
+"Merged" is not "done". When the maintainer has merged, check the runs that follow on `main`: the `Site` workflow and its `deploy` job (`gh run list --workflow site.yaml --branch main --limit 3`), then, if the change touches the site, the `curl` checks of [Changing the site](/contributing/pages/#changing-the-site), including that every moved page answers 301. Report the result.
 
 ## Commits
 
@@ -53,8 +67,21 @@ Green CI is the merge gate: a pull request with a red or a skipped required chec
 ## Review
 
 - Every pull request is reviewed by the maintainer and by the review agent ([GOVERNANCE.md](https://github.com/truvity/ritueel/blob/main/GOVERNANCE.md)).
-- Before you push again, read every comment on the pull request, from reviewers and from review bots, and answer or fix each one in the same push.
+- Before you push again, read every comment on the pull request, from reviewers and from review bots (cubic, GitHub code scanning), and answer or fix each one in the same push.
+- Every thread is read, and fixed or answered with the reason, before the maintainer merges. An open bot thread on a pull request you handed over is a defect in the hand-over.
 - Expect questions about tests, edge cases and failure modes. Answer them in the pull request, or fix the code.
 - Reply to every comment, even if only to say "done". Resolve a thread only when the reviewer agrees.
 - Changes to key handling, signing, revocation, trust artifacts or the hand-off contract get a security note in the pull request: what could go wrong, and which test shows it does not.
 - Review comments are about the change, not the person.
+
+## Issues and the board
+
+An agent may open at most a couple of issues itself, and only for a defect or a follow-up it found. Every other write to the board (a bulk create, an edit, a comment, a label, a close) goes into a script that the maintainer runs, written as the `maintainer-script` skill says. The script's contract:
+
+- **Dry run by default,** and `--apply` to write.
+- **Idempotent:** create an issue only when no issue has the exact title; add a comment only when the same text is absent; replace a body only while it still equals the reviewed copy.
+- **Reads over REST** (`gh api repos/...`), because the GraphQL budget is shared by everyone. Pause briefly after each write, and keep an apply log.
+- **Say what failed:** on a failed read, print the real `gh` stderr rather than guessing "rate limit".
+- **Pages stay out of shell variables.** A page of issues is hundreds of kilobytes, and in a shell that exports every variable a value over 128 KiB makes each later `gh` or `jq` start fail with "Argument list too long". Write each page to a temporary file and run `jq` on the file.
+- **Check before creating:** search open and closed issues by title in this repository, and in the sibling repository for a cross-repository item, so the script never opens a duplicate.
+- **Bodies live in files** next to the script. Review the dry-run output, and scan it for private terms, before the maintainer runs it.

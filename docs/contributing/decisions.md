@@ -32,14 +32,22 @@ When in doubt, ask whether any result of the task would make you rewrite the Dec
 
 A record holds the choice, the reasons and the roads not taken. Measurements are cited from a dated page under `docs/research/` ([Spikes and research](/contributing/research/)); formats, file layouts and command tables live under `docs/reference/`. A record of about one screen of decision is the aim.
 
+## State each rule once
+
+A rule lives in one place: in the record that decides it, or in a reference page with test vectors that the record links. Do not restate it in a second record or a page; link to it. Two statements of one rule drift apart, and the reader cannot tell which is true. When a record needs a rule from another, name the record and the section.
+
+Judge a proposal against the mission first ([How we design](/contributing/design/#the-mission-is-the-test)): a record that makes a tool decide for the person, or skips the teaching, is reworked before it is written.
+
 ## Roads not taken
 
-Every record keeps the options it did not take: one line each, saying what the option would have given, what it costs, and why it lost. Git keeps the text that was merged, not the reasoning that was dropped, so this part is required and is never cut to make a record shorter.
+Every record keeps the options it did not take: one line each, saying what the option would have given, what it costs, and why it lost. Git keeps the text that was merged, not the reasoning that was dropped, so this part is required and is never cut to make a record shorter. The same goes for a research page and a reference page that settles a choice.
 
 ## Changing a record
 
-- **Until the first release (design phase),** a record is rewritten in place, merged with another, renumbered or removed, so that the set stays small and current. The earlier text stays in git history. When a record's address changes, add a line to `site/public/_redirects` from the old address to the new one, and update every link to it.
-- **From the first release on,** records are append-only. A changed mind gets a new record that supersedes the old one, and the old status line says so (`Superseded by NNNN`, or `Accepted; amended by NNNN`). Typos and links may be fixed in place.
+- **Until the first release (design phase),** a record is rewritten in place, merged with another, renumbered or removed, so that the set stays small and current. The earlier text stays in git history. When a record's address changes, add a line to `site/public/_redirects` from the old address to the new one in the same pull request, update every link to it, and check after the deploy that the old address answers 301 ([Changing the site](/contributing/pages/#changing-the-site)). Do not amend a record with a note that the design phase would rather absorb.
+- **From the first release on,** records are append-only. A changed mind gets a new record that supersedes the old one, and the old status line says so (`Superseded by NNNN`, or `Accepted; amended by NNNN`). The decision is never edited; typos and links may be fixed in place. A number is never reused.
+
+The first release is the line between the two. Which side a record is on is the maintainer's to say when it is not clear.
 
 ## What CI checks
 

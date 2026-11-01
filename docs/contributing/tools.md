@@ -67,6 +67,15 @@ An AI agent's shell may reset its working directory between calls, so a `cd` in 
 
 Never run `go mod init` or `go get` outside the repository: in the wrong directory they create or change a module that is not this one.
 
+## Local work
+
+- **Work in your own place.** Use a fresh clone or a worktree under your scratch area ([Branches and pull requests](/contributing/workflow/#one-change-one-worktree-one-branch)). Never work inside someone else's checkout, and do not `cd` into it.
+- **Run the narrow recipes,** `just check-rules`, `just site-lint` and `just site-build`, and leave the rest to GitHub CI, which runs the full gate on every pull request. Say which you ran.
+- **If `just` is not on `PATH`,** run `devbox run -c <dir> -- just <recipe>`, with `<dir>` the absolute path of the clone.
+- **If `yarn` fails with `EXDEV`** in a scratch area, set `YARN_GLOBAL_FOLDER` to a folder on the same filesystem as the clone.
+- **Do not print a token, a password or a secret.** Read a credential file when the command runs; do not echo it, and do not paste its value into a command line you show.
+- **A deletion that a safety check refuses is left to the maintainer,** with the exact command in your report ([AI agents](/contributing/agents/#safety-tooling)).
+
 ## Hardware tokens and cloud keys
 
 Tests that use a hardware token, a smart card, a security key or a cloud key use dedicated test devices and test keys only, never a device or a key someone uses for real work. Select the test device by its serial number, never by "the first one found", and reset it to its factory state when the test is done. Cloud tests use a dedicated test account and keys that are deleted afterwards. A serial number, an account id or a key id is not written into the repository.
