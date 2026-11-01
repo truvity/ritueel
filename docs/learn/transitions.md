@@ -2,7 +2,7 @@
 title: Moving from one root to another
 description: How a new root takes over from an old one without breaking anyone, with create, vouch, overlap, supersede and revoke, and what outsiders install.
 sidebar:
-  order: 10
+  order: 19
 ---
 
 *Design phase: this page teaches the model. The tools that carry out each step are planned; see the [roadmap](/roadmap/).*

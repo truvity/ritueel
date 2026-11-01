@@ -2,7 +2,7 @@
 title: OpenPGP release keys and the keyring
 description: How an OpenPGP root and an intermediate's subkey sign releases, what a keyring package carries, and what a revocation reaches in gpg, sqv, apt and rpm.
 sidebar:
-  order: 12
+  order: 21
 ---
 
 *Design phase: this page teaches the model of [ADR 0006](/decisions/0006-release-keys-and-the-keyring-package/). No release is signed until the card roots exist and the adoption drill has run. The measurements are in [the verifier matrix](/research/openpgp-verifier-matrix-2026-11/).*

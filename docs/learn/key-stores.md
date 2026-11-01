@@ -2,7 +2,7 @@
 title: Where a key lives
 description: Key stores compared in the open, with software and its backends, YubiKey PIV and OpenPGP card, AWS KMS and planned stores, and what each protects and costs.
 sidebar:
-  order: 7
+  order: 12
 ---
 
 *Design phase: this page teaches the trade-offs. None of the stores is built yet; a store is called supported only after it is proven on real hardware or a real account ([ADR 0003](/decisions/0003-key-stores-and-the-card-layer/)). The first version targets software, PIV, the OpenPGP card and AWS KMS. The measurements behind the card choices are in [Card libraries and tooling](/research/card-libraries-and-tooling-2026-11-01/).*
@@ -19,41 +19,20 @@ One rule holds for every store ([principle 1](/principles/)): **a key is born in
 | **Where the key is** | A passphrase-protected file on a disk you control. | An item in a 1Password vault, synced between your devices. | The system keyring: Secret Service on Linux, Keychain on macOS, Credential Manager on Windows. | A PIV slot of a hardware token. | The OpenPGP applet of a card. | The service. You ask it to sign. |
 | **Can it be copied?** | Yes. A backup is a copy. | Yes, by anyone who can unlock the vault. Sync makes copies on each device. | Yes, by programs running as you, once the keyring is unlocked. | No. | No. | No, but the service can keep a replica. |
 | **Protects against** | A casual thief who finds the file, if the passphrase is strong. | Loss of one device. Theft of one device that is locked. | Theft of a powered-off, encrypted disk. | Theft of the computer, and a copy of the key by malware. | The same. | Theft of a computer, loss of a card. Gives an audit trail. |
-| **Does not protect against** | Malware that reads the file and the passphrase. A copy anywhere. | Malware on an unlocked device. A compromised account. On Linux, any program of the same user can reach the app. | Malware, or any program of the same user, usually with no prompt. It is often synced or backed up. There is no copy of its own: a lost laptop is a lost key. | Loss, fire, a thief who has the PIN and the token. | The same. | A locked or compromised account. A deleted key after the waiting period. |
+| **Does not protect against** | Malware that reads the file and the passphrase. A copy anywhere. | Malware on an unlocked device. A compromised account. | Malware, or any program of the same user. A lost laptop is a lost key: there is no copy. | Loss, fire, a thief who has the PIN and the token. | The same. | A locked or compromised account. A deleted key after the waiting period. |
 | **Redundancy** | More copies, which raises the chance of theft. | The sync, which is the replication. Protects against loss only. | None. | A second, independent card. | A second, independent card. | A replica in another Region. |
 | **What "present" means** | The passphrase. | Unlocking the vault. | The user session. | Possession, PIN and a touch. | Possession and PIN, and a touch if set. | Cloud permissions, plus what you add: a role that needs multi-factor authentication. |
 | **Proof of where it lives** | None. | None. | None. | An attestation certificate from the token. | An attestation from the card. | The key's description and policy, read from the service. |
 | **Cost** | Free. | A subscription you probably have. | Free. | A token, bought twice. | A card, bought twice. | Per key and per use; an account to secure. |
-| **Good for** | Drills, tests, development. | A drill that survives a lost laptop; an encrypted copy of an intermediate's key or a subkey. Not a home for a root. | A throw-away test key. Not for a key others rely on. | The root keys; a service's intermediate. | A person's daily subkeys. | A company root; a service's intermediate. |
+| **Good for** | Drills, tests, development. | A person's own key; a drill that survives a lost laptop. | Trying ritueel out. Not for a key others rely on. | The root keys; a service's intermediate. | A person's daily subkeys. | A company root; a service's intermediate. |
 
 ## The software stores in detail
 
 **The encrypted file** is the simplest and the weakest. It is right for a drill, a test root and a development setup, and for a test harness that needs a root on day one. A backup of it is another copy, which is exactly the danger. A software root never anchors a signed release.
 
-**1Password is the proposed persistent store for software keys.** The key goes straight from memory into a vault item, so it is never a file on disk. The vault syncs between your devices, which gives you what a single file cannot: a lost laptop does not lose the key. That is redundancy against loss, and as ever it does not protect against compromise. What to know before you choose it (read from the vendor's documentation and white paper, 2026-11-01):
+**1Password is the proposed persistent store for software keys.** The key goes straight from memory into a vault item, so it is never a file on disk. The vault syncs between your devices, which gives you what a single file cannot: a lost laptop does not lose the key. That is redundancy against loss, and as ever it does not protect against compromise: whoever unlocks the vault has the key. Use a vault only you can open, with a strong account password and secret key, and do not keep the vault unlocked while you are away. ritueel never sees your account password.
 
-- **The key is exportable by design.** Whoever can unlock the item gets every byte. The vendor's own threat statement says malware that can read memory while the app is unlocked can extract secrets.
-- **It is synced to the vendor's cloud and to every signed-in device,** so the key is not offline.
-- **On Linux, any process started by your user can connect to the app's socket,** and a command-line session stays authorised for up to 10 minutes idle and 12 hours in all. On macOS and Windows the app checks the caller's code signature.
-- **A shared vault is not rotated when a member leaves:** removing a member is not cryptographically enforced, and on team plans a recovery group can reach every vault.
-- **Recovery needs the account password and the Secret Key.** The vendor cannot recover data if both are lost, and the Emergency Kit that holds the Secret Key is itself a secret.
-- **The item type matters.** An SSH Key item accepts only Ed25519 and RSA, not ECDSA P-384, so ritueel stores its key in a Document item or a Secure Note.
-
-This is the current recommendation: use 1Password for the software keys of **test roots, intermediates and subkeys,** and for **passphrases of keys that are already encrypted.** For a production root or an OpenPGP master key, use a pair of hardware tokens, or a cloud key with a replica. Use a vault only you can open, and lock the app when you step away. ritueel never sees your account password.
-
-**The operating system's keyring can be insecure, and ritueel says so every time.** It is offered through [github.com/zalando/go-keyring](https://github.com/zalando/go-keyring) (v0.2.8, read 2026-11-01) because it is already there and needs no account. The warning ritueel shows reads:
-
-> WARNING: the OS keyring is not a safe home for a root or master key. Any program running as your user can usually read it without a prompt, it is often synced or backed up, and it cannot be made non-exportable. Use it only for a throwaway test key or for the passphrase of an already encrypted key. Keep real root keys offline, on a hardware token or in an HSM.
-
-The details behind it:
-
-| System | What backs it | What to know |
-|---|---|---|
-| Linux | The Secret Service over the D-Bus session bus (GNOME Keyring, or KWallet if it offers that interface). | The library opens a plain session, so the secret crosses the bus unencrypted. Any program on the session bus can ask an unlocked collection. A headless server without a session bus has no keyring, and ritueel refuses to fall back to a file. |
-| macOS | The login Keychain, through the `security` tool. | The secret is base64, which is not encryption. About 3000 bytes fit. A program of the same user that can run `security` may read it while the keychain is unlocked (not confirmed on a Mac). |
-| Windows | The Credential Manager. | A secret above 2560 bytes is refused. Programs of the same user can read generic credentials. |
-
-An armoured OpenPGP secret key is about 1 KB, so it fits all three; size is not the reason to avoid it. ritueel puts the warning in the ceremony record too.
+**The operating system's keyring can be insecure, and ritueel says so every time.** It is offered through [github.com/zalando/go-keyring](https://github.com/zalando/go-keyring) because it is already there and needs no account. But on many systems, once you are logged in and the keyring is unlocked, any program running as you can ask it for the key, and there is no copy: a dead disk is a dead key. Choose it to try ritueel out, or for a key whose loss you can survive. Do not choose it for a root other people trust. ritueel refuses to fall back to a file when no keyring is available, and puts the warning in the ceremony record.
 
 ## Hardware and cloud stores in plain words
 
@@ -71,9 +50,9 @@ These are not supported and not scheduled. Each arrives with its first real inst
 
 | Store | Why it is interesting | What has to be measured first |
 |---|---|---|
-| Google Cloud KMS | The same model as AWS KMS in another provider. It signs a SHA-384 digest with P-384 at the HSM level and documents an attestation that a key was made in the HSM. About 2.50 USD per HSM key per month (computed from list prices, 2026-11-01). | Signing a real certificate and a real OpenPGP signature, importing a P-384 key, and how a key in another project is read. |
-| Azure Key Vault | The same model for a company on Azure. P-384 signing with a supplied hash. A Premium HSM-protected key costs about 5 USD per month for the first 250 keys, and a Managed HSM about 2,300 USD per month (Azure price API, West Europe, 2026-11-01). No key attestation was found. | The signature encoding (probably raw r and s, which needs conversion), and the difference between the vault and a Managed HSM. |
-| Nitrokey | Hardware with open firmware, at about 65 EUR for a Nitrokey 3 (shop, 2026-11-01). The Nitrokey 3 has an OpenPGP card with P-384 and touch confirmation, and a PIV applet with P-384 since firmware 1.8.2. **It could not attest a key** in either: the PIV applet answers the attestation command with "function not supported", and no attestation was found in the OpenPGP code (read from its source, 2026-11-01). A ceremony with it has no hardware evidence. | Per-key touch policy for PIV, behaviour with the PIV and OpenPGP card libraries, and how it matures. |
+| Google Cloud KMS | The same model as AWS KMS in another provider, for a company that does not use AWS. | What the key attestation and the policy can prove, signing with P-384, and how a key in another project is read. |
+| Azure Key Vault | The same, for a company on Azure. | The same questions, and the difference between the vault and a managed HSM. |
+| Nitrokey | Hardware with open firmware, as an alternative to YubiKey. | Which model supports PIV, the OpenPGP card or both, with which algorithms, and whether it can attest a key. |
 | Other tokens and HSMs | A company may already own them. | Whatever the first real installation needs. |
 
 A page on which keys to buy for testing the hardware stores follows with the research behind it.
