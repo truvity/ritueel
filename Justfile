@@ -25,8 +25,20 @@ site-lint:
     site/scripts/check-descriptions.mjs
 
 # Every link in the built site, internal and external (lychee.toml). Needs `just site-build`.
+# Each try is bounded to 4 minutes (a normal run takes well under one), is verbose so that
+# the log names the link it stopped at, and a try that hit the bound is repeated, twice. A run
+# that ends in lychee's own failure (a dead link) is not repeated.
 site-links:
-    lychee --config lychee.toml --root-dir "$PWD/site/dist" --no-progress 'site/dist/**/*.html'
+    #!/usr/bin/env bash
+    set -euo pipefail
+    for attempt in 1 2 3; do
+      rc=0
+      timeout --foreground 240 lychee --config lychee.toml --root-dir "$PWD/site/dist" --no-progress -v 'site/dist/**/*.html' || rc=$?
+      [ "$rc" -eq 124 ] || exit "$rc"
+      echo "site-links: lychee did not finish in 240 s (try $attempt of 3)" >&2
+    done
+    echo "site-links: lychee did not finish in 3 tries" >&2
+    exit 1
 
 # What a pull request must pass for the site.
 site-check: site-lint site-build site-links
