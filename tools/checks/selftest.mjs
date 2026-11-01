@@ -205,6 +205,22 @@ expect('a root list changed after signing', 'vectors', rlWith('lists/seq7-a.json
 expect('a CA bundle with another trust sequence', 'vectors', rlWith('bundles/ca-bundle-7.pem', (t) => t.replace('trust-sequence: 7', 'trust-sequence: 6')), 'fail', { has: ['bundle ca-bundle-7: the first line'] });
 expect('a root pin that is not the certificate\'s key', 'vectors', rlWith('manifest.json', (t) => t.replace(/"x509_spki_sha256": "[0-9a-f]{64}"/, `"x509_spki_sha256": "${hex('other')}"`)), 'fail', { has: ['root A: x509_spki_sha256 is not the SPKI hash'] });
 
+// ---- SSH CA key list and CRL vectors: the committed sets, copied, then broken one way at a time
+const copyOf = (set) => {
+  const dir = join(repo, 'testdata', set, 'v1');
+  return Object.fromEntries(execFileSync('git', ['-C', dir, 'ls-files', '-z'], { encoding: 'utf8' }).split('\0').filter(Boolean)
+    .map((p) => [`testdata/set/v1/${p}`, readFileSync(join(dir, p))]));
+};
+const edited = (set, path, edit) => ({ ...set, [`testdata/set/v1/${path}`]: edit(set[`testdata/set/v1/${path}`].toString('utf8')) });
+const ssh = copyOf('ssh-ca-keys');
+expect('an SSH CA key list set that matches its manifest', 'vectors', ssh, 'pass', { has: ['vector files, no errors'] });
+expect('an SSH CA key list changed after signing', 'vectors', edited(ssh, 'lists/seq7-a.json', (t) => t.replace('"sequence":7', '"sequence":8')), 'fail', { has: ['list seq7-a: the signature does not verify'] });
+expect('a user keys file that is not the list\'s', 'vectors', edited(ssh, 'files/ssh-user-ca-keys-7.pub', (t) => t.replace('trust-sequence: 7', 'trust-sequence: 6')), 'fail', { has: ['is not the user keys of seq7-a'] });
+const crl = copyOf('crl');
+expect('a CRL set that matches its manifest', 'vectors', crl, 'pass', { has: ['vector files, no errors'] });
+expect('a CRL whose number is not the manifest\'s', 'vectors', edited(crl, 'manifest.json', (t) => t.replace('"number": 7,', '"number": 9,')), 'fail', { has: ['the CRL number is 7, not 9'] });
+expect('a revocation case the CRL does not bear out', 'vectors', edited(crl, 'manifest.json', (t) => t.replace('"expect": "revoked"', '"expect": "good"')), 'fail', { has: ['lists ca-a-1, but the case expects good'] });
+
 rmSync(scratch, { recursive: true, force: true });
 if (failures) {
   console.error(`selftest: ${failures} of ${cases} cases failed`);

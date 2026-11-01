@@ -38,7 +38,7 @@ The effects below appear during an overlap and whenever a cross-certificate exis
 
 - **A server presents one chain.** The chain holds the leaf and one certificate of the intermediate, issued by one root. Do not put both certificates of the intermediate in the same chain.
 - **Path building differs between libraries.** The OpenSSL command line takes the first intermediate whose name matches and does not try the other one if that path fails; Go backtracks and tries both. The same family of bug is why OpenSSL 1.0.x broke when [a cross-signed root expired in 2021](https://openssl-library.org/post/2021-09-13-letsencryptrootcertexpire/): it preferred the chain it was sent over a valid path through its own trust store. A verifier that uses the OpenSSL command line should pass the chain it wants explicitly, or the root that matches it.
-- **A revocation list is per issuer.** A client may build the path through either root, so it may ask for either list. A root that has no revocations would still publish an empty, current list.
+- **A revocation list is per issuer.** A client may build the path through either root, so it may ask for either list. A root that has no revocations still publishes an empty, current list. Each root signs its [CRL](/reference/crl/) only when it signs, about every second year, so a CRL is valid for 25 months and the other root's is carried unchanged.
 
 ## The limit you accept
 

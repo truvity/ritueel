@@ -33,8 +33,8 @@ The first root ceremony on the two cards, with attestation, and the adoption dri
 ### The keyring package
 
 - **Contents.** For every active primary, its complete public certificate: the primary, the release identity, its self-signatures, every subkey ever bound with its binding, and the soft revocations. Nothing else: no encryption subkey, no third-party certification.
-- **Name and version.** `<name>-keyring`, version `<year>.<sequence>`, where the sequence is the trust sequence of [0005](/decisions/0005-trust-products-the-root-list-the-ca-bundle-the-ssh-ca-key-list-and-the-trust-sequence/). The file layout is in [the keyring package reference](/reference/keyring-package/).
-- **Built by ritueel, deterministically,** without `dpkg-deb` or `rpmbuild`: the same directory gives the same bytes.
+- **Name and version.** `<name>-keyring`, version `<year>.<sequence>`, where the sequence is the trust sequence of [0005](/decisions/0005-trust-products-the-root-list-the-ca-bundle-the-ssh-ca-key-list-and-the-trust-sequence/). The file layout, the build and verify steps and the installer matrix are in [the keyring package reference](/reference/keyring-package/).
+- **Built by ritueel, deterministically,** without `dpkg-deb` or `rpmbuild`: the same directory gives the same bytes. The builder reads its output back with a checker of its own (`keyring verify`), and a pipeline can run the same checker on a package it received.
 - **Not signed or published by ritueel.** The user's repository signs it like every other file, with the current subkey, so a package that adds a primary is signed by an old key, which is how an existing keyring accepts the new one.
 - **Users verify with the keyring,** never with one primary's certificate, because a subkey may be bound by either.
 - **Where it is published, first version.** The keyring package goes in the user's own repository. The primaries' fingerprints are published on the project's site and in its security file. Keyservers, WKD and DNS `OPENPGPKEY` wait for a consumer.
@@ -73,4 +73,4 @@ Sigstore and build provenance say how a file was built; OpenPGP says who vouches
 ## Follow-ups
 
 - Research the publication channels beyond the first version and the verification tools, for the guide ([#28](https://github.com/truvity/ritueel/issues/28)).
-- Test older rpm releases and a combined armoured file, and choose the archive writer by the criteria above ([#15](https://github.com/truvity/ritueel/issues/15)).
+- Measure the oldest rpm releases that import the per-primary key files and verify a signature by the P-384 subkey, which sets the floor of rpm support, and choose the archive writer by the criteria above ([#15](https://github.com/truvity/ritueel/issues/15)).

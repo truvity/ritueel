@@ -1,0 +1,333 @@
+{
+  "crl": 1,
+  "clock": "2026-11-15T12:00:00Z",
+  "roots": [
+    {
+      "label": "A",
+      "certificate": "pki/test-root-a.pem",
+      "x509_spki_sha256": "9cc5ca24fa7585ded1a51bea532e30c1e7d291dd5dffac6ebed1ae855577ac4a"
+    },
+    {
+      "label": "B",
+      "certificate": "pki/test-root-b.pem",
+      "x509_spki_sha256": "4d09f15759ad0d3d43448134513c9f4805532098d3ccd8ad0837f66d8a2fec24"
+    },
+    {
+      "label": "Z",
+      "certificate": "pki/test-root-z.pem",
+      "x509_spki_sha256": "f32279c9eb24daad9e325695e4b30296489ba6492c0c3f512366285abb4333e2"
+    }
+  ],
+  "certs": [
+    {
+      "id": "ca-a-1",
+      "file": "certs/ca-a-1.pem",
+      "issuer": "A",
+      "serial": "dcda0660d7d2fcd93990bda093aba5c0fef376"
+    },
+    {
+      "id": "ca-b-1",
+      "file": "certs/ca-b-1.pem",
+      "issuer": "B",
+      "serial": "4a3b825cd201532d4fa5488e7e228e1c96ea5d"
+    }
+  ],
+  "crls": [
+    {
+      "id": "a-seq7-empty",
+      "signer": "A",
+      "file": "crls/a-seq7-empty.pem",
+      "number": 7,
+      "this_update": "2026-11-15T12:00:00Z",
+      "next_update": "2028-12-15T12:00:00Z",
+      "revoked": []
+    },
+    {
+      "id": "b-seq6-empty",
+      "signer": "B",
+      "file": "crls/b-seq6-empty.pem",
+      "number": 6,
+      "this_update": "2025-11-15T12:00:00Z",
+      "next_update": "2027-12-15T12:00:00Z",
+      "revoked": []
+    },
+    {
+      "id": "a-seq8-revokes",
+      "signer": "A",
+      "file": "crls/a-seq8-revokes.pem",
+      "number": 8,
+      "this_update": "2026-12-01T12:00:00Z",
+      "next_update": "2029-01-01T12:00:00Z",
+      "revoked": [
+        {
+          "serial": "dcda0660d7d2fcd93990bda093aba5c0fef376",
+          "reason": "keyCompromise"
+        }
+      ]
+    },
+    {
+      "id": "a-seq7-revokes",
+      "signer": "A",
+      "file": "crls/a-seq7-revokes.pem",
+      "number": 7,
+      "this_update": "2026-11-15T12:00:00Z",
+      "next_update": "2028-12-15T12:00:00Z",
+      "revoked": [
+        {
+          "serial": "dcda0660d7d2fcd93990bda093aba5c0fef376",
+          "reason": "keyCompromise"
+        }
+      ]
+    },
+    {
+      "id": "z-seq8",
+      "signer": "Z",
+      "file": "crls/z-seq8.pem",
+      "number": 8,
+      "this_update": "2026-12-01T12:00:00Z",
+      "next_update": "2029-01-01T12:00:00Z",
+      "revoked": []
+    },
+    {
+      "id": "a-seq8-tampered",
+      "signer": "A",
+      "file": "crls/a-seq8-tampered.pem",
+      "number": 8,
+      "this_update": "2026-12-01T12:00:00Z",
+      "next_update": "2029-01-01T12:00:00Z",
+      "revoked": [
+        {
+          "serial": "dcda0660d7d2fcd93990bda093aba5c0fef376",
+          "reason": "keyCompromise"
+        }
+      ]
+    },
+    {
+      "id": "a-seq5-expired",
+      "signer": "A",
+      "file": "crls/a-seq5-expired.pem",
+      "number": 5,
+      "this_update": "2024-09-15T12:00:00Z",
+      "next_update": "2026-10-15T12:00:00Z",
+      "revoked": []
+    },
+    {
+      "id": "a-seq9-not-yet-valid",
+      "signer": "A",
+      "file": "crls/a-seq9-not-yet-valid.pem",
+      "number": 9,
+      "this_update": "2027-01-01T12:00:00Z",
+      "next_update": "2029-02-01T12:00:00Z",
+      "revoked": []
+    },
+    {
+      "id": "a-seq8-critical-extension",
+      "signer": "A",
+      "file": "crls/a-seq8-critical-extension.pem",
+      "number": 8,
+      "this_update": "2026-12-01T12:00:00Z",
+      "next_update": "2029-01-01T12:00:00Z",
+      "revoked": []
+    },
+    {
+      "id": "a-seq8-sha256",
+      "signer": "A",
+      "file": "crls/a-seq8-sha256.pem",
+      "number": 8,
+      "this_update": "2026-12-01T12:00:00Z",
+      "next_update": "2029-01-01T12:00:00Z",
+      "revoked": []
+    }
+  ],
+  "cases": [
+    {
+      "id": "first-crl",
+      "held": null,
+      "candidate": "a-seq7-empty",
+      "roots": [
+        "A",
+        "B"
+      ],
+      "expect": "accept"
+    },
+    {
+      "id": "first-crl-of-the-other-root",
+      "held": null,
+      "candidate": "b-seq6-empty",
+      "roots": [
+        "A",
+        "B"
+      ],
+      "expect": "accept"
+    },
+    {
+      "id": "the-other-roots-crl-a-year-on",
+      "held": null,
+      "candidate": "b-seq6-empty",
+      "roots": [
+        "A",
+        "B"
+      ],
+      "clock": "2027-11-15T12:00:00Z",
+      "expect": "accept"
+    },
+    {
+      "id": "update",
+      "held": "a-seq7-empty",
+      "candidate": "a-seq8-revokes",
+      "roots": [
+        "A",
+        "B"
+      ],
+      "clock": "2026-12-01T12:00:00Z",
+      "expect": "accept"
+    },
+    {
+      "id": "same-crl-again",
+      "held": "a-seq7-empty",
+      "candidate": "a-seq7-empty",
+      "roots": [
+        "A",
+        "B"
+      ],
+      "expect": "accept"
+    },
+    {
+      "id": "rollback",
+      "held": "a-seq8-revokes",
+      "candidate": "a-seq7-empty",
+      "roots": [
+        "A",
+        "B"
+      ],
+      "clock": "2026-12-01T12:00:00Z",
+      "expect": "refuse",
+      "reason": "rollback"
+    },
+    {
+      "id": "same-number-different-content",
+      "held": "a-seq7-empty",
+      "candidate": "a-seq7-revokes",
+      "roots": [
+        "A",
+        "B"
+      ],
+      "expect": "refuse",
+      "reason": "sequence-conflict"
+    },
+    {
+      "id": "unknown-signer",
+      "held": null,
+      "candidate": "z-seq8",
+      "roots": [
+        "A",
+        "B"
+      ],
+      "clock": "2026-12-01T12:00:00Z",
+      "expect": "refuse",
+      "reason": "unknown-signer"
+    },
+    {
+      "id": "signed-by-a-revoked-root",
+      "held": null,
+      "candidate": "a-seq8-revokes",
+      "roots": [
+        "B"
+      ],
+      "clock": "2026-12-01T12:00:00Z",
+      "expect": "refuse",
+      "reason": "unknown-signer"
+    },
+    {
+      "id": "tampered",
+      "held": null,
+      "candidate": "a-seq8-tampered",
+      "roots": [
+        "A",
+        "B"
+      ],
+      "clock": "2026-12-01T12:00:00Z",
+      "expect": "refuse",
+      "reason": "signature-invalid"
+    },
+    {
+      "id": "expired",
+      "held": null,
+      "candidate": "a-seq5-expired",
+      "roots": [
+        "A",
+        "B"
+      ],
+      "expect": "refuse",
+      "reason": "expired"
+    },
+    {
+      "id": "not-yet-valid",
+      "held": null,
+      "candidate": "a-seq9-not-yet-valid",
+      "roots": [
+        "A",
+        "B"
+      ],
+      "expect": "refuse",
+      "reason": "not-yet-valid"
+    },
+    {
+      "id": "critical-extension",
+      "held": null,
+      "candidate": "a-seq8-critical-extension",
+      "roots": [
+        "A",
+        "B"
+      ],
+      "clock": "2026-12-01T12:00:00Z",
+      "expect": "refuse",
+      "reason": "malformed"
+    },
+    {
+      "id": "sha-256-signature",
+      "held": null,
+      "candidate": "a-seq8-sha256",
+      "roots": [
+        "A",
+        "B"
+      ],
+      "clock": "2026-12-01T12:00:00Z",
+      "expect": "refuse",
+      "reason": "malformed"
+    },
+    {
+      "id": "held-crl-expired",
+      "held": "a-seq7-empty",
+      "candidate": null,
+      "roots": [
+        "A",
+        "B"
+      ],
+      "clock": "2029-01-01T00:00:00Z",
+      "expect": "warn",
+      "warning": "expired"
+    }
+  ],
+  "revocation": [
+    {
+      "id": "listed",
+      "cert": "ca-a-1",
+      "crl": "a-seq8-revokes",
+      "clock": "2026-12-01T12:00:00Z",
+      "expect": "revoked"
+    },
+    {
+      "id": "not-listed",
+      "cert": "ca-a-1",
+      "crl": "a-seq7-empty",
+      "expect": "good"
+    },
+    {
+      "id": "other-root-not-listed",
+      "cert": "ca-b-1",
+      "crl": "b-seq6-empty",
+      "expect": "good"
+    }
+  ]
+}

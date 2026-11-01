@@ -1,6 +1,6 @@
 ---
 title: Hand-off contract, version 1
-description: What a system that holds intermediate keys sends ritueel for a certificate or a subkey binding, and what comes back. Files, proofs, checks, refusals, vectors.
+description: What a system that holds intermediate keys sends ritueel for a certificate, a subkey binding or an SSH CA key listing, and what comes back. Checks and vectors.
 sidebar:
   order: 1
 ---
@@ -15,8 +15,9 @@ A system that holds intermediate keys, called the **requester** on this page, an
 |---|---|---|
 | X.509 intermediate (`x509-intermediate`) | A PKCS#10 certificate request, and a proof file | A certificate, and a result file |
 | OpenPGP signing subkey (`openpgp-subkey`) | The public subkey and its back-signatures (one for every active primary) as OpenPGP packets, and a proof file | The subkey bound by a primary, as OpenPGP packets, and a result file |
+| SSH CA key (`ssh-ca-key`) | The public key as an OpenSSH line, an SSH signature by that key, and a proof file | A result file: the key is on the next [SSH CA key list](/reference/ssh-ca-key-list/) |
 
-The key is made where it will live (a YubiKey slot, a card's OpenPGP applet, an AWS KMS key, or a file in development) and never leaves. Only public keys, signatures and certificates travel. The proof file says where the key lives and carries the evidence for it.
+The key is made where it will live (a YubiKey slot, a card's OpenPGP applet, an AWS KMS key, or a file in development) and never leaves. Only public keys, signatures and certificates travel. The proof file says where the key lives and carries the evidence for it. An SSH CA key is not certified: a host trusts it by being given its public key, so ritueel lists it instead.
 
 ## Messages and files
 
@@ -26,9 +27,11 @@ A message is a set of files that share a **stem**, a name the requester chooses:
 |---|---|
 | X.509 request | `<stem>.csr.pem`, `<stem>.proof.json` |
 | OpenPGP request | `<stem>.subkey.pgp`, `<stem>.proof.json` |
+| SSH CA key request | `<stem>.sshca.pub`, `<stem>.sshca.sig`, `<stem>.proof.json` |
 | Answer, always | `<stem>.result.json` |
 | X.509 answer, issued | `<stem>.cert.pem` |
 | OpenPGP answer, issued | `<stem>.bound.pgp` |
+| SSH CA key answer, issued | None: the key is on the list, and the result file says so |
 
 **JSON files** are one UTF-8 object, with no byte order mark and no more than 256 KiB. A member name appears once. A member this page does not define is an error, not something to skip. Numbers are integers. A time is `YYYY-MM-DDThh:mm:ssZ` in UTC (RFC 3339, whole seconds). A digest is SHA-256 in lower-case hexadecimal. A certificate or a public key inside JSON is standard Base64 (RFC 4648, with padding) of its DER encoding, as in the `x5c` member of a JSON Web Signature (RFC 7515, section 4.1.6).
 
@@ -39,6 +42,7 @@ A message is a set of files that share a **stem**, a name the requester chooses:
 - Every JSON file has the member `handoff`, an integer. This page is version `1`.
 - A receiver that does not know the version refuses the message with `version-unsupported` and reads nothing else in it.
 - The answer carries the version of the request it answers. A requester refuses an answer whose version is not the one it sent.
+- **The types.** `x509-intermediate`, `openpgp-subkey` and `ssh-ca-key` are all version 1. A receiver that does not know a type refuses it with `malformed`. While no certifier or requester has been released, version 1 is rewritten in place, as the third type was on 2026-11-01; from the first release, a new type is a new version.
 - Any change to a member, a rule, a profile or a reason code that can turn an accepted message into a refused one, or the reverse, is a new version. A rewording that changes no outcome in the test vectors is not.
 - **The compatibility window.** A release of the certifier states the versions it reads. It drops a version only in a major release, and not earlier than 24 months after the first release that read its successor. The reason is the yearly cadence: a requester installed a year ago must still be understood at its next ceremony, and a second year covers a missed one.
 - The test vectors are versioned with the contract (`testdata/hand-off/v1/`). A change to a vector that flips its outcome is a new contract version.
@@ -50,12 +54,13 @@ A message is a set of files that share a **stem**, a name the requester chooses:
 | Member | Required | Meaning |
 |---|---|---|
 | `handoff` | yes | The contract version, `1`. |
-| `type` | yes | `x509-intermediate` or `openpgp-subkey`. |
-| `request_sha256` | yes | SHA-256 of the request: the DER of the CSR, or the bytes of the `.subkey.pgp` file. It binds the proof to its request and catches a swapped pair of files. |
+| `type` | yes | `x509-intermediate`, `openpgp-subkey` or `ssh-ca-key`. |
+| `request_sha256` | yes | SHA-256 of the request: the DER of the CSR, the bytes of the `.subkey.pgp` file, or the bytes of the `.sshca.pub` file. It binds the proof to its request and catches a swapped pair of files. |
 | `store` | yes | Where the key lives: `piv` (a PIV applet, as on a YubiKey), `openpgp-card`, `aws-kms` or `software`. |
 | `evidence` | for `piv`, `openpgp-card` and `aws-kms`, absent for `software` | The proof, as below. |
 | `primaries` | for `openpgp-subkey` only | The fingerprints (40 hexadecimal digits each, version 4) of every active primary on the signed root list the requester read, in the order of that list. |
 | `capabilities` | for `openpgp-subkey` only | The list `["sign"]`. Version 1 binds signing subkeys. |
+| `use` | for `ssh-ca-key` only | `user` or `host`: whether the key will sign SSH certificates for users or for hosts. One key does one; a host that trusts user CAs is not made to trust host CAs. |
 
 ### `piv`
 
@@ -246,6 +251,48 @@ A verifier then needs nothing from ritueel. The first set of vectors was checked
 
 Every version 4 signature ritueel writes, and every back-signature it accepts, carries **both** the Issuer Fingerprint subpacket (type 33, hashed) and the Issuer Key ID subpacket (type 16, unhashed). go-crypto v1.5.2 writes a version 4 signature with the fingerprint only, and `gpg` 2.2.27 rejects a certificate made of such signatures on import, so a signature without the key ID is not safe to ship (measured 2026-11-01). The rule is in [ADR 0006](/decisions/0006-release-keys-and-the-keyring-package/#the-keys) too.
 
+## SSH CA key
+
+An SSH CA key signs SSH certificates, for users or for hosts. ritueel does not certify it, because there is nothing to certify: an SSH host trusts a CA key by being given its public key. What ritueel does, at a ceremony and after the checks below, is **list** the key on the signed [SSH CA key list](/reference/ssh-ca-key-list/), which hosts read the way they read the root list.
+
+### The request
+
+`<stem>.sshca.pub` is the public key as OpenSSH writes it: one line, `ecdsa-sha2-nistp384 <Base64>`, a newline, and nothing else (no comment, no options). Version 1 accepts no other key type. The key is ECDSA on P-384 (RFC 5656), because a PIV slot and a KMS key sign with it and neither signs with Ed25519; it is also the algorithm of the rest of the contract.
+
+`<stem>.sshca.sig` is the proof of possession: an SSH signature (SSHSIG, OpenSSH's `PROTOCOL.sshsig`) in its armoured form, made by that key over the bytes of `<stem>.sshca.pub`, in the namespace `ssh-ca-key@ritueel.id`, with the hash algorithm `sha512` and an empty reserved string. For a key `ssh-keygen` can reach, it is what `ssh-keygen -Y sign -n ssh-ca-key@ritueel.id -f KEY` writes. For a key in a PIV slot or in KMS the requester builds the same blob and has the device sign its digest, which is the SHA-384 the device signs for every other type. The namespace keeps a signature made for another purpose from being taken for this one.
+
+The proof file has `type` `ssh-ca-key`, `store`, `evidence` as for the other types, `use`, and no `primaries` or `capabilities`. `request_sha256` is the SHA-256 of the bytes of `<stem>.sshca.pub`.
+
+### What the certifier checks
+
+The same ten checks and codes as for X.509, with these differences.
+
+| # | For an SSH CA key |
+|---|---|
+| 4 | The key is `ecdsa-sha2-nistp384`. An Ed25519 or RSA key is refused with `algorithm-unsupported`. |
+| 5 | `<stem>.sshca.sig` is a valid SSHSIG by the key in the request, in the namespace above, over the bytes of `<stem>.sshca.pub`. Anything else, including another namespace, is `possession-invalid`. |
+| 6 | The store is `piv`, `aws-kms` or `software`, and the policy allows it. An `openpgp-card` key is refused with `store-not-allowed` for this type: a person's daily card is not an SSH CA. |
+| 7, 8 | As for X.509: the attested key of a PIV slot, or the key KMS returns, is the key in the request. |
+| 9 | Reference policy: the rules of X.509 that do not concern a certificate (firmware, PIN policy, the KMS key policy), and `use` is the `use` of the intermediate's entry in the certifier's configuration. A `use` other than `user` or `host` is `malformed`. |
+
+### What is listed
+
+On confirmation the certifier adds the key to the SSH CA key list of the ceremony, under the name of the intermediate in its configuration, with the `use` asked. If that intermediate already has a key on the list, the new key replaces it: that is the event path of an intermediate whose key changes. The list is signed in the same ceremony, so the answer carries the trust sequence of the list that holds the key. Nothing else is written for the requester.
+
+`<stem>.result.json` has `outcome` `issued`, an empty `artifacts` list, `valid_from` (the ceremony time), no `valid_until` (a key stays on the list until a ceremony withdraws it; the list has its own expiry), `issuer` (the SHA-256 of the DER `SubjectPublicKeyInfo` of the root that signed the list) and `trust_sequence`.
+
+### What the requester checks before it relies on it
+
+| Check | Code |
+|---|---|
+| The version, and `request_sha256`, as for X.509. | `version-unsupported`, `request-mismatch` |
+| It holds an SSH CA key list that its own checks accepted and whose `sequence` is at least `trust_sequence`. | `issuer` |
+| That list holds its public key, under the name of its intermediate. | `key-mismatch` |
+| The entry has the `use` it asked for. | `profile` |
+| `artifacts` is empty, and the digests and members of `result.json` are well formed. | `malformed` |
+
+The requester reads the list from where the operator publishes it, with the host rules of [its page](/reference/ssh-ca-key-list/#how-a-host-reads-it); the answer does not carry it. A key is withdrawn when a ceremony publishes a list without it, and hosts stop trusting it when they take that list. No revocation signature exists for an SSH CA key, and certificates it already signed stay valid to a host that still holds the key.
+
 ## The answer
 
 `<stem>.result.json`:
@@ -255,9 +302,9 @@ Every version 4 signature ritueel writes, and every back-signature it accepts, c
 | `handoff`, `type`, `request_sha256` | As in the request. `request_sha256` is the digest of the request that was answered. |
 | `outcome` | `issued` or `refused`. |
 | `reasons` | When refused: a list of one or more codes from the table below. |
-| `artifacts` | When issued: a list of `{ "name", "sha256" }`, one for each file of the answer other than this one. |
-| `valid_from`, `valid_until` | The validity that was issued. |
-| `issuer` | For X.509, the SHA-256 of the DER `SubjectPublicKeyInfo` of the issuing root. For OpenPGP, the fingerprint of the primary. |
+| `artifacts` | When issued: a list of `{ "name", "sha256" }`, one for each file of the answer other than this one. Empty for an SSH CA key. |
+| `valid_from`, `valid_until` | The validity that was issued. An SSH CA key has `valid_from` only. |
+| `issuer` | For X.509, the SHA-256 of the DER `SubjectPublicKeyInfo` of the issuing root. For OpenPGP, the fingerprint of the primary. For an SSH CA key, the SHA-256 of the DER `SubjectPublicKeyInfo` of the root that signed the list. |
 | `trust_sequence` | The sequence number of the trust set (root list, CA bundle and keyring) that the answer belongs to. The requester must hold a root list at least this recent before it installs. |
 
 A refused answer holds no artifacts and no secret. The codes:
@@ -278,18 +325,18 @@ A refused answer holds no artifacts and no secret. The codes:
 
 The answer does not say which part of a policy failed. The certifier's output and its ceremony record do.
 
-**Trust products.** The CA bundle, the keyring and the signed root list are not part of this contract, and the certifier publishes them as it does for everyone ([ADR 0005](/decisions/0005-trust-products-the-root-list-the-ca-bundle-the-ssh-ca-key-list-and-the-trust-sequence/)). The contract fixes one thing about them: they carry the **trust sequence**, one integer that grows by one each time any of them changes, and `trust_sequence` in the answer says which one the answer needs. The root list's own format, and the CA bundle's, are in [the root list reference](/reference/root-list/), with vectors made from the same test roots as these.
+**Trust products.** The CA bundle, the keyring, the signed root list, the SSH CA key list and the CRLs are not part of this contract, and the certifier publishes them as it does for everyone ([ADR 0005](/decisions/0005-trust-products-the-root-list-the-ca-bundle-the-ssh-ca-key-list-and-the-trust-sequence/)). The contract fixes one thing about them: they carry the **trust sequence**, one integer that grows by one each time any of them changes, and `trust_sequence` in the answer says which one the answer needs. The root list's own format, and the CA bundle's, are in [the root list reference](/reference/root-list/), the SSH CA key list's in [its reference](/reference/ssh-ca-key-list/), and the CRLs in [theirs](/reference/crl/), each with vectors made from the same test roots as these.
 
 ## What the certifier records
 
-The ceremony record ([its format](/reference/ceremony-record/#the-record), [issue #9](https://github.com/truvity/ritueel/issues/9)) gets, for each request: the digests of the request and the proof; the store; the fingerprint of the key; for a YubiKey the serial, firmware, PIN and touch policy and form factor read from the attestation; for KMS the ARN, the key's description and the digest of its policy; the policy that was applied; the result and the digests of the artifacts. It never holds a PIN, a passphrase or a key. The record does not decide anything on this page.
+The ceremony record ([its format](/reference/ceremony-record/#the-record), [issue #9](https://github.com/truvity/ritueel/issues/9)) gets, for each request: the digests of the request and the proof; the store; the fingerprint of the key; for a YubiKey the serial, firmware, PIN and touch policy and form factor read from the attestation; for KMS the ARN, the key's description and the digest of its policy; for an SSH CA key its fingerprint and `use`; the policy that was applied; the result and the digests of the artifacts. It never holds a PIN, a passphrase or a key. The record does not decide anything on this page.
 
 ## Test vectors
 
 The vectors are in [`testdata/hand-off/v1/`](https://github.com/truvity/ritueel/tree/main/testdata/hand-off/v1). They are public material only: CSRs, certificates, public subkeys, signatures and JSON files. Every key was made in software by [`generate.py`](https://github.com/truvity/ritueel/blob/main/testdata/hand-off/generate.py), and its private half was never written down. The attestation hierarchy is a made-up "Example Test" hierarchy, not the maker's, and the certifier's roots are test roots.
 
 - `manifest.json` lists every case with its files, the policy configuration it runs under, and the expected outcome and reason. A test in the Go code will read it ([issue #7](https://github.com/truvity/ritueel/issues/7), done when).
-- `pki/` holds the pinned test attestation root and intermediates (one for the PIV applet, one for the OpenPGP applet), and the certifier's test roots: A and B are on the signed root list, each an X.509 root and an OpenPGP primary, as on two root cards; Z is on no list. The roots follow the [root profiles](/reference/directory/#the-root-certificate). The signed root list of trust sequence 7, which every answer here carries, is `seq7-a` in [the root list vectors](/reference/root-list/#test-vectors).
+- `pki/` holds the pinned test attestation root and intermediates (one for the PIV applet, one for the OpenPGP applet), and the certifier's test roots: A and B are on the signed root list, each an X.509 root and an OpenPGP primary, as on two root cards; Z is on no list. The roots follow the [root profiles](/reference/directory/#the-root-certificate). The signed root list of trust sequence 7, which every answer here carries, is `seq7-a` in [the root list vectors](/reference/root-list/#test-vectors), and the SSH CA key list of that sequence, which the answers of type `ssh-ca-key` name in their `ssh_ca_key_list` member, is `seq7-a` or `seq7-b` in [its vectors](/reference/ssh-ca-key-list/#test-vectors).
 - The clock of every vector is `2026-11-15T12:00:00Z`. A test fixes its clock to that time, so the vectors do not expire.
 - Every case is confirmed by the person at the ceremony, except one marked `"confirmation": "declined"`: the person declines it at check 10, and the certifier answers `declined` ([Declining](/reference/ceremony-record/#declining)).
 - Two configurations: `production` (a PIV, OpenPGP-card or KMS key; software refused) and `development` (software allowed). Both use the reference policy above, and both list the read-only role for the one other account the KMS vectors use (`kms_read_roles`).
@@ -301,8 +348,12 @@ The vectors are in [`testdata/hand-off/v1/`](https://github.com/truvity/ritueel/
 | X.509 answers | A PIV key, a KMS key, a software key, an answer from the other root. | Another key, path length 1, expired, an issuer that is not on the root list. |
 | OpenPGP requests | A PIV key, a KMS key, an OpenPGP-card key, a software key; each with a back-signature for both active primaries. | No back-signature; one for only one primary; one over a primary not on the list, of type `0x18`, damaged, or without the issuer key ID; version 2; a primary not on the list; `primaries` missing an active one; an attested key that is not the subkey; an untrusted OpenPGP-card chain; an Ed25519 subkey. |
 | OpenPGP answers | A PIV key, a KMS key, an OpenPGP-card key, a software key, a binding by the other primary. | No embedded back-signature, another subkey, a primary not on the list, an expiry of two months. |
+| SSH CA key requests | A PIV key for users, a KMS key for hosts, a software key in development. | Software in production, an OpenPGP-card key, a signature over other bytes, a signature in another namespace, an Ed25519 key, version 2, a proof for another request, an unknown member, `use` missing or `both`, an attested key that is not the request's, an untrusted attestation chain, PIN policy never, a KMS key that is not the request's, a KMS policy that names two actors. |
+| SSH CA key answers | A key on the list, a list signed by the other root. | A key not on the list, listed with the other use, a list older than `trust_sequence`. |
 
-CI checks that the manifest names every file of the set, that every file it names is in the repository, and that the digests in the proofs and results match their files (`just check-vectors`).
+A request of type `ssh-ca-key` is `<case>.sshca.pub` with `<case>.sshca.sig`, and `ssh-keygen -Y check-novalidate -n ssh-ca-key@ritueel.id -s <case>.sshca.sig < <case>.sshca.pub` accepts every one except the two that are refused for their signature (OpenSSH 10.2p1, checked 2026-11-01).
+
+CI checks that the manifest names every file of the set, that every file it names is in the repository, that the digests in the proofs and results match their files, and that an answer of type `ssh-ca-key` names a list of the SSH CA key list vectors (`just check-vectors`).
 
 A certifier passes when its outcome and reason code match the manifest for every request; a requester passes when its decision and code match for every answer. The vectors fix the outcome and the code, not the wording of a message.
 
@@ -318,6 +369,9 @@ The choices that had a real alternative, with the reason each alternative lost.
 | KMS key in another account | The certifier assumes a small read-only role inside the key's account (`DescribeKey`, `GetPublicKey`, `GetKeyPolicy`) and reads the key and its policy as a same-account caller | Grant the certifier's principal access in the key policy, which `GetKeyPolicy` does not honour across accounts; accept a snapshot of the description in the proof and mark it unverified; apply the policy rule to same-account keys only. | A copy is a claim, and the contract's rule is that the certifier reads the key itself. Only a role in the key's account can read the policy, so the rule is checked for every key. |
 | Certificate file | The issued certificate only; the root is named in `result.json`. | The chain with the root included. | A root in a file invites trusting it. |
 | Who decides validity and constraints | The certifier decides validity. The requester asks for constraints in the CSR, and the certifier issues them exactly or refuses. | The certifier overrides the request; the requester asks for validity. | Silent change is the failure to avoid: the requester then installs something it did not ask for. |
+| Third request type in version 1 | `ssh-ca-key`, added to version 1 in place. | Contract version 2 for the new type; a separate contract for SSH. | Nothing has been released, so there is no receiver that version 1 could surprise, and a version that had to be read next to version 1 for 24 months would cost every reader a second code path for no one. The rule that a new type is a new version starts with the first release. |
+| Proof of possession of an SSH CA key | An SSHSIG signature over the request file, in a fixed namespace. | A self-signed SSH certificate; a signature in a made-up format; none, since the ceremony compares fingerprints. | `ssh-keygen -Y check-novalidate` verifies it, so a requester and a certifier can both be tested with a tool people already have, and a card or KMS key signs its digest as for every other type. A certificate would carry validity and principals that mean something else. Comparing fingerprints proves nothing about possession. |
+| An SSH CA key enters the list | By a request, a proof and a ceremony, like every other key. | The operator edits the list; a request that carries the list entry. | A key that is listed without a check of where it lives is the one place the contract's evidence rules would not apply, and a hand-edited list would be a second way to change what hosts trust. |
 | OpenPGP request | The subkey and a back-signature for every active primary, plus the proof naming the primaries. | One primary per request, with a second request for the second root; the whole primary certificate in the request. | Either root card can make the binding, with no second request, and the requester need not know whose year it is. The certifier already holds the primaries. Cost: one more signature in the request for each active primary. |
 
 ## Follow-ups
@@ -336,6 +390,9 @@ The choices that had a real alternative, with the reason each alternative lost.
 | [RFC 7093](https://datatracker.ietf.org/doc/html/rfc7093) | The key identifiers. |
 | [RFC 9580](https://datatracker.ietf.org/doc/html/rfc9580) | OpenPGP packets, signature types `0x18` and `0x19`, subpackets. |
 | [RFC 7515](https://datatracker.ietf.org/doc/html/rfc7515) | The `x5c` precedent for certificates in JSON. |
+| [RFC 5656](https://datatracker.ietf.org/doc/html/rfc5656) | `ecdsa-sha2-nistp384` public keys and signatures in SSH. |
+| OpenSSH `PROTOCOL.sshsig` | The SSH signature format of the proof of possession of an SSH CA key. |
+| OpenSSH `PROTOCOL.certkeys` | What an SSH CA key signs: user and host certificates. |
 | [RFC 4648](https://datatracker.ietf.org/doc/html/rfc4648) | Base64. |
 | The maker's PIV attestation documentation | The extension arc `1.3.6.1.4.1.41482.3` and the attestation chain. The encodings above were measured on 2026-10-31. |
 | AWS KMS API | `DescribeKey`, `GetPublicKey`, `GetKeyPolicy`, `Sign`. |

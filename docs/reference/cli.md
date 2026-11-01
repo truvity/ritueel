@@ -15,13 +15,15 @@ sidebar:
 | `ritueel yearly` | The yearly ceremony: renews every registered intermediate by re-signing, with the root of the year, extends that root, and publishes the next trust sequence. | Yes |
 | `ritueel intermediate add NAME --request STEM` | Registers an intermediate and certifies its first request. | Yes |
 | `ritueel intermediate replace NAME` | The event path: certifies a new key for a registered intermediate. `--revoke` also revokes the old one, with a reason. | Yes |
-| `ritueel intermediate revoke NAME` | Revokes the certificate and subkey binding of an intermediate, with a reason, without a replacement. | Yes |
+| `ritueel intermediate revoke NAME` | Revokes the certificate and subkey binding of an intermediate, or withdraws its SSH CA key, with a reason (`--reason compromise`, `superseded` or `cessation`), without a replacement. It lists the intermediate's unexpired certificates on the [CRL](/reference/crl/) of each root that issued them, so it needs those roots' cards. | Yes |
 | `ritueel root add` | Creates a new root in a store and has an existing root vouch for it. This starts an overlap. | Yes |
 | `ritueel root retire ROOT` | Ends an overlap: removes the root from the next trust products. | Yes |
 | `ritueel root revoke ROOT` | Revokes a lost, stolen or compromised root, and builds the trust products without it. | Yes |
 | `ritueel status` | Lists roots, intermediates, the root list and unresolved attempts, with what expires when. | No |
 | `ritueel handoff check STEM` | Runs every check of the [hand-off contract](/reference/hand-off-contract/) on the request `STEM`, and signs nothing. | No |
 | `ritueel bundle build`, `ritueel keyring build` | Build the CA bundle and the [keyring package](/reference/keyring-package/) from the directory. Same directory, same bytes. | No |
+| `ritueel root-list verify`, `ssh-ca-keys verify`, `crl verify`, `keyring verify` | The host's and the relying party's side of each trust product: run its checks on a file, signing and writing nothing. | No |
+| `ritueel ssh-ca break-glass ROOT` | Makes the break-glass SSH CA of a root that was made before ritueel made one at `init` and `root add`, and lists it. | Yes |
 | `ritueel records list`, `records verify`, `records close` | Read the ceremony records, check their hash chain, and close an unresolved attempt. | `close` only |
 | `ritueel wizard` | A guided front end to the commands above, in the terminal or in a browser on localhost. | Yes |
 
@@ -54,7 +56,7 @@ A PIN is never a flag or an environment variable; the holder types it at the ter
 | 3 | Refused by a check or by the policy. |
 | 4 | Refused by the card or its PIN state. |
 | 5 | Not confirmed. |
-| 10, 11, 12 | `status` only: notice, alert and critical. Intermediates warn at 60, 30 and 14 days, the root list at 60, 30 and 14 days, roots at 6 months, 3 months and 30 days. An unresolved attempt is critical, because it may mean a signature that was made and never recorded. The highest finding wins. |
+| 10, 11, 12 | `status` only: notice, alert and critical. Intermediates warn at 60, 30 and 14 days, the root list, the SSH CA key list and each CRL at 60, 30 and 14 days, roots at 6 months, 3 months and 30 days. An unresolved attempt is critical, because it may mean a signature that was made and never recorded. The highest finding wins. |
 
 ## The first version's commands
 
@@ -82,7 +84,27 @@ M1 builds these, with the software store only ([issue #8](https://github.com/tru
 - **`bundle build`** gives the bytes of `products/<sequence>/ca-bundle.pem` for the newest sequence, and refuses to mix test and real roots.
 - **`root-list verify`** is the host's side: it runs [the host's checks](/reference/root-list/#how-a-host-reads-it) on `FILE` (a `root-list.json`, with its `.jws` beside it) against `--held FILE`, the list the host holds, or `--pin`, its initial pins. `--bundle FILE` also checks a CA bundle against the list. It exits 0 when the list is accepted and 3 with the code when it is refused; a held list that has expired is a warning in the output. It needs no directory.
 
-`yearly`, `intermediate replace` and `revoke`, the `root` commands, `keyring build` and `wizard` come with M2 to M4.
+`yearly`, `intermediate replace` and `revoke`, the `root` commands, `keyring build` and `wizard` come with M2 to M4; the commands of the trust products that come after M1 are below.
+
+## Commands for the trust products after M1
+
+These are the arguments of the commands that build and check the CRLs (M2, [issue #30](https://github.com/truvity/ritueel/issues/30)), the SSH CA key list (M3, [issue #55](https://github.com/truvity/ritueel/issues/55)) and the keyring package (M3, [issue #15](https://github.com/truvity/ritueel/issues/15)). The formats are on [the CRL page](/reference/crl/), [the SSH CA key list page](/reference/ssh-ca-key-list/) and [the keyring package page](/reference/keyring-package/).
+
+| Command | Reads | Writes | Exit codes |
+|---|---|---|---|
+| `ritueel crl verify FILE --bundle FILE [--held FILE] [--cert FILE]` | A CRL, the CA bundle of the roots the party trusts, the CRL it holds and a certificate. | Nothing. | 0, 1, 2, 3 |
+| `ritueel ssh-ca-keys verify FILE (--held FILE \| --root-list FILE) [--user-keys FILE]` | An SSH CA key list, the list the host holds or the root list it holds (with its `.jws`), and the file for sshd. | Nothing. | 0, 1, 2, 3 |
+| `ritueel keyring build --name NAME [--out DIR]` | The roots and the bindings in the directory, and the newest root list. | The packages and plain files, to `products/<sequence>/keyring/` or `DIR`. | 0, 1, 2, 3 |
+| `ritueel keyring verify FILE... --root-list FILE [--dir DIR]` | Packages or plain files, the root list, and the directory. | Nothing. | 0, 1, 2, 3 |
+| `ritueel ssh-ca break-glass ROOT` | The root's entry in the directory. | A break-glass SSH CA in the root's store, its public key `roots/<label>/ssh-break-glass.pub`, and the next trust products. | 0, 1, 2, 3, 4, 5 |
+
+- **`crl verify`** exits 0 when the CRL is accepted and 3 with the code when it is refused; a held CRL that has expired is a warning in the output. With `--cert`, a certificate the CRL lists exits 3 with the code `revoked`. It needs no directory.
+- **`ssh-ca-keys verify`** exits 0 when the list is accepted and 3 with the code, including `user-keys-mismatch` for the file for sshd; it needs no directory.
+- **`keyring build`** refuses to mix test and real roots, as `bundle build` does, and verifies its output before it writes it. A ceremony writes the keyring with its other trust products once the builder exists.
+- **`keyring verify`** exits 0 when every check passes and 3 with the code. Without `--dir` it cannot check what a revocation dropped.
+- **`ssh-ca break-glass`** is a ceremony: it has the plan, the confirmation and the record of every other, and needs the card of `ROOT`.
+
+The codes of the new objects are in the output as `reasons`, like the others; `trust_sequence` and `artifacts` are written by the commands that write trust products.
 
 :::note[Proposed]
 `init` reads a `ritueel.yaml` the operator wrote rather than taking the name, the release address and the policy as flags, so that ritueel never rewrites that file. `--key-dir`, `handoff check --intermediate`, `records close --reason`, `bundle build --out`, `--decline` and the arguments of `root-list verify` are the arguments this page adds to the commands of ADR 0004.
@@ -127,7 +149,7 @@ And these where they apply:
 | `roots` | `init`, `status` | A list of `{ "label", "store", "test", "x509_spki_sha256", "openpgp_fingerprint", "not_after" }`. |
 | `answer` | `intermediate add` | `{ "stem", "outcome", "reasons", "artifacts" }`, as in `result.json`. |
 | `checks` | `handoff check` | A list of `{ "n", "result" }` for checks 1 to 9, where `result` is `passed`, `failed` or `not-run`. |
-| `findings` | `status` | A list of `{ "level", "kind", "name", "expires_at", "days_left" }`: `level` is `notice`, `alert` or `critical`, `kind` is `intermediate`, `root`, `root-list` or `attempt`. |
+| `findings` | `status` | A list of `{ "level", "kind", "name", "expires_at", "days_left" }`: `level` is `notice`, `alert` or `critical`, `kind` is `intermediate`, `root`, `root-list`, `ssh-ca-keys`, `crl` or `attempt`. |
 | `records` | `records list` | A list of `{ "ceremony", "command", "outcome", "sha256" }`, in chain order. |
 
 The members are named with lower-case words and underscores, times and digests are written as in the [hand-off contract](/reference/hand-off-contract/#messages-and-files), and the object is not in canonical form. A new member is not a new version, so a reader ignores a member it does not know; a member renamed, removed or changed in meaning is version 2.

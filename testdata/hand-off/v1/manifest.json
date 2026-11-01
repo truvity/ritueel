@@ -487,6 +487,233 @@
         "requests/pgp-response-request.proof.json"
       ],
       "expect": "accept"
+    },
+    {
+      "id": "ssh-piv-valid",
+      "type": "ssh-ca-key",
+      "config": "production",
+      "files": [
+        "requests/ssh-piv-valid.sshca.pub",
+        "requests/ssh-piv-valid.sshca.sig",
+        "requests/ssh-piv-valid.proof.json"
+      ],
+      "expect": "accept"
+    },
+    {
+      "id": "ssh-kms-valid",
+      "type": "ssh-ca-key",
+      "config": "production",
+      "files": [
+        "requests/ssh-kms-valid.sshca.pub",
+        "requests/ssh-kms-valid.sshca.sig",
+        "requests/ssh-kms-valid.proof.json"
+      ],
+      "expect": "accept",
+      "kms_stub": "requests/ssh-kms-valid.kms-stub.json"
+    },
+    {
+      "id": "ssh-software-valid",
+      "type": "ssh-ca-key",
+      "config": "development",
+      "files": [
+        "requests/ssh-software-valid.sshca.pub",
+        "requests/ssh-software-valid.sshca.sig",
+        "requests/ssh-software-valid.proof.json"
+      ],
+      "expect": "accept"
+    },
+    {
+      "id": "ssh-software-in-production",
+      "type": "ssh-ca-key",
+      "config": "production",
+      "files": [
+        "requests/ssh-software-valid.sshca.pub",
+        "requests/ssh-software-valid.sshca.sig",
+        "requests/ssh-software-valid.proof.json"
+      ],
+      "expect": "refuse",
+      "reason": "store-not-allowed"
+    },
+    {
+      "id": "ssh-openpgp-card",
+      "type": "ssh-ca-key",
+      "config": "production",
+      "files": [
+        "requests/ssh-openpgp-card.sshca.pub",
+        "requests/ssh-openpgp-card.sshca.sig",
+        "requests/ssh-openpgp-card.proof.json"
+      ],
+      "expect": "refuse",
+      "reason": "store-not-allowed"
+    },
+    {
+      "id": "ssh-bad-signature",
+      "type": "ssh-ca-key",
+      "config": "development",
+      "files": [
+        "requests/ssh-bad-signature.sshca.pub",
+        "requests/ssh-bad-signature.sshca.sig",
+        "requests/ssh-bad-signature.proof.json"
+      ],
+      "expect": "refuse",
+      "reason": "possession-invalid"
+    },
+    {
+      "id": "ssh-wrong-namespace",
+      "type": "ssh-ca-key",
+      "config": "development",
+      "files": [
+        "requests/ssh-wrong-namespace.sshca.pub",
+        "requests/ssh-wrong-namespace.sshca.sig",
+        "requests/ssh-wrong-namespace.proof.json"
+      ],
+      "expect": "refuse",
+      "reason": "possession-invalid"
+    },
+    {
+      "id": "ssh-ed25519",
+      "type": "ssh-ca-key",
+      "config": "development",
+      "files": [
+        "requests/ssh-ed25519.sshca.pub",
+        "requests/ssh-ed25519.sshca.sig",
+        "requests/ssh-ed25519.proof.json"
+      ],
+      "expect": "refuse",
+      "reason": "algorithm-unsupported"
+    },
+    {
+      "id": "ssh-version-2",
+      "type": "ssh-ca-key",
+      "config": "production",
+      "files": [
+        "requests/ssh-version-2.sshca.pub",
+        "requests/ssh-version-2.sshca.sig",
+        "requests/ssh-version-2.proof.json"
+      ],
+      "expect": "refuse",
+      "reason": "version-unsupported"
+    },
+    {
+      "id": "ssh-request-mismatch",
+      "type": "ssh-ca-key",
+      "config": "production",
+      "files": [
+        "requests/ssh-request-mismatch.sshca.pub",
+        "requests/ssh-request-mismatch.sshca.sig",
+        "requests/ssh-request-mismatch.proof.json"
+      ],
+      "expect": "refuse",
+      "reason": "request-mismatch"
+    },
+    {
+      "id": "ssh-unknown-member",
+      "type": "ssh-ca-key",
+      "config": "production",
+      "files": [
+        "requests/ssh-unknown-member.sshca.pub",
+        "requests/ssh-unknown-member.sshca.sig",
+        "requests/ssh-unknown-member.proof.json"
+      ],
+      "expect": "refuse",
+      "reason": "malformed"
+    },
+    {
+      "id": "ssh-use-missing",
+      "type": "ssh-ca-key",
+      "config": "production",
+      "files": [
+        "requests/ssh-use-missing.sshca.pub",
+        "requests/ssh-use-missing.sshca.sig",
+        "requests/ssh-use-missing.proof.json"
+      ],
+      "expect": "refuse",
+      "reason": "malformed"
+    },
+    {
+      "id": "ssh-use-both",
+      "type": "ssh-ca-key",
+      "config": "production",
+      "files": [
+        "requests/ssh-use-both.sshca.pub",
+        "requests/ssh-use-both.sshca.sig",
+        "requests/ssh-use-both.proof.json"
+      ],
+      "expect": "refuse",
+      "reason": "malformed"
+    },
+    {
+      "id": "ssh-piv-key-mismatch",
+      "type": "ssh-ca-key",
+      "config": "production",
+      "files": [
+        "requests/ssh-piv-key-mismatch.sshca.pub",
+        "requests/ssh-piv-key-mismatch.sshca.sig",
+        "requests/ssh-piv-key-mismatch.proof.json"
+      ],
+      "expect": "refuse",
+      "reason": "key-mismatch"
+    },
+    {
+      "id": "ssh-piv-untrusted-chain",
+      "type": "ssh-ca-key",
+      "config": "production",
+      "files": [
+        "requests/ssh-piv-untrusted-chain.sshca.pub",
+        "requests/ssh-piv-untrusted-chain.sshca.sig",
+        "requests/ssh-piv-untrusted-chain.proof.json"
+      ],
+      "expect": "refuse",
+      "reason": "proof-invalid"
+    },
+    {
+      "id": "ssh-piv-pin-never",
+      "type": "ssh-ca-key",
+      "config": "production",
+      "files": [
+        "requests/ssh-piv-pin-never.sshca.pub",
+        "requests/ssh-piv-pin-never.sshca.sig",
+        "requests/ssh-piv-pin-never.proof.json"
+      ],
+      "expect": "refuse",
+      "reason": "policy"
+    },
+    {
+      "id": "ssh-kms-key-mismatch",
+      "type": "ssh-ca-key",
+      "config": "production",
+      "files": [
+        "requests/ssh-kms-key-mismatch.sshca.pub",
+        "requests/ssh-kms-key-mismatch.sshca.sig",
+        "requests/ssh-kms-key-mismatch.proof.json"
+      ],
+      "expect": "refuse",
+      "reason": "key-mismatch",
+      "kms_stub": "requests/ssh-kms-key-mismatch.kms-stub.json"
+    },
+    {
+      "id": "ssh-kms-two-actors",
+      "type": "ssh-ca-key",
+      "config": "production",
+      "files": [
+        "requests/ssh-kms-two-actors.sshca.pub",
+        "requests/ssh-kms-two-actors.sshca.sig",
+        "requests/ssh-kms-two-actors.proof.json"
+      ],
+      "expect": "refuse",
+      "reason": "policy",
+      "kms_stub": "requests/ssh-kms-two-actors.kms-stub.json"
+    },
+    {
+      "id": "ssh-response-request",
+      "type": "ssh-ca-key",
+      "config": "development",
+      "files": [
+        "requests/ssh-response-request.sshca.pub",
+        "requests/ssh-response-request.sshca.sig",
+        "requests/ssh-response-request.proof.json"
+      ],
+      "expect": "accept"
     }
   ],
   "responses": [
@@ -667,6 +894,79 @@
       ],
       "expect": "refuse",
       "reason": "validity"
+    },
+    {
+      "id": "ssh-piv-valid",
+      "type": "ssh-ca-key",
+      "request": "ssh-piv-valid",
+      "files": [
+        "responses/ssh-piv-valid.result.json"
+      ],
+      "ssh_ca_key_list": "seq7-a",
+      "expect": "install"
+    },
+    {
+      "id": "ssh-kms-valid",
+      "type": "ssh-ca-key",
+      "request": "ssh-kms-valid",
+      "files": [
+        "responses/ssh-kms-valid.result.json"
+      ],
+      "ssh_ca_key_list": "seq7-a",
+      "expect": "install"
+    },
+    {
+      "id": "ssh-software-valid",
+      "type": "ssh-ca-key",
+      "request": "ssh-software-valid",
+      "files": [
+        "responses/ssh-software-valid.result.json"
+      ],
+      "ssh_ca_key_list": "seq7-a",
+      "expect": "install"
+    },
+    {
+      "id": "ssh-response-other-root",
+      "type": "ssh-ca-key",
+      "request": "ssh-response-request",
+      "files": [
+        "responses/ssh-response-other-root.result.json"
+      ],
+      "ssh_ca_key_list": "seq7-b",
+      "expect": "install"
+    },
+    {
+      "id": "ssh-response-key-not-listed",
+      "type": "ssh-ca-key",
+      "request": "ssh-response-request",
+      "files": [
+        "responses/ssh-response-key-not-listed.result.json"
+      ],
+      "ssh_ca_key_list": "seq7-a-without-key",
+      "expect": "refuse",
+      "reason": "key-mismatch"
+    },
+    {
+      "id": "ssh-response-wrong-use",
+      "type": "ssh-ca-key",
+      "request": "ssh-response-request",
+      "files": [
+        "responses/ssh-response-wrong-use.result.json"
+      ],
+      "ssh_ca_key_list": "seq7-a-wrong-use",
+      "expect": "refuse",
+      "reason": "profile"
+    },
+    {
+      "id": "ssh-response-old-list",
+      "type": "ssh-ca-key",
+      "request": "ssh-response-request",
+      "files": [
+        "responses/ssh-response-old-list.result.json"
+      ],
+      "ssh_ca_key_list": "seq6-b",
+      "expect": "refuse",
+      "reason": "issuer"
     }
   ]
 }

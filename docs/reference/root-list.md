@@ -5,7 +5,7 @@ sidebar:
   order: 4
 ---
 
-*Not built yet. This is version 1 of the format that [ADR 0005](/decisions/0005-trust-products-the-root-list-the-ca-bundle-the-ssh-ca-key-list-and-the-trust-sequence/) leaves to a reference page; the code is [issue #14](https://github.com/truvity/ritueel/issues/14), in M1, and its [test vectors](/reference/root-list/#test-vectors) match this page. The SSH CA key list follows in M3 ([issue #55](https://github.com/truvity/ritueel/issues/55)).*
+*Not built yet. This is version 1 of the format that [ADR 0005](/decisions/0005-trust-products-the-root-list-the-ca-bundle-the-ssh-ca-key-list-and-the-trust-sequence/) leaves to a reference page; the code is [issue #14](https://github.com/truvity/ritueel/issues/14), in M1, and its [test vectors](/reference/root-list/#test-vectors) match this page. The SSH CA key list follows the same shape in M3 ([its page](/reference/ssh-ca-key-list/)), and the CRLs of the roots are on [their page](/reference/crl/).*
 
 A system that updates its own trust, such as a system that holds intermediates, needs to know which roots are active today. The **signed root list** tells it: the active roots, pinned by their public keys, with the [trust sequence](/decisions/0005-trust-products-the-root-list-the-ca-bundle-the-ssh-ca-key-list-and-the-trust-sequence/#one-counter-the-trust-sequence), signed by one active root. The **CA bundle** carries the same roots' certificates, for a TLS client and for chain building. A requester of the [hand-off contract](/reference/hand-off-contract/) reads the root list to fill `primaries` and to check an answer's issuer and `trust_sequence`.
 
@@ -74,7 +74,7 @@ The protected header has exactly these members:
 
 **When.** A ceremony that changes any trust product writes a new list with the next sequence, signed in the same ceremony. The yearly ceremony and every transition always do, so the list is re-signed at least once a year ([ADR 0005](/decisions/0005-trust-products-the-root-list-the-ca-bundle-the-ssh-ca-key-list-and-the-trust-sequence/#the-signed-root-list)); so does any other ceremony that signs with a root, because each use re-issues that root's certificate and so changes the CA bundle ([ADR 0002](/decisions/0002-key-custody-every-key-is-born-in-its-store-two-root-cards-or-one-kms-root-and-a-replica/#validity-renewal-and-replacement)). The list's bytes are fixed in the ceremony's plan, so the signature is one of the plan's signatures and its touch is counted. `status` warns 60, 30 and 14 days before the newest list expires ([commands](/reference/cli/#exit-codes)).
 
-**Revoking a root** is a new list, signed by a surviving root, without the revoked one, with a CA bundle and a keyring without it beside it.
+**Revoking a root** is a new list, signed by a surviving root, without the revoked one, with a CA bundle and a keyring without it beside it, and the revoked root's break-glass SSH CA key off the SSH CA key list. The root stops publishing its [CRL](/reference/crl/).
 
 ## How a host reads it
 
@@ -142,7 +142,7 @@ CI checks that the manifest names every file of the set, that the pins match the
 ## Follow-ups
 
 - The code: writing, signing and reading the list and the bundle, with the host rules, and a test that the same inputs give the same bytes ([issue #14](https://github.com/truvity/ritueel/issues/14)).
-- The SSH CA key list in the same shape, with its own `typ` and vectors ([issue #55](https://github.com/truvity/ritueel/issues/55)).
+- The SSH CA key list in the same shape, with its own `typ` and vectors, is specified on [its page](/reference/ssh-ca-key-list/) ([issue #55](https://github.com/truvity/ritueel/issues/55)).
 
 ## Standards
 

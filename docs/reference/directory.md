@@ -19,10 +19,11 @@ ritueel keeps everything it knows in **one directory of plain files** that the h
 | `roots/<label>/x509.pem` | ritueel | The root's current certificate. |
 | `roots/<label>/openpgp.pgp` | ritueel | The primary's current public certificate, binary. |
 | `roots/<label>/attestation/` | ritueel | For a root on a card or in KMS: the attestation or the key's description and policy, as read at `init`. |
+| `roots/<label>/ssh-break-glass.pub` | ritueel | From M3: the root's break-glass SSH CA key, one OpenSSH line ([the SSH CA key list](/reference/ssh-ca-key-list/#how-a-key-enters-the-list)). |
 | `requests/<stem>.*` | The operator | Pending requests: the files of the [hand-off contract](/reference/hand-off-contract/#messages-and-files), one stem each. |
 | `answers/<stem>.*` | ritueel | The answers: `<stem>.result.json`, and `<stem>.cert.pem` or `<stem>.bound.pgp`. |
 | `plans/`, `attempts/`, `records/`, `transcripts/` | ritueel | The [ceremony files](/reference/ceremony-record/), one of each kind for each ceremony. |
-| `products/<sequence>/` | ritueel | The trust products of one trust sequence: `root-list.json`, `root-list.jws` and `ca-bundle.pem` ([the root list](/reference/root-list/#files)), and from M3 the keyring package. |
+| `products/<sequence>/` | ritueel | The trust products of one trust sequence: `root-list.json`, `root-list.jws` and `ca-bundle.pem` ([the root list](/reference/root-list/#files)); from M2 `crl-<label>.pem` for each active root ([the CRLs](/reference/crl/#files)); from M3 `ssh-ca-keys.json`, `ssh-ca-keys.jws` and `ssh-user-ca-keys.pub` ([the SSH CA key list](/reference/ssh-ca-key-list/#files)), `keyring/` ([the keyring package](/reference/keyring-package/#files)) and `revocations/`. |
 
 - ritueel never writes `ritueel.yaml` or `requests/`, and the operator does not edit the other paths.
 - A file that a ceremony replaces, such as `x509.pem`, keeps its history in `products/` and in version control. Nothing under `products/`, `plans/`, `attempts/`, `records/` or `transcripts/` is ever overwritten.
@@ -51,6 +52,11 @@ intermediates:
     type: openpgp-subkey
     kms_read_roles:
       "111122223333": arn:aws:iam::111122223333:role/example-certifier-read
+  - name: example-ssh
+    type: ssh-ca-key
+    use: user
+keyring:
+  license: CC0-1.0
 ```
 
 | Key | Meaning |
@@ -59,8 +65,10 @@ intermediates:
 | `name` | 1 to 64 characters: letters, digits, spaces and hyphens. It names the roots and their primaries ([below](/reference/directory/#the-root-certificate)). |
 | `release_address` | The address in every primary's user ID: the project's release identity, never a person's ([ADR 0006](/decisions/0006-release-keys-and-the-keyring-package/#the-keys)). |
 | `policy` | The rules every request is checked against: `stores`, `min_firmware`, `pin_policy`, `require_name_constraints` and `validity_months`, with the meanings of the [reference policy](/reference/hand-off-contract/#what-the-certifier-checks). All five are required. |
-| `intermediates` | The intermediates ritueel may certify, one entry each. `name` is the `NAME` of the commands: lower-case letters, digits and hyphens, 1 to 63 characters, unique. `type` is `x509-intermediate` or `openpgp-subkey`. |
+| `intermediates` | The intermediates ritueel may certify, one entry each. `name` is the `NAME` of the commands: lower-case letters, digits and hyphens, 1 to 63 characters, unique. `type` is `x509-intermediate`, `openpgp-subkey` or `ssh-ca-key`. |
 | `intermediates[].permitted_uri_hosts` | For `x509-intermediate`: the hosts a request's name constraints must stay inside. Required when `require_name_constraints` is true. |
+| `intermediates[].use` | For `ssh-ca-key`: `user` or `host`, required. A request for another `use` is refused with `policy`; the key is listed with this use ([the contract](/reference/hand-off-contract/#ssh-ca-key)). |
+| `keyring` | Optional. `license` is the SPDX identifier written into the `.rpm`, required to build one: the operator's choice, which ritueel does not default ([the keyring package](/reference/keyring-package/)). |
 | `intermediates[].kms_read_roles` | For a requester's KMS key in another account: the read-only role to assume, by account ([the contract](/reference/hand-off-contract/#aws-kms)). The role is never taken from a request. |
 
 A test vector's configuration in `testdata/hand-off/v1/manifest.json` is the `policy` block together with the one intermediate entry its requests are for: the `permitted_uri_hosts` and `kms_read_roles` there are that entry's.
@@ -95,6 +103,11 @@ The schema, in JSON Schema (draft 2020-12), which the code ships and checks the 
         "validity_months": { "type": "integer", "minimum": 1 }
       }
     },
+    "keyring": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": { "license": { "type": "string", "minLength": 1 } }
+    },
     "intermediates": {
       "type": "array",
       "items": {
@@ -103,7 +116,8 @@ The schema, in JSON Schema (draft 2020-12), which the code ships and checks the 
         "required": ["name", "type"],
         "properties": {
           "name": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]{0,62}$" },
-          "type": { "enum": ["x509-intermediate", "openpgp-subkey"] },
+          "type": { "enum": ["x509-intermediate", "openpgp-subkey", "ssh-ca-key"] },
+          "use": { "enum": ["user", "host"] },
           "permitted_uri_hosts": { "type": "array", "uniqueItems": true, "items": { "type": "string" } },
           "kms_read_roles": { "type": "object", "propertyNames": { "pattern": "^[0-9]{12}$" },
                               "additionalProperties": { "type": "string", "pattern": "^arn:aws[a-z-]*:iam::[0-9]{12}:role/" } }
@@ -114,7 +128,7 @@ The schema, in JSON Schema (draft 2020-12), which the code ships and checks the 
 }
 ```
 
-Two rules the schema cannot state: intermediate names are unique, and an `x509-intermediate` has `permitted_uri_hosts` when `require_name_constraints` is true. ritueel checks both when it reads the file.
+Three rules the schema cannot state: intermediate names are unique, an `x509-intermediate` has `permitted_uri_hosts` when `require_name_constraints` is true, and an `ssh-ca-key` has `use` and no other key of the entry. A name that begins with `break-glass-` is refused, because the SSH CA key list uses those for the break-glass keys. ritueel checks all of them when it reads the file.
 
 ## `root.json`
 
@@ -185,7 +199,7 @@ A software root ([the `software` store](/decisions/0003-key-stores-and-the-card-
 ## Follow-ups
 
 - `cards.yaml` and the `attestation/` files are specified with the `piv` and `aws-kms` stores ([issue #11](https://github.com/truvity/ritueel/issues/11), [issue #12](https://github.com/truvity/ritueel/issues/12)).
-- The keyring files under `products/<sequence>/` come with the keyring builder ([issue #15](https://github.com/truvity/ritueel/issues/15)).
+- The CRLs, the SSH CA key list and the keyring files under `products/<sequence>/` come with their builders ([issue #30](https://github.com/truvity/ritueel/issues/30), [issue #55](https://github.com/truvity/ritueel/issues/55), [issue #15](https://github.com/truvity/ritueel/issues/15)).
 
 ## Standards
 

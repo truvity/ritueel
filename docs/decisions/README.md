@@ -45,5 +45,5 @@ Every record has these parts, in this order:
 | [0002](0002-key-custody-every-key-is-born-in-its-store-two-root-cards-or-one-kms-root-and-a-replica.md) | Key custody: every key is born in its store; two root cards, or one KMS root and a replica | Accepted |
 | [0003](0003-key-stores-and-the-card-layer.md) | Key stores and the card layer | Accepted |
 | [0004](0004-ceremonies-plan-confirm-reserve-sign-verify-record.md) | Ceremonies: plan, confirm, reserve, sign, verify, record | Accepted |
-| [0005](0005-trust-products-the-root-list-the-ca-bundle-the-ssh-ca-key-list-and-the-trust-sequence.md) | Trust products: the root list, the CA bundle, the SSH CA key list and the trust sequence | Accepted |
+| [0005](0005-trust-products-the-root-list-the-ca-bundle-the-ssh-ca-key-list-and-the-trust-sequence.md) | Trust products: the root list, the CA bundle, the SSH CA key list, CRLs and the trust sequence | Accepted |
 | [0006](0006-release-keys-and-the-keyring-package.md) | Release keys and the keyring package | Accepted |

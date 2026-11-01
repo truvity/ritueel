@@ -1,16 +1,16 @@
 {
   "handoff": 1,
   "type": "openpgp-subkey",
-  "request_sha256": "fdafc23759e32e7531e7fa018a33d275cde89c8828e5ee0b607024f4299ea22b",
+  "request_sha256": "28957b1b2f299a6a95ef7730992e33c06014e5e95f1ad2a4f45cd4fbe75f7330",
   "outcome": "issued",
   "artifacts": [
     {
       "name": "pgp-response-wrong-subkey.bound.pgp",
-      "sha256": "32d02f5cf08bc2a15f2cafa2984541f01ad0fd57dbf954c821f39ce64b0361d1"
+      "sha256": "fce11e4fe2d850003203adb6c2cd8aae5ce28061494cd3db59327f1955f11213"
     }
   ],
   "valid_from": "2026-11-15T12:00:00Z",
   "valid_until": "2027-12-15T12:00:00Z",
-  "issuer": "597693af86b7850a381d71489b22b2b3c1a8c55b",
+  "issuer": "c3e47d2685915679d6c61db81f4fb446bce77037",
   "trust_sequence": 7
 }
