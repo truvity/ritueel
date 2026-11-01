@@ -1,0 +1,137 @@
+---
+title: "ritueel: manage the root of your PKI and the master key of OpenPGP"
+description: ritueel teaches how to keep a PKI root and an OpenPGP master key safe, and gives tools that simplify the ceremonies, while you stay in charge. Open source.
+template: splash
+hero:
+  title: The keys you use once a year are the ones that matter most.
+  tagline: A PKI root. An OpenPGP master key. You touch them rarely, by hand, with tools that assume you remember last time. ritueel teaches the logic first, then gives you tools that remember for you.
+  actions:
+    - text: Start learning
+      link: /learn/
+      variant: primary
+    - text: The custody chain
+      link: /learn/custody-chain/
+      variant: secondary
+    - text: View on GitHub
+      link: https://github.com/truvity/ritueel
+      variant: minimal
+---
+
+import Mission from '../site/src/components/home/Mission.astro';
+import Pairs from '../site/src/components/home/Pairs.astro';
+import Pair from '../site/src/components/home/Pair.astro';
+import Cloud from '../site/src/components/home/Cloud.astro';
+import Answer from '../site/src/components/home/Answer.astro';
+import Rituals from '../site/src/components/home/Rituals.astro';
+
+## Our mission
+
+<Mission>
+ritueel teaches people to manage the root of a PKI and the master key of OpenPGP smoothly and safely, and gives them tools that simplify each ritual, from creating a root to signing intermediates and subkeys onto cards, while the person stays in charge.
+</Mission>
+
+Almost everything built on keys hangs from a few keys that are used rarely: the root of a certificate hierarchy, the master key of an OpenPGP identity. Using them is a manual ritual, a *ceremony*, done by a person, and most people do it once or twice in their life. ritueel exists to make that experience smooth and safe.
+
+## Does this sound familiar?
+
+Two kinds of trouble, and most people meet both in the same afternoon. Both come from one fact: you do this rarely, and the manual assumes you do it daily. Each chip leads to the page that deals with it.
+
+<Pairs>
+<Pair>
+<Cloud
+  tone="concept"
+  title="Nobody explained what all this is"
+  voice="GPG? PKCS#11? An internal PKI? What is it, and how do I use it?"
+  items={[
+    { term: 'GPG / OpenPGP', note: 'One identity, many keys', href: '/learn/chain-openpgp/', w: 4, icon: 'gnupg' },
+    { term: 'PKCS#11', note: 'How programs talk to a token', href: '/learn/key-stores/', w: 3 },
+    { term: 'X.509', note: 'The certificate format', href: '/learn/what-is-a-root/', w: 2 },
+    { term: 'Internal PKI', note: 'Your own certificate authority', href: '/learn/chain-private-pki/', w: 4 },
+    { term: 'CRL', note: 'A signed list of revoked certificates', href: '/learn/revoke/', w: 2 },
+    { term: 'Root vs intermediate', note: 'Which one lives in the drawer?', href: '/learn/root-and-intermediate/', w: 3 },
+    { term: 'Name constraints', note: 'A fence around what a CA may name', href: '/learn/chain-private-pki/', w: 1 },
+    { term: 'Master key vs subkeys', note: 'Why does a key have children?', href: '/learn/root-and-intermediate/', w: 3 },
+    { term: 'PIV', note: 'A smart-card standard with slots', href: '/learn/key-stores/', w: 2 },
+    { term: 'Trust store', note: 'Who gets believed, and why', href: '/learn/layered-trust/', w: 2 },
+    { term: 'Custody chain', note: 'Who holds which key, down to the leaf', href: '/learn/custody-chain/', w: 3 },
+  ]}
+/>
+<Answer title="Learn explains it, in order">
+
+Plain pages that start from what goes wrong in real life and then give the rule. They are written for someone technical who is new to PKI. Read them in order, or jump in from a chip above.
+
+- [Start learning](/learn/)
+- [The custody chain](/learn/custody-chain/)
+- [Which keys to buy](/learn/which-keys-to-buy/)
+- [The guides](/guides/)
+
+</Answer>
+</Pair>
+<Pair>
+<Cloud
+  tone="mechanic"
+  title="Then the tools push back"
+  voice="YubiKey PIV, gpg-agent, CRL signing, a laptop that has to boot offline."
+  items={[
+    { term: 'YubiKey PIV slots', note: '9a, 9c, 9d, 9e. Which one was it?', href: '/learn/key-stores/', w: 4, icon: 'yubico' },
+    { term: 'gpg-agent vs scdaemon vs pcscd', note: 'Three daemons, one card, one lock', href: '/guides/openpgp-ssh-authentication/', w: 4, icon: 'gnupg', cmd: true },
+    { term: 'keytocard', note: 'Moves the key. Back up first.', href: '/guides/openpgp-ssh-authentication/', w: 3, cmd: true },
+    { term: 'Boot the offline machine', note: 'Again. For ten minutes of signing.', href: '/learn/why-the-root-stays-offline/', w: 3 },
+    { term: 'gpg --edit-card', note: 'A menu with its own rules', href: '/guides/openpgp-ssh-authentication/', w: 2, cmd: true },
+    { term: 'CRL re-signing', note: 'The list expires on its own schedule', href: '/learn/re-sign/', w: 3 },
+    { term: 'ykman', note: 'One more tool, one more PIN', href: '/learn/which-keys-to-buy/', w: 2, icon: 'yubico', cmd: true },
+    { term: 'Expiring subkeys', note: 'They lapse on a Tuesday', href: '/learn/re-sign/', w: 2 },
+    { term: 'Lost card', note: 'Is there a spare? Where?', href: '/guides/lost-root-card/', w: 3 },
+    { term: 'PIN, then PUK', note: 'Three wrong tries each, then a reset', href: '/learn/recover/', w: 1 },
+    { term: 'Revocation certificate', note: 'Nobody made one in advance', href: '/guides/revoke-a-key/', w: 3 },
+  ]}
+/>
+<Answer title="The tools do the chores" status="Planned, not built yet: ritueel is in its design phase.">
+
+A command line plans each step, checks the card, asks you to confirm, and writes the record. Then a wizard, served on your own computer only, shows the same steps with their explanation next to them. You stay in charge: the PIN and the touch stay on the card.
+
+- [The command line](/tools/cli/)
+- [The wizard](/tools/wizard/)
+- [Command reference](/reference/cli/)
+
+</Answer>
+</Pair>
+</Pairs>
+
+## The ledger and the four rituals
+
+<Rituals
+  rituals={[
+    { name: 'Re-sign', line: 'Same key, new validity, every year.', learn: '/learn/re-sign/', steps: '/guides/re-sign-yearly/' },
+    { name: 'Rotate', line: 'A new key, on an event or at most every three years.', learn: '/learn/rotate/', steps: '/guides/rotate-a-key/' },
+    { name: 'Revoke', line: 'Say a key can no longer be trusted, now.', learn: '/learn/revoke/', steps: '/guides/revoke-a-key/' },
+    { name: 'Recover', line: 'A card is lost, or a PIN is gone. Start from the record.', learn: '/learn/recover/', steps: '/guides/lost-root-card/' },
+  ]}
+>
+
+Learning and tools meet in two things. The **ledger** is the written record of what you did: which roots exist, where each lives, what was signed and when. Next year you do not start from memory. Read [how to keep it](/learn/the-ledger/).
+
+The four **rituals** are what you come back to. Each one reads the ledger and adds to it, whether you run it by hand from a guide or with a tool.
+
+</Rituals>
+
+## What comes next
+
+When the root is in order, the next step is identity built on top of it. [sluis](https://sluis.id) holds intermediates and signs online. Your root of custody first, then secure-by-design identity on top. The two are separate products; they do not depend on each other and exchange standard formats only.
+
+## Where to start
+
+| If you want to | Read |
+|---|---|
+| Understand what a root is and why it is kept offline | [What is a root?](/learn/what-is-a-root/) and [Why the root stays offline](/learn/why-the-root-stays-offline/) |
+| See who holds which key, from the root down to the leaf | [The custody chain](/learn/custody-chain/) |
+| Choose where a key will live | [Where a key lives](/learn/key-stores/) and [Which keys to buy](/learn/which-keys-to-buy/) |
+| Follow a root from birth to retirement | [The life of a root](/learn/life-of-a-root/) |
+| Do something now | [Guides](/guides/) |
+| Know what the tools do today | [Tools](/tools/) |
+
+## Status
+
+ritueel is in the **design phase**. There is no release yet. The [decision records](/decisions/) are accepted, the learning pages and the [hand-off contract](/reference/hand-off-contract/) are written, and the [roadmap](/roadmap/) lists the milestones of the first version. The command line and the wizard are [planned](/tools/); every page says what is built.
+
+How to take part is in [Contributing](/contributing/).

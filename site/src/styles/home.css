@@ -1,0 +1,22 @@
+/* Tokens of the home page (docs/index.mdx and src/components/home/). Two inks carry the
+   page's story: the pain is stamped in crimson, the answer is written in a deep green.
+   Both follow Starlight's light/dark switch; the greys come from Starlight itself. */
+:root {
+  --rt-pain: #ff9db0;
+  --rt-ink: #62d6b8;
+  --rt-ink-on: #04241c;
+  --rt-serif: 'Iowan Old Style', 'Palatino Linotype', Palatino, Charter, 'Bitstream Charter', 'Source Serif Pro', Georgia, serif;
+  --rt-mono: ui-monospace, 'SF Mono', 'Cascadia Mono', 'Roboto Mono', Menlo, Consolas, monospace;
+}
+:root[data-theme='light'] {
+  --rt-pain: #a3223a;
+  --rt-ink: #0b6652;
+  --rt-ink-on: #ffffff;
+}
+
+/* The home page's section headings share the headline's serif. */
+:root[data-has-hero] .sl-markdown-content :is(h2) {
+  font-family: var(--rt-serif);
+  font-weight: 600;
+  letter-spacing: -0.005em;
+}

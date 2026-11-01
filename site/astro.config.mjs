@@ -31,8 +31,10 @@ export default defineConfig({
       components: {
         TwoColumnContent: './src/components/TwoColumnContent.astro',
         PageSidebar: './src/components/PageSidebar.astro',
+        // The home page's headline and links (the only page with `hero:` front matter).
+        Hero: './src/components/Hero.astro',
       },
-      customCss: ['./src/styles/layout.css'],
+      customCss: ['./src/styles/layout.css', './src/styles/home.css'],
       routeMiddleware: './src/route-middleware.ts',
       sidebar: [
         // Learn comes first: the site teaches, and the tools simplify the rituals.
