@@ -1,0 +1,16 @@
+{
+  "handoff": 1,
+  "type": "x509-intermediate",
+  "request_sha256": "7ccdb6667a686ae211e041c8b67f5b64c295bf9e06136dbbc9a9cf2db6a9c6f1",
+  "outcome": "issued",
+  "artifacts": [
+    {
+      "name": "x509-response-other-root.cert.pem",
+      "sha256": "0cd482bef9f0bf8e6943bc9da9c126385e5de227b86afbea8e7cea9974ce0c70"
+    }
+  ],
+  "valid_from": "2026-11-15T12:00:00Z",
+  "valid_until": "2027-12-15T12:00:00Z",
+  "issuer": "5975eba517e35dbff4086ebfd7e6879c328e8b6371d402ebb2f703588d9c0c89",
+  "trust_sequence": 7
+}

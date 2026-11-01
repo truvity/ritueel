@@ -6,26 +6,34 @@
       "pki/test-attestation-root.pem"
     ],
     "attestation_intermediates": [
-      "pki/test-attestation-intermediate.pem"
+      "pki/test-attestation-intermediate.pem",
+      "pki/test-opgp-attestation-intermediate.pem"
     ],
     "root_list": {
       "x509": [
-        "pki/test-root-a.pem"
+        "pki/test-root-a.pem",
+        "pki/test-root-b.pem"
       ],
       "openpgp": [
-        "pki/test-primary-a.pgp"
+        "pki/test-primary-a.pgp",
+        "pki/test-primary-b.pgp"
       ]
     },
-    "known_openpgp_primaries": [
-      "pki/test-primary-a.pgp",
-      "pki/test-primary-b.pgp"
-    ],
+    "not_listed": {
+      "x509": [
+        "pki/test-root-z.pem"
+      ],
+      "openpgp": [
+        "pki/test-primary-z.pgp"
+      ]
+    },
     "trust_sequence": 7
   },
   "configs": {
     "production": {
       "stores": [
-        "yubikey-piv",
+        "piv",
+        "openpgp-card",
         "aws-kms"
       ],
       "min_firmware": "5.7.0",
@@ -37,11 +45,15 @@
       "permitted_uri_hosts": [
         "example.org"
       ],
-      "validity_months": 13
+      "validity_months": 13,
+      "kms_read_roles": {
+        "111122223333": "arn:aws:iam::111122223333:role/example-certifier-read"
+      }
     },
     "development": {
       "stores": [
-        "yubikey-piv",
+        "piv",
+        "openpgp-card",
         "aws-kms",
         "software"
       ],
@@ -54,7 +66,10 @@
       "permitted_uri_hosts": [
         "example.org"
       ],
-      "validity_months": 13
+      "validity_months": 13,
+      "kms_read_roles": {
+        "111122223333": "arn:aws:iam::111122223333:role/example-certifier-read"
+      }
     }
   },
   "requests": [
@@ -78,6 +93,29 @@
       ],
       "expect": "accept",
       "kms_stub": "requests/x509-kms-valid.kms-stub.json"
+    },
+    {
+      "id": "x509-kms-cross-account",
+      "type": "x509-intermediate",
+      "config": "production",
+      "files": [
+        "requests/x509-kms-cross-account.csr.pem",
+        "requests/x509-kms-cross-account.proof.json"
+      ],
+      "expect": "accept",
+      "kms_stub": "requests/x509-kms-cross-account.kms-stub.json"
+    },
+    {
+      "id": "x509-kms-cross-account-no-role",
+      "type": "x509-intermediate",
+      "config": "production",
+      "files": [
+        "requests/x509-kms-cross-account-no-role.csr.pem",
+        "requests/x509-kms-cross-account-no-role.proof.json"
+      ],
+      "expect": "refuse",
+      "reason": "proof-invalid",
+      "kms_stub": "requests/x509-kms-cross-account-no-role.kms-stub.json"
     },
     {
       "id": "x509-software-valid",
@@ -277,6 +315,16 @@
       "kms_stub": "requests/pgp-kms-valid.kms-stub.json"
     },
     {
+      "id": "pgp-openpgp-card-valid",
+      "type": "openpgp-subkey",
+      "config": "production",
+      "files": [
+        "requests/pgp-openpgp-card-valid.subkey.pgp",
+        "requests/pgp-openpgp-card-valid.proof.json"
+      ],
+      "expect": "accept"
+    },
+    {
       "id": "pgp-software-valid",
       "type": "openpgp-subkey",
       "config": "development",
@@ -293,6 +341,17 @@
       "files": [
         "requests/pgp-backsig-missing.subkey.pgp",
         "requests/pgp-backsig-missing.proof.json"
+      ],
+      "expect": "refuse",
+      "reason": "possession-invalid"
+    },
+    {
+      "id": "pgp-backsig-missing-one",
+      "type": "openpgp-subkey",
+      "config": "production",
+      "files": [
+        "requests/pgp-backsig-missing-one.subkey.pgp",
+        "requests/pgp-backsig-missing-one.proof.json"
       ],
       "expect": "refuse",
       "reason": "possession-invalid"
@@ -331,6 +390,17 @@
       "reason": "possession-invalid"
     },
     {
+      "id": "pgp-backsig-no-key-id",
+      "type": "openpgp-subkey",
+      "config": "production",
+      "files": [
+        "requests/pgp-backsig-no-key-id.subkey.pgp",
+        "requests/pgp-backsig-no-key-id.proof.json"
+      ],
+      "expect": "refuse",
+      "reason": "possession-invalid"
+    },
+    {
       "id": "pgp-version-2",
       "type": "openpgp-subkey",
       "config": "production",
@@ -353,6 +423,17 @@
       "reason": "unknown-primary"
     },
     {
+      "id": "pgp-primaries-incomplete",
+      "type": "openpgp-subkey",
+      "config": "production",
+      "files": [
+        "requests/pgp-primaries-incomplete.subkey.pgp",
+        "requests/pgp-primaries-incomplete.proof.json"
+      ],
+      "expect": "refuse",
+      "reason": "unknown-primary"
+    },
+    {
       "id": "pgp-piv-key-mismatch",
       "type": "openpgp-subkey",
       "config": "production",
@@ -362,6 +443,17 @@
       ],
       "expect": "refuse",
       "reason": "key-mismatch"
+    },
+    {
+      "id": "pgp-openpgp-card-untrusted-chain",
+      "type": "openpgp-subkey",
+      "config": "production",
+      "files": [
+        "requests/pgp-openpgp-card-untrusted-chain.subkey.pgp",
+        "requests/pgp-openpgp-card-untrusted-chain.proof.json"
+      ],
+      "expect": "refuse",
+      "reason": "proof-invalid"
     },
     {
       "id": "pgp-ed25519",
@@ -391,7 +483,7 @@
       "type": "x509-intermediate",
       "request": "x509-piv-valid",
       "files": [
-        "responses/x509-piv-valid.chain.pem",
+        "responses/x509-piv-valid.cert.pem",
         "responses/x509-piv-valid.result.json"
       ],
       "expect": "install"
@@ -401,7 +493,7 @@
       "type": "x509-intermediate",
       "request": "x509-kms-valid",
       "files": [
-        "responses/x509-kms-valid.chain.pem",
+        "responses/x509-kms-valid.cert.pem",
         "responses/x509-kms-valid.result.json"
       ],
       "expect": "install"
@@ -411,8 +503,18 @@
       "type": "x509-intermediate",
       "request": "x509-software-valid",
       "files": [
-        "responses/x509-software-valid.chain.pem",
+        "responses/x509-software-valid.cert.pem",
         "responses/x509-software-valid.result.json"
+      ],
+      "expect": "install"
+    },
+    {
+      "id": "x509-response-other-root",
+      "type": "x509-intermediate",
+      "request": "x509-response-request",
+      "files": [
+        "responses/x509-response-other-root.cert.pem",
+        "responses/x509-response-other-root.result.json"
       ],
       "expect": "install"
     },
@@ -421,7 +523,7 @@
       "type": "x509-intermediate",
       "request": "x509-response-request",
       "files": [
-        "responses/x509-response-wrong-key.chain.pem",
+        "responses/x509-response-wrong-key.cert.pem",
         "responses/x509-response-wrong-key.result.json"
       ],
       "expect": "refuse",
@@ -432,7 +534,7 @@
       "type": "x509-intermediate",
       "request": "x509-response-request",
       "files": [
-        "responses/x509-response-pathlen-1.chain.pem",
+        "responses/x509-response-pathlen-1.cert.pem",
         "responses/x509-response-pathlen-1.result.json"
       ],
       "expect": "refuse",
@@ -443,7 +545,7 @@
       "type": "x509-intermediate",
       "request": "x509-response-request",
       "files": [
-        "responses/x509-response-expired.chain.pem",
+        "responses/x509-response-expired.cert.pem",
         "responses/x509-response-expired.result.json"
       ],
       "expect": "refuse",
@@ -454,7 +556,7 @@
       "type": "x509-intermediate",
       "request": "x509-response-request",
       "files": [
-        "responses/x509-response-untrusted-issuer.chain.pem",
+        "responses/x509-response-untrusted-issuer.cert.pem",
         "responses/x509-response-untrusted-issuer.result.json"
       ],
       "expect": "refuse",
@@ -481,12 +583,32 @@
       "expect": "install"
     },
     {
+      "id": "pgp-openpgp-card-valid",
+      "type": "openpgp-subkey",
+      "request": "pgp-openpgp-card-valid",
+      "files": [
+        "responses/pgp-openpgp-card-valid.bound.pgp",
+        "responses/pgp-openpgp-card-valid.result.json"
+      ],
+      "expect": "install"
+    },
+    {
       "id": "pgp-software-valid",
       "type": "openpgp-subkey",
       "request": "pgp-software-valid",
       "files": [
         "responses/pgp-software-valid.bound.pgp",
         "responses/pgp-software-valid.result.json"
+      ],
+      "expect": "install"
+    },
+    {
+      "id": "pgp-response-other-primary",
+      "type": "openpgp-subkey",
+      "request": "pgp-response-request",
+      "files": [
+        "responses/pgp-response-other-primary.bound.pgp",
+        "responses/pgp-response-other-primary.result.json"
       ],
       "expect": "install"
     },

@@ -7,6 +7,7 @@
 //
 // usage: tools/checks/selftest.mjs
 import { execFileSync, spawnSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
@@ -161,6 +162,34 @@ expect('a link to a missing file', 'agent-links', { ...docs, 'AGENTS.md': 'Read 
 expect('a code path to a missing file', 'agent-links', { ...docs, '.claude/skills/example/SKILL.md': 'Edit `docs/contributing/gone.md`.\n' }, 'fail', { has: ['gone.md does not exist'] });
 expect('a subagent file with a missing path', 'agent-links', { ...docs, '.claude/agents/docs.md': 'Edit `docs/contributing/gone.md`.\n' }, 'fail', { has: ['.claude/agents/docs.md:1: docs/contributing/gone.md does not exist'] });
 expect('an agent file with no pointer', 'agent-links', { ...docs, 'AGENTS.md': 'Be careful.\n' }, 'fail', { has: ['empty sweep'] });
+
+// ---- test vectors: a manifest with one request and one answer
+const hex = (s) => createHash('sha256').update(s).digest('hex');
+const vec = ({ drop = '', extra = {}, digest = hex('subkey'), artifact = hex('bound'), reason } = {}) => {
+  const m = {
+    handoff: 1, pinned: { root_list: { openpgp: ['pki/root.pgp'] } },
+    requests: [{ id: 'ok', type: 'openpgp-subkey', files: ['requests/ok.subkey.pgp', 'requests/ok.proof.json'], expect: 'accept', ...(reason ? { reason } : {}) }],
+    responses: [{ id: 'ok', request: 'ok', files: ['responses/ok.bound.pgp', 'responses/ok.result.json'], expect: 'install' }],
+  };
+  const files = {
+    'testdata/set/v1/manifest.json': JSON.stringify(m),
+    'testdata/set/v1/pki/root.pgp': 'root',
+    'testdata/set/v1/requests/ok.subkey.pgp': 'subkey',
+    'testdata/set/v1/requests/ok.proof.json': JSON.stringify({ request_sha256: digest }),
+    'testdata/set/v1/responses/ok.bound.pgp': 'bound',
+    'testdata/set/v1/responses/ok.result.json': JSON.stringify({ artifacts: [{ name: 'ok.bound.pgp', sha256: artifact }] }),
+    ...extra,
+  };
+  if (drop) delete files[drop];
+  return files;
+};
+expect('vectors that match their manifest', 'vectors', vec(), 'pass', { has: ['5 vector files'] });
+expect('a named file that is not tracked', 'vectors', vec({ drop: 'testdata/set/v1/pki/root.pgp' }), 'fail', { has: ['names pki/root.pgp, which git does not track'] });
+expect('a file no manifest names', 'vectors', vec({ extra: { 'testdata/set/v1/requests/stray.csr.pem': 'x' } }), 'fail', { has: ['stray.csr.pem: not named'] });
+expect('a proof for another request', 'vectors', vec({ digest: hex('other') }), 'fail', { has: ['request_sha256 is not the digest'] });
+expect('an artifact digest that differs', 'vectors', vec({ artifact: hex('other') }), 'fail', { has: ['the SHA-256 of ok.bound.pgp'] });
+expect('an accepted case with a reason', 'vectors', vec({ reason: 'policy' }), 'fail', { has: ['expects accept with a reason'] });
+expect('no vectors at all', 'vectors', { 'README.md': 'x\n' }, 'fail', { has: ['empty sweep'] });
 
 rmSync(scratch, { recursive: true, force: true });
 if (failures) {

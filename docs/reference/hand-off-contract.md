@@ -8,7 +8,7 @@ sidebar:
 *Design phase: not built yet. This page is the proposed specification for [issue #7](https://github.com/truvity/ritueel/issues/7). Every choice that the issue left open is listed in [Choices made](#choices-made), and what is still undecided is in [Open](#open).*
 
 :::note[Proposed]
-Nothing here is accepted until the maintainer merges it. The test vectors were made with software keys and checked with OpenSSL 3.5.5 and Sequoia `sqv` 1.3.0 on 2026-11-01. GnuPG was not run on them yet.
+The contract stays proposed until its test vectors match it, which they do since 2026-11-01 ([issue #46](https://github.com/truvity/ritueel/issues/46)). They were made with software keys and checked on 2026-11-01 with OpenSSL 3.5 (certificates, requests, attestation chains) and an independent packet parser (every back-signature and binding). GnuPG and Sequoia were not run on this set yet.
 :::
 
 A system that holds intermediate keys, called the **requester** on this page, and ritueel, called the **certifier**, depend on neither product nor shared code. They meet at standard formats, and this page is the one place that says exactly which. A requester can be built from this page alone, and so can a certifier. The reasons are in [ADR 0001](https://github.com/truvity/ritueel/blob/main/docs/decisions/0001-scope-roots-and-transitions-systems-like-sluis-hold-intermediates.md). The vocabulary (root, intermediate, ceremony) is in [Roots, intermediates and transitions](/concepts/roots-and-transitions/).
@@ -31,7 +31,7 @@ A message is a set of files that share a **stem**, a name the requester chooses:
 | X.509 request | `<stem>.csr.pem`, `<stem>.proof.json` |
 | OpenPGP request | `<stem>.subkey.pgp`, `<stem>.proof.json` |
 | Answer, always | `<stem>.result.json` |
-| X.509 answer, issued | `<stem>.chain.pem` |
+| X.509 answer, issued | `<stem>.cert.pem` |
 | OpenPGP answer, issued | `<stem>.bound.pgp` |
 
 **JSON files** are one UTF-8 object, with no byte order mark and no more than 256 KiB. A member name appears once. A member this page does not define is an error, not something to skip. Numbers are integers. A time is `YYYY-MM-DDThh:mm:ssZ` in UTC (RFC 3339, whole seconds). A digest is SHA-256 in lower-case hexadecimal. A certificate or a public key inside JSON is standard Base64 (RFC 4648, with padding) of its DER encoding, as in the `x5c` member of a JSON Web Signature (RFC 7515, section 4.1.6).
@@ -56,12 +56,12 @@ A message is a set of files that share a **stem**, a name the requester chooses:
 | `handoff` | yes | The contract version, `1`. |
 | `type` | yes | `x509-intermediate` or `openpgp-subkey`. |
 | `request_sha256` | yes | SHA-256 of the request: the DER of the CSR, or the bytes of the `.subkey.pgp` file. It binds the proof to its request and catches a swapped pair of files. |
-| `store` | yes | Where the key lives: `yubikey-piv` (the `piv` store), `openpgp-card`, `aws-kms` or `software`. |
-| `evidence` | for `yubikey-piv`, `openpgp-card` and `aws-kms`, absent for `software` | The proof, as below. |
+| `store` | yes | Where the key lives: `piv` (a PIV applet, as on a YubiKey), `openpgp-card`, `aws-kms` or `software`. |
+| `evidence` | for `piv`, `openpgp-card` and `aws-kms`, absent for `software` | The proof, as below. |
 | `primaries` | for `openpgp-subkey` only | The fingerprints (40 hexadecimal digits each, version 4) of every active primary on the signed root list the requester read, in the order of that list. |
 | `capabilities` | for `openpgp-subkey` only | The list `["sign"]`. Version 1 binds signing subkeys. |
 
-### `yubikey-piv`
+### `piv`
 
 ```json
 { "attestation": ["<slot certificate, Base64 DER>", "<card certificate, Base64 DER>"] }
@@ -83,10 +83,10 @@ Firmware 5.7 and newer chain to the maker's *current* attestation root; older to
 ### `openpgp-card`
 
 ```json
-{ "attestation": ["<key certificate, Base64 DER>"] }
+{ "attestation": ["<key certificate, Base64 DER>", "<card certificate, Base64 DER>"] }
 ```
 
-The key lives in the OpenPGP applet of a card, and the card attests it with its own command (on a YubiKey, `80 FB 01 00`, after the user PIN is verified). The list holds the certificate the card returns, leaf first. The certifier chains it to a pinned root of the maker through the maker's intermediates, from its own pinned copies, as for `yubikey-piv`; on firmware 5.8 the chain passes through the intermediate "Yubico OPGP Attestation B2 1" (measured 2026-11-01). The extensions of the certificate are under the OID arc `1.3.6.1.4.1.41482.5`. Their encoding, and so the policy rules that read them, are not specified yet (see [Open](/reference/hand-off-contract/#open)); a certifier that cannot read them records the key as attested and does not enforce a PIN or touch policy. This store is the one a person's daily subkey uses, with the person's own card as the requester.
+The key lives in the OpenPGP applet of a card, and the card attests it with its own command (on a YubiKey, `80 FB 01 00`, after the user PIN is verified). The list holds the certificate the card returns for the key, then the card's own attestation certificate that signed it, leaf first. The certifier chains them to a pinned root of the maker through the maker's intermediates, from its own pinned copies, as for `piv`; on firmware 5.8 the chain passes through the intermediate "Yubico OPGP Attestation B2 1" (measured 2026-11-01). The extensions of the certificate are under the OID arc `1.3.6.1.4.1.41482.5`. Their encoding, and so the policy rules that read them, are not specified yet (see [Open](/reference/hand-off-contract/#open)); a certifier that cannot read them records the key as attested and does not enforce a PIN or touch policy. This store is the one a person's daily subkey uses, with the person's own card as the requester.
 
 ### `aws-kms`
 
@@ -177,7 +177,7 @@ The profile of the certificate. The requester can check every row.
 | Authority key identifier | Not critical. The `keyIdentifier` of the issuing root, computed the same way. |
 | Anything else | Absent. |
 
-`<stem>.chain.pem` holds the issued certificate, and in version 1 nothing else, because a root issues an intermediate directly. **The root is not in the file.** The requester takes its anchors from its own root list, never from the answer. `result.json` names the issuing root so the requester can tell which anchor to use.
+`<stem>.cert.pem` holds the issued certificate and nothing else, because a root issues an intermediate directly. **The root is not in the file.** The requester takes its anchors from its own root list, never from the answer. `result.json` names the issuing root so the requester can tell which anchor to use.
 
 ### What the requester checks before it installs
 
@@ -236,7 +236,7 @@ Add the packets to the primary's certificate to get the updated certificate, wit
 cat test-primary-a.pgp pgp-piv-valid.bound.pgp > updated.pgp
 ```
 
-A verifier then needs nothing from ritueel. The vectors were checked this way with `sqv`: a signature made by an accepted subkey verifies against `updated.pgp`, and one made by a subkey whose answer lacks the embedded back-signature, or was bound by another primary, does not. The ritueel keyring package carries the same certificates ([issue #15](https://github.com/truvity/ritueel/issues/15)).
+A verifier then needs nothing from ritueel. The first set of vectors was checked this way with `sqv` on 2026-11-01: a signature made by an accepted subkey verifies against `updated.pgp`, and one made by a subkey whose answer lacks the embedded back-signature, or was bound by another primary, does not. The ritueel keyring package carries the same certificates ([issue #15](https://github.com/truvity/ritueel/issues/15)).
 
 ### What the requester checks before it installs
 
@@ -295,19 +295,19 @@ The ceremony record ([issue #9](https://github.com/truvity/ritueel/issues/9)) ge
 The vectors are in [`testdata/hand-off/v1/`](https://github.com/truvity/ritueel/tree/main/testdata/hand-off/v1). They are public material only: CSRs, certificates, public subkeys, signatures and JSON files. Every key was made in software by [`generate.py`](https://github.com/truvity/ritueel/blob/main/testdata/hand-off/generate.py), and its private half was never written down. The attestation hierarchy is a made-up "Example Test" hierarchy, not the maker's, and the certifier's roots are test roots.
 
 - `manifest.json` lists every case with its files, the policy configuration it runs under, and the expected outcome and reason. A test in the Go code will read it ([issue #7](https://github.com/truvity/ritueel/issues/7), done when).
-- `pki/` holds the pinned test attestation root and intermediate, the test roots and primaries the certifier would hold.
+- `pki/` holds the pinned test attestation root and intermediates (one for the PIV applet, one for the OpenPGP applet), and the certifier's test roots: A and B are on the signed root list, each an X.509 root and an OpenPGP primary, as on two root cards; Z is on no list.
 - The clock of every vector is `2026-11-15T12:00:00Z`. A test fixes its clock to that time, so the vectors do not expire.
-- Two configurations: `production` (a YubiKey or KMS key; software refused) and `development` (software allowed). Both use the reference policy above.
-- A KMS case comes with `<case>.kms-stub.json`: the answers of `DescribeKey`, `GetPublicKey` and `GetKeyPolicy` that a test replays instead of calling AWS.
+- Two configurations: `production` (a PIV, OpenPGP-card or KMS key; software refused) and `development` (software allowed). Both use the reference policy above, and both list the read-only role for the one other account the KMS vectors use (`kms_read_roles`).
+- A KMS case comes with `<case>.kms-stub.json`: the answers of `DescribeKey`, `GetPublicKey` and `GetKeyPolicy` that a test replays instead of calling AWS. For a key in another account the stub starts with `assume_role`, the role the certifier must assume first, and its answers are the ones that role gets.
 
 | Group | Accepted | Refused |
 |---|---|---|
-| X.509 requests | A YubiKey, a KMS key, a software key in development. | Software in production, a bad CSR signature, a P-256 key, version 2, a proof for another request, an unknown member, an attested key that is not the request's, an untrusted attestation chain, PIN policy never, old firmware, no name constraints, a name constraint outside the policy, a KMS key that is not the request's, a KMS policy that names two actors. |
-| X.509 answers | A YubiKey, a KMS key, a software key. | Another key, path length 1, expired, an issuer that is not in the root list. |
-| OpenPGP requests | A YubiKey, a KMS key, a software key. | No back-signature, a back-signature over another primary, of type `0x18`, or damaged; version 2; an unknown primary; an attested key that is not the subkey; an Ed25519 subkey. |
-| OpenPGP answers | A YubiKey, a KMS key, a software key. | No embedded back-signature, another subkey, another primary, an expiry of two months. |
+| X.509 requests | A PIV key, a KMS key, a KMS key in another account read through its role, a software key in development. | Software in production, a bad CSR signature, a P-256 key, version 2, a proof for another request, an unknown member, an attested key that is not the request's, an untrusted attestation chain, PIN policy never, old firmware, no name constraints, a name constraint outside the policy, a KMS key that is not the request's, a KMS policy that names two actors, a KMS key in an account with no read role. |
+| X.509 answers | A PIV key, a KMS key, a software key, an answer from the other root. | Another key, path length 1, expired, an issuer that is not on the root list. |
+| OpenPGP requests | A PIV key, a KMS key, an OpenPGP-card key, a software key; each with a back-signature for both active primaries. | No back-signature; one for only one primary; one over a primary not on the list, of type `0x18`, damaged, or without the issuer key ID; version 2; a primary not on the list; `primaries` missing an active one; an attested key that is not the subkey; an untrusted OpenPGP-card chain; an Ed25519 subkey. |
+| OpenPGP answers | A PIV key, a KMS key, an OpenPGP-card key, a software key, a binding by the other primary. | No embedded back-signature, another subkey, a primary not on the list, an expiry of two months. |
 
-**Not yet matching this page.** The OpenPGP request vectors were made before the decision of 2026-11-01: each holds one back-signature and names one `primary`, and the stores use `yubikey-piv`, `aws-kms` and `software`. They are regenerated for the request shape above, with a back-signature for every primary, an `openpgp-card` case and the issuer key ID, before the contract is accepted. The manifest and the Go test follow them.
+CI checks that the manifest names every file of the set, that every file it names is in the repository, and that the digests in the proofs and results match their files (`just check-vectors`).
 
 A certifier passes when its outcome and reason code match the manifest for every request; a requester passes when its decision and code match for every answer. The vectors fix the outcome and the code, not the wording of a message.
 
@@ -318,7 +318,7 @@ The issue left these to the specification. Each is a proposal.
 | Choice | Chosen | Other options | Why |
 |---|---|---|---|
 | Encoding of the proof file | JSON, with certificates and keys as Base64 DER. | CBOR; ASN.1 DER; one PEM file with headers; a TAR holding everything. | Readable by a person who must compare it with what they expect. Every language has a strict parser. The `x5c` precedent covers the encoding of certificates. CBOR and DER are smaller and harder to read; PEM headers have no standard shape. |
-| File names | `<stem>.csr.pem`, `<stem>.subkey.pgp`, `<stem>.proof.json`, `<stem>.result.json`, `<stem>.chain.pem`, `<stem>.bound.pgp`. | A directory per request with fixed names. | A stem lets several requests share a directory, and the extension says the format. A directory is cleaner for one request. |
+| File names | `<stem>.csr.pem`, `<stem>.subkey.pgp`, `<stem>.proof.json`, `<stem>.result.json`, `<stem>.cert.pem`, `<stem>.bound.pgp`. | A directory per request with fixed names. | A stem lets several requests share a directory, and the extension says the format. A directory is cleaner for one request. |
 | Version | One integer in every JSON file. Unknown versions are refused. | `major.minor` with ignorable additions; a media type. | A security contract should not skip what it does not understand. Strict members mean every addition is a new version, and the window makes that cheap. |
 | Compatibility window | Read the previous version for 24 months after its successor first ships. | A fixed 12 months; "any older version, always". | Ceremonies are yearly. A year is not enough for a missed one. |
 | Unknown members | Refused. | Ignored. | An ignored member is a field one side thinks it understands. |
@@ -331,7 +331,7 @@ The issue left these to the specification. Each is a proposal.
 | OpenPGP answer | The subkey and its binding, to be appended to the primary's certificate. | The complete updated certificate. | The answer is small and checkable by concatenation. The keyring package carries complete certificates. |
 | Embedded back-signature | In the unhashed area of the binding. | In the hashed area. | The way GnuPG, Sequoia and `sqv` were tested and measured on 2026-10-31 and 2026-11-01. Both areas are legal (RFC 9580, section 5.2.3.34). |
 | Order of checks | Fixed, with one code. | Report every failure. | The vectors then have one right answer, and a person sees the first problem to fix. |
-| Store names | `yubikey-piv`, `openpgp-card`, `aws-kms`, `software`. | Rename `yubikey-piv` to `piv` now. | `yubikey-piv` is the name the vectors use; the rename waits for the vectors to be regenerated. |
+| Store names | `piv`, `openpgp-card`, `aws-kms`, `software`. | `yubikey-piv`, the name of the first vectors. | A name says what the thing is: the store is a PIV applet, whoever makes the card. |
 | Algorithm | ECDSA P-384, SHA-384, version 4 keys. | P-256; Ed25519; version 6 keys. | P-384 works on every store and with GnuPG, `gpgv`, `sqv`, apt and rpm (tested 2026-10-29 and 2026-10-31). A PIV slot signs a whole Ed25519 message and refuses more than about 3 KiB, so it cannot sign an artifact. GnuPG implements no version 6 (`gpg` 2.4.8 refuses to parse it), and Sequoia accepts it; version 6 comes when the verifiers do. |
 | Fixture generator | A Python script, kept next to the fixtures. | Go, with the first test; none. | It was the fastest way to make fixtures with independent code. It should become Go once the module exists, so that one toolchain builds everything. |
 
@@ -342,7 +342,6 @@ These need the maintainer's decision. The issue each belongs to is linked; the o
 :::
 
 - **The format and expiry of the root list**, and so the rule for `trust_sequence`. [Issue #14](https://github.com/truvity/ritueel/issues/14).
-- **The test vectors** in `testdata/hand-off/v1/` are regenerated before the contract is accepted: the `primaries` member, one back-signature for every primary, the Issuer Key ID subpacket, and an `openpgp-card` case.
 - **The attestation of an OpenPGP-card key.** The encoding of the extensions under `1.3.6.1.4.1.41482.5`, and the policy rules that read them, are not measured yet.
 - **GnuPG** was not run on the OpenPGP vectors. A test with `gpg` and `gpgv` should join the verifier matrix ([issue #24](https://github.com/truvity/ritueel/issues/24)).
 

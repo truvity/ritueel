@@ -8,7 +8,11 @@ hierarchy is a made-up "Example Test" hierarchy and not the maker's. A second ru
 different bytes (ECDSA is randomised), so the committed files are the fixtures and this
 script is the record of how they were made.
 
-Made with Python 3.13 and cryptography 46.0.5.
+The test trust set has two roots, A and B, as on two root cards: each has an X.509 root
+and an OpenPGP primary, and both are active on the signed root list. A third root, Z, is
+on no list; it makes the "untrusted issuer" and "unknown primary" cases.
+
+Made with Python 3.14 and cryptography 46.0.5.
 
 usage: generate.py OUTDIR
 """
@@ -83,37 +87,49 @@ def root(cn):
     return k, c
 
 
-# the certifier's test roots (what ritueel would hold): A is in the root list, B is not (it is the "untrusted issuer")
+# the certifier's test roots (what ritueel would hold): A and B are on the root list, Z is not (the "untrusted issuer")
 ROOT_A_KEY, ROOT_A = root("Example Test Root A (TEST ONLY)")
 ROOT_B_KEY, ROOT_B = root("Example Test Root B (TEST ONLY)")
+ROOT_Z_KEY, ROOT_Z = root("Example Test Root Z, not listed (TEST ONLY)")
 w("pki/test-root-a.pem", ROOT_A.public_bytes(PEM))
+w("pki/test-root-b.pem", ROOT_B.public_bytes(PEM))
+w("pki/test-root-z.pem", ROOT_Z.public_bytes(PEM))
 
-# the made-up attestation hierarchy: root -> intermediate -> per-card key -> per-slot certificate
+# the made-up attestation hierarchy: root -> intermediate -> per-card key -> per-key certificate. The PIV applet and the
+# OpenPGP applet of a card have their own intermediates under one maker root, as on a real card.
 ATT_ROOT_KEY, ATT_ROOT = root("Example Test Attestation Root (TEST ONLY)")
-ATT_INT_KEY = ec384()
-ATT_INT = ca_cert(name("Example Test Attestation Intermediate"), ATT_INT_KEY, ATT_ROOT.subject, ATT_ROOT_KEY,
-                  dt.datetime(2025, 1, 1, tzinfo=UTC), dt.datetime(9999, 12, 31, 23, 59, 59, tzinfo=UTC), 1,
-                  ATT_ROOT_KEY.public_key(), extra=[(KU_CA, True)])
+
+
+def att_intermediate(cn, parent_key, parent):
+    k = ec384()
+    c = ca_cert(name(cn), k, parent.subject, parent_key, dt.datetime(2025, 1, 1, tzinfo=UTC),
+                dt.datetime(9999, 12, 31, 23, 59, 59, tzinfo=UTC), 1, parent_key.public_key(), extra=[(KU_CA, True)])
+    return k, c
+
+
+ATT_INT_KEY, ATT_INT = att_intermediate("Example Test PIV Attestation Intermediate", ATT_ROOT_KEY, ATT_ROOT)
+OPGP_INT_KEY, OPGP_INT = att_intermediate("Example Test OPGP Attestation Intermediate", ATT_ROOT_KEY, ATT_ROOT)
 w("pki/test-attestation-root.pem", ATT_ROOT.public_bytes(PEM))
 w("pki/test-attestation-intermediate.pem", ATT_INT.public_bytes(PEM))
+w("pki/test-opgp-attestation-intermediate.pem", OPGP_INT.public_bytes(PEM))
 OTHER_ROOT_KEY, OTHER_ROOT = root("Example Other Attestation Root (TEST ONLY)")   # never pinned
 
 
 class Card:
-    """A made-up token: a per-card attestation key (RSA 2048, like the real one) certified by the test intermediate."""
+    """A made-up token: a per-card attestation key (RSA 2048, like the real one) certified by a test intermediate."""
 
-    def __init__(self, int_key, int_cert, int_pub, cn="Example Test PIV Attestation"):
+    def __init__(self, int_key, int_cert, cn="Example Test PIV Attestation"):
         self.key = rsa.generate_private_key(65537, 2048)
         self.cert = (x509.CertificateBuilder().subject_name(name(cn, "Example Test")).issuer_name(int_cert.subject)
                      .public_key(self.key.public_key()).serial_number(secrets.randbits(63) | 1 << 62)
                      .not_valid_before(dt.datetime(2025, 8, 1, tzinfo=UTC)).not_valid_after(dt.datetime(9999, 12, 31, 23, 59, 59, tzinfo=UTC))
                      .add_extension(x509.BasicConstraints(ca=True, path_length=0), critical=True)
                      .sign(int_key, hashes.SHA384()))
-        self.int_chain = [int_cert]
 
     def slot_cert(self, pub, slot="9c", firmware=bytes([5, 8, 0]), serial=12345678, policy=bytes([2, 1]), form=bytes([2])):
-        """The certificate a token makes for a key born in a slot. The OIDs and encodings are the ones measured on a real
-        token on 2026-10-31 (firmware 5.8.0): raw bytes for firmware, policy and form factor, a DER INTEGER for the serial."""
+        """The certificate a token makes for a key born in a PIV slot. The OIDs and encodings are the ones measured on a
+        real token on 2026-10-31 (firmware 5.8.0): raw bytes for firmware, policy and form factor, a DER INTEGER for the
+        serial."""
         base = "1.3.6.1.4.1.41482.3."
         sn = serial.to_bytes((serial.bit_length() + 8) // 8, "big")
         ext = [("3", firmware), ("7", b"\x02" + bytes([len(sn)]) + sn), ("8", policy), ("9", form)]
@@ -124,41 +140,71 @@ class Card:
             b = b.add_extension(x509.UnrecognizedExtension(ObjectIdentifier(base + o), v), critical=False)
         return b.sign(self.key, hashes.SHA256())
 
+    def opgp_cert(self, pub, slot="SIG"):
+        """The certificate a card's OpenPGP applet makes for a key it generated. The extensions under 1.3.6.1.4.1.41482.5
+        are not specified by the contract yet, so this certificate carries none: a certifier records the key as attested
+        and enforces no PIN or touch policy."""
+        return (x509.CertificateBuilder().subject_name(x509.Name([x509.NameAttribute(NameOID.COMMON_NAME, f"YubiKey OPGP Attestation {slot}")]))
+                .issuer_name(self.cert.subject).public_key(pub).serial_number(secrets.randbits(63) | 1 << 62)
+                .not_valid_before(dt.datetime(2025, 8, 1, tzinfo=UTC)).not_valid_after(dt.datetime(9999, 12, 31, 23, 59, 59, tzinfo=UTC))
+                .sign(self.key, hashes.SHA256()))
 
-CARD = Card(ATT_INT_KEY, ATT_INT, ATT_INT_KEY.public_key())
-OTHER_INT_KEY = ec384()
-OTHER_INT = ca_cert(name("Example Other Attestation Intermediate"), OTHER_INT_KEY, OTHER_ROOT.subject, OTHER_ROOT_KEY,
-                    dt.datetime(2025, 1, 1, tzinfo=UTC), dt.datetime(9999, 12, 31, 23, 59, 59, tzinfo=UTC), 1,
-                    OTHER_ROOT_KEY.public_key(), extra=[(KU_CA, True)])
-OTHER_CARD = Card(OTHER_INT_KEY, OTHER_INT, OTHER_INT_KEY.public_key())
+
+CARD = Card(ATT_INT_KEY, ATT_INT)
+OPGP_CARD = Card(OPGP_INT_KEY, OPGP_INT, cn="Example Test OPGP Attestation")
+OTHER_INT_KEY, OTHER_INT = att_intermediate("Example Other Attestation Intermediate", OTHER_ROOT_KEY, OTHER_ROOT)
+OTHER_CARD = Card(OTHER_INT_KEY, OTHER_INT)
+OTHER_OPGP_CARD = Card(OTHER_INT_KEY, OTHER_INT, cn="Example Other OPGP Attestation")
 
 
 def attestation(pub, card=CARD, **kw):
-    """The evidence member of a proof for a token: the slot certificate, then the card's own certificate (leaf first)."""
+    """The evidence member of a proof for a PIV key: the slot certificate, then the card's own certificate (leaf first)."""
     return {"attestation": [b64(card.slot_cert(pub, **kw).public_bytes(DER)), b64(card.cert.public_bytes(DER))]}
 
 
+def opgp_attestation(pub, card=OPGP_CARD):
+    """The evidence member of a proof for an OpenPGP-card key: the key's certificate, then the card's own (leaf first)."""
+    return {"attestation": [b64(card.opgp_cert(pub).public_bytes(DER)), b64(card.cert.public_bytes(DER))]}
+
+
+# The certifier's own account is 123456789012. A requester's key in another account (111122223333) is read through the
+# read-only role the certifier's policy lists for that account; an account with no listed role (444455556666) is unreadable.
 ARN = "arn:aws:kms:eu-west-1:123456789012:key/11111111-2222-3333-4444-555555555555"
-ROLE = "arn:aws:iam::123456789012:role/example-key-holder"
-ADMIN = "arn:aws:iam::123456789012:role/example-key-admin"
+ARN_OTHER = "arn:aws:kms:eu-west-1:111122223333:key/66666666-7777-8888-9999-000000000000"
+ARN_UNLISTED = "arn:aws:kms:eu-west-1:444455556666:key/aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"
+READ_ROLE = "arn:aws:iam::111122223333:role/example-certifier-read"
 
 
-def kms_stub(pub, two_actors=False, spec="ECC_NIST_P384"):
-    stmts = [{"Sid": "Admin", "Effect": "Allow", "Principal": {"AWS": ADMIN},
+def kms_stub(pub, arn=ARN, two_actors=False, spec="ECC_NIST_P384", via_role=None, denied=False):
+    """The answers of DescribeKey, GetPublicKey and GetKeyPolicy that a test replays instead of calling AWS. via_role is
+    the role the certifier must assume first (a key in another account); denied means every read is refused."""
+    acct = arn.split(":")[4]
+    if denied:
+        err = {"error": "AccessDeniedException"}
+        return {"describe_key": err, "get_public_key": err, "get_key_policy": err}
+    role = f"arn:aws:iam::{acct}:role/example-key-holder"
+    stmts = [{"Sid": "Admin", "Effect": "Allow", "Principal": {"AWS": f"arn:aws:iam::{acct}:role/example-key-admin"},
               "Action": ["kms:Describe*", "kms:Get*", "kms:List*", "kms:ScheduleKeyDeletion", "kms:CancelKeyDeletion"], "Resource": "*"},
-             {"Sid": "Use", "Effect": "Allow", "Principal": {"AWS": ROLE}, "Action": ["kms:Sign", "kms:GetPublicKey", "kms:DescribeKey"], "Resource": "*"}]
+             {"Sid": "Use", "Effect": "Allow", "Principal": {"AWS": role}, "Action": ["kms:Sign", "kms:GetPublicKey", "kms:DescribeKey"], "Resource": "*"}]
+    if via_role:
+        stmts.append({"Sid": "CertifierRead", "Effect": "Allow", "Principal": {"AWS": via_role},
+                      "Action": ["kms:DescribeKey", "kms:GetPublicKey", "kms:GetKeyPolicy"], "Resource": "*"})
     if two_actors:
-        stmts.append({"Sid": "Use2", "Effect": "Allow", "Principal": {"AWS": "arn:aws:iam::123456789012:role/example-other"},
+        stmts.append({"Sid": "Use2", "Effect": "Allow", "Principal": {"AWS": f"arn:aws:iam::{acct}:role/example-other"},
                       "Action": "kms:Sign", "Resource": "*"})
-    return {"describe_key": {"KeyMetadata": {"Arn": ARN, "KeyId": ARN.rsplit("/", 1)[1], "KeySpec": spec, "KeyUsage": "SIGN_VERIFY",
-                                              "KeyState": "Enabled", "Origin": "AWS_KMS", "KeyManager": "CUSTOMER", "MultiRegion": False,
-                                              "SigningAlgorithms": ["ECDSA_SHA_384"]}},
-            "get_public_key": {"KeyId": ARN, "KeySpec": spec, "PublicKey": b64(spki(pub))},
-            "get_key_policy": {"PolicyName": "default", "Policy": json.dumps({"Version": "2012-10-17", "Statement": stmts})}}
+    stub = {}
+    if via_role:
+        stub["assume_role"] = {"RoleArn": via_role}
+    stub.update({"describe_key": {"KeyMetadata": {"Arn": arn, "KeyId": arn.rsplit("/", 1)[1], "KeySpec": spec, "KeyUsage": "SIGN_VERIFY",
+                                                   "KeyState": "Enabled", "Origin": "AWS_KMS", "KeyManager": "CUSTOMER", "MultiRegion": False,
+                                                   "SigningAlgorithms": ["ECDSA_SHA_384"]}},
+                 "get_public_key": {"KeyId": arn, "KeySpec": spec, "PublicKey": b64(spki(pub))},
+                 "get_key_policy": {"PolicyName": "default", "Policy": json.dumps({"Version": "2012-10-17", "Statement": stmts})}})
+    return stub
 
 
 # ---------------------------------------------------------------- CSR and certificate
-def make_csr(key, cn="acme board-1 intermediate CA", nc=("%s" % HOST,), pathlen=0, hash_=hashes.SHA384()):
+def make_csr(key, cn="acme example intermediate CA", nc=("%s" % HOST,), pathlen=0, hash_=hashes.SHA384()):
     b = (x509.CertificateSigningRequestBuilder().subject_name(name(cn))
          .add_extension(x509.BasicConstraints(ca=True, path_length=pathlen), critical=True)
          .add_extension(KU_CA, critical=True))
@@ -245,7 +291,8 @@ class PgpKey:
         if self.alg == 19:
             r, s = decode_dss_signature(self.priv.sign(d, ec.ECDSA(Prehashed(hashes.SHA384()))))
             return mpi(r.to_bytes(48, "big")) + mpi(s.to_bytes(48, "big"))
-        raise NotImplementedError
+        sg = self.priv.sign(d)
+        return mpi(sg[:32]) + mpi(sg[32:])
 
 
 def sig_body(stype, hashed, unhashed, data, signer, alg=19):
@@ -255,7 +302,9 @@ def sig_body(stype, hashed, unhashed, data, signer, alg=19):
 
 
 def issuer(k):
-    return sub(33, b"\x04" + k.fpr), sub(16, k.fpr[-8:])   # issuer fingerprint (hashed), key id (unhashed)
+    """Every signature carries both: the Issuer Fingerprint subpacket (33, hashed) and the Issuer Key ID subpacket
+    (16, unhashed). gpg 2.2 refuses a v4 signature without the key ID."""
+    return sub(33, b"\x04" + k.fpr), sub(16, k.fpr[-8:])
 
 
 def primary_cert(k, uid):
@@ -266,27 +315,27 @@ def primary_cert(k, uid):
     return pkt(6, k.body) + pkt(13, uid) + pkt(2, cert)
 
 
-def backsig(sk, primary, stype=0x19, creation=T_SUBKEY + 60):
+def backsig(sk, primary, stype=0x19, creation=T_SUBKEY + 60, key_id=True):
     """The back-signature: made by the subkey over the primary and the subkey (RFC 9580, section 5.2.1.9)."""
     ih, iu = issuer(sk)
-    signer = sk.sign_digest
-    return sig_body(stype, sub(2, struct.pack(">I", creation)) + ih, iu, keyhash(primary.body) + keyhash(sk.body), signer)
+    return sig_body(stype, sub(2, struct.pack(">I", creation)) + ih, iu if key_id else b"",
+                    keyhash(primary.body) + keyhash(sk.body), sk.sign_digest, alg=sk.alg)
 
 
 def binding(sk, primary, back, until=T_UNTIL, embed=True, when=T_CEREMONY):
     """The subkey binding the certifier makes: signing capability only, expiry set so the subkey ends at 'until', the
-    back-signature embedded in the unhashed area."""
+    back-signature for this primary embedded in the unhashed area."""
     ih, iu = issuer(primary)
     hashed = sub(2, struct.pack(">I", when)) + sub(27, b"\x02") + sub(9, struct.pack(">I", until - sk.created), True) + ih
     unhashed = iu + (sub(32, back) if embed else b"")
     return sig_body(0x18, hashed, unhashed, keyhash(primary.body) + keyhash(sk.body), primary.sign_digest)
 
 
-PRIM_A, PRIM_B = PgpKey(T_PRIMARY), PgpKey(T_PRIMARY)
-CERT_A = primary_cert(PRIM_A, b"Example Test Release Root A <release-a@example.org>")
-CERT_B = primary_cert(PRIM_B, b"Example Test Release Root B <release-b@example.org>")
-w("pki/test-primary-a.pgp", CERT_A)
-w("pki/test-primary-b.pgp", CERT_B)
+PRIM_A, PRIM_B, PRIM_Z = PgpKey(T_PRIMARY), PgpKey(T_PRIMARY), PgpKey(T_PRIMARY)
+w("pki/test-primary-a.pgp", primary_cert(PRIM_A, b"Example Test Release Root A <release-a@example.org>"))
+w("pki/test-primary-b.pgp", primary_cert(PRIM_B, b"Example Test Release Root B <release-b@example.org>"))
+w("pki/test-primary-z.pgp", primary_cert(PRIM_Z, b"Example Test Release Root Z, not listed <release-z@example.org>"))
+ACTIVE = [PRIM_A, PRIM_B]   # the active primaries on the test root list, in its order
 
 # ---------------------------------------------------------------- cases
 cases, responses = [], []
@@ -314,17 +363,22 @@ def add(case, typ, cfg, expect, reason=None, files=(), stub=None):
     cases.append(c)
 
 
-def x509_case(case, key=None, store="yubikey-piv", cfg="production", expect="refuse", reason=None, csr=None, csr_der=None,
-              ev=None, version=1, extra_member=None, digest_of=None, stub=None, stub_pub=None, evidence_pub=None, **att):
+def evidence_for(store, pub, arn=ARN, att=None, card=None):
+    if store == "piv":
+        return attestation(pub, **({"card": card} if card else {}), **(att or {}))
+    if store == "openpgp-card":
+        return opgp_attestation(pub, **({"card": card} if card else {}))
+    if store == "aws-kms":
+        return {"key_arn": arn, "public_key": b64(spki(pub))}
+    return None
+
+
+def x509_case(case, key=None, store="piv", cfg="production", expect="refuse", reason=None, csr=None, csr_der=None,
+              ev=None, version=1, extra_member=None, digest_of=None, stub=None, evidence_pub=None, arn=ARN, **att):
     key = key or ec384()
     csr = csr or make_csr(key)
     der = csr_der or csr.public_bytes(DER)
-    if store == "yubikey-piv":
-        evidence = ev or attestation(evidence_pub or key.public_key(), **att)
-    elif store == "aws-kms":
-        evidence = {"key_arn": ARN, "public_key": b64(spki(evidence_pub or key.public_key()))}
-    else:
-        evidence = None
+    evidence = ev or evidence_for(store, evidence_pub or key.public_key(), arn=arn, att=att)
     p = proof("x509-intermediate", digest_of or der, store, evidence, version)
     if extra_member:
         p["unexpected"] = extra_member
@@ -339,15 +393,15 @@ def x509_case(case, key=None, store="yubikey-piv", cfg="production", expect="ref
     return csr, key
 
 
-def x509_response(case, request_case, cert, expect, reason=None, csr=None):
-    w(f"responses/{case}.chain.pem", cert.public_bytes(PEM))
-    chain = f"responses/{case}.chain.pem"
-    chain_bytes = cert.public_bytes(PEM)
+def x509_response(case, request_case, cert, expect, reason=None, csr=None, issuer_cert=ROOT_A):
+    path = f"responses/{case}.cert.pem"
+    body = cert.public_bytes(PEM)
+    w(path, body)
     res = {"handoff": 1, "type": "x509-intermediate", "request_sha256": sha(csr.public_bytes(DER)), "outcome": "issued",
-           "artifacts": [{"name": f"{case}.chain.pem", "sha256": sha(chain_bytes)}], "valid_from": ts(cert.not_valid_before_utc),
-           "valid_until": ts(cert.not_valid_after_utc), "issuer": sha(ROOT_A.public_key().public_bytes(DER, SPKI)), "trust_sequence": SEQUENCE}
+           "artifacts": [{"name": f"{case}.cert.pem", "sha256": sha(body)}], "valid_from": ts(cert.not_valid_before_utc),
+           "valid_until": ts(cert.not_valid_after_utc), "issuer": sha(issuer_cert.public_key().public_bytes(DER, SPKI)), "trust_sequence": SEQUENCE}
     wj(f"responses/{case}.result.json", res)
-    r = {"id": case, "type": "x509-intermediate", "request": request_case, "files": [chain, f"responses/{case}.result.json"], "expect": expect}
+    r = {"id": case, "type": "x509-intermediate", "request": request_case, "files": [path, f"responses/{case}.result.json"], "expect": expect}
     if reason:
         r["reason"] = reason
     responses.append(r)
@@ -359,6 +413,14 @@ x509_response("x509-piv-valid", "x509-piv-valid", issue(csr), "install", csr=csr
 k = ec384(); c = make_csr(k)
 x509_case("x509-kms-valid", key=k, csr=c, store="aws-kms", expect="accept", stub=kms_stub(k.public_key()))
 x509_response("x509-kms-valid", "x509-kms-valid", issue(c), "install", csr=c)
+# a key in another account: the certifier assumes the read-only role its policy lists for that account
+k = ec384(); c = make_csr(k)
+x509_case("x509-kms-cross-account", key=k, csr=c, store="aws-kms", arn=ARN_OTHER, expect="accept",
+          stub=kms_stub(k.public_key(), arn=ARN_OTHER, via_role=READ_ROLE))
+# a key in an account for which the policy lists no read role: the certifier cannot read it
+k = ec384(); c = make_csr(k)
+x509_case("x509-kms-cross-account-no-role", key=k, csr=c, store="aws-kms", arn=ARN_UNLISTED,
+          stub=kms_stub(k.public_key(), arn=ARN_UNLISTED, denied=True), reason="proof-invalid")
 k = ec384(); c = make_csr(k)
 x509_case("x509-software-valid", key=k, csr=c, store="software", cfg="development", expect="accept")
 x509_response("x509-software-valid", "x509-software-valid", issue(c), "install", csr=c)
@@ -369,7 +431,7 @@ cases.append({"id": "x509-software-in-production", "type": "x509-intermediate", 
 
 k = ec384(); c = make_csr(k)
 x509_case("x509-csr-bad-signature", key=k, csr=c, csr_der=tamper_csr(c), cfg="development", store="software", reason="possession-invalid")
-k = ec384(); x509_case("x509-p256", key=ec.generate_private_key(ec.SECP256R1()), cfg="development", store="software", reason="algorithm-unsupported")
+x509_case("x509-p256", key=ec.generate_private_key(ec.SECP256R1()), cfg="development", store="software", reason="algorithm-unsupported")
 x509_case("x509-version-2", version=2, reason="version-unsupported")
 k = ec384(); c = make_csr(k); other = make_csr(ec384(), cn="another request")
 x509_case("x509-request-mismatch", key=k, csr=c, digest_of=other.public_bytes(DER), reason="request-mismatch")
@@ -384,46 +446,44 @@ k = ec384(); x509_case("x509-kms-key-mismatch", key=k, store="aws-kms", evidence
                        stub=kms_stub(k.public_key()), reason="key-mismatch")
 k = ec384(); x509_case("x509-kms-two-actors", key=k, store="aws-kms", stub=kms_stub(k.public_key(), two_actors=True), reason="policy")
 
-# ---- X.509 responses a requester must refuse (they answer the request x509-response-request)
+# ---- X.509 answers to the request x509-response-request: one from the other root, and four a requester must refuse
 k = ec384(); c = make_csr(k)
 x509_case("x509-response-request", key=k, csr=c, store="software", cfg="development", expect="accept")
 base = "x509-response-request"
+x509_response("x509-response-other-root", base, issue(c, issuer_key=ROOT_B_KEY, issuer=ROOT_B), "install", csr=c, issuer_cert=ROOT_B)
 x509_response("x509-response-wrong-key", base, issue(c, pubkey=ec384().public_key()), "refuse", "key-mismatch", csr=c)
 x509_response("x509-response-pathlen-1", base, issue(c, pathlen=1), "refuse", "profile", csr=c)
 x509_response("x509-response-expired", base, issue(c, nb=dt.datetime(2025, 9, 1, tzinfo=UTC), na=dt.datetime(2026, 10, 1, tzinfo=UTC)), "refuse", "validity", csr=c)
-x509_response("x509-response-untrusted-issuer", base, issue(c, issuer_key=ROOT_B_KEY, issuer=ROOT_B), "refuse", "issuer", csr=c)
+x509_response("x509-response-untrusted-issuer", base, issue(c, issuer_key=ROOT_Z_KEY, issuer=ROOT_Z), "refuse", "issuer", csr=c, issuer_cert=ROOT_Z)
 
 
-# ---- OpenPGP requests
-def pgp_case(case, store="yubikey-piv", cfg="production", expect="refuse", reason=None, sk=None, primary=PRIM_A, back=None,
-             version=1, stub=False, evidence_pub=None, proof_primary=None, omit_back=False, req_override=None, **att):
+# ---- OpenPGP requests: the subkey, then one back-signature for each primary in `primaries`, in that order
+def pgp_case(case, store="piv", cfg="production", expect="refuse", reason=None, sk=None, primaries=None, backs=None,
+             version=1, stub=None, evidence_pub=None, proof_primaries=None, card=None):
     sk = sk or PgpKey(T_SUBKEY)
-    back = back if back is not None else backsig(sk, primary)
-    req = req_override or (pkt(14, sk.body) + (b"" if omit_back else pkt(2, back)))
-    pub = evidence_pub or sk.pub
-    if store == "yubikey-piv":
-        evidence = attestation(pub, **att)
-    elif store == "aws-kms":
-        evidence = {"key_arn": ARN, "public_key": b64(spki(pub))}
-    else:
-        evidence = None
-    p = proof("openpgp-subkey", req, store, evidence, version, primary=proof_primary or hexfp(primary), capabilities=["sign"])
+    primaries = ACTIVE if primaries is None else primaries
+    backs = [backsig(sk, p) for p in primaries] if backs is None else backs
+    req = pkt(14, sk.body) + b"".join(pkt(2, b) for b in backs)
+    evidence = evidence_for(store, evidence_pub or sk.pub, card=card)
+    names = proof_primaries if proof_primaries is not None else [hexfp(p) for p in primaries]
+    p = proof("openpgp-subkey", req, store, evidence, version, primaries=names, capabilities=["sign"])
     w(f"requests/{case}.subkey.pgp", req)
     wj(f"requests/{case}.proof.json", p)
     files = [f"requests/{case}.subkey.pgp", f"requests/{case}.proof.json"]
     st = None
-    if stub:
+    if stub is not None:
         st = f"requests/{case}.kms-stub.json"
-        wj(st, kms_stub(sk.pub))
+        wj(st, stub)
     add(case, "openpgp-subkey", cfg, expect, reason, files, st)
-    return sk, back
+    return sk, dict(zip((hexfp(p) for p in primaries), backs)), req
 
 
-def pgp_response(case, request_case, sk, back, primary=PRIM_A, expect="install", reason=None, cert_override=None, until=T_UNTIL, embed=True):
-    body = cert_override or (pkt(14, sk.body) + pkt(2, binding(sk, primary, back, until=until, embed=embed)))
+def pgp_response(case, request_case, sk, backs, req, primary=PRIM_A, expect="install", reason=None, until=T_UNTIL, embed=True):
+    back = backs.get(hexfp(primary)) or backsig(sk, primary)
+    body = pkt(14, sk.body) + pkt(2, binding(sk, primary, back, until=until, embed=embed))
     w(f"responses/{case}.bound.pgp", body)
     SUBKEYS[case] = sk
-    res = {"handoff": 1, "type": "openpgp-subkey", "request_sha256": sha(pkt(14, sk.body) + pkt(2, back)), "outcome": "issued",
+    res = {"handoff": 1, "type": "openpgp-subkey", "request_sha256": sha(req), "outcome": "issued",
            "artifacts": [{"name": f"{case}.bound.pgp", "sha256": sha(body)}], "valid_from": ts(CLOCK), "valid_until": ts(dt.datetime.fromtimestamp(until, UTC)),
            "issuer": hexfp(primary), "trust_sequence": SEQUENCE}
     wj(f"responses/{case}.result.json", res)
@@ -433,42 +493,45 @@ def pgp_response(case, request_case, sk, back, primary=PRIM_A, expect="install",
     responses.append(r)
 
 
-sk, back = pgp_case("pgp-piv-valid", expect="accept")
-pgp_response("pgp-piv-valid", "pgp-piv-valid", sk, back)
-sk, back = pgp_case("pgp-kms-valid", store="aws-kms", expect="accept", stub=True)
-pgp_response("pgp-kms-valid", "pgp-kms-valid", sk, back)
-sk, back = pgp_case("pgp-software-valid", store="software", cfg="development", expect="accept")
-pgp_response("pgp-software-valid", "pgp-software-valid", sk, back)
-pgp_case("pgp-backsig-missing", omit_back=True, reason="possession-invalid")
+sk, backs, req = pgp_case("pgp-piv-valid", expect="accept")
+pgp_response("pgp-piv-valid", "pgp-piv-valid", sk, backs, req)
 sk = PgpKey(T_SUBKEY)
-pgp_case("pgp-backsig-wrong-primary", sk=sk, back=backsig(sk, PRIM_B), reason="possession-invalid")
-sk = PgpKey(T_SUBKEY)
-pgp_case("pgp-backsig-wrong-type", sk=sk, back=backsig(sk, PRIM_A, stype=0x18), reason="possession-invalid")
-sk = PgpKey(T_SUBKEY)
-bs = bytearray(backsig(sk, PRIM_A)); bs[-1] ^= 1
-pgp_case("pgp-backsig-tampered", sk=sk, back=bytes(bs), reason="possession-invalid")
-pgp_case("pgp-version-2", version=2, reason="version-unsupported")
-pgp_case("pgp-unknown-primary", proof_primary="0" * 39 + "1", reason="unknown-primary")
-pgp_case("pgp-piv-key-mismatch", evidence_pub=ec384().public_key(), reason="key-mismatch")
-# an Ed25519 subkey: the request is well formed and signed, the algorithm is not one of version 1
-esk = PgpKey(T_SUBKEY, alg=22)
-ih, iu = issuer(esk)
-hashed = sub(2, struct.pack(">I", T_SUBKEY + 60)) + ih
-head = b"\x04" + bytes([0x19, 22, 9]) + struct.pack(">H", len(hashed)) + hashed
-dg = hashlib.sha384(keyhash(PRIM_A.body) + keyhash(esk.body) + head + b"\x04\xff" + struct.pack(">I", len(head))).digest()
-sg = esk.priv.sign(dg)
-eback = head + struct.pack(">H", len(iu)) + iu + dg[:2] + mpi(sg[:32]) + mpi(sg[32:])
-pgp_case("pgp-ed25519", sk=esk, back=eback, store="software", cfg="development", reason="algorithm-unsupported")
+sk, backs, req = pgp_case("pgp-kms-valid", sk=sk, store="aws-kms", expect="accept", stub=kms_stub(sk.pub))
+pgp_response("pgp-kms-valid", "pgp-kms-valid", sk, backs, req)
+sk, backs, req = pgp_case("pgp-openpgp-card-valid", store="openpgp-card", expect="accept")
+pgp_response("pgp-openpgp-card-valid", "pgp-openpgp-card-valid", sk, backs, req)
+sk, backs, req = pgp_case("pgp-software-valid", store="software", cfg="development", expect="accept")
+pgp_response("pgp-software-valid", "pgp-software-valid", sk, backs, req)
 
-# ---- OpenPGP responses a requester must refuse (they answer the request pgp-response-request)
-sk = PgpKey(T_SUBKEY); back = backsig(sk, PRIM_A)
-pgp_case("pgp-response-request", sk=sk, back=back, store="software", cfg="development", expect="accept")
-pgp_response("pgp-response-no-backsig", "pgp-response-request", sk, back, embed=False, expect="refuse", reason="profile")
+pgp_case("pgp-backsig-missing", backs=[], reason="possession-invalid")
+sk = PgpKey(T_SUBKEY)
+pgp_case("pgp-backsig-missing-one", sk=sk, backs=[backsig(sk, PRIM_A)], reason="possession-invalid")
+sk = PgpKey(T_SUBKEY)
+pgp_case("pgp-backsig-wrong-primary", sk=sk, backs=[backsig(sk, PRIM_A), backsig(sk, PRIM_Z)], reason="possession-invalid")
+sk = PgpKey(T_SUBKEY)
+pgp_case("pgp-backsig-wrong-type", sk=sk, backs=[backsig(sk, PRIM_A), backsig(sk, PRIM_B, stype=0x18)], reason="possession-invalid")
+sk = PgpKey(T_SUBKEY)
+bad = bytearray(backsig(sk, PRIM_B)); bad[-1] ^= 1
+pgp_case("pgp-backsig-tampered", sk=sk, backs=[backsig(sk, PRIM_A), bytes(bad)], reason="possession-invalid")
+sk = PgpKey(T_SUBKEY)
+pgp_case("pgp-backsig-no-key-id", sk=sk, backs=[backsig(sk, PRIM_A), backsig(sk, PRIM_B, key_id=False)], reason="possession-invalid")
+pgp_case("pgp-version-2", version=2, reason="version-unsupported")
+pgp_case("pgp-unknown-primary", primaries=[PRIM_A, PRIM_Z], reason="unknown-primary")
+pgp_case("pgp-primaries-incomplete", primaries=[PRIM_A], reason="unknown-primary")
+pgp_case("pgp-piv-key-mismatch", evidence_pub=ec384().public_key(), reason="key-mismatch")
+pgp_case("pgp-openpgp-card-untrusted-chain", store="openpgp-card", card=OTHER_OPGP_CARD, reason="proof-invalid")
+# an Ed25519 subkey: the request is well formed and signed, the algorithm is not one of version 1
+pgp_case("pgp-ed25519", sk=PgpKey(T_SUBKEY, alg=22), store="software", cfg="development", reason="algorithm-unsupported")
+
+# ---- OpenPGP answers to the request pgp-response-request: one bound by the other primary, and four a requester must refuse
+sk, backs, req = pgp_case("pgp-response-request", store="software", cfg="development", expect="accept")
+pgp_response("pgp-response-other-primary", "pgp-response-request", sk, backs, req, primary=PRIM_B)
+pgp_response("pgp-response-no-backsig", "pgp-response-request", sk, backs, req, embed=False, expect="refuse", reason="profile")
 other = PgpKey(T_SUBKEY)
-pgp_response("pgp-response-wrong-subkey", "pgp-response-request", other, backsig(other, PRIM_A), expect="refuse", reason="key-mismatch")
-pgp_response("pgp-response-wrong-primary", "pgp-response-request", sk, back, primary=PRIM_B, expect="refuse", reason="issuer")
+pgp_response("pgp-response-wrong-subkey", "pgp-response-request", other, {}, req, expect="refuse", reason="key-mismatch")
+pgp_response("pgp-response-wrong-primary", "pgp-response-request", sk, backs, req, primary=PRIM_Z, expect="refuse", reason="issuer")
 # the expiry is shorter than 12 months: a requester that expects about 13 months refuses it
-pgp_response("pgp-response-short-expiry", "pgp-response-request", sk, back, until=T_CEREMONY + 60 * 86400, expect="refuse", reason="validity")
+pgp_response("pgp-response-short-expiry", "pgp-response-request", sk, backs, req, until=T_CEREMONY + 60 * 86400, expect="refuse", reason="validity")
 
 # ---- optional self-check material: with VERIFY_DIR set, write a detached signature by each response's subkey over a
 # fixed text, so that an independent verifier (sqv) can be run on primary-cert + bound.pgp. Not part of the fixtures.
@@ -482,21 +545,21 @@ if os.environ.get("VERIFY_DIR"):
     open(os.path.join(os.environ["VERIFY_DIR"], "data.txt"), "wb").write(b"hand-off vector check\n")
 
 # ---- manifest
+policy = {"min_firmware": "5.7.0", "pin_policy": ["once", "always"], "require_name_constraints": True,
+          "permitted_uri_hosts": [HOST], "validity_months": 13, "kms_read_roles": {"111122223333": READ_ROLE}}
 wj("manifest.json", {
     "handoff": 1,
     "clock": ts(CLOCK),
     "pinned": {
         "attestation_roots": ["pki/test-attestation-root.pem"],
-        "attestation_intermediates": ["pki/test-attestation-intermediate.pem"],
-        "root_list": {"x509": ["pki/test-root-a.pem"], "openpgp": ["pki/test-primary-a.pgp"]},
-        "known_openpgp_primaries": ["pki/test-primary-a.pgp", "pki/test-primary-b.pgp"],
+        "attestation_intermediates": ["pki/test-attestation-intermediate.pem", "pki/test-opgp-attestation-intermediate.pem"],
+        "root_list": {"x509": ["pki/test-root-a.pem", "pki/test-root-b.pem"], "openpgp": ["pki/test-primary-a.pgp", "pki/test-primary-b.pgp"]},
+        "not_listed": {"x509": ["pki/test-root-z.pem"], "openpgp": ["pki/test-primary-z.pgp"]},
         "trust_sequence": SEQUENCE,
     },
     "configs": {
-        "production": {"stores": ["yubikey-piv", "aws-kms"], "min_firmware": "5.7.0", "pin_policy": ["once", "always"],
-                       "require_name_constraints": True, "permitted_uri_hosts": [HOST], "validity_months": 13},
-        "development": {"stores": ["yubikey-piv", "aws-kms", "software"], "min_firmware": "5.7.0", "pin_policy": ["once", "always"],
-                        "require_name_constraints": True, "permitted_uri_hosts": [HOST], "validity_months": 13},
+        "production": {"stores": ["piv", "openpgp-card", "aws-kms"], **policy},
+        "development": {"stores": ["piv", "openpgp-card", "aws-kms", "software"], **policy},
     },
     "requests": cases,
     "responses": responses,
