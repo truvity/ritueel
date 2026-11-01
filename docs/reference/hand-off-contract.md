@@ -1,6 +1,6 @@
 ---
 title: Hand-off contract, version 1
-description: What a system that holds intermediate keys sends ritueel to get a certificate or a subkey binding, and what comes back. Files, proofs, checks, refusals and test vectors.
+description: What a system that holds intermediate keys sends ritueel for a certificate or a subkey binding, and what comes back: files, proofs, checks, refusals, vectors.
 sidebar:
   order: 1
 ---
