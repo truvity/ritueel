@@ -20,15 +20,18 @@ Facts from tests, which the choices rest on:
 - A release certificate with an encryption subkey makes rpm-sequoia print a policy warning on every install.
 - `gpg` and `gpgv` refuse a signing subkey without a back-signature; `sqv` reports no binding. A back-signature made by a YubiKey PIV key was accepted (2026-10-31).
 - A PIV slot signs a whole Ed25519 message and refuses more than about 3 KiB, so it cannot sign an artifact. P-384 signs a digest.
+- A P-384 key in a PIV slot works as the primary of a version 4 certificate: it made the direct-key signature (`0x1F`), the user ID certification (`0x13`), the subkey binding (`0x18`) and revocations (`0x20`, `0x28`). `gpg` 2.4.8, `gpgv`, `sqv` 1.5.0, `sq` 1.4.1 and apt 3.2.0 accepted the certificate and a subkey signature, and rpm 6.0.2 imported it (signed `.rpm` files were not tested). An AWS KMS P-384 key worked the same way, as primary and as subkey (measured 2026-11-01).
+- `gpgv` ignores revocation signatures, and `gpg --verify` exits 0 for a revoked key (it prints `REVKEYSIG`). `sqv` rejects: a revocation with a hard reason (no reason given, compromised) rejects every signature of the key, and one with a soft reason (superseded, retired) rejects only signatures made after it (measured 2026-11-01).
+- `gpg` 2.4.8 refuses to parse a version 6 certificate ("unknown version 6"); `gpgv` refuses it too. `sqv` 1.5.0 accepts it (measured 2026-11-01).
 
 ## Decision
 
 ### The keys
 
-- **Two primaries, one on each root card,** generated on the card, certify-only, never copies of each other, both authoritative ([0002](/decisions/0002-every-key-is-born-in-its-store-two-roots-one-holder-yearly-alternation/)). Version 4 keys, ECDSA on P-384, signatures with SHA-384. A primary is valid for about three years, and a new self-signature at each use of its card extends it ([0002](/decisions/0002-every-key-is-born-in-its-store-two-roots-one-holder-yearly-alternation/), [0003](/decisions/0003-ceremonies-plan-confirm-reserve-sign-record-and-the-ritueel-commands/)). Each primary lives in a PIV slot, and ritueel builds the OpenPGP packets itself.
+- **Two primaries, one on each root card,** generated on the card, certify-only, never copies of each other, both authoritative ([0002](/decisions/0002-every-key-is-born-in-its-store-two-roots-one-holder-yearly-alternation/)). Version 4 keys ([see Algorithm](#algorithm)), ECDSA on P-384, signatures with SHA-384. A primary is valid for about three years, and a new self-signature at each use of its card extends it ([0002](/decisions/0002-every-key-is-born-in-its-store-two-roots-one-holder-yearly-alternation/), [0003](/decisions/0003-ceremonies-plan-confirm-reserve-sign-record-and-the-ritueel-commands/)). Each primary lives in a PIV slot, and ritueel builds the OpenPGP packets itself.
 - **A dedicated release identity.** Both primaries carry the same user ID, a release address of the project, and no person's name. The identity is a role; whoever holds the cards is not in it. **No personal key certifies a release primary:** nobody's own key vouches for it, so release trust does not depend on a key that is usually in software.
 - **Signing subkeys.** The holder of an intermediate generates a signing-only subkey where it lives (a YubiKey slot or a KMS key). A primary binds it with a type `0x18` signature that carries the subkey's own `0x19` back-signature, expires after about 13 months, and is renewed at the yearly ceremony, so years overlap. The primary of the year binds; a subkey is revoked by the primary of the year.
-- **The keyring keeps expired subkeys.** A signature made while a subkey was valid keeps verifying after it expires, because `gpgv` and `sqv` judge a signature at its own time. Dropping expired subkeys would break the verification of old releases. A revoked subkey stays too, with its revocation.
+- **The keyring keeps expired subkeys.** A signature made while a subkey was valid keeps verifying after it expires, because `gpgv` and `sqv` judge a signature at its own time. Dropping expired subkeys would break the verification of old releases. A revoked subkey stays too, with its revocation, for the tools that read it. `gpgv` and apt do not read a revocation, so whether a subkey revoked as compromised is dropped from the package instead is open (see below).
 
 ### No signed release until the card roots exist
 
@@ -63,8 +66,18 @@ The roadmap and the guides carry the same order.
 
 ### Revocation
 
-- A subkey is revoked by the primary of the year. The revocation is a signature inside the keyring and reaches users in the next package.
-- A primary is revoked with the pre-made revocation signature, made when it was born and stored apart from the card (RFC 9580, section 13.9; [0002](/decisions/0002-every-key-is-born-in-its-store-two-roots-one-holder-yearly-alternation/)). RFC 9580 (section 5.2.3.23) deprecates the designated-revoker subpacket and says applications must not generate it, so it is not used.
+A revocation signature is advisory for some verifiers, so revocation has two parts that reach different users (measured 2026-11-01):
+
+| Verifier | Reads a revocation signature? |
+|---|---|
+| `sqv`, `sq` | Yes. A hard reason (no reason, compromised) rejects every signature of the key. A soft reason (superseded, retired) rejects only signatures made after the revocation. |
+| `gpg` | Partly. It marks the key revoked and prints `REVKEYSIG`, but `gpg --verify` still exits 0. |
+| `gpgv`, and so apt | No. It ignores the revocation and reports a good signature. |
+| rpm | Not tested. |
+
+- **For `gpg` and Sequoia users,** a subkey is revoked by the primary of the year, and a primary with the pre-made revocation signature, made when it was born and stored apart from the card (RFC 9580, section 13.9; [0002](/decisions/0002-every-key-is-born-in-its-store-two-roots-one-holder-yearly-alternation/)). The signature is inside the keyring and reaches users in the next package. RFC 9580 (section 5.2.3.23) deprecates the designated-revoker subpacket and says applications must not generate it, so it is not used.
+- **For apt users, the effective revocation is a new keyring package without the key.** A package that drops a revoked primary or subkey is the only thing `gpgv` notices. The revocation signature still goes out, for the users who read it.
+- **`gpg --verify` exit status is never a trust decision.** A script that checks a signature uses `sqv`, or `gpg --status-fd` and rejects `REVKEYSIG`. The guides say so.
 - The time from a theft to a verifier's refusal is the time to run the ceremony and to publish the package. Each guide says so.
 
 ### Sigstore
@@ -74,7 +87,9 @@ The roadmap and the guides carry the same order.
 
 ### Algorithm
 
-ECDSA on P-384, version 4 keys, SHA-384, for primaries and subkeys. It works on every store, with every verifier tested, and on a PIV slot. Ed25519 and version 6 keys are not used: a PIV slot cannot sign an artifact with Ed25519, and GnuPG 2.4 does not handle version 6. A post-quantum primary is [issue #32](https://github.com/truvity/ritueel/issues/32).
+**Decided by the maintainer on 2026-11-01: OpenPGP keys are version 4 now, and version 6 comes later, once the verifiers people use accept it.** The reason is measured: GnuPG implements no version 6 in any release, and `gpg` 2.4.8, the current one, refuses to parse a version 6 certificate, while Sequoia (`sqv`, `sq`) accepts it. A release key that `gpg`, `gpgv` and apt cannot read is not a release key. The profile that adds version 6 is a later record.
+
+ECDSA on P-384, version 4 keys, SHA-384, for primaries and subkeys. It works on every store, with every verifier tested, and on a PIV slot. **SHA-384 is used on every backend:** a KMS P-384 key signs only 48-byte SHA-384 digests, and one hash everywhere makes a card, KMS and software key behave alike. Ed25519 is not used: a PIV slot cannot sign an artifact with Ed25519. A post-quantum primary is [issue #32](https://github.com/truvity/ritueel/issues/32).
 
 ### Old releases
 
@@ -85,6 +100,8 @@ ECDSA on P-384, version 4 keys, SHA-384, for primaries and subkeys. It works on 
 - **Publication channels** ([issue #28](https://github.com/truvity/ritueel/issues/28)): which channels publish the keyring (keyservers, WKD, DNS OPENPGPKEY, the project site, the repository's security file). The personal-key question is decided above.
 - **Older rpm** and a combined armoured file. Importing one file with two certificates was tested on rpm 6.0 only (2026-10-29); the package ships one file for each primary to avoid the question. The matrix of older releases is for issue #15.
 - **Who writes the archives** ([issue #15](https://github.com/truvity/ritueel/issues/15)).
+- **Short key expiry as a second line for apt users.** Because `gpgv` ignores revocation, the only brake on a stolen key is a new keyring. Options: (a) rely on the new keyring package alone, which is simplest and already planned; (b) also give primaries and subkeys a shorter expiry and re-sign them more often, which bounds how long a key that nobody revoked stays usable, at the cost of more ceremonies and of a keyring that every user must update more often; the effect on `gpgv` was not tested. Not decided.
+- **A subkey revoked as compromised.** Options: keep it in the keyring with its revocation, which `gpg` and `sqv` honour and which keeps old signatures checkable, but which `gpgv` and apt keep accepting; or drop it from the package, which protects apt users and breaks the check of old signatures made with that subkey. Not decided.
 
 ## Consequences
 
@@ -93,7 +110,9 @@ ECDSA on P-384, version 4 keys, SHA-384, for primaries and subkeys. It works on 
 - A user who keeps an old keyring version can verify old releases with it; one who upgrades cannot verify a release signed under a primary that a later package dropped.
 - The keyring grows by one subkey per signer per year. Expired subkeys stay for as long as a primary is active.
 - Because a package that adds a primary is signed by an old key, a user who skips the transition (a very old keyring) cannot verify it and must fetch the new keyring by one of the published channels. The channels in #28 matter for them.
-- ritueel needs OpenPGP code of its own: binding, certification, revocation, and a keyring writer that produces certificates other tools accept. The test matrix is `gpg`, `gpgv`, `sqv`, apt and rpm, and it belongs to issue #25.
+- ritueel needs OpenPGP code of its own: binding, certification, revocation, and a keyring writer that produces certificates other tools accept. The test matrix is `gpg`, `gpgv`, `sqv`, apt and rpm, and it belongs to issue #25. The matrix includes a revoked key, and its checks read the verifier's status output and not its exit code.
+- A revocation signature does not protect an apt user. After a theft, the protection is the new keyring package, so the speed of the ceremony and of the package is what counts.
+- Version 4 keys carry the SHA-1 fingerprint, and the creation time is part of it; ritueel stores the creation time it chose ([0003](/decisions/0003-ceremonies-plan-confirm-reserve-sign-record-and-the-ritueel-commands/)).
 - A deterministic package builder is code to write and keep, and its tests need no distribution tool.
 - The trust sequence couples three products to one counter. A change to any of them is a new package version, even when the keyring did not change.
 
@@ -141,11 +160,17 @@ ECDSA on P-384, version 4 keys, SHA-384, for primaries and subkeys. It works on 
 - Cons: it needs an online key, which ritueel does not hold ([0001](/decisions/0001-scope-roots-and-transitions-systems-like-sluis-hold-intermediates/)); the package would be signed by the primary, which is rarely available.
 - Why not: the user's pipeline signs with the current subkey, as it does for every other file.
 
-### Ed25519 or version 6 keys
+### Version 6 keys now
 
-- Pros: shorter keys and signatures; the direction of the standard.
-- Cons: a PIV slot cannot sign an artifact with Ed25519; GnuPG 2.4 does not read version 6; the verifier matrix shrinks.
-- Why not: P-384 works everywhere that matters today. A later record can add a profile.
+- Pros: the direction of the standard (RFC 9580); a SHA-256 fingerprint; Sequoia accepts them (`sqv` 1.5.0), and a card or KMS key can be the primary of one (the packets are built the same way).
+- Cons: GnuPG implements no version 6 in any release, and `gpg` 2.4.8 refuses to parse the certificate; `gpgv`, and so apt, read the keyring through the same code, so a release signed under a version 6 key would verify only with Sequoia-based tools.
+- Why not: the maintainer decided on 2026-11-01 to use version 4 now and to add version 6 once the verifiers people use accept it. A later record adds the profile.
+
+### Ed25519 keys
+
+- Pros: shorter keys and signatures.
+- Cons: a PIV slot cannot sign an artifact with Ed25519; the verifier matrix shrinks.
+- Why not: P-384 works everywhere that matters today.
 
 ### A provisional software primary that binds the first KMS subkey
 

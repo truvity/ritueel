@@ -5,14 +5,14 @@ sidebar:
   order: 1
 ---
 
-*Design phase: not built yet, and the revocation steps are assumed, not tested (see [OpenPGP release keys](/concepts/openpgp-release-keys/#revocation)). This page is the plan that the `root revoke` and `root add` commands will follow, and the drill that will rehearse it.*
+*Design phase: not built yet. The revocation behaviour of the verifiers was measured on 2026-11-01 (see [OpenPGP release keys](/concepts/openpgp-release-keys/#revocation)); the drill has not run. This page is the plan that the `root revoke` and `root add` commands will follow, and the drill that will rehearse it.*
 
 Until the revocation reaches outsiders, whoever holds the card **and** its PIN can sign things they trust. A card without its PIN locks after three wrong tries, which limits the exposure. Act in this order.
 
 ## Steps
 
-1. **Revoke the root.** Publish a root list signed by the surviving root, with a higher version and without the lost root. For OpenPGP, publish the revocation signature that was made when the primary was born and stored apart from the card. Result: clients that fetch the root list stop trusting the lost root.
-2. **Publish new trust products without the lost root.** A new CA bundle, and a new keyring package signed by the surviving key. Result: new installs and package updates carry only the surviving root.
+1. **Revoke the root.** Publish a root list signed by the surviving root, with a higher version and without the lost root. For OpenPGP, publish the revocation signature that was made when the primary was born and stored apart from the card. Result: clients that fetch the root list stop trusting the lost root, and users of `gpg` and Sequoia (`sqv`) who receive the signature stop trusting the lost primary. A user of `gpgv` or apt does not notice the signature; step 2 is what protects them.
+2. **Publish new trust products without the lost root.** A new CA bundle, and a new keyring package signed by the surviving key. Result: new installs and package updates carry only the surviving root. **For apt users this is the revocation:** `gpgv` ignores revocation signatures, so the lost primary stops being trusted only when the keyring package without it is installed.
 3. **Add a replacement root.** Generate it on a fresh card or in a cloud key service (`root add`). The surviving root vouches for it with an X.509 cross-certificate, and its primary is certified by the surviving primary. Result: two roots again.
 4. **Re-certify what chained only to the lost root.** With alternating years this is the normal case: the boards' intermediates of the year the lost card certified are certified again by the surviving card, without replacing any board key. Result: no board has a certificate that depends on the lost root.
 5. **Publish the new trust products with the replacement root,** after the overlap that your slowest client needs.
@@ -22,7 +22,8 @@ Until the revocation reaches outsiders, whoever holds the card **and** its PIN c
 
 - A client with only the new root list refuses a certificate issued under the lost root's key after the revocation.
 - A host that had the old list refuses to accept an older list than the one it holds.
-- `gpgv` with the new keyring refuses a signature by a subkey the lost primary bound, once that subkey is revoked.
+- `gpgv` with the new keyring refuses a signature by a subkey the lost primary bound, because the new keyring no longer holds the lost primary. `gpgv` with the old keyring still accepts it, revoked or not.
+- `sqv` with the old keyring and the revocation signature refuses it too. Do not use the exit status of `gpg --verify` for this check: it is 0 for a revoked key. Read `gpg --status-fd` for `REVKEYSIG`, or use `sqv`.
 
 ## What the drill checks
 

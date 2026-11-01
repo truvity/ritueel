@@ -78,7 +78,7 @@ What the certifier reads from the slot certificate (checked on a test YubiKey 5,
 | `.8` | Two raw bytes: PIN policy (1 never, 2 once, 3 always), then touch policy (1 never, 2 always, 3 cached). |
 | `.9` | Form factor, one raw byte. |
 
-Firmware 5.7 and newer chain to the maker's *current* attestation root; older tokens chain to the earlier PIV root. The certifier pins whichever roots the holder lists, so a chain that ends in an unpinned root is refused.
+Firmware 5.7 and newer chain to the maker's *current* attestation root; older tokens chain to the earlier PIV root. The certifier pins whichever roots the holder lists, so a chain that ends in an unpinned root is refused. The certifier also needs the maker's **intermediates**: the list that piv-go v2.6.0 embeds lacks the intermediate that firmware 5.8 uses, and its built-in verification fails (measured 2026-11-01). The certifier's pinned set is therefore the maker's current root plus the full intermediate bundle, and a card whose intermediate is missing from it is refused until the bundle is refreshed.
 
 ### `aws-kms`
 
@@ -87,7 +87,7 @@ Firmware 5.7 and newer chain to the maker's *current* attestation root; older to
   "public_key": "<the public key, Base64 DER SubjectPublicKeyInfo>" }
 ```
 
-The ARN names the key together with its Region and account. A bare key identifier does not, and the same identifier can exist in two Regions. The public key is a claim. **The certifier does not trust it: it reads the key from KMS** with `DescribeKey`, `GetPublicKey` and `GetKeyPolicy`, and compares. The requester has to give the certifier's principal permission to read the key's description and public key, and nothing more. **This holds for a key in another account too: the certifier is granted read access and re-reads the public key itself. It never accepts a copy of the description or the key in the proof**, not even one marked unverified. A proof whose key the certifier cannot read is refused (`proof-invalid`). `GetKeyPolicy` works only inside the key's own account (AWS documentation, checked 2026-11-01); how the policy rule below applies to a key in another account is open.
+The ARN names the key together with its Region and account. A bare key identifier does not, and the same identifier can exist in two Regions. The public key is a claim. **The certifier does not trust it: it reads the key from KMS** with `DescribeKey`, `GetPublicKey` and `GetKeyPolicy`, and compares. The requester has to give the certifier's principal permission to read the key's description and public key, and nothing more. **This holds for a key in another account too: the certifier is granted read access and re-reads the public key itself. It never accepts a copy of the description or the key in the proof**, not even one marked unverified. A proof whose key the certifier cannot read is refused (`proof-invalid`). **KMS has no attestation.** The evidence for a KMS key is what the certifier reads: the key's description, its policy and the audit trail of its uses. Two further facts apply to an OpenPGP key in KMS (measured 2026-11-01). A P-384 key signs only 48-byte SHA-384 digests, which is the hash the contract uses everywhere. The OpenPGP creation time fixes the fingerprint and is not KMS's creation date, so the requester has to keep it (for example as a tag on the key) and put it in the subkey packet; the certifier takes it from the packet. `GetKeyPolicy` works only inside the key's own account (AWS documentation, checked 2026-11-01); how the policy rule below applies to a key in another account is open.
 
 ### `software`
 
@@ -186,7 +186,7 @@ Each failure gives one of these codes. They belong to the requester and are not 
 
 ### Keys and hashes
 
-Version 1 uses version 4 keys: the primary and the subkey are ECDSA on P-384 (algorithm 19, curve OID `1.3.132.0.34`). RFC 9580 (section 5.2.3.2) wants a digest of at least 384 bits for P-384. Every signature of the contract uses **SHA-384**, which is also the 48-byte digest a YubiKey or a KMS key signs as it is given. Other algorithms are refused with `algorithm-unsupported`. OpenPGP version 6 keys wait for a later version of the contract.
+Version 1 uses version 4 keys: the primary and the subkey are ECDSA on P-384 (algorithm 19, curve OID `1.3.132.0.34`). RFC 9580 (section 5.2.3.2) wants a digest of at least 384 bits for P-384. Every signature of the contract uses **SHA-384**, which is also the 48-byte digest a YubiKey or a KMS key signs as it is given; a KMS P-384 key accepts no other digest length. Other algorithms are refused with `algorithm-unsupported`. OpenPGP version 6 keys wait for a later version of the contract: the maintainer decided on 2026-11-01 to use version 4 now and version 6 once the verifiers people use accept it, because GnuPG (`gpg` 2.4.8) refuses to parse a version 6 certificate.
 
 ### The request
 
@@ -315,7 +315,7 @@ The issue left these to the specification. Each is a proposal.
 | OpenPGP answer | The subkey and its binding, to be appended to the primary's certificate. | The complete updated certificate. | The answer is small and checkable by concatenation. The keyring package carries complete certificates. |
 | Embedded back-signature | In the unhashed area of the binding. | In the hashed area. | The way GnuPG, Sequoia and `sqv` were tested and measured on 2026-10-31 and 2026-11-01. Both areas are legal (RFC 9580, section 5.2.3.34). |
 | Order of checks | Fixed, with one code. | Report every failure. | The vectors then have one right answer, and a person sees the first problem to fix. |
-| Algorithm | ECDSA P-384, SHA-384, version 4 keys. | P-256; Ed25519; version 6 keys. | P-384 works on every store and with GnuPG, `gpgv`, `sqv`, apt and rpm (tested 2026-10-29 and 2026-10-31). A PIV slot signs a whole Ed25519 message and refuses more than about 3 KiB, so it cannot sign an artifact. GnuPG 2.4 does not handle version 6. |
+| Algorithm | ECDSA P-384, SHA-384, version 4 keys. | P-256; Ed25519; version 6 keys. | P-384 works on every store and with GnuPG, `gpgv`, `sqv`, apt and rpm (tested 2026-10-29 and 2026-10-31). A PIV slot signs a whole Ed25519 message and refuses more than about 3 KiB, so it cannot sign an artifact. GnuPG implements no version 6 (`gpg` 2.4.8 refuses to parse it), and Sequoia accepts it; version 6 comes when the verifiers do. |
 | Fixture generator | A Python script, kept next to the fixtures. | Go, with the first test; none. | It was the fastest way to make fixtures with independent code. It should become Go once the module exists, so that one toolchain builds everything. |
 
 ## Open
