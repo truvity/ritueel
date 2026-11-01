@@ -37,6 +37,17 @@ For a root, rotating is a [transition](/learn/transitions/): create the new root
 
 For OpenPGP subkeys, make a new subkey, bind it, and let the old one expire or revoke it with a soft reason (*superseded*), so old signatures stay valid. Rotating the master key means a new identity: everyone who recorded your fingerprint must record the new one, so it is the most expensive rotation.
 
+## How others do it
+
+| Project | Practice |
+|---|---|
+| Debian archive | A signing key for each release, with the new key signed by other archive keys after a fingerprint check, and announced well in advance. |
+| Qubes | An offline master key certifies a signing key for each release; developer keys expire after one year, the master and release keys do not. |
+| Tails | The same key, its expiry extended again and again, with subkeys on smartcards. |
+| Linux kernel | A compromised key is revoked, and the developer signs earlier releases again with a new key. |
+
+Two patterns follow. **Extend the same key's expiry** when the key is safe (Tails): that is re-signing. **Rotate to a new key certified by the old one** when custody changed (Debian, Qubes). A *key transition statement*, signed by both keys, lists both fingerprints and asks readers to check the new one (read from the projects' pages, 2026-11-01).
+
 ## The rule
 
 > **Re-sign yearly. Rotate on an event, or after at most three years.** ([principle 3](/principles/))

@@ -16,6 +16,8 @@ sidebar:
 | OpenPGP subkey | A new binding signature from the master key, with a later expiry. |
 | OpenPGP master key | A new self-signature that moves its expiry. |
 
+With GnuPG, `gpg --quick-set-expire <fingerprint> <expiry> [subkeys]` moves the expiry; it needs the master secret key, which is why it is a ceremony.
+
 Nothing that holds the key has to change. The intermediate keeps its private key where it lives; only a new certificate arrives. Anyone who pinned the public key still has the right pin.
 
 ## Why every year

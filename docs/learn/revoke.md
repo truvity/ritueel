@@ -23,6 +23,14 @@ A revocation made after a key is lost cannot be made at all, and one made in a h
 
 Choose honestly. A soft reason on a stolen key tells verifiers to believe a thief's backdated signatures.
 
+## How to make an OpenPGP revocation certificate
+
+- `gpg --gen-revoke <fingerprint>` makes one on demand. It takes effect only after you import it and publish the result.
+- `gpg --quick-gen-key` writes one automatically to `openpgp-revocs.d/<fingerprint>.rev` in the GnuPG home when it makes a key (measured 2026-11-01, GnuPG 2.4.8), with the reason "no reason". Its first line is prefixed with a colon so it cannot be imported by accident; anyone who holds the file can remove the colon and publish it, so store it like a key.
+- Sequoia: `sq key generate` writes an emergency revocation certificate by default, and `sq key revoke` makes one with a reason.
+- The reason codes are: 0 no reason, 1 superseded, 2 compromised, 3 retired. On *compromised*, all signatures by the key are suspect; on *superseded* or *retired*, old signatures stay valid (RFC 9580, section 5.2.3.31). Make one certificate for each likely reason, and keep them all apart from the signing machine.
+- There is no designated revoker: RFC 9580 forbids generating one. The replacement is a revocation certificate kept in escrow, which may be split into shares.
+
 ## What a revocation reaches
 
 A revocation is only as good as the verifier that reads it.
@@ -32,7 +40,7 @@ A revocation is only as good as the verifier that reads it.
 | Sequoia (`sqv`, `sq`) | Rejects a revoked key. |
 | `gpg` | Marks the key revoked but, measured on 2026-11-01, still reports a good signature. |
 | `gpgv` and apt | Ignore the revocation. |
-| An X.509 client | Honours a CRL only if it loads one; many do not, so short lifetimes matter more than CRLs. |
+| An X.509 client | Honours a CRL only if it loads one; many do not, so short lifetimes matter more than CRLs. A public CA that issues CA certificates must publish a new CRL at least every 12 months (Baseline Requirements, read 2026-11-01). |
 
 So for apt users **the effective revocation is a new keyring package without the key.** They are protected only when it arrives. The numbers and versions are in [OpenPGP release keys](/learn/openpgp-release-keys/#revocation). Never treat the exit status of `gpg --verify` as a trust decision.
 
