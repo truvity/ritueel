@@ -55,7 +55,7 @@ These are not supported and not scheduled. Each arrives with its first real inst
 | Nitrokey | Hardware with open firmware, as an alternative to YubiKey. | Which model supports PIV, the OpenPGP card or both, with which algorithms, and whether it can attest a key. |
 | Other tokens and HSMs | A company may already own them. | Whatever the first real installation needs. |
 
-A page on which keys to buy for testing the hardware stores follows with the research behind it.
+[Which keys to buy](/learn/which-keys-to-buy/) says which devices to buy for testing the hardware stores, with the research behind it.
 
 ## Choosing
 
