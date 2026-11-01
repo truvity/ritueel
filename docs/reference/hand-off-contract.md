@@ -87,7 +87,7 @@ Firmware 5.7 and newer chain to the maker's *current* attestation root; older to
   "public_key": "<the public key, Base64 DER SubjectPublicKeyInfo>" }
 ```
 
-The ARN names the key together with its Region and account. A bare key identifier does not, and the same identifier can exist in two Regions. The public key is a claim. **The certifier does not trust it: it reads the key from KMS** with `DescribeKey`, `GetPublicKey` and `GetKeyPolicy`, and compares. The requester has to give the certifier's principal permission to read those three, and nothing more.
+The ARN names the key together with its Region and account. A bare key identifier does not, and the same identifier can exist in two Regions. The public key is a claim. **The certifier does not trust it: it reads the key from KMS** with `DescribeKey`, `GetPublicKey` and `GetKeyPolicy`, and compares. The requester has to give the certifier's principal permission to read the key's description and public key, and nothing more. **This holds for a key in another account too: the certifier is granted read access and re-reads the public key itself. It never accepts a copy of the description or the key in the proof**, not even one marked unverified. A proof whose key the certifier cannot read is refused (`proof-invalid`). `GetKeyPolicy` works only inside the key's own account (AWS documentation, checked 2026-11-01); how the policy rule below applies to a key in another account is open.
 
 ### `software`
 
@@ -308,6 +308,7 @@ The issue left these to the specification. Each is a proposal.
 | Unknown members | Refused. | Ignored. | An ignored member is a field one side thinks it understands. |
 | Binding of proof to request | `request_sha256`. | Nothing; a signature by the key over the proof. | It catches swapped files without a second signature, and the request is already signed by its key. |
 | KMS key reference | The full ARN. | The bare key identifier. | The ARN carries Region and account, which the certifier needs to read the key. |
+| KMS key in another account | The certifier is granted read access to the key's description and re-reads the public key. | Accept a snapshot of the description in the proof and mark it unverified. | A copy is a claim, and the contract's rule is that the certifier reads the key itself. |
 | Chain file | The issued certificate only; the root is named in `result.json`. | The chain with the root included. | A root in a file invites trusting it. |
 | Who decides validity and constraints | The certifier decides validity. The requester asks for constraints in the CSR, and the certifier issues them exactly or refuses. | The certifier overrides the request; the requester asks for validity. | Silent change is the failure to avoid: the requester then installs something it did not ask for. |
 | OpenPGP request | Two packets, plus the proof naming the primary. | The whole primary certificate in the request; a back-signature for every primary at once. | The primary is already held by the certifier. One primary per request keeps each file small, at the cost of a second request for the second root. |
@@ -325,7 +326,7 @@ These need the maintainer's decision. The issue each belongs to is linked; the o
 
 - **Non-CA signing certificates** (for keys that sign tokens and are published with a chain). Version 1 issues CA certificates only. Options: add a second profile in version 1; allow `digitalSignature` without `keyCertSign` in this one; wait for a later version. [Issue #7](https://github.com/truvity/ritueel/issues/7).
 - **How the requester learns the target primary.** Options: the person tells it, from the keyring; the certifier's plan prints the command; the request covers every active primary. [Issue #7](https://github.com/truvity/ritueel/issues/7).
-- **Reading KMS across accounts.** The certifier needs three read permissions on the key. Options: grant them; accept a snapshot of the key's description in the proof and mark it unverified. [Issue #12](https://github.com/truvity/ritueel/issues/12).
+- **The key policy of a key in another account.** The certifier reads the description and the public key across accounts, but `GetKeyPolicy` does not work across accounts, so the single-principal rule of the reference policy cannot be checked the same way. Options: apply the rule to keys in the certifier's own account only, and record that the policy of another account's key was not checked; refuse a key in another account under the reference policy. [Issue #12](https://github.com/truvity/ritueel/issues/12).
 - **The format and expiry of the root list**, and so the rule for `trust_sequence`. [Issue #14](https://github.com/truvity/ritueel/issues/14).
 - **GnuPG** was not run on the OpenPGP vectors. A test with `gpg` and `gpgv` should join the verifier matrix ([issue #24](https://github.com/truvity/ritueel/issues/24)).
 

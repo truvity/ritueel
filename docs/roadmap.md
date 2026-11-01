@@ -14,9 +14,13 @@ The first version supports three key stores: software, YubiKey and AWS KMS. It i
 | Milestone | Delivers | Work items |
 |---|---|---|
 | **M1: Hand-off and software roots** | A system that holds intermediates can get a certified intermediate or a bound subkey from a software root, using standard formats. Nothing else is needed to start. | The hand-off contract specification. Software-root mode: create a root, sign a CSR, bind a subkey. Ceremony records, first version. The Go module and CLI skeleton. |
-| **M2: Hardware and cloud roots** | The same ceremonies with the root on a YubiKey or in AWS KMS, with proof of where intermediate keys live. | The YubiKey back end (PIV and OpenPGP applets, attestation chain to the maker's current root, the policy and serial extensions). The AWS KMS back end, with an MFA-gated role as the "touch". |
-| **M3: Transitions and trust products** | A root can be replaced without breaking anyone, and outsiders get standard artifacts. | Vouch, overlap, supersede and revoke, including revocation certificates made in advance and designated revokers. The trust bundle and the signed root list. The keyring builder for `.deb`, `.rpm` and plain files. |
+| **M2: Hardware and cloud roots** | The same ceremonies with the root on a YubiKey or in AWS KMS, with proof of where intermediate keys live. | The YubiKey back end (both root keys in PIV slots through piv-go, with ritueel building the OpenPGP packets; attestation chain to the maker's current root, the policy and serial extensions). The AWS KMS back end, with an MFA-gated role as the "touch". |
+| **M3: Transitions and trust products** | A root can be replaced without breaking anyone, and outsiders get standard artifacts. | Vouch, overlap, supersede and revoke, including revocation signatures made in advance and stored apart from the card, and the yearly extension of each root's validity. The trust bundle and the signed root list. The keyring builder for `.deb`, `.rpm` and plain files. |
 | **M4: Wizards, personal GPG and teaching** | Adopting ritueel is guided, and the teaching material is complete. | The CLI wizard. The localhost web wizard. Personal GPG flows. The guides, one per transition. The drills. |
+
+### Before the first signed release
+
+No release is signed until the card roots exist. The order is: the first root ceremony on the two cards, then a drill, then the first signed release ([ADR 0004](/decisions/0004-release-keys-primaries-on-the-roots-signing-subkeys-and-the-keyring-package/)). A software root serves tests, drills and development; it never anchors a signed release, and there is no provisional primary.
 
 ### Order and reasons
 

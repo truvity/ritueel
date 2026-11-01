@@ -5,13 +5,15 @@ sidebar:
   order: 4
 ---
 
-*Design phase: this page teaches the model of [ADR 0002](/decisions/0002-every-key-is-born-in-its-store-two-roots-one-holder-yearly-alternation/). The tests were run on 2026-10-29 (software keys) and 2026-10-31 (two YubiKey 5 test cards, firmware 5.8.0, OpenPGP applet 3.4, and one board's Nano). The tools that carry out each step are planned.*
+*Design phase: this page teaches the model of [ADR 0002](/decisions/0002-every-key-is-born-in-its-store-two-roots-one-holder-yearly-alternation/) and [ADR 0004](/decisions/0004-release-keys-primaries-on-the-roots-signing-subkeys-and-the-keyring-package/). No release is signed until the card roots exist and a drill has run. The tests were run on 2026-10-29 (software keys) and 2026-10-31 (two YubiKey 5 test cards, firmware 5.8.0, OpenPGP applet 3.4, and one board's Nano). The tools that carry out each step are planned.*
 
 OpenPGP has no certificate chains. It has a primary key, subkeys that the primary binds, and certifications. A release is signed by a subkey that a primary has bound, and users verify with a keyring that holds the primaries.
 
 ## The shape
 
-- **Two primaries, one on each root card.** Each is generated on its card and attested. Neither is a copy of the other. The same two cards hold the two X.509 roots.
+- **Two primaries, one on each root card.** Each is generated on its card, in a PIV slot, and attested. Neither is a copy of the other. The same two cards hold the two X.509 roots. ritueel builds the OpenPGP packets itself; the OpenPGP applet of the card stays free for the holder's own use.
+- **A primary lasts about three years, and each use extends it** with a new self-signature. A dead card shows itself by not extending.
+- **No personal key certifies a primary.** Release trust rests on the dedicated release identity and the keyring, not on anyone's own key.
 - **Each board holds one signing subkey,** generated on the board in a PIV slot, bound by the primary of the year. The binding is a signature by the primary. The subkey also makes a *back-signature* (type 0x19) over the primary and itself, which proves that the subkey agreed to be bound. A verifier that checks cross-certification refuses a subkey without it.
 - **The subkey lasts about 13 months** and is renewed at the yearly ceremony, so years overlap.
 - **Users hold a keyring, not one certificate.** A keyring package carries both primaries and every current subkey binding. A verifier that holds only one primary's certificate cannot check a signature from a subkey that the other bound, so the instructions say "use the keyring package".
@@ -19,8 +21,9 @@ OpenPGP has no certificate chains. It has a primary key, subkeys that the primar
 ## Revocation
 
 - A subkey is revoked by the primary of the year.
-- A revocation certificate for each primary is made when it is born and stored apart from the card. Each primary is named the designated revoker of the other, so a primary can be revoked even if its own card and PIN are gone.
-- Whether `gpg`, `gpgv`, `sqv`, apt and rpm honour a pre-made revocation certificate and a designated revoker is **assumed, not tested**. A half-day test on test cards must show it before a guide claims it ([issue #24](https://github.com/truvity/ritueel/issues/24)).
+- A revocation signature for each primary is made when it is born and stored apart from the card, so a primary can be revoked even if its own card and PIN are gone ([RFC 9580](https://datatracker.ietf.org/doc/html/rfc9580), section 13.9).
+- There is no designated revoker: RFC 9580 (section 5.2.3.23) deprecates the Revocation Key subpacket and says applications must not generate it.
+- Whether `gpg`, `gpgv`, `sqv`, apt and rpm honour a pre-made revocation signature that a keyring carries is **assumed, not tested**. A half-day test on test cards must show it before a guide claims it ([issue #24](https://github.com/truvity/ritueel/issues/24)).
 
 ## How others do it
 
@@ -48,3 +51,7 @@ The first two tests bound the subkey under both primaries. The model binds it un
 - **apt's `Release.gpg` must be armored.** A binary detached signature fails with `NODATA` (apt 2.4, checked again on 2026-10-31).
 - **No encryption subkey in the release certificate.** `gpg`'s card key generation adds an ECDH subkey with an AES-192 key wrap, and rpm-sequoia prints a policy warning about it on every install, although the signature verifies. Write only the primary, its user ID and the signing subkeys.
 - **Tampered files and certificates that do not match are refused** by every verifier tested.
+
+## Old releases
+
+The first version does nothing for old releases. A keyring drops a superseded primary, so to verify an old signature you need the keyring version of that time.

@@ -5,7 +5,7 @@ sidebar:
   order: 5
 ---
 
-*Design phase: no ceremony command exists yet. This page describes what the commands will do ([ADR 0002](/decisions/0002-every-key-is-born-in-its-store-two-roots-one-holder-yearly-alternation/)). The card tool is an [open decision](https://github.com/truvity/ritueel/issues/26).*
+*Design phase: no ceremony command exists yet. This page describes what the commands will do ([ADR 0002](/decisions/0002-every-key-is-born-in-its-store-two-roots-one-holder-yearly-alternation/)). The card library is piv-go; a spike ([issue #26](https://github.com/truvity/ritueel/issues/26)) still tests a primary key in a PIV slot.*
 
 A ceremony is a scripted, reviewable use of a root. It runs on the holder's ordinary workstation, with no live CD and no air gap, because the root keys never leave their cards: a compromised workstation cannot copy a key it never holds. It can still try to trick the holder, which is why the checks below exist.
 
@@ -23,7 +23,7 @@ A PIN is entered by the holder at the terminal. The tool never retries a wrong P
 
 | Ceremony | When | Card | Result |
 |---|---|---|---|
-| Yearly | Month 12 of the intermediates' life | The card for the year | New 13-month certificates and subkey bindings, a new keyring package and root list |
+| Yearly | Month 12 of the intermediates' life | The card for the year | New 13-month certificates and subkey bindings, the card's own root extended, a new keyring package and root list |
 | Board add or replace | Between yearly ceremonies | The card for the year | A certificate and binding for the new board key |
 | Root add, retire or revoke | A card is lost, retired or compromised | The surviving card | A new root, or a root list without the old one |
 
@@ -33,16 +33,27 @@ Each is a few commands. [A lost root card](/guides/lost-root-card/) walks throug
 
 A missed touch comes back from the card after about 15 seconds as a generic security status, not as a touch timeout (measured 2026-10-31). Whether the tool reports it as "touch not received" is open.
 
-## Open: which code talks to the cards
+## Root validity and its extension
 
-The CLI is written in Go. For the OpenPGP applet there are three ways, compared by a spike on 2026-10-31 on two YubiKey 5 test cards (firmware 5.8.0, OpenPGP applet 3.4):
+A root is valid for about three years, and each use extends it. The card that signs at a ceremony also extends its own root to about three years from that day:
 
-| | Rust helper (`openpgp-card` with rPGP) | Go driving `gpg` 2.2.27 |
-|---|---|---|
-| A P-384 primary generated on each card | yes, 1.2 s | yes, 4.0 s, but it also writes encryption and authentication subkeys |
-| A signing subkey bound under both primaries | yes, 0.3 s per binding | **not with `gpg`**: it binds an existing P-384 key as an encryption subkey; a Go program got there by building the binding packets itself and using `gpg-agent` only as the card signer |
-| A card signature | 0.27 s | 0.42 s |
-| Certificate | 766 bytes: primary, user ID, subkey | 1,459 bytes: also encryption and authentication subkeys |
-| Code | 340 lines | 595 lines, plus `gpg`, `gpg-agent` and `scdaemon` at run time |
+- **OpenPGP.** A new self-signature on the primary moves its expiry.
+- **X.509.** The root certificate is re-issued over the same key and the same subject, with a new validity.
+- **Pinning holds.** Clients of the signed root list pin the public keys of the roots, not their certificates, and refuse a list with a lower version. A re-issued certificate has the same public key, so the pin holds.
+- **A dead or lost card shows itself.** Its root is not extended, and runs out.
 
-`gpg` 2.2 also sent two wrong PINs to a card, because it does not say which PIN it asks for. A Go card library is the third option, if a maintained one exists. Because every key is now generated on the card, no key is ever in host memory, so the argument for a memory-safe helper that zeroises keys no longer applies to key material. The decision is [issue #26](https://github.com/truvity/ritueel/issues/26).
+`status` warns about a root 6 months, 3 months and 30 days before it expires, with the exit codes 10, 11 and 12. Cards alternate, so a healthy root always has at least about a year left; a warning at 6 months means an extension was missed, with time left to act. The reasons are in [ADR 0003](/decisions/0003-ceremonies-plan-confirm-reserve-sign-record-and-the-ritueel-commands/).
+
+## Which code talks to the cards
+
+The CLI is written in Go, with **piv-go** as the card library. Both root keys of a card live in PIV slots: the X.509 root in slot 9c and the OpenPGP primary in a retired slot. ritueel builds the OpenPGP packets itself, and the card signs digests. That means one applet, one library and one binary, with no `gpg` or `gpg-agent` at run time, and the attestation works the same for both keys. The OpenPGP applet of the card stays free for the holder's own daily use.
+
+A spike on 2026-10-31 on two YubiKey 5 test cards (firmware 5.8.0, OpenPGP applet 3.4) compared the ways to reach the OpenPGP applet. It also showed that a key in a PIV slot makes back-signatures that `gpg`, `gpgv` and `sqv` accept. Findings that count against the other ways:
+
+- `gpg` 2.2 binds an existing P-384 key as an encryption subkey, so a program has to build the binding packets itself either way.
+- `gpg` 2.2 sent two wrong PINs to a card, because it does not say which PIN it asks for.
+- A card key generated by `gpg` also gets encryption and authentication subkeys, which makes a 1,459-byte certificate against 766 bytes for a bare one.
+
+Because every key is generated on the card, no key is ever in host memory, so the argument for a memory-safe helper that zeroises keys does not apply to key material.
+
+Still to be shown: that certifications and bindings made by a **primary** held in a PIV slot are accepted by `gpg`, `gpgv`, `sqv`, apt and rpm. A spike runs this prototype test ([issue #26](https://github.com/truvity/ritueel/issues/26)).
