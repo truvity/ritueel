@@ -5,7 +5,7 @@ sidebar:
   order: 3
 ---
 
-*Design phase: this page teaches the model of [ADR 0002](/decisions/0002-every-key-is-born-in-its-store-two-roots-one-holder-yearly-alternation/). Checks of other projects were made on 2026-10-29; check again before you rely on one.*
+*Design phase: this page teaches the model of [ADR 0002](/decisions/0002-key-custody-every-key-is-born-in-its-store-two-root-cards-or-one-kms-root-and-a-replica/). Checks of other projects were made on 2026-10-29; check again before you rely on one.*
 
 Two roots are redundancy, not control. One holder operates both cards, which are stored in two separate locations, and the cards alternate by year. This page shows that the practice is ordinary, and what to expect from clients. It is about cards, which cannot be copied; a company root in a cloud key service is one root and a replica, as [Where a key lives](/concepts/key-stores/) says.
 

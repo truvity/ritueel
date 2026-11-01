@@ -5,7 +5,7 @@ sidebar:
   order: 5
 ---
 
-*Design phase: no ceremony command exists yet. This page describes what the commands will do ([ADR 0002](/decisions/0002-every-key-is-born-in-its-store-two-roots-one-holder-yearly-alternation/)). The card library is piv-go, and a spike ([issue #26](https://github.com/truvity/ritueel/issues/26)) showed on 2026-11-01 that a key in a PIV slot works as an OpenPGP primary.*
+*Design phase: no ceremony command exists yet. This page describes what the commands will do ([ADR 0002](/decisions/0002-key-custody-every-key-is-born-in-its-store-two-root-cards-or-one-kms-root-and-a-replica/)). The card library is piv-go, and a spike ([issue #26](https://github.com/truvity/ritueel/issues/26)) showed on 2026-11-01 that a key in a PIV slot works as an OpenPGP primary.*
 
 A ceremony is a scripted, reviewable use of a root. It runs on the holder's ordinary workstation, with no live CD and no air gap, because the root keys never leave their cards: a compromised workstation cannot copy a key it never holds. It can still try to trick the holder, which is why the checks below exist.
 
@@ -31,7 +31,7 @@ Each is a few commands (`ritueel yearly`, `ritueel intermediate add|replace|revo
 
 ## Renewal and replacement
 
-The yearly ceremony **renews by re-signing**: new certificates over the same intermediate keys, and new bindings that extend the same subkeys' expiry. Roots are extended at each use, as below. **Key material is replaced only on an event** (a suspected compromise, a change of store or algorithm, a change of custody) **or at most every 3 years**, which is the one to three years that NIST SP 800-57 gives for a private signature key. The forced replacement at three years keeps the replace path (`intermediate replace`) tested, so it works on the day an event needs it. The reasons are in [ADR 0002](/decisions/0002-every-key-is-born-in-its-store-two-roots-one-holder-yearly-alternation/#renewal-and-replacement).
+The yearly ceremony **renews by re-signing**: new certificates over the same intermediate keys, and new bindings that extend the same subkeys' expiry. Roots are extended at each use, as below. **Key material is replaced only on an event** (a suspected compromise, a change of store or algorithm, a change of custody) **or at most every 3 years**, which is the one to three years that NIST SP 800-57 gives for a private signature key. The forced replacement at three years keeps the replace path (`intermediate replace`) tested, so it works on the day an event needs it. The reasons are in [ADR 0002](/decisions/0002-key-custody-every-key-is-born-in-its-store-two-root-cards-or-one-kms-root-and-a-replica/#validity-renewal-and-replacement).
 
 ## A missed touch
 
@@ -46,7 +46,7 @@ A root is valid for about three years, and each use extends it. The card that si
 - **Pinning holds.** Clients of the signed root list pin the public keys of the roots, not their certificates, and refuse a list with a lower version. A re-issued certificate has the same public key, so the pin holds.
 - **A dead or lost card shows itself.** Its root is not extended, and runs out.
 
-`status` warns about a root 6 months, 3 months and 30 days before it expires, with the exit codes 10, 11 and 12. Cards alternate, so a healthy root always has at least about a year left; a warning at 6 months means an extension was missed, with time left to act. The reasons are in [ADR 0003](/decisions/0003-ceremonies-plan-confirm-reserve-sign-record-and-the-ritueel-commands/).
+`status` warns about a root 6 months, 3 months and 30 days before it expires, with the exit codes 10, 11 and 12. Cards alternate, so a healthy root always has at least about a year left; a warning at 6 months means an extension was missed, with time left to act. The reasons are in [ADR 0003](/decisions/0004-ceremonies-plan-confirm-reserve-sign-verify-record/).
 
 ## Which code talks to the cards
 
@@ -70,7 +70,7 @@ A person's daily OpenPGP subkey is born on the card's OpenPGP applet, in the `op
 - On firmware 5.8 the library needs fixes. Reading the supported algorithms fails without a three-line patch. The fingerprint it stores for an ECDSA key is wrong, because it appends ECDH key-derivation parameters; ritueel writes the correct fingerprint with PUT DATA. It has no attestation: the YubiKey command `80 FB 01 00` works after the user PIN is verified, and the certificate chains to Yubico's current roots through "Yubico OPGP Attestation B2 1", with extensions under OID `1.3.6.1.4.1.41482.5`.
 - Verifying the PIN does not survive reopening the card, so every process verifies again. The library opens the card exclusively, and closing it resets the card (`SCARD_RESET_CARD`). Signing runs at about four signatures a second, including the PIN check.
 
-The decision and its alternatives are in [ADR 0003](/decisions/0003-ceremonies-plan-confirm-reserve-sign-record-and-the-ritueel-commands/).
+The decision and its alternatives are in [ADR 0003](/decisions/0004-ceremonies-plan-confirm-reserve-sign-verify-record/).
 
 ## Attestation roots
 
@@ -82,7 +82,7 @@ The OpenPGP applet and the PIV applet are independent: using PIV changes nothing
 
 ## KMS keys in a ceremony
 
-A KMS key follows the same ceremony with three differences that come from the service (measured 2026-11-01). A company root in KMS is one key and a multi-Region replica in one dedicated root account; with one root there is nothing to alternate, and a compromise is answered by revocation and a transition ([ADR 0002](/decisions/0002-every-key-is-born-in-its-store-two-roots-one-holder-yearly-alternation/)).
+A KMS key follows the same ceremony with three differences that come from the service (measured 2026-11-01). A company root in KMS is one key and a multi-Region replica in one dedicated root account; with one root there is nothing to alternate, and a compromise is answered by revocation and a transition ([ADR 0002](/decisions/0002-key-custody-every-key-is-born-in-its-store-two-root-cards-or-one-kms-root-and-a-replica/)).
 
 - A P-384 KMS key signs only 48-byte SHA-384 digests, so every P-384 OpenPGP signature uses SHA-384, on every backend.
 - The OpenPGP creation time fixes the fingerprint, and KMS's own creation date is not it. ritueel stores the creation time it chose, as a tag on the key and in the published certificate.
@@ -90,5 +90,5 @@ A KMS key follows the same ceremony with three differences that come from the se
 
 ## Still open
 
-- **One card or two.** A separate card for roots, or one card shared with daily `gpg`. Recommended: separate. Not decided ([ADR 0003](/decisions/0003-ceremonies-plan-confirm-reserve-sign-record-and-the-ritueel-commands/)).
+- **One card or two.** A separate card for roots, or one card shared with daily `gpg`. Recommended: separate. Not decided ([ADR 0003](/decisions/0004-ceremonies-plan-confirm-reserve-sign-verify-record/)).
 - **The OpenPGP packet library.** ritueel builds packets with ProtonMail/go-crypto, whose signing path takes any `crypto.Signer` but whose constructor for a signing key panics on one; a small bypass works. Keep it, upstream an API, or write the packets ourselves: not decided.

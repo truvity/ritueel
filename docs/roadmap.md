@@ -11,7 +11,7 @@ What is done, as of 2026-11-01:
 
 - The scope is decided in [ADR 0001](/decisions/0001-scope-roots-and-transitions-systems-like-sluis-hold-intermediates/), and the [concepts](/concepts/) are written.
 - The hand-off contract, version 1, is specified.
-- [ADR 0003](/decisions/0003-ceremonies-plan-confirm-reserve-sign-record-and-the-ritueel-commands/) and [ADR 0004](/decisions/0004-release-keys-primaries-on-the-roots-signing-subkeys-and-the-keyring-package/) are written, with the root decisions.
+- [ADR 0003](/decisions/0004-ceremonies-plan-confirm-reserve-sign-verify-record/) and [ADR 0004](/decisions/0006-release-keys-and-the-keyring-package/) are written, with the root decisions.
 - The card spike is done. Its findings: the card is driven as OpenPGP v4.
 - The token key of a system that holds intermediates is certified by its intermediate.
 - A ceremony makes one request for every active primary. A read-only role covers KMS keys in other accounts. A compromised subkey is dropped from the keyring. The commands are `intermediate add`, `replace` and `revoke`. A company KMS root is one root with a replica. There are four pluggable key stores. The Issuer Key ID subpacket is used. Renewing means re-signing. SSH CA key lists are in scope.
@@ -39,7 +39,7 @@ The first version supports four key stores behind one ceremony: software, PIV, t
 
 ### Before the first signed release
 
-No release is signed until the card roots exist. The order is: the first root ceremony on the two cards, then a drill, then the first signed release ([ADR 0004](/decisions/0004-release-keys-primaries-on-the-roots-signing-subkeys-and-the-keyring-package/)). A software root serves tests, drills and development; it never anchors a signed release, and there is no provisional primary.
+No release is signed until the card roots exist. The order is: the first root ceremony on the two cards, then a drill, then the first signed release ([ADR 0004](/decisions/0006-release-keys-and-the-keyring-package/)). A software root serves tests, drills and development; it never anchors a signed release, and there is no provisional primary.
 
 ### Order and reasons
 

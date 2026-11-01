@@ -65,14 +65,15 @@ const template = readFileSync(join(repo, 'docs/decisions/0000-template.md'), 'ut
 const readme = readFileSync(join(repo, 'docs/decisions/README.md'), 'utf8')
   .replace(/(## Index\n)[\s\S]*$/, '$1\n| ADR | Decision | Status |\n|-----|----------|--------|\n');
 const row = (n, slug, status) => `| [${n}](${n}-${slug}.md) | A decision | ${status} |\n`;
-const GOOD = ['- Pros: one.', '- Cons: two.', '- Why not: three.'];
-const record = ({ num = '0001', status = 'Accepted', date = '2026-10-31', drop = '', roads = GOOD, extra = [] } = {}) =>
+const GOOD = ['- **Another way.** It would be simpler, and it lost because it breaks the example.'];
+const FOLLOW = ['- Test it at a card ([#11](https://github.com/truvity/ritueel/issues/11)).'];
+const record = ({ num = '0001', status = 'Accepted', date = '2026-10-31', drop = '', roads = GOOD, follow = FOLLOW, extra = [], decision = ['Text.'] } = {}) =>
   [
     `# ${num} — We use the example`, '', `**Status:** ${status}`, `**Date:** ${date}`, '', ...extra,
-    ...['Context', 'Decision', 'Consequences'].filter((s) => s !== drop).flatMap((s) => [`## ${s}`, '', 'Text.', '']),
-    '## Roads not taken', '', '### Another way', '', ...roads, '',
+    ...['Context', 'Decision', 'Consequences'].filter((s) => s !== drop).flatMap((s) => [`## ${s}`, '', ...(s === 'Decision' ? decision : ['Text.']), '']),
+    '## Roads not taken', '', ...roads, '',
+    ...(drop === 'Follow-ups' ? [] : ['## Follow-ups', '', ...follow, '']),
   ].join('\n');
-const why = (label) => ['- Pros: one.', '- Cons: two.', `- ${label}: three.`];
 const adr = (extra = {}, idx = row('0001', 'we-use-the-example', 'Accepted')) => ({
   'docs/decisions/0000-template.md': template,
   'docs/decisions/README.md': readme + idx,
@@ -81,19 +82,22 @@ const adr = (extra = {}, idx = row('0001', 'we-use-the-example', 'Accepted')) =>
 });
 const one = (opts) => ({ 'docs/decisions/0001-we-use-the-example.md': record(opts) });
 expect('a good record', 'decisions', adr(), 'pass', { has: ['1 records'] });
-expect('a label with a note in parentheses', 'decisions', adr(one({ roads: why('Why not (inferred)') })), 'pass');
-expect('a label with an allowed qualifier', 'decisions', adr(one({ roads: why('Why not first') })), 'pass');
-expect('bold labels, colon inside or outside', 'decisions', adr(one({ roads: ['- **Pros:** one.', '- **Cons**: two.', '- Why not:', '  three, on the next line.'] })), 'pass');
-expect('a label with another qualifier', 'decisions', adr(one({ roads: why('Why not really') })), 'fail', { has: ['no "- Why not:" bullet'] });
-expect('an empty label', 'decisions', adr(one({ roads: ['- Pros:', '- Cons: two.', '- Why not: three.'] })), 'fail', { has: ['empty "Pros:"'] });
-expect('a label in prose, not a bullet', 'decisions', adr(one({ roads: ['- One way. Pros: one. Cons: two.', '- Why not: three.'] })), 'fail', { has: ['no "- Pros:" bullet'] });
+expect('no follow-ups, said as None.', 'decisions', adr(one({ follow: ['None.'] })), 'pass');
+expect('a road with a colon after the name', 'decisions', adr(one({ roads: ['- **Another way**: simpler, and it lost because it breaks the example.'] })), 'pass');
+expect('a road with no reason', 'decisions', adr(one({ roads: ['- **Another way.**'] })), 'fail', { has: ['a road not taken is one line'] });
+expect('a road in the old three-bullet form', 'decisions', adr(one({ roads: ['### Another way', '', '- Pros: one.', '- Cons: two.', '- Why not: three.'] })), 'fail', { has: ['a road not taken is one line'] });
+expect('no road at all', 'decisions', adr(one({ roads: [] })), 'fail', { has: ['lists no option'] });
+expect('a follow-up without its issue', 'decisions', adr(one({ follow: ['- Test it at a card.'] })), 'fail', { has: ['links its issue'] });
+expect('an empty follow-ups section', 'decisions', adr(one({ follow: [] })), 'fail', { has: ['"## Follow-ups" is empty'] });
+expect('no follow-ups section', 'decisions', adr(one({ drop: 'Follow-ups' })), 'fail', { has: ['## Follow-ups'] });
+expect('an Accepted record with an open part', 'decisions', adr(one({ decision: ['Text.', '', '### Open', '', '- A question.'] })), 'fail', { has: ['no open part'] });
+expect('a Proposed record with an open part', 'decisions', adr(one({ status: 'Proposed', decision: ['Text.', '', '### Open', '', '- A question.'] }), row('0001', 'we-use-the-example', 'Proposed')), 'pass');
 expect('a line of the template comment left in', 'decisions', adr(one({ extra: [template.split('\n').find((l) => /^Keep the text public/.test(l)), ''] })), 'fail', { has: ["template's instructions comment"] });
 expect('no records', 'decisions', { ...adr({}, ''), 'docs/decisions/0001-we-use-the-example.md': undefined }, 'fail', { has: ['empty sweep'] });
 expect('a missing section', 'decisions', adr(one({ drop: 'Consequences' })), 'fail', { has: ['## Consequences'] });
 expect('an unknown status', 'decisions', adr(one({ status: 'Maybe' })), 'fail', { has: ['not one of'] });
 expect('superseded by a missing record', 'decisions', adr(one({ status: 'Superseded by 0099' }), row('0001', 'we-use-the-example', 'Superseded by 0099')), 'fail', { has: ['0099'] });
 expect('a date that is no day', 'decisions', adr(one({ date: '2026-02-30' })), 'fail', { has: ['YYYY-MM-DD'] });
-expect('an option without a reason', 'decisions', adr(one({ roads: why('Because') })), 'fail', { has: ['Why not:'] });
 expect('a title with another number', 'decisions', adr(one({ num: '0002' })), 'fail', { has: ['number 0002'] });
 expect('an index status that differs', 'decisions', adr({}, row('0001', 'we-use-the-example', 'Proposed')), 'fail', { has: ['says "Proposed"'] });
 expect('a record not in the index', 'decisions', adr({}, ''), 'fail', { has: ['no row in the README index'] });
