@@ -9,14 +9,14 @@ Status on 2026-11-01: design phase. The scope is decided in [ADR 0001](/decision
 
 ## The first version
 
-The first version supports three key stores: software, YubiKey and AWS KMS. It is built in four milestones.
+The first version supports four key stores behind one ceremony: software, PIV, the OpenPGP card and AWS KMS. It is built in four milestones.
 
 | Milestone | Delivers | Work items |
 |---|---|---|
 | **M1: Hand-off and software roots** | A system that holds intermediates can get a certified intermediate or a bound subkey from a software root, using standard formats. Nothing else is needed to start. | The hand-off contract specification. Software-root mode: create a root, sign a CSR, bind a subkey. Ceremony records, first version. The Go module and CLI skeleton. |
 | **M2: Hardware and cloud roots** | The same ceremonies with the root on a YubiKey or in AWS KMS, with proof of where intermediate keys live. | The YubiKey back end (both root keys in PIV slots through piv-go, with ritueel building the OpenPGP packets; attestation chain verified against the maker's current root and its full intermediate bundle, with a documented refresh step; the policy and serial extensions). The AWS KMS back end, with an MFA-gated role as the "touch". |
-| **M3: Transitions and trust products** | A root can be replaced without breaking anyone, and outsiders get standard artifacts. | Vouch, overlap, supersede and revoke, including revocation signatures made in advance and stored apart from the card, and the yearly extension of each root's validity. The trust bundle and the signed root list. The keyring builder for `.deb`, `.rpm` and plain files. |
-| **M4: Wizards, personal GPG and teaching** | Adopting ritueel is guided, and the teaching material is complete. | The CLI wizard. The localhost web wizard. Personal GPG flows. The guides, one per transition. The drills. |
+| **M3: Transitions and trust products** | A root can be replaced without breaking anyone, and outsiders get standard artifacts. | Vouch, overlap, supersede and revoke, including revocation signatures made in advance and stored apart from the card, the yearly extension of each root's validity, and the yearly renewal of intermediates by re-signing. The trust bundle and the signed root list. The keyring builder for `.deb`, `.rpm` and plain files. |
+| **M4: Wizards, personal GPG and teaching** | Adopting ritueel is guided, and the teaching material is complete. | The CLI wizard. The localhost web wizard. The OpenPGP-card store (a vendored, patched fork of the card library behind a small interface) and the personal GPG flows: a daily subkey born on the card and bound by a software primary. The guides, one per transition. The drills. |
 
 ### Before the first signed release
 

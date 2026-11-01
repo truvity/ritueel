@@ -1,11 +1,11 @@
 ---
 title: OpenPGP release keys and the keyring
-description: How an OpenPGP root and a board subkey sign releases, what a keyring package carries, how revocation works, and what gpg, sqv, apt and rpm accept.
+description: How an OpenPGP root and an intermediate's subkey sign releases, what a keyring package carries, how revocation works, and what gpg, sqv, apt and rpm accept.
 sidebar:
   order: 4
 ---
 
-*Design phase: this page teaches the model of [ADR 0002](/decisions/0002-every-key-is-born-in-its-store-two-roots-one-holder-yearly-alternation/) and [ADR 0004](/decisions/0004-release-keys-primaries-on-the-roots-signing-subkeys-and-the-keyring-package/). No release is signed until the card roots exist and a drill has run. The tests were run on 2026-10-29 (software keys), 2026-10-31 (two YubiKey 5 test cards, firmware 5.8.0, OpenPGP applet 3.4, and one board's Nano) and 2026-11-01 (a primary in a PIV slot, and AWS KMS keys). The tools that carry out each step are planned.*
+*Design phase: this page teaches the model of [ADR 0002](/decisions/0002-every-key-is-born-in-its-store-two-roots-one-holder-yearly-alternation/) and [ADR 0004](/decisions/0004-release-keys-primaries-on-the-roots-signing-subkeys-and-the-keyring-package/). No release is signed until the card roots exist and a drill has run. The tests were run on 2026-10-29 (software keys), 2026-10-31 (two YubiKey 5 test cards, firmware 5.8.0, OpenPGP applet 3.4, and a Nano-size YubiKey) and 2026-11-01 (a primary in a PIV slot, and AWS KMS keys). The tools that carry out each step are planned.*
 
 OpenPGP has no certificate chains. It has a primary key, subkeys that the primary binds, and certifications. A release is signed by a subkey that a primary has bound, and users verify with a keyring that holds the primaries.
 
@@ -14,13 +14,14 @@ OpenPGP has no certificate chains. It has a primary key, subkeys that the primar
 - **Two primaries, one on each root card.** Each is generated on its card, in a PIV slot, and attested. A PIV key works as an OpenPGP primary (measured 2026-11-01). Neither is a copy of the other. The same two cards hold the two X.509 roots. ritueel builds the OpenPGP packets itself; the OpenPGP applet of the card stays free for the holder's own use.
 - **A primary lasts about three years, and each use extends it** with a new self-signature. A dead card shows itself by not extending.
 - **No personal key certifies a primary.** Release trust rests on the dedicated release identity and the keyring, not on anyone's own key.
-- **Each board holds one signing subkey,** generated on the board in a PIV slot, bound by the primary of the year. The binding is a signature by the primary. The subkey also makes a *back-signature* (type 0x19) over the primary and itself, which proves that the subkey agreed to be bound. A verifier that checks cross-certification refuses a subkey without it.
-- **The subkey lasts about 13 months** and is renewed at the yearly ceremony, so years overlap.
+- **Each holder of an intermediate holds one signing subkey,** generated where it lives (a PIV slot or a KMS key), bound by the primary of the year. The binding is a signature by the primary. The subkey also makes a *back-signature* (type 0x19) over a primary and itself, which proves that the subkey agreed to be bound. A verifier that checks cross-certification refuses a subkey without it. **The request carries a back-signature for every active primary,** so either root card can make the binding.
+- **The binding lasts about 13 months** and the yearly ceremony renews it by re-signing: a new binding that extends the same subkey's expiry, so years overlap. The subkey is replaced only on an event, or at most every 3 years.
 - **Users hold a keyring, not one certificate.** A keyring package carries both primaries and every current subkey binding. A verifier that holds only one primary's certificate cannot check a signature from a subkey that the other bound, so the instructions say "use the keyring package".
 
 ## Revocation
 
 - A subkey is revoked by the primary of the year.
+- **A subkey revoked as compromised is dropped from the next keyring package.** Its revocation signature is still published, for the users of `gpg` and Sequoia, because `gpgv` and apt ignore revocations. A subkey retired with a soft reason stays in the keyring, so its old signatures keep verifying.
 - A revocation signature for each primary is made when it is born and stored apart from the card, so a primary can be revoked even if its own card and PIN are gone ([RFC 9580](https://datatracker.ietf.org/doc/html/rfc9580), section 13.9).
 - There is no designated revoker: RFC 9580 (section 5.2.3.23) deprecates the Revocation Key subpacket and says applications must not generate it.
 
@@ -59,12 +60,14 @@ Checked on 2026-10-29.
 |---|---|---|
 | 2026-10-29 | One subkey bound under two software primaries; certificate A, B, and A with B, in both import orders | `gpg` and `gpgv` 2.4.8, `sqv` 1.5.0, apt 2.6 (via `gpgv`) and 3.0 (via `sqv`), and rpm 6.0 (rpm-sequoia) accepted the signature every time |
 | 2026-10-31 | A P-384 primary on each of two YubiKey 5 test cards, one signing subkey bound under both | `gpg` and `gpgv` 2.2.27, 2.2.40 and 2.4.7, `sqv` 1.1.0 and 1.3.0, apt 2.4.14, 2.6.1 and 3.0.3, and rpm 6.0.2 with rpm-sequoia 1.10.2 accepted every signature with certificate A, B or both. Tampered files and unrelated certificates were refused. ECDSA P-384 release signatures work with apt and rpm |
-| 2026-10-31 | A subkey whose key is in a PIV slot of a board, back-signature made by the card | `gpg`, `gpgv` and `sqv` accept it. Without the back-signature `gpg` and `gpgv` refuse (`not cross-certified`) and `sqv` reports no binding signature |
+| 2026-10-31 | A subkey whose key is in a PIV slot of a small token, back-signature made by the card | `gpg`, `gpgv` and `sqv` accept it. Without the back-signature `gpg` and `gpgv` refuse (`not cross-certified`) and `sqv` reports no binding signature |
 | 2026-10-31 | `gpg` 2.2.27 and 2.4.7 asked to bind an existing P-384 key as a signing subkey | Both bind it as an encryption subkey; `--quick-add-key` refuses a keygrip. A tool has to build the binding packets itself |
 | 2026-11-01 | A P-384 key in a PIV slot as the primary: direct-key signature, user ID certification, subkey binding (with the subkey's back-signature), revocations | `gpg` 2.4.8, `gpgv`, `sqv` 1.5.0, `sq` 1.4.1 and apt 3.2.0 accept the certificate and the subkey's signatures; tampered data is refused; rpm 6.0.2 imports the key (signed `.rpm` not tested). Apt needs an armoured `Release` signature |
 | 2026-11-01 | The same with an AWS KMS P-384 key as primary and as subkey | The same result; 200 further signatures verified with `gpgv` and `sqv`. Only SHA-384 digests are accepted by the key |
 | 2026-11-01 | A revoked primary and a revoked subkey, with hard and soft reasons | See [Revocation](#revocation): `sqv` rejects, `gpgv` and apt do not notice |
 | 2026-11-01 | A version 6 certificate with a PIV primary | `gpg` 2.4.8 and `gpgv` refuse to parse it; `sqv` accepts it |
+| 2026-11-01 | A P-384 signing subkey generated on the OpenPGP applet of a YubiKey 5 (firmware 5.8), its back-signature made by the card, bound by a software primary | `gpg` 2.4.8, `gpgv`, `sqv` 1.5.0 and `sq` 1.4.1 accept it; `gpg` 2.2.27 with `scdaemon` signs with the card subkey |
+| 2026-11-01 | A certificate whose signatures carry the Issuer Fingerprint subpacket only, as go-crypto v1.5.2 writes them | `gpg` 2.2.27 rejects it on import. Adding the Issuer Key ID subpacket fixes it |
 
 The first two tests bound the subkey under both primaries. The model binds it under the primary of the year only, so "certificate A, B or both" now matters only for the keyring.
 
@@ -75,6 +78,14 @@ The first two tests bound the subkey under both primaries. The model binds it un
 - **apt's `Release.gpg` must be armored.** A binary detached signature fails with `NODATA` (apt 2.4, checked again on 2026-10-31).
 - **No encryption subkey in the release certificate.** `gpg`'s card key generation adds an ECDH subkey with an AES-192 key wrap, and rpm-sequoia prints a policy warning about it on every install, although the signature verifies. Write only the primary, its user ID and the signing subkeys.
 - **Tampered files and certificates that do not match are refused** by every verifier tested.
+
+## Packet rules
+
+Every version 4 signature carries both the Issuer Fingerprint and the Issuer Key ID subpacket. go-crypto v1.5.2 writes only the fingerprint, and `gpg` 2.2.27 rejects a certificate made of such signatures on import, so ritueel always adds the key ID too ([ADR 0004](/decisions/0004-release-keys-primaries-on-the-roots-signing-subkeys-and-the-keyring-package/)).
+
+## Personal GPG
+
+Personal GPG is in scope. A person's daily signing subkey is born on the card's OpenPGP applet, so `gpg` uses it directly, and a software primary binds it: the card makes the subkey and its back-signature, and the primary makes the binding. The primary is a file, kept offline, and a software key can be copied; ritueel says so in every record. How the card is driven is in [the ceremony](/concepts/ceremonies/#the-openpgp-card-store), and where it fits among the stores in [Where a key lives](/concepts/key-stores/).
 
 ## Old releases
 

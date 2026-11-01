@@ -7,7 +7,7 @@ sidebar:
 
 *Design phase: this page teaches the model of [ADR 0002](/decisions/0002-every-key-is-born-in-its-store-two-roots-one-holder-yearly-alternation/). Checks of other projects were made on 2026-10-29; check again before you rely on one.*
 
-Two roots are redundancy, not control. One holder operates both cards, which are stored in two separate locations, and the cards alternate by year. This page shows that the practice is ordinary, and what to expect from clients.
+Two roots are redundancy, not control. One holder operates both cards, which are stored in two separate locations, and the cards alternate by year. This page shows that the practice is ordinary, and what to expect from clients. It is about cards, which cannot be copied; a company root in a cloud key service is one root and a replica, as [Where a key lives](/concepts/key-stores/) says.
 
 ## What others do
 
@@ -22,15 +22,15 @@ ritueel takes the other branch for two reasons: no key is ever copied, so each c
 
 ## How the cards alternate
 
-A board's intermediate is certified by the card of the year and lasts about 13 months. At the yearly ceremony the other card certifies the next one, so years overlap by about a month. Between ceremonies there is no always-online intermediate.
+An intermediate's certificate is signed by the card of the year and lasts about 13 months. At the yearly ceremony the other card signs a new certificate over the same intermediate key, so years overlap by about a month. The key is not made again each year; it is replaced only on an event, or at most every three years. Between ceremonies there is no always-online intermediate.
 
 | Year | Card at the ceremony | Certified that year | Still valid from the year before |
 |---|---|---|---|
-| 1 | A | Intermediates 1 | none |
-| 2 | B | Intermediates 2 | Intermediates 1, for about a month |
-| 3 | A | Intermediates 3 | Intermediates 2, for about a month |
+| 1 | A | Certificates 1 | none |
+| 2 | B | Certificates 2 | Certificates 1, for about a month |
+| 3 | A | Certificates 3 | Certificates 2, for about a month |
 
-If card B is lost in year 2, intermediates 2 are never issued by it. Card A certifies them, outsiders get a CA bundle and a keyring without B, and a replacement root is added. See [a lost root card](/guides/lost-root-card/).
+If card B is lost in year 2, certificates 2 are never issued by it. Card A signs them over the same intermediate keys, outsiders get a CA bundle and a keyring without B, and a replacement root is added. See [a lost root card](/guides/lost-root-card/).
 
 ## What to expect from clients
 

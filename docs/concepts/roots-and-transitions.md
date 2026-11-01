@@ -16,7 +16,7 @@ A chain of trust has two kinds of key, and they live different lives.
 | What it is | The key that outsiders trust directly: an X.509 CA root certificate in a trust store, or an OpenPGP primary key in a keyring. | A key that a root has authorised to act for it: an intermediate CA certificate, or an OpenPGP subkey bound to a primary. |
 | Used | Rarely: when an intermediate is created or renewed, or when the roots themselves change. Often once a year. | Every day, by software, to issue certificates or make signatures. |
 | Held by | A person's care: a card in a drawer, a cloud key behind a confirmation. | A running system, close to the work. |
-| Lifetime | Years. | Months, so that losing one is a small event. |
+| Lifetime | Years, extended at each use. | Months, so that losing one is a small event. The yearly ceremony renews it by re-signing the same key. |
 | Cost of a mistake | Every client that trusts it must learn the change. | Replace one intermediate; the root stays. |
 
 The split exists so that the key that is expensive to lose is rarely used, and the key that is used all the time is cheap to replace. ritueel handles the left column. A system that holds intermediates, such as [sluis](https://sluis.id), handles the right.
@@ -25,9 +25,9 @@ The split exists so that the key that is expensive to lose is rarely used, and t
 
 A *ceremony* is a root being used. It is interactive, because a person has to be present: they touch a YubiKey, or they confirm the use of a cloud key. It is also short, because everything that does not need the person is done for them. In ritueel a ceremony is one to three commands, and it leaves a record of what was done.
 
-The most common ceremony is giving an intermediate its authority:
+The most common ceremony is giving an intermediate its authority, and the same ceremony renews it every year by signing again over the same key. An intermediate key is replaced only on an event (a suspected compromise, a change of store or algorithm, a change of custody) or at most every three years.
 
-1. The system that will hold the intermediate makes its own key, so the key never travels, and sends a request. For X.509 the request is a PKCS#10 certificate request. For OpenPGP it is a public subkey together with a *back-signature*, made by the subkey itself, which proves that the holder of the subkey agreed to be bound.
+1. The system that will hold the intermediate makes its own key, so the key never travels, and sends a request. For X.509 the request is a PKCS#10 certificate request. For OpenPGP it is a public subkey together with *back-signatures*, one for every active root and made by the subkey itself, which prove that the holder of the subkey agreed to be bound. With one for each root, either root can make the binding.
 2. The request carries *proof of where the key lives*: a YubiKey attestation certificate, or the description of a KMS key. A key that cannot prove it lives in a hardware store may be accepted or refused, depending on the policy you set.
 3. ritueel checks the proof, shows the person what they are about to authorise (fingerprints, key store, lifetime), and asks for the touch or the confirmation.
 4. The root signs. For X.509 that gives an intermediate CA certificate; for OpenPGP, a binding signature on the subkey. The result goes back to the system, which installs it.
@@ -40,10 +40,12 @@ One root is a single point of failure. A card breaks, a cloud account is locked,
 
 The remedy is two or more *independent* roots: separate keys, made separately, stored in different places, ideally on different kinds of store. Outsiders are given all of them at once, as one CA bundle or one keyring. Any one of them can authorise intermediates, so losing one does not stop you.
 
+How many roots depends on the store. A card cannot be copied, so redundancy means a second, independent card. A cloud key service can replicate its key, so a company root in AWS KMS is **one root and a multi-Region replica**, in one dedicated account. **Redundancy protects against loss, not compromise.** A replica covers a lost Region and is the same key; a compromise of any root is answered by revocation and a transition.
+
 Two limits are worth knowing.
 
 - Redundancy is not control. With standard tools, any single root that a client trusts can sign anything that client will accept. Standard X.509 and OpenPGP clients cannot ask for "two roots agreed". Protect each root as if it were the only one.
-- A root key that is copied is not a second root, it is a second place to steal the same key. Redundancy means different keys.
+- A root key that is copied is not a second root, it is a second place to steal the same key. A second root means a different key. A replica of a cloud key is a copy kept by the service for availability, and it is not counted as a root.
 
 ## Moving from one root to another
 

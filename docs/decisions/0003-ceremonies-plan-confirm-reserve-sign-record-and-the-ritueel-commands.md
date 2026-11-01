@@ -3,7 +3,7 @@
 **Status:** Proposed
 **Date:** 2026-11-01
 
-Proposal: [issue #27](https://github.com/truvity/ritueel/issues/27). The commands are built in [issue #30](https://github.com/truvity/ritueel/issues/30), the records in [issue #9](https://github.com/truvity/ritueel/issues/9), the transitions in [issue #13](https://github.com/truvity/ritueel/issues/13), and the software-root mode in [issue #8](https://github.com/truvity/ritueel/issues/8). The record stays `Proposed` while the open parts at the end are undecided; they are tracked in issues #14, #26 and #27.
+Proposal: [issue #27](https://github.com/truvity/ritueel/issues/27). The commands are built in [issue #30](https://github.com/truvity/ritueel/issues/30), the records in [issue #9](https://github.com/truvity/ritueel/issues/9), the transitions in [issue #13](https://github.com/truvity/ritueel/issues/13), and the software-root mode in [issue #8](https://github.com/truvity/ritueel/issues/8). The record stays `Proposed` while the open parts at the end are undecided; they are tracked in issues #14, #26 and #27. Revised in place on 2026-11-01, while ritueel is in its design phase: the command word is `intermediate`, the yearly ceremony renews by re-signing, a company KMS root is one root with a replica, and the key stores are pluggable.
 
 ## Context
 
@@ -23,9 +23,10 @@ Four facts shape it.
 | Command | Does | Needs a person |
 |---|---|---|
 | `ritueel init` | Creates the directory, the roots (`--roots N`, default 2, both cards present) and their revocation material, and the first trust products. | Yes |
-| `ritueel yearly` | The yearly ceremony: certifies every pending request with the root of the year, and publishes the next trust sequence. | Yes |
-| `ritueel board add NAME` | Registers a system that holds intermediates and certifies its first request. | Yes |
-| `ritueel board replace NAME` | Certifies a new key for a registered system. `--revoke` also revokes the old one, with a reason. | Yes |
+| `ritueel yearly` | The yearly ceremony: renews every registered intermediate by re-signing, with the root of the year, and publishes the next trust sequence. | Yes |
+| `ritueel intermediate add NAME` | Registers an intermediate and certifies its first request. | Yes |
+| `ritueel intermediate replace NAME` | The event path: certifies a new key for a registered intermediate. `--revoke` also revokes the old one, with a reason. | Yes |
+| `ritueel intermediate revoke NAME` | Revokes the certificate and subkey binding of a registered intermediate, with a reason, without a replacement. | Yes |
 | `ritueel root add` | Creates a new root in a store, and has an existing root vouch for it. This starts an overlap. | Yes |
 | `ritueel root retire ROOT` | Ends an overlap: removes the root from the next trust products. | Yes |
 | `ritueel root revoke ROOT` | Revokes a lost, stolen or compromised root. | Yes |
@@ -35,7 +36,7 @@ Four facts shape it.
 | `ritueel records list`, `ritueel records verify` | Read the ceremony records and check their chain. | No |
 | `ritueel wizard` | A guided front end to the commands above. | Yes |
 
-The verbs of a transition ([13](https://github.com/truvity/ritueel/issues/13)) map onto the commands: *create* and *vouch* are `root add`, *overlap* is a state that both roots are in and not a command, *supersede* is `root retire`, and *revoke* is `root revoke`. `board` is the word of 0002 for a system that holds intermediates; whether to use a more general word is open.
+The verbs of a transition ([13](https://github.com/truvity/ritueel/issues/13)) map onto the commands: *create* and *vouch* are `root add`, *overlap* is a state that both roots are in and not a command, *supersede* is `root retire`, and *revoke* is `root revoke`. The command word is `intermediate`, decided on 2026-11-01: things are named for what they are, and a board is only one place an intermediate key can live (a card slot in a board, a KMS key, a file).
 
 Routine work needs no person and no card, because it reads public files only. `bundle build` and `keyring build` give the same bytes from the same directory, so a pipeline can run them on every change and publish the result.
 
@@ -76,7 +77,7 @@ The version in use is written in every record. A holder who edits slots by hand 
 
 ritueel keeps its state in one directory of plain files, which holds **public material only**: the configuration, the registry of known cards, the roots' certificates and public keys, the revocation certificates' digests, the plans, the ceremony records and transcripts, and the trust products. A private key, a PIN, a passphrase and a revocation certificate itself are never in it. The directory is meant to be kept in version control by the holder, and it must be backed up: the creation time of an OpenPGP key is part of its fingerprint and is not on a card.
 
-The registry holds, for each known card, the serial, its role and the fingerprints of the keys made on it. It is filled by `init` and `board add`. The directory is chosen with `--dir`, and defaults to the current directory when it holds `ritueel.yaml`.
+The registry holds, for each known card, the serial, its role and the fingerprints of the keys made on it. It is filled by `init` and `intermediate add`. The directory is chosen with `--dir`, and defaults to the current directory when it holds `ritueel.yaml`.
 
 ### Records and transcripts
 
@@ -90,7 +91,9 @@ The registry holds, for each known card, the serial, its role and the fingerprin
 - The root of the year signs a yearly ceremony. The default is the root that did not sign the previous yearly ceremony, found in the records. `--root` overrides it, and the reason is recorded. If a root is retired or revoked, the other signs.
 - **When.** Intermediates last 13 calendar months. The yearly ceremony is held in month 12 of their life, when the earliest expiry is 60 to 30 days away. `status` warns about an intermediate at 60, 30 and 14 days (configurable), the same days a system that holds intermediates warns on its side; its exit code is 0, 10, 11 or 12 for nothing due, notice, alert and critical.
 - **Root expiry.** `status` also warns about a root, at **6 months, 3 months and 30 days** before it expires, with the same exit codes 10, 11 and 12 (the highest of all findings is returned). Why: a root is extended at every use of its card and the cards alternate, so a healthy root always has at least about a year left, and a warning at 6 months means an extension was missed while there is still time for a ceremony, an overlap and a transition.
-- **Pending requests.** `yearly` takes one request for every registered system. It stops when one is missing, because that system would then expire, unless the person passes `--allow-missing NAME`, which is recorded.
+- **Pending requests.** `yearly` takes one request for every registered intermediate. It stops when one is missing, because that intermediate would then expire, unless the person passes `--allow-missing NAME`, which is recorded.
+- **What the yearly ceremony does to a key.** It renews by re-signing: for each intermediate, a new certificate over the same key (X.509) and a new binding that extends the same subkey's expiry (OpenPGP). The request still arrives, so the proof of where the key lives is checked again, but the key is the same key.
+- **When a key is replaced.** `intermediate replace` is the event path: a suspected compromise, a change of store or algorithm, a change of custody. It is also forced at most every 3 years (NIST SP 800-57 Part 1 gives one to three years for a private signature key), so the path is exercised and works on the day an event needs it. `status` shows the age of each intermediate key, and the ceremony after a key reaches three years replaces it ([0002](/decisions/0002-every-key-is-born-in-its-store-two-roots-one-holder-yearly-alternation/#renewal-and-replacement)).
 
 ### Revocation readiness
 
@@ -114,7 +117,7 @@ The registry holds, for each known card, the serial, its role and the fingerprin
 
 ### KMS roots
 
-A KMS root follows the same steps. The confirmation is the typed digest plus a role that needs multi-factor authentication; ritueel uses the credentials of the caller's standard chain and stores none. The record holds the key ARN, the digest of the key policy and the role session. The company model has two independent KMS roots, like the two cards: a second KMS root **in a separate account**. A replica of a multi-Region key is the same key, so it adds availability and not independence, and is never counted as the second root. Whether each root gets an account of its own is open. For a key held by a system that asks for an intermediate, the certifier reads the key itself, never a copy, as the hand-off contract says.
+A KMS root follows the same steps. The confirmation is the typed digest plus a role that needs multi-factor authentication; ritueel uses the credentials of the caller's standard chain and stores none. The record holds the key ARN, the digest of the key policy and the role session. The company model has **one KMS root and a multi-Region replica, in one dedicated root account** (decided 2026-11-01). Redundancy protects against loss and not against compromise: the replica covers a lost Region or primary copy, and it is the same key, so it is never counted as a second root. A compromise of the root is answered by revocation and a transition, as for a card. The cards stay two independent keys because a card cannot be copied ([0002](/decisions/0002-every-key-is-born-in-its-store-two-roots-one-holder-yearly-alternation/)). For a key held by a system that asks for an intermediate, the certifier reads the key itself, never a copy, as the hand-off contract says; for a key in another account it assumes a small read-only role inside that account, because `GetKeyPolicy` does not work across accounts.
 
 ### Wizards
 
@@ -128,11 +131,38 @@ The CLI wizard and the web wizard ([16](https://github.com/truvity/ritueel/issue
 
 `init` prints it, and the record says it was shown: whoever holds one root card and its PIN can sign things that outsiders trust, until that root is revoked and the update reaches them. A stolen card without its PIN locks after three tries.
 
+### Key stores: one ceremony, many stores
+
+ritueel's ceremony makes a key in a store, or binds a key that a store holds. Only the store and the consumer of the key differ; the six steps, the plan, the records and the checks are the same. A store is a driver behind one small interface. Decided on 2026-11-01.
+
+| Store | Driver | Typical consumer | Used for |
+|---|---|---|---|
+| `software` | A passphrase-protected file | Tests, drills, development | Development and drills, and a person's own primary. A software key can be copied, and every record says so. |
+| `piv` | piv-go | A service's key-holder | Root keys on a card, and an intermediate key of a service that holds a card slot. |
+| `openpgp-card` | A fork of go-openpgp-card (below) | `gpg`, used by a person | A person's daily signing subkey, born on the card's OpenPGP applet. |
+| `aws-kms` | The AWS SDK | A service, or a company root | A company root, and an intermediate key of a service that holds a KMS key. |
+
+Each store is proven on real hardware or a real account before it is called supported; a store that cannot be proven that way is not added.
+
+**Personal GPG** is in scope ([0001](/decisions/0001-scope-roots-and-transitions-systems-like-sluis-hold-intermediates/)). A person's daily OpenPGP subkey is **born on the card's OpenPGP applet** (the `openpgp-card` store), so `gpg` and `scdaemon` use it directly. A **software primary** binds it: the card makes the signing subkey and the back-signature (type `0x19`), and the primary makes the binding (type `0x18`). The primary is a passphrase-protected file kept offline, and a transition can move it to a card later. This is the same hand-off as for a service's subkey, with the person's own card as the requester.
+
+### The OpenPGP card store
+
+The `openpgp-card` store drives the OpenPGP applet of a card (OpenPGP card specification 3.4.1). The library is cunicu's **go-openpgp-card**, now hosted on Codeberg: latest release v0.3.11, last functional commit in December 2024, one maintainer. Because of that, ritueel **vendors a patched fork behind a small interface** and does not depend on the upstream module at build time. The fallback, if the fork cannot be kept, is a small driver of our own on go-iso7816, and after that `scdaemon`.
+
+Measured on 2026-11-01 on a test YubiKey 5 (firmware 5.8), in a spike:
+
+- **Interoperability.** A signing key generated by the card (P-384), a back-signature (`0x19`) made by the card, and a binding (`0x18`) made by a software primary were accepted by `gpg` 2.4.8, `gpgv`, `sqv` 1.5.0 and `sq` 1.4.1. `gpg` 2.2.27 with `scdaemon` then signs with the card's subkey.
+- **Fixes the library needs on firmware 5.8.** Reading the card's supported algorithms fails until a three-line patch is applied. The fingerprint the library stores for an ECDSA key is wrong, because it appends ECDH key-derivation parameters; ritueel writes the correct fingerprint to the card with PUT DATA. The library has no attestation: the YubiKey command `80 FB 01 00` works after the user PIN (PW1) is verified, and the certificate it returns chains to Yubico's current roots through the intermediate "Yubico OPGP Attestation B2 1", with extensions under OID `1.3.6.1.4.1.41482.5`.
+- **Session behaviour.** PW1 verification does not survive reopening the card, so every process verifies again. The library opens the card exclusively, like piv-go. `iso.Card.Close()` resets the card (`SCARD_RESET_CARD`), which also ends the verified state. Signing runs at about four signatures a second, including the PIN verification.
+
+Attestation of an OpenPGP-applet key is a third attestation shape beside the PIV one and the KMS description. The attestation bundle ritueel carries holds the intermediates of both.
+
 ### The card layer
 
-The card library is **go-piv/piv-go** (v2.6.0, Apache-2.0, released 2026-04-15). **Both root keys live in PIV slots:** the X.509 root in 9c and the OpenPGP primary in a retired slot. ritueel builds the OpenPGP packets itself, and the card signs digests. There is one applet, one library, one binary, no `gpg` and no second language, and attestation works the same for both keys. The spike showed a PIV key makes back-signatures that `gpg`, `gpgv` and `sqv` accept (2026-10-31).
+For the roots, the card library is **go-piv/piv-go** (v2.6.0, Apache-2.0, released 2026-04-15), the `piv` store. **Both root keys live in PIV slots:** the X.509 root in 9c and the OpenPGP primary in a retired slot. ritueel builds the OpenPGP packets itself, and the card signs digests. There is one applet, one library, one binary, no `gpg` and no second language, and attestation works the same for both keys. The spike showed a PIV key makes back-signatures that `gpg`, `gpgv` and `sqv` accept (2026-10-31).
 
-- **The OpenPGP applet stays free** for the holder's own daily use. `gpg --card-status` shows nothing of the root. The two applets are independent: generating keys in six PIV slots, signing and one wrong PIV PIN changed nothing in the OpenPGP applet (its data, PIN retry counters and signature counter were identical before and after, on two cards; measured 2026-11-01).
+- **The OpenPGP applet stays free** for the holder's own daily use, which is the `openpgp-card` store above. `gpg --card-status` shows nothing of the root. The two applets are independent: generating keys in six PIV slots, signing and one wrong PIV PIN changed nothing in the OpenPGP applet (its data, PIN retry counters and signature counter were identical before and after, on two cards; measured 2026-11-01).
 - **The creation time of the primary is not on the card.** ritueel chooses it, and the directory keeps it ([issue #11](https://github.com/truvity/ritueel/issues/11) is reworded for PIV). The creation time fixes the OpenPGP fingerprint, so it is part of the key's identity; losing it changes the fingerprint of the same key. The same holds for a KMS key, whose own creation date plays no role: ritueel stores the time as a key tag and in every published certificate.
 - **A PIV-resident key works as an OpenPGP primary** (the spike of [issue #26](https://github.com/truvity/ritueel/issues/26), measured 2026-11-01 on a YubiKey 5, firmware 5.8.0, piv-go v2.6.0). It made the direct-key signature (`0x1F`), the user ID certification (`0x13`), the subkey binding (`0x18`) and revocations (`0x20`, `0x28`). `gpg` 2.4.8, `gpgv`, `sqv` 1.5.0, `sq` 1.4.1 and apt 3.2.0 accept the certificate and a subkey signature; rpm 6.0.2 imports it (a signed `.rpm` was not tested). One card signature takes about 150 ms, a certificate with three signatures about 450 ms. The choice of piv-go stands.
 - **A KMS key does the same.** An AWS KMS `ECC_NIST_P384` key worked as primary and as subkey of a certificate that the same verifiers accept; a signature takes about 15 ms. A P-384 KMS key signs only 48-byte SHA-384 digests, so **every P-384 OpenPGP signature uses SHA-384 on all backends.** KMS has no attestation: the evidence for a KMS key is its description, its key policy and the audit trail of its uses.
@@ -150,9 +180,7 @@ A root is valid for about three years, and **each use extends it** (0002, which 
 
 ### Open
 
-- **`board`**, the name of a system that holds intermediates in the commands. Options: keep it (0002 uses it); use a general word such as `holder`. Keeping is cheaper now; the general word is clearer in a generic product.
 - **Lifetimes.** Settled: 13 calendar months for intermediates, ceremony in month 12, warnings at 60, 30 and 14 days; about three years for a root, extended at each use, warnings at 6 months, 3 months and 30 days. Not settled here: the lifetime of the signed root list ([issue #14](https://github.com/truvity/ritueel/issues/14)) and the PIV touch policy of the root key (always, as 0002 says, or cached; not exercised in the 2026-11-01 spike, which needs a person at the card).
-- **The layout of KMS roots.** The second root is in a separate account. Whether each root gets an account of its own is open ([issue #27](https://github.com/truvity/ritueel/issues/27)).
 - **One card or two for roots and daily `gpg`.** (a) A separate card for roots: no sharing, one more object to keep; recommended. (b) One card: fewer objects, but the PC/SC lock, a possible PIN prompt on every `gpg` operation when the two share the card, and an accidental reset that affects both. Not decided.
 - **The go-crypto bypass.** (a) Keep the bypass, with the version pinned and a test that builds a certificate with a software signer and runs `gpgv`, `sqv` and a tampered-input control: least work, depends on an unofficial path. (b) Upstream an API that accepts a `crypto.Signer`: shared benefit, depends on review speed. (c) Write the packets ourselves: no dependency risk, more security-critical code to keep. Not decided; (a) is the working assumption.
 - **Attestation bundle: upstream fix.** ritueel carries its own bundle now. Sending the missing intermediate to piv-go is a parallel nice-to-have and changes nothing here.
@@ -167,10 +195,14 @@ A root is valid for about three years, and **each use extends it** (0002, which 
 - There is one card library to keep up and no OpenPGP applet code. The primary's own signatures are tested (issue #26, 2026-11-01); the matrix must also carry a signed `.rpm`.
 - ritueel owns an attestation bundle: the maker's current root and its intermediates, which someone refreshes when a new intermediate appears. A card whose chain is not in the bundle is refused until it is.
 - ritueel stores the OpenPGP creation time of every key, for KMS keys as well as card keys.
+- An intermediate key is renewed by re-signing and replaced only on an event or at three years, so a yearly ceremony moves no key. The cost is a forced replacement every three years, which is the price of a tested replace path.
 - A root changes at every use: the extension is one more signature in each ceremony, and the CA bundle and the keyring are rebuilt every year.
 - The stored revocation signature can be lost, and nothing else can revoke a primary whose card and PIN are gone. The guide says where to keep it.
 - Typing a digest prefix per ceremony is slower than pressing a key, by a few seconds, once a year.
-- The touches per ceremony grow with the number of systems; the plan prints the count.
+- The touches per ceremony grow with the number of intermediates; the plan prints the count.
+- A company KMS root is one key and a replica in one account. The account is a single point of compromise, answered by revocation and a transition and not by a second root; the root account holds nothing else and its role needs multi-factor authentication.
+- A new key store is a driver behind one interface, and the ceremony does not change. The cost is one interface to keep stable and a test on real hardware or a real account for each store.
+- The OpenPGP-card driver depends on a library with one maintainer. Vendoring a patched fork keeps ritueel building and gives a place for the fixes it needs, and makes ritueel the maintainer of that fork.
 
 ## Roads not taken
 
@@ -191,6 +223,24 @@ A root is valid for about three years, and **each use extends it** (0002, which 
 - Pros: did every step in the spike (340 lines), with `openpgp-card` and rPGP.
 - Cons: a second language and a helper to package and sign, for key handling that no longer keeps a key in memory.
 - Why not: the reason for a memory-safe helper is gone when every key is born on the card.
+
+### The OpenPGP card store: the upstream library as it is
+
+- Pros: nothing to maintain; fixes would come from upstream.
+- Cons: one maintainer and no functional commit since December 2024; the spike needed a three-line patch, a fingerprint fix and an attestation command that the library lacks.
+- Why not: a ceremony tool cannot wait for a fix. A patched fork behind a small interface keeps ritueel building and lets the driver be replaced by our own on go-iso7816, or by `scdaemon`.
+
+### A person's daily subkey in a PIV slot
+
+- Pros: one applet and one library for every card key.
+- Cons: `gpg` and `scdaemon` read the card's OpenPGP applet, so a PIV key is not a key `gpg` can use day to day.
+- Why not: the daily subkey has to be where its consumer looks. The key is born on the OpenPGP applet and a software primary binds it.
+
+### A different ceremony for each key store
+
+- Pros: each store keeps its own shape.
+- Cons: the plan, the confirmation, the records and the refusals are written and taught once for each store.
+- Why not: a ceremony makes or binds a key, and only the store and the consumer differ. One ceremony behind a small driver interface is written, tested and taught once.
 
 ### One command with no plan step
 
