@@ -29,6 +29,12 @@ The creation times matter more than they look. An OpenPGP fingerprint depends on
 4. **The digest of the last record, kept apart.** The records are a hash chain. Write the latest digest somewhere that is not the repository, such as a note in the password manager. Anyone who later rewrites the history cannot reproduce it. ritueel also puts the digest into each signed root list, which anchors the chain without using the root again.
 5. **Not on the machine you use for the ceremony only.** A ceremony workstation may be reinstalled. The ledger is cloned onto it, used, and pushed back.
 
+## How others keep a record
+
+Public certificate authorities follow a written script for a root key ceremony, and a qualified auditor witnesses it or it is recorded on video, with a report that the script was followed. The CA/Browser Forum Baseline Requirements (version 2.3.1, effective 2026-10-04) also require logging key generation, backup, storage, recovery and CRL signing, and keeping the logs for at least two years after the key's last certificate expires or the key is destroyed. The operator of the DNS root key publishes the annotated script, the key-generation log and a hash of the system image for each ceremony (read 2026-11-01).
+
+ritueel's ledger is the same idea scaled to one holder: a script that is the tool, a record per ceremony, a hash chain, and a history you can audit. It is a design choice, not a standard, that the history is a signed git repository.
+
 ## What else must be backed up, and where
 
 The ledger is only half. The other half is what it deliberately does not hold.
@@ -57,4 +63,4 @@ A restore you have never practised is a hope. The restore drill is the practice:
 3. Compare each root with its card or cloud key: the serial, the fingerprint, the attestation.
 4. Walk through the loss of one card with its revocation certificate.
 
-It ends when every check passes, and the record says how long each step took. The drill runs on test keys first, then once on the real ones. This is planned as its own command ([the drills](/guides/)).
+It ends when every check passes, and the record says how long each step took. Yearly is ritueel's recommendation: no standard sets how often to rehearse a restore (checked 2026-11-01), and the DNS root operator says only that its recovery plan is regularly tested. The drill runs on test keys first, then once on the real ones. This is planned as its own command ([the drills](/guides/)).

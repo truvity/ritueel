@@ -23,11 +23,11 @@ ritueel has two faces: the **command line** and a **wizard**, in the terminal an
 
 ### The wizard's security rules
 
-1. It binds to **127.0.0.1 only** and refuses any other address.
-2. It listens on a **random port**.
-3. It prints a **one-time token** in its address; a request without it is refused.
-4. It checks the **Host and Origin** headers of every request, against DNS rebinding and cross-site requests.
-5. It loads **no remote assets**.
+1. It binds to **127.0.0.1 only**, by that literal address and not the name `localhost`, and refuses any other address.
+2. It listens on a **random port**, chosen by the system.
+3. It prints a **one-time token** in its address; the token is exchanged for a cookie and a request without either is refused.
+4. It checks the **Host** header against an allow-list, against DNS rebinding, and the **Origin** header, against cross-site requests. They are separate checks.
+5. It loads **no remote assets**: the page is part of the program.
 6. It sends a **strict Content-Security-Policy**: its own files only.
 7. **Every irreversible step is confirmed in the terminal or by touch,** never by a click alone. The page never receives a PIN, a passphrase or a key.
 8. It sends no telemetry and makes no network call that a ceremony does not need.
