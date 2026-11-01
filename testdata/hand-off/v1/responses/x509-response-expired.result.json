@@ -1,16 +1,16 @@
 {
   "handoff": 1,
   "type": "x509-intermediate",
-  "request_sha256": "03aef061a6a73491c8ba8a76027c6ad1206865934ca6c4530c50e274a9d47206",
+  "request_sha256": "3b8839e963b7734358982fda67a41460c2ba95f3d477d47f86f90990e12dcd5b",
   "outcome": "issued",
   "artifacts": [
     {
       "name": "x509-response-expired.cert.pem",
-      "sha256": "722c42adf8ae0b4be551e909a85d9aa6f8f5a36d5f02f1c60e20fd8511b485c6"
+      "sha256": "5436a691dd1c6e278fbcf4c852b05a3e2fff6e133a13980ae6ed4ff34575d95c"
     }
   ],
   "valid_from": "2025-09-01T00:00:00Z",
   "valid_until": "2026-10-01T00:00:00Z",
-  "issuer": "2d5286ae78432f9b31417ca25a12e843dce66aed276c268032d09b9f486803aa",
+  "issuer": "9cc5ca24fa7585ded1a51bea532e30c1e7d291dd5dffac6ebed1ae855577ac4a",
   "trust_sequence": 7
 }

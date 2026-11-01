@@ -1,0 +1,438 @@
+{
+  "ssh_ca_keys": 1,
+  "clock": "2026-11-15T12:00:00Z",
+  "roots": [
+    {
+      "label": "A",
+      "certificate": "pki/test-root-a.pem",
+      "x509_spki_sha256": "9cc5ca24fa7585ded1a51bea532e30c1e7d291dd5dffac6ebed1ae855577ac4a"
+    },
+    {
+      "label": "B",
+      "certificate": "pki/test-root-b.pem",
+      "x509_spki_sha256": "4d09f15759ad0d3d43448134513c9f4805532098d3ccd8ad0837f66d8a2fec24"
+    },
+    {
+      "label": "Z",
+      "certificate": "pki/test-root-z.pem",
+      "x509_spki_sha256": "f32279c9eb24daad9e325695e4b30296489ba6492c0c3f512366285abb4333e2"
+    }
+  ],
+  "lists": [
+    {
+      "id": "seq6-b",
+      "signer": "B",
+      "files": [
+        "lists/seq6-b.json",
+        "lists/seq6-b.jws"
+      ]
+    },
+    {
+      "id": "seq7-a",
+      "signer": "A",
+      "files": [
+        "lists/seq7-a.json",
+        "lists/seq7-a.jws"
+      ]
+    },
+    {
+      "id": "seq7-b",
+      "signer": "B",
+      "files": [
+        "lists/seq7-b.json",
+        "lists/seq7-b.jws"
+      ]
+    },
+    {
+      "id": "seq7-a-without-key",
+      "signer": "A",
+      "files": [
+        "lists/seq7-a-without-key.json",
+        "lists/seq7-a-without-key.jws"
+      ]
+    },
+    {
+      "id": "seq7-a-wrong-use",
+      "signer": "A",
+      "files": [
+        "lists/seq7-a-wrong-use.json",
+        "lists/seq7-a-wrong-use.jws"
+      ]
+    },
+    {
+      "id": "seq8-b-without-a",
+      "signer": "B",
+      "files": [
+        "lists/seq8-b-without-a.json",
+        "lists/seq8-b-without-a.jws"
+      ]
+    },
+    {
+      "id": "seq8-a-retiring",
+      "signer": "A",
+      "files": [
+        "lists/seq8-a-retiring.json",
+        "lists/seq8-a-retiring.jws"
+      ]
+    },
+    {
+      "id": "seq8-a-empty",
+      "signer": "A",
+      "files": [
+        "lists/seq8-a-empty.json",
+        "lists/seq8-a-empty.jws"
+      ]
+    },
+    {
+      "id": "seq9-a",
+      "signer": "A",
+      "files": [
+        "lists/seq9-a.json",
+        "lists/seq9-a.jws"
+      ]
+    },
+    {
+      "id": "seq8-z",
+      "signer": "Z",
+      "files": [
+        "lists/seq8-z.json",
+        "lists/seq8-z.jws"
+      ]
+    },
+    {
+      "id": "seq8-a-version-2",
+      "signer": "A",
+      "files": [
+        "lists/seq8-a-version-2.json",
+        "lists/seq8-a-version-2.jws"
+      ]
+    },
+    {
+      "id": "seq8-a-unknown-member",
+      "signer": "A",
+      "files": [
+        "lists/seq8-a-unknown-member.json",
+        "lists/seq8-a-unknown-member.jws"
+      ]
+    },
+    {
+      "id": "seq8-a-duplicate-key",
+      "signer": "A",
+      "files": [
+        "lists/seq8-a-duplicate-key.json",
+        "lists/seq8-a-duplicate-key.jws"
+      ]
+    },
+    {
+      "id": "seq8-a-root-list-type",
+      "signer": "A",
+      "files": [
+        "lists/seq8-a-root-list-type.json",
+        "lists/seq8-a-root-list-type.jws"
+      ]
+    },
+    {
+      "id": "seq7-a-tampered",
+      "signer": "A",
+      "files": [
+        "lists/seq7-a-tampered.json",
+        "lists/seq7-a-tampered.jws"
+      ]
+    }
+  ],
+  "files": [
+    {
+      "id": "ssh-user-ca-keys-7",
+      "file": "files/ssh-user-ca-keys-7.pub"
+    },
+    {
+      "id": "ssh-user-ca-keys-7-with-host-key",
+      "file": "files/ssh-user-ca-keys-7-with-host-key.pub"
+    }
+  ],
+  "cases": [
+    {
+      "id": "first-list",
+      "held": null,
+      "candidate": "seq7-a",
+      "root_list": {
+        "roots": [
+          "A",
+          "B"
+        ]
+      },
+      "expect": "accept"
+    },
+    {
+      "id": "update",
+      "held": "seq6-b",
+      "candidate": "seq7-a",
+      "root_list": {
+        "roots": [
+          "A",
+          "B"
+        ]
+      },
+      "expect": "accept"
+    },
+    {
+      "id": "same-list-signed-by-the-other-root",
+      "held": "seq7-a",
+      "candidate": "seq7-b",
+      "root_list": {
+        "roots": [
+          "A",
+          "B"
+        ]
+      },
+      "expect": "accept"
+    },
+    {
+      "id": "remove-a-revoked-roots-key",
+      "held": "seq7-a",
+      "candidate": "seq8-b-without-a",
+      "root_list": {
+        "roots": [
+          "B"
+        ],
+        "sequence": 8,
+        "signer": "B"
+      },
+      "clock": "2026-12-01T12:00:00Z",
+      "expect": "accept"
+    },
+    {
+      "id": "retiring-root-signs",
+      "held": "seq7-a",
+      "candidate": "seq8-a-retiring",
+      "root_list": {
+        "roots": [
+          "B"
+        ],
+        "sequence": 8,
+        "signer": "A"
+      },
+      "clock": "2026-12-01T12:00:00Z",
+      "expect": "accept"
+    },
+    {
+      "id": "every-key-withdrawn",
+      "held": "seq7-a",
+      "candidate": "seq8-a-empty",
+      "root_list": {
+        "roots": [
+          "A",
+          "B"
+        ]
+      },
+      "clock": "2026-12-01T12:00:00Z",
+      "expect": "accept"
+    },
+    {
+      "id": "same-list-again",
+      "held": "seq7-a",
+      "candidate": "seq7-a",
+      "root_list": {
+        "roots": [
+          "A",
+          "B"
+        ]
+      },
+      "expect": "accept"
+    },
+    {
+      "id": "user-keys-file",
+      "held": null,
+      "candidate": "seq7-a",
+      "root_list": {
+        "roots": [
+          "A",
+          "B"
+        ]
+      },
+      "user_keys": "files/ssh-user-ca-keys-7.pub",
+      "expect": "accept"
+    },
+    {
+      "id": "rollback",
+      "held": "seq7-a",
+      "candidate": "seq6-b",
+      "root_list": {
+        "roots": [
+          "A",
+          "B"
+        ]
+      },
+      "expect": "refuse",
+      "reason": "rollback"
+    },
+    {
+      "id": "same-sequence-different-content",
+      "held": "seq7-a",
+      "candidate": "seq7-a-without-key",
+      "root_list": {
+        "roots": [
+          "A",
+          "B"
+        ]
+      },
+      "expect": "refuse",
+      "reason": "sequence-conflict"
+    },
+    {
+      "id": "signed-by-a-revoked-root",
+      "held": "seq8-b-without-a",
+      "candidate": "seq9-a",
+      "root_list": {
+        "roots": [
+          "B"
+        ],
+        "sequence": 9,
+        "signer": "B"
+      },
+      "clock": "2026-12-02T12:00:00Z",
+      "expect": "refuse",
+      "reason": "unknown-signer"
+    },
+    {
+      "id": "retiring-root-signs-after-its-root-list",
+      "held": "seq7-a",
+      "candidate": "seq8-a-retiring",
+      "root_list": {
+        "roots": [
+          "B"
+        ],
+        "sequence": 9,
+        "signer": "B"
+      },
+      "clock": "2026-12-01T12:00:00Z",
+      "expect": "refuse",
+      "reason": "unknown-signer"
+    },
+    {
+      "id": "unknown-signer",
+      "held": "seq7-a",
+      "candidate": "seq8-z",
+      "root_list": {
+        "roots": [
+          "A",
+          "B"
+        ]
+      },
+      "clock": "2026-12-01T12:00:00Z",
+      "expect": "refuse",
+      "reason": "unknown-signer"
+    },
+    {
+      "id": "tampered",
+      "held": "seq6-b",
+      "candidate": "seq7-a-tampered",
+      "root_list": {
+        "roots": [
+          "A",
+          "B"
+        ]
+      },
+      "expect": "refuse",
+      "reason": "signature-invalid"
+    },
+    {
+      "id": "expired",
+      "held": "seq6-b",
+      "candidate": "seq7-a",
+      "root_list": {
+        "roots": [
+          "A",
+          "B"
+        ]
+      },
+      "clock": "2028-01-01T00:00:00Z",
+      "expect": "refuse",
+      "reason": "expired"
+    },
+    {
+      "id": "version-2",
+      "held": "seq7-a",
+      "candidate": "seq8-a-version-2",
+      "root_list": {
+        "roots": [
+          "A",
+          "B"
+        ]
+      },
+      "clock": "2026-12-01T12:00:00Z",
+      "expect": "refuse",
+      "reason": "version-unsupported"
+    },
+    {
+      "id": "unknown-member",
+      "held": "seq7-a",
+      "candidate": "seq8-a-unknown-member",
+      "root_list": {
+        "roots": [
+          "A",
+          "B"
+        ]
+      },
+      "clock": "2026-12-01T12:00:00Z",
+      "expect": "refuse",
+      "reason": "malformed"
+    },
+    {
+      "id": "duplicate-key",
+      "held": "seq7-a",
+      "candidate": "seq8-a-duplicate-key",
+      "root_list": {
+        "roots": [
+          "A",
+          "B"
+        ]
+      },
+      "clock": "2026-12-01T12:00:00Z",
+      "expect": "refuse",
+      "reason": "malformed"
+    },
+    {
+      "id": "root-list-type",
+      "held": "seq7-a",
+      "candidate": "seq8-a-root-list-type",
+      "root_list": {
+        "roots": [
+          "A",
+          "B"
+        ]
+      },
+      "clock": "2026-12-01T12:00:00Z",
+      "expect": "refuse",
+      "reason": "malformed"
+    },
+    {
+      "id": "user-keys-file-with-a-host-key",
+      "held": null,
+      "candidate": "seq7-a",
+      "root_list": {
+        "roots": [
+          "A",
+          "B"
+        ]
+      },
+      "user_keys": "files/ssh-user-ca-keys-7-with-host-key.pub",
+      "expect": "refuse",
+      "reason": "user-keys-mismatch"
+    },
+    {
+      "id": "held-list-expired",
+      "held": "seq7-a",
+      "candidate": null,
+      "root_list": {
+        "roots": [
+          "A",
+          "B"
+        ]
+      },
+      "clock": "2028-01-01T00:00:00Z",
+      "expect": "warn",
+      "warning": "expired"
+    }
+  ]
+}

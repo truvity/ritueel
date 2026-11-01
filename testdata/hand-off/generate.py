@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
-"""Generate the hand-off test vectors of version 1 into testdata/hand-off/v1/, and the root list
-and CA bundle vectors of version 1 into testdata/root-list/v1/, from one test trust set.
+"""Generate the hand-off test vectors of version 1 into testdata/hand-off/v1/, the root list and CA
+bundle vectors of version 1 into testdata/root-list/v1/, the SSH CA key list vectors into
+testdata/ssh-ca-keys/v1/ and the CRL vectors into testdata/crl/v1/, from one test trust set.
 
 Test fixtures only. Every key here is a throw-away software key made by this script;
 its private half is never written to disk, so the output holds public material only:
@@ -13,12 +14,13 @@ The test trust set has two roots, A and B, as on two root cards: each has an X.5
 and an OpenPGP primary, and both are active on the signed root list. A third root, Z, is
 on no list; it makes the "untrusted issuer" and "unknown primary" cases. The roots follow the
 root profile of docs/reference/directory.md, and the root lists and CA bundles that name them
-follow docs/reference/root-list.md. Both sets are made in one run because the root lists are
+follow docs/reference/root-list.md, the SSH CA key lists docs/reference/ssh-ca-key-list.md and the
+CRLs docs/reference/crl.md. All four sets are made in one run because the lists and the CRLs are
 signed by the same throw-away root keys that issue the hand-off answers.
 
 Made with Python 3.14 and cryptography 46.0.5.
 
-usage: generate.py HANDOFF_OUTDIR ROOTLIST_OUTDIR
+usage: generate.py HANDOFF_OUTDIR ROOTLIST_OUTDIR SSHCA_OUTDIR CRL_OUTDIR
 """
 import base64, datetime as dt, hashlib, json, os, secrets, struct, sys
 from cryptography import x509
@@ -29,6 +31,8 @@ from cryptography.x509.oid import NameOID, ObjectIdentifier
 
 OUT = sys.argv[1]
 RL_OUT = sys.argv[2]
+SSH_OUT = sys.argv[3]
+CRL_OUT = sys.argv[4]
 UTC = dt.timezone.utc
 CLOCK = dt.datetime(2026, 11, 15, 12, 0, 0, tzinfo=UTC)   # the ceremony time used by every vector
 UNTIL = dt.datetime(2027, 12, 15, 12, 0, 0, tzinfo=UTC)   # 13 calendar months later
@@ -560,6 +564,130 @@ pgp_response("pgp-response-wrong-primary", "pgp-response-request", sk, backs, re
 # the expiry is shorter than 12 months: a requester that expects about 13 months refuses it
 pgp_response("pgp-response-short-expiry", "pgp-response-request", sk, backs, req, until=T_CEREMONY + 60 * 86400, expect="refuse", reason="validity")
 
+# ---- SSH CA key requests (type ssh-ca-key): the key as an OpenSSH public key line, and a proof of possession that is an
+# SSHSIG signature (OpenSSH PROTOCOL.sshsig) over the bytes of that line in the namespace below.
+SSH_NS = b"ssh-ca-key@ritueel.id"
+
+
+def sshstr(b):
+    return struct.pack(">I", len(b)) + b
+
+
+def sshmpint(n):
+    b = n.to_bytes((n.bit_length() + 7) // 8 or 1, "big")
+    return (b"\0" + b) if b[0] & 0x80 else b
+
+
+class SshKey:
+    """An SSH public key: ecdsa-sha2-nistp384, or ssh-ed25519 to make a refused vector."""
+
+    def __init__(self, alg="ecdsa-sha2-nistp384"):
+        self.alg = alg
+        if alg == "ssh-ed25519":
+            self.priv = ed25519.Ed25519PrivateKey.generate()
+            raw = self.priv.public_key().public_bytes(serialization.Encoding.Raw, serialization.PublicFormat.Raw)
+            self.blob = sshstr(b"ssh-ed25519") + sshstr(raw)
+        else:
+            self.priv = ec384()
+            self.blob = sshstr(alg.encode()) + sshstr(b"nistp384") + sshstr(self.priv.public_key().public_bytes(*POINT))
+        self.pub = self.priv.public_key()
+        self.text = f"{alg} {b64(self.blob)}"                       # the list's ssh_public_key
+        self.line = (self.text + "\n").encode()                       # the bytes of <stem>.sshca.pub
+        self.fingerprint = "SHA256:" + b64(hashlib.sha256(self.blob).digest()).rstrip("=")
+
+    def signature(self, data):
+        if self.alg == "ssh-ed25519":
+            return sshstr(b"ssh-ed25519") + sshstr(self.priv.sign(data))
+        r, s_ = decode_dss_signature(self.priv.sign(data, ec.ECDSA(hashes.SHA384())))
+        return sshstr(self.alg.encode()) + sshstr(sshstr(sshmpint(r)) + sshstr(sshmpint(s_)))
+
+
+def sshsig(key, message, ns=SSH_NS):
+    """The armoured SSHSIG signature `ssh-keygen -Y sign` writes: hash algorithm sha512, an empty reserved string."""
+    signed = b"SSHSIG" + sshstr(ns) + sshstr(b"") + sshstr(b"sha512") + sshstr(hashlib.sha512(message).digest())
+    blob = (b"SSHSIG" + struct.pack(">I", 1) + sshstr(key.blob) + sshstr(ns) + sshstr(b"") + sshstr(b"sha512")
+            + sshstr(key.signature(signed)))
+    body = base64.b64encode(blob).decode()
+    return ("-----BEGIN SSH SIGNATURE-----\n" + "".join(body[i:i + 70] + "\n" for i in range(0, len(body), 70))
+            + "-----END SSH SIGNATURE-----\n").encode()
+
+
+SSH_KEYS = {}   # case id -> (SshKey, use): the keys of the accepted requests, which the SSH CA key lists carry
+
+
+def ssh_case(case, key=None, store="piv", cfg="production", expect="refuse", reason=None, use="user", ev=None, version=1,
+             extra_member=None, digest_of=None, stub=None, evidence_pub=None, arn=ARN, sig_message=None, ns=SSH_NS, **att):
+    key = key or SshKey()
+    evidence = ev or evidence_for(store, evidence_pub or key.pub, arn=arn, att=att)
+    p = proof("ssh-ca-key", digest_of or key.line, store, evidence, version)
+    if use is not None:
+        p["use"] = use
+    if extra_member:
+        p["unexpected"] = extra_member
+    w(f"requests/{case}.sshca.pub", key.line)
+    w(f"requests/{case}.sshca.sig", sshsig(key, sig_message or key.line, ns))
+    wj(f"requests/{case}.proof.json", p)
+    files = [f"requests/{case}.sshca.pub", f"requests/{case}.sshca.sig", f"requests/{case}.proof.json"]
+    st = None
+    if stub is not None:
+        st = f"requests/{case}.kms-stub.json"
+        wj(st, stub)
+    add(case, "ssh-ca-key", cfg, expect, reason, files, st)
+    if expect == "accept":
+        SSH_KEYS[case] = (key, use)
+    return key
+
+
+def ssh_response(case, request_case, key, ssh_list, expect="install", reason=None, issuer_label="A"):
+    """The answer to an ssh-ca-key request: the key is listed, so there is no artifact; the requester reads the SSH CA key
+    list `ssh_list` of the SSH CA key list vectors, which it holds."""
+    res = {"handoff": 1, "type": "ssh-ca-key", "request_sha256": sha(key.line), "outcome": "issued", "artifacts": [],
+           "valid_from": ts(CLOCK), "issuer": sha(spki({"A": ROOT_A, "B": ROOT_B}[issuer_label].public_key())), "trust_sequence": SEQUENCE}
+    wj(f"responses/{case}.result.json", res)
+    r = {"id": case, "type": "ssh-ca-key", "request": request_case, "files": [f"responses/{case}.result.json"],
+         "ssh_ca_key_list": ssh_list, "expect": expect}
+    if reason:
+        r["reason"] = reason
+    responses.append(r)
+
+
+k = ssh_case("ssh-piv-valid", expect="accept", use="user")
+ssh_response("ssh-piv-valid", "ssh-piv-valid", k, "seq7-a")
+k = SshKey()
+ssh_case("ssh-kms-valid", key=k, store="aws-kms", expect="accept", use="host", stub=kms_stub(k.pub))
+ssh_response("ssh-kms-valid", "ssh-kms-valid", k, "seq7-a")
+k = ssh_case("ssh-software-valid", store="software", cfg="development", expect="accept", use="user")
+ssh_response("ssh-software-valid", "ssh-software-valid", k, "seq7-a")
+src = cases[-1]
+cases.append({"id": "ssh-software-in-production", "type": "ssh-ca-key", "config": "production", "files": src["files"],
+              "expect": "refuse", "reason": "store-not-allowed"})
+ssh_case("ssh-openpgp-card", store="openpgp-card", reason="store-not-allowed")
+k = SshKey()
+ssh_case("ssh-bad-signature", key=k, store="software", cfg="development", sig_message=b"another request\n", reason="possession-invalid")
+ssh_case("ssh-wrong-namespace", store="software", cfg="development", ns=b"file", reason="possession-invalid")
+ssh_case("ssh-ed25519", key=SshKey("ssh-ed25519"), store="software", cfg="development", reason="algorithm-unsupported")
+ssh_case("ssh-version-2", version=2, reason="version-unsupported")
+k = SshKey()
+ssh_case("ssh-request-mismatch", key=k, digest_of=SshKey().line, reason="request-mismatch")
+ssh_case("ssh-unknown-member", extra_member=True, reason="malformed")
+ssh_case("ssh-use-missing", use=None, reason="malformed")
+ssh_case("ssh-use-both", use="both", reason="malformed")
+ssh_case("ssh-piv-key-mismatch", evidence_pub=ec384().public_key(), reason="key-mismatch")
+k = SshKey()
+ssh_case("ssh-piv-untrusted-chain", key=k, ev=attestation(k.pub, card=OTHER_CARD), reason="proof-invalid")
+ssh_case("ssh-piv-pin-never", policy=bytes([1, 1]), reason="policy")
+k = SshKey()
+ssh_case("ssh-kms-key-mismatch", key=k, store="aws-kms", evidence_pub=ec384().public_key(), stub=kms_stub(k.pub), reason="key-mismatch")
+k = SshKey()
+ssh_case("ssh-kms-two-actors", key=k, store="aws-kms", stub=kms_stub(k.pub, two_actors=True), reason="policy")
+
+# ---- answers to the request ssh-response-request: one listed by the other root, and three a requester must refuse
+k_resp = ssh_case("ssh-response-request", store="software", cfg="development", expect="accept", use="user")
+ssh_response("ssh-response-other-root", "ssh-response-request", k_resp, "seq7-b", issuer_label="B")
+ssh_response("ssh-response-key-not-listed", "ssh-response-request", k_resp, "seq7-a-without-key", expect="refuse", reason="key-mismatch")
+ssh_response("ssh-response-wrong-use", "ssh-response-request", k_resp, "seq7-a-wrong-use", expect="refuse", reason="profile")
+ssh_response("ssh-response-old-list", "ssh-response-request", k_resp, "seq6-b", expect="refuse", reason="issuer")
+
 # ---- optional self-check material: with VERIFY_DIR set, write a detached signature by each response's subkey over a
 # fixed text, so that an independent verifier (sqv) can be run on primary-cert + bound.pgp. Not part of the fixtures.
 if os.environ.get("VERIFY_DIR"):
@@ -608,9 +736,9 @@ ROOTS = {"A": (ROOT_A_KEY, ROOT_A, PRIM_A), "B": (ROOT_B_KEY, ROOT_B, PRIM_B), "
 spki_hex = lambda lbl: sha(spki(ROOTS[lbl][1].public_key()))
 
 
-def months13(t):
-    """13 calendar months later, same day and time, or the last day of the month if it has none."""
-    y, m = divmod(t.month - 1 + 13, 12)
+def months13(t, n=13):
+    """n (13) calendar months later, same day and time, or the last day of the month if it has none."""
+    y, m = divmod(t.month - 1 + n, 12)
     y, m = t.year + y, m + 1
     last = (dt.datetime(y + (m == 12), m % 12 + 1, 1, tzinfo=UTC) - dt.timedelta(days=1)).day
     return t.replace(year=y, month=m, day=min(t.day, last))
@@ -620,10 +748,10 @@ def entry(lbl):
     return {"label": lbl, "x509_spki_sha256": spki_hex(lbl), "openpgp_fingerprint": ROOTS[lbl][2].fpr.hex()}
 
 
-def jws(signer, payload):
+def jws(signer, payload, typ="root-list+json"):
     """A detached JWS (RFC 7515, appendix F) in compact form: header..signature. ES384 over the payload's bytes."""
     key, cert, _ = ROOTS[signer]
-    header = canonical({"alg": "ES384", "kid": spki_hex(signer), "typ": "root-list+json", "x5c": [b64(cert.public_bytes(DER))]})
+    header = canonical({"alg": "ES384", "kid": spki_hex(signer), "typ": typ, "x5c": [b64(cert.public_bytes(DER))]})
     signing_input = (b64u(header) + "." + b64u(payload)).encode()
     r, s_ = decode_dss_signature(key.sign(signing_input, ec.ECDSA(hashes.SHA384())))
     return b64u(header) + ".." + b64u(r.to_bytes(48, "big") + s_.to_bytes(48, "big"))
@@ -729,3 +857,240 @@ wj("manifest.json", {
     "bundles": bundles,
 }, RL_OUT)
 print("root lists:", len(lists), "cases:", len(rl_cases), "bundles:", len(bundles))
+
+
+# ================================================================ SSH CA key list vectors, version 1
+# The list at trust sequence 7 holds the keys of the accepted ssh-ca-key requests above, the key of the answer vectors,
+# and a break-glass SSH CA for each of the roots A and B. The hand-off answers of type ssh-ca-key name these lists.
+BREAK_GLASS = {lbl: SshKey() for lbl in "AB"}
+
+
+def ssh_entry(name_, key, use, root_label=None):
+    e = {"name": name_, "use": use, "ssh_public_key": key.text, "fingerprint": key.fingerprint}
+    if root_label:
+        e["root"] = root_label
+    return e
+
+
+def listed(without=(), wrong_use=()):
+    """The entries of the list at sequence 7, sorted by name: the break-glass keys, then the requests' keys. A name in
+    wrong_use is listed with the other use than the request asked for."""
+    es = [ssh_entry(f"break-glass-{lbl}", BREAK_GLASS[lbl], "user", lbl) for lbl in "AB"]
+    for c, (k, u) in SSH_KEYS.items():
+        if c not in without:
+            es.append(ssh_entry(c, k, ("host" if u == "user" else "user") if c in wrong_use else u))
+    return sorted(es, key=lambda e: e["name"].encode())
+
+
+ssh_lists = []
+
+
+def ssh_list(stem, signer, sequence, entries, signed_at, version=1, extra=None, tamper=None, typ="ssh-ca-keys+json"):
+    doc = {"version": version, "sequence": sequence, "signed_at": ts(signed_at), "expires_at": ts(months13(signed_at)), "keys": entries}
+    if extra:
+        doc.update(extra)
+    payload = canonical(doc)
+    sig = jws(signer, payload, typ)
+    if tamper:
+        payload = canonical(tamper(doc))
+    w(f"lists/{stem}.json", payload, SSH_OUT)
+    w(f"lists/{stem}.jws", sig, SSH_OUT)
+    ssh_lists.append({"id": stem, "signer": signer, "files": [f"lists/{stem}.json", f"lists/{stem}.jws"]})
+
+
+def user_keys_file(sequence, entries):
+    """The file for sshd's TrustedUserCAKeys: the trust sequence in a comment, then every key whose use is user, in list order."""
+    return (f"# trust-sequence: {sequence}\n" + "".join(e["ssh_public_key"] + "\n" for e in entries if e["use"] == "user")).encode()
+
+
+ssh_list("seq6-b", "B", 6, [ssh_entry(f"break-glass-{lbl}", BREAK_GLASS[lbl], "user", lbl) for lbl in "AB"], T_SEQ6)
+ssh_list("seq7-a", "A", 7, listed(), CLOCK)
+ssh_list("seq7-b", "B", 7, listed(), CLOCK)
+ssh_list("seq7-a-without-key", "A", 7, listed(without=("ssh-response-request",)), CLOCK)
+ssh_list("seq7-a-wrong-use", "A", 7, listed(wrong_use=("ssh-response-request",)), CLOCK)
+no_bg_a = [e for e in listed() if e["name"] != "break-glass-A"]
+ssh_list("seq8-b-without-a", "B", 8, no_bg_a, T_SEQ8)                     # root A revoked: its break-glass key leaves, signed by B
+ssh_list("seq8-a-retiring", "A", 8, no_bg_a, T_SEQ8)                      # root A retires and signs the lists that remove it
+ssh_list("seq8-a-empty", "A", 8, [], T_SEQ8)                              # every key withdrawn
+ssh_list("seq9-a", "A", 9, no_bg_a, T_SEQ9)                               # signed by the revoked root
+ssh_list("seq8-z", "Z", 8, listed(), T_SEQ8)                              # signed by a root on no list
+ssh_list("seq8-a-version-2", "A", 8, listed(), T_SEQ8, version=2)
+ssh_list("seq8-a-unknown-member", "A", 8, listed(), T_SEQ8, extra={"comment": "not a member of version 1"})
+dup = listed()
+ssh_list("seq8-a-duplicate-key", "A", 8, sorted(dup + [dict(dup[2], name="zzz-copy")], key=lambda e: e["name"].encode()), T_SEQ8)
+ssh_list("seq8-a-root-list-type", "A", 8, listed(), T_SEQ8, typ="root-list+json")   # the root list's type in the protected header
+
+
+def swap_key(doc):
+    doc = json.loads(json.dumps(doc))
+    doc["keys"][2]["ssh_public_key"] = SshKey().text
+    return doc
+
+
+ssh_list("seq7-a-tampered", "A", 7, listed(), CLOCK, tamper=swap_key)     # a key replaced after signing
+
+w("files/ssh-user-ca-keys-7.pub", user_keys_file(7, listed()), SSH_OUT)
+w("files/ssh-user-ca-keys-7-with-host-key.pub", user_keys_file(7, listed()) + (SSH_KEYS["ssh-kms-valid"][0].text + "\n").encode(), SSH_OUT)
+
+ssh_cases = []
+
+
+def ssh_list_case(cid, held, candidate, expect, reason=None, clock=None, warning=None, roots="AB", rl_sequence=None, rl_signer=None, user_keys=None):
+    c = {"id": cid, "held": held, "candidate": candidate, "root_list": {"roots": list(roots)}}
+    if rl_sequence:
+        c["root_list"].update({"sequence": rl_sequence, "signer": rl_signer})
+    if clock:
+        c["clock"] = ts(clock)
+    if user_keys:
+        c["user_keys"] = user_keys
+    c["expect"] = expect
+    if reason:
+        c["reason"] = reason
+    if warning:
+        c["warning"] = warning
+    ssh_cases.append(c)
+
+
+ssh_list_case("first-list", None, "seq7-a", "accept")
+ssh_list_case("update", "seq6-b", "seq7-a", "accept")
+ssh_list_case("same-list-signed-by-the-other-root", "seq7-a", "seq7-b", "accept")
+ssh_list_case("remove-a-revoked-roots-key", "seq7-a", "seq8-b-without-a", "accept", clock=T_SEQ8, roots="B", rl_sequence=8, rl_signer="B")
+ssh_list_case("retiring-root-signs", "seq7-a", "seq8-a-retiring", "accept", clock=T_SEQ8, roots="B", rl_sequence=8, rl_signer="A")
+ssh_list_case("every-key-withdrawn", "seq7-a", "seq8-a-empty", "accept", clock=T_SEQ8)
+ssh_list_case("same-list-again", "seq7-a", "seq7-a", "accept")
+ssh_list_case("user-keys-file", None, "seq7-a", "accept", user_keys="files/ssh-user-ca-keys-7.pub")
+ssh_list_case("rollback", "seq7-a", "seq6-b", "refuse", "rollback")
+ssh_list_case("same-sequence-different-content", "seq7-a", "seq7-a-without-key", "refuse", "sequence-conflict")
+ssh_list_case("signed-by-a-revoked-root", "seq8-b-without-a", "seq9-a", "refuse", "unknown-signer", clock=T_SEQ9, roots="B", rl_sequence=9, rl_signer="B")
+ssh_list_case("retiring-root-signs-after-its-root-list", "seq7-a", "seq8-a-retiring", "refuse", "unknown-signer", clock=T_SEQ8, roots="B", rl_sequence=9, rl_signer="B")
+ssh_list_case("unknown-signer", "seq7-a", "seq8-z", "refuse", "unknown-signer", clock=T_SEQ8)
+ssh_list_case("tampered", "seq6-b", "seq7-a-tampered", "refuse", "signature-invalid")
+ssh_list_case("expired", "seq6-b", "seq7-a", "refuse", "expired", clock=dt.datetime(2028, 1, 1, tzinfo=UTC))
+ssh_list_case("version-2", "seq7-a", "seq8-a-version-2", "refuse", "version-unsupported", clock=T_SEQ8)
+ssh_list_case("unknown-member", "seq7-a", "seq8-a-unknown-member", "refuse", "malformed", clock=T_SEQ8)
+ssh_list_case("duplicate-key", "seq7-a", "seq8-a-duplicate-key", "refuse", "malformed", clock=T_SEQ8)
+ssh_list_case("root-list-type", "seq7-a", "seq8-a-root-list-type", "refuse", "malformed", clock=T_SEQ8)
+ssh_list_case("user-keys-file-with-a-host-key", None, "seq7-a", "refuse", "user-keys-mismatch", user_keys="files/ssh-user-ca-keys-7-with-host-key.pub")
+ssh_list_case("held-list-expired", "seq7-a", None, "warn", clock=dt.datetime(2028, 1, 1, tzinfo=UTC), warning="expired")
+
+for lbl in "ABZ":
+    w(f"pki/test-root-{lbl.lower()}.pem", ROOTS[lbl][1].public_bytes(PEM), SSH_OUT)
+wj("manifest.json", {
+    "ssh_ca_keys": 1,
+    "clock": ts(CLOCK),
+    "roots": [{"label": lbl, "certificate": f"pki/test-root-{lbl.lower()}.pem", "x509_spki_sha256": spki_hex(lbl)} for lbl in "ABZ"],
+    "lists": ssh_lists,
+    "files": [{"id": "ssh-user-ca-keys-7", "file": "files/ssh-user-ca-keys-7.pub"},
+              {"id": "ssh-user-ca-keys-7-with-host-key", "file": "files/ssh-user-ca-keys-7-with-host-key.pub"}],
+    "cases": ssh_cases,
+}, SSH_OUT)
+print("ssh ca key lists:", len(ssh_lists), "cases:", len(ssh_cases))
+
+
+# ================================================================ CRL vectors, version 1
+# One CRL for each root, signed by that root. The CRL number is the trust sequence at which the root signed it: root A
+# signed at sequence 7, root B at sequence 6, and B's CRL is still current because a CRL is valid for 25 months.
+def crl_cert(root_lbl):
+    key, root_cert, _ = ROOTS[root_lbl]
+    csr = make_csr(ec384())
+    return issue(csr, issuer_key=key, issuer=root_cert)
+
+
+CA_A1, CA_B1 = crl_cert("A"), crl_cert("B")
+w("certs/ca-a-1.pem", CA_A1.public_bytes(PEM), CRL_OUT)
+w("certs/ca-b-1.pem", CA_B1.public_bytes(PEM), CRL_OUT)
+CRL_CERTS = [{"id": "ca-a-1", "file": "certs/ca-a-1.pem", "issuer": "A", "serial": f"{CA_A1.serial_number:x}"},
+             {"id": "ca-b-1", "file": "certs/ca-b-1.pem", "issuer": "B", "serial": f"{CA_B1.serial_number:x}"}]
+crls = []
+
+
+def crl(stem, signer, number, this, revoked=(), nxt=None, hash_=None, critical_ext=False, tamper=None):
+    key, root_cert, _ = ROOTS[signer]
+    b = (x509.CertificateRevocationListBuilder().issuer_name(root_cert.subject).last_update(this)
+         .next_update(nxt or months13(this, 25))
+         .add_extension(x509.AuthorityKeyIdentifier(ski(root_cert.public_key()), None, None), critical=False)
+         .add_extension(x509.CRLNumber(number), critical=False))
+    for cert in revoked:
+        b = b.add_revoked_certificate(x509.RevokedCertificateBuilder().serial_number(cert.serial_number).revocation_date(this)
+                                      .add_extension(x509.CRLReason(x509.ReasonFlags.key_compromise), critical=False).build())
+    if critical_ext:
+        b = b.add_extension(x509.UnrecognizedExtension(ObjectIdentifier("1.3.6.1.4.1.99999.1"), b"\x05\x00"), critical=True)
+    der = b.sign(key, hash_ or hashes.SHA384()).public_bytes(DER)
+    if tamper:
+        der = tamper(der)
+    pem = ("-----BEGIN X509 CRL-----\n" + "".join(b64(der)[i:i + 64] + "\n" for i in range(0, len(b64(der)), 64)) + "-----END X509 CRL-----\n")
+    w(f"crls/{stem}.pem", pem, CRL_OUT)
+    crls.append({"id": stem, "signer": signer, "file": f"crls/{stem}.pem", "number": number, "this_update": ts(this),
+                 "next_update": ts(nxt or months13(this, 25)), "revoked": [{"serial": f"{c.serial_number:x}", "reason": "keyCompromise"} for c in revoked]})
+
+
+def swap_serial(der):
+    """Replace the revoked serial by another of the same length, after signing."""
+    old = CA_A1.serial_number.to_bytes((CA_A1.serial_number.bit_length() + 7) // 8, "big")
+    new = bytearray(old)
+    new[-1] ^= 0x01
+    assert old in der
+    return der.replace(old, bytes(new))
+
+
+T_B_CRL = dt.datetime(2025, 11, 15, 12, tzinfo=UTC)
+crl("a-seq7-empty", "A", 7, CLOCK)
+crl("b-seq6-empty", "B", 6, T_B_CRL)
+crl("a-seq8-revokes", "A", 8, T_SEQ8, [CA_A1])
+crl("a-seq7-revokes", "A", 7, CLOCK, [CA_A1])                              # another CRL with number 7
+crl("z-seq8", "Z", 8, T_SEQ8)
+crl("a-seq8-tampered", "A", 8, T_SEQ8, [CA_A1], tamper=swap_serial)
+crl("a-seq5-expired", "A", 5, dt.datetime(2024, 9, 15, 12, tzinfo=UTC))
+crl("a-seq9-not-yet-valid", "A", 9, dt.datetime(2027, 1, 1, 12, tzinfo=UTC))
+crl("a-seq8-critical-extension", "A", 8, T_SEQ8, critical_ext=True)
+crl("a-seq8-sha256", "A", 8, T_SEQ8, hash_=hashes.SHA256())
+
+crl_cases = []
+
+
+def crl_case(cid, held, candidate, expect, reason=None, clock=None, warning=None, roots="AB"):
+    c = {"id": cid, "held": held, "candidate": candidate, "roots": list(roots)}
+    if clock:
+        c["clock"] = ts(clock)
+    c["expect"] = expect
+    if reason:
+        c["reason"] = reason
+    if warning:
+        c["warning"] = warning
+    crl_cases.append(c)
+
+
+crl_case("first-crl", None, "a-seq7-empty", "accept")
+crl_case("first-crl-of-the-other-root", None, "b-seq6-empty", "accept")
+crl_case("the-other-roots-crl-a-year-on", None, "b-seq6-empty", "accept", clock=dt.datetime(2027, 11, 15, 12, tzinfo=UTC))
+crl_case("update", "a-seq7-empty", "a-seq8-revokes", "accept", clock=T_SEQ8)
+crl_case("same-crl-again", "a-seq7-empty", "a-seq7-empty", "accept")
+crl_case("rollback", "a-seq8-revokes", "a-seq7-empty", "refuse", "rollback", clock=T_SEQ8)
+crl_case("same-number-different-content", "a-seq7-empty", "a-seq7-revokes", "refuse", "sequence-conflict")
+crl_case("unknown-signer", None, "z-seq8", "refuse", "unknown-signer", clock=T_SEQ8)
+crl_case("signed-by-a-revoked-root", None, "a-seq8-revokes", "refuse", "unknown-signer", clock=T_SEQ8, roots="B")
+crl_case("tampered", None, "a-seq8-tampered", "refuse", "signature-invalid", clock=T_SEQ8)
+crl_case("expired", None, "a-seq5-expired", "refuse", "expired")
+crl_case("not-yet-valid", None, "a-seq9-not-yet-valid", "refuse", "not-yet-valid")
+crl_case("critical-extension", None, "a-seq8-critical-extension", "refuse", "malformed", clock=T_SEQ8)
+crl_case("sha-256-signature", None, "a-seq8-sha256", "refuse", "malformed", clock=T_SEQ8)
+crl_case("held-crl-expired", "a-seq7-empty", None, "warn", clock=dt.datetime(2029, 1, 1, tzinfo=UTC), warning="expired")
+
+crl_revocation = [
+    {"id": "listed", "cert": "ca-a-1", "crl": "a-seq8-revokes", "clock": ts(T_SEQ8), "expect": "revoked"},
+    {"id": "not-listed", "cert": "ca-a-1", "crl": "a-seq7-empty", "expect": "good"},
+    {"id": "other-root-not-listed", "cert": "ca-b-1", "crl": "b-seq6-empty", "expect": "good"},
+]
+
+for lbl in "ABZ":
+    w(f"pki/test-root-{lbl.lower()}.pem", ROOTS[lbl][1].public_bytes(PEM), CRL_OUT)
+wj("manifest.json", {
+    "crl": 1,
+    "clock": ts(CLOCK),
+    "roots": [{"label": lbl, "certificate": f"pki/test-root-{lbl.lower()}.pem", "x509_spki_sha256": spki_hex(lbl)} for lbl in "ABZ"],
+    "certs": CRL_CERTS,
+    "crls": crls,
+    "cases": crl_cases,
+    "revocation": crl_revocation,
+}, CRL_OUT)
+print("crls:", len(crls), "cases:", len(crl_cases), "revocation:", len(crl_revocation))

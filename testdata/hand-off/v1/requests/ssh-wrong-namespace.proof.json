@@ -1,0 +1,7 @@
+{
+  "handoff": 1,
+  "type": "ssh-ca-key",
+  "request_sha256": "7827c90f3c9f9c04a51c55d0f8067240676273452fd32b1ce6c33574d0757815",
+  "store": "software",
+  "use": "user"
+}

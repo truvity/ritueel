@@ -6,22 +6,22 @@
       "label": "A",
       "certificate": "pki/test-root-a.pem",
       "openpgp": "pki/test-primary-a.pgp",
-      "x509_spki_sha256": "2d5286ae78432f9b31417ca25a12e843dce66aed276c268032d09b9f486803aa",
-      "openpgp_fingerprint": "597693af86b7850a381d71489b22b2b3c1a8c55b"
+      "x509_spki_sha256": "9cc5ca24fa7585ded1a51bea532e30c1e7d291dd5dffac6ebed1ae855577ac4a",
+      "openpgp_fingerprint": "c3e47d2685915679d6c61db81f4fb446bce77037"
     },
     {
       "label": "B",
       "certificate": "pki/test-root-b.pem",
       "openpgp": "pki/test-primary-b.pgp",
-      "x509_spki_sha256": "ab3f13d1742cdd3559b6ac004585871226c05fddc040e15294c3897e3f240668",
-      "openpgp_fingerprint": "b99dd5377b46478716694fb96f866164ea69b224"
+      "x509_spki_sha256": "4d09f15759ad0d3d43448134513c9f4805532098d3ccd8ad0837f66d8a2fec24",
+      "openpgp_fingerprint": "1bb0719363cf496908f181309d4b9dde214b867b"
     },
     {
       "label": "Z",
       "certificate": "pki/test-root-z.pem",
       "openpgp": "pki/test-primary-z.pgp",
-      "x509_spki_sha256": "9505a0de371e7b75fa6e5175bc45443d6c5302ddf7dcf9a834cf82b68df2b384",
-      "openpgp_fingerprint": "27be53b64ff3f2eddd3d2fb21f8453ac8a23696c"
+      "x509_spki_sha256": "f32279c9eb24daad9e325695e4b30296489ba6492c0c3f512366285abb4333e2",
+      "openpgp_fingerprint": "7fe16c0f5c554e5a8b9ba73070de30d6d4a26ee9"
     }
   ],
   "initial_pins": [

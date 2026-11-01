@@ -80,7 +80,8 @@ Outsiders need only the tools they already have. Every product carries one *trus
 | TLS and other X.509 clients | A *CA bundle*: the root certificates in one PEM file, in the system or application trust store. | ritueel builds it from the current roots. |
 | Package managers and `gpg` | A *keyring*: the public OpenPGP primary keys and their subkeys, delivered as a `.deb` or `.rpm` package that places them where the package manager looks. | ritueel builds the package. Your pipeline signs and publishes it. |
 | Systems that update their own trust | A *signed root list*: the current roots pinned by their public keys, with the trust sequence and an expiry 13 months after signing, signed by one root. It is re-signed at every yearly ceremony and every transition. A client refuses an older list; when its list expires with no newer one, it keeps the last good list and warns. | ritueel produces it. The client verifies it. |
-| SSH hosts | An *SSH CA key list*: the SSH CA public keys that hosts trust, including the break-glass SSH CA that ritueel holds offline, signed and versioned like the root list. | ritueel produces it. The host verifies it. |
+| X.509 clients that check revocation | A *CRL* for each root, to load beside the CA bundle: it lists the intermediate certificates that were revoked. Certificates carry no address to fetch it from. | ritueel signs it with the root. The operator publishes it. The client loads it. |
+| SSH hosts | An *SSH CA key list*: the SSH CA public keys that hosts trust, including the break-glass SSH CA that ritueel holds offline, signed and versioned like the root list. A system's key gets on it through the same hand-off as an intermediate. | ritueel produces it. The host verifies it. |
 
 A keyring package is also how a new OpenPGP root reaches people: the new package, signed by an old key, carries both keys during the overlap, and a package that drops the old key is the supersede step.
 
