@@ -58,7 +58,7 @@ Whoever holds one root card **and its PIN** can sign things that outsiders trust
 
 ### Not decided here
 
-The exact lifetime of the signed root list, and the account layout of KMS roots, are open. They are tracked in [issue #14](https://github.com/truvity/ritueel/issues/14) and [issue #27](https://github.com/truvity/ritueel/issues/27). The card library is piv-go, with both keys in PIV slots; a spike ([issue #26](https://github.com/truvity/ritueel/issues/26)) tests that a primary key held in a PIV slot makes certifications and bindings that `gpg`, `gpgv` and `sqv` accept.
+The exact lifetime of the signed root list, and the account layout of KMS roots, are open. They are tracked in [issue #14](https://github.com/truvity/ritueel/issues/14) and [issue #27](https://github.com/truvity/ritueel/issues/27). The card library is piv-go, with both keys in PIV slots. A spike ([issue #26](https://github.com/truvity/ritueel/issues/26)) showed on 2026-11-01 that a primary key held in a PIV slot makes certifications, bindings and revocations that `gpg`, `gpgv`, `sqv`, apt and rpm (import) accept ([0003](/decisions/0003-ceremonies-plan-confirm-reserve-sign-record-and-the-ritueel-commands/)).
 
 ## Consequences
 
@@ -66,7 +66,7 @@ The exact lifetime of the signed root list, and the account layout of KMS roots,
 - Outsiders have two anchors to install and watch, and ritueel has two sets of ceremony records.
 - With alternating years, the loss of a card breaks no chain only during the 13-month overlap. After that, recovery is re-certification from the surviving root, without replacing any board key.
 - The single holder is a single point of human failure. The model protects against a lost card, not against the holder's incapacity. Succession is out of scope for this record.
-- Whether `gpg`, `gpgv`, `sqv`, apt and rpm honour a pre-made revocation signature carried in a keyring is assumed, and a half-day test on test cards must show it before a guide claims it ([issue #24](https://github.com/truvity/ritueel/issues/24)). Dropping the designated revoker means the holder must keep the stored signature safe and findable; it can be lost.
+- A pre-made revocation signature is honoured by `sqv` and marked by `gpg`, and ignored by `gpgv` and so by apt (measured 2026-11-01). For apt users the effective revocation is a new keyring package without the key ([0004](/decisions/0004-release-keys-primaries-on-the-roots-signing-subkeys-and-the-keyring-package/)). rpm is not tested ([issue #24](https://github.com/truvity/ritueel/issues/24)). Dropping the designated revoker means the holder must keep the stored signature safe and findable; it can be lost.
 - Each yearly use also changes the root certificate and the primary's self-signature, so the CA bundle and the keyring change every year, not only on a transition.
 - Documentation must not describe the second card as a spare, must not call root custody two-person control, and must state the accepted limit.
 

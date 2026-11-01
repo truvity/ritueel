@@ -5,14 +5,14 @@ sidebar:
   order: 5
 ---
 
-*Design phase: no ceremony command exists yet. This page describes what the commands will do ([ADR 0002](/decisions/0002-every-key-is-born-in-its-store-two-roots-one-holder-yearly-alternation/)). The card library is piv-go; a spike ([issue #26](https://github.com/truvity/ritueel/issues/26)) still tests a primary key in a PIV slot.*
+*Design phase: no ceremony command exists yet. This page describes what the commands will do ([ADR 0002](/decisions/0002-every-key-is-born-in-its-store-two-roots-one-holder-yearly-alternation/)). The card library is piv-go, and a spike ([issue #26](https://github.com/truvity/ritueel/issues/26)) showed on 2026-11-01 that a key in a PIV slot works as an OpenPGP primary.*
 
 A ceremony is a scripted, reviewable use of a root. It runs on the holder's ordinary workstation, with no live CD and no air gap, because the root keys never leave their cards: a compromised workstation cannot copy a key it never holds. It can still try to trick the holder, which is why the checks below exist.
 
 ## What the tool checks
 
 1. **The card.** Detect it, read its serial, and check the serial against the registry of known cards before anything is written.
-2. **The attestation of every key it certifies.** For a YubiKey on firmware 5.7 or newer the chain leads to Yubico Attestation Root 1 (`yubico-ca-1.pem`) through Yubico's intermediates; older cards chain to the earlier PIV root. A key that cannot be attested is refused, because an imported key cannot be attested (measured 2026-10-31).
+2. **The attestation of every key it certifies.** For a YubiKey on firmware 5.7 or newer the chain leads to Yubico Attestation Root 1 (`yubico-ca-1.pem`) through Yubico's intermediates; older cards chain to the earlier PIV root. A key that cannot be attested is refused, because an imported key cannot be attested (measured 2026-10-31). The chains are checked against the maker's current root and its full set of intermediates, which ritueel carries and refreshes ([below](#attestation-roots)).
 3. **What is about to be signed.** Show the key's fingerprint, its store, its lifetime and the serial before each touch. The holder confirms by comparing, not by pressing a button.
 4. **The result.** After signing, verify the certificate or binding against the request.
 5. **The record.** Write a hash-chained ceremony record that contains no PIN, no key and no secret.
@@ -56,4 +56,25 @@ A spike on 2026-10-31 on two YubiKey 5 test cards (firmware 5.8.0, OpenPGP apple
 
 Because every key is generated on the card, no key is ever in host memory, so the argument for a memory-safe helper that zeroises keys does not apply to key material.
 
-Still to be shown: that certifications and bindings made by a **primary** held in a PIV slot are accepted by `gpg`, `gpgv`, `sqv`, apt and rpm. A spike runs this prototype test ([issue #26](https://github.com/truvity/ritueel/issues/26)).
+The open test of the primary's own signatures is done (2026-11-01, a YubiKey 5 with firmware 5.8.0, piv-go v2.6.0). A key in a PIV slot is the primary of an OpenPGP version 4 certificate: it makes the direct-key signature, the user ID certification, the subkey binding and the revocations. `gpg` 2.4.8, `gpgv`, `sqv` 1.5.0, `sq` 1.4.1 and apt 3.2.0 accept the certificate and a subkey signature, and rpm 6.0.2 imports it (a signed `.rpm` was not tested). An AWS KMS P-384 key works the same way, as primary and as subkey.
+
+## Attestation roots
+
+piv-go's built-in attestation roots fail on firmware 5.8: the token's certificate is issued by an intermediate that piv-go v2.6.0 does not embed, so `piv.Verify` reports an unknown authority (measured 2026-11-01). ritueel therefore verifies with the maker's current root plus the full intermediate bundle, passed to `piv.Verifier`. The bundle is a file in the repository with a documented refresh step, so a new intermediate is added by a reviewed change and not by a network fetch during an offline ceremony. A fix upstream is wanted too, and is not awaited.
+
+## One card, one lock
+
+The OpenPGP applet and the PIV applet are independent: using PIV changes nothing in the OpenPGP applet's data, PIN counters or signature counter (measured 2026-11-01). The connection to the card is shared, though. piv-go opens the card exclusively, so while `gpg`'s `scdaemon` holds it, piv-go cannot open it, and the other way round. A ceremony on a workstation whose card is also used for daily `gpg` has to stop `scdaemon` first (`gpgconf --kill scdaemon`), and `gpg` waits until the ceremony ends. The simplest answer is **a separate card for roots.**
+
+## KMS keys in a ceremony
+
+A KMS key follows the same ceremony with three differences that come from the service (measured 2026-11-01):
+
+- A P-384 KMS key signs only 48-byte SHA-384 digests, so every P-384 OpenPGP signature uses SHA-384, on every backend.
+- The OpenPGP creation time fixes the fingerprint, and KMS's own creation date is not it. ritueel stores the creation time it chose, as a tag on the key and in the published certificate.
+- KMS has no attestation. The evidence for a KMS key is its description, its policy and the audit trail.
+
+## Still open
+
+- **One card or two.** A separate card for roots, or one card shared with daily `gpg`. Recommended: separate. Not decided ([ADR 0003](/decisions/0003-ceremonies-plan-confirm-reserve-sign-record-and-the-ritueel-commands/)).
+- **The OpenPGP packet library.** ritueel builds packets with ProtonMail/go-crypto, whose signing path takes any `crypto.Signer` but whose constructor for a signing key panics on one; a small bypass works. Keep it, upstream an API, or write the packets ourselves: not decided.

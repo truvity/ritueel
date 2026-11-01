@@ -55,7 +55,7 @@ Roots change: a key store is replaced, an algorithm ages, a root nears its expir
 | **Vouch** | Let the old root vouch for the new one. For X.509 the old root issues a *cross-certificate* for the new root's key. For OpenPGP the old primary *certifies* the new primary. Now a client that trusts only the old root can still validate things signed under the new one. |
 | **Overlap** | Run both. New intermediates are issued under the new root, while the old root stays trusted. Outsiders receive a bundle or keyring that holds both. |
 | **Supersede** | Once every client has had time to learn the new root, publish a bundle or keyring without the old one. The old root is retired: no new intermediates, and it is removed from what you ship. |
-| **Revoke** | The emergency exit. The old root is declared untrustworthy now. For OpenPGP this is a *revocation certificate*; for X.509, revocation of the cross-certificate and of the root through whatever channel your clients check. |
+| **Revoke** | The emergency exit. The old root is declared untrustworthy now. For OpenPGP this is a *revocation certificate*, plus a keyring without the old key, because some verifiers ignore the certificate; for X.509, revocation of the cross-certificate and of the root through whatever channel your clients check. |
 
 A transition, as it looks to an outsider:
 
@@ -70,7 +70,7 @@ The overlap is the part that is easy to get wrong. It must last as long as the s
 
 ### Revocation is made in advance
 
-A revocation certificate made after a key is lost cannot be made at all, and one made in a hurry is made on the worst day. So ritueel makes revocation material when a root is created, and the holder stores it apart from the key. For OpenPGP this is a pre-made *revocation signature* for the primary, made while the card is at hand. A root can then be revoked even if its own card and PIN are gone. ritueel does not name a *designated revoker*: the standard deprecates that mechanism ([RFC 9580](https://datatracker.ietf.org/doc/html/rfc9580), section 5.2.3.23, says applications must not generate it) and prefers the stored revocation signature (section 13.9).
+A revocation certificate made after a key is lost cannot be made at all, and one made in a hurry is made on the worst day. So ritueel makes revocation material when a root is created, and the holder stores it apart from the key. For OpenPGP this is a pre-made *revocation signature* for the primary, made while the card is at hand. A root can then be revoked even if its own card and PIN are gone. The signature does not reach everyone: `gpgv`, and so apt, ignores revocation signatures, and `gpg --verify` still exits 0 for a revoked key (measured 2026-11-01). For a user of apt, the revocation is the new keyring package that no longer holds the key; the signature goes out as well, for the users of `gpg` and Sequoia, whose `sqv` rejects a revoked key. ([OpenPGP release keys](/concepts/openpgp-release-keys/#revocation) has the table.) ritueel does not name a *designated revoker*: the standard deprecates that mechanism ([RFC 9580](https://datatracker.ietf.org/doc/html/rfc9580), section 5.2.3.23, says applications must not generate it) and prefers the stored revocation signature (section 13.9).
 
 ### Expiry is a transition too
 
