@@ -23,7 +23,7 @@ One layer, a root that signs leaves directly, would be simple, but every issuanc
 
 ## Limits narrow as you go down
 
-A layer should be able to do less than the one above it. In X.509 this is done with *name constraints* on an intermediate: it can issue only for the names it is meant for. In OpenPGP, a subkey's flags say whether it can sign, encrypt or authenticate, and nothing more. A narrow intermediate that is stolen does less damage. The [private PKI](/learn/custody-chain/#different-chains) page returns to this.
+A layer should be able to do less than the one above it. In X.509 this is done with *name constraints* on an intermediate: it can issue only for the names it is meant for. In OpenPGP, a subkey's flags say whether it can sign, encrypt or authenticate, and nothing more. A narrow intermediate that is stolen does less damage. The [private PKI](/learn/chain-private-pki/) page returns to this.
 
 ## Redundancy and compromise are different problems
 
