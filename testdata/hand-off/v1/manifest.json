@@ -1,0 +1,538 @@
+{
+  "handoff": 1,
+  "clock": "2026-11-15T12:00:00Z",
+  "pinned": {
+    "attestation_roots": [
+      "pki/test-attestation-root.pem"
+    ],
+    "attestation_intermediates": [
+      "pki/test-attestation-intermediate.pem"
+    ],
+    "root_list": {
+      "x509": [
+        "pki/test-root-a.pem"
+      ],
+      "openpgp": [
+        "pki/test-primary-a.pgp"
+      ]
+    },
+    "known_openpgp_primaries": [
+      "pki/test-primary-a.pgp",
+      "pki/test-primary-b.pgp"
+    ],
+    "trust_sequence": 7
+  },
+  "configs": {
+    "production": {
+      "stores": [
+        "yubikey-piv",
+        "aws-kms"
+      ],
+      "min_firmware": "5.7.0",
+      "pin_policy": [
+        "once",
+        "always"
+      ],
+      "require_name_constraints": true,
+      "permitted_uri_hosts": [
+        "example.org"
+      ],
+      "validity_months": 13
+    },
+    "development": {
+      "stores": [
+        "yubikey-piv",
+        "aws-kms",
+        "software"
+      ],
+      "min_firmware": "5.7.0",
+      "pin_policy": [
+        "once",
+        "always"
+      ],
+      "require_name_constraints": true,
+      "permitted_uri_hosts": [
+        "example.org"
+      ],
+      "validity_months": 13
+    }
+  },
+  "requests": [
+    {
+      "id": "x509-piv-valid",
+      "type": "x509-intermediate",
+      "config": "production",
+      "files": [
+        "requests/x509-piv-valid.csr.pem",
+        "requests/x509-piv-valid.proof.json"
+      ],
+      "expect": "accept"
+    },
+    {
+      "id": "x509-kms-valid",
+      "type": "x509-intermediate",
+      "config": "production",
+      "files": [
+        "requests/x509-kms-valid.csr.pem",
+        "requests/x509-kms-valid.proof.json"
+      ],
+      "expect": "accept",
+      "kms_stub": "requests/x509-kms-valid.kms-stub.json"
+    },
+    {
+      "id": "x509-software-valid",
+      "type": "x509-intermediate",
+      "config": "development",
+      "files": [
+        "requests/x509-software-valid.csr.pem",
+        "requests/x509-software-valid.proof.json"
+      ],
+      "expect": "accept"
+    },
+    {
+      "id": "x509-software-in-production",
+      "type": "x509-intermediate",
+      "config": "production",
+      "files": [
+        "requests/x509-software-valid.csr.pem",
+        "requests/x509-software-valid.proof.json"
+      ],
+      "expect": "refuse",
+      "reason": "store-not-allowed"
+    },
+    {
+      "id": "x509-csr-bad-signature",
+      "type": "x509-intermediate",
+      "config": "development",
+      "files": [
+        "requests/x509-csr-bad-signature.csr.pem",
+        "requests/x509-csr-bad-signature.proof.json"
+      ],
+      "expect": "refuse",
+      "reason": "possession-invalid"
+    },
+    {
+      "id": "x509-p256",
+      "type": "x509-intermediate",
+      "config": "development",
+      "files": [
+        "requests/x509-p256.csr.pem",
+        "requests/x509-p256.proof.json"
+      ],
+      "expect": "refuse",
+      "reason": "algorithm-unsupported"
+    },
+    {
+      "id": "x509-version-2",
+      "type": "x509-intermediate",
+      "config": "production",
+      "files": [
+        "requests/x509-version-2.csr.pem",
+        "requests/x509-version-2.proof.json"
+      ],
+      "expect": "refuse",
+      "reason": "version-unsupported"
+    },
+    {
+      "id": "x509-request-mismatch",
+      "type": "x509-intermediate",
+      "config": "production",
+      "files": [
+        "requests/x509-request-mismatch.csr.pem",
+        "requests/x509-request-mismatch.proof.json"
+      ],
+      "expect": "refuse",
+      "reason": "request-mismatch"
+    },
+    {
+      "id": "x509-unknown-member",
+      "type": "x509-intermediate",
+      "config": "production",
+      "files": [
+        "requests/x509-unknown-member.csr.pem",
+        "requests/x509-unknown-member.proof.json"
+      ],
+      "expect": "refuse",
+      "reason": "malformed"
+    },
+    {
+      "id": "x509-piv-key-mismatch",
+      "type": "x509-intermediate",
+      "config": "production",
+      "files": [
+        "requests/x509-piv-key-mismatch.csr.pem",
+        "requests/x509-piv-key-mismatch.proof.json"
+      ],
+      "expect": "refuse",
+      "reason": "key-mismatch"
+    },
+    {
+      "id": "x509-piv-untrusted-chain",
+      "type": "x509-intermediate",
+      "config": "production",
+      "files": [
+        "requests/x509-piv-untrusted-chain.csr.pem",
+        "requests/x509-piv-untrusted-chain.proof.json"
+      ],
+      "expect": "refuse",
+      "reason": "proof-invalid"
+    },
+    {
+      "id": "x509-piv-pin-never",
+      "type": "x509-intermediate",
+      "config": "production",
+      "files": [
+        "requests/x509-piv-pin-never.csr.pem",
+        "requests/x509-piv-pin-never.proof.json"
+      ],
+      "expect": "refuse",
+      "reason": "policy"
+    },
+    {
+      "id": "x509-piv-old-firmware",
+      "type": "x509-intermediate",
+      "config": "production",
+      "files": [
+        "requests/x509-piv-old-firmware.csr.pem",
+        "requests/x509-piv-old-firmware.proof.json"
+      ],
+      "expect": "refuse",
+      "reason": "policy"
+    },
+    {
+      "id": "x509-no-name-constraints",
+      "type": "x509-intermediate",
+      "config": "production",
+      "files": [
+        "requests/x509-no-name-constraints.csr.pem",
+        "requests/x509-no-name-constraints.proof.json"
+      ],
+      "expect": "refuse",
+      "reason": "policy"
+    },
+    {
+      "id": "x509-name-constraint-outside",
+      "type": "x509-intermediate",
+      "config": "production",
+      "files": [
+        "requests/x509-name-constraint-outside.csr.pem",
+        "requests/x509-name-constraint-outside.proof.json"
+      ],
+      "expect": "refuse",
+      "reason": "policy"
+    },
+    {
+      "id": "x509-kms-key-mismatch",
+      "type": "x509-intermediate",
+      "config": "production",
+      "files": [
+        "requests/x509-kms-key-mismatch.csr.pem",
+        "requests/x509-kms-key-mismatch.proof.json"
+      ],
+      "expect": "refuse",
+      "reason": "key-mismatch",
+      "kms_stub": "requests/x509-kms-key-mismatch.kms-stub.json"
+    },
+    {
+      "id": "x509-kms-two-actors",
+      "type": "x509-intermediate",
+      "config": "production",
+      "files": [
+        "requests/x509-kms-two-actors.csr.pem",
+        "requests/x509-kms-two-actors.proof.json"
+      ],
+      "expect": "refuse",
+      "reason": "policy",
+      "kms_stub": "requests/x509-kms-two-actors.kms-stub.json"
+    },
+    {
+      "id": "x509-response-request",
+      "type": "x509-intermediate",
+      "config": "development",
+      "files": [
+        "requests/x509-response-request.csr.pem",
+        "requests/x509-response-request.proof.json"
+      ],
+      "expect": "accept"
+    },
+    {
+      "id": "pgp-piv-valid",
+      "type": "openpgp-subkey",
+      "config": "production",
+      "files": [
+        "requests/pgp-piv-valid.subkey.pgp",
+        "requests/pgp-piv-valid.proof.json"
+      ],
+      "expect": "accept"
+    },
+    {
+      "id": "pgp-kms-valid",
+      "type": "openpgp-subkey",
+      "config": "production",
+      "files": [
+        "requests/pgp-kms-valid.subkey.pgp",
+        "requests/pgp-kms-valid.proof.json"
+      ],
+      "expect": "accept",
+      "kms_stub": "requests/pgp-kms-valid.kms-stub.json"
+    },
+    {
+      "id": "pgp-software-valid",
+      "type": "openpgp-subkey",
+      "config": "development",
+      "files": [
+        "requests/pgp-software-valid.subkey.pgp",
+        "requests/pgp-software-valid.proof.json"
+      ],
+      "expect": "accept"
+    },
+    {
+      "id": "pgp-backsig-missing",
+      "type": "openpgp-subkey",
+      "config": "production",
+      "files": [
+        "requests/pgp-backsig-missing.subkey.pgp",
+        "requests/pgp-backsig-missing.proof.json"
+      ],
+      "expect": "refuse",
+      "reason": "possession-invalid"
+    },
+    {
+      "id": "pgp-backsig-wrong-primary",
+      "type": "openpgp-subkey",
+      "config": "production",
+      "files": [
+        "requests/pgp-backsig-wrong-primary.subkey.pgp",
+        "requests/pgp-backsig-wrong-primary.proof.json"
+      ],
+      "expect": "refuse",
+      "reason": "possession-invalid"
+    },
+    {
+      "id": "pgp-backsig-wrong-type",
+      "type": "openpgp-subkey",
+      "config": "production",
+      "files": [
+        "requests/pgp-backsig-wrong-type.subkey.pgp",
+        "requests/pgp-backsig-wrong-type.proof.json"
+      ],
+      "expect": "refuse",
+      "reason": "possession-invalid"
+    },
+    {
+      "id": "pgp-backsig-tampered",
+      "type": "openpgp-subkey",
+      "config": "production",
+      "files": [
+        "requests/pgp-backsig-tampered.subkey.pgp",
+        "requests/pgp-backsig-tampered.proof.json"
+      ],
+      "expect": "refuse",
+      "reason": "possession-invalid"
+    },
+    {
+      "id": "pgp-version-2",
+      "type": "openpgp-subkey",
+      "config": "production",
+      "files": [
+        "requests/pgp-version-2.subkey.pgp",
+        "requests/pgp-version-2.proof.json"
+      ],
+      "expect": "refuse",
+      "reason": "version-unsupported"
+    },
+    {
+      "id": "pgp-unknown-primary",
+      "type": "openpgp-subkey",
+      "config": "production",
+      "files": [
+        "requests/pgp-unknown-primary.subkey.pgp",
+        "requests/pgp-unknown-primary.proof.json"
+      ],
+      "expect": "refuse",
+      "reason": "unknown-primary"
+    },
+    {
+      "id": "pgp-piv-key-mismatch",
+      "type": "openpgp-subkey",
+      "config": "production",
+      "files": [
+        "requests/pgp-piv-key-mismatch.subkey.pgp",
+        "requests/pgp-piv-key-mismatch.proof.json"
+      ],
+      "expect": "refuse",
+      "reason": "key-mismatch"
+    },
+    {
+      "id": "pgp-ed25519",
+      "type": "openpgp-subkey",
+      "config": "development",
+      "files": [
+        "requests/pgp-ed25519.subkey.pgp",
+        "requests/pgp-ed25519.proof.json"
+      ],
+      "expect": "refuse",
+      "reason": "algorithm-unsupported"
+    },
+    {
+      "id": "pgp-response-request",
+      "type": "openpgp-subkey",
+      "config": "development",
+      "files": [
+        "requests/pgp-response-request.subkey.pgp",
+        "requests/pgp-response-request.proof.json"
+      ],
+      "expect": "accept"
+    }
+  ],
+  "responses": [
+    {
+      "id": "x509-piv-valid",
+      "type": "x509-intermediate",
+      "request": "x509-piv-valid",
+      "files": [
+        "responses/x509-piv-valid.chain.pem",
+        "responses/x509-piv-valid.result.json"
+      ],
+      "expect": "install"
+    },
+    {
+      "id": "x509-kms-valid",
+      "type": "x509-intermediate",
+      "request": "x509-kms-valid",
+      "files": [
+        "responses/x509-kms-valid.chain.pem",
+        "responses/x509-kms-valid.result.json"
+      ],
+      "expect": "install"
+    },
+    {
+      "id": "x509-software-valid",
+      "type": "x509-intermediate",
+      "request": "x509-software-valid",
+      "files": [
+        "responses/x509-software-valid.chain.pem",
+        "responses/x509-software-valid.result.json"
+      ],
+      "expect": "install"
+    },
+    {
+      "id": "x509-response-wrong-key",
+      "type": "x509-intermediate",
+      "request": "x509-response-request",
+      "files": [
+        "responses/x509-response-wrong-key.chain.pem",
+        "responses/x509-response-wrong-key.result.json"
+      ],
+      "expect": "refuse",
+      "reason": "key-mismatch"
+    },
+    {
+      "id": "x509-response-pathlen-1",
+      "type": "x509-intermediate",
+      "request": "x509-response-request",
+      "files": [
+        "responses/x509-response-pathlen-1.chain.pem",
+        "responses/x509-response-pathlen-1.result.json"
+      ],
+      "expect": "refuse",
+      "reason": "profile"
+    },
+    {
+      "id": "x509-response-expired",
+      "type": "x509-intermediate",
+      "request": "x509-response-request",
+      "files": [
+        "responses/x509-response-expired.chain.pem",
+        "responses/x509-response-expired.result.json"
+      ],
+      "expect": "refuse",
+      "reason": "validity"
+    },
+    {
+      "id": "x509-response-untrusted-issuer",
+      "type": "x509-intermediate",
+      "request": "x509-response-request",
+      "files": [
+        "responses/x509-response-untrusted-issuer.chain.pem",
+        "responses/x509-response-untrusted-issuer.result.json"
+      ],
+      "expect": "refuse",
+      "reason": "issuer"
+    },
+    {
+      "id": "pgp-piv-valid",
+      "type": "openpgp-subkey",
+      "request": "pgp-piv-valid",
+      "files": [
+        "responses/pgp-piv-valid.bound.pgp",
+        "responses/pgp-piv-valid.result.json"
+      ],
+      "expect": "install"
+    },
+    {
+      "id": "pgp-kms-valid",
+      "type": "openpgp-subkey",
+      "request": "pgp-kms-valid",
+      "files": [
+        "responses/pgp-kms-valid.bound.pgp",
+        "responses/pgp-kms-valid.result.json"
+      ],
+      "expect": "install"
+    },
+    {
+      "id": "pgp-software-valid",
+      "type": "openpgp-subkey",
+      "request": "pgp-software-valid",
+      "files": [
+        "responses/pgp-software-valid.bound.pgp",
+        "responses/pgp-software-valid.result.json"
+      ],
+      "expect": "install"
+    },
+    {
+      "id": "pgp-response-no-backsig",
+      "type": "openpgp-subkey",
+      "request": "pgp-response-request",
+      "files": [
+        "responses/pgp-response-no-backsig.bound.pgp",
+        "responses/pgp-response-no-backsig.result.json"
+      ],
+      "expect": "refuse",
+      "reason": "profile"
+    },
+    {
+      "id": "pgp-response-wrong-subkey",
+      "type": "openpgp-subkey",
+      "request": "pgp-response-request",
+      "files": [
+        "responses/pgp-response-wrong-subkey.bound.pgp",
+        "responses/pgp-response-wrong-subkey.result.json"
+      ],
+      "expect": "refuse",
+      "reason": "key-mismatch"
+    },
+    {
+      "id": "pgp-response-wrong-primary",
+      "type": "openpgp-subkey",
+      "request": "pgp-response-request",
+      "files": [
+        "responses/pgp-response-wrong-primary.bound.pgp",
+        "responses/pgp-response-wrong-primary.result.json"
+      ],
+      "expect": "refuse",
+      "reason": "issuer"
+    },
+    {
+      "id": "pgp-response-short-expiry",
+      "type": "openpgp-subkey",
+      "request": "pgp-response-request",
+      "files": [
+        "responses/pgp-response-short-expiry.bound.pgp",
+        "responses/pgp-response-short-expiry.result.json"
+      ],
+      "expect": "refuse",
+      "reason": "validity"
+    }
+  ]
+}
