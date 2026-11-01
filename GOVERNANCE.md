@@ -53,7 +53,7 @@ Roadmap, features, architecture and decisions are public. Internal reasoning and
 
 **Now.** Every change to `main` goes through a pull request. The maintainer reviews it, and the review agent reviews it too. The maintainer merges when checks pass, and findings from the review agent are answered or fixed. Changes that touch key handling, signing, revocation, trust artifacts or the hand-off contract also carry a short security note in the pull request: what could go wrong, and which test shows it does not.
 
-**Agents.** An agent working for the maintainer may merge its own pull request when checks are green and review is done. It never decides scope, never merges another author's pull request, and never changes governance files without the maintainer.
+**Agents.** The maintainer merges. An agent working for the maintainer opens the pull request, keeps CI green, answers or fixes the review bots' threads, and reports the pull request URL and the head sha. It never merges, never uses `--admin`, never decides scope, and never changes governance files without the maintainer.
 
 **Later.** The rules tighten before ritueel is used for production roots. The bar is:
 
