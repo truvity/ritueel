@@ -24,7 +24,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: truvity/ci-actions/setup-devbox@1cb80aafbf111e79a09c202651c3865e09c964d9 # v3.7.0
+      - uses: truvity/ci-actions/setup-devbox@c0af6f2725824b0f199f7590be79b84b0ee895e6 # v3.8.0
       - run: devbox run -- just site-check
       # What the deploy job of site.yaml builds, minus the deploy: `wrangler deploy --dry-run`
       # on the build. It uploads nothing and holds no Cloudflare credential.
@@ -38,7 +38,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: truvity/ci-actions/setup-devbox@1cb80aafbf111e79a09c202651c3865e09c964d9 # v3.7.0
+      - uses: truvity/ci-actions/setup-devbox@c0af6f2725824b0f199f7590be79b84b0ee895e6 # v3.8.0
       - run: devbox run -- actionlint
 
   # The repository rules (tools/checks/, `just check-rules`), and the same public-content scan
@@ -60,7 +60,7 @@ jobs:
           # The commit range origin/main..HEAD needs the history.
           fetch-depth: 0
           persist-credentials: false
-      - uses: truvity/ci-actions/setup-devbox@1cb80aafbf111e79a09c202651c3865e09c964d9 # v3.7.0
+      - uses: truvity/ci-actions/setup-devbox@c0af6f2725824b0f199f7590be79b84b0ee895e6 # v3.8.0
       - run: devbox run -- just check-rules
       - name: Commit messages and the pull request text
         env:
