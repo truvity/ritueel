@@ -1,6 +1,6 @@
 ---
 title: Concepts
-description: The ideas behind ritueel, in the order to learn them: roots and intermediates, where a key lives, two roots, OpenPGP release keys and the ceremony.
+description: The ideas behind ritueel, in the order to learn them. Roots and intermediates, where a key lives, two roots, OpenPGP release keys and the ceremony.
 sidebar:
   order: 0
 ---
