@@ -30,13 +30,13 @@ The maintainer decided on 2026-11-01 to make roots and their transitions a separ
 
 **Ceremony records.** ritueel keeps a record of every ceremony: what was done, with which keys, on which store, who confirmed it, and what the outsider-visible result is.
 
-**Personal OpenPGP.** Personal GPG is in scope: a primary key, subkeys, cards, and keyring upkeep. Company-wide GPG management comes later and needs its own record.
+**Personal OpenPGP.** Personal GPG is in scope: a primary key, subkeys, cards, and keyring upkeep. A person's daily subkey is born on the card's OpenPGP applet, and a software primary binds it ([0003](/decisions/0003-ceremonies-plan-confirm-reserve-sign-record-and-the-ritueel-commands/)). Company-wide GPG management comes later and needs its own record.
 
 **How a person uses it.** Ceremonies are interactive, with a person present (a YubiKey touch, or confirming the use of a KMS root), yet automated down to one to three CLI commands. Routine work, such as keyring maintenance, is fully automated. ritueel offers guided wizards for adoption: a CLI wizard, and a web UI that listens on localhost only.
 
 **A teaching product.** ritueel teaches as well as does: concepts, one guide per transition (software to YubiKey, YubiKey to AWS KMS, and the other directions), and drills on test keys. The site is part of the product.
 
-**Language and stores.** The CLI is written in Go. The first version supports three key stores: software, YubiKey and AWS KMS.
+**Language and stores.** The CLI is written in Go. The first version supports four key stores behind one ceremony: `software`, `piv` (a YubiKey's PIV applet), `openpgp-card` (a card's OpenPGP applet) and `aws-kms`. The ceremony makes or binds a key in a store; only the store and the consumer of the key differ ([0003](/decisions/0003-ceremonies-plan-confirm-reserve-sign-record-and-the-ritueel-commands/)). Revised in place on 2026-11-01, while ritueel is in its design phase.
 
 **Generic, with no hard dependency.** ritueel does not depend on sluis, and sluis does not depend on ritueel. They exchange standard formats: a PKCS#10 certificate request, an X.509 certificate, OpenPGP packets (a public subkey and its back-signature), and attestation certificates. The hand-off is specified once, as a versioned contract, and either side can be replaced by another system that speaks it.
 
@@ -48,7 +48,7 @@ The maintainer decided on 2026-11-01 to make roots and their transitions a separ
 - ritueel needs a hand-off contract that is specified and tested from both sides, with versioning. The first backlog item is that specification.
 - A deployment that has no ritueel needs one of the two ends to be something else that speaks the same formats. The contract is the interface, not the product.
 - The first version of any system that needs a certified intermediate depends on ritueel's software-root mode, which is therefore built first.
-- Three key stores are enough to teach every transition shape: from a file, to a card, to a cloud service, and back. Other stores wait for a later record.
+- Four key stores are enough to teach every transition shape: from a file, to a card, to a cloud service, and back. The card's OpenPGP applet is there because a person's daily key lives in it. Other stores wait for a later record.
 - The localhost-only web wizard avoids a network service that holds ceremony state. It also means a wizard cannot be shared between machines.
 - ritueel carries the cost of a security-critical code base by itself: key handling, signing and revocation need review, tests on real test devices, and the security rules in `GOVERNANCE.md`.
 - Company-wide GPG management is not designed now. The personal flows are built so that it can extend them.
@@ -83,7 +83,7 @@ The maintainer decided on 2026-11-01 to make roots and their transitions a separ
 
 - Pros: wider reach on day one, for example other clouds, HSMs, TPMs and other cards.
 - Cons: every store multiplies the tests and the guides; the first version would teach none of them well.
-- Why not: software, YubiKey and AWS KMS cover the full set of transition shapes. Later stores need a record each.
+- Why not: software, PIV, the OpenPGP card and AWS KMS cover the full set of transition shapes. Later stores need a record each.
 
 ### Manage company-wide GPG from the start
 

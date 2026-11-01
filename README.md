@@ -22,7 +22,7 @@ ritueel makes those moves ordinary: a few commands, a guided wizard, a record of
 | Wizards | A CLI wizard, and a web wizard that listens on localhost only. A ceremony is one to three commands; routine work is fully automated. |
 | Teaching | Concepts, one guide per transition (software, YubiKey, AWS KMS, in every direction) and drills on test keys. |
 
-The first version supports three key stores: software, YubiKey and AWS KMS.
+The first version supports four key stores behind one ceremony: software, PIV, the OpenPGP card and AWS KMS.
 
 ## What ritueel does not do
 

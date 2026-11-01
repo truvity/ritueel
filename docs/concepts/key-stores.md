@@ -5,21 +5,24 @@ sidebar:
   order: 2
 ---
 
-*Design phase: this page teaches the trade-offs. The first version of ritueel supports exactly these three key stores. Claims about firmware and service behaviour were checked on 2026-10-31 and 2026-11-01; check again before you rely on one.*
+*Design phase: this page teaches the trade-offs. The first version of ritueel supports exactly these four key stores. Claims about firmware and service behaviour were checked on 2026-10-31 and 2026-11-01; check again before you rely on one.*
 
-A root key has to live somewhere. The three places ritueel supports differ in one question above all: **can the key be copied?**
+A key has to live somewhere. The places ritueel supports differ in one question above all: **can the key be copied?**
 
-## The three stores
+## The four stores
 
-| | Software | YubiKey | AWS KMS |
-|---|---|---|---|
-| Where the key is | A file, encrypted with a passphrase, on a disk you control. | A hardware token. The key is made on the token and cannot be read out. | A cloud service. The key is made in the service and cannot be exported; you ask the service to sign. |
-| Can it be copied? | Yes. Anyone who has the file and the passphrase has the key, and a backup is a copy. | No. Loss of the token is loss of the key. | No. Loss of access to the account or the key is loss of the key. |
-| What "present" means | The passphrase. | Physical possession, the PIN, and a touch on the token. | Cloud permissions, plus whatever you add: a role that needs multi-factor authentication, a key policy that names one actor. |
-| Proof of where it lives | None. You are asked to believe it. | An attestation certificate, signed by the maker, chaining to the maker's published root. | The key's description and policy, read from the service; the service's audit trail shows each use. |
-| Speed | Fast. | A few signatures a second (about 7 a second with P-384, measured 2026-10-31 on one model); roots need a handful a year. | A network call per signature. |
-| Failure you plan for | The file is stolen or copied. | The token breaks or is lost. | The account is locked, the key is scheduled for deletion, the region is unavailable. |
-| Good for | Learning, drills, test roots, and the first bootstrap before anything else exists. | Roots held by a person or a small team, without a cloud dependency. | Roots in an organisation that already runs on that cloud and wants its access control and audit. |
+| | Software | YubiKey (PIV) | OpenPGP card | AWS KMS |
+|---|---|---|---|---|
+| Where the key is | A file, encrypted with a passphrase, on a disk you control. | A hardware token. The key is made on the token and cannot be read out. | The OpenPGP applet of a card. The key is made on the card and cannot be read out. | A cloud service. The key is made in the service and cannot be exported; you ask the service to sign. |
+| Can it be copied? | Yes. Anyone who has the file and the passphrase has the key, and a backup is a copy. | No. Loss of the token is loss of the key. | No. Loss of the card is loss of the key. | No. Loss of access to the account or the key is loss of the key. |
+| What "present" means | The passphrase. | Physical possession, the PIN, and a touch on the token. | Physical possession and the PIN (a touch, if the card is set to ask). | Cloud permissions, plus whatever you add: a role that needs multi-factor authentication, a key policy that names one actor. |
+| Proof of where it lives | None. You are asked to believe it. | An attestation certificate, signed by the maker, chaining to the maker's published root. | An attestation certificate from the card's own command, chaining to the maker's published root. | The key's description and policy, read from the service; the service's audit trail shows each use. |
+| Speed | Fast. | A few signatures a second (about 7 a second with P-384, measured 2026-10-31 on one model); roots need a handful a year. | About 4 signatures a second with P-384, including the PIN check (measured 2026-11-01). | A network call per signature. |
+| Failure you plan for | The file is stolen or copied. | The token breaks or is lost. | The card breaks or is lost. | The account is locked, the key is scheduled for deletion, the region is unavailable. |
+| Who uses the key afterwards | Tests and drills; a person's own primary. | A service's key-holder; the root cards. | `gpg`, for a person's daily signing subkey. | A service, or a company root. |
+| Good for | Learning, drills, test roots, and the first bootstrap before anything else exists. | Roots held by a person or a small team, without a cloud dependency. | A person's daily key, born on the card. | Roots in an organisation that already runs on that cloud and wants its access control and audit. |
+
+One ceremony, many stores: ritueel's ceremony makes a key in a store, or binds a key that a store holds. Only the store and the consumer of the key differ. Each store is proven on real hardware or a real account before it is called supported ([ADR 0003](/decisions/0003-ceremonies-plan-confirm-reserve-sign-record-and-the-ritueel-commands/)).
 
 ## The trade-offs in plain words
 
@@ -34,11 +37,13 @@ A root key has to live somewhere. The three places ritueel supports differ in on
 
 A token has no backup. That is why the model asks for more than one independent root.
 
-**AWS KMS makes the key a permission.** The key is as safe as the account's access control, and every use is in the audit trail. There is no card to lose, but there is an account to lose, and a deletion that is only reversible for a waiting period. A root that is "present" because a role was assumed is weaker than a touch unless you make the role hard to assume. ritueel's answer is to gate the role with multi-factor authentication and to let the person confirm the use, so that the cloud key behaves like a card with a touch. KMS keys do not attest in the YubiKey sense; ritueel reads the key's description and policy instead, and records both, and the audit trail shows each use. That is the whole evidence for a KMS key: description, policy and audit trail. For a key in another account, the owner grants ritueel read access to the key's description, and ritueel reads the public key from the service itself; it does not accept a copy of either.
+**An OpenPGP card holds a person's daily key.** A person's signing subkey is born on the card's OpenPGP applet, so `gpg` and its `scdaemon` use it directly, and a software primary binds it. The primary is a passphrase-protected file kept offline; the card makes the subkey and its back-signature, and the primary makes the binding. Personal GPG is in scope. Measured on 2026-11-01 on a test YubiKey 5 (firmware 5.8): such a subkey was accepted by `gpg` 2.4.8, `gpgv`, `sqv` and `sq`, and `gpg` 2.2.27 signs with it. The card library for this applet is a small, single-maintainer project, so ritueel vendors a patched fork of it behind a small interface; the card also attests a key made on this applet through a command of its own. The details are in [the ceremony](/concepts/ceremonies/#the-openpgp-card-store).
+
+**AWS KMS makes the key a permission.** The key is as safe as the account's access control, and every use is in the audit trail. There is no card to lose, but there is an account to lose, and a deletion that is only reversible for a waiting period. A root that is "present" because a role was assumed is weaker than a touch unless you make the role hard to assume. ritueel's answer is to gate the role with multi-factor authentication and to let the person confirm the use, so that the cloud key behaves like a card with a touch. KMS keys do not attest in the YubiKey sense; ritueel reads the key's description and policy instead, and records both, and the audit trail shows each use. That is the whole evidence for a KMS key: description, policy and audit trail. For a key in another account, `GetKeyPolicy` does not work across accounts, so the owner creates a small read-only role inside the key's account (allowed `DescribeKey`, `GetPublicKey` and `GetKeyPolicy`), and ritueel assumes it and reads the key and its policy as a same-account caller. It reads the public key from the service itself; it does not accept a copy of either.
 
 Two facts about OpenPGP keys in KMS (measured 2026-11-01). A P-384 KMS key signs only 48-byte SHA-384 digests, so every P-384 OpenPGP signature uses SHA-384, on every store, and a SHA-256 or SHA-512 digest is refused. The OpenPGP creation time is part of the fingerprint, and KMS's own creation date is not it; ritueel stores the time it chose, as a tag on the key and in the published certificate, because without it the same KMS key yields a different fingerprint.
 
-A KMS root has the same rule as a card root: **two roots, independent.** A company setup has a second KMS root in a separate account, as the model has two cards. A multi-Region replica of a KMS key is the same key, so it adds availability and not independence; a lost account, a deleted key or a stolen role takes every copy. Whether each root gets an account of its own is not decided yet.
+A company root in KMS is **one KMS root plus a multi-Region replica, in one dedicated root account.** Redundancy protects against loss, not compromise. A card cannot be copied, so cards need two independent keys; a cloud key service can replicate its key, so a replica covers the loss of a Region and one key is enough. A replica is the same key, and it is not counted as a second root: a lost account, a deleted key or a stolen role reaches every copy. That is answered the way any compromise is, by revocation and a transition. A company that wants a root that does not depend on one provider adds a card root.
 
 ## Choosing
 
@@ -46,8 +51,9 @@ A KMS root has the same rule as a card root: **two roots, independent.** A compa
 |---|---|
 | You are learning, or testing a pipeline | Software, on a throw-away root, with a drill. |
 | One person or a small team holds the roots, and no cloud is involved | Two independent YubiKey roots, in two places. |
-| An organisation already runs on AWS and wants audited, policy-gated roots | Two AWS KMS roots with an MFA-gated role, the second in a separate account, or at least one root on a different store, so that a lost account does not strand your clients. |
-| You want the strongest story | Roots on different kinds of store: for example one YubiKey and one KMS key. A failure of one kind does not take out the other. |
+| A person wants a daily GPG key | A subkey born on an OpenPGP card, bound by a software primary kept offline. |
+| An organisation already runs on AWS and wants audited, policy-gated roots | One AWS KMS root with a multi-Region replica, in a dedicated root account, with an MFA-gated role. Add a card root if a lost account must not strand your clients. |
+| You want the strongest story | Roots on different kinds of store: for example one YubiKey and one KMS key. A failure or a compromise of one kind does not take out the other. |
 
 ## Moving between stores
 

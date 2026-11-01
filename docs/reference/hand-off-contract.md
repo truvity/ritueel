@@ -18,9 +18,9 @@ A system that holds intermediate keys, called the **requester** on this page, an
 | Kind | The requester sends | The certifier sends back |
 |---|---|---|
 | X.509 intermediate (`x509-intermediate`) | A PKCS#10 certificate request, and a proof file | A certificate, and a result file |
-| OpenPGP signing subkey (`openpgp-subkey`) | The public subkey and its back-signature as OpenPGP packets, and a proof file | The subkey bound by a primary, as OpenPGP packets, and a result file |
+| OpenPGP signing subkey (`openpgp-subkey`) | The public subkey and its back-signatures (one for every active primary) as OpenPGP packets, and a proof file | The subkey bound by a primary, as OpenPGP packets, and a result file |
 
-The key is made where it will live (a YubiKey slot, an AWS KMS key, or a file in development) and never leaves. Only public keys, signatures and certificates travel. The proof file says where the key lives and carries the evidence for it.
+The key is made where it will live (a YubiKey slot, a card's OpenPGP applet, an AWS KMS key, or a file in development) and never leaves. Only public keys, signatures and certificates travel. The proof file says where the key lives and carries the evidence for it.
 
 ## Messages and files
 
@@ -56,9 +56,9 @@ A message is a set of files that share a **stem**, a name the requester chooses:
 | `handoff` | yes | The contract version, `1`. |
 | `type` | yes | `x509-intermediate` or `openpgp-subkey`. |
 | `request_sha256` | yes | SHA-256 of the request: the DER of the CSR, or the bytes of the `.subkey.pgp` file. It binds the proof to its request and catches a swapped pair of files. |
-| `store` | yes | Where the key lives: `yubikey-piv`, `aws-kms` or `software`. |
-| `evidence` | for `yubikey-piv` and `aws-kms`, absent for `software` | The proof, as below. |
-| `primary` | for `openpgp-subkey` only | The fingerprint (40 hexadecimal digits, version 4) of the primary that is to bind the subkey. |
+| `store` | yes | Where the key lives: `yubikey-piv` (the `piv` store), `openpgp-card`, `aws-kms` or `software`. |
+| `evidence` | for `yubikey-piv`, `openpgp-card` and `aws-kms`, absent for `software` | The proof, as below. |
+| `primaries` | for `openpgp-subkey` only | The fingerprints (40 hexadecimal digits each, version 4) of every active primary on the signed root list the requester read, in the order of that list. |
 | `capabilities` | for `openpgp-subkey` only | The list `["sign"]`. Version 1 binds signing subkeys. |
 
 ### `yubikey-piv`
@@ -80,6 +80,14 @@ What the certifier reads from the slot certificate (checked on a test YubiKey 5,
 
 Firmware 5.7 and newer chain to the maker's *current* attestation root; older tokens chain to the earlier PIV root. The certifier pins whichever roots the holder lists, so a chain that ends in an unpinned root is refused. The certifier also needs the maker's **intermediates**: the list that piv-go v2.6.0 embeds lacks the intermediate that firmware 5.8 uses, and its built-in verification fails (measured 2026-11-01). The certifier's pinned set is therefore the maker's current root plus the full intermediate bundle, and a card whose intermediate is missing from it is refused until the bundle is refreshed.
 
+### `openpgp-card`
+
+```json
+{ "attestation": ["<key certificate, Base64 DER>"] }
+```
+
+The key lives in the OpenPGP applet of a card, and the card attests it with its own command (on a YubiKey, `80 FB 01 00`, after the user PIN is verified). The list holds the certificate the card returns, leaf first. The certifier chains it to a pinned root of the maker through the maker's intermediates, from its own pinned copies, as for `yubikey-piv`; on firmware 5.8 the chain passes through the intermediate "Yubico OPGP Attestation B2 1" (measured 2026-11-01). The extensions of the certificate are under the OID arc `1.3.6.1.4.1.41482.5`. Their encoding, and so the policy rules that read them, are not specified yet (see [Open](/reference/hand-off-contract/#open)); a certifier that cannot read them records the key as attested and does not enforce a PIN or touch policy. This store is the one a person's daily subkey uses, with the person's own card as the requester.
+
 ### `aws-kms`
 
 ```json
@@ -87,7 +95,7 @@ Firmware 5.7 and newer chain to the maker's *current* attestation root; older to
   "public_key": "<the public key, Base64 DER SubjectPublicKeyInfo>" }
 ```
 
-The ARN names the key together with its Region and account. A bare key identifier does not, and the same identifier can exist in two Regions. The public key is a claim. **The certifier does not trust it: it reads the key from KMS** with `DescribeKey`, `GetPublicKey` and `GetKeyPolicy`, and compares. The requester has to give the certifier's principal permission to read the key's description and public key, and nothing more. **This holds for a key in another account too: the certifier is granted read access and re-reads the public key itself. It never accepts a copy of the description or the key in the proof**, not even one marked unverified. A proof whose key the certifier cannot read is refused (`proof-invalid`). **KMS has no attestation.** The evidence for a KMS key is what the certifier reads: the key's description, its policy and the audit trail of its uses. Two further facts apply to an OpenPGP key in KMS (measured 2026-11-01). A P-384 key signs only 48-byte SHA-384 digests, which is the hash the contract uses everywhere. The OpenPGP creation time fixes the fingerprint and is not KMS's creation date, so the requester has to keep it (for example as a tag on the key) and put it in the subkey packet; the certifier takes it from the packet. `GetKeyPolicy` works only inside the key's own account (AWS documentation, checked 2026-11-01); how the policy rule below applies to a key in another account is open.
+The ARN names the key together with its Region and account. A bare key identifier does not, and the same identifier can exist in two Regions. The public key is a claim. **The certifier does not trust it: it reads the key from KMS** with `DescribeKey`, `GetPublicKey` and `GetKeyPolicy`, and compares. A key in the certifier's own account is read with its own credentials. **A key in another account is read through a small read-only role inside that account**, because `GetKeyPolicy` does not work across accounts (AWS documentation, checked 2026-11-01). The requester creates the role. It allows `DescribeKey`, `GetPublicKey` and `GetKeyPolicy` on that key, nothing else (no `Sign`), and trusts the certifier's principal to assume it. The certifier assumes the role and reads the key and its policy as a same-account caller, so the single-principal rule below is checked the same way for both. The role's ARN is not taken from the request: the certifier's policy lists it for the requester, so a request cannot make the certifier assume a role of its choosing. **The certifier re-reads the public key itself. It never accepts a copy of the description, the policy or the key in the proof**, not even one marked unverified. A proof whose key the certifier cannot read is refused (`proof-invalid`). **KMS has no attestation.** The evidence for a KMS key is what the certifier reads: the key's description, its policy and the audit trail of its uses. Two further facts apply to an OpenPGP key in KMS (measured 2026-11-01). A P-384 key signs only 48-byte SHA-384 digests, which is the hash the contract uses everywhere. The OpenPGP creation time fixes the fingerprint and is not KMS's creation date, so the requester has to keep it (for example as a tag on the key) and put it in the subkey packet; the certifier takes it from the packet.
 
 ### `software`
 
@@ -192,14 +200,14 @@ Version 1 uses version 4 keys: the primary and the subkey are ECDSA on P-384 (al
 
 ### The request
 
-`<stem>.subkey.pgp` is binary OpenPGP and holds exactly two packets, in this order:
+`<stem>.subkey.pgp` is binary OpenPGP and holds one Public-Subkey packet followed by one back-signature for every primary in `primaries`, in this order:
 
 1. A **Public-Subkey packet** (tag 14) with the subkey.
-2. A **Signature packet** (tag 2) of type `0x19`, the primary key binding, also called the **back-signature**. It is made by the subkey, and says that the subkey agrees to belong to the primary (RFC 9580, section 5.2.1.9). It signs the primary key and then the subkey, each as `0x99`, a two-byte length and the packet body, followed by the usual signature trailer. Its hashed area has the signature creation time and the issuer fingerprint of the subkey.
+2. One **Signature packet** (tag 2) of type `0x19` for every active primary, in the order of `primaries`: the primary key binding, also called the **back-signature**. Each is made by the subkey, and says that the subkey agrees to belong to that primary (RFC 9580, section 5.2.1.9). It signs the primary key and then the subkey, each as `0x99`, a two-byte length and the packet body, followed by the usual signature trailer. Its hashed area has the signature creation time and the issuer fingerprint of the subkey. Its unhashed area has the issuer key ID of the subkey (see [Issuer key ID](/reference/hand-off-contract/#issuer-key-id)).
 
-Because the back-signature covers the primary's key, the **requester must know which primary** will bind it before it makes the signature. The proof names it in `primary`. One request names one primary. A requester that wants to be bound by both roots makes two requests for the same subkey.
+Because a back-signature covers the primary's key, it must exist before that primary can bind the subkey. **The request therefore back-signs for every active primary** (decided 2026-11-01). The requester reads the signed root list it already trusts, takes the active primaries from it, and makes one back-signature for each, in one request. Either root card can then make the binding: the card of the year, the other card next year, or the surviving card after one is lost, with no second request. The binding itself is made by one primary, the one the ceremony uses.
 
-A subkey whose back-signature is missing, of another type, made over another primary, or damaged is refused with `possession-invalid`. GnuPG and Sequoia refuse a signing subkey without a good back-signature, so the certifier does not bind one.
+A subkey with a back-signature that is missing for a listed primary, of another type, made over another primary, without the issuer key ID, or damaged is refused with `possession-invalid`. GnuPG and Sequoia refuse a signing subkey without a good back-signature, so the certifier does not bind one.
 
 ### What the certifier checks
 
@@ -207,9 +215,9 @@ The same ten checks and codes as for X.509, with these differences.
 
 | # | In OpenPGP |
 |---|---|
-| 3 | After the digest, `primary` must be a primary the certifier holds. Otherwise `unknown-primary`. |
+| 3 | After the digest, `primaries` must be exactly the active primaries on the certifier's signed root list. A listed primary the certifier does not hold, or an active one the list leaves out, gives `unknown-primary`: the requester's root list is not current. |
 | 4 | The subkey is ECDSA P-384. |
-| 5 | The packets are the two above, the back-signature has type `0x19` and verifies with the subkey over the named primary and the subkey. `capabilities` is `["sign"]`. |
+| 5 | The packets are the ones above, one back-signature for each listed primary. Each has type `0x19` and verifies with the subkey over that primary and the subkey, and carries the issuer fingerprint and the issuer key ID of the subkey. `capabilities` is `["sign"]`. |
 | 7, 8 | As for X.509. The key in the evidence is the point of the subkey. |
 | 9 | Reference policy: as for X.509, without the name constraints rule. |
 
@@ -220,7 +228,7 @@ The same ten checks and codes as for X.509, with these differences.
 | Part | Value |
 |---|---|
 | Hashed area | Signature creation time (the ceremony time). Key flags: `0x02`, signing only. Key expiration time, marked critical, in seconds after the subkey's creation, so that the subkey ends at the same instant a certificate issued at that ceremony would. Issuer fingerprint of the primary. |
-| Unhashed area | Issuer key ID. **Embedded signature** (subpacket 32): the request's back-signature, unchanged. |
+| Unhashed area | Issuer key ID. **Embedded signature** (subpacket 32): the request's back-signature for this primary, unchanged. |
 
 Add the packets to the primary's certificate to get the updated certificate, with any tool that concatenates files:
 
@@ -236,9 +244,13 @@ A verifier then needs nothing from ritueel. The vectors were checked this way wi
 |---|---|
 | The version, and `request_sha256`, as for X.509. | `version-unsupported`, `request-mismatch` |
 | The first packet is its own subkey. | `key-mismatch` |
-| The binding verifies, with the primary's key from its keyring, over that primary and the subkey, and the primary is the one it named. | `issuer` |
-| The key flags are exactly signing. The embedded signature is its own back-signature. | `profile` |
+| The binding verifies, with the primary's key from its keyring, over that primary and the subkey, and the primary is one of those it named. | `issuer` |
+| The key flags are exactly signing. The embedded signature is its own back-signature for that primary. | `profile` |
 | The expiry is the length it expects, and has not passed. | `validity` |
+
+### Issuer key ID
+
+Every version 4 signature ritueel writes, and every back-signature it accepts, carries **both** the Issuer Fingerprint subpacket (type 33, hashed) and the Issuer Key ID subpacket (type 16, unhashed). go-crypto v1.5.2 writes a version 4 signature with the fingerprint only, and `gpg` 2.2.27 rejects a certificate made of such signatures on import, so a signature without the key ID is not safe to ship (measured 2026-11-01). The rule is in [ADR 0004](/decisions/0004-release-keys-primaries-on-the-roots-signing-subkeys-and-the-keyring-package/) too.
 
 ## The answer
 
@@ -261,7 +273,7 @@ A refused answer holds no artifacts and no secret. The codes:
 | `version-unsupported` | The contract version is not known. |
 | `malformed` | A file does not parse, or has an unknown or repeated member. |
 | `request-mismatch` | The proof is not for this request. |
-| `unknown-primary` | OpenPGP only: the primary is not one the certifier holds. |
+| `unknown-primary` | OpenPGP only: `primaries` is not the set of active primaries the certifier holds. |
 | `algorithm-unsupported` | The key is not ECDSA P-384. |
 | `possession-invalid` | The request's signature, or the back-signature, does not verify or is not the right kind. |
 | `store-not-allowed` | The policy does not allow this key store. |
@@ -295,6 +307,8 @@ The vectors are in [`testdata/hand-off/v1/`](https://github.com/truvity/ritueel/
 | OpenPGP requests | A YubiKey, a KMS key, a software key. | No back-signature, a back-signature over another primary, of type `0x18`, or damaged; version 2; an unknown primary; an attested key that is not the subkey; an Ed25519 subkey. |
 | OpenPGP answers | A YubiKey, a KMS key, a software key. | No embedded back-signature, another subkey, another primary, an expiry of two months. |
 
+**Not yet matching this page.** The OpenPGP request vectors were made before the decision of 2026-11-01: each holds one back-signature and names one `primary`, and the stores use `yubikey-piv`, `aws-kms` and `software`. They are regenerated for the request shape above, with a back-signature for every primary, an `openpgp-card` case and the issuer key ID, before the contract is accepted. The manifest and the Go test follow them.
+
 A certifier passes when its outcome and reason code match the manifest for every request; a requester passes when its decision and code match for every answer. The vectors fix the outcome and the code, not the wording of a message.
 
 ## Choices made
@@ -310,13 +324,14 @@ The issue left these to the specification. Each is a proposal.
 | Unknown members | Refused. | Ignored. | An ignored member is a field one side thinks it understands. |
 | Binding of proof to request | `request_sha256`. | Nothing; a signature by the key over the proof. | It catches swapped files without a second signature, and the request is already signed by its key. |
 | KMS key reference | The full ARN. | The bare key identifier. | The ARN carries Region and account, which the certifier needs to read the key. |
-| KMS key in another account | The certifier is granted read access to the key's description and re-reads the public key. | Accept a snapshot of the description in the proof and mark it unverified. | A copy is a claim, and the contract's rule is that the certifier reads the key itself. |
+| KMS key in another account | The certifier assumes a small read-only role inside the key's account (`DescribeKey`, `GetPublicKey`, `GetKeyPolicy`) and reads the key and its policy as a same-account caller (decided 2026-11-01). | Grant the certifier's principal access in the key policy, which `GetKeyPolicy` does not honour across accounts; accept a snapshot of the description in the proof and mark it unverified; apply the policy rule to same-account keys only. | A copy is a claim, and the contract's rule is that the certifier reads the key itself. Only a role in the key's account can read the policy, so the rule is checked for every key. |
 | Chain file | The issued certificate only; the root is named in `result.json`. | The chain with the root included. | A root in a file invites trusting it. |
 | Who decides validity and constraints | The certifier decides validity. The requester asks for constraints in the CSR, and the certifier issues them exactly or refuses. | The certifier overrides the request; the requester asks for validity. | Silent change is the failure to avoid: the requester then installs something it did not ask for. |
-| OpenPGP request | Two packets, plus the proof naming the primary. | The whole primary certificate in the request; a back-signature for every primary at once. | The primary is already held by the certifier. One primary per request keeps each file small, at the cost of a second request for the second root. |
+| OpenPGP request | The subkey and a back-signature for every active primary, plus the proof naming the primaries (decided 2026-11-01). | One primary per request, with a second request for the second root; the whole primary certificate in the request. | Either root card can make the binding, with no second request, and the requester need not know whose year it is. The certifier already holds the primaries. Cost: one more signature in the request for each active primary. |
 | OpenPGP answer | The subkey and its binding, to be appended to the primary's certificate. | The complete updated certificate. | The answer is small and checkable by concatenation. The keyring package carries complete certificates. |
 | Embedded back-signature | In the unhashed area of the binding. | In the hashed area. | The way GnuPG, Sequoia and `sqv` were tested and measured on 2026-10-31 and 2026-11-01. Both areas are legal (RFC 9580, section 5.2.3.34). |
 | Order of checks | Fixed, with one code. | Report every failure. | The vectors then have one right answer, and a person sees the first problem to fix. |
+| Store names | `yubikey-piv`, `openpgp-card`, `aws-kms`, `software`. | Rename `yubikey-piv` to `piv` now. | `yubikey-piv` is the name the vectors use; the rename waits for the vectors to be regenerated. |
 | Algorithm | ECDSA P-384, SHA-384, version 4 keys. | P-256; Ed25519; version 6 keys. | P-384 works on every store and with GnuPG, `gpgv`, `sqv`, apt and rpm (tested 2026-10-29 and 2026-10-31). A PIV slot signs a whole Ed25519 message and refuses more than about 3 KiB, so it cannot sign an artifact. GnuPG implements no version 6 (`gpg` 2.4.8 refuses to parse it), and Sequoia accepts it; version 6 comes when the verifiers do. |
 | Fixture generator | A Python script, kept next to the fixtures. | Go, with the first test; none. | It was the fastest way to make fixtures with independent code. It should become Go once the module exists, so that one toolchain builds everything. |
 
@@ -326,9 +341,8 @@ The issue left these to the specification. Each is a proposal.
 These need the maintainer's decision. The issue each belongs to is linked; the options are in the pull request description.
 :::
 
-- **How the requester learns the target primary.** Options: the person tells it, from the keyring; the certifier's plan prints the command; the request covers every active primary. [Issue #7](https://github.com/truvity/ritueel/issues/7).
-- **The key policy of a key in another account.** The certifier reads the description and the public key across accounts, but `GetKeyPolicy` does not work across accounts, so the single-principal rule of the reference policy cannot be checked the same way. Options: apply the rule to keys in the certifier's own account only, and record that the policy of another account's key was not checked; refuse a key in another account under the reference policy. [Issue #12](https://github.com/truvity/ritueel/issues/12).
 - **The format and expiry of the root list**, and so the rule for `trust_sequence`. [Issue #14](https://github.com/truvity/ritueel/issues/14).
+- **The attestation of an OpenPGP-card key.** The encoding of the extensions under `1.3.6.1.4.1.41482.5`, and the policy rules that read them, are not measured yet.
 - **GnuPG** was not run on the OpenPGP vectors. A test with `gpg` and `gpgv` should join the verifier matrix ([issue #24](https://github.com/truvity/ritueel/issues/24)).
 
 ## Standards

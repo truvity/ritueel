@@ -1,6 +1,6 @@
 ---
 title: The ceremony
-description: What happens when a person uses a root, which checks the tool makes before each touch, how a yearly ceremony and a board change differ, and what is still open.
+description: What happens when a person uses a root, which checks the tool makes before each touch, how a yearly renewal differs from an intermediate change, what is open.
 sidebar:
   order: 5
 ---
@@ -23,11 +23,15 @@ A PIN is entered by the holder at the terminal. The tool never retries a wrong P
 
 | Ceremony | When | Card | Result |
 |---|---|---|---|
-| Yearly | Month 12 of the intermediates' life | The card for the year | New 13-month certificates and subkey bindings, the card's own root extended, a new keyring package and root list |
-| Board add or replace | Between yearly ceremonies | The card for the year | A certificate and binding for the new board key |
+| Yearly | Month 12 of the intermediates' life | The card for the year | Renewal by re-signing: new 13-month certificates over the same intermediate keys, and new bindings that extend the same subkeys' expiry. The card's own root extended, a new keyring package and root list |
+| Intermediate add, replace or revoke | Between yearly ceremonies | The card for the year | `add`: a certificate and binding for a new intermediate. `replace`: new key material, on an event. `revoke`: the certificate and binding withdrawn |
 | Root add, retire or revoke | A card is lost, retired or compromised | The surviving card | A new root, or a root list without the old one |
 
-Each is a few commands. [A lost root card](/guides/lost-root-card/) walks through the last one.
+Each is a few commands (`ritueel yearly`, `ritueel intermediate add|replace|revoke`, `ritueel root add|retire|revoke`). [A lost root card](/guides/lost-root-card/) walks through the last one.
+
+## Renewal and replacement
+
+The yearly ceremony **renews by re-signing**: new certificates over the same intermediate keys, and new bindings that extend the same subkeys' expiry. Roots are extended at each use, as below. **Key material is replaced only on an event** (a suspected compromise, a change of store or algorithm, a change of custody) **or at most every 3 years**, which is the one to three years that NIST SP 800-57 gives for a private signature key. The forced replacement at three years keeps the replace path (`intermediate replace`) tested, so it works on the day an event needs it. The reasons are in [ADR 0002](/decisions/0002-every-key-is-born-in-its-store-two-roots-one-holder-yearly-alternation/#renewal-and-replacement).
 
 ## A missed touch
 
@@ -46,7 +50,7 @@ A root is valid for about three years, and each use extends it. The card that si
 
 ## Which code talks to the cards
 
-The CLI is written in Go, with **piv-go** as the card library. Both root keys of a card live in PIV slots: the X.509 root in slot 9c and the OpenPGP primary in a retired slot. ritueel builds the OpenPGP packets itself, and the card signs digests. That means one applet, one library and one binary, with no `gpg` or `gpg-agent` at run time, and the attestation works the same for both keys. The OpenPGP applet of the card stays free for the holder's own daily use.
+The CLI is written in Go. For the roots, **piv-go** is the card library (the `piv` store). Both root keys of a card live in PIV slots: the X.509 root in slot 9c and the OpenPGP primary in a retired slot. ritueel builds the OpenPGP packets itself, and the card signs digests. That means one applet, one library and one binary, with no `gpg` or `gpg-agent` at run time, and the attestation works the same for both keys. The OpenPGP applet of the card stays free for the holder's own daily use.
 
 A spike on 2026-10-31 on two YubiKey 5 test cards (firmware 5.8.0, OpenPGP applet 3.4) compared the ways to reach the OpenPGP applet. It also showed that a key in a PIV slot makes back-signatures that `gpg`, `gpgv` and `sqv` accept. Findings that count against the other ways:
 
@@ -58,6 +62,16 @@ Because every key is generated on the card, no key is ever in host memory, so th
 
 The open test of the primary's own signatures is done (2026-11-01, a YubiKey 5 with firmware 5.8.0, piv-go v2.6.0). A key in a PIV slot is the primary of an OpenPGP version 4 certificate: it makes the direct-key signature, the user ID certification, the subkey binding and the revocations. `gpg` 2.4.8, `gpgv`, `sqv` 1.5.0, `sq` 1.4.1 and apt 3.2.0 accept the certificate and a subkey signature, and rpm 6.0.2 imports it (a signed `.rpm` was not tested). An AWS KMS P-384 key works the same way, as primary and as subkey.
 
+## The OpenPGP card store
+
+A person's daily OpenPGP subkey is born on the card's OpenPGP applet, in the `openpgp-card` store, so that `gpg` can use it, and a software primary binds it. The card library is cunicu's go-openpgp-card (OpenPGP card specification 3.4.1; it has moved to Codeberg; latest release v0.3.11; last functional commit in December 2024; one maintainer). ritueel therefore vendors **a patched fork behind a small interface**. If the fork cannot be kept, the fallback is a small driver of our own on go-iso7816, and after that `scdaemon`. What was measured on 2026-11-01 on a test YubiKey 5 (firmware 5.8):
+
+- A card-generated P-384 signing key, a back-signature (`0x19`) made by the card and a binding (`0x18`) made by a software primary are accepted by `gpg` 2.4.8, `gpgv`, `sqv` 1.5.0 and `sq` 1.4.1, and `gpg` 2.2.27 with `scdaemon` signs with the card's subkey.
+- On firmware 5.8 the library needs fixes. Reading the supported algorithms fails without a three-line patch. The fingerprint it stores for an ECDSA key is wrong, because it appends ECDH key-derivation parameters; ritueel writes the correct fingerprint with PUT DATA. It has no attestation: the YubiKey command `80 FB 01 00` works after the user PIN is verified, and the certificate chains to Yubico's current roots through "Yubico OPGP Attestation B2 1", with extensions under OID `1.3.6.1.4.1.41482.5`.
+- Verifying the PIN does not survive reopening the card, so every process verifies again. The library opens the card exclusively, and closing it resets the card (`SCARD_RESET_CARD`). Signing runs at about four signatures a second, including the PIN check.
+
+The decision and its alternatives are in [ADR 0003](/decisions/0003-ceremonies-plan-confirm-reserve-sign-record-and-the-ritueel-commands/).
+
 ## Attestation roots
 
 piv-go's built-in attestation roots fail on firmware 5.8: the token's certificate is issued by an intermediate that piv-go v2.6.0 does not embed, so `piv.Verify` reports an unknown authority (measured 2026-11-01). ritueel therefore verifies with the maker's current root plus the full intermediate bundle, passed to `piv.Verifier`. The bundle is a file in the repository with a documented refresh step, so a new intermediate is added by a reviewed change and not by a network fetch during an offline ceremony. A fix upstream is wanted too, and is not awaited.
@@ -68,11 +82,11 @@ The OpenPGP applet and the PIV applet are independent: using PIV changes nothing
 
 ## KMS keys in a ceremony
 
-A KMS key follows the same ceremony with three differences that come from the service (measured 2026-11-01):
+A KMS key follows the same ceremony with three differences that come from the service (measured 2026-11-01). A company root in KMS is one key and a multi-Region replica in one dedicated root account; with one root there is nothing to alternate, and a compromise is answered by revocation and a transition ([ADR 0002](/decisions/0002-every-key-is-born-in-its-store-two-roots-one-holder-yearly-alternation/)).
 
 - A P-384 KMS key signs only 48-byte SHA-384 digests, so every P-384 OpenPGP signature uses SHA-384, on every backend.
 - The OpenPGP creation time fixes the fingerprint, and KMS's own creation date is not it. ritueel stores the creation time it chose, as a tag on the key and in the published certificate.
-- KMS has no attestation. The evidence for a KMS key is its description, its policy and the audit trail.
+- KMS has no attestation. The evidence for a KMS key is its description, its policy and the audit trail. For a key in another account, ritueel assumes a small read-only role inside that account, because `GetKeyPolicy` does not work across accounts.
 
 ## Still open
 

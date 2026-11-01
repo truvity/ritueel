@@ -1,6 +1,6 @@
 ---
 title: A lost root card
-description: What to do when a root card is lost, stolen or compromised. Revoke it, publish the new root list and keyring, add a replacement root, and re-certify the boards.
+description: What to do when a root card is lost, stolen or compromised. Revoke it, publish the new root list and keyring, add a replacement root, re-certify intermediates.
 sidebar:
   order: 1
 ---
@@ -14,7 +14,7 @@ Until the revocation reaches outsiders, whoever holds the card **and** its PIN c
 1. **Revoke the root.** Publish a root list signed by the surviving root, with a higher version and without the lost root. For OpenPGP, publish the revocation signature that was made when the primary was born and stored apart from the card. Result: clients that fetch the root list stop trusting the lost root, and users of `gpg` and Sequoia (`sqv`) who receive the signature stop trusting the lost primary. A user of `gpgv` or apt does not notice the signature; step 2 is what protects them.
 2. **Publish new trust products without the lost root.** A new CA bundle, and a new keyring package signed by the surviving key. Result: new installs and package updates carry only the surviving root. **For apt users this is the revocation:** `gpgv` ignores revocation signatures, so the lost primary stops being trusted only when the keyring package without it is installed.
 3. **Add a replacement root.** Generate it on a fresh card or in a cloud key service (`root add`). The surviving root vouches for it with an X.509 cross-certificate, and its primary is certified by the surviving primary. Result: two roots again.
-4. **Re-certify what chained only to the lost root.** With alternating years this is the normal case: the boards' intermediates of the year the lost card certified are certified again by the surviving card, without replacing any board key. Result: no board has a certificate that depends on the lost root.
+4. **Re-certify what chained only to the lost root.** With alternating years this is the normal case: the intermediates of the year the lost card signed are signed again by the surviving card, over the same keys, without replacing any of them. Result: no intermediate has a certificate that depends on the lost root.
 5. **Publish the new trust products with the replacement root,** after the overlap that your slowest client needs.
 6. **Record it.** The ceremony record shows what was done, with which keys, and what outsiders now see.
 
@@ -27,4 +27,4 @@ Until the revocation reaches outsiders, whoever holds the card **and** its PIN c
 
 ## What the drill checks
 
-The drill uses test cards. It starts with two roots and one board, takes a card out of use, and ends when the steps above have run and the checks pass. It records how long each step took, so the real time from loss to refusal is known.
+The drill uses test cards. It starts with two roots and one intermediate, takes a card out of use, and ends when the steps above have run and the checks pass. It records how long each step took, so the real time from loss to refusal is known.
