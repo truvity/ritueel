@@ -24,6 +24,8 @@ The maintainer decided on 2026-11-01 to make roots and their transitions a separ
 - *revoke* a root, with revocation signatures made in advance and stored apart from the card when the root is born;
 - *expire* a root, extend it at each use, and warn before it lapses.
 
+**SSH CA key lists.** An SSH CA key is an anchor, not a chain. The SSH CA keys of a system that holds intermediates stay in its key-holder. Hosts trust a list of SSH CA public keys that ritueel publishes, signed by a root, versioned so that a host refuses a lower version. The break-glass SSH CA is ritueel's own, made and held offline, and its public key joins the same list ([issue #31](https://github.com/truvity/ritueel/issues/31)). Decided 2026-11-01.
+
 **Ceremonies for intermediates.** ritueel runs the ceremonies that give an intermediate its authority: it verifies where the key lives (a YubiKey attestation chain, or the description of a cloud KMS key), signs a PKCS#10 certificate request into an intermediate CA certificate, and binds an OpenPGP subkey to a primary after checking the subkey's back-signature.
 
 **Trust artifacts.** ritueel produces what outsiders install: CA bundles, keyrings, and signed root lists. It provides the automation and the CLI that build keyring `.deb` and `.rpm` packages. The user's own pipeline publishes them.
