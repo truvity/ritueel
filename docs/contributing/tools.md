@@ -49,6 +49,15 @@ The site is built from `docs/` and `site/` with Astro Starlight, and every page 
 - **The deploy** is the `deploy` job of `.github/workflows/site.yaml`. It runs on a push to `main` and on a manual run from `main`, after the `build` job has passed, and never on a pull request. It rebuilds the site, then runs `just site-deploy`, which is `yarn wrangler deploy` in `site/`. No build artifact is uploaded to GitHub. The job runs in the GitHub environment `cloudflare`, which allows deployments from `main` only and has no required reviewers. It holds two secrets: `CLOUDFLARE_API_TOKEN`, a token limited to deploying this one Worker, and `CLOUDFLARE_ACCOUNT_ID`. The job gives each secret to the one step that needs it. While the token is not set, the job says so in a notice and skips, and `main` stays green. The maintainer creates and rotates the token; a deploy that fails with an authentication error is the sign that it has expired.
 - The Worker, its routes and the domain are declared in the operator's own infrastructure code, outside this repository. The deploy uploads a new version of the Worker and changes none of them.
 
+## How a consumer gets ritueel
+
+The first consumer is the test harness of a system that holds intermediates, such as [sluis](https://sluis.id), which runs ritueel's software-root mode in its CI ([principle 8](/concepts/principles/#shared-with-systems-that-hold-intermediates)). It needs a build it can pin. Not built yet: the release workflow comes with the Go module ([issue #10](https://github.com/truvity/ritueel/issues/10)).
+
+- **What a release is.** A tag `vX.Y.Z` on `main`. GoReleaser (version 2) builds the binary for Linux and macOS, on amd64 and arm64, into one `.tar.gz` for each platform, and writes `SHA256SUMS` with the digest of each. The files go on the repository's GitHub Releases page.
+- **Checksums only, before the gate.** No release is signed until the real roots are adopted and drilled ([ADR 0006](/decisions/0006-release-keys-and-the-keyring-package/#no-signed-release-before-the-gate)). Until then a consumer's trust in a build is the digest it pinned, not a signature.
+- **How a consumer pins it.** It records the version and the SHA-256 of the archive for each platform it runs on in its own repository, downloads the archive from the release, compares the digest before it unpacks, and refuses a mismatch. A new version is a reviewed change of both. `ritueel version` prints the version and the commit, so a log shows which build ran.
+- **No container image and no packages yet.** A `.deb` or `.rpm` of ritueel waits for a user beyond the test harness, and will be signed once the gate is passed.
+
 ## Commands from an agent shell
 
 An AI agent's shell may reset its working directory between calls, so a `cd` in one call is gone in the next. Use absolute paths:
