@@ -19,6 +19,24 @@ A system that holds intermediate keys, called the **requester** on this page, an
 
 The key is made where it will live (a YubiKey slot, a card's OpenPGP applet, an AWS KMS key, or a file in development) and never leaves. Only public keys, signatures and certificates travel. The proof file says where the key lives and carries the evidence for it. An SSH CA key is not certified: a host trusts it by being given its public key, so ritueel lists it instead.
 
+## The floor: PKCS#10 in, X.509 out
+
+The least a system that holds an X.509 intermediate needs from a root is a certificate for its request. That is the **floor** of this contract: the requester sends a PKCS#10 request, as in [the request](/reference/hand-off-contract/#the-request), and gets back a certificate. Any certificate authority that can be configured to the profile below serves the floor; ritueel serves the floor and the rest of the contract. The floor is X.509 only: an OpenPGP subkey and an SSH CA key need the full contract.
+
+**What the CA issues.** The rows of [What is issued](/reference/hand-off-contract/#what-is-issued) that the requester checks, and nothing critical besides. In the terms of a CA tool:
+
+- Copy the subject and the public key of the request, unchanged.
+- Copy the requested extensions with their criticality: basic constraints (critical, `cA` true, path length 0), key usage (critical, `keyCertSign`, and `cRLSign` when asked), name constraints (critical, at least one permitted subtree), and extended key usage when asked. Add no other critical extension.
+- Make it valid for 13 calendar months from the time of issue.
+
+The serial number, the form of the key identifiers and the issuing key are the CA's own; ritueel uses P-384 and `ecdsa-with-SHA384`, and a CA on the floor should too. [The test vectors' README](https://github.com/truvity/ritueel/blob/main/testdata/hand-off/README.md) has an `openssl` recipe that issues a floor certificate for a vector's request.
+
+**What the requester checks on the floor.** Of [its checks](/reference/hand-off-contract/#what-the-requester-checks-before-it-installs), those that need nothing but the certificate: that it verifies to a CA certificate the operator installed (`issuer`), that it holds the requester's own key (`key-mismatch`), the profile (`profile`) and the validity (`validity`). The version, `request_sha256`, the digests of `result.json` and the trust sequence cannot be checked, because there is no result file. The requester reports those checks as not run, never as passed, and reports that nobody but itself checked where its key lives: the certifier's checks 6 to 8 are not run on the floor ([principle 4](/principles/)).
+
+**Trust on the floor.** The requester's anchors are the CA certificates the operator installed, and nothing else. A signed [root list](/reference/root-list/) is optional: without one there is **no trust sequence and no protection against rollback**, so an older file of anchors put back in place is accepted, as a TLS client accepts the file it is given.
+
+**The full contract** is the floor plus the proof file and its evidence, the result file, the reason codes, and the trust sequence with the signed root list. A requester that sends a proof file gets all of it from ritueel.
+
 ## Messages and files
 
 A message is a set of files that share a **stem**, a name the requester chooses: lower-case letters, digits and hyphens, 1 to 63 characters, starting with a letter or a digit. The certifier repeats the stem in its answer.
@@ -340,6 +358,7 @@ The vectors are in [`testdata/hand-off/v1/`](https://github.com/truvity/ritueel/
 - The clock of every vector is `2026-11-15T12:00:00Z`. A test fixes its clock to that time, so the vectors do not expire.
 - Every case is confirmed by the person at the ceremony, except one marked `"confirmation": "declined"`: the person declines it at check 10, and the certifier answers `declined` ([Declining](/reference/ceremony-record/#declining)).
 - Two configurations: `production` (a PIV, OpenPGP-card or KMS key; software refused) and `development` (software allowed). Both use the reference policy above, and both list the read-only role for the one other account the KMS vectors use (`kms_read_roles`).
+- A floor answer is marked `"floor": true` and is one file, `<case>.cert.pem`, with no result file. It answers the request `x509-response-request`, and its anchor is `pinned.floor_anchors`, a test CA that is not a ritueel root.
 - A KMS case comes with `<case>.kms-stub.json`: the answers of `DescribeKey`, `GetPublicKey` and `GetKeyPolicy` that a test replays instead of calling AWS. For a key in another account the stub starts with `assume_role`, the role the certifier must assume first, and its answers are the ones that role gets.
 
 | Group | Accepted | Refused |
@@ -350,10 +369,11 @@ The vectors are in [`testdata/hand-off/v1/`](https://github.com/truvity/ritueel/
 | OpenPGP answers | A PIV key, a KMS key, an OpenPGP-card key, a software key, a binding by the other primary. | No embedded back-signature, another subkey, a primary not on the list, an expiry of two months. |
 | SSH CA key requests | A PIV key for users, a KMS key for hosts, a software key in development. | Software in production, an OpenPGP-card key, a signature over other bytes, a signature in another namespace, an Ed25519 key, version 2, a proof for another request, an unknown member, `use` missing or `both`, an attested key that is not the request's, an untrusted attestation chain, PIN policy never, a KMS key that is not the request's, a KMS policy that names two actors. |
 | SSH CA key answers | A key on the list, a list signed by the other root. | A key not on the list, listed with the other use, a list older than `trust_sequence`. |
+| X.509 floor answers | A certificate from the installed foreign CA, with SHA-1 key identifiers, which the requester does not check. | One without the requested extensions (`profile`), one from a CA that is not installed (`issuer`), one valid for two years (`validity`). |
 
 A request of type `ssh-ca-key` is `<case>.sshca.pub` with `<case>.sshca.sig`, and `ssh-keygen -Y check-novalidate -n ssh-ca-key@ritueel.id -s <case>.sshca.sig < <case>.sshca.pub` accepts every one except the two that are refused for their signature (OpenSSH 10.2p1, checked 2026-11-01).
 
-CI checks that the manifest names every file of the set, that every file it names is in the repository, that the digests in the proofs and results match their files, and that an answer of type `ssh-ca-key` names a list of the SSH CA key list vectors (`just check-vectors`).
+CI checks that the manifest names every file of the set, that every file it names is in the repository, that the digests in the proofs and results match their files, that an answer of type `ssh-ca-key` names a list of the SSH CA key list vectors, and that an installed floor answer holds its request's key and is signed by a floor anchor (`just check-vectors`).
 
 A certifier passes when its outcome and reason code match the manifest for every request; a requester passes when its decision and code match for every answer. The vectors fix the outcome and the code, not the wording of a message.
 
@@ -363,6 +383,7 @@ The choices that had a real alternative, with the reason each alternative lost.
 
 | Choice | Chosen | Other options | Why |
 |---|---|---|---|
+| The floor | PKCS#10 in, X.509 out, with the profile stated so that any CA can be configured to it. | Only the full contract; a floor that also needs the signed root list. | A system that holds intermediates can be certified, and tested, by any CA, so it does not wait for ritueel. A root list on the floor would make ritueel's own format a requirement on every CA. The cost is a second trust mode, without a trust sequence, which the page states plainly. |
 | Encoding of the proof file | JSON, with certificates and keys as Base64 DER. | CBOR; ASN.1 DER; one PEM file with headers; a TAR holding everything. | Readable by a person who must compare it with what they expect. Every language has a strict parser. The `x5c` precedent covers the encoding of certificates. CBOR and DER are smaller and harder to read; PEM headers have no standard shape. |
 | Compatibility window | Read the previous version for 24 months after its successor first ships. | A fixed 12 months; "any older version, always". | Ceremonies are yearly. A year is not enough for a missed one. |
 | Unknown members | Refused. | Ignored. | An ignored member is a field one side thinks it understands. |

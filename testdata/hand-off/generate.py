@@ -598,6 +598,58 @@ x509_response("x509-response-expired", base, issue(c, nb=dt.datetime(2025, 9, 1,
 x509_response("x509-response-untrusted-issuer", base, issue(c, issuer_key=ROOT_Z_KEY, issuer=ROOT_Z), "refuse", "issuer", csr=c, issuer_cert=ROOT_Z)
 
 
+# ---- the floor: the same request certified by a CA that is not ritueel. The answer is a certificate and nothing else: no
+# result file, no trust sequence. The requester's anchor is the CA certificate the operator installed (`floor_anchors`).
+# The foreign CA writes its key identifiers the way common CA tools do (SHA-1, RFC 5280 method 1), which is outside what the
+# requester checks.
+def foreign_root(cn):
+    k = ec384()
+    n = x509.Name([x509.NameAttribute(NameOID.COMMON_NAME, cn)])
+    b = (x509.CertificateBuilder().subject_name(n).issuer_name(n).public_key(k.public_key()).serial_number(serial160())
+         .not_valid_before(dt.datetime(2026, 1, 1, tzinfo=UTC)).not_valid_after(dt.datetime(2036, 1, 1, tzinfo=UTC))
+         .add_extension(x509.BasicConstraints(ca=True, path_length=None), critical=True)
+         .add_extension(KU_CA, critical=True)
+         .add_extension(x509.SubjectKeyIdentifier.from_public_key(k.public_key()), critical=False))
+    return k, sign_builder(b, k, hashes.SHA384())
+
+
+def floor_issue(csr, issuer_key=None, issuer=None, na=UNTIL, copy=True):
+    """What a CA configured to the floor profile issues: the CSR's subject and requested extensions, copied; or, with
+    copy=False, a CA that drops the requested extensions and writes its own CA defaults."""
+    issuer_key, issuer = issuer_key or FLOOR_KEY, issuer or FLOOR_ROOT
+    exts = {type(e.value): e for e in csr.extensions}
+    b = (x509.CertificateBuilder().subject_name(csr.subject).issuer_name(issuer.subject).public_key(csr.public_key())
+         .serial_number(serial160()).not_valid_before(CLOCK).not_valid_after(na))
+    if copy:
+        for e in csr.extensions:
+            b = b.add_extension(e.value, critical=e.critical)
+    else:
+        b = (b.add_extension(x509.BasicConstraints(ca=True, path_length=0), critical=True)
+             .add_extension(exts[x509.KeyUsage].value, critical=True))
+    b = (b.add_extension(x509.SubjectKeyIdentifier.from_public_key(csr.public_key()), critical=False)
+         .add_extension(x509.AuthorityKeyIdentifier.from_issuer_public_key(issuer.public_key()), critical=False))
+    return sign_builder(b, issuer_key, hashes.SHA384())
+
+
+def floor_response(case, request_case, cert, expect, reason=None):
+    path = f"responses/{case}.cert.pem"
+    w(path, cert.public_bytes(PEM))
+    r = {"id": case, "type": "x509-intermediate", "request": request_case, "floor": True, "files": [path], "expect": expect}
+    if reason:
+        r["reason"] = reason
+    responses.append(r)
+
+
+with stream("floor"):
+    FLOOR_KEY, FLOOR_ROOT = foreign_root("Example Test Foreign CA (TEST ONLY)")
+    OTHER_FLOOR_KEY, OTHER_FLOOR_ROOT = foreign_root("Example Test Other Foreign CA (TEST ONLY)")   # never installed
+    w("pki/test-foreign-root.pem", FLOOR_ROOT.public_bytes(PEM))
+    floor_response("x509-floor-valid", base, floor_issue(c), "install")
+    floor_response("x509-floor-extensions-dropped", base, floor_issue(c, copy=False), "refuse", "profile")
+    floor_response("x509-floor-other-ca", base, floor_issue(c, issuer_key=OTHER_FLOOR_KEY, issuer=OTHER_FLOOR_ROOT), "refuse", "issuer")
+    floor_response("x509-floor-two-years", base, floor_issue(c, na=dt.datetime(2028, 11, 15, 12, tzinfo=UTC)), "refuse", "validity")
+
+
 # ---- OpenPGP requests: the subkey, then one back-signature for each primary in `primaries`, in that order
 def pgp_case(case, store="piv", cfg="production", expect="refuse", reason=None, sk=None, primaries=None, backs=None,
              version=1, stub=None, evidence_pub=None, proof_primaries=None, card=None):
@@ -820,6 +872,7 @@ wj("manifest.json", {
         "attestation_intermediates": ["pki/test-attestation-intermediate.pem", "pki/test-opgp-attestation-intermediate.pem"],
         "root_list": {"x509": ["pki/test-root-a.pem", "pki/test-root-b.pem"], "openpgp": ["pki/test-primary-a.pgp", "pki/test-primary-b.pgp"]},
         "not_listed": {"x509": ["pki/test-root-z.pem"], "openpgp": ["pki/test-primary-z.pgp"]},
+        "floor_anchors": ["pki/test-foreign-root.pem"],
         "trust_sequence": SEQUENCE,
     },
     "configs": {
