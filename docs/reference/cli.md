@@ -27,7 +27,8 @@ sidebar:
 | `ritueel root-list verify`, `ssh-ca-keys verify`, `crl verify`, `keyring verify` | The host's and the relying party's side of each trust product: run its checks on a file, signing and writing nothing. | No |
 | `ritueel ssh-ca break-glass ROOT` | Makes the break-glass SSH CA of a root that was made before ritueel made one at `init` and `root add`, and lists it. | Yes |
 | `ritueel records list`, `records verify`, `records close` | Read the ceremony records, check their hash chain, and close an unresolved attempt. | `close` only |
-| `ritueel wizard` | A guided front end to the commands above, in the terminal or in a browser on localhost. | Yes |
+| `ritueel personal subkey add NAME --card SERIAL` | In a personal directory: the card makes the daily subkey and its back-signature, and the person's primary binds it ([personal OpenPGP](/reference/personal-openpgp/#the-commands)). `init --kind personal` makes the directory. | Yes |
+| `ritueel wizard [--web]` | A guided front end to the commands above, in the terminal, and with `--web` also on a page served on localhost ([the wizard](/reference/wizard/)). | Yes |
 
 The verbs of a transition map onto the commands: *create* and *vouch* are `root add`, *overlap* is a state and not a command, *supersede* is `root retire`, and *revoke* is `root revoke`.
 
@@ -43,6 +44,8 @@ The verbs of a transition map onto the commands: *create* and *vouch* are `root 
 | `--allow-missing NAME` | `yearly` only: go on without a request for this intermediate, and record it. |
 | `--card [LABEL=]SERIAL` | `piv` roots: the card that holds the root `LABEL`, by serial. `init` takes one for each root (`--card A=00000001 --card B=00000002`); `root add` takes one. Without it, the only card connected is used, and two cards are refused with `card-ambiguous` ([cards](/reference/cards/#what-is-checked-on-a-card)). |
 | `--extra-intermediates FILE` | `piv` roots: PEM certificates of the maker's intermediates that the bundle lacks. Helpers only: each must chain to the pinned root ([the bundle](/reference/cards/#the-attestation-bundle)). |
+| `--revocation-dir DIR` | Every command that makes revocation signatures for a root that is not an encrypted-file software root: where to write them. Refused inside the directory or its repository ([revocation material](/reference/revocation-material/#where-it-is-written)). `--reasons` chooses the reasons. |
+| `--backend file\|onepassword\|keyring` | Software roots: the backend ([the software store](/reference/software-store/)). `--op-vault NAME` names the vault for `onepassword`. `init --kind personal` makes a personal directory. |
 | `--passphrase-fd N` | Software roots: read the passphrase from this file descriptor. |
 | `--key-dir DIR` | Software roots: the directory of the [key files](/reference/directory/#the-software-roots-key-files). Refused when it is inside `--dir`. |
 | `--test-root` | Software roots: no passphrase, marked `TEST ONLY` everywhere. Products refuse to mix test and real roots. |
