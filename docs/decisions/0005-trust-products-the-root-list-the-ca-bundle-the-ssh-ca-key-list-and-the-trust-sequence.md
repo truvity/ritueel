@@ -18,10 +18,13 @@ The **trust sequence** is one integer that grows by one whenever any trust produ
 ### The signed root list
 
 - **What it holds.** The active roots, each pinned by the SHA-256 of its public key (`SubjectPublicKeyInfo`) and, for OpenPGP, the primary's fingerprint; the `sequence`; when it was signed; when it expires; and the digest of the last ceremony record ([0004](/decisions/0004-ceremonies-plan-confirm-reserve-sign-verify-record/)). It pins keys, never certificates.
-- **Who signs.** Any one active root (1 of n), with its X.509 root key: the root used at that ceremony. The key whose public key hosts pin is the key that tells them which roots to pin; the slot is in [0003](/decisions/0003-key-stores-and-the-card-layer/).
+- **Who signs.** Each signer uses its X.509 root key: the key whose public key hosts pin is the key that tells them which roots to pin; the slot is in [0003](/decisions/0003-key-stores-and-the-card-layer/).
+  - **A list with the same roots** is signed by any one active root: the root used at that ceremony.
+  - **A list that changes the root set** carries, for every active root of the list it replaces, that root's signature or its stored removal authorisation; and every root it adds signs it. Changing the root set requires every current root, or a root's stored removal authorisation.
+  - **The removal authorisation** is a statement each root signs over its own pin when it is born, kept with the revocation material ([0010](/decisions/0010-readiness-is-made-at-birth-and-proved-by-a-drill/#revocation-material)). A root that can no longer sign leaves the set with it.
 - **When.** It is re-signed at every yearly ceremony and at every transition, and so at least once a year. It expires 13 months after it is signed, like an intermediate, so a list that stopped being renewed shows itself. `status` warns at 60, 30 and 14 days before it expires.
-- **How a host reads it.** A host refuses a list with a lower `sequence` than the one it holds, a list with the same `sequence` whose content differs from the one it holds (only the same list again is accepted, so one sequence names one set of roots), a bad signature, a signer that is not an active root of the list it holds, or one already expired. When the list it holds passes its expiry and no newer one has arrived, it keeps the last good list and raises a warning; it does not drop its roots.
-- **Revoking a root** is a new list, signed by a surviving root, without the revoked one, with new trust products beside it.
+- **How a host reads it.** A host refuses a list with a lower `sequence` than the one it holds, a list with the same `sequence` whose content differs from the one it holds (only the same list again is accepted, so one sequence names one set of roots), a bad signature, a list that no active root of the list it holds has signed, a change of the root set without every current root's signature or removal authorisation, or one already expired. When the list it holds passes its expiry and no newer one has arrived, it keeps the last good list and raises a warning; it does not drop its roots.
+- **Revoking a root** is a new list without the revoked one, signed by the surviving roots and carrying the revoked root's removal authorisation, with new trust products beside it.
 
 ### The SSH CA key list
 
@@ -61,6 +64,8 @@ The exact members, the encoding and the signature format of each product are a r
 - A revoked intermediate reaches relying parties only if they load the CRL, and only as fast as the operator's pipeline publishes it; a relying party that never configured the file never learns of it.
 - Revoking an intermediate can need a card the holder has to fetch from its place, and a lost card turns the revocation into a root revocation.
 - A hand-off request of a third type adds a code path for the SSH signature to the certifier and the requester.
+- A change of the root set needs every current root at the ceremony, or the stored removal authorisation of one that cannot come. With two cards, adding a root is a two-card ceremony; the yearly ceremony stays a one-card ceremony.
+- The root list carries more than one signature, and a removal authorisation is one more file of revocation material to store apart and to check at the drill.
 
 ## Roads not taken
 
@@ -71,6 +76,9 @@ The exact members, the encoding and the signature format of each product are a r
 - **A root list with no expiry.** Nothing to renew, but a list that stopped being signed cannot be told from a current one.
 - **Fail closed when the list expires.** Stronger on paper, but a missed ceremony would cut every host off its roots at once.
 - **A separate key for the list and the SSH CA keys.** Separates their signer, but costs a slot and a touch for a key with the same audience, lifetime and revocation.
+- **Any one active root changes the root set, as it renews the list.** One signature for every list, but which roots are trusted would rest on one root alone; the roots now decide that together.
+- **Every current root signs a change of the set, with no stored authorisation.** The simplest strict rule, but a lost root could never leave the set by a signature, and every host would need its pins replaced by hand.
+- **A separate key for changes of the root set.** Keeps renewals and changes apart, but costs one more slot and touch per root for a key with the same audience.
 - **OCSP for an intermediate.** Live status, but it needs a responder that signs online, which ritueel never holds, and a certificate that names it.
 - **A CRL distribution point in the intermediate's certificate.** Clients could fetch the list by themselves, but the certificate would name a host that outlives it, and TLS libraries do not fetch it by default.
 - **One CRL for both roots, signed by the root of the year.** One file, but standard clients take a CRL from the issuer only, and an indirect CRL is poorly supported.

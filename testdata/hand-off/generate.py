@@ -6,8 +6,17 @@ testdata/ssh-ca-keys/v1/ and the CRL vectors into testdata/crl/v1/, from one tes
 Test fixtures only. Every key here is a throw-away software key made by this script;
 its private half is never written to disk, so the output holds public material only:
 CSRs, certificates, public subkey packets, signatures and JSON files. The attestation
-hierarchy is a made-up "Example Test" hierarchy and not the maker's. A second run makes
-different bytes (ECDSA is randomised), so the committed files are the fixtures and this
+hierarchy is a made-up "Example Test" hierarchy and not the maker's.
+
+Every key, serial number and random value comes from a SHA-256 counter stream over a
+seed, one stream for each part of the set, and every ECDSA signature is the
+deterministic one of RFC 6979. The seed is RITUEEL_VECTOR_SEED (64 hexadecimal digits)
+when it is set, and 32 fresh random bytes otherwise; it is never printed or written.
+With the same seed, Python and cryptography versions, a run makes the same bytes, and a
+part added later changes no file of the other parts. The seed is not in the repository:
+keys derived from a published seed would be private key material in the repository,
+which docs/contributing/public-content.md keeps out. A run without the seed of the
+committed files makes every file again, so the committed files are the fixtures and this
 script is the record of how they were made.
 
 The test trust set has two roots, A and B, as on two root cards: each has an X.509 root
@@ -22,7 +31,7 @@ Made with Python 3.14 and cryptography 46.0.5.
 
 usage: generate.py HANDOFF_OUTDIR ROOTLIST_OUTDIR SSHCA_OUTDIR CRL_OUTDIR
 """
-import base64, datetime as dt, hashlib, json, os, secrets, struct, sys
+import base64, contextlib, datetime as dt, hashlib, json, math, os, struct, sys
 from cryptography import x509
 from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import ec, ed25519, rsa
@@ -68,21 +77,122 @@ def ski(pub):   # RFC 7093, method 1: the leftmost 160 bits of the SHA-256 of th
     return hashlib.sha256(pub.public_bytes(*POINT)).digest()[:20]
 
 
+# ---------------------------------------------------------------- the deterministic random stream
+SEED = bytes.fromhex(os.environ["RITUEEL_VECTOR_SEED"]) if os.environ.get("RITUEEL_VECTOR_SEED") else os.urandom(32)
+_stream = ["hand-off", 0]   # the part of the set being made, and the next block of its stream
+
+
+def rand_bytes(n):
+    """The next n bytes of the current stream: SHA-256 over the seed, the part's name and a counter, block by block."""
+    out = b""
+    while len(out) < n:
+        out += hashlib.sha256(SEED + b"/" + _stream[0].encode() + _stream[1].to_bytes(8, "big")).digest()
+        _stream[1] += 1
+    return out[:n]
+
+
+@contextlib.contextmanager
+def stream(name):
+    """Draw from the stream of another part while inside the block, so that a part added later changes no other file."""
+    saved = list(_stream)
+    _stream[:] = [name, 0]
+    try:
+        yield
+    finally:
+        _stream[:] = saved
+
+
+def rand_int(bits):
+    return int.from_bytes(rand_bytes((bits + 7) // 8), "big") >> (-bits % 8)
+
+
+def ec_key(curve, order):
+    """A private key on the curve from the stream: an integer in [1, order - 1]."""
+    return ec.derive_private_key(int.from_bytes(rand_bytes(64), "big") % (order - 1) + 1, curve)
+
+
+P384_ORDER = 0xffffffffffffffffffffffffffffffffffffffffffffffffc7634d81f4372ddf581a0db248b0a77aecec196accc52973
+P256_ORDER = 0xffffffff00000000ffffffffffffffffbce6faada7179e84f3b9cac2fc632551
+
+
 def ec384():
-    return ec.generate_private_key(ec.SECP384R1())
+    return ec_key(ec.SECP384R1(), P384_ORDER)
+
+
+def ec256():
+    return ec_key(ec.SECP256R1(), P256_ORDER)
+
+
+def ed25519_key():
+    return ed25519.Ed25519PrivateKey.from_private_bytes(rand_bytes(32))
+
+
+SMALL_PRIMES = [p for p in range(3, 2000) if all(p % q for q in range(2, int(p ** 0.5) + 1))]
+
+
+def _probable_prime(n):
+    if any(n % p == 0 for p in SMALL_PRIMES):
+        return n in SMALL_PRIMES
+    d, r = n - 1, 0
+    while d % 2 == 0:
+        d, r = d // 2, r + 1
+    for _ in range(40):   # Miller-Rabin with bases from the stream
+        x = pow(rand_int(n.bit_length() - 1) % (n - 3) + 2, d, n)
+        if x in (1, n - 1):
+            continue
+        for _ in range(r - 1):
+            x = pow(x, 2, n)
+            if x == n - 1:
+                break
+        else:
+            return False
+    return True
+
+
+def rsa2048():
+    """An RSA 2048 key from the stream: two 1024-bit primes with the top two bits set, e = 65537."""
+    def prime():
+        while True:
+            c = rand_int(1024) | (3 << 1022) | 1
+            if math.gcd(c - 1, 65537) == 1 and _probable_prime(c):
+                return c
+    p, q = prime(), prime()
+    d = pow(65537, -1, (p - 1) * (q - 1) // math.gcd(p - 1, q - 1))
+    pub = rsa.RSAPublicNumbers(65537, p * q)
+    return rsa.RSAPrivateNumbers(p, q, d, rsa.rsa_crt_dmp1(d, p), rsa.rsa_crt_dmq1(d, q), rsa.rsa_crt_iqmp(p, q), pub).private_key()
+
+
+def serial160():
+    """A certificate serial: 19 bytes from the stream, with bit 150 set so that it is positive and 20 bytes at most."""
+    return int.from_bytes(rand_bytes(19), "big") | 1 << 150
+
+
+def serial63():
+    return rand_int(63) | 1 << 62
+
+
+def sign_builder(builder, key, alg):
+    """Sign a certificate, CSR or CRL builder; ECDSA keys sign deterministically (RFC 6979)."""
+    if isinstance(key, ec.EllipticCurvePrivateKey):
+        return builder.sign(key, alg, ecdsa_deterministic=True)
+    return builder.sign(key, alg)
+
+
+def ecdsa(alg):
+    return ec.ECDSA(alg, deterministic_signing=True)
 
 
 # ---------------------------------------------------------------- X.509 pieces
 def ca_cert(subject, key, issuer_name, issuer_key, nb, na, pathlen, issuer_pub=None, extra=()):
     b = (x509.CertificateBuilder().subject_name(subject).issuer_name(issuer_name).public_key(key.public_key())
-         .serial_number(int.from_bytes(secrets.token_bytes(19), "big") | 1 << 150).not_valid_before(nb).not_valid_after(na)
+         .serial_number(serial160()).not_valid_before(nb).not_valid_after(na)
          .add_extension(x509.BasicConstraints(ca=True, path_length=pathlen), critical=True)
          .add_extension(x509.SubjectKeyIdentifier(ski(key.public_key())), critical=False))
     for e, crit in extra:
         b = b.add_extension(e, critical=crit)
     if issuer_pub is not None:
         b = b.add_extension(x509.AuthorityKeyIdentifier(ski(issuer_pub), None, None), critical=False)
-    return b.sign(issuer_key, hashes.SHA384() if isinstance(issuer_key, ec.EllipticCurvePrivateKey) else hashes.SHA256())
+    return sign_builder(b, issuer_key, hashes.SHA384() if isinstance(issuer_key, ec.EllipticCurvePrivateKey) else hashes.SHA256())
 
 
 KU_CA = x509.KeyUsage(False, False, False, False, False, True, True, False, False)
@@ -142,12 +252,12 @@ class Card:
     """A made-up token: a per-card attestation key (RSA 2048, like the real one) certified by a test intermediate."""
 
     def __init__(self, int_key, int_cert, cn="Example Test PIV Attestation"):
-        self.key = rsa.generate_private_key(65537, 2048)
+        self.key = rsa2048()
         self.cert = (x509.CertificateBuilder().subject_name(name(cn, "Example Test")).issuer_name(int_cert.subject)
-                     .public_key(self.key.public_key()).serial_number(secrets.randbits(63) | 1 << 62)
+                     .public_key(self.key.public_key()).serial_number(serial63())
                      .not_valid_before(dt.datetime(2025, 8, 1, tzinfo=UTC)).not_valid_after(dt.datetime(9999, 12, 31, 23, 59, 59, tzinfo=UTC))
-                     .add_extension(x509.BasicConstraints(ca=True, path_length=0), critical=True)
-                     .sign(int_key, hashes.SHA384()))
+                     .add_extension(x509.BasicConstraints(ca=True, path_length=0), critical=True))
+        self.cert = sign_builder(self.cert, int_key, hashes.SHA384())
 
     def slot_cert(self, pub, slot="9c", firmware=bytes([5, 8, 0]), serial=12345678, policy=bytes([2, 1]), form=bytes([2])):
         """The certificate a token makes for a key born in a PIV slot. The OIDs and encodings are the ones measured on a
@@ -157,20 +267,20 @@ class Card:
         sn = serial.to_bytes((serial.bit_length() + 8) // 8, "big")
         ext = [("3", firmware), ("7", b"\x02" + bytes([len(sn)]) + sn), ("8", policy), ("9", form)]
         b = (x509.CertificateBuilder().subject_name(x509.Name([x509.NameAttribute(NameOID.COMMON_NAME, f"YubiKey PIV Attestation {slot}")]))
-             .issuer_name(self.cert.subject).public_key(pub).serial_number(secrets.randbits(63) | 1 << 62)
+             .issuer_name(self.cert.subject).public_key(pub).serial_number(serial63())
              .not_valid_before(dt.datetime(2025, 8, 1, tzinfo=UTC)).not_valid_after(dt.datetime(9999, 12, 31, 23, 59, 59, tzinfo=UTC)))
         for o, v in ext:
             b = b.add_extension(x509.UnrecognizedExtension(ObjectIdentifier(base + o), v), critical=False)
-        return b.sign(self.key, hashes.SHA256())
+        return sign_builder(b, self.key, hashes.SHA256())
 
     def opgp_cert(self, pub, slot="SIG"):
         """The certificate a card's OpenPGP applet makes for a key it generated. The extensions under 1.3.6.1.4.1.41482.5
         are not specified by the contract yet, so this certificate carries none: a certifier records the key as attested
         and enforces no PIN or touch policy."""
-        return (x509.CertificateBuilder().subject_name(x509.Name([x509.NameAttribute(NameOID.COMMON_NAME, f"YubiKey OPGP Attestation {slot}")]))
-                .issuer_name(self.cert.subject).public_key(pub).serial_number(secrets.randbits(63) | 1 << 62)
-                .not_valid_before(dt.datetime(2025, 8, 1, tzinfo=UTC)).not_valid_after(dt.datetime(9999, 12, 31, 23, 59, 59, tzinfo=UTC))
-                .sign(self.key, hashes.SHA256()))
+        b = (x509.CertificateBuilder().subject_name(x509.Name([x509.NameAttribute(NameOID.COMMON_NAME, f"YubiKey OPGP Attestation {slot}")]))
+             .issuer_name(self.cert.subject).public_key(pub).serial_number(serial63())
+             .not_valid_before(dt.datetime(2025, 8, 1, tzinfo=UTC)).not_valid_after(dt.datetime(9999, 12, 31, 23, 59, 59, tzinfo=UTC)))
+        return sign_builder(b, self.key, hashes.SHA256())
 
 
 CARD = Card(ATT_INT_KEY, ATT_INT)
@@ -233,7 +343,7 @@ def make_csr(key, cn="acme example intermediate CA", nc=("%s" % HOST,), pathlen=
          .add_extension(KU_CA, critical=True))
     if nc:
         b = b.add_extension(x509.NameConstraints([x509.UniformResourceIdentifier(h) for h in nc], None), critical=True)
-    return b.sign(key, hash_)
+    return sign_builder(b, key, hash_)
 
 
 def issue(csr, issuer_key=ROOT_A_KEY, issuer=ROOT_A, nb=CLOCK, na=UNTIL, pubkey=None, pathlen=None):
@@ -241,14 +351,14 @@ def issue(csr, issuer_key=ROOT_A_KEY, issuer=ROOT_A, nb=CLOCK, na=UNTIL, pubkey=
     exts = {type(e.value): e for e in csr.extensions}
     bc = exts[x509.BasicConstraints].value
     b = (x509.CertificateBuilder().subject_name(csr.subject).issuer_name(issuer.subject).public_key(pubkey or csr.public_key())
-         .serial_number(int.from_bytes(secrets.token_bytes(19), "big") | 1 << 150).not_valid_before(nb).not_valid_after(na)
+         .serial_number(serial160()).not_valid_before(nb).not_valid_after(na)
          .add_extension(x509.BasicConstraints(ca=True, path_length=bc.path_length if pathlen is None else pathlen), critical=True)
          .add_extension(exts[x509.KeyUsage].value, critical=True))
     if x509.NameConstraints in exts:
         b = b.add_extension(exts[x509.NameConstraints].value, critical=True)
     b = (b.add_extension(x509.SubjectKeyIdentifier(ski(pubkey or csr.public_key())), critical=False)
          .add_extension(x509.AuthorityKeyIdentifier(ski(issuer.public_key()), None, None), critical=False))
-    return b.sign(issuer_key, hashes.SHA384())
+    return sign_builder(b, issuer_key, hashes.SHA384())
 
 
 def tamper_csr(csr):
@@ -304,7 +414,7 @@ class PgpKey:
             self.body = b"\x04" + struct.pack(">I", created) + b"\x13" + bytes([len(OID_P384)]) + OID_P384 + mpi(self.priv.public_key().public_bytes(*POINT))
             self.pub = self.priv.public_key()
         else:
-            self.priv = ed25519.Ed25519PrivateKey.generate()
+            self.priv = ed25519_key()
             raw = self.priv.public_key().public_bytes(serialization.Encoding.Raw, serialization.PublicFormat.Raw)
             self.body = b"\x04" + struct.pack(">I", created) + b"\x16" + bytes([len(OID_ED25519)]) + OID_ED25519 + mpi(b"\x40" + raw)
             self.pub = self.priv.public_key()
@@ -312,7 +422,7 @@ class PgpKey:
 
     def sign_digest(self, d):   # returns the two MPIs of a signature
         if self.alg == 19:
-            r, s = decode_dss_signature(self.priv.sign(d, ec.ECDSA(Prehashed(hashes.SHA384()))))
+            r, s = decode_dss_signature(self.priv.sign(d, ecdsa(Prehashed(hashes.SHA384()))))
             return mpi(r.to_bytes(48, "big")) + mpi(s.to_bytes(48, "big"))
         sg = self.priv.sign(d)
         return mpi(sg[:32]) + mpi(sg[32:])
@@ -462,7 +572,7 @@ cases.append({"id": "x509-software-declined", "type": "x509-intermediate", "conf
 
 k = ec384(); c = make_csr(k)
 x509_case("x509-csr-bad-signature", key=k, csr=c, csr_der=tamper_csr(c), cfg="development", store="software", reason="possession-invalid")
-x509_case("x509-p256", key=ec.generate_private_key(ec.SECP256R1()), cfg="development", store="software", reason="algorithm-unsupported")
+x509_case("x509-p256", key=ec256(), cfg="development", store="software", reason="algorithm-unsupported")
 x509_case("x509-version-2", version=2, reason="version-unsupported")
 k = ec384(); c = make_csr(k); other = make_csr(ec384(), cn="another request")
 x509_case("x509-request-mismatch", key=k, csr=c, digest_of=other.public_bytes(DER), reason="request-mismatch")
@@ -584,7 +694,7 @@ class SshKey:
     def __init__(self, alg="ecdsa-sha2-nistp384"):
         self.alg = alg
         if alg == "ssh-ed25519":
-            self.priv = ed25519.Ed25519PrivateKey.generate()
+            self.priv = ed25519_key()
             raw = self.priv.public_key().public_bytes(serialization.Encoding.Raw, serialization.PublicFormat.Raw)
             self.blob = sshstr(b"ssh-ed25519") + sshstr(raw)
         else:
@@ -598,7 +708,7 @@ class SshKey:
     def signature(self, data):
         if self.alg == "ssh-ed25519":
             return sshstr(b"ssh-ed25519") + sshstr(self.priv.sign(data))
-        r, s_ = decode_dss_signature(self.priv.sign(data, ec.ECDSA(hashes.SHA384())))
+        r, s_ = decode_dss_signature(self.priv.sign(data, ecdsa(hashes.SHA384())))
         return sshstr(self.alg.encode()) + sshstr(sshstr(sshmpint(r)) + sshstr(sshmpint(s_)))
 
 
@@ -723,6 +833,7 @@ print("cases:", len(cases), "responses:", len(responses))
 
 
 # ================================================================ root list and CA bundle vectors, version 1
+_stream[:] = ["root-list", 0]
 # The same roots A, B and Z as above. The hand-off answers carry trust sequence 7, and the list `seq7-a` is the
 # root list of that trust set: a requester that holds it can install them.
 def canonical(obj):
@@ -750,43 +861,88 @@ def entry(lbl):
 
 def jws(signer, payload, typ="root-list+json"):
     """A detached JWS (RFC 7515, appendix F) in compact form: header..signature. ES384 over the payload's bytes."""
+    h, sig = jws_parts(signer, payload, typ)
+    return h + ".." + sig
+
+
+def jws_parts(signer, payload, typ):
+    """The protected header and the signature, both Base64url, of one ES384 signature by a root's X.509 key."""
     key, cert, _ = ROOTS[signer]
     header = canonical({"alg": "ES384", "kid": spki_hex(signer), "typ": typ, "x5c": [b64(cert.public_bytes(DER))]})
     signing_input = (b64u(header) + "." + b64u(payload)).encode()
-    r, s_ = decode_dss_signature(key.sign(signing_input, ec.ECDSA(hashes.SHA384())))
-    return b64u(header) + ".." + b64u(r.to_bytes(48, "big") + s_.to_bytes(48, "big"))
+    r, s_ = decode_dss_signature(key.sign(signing_input, ecdsa(hashes.SHA384())))
+    return b64u(header), b64u(r.to_bytes(48, "big") + s_.to_bytes(48, "big"))
+
+
+def jws_general(signers, payload, typ="root-list+json"):
+    """A detached JWS in the general JSON serialisation (RFC 7515, section 7.2.1, without the payload member): one
+    signature for each signer, in label order, in canonical form."""
+    sigs = []
+    for lbl in sorted(signers):
+        h, sg = jws_parts(lbl, payload, typ)
+        sigs.append({"protected": h, "signature": sg})
+    return canonical({"signatures": sigs})
+
+
+def removal_authorisation(lbl):
+    """A root's removal authorisation, made at its birth: a compact JWS with the payload attached, signed by the root's
+    X.509 key over its own pin, typ root-removal+json, with no sequence and no expiry."""
+    payload = canonical({"version": 1, "x509_spki_sha256": spki_hex(lbl)})
+    h, sg = jws_parts(lbl, payload, "root-removal+json")
+    return f"{h}.{b64u(payload)}.{sg}"
 
 
 RECORDS = {n: sha(f"example ceremony record {n}\n".encode()) for n in range(1, 10)}   # made-up record digests
 lists = []
 
 
-def root_list(stem, signer, sequence, roots, signed_at, version=1, last_record=True, extra=None, tamper=None):
+def removal_entry(lbl, authorisation=None):
+    return {"label": lbl, "x509_spki_sha256": spki_hex(lbl), "authorisation": authorisation or removal_authorisation(lbl)}
+
+
+def root_list(stem, signers, sequence, roots, signed_at, version=1, last_record=True, extra=None, tamper=None, removals=()):
     doc = {"version": version, "sequence": sequence, "signed_at": ts(signed_at), "expires_at": ts(months13(signed_at)),
            "roots": [entry(r) for r in roots]}
     if last_record:
         doc["last_record_sha256"] = RECORDS[sequence - 1]
+    if removals:
+        doc["removals"] = list(removals)
     if extra:
         doc.update(extra)
     payload = canonical(doc)
-    sig = jws(signer, payload)
+    sig = jws_general(signers, payload)
     if tamper:
         payload = canonical(tamper(doc))
     w(f"lists/{stem}.json", payload, RL_OUT)
     w(f"lists/{stem}.jws", sig, RL_OUT)
-    lists.append({"id": stem, "signer": signer, "files": [f"lists/{stem}.json", f"lists/{stem}.jws"]})
+    lists.append({"id": stem, "signers": sorted(signers), "files": [f"lists/{stem}.json", f"lists/{stem}.jws"]})
 
+
+# A fourth test root, C, that a list adds; on the root list vectors only.
+ROOT_C_KEY, ROOT_C = ritueel_root("C")
+PRIM_C = PgpKey(T_PRIMARY)
+ROOTS["C"] = (ROOT_C_KEY, ROOT_C, PRIM_C)
+PRIMARY_CERTS["C"] = primary_cert(PRIM_C, b"Example Test Release Root C (TEST ONLY) <release@example.org>")
 
 T_INIT, T_SEQ6, T_SEQ8, T_SEQ9 = T_ROOTS, dt.datetime(2026, 6, 1, 12, tzinfo=UTC), dt.datetime(2026, 12, 1, 12, tzinfo=UTC), dt.datetime(2026, 12, 2, 12, tzinfo=UTC)
 root_list("init-a", "A", 1, "AB", T_INIT, last_record=False)            # the first list, made by `init`: no record before it
 root_list("seq6-b", "B", 6, "AB", T_SEQ6)
 root_list("seq7-a", "A", 7, "AB", CLOCK)                                # the trust set of the hand-off answers
 root_list("seq7-b", "B", 7, "AB", CLOCK)
-root_list("seq8-b-without-a", "B", 8, "B", T_SEQ8)                      # root A revoked: signed by the surviving root
+root_list("seq8-b-without-a", "B", 8, "B", T_SEQ8, removals=[removal_entry("A")])   # root A revoked: B signs, A's stored authorisation
+root_list("seq8-ab-without-a", "AB", 8, "B", T_SEQ8)                    # root A retired: both roots sign
+root_list("seq8-abc", "ABC", 8, "ABC", T_SEQ8)                          # root C added: every current root and C sign
 root_list("seq9-a", "A", 9, "AB", T_SEQ9)                               # signed by the revoked root
 root_list("seq8-z", "Z", 8, "AB", T_SEQ8)                               # signed by a root on no list
+root_list("seq8-a-and-z", "AZ", 8, "AB", T_SEQ8)                        # a second signature, by a root on no list
 root_list("seq8-a-version-2", "A", 8, "AB", T_SEQ8, version=2)
 root_list("seq8-a-unknown-member", "A", 8, "AB", T_SEQ8, extra={"comment": "not a member of version 1"})
+root_list("seq8-a-without-b", "A", 8, "A", T_SEQ8)                      # a change of the root set with one signature
+root_list("seq8-b-without-a-no-removal", "B", 8, "B", T_SEQ8)           # A neither signs nor has its authorisation attached
+root_list("seq8-b-without-a-wrong-removal", "B", 8, "B", T_SEQ8,        # A's entry carries B's authorisation, not A's
+          removals=[removal_entry("A", removal_authorisation("B"))])
+root_list("seq8-abc-not-signed-by-c", "AB", 8, "ABC", T_SEQ8)           # the added root does not sign
+root_list("seq8-abc-by-a-and-c", "AC", 8, "ABC", T_SEQ8)                # a current root does not sign
 
 
 def swap_b_for_z(doc):
@@ -797,6 +953,13 @@ def swap_b_for_z(doc):
 
 root_list("seq7-a-tampered", "A", 7, "AB", CLOCK, tamper=swap_b_for_z)   # root B replaced by Z after signing
 root_list("seq7-a-without-b", "A", 7, "A", CLOCK)                      # a second, different list at sequence 7
+
+# the removal authorisations as the holder stores them, one file for each root
+removal_files = []
+for lbl in "ABC":
+    path = f"removals/test-root-{lbl.lower()}.removal.jws"
+    w(path, removal_authorisation(lbl), RL_OUT)
+    removal_files.append({"label": lbl, "file": path})
 
 rl_cases = []
 
@@ -818,11 +981,19 @@ rl_case("first-list-from-init", None, "init-a", "accept")
 rl_case("update", "seq6-b", "seq7-a", "accept")
 rl_case("update-by-the-other-root", "init-a", "seq7-b", "accept")
 rl_case("revoke-a-root", "seq7-a", "seq8-b-without-a", "accept", clock=T_SEQ8)
+rl_case("retire-a-root", "seq7-a", "seq8-ab-without-a", "accept", clock=T_SEQ8)
+rl_case("add-a-root", "seq7-a", "seq8-abc", "accept", clock=T_SEQ8)
 rl_case("same-list-again", "seq7-a", "seq7-a", "accept")
 rl_case("rollback", "seq7-a", "seq6-b", "refuse", "rollback")
 rl_case("same-sequence-different-content", "seq7-a", "seq7-a-without-b", "refuse", "sequence-conflict")
 rl_case("signed-by-a-revoked-root", "seq8-b-without-a", "seq9-a", "refuse", "unknown-signer", clock=T_SEQ9)
 rl_case("unknown-signer", "seq7-a", "seq8-z", "refuse", "unknown-signer", clock=T_SEQ8)
+rl_case("a-second-signer-on-no-list", "seq7-a", "seq8-a-and-z", "refuse", "unknown-signer", clock=T_SEQ8)
+rl_case("set-change-with-one-signature", "seq7-a", "seq8-a-without-b", "refuse", "insufficient-signers", clock=T_SEQ8)
+rl_case("removal-without-authorisation", "seq7-a", "seq8-b-without-a-no-removal", "refuse", "insufficient-signers", clock=T_SEQ8)
+rl_case("removal-with-another-roots-authorisation", "seq7-a", "seq8-b-without-a-wrong-removal", "refuse", "removal-invalid", clock=T_SEQ8)
+rl_case("addition-not-signed-by-the-new-root", "seq7-a", "seq8-abc-not-signed-by-c", "refuse", "insufficient-signers", clock=T_SEQ8)
+rl_case("addition-without-every-current-root", "seq7-a", "seq8-abc-by-a-and-c", "refuse", "insufficient-signers", clock=T_SEQ8)
 rl_case("tampered", "seq6-b", "seq7-a-tampered", "refuse", "signature-invalid")
 rl_case("expired", "init-a", "seq6-b", "refuse", "expired", clock=dt.datetime(2027, 8, 1, tzinfo=UTC))
 rl_case("version-2", "seq7-a", "seq8-a-version-2", "refuse", "version-unsupported", clock=T_SEQ8)
@@ -843,15 +1014,16 @@ def ca_bundle(sequence, roots):
 ca_bundle(7, "AB")
 ca_bundle(8, "B")
 
-for lbl in "ABZ":
+for lbl in "ABCZ":
     w(f"pki/test-root-{lbl.lower()}.pem", ROOTS[lbl][1].public_bytes(PEM), RL_OUT)
     w(f"pki/test-primary-{lbl.lower()}.pgp", PRIMARY_CERTS[lbl], RL_OUT)
 wj("manifest.json", {
     "root_list": 1,
     "clock": ts(CLOCK),
     "roots": [{"label": lbl, "certificate": f"pki/test-root-{lbl.lower()}.pem", "openpgp": f"pki/test-primary-{lbl.lower()}.pgp",
-               "x509_spki_sha256": spki_hex(lbl), "openpgp_fingerprint": ROOTS[lbl][2].fpr.hex()} for lbl in "ABZ"],
+               "x509_spki_sha256": spki_hex(lbl), "openpgp_fingerprint": ROOTS[lbl][2].fpr.hex()} for lbl in "ABCZ"],
     "initial_pins": ["A", "B"],
+    "removals": removal_files,
     "lists": lists,
     "cases": rl_cases,
     "bundles": bundles,
@@ -860,6 +1032,7 @@ print("root lists:", len(lists), "cases:", len(rl_cases), "bundles:", len(bundle
 
 
 # ================================================================ SSH CA key list vectors, version 1
+_stream[:] = ["ssh-ca-keys", 0]
 # The list at trust sequence 7 holds the keys of the accepted ssh-ca-key requests above, the key of the answer vectors,
 # and a break-glass SSH CA for each of the roots A and B. The hand-off answers of type ssh-ca-key name these lists.
 BREAK_GLASS = {lbl: SshKey() for lbl in "AB"}
@@ -988,6 +1161,7 @@ print("ssh ca key lists:", len(ssh_lists), "cases:", len(ssh_cases))
 
 
 # ================================================================ CRL vectors, version 1
+_stream[:] = ["crl", 0]
 # One CRL for each root, signed by that root. The CRL number is the trust sequence at which the root signed it: root A
 # signed at sequence 7, root B at sequence 6, and B's CRL is still current because a CRL is valid for 25 months.
 def crl_cert(root_lbl):
@@ -1015,7 +1189,7 @@ def crl(stem, signer, number, this, revoked=(), nxt=None, hash_=None, critical_e
                                       .add_extension(x509.CRLReason(x509.ReasonFlags.key_compromise), critical=False).build())
     if critical_ext:
         b = b.add_extension(x509.UnrecognizedExtension(ObjectIdentifier("1.3.6.1.4.1.99999.1"), b"\x05\x00"), critical=True)
-    der = b.sign(key, hash_ or hashes.SHA384()).public_bytes(DER)
+    der = sign_builder(b, key, hash_ or hashes.SHA384()).public_bytes(DER)
     if tamper:
         der = tamper(der)
     pem = ("-----BEGIN X509 CRL-----\n" + "".join(b64(der)[i:i + 64] + "\n" for i in range(0, len(b64(der)), 64)) + "-----END X509 CRL-----\n")

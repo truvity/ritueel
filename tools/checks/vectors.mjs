@@ -108,13 +108,20 @@ r.finish(manifests.length && files, 'vector files');
 
 // A root list set:
 //   - every file it names (each root's `certificate` and `openpgp`, each list's `files`, each
-//     bundle's `file`) is tracked, and every tracked file under v<N>/ is named, as above;
+//     removal authorisation's `file`, each bundle's `file`) is tracked, and every tracked file under
+//     v<N>/ is named, as above;
 //   - each root's `x509_spki_sha256` is the SHA-256 of its certificate's SubjectPublicKeyInfo, and
 //     its `openpgp_fingerprint` the v4 fingerprint of the first packet of its OpenPGP file;
-//   - each list is a `.json` and a `.jws`: the JWS header has `alg` ES384, `typ` root-list+json and a
-//     `kid` that is the SPKI hash of its `x5c` certificate and of the root named as `signer`;
-//   - the signature verifies over the `.json` bytes, except for a list that a case refuses with
-//     `signature-invalid`, whose signature must not verify;
+//   - each list is a `.json` and a `.jws`: the JWS is in the general JSON serialisation with no
+//     payload, one signature for each root in the list's `signers`, in that order; each protected
+//     header has `alg` ES384, `typ` root-list+json and a `kid` that is the SPKI hash of its `x5c`
+//     certificate and of that signer;
+//   - every signature verifies over the `.json` bytes, except for a list that a case refuses with
+//     `signature-invalid`, where one must not verify;
+//   - every removal authorisation, in a file or in a list's `removals`, is a compact JWS with `typ`
+//     root-removal+json whose `kid`, `x5c` key and payload pin are those of the root it names, and
+//     whose signature verifies; except in a list that a case refuses with `removal-invalid`, where
+//     one must not be;
 //   - case ids are unique, `held` and `candidate` name lists (or are null), a refused case has a
 //     `reason`, a warned one a `warning`, an accepted one neither;
 //   - each bundle starts with `# trust-sequence: N` for its `sequence`, and holds the certificates of
@@ -135,6 +142,19 @@ function checkRootList(mpath, m, read, need) {
   for (const label of m.initial_pins ?? []) if (!roots.has(label)) E(`${mpath}: initial pin ${label} is no root`);
   const cases = m.cases ?? [];
   const badSig = new Set(cases.filter((c) => c.reason === 'signature-invalid').map((c) => c.candidate));
+  const badRemoval = new Set(cases.filter((c) => c.reason === 'removal-invalid').map((c) => c.candidate));
+  const es384 = (input, cert, sig) => verify('sha384', Buffer.from(input, 'ascii'),
+    { key: createPublicKey(cert.publicKey.export({ type: 'spki', format: 'pem' })), dsaEncoding: 'ieee-p1363' }, b64u(sig));
+  // A removal authorisation: a compact JWS with the payload attached, by the root whose pin it names.
+  const removalValid = (text, pin) => {
+    const [h, p, s] = String(text ?? '').split('.');
+    if (!h || !p || !s) return false;
+    const header = JSON.parse(b64u(h).toString('utf8'));
+    const cert = new X509Certificate(Buffer.from(header.x5c?.[0] ?? '', 'base64'));
+    const payload = JSON.parse(b64u(p).toString('utf8'));
+    return header.alg === 'ES384' && header.typ === 'root-removal+json' && header.kid === pin && spkiHash(cert) === pin
+      && payload.version === 1 && payload.x509_spki_sha256 === pin && es384(`${h}.${p}`, cert, s);
+  };
   const lists = new Set();
   for (const l of m.lists ?? []) {
     if (lists.has(l.id)) E(`${mpath}: list id ${l.id} is used twice`);
@@ -145,17 +165,31 @@ function checkRootList(mpath, m, read, need) {
     if (!json || !sig) { E(`${mpath}: list ${l.id} needs a .json and a .jws file`); continue; }
     if (!tracked.has(`${dirname(mpath)}/${json}`) || !tracked.has(`${dirname(mpath)}/${sig}`)) continue;
     try {
-      const [h, middle, s] = read(sig).toString('ascii').split('.');
-      if (middle !== '' || !s) throw new Error('not a detached compact JWS');
-      const header = JSON.parse(b64u(h).toString('utf8'));
-      const cert = new X509Certificate(Buffer.from(header.x5c?.[0] ?? '', 'base64'));
-      if (header.alg !== 'ES384' || header.typ !== 'root-list+json') E(`${mpath}: list ${l.id}: the header is not alg ES384, typ root-list+json`);
-      if (header.kid !== spkiHash(cert)) E(`${mpath}: list ${l.id}: kid is not the SPKI hash of the x5c certificate`);
-      if (header.kid !== roots.get(l.signer)?.x509_spki_sha256) E(`${mpath}: list ${l.id}: kid is not the key of its signer ${l.signer}`);
-      const input = Buffer.from(`${h}.${read(json).toString('base64url')}`, 'ascii');
-      const ok = verify('sha384', input, { key: createPublicKey(cert.publicKey.export({ type: 'spki', format: 'pem' })), dsaEncoding: 'ieee-p1363' }, b64u(s));
-      if (ok === badSig.has(l.id)) E(`${mpath}: list ${l.id}: the signature ${ok ? 'verifies, but a case expects signature-invalid' : 'does not verify'}`);
+      const jws = JSON.parse(read(sig).toString('utf8'));
+      if (Object.keys(jws).join() !== 'signatures' || !Array.isArray(jws.signatures)) throw new Error('not a general JSON JWS with only a signatures member');
+      const signers = l.signers ?? [];
+      if (jws.signatures.length !== signers.length) E(`${mpath}: list ${l.id}: ${jws.signatures.length} signatures, but the manifest names ${signers.length} signers`);
+      let allOk = true;
+      jws.signatures.forEach((entry, i) => {
+        const header = JSON.parse(b64u(entry.protected).toString('utf8'));
+        const cert = new X509Certificate(Buffer.from(header.x5c?.[0] ?? '', 'base64'));
+        if (header.alg !== 'ES384' || header.typ !== 'root-list+json') E(`${mpath}: list ${l.id}: a header is not alg ES384, typ root-list+json`);
+        if (header.kid !== spkiHash(cert)) E(`${mpath}: list ${l.id}: kid is not the SPKI hash of the x5c certificate`);
+        if (header.kid !== roots.get(signers[i])?.x509_spki_sha256) E(`${mpath}: list ${l.id}: signature ${i + 1} is not by its signer ${signers[i]}`);
+        allOk &&= es384(`${entry.protected}.${read(json).toString('base64url')}`, cert, entry.signature);
+      });
+      if (allOk === badSig.has(l.id)) E(`${mpath}: list ${l.id}: the signature ${allOk ? 'verifies, but a case expects signature-invalid' : 'does not verify'}`);
+      const doc = JSON.parse(read(json).toString('utf8'));
+      const removalsOk = (doc.removals ?? []).every((rm) => removalValid(rm.authorisation, rm.x509_spki_sha256));
+      if (removalsOk === badRemoval.has(l.id)) E(`${mpath}: list ${l.id}: the removal authorisations ${removalsOk ? 'are valid, but a case expects removal-invalid' : 'are not valid'}`);
     } catch (e) { E(`${mpath}: list ${l.id}: ${e.message}`); }
+  }
+  for (const rm of m.removals ?? []) {
+    need(rm.file, `removal ${rm.label}`);
+    if (!tracked.has(`${dirname(mpath)}/${rm.file}`)) continue;
+    try {
+      if (!removalValid(read(rm.file).toString('ascii'), roots.get(rm.label)?.x509_spki_sha256)) E(`${mpath}: removal ${rm.label}: not a valid removal authorisation of root ${rm.label}`);
+    } catch (e) { E(`${mpath}: removal ${rm.label}: ${e.message}`); }
   }
   const ids = new Set();
   for (const c of cases) {

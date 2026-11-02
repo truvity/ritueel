@@ -1,17 +1,17 @@
 {
   "handoff": 1,
   "type": "openpgp-subkey",
-  "request_sha256": "42822220ceadc37b608560baf32ae6774879618add58e573244040f159d3f601",
+  "request_sha256": "0f2a11888dc05726dfd1b9e39c9cef21a00dfc364800fd29d045a9f3f7ccacca",
   "store": "aws-kms",
   "primaries": [
-    "c3e47d2685915679d6c61db81f4fb446bce77037",
-    "1bb0719363cf496908f181309d4b9dde214b867b"
+    "d4e03a4b42528f614f298766fc70e10c1d0c0ec7",
+    "1de9b70a529d1fefc19baf71b2d0718b32aed4f4"
   ],
   "capabilities": [
     "sign"
   ],
   "evidence": {
     "key_arn": "arn:aws:kms:eu-west-1:123456789012:key/11111111-2222-3333-4444-555555555555",
-    "public_key": "MHYwEAYHKoZIzj0CAQYFK4EEACIDYgAE81ubFKzGyOyy35ErYa6Ua9yhgqCp8NuNMS5rPiwapNJwDrnrqOkkJTdOKxCytLbHyTJnMrAiXXEXNqN2C1LFVQUl8IkzSp2kgiq9RDLfkWtAadaSyNvubvNft+Ay+F1T"
+    "public_key": "MHYwEAYHKoZIzj0CAQYFK4EEACIDYgAEvwrL2LRFOkEdC8xykxR80oa3JXWKVHsR0PL355vLJExlQP7u4vl/jNbfquSoMt4QOVoZvN1lad/HJI7xlCXjjkVS6eCPpJnfrGATWd1vuiIE33i2zBM9KTZles+wCALi"
   }
 }

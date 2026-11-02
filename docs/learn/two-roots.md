@@ -43,3 +43,5 @@ The effects below appear during an overlap and whenever a cross-certificate exis
 ## The limit you accept
 
 Whoever holds one root card and its PIN can sign things that outsiders trust, until that root is revoked and the update reaches them ([the accepted limit](/decisions/0002-key-custody-every-key-is-born-in-its-store-two-root-cards-or-one-kms-root-and-a-replica/#the-accepted-limit)). Standard tools cannot require two roots to agree. Do not describe the second card as a spare, and do not describe the custody as two-person control.
+
+ritueel's own signed root list is the one place where the roots do agree. Renewing the list with the same roots needs one root, as every yearly ceremony does. Changing the root set requires every current root, or a root's stored removal authorisation: each root signs consent to its own removal when it is born, and that file is kept with its revocation signature, so a lost card can still leave the set ([the root list](/reference/root-list/#who-signs)).

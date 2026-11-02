@@ -19,7 +19,7 @@ A transition has four verbs, and a fifth for emergencies.
 | **Vouch** | Let the old root vouch for the new one. For X.509 the old root issues a *cross-certificate* for the new root's key. For OpenPGP the old primary *certifies* the new primary. Now a client that trusts only the old root can still validate things signed under the new one. |
 | **Overlap** | Run both. New intermediates are issued under the new root, while the old root stays trusted. Outsiders receive a bundle or keyring that holds both. |
 | **Supersede** | Once every client has had time to learn the new root, publish a bundle or keyring without the old one. The old root is retired: no new intermediates, and it is removed from what you ship. |
-| **Revoke** | The emergency exit. The old root is declared untrustworthy now. For OpenPGP this is a *revocation signature*, plus a keyring without the old key, because some verifiers ignore the signature; for X.509, a signed root list without the old root, signed by a surviving root. |
+| **Revoke** | The emergency exit. The old root is declared untrustworthy now. For OpenPGP this is a *revocation signature*, plus a keyring without the old key, because some verifiers ignore the signature; for X.509, a signed root list without the old root, signed by the surviving roots and carrying the old root's removal authorisation, made when it was born. |
 
 A transition, as it looks to an outsider:
 

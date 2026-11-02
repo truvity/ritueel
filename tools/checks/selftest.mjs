@@ -213,6 +213,8 @@ expect('a root list set that matches its manifest', 'vectors', rl, 'pass', { has
 expect('a root list changed after signing', 'vectors', rlWith('lists/seq7-a.json', (t) => t.replace('"sequence":7', '"sequence":8')), 'fail', { has: ['list seq7-a: the signature does not verify'] });
 expect('a CA bundle with another trust sequence', 'vectors', rlWith('bundles/ca-bundle-7.pem', (t) => t.replace('trust-sequence: 7', 'trust-sequence: 6')), 'fail', { has: ['bundle ca-bundle-7: the first line'] });
 expect('a root pin that is not the certificate\'s key', 'vectors', rlWith('manifest.json', (t) => t.replace(/"x509_spki_sha256": "[0-9a-f]{64}"/, `"x509_spki_sha256": "${hex('other')}"`)), 'fail', { has: ['root A: x509_spki_sha256 is not the SPKI hash'] });
+expect('a removal authorisation by another root', 'vectors', rlWith('removals/test-root-a.removal.jws', () => rl['testdata/set/v1/removals/test-root-b.removal.jws'].toString('utf8')), 'fail', { has: ['removal A: not a valid removal authorisation of root A'] });
+expect('a list whose signers are not the manifest\'s', 'vectors', rlWith('manifest.json', (t) => t.replace('"signers": [\n        "A",\n        "B",\n        "C"\n      ]', '"signers": [\n        "A",\n        "C",\n        "B"\n      ]')), 'fail', { has: ['list seq8-abc: signature 2 is not by its signer C'] });
 
 // ---- SSH CA key list and CRL vectors: the committed sets, copied, then broken one way at a time
 const copyOf = (set) => {
@@ -221,6 +223,9 @@ const copyOf = (set) => {
     .map((p) => [`testdata/set/v1/${p}`, readFileSync(join(dir, p))]));
 };
 const edited = (set, path, edit) => ({ ...set, [`testdata/set/v1/${path}`]: edit(set[`testdata/set/v1/${path}`].toString('utf8')) });
+// the hand-off set names lists of the SSH CA key list set, so that set comes along under its own name
+const handoff = { ...copyOf('hand-off'), ...Object.fromEntries(Object.entries(copyOf('ssh-ca-keys')).map(([p, v]) => [p.replace('testdata/set/', 'testdata/ssh-ca-keys/'), v])) };
+expect('a hand-off set that matches its manifest', 'vectors', handoff, 'pass', { has: ['vector files, no errors'] });
 const ssh = copyOf('ssh-ca-keys');
 expect('an SSH CA key list set that matches its manifest', 'vectors', ssh, 'pass', { has: ['vector files, no errors'] });
 expect('an SSH CA key list changed after signing', 'vectors', edited(ssh, 'lists/seq7-a.json', (t) => t.replace('"sequence":7', '"sequence":8')), 'fail', { has: ['list seq7-a: the signature does not verify'] });

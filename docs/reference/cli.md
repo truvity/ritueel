@@ -11,15 +11,15 @@ sidebar:
 
 | Command | Does | Needs a person |
 |---|---|---|
-| `ritueel init` | Creates the directory, the roots (`--roots N`, default 2, both cards present) with their attestations and their revocation signatures (one for each of two reasons), and the first trust products. | Yes |
+| `ritueel init` | Creates the directory, the roots (`--roots N`, default 2, both cards present) with their attestations, their revocation signatures (one for each of two reasons) and their removal authorisations, and the first trust products. | Yes |
 | `ritueel yearly` | The yearly ceremony: renews every registered intermediate by re-signing, with the root of the year, extends that root, and publishes the next trust sequence. | Yes |
 | `ritueel intermediate add NAME --request STEM` | Registers an intermediate and certifies its first request. | Yes |
 | `ritueel intermediate replace NAME` | The event path: certifies a new key for a registered intermediate. `--revoke` also revokes the old one, with a reason. | Yes |
 | `ritueel intermediate revoke NAME` | Revokes the certificate and subkey binding of an intermediate, or withdraws its SSH CA key, with a reason (`--reason compromise`, `superseded` or `cessation`), without a replacement. It lists the intermediate's unexpired certificates on the [CRL](/reference/crl/) of each root that issued them, so it needs those roots' cards. | Yes |
-| `ritueel root add --store S [--replaces LABEL --overlap-until DATE \| --target N]` | Creates a new root in a store and has an existing root vouch for it. With `--replaces`, this starts an overlap that ends on the day given ([root transitions](/reference/transitions/#the-commands)). | Yes |
-| `ritueel root retire LABEL` | Ends an overlap: removes the root from the next trust products, after the checks of [root transitions](/reference/transitions/#root-retire). | Yes |
-| `ritueel root revoke LABEL --reason REASON --revocation FILE` | Revokes a lost, stolen or compromised root with its stored revocation signature, and builds the trust products without it. | Yes |
-| `ritueel revocation make`, `revocation check` | Make one more revocation signature while the primary exists, and check a stored one without printing it ([revocation material](/reference/revocation-material/#making-one-later-and-checking-one)). | `make` only |
+| `ritueel root add --store S [--replaces LABEL --overlap-until DATE \| --target N]` | Creates a new root in a store and has an existing root vouch for it; every active root and the new one sign the next root list. With `--replaces`, this starts an overlap that ends on the day given ([root transitions](/reference/transitions/#the-commands)). | Yes |
+| `ritueel root retire LABEL` | Ends an overlap: removes the root from the next trust products, after the checks of [root transitions](/reference/transitions/#root-retire). Every active root signs. | Yes |
+| `ritueel root revoke LABEL --reason REASON --revocation FILE [--removal FILE]` | Revokes a lost, stolen or compromised root with its stored revocation signature, and builds the trust products without it; the other roots sign, and the root's stored removal authorisation stands in for its signature. | Yes |
+| `ritueel revocation make`, `revocation check` | Make one more revocation signature, or the removal authorisation again, while the root's key exists, and check a stored one without printing it ([revocation material](/reference/revocation-material/#making-one-later-and-checking-one)). | `make` only |
 | `ritueel drill restore` | The restore check on a clean machine: the records, the roots against their holders, the revocation signatures. It signs nothing ([drills](/reference/drill/#the-restore-check)). | No |
 | `ritueel status` | Lists roots, intermediates, the root list and unresolved attempts, with what expires when. | No |
 | `ritueel handoff check STEM` | Runs every check of the [hand-off contract](/reference/hand-off-contract/) on the request `STEM`, and signs nothing. | No |

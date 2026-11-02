@@ -38,7 +38,7 @@ The goal is a key-service experience without trusting software with a key: every
 ### Revocation readiness
 
 - **A revocation signature for each OpenPGP primary, one for each of two reasons (`compromised` and `superseded`), is made when it is born** and stored apart from its card ([RFC 9580](https://datatracker.ietf.org/doc/html/rfc9580), section 13.9; the reasons and the places are in [0010](/decisions/0010-readiness-is-made-at-birth-and-proved-by-a-drill/)). There is no designated revoker: section 5.2.3.23 deprecates the Revocation Key subpacket and says applications must not generate it.
-- **An X.509 root is revoked by a root list signed by the surviving root,** and new trust products without it ([0005](/decisions/0005-trust-products-the-root-list-the-ca-bundle-the-ssh-ca-key-list-and-the-trust-sequence/)).
+- **An X.509 root is revoked by a root list without it,** signed by the surviving roots and carrying its removal authorisation made at birth, and new trust products without it ([0005](/decisions/0005-trust-products-the-root-list-the-ca-bundle-the-ssh-ca-key-list-and-the-trust-sequence/#the-signed-root-list)).
 - **A stolen intermediate is a small event:** revoke it and certify a new key with the root of the year.
 
 ### The accepted limit

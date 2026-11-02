@@ -12,7 +12,7 @@ sidebar:
 A revocation made after a key is lost cannot be made at all, and one made in a hurry is made on the worst day of the year. So the material is prepared when the key is born:
 
 - **OpenPGP: a revocation certificate** for the master key, made at creation and stored apart from the card, in at least two places. With it the master key can be revoked even if its card and PIN are gone.
-- **X.509: the means to publish a list that leaves the key out.** An intermediate is revoked by a *certificate revocation list* (CRL) signed by the root that issued it. A root is revoked by a root list signed by a surviving root, and a CA bundle without it.
+- **X.509: the means to publish a list that leaves the key out.** An intermediate is revoked by a *certificate revocation list* (CRL) signed by the root that issued it. A root is revoked by a root list without it, signed by the surviving roots with the revoked root's removal authorisation attached, and a CA bundle without it.
 
 ## Reasons matter
 
