@@ -16,7 +16,10 @@
 //   - for a request the manifest expects accepted, `request_sha256` in its proof is the digest of
 //     its request (the DER of a CSR, or the bytes of a subkey file);
 //   - every artifact a `result.json` lists is a file of that response, with that SHA-256;
-//   - a response with `ssh_ca_key_list` names a list of the SSH CA key list set.
+//   - a response with `ssh_ca_key_list` names a list of the SSH CA key list set;
+//   - a floor response (`floor` true) is a certificate and nothing else, with no result file; when it
+//     is installed, its key is the key of its request's CSR and it is signed by an anchor of
+//     `pinned.floor_anchors`.
 //
 // usage: tools/checks/vectors.mjs [repo-root]
 import { X509Certificate, createHash, createPublicKey, verify } from 'node:crypto';
@@ -66,9 +69,11 @@ for (const mpath of manifests) {
   } else {
     for (const p of paths(m.pinned ?? {})) need(p, 'pinned');
     const ids = new Set();
+    const requestFiles = new Map();
     for (const c of m.requests ?? []) {
       if (ids.has(c.id)) E(`${mpath}: request id ${c.id} is used twice`);
       ids.add(c.id);
+      requestFiles.set(c.id, c.files ?? []);
       for (const p of c.files ?? []) need(p, `request ${c.id}`);
       if (c.kms_stub) need(c.kms_stub, `request ${c.id}`);
       if ((c.expect === 'refuse') !== Boolean(c.reason)) E(`${mpath}: request ${c.id} expects ${c.expect} ${c.reason ? 'with' : 'without'} a reason`);
@@ -88,6 +93,7 @@ for (const mpath of manifests) {
       for (const p of s.files ?? []) need(p, `response ${s.id}`);
       if ((s.expect === 'refuse') !== Boolean(s.reason)) E(`${mpath}: response ${s.id} expects ${s.expect} ${s.reason ? 'with' : 'without'} a reason`);
       if (s.ssh_ca_key_list !== undefined && !sshLists().has(s.ssh_ca_key_list)) E(`${mpath}: response ${s.id}: ssh_ca_key_list ${s.ssh_ca_key_list} is no list of the SSH CA key list set`);
+      if (s.floor) checkFloor(mpath, m, s, read, requestFiles.get(s.request) ?? []);
       const result = (s.files ?? []).find((p) => p.endsWith('.result.json'));
       if (!result || !tracked.has(`${dir}/${result}`)) continue;
       for (const a of JSON.parse(read(result)).artifacts ?? []) {
@@ -105,6 +111,25 @@ for (const mpath of manifests) {
   }
 }
 r.finish(manifests.length && files, 'vector files');
+
+// A floor answer: the certificate alone. The anchors are the CA certificates the operator installed.
+function checkFloor(mpath, m, s, read, reqFiles) {
+  const files = s.files ?? [];
+  if (files.length !== 1 || !files[0].endsWith('.cert.pem')) { E(`${mpath}: floor response ${s.id}: not a single .cert.pem file`); return; }
+  if (s.expect !== 'install') return;
+  const csr = reqFiles.find((p) => p.endsWith('.csr.pem'));
+  if (!csr) { E(`${mpath}: floor response ${s.id}: its request has no CSR`); return; }
+  try {
+    const cert = new X509Certificate(read(files[0]));
+    const csrDer = der(read(csr));
+    const info = children(csrDer, tlv(csrDer, 0))[0];
+    const spki = children(csrDer, info)[2];
+    const csrKey = sha(csrDer.subarray(spki.start, spki.end));
+    if (sha(cert.publicKey.export({ type: 'spki', format: 'der' })) !== csrKey) E(`${mpath}: floor response ${s.id}: the key is not the key of ${csr}`);
+    const anchors = (m.pinned?.floor_anchors ?? []).map((p) => new X509Certificate(read(p)));
+    if (!anchors.some((a) => cert.checkIssued(a) && cert.verify(a.publicKey))) E(`${mpath}: floor response ${s.id}: not signed by an anchor of floor_anchors`);
+  } catch (e) { E(`${mpath}: floor response ${s.id}: ${e.message}`); }
+}
 
 // A root list set:
 //   - every file it names (each root's `certificate` and `openpgp`, each list's `files`, each

@@ -23,13 +23,15 @@ ritueel owns root keys and root transitions for X.509 CA roots and OpenPGP prima
 - **The whole life of a root.** Opinionated help for where the ledger lives, backup and restore, re-signing and rotating, revocation, and card loss and replacement ([0007](/decisions/0007-ritueel-teaches-and-its-tools-simplify-the-ceremonies/)).
 - **Language and stores.** A Go command-line tool with key stores behind one ceremony: `software` (an encrypted file, 1Password or the OS keyring), `piv`, `openpgp-card` and `aws-kms` first; Google Cloud KMS, Azure Key Vault and Nitrokey are planned ([0003](/decisions/0003-key-stores-and-the-card-layer/)).
 - **Generic, with no hard dependency.** ritueel and sluis depend on neither each other nor shared code. They exchange standard formats (PKCS#10, X.509, OpenPGP packets, attestation certificates) through the versioned [hand-off contract](/reference/hand-off-contract/), so either side can be replaced by another system that speaks it.
+- **The floor is PKCS#10 in, X.509 out.** A system that holds intermediates meets a root through a PKCS#10 request and gets back a certificate in a stated profile, which any certificate authority can issue ([the floor](/reference/hand-off-contract/#the-floor-pkcs10-in-x509-out)). ritueel's contract adds the proof of where the key lives, the result file, the reason codes and the signed root list with its trust sequence. On the floor, the requester's anchors are the CA certificates the operator installed, with no trust sequence and no rollback protection.
 - **Out of scope.** Online signing, leaf certificates and secret storage. ritueel never keeps a private key outside the store that made it, and keeps no PIN or passphrase.
 
 ## Consequences
 
 - A system that holds intermediates gets smaller: it sends a request with proof of where its key lives, and installs what comes back. It never handles a root.
 - The hand-off contract must be specified and tested from both sides, with versioning; it is the first backlog item, with test vectors.
-- The first consumer that needs a certified intermediate depends on ritueel's software-root mode, which is therefore built first.
+- A system that holds intermediates can be certified and tested on the floor by any CA, before ritueel exists. The full contract, with the proof and the trust sequence, needs ritueel's software-root mode, which is therefore built first.
+- A requester has two trust modes to test: the floor's installed anchors, and the signed root list.
 - Four stores teach every transition shape: from a file, to a card, to a cloud service, and back. Other stores wait for their first real installation.
 - The localhost-only wizard avoids a network service that holds ceremony state, and cannot be shared between machines.
 - ritueel carries a security-critical code base by itself: key handling, signing and revocation need review, tests on real test devices, and the rules in `GOVERNANCE.md`.
@@ -38,6 +40,7 @@ ritueel owns root keys and root transitions for X.509 CA roots and OpenPGP prima
 
 - **Root ceremonies inside the system that holds intermediates.** One product to install, but root custody sits next to the busiest code and the boundary between rare and daily keys disappears.
 - **A shared library or a private protocol between the products.** Less to specify, but neither product works without the other and other issuing systems are locked out.
+- **No floor: the full contract or nothing.** One trust mode, rollback protection everywhere, but ritueel's own formats would become a requirement on every CA, and a system that holds intermediates could not be tested without ritueel.
 - **Two tools, one for X.509 and one for OpenPGP.** Smaller tools, but create, vouch, overlap, supersede and revoke are one model, and the teaching and records would be written twice.
 - **A hosted service that holds the roots.** No workstation ceremony, but it makes the roots online and needs someone trusted with every root.
 - **More key stores in the first version.** Wider reach, but every store multiplies tests and guides; four already cover every transition shape. The others are planned ([0007](/decisions/0007-ritueel-teaches-and-its-tools-simplify-the-ceremonies/)).

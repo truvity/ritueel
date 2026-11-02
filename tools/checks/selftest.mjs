@@ -226,6 +226,7 @@ const edited = (set, path, edit) => ({ ...set, [`testdata/set/v1/${path}`]: edit
 // the hand-off set names lists of the SSH CA key list set, so that set comes along under its own name
 const handoff = { ...copyOf('hand-off'), ...Object.fromEntries(Object.entries(copyOf('ssh-ca-keys')).map(([p, v]) => [p.replace('testdata/set/', 'testdata/ssh-ca-keys/'), v])) };
 expect('a hand-off set that matches its manifest', 'vectors', handoff, 'pass', { has: ['vector files, no errors'] });
+expect('a floor answer from a CA that is not installed', 'vectors', edited(handoff, 'manifest.json', (t) => t.replace('"floor_anchors": [\n      "pki/test-foreign-root.pem"', '"floor_anchors": [\n      "pki/test-root-a.pem"')), 'fail', { has: ['floor response x509-floor-valid: not signed by an anchor of floor_anchors'] });
 const ssh = copyOf('ssh-ca-keys');
 expect('an SSH CA key list set that matches its manifest', 'vectors', ssh, 'pass', { has: ['vector files, no errors'] });
 expect('an SSH CA key list changed after signing', 'vectors', edited(ssh, 'lists/seq7-a.json', (t) => t.replace('"sequence":7', '"sequence":8')), 'fail', { has: ['list seq7-a: the signature does not verify'] });
