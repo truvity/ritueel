@@ -13,7 +13,7 @@ Some people prefer a page to a terminal, and a ceremony is easier to follow when
 
 ## What it is
 
-- **A second face of the same engine.** The wizard asks the ceremony engine for the plan, shows it, and asks you to confirm. It does not sign, verify or record by any code of its own ([principle 12](/principles/#the-principles)).
+- **A second face of the same engine.** The wizard asks the ceremony engine for the plan, shows it, and asks you to confirm. It does not sign, verify or record by any code of its own ([principle 14](/principles/#the-principles)).
 - **In the terminal, or in a browser.** The terminal wizard asks line by line in plain text, so a screen reader and a log both work. The web wizard is a page served by the program on your own computer, beside the terminal wizard, which keeps the confirmation.
 - **The user is in charge.** Nothing happens without your confirmation. The PIN is typed at the terminal and goes to the card, and the touch is a touch on the card. The page never sees either.
 
