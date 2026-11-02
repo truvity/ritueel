@@ -58,7 +58,7 @@ A PIN is never a flag or an environment variable; the holder types it at the ter
 | 1 | Failure. |
 | 2 | Usage error. |
 | 3 | Refused by a check or by the policy. |
-| 4 | Refused by the card or its PIN state. |
+| 4 | Refused by the card or its PIN state, or by a locked key store backend. |
 | 5 | Not confirmed. |
 | 10, 11, 12 | `status` only: notice, alert and critical. Intermediates warn at 60, 30 and 14 days, the root list, the SSH CA key list and each CRL at 60, 30 and 14 days, roots at 6 months, 3 months and 30 days. An unresolved attempt is critical, because it may mean a signature that was made and never recorded. A short root set is an alert, an overdue overlap an alert and a running one a notice ([root transitions](/reference/transitions/#the-target)); a restore drill older than 13 months is a notice ([drills](/reference/drill/#when-it-is-due)). The highest finding wins. |
 

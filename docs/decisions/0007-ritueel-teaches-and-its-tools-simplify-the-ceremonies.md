@@ -1,7 +1,7 @@
 # 0007 — ritueel teaches, and its tools simplify the ceremonies
 
 **Status:** Accepted
-**Date:** 2026-11-01
+**Date:** 2026-11-02
 
 ## Context
 
@@ -39,7 +39,7 @@ A software key is generated in memory and written **directly into its store, nev
 | Backend | Role | Said plainly |
 |---|---|---|
 | Encrypted file | The default for drills and tests. | A copy by nature. A backup is another copy. |
-| 1Password | **Proposed as the persistent store** for software keys. | Its sync gives redundancy against loss, not against compromise (principle 2). Whoever unlocks the vault has the key. |
+| 1Password, through its `op` command line | A persistent home for the software keys of **test roots, intermediates and subkeys**; never a production root or a person's master key. | Its sync gives redundancy against loss, not against compromise (principle 2). Whoever unlocks the vault has the key. |
 | OS keyring, through `github.com/zalando/go-keyring` | Offered, with a warning in the creation output, in every record and on the site. | It can be insecure: programs of the same user can read it, and it has no copy. ritueel refuses to fall back to a file when no keyring exists. |
 
 ritueel **never exports a key from a card or a cloud key** for backup. For cards, backup means two independent cards. For a cloud key, it means a replica that the service keeps. A software root remains unfit for a root that others rely on ([0002](/decisions/0002-key-custody-every-key-is-born-in-its-store-two-root-cards-or-one-kms-root-and-a-replica/)): it serves tests, drills, development and a person's own key.
@@ -82,6 +82,7 @@ Each procedure gets a page under Learn that says why and when, a guide that give
 - **A desktop application instead of a localhost page.** No browser needed, but a large dependency, an installer to sign and a wider attack surface for the same screens.
 - **A wizard reachable from other machines.** Shareable, but a network service that acts on root keys needs authentication and a larger attack surface ([0001](/decisions/0001-scope-roots-and-transitions-systems-like-sluis-hold-intermediates/)).
 - **Only the encrypted file for software keys.** The simplest, but one copy on one disk, so a lost laptop loses the key.
+- **1Password as the home of a production root or a person's master key.** A synced copy that survives a lost laptop, but whoever unlocks the vault has the key, and removing a member of a shared vault does not change its keys ([research](/research/software-key-backends-2026-11-01/)); it holds test keys, and the master key of a person is a file ([0012](/decisions/0012-personal-openpgp-the-primary-offline-in-a-file-the-daily-subkey-on-a-card/)).
 - **Importing a key into 1Password or the keyring.** Lets people bring an old key, but the key then existed outside its store, which principle 1 rules out.
 - **Exporting a key from a card or KMS for backup.** An easy restore, but it turns a key that cannot be copied into one that can, and the theft risk grows with every copy.
 - **The OS keyring as the default.** No account and no setup, but it is the weakest option, so ritueel offers it with a warning and does not choose it for the user.
