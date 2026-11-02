@@ -1,13 +1,13 @@
 ---
-title: Revocation material for OpenPGP master keys
-description: The revocation signatures made when a master key is born, where they are written and refused, how to make and check one later, and what the ledger keeps.
+title: Revocation material
+description: The revocation signatures and removal authorisation made when a root is born, where they are written and refused, how to make and check one later.
 sidebar:
   order: 12
 ---
 
 *Not built yet. This is the page that [ADR 0010](/decisions/0010-readiness-is-made-at-birth-and-proved-by-a-drill/#revocation-material) leaves for the format and the commands; the code is [issue #69](https://github.com/truvity/ritueel/issues/69), in M3, with the roots of [issue #48](https://github.com/truvity/ritueel/issues/48). The ideas are taught in [Revoke](/learn/revoke/).*
 
-A revocation made after a master key is lost cannot be made at all. So ritueel makes the revocation signatures when the key is born, for every OpenPGP master key it creates: the primary of each root, and a person's own primary when personal OpenPGP is built (M4, [issue #18](https://github.com/truvity/ritueel/issues/18)).
+A revocation made after a master key is lost cannot be made at all. So ritueel makes the revocation signatures when the key is born, for every OpenPGP master key it creates: the primary of each root, and a person's own primary when personal OpenPGP is built (M4, [issue #18](https://github.com/truvity/ritueel/issues/18)). For the same reason every root also makes its **removal authorisation** at birth, which lets it leave the root set without signing ([below](/reference/revocation-material/#the-removal-authorisation)).
 
 ## What is made
 
@@ -47,26 +47,43 @@ The **digest** of each signature: the SHA-256 of the binary signature packet, so
 
 `revocation_sha256` of the first version of [`root.json`](/reference/directory/#rootjson) is replaced by `revocations`.
 
+## The removal authorisation
+
+Changing the root set requires every current root, or a root's stored removal authorisation ([the root list](/reference/root-list/#who-signs)). A root that is lost or destroyed cannot sign the list that removes it, so it signs its consent in advance: when it is born, at `init` or `root add`, its X.509 root key signs a statement over its own pin, in [the format of the root list page](/reference/root-list/#the-removal-authorisation). It has no reason, no sequence and no expiry. A personal directory, which has no X.509 key and no root list, makes none.
+
+It is revocation material, and is handled like a revocation signature:
+
+| Root's store | Where | Form |
+|---|---|---|
+| `piv`, `aws-kms`, and the `software` backends `onepassword` and `keyring` | `--revocation-dir DIR`, with the revocation signatures. | `<x509_spki_sha256>.removal.jws`, the compact JWS as text. Mode `0600`. |
+| `software`, backend `file` | The key directory. | `<label>.removal.jws.age`, encrypted like the key files; a test root writes `<label>.removal.jws`. |
+
+The same refusals apply (`revocation-dir`, `revocation-exists`), it is never printed, and the holder stores it apart from the cards with the revocation signatures. The ledger keeps its digest, the SHA-256 of the JWS text, in `root.json` as `removal_sha256`, and the record of the ceremony lists it in `revocations` as `{ "label", "reason": "root-removal", "sha256" }`. Its signature is one of the plan's, of kind `root-removal`, and on a card it takes a touch.
+
+`root revoke` attaches it to the list that removes the root, when the root does not sign that list itself ([root transitions](/reference/transitions/#root-revoke)). Anyone who holds it and the other roots can remove that root from the set, so it is kept with the same care as the revocation signatures.
+
 ## Making one later, and checking one
 
 | Command | Does | Needs a person |
 |---|---|---|
-| `ritueel revocation make --root LABEL --reason REASON --revocation-dir DIR` | A ceremony, with the plan, the confirmation and the record: signs one more revocation signature while the primary and its PIN still exist, and writes it as above. | Yes |
-| `ritueel revocation check FILE [--root LABEL]` | Reads a stored file, armoured or binary, and prints only the verdict: well formed, type `0x20`, the reason, the issuer, and whether its digest is the ledger's. It signs and writes nothing. | No |
+| `ritueel revocation make --root LABEL (--reason REASON \| --removal) --revocation-dir DIR` | A ceremony, with the plan, the confirmation and the record: signs one more revocation signature, or the removal authorisation again, while the root's key and its PIN still exist, and writes it as above. | Yes |
+| `ritueel revocation check FILE [--root LABEL]` | Reads a stored file, armoured or binary, and prints only the verdict: well formed, type `0x20` and the reason, or a removal authorisation and its pin; the issuer; and whether its digest is the ledger's. It signs and writes nothing. | No |
 
-`revocation check` exits 0 when the file is a revocation signature of a primary in the directory with the digest the ledger holds, and 3 with the code otherwise: `revocation-invalid` (not a revocation signature, or one that does not verify over the primary), `revocation-mismatch` (a different digest), `reason-unknown`. A missing file is a refusal of the caller's, not a pass.
+`revocation check` exits 0 when the file is a revocation signature of a primary, or a removal authorisation of a root, in the directory with the digest the ledger holds, and 3 with the code otherwise: `revocation-invalid` (not a revocation signature or removal authorisation, or one that does not verify), `revocation-mismatch` (a different digest), `reason-unknown`. A missing file is a refusal of the caller's, not a pass. The restore check runs it on every stored file ([drills](/reference/drill/#the-restore-check)).
 
 ## Using one
 
-`root revoke` is the one command that uses a stored signature: it checks the file as `revocation check` does, then publishes it ([root transitions](/reference/transitions/#root-revoke)). For a person's primary the guide is [Revoke a key](/guides/revoke-a-key/).
+`root revoke` is the one command that uses stored material: it checks the revocation signature, and the removal authorisation when the root does not sign, as `revocation check` does, then publishes the signature and attaches the authorisation to the new root list ([root transitions](/reference/transitions/#root-revoke)). For a person's primary the guide is [Revoke a key](/guides/revoke-a-key/).
 
 ## Follow-ups
 
 - The signing, the files, the refusals and `revocation make` and `check` ([issue #69](https://github.com/truvity/ritueel/issues/69)).
 - The two reasons for the root primaries at `init` ([issue #48](https://github.com/truvity/ritueel/issues/48)).
+- The removal authorisation at `init` and `root add`, with the root list that reads it ([issue #14](https://github.com/truvity/ritueel/issues/14), [issue #13](https://github.com/truvity/ritueel/issues/13)).
 
 ## Standards
 
 | Standard | Used for |
 |---|---|
 | [RFC 9580](https://datatracker.ietf.org/doc/html/rfc9580) | The key revocation signature (sections 5.2.1.11 and 5.2.3.31), the escrowed revocation (section 13.9) and the armour (section 6.2). |
+| [RFC 7515](https://datatracker.ietf.org/doc/html/rfc7515) | The removal authorisation, a compact JWS. |

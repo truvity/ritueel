@@ -35,18 +35,22 @@ The number of active roots the holder intends to have is the **target**: `init` 
 
 | Command | Needs | Writes |
 |---|---|---|
-| `ritueel root add --store S [--card SERIAL] [--replaces LABEL --overlap-until DATE \| --target N] [--root LABEL]` | The card, or the KMS roles, of the new root; the card or role of the vouching root. | The new root; its vouches; the next trust products. |
-| `ritueel root retire LABEL [--now REASON] [--target N]` | The card of an active root other than `LABEL`. | A record, and the next trust products without `LABEL`. |
-| `ritueel root revoke LABEL --reason REASON --revocation FILE [--target N]` | The card of an active root other than `LABEL`, and the stored revocation signature. | A record, the next trust products without `LABEL`, and the signature beside the keyring. |
+| `ritueel root add --store S [--card SERIAL] [--replaces LABEL --overlap-until DATE \| --target N] [--root LABEL]` | The card, or the KMS roles, of the new root, and the card or role of every active root. A root that cannot come is revoked first. | The new root; its vouches; the next trust products. |
+| `ritueel root retire LABEL [--now REASON] [--target N]` | The card or role of every active root, `LABEL` included. | A record, and the next trust products without `LABEL`. |
+| `ritueel root revoke LABEL --reason REASON --revocation FILE [--removal FILE] [--target N]` | The card or role of every other active root, the stored revocation signature, and `LABEL`'s stored removal authorisation unless `LABEL` signs. | A record, the next trust products without `LABEL`, and the signature beside the keyring. |
+
+Changing the root set requires every current root, or a root's stored removal authorisation ([the root list](/reference/root-list/#who-signs)). Each root signs the new root list in the same ceremony, with a touch on a card, and the plan counts them. With two cards, `root add` and `root retire` are two-card ceremonies; the yearly ceremony stays a one-card ceremony, because its list has the same roots.
 
 `--overlap-until DATE` is a day in UTC and has no default: how long the overlap must last is the time that the slowest client you care about needs, and only the holder knows it ([Moving from one root to another](/learn/transitions/)). The vouching root is the root of the year unless `--root` names another, with the reason recorded, as for every ceremony.
 
 ### `root add`
 
-1. The plan names the births ([ADR 0008](/decisions/0008-the-operator-prepares-the-holder-and-ritueel-creates-attests-and-verifies-the-root/#births-and-what-a-crash-leaves)): the new root's X.509 root key, OpenPGP primary and break-glass SSH CA key, with their revocation signatures ([Revocation material](/reference/revocation-material/)).
+Refused with `root-absent` unless every active root can sign the next root list.
+
+1. The plan names the births ([ADR 0008](/decisions/0008-the-operator-prepares-the-holder-and-ritueel-creates-attests-and-verifies-the-root/#births-and-what-a-crash-leaves)): the new root's X.509 root key, OpenPGP primary and break-glass SSH CA key, with their revocation signatures and the removal authorisation ([Revocation material](/reference/revocation-material/)).
 2. The new root's own certificate, self-signature and CRL are signed by the new keys.
 3. The vouching root signs the cross-certificate and the OpenPGP certification below, with a touch each, and the new fingerprints have been shown before the touch.
-4. The vouching root signs the next root list, with both roots, and the next CRL; the CA bundle, the SSH CA key list and the keyring are built with both.
+4. Every active root and the new root sign the next root list, which holds them all; the vouching root signs the next CRL; the CA bundle, the SSH CA key list and the keyring are built with the new root.
 
 ### `root retire`
 
@@ -55,6 +59,7 @@ Refused unless all of these hold:
 | Check | Code |
 |---|---|
 | At least one other root stays active. | `last-root` |
+| Every active root, `LABEL` included, can sign the next root list. A root that cannot is revoked instead. | `root-absent` |
 | The root is replaced by an active root (`replaces`), or `--target` lowers the target. | `target-required` |
 | The overlap has ended (`overlap_until` has passed). `--now REASON` overrides this, and the reason is recorded. | `overlap-open` |
 | Nothing depends on this root alone: every registered intermediate has a certificate, or a binding, from another active root over the same key, valid for at least 30 more days. | `still-needed` |
@@ -63,14 +68,16 @@ Refused unless all of these hold:
 
 ### `root revoke`
 
-It never waits for anything but the revocation signature, because it is the emergency exit.
+It never waits for anything but the stored revocation material, because it is the emergency exit.
 
 | Check | Code |
 |---|---|
 | At least one other root stays active, and it can sign. | `last-root` |
+| Every other active root can sign the next root list. | `root-absent` |
 | The file's digest equals the digest the ledger holds for this root and reason, and its signature verifies over the root's primary. | `revocation-mismatch`, `revocation-invalid` |
+| Unless the root signs the new list itself, `--removal FILE` is its removal authorisation, with the digest the ledger holds and a signature that verifies over its pin ([revocation material](/reference/revocation-material/#the-removal-authorisation)). | `revocation-mismatch`, `revocation-invalid` |
 
-It then writes a root list, a bundle, a keyring and an SSH CA key list without the root, copies the revocation signature to `products/<sequence>/revocations/` (armoured, named by the fingerprint, as the [keyring page](/reference/keyring-package/#files) says), and stops writing the root's CRL. What the root alone had certified is **not** re-certified here: `status` reports each such intermediate as critical until a `yearly` ceremony does it, over the same keys ([A lost root card](/guides/lost-root-card/)).
+It then writes a root list without the root, signed by the other roots and carrying its removal authorisation, a bundle, a keyring and an SSH CA key list without it, copies the revocation signature to `products/<sequence>/revocations/` (armoured, named by the fingerprint, as the [keyring page](/reference/keyring-package/#files) says), and stops writing the root's CRL. What the root alone had certified is **not** re-certified here: `status` reports each such intermediate as critical until a `yearly` ceremony does it, over the same keys ([A lost root card](/guides/lost-root-card/)).
 
 ## The vouch
 
