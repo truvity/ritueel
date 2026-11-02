@@ -27,6 +27,12 @@ Say a thing once, in the page that owns it, and link to it from the others: a me
 
 Say it in the first paragraph of a page about a tool or a store: "Planned", "Not built yet", "Partly built: X works, Y does not", or nothing when it is built and released. Change it in the same pull request that builds the thing. A guide never describes a command that does not exist as if it did.
 
+## Page format
+
+Pages are Markdown (`.md`). A page is MDX (`.mdx`) only when it places components, which today is the home page (`docs/index.mdx`) alone. The reasons: `.md` renders readably on GitHub and in other tools, reviews stay text-only, and a broken component in `.mdx` breaks the whole build. Starlight's Markdown already has asides, code blocks, tables and links, so a page that wants any of those stays `.md`. `just check-mdx-pages` fails an `.mdx` file that imports no component or places none ("use .md: MDX only for pages that place components").
+
+The "Edit page" link of each page opens the file in `docs/` (`docs/<page>.md`, or `.mdx`). `site/src/route-middleware.ts` builds it, because Starlight alone would use the path of the symlink under `site/src/content/docs/`; the generated decision pages set their own source file. `check-built.sh` fails when a link does not point at a file in the repository.
+
 ## Asides and diagrams
 
 How settled a point is shows in how it is written. Plain prose is agreed. `:::note[Proposed]` is the design as proposed, awaiting the maintainer. `:::caution[Open]` is undecided and links to the decision issue.
@@ -87,6 +93,7 @@ The `site-change` skill is the checklist for a change to `site/`, `site/public/`
 - **HSTS is preloaded.** The domain is on the browsers' preload list, with a one-year `max-age`, `includeSubDomains` and `preload`. Never lower the header, never serve a name over plain HTTP, and change the line in `site/public/_headers` only to match the zone.
 - **The Content-Security-Policy is `'self'` plus Cloudflare Web Analytics and nothing else:** `https://static.cloudflareinsights.com` in `script-src` and `https://cloudflareinsights.com` in `connect-src`. Inline scripts are listed by hash. Do not widen a directive to make a page work; change the page.
 - **No remote assets:** no font, script, image, style or embed from another host. Use inline SVG, or a CC0 icon (for example from simple-icons) inlined and used only to name the product it stands for, or an asset in the repository.
+- **Edit links point at the real file.** `site/src/route-middleware.ts` rewrites Starlight's "Edit page" URL from `site/src/content/docs/<id>.md` to `docs/<id>.md`, and `site/scripts/check-edit-links.mjs` (run by `check-built.sh`) fails when a link in the built site is not a file in the checkout or not the source of its page. Do not point `editLink.baseUrl` back at `docs/`.
 - **A moved or renamed page** gets a `301` line in `site/public/_redirects` in the same pull request, and every link to it is updated.
 - **Link checking is bounded.** `lychee` runs with a timeout, bounded retries, a limit on redirects and a wall-clock `timeout` around the whole run, and with `-v` so a stall names its URL. A host that loops on redirects, such as `www.rfc-editor.org`, is excluded in `lychee.toml`. A job that runs past its usual time is a finding: cancel one run, read its log, fix the bound, then rerun.
 - **A strict build fails on one warning.** A slow external fetch is such a warning. Retry that one failure; keep strict mode for everything else.

@@ -1,7 +1,7 @@
 ---
 import StarlightPage from '@astrojs/starlight/components/StarlightPage.astro';
 import { render } from 'astro:content';
-import { decisionFacts, listDecisions, sourceUrl } from '../../lib-decisions';
+import { decisionFacts, editUrl, listDecisions, sourceUrl } from '../../lib-decisions';
 
 export async function getStaticPaths() {
   const entries = await listDecisions();
@@ -17,6 +17,7 @@ const facts = decisionFacts(entry);
   frontmatter={{
     title: `${facts.number}: ${facts.title}`,
     description: `Architecture decision record ${facts.number} for ritueel: ${facts.title}.`,
+    editUrl: editUrl(entry),
   }}
 >
   <Content />

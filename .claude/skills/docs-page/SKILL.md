@@ -10,6 +10,7 @@ Checklist:
 - [ ] The front matter has a `title` and a `description` of 40 to 160 characters.
 - [ ] The first paragraph of a page about a tool says how far it is built, as the page describes.
 - [ ] Agreed, proposed and open points are marked the way the page describes.
+- [ ] A page is `.md`; `.mdx` is only for a page that places components ("Page format" in `docs/contributing/pages.md`, checked by `just check-mdx-pages`).
 - [ ] Diagrams keep to the size limits on the page.
 - [ ] A Learn or Guides page also follows the `teaching-page` skill; a change to `site/` follows `site-change`.
 - [ ] Every external fact has a source and a date, and no unverified fact is on the page.

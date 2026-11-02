@@ -12,6 +12,7 @@ Checklist:
 - [ ] No remote asset: no font, script, image, style or embed from another host. Inline SVG, or a CC0 icon (simple-icons) inlined and used nominatively, or a file in the repository.
 - [ ] A moved or renamed page has a 301 line in `site/public/_redirects` in the same pull request.
 - [ ] The link check stays bounded: `lychee` with a timeout, bounded retries and redirects, a wall-clock `timeout` around the run, and `-v`. A host that loops on redirects is excluded in `lychee.toml`. A job that runs long is a finding, not a rerun.
+- [ ] A page is `.md`; `.mdx` is only for a page that places components ("Page format" in `docs/contributing/pages.md`, checked by `just check-mdx-pages`).
 - [ ] A home page, or the first screen of a section, starts from the reader's pain, then the mission, then what the project does about each pain, with honest status.
 - [ ] You built the site, served it, and took screenshots with headless Chrome at 1440 px and 390 px, in light and dark. You looked at all four, fixed what was off, and found no horizontal scroll at 375 px. Say so in the pull request.
 - [ ] `devbox run -- just site-lint`, `site-build` and `check-rules` pass; CI is green.
