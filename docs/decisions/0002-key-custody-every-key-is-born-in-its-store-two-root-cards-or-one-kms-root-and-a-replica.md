@@ -26,7 +26,7 @@ The goal is a key-service experience without trusting software with a key: every
 ### The yearly ceremony
 
 - **The cards alternate by year:** A one year, B the next. A cloud root has nothing to alternate with and signs every year.
-- **It runs on the holder's ordinary workstation,** with no live CD and no air gap, because keys never leave their store. The workstation can still lie about what is signed, so the ceremony checks are in [0004](/decisions/0004-ceremonies-plan-confirm-reserve-sign-verify-record/).
+- **It runs on the holder's ordinary workstation,** with no live CD and no air gap. The workstation is untrusted: the key never leaves its store, and every byte the root will sign is fixed, shown and confirmed before the store signs it. The ceremony checks are in [0004](/decisions/0004-ceremonies-plan-confirm-reserve-sign-verify-record/).
 - **PINs and admin PINs** live in the holder's password manager, one entry per card.
 
 ### Validity, renewal and replacement
@@ -49,7 +49,7 @@ Whoever holds one root card and its PIN, or the role that uses a cloud root, can
 
 - A lost card is survivable: the other root exists, and the lost one is revoked with the stored signature.
 - Outsiders install two anchors on cards, and watch them; a cloud setup publishes one.
-- The single holder is a single point of human failure; succession is out of scope.
+- The single holder is a single point of human failure. Succession is the holder's organisational duty ([principle 13](/principles/#the-principles)); ritueel reminds and does not enforce.
 - The stored revocation signature can be lost, and nothing else revokes a primary whose card and PIN are gone. A revocation signature also does not reach every verifier: for apt it is the new keyring package that revokes ([the revocation table](/learn/openpgp-release-keys/#revocation)).
 - Each use changes the root certificate and the primary's self-signature, so the CA bundle and the keyring change every year.
 - A cloud root account is a single point of compromise, guarded by its key policy and an organisation policy, and answered by revocation and a transition.

@@ -1,6 +1,6 @@
 # ritueel
 
-ritueel teaches people to manage the root of a PKI and the master key of OpenPGP smoothly and safely, and gives them tools that simplify each ritual, from creating a root to signing intermediates and subkeys onto cards, while the person stays in charge.
+ritueel helps one person or a small team keep a private root and an OpenPGP primary key for years without losing it, leaking it, misusing it or letting it expire. It teaches the model first, and its tools run each ceremony with the person deciding.
 
 The site at [ritueel.id](https://ritueel.id) teaches first: the logic of keeping root keys and intermediates, the [custody chain](docs/learn/custody-chain.md), the key stores compared in the open, and the whole life of a root. The tools come after, because the steps are mostly manual ceremonies. ritueel is open source (MIT) and written in Go.
 

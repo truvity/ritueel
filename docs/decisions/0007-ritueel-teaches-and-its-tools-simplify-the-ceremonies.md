@@ -13,7 +13,7 @@ The steps are mostly manual ceremonies, which is why there is a command line. Tw
 
 ### The mission
 
-> ritueel teaches people to manage the root of a PKI and the master key of OpenPGP smoothly and safely, and gives them tools that simplify each ritual, from creating a root to signing intermediates and subkeys onto cards, while the person stays in charge.
+> ritueel helps one person or a small team keep a private root and an OpenPGP primary key for years without losing it, leaking it, misusing it or letting it expire. It teaches the model first, and its tools run each ceremony with the person deciding.
 
 **ritueel.id teaches first.** It explains the general logic of handling root keys and intermediates securely: what a root is, why it stays offline, what a ceremony is, the custody chain, the key stores compared, and the life of a root. The tools exist to simplify the rituals. The site is organised in that order: Learn, Guides, Tools, Reference, Decisions, Principles.
 
