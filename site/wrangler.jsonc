@@ -1,11 +1,16 @@
-// The Worker that serves ritueel.id: static assets only, no Worker code, no KV, no routes.
+// The Worker that serves ritueel.id: static assets, and the live status API on /api/*.
 // `astro build` writes the site to dist/; the deploy job of .github/workflows/site.yaml runs
-// `wrangler deploy` on this file. The repository holds no account id and no Cloudflare hostname.
-// The Worker, its routes and the custom domain are declared outside this repository; a deploy
-// uploads a new version of the Worker and changes none of them.
+// `wrangler deploy` on this file (through site/scripts/deploy-config.mjs, which adds the KV id).
+// The repository holds no account id, no namespace id and no Cloudflare hostname. The Worker,
+// its KV namespace, its custom domain and the GitHub App it reads as are declared outside this
+// repository; a deploy uploads a new version of the Worker and its secrets, and changes none of
+// them.
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "ritueel-site",
+  // The Worker's own code: the /api/* routes and the cron below. It is a plain module that
+  // Wrangler bundles, with no Astro server in it.
+  "main": "src/worker/index.ts",
   // Compatibility date: not newer than two weeks before it was chosen.
   "compatibility_date": "2026-10-15",
   // BOTH OFF FOR GOOD. Wrangler's defaults turn them on: every deploy would publish a
@@ -16,7 +21,22 @@
   "preview_urls": false,
   "assets": {
     "directory": "./dist",
+    // The Worker reads /data/status.json (the roadmap as the build read it) through this binding.
+    "binding": "ASSETS",
     // A page that does not exist gets the site's own 404.html with status 404.
-    "not_found_handling": "404-page"
-  }
+    "not_found_handling": "404-page",
+    // Only /api/* runs the Worker first. A request for anything else that is an asset is served
+    // from the assets and never invokes the Worker: that keeps static traffic off the Free plan's
+    // daily request limit. Never widen this to "/*" or true, and never turn on Workers Cache.
+    "run_worker_first": ["/api/*"]
+  },
+  // The only writer of the live status: every 15 minutes the Worker reads the issues and the runs
+  // on `main`, and writes KV only when something changed (src/worker/status.ts).
+  "triggers": { "crons": ["*/15 * * * *"] },
+  "kv_namespaces": [
+    // The live status document, `board`. The id comes from the deploy environment (RITUEEL_STATUS_KV_ID,
+    // a secret of the GitHub environment cloudflare): site/scripts/deploy-config.mjs writes it into
+    // the configuration the deploy uses. This placeholder is never deployed.
+    { "binding": "STATUS", "id": "00000000000000000000000000000000" }
+  ]
 }

@@ -46,3 +46,13 @@
   line-height: 1.6; color: var(--sl-color-gray-1); background: var(--sl-color-bg-nav); text-decoration: none; overflow-wrap: anywhere; }
 a.ps-chip:hover { border-color: var(--sl-color-accent); color: var(--sl-color-white); }
 .ps-no { font-family: var(--sl-font-mono); color: var(--sl-color-accent-high); }
+
+/* the live parts: the note when the Worker could not be read, the "as of" line of each part, the checks on main */
+.ps-live-note { margin-block: 1rem; padding: 0.5rem 0.75rem; border: 1px solid var(--sl-color-orange); border-radius: 0.5rem; font-size: var(--sl-text-sm);
+  color: var(--sl-color-white); background: var(--sl-color-orange-low); }
+.ps-live-note[hidden] { display: none; }
+.ps .ps-asof-line { margin: 0 0 0.5rem; font-size: var(--sl-text-xs); color: var(--sl-color-gray-3); }
+.ps-asof-line .ps-tag { margin-left: 0; }
+.ps-tag.ps-tag-build { border-color: var(--sl-color-gray-4); background-color: var(--sl-color-gray-5); color: var(--sl-color-white); }
+.ps-state { color: var(--sl-color-gray-3); font-size: var(--sl-text-xs); }
+.ps-chip.ps-chip-bad { border-color: var(--sl-color-red); }

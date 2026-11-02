@@ -1,5 +1,5 @@
-# Judges pull requests: the site (description lint, a strict build, a link check, a dry-run
-# deploy of the Worker), the workflows themselves (actionlint) and the repository rules
+# Judges pull requests: the site (description lint, a strict build, a link check, the Worker's tests
+# and dry-run deploy, the status page in a browser), the workflows themselves (actionlint) and the repository rules
 # (`just check-rules`). It never publishes (site.yaml does), and it is not path-filtered, so
 # it can be made a required check on `main`.
 name: Checks
@@ -33,6 +33,9 @@ jobs:
       # What the deploy job of site.yaml builds, minus the deploy: `wrangler deploy --dry-run`
       # on the build. It uploads nothing and holds no Cloudflare credential.
       - run: devbox run -- just site-workers
+      # The status page in headless Chrome (the runner's own): the live script against a stand-in
+      # for the Worker, in light and dark, at 1440, 390 and 375 px.
+      - run: devbox run -- just site-render
 
   workflows:
     name: workflows (actionlint)

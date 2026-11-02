@@ -15,6 +15,7 @@ go.work.sum
 /site/dist/
 /site/.astro/
 /site/.wrangler/
+/site/wrangler.deploy.json
 .lycheecache
 .cache/
 
