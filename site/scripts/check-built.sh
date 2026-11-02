@@ -46,6 +46,9 @@ if grep -Eq '^\s*"(routes?|kv_namespaces|account_id|zone_id)"' "$cfg"; then
   bad "$cfg declares routes, KV or an account; those live outside this repository"
 fi
 
+# "Edit page" links: each one is a file in this checkout (and the page's own source).
+site/scripts/check-edit-links.mjs "$dist" || bad "an edit link does not point at its file in the repository (above)"
+
 # A decision record page exists for every record, and the template is not one.
 if [ -s "$dist/decisions/index.html" ]; then
   if grep -q '0000-template' "$dist/decisions/index.html"; then bad "decisions/index.html lists the template"; fi

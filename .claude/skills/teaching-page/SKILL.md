@@ -17,5 +17,6 @@ Checklist:
 - [ ] Hardware and price facts give the model, the revision, the price with its currency, the source and the day.
 - [ ] A drill says what the learner starts with, what they do and how they know it worked, on test keys.
 - [ ] If the page moved or was renamed, `site/public/_redirects` has a 301 line for the old address, and links are updated.
+- [ ] A page is `.md`; `.mdx` is only for a page that places components ("Page format" in `docs/contributing/pages.md`, checked by `just check-mdx-pages`).
 - [ ] Front matter has a `title` and a `description` of 40 to 160 characters; links use site paths with a trailing slash.
 - [ ] `devbox run -- just check-rules`, `site-lint` and `site-build` pass; then follow `docs/contributing/workflow.md`.

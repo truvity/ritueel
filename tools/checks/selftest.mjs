@@ -150,6 +150,15 @@ expect('the files tools require', 'yaml-ext', { '.github/ISSUE_TEMPLATE/config.y
 expect('a .yml file', 'yaml-ext', { 'a.yaml': 'a: 1\n', 'deploy/values.yml': 'a: 1\n' }, 'fail', { has: ['deploy/values.yml'] });
 expect('no YAML at all', 'yaml-ext', { 'README.md': 'x\n' }, 'fail', { has: ['empty sweep'] });
 
+// ---- MDX only for pages that place components
+const MDX_HOME = "---\ntitle: Home\n---\nimport '../site/home.css';\nimport Cloud from '../site/Cloud.astro';\nimport { Pair as Twin, helper } from '../site/Pair.astro';\n\n<div>\n  <Cloud />\n</div>\n";
+expect('an .mdx page that places a component', 'mdx-pages', { 'docs/index.mdx': MDX_HOME }, 'pass');
+expect('an .mdx page that places a renamed named import', 'mdx-pages', { 'docs/a/b.mdx': "import { Pair as Twin } from '../x.astro';\n\n<Twin part=\"a\" />\n" }, 'pass');
+expect('an .mdx page with plain Markdown', 'mdx-pages', { 'docs/index.mdx': MDX_HOME, 'docs/learn/x.mdx': '# Title\n\nText.\n' }, 'fail', { has: ['docs/learn/x.mdx: use .md: MDX only for pages that place components'] });
+expect('an .mdx page that imports a component and never places it', 'mdx-pages', { 'docs/x.mdx': "import Cloud from '../Cloud.astro';\n\nText.\n" }, 'fail', { has: ['docs/x.mdx: use .md'] });
+expect('an .mdx page that imports only a stylesheet', 'mdx-pages', { 'docs/x.mdx': "import '../home.css';\n\n<div>Text.</div>\n" }, 'fail', { has: ['docs/x.mdx: use .md'] });
+expect('no .mdx file at all', 'mdx-pages', { 'docs/index.md': 'x\n' }, 'fail', { has: ['empty sweep'] });
+
 // ---- agent links
 const docs = { 'docs/contributing/index.md': 'x\n', Justfile: 'default:\n', 'CLAUDE.md': '@AGENTS.md\n' };
 expect('no agent files at all', 'agent-links', { 'docs/contributing/index.md': 'x\n' }, 'fail', { has: ['AGENTS.md is missing', 'CLAUDE.md is missing'] });
