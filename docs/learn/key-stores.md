@@ -11,6 +11,15 @@ A key has to live somewhere. The places differ in one question above all: **can 
 
 One rule holds for every store ([principle 1](/principles/)): **a key is born in its store and never leaves it.** ritueel does not import a key, and it never offers to export a key from a card or a cloud key service "for backup". For software stores the rule means the key is generated in memory and written directly into the store, never to a file on disk.
 
+## Which path is yours
+
+Two paths lead to a root that others rely on. Pick the first unless you cannot.
+
+- **The cloud root** is the recommended path for a team with a cloud account. It is one key that the service keeps, with a replica that the service keeps in a second Region, an audit trail of every use, and no cards to alternate. You pay in an account to secure, a provider to trust, and a key that cannot attest where it was made: you read its policy from the service instead ([what a store can prove](/learn/what-a-store-can-prove/)). The first guide is [Prepare the cloud root](/guides/prepare-the-cloud-root/).
+- **Two cards** is the path for a person or a lab with no cloud account, and it is the more demanding one: two independent roots on two cards, each made on its card, kept in two places, alternating by year ([Two roots in practice](/learn/two-roots/)).
+
+**The trade-off the other tools make, said openly.** Other tools take a copy-once path: the root is made off the card and loaded onto two cards, so one card and a backup are enough ([the comparison](/learn/compared/) names them, with their sources). ritueel does not, because a copied key cannot attest where it was born, and the only verifier of a root's attestation is you. What you gain is a root that provably exists in one place. What you pay is two independent roots and the alternation. If you accept a wrapped copy in a safe, use one of those tools, and read ritueel to understand what you are doing.
+
 ## The stores today
 
 | | Encrypted file | 1Password | OS keyring | YubiKey PIV | OpenPGP card | AWS KMS |
@@ -63,7 +72,7 @@ These are not supported and not scheduled. Each arrives with its first real inst
 |---|---|
 | You are learning, or testing a pipeline | A software store, on a throw-away root, with a drill. |
 | You want a drill to survive a lost laptop | 1Password, on a root that is still only a drill. |
-| One person or a small team holds the roots, and no cloud is involved | Two independent root cards, in two places. |
+| One person or a small team holds the roots, and no cloud is involved | Two independent root cards, in two places ([which path is yours](#which-path-is-yours)). |
 | A person wants a daily OpenPGP key | A subkey born on an OpenPGP card, bound by a master key kept offline. |
 | An organisation already runs on AWS and wants audited, policy-gated roots | One KMS root with a multi-Region replica, in a dedicated root account, with a role that needs multi-factor authentication. |
 | You want the strongest story | Roots on different kinds of store: for example a card root and a KMS root. A failure of one kind does not take out the other. |

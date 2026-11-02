@@ -7,7 +7,7 @@ sidebar:
 
 *Design phase: not built yet. The roles and the checks are specified in [The cloud root in AWS KMS](/reference/kms-root/); the code is [issue #12](https://github.com/truvity/ritueel/issues/12), in M2. ritueel creates the keys and their policy; it does not create the account or the roles ([ADR 0008](/decisions/0008-the-operator-prepares-the-holder-and-ritueel-creates-attests-and-verifies-the-root/#the-cloud-root)). Try everything in a test account first.*
 
-A cloud root is a permission: the key never leaves the service, so the root is as safe as the rules about who may use it. Those rules are yours to set up, once, before ritueel makes the key. This guide says what to make, in words; use whatever infrastructure tool your organisation already uses, and review the result as you would any change to who can sign for you.
+A cloud root is the recommended path for a team with a cloud account ([which path is yours](/learn/key-stores/#which-path-is-yours)), and this guide is its first step. It is a permission: the key never leaves the service, so the root is as safe as the rules about who may use it. Those rules are yours to set up, once, before ritueel makes the key. This guide says what to make, in words; use whatever infrastructure tool your organisation already uses, and review the result as you would any change to who can sign for you.
 
 ## What you start with
 
