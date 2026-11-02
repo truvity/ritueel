@@ -459,11 +459,14 @@ def backsig(sk, primary, stype=0x19, creation=T_SUBKEY + 60, key_id=True):
                     keyhash(primary.body) + keyhash(sk.body), sk.sign_digest, alg=sk.alg)
 
 
-def binding(sk, primary, back, until=T_UNTIL, embed=True, when=T_CEREMONY):
-    """The subkey binding the certifier makes: signing capability only, expiry set so the subkey ends at 'until', the
-    back-signature for this primary embedded in the unhashed area."""
+KEY_FLAGS = {"sign": b"\x02", "authenticate": b"\x20"}   # RFC 9580, section 5.2.3.29
+
+
+def binding(sk, primary, back, until=T_UNTIL, embed=True, when=T_CEREMONY, flags=KEY_FLAGS["sign"]):
+    """The subkey binding the certifier makes: the key flags of the capability asked (signing or authentication), expiry
+    set so the subkey ends at 'until', the back-signature for this primary embedded in the unhashed area."""
     ih, iu = issuer(primary)
-    hashed = sub(2, struct.pack(">I", when)) + sub(27, b"\x02") + sub(9, struct.pack(">I", until - sk.created), True) + ih
+    hashed = sub(2, struct.pack(">I", when)) + sub(27, flags) + sub(9, struct.pack(">I", until - sk.created), True) + ih
     unhashed = iu + (sub(32, back) if embed else b"")
     return sig_body(0x18, hashed, unhashed, keyhash(primary.body) + keyhash(sk.body), primary.sign_digest)
 
@@ -652,14 +655,14 @@ with stream("floor"):
 
 # ---- OpenPGP requests: the subkey, then one back-signature for each primary in `primaries`, in that order
 def pgp_case(case, store="piv", cfg="production", expect="refuse", reason=None, sk=None, primaries=None, backs=None,
-             version=1, stub=None, evidence_pub=None, proof_primaries=None, card=None):
+             version=1, stub=None, evidence_pub=None, proof_primaries=None, card=None, capabilities=("sign",)):
     sk = sk or PgpKey(T_SUBKEY)
     primaries = ACTIVE if primaries is None else primaries
     backs = [backsig(sk, p) for p in primaries] if backs is None else backs
     req = pkt(14, sk.body) + b"".join(pkt(2, b) for b in backs)
     evidence = evidence_for(store, evidence_pub or sk.pub, card=card)
     names = proof_primaries if proof_primaries is not None else [hexfp(p) for p in primaries]
-    p = proof("openpgp-subkey", req, store, evidence, version, primaries=names, capabilities=["sign"])
+    p = proof("openpgp-subkey", req, store, evidence, version, primaries=names, capabilities=list(capabilities))
     w(f"requests/{case}.subkey.pgp", req)
     wj(f"requests/{case}.proof.json", p)
     files = [f"requests/{case}.subkey.pgp", f"requests/{case}.proof.json"]
@@ -671,9 +674,10 @@ def pgp_case(case, store="piv", cfg="production", expect="refuse", reason=None, 
     return sk, dict(zip((hexfp(p) for p in primaries), backs)), req
 
 
-def pgp_response(case, request_case, sk, backs, req, primary=PRIM_A, expect="install", reason=None, until=T_UNTIL, embed=True):
+def pgp_response(case, request_case, sk, backs, req, primary=PRIM_A, expect="install", reason=None, until=T_UNTIL, embed=True,
+                 capability="sign"):
     back = backs.get(hexfp(primary)) or backsig(sk, primary)
-    body = pkt(14, sk.body) + pkt(2, binding(sk, primary, back, until=until, embed=embed))
+    body = pkt(14, sk.body) + pkt(2, binding(sk, primary, back, until=until, embed=embed, flags=KEY_FLAGS[capability]))
     w(f"responses/{case}.bound.pgp", body)
     SUBKEYS[case] = sk
     res = {"handoff": 1, "type": "openpgp-subkey", "request_sha256": sha(req), "outcome": "issued",
@@ -715,6 +719,10 @@ pgp_case("pgp-piv-key-mismatch", evidence_pub=ec384().public_key(), reason="key-
 pgp_case("pgp-openpgp-card-untrusted-chain", store="openpgp-card", card=OTHER_OPGP_CARD, reason="proof-invalid")
 # an Ed25519 subkey: the request is well formed and signed, the algorithm is not one of version 1
 pgp_case("pgp-ed25519", sk=PgpKey(T_SUBKEY, alg=22), store="software", cfg="development", reason="algorithm-unsupported")
+# capabilities: exactly one of sign and authenticate
+with stream("authenticate-refused"):
+    pgp_case("pgp-capabilities-two", capabilities=("sign", "authenticate"), reason="malformed")
+    pgp_case("pgp-capability-encrypt", capabilities=("encrypt",), reason="malformed")
 
 # ---- OpenPGP answers to the request pgp-response-request: one bound by the other primary, and four a requester must refuse
 sk, backs, req = pgp_case("pgp-response-request", store="software", cfg="development", expect="accept")
@@ -725,6 +733,14 @@ pgp_response("pgp-response-wrong-subkey", "pgp-response-request", other, {}, req
 pgp_response("pgp-response-wrong-primary", "pgp-response-request", sk, backs, req, primary=PRIM_Z, expect="refuse", reason="issuer")
 # the expiry is shorter than 12 months: a requester that expects about 13 months refuses it
 pgp_response("pgp-response-short-expiry", "pgp-response-request", sk, backs, req, until=T_CEREMONY + 60 * 86400, expect="refuse", reason="validity")
+
+# ---- an authentication subkey, born on a person's card: the request asks for `authenticate`, and the binding carries key
+# flag 0x20. An answer that binds it for signing instead is refused by the requester.
+with stream("authenticate"):
+    sk, backs, req = pgp_case("pgp-openpgp-card-authenticate", store="openpgp-card", expect="accept", capabilities=("authenticate",))
+    pgp_response("pgp-openpgp-card-authenticate", "pgp-openpgp-card-authenticate", sk, backs, req, capability="authenticate")
+    pgp_response("pgp-response-authenticate-bound-for-signing", "pgp-openpgp-card-authenticate", sk, backs, req, capability="sign",
+                 expect="refuse", reason="profile")
 
 # ---- SSH CA key requests (type ssh-ca-key): the key as an OpenSSH public key line, and a proof of possession that is an
 # SSHSIG signature (OpenSSH PROTOCOL.sshsig) over the bytes of that line in the namespace below.

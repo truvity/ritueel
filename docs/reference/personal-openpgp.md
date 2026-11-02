@@ -5,7 +5,7 @@ sidebar:
   order: 15
 ---
 
-*Not built yet. This is the page that [ADR 0012](/decisions/0012-personal-openpgp-the-primary-offline-in-a-file-the-daily-subkey-on-a-card/) leaves for the details, and that record is `Accepted`. It decides that the first version makes a signing subkey and an authentication subkey and no encryption subkey, and how long a person's primary lives; this page still describes the signing subkey only, and gains the authentication subkey with the contract change that [issue #18](https://github.com/truvity/ritueel/issues/18) tracks. The code is [issue #18](https://github.com/truvity/ritueel/issues/18), in M4. How to use the result is in [Sign git commits and tags](/guides/openpgp-sign-git/) and [Your own OpenPGP key](/guides/personal-openpgp/).*
+*Not built yet. This is the page that [ADR 0012](/decisions/0012-personal-openpgp-the-primary-offline-in-a-file-the-daily-subkey-on-a-card/) leaves for the details, and that record is `Accepted`. It decides that the first version makes a signing subkey and an authentication subkey and no encryption subkey, and how long a person's primary lives; the [hand-off contract](/reference/hand-off-contract/#openpgp-subkey) carries both capabilities, with their test vectors. The code is [issue #18](https://github.com/truvity/ritueel/issues/18), in M4. How to use the result is in [Sign git commits and tags](/guides/openpgp-sign-git/) and [Your own OpenPGP key](/guides/personal-openpgp/).*
 
 A person's OpenPGP key is the same ritual as a service's subkey: a key is made in a store and bound under a primary. Here the primary is the person's, offline in a file, and the subkey is born on the person's card. ritueel runs it with the engine of the company case, with the X.509 half switched off.
 
@@ -26,6 +26,10 @@ policy:
 intermediates:
   - name: daily
     type: openpgp-subkey
+    capability: sign
+  - name: ssh
+    type: openpgp-subkey
+    capability: authenticate
 ```
 
 `kind: personal` replaces `name` and `release_address` with `person` (a name of 1 to 64 characters and an address) and is otherwise [the same file](/reference/directory/#ritueelyaml). It is additive: a file without `kind` is a company directory, as before.
@@ -44,14 +48,14 @@ intermediates:
 
 The primary is the profile of [the OpenPGP primary](/reference/directory/#the-openpgp-primary) with two changes: its one user ID is `<name> <address>` of the person, and it is made in the `software` store with the encrypted file backend, whose key file is `A.openpgp.key.age` in the key directory. It is valid 36 months and extended at each use.
 
-The daily subkey is the signing subkey of [the contract](/reference/hand-off-contract/#openpgp-signing-subkey): ECDSA P-384, version 4, key flags `0x02`, a back-signature made by the subkey, a binding of about 13 months. Which other kinds a person may have is [an open question](/decisions/0012-personal-openpgp-the-primary-offline-in-a-file-the-daily-subkey-on-a-card/).
+The two subkeys are the subkeys of [the contract](/reference/hand-off-contract/#openpgp-subkey): ECDSA P-384, version 4, a back-signature made by the subkey, a binding of about 13 months. The signing subkey (`daily` above) has key flags `0x02`; the authentication subkey (`ssh` above) has `0x20` and serves SSH through `gpg-agent` ([the guide](/guides/openpgp-ssh-authentication/)). There is no encryption subkey ([ADR 0012](/decisions/0012-personal-openpgp-the-primary-offline-in-a-file-the-daily-subkey-on-a-card/)).
 
 ## The commands
 
 | Command | Does | Needs a person |
 |---|---|---|
 | `ritueel init --kind personal --store software --backend file --key-dir DIR --revocation-dir DIR` | Makes the directory, the primary and its revocation signatures ([revocation material](/reference/revocation-material/)), and the first certificate. | Yes |
-| `ritueel personal subkey add NAME --card SERIAL` | One ceremony: the card makes the subkey and its back-signature, the primary binds it, and the certificate is rebuilt. It writes the request and the proof into `requests/` like any requester, then answers them. | Yes |
+| `ritueel personal subkey add NAME --card SERIAL` | One ceremony: the card makes the subkey of the entry `NAME`, with its capability, and its back-signature, the primary binds it, and the certificate is rebuilt. It writes the request and the proof into `requests/` like any requester, then answers them. | Yes |
 
 Everything else is a command that exists already. `ritueel yearly` renews the binding and extends the primary, `status` warns at 60, 30 and 14 days for the binding and at 6 months, 3 months and 30 days for the primary, and `revocation make`, `revocation check` and `drill restore` work as for a root.
 

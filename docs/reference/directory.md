@@ -50,6 +50,7 @@ intermediates:
     permitted_uri_hosts: [example.com]
   - name: example-release
     type: openpgp-subkey
+    capability: sign
     kms_read_roles:
       "111122223333": arn:aws:iam::111122223333:role/example-certifier-read
   - name: example-ssh
@@ -67,6 +68,7 @@ keyring:
 | `policy` | The rules every request is checked against: `stores`, `min_firmware`, `pin_policy`, `require_name_constraints` and `validity_months`, with the meanings of the [reference policy](/reference/hand-off-contract/#what-the-certifier-checks). All five are required. |
 | `intermediates` | The intermediates ritueel may certify, one entry each. `name` is the `NAME` of the commands: lower-case letters, digits and hyphens, 1 to 63 characters, unique. `type` is `x509-intermediate`, `openpgp-subkey` or `ssh-ca-key`. |
 | `intermediates[].permitted_uri_hosts` | For `x509-intermediate`: the hosts a request's name constraints must stay inside. Required when `require_name_constraints` is true. Only URI hosts are expressible in version 1. **Planned:** permitted and excluded DNS subtrees and excluded IP ranges, for an intermediate that issues for DNS names and for per-environment limits; the schema will grow when a first installation needs it. |
+| `intermediates[].capability` | For `openpgp-subkey`: `sign` or `authenticate`, required. A request for another capability is refused with `policy`; the subkey is bound with this one's key flag ([the contract](/reference/hand-off-contract/#openpgp-subkey)). |
 | `intermediates[].use` | For `ssh-ca-key`: `user` or `host`, required. A request for another `use` is refused with `policy`; the key is listed with this use ([the contract](/reference/hand-off-contract/#ssh-ca-key)). |
 | `kind` | Optional. `personal` for a person's own OpenPGP key; absent for a company directory. A personal directory has `person` instead of `name` and `release_address` ([personal OpenPGP](/reference/personal-openpgp/)). |
 | `person` | Only with `kind: personal`: `name` (1 to 64 characters) and `address`. |
@@ -147,6 +149,7 @@ The schema, in JSON Schema (draft 2020-12), which the code ships and checks the 
         "properties": {
           "name": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]{0,62}$" },
           "type": { "enum": ["x509-intermediate", "openpgp-subkey", "ssh-ca-key"] },
+          "capability": { "enum": ["sign", "authenticate"] },
           "use": { "enum": ["user", "host"] },
           "permitted_uri_hosts": { "type": "array", "uniqueItems": true, "items": { "type": "string" } },
           "kms_read_roles": { "type": "object", "propertyNames": { "pattern": "^[0-9]{12}$" },
@@ -158,7 +161,7 @@ The schema, in JSON Schema (draft 2020-12), which the code ships and checks the 
 }
 ```
 
-Five rules the schema cannot state: the two Regions of `aws_kms` differ, both its roles are in `account`, intermediate names are unique, an `x509-intermediate` has `permitted_uri_hosts` when `require_name_constraints` is true, and an `ssh-ca-key` has `use` and no other key of the entry. A name that begins with `break-glass-` is refused, because the SSH CA key list uses those for the break-glass keys. ritueel checks all of them when it reads the file.
+Six rules the schema cannot state: the two Regions of `aws_kms` differ, both its roles are in `account`, intermediate names are unique, an `x509-intermediate` has `permitted_uri_hosts` when `require_name_constraints` is true, an `openpgp-subkey` has `capability`, and an `ssh-ca-key` has `use` and no other key of the entry. A name that begins with `break-glass-` is refused, because the SSH CA key list uses those for the break-glass keys. ritueel checks all of them when it reads the file.
 
 ## `root.json`
 
@@ -208,7 +211,7 @@ Every root's OpenPGP primary has this profile, as [ADR 0006](/decisions/0006-rel
 | Key | Version 4, ECDSA on P-384 (algorithm 19). The creation time is `openpgp_created`. |
 | User ID | One: `<name> Release Root <label> <release_address>`, for example `Example Release Root A <release@example.com>`. A test root's adds ` (TEST ONLY)` before the address. No person's name. |
 | Self-signature | A positive certification (type `0x13`) of the user ID, SHA-384. Hashed: signature creation time (the ceremony time), key flags `0x01` (certify only), key expiration time, marked critical, so that the key expires 36 calendar months after the ceremony, and the issuer fingerprint. Unhashed: the issuer key ID ([the packet rule](/reference/hand-off-contract/#issuer-key-id)). |
-| Subkeys | None of its own. It binds the signing subkeys of intermediates through the hand-off. |
+| Subkeys | None of its own. It binds the subkeys of intermediates through the hand-off. |
 | Revocation | A key revocation signature (type `0x20`), made when the key is born and stored apart from it. |
 
 **Each use extends it,** with a new self-signature of the same shape at the ceremony time.
