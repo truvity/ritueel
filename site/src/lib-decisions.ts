@@ -20,6 +20,9 @@ export function decisionTitle(entry: Decision): string {
 export const sourceUrl = (entry: Decision): string =>
   `https://github.com/truvity/ritueel/blob/main/docs/decisions/${entry.id}.md`;
 
+export const editUrl = (entry: Decision): string =>
+  `https://github.com/truvity/ritueel/edit/main/docs/decisions/${entry.id}.md`;
+
 // A record keeps its status and date as the `**Status:**` and `**Date:**` lines under its
 // heading (docs/decisions/README.md, checked by tools/checks/decisions.mjs).
 const field = (body: string, name: string): string | undefined =>

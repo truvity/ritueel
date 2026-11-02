@@ -79,6 +79,11 @@ check-messages:
 check-yaml-ext:
     tools/checks/yaml-ext.mjs
 
+# Markdown everywhere; MDX only for a page that places components: every docs/**/*.mdx imports
+# a component and places it ("Page format" in docs/contributing/pages.md).
+check-mdx-pages:
+    tools/checks/mdx-pages.mjs
+
 # Every path that AGENTS.md, CLAUDE.md, .claude/skills/*/SKILL.md and .claude/agents/*.md
 # point to exists. Fails when AGENTS.md is missing or CLAUDE.md does not import it.
 check-agent-links:
@@ -94,7 +99,7 @@ check-vectors:
     tools/checks/vectors.mjs
 
 # Every repository rule.
-check-rules: check-selftest check-decisions check-public check-yaml-ext check-agent-links check-vectors
+check-rules: check-selftest check-decisions check-public check-yaml-ext check-mdx-pages check-agent-links check-vectors
 
 # Everything a pull request must pass.
 check: check-rules site-check site-workers

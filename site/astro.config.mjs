@@ -16,7 +16,7 @@ export default defineConfig({
         'ritueel teaches how to keep the root of a PKI and the master key of OpenPGP safe, and gives tools that simplify the ceremonies. Open source, taught in the open.',
       favicon: '/favicon.svg',
       social: [{ icon: 'github', label: 'GitHub', href: 'https://github.com/truvity/ritueel' }],
-      editLink: { baseUrl: 'https://github.com/truvity/ritueel/edit/main/docs/' },
+      editLink: { baseUrl: 'https://github.com/truvity/ritueel/edit/main/' },
       lastUpdated: false,
       // The 404 page is src/pages/404.astro.
       disable404Route: true,
