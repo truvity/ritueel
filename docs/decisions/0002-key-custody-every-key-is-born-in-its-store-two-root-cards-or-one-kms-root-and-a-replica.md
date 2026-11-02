@@ -25,7 +25,7 @@ The goal is a key-service experience without trusting software with a key: every
 
 ### The yearly ceremony
 
-- **The cards alternate by year:** A one year, B the next. A cloud root has nothing to alternate with and signs every year.
+- **The cards alternate by year:** A one year, B the next. A cloud root has nothing to alternate with and signs every year: at a ceremony, or unattended under a declared renewal policy that can extend trust and never create it ([0008](/decisions/0008-the-operator-prepares-the-holder-and-ritueel-creates-attests-and-verifies-the-root/#renewal-of-a-cloud-root-under-a-policy)). A card root cannot be renewed unattended; `status` reminds its holder.
 - **It runs on the holder's ordinary workstation,** with no live CD and no air gap. The workstation is untrusted: the key never leaves its store, and every byte the root will sign is fixed, shown and confirmed before the store signs it. The ceremony checks are in [0004](/decisions/0004-ceremonies-plan-confirm-reserve-sign-verify-record/).
 - **PINs and admin PINs** live in the holder's password manager, one entry per card.
 
@@ -43,7 +43,7 @@ The goal is a key-service experience without trusting software with a key: every
 
 ### The accepted limit
 
-Whoever holds one root card and its PIN, or the role that uses a cloud root, can sign things outsiders trust until that root is revoked and the update reaches them. Standard tools cannot require m-of-n. A stolen card without its PIN locks after three tries.
+Whoever holds one root card and its PIN, or the role that uses a cloud root, can sign things outsiders trust until that root is revoked and the update reaches them. Standard tools cannot require m-of-n. A stolen card without its PIN locks after three tries. Whoever holds a cloud root's renewal role can only keep alive what the ledger already holds, past the day it should have lapsed, until a ceremony revokes it.
 
 ## Consequences
 
@@ -70,6 +70,8 @@ Whoever holds one root card and its PIN, or the role that uses a cloud root, can
 - **A second, independent cloud root in another account.** Two keys like the two cards, but a second account to secure, both still on one provider, and the loss it covers is already covered by the replica.
 - **A cloud key service as the only kind of store.** One anchor and full audit, but one provider, no attestation, and no use to an installation on single-board computers.
 - **Replace every intermediate key every year.** Short-lived keys, but a key ceremony per holder per year moves a sound key for no gain.
+- **A renewal role for card roots,** with a card left in a scheduler's host and its PIN cached. No yearly touch, but the card's PIN-always and touch-always policy would have to go, and a card on an online host is no longer a root held offline.
+- **Unattended renewal for a mixed set, one card and one cloud root.** The cloud root could keep the set alive alone, but the card's own certificate and CRL still need its touch about every second year, and lists signed by the cloud root alone year after year would hide a card that died; `renew` refuses a directory with a card root.
 
 ## Follow-ups
 

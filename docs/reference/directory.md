@@ -70,7 +70,7 @@ keyring:
 | `intermediates[].use` | For `ssh-ca-key`: `user` or `host`, required. A request for another `use` is refused with `policy`; the key is listed with this use ([the contract](/reference/hand-off-contract/#ssh-ca-key)). |
 | `kind` | Optional. `personal` for a person's own OpenPGP key; absent for a company directory. A personal directory has `person` instead of `name` and `release_address` ([personal OpenPGP](/reference/personal-openpgp/)). |
 | `person` | Only with `kind: personal`: `name` (1 to 64 characters) and `address`. |
-| `aws_kms` | Optional, from M2; required when a root's store is `aws-kms`. The root account, the two Regions and the two roles ([the block](/reference/kms-root/#ritueelyaml)). |
+| `aws_kms` | Optional, from M2; required when a root's store is `aws-kms`. The root account, the two Regions and the two roles, and optionally the renewal policy ([the block](/reference/kms-root/#ritueelyaml), [the policy](/reference/kms-root/#the-policy-in-ritueelyaml)). |
 | `keyring` | Optional. `license` is the SPDX identifier written into the `.rpm`, required to build one: the operator's choice, which ritueel does not default ([the keyring package](/reference/keyring-package/)). |
 | `intermediates[].kms_read_roles` | For a requester's KMS key in another account: the read-only role to assume, by account ([the contract](/reference/hand-off-contract/#aws-kms)). The role is never taken from a request. |
 
@@ -135,7 +135,17 @@ The schema, in JSON Schema (draft 2020-12), which the code ships and checks the 
         "region": { "type": "string", "minLength": 1 },
         "replica_region": { "type": "string", "minLength": 1 },
         "admin_role": { "type": "string", "pattern": "^arn:aws[a-z-]*:iam::[0-9]{12}:role/" },
-        "ceremony_role": { "type": "string", "pattern": "^arn:aws[a-z-]*:iam::[0-9]{12}:role/" }
+        "ceremony_role": { "type": "string", "pattern": "^arn:aws[a-z-]*:iam::[0-9]{12}:role/" },
+        "renewal": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["role", "intermediates", "within_days"],
+          "properties": {
+            "role": { "type": "string", "pattern": "^arn:aws[a-z-]*:iam::[0-9]{12}:role/" },
+            "intermediates": { "type": "array", "uniqueItems": true, "items": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]{0,62}$" } },
+            "within_days": { "type": "integer", "minimum": 14, "maximum": 90 }
+          }
+        }
       }
     },
     "intermediates": {
