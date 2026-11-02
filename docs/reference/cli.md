@@ -11,21 +11,24 @@ sidebar:
 
 | Command | Does | Needs a person |
 |---|---|---|
-| `ritueel init` | Creates the directory, the roots (`--roots N`, default 2, both cards present) with their attestations and revocation signatures, and the first trust products. | Yes |
+| `ritueel init` | Creates the directory, the roots (`--roots N`, default 2, both cards present) with their attestations and their revocation signatures (one for each of two reasons), and the first trust products. | Yes |
 | `ritueel yearly` | The yearly ceremony: renews every registered intermediate by re-signing, with the root of the year, extends that root, and publishes the next trust sequence. | Yes |
 | `ritueel intermediate add NAME --request STEM` | Registers an intermediate and certifies its first request. | Yes |
 | `ritueel intermediate replace NAME` | The event path: certifies a new key for a registered intermediate. `--revoke` also revokes the old one, with a reason. | Yes |
 | `ritueel intermediate revoke NAME` | Revokes the certificate and subkey binding of an intermediate, or withdraws its SSH CA key, with a reason (`--reason compromise`, `superseded` or `cessation`), without a replacement. It lists the intermediate's unexpired certificates on the [CRL](/reference/crl/) of each root that issued them, so it needs those roots' cards. | Yes |
-| `ritueel root add` | Creates a new root in a store and has an existing root vouch for it. This starts an overlap. | Yes |
-| `ritueel root retire ROOT` | Ends an overlap: removes the root from the next trust products. | Yes |
-| `ritueel root revoke ROOT` | Revokes a lost, stolen or compromised root, and builds the trust products without it. | Yes |
+| `ritueel root add --store S [--replaces LABEL --overlap-until DATE \| --target N]` | Creates a new root in a store and has an existing root vouch for it. With `--replaces`, this starts an overlap that ends on the day given ([root transitions](/reference/transitions/#the-commands)). | Yes |
+| `ritueel root retire LABEL` | Ends an overlap: removes the root from the next trust products, after the checks of [root transitions](/reference/transitions/#root-retire). | Yes |
+| `ritueel root revoke LABEL --reason REASON --revocation FILE` | Revokes a lost, stolen or compromised root with its stored revocation signature, and builds the trust products without it. | Yes |
+| `ritueel revocation make`, `revocation check` | Make one more revocation signature while the primary exists, and check a stored one without printing it ([revocation material](/reference/revocation-material/#making-one-later-and-checking-one)). | `make` only |
+| `ritueel drill restore` | The restore check on a clean machine: the records, the roots against their holders, the revocation signatures. It signs nothing ([drills](/reference/drill/#the-restore-check)). | No |
 | `ritueel status` | Lists roots, intermediates, the root list and unresolved attempts, with what expires when. | No |
 | `ritueel handoff check STEM` | Runs every check of the [hand-off contract](/reference/hand-off-contract/) on the request `STEM`, and signs nothing. | No |
 | `ritueel bundle build`, `ritueel keyring build` | Build the CA bundle and the [keyring package](/reference/keyring-package/) from the directory. Same directory, same bytes. | No |
 | `ritueel root-list verify`, `ssh-ca-keys verify`, `crl verify`, `keyring verify` | The host's and the relying party's side of each trust product: run its checks on a file, signing and writing nothing. | No |
 | `ritueel ssh-ca break-glass ROOT` | Makes the break-glass SSH CA of a root that was made before ritueel made one at `init` and `root add`, and lists it. | Yes |
 | `ritueel records list`, `records verify`, `records close` | Read the ceremony records, check their hash chain, and close an unresolved attempt. | `close` only |
-| `ritueel wizard` | A guided front end to the commands above, in the terminal or in a browser on localhost. | Yes |
+| `ritueel personal subkey add NAME --card SERIAL` | In a personal directory: the card makes the daily subkey and its back-signature, and the person's primary binds it ([personal OpenPGP](/reference/personal-openpgp/#the-commands)). `init --kind personal` makes the directory. | Yes |
+| `ritueel wizard [--web]` | A guided front end to the commands above, in the terminal, and with `--web` also on a page served on localhost ([the wizard](/reference/wizard/)). | Yes |
 
 The verbs of a transition map onto the commands: *create* and *vouch* are `root add`, *overlap* is a state and not a command, *supersede* is `root retire`, and *revoke* is `root revoke`.
 
@@ -39,6 +42,10 @@ The verbs of a transition map onto the commands: *create* and *vouch* are `root 
 | `--confirm DIGEST` | Confirm a plan from a script; the digest must be the plan's. |
 | `--root ROOT` | Sign with this root instead of the root of the year; the reason is recorded. |
 | `--allow-missing NAME` | `yearly` only: go on without a request for this intermediate, and record it. |
+| `--card [LABEL=]SERIAL` | `piv` roots: the card that holds the root `LABEL`, by serial. `init` takes one for each root (`--card A=00000001 --card B=00000002`); `root add` takes one. Without it, the only card connected is used, and two cards are refused with `card-ambiguous` ([cards](/reference/cards/#what-is-checked-on-a-card)). |
+| `--extra-intermediates FILE` | `piv` roots: PEM certificates of the maker's intermediates that the bundle lacks. Helpers only: each must chain to the pinned root ([the bundle](/reference/cards/#the-attestation-bundle)). |
+| `--revocation-dir DIR` | Every command that makes revocation signatures for a root that is not an encrypted-file software root: where to write them. Refused inside the directory or its repository ([revocation material](/reference/revocation-material/#where-it-is-written)). `--reasons` chooses the reasons. |
+| `--backend file\|onepassword\|keyring` | Software roots: the backend ([the software store](/reference/software-store/)). `--op-vault NAME` names the vault for `onepassword`. `init --kind personal` makes a personal directory. |
 | `--passphrase-fd N` | Software roots: read the passphrase from this file descriptor. |
 | `--key-dir DIR` | Software roots: the directory of the [key files](/reference/directory/#the-software-roots-key-files). Refused when it is inside `--dir`. |
 | `--test-root` | Software roots: no passphrase, marked `TEST ONLY` everywhere. Products refuse to mix test and real roots. |
@@ -54,9 +61,9 @@ A PIN is never a flag or an environment variable; the holder types it at the ter
 | 1 | Failure. |
 | 2 | Usage error. |
 | 3 | Refused by a check or by the policy. |
-| 4 | Refused by the card or its PIN state. |
+| 4 | Refused by the card or its PIN state, or by a locked key store backend. |
 | 5 | Not confirmed. |
-| 10, 11, 12 | `status` only: notice, alert and critical. Intermediates warn at 60, 30 and 14 days, the root list, the SSH CA key list and each CRL at 60, 30 and 14 days, roots at 6 months, 3 months and 30 days. An unresolved attempt is critical, because it may mean a signature that was made and never recorded. The highest finding wins. |
+| 10, 11, 12 | `status` only: notice, alert and critical. Intermediates warn at 60, 30 and 14 days, the root list, the SSH CA key list and each CRL at 60, 30 and 14 days, roots at 6 months, 3 months and 30 days. An unresolved attempt is critical, because it may mean a signature that was made and never recorded. A short root set is an alert, an overdue overlap an alert and a running one a notice ([root transitions](/reference/transitions/#the-target)); a restore drill older than 13 months is a notice ([drills](/reference/drill/#when-it-is-due)). The highest finding wins. |
 
 ## The first version's commands
 
@@ -133,7 +140,7 @@ Every object has these members:
 | `command` | The command, as in the plan: `intermediate add`. |
 | `exit_code` | The exit code the command returns. |
 | `outcome` | `done`, `refused`, `not-confirmed`, `usage` or `failed`, matching the exit code. |
-| `reasons` | When refused: the codes, as in the [hand-off contract](/reference/hand-off-contract/#the-answer) or the [root list](/reference/root-list/#how-a-host-reads-it) where they apply, and `plan-stale` for a plan that no longer matches the directory. |
+| `reasons` | When refused: the codes, as in the [hand-off contract](/reference/hand-off-contract/#the-answer) or the [root list](/reference/root-list/#how-a-host-reads-it) where they apply, the codes of [a card](/reference/cards/#what-is-checked-on-a-card) and of [a KMS root](/reference/kms-root/#the-checks), and `plan-stale` for a plan that no longer matches the directory. |
 | `error` | When failed or a usage error: a message for a person. Its wording is not part of the format. |
 
 And these where they apply:
@@ -149,7 +156,7 @@ And these where they apply:
 | `roots` | `init`, `status` | A list of `{ "label", "store", "test", "x509_spki_sha256", "openpgp_fingerprint", "not_after" }`. |
 | `answer` | `intermediate add` | `{ "stem", "outcome", "reasons", "artifacts" }`, as in `result.json`. |
 | `checks` | `handoff check` | A list of `{ "n", "result" }` for checks 1 to 9, where `result` is `passed`, `failed` or `not-run`. |
-| `findings` | `status` | A list of `{ "level", "kind", "name", "expires_at", "days_left" }`: `level` is `notice`, `alert` or `critical`, `kind` is `intermediate`, `root`, `root-list`, `ssh-ca-keys`, `crl` or `attempt`. |
+| `findings` | `status` | A list of `{ "level", "kind", "name", "expires_at", "days_left" }`: `level` is `notice`, `alert` or `critical`, `kind` is `intermediate`, `root`, `root-list`, `ssh-ca-keys`, `crl`, `attempt`, `root-set`, `root-overlap` or `drill`. |
 | `records` | `records list` | A list of `{ "ceremony", "command", "outcome", "sha256" }`, in chain order. |
 
 The members are named with lower-case words and underscores, times and digests are written as in the [hand-off contract](/reference/hand-off-contract/#messages-and-files), and the object is not in canonical form. A new member is not a new version, so a reader ignores a member it does not know; a member renamed, removed or changed in meaning is version 2.

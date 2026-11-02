@@ -15,8 +15,8 @@ Every ceremony runs the same steps: **plan** every byte that will be signed, **c
 
 ## What the tool checks
 
-1. **The card.** Read its serial, and check it against the registry of known cards before anything is written: the right card for the role, PIN tries left, no default PIN.
-2. **The attestation of every key it certifies, and of every root it creates.** A card's chain must lead to the maker's current root through the maker's intermediates, which ritueel ships and refreshes; a KMS key is read from the service. A key that cannot be attested is refused, because an imported key cannot be.
+1. **The card.** Read its serial, and check it against the registry of known cards before anything is written: the right card for the role, PIN tries left, no default PIN, PUK or management key ([the checks](/reference/cards/#what-is-checked-on-a-card)). Preparing the card is the holder's job, with the maker's tool ([Prepare a root card](/guides/prepare-a-root-card/)).
+2. **The attestation of every key it certifies, and of every root it creates.** A card's chain must lead to the maker's current root through the maker's intermediates, which ritueel ships and refreshes; a KMS key is read from the service, with its policy and replica ([the checks](/reference/kms-root/#the-checks)). A key that cannot be attested is refused, because an imported key cannot be.
 3. **What is about to be signed.** Show the key's fingerprint, its store, its lifetime and the serial before each touch. The holder confirms by comparing, not by pressing a button.
 4. **The result.** After signing, verify the certificate or binding against the request and the plan.
 5. **The record.** Write a hash-chained ceremony record that contains no PIN, no key and no secret.
@@ -29,7 +29,7 @@ A PIN is entered by the holder at the terminal. The tool never retries a wrong P
 |---|---|---|---|
 | Yearly | Month 12 of the intermediates' life | The card for the year | New 13-month certificates over the same intermediate keys, and new bindings that extend the same subkeys. The card's own root extended, a new keyring package and root list. |
 | Intermediate add, replace or revoke | Between yearly ceremonies | The card for the year; for `revoke`, the card of each root that issued an unexpired certificate of the intermediate | `add`: a certificate, binding or SSH CA key listing for a new intermediate. `replace`: new key material, on an event. `revoke`: the certificate and binding withdrawn, and the certificate put on the issuing root's [CRL](/reference/crl/). |
-| Root add, retire or revoke | A card is lost, retired or compromised | The surviving card | A new root, or a root list without the old one. |
+| Root add, retire or revoke | A card is lost, retired or compromised | The surviving card | A new root that an active root vouches for, an overlap that ends on a day you name, or a root list without the old root ([root transitions](/reference/transitions/)). |
 
 Each is one to three commands. [Adopting the roots](/guides/root-adoption/) is the first one you run, and [A lost root card](/guides/lost-root-card/) walks through the last. An intermediate key is renewed by re-signing and replaced only on an event or at most every three years ([ADR 0002](/decisions/0002-key-custody-every-key-is-born-in-its-store-two-root-cards-or-one-kms-root-and-a-replica/#validity-renewal-and-replacement)).
 

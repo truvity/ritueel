@@ -24,6 +24,7 @@ sidebar:
 
 ## Restore, as a drill
 
+0. **Run the check.** `ritueel drill restore --expect-last DIGEST --allowed-signers FILE --revocation-dir DIR` does steps 1 to 4 below, compares the stored revocation signatures with their digests, and writes a report ([the check](/reference/drill/#the-restore-check)). The steps say what it does, so you can do each by hand once.
 1. **Clone the ledger** on the clean machine from the remote, and verify the signed commits.
 2. **Verify the chain.** `ritueel records verify`, then compare the last digest with the note. Result: the history is whole.
 3. **List the state.** `ritueel status`. Result: the roots, the intermediates and what expires when.
