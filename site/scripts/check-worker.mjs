@@ -389,7 +389,9 @@ await test('the page carries a container for every part the fragment has', () =>
   const page = readFileSync(join(site, 'src/pages/status.astro'), 'utf8');
   for (const p of PARTS) assert.ok(page.includes(`data-live-part="${p}"`), `status.astro has the ${p} part`);
   assert.ok(page.includes('data-live-src="/api/status/live/"') && page.includes('data-live-note'));
-  assert.ok(!/<script[^>]*>\s*[^<\s]/.test(page.replace(/<script>\s*import '..\/scripts\/status-live.ts';\s*<\/script>/, '')), 'no inline script but the import of the bundled one');
+  // The page holds one <script>, in any letter case: the import of the bundled script, never inline code.
+  const scripts = [...page.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script\s*>/gi)].map((m) => m[1].trim());
+  assert.deepEqual(scripts, ["import '../scripts/status-live.ts';"], 'no inline script but the import of the bundled one');
 });
 
 // ---- the live script's decisions
