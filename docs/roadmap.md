@@ -5,7 +5,7 @@ description: The milestones of the first version of ritueel in the order they ar
 
 The plan is public and small. Each milestone delivers something a person can use, and each work item is an [issue](https://github.com/truvity/ritueel/issues) with a "done when". Dates are not promised; the order is.
 
-**Status as of 2026-11-02:** design phase. The [decision records](/decisions/) are accepted, apart from the personal OpenPGP record, which has two open questions for the maintainer ([ADR 0012](/decisions/0012-personal-openpgp-the-primary-offline-in-a-file-the-daily-subkey-on-a-card/)), and every format that M1 to M4 build is specified on the [reference pages](/reference/). The hand-off contract (with the SSH CA key request), the root list, the SSH CA key list and the CRLs have test vectors; the keyring package is a specification that its builder will check. No code exists yet. What is open lives in the issues and their milestones, not on this page.
+**Status as of 2026-11-02:** design phase. The [decision records](/decisions/) are accepted, and every format that M1 to M4 build is specified on the [reference pages](/reference/). The hand-off contract (with the SSH CA key request), the root list, the SSH CA key list and the CRLs have test vectors; the keyring package is a specification that its builder will check. No code exists yet. What is open lives in the issues and their milestones, not on this page.
 
 ## The first version
 

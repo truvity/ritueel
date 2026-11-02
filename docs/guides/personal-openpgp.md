@@ -5,7 +5,7 @@ sidebar:
   order: 9
 ---
 
-*Design phase: not built yet. This page is the plan that `ritueel init --kind personal` and `ritueel personal subkey add` will follow ([issue #18](https://github.com/truvity/ritueel/issues/18), M4); the record behind it, [ADR 0012](/decisions/0012-personal-openpgp-the-primary-offline-in-a-file-the-daily-subkey-on-a-card/), is still `Proposed`. The files are in [Personal OpenPGP](/reference/personal-openpgp/). Read [the OpenPGP custody chain](/learn/chain-openpgp/) first for why a master key and a daily subkey are two keys.*
+*Design phase: not built yet. This page is the plan that `ritueel init --kind personal` and `ritueel personal subkey add` will follow ([issue #18](https://github.com/truvity/ritueel/issues/18), M4); the record behind it, [ADR 0012](/decisions/0012-personal-openpgp-the-primary-offline-in-a-file-the-daily-subkey-on-a-card/), is `Accepted`: the first version makes a signing subkey and an authentication subkey, and replaces a software primary at most every three years. This page describes the signing subkey and gains the rest with [issue #18](https://github.com/truvity/ritueel/issues/18). The files are in [Personal OpenPGP](/reference/personal-openpgp/). Read [the OpenPGP custody chain](/learn/chain-openpgp/) first for why a master key and a daily subkey are two keys.*
 
 You want to sign commits and releases, and maybe log in, with a key that cannot be copied off your computer, and a master key you can lose a card without losing. The answer is two keys: a **master key** (the primary) that signs rarely and stays offline in an encrypted file, and a **daily subkey** that is born on a card and does the signing.
 
