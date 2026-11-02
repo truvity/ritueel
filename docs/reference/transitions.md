@@ -21,7 +21,7 @@ There is no state for the overlap. **An overlap is the time in which a root and 
 
 ## The target
 
-The number of active roots the holder intends to have is the **target**: `init` sets it (2 for two cards, 1 for a cloud root), and it is written in every record of `init`, `root add`, `root retire` and `root revoke` as `roots_target`. `status` compares it with the number of active roots:
+The number of active roots the holder intends to have is the **target**: `init` sets it to the number of roots it made (2 for two cards, 1 for a cloud root), and it is written in every record of `init`, `root add`, `root retire` and `root revoke` as `roots_target`. `status` compares it with the number of active roots:
 
 | Active roots | Finding | Level |
 |---|---|---|
