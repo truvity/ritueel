@@ -40,6 +40,7 @@ A **key fingerprint** in these files is the SHA-256 of the DER `SubjectPublicKey
 | `root_reason` | Present only when `--root` chose another root than the root of the year: the reason given. |
 | `requests` | A list, one for each request the ceremony answers: `{ "stem", "type", "request_sha256", "proof_sha256", "store", "key" }`, where `key` is the fingerprint of the requester's key. |
 | `signatures` | The ordered list of every signature the ceremony makes, below. |
+| `births` | Only in a ceremony that makes keys: the keys to be born, below. |
 | `touches` | The number of touches the holder will give: one for each signature by a card, 0 for a software root. |
 | `base_sequence` | The trust sequence of the newest trust products when the plan was made, the state it was made against. |
 | `trust_sequence` | The trust sequence of the trust products the ceremony writes: `base_sequence` plus one. |
@@ -55,8 +56,11 @@ Each member of `signatures`:
 | `serial` | For a certificate: the serial number, in lower-case hexadecimal, drawn here. |
 | `not_before`, `not_after` | For a certificate or a binding: the validity it gives. |
 | `tbs_sha256` | The SHA-256 of the exact bytes the key signs: the DER `TBSCertificate`, the OpenPGP data hashed for the signature (RFC 9580, section 5.2.4), the JWS signing input of the root list or of the SSH CA key list, or the DER `TBSCertList` of a CRL. |
+| `derived` | True for a signature that covers a key born in this ceremony; it has no `tbs_sha256`, and no `key` when the new key signs itself ([below](/reference/ceremony-record/#the-plan)). Absent otherwise. |
 
 `tbs_sha256` is what makes the plan exact: two machines that build the same plan from the same directory compute the same bytes to sign, and the verify step compares each artifact with it.
+
+**A key that is born in the ceremony is the exception.** `init`, `root add` and `ssh-ca break-glass` make keys, and a signature that covers a new key (its root certificate, its primary's self-signature and revocation signatures, a vouching signature, a cross-certificate) cannot have its bytes fixed before the key exists. The plan lists such a signature with `derived` set to true and without `tbs_sha256` (and without `key` when the new key signs itself), and lists the keys to be born in `births`: for each, `{ "label", "purpose", "store", "place", "creation_time" }`, where `place` is the card's serial and slot, or the Region, and `creation_time` is the OpenPGP creation time drawn here. The verify step checks every derived artifact against the profile and the key that was born, with code that did not sign it, and the record carries the digests that the plan could not ([ADR 0008](/decisions/0008-the-operator-prepares-the-holder-and-ritueel-creates-attests-and-verifies-the-root/#births-and-what-a-crash-leaves)).
 
 ### The plan digest and the confirmation
 
@@ -82,7 +86,11 @@ A person who has read the plan may **decline** a request instead of confirming: 
 | `root` | The label of the root that signs. |
 | `started_at` | When the attempt was written. |
 
-ritueel creates the file only if it does not exist (exclusive create), writes it to disk, and only then makes the first signature. An existing attempt for a plan means its serials may be used: ritueel refuses to run that plan again. An attempt is **resolved** when a record names its ceremony: the ceremony's own record, or a closing record from `records close`. `status` reports every unresolved attempt as **critical** (exit code 12): a reserved but unrecorded attempt may mean a signature that was made and never recorded.
+ritueel creates the file only if it does not exist (exclusive create), writes it to disk, and only then makes the first birth or signature. An existing attempt for a plan means its serials may be used: ritueel refuses to run that plan again. An attempt is **resolved** when a record names its ceremony: the ceremony's own record, or a closing record from `records close`. `status` reports every unresolved attempt as **critical** (exit code 12): a reserved but unrecorded attempt may mean a signature that was made and never recorded.
+
+### The birth journal
+
+A ceremony that makes keys also creates `attempts/<ceremony>.births.jsonl`, with the attempt and before the first birth. After each key exists, and before the next birth begins, ritueel appends one line and syncs the file: `{ "at", "label", "purpose", "store", "place", "public_key_sha256" }`, where `place` is as in the plan with the key's ARN for KMS. The journal holds no secret. If the run stops, `records close` prints it, so that the holder can reset the card or the operator can schedule the key for deletion; ritueel does neither ([ADR 0008](/decisions/0008-the-operator-prepares-the-holder-and-ritueel-creates-attests-and-verifies-the-root/#births-and-what-a-crash-leaves)). An attempt is resolved by a record, as before; the journal is not a second record.
 
 ## The record
 

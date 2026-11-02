@@ -14,15 +14,15 @@ ritueel keeps everything it knows in **one directory of plain files** that the h
 | Path | Written by | Holds |
 |---|---|---|
 | `ritueel.yaml` | The operator | The name, the release address, the policy and the intermediates ([below](/reference/directory/#ritueelyaml)). |
-| `cards.yaml` | ritueel | The registry of known cards, from M2. Absent while every root is in software. |
+| `cards.yaml` | ritueel | The registry of cards that held a root, from M2. Absent while every root is in software ([the registry](/reference/cards/#the-registry-cardsyaml)). |
 | `roots/<label>/root.json` | ritueel | The facts of one root ([below](/reference/directory/#rootjson)). |
 | `roots/<label>/x509.pem` | ritueel | The root's current certificate. |
 | `roots/<label>/openpgp.pgp` | ritueel | The primary's current public certificate, binary. |
-| `roots/<label>/attestation/` | ritueel | For a root on a card or in KMS: the attestation or the key's description and policy, as read at `init`. |
+| `roots/<label>/attestation/` | ritueel | For a root on a card or in KMS: the attestation or the key's description and policy, as read at `init` ([cards](/reference/cards/#files), [KMS](/reference/kms-root/#evidence-files)). |
 | `roots/<label>/ssh-break-glass.pub` | ritueel | From M3: the root's break-glass SSH CA key, one OpenSSH line ([the SSH CA key list](/reference/ssh-ca-key-list/#how-a-key-enters-the-list)). |
 | `requests/<stem>.*` | The operator | Pending requests: the files of the [hand-off contract](/reference/hand-off-contract/#messages-and-files), one stem each. |
 | `answers/<stem>.*` | ritueel | The answers: `<stem>.result.json`, and `<stem>.cert.pem` or `<stem>.bound.pgp`. |
-| `plans/`, `attempts/`, `records/`, `transcripts/` | ritueel | The [ceremony files](/reference/ceremony-record/), one of each kind for each ceremony. |
+| `plans/`, `attempts/`, `records/`, `transcripts/` | ritueel | The [ceremony files](/reference/ceremony-record/), one of each kind for each ceremony. A ceremony that makes keys also writes `attempts/<ceremony>.births.jsonl`, the [birth journal](/reference/ceremony-record/#the-birth-journal). |
 | `products/<sequence>/` | ritueel | The trust products of one trust sequence: `root-list.json`, `root-list.jws` and `ca-bundle.pem` ([the root list](/reference/root-list/#files)); from M2 `crl-<label>.pem` for each active root ([the CRLs](/reference/crl/#files)); from M3 `ssh-ca-keys.json`, `ssh-ca-keys.jws` and `ssh-user-ca-keys.pub` ([the SSH CA key list](/reference/ssh-ca-key-list/#files)), `keyring/` ([the keyring package](/reference/keyring-package/#files)) and `revocations/`. |
 
 - ritueel never writes `ritueel.yaml` or `requests/`, and the operator does not edit the other paths.
@@ -68,6 +68,7 @@ keyring:
 | `intermediates` | The intermediates ritueel may certify, one entry each. `name` is the `NAME` of the commands: lower-case letters, digits and hyphens, 1 to 63 characters, unique. `type` is `x509-intermediate`, `openpgp-subkey` or `ssh-ca-key`. |
 | `intermediates[].permitted_uri_hosts` | For `x509-intermediate`: the hosts a request's name constraints must stay inside. Required when `require_name_constraints` is true. Only URI hosts are expressible in version 1. **Planned:** permitted and excluded DNS subtrees and excluded IP ranges, for an intermediate that issues for DNS names and for per-environment limits; the schema will grow when a first installation needs it. |
 | `intermediates[].use` | For `ssh-ca-key`: `user` or `host`, required. A request for another `use` is refused with `policy`; the key is listed with this use ([the contract](/reference/hand-off-contract/#ssh-ca-key)). |
+| `aws_kms` | Optional, from M2; required when a root's store is `aws-kms`. The root account, the two Regions and the two roles ([the block](/reference/kms-root/#ritueelyaml)). |
 | `keyring` | Optional. `license` is the SPDX identifier written into the `.rpm`, required to build one: the operator's choice, which ritueel does not default ([the keyring package](/reference/keyring-package/)). |
 | `intermediates[].kms_read_roles` | For a requester's KMS key in another account: the read-only role to assume, by account ([the contract](/reference/hand-off-contract/#aws-kms)). The role is never taken from a request. |
 
@@ -108,6 +109,18 @@ The schema, in JSON Schema (draft 2020-12), which the code ships and checks the 
       "additionalProperties": false,
       "properties": { "license": { "type": "string", "minLength": 1 } }
     },
+    "aws_kms": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["account", "region", "replica_region", "admin_role", "ceremony_role"],
+      "properties": {
+        "account": { "type": "string", "pattern": "^[0-9]{12}$" },
+        "region": { "type": "string", "minLength": 1 },
+        "replica_region": { "type": "string", "minLength": 1 },
+        "admin_role": { "type": "string", "pattern": "^arn:aws[a-z-]*:iam::[0-9]{12}:role/" },
+        "ceremony_role": { "type": "string", "pattern": "^arn:aws[a-z-]*:iam::[0-9]{12}:role/" }
+      }
+    },
     "intermediates": {
       "type": "array",
       "items": {
@@ -128,7 +141,7 @@ The schema, in JSON Schema (draft 2020-12), which the code ships and checks the 
 }
 ```
 
-Three rules the schema cannot state: intermediate names are unique, an `x509-intermediate` has `permitted_uri_hosts` when `require_name_constraints` is true, and an `ssh-ca-key` has `use` and no other key of the entry. A name that begins with `break-glass-` is refused, because the SSH CA key list uses those for the break-glass keys. ritueel checks all of them when it reads the file.
+Five rules the schema cannot state: the two Regions of `aws_kms` differ, both its roles are in `account`, intermediate names are unique, an `x509-intermediate` has `permitted_uri_hosts` when `require_name_constraints` is true, and an `ssh-ca-key` has `use` and no other key of the entry. A name that begins with `break-glass-` is refused, because the SSH CA key list uses those for the break-glass keys. ritueel checks all of them when it reads the file.
 
 ## `root.json`
 
@@ -145,6 +158,7 @@ Three rules the schema cannot state: intermediate names are unique, an `x509-int
 | `openpgp_fingerprint` | The primary's fingerprint. |
 | `openpgp_created` | The OpenPGP creation time of the primary, which fixes its fingerprint and is on no card ([ADR 0003](/decisions/0003-key-stores-and-the-card-layer/#rules-for-every-store)). |
 | `revocation_sha256` | The SHA-256 of the primary's revocation signature, which is stored elsewhere. |
+| `store_ref` | From M2, for a root in `piv` or `aws-kms`; absent for `software`. For `piv`: `{ "serial", "x509_slot", "openpgp_slot", "ssh_slot" }`, the card's row in [`cards.yaml`](/reference/cards/#the-registry-cardsyaml) and the slots of the [slot map](/decisions/0003-key-stores-and-the-card-layer/#the-piv-store-and-the-root-cards). For `aws-kms`: `{ "x509_arn", "openpgp_arn", "ssh_arn" }`, the ARNs of the primary keys ([the cloud root](/reference/kms-root/#what-ritueel-creates)). |
 | `revoked_at` | Present once the root is revoked. |
 
 ## The root certificate
@@ -198,7 +212,7 @@ A software root ([the `software` store](/decisions/0003-key-stores-and-the-card-
 
 ## Follow-ups
 
-- `cards.yaml` and the `attestation/` files are specified with the `piv` and `aws-kms` stores ([issue #11](https://github.com/truvity/ritueel/issues/11), [issue #12](https://github.com/truvity/ritueel/issues/12)).
+- The code that writes `cards.yaml`, the `attestation/` files and the `aws_kms` block ([issue #11](https://github.com/truvity/ritueel/issues/11), [issue #12](https://github.com/truvity/ritueel/issues/12)); their formats are on [the cards page](/reference/cards/) and [the cloud root page](/reference/kms-root/).
 - The CRLs, the SSH CA key list and the keyring files under `products/<sequence>/` come with their builders ([issue #30](https://github.com/truvity/ritueel/issues/30), [issue #55](https://github.com/truvity/ritueel/issues/55), [issue #15](https://github.com/truvity/ritueel/issues/15)).
 
 ## Standards

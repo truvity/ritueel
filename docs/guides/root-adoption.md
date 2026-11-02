@@ -11,7 +11,7 @@ Adoption makes the real roots: on two dedicated root cards, or in one cloud root
 
 ## What you start with
 
-- Two root cards that are used for nothing else, each with its PIN, PUK and management key changed from the defaults. The PINs are in your password manager, one entry per card.
+- Two root cards that are used for nothing else, each prepared as in [Prepare a root card](/guides/prepare-a-root-card/): its PIN, PUK and management key changed from the defaults. The PINs are in your password manager, one entry per card.
 - A workstation with ritueel, and an empty directory kept in version control.
 - Two places to keep the cards apart, and a third for the revocation signatures.
 
@@ -30,4 +30,4 @@ Adoption makes the real roots: on two dedicated root cards, or in one cloud root
 - `ritueel status` lists two roots, each valid for about three years, and no unresolved attempt.
 - The drill's record says how long each step of the lost-card walk-through took.
 
-A company on a cloud key service runs the same steps against its dedicated root account: one X.509 root and one OpenPGP primary, each a multi-Region key with a replica, and the key's description and policy in place of an attestation.
+A company on a cloud key service prepares its account as in [Prepare the cloud root](/guides/prepare-the-cloud-root/), then runs the same steps against its dedicated root account: one X.509 root and one OpenPGP primary, each a multi-Region key with a replica, and the key's description and policy in place of an attestation.

@@ -15,8 +15,8 @@ Every ceremony runs the same steps: **plan** every byte that will be signed, **c
 
 ## What the tool checks
 
-1. **The card.** Read its serial, and check it against the registry of known cards before anything is written: the right card for the role, PIN tries left, no default PIN.
-2. **The attestation of every key it certifies, and of every root it creates.** A card's chain must lead to the maker's current root through the maker's intermediates, which ritueel ships and refreshes; a KMS key is read from the service. A key that cannot be attested is refused, because an imported key cannot be.
+1. **The card.** Read its serial, and check it against the registry of known cards before anything is written: the right card for the role, PIN tries left, no default PIN, PUK or management key ([the checks](/reference/cards/#what-is-checked-on-a-card)). Preparing the card is the holder's job, with the maker's tool ([Prepare a root card](/guides/prepare-a-root-card/)).
+2. **The attestation of every key it certifies, and of every root it creates.** A card's chain must lead to the maker's current root through the maker's intermediates, which ritueel ships and refreshes; a KMS key is read from the service, with its policy and replica ([the checks](/reference/kms-root/#the-checks)). A key that cannot be attested is refused, because an imported key cannot be.
 3. **What is about to be signed.** Show the key's fingerprint, its store, its lifetime and the serial before each touch. The holder confirms by comparing, not by pressing a button.
 4. **The result.** After signing, verify the certificate or binding against the request and the plan.
 5. **The record.** Write a hash-chained ceremony record that contains no PIN, no key and no secret.
