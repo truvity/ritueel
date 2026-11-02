@@ -1,7 +1,7 @@
 # 0003 — Key stores and the card layer
 
 **Status:** Accepted; amended by 0007
-**Date:** 2026-11-01
+**Date:** 2026-11-02
 
 ## Context
 
@@ -51,9 +51,29 @@ The `software` store has three backends, chosen when the root is made ([0007](/d
 - **1Password,** the proposed persistent store. Its sync is redundancy against loss, not against compromise.
 - **The OS keyring,** through `github.com/zalando/go-keyring`, with a warning in the creation output and in every record that it can be insecure and has no copy. ritueel refuses to fall back to a file when no keyring exists.
 
+### What a store can prove decides what it may hold
+
+The stores give three kinds of evidence, and the kind sets the work a store may do. The teaching page is [What a key store can prove](/learn/what-a-store-can-prove/).
+
+| Evidence | Stores | What it shows | May hold |
+|---|---|---|---|
+| **Attested** | `piv`, `openpgp-card` | A chain to the maker's root says the key was made inside this device, with this firmware and these policies. | Roots, intermediates and subkeys. |
+| **Read from the service** | `aws-kms` | The key's description, policy and audit trail, read from the service every time. Not that it was made in an HSM. | Roots, intermediates and subkeys. |
+| **None** | `software` and its backends; a token that cannot attest | Nothing about where the key lives. | Test roots, drills, development and a person's own primary. Intermediates and subkeys only where `policy.stores` lists the store. Never a root that others rely on. |
+
+`init` and `root add` refuse a hardware or cloud root that cannot be attested or read, as [0004](/decisions/0004-ceremonies-plan-confirm-reserve-sign-verify-record/#the-roots-at-init) says. A store with no evidence is the `software` store, marked as copyable in every record.
+
 ### Planned stores
 
-Google Cloud KMS, Azure Key Vault and other hardware such as Nitrokey are planned. Each arrives with its first real installation, and is supported only after it is proven on real hardware or a real account. The site compares them and says which device to buy for testing.
+Google Cloud KMS, Azure Key Vault and other hardware such as Nitrokey are planned ([issue #67](https://github.com/truvity/ritueel/issues/67), [issue #66](https://github.com/truvity/ritueel/issues/66)). A store is admitted, and called supported, when all of these hold, and not before:
+
+1. **A real installation needs it** (principle 8): a real account or a real device, not an imagined one.
+2. **A dated research page measures it:** a P-384 signature over a SHA-384 digest, the evidence it gives and how it is checked, how a second process or machine reaches it, what a replica or a backup is, and what a reset or a deletion does.
+3. **Its evidence kind is stated,** which fixes what it may hold. A token that cannot attest holds no root.
+4. **It passes the tagged tests of its kind** on a real device or account, selected by serial or by test account.
+5. **The site compares it** on [Where a key lives](/learn/key-stores/) and a guide walks the transition into it.
+
+Whether a new token joins `piv` or `openpgp-card` or stands alone is decided after step 2, with a line here or a record of its own.
 
 ### Rules for every store
 

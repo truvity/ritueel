@@ -22,7 +22,7 @@ One rule holds for every store ([principle 1](/principles/)): **a key is born in
 | **Does not protect against** | Malware that reads the file and the passphrase. A copy anywhere. | Malware on an unlocked device. A compromised account. | Malware, or any program of the same user. A lost laptop is a lost key: there is no copy. | Loss, fire, a thief who has the PIN and the token. | The same. | A locked or compromised account. A deleted key after the waiting period. |
 | **Redundancy** | More copies, which raises the chance of theft. | The sync, which is the replication. Protects against loss only. | None. | A second, independent card. | A second, independent card. | A replica in another Region. |
 | **What "present" means** | The passphrase. | Unlocking the vault. | The user session. | Possession, PIN and a touch. | Possession and PIN, and a touch if set. | Cloud permissions, plus what you add: a role that needs multi-factor authentication. |
-| **Proof of where it lives** | None. | None. | None. | An attestation certificate from the token. | An attestation from the card. | The key's description and policy, read from the service. |
+| **Proof of where it lives** ([what that means](/learn/what-a-store-can-prove/)) | None. | None. | None. | An attestation certificate from the token. | An attestation from the card. | The key's description and policy, read from the service. |
 | **Cost** | Free. | A subscription you probably have. | Free. | A token, bought twice. | A card, bought twice. | Per key and per use; an account to secure. |
 | **Good for** | Drills, tests, development. | A person's own key; a drill that survives a lost laptop. | Trying ritueel out. Not for a key others rely on. | The root keys; a service's intermediate. | A person's daily subkeys. | A company root; a service's intermediate. |
 
@@ -46,13 +46,13 @@ A company root in KMS is **one root and a multi-Region replica, in one dedicated
 
 ## Planned stores
 
-These are not supported and not scheduled. Each arrives with its first real installation, a real account or a real device, because a store that is only imagined cannot be tested ([principle 8](/principles/)).
+These are not supported and not scheduled. Each arrives with its first real installation, a real account or a real device, because a store that is only imagined cannot be tested ([principle 8](/principles/)). The tests a store must pass first are in [ADR 0003](/decisions/0003-key-stores-and-the-card-layer/#planned-stores).
 
 | Store | Why it is interesting | What has to be measured first |
 |---|---|---|
 | Google Cloud KMS | The same model as AWS KMS in another provider, for a company that does not use AWS. | What the key attestation and the policy can prove, signing with P-384, and how a key in another project is read. |
 | Azure Key Vault | The same, for a company on Azure. | The same questions, and the difference between the vault and a managed HSM. |
-| Nitrokey | Hardware with open firmware, as an alternative to YubiKey. | Which model supports PIV, the OpenPGP card or both, with which algorithms, and whether it can attest a key. |
+| Nitrokey | Hardware with open firmware, as an alternative to YubiKey. | Which model supports PIV, the OpenPGP card or both, with which algorithms, and whether it can attest a key. A token that cannot attest holds no root ([what a store can prove](/learn/what-a-store-can-prove/)). |
 | Other tokens and HSMs | A company may already own them. | Whatever the first real installation needs. |
 
 [Which keys to buy](/learn/which-keys-to-buy/) says which devices to buy for testing the hardware stores, with the research behind it.

@@ -39,6 +39,8 @@ The verbs of a transition map onto the commands: *create* and *vouch* are `root 
 | `--confirm DIGEST` | Confirm a plan from a script; the digest must be the plan's. |
 | `--root ROOT` | Sign with this root instead of the root of the year; the reason is recorded. |
 | `--allow-missing NAME` | `yearly` only: go on without a request for this intermediate, and record it. |
+| `--card [LABEL=]SERIAL` | `piv` roots: the card that holds the root `LABEL`, by serial. `init` takes one for each root (`--card A=00000001 --card B=00000002`); `root add` takes one. Without it, the only card connected is used, and two cards are refused with `card-ambiguous` ([cards](/reference/cards/#what-is-checked-on-a-card)). |
+| `--extra-intermediates FILE` | `piv` roots: PEM certificates of the maker's intermediates that the bundle lacks. Helpers only: each must chain to the pinned root ([the bundle](/reference/cards/#the-attestation-bundle)). |
 | `--passphrase-fd N` | Software roots: read the passphrase from this file descriptor. |
 | `--key-dir DIR` | Software roots: the directory of the [key files](/reference/directory/#the-software-roots-key-files). Refused when it is inside `--dir`. |
 | `--test-root` | Software roots: no passphrase, marked `TEST ONLY` everywhere. Products refuse to mix test and real roots. |
@@ -133,7 +135,7 @@ Every object has these members:
 | `command` | The command, as in the plan: `intermediate add`. |
 | `exit_code` | The exit code the command returns. |
 | `outcome` | `done`, `refused`, `not-confirmed`, `usage` or `failed`, matching the exit code. |
-| `reasons` | When refused: the codes, as in the [hand-off contract](/reference/hand-off-contract/#the-answer) or the [root list](/reference/root-list/#how-a-host-reads-it) where they apply, and `plan-stale` for a plan that no longer matches the directory. |
+| `reasons` | When refused: the codes, as in the [hand-off contract](/reference/hand-off-contract/#the-answer) or the [root list](/reference/root-list/#how-a-host-reads-it) where they apply, the codes of [a card](/reference/cards/#what-is-checked-on-a-card) and of [a KMS root](/reference/kms-root/#the-checks), and `plan-stale` for a plan that no longer matches the directory. |
 | `error` | When failed or a usage error: a message for a person. Its wording is not part of the format. |
 
 And these where they apply:
