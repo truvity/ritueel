@@ -46,7 +46,7 @@ ritueel **never exports a key from a card or a cloud key** for backup. For cards
 
 ### Key stores, compared in the open
 
-The site compares the stores with what each protects against and what each costs: software and its backends, YubiKey (PIV and OpenPGP card) and AWS KMS today. **Google Cloud KMS, Azure Key Vault and other hardware such as Nitrokey are planned.** Each arrives with its first real installation, on a real account or a real device (principles 8 and 13), and not before. The site recommends which devices to buy for testing, with the date of each claim.
+The site compares the stores with what each protects against and what each costs: software and its backends, YubiKey (PIV and OpenPGP card) and AWS KMS today. **Google Cloud KMS, Azure Key Vault and other hardware such as Nitrokey are planned.** Each arrives with its first real installation, on a real account or a real device (principle 8), and not before. The site recommends which devices to buy for testing, with the date of each claim.
 
 ### An opinionated ledger
 

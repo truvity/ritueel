@@ -51,7 +51,7 @@ Whoever holds one root card and its PIN, or the role that uses a cloud root, can
 
 - A lost card is survivable: the other root exists, and the lost one is revoked with the stored signature.
 - Outsiders install two anchors on cards, and watch them; a cloud setup publishes one.
-- The single holder is a single point of human failure. Succession is the holder's organisational duty ([principle 13](/principles/#the-principles)); ritueel reminds and does not enforce.
+- The single holder is a single point of human failure. Succession is the holder's organisational duty ([principle 15](/principles/#the-principles)); ritueel reminds and does not enforce.
 - The stored revocation signature can be lost, and nothing else revokes a primary whose card and PIN are gone. A revocation signature also does not reach every verifier: for apt it is the new keyring package that revokes ([the revocation table](/learn/openpgp-release-keys/#revocation)).
 - Each use changes the root certificate and the primary's self-signature, so the CA bundle and the keyring change every year.
 - A root on a card or in a cloud KMS has no calendar end: it lives until an event, and the yearly review of the advisories is what finds one. The yearly ceremony gains that step and its record.
