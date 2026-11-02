@@ -126,15 +126,15 @@ A request that a requester left in `requests/` is used when its key, subject and
 
 ### The checks of a renewal
 
-Exit code 3 for each. They run after the KMS checks and before anything is signed.
+Exit code 3 for each. They follow the KMS checks above, and run before anything is signed.
 
 | # | Check | Code |
 |---|---|---|
-| R1 | Every active root of the directory is in `aws-kms`, and `renewal` is declared. A card or software root is refused with a message that names the yearly ceremony. | `not-in-policy` |
-| R2 | Every intermediate to renew is named in `intermediates`, and is neither revoked nor replaced. | `not-in-policy` |
-| R3 | Every key, subject, constraint, key flag, `use`, root and list entry in the plan is one the ledger already holds for that item, and every CRL entry of the last CRL that has not expired is kept. | `key-not-in-ledger` |
-| R4 | The item that expires first among those to renew expires within `within_days`. An earlier run is refused, so a schedule that runs too often cannot move the trust sequence every day. | `too-early` |
-| R5 | The session is the renewal role (check 9). | `kms-session` |
+| 10 | Every active root of the directory is in `aws-kms`, and `renewal` is declared. A card or software root is refused with a message that names the yearly ceremony. | `not-in-policy` |
+| 11 | Every intermediate to renew is named in `intermediates`, and is neither revoked nor replaced. | `not-in-policy` |
+| 12 | Every key, subject, constraint, key flag, `use`, root and list entry in the plan is one the ledger already holds for that item, and every CRL entry of the last CRL that has not expired is kept. | `key-not-in-ledger` |
+| 13 | The item that expires first among those to renew expires within `within_days`. An earlier run is refused, so a schedule that runs too often cannot move the trust sequence every day. | `too-early` |
+| 14 | The session is the renewal role (check 9). | `kms-session` |
 
 ### What the renewal role can and cannot do
 
