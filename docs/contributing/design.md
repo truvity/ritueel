@@ -9,7 +9,11 @@ This page is the design paradigm: how a question is answered before it becomes a
 
 ## The mission is the test
 
-[ADR 0007](/decisions/0007-ritueel-teaches-and-its-tools-simplify-the-ceremonies/) sets the mission: ritueel teaches people to run a PKI root and an OpenPGP master key safely. The tools only simplify the rituals, and the person stays in charge. Judge every new page, tool or option against it:
+[ADR 0007](/decisions/0007-ritueel-teaches-and-its-tools-simplify-the-ceremonies/) sets the mission:
+
+> ritueel helps one person or a small team keep a private root and an OpenPGP primary key for years without losing it, leaking it, misusing it or letting it expire. It teaches the model first, and its tools run each ceremony with the person deciding.
+
+Judge every new page, tool or option against it:
 
 1. **Does it teach first?** The reader meets the reason before the command, and a Learn page exists before a guide or a tool depends on it.
 2. **Does the tool only simplify a ritual** a careful person could do by hand? A tool that decides for the person, or hides a step they should understand, fails.
