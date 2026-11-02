@@ -18,6 +18,7 @@ A guide walks through one procedure step by step, with the result of each step a
 | [Revoke a key](/guides/revoke-a-key/) | A key is compromised, or retired for good. | [Revoke](/learn/revoke/) |
 | [A lost root card](/guides/lost-root-card/) | A root card is lost, stolen or compromised. This is the recovery guide. | [Recover](/learn/recover/) |
 | [Back up and restore](/guides/back-up-and-restore/) | After every change, and as a drill once a year. | [The ledger](/learn/the-ledger/) |
+| [Run a drill](/guides/run-a-drill/) | Once a year and before the real thing: a walk-through on test keys and the restore check. | [The ledger](/learn/the-ledger/) |
 
 ## Using OpenPGP in practice
 

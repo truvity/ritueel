@@ -15,7 +15,7 @@ sidebar:
 
 ## Revoke an OpenPGP key
 
-1. **Fetch the revocation certificate** from its stored place. Check its digest against the one in the ledger. Result: you hold the right file.
+1. **Fetch the revocation certificate** for your reason from its stored place, and run `ritueel revocation check FILE`. Result: you hold the right file, and ritueel has printed nothing of it. Use the *compromised* file if the key may be in another's hands, and the *superseded* file if it was safe and has been replaced ([Revoke](/learn/revoke/#reasons-matter)).
 2. **Publish it:** to your key directory or website, and to the places people look for your key.
 3. **Publish a keyring package without the key.** `ritueel keyring build`, then your pipeline. Result: apt users, whose `gpgv` ignores revocation signatures, are protected when the package arrives.
 4. **Tell people** which fingerprint to stop trusting, and which to trust.
@@ -28,7 +28,7 @@ sidebar:
 
 ## Revoke a root
 
-For a root that is lost, stolen or compromised, use [A lost root card](/guides/lost-root-card/).
+For a root that is lost, stolen or compromised, use [A lost root card](/guides/lost-root-card/): `ritueel root revoke LABEL --reason REASON --revocation FILE` ([the checks](/reference/transitions/#root-revoke)).
 
 ## How you know it worked
 

@@ -145,7 +145,7 @@ Five rules the schema cannot state: the two Regions of `aws_kms` differ, both it
 
 ## `root.json`
 
-`roots/<label>/root.json` is one canonical JSON object ([the common rules](/reference/ceremony-record/#common-rules)), written at `init` or `root add` and not changed after, except `revoked_at`.
+`roots/<label>/root.json` is one canonical JSON object ([the common rules](/reference/ceremony-record/#common-rules)), written at `init` or `root add` and not changed after, except `retired_at`, `revoked_at` and `revoked_reason`.
 
 | Member | Meaning |
 |---|---|
@@ -157,9 +157,10 @@ Five rules the schema cannot state: the two Regions of `aws_kms` differ, both it
 | `x509_spki_sha256` | The pin of the X.509 root key. |
 | `openpgp_fingerprint` | The primary's fingerprint. |
 | `openpgp_created` | The OpenPGP creation time of the primary, which fixes its fingerprint and is on no card ([ADR 0003](/decisions/0003-key-stores-and-the-card-layer/#rules-for-every-store)). |
-| `revocation_sha256` | The SHA-256 of the primary's revocation signature, which is stored elsewhere. |
+| `revocations` | An object from reason (`compromised`, `superseded`, and any the holder added) to the SHA-256 of that revocation signature packet, which is stored elsewhere ([revocation material](/reference/revocation-material/)). |
 | `store_ref` | From M2, for a root in `piv` or `aws-kms`; absent for `software`. For `piv`: `{ "serial", "x509_slot", "openpgp_slot", "ssh_slot" }`, the card's row in [`cards.yaml`](/reference/cards/#the-registry-cardsyaml) and the slots of the [slot map](/decisions/0003-key-stores-and-the-card-layer/#the-piv-store-and-the-root-cards). For `aws-kms`: `{ "x509_arn", "openpgp_arn", "ssh_arn" }`, the ARNs of the primary keys ([the cloud root](/reference/kms-root/#what-ritueel-creates)). |
 | `revoked_at` | Present once the root is revoked. |
+| `replaces`, `overlap_until`, `vouched_by`, `vouches`, `retired_at`, `revoked_reason` | From M3, as [the transitions page](/reference/transitions/#in-rootjson) says. `retired_at` and `revoked_at` are the only members changed after the root is written. |
 
 ## The root certificate
 
@@ -204,10 +205,10 @@ A software root ([the `software` store](/decisions/0003-key-stores-and-the-card-
 |---|---|
 | `<label>.x509.key.age` | The X.509 root key: a PKCS#8 `PrivateKeyInfo` (RFC 5958), PEM-armoured as `PRIVATE KEY`, encrypted to a passphrase with age. |
 | `<label>.openpgp.key.age` | The primary: a transferable secret key, binary (RFC 9580, section 10.2), version 4, whose secret key material is not protected inside (S2K usage 0) because age encrypts the whole file. |
-| `<label>.revocation.pgp.age` | The primary's revocation signature, encrypted the same way. Its SHA-256 before encryption is `revocation_sha256`. |
+| `<label>.revocation.<reason>.pgp.age` | The primary's revocation signature for one reason, `compromised` or `superseded` (or one the holder added), encrypted the same way. One file for each reason; the SHA-256 of the signature packet before encryption is the reason's entry in `revocations`. |
 
 - **Encryption.** The age format (`age-encryption.org/v1`) with a passphrase recipient, which derives the key with scrypt. One passphrase for the files of a root, read from the terminal without echo, or from `--passphrase-fd N`. It is never a flag, an environment variable or a line of output.
-- **`--test-root`** writes the same keys with no passphrase: `<label>.x509.key.pem` with the line `TEST ONLY: a test root with no passphrase; anyone with this file can sign as this root.` before the armour, and `<label>.openpgp.key.asc` and `<label>.revocation.asc`, ASCII-armoured with the header `Comment: TEST ONLY`. The root's names carry ` (TEST ONLY)` too, and products refuse to mix test and real roots.
+- **`--test-root`** writes the same keys with no passphrase: `<label>.x509.key.pem` with the line `TEST ONLY: a test root with no passphrase; anyone with this file can sign as this root.` before the armour, and `<label>.openpgp.key.asc` and `<label>.revocation.<reason>.asc`, ASCII-armoured with the header `Comment: TEST ONLY`. The root's names carry ` (TEST ONLY)` too, and products refuse to mix test and real roots.
 - The holder keeps the revocation file apart from the key files, as for a card ([ADR 0002](/decisions/0002-key-custody-every-key-is-born-in-its-store-two-root-cards-or-one-kms-root-and-a-replica/#revocation-readiness)).
 
 ## Follow-ups

@@ -50,9 +50,10 @@ Each member of `signatures`:
 | Member | Meaning |
 |---|---|
 | `n` | Its place in the order, from 1. |
-| `kind` | `intermediate-certificate`, `subkey-binding`, `root-certificate`, `primary-self-signature`, `primary-revocation` (at `init` only), `root-list`, and from M2 and M3 `crl` and `ssh-ca-key-list`. |
+| `kind` | `intermediate-certificate`, `subkey-binding`, `root-certificate`, `primary-self-signature`, `primary-revocation` (at `init` and `root add`, and by `revocation make`; one for each reason, with a `reason` member), `cross-certificate` and `openpgp-vouch` (at `root add`), `root-list`, and from M2 and M3 `crl` and `ssh-ca-key-list`. |
 | `key` | The fingerprint of the signing key: the root's X.509 key or its OpenPGP primary. |
 | `subject` | What is signed for: the request's stem, or the root's label for the root's own certificate, self-signature, revocation, CRL, root list and SSH CA key list. |
+| `reason` | For `primary-revocation`: `compromised`, `superseded`, `retired` or `no-reason`. |
 | `serial` | For a certificate: the serial number, in lower-case hexadecimal, drawn here. |
 | `not_before`, `not_after` | For a certificate or a binding: the validity it gives. |
 | `tbs_sha256` | The SHA-256 of the exact bytes the key signs: the DER `TBSCertificate`, the OpenPGP data hashed for the signature (RFC 9580, section 5.2.4), the JWS signing input of the root list or of the SSH CA key list, or the DER `TBSCertList` of a CRL. |
@@ -113,6 +114,8 @@ A ceremony that makes keys also creates `attempts/<ceremony>.births.jsonl`, with
 | `transcript_sha256` | The SHA-256 of the transcript. |
 | `declined` | A declining record only: `{ "stem", "reason" }`, the request declined and the reason the person gave. Such a record has no `signatures`, and its `artifacts` are the refused answer. |
 | `closes` | A closing record only: `{ "ceremony", "attempt_sha256", "reason" }`, the attempt it resolves, its digest, and the reason the person gave. |
+| `revocations` | A ceremony that made revocation signatures: a list of `{ "label", "reason", "sha256" }`, the digest of each signature packet. The signatures themselves are never in the record ([revocation material](/reference/revocation-material/)). |
+| `roots_target` | `init`, `root add`, `root retire` and `root revoke`: the number of active roots the holder intends after the ceremony ([root transitions](/reference/transitions/#the-target)). |
 
 Each member of `requests` holds what the [hand-off contract records](/reference/hand-off-contract/#what-the-certifier-records): `stem`, `type`, `request_sha256`, `proof_sha256`, `store`, `key`, `evidence`, `policy`, `outcome` and `artifacts`.
 

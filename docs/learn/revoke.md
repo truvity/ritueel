@@ -54,4 +54,4 @@ So for apt users **the effective revocation is a new keyring package without the
 
 ## In ritueel
 
-`root revoke` and `intermediate revoke` carry out the X.509 side, and `init` makes the OpenPGP revocation certificates and keeps a digest of each. Both are planned. The steps and a drill are in the [guide](/guides/revoke-a-key/).
+`root revoke` and `intermediate revoke` carry out the X.509 side. `init` makes the OpenPGP revocation certificates for every master key, one for each of two reasons (compromised and superseded), writes them to a place you name outside the ledger, and keeps only a digest of each. `ritueel revocation check` tells you, without printing anything, that a stored file is the right one. All of it is planned ([the formats](/reference/revocation-material/)). The steps and a drill are in the [guide](/guides/revoke-a-key/).

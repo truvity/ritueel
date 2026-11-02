@@ -29,7 +29,7 @@ A PIN is entered by the holder at the terminal. The tool never retries a wrong P
 |---|---|---|---|
 | Yearly | Month 12 of the intermediates' life | The card for the year | New 13-month certificates over the same intermediate keys, and new bindings that extend the same subkeys. The card's own root extended, a new keyring package and root list. |
 | Intermediate add, replace or revoke | Between yearly ceremonies | The card for the year; for `revoke`, the card of each root that issued an unexpired certificate of the intermediate | `add`: a certificate, binding or SSH CA key listing for a new intermediate. `replace`: new key material, on an event. `revoke`: the certificate and binding withdrawn, and the certificate put on the issuing root's [CRL](/reference/crl/). |
-| Root add, retire or revoke | A card is lost, retired or compromised | The surviving card | A new root, or a root list without the old one. |
+| Root add, retire or revoke | A card is lost, retired or compromised | The surviving card | A new root that an active root vouches for, an overlap that ends on a day you name, or a root list without the old root ([root transitions](/reference/transitions/)). |
 
 Each is one to three commands. [Adopting the roots](/guides/root-adoption/) is the first one you run, and [A lost root card](/guides/lost-root-card/) walks through the last. An intermediate key is renewed by re-signing and replaced only on an event or at most every three years ([ADR 0002](/decisions/0002-key-custody-every-key-is-born-in-its-store-two-root-cards-or-one-kms-root-and-a-replica/#validity-renewal-and-replacement)).
 

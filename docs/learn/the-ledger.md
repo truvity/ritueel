@@ -35,7 +35,7 @@ The ledger is only half. The other half is what it deliberately does not hold.
 
 | Item | Why it is kept | Where |
 |---|---|---|
-| **Revocation certificates** of the OpenPGP master keys, made when each key was born. | They are the only way to revoke a master key whose card and PIN are gone. | Apart from the cards, in at least two places: for example printed and sealed, and in the password manager. A third place is not wasteful. |
+| **Revocation certificates** of the OpenPGP master keys, made when each key was born, one for each of two reasons (compromised and superseded). | They are the only way to revoke a master key whose card and PIN are gone. | Apart from the cards, in at least two places: for example printed and sealed, and in the password manager. A third place is not wasteful. |
 | **PINs, PUKs and passphrases**, one entry per card. | Without the PIN a card is a locked box; three wrong tries block it. | The password manager, never in the ledger. |
 | **Software keys,** if any. | A software key is a copy by nature. | In the software store you chose, whose own replication is the backup (see [where a key lives](/learn/key-stores/)). |
 | **The second card.** | A card cannot be copied. | A second, independent card, in a second place. |

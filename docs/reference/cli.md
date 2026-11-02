@@ -11,14 +11,16 @@ sidebar:
 
 | Command | Does | Needs a person |
 |---|---|---|
-| `ritueel init` | Creates the directory, the roots (`--roots N`, default 2, both cards present) with their attestations and revocation signatures, and the first trust products. | Yes |
+| `ritueel init` | Creates the directory, the roots (`--roots N`, default 2, both cards present) with their attestations and their revocation signatures (one for each of two reasons), and the first trust products. | Yes |
 | `ritueel yearly` | The yearly ceremony: renews every registered intermediate by re-signing, with the root of the year, extends that root, and publishes the next trust sequence. | Yes |
 | `ritueel intermediate add NAME --request STEM` | Registers an intermediate and certifies its first request. | Yes |
 | `ritueel intermediate replace NAME` | The event path: certifies a new key for a registered intermediate. `--revoke` also revokes the old one, with a reason. | Yes |
 | `ritueel intermediate revoke NAME` | Revokes the certificate and subkey binding of an intermediate, or withdraws its SSH CA key, with a reason (`--reason compromise`, `superseded` or `cessation`), without a replacement. It lists the intermediate's unexpired certificates on the [CRL](/reference/crl/) of each root that issued them, so it needs those roots' cards. | Yes |
-| `ritueel root add` | Creates a new root in a store and has an existing root vouch for it. This starts an overlap. | Yes |
-| `ritueel root retire ROOT` | Ends an overlap: removes the root from the next trust products. | Yes |
-| `ritueel root revoke ROOT` | Revokes a lost, stolen or compromised root, and builds the trust products without it. | Yes |
+| `ritueel root add --store S [--replaces LABEL --overlap-until DATE \| --target N]` | Creates a new root in a store and has an existing root vouch for it. With `--replaces`, this starts an overlap that ends on the day given ([root transitions](/reference/transitions/#the-commands)). | Yes |
+| `ritueel root retire LABEL` | Ends an overlap: removes the root from the next trust products, after the checks of [root transitions](/reference/transitions/#root-retire). | Yes |
+| `ritueel root revoke LABEL --reason REASON --revocation FILE` | Revokes a lost, stolen or compromised root with its stored revocation signature, and builds the trust products without it. | Yes |
+| `ritueel revocation make`, `revocation check` | Make one more revocation signature while the primary exists, and check a stored one without printing it ([revocation material](/reference/revocation-material/#making-one-later-and-checking-one)). | `make` only |
+| `ritueel drill restore` | The restore check on a clean machine: the records, the roots against their holders, the revocation signatures. It signs nothing ([drills](/reference/drill/#the-restore-check)). | No |
 | `ritueel status` | Lists roots, intermediates, the root list and unresolved attempts, with what expires when. | No |
 | `ritueel handoff check STEM` | Runs every check of the [hand-off contract](/reference/hand-off-contract/) on the request `STEM`, and signs nothing. | No |
 | `ritueel bundle build`, `ritueel keyring build` | Build the CA bundle and the [keyring package](/reference/keyring-package/) from the directory. Same directory, same bytes. | No |
@@ -58,7 +60,7 @@ A PIN is never a flag or an environment variable; the holder types it at the ter
 | 3 | Refused by a check or by the policy. |
 | 4 | Refused by the card or its PIN state. |
 | 5 | Not confirmed. |
-| 10, 11, 12 | `status` only: notice, alert and critical. Intermediates warn at 60, 30 and 14 days, the root list, the SSH CA key list and each CRL at 60, 30 and 14 days, roots at 6 months, 3 months and 30 days. An unresolved attempt is critical, because it may mean a signature that was made and never recorded. The highest finding wins. |
+| 10, 11, 12 | `status` only: notice, alert and critical. Intermediates warn at 60, 30 and 14 days, the root list, the SSH CA key list and each CRL at 60, 30 and 14 days, roots at 6 months, 3 months and 30 days. An unresolved attempt is critical, because it may mean a signature that was made and never recorded. A short root set is an alert, an overdue overlap an alert and a running one a notice ([root transitions](/reference/transitions/#the-target)); a restore drill older than 13 months is a notice ([drills](/reference/drill/#when-it-is-due)). The highest finding wins. |
 
 ## The first version's commands
 
@@ -151,7 +153,7 @@ And these where they apply:
 | `roots` | `init`, `status` | A list of `{ "label", "store", "test", "x509_spki_sha256", "openpgp_fingerprint", "not_after" }`. |
 | `answer` | `intermediate add` | `{ "stem", "outcome", "reasons", "artifacts" }`, as in `result.json`. |
 | `checks` | `handoff check` | A list of `{ "n", "result" }` for checks 1 to 9, where `result` is `passed`, `failed` or `not-run`. |
-| `findings` | `status` | A list of `{ "level", "kind", "name", "expires_at", "days_left" }`: `level` is `notice`, `alert` or `critical`, `kind` is `intermediate`, `root`, `root-list`, `ssh-ca-keys`, `crl` or `attempt`. |
+| `findings` | `status` | A list of `{ "level", "kind", "name", "expires_at", "days_left" }`: `level` is `notice`, `alert` or `critical`, `kind` is `intermediate`, `root`, `root-list`, `ssh-ca-keys`, `crl`, `attempt`, `root-set`, `root-overlap` or `drill`. |
 | `records` | `records list` | A list of `{ "ceremony", "command", "outcome", "sha256" }`, in chain order. |
 
 The members are named with lower-case words and underscores, times and digests are written as in the [hand-off contract](/reference/hand-off-contract/#messages-and-files), and the object is not in canonical form. A new member is not a new version, so a reader ignores a member it does not know; a member renamed, removed or changed in meaning is version 2.
