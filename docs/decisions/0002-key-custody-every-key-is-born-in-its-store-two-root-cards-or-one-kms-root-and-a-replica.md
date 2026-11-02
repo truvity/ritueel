@@ -33,7 +33,9 @@ The goal is a key-service experience without trusting software with a key: every
 
 - **A root is valid for about three years, and each use extends it.** The card that signs extends its own root: a new OpenPGP self-signature, and an X.509 root certificate re-issued over the same key and subject. Clients pin public keys, so the extension breaks no pin ([0005](/decisions/0005-trust-products-the-root-list-the-ca-bundle-the-ssh-ca-key-list-and-the-trust-sequence/)). A dead or lost card shows itself by not extending.
 - **An intermediate lasts about 13 months and is renewed by re-signing.** The yearly ceremony makes a new certificate over the same key and a new binding that extends the same subkey, so years overlap. No key is made at a yearly ceremony.
-- **Key material is replaced only on an event, or at most every three years.** The events are a suspected compromise, a change of store or algorithm, and a change of custody. Three years is the top of the cryptoperiod NIST SP 800-57 Part 1 gives a private signature key, and the forced replacement keeps the replace path exercised.
+- **Key material is replaced on an event.** The events are an advisory about the device, its firmware or the cloud key service that affects the key; the deprecation of its algorithm; the loss of a card, or its end of life; a suspected compromise; a change of store or custody. For a key on a card or in a cloud KMS, a root included, it is the only rule: such a key cannot be copied, so what ages it is what happens to the device, the service or the algorithm, not the calendar. [0012](/decisions/0012-personal-openpgp-the-primary-offline-in-a-file-the-daily-subkey-on-a-card/#how-long-a-persons-primary-lives) gives an advisory that ended keys on cards.
+- **At every yearly ceremony the holder reviews the advisories** for the devices, the services and the algorithms in use, and the record says that they did. A missed advisory is the one event a holder can fail to notice, so the review is a step of the ceremony and not a habit.
+- **A key that can be copied is also replaced at most every three years.** A software key, such as a test root or a person's primary, can be copied and read without a trace, so a calendar bound limits how long an unnoticed copy is useful. Three years is the top of the cryptoperiod NIST SP 800-57 Part 1 gives a private signature key, and the forced replacement keeps the replace path exercised.
 
 ### Revocation readiness
 
@@ -52,6 +54,7 @@ Whoever holds one root card and its PIN, or the role that uses a cloud root, can
 - The single holder is a single point of human failure. Succession is the holder's organisational duty ([principle 13](/principles/#the-principles)); ritueel reminds and does not enforce.
 - The stored revocation signature can be lost, and nothing else revokes a primary whose card and PIN are gone. A revocation signature also does not reach every verifier: for apt it is the new keyring package that revokes ([the revocation table](/learn/openpgp-release-keys/#revocation)).
 - Each use changes the root certificate and the primary's self-signature, so the CA bundle and the keyring change every year.
+- A root on a card or in a cloud KMS has no calendar end: it lives until an event, and the yearly review of the advisories is what finds one. The yearly ceremony gains that step and its record.
 - A cloud root account is a single point of compromise, guarded by its key policy and an organisation policy, and answered by revocation and a transition.
 - Pages must not call the second card a spare, call the custody two-person control, or call a replica a second root, and they state the accepted limit.
 
@@ -67,6 +70,7 @@ Whoever holds one root card and its PIN, or the role that uses a cloud root, can
 - **One OpenPGP subkey bound under both primaries.** Verifies under either, but rotation needs both cards and a revocation must be made twice.
 - **A designated revoker, each root for the other.** Revocation without the stored signature, but RFC 9580 deprecates it and it widens what one stolen card can do.
 - **A fixed ten-year root, or no expiry.** No yearly change, but a dead card stays silent for years.
+- **Replace every root key at most every three years, whatever its store.** One rule, and the replace path exercised by the calendar, but a card or KMS key cannot be copied, so the calendar forces a new anchor on every relying party for no gain, when an advisory or a lost card is what ends such a key.
 - **A second, independent cloud root in another account.** Two keys like the two cards, but a second account to secure, both still on one provider, and the loss it covers is already covered by the replica.
 - **A cloud key service as the only kind of store.** One anchor and full audit, but one provider, no attestation, and no use to an installation on single-board computers.
 - **Replace every intermediate key every year.** Short-lived keys, but a key ceremony per holder per year moves a sound key for no gain.
@@ -74,3 +78,4 @@ Whoever holds one root card and its PIN, or the role that uses a cloud root, can
 ## Follow-ups
 
 - Adopt the roots on the two cards and run the adoption drill, the gate before the first signed release ([#48](https://github.com/truvity/ritueel/issues/48)).
+- Ask for the advisory review in `ritueel yearly` and keep it in the record ([#30](https://github.com/truvity/ritueel/issues/30)).

@@ -28,9 +28,9 @@ The overlap is built in. A certificate that lasts about 13 months, renewed each 
 
 ## The rule
 
-> **Re-sign yearly. Rotate on an event, or after at most three years.** ([principle 3](/principles/))
+> **Re-sign yearly. Rotate on an event; a key in software also after at most three years.** ([principle 3](/principles/))
 
-If nothing has gone wrong and the key is not three years old, re-signing is the right ritual. See [rotate](/learn/rotate/) for the other case.
+If nothing has gone wrong, no advisory touches the key, and a key in software is not three years old, re-signing is the right ritual. See [rotate](/learn/rotate/) for the other case.
 
 ## What can go wrong
 

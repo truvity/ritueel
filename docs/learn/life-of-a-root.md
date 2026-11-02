@@ -14,7 +14,7 @@ A root lives for years, and most of what happens to it is waiting. This page fol
 | [Record](#record) | After every ceremony | The ledger says what was done. |
 | [Back up](#back-up) | Right after creating, and after every change | Loss becomes survivable. |
 | [Re-sign](#re-sign) | Every year | The same key gets a new validity. |
-| [Rotate](#rotate) | On an event, or after at most three years | A new key replaces the old one. |
+| [Rotate](#rotate) | On an event; a key in software also after at most three years | A new key replaces the old one. |
 | [Revoke](#revoke) | On compromise or loss | A key is declared untrustworthy. |
 | [Recover](#recover) | When a card or a key is lost | The chain is made whole again. |
 
@@ -61,10 +61,10 @@ Re-signing is cheap, and it changes nothing for anyone who already trusts the ke
 
 Rotating is different: a **new key** replaces the old one. It is a larger event, because everything that trusted the old key must learn the new one, so it is done only when there is a reason:
 
-- **On an event.** A suspected compromise, a change of store, a change of algorithm, a change of custody.
-- **After at most three years,** whatever else happened. Three years is the top of the usual lifetime for a private signing key, and a forced rotation keeps the rotate path exercised.
+- **On an event.** An advisory that affects the card, its firmware or the service; the deprecation of the algorithm; a lost card or one at its end of life; a suspected compromise; a change of store or custody. The yearly ceremony includes a review of the advisories, so that this kind of event is not missed.
+- **For a key in software, also after at most three years,** whatever else happened, because a file can be copied without a trace. Three years is the top of the usual lifetime for a private signing key, and a forced rotation keeps the rotate path exercised. A key on a card or in a cloud key service cannot be copied, and has no such limit.
 
-The rule: **re-sign yearly; rotate on an event or after at most three years.** See [rotate](/learn/rotate/).
+The rule: **re-sign yearly; rotate on an event, and a key in software after at most three years.** See [rotate](/learn/rotate/).
 
 ## Revoke
 
