@@ -1,0 +1,49 @@
+---
+// The status line under the mission: what exists, counted from the repository at build time, so
+// it cannot drift. Decision records are docs/decisions/NNNN-*.md without the template, reference
+// pages are docs/reference/*.md without the index, and code is the lines of every Go file outside
+// site/ and node_modules (the product is Go; the scripts under tools/ are repository checks and
+// are not counted). Zero Go files is zero lines, and the line says so.
+import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
+import { join } from 'node:path';
+
+// The build runs in site/; the repository root is the first directory above it that has docs/.
+let root = process.cwd();
+while (!existsSync(join(root, 'docs', 'decisions')) && join(root, '..') !== root) root = join(root, '..');
+
+const count = (dir: string, keep: (name: string) => boolean): number =>
+  readdirSync(join(root, dir)).filter((name) => name.endsWith('.md') && keep(name)).length;
+
+const records = count('docs/decisions', (name) => /^\d{4}-/.test(name) && !name.startsWith('0000-'));
+const reference = count('docs/reference', (name) => name !== 'index.md');
+
+const skip = new Set(['.git', 'node_modules', 'site', 'dist']);
+const goLines = (dir: string): number =>
+  readdirSync(dir).reduce((sum, name) => {
+    if (skip.has(name)) return sum;
+    const path = join(dir, name);
+    if (statSync(path).isDirectory()) return sum + goLines(path);
+    return name.endsWith('.go') ? sum + readFileSync(path, 'utf8').split('\n').length : sum;
+  }, 0);
+const code = goLines(root);
+const built = new Date().toISOString().slice(0, 10);
+---
+
+<p class="not-content status-line">
+  <strong>Design: {records} decision records, {reference} reference pages. Code: {code} lines.</strong>{' '}
+  <span>Counted at build, {built}.</span>
+</p>
+
+<style>
+  .status-line {
+    margin: 1rem 0 0;
+    padding: 0.5rem 0.9rem;
+    border-inline-start: 4px solid var(--rt-ink);
+    background: color-mix(in srgb, var(--rt-ink) 7%, var(--sl-color-bg));
+    color: var(--sl-color-text);
+    font-size: 0.95rem;
+    line-height: 1.5;
+  }
+  .status-line strong { color: var(--sl-color-white); }
+  .status-line span { color: var(--sl-color-gray-2); white-space: nowrap; }
+</style>

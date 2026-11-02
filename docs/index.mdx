@@ -1,6 +1,6 @@
 ---
 title: "ritueel: manage the root of your PKI and the master key of OpenPGP"
-description: ritueel teaches how to keep a PKI root and an OpenPGP master key safe, and gives tools that simplify the ceremonies, while you stay in charge. Open source.
+description: ritueel helps one person or a small team keep a private root and an OpenPGP primary key for years. It teaches the model first, and its tools are planned.
 template: splash
 hero:
   title: Does this sound familiar?
@@ -8,6 +8,7 @@ hero:
 ---
 
 import Mission from '../site/src/components/home/Mission.astro';
+import HomeStatus from '../site/src/components/home/HomeStatus.astro';
 import Pairs from '../site/src/components/home/Pairs.astro';
 import Pair from '../site/src/components/home/Pair.astro';
 import Cloud from '../site/src/components/home/Cloud.astro';
@@ -37,11 +38,12 @@ import Actions from '../site/src/components/home/Actions.astro';
 />
 <Answer title="Learn explains it, in order">
 
-Plain pages that start from what goes wrong in real life and then give the rule. They are written for someone technical who is new to PKI. Read them in order, or jump in from a chip above.
+Plain pages that start from what goes wrong in real life and then give the rule. They are written for someone technical who is new to PKI. Learn is the product for now: it works with any tool. Read the pages in order, or jump in from a chip above.
 
 - [Start learning](/learn/)
 - [The custody chain](/learn/custody-chain/)
 - [Which keys to buy](/learn/which-keys-to-buy/)
+- [Compared with other tools](/learn/compared/)
 - [The guides](/guides/)
 
 </Answer>
@@ -60,7 +62,7 @@ Plain pages that start from what goes wrong in real life and then give the rule.
     { term: 'CRL re-signing', note: 'The list expires on its own schedule', href: '/learn/re-sign/', w: 3 },
     { term: 'ykman', note: 'One more tool, one more PIN', href: '/learn/which-keys-to-buy/', w: 2, icon: 'yubico', cmd: true },
     { term: 'Expiring subkeys', note: 'They lapse on a Tuesday', href: '/learn/re-sign/', w: 2 },
-    { term: 'Lost card', note: 'Is there a spare? Where?', href: '/guides/lost-root-card/', w: 3 },
+    { term: 'Lost card', note: 'Where is the other one?', href: '/guides/lost-root-card/', w: 3 },
     { term: 'PIN, then PUK', note: 'Three wrong tries each, then a reset', href: '/learn/recover/', w: 1 },
     { term: 'Revocation certificate', note: 'Nobody made one in advance', href: '/guides/revoke-a-key/', w: 3 },
   ]}
@@ -88,8 +90,12 @@ A command line plans each step, checks the card, asks you to confirm, and writes
 ## Our mission
 
 <Mission>
-ritueel teaches people to manage the root of a PKI and the master key of OpenPGP smoothly and safely, and gives them tools that simplify each ritual, from creating a root to signing intermediates and subkeys onto cards, while the person stays in charge.
+ritueel helps one person or a small team keep a private root and an OpenPGP primary key for years without losing it, leaking it, misusing it or letting it expire. It teaches the model first, and its tools run each ceremony with the person deciding.
 </Mission>
+
+<HomeStatus />
+
+A *ritueel* is a ritual: the rare, deliberate act you do by hand because it matters and because you do it seldom.
 
 Almost everything built on keys hangs from a few keys that are used rarely: the root of a certificate hierarchy, the master key of an OpenPGP identity. Using them is a manual ritual, a *ceremony*, done by a person, and most people do it once or twice in their life. ritueel exists to make that experience smooth and safe.
 
@@ -112,7 +118,7 @@ The four **rituals** are what you come back to. Each one reads the ledger and ad
 
 ## What comes next
 
-When the root is in order, the next step is identity built on top of it. [sluis](https://sluis.id) holds intermediates and signs online. Your root of custody first, then secure-by-design identity on top. The two are separate products; they do not depend on each other and exchange standard formats only.
+When the root is in order, the next step is identity built on top of it. [sluis](https://sluis.id) holds intermediates and signs online. It can be certified by any CA that signs a PKCS#10 request; ritueel is the custodian it is tested with. The two are separate products.
 
 ## Where to start
 
@@ -121,6 +127,8 @@ When the root is in order, the next step is identity built on top of it. [sluis]
 | Understand what a root is and why it is kept offline | [What is a root?](/learn/what-is-a-root/) and [Why the root stays offline](/learn/why-the-root-stays-offline/) |
 | See who holds which key, from the root down to the leaf | [The custody chain](/learn/custody-chain/) |
 | Choose where a key will live | [Where a key lives](/learn/key-stores/) and [Which keys to buy](/learn/which-keys-to-buy/) |
+| You have a cloud account and a team: start with the cloud root | [Which path is yours](/learn/key-stores/#which-path-is-yours) and [Prepare the cloud root](/guides/prepare-the-cloud-root/) |
+| Compare it with what you can use today | [Compared with other tools](/learn/compared/) |
 | Follow a root from birth to retirement | [The life of a root](/learn/life-of-a-root/) |
 | Do something now | [Guides](/guides/) |
 | Know what the tools do today | [Tools](/tools/) |

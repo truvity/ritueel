@@ -6,7 +6,7 @@ sidebar:
   order: 0
 ---
 
-ritueel teaches first. These pages explain how roots and intermediates are handled securely, whatever tool you use; the tools exist to make the rituals simpler, and they come after. Read the pages in order. Each one assumes the page before it.
+ritueel teaches first, and for now the teaching is the product: these pages explain how roots and intermediates are handled securely, whatever tool you use, and they work without ritueel's tools, which are not built yet. The tools exist to make the rituals simpler, and they come after. Read the pages in order. Each one assumes the page before it.
 
 | Page | What you learn |
 |---|---|
@@ -26,6 +26,7 @@ ritueel teaches first. These pages explain how roots and intermediates are handl
 | [Moving from one root to another](/learn/transitions/) | How a new root takes over from an old one without breaking anyone, and what outsiders install. |
 | [Two roots in practice](/learn/two-roots/) | What public CAs do, how clients behave when an intermediate has two certificates, and how two cards alternate. |
 | [OpenPGP release keys and the keyring](/learn/openpgp-release-keys/) | The primaries, an intermediate's subkey, the back-signature, the keyring package, and what a revocation reaches. |
+| [Compared with what you can use today](/learn/compared/) | What offline-pki, Smallstep's recipe, the drduh guide, OpenBao, YubiHSM 2, Sequoia and AWS KMS do, with dated sources, and what ritueel adds. |
 
 When you are ready to act, the [guides](/guides/) give the steps. The [principles](/principles/) are the rules ritueel's design follows, and the [decision records](/decisions/) hold the reasons.
 
