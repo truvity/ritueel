@@ -38,12 +38,39 @@ awk '
   END { exit (ok && !stray) ? 0 : 1 }
 ' "$dist/_headers" || bad "$dist/_headers must give /_astro/* (and only it) 'Cache-Control: public, max-age=31536000, immutable'"
 
-# The Worker configuration: neither workers.dev nor preview URLs, no routes, no KV, no secrets.
+# The Worker configuration: neither workers.dev nor preview URLs; no routes, account or zone (those
+# live outside this repository); the Worker runs first for /api/* and nothing else; one cron; and
+# exactly one KV binding, STATUS, with the placeholder id (the real one is put in at the deploy by
+# site/scripts/deploy-config.mjs, from a secret).
 cfg=site/wrangler.jsonc
 grep -q '"workers_dev": false' "$cfg" || bad "$cfg does not set workers_dev false"
 grep -q '"preview_urls": false' "$cfg" || bad "$cfg does not set preview_urls false"
-if grep -Eq '^\s*"(routes?|kv_namespaces|account_id|zone_id)"' "$cfg"; then
-  bad "$cfg declares routes, KV or an account; those live outside this repository"
+if grep -Eq '^\s*"(routes?|account_id|zone_id)"' "$cfg"; then
+  bad "$cfg declares routes or an account; those live outside this repository"
+fi
+grep -Eq '^\s*"run_worker_first": \["/api/\*"\]' "$cfg" || bad "$cfg must run the Worker first for /api/* only (assets.run_worker_first)"
+if grep -Eq '"run_worker_first": *(true|\[[^]]*"/\*")' "$cfg"; then bad "$cfg runs the Worker first for more than /api/*: static traffic would count against the Worker request limit"; fi
+grep -Eq '^\s*"main": "src/worker/index.ts"' "$cfg" || bad "$cfg does not name the Worker's code as main"
+[ "$(grep -cE '^\s*\{ "binding": "STATUS", "id": "0{32}" \}' "$cfg")" -eq 1 ] || bad "$cfg must declare exactly one KV namespace, STATUS, with the placeholder id"
+if grep -E '"id": "[0-9a-f]{32}"' "$cfg" | grep -Evq '"id": "0{32}"'; then bad "$cfg holds a KV namespace id; the id is a secret of the deploy environment"; fi
+grep -Eq '"crons": \["[^"]+"\]' "$cfg" || bad "$cfg has no cron trigger"
+
+# The roadmap as the Worker reads it (/data/status.json) and the live status page: a container for
+# every part the Worker's fragment has, the note, and the script as a file of this site, not inline.
+if [ -s "$dist/data/status.json" ]; then
+  want=$(grep -cE '^\| \*\*M[0-9]+:' docs/roadmap.md || true)
+  have=$(grep -c '"key": "M[0-9]*"' "$dist/data/status.json" || true)
+  { [ "$want" -gt 0 ] && [ "$want" -eq "$have" ]; } || bad "data/status.json has $have milestones; docs/roadmap.md has $want milestone rows"
+else
+  bad "missing or empty: data/status.json"
+fi
+if [ -s "$dist/status/index.html" ]; then
+  for part in cards issues checks; do
+    grep -q "data-live-part=\"$part\"" "$dist/status/index.html" || bad "status/index.html has no live part $part"
+  done
+  grep -q 'data-live-src="/api/status/live/"' "$dist/status/index.html" || bad "status/index.html has no live source"
+  grep -q 'data-live-note' "$dist/status/index.html" || bad "status/index.html has no live note"
+  grep -Eq '<script[^>]* src="/_astro/[^"]*"' "$dist/status/index.html" || bad "status/index.html loads no script from /_astro/ (the live script must be a file of this site)"
 fi
 
 # "Edit page" links: each one is a file in this checkout (and the page's own source).

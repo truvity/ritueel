@@ -4,7 +4,10 @@
 #
 # Content-Security-Policy:
 # - script-src names each inline script by its sha256, with no 'unsafe-inline'. Starlight and
-#   Pagefind each emit a few (theme setup, the search dialog, page components).
+#   Pagefind each emit a few (theme setup, the search dialog, page components). The build inlines
+#   none of its bundled scripts (vite.build.assetsInlineLimit is 0 in astro.config.mjs), so the
+#   status page's live script (src/scripts/status-live.ts) is a file under /_astro/ that
+#   'self' covers; only the scripts that are inline in the source are listed.
 #   site/scripts/check-csp.mjs, run by site/scripts/check-built.sh and so by CI, fails when a
 #   page runs an inline script that is not listed here, or a listed one is no longer used, and
 #   prints the tokens to paste. 'wasm-unsafe-eval' is for Pagefind's WebAssembly search.
@@ -31,7 +34,7 @@
 # favicon and everything else keep the Workers static assets default (revalidate on every load).
 # site/scripts/check-built.sh fails when the rule is missing or applies to any other path.
 /*
-  Content-Security-Policy: default-src 'self'; script-src 'self' https://static.cloudflareinsights.com 'wasm-unsafe-eval' 'sha256-7eCV4jtsr4t4knb3c4FCRPeu7GGZeOUGE3XvWix0XOQ=' 'sha256-GkZBRnvSuhtx/cvzvukVkX2JJZW+DdPlVr7BX8Tefqo=' 'sha256-VWo5Wp4aqSj6nSgMpeAp9cKieaoIfwFUAunAVugI5gA=' 'sha256-VgrgcKBvIM3XpiLJ6fEv1Vy6YHBwlKLkYtFdfBMouTo=' 'sha256-f/zAUE74ucc3JYp4r4QQvkJofoQdkOIhHYK+jeZ6eko=' 'sha256-hP48sUywTAXyg22qvpdOC/cYIA8MfPdKEbPC/mvGk4M=' 'sha256-nVO98WGdJA5yup1/MAdukGqUlS6Psuf7JJFF5ikWqbQ=' 'sha256-ucPfdYc9FPIvbmnn9ECv3eLKYLt8/heMPFQ+hNTn6jY=' 'sha256-vGRRWwWSIVGVGDQTLXvfUqIoIy0xJFJxoIt9HHBytuc=' 'sha256-wX2yOADeV+NMngflD5uYi3vl50SHC4sfM1EmylVjlX4='; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self' https://cloudflareinsights.com; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'
+  Content-Security-Policy: default-src 'self'; script-src 'self' https://static.cloudflareinsights.com 'wasm-unsafe-eval' 'sha256-7eCV4jtsr4t4knb3c4FCRPeu7GGZeOUGE3XvWix0XOQ=' 'sha256-GkZBRnvSuhtx/cvzvukVkX2JJZW+DdPlVr7BX8Tefqo=' 'sha256-VWo5Wp4aqSj6nSgMpeAp9cKieaoIfwFUAunAVugI5gA=' 'sha256-f/zAUE74ucc3JYp4r4QQvkJofoQdkOIhHYK+jeZ6eko=' 'sha256-wX2yOADeV+NMngflD5uYi3vl50SHC4sfM1EmylVjlX4='; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self' https://cloudflareinsights.com; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'
   X-Content-Type-Options: nosniff
   X-Frame-Options: DENY
   Referrer-Policy: strict-origin-when-cross-origin

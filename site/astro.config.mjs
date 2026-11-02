@@ -9,6 +9,10 @@ export default defineConfig({
   site: 'https://ritueel.id',
   trailingSlash: 'always',
   prefetch: { prefetchAll: true, defaultStrategy: 'hover' },
+  // Astro inlines a bundled script under 4 KB into the page, which would need its hash in the
+  // Content-Security-Policy; the status page's live script (src/scripts/status-live.ts) must stay a
+  // file of this site that `script-src 'self'` covers, so nothing is inlined.
+  vite: { build: { assetsInlineLimit: 0 } },
   integrations: [
     starlight({
       title: 'ritueel',

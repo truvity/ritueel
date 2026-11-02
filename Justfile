@@ -43,15 +43,32 @@ site-links:
 # What a pull request must pass for the site.
 site-check: site-lint site-build site-links
 
-# The Worker's dry-run deploy: `wrangler deploy --dry-run` on the built site in site/dist. It
-# uploads nothing and needs no Cloudflare credential. Needs `just site-build`.
-site-workers:
+# The tests of the site's Worker (site/src/worker/, the renderer it shares with the status page, the
+# live script's decisions, the deploy configuration), in Node, with GitHub and KV faked. No network,
+# no credential.
+site-test-worker: site-install
+    site/scripts/check-worker.mjs
+
+# The status page in headless Chrome (site/scripts/check-render.mjs): the live script swaps the
+# Worker's parts in, keeps the snapshot when the Worker has nothing, and nothing scrolls sideways at
+# 375 px. A server in the script stands in for the Worker. Needs `just site-build` and Chrome or
+# Chromium (CHROME, or on PATH). With a directory, it saves a screenshot of each render there.
+site-render dir='':
+    site/scripts/check-render.mjs site/dist {{ dir }}
+
+# The Worker's dry-run deploy: `wrangler deploy --dry-run` on the built site in site/dist, which
+# also bundles the Worker. It uploads nothing and needs no Cloudflare credential. Needs
+# `just site-build`.
+site-workers: site-test-worker
     cd site && WRANGLER_SEND_METRICS=false yarn wrangler deploy --dry-run
 
 # Deploy the build in site/dist to Cloudflare. Only the deploy job of site.yaml runs this, on a
-# strict build of `main`. Needs CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID.
-site-deploy:
-    cd site && WRANGLER_SEND_METRICS=false yarn wrangler deploy
+# strict build of `main`. Needs CLOUDFLARE_API_TOKEN, CLOUDFLARE_ACCOUNT_ID and RITUEEL_STATUS_KV_ID.
+# `secrets` is a JSON file of Worker secrets to upload with the version (absolute path); the deploy
+# job writes it from GitHub secrets and deletes it afterwards.
+site-deploy secrets='':
+    site/scripts/deploy-config.mjs
+    cd site && WRANGLER_SEND_METRICS=false yarn wrangler deploy --config wrangler.deploy.json {{ if secrets != '' { '--secrets-file ' + quote(secrets) } else { '' } }}
 
 # Repository rules (tools/checks/). Each check fails when it finds nothing to check.
 
@@ -102,4 +119,4 @@ check-vectors:
 check-rules: check-selftest check-decisions check-public check-yaml-ext check-mdx-pages check-agent-links check-vectors
 
 # Everything a pull request must pass.
-check: check-rules site-check site-workers
+check: check-rules site-check site-workers site-render

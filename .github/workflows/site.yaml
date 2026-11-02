@@ -1,18 +1,23 @@
 # Builds the ritueel.id website (Astro Starlight, site/ and docs/) and deploys it to the
-# Cloudflare Worker `ritueel-site` (static assets only). This workflow publishes;
-# checks.yaml judges pull requests.
+# Cloudflare Worker `ritueel-site` (static assets, and the live status API on /api/*). This
+# workflow publishes; checks.yaml judges pull requests.
 #
 # - `build` proves that the site builds strictly on `main`. It runs after every push that
 #   touches the site, and uploads nothing.
 # - `deploy` runs after `build` has passed, on `main` only, in the GitHub environment
 #   `cloudflare`. That environment allows only `main`, has no required reviewers, and holds
-#   two secrets: CLOUDFLARE_API_TOKEN (a token limited to this one Worker, created by the
-#   maintainer once the Worker exists) and CLOUDFLARE_ACCOUNT_ID. A pull request never runs
-#   it: this workflow has no pull_request trigger.
+#   the deploy's secrets and variable: CLOUDFLARE_API_TOKEN (a token limited to this one
+#   Worker, created by the maintainer once the Worker exists), CLOUDFLARE_ACCOUNT_ID,
+#   RITUEEL_STATUS_KV_ID (the KV namespace of the live status), RITUEEL_STATUS_APP_KEY (the
+#   private key of the read-only GitHub App the Worker reads as) and the variable
+#   RITUEEL_STATUS_APP_CLIENT_ID. A pull request never runs it: this workflow has no
+#   pull_request trigger.
 #
 # Until the token exists the deploy job says so in a notice and skips, and `main` stays
-# green. The Worker, its routes and the domain are declared outside this repository; this
-# workflow only uploads a new version of the Worker. No build artifact is uploaded to GitHub:
+# green. Once it exists, the other secrets are required: the job fails in seconds, naming the
+# missing one, rather than deploy a Worker that cannot read GitHub. The Worker, its KV
+# namespace, its routes and the domain are declared outside this repository; this workflow only
+# uploads a new version of the Worker and its secrets. No build artifact is uploaded to GitHub:
 # the deploy job rebuilds from the commit.
 name: Site
 
@@ -66,22 +71,29 @@ jobs:
     steps:
       # Decide in seconds, and without printing a value, whether the environment is set up.
       # An empty token is the expected state until the Worker exists: skip with a notice.
-      # A token without an account id is a mistake: fail.
+      # A token without the rest is a mistake: fail, naming what is missing.
       - name: Is the deploy set up
         id: gate
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          RITUEEL_STATUS_KV_ID: ${{ secrets.RITUEEL_STATUS_KV_ID }}
+          RITUEEL_STATUS_APP_KEY: ${{ secrets.RITUEEL_STATUS_APP_KEY }}
+          RITUEEL_STATUS_APP_CLIENT_ID: ${{ vars.RITUEEL_STATUS_APP_CLIENT_ID }}
         run: |
           if [ -z "$CLOUDFLARE_API_TOKEN" ]; then
             echo "::notice title=Deploy skipped::the secret CLOUDFLARE_API_TOKEN of the environment cloudflare is not set yet, so nothing was deployed. The maintainer creates it once the Worker exists."
             echo "ready=false" >> "$GITHUB_OUTPUT"
             exit 0
           fi
-          if [ -z "$CLOUDFLARE_ACCOUNT_ID" ]; then
-            echo "::error::the secret CLOUDFLARE_ACCOUNT_ID of the environment cloudflare is not set"
-            exit 1
-          fi
+          missing=0
+          for name in CLOUDFLARE_ACCOUNT_ID RITUEEL_STATUS_KV_ID RITUEEL_STATUS_APP_KEY RITUEEL_STATUS_APP_CLIENT_ID; do
+            if [ -z "${!name}" ]; then
+              echo "::error::$name of the environment cloudflare is not set"
+              missing=1
+            fi
+          done
+          [ "$missing" -eq 0 ] || exit 1
           echo "ready=true" >> "$GITHUB_OUTPUT"
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         if: ${{ steps.gate.outputs.ready == 'true' }}
@@ -106,9 +118,25 @@ jobs:
           files=$(find site/dist -type f | wc -l)
           echo "$files asset files"
           [ "$files" -le 20000 ] || { echo "::error::$files asset files; the Free plan allows 20,000 per version"; exit 1; }
+      # The Worker's secrets go up with the version (`wrangler deploy --secrets-file`), from a file
+      # in the runner's temporary directory that only this step can read and that is deleted when
+      # it ends; Wrangler prints their names, never their values. The Worker reads GitHub as the
+      # read-only GitHub App: its client id (a variable of the environment) and private key (a
+      # secret). Nobody runs `wrangler secret put`: rotating one is changing it in GitHub and
+      # running this workflow. Wrangler prints the Worker's bindings, which include the KV id;
+      # GitHub masks the value of every secret in the log, so it shows as ***.
       - name: Deploy the Worker
         if: ${{ steps.gate.outputs.ready == 'true' }}
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-        run: devbox run -- just site-deploy
+          RITUEEL_STATUS_KV_ID: ${{ secrets.RITUEEL_STATUS_KV_ID }}
+          GITHUB_APP_CLIENT_ID: ${{ vars.RITUEEL_STATUS_APP_CLIENT_ID }}
+          GITHUB_APP_PRIVATE_KEY: ${{ secrets.RITUEEL_STATUS_APP_KEY }}
+        run: |
+          set -euo pipefail
+          umask 077
+          secrets="$RUNNER_TEMP/worker-secrets.json"
+          trap 'rm -f "$secrets"' EXIT
+          jq -n '{GITHUB_APP_CLIENT_ID: env.GITHUB_APP_CLIENT_ID, GITHUB_APP_PRIVATE_KEY: env.GITHUB_APP_PRIVATE_KEY}' > "$secrets"
+          devbox run -- just site-deploy "$secrets"
