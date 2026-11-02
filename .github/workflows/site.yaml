@@ -44,6 +44,8 @@ jobs:
       - uses: truvity/ci-actions/setup-devbox@c0af6f2725824b0f199f7590be79b84b0ee895e6 # v3.8.0
       - name: Build the site (strict)
         run: devbox run -- just site-build
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
 
   # The secrets are given to single steps, not to the job, so the install, the build and the
   # checks never see them.
@@ -90,6 +92,8 @@ jobs:
       - name: Build the site (strict)
         if: ${{ steps.gate.outputs.ready == 'true' }}
         run: devbox run -- just site-build
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
       - name: Stamp the build
         if: ${{ steps.gate.outputs.ready == 'true' }}
         run: |

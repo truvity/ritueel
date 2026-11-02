@@ -12,7 +12,7 @@ bad() { echo "check-built: $*" >&2; fail=1; }
 for f in index.html 404.html sitemap-index.xml robots.txt \
          learn/index.html learn/what-is-a-root/index.html learn/custody-chain/index.html learn/key-stores/index.html \
          learn/life-of-a-root/index.html guides/index.html tools/index.html tools/wizard/index.html principles/index.html reference/index.html reference/cli/index.html research/index.html \
-         roadmap/index.html contributing/index.html decisions/index.html; do
+         roadmap/index.html contributing/index.html decisions/index.html status/index.html; do
   [ -s "$dist/$f" ] || bad "missing or empty: $f"
 done
 
@@ -72,6 +72,19 @@ if [ -s "$dist/_redirects" ]; then
   done < "$dist/_redirects"
 else
   bad "no _redirects: site/public/_redirects did not reach the output"
+fi
+
+# The project status page: a card for every milestone row of the roadmap, and the design line
+# the home page shows, word for word (both are counted by site/src/lib-status.ts).
+if [ -s "$dist/status/index.html" ]; then
+  want=$(grep -cE '^\| \*\*M[0-9]+:' docs/roadmap.md || true)
+  have=$(grep -o 'data-milestone="M[0-9]*"' "$dist/status/index.html" | sort -u | wc -l)
+  { [ "$want" -gt 0 ] && [ "$want" -eq "$have" ]; } || bad "status/index.html has $have milestone cards; docs/roadmap.md has $want milestone rows"
+  grep -q 'data-github="\(available\|unavailable\)"' "$dist/status/index.html" || bad "status/index.html does not say whether the issues were read"
+  design() { grep -o 'Design: [0-9]* decision records, [0-9]* reference pages\. Code: [0-9]* lines\.' "$1" | head -1; }
+  home=$(design "$dist/index.html")
+  [ -n "$home" ] || bad "index.html has no design line"
+  [ "$home" = "$(design "$dist/status/index.html")" ] || bad "status/index.html and index.html disagree on the design line"
 fi
 
 # The landing page says what ritueel is and that it is in the design phase.
