@@ -15,7 +15,7 @@ OpenPGP has no certificate chains. It has a primary key, subkeys that the primar
 - **A primary lasts about three years, and each use extends it** with a new self-signature. A dead card shows itself by not extending.
 - **No personal key certifies a primary.** Release trust rests on a dedicated release identity and the keyring, not on anyone's own key.
 - **Each holder of an intermediate holds one signing subkey,** generated where it lives (a PIV slot or a KMS key). The subkey makes a *back-signature* (type `0x19`) over a primary and itself, which proves it agreed to be bound; `gpg`, `gpgv` and `sqv` refuse a signing subkey without one. **The request carries a back-signature for every active primary,** so either root card can make the binding.
-- **The root of the year binds the subkey for about 13 months,** and each yearly ceremony re-signs the binding, so years overlap. The subkey is replaced only on an event, or at most every three years.
+- **The root of the year binds the subkey for about 13 months,** and each yearly ceremony re-signs the binding, so years overlap. The subkey is replaced on an event, and a subkey in software also at most every three years.
 - **Users hold a keyring, not one certificate.** The keyring package carries every active primary and every subkey binding. A verifier that holds one primary cannot check a subkey that the other bound, so the instructions say "use the keyring package". Its files are in [the keyring package reference](/reference/keyring-package/).
 
 ## Revocation

@@ -16,7 +16,7 @@ sidebar:
 
 ## Steps
 
-1. **Check what is due.** Run `ritueel status`. Result: a list of intermediates, roots, root list and CRLs, with what expires when. Nothing critical remains unresolved.
+1. **Check what is due, and review the advisories.** Run `ritueel status`, then read the makers' and the cloud provider's security advisories for the cards, the firmware, the services and the algorithms in use since the last ceremony. Result: a list of intermediates, roots, root list and CRLs, with what expires when; nothing critical remains unresolved; and either no advisory touches a key, or you rotate that key instead of re-signing it ([Rotate](/learn/rotate/#when-to-rotate)). `ritueel yearly` asks whether you did, and the record keeps the answer.
 2. **Make the plan.** Run `ritueel yearly --plan-only`. Result: a plan that names every certificate and binding to be signed, each key's fingerprint and where it lives, and the number of touches. Nothing has been touched yet.
 3. **Read the plan.** Compare the fingerprints with the ledger. Result: you are sure each key is the one you expect.
 4. **Confirm and sign.** Run `ritueel yearly --plan FILE`, type the first eight characters of the plan's digest when asked, enter the PIN at the terminal, and touch the card at each prompt. Result: new certificates and bindings over the same keys, the card's own root extended, and a new trust sequence.

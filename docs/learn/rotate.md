@@ -1,6 +1,6 @@
 ---
 title: Rotate
-description: Rotating replaces a key with a new one. It is needed on an event or after three years at most, not sooner or later, and it asks work of everyone who trusts it.
+description: Rotating replaces a key with a new one. It is needed on an event, and for a key in software after three years at most. It asks work of everyone who trusts it.
 sidebar:
   order: 16
 ---
@@ -11,10 +11,12 @@ sidebar:
 
 | Reason | Example |
 |---|---|
-| **An event** | A suspected compromise; a change of key store (from a file to a card); a change of algorithm; a change of who holds the key. |
-| **Age** | After at most three years, whatever else happened. |
+| **An event** | An advisory about the card, its firmware or the cloud key service that affects the key; the deprecation of its algorithm; a lost card, or one at its end of life; a suspected compromise; a change of key store (from a file to a card); a change of who holds the key. |
+| **Age, for a key in software** | After at most three years, whatever else happened. |
 
-Three years is the top of the cryptoperiod that NIST SP 800-57 Part 1 gives a private signing key. A forced rotation also keeps the rotation path practised: a path used only in an emergency is a path that has never been tested.
+**What ages a key depends on where it lives.** A key in a file can be copied and read without leaving a trace, so a calendar limit bounds how long an unnoticed copy stays useful. Three years is the top of the cryptoperiod that NIST SP 800-57 Part 1 gives a private signing key, and a forced rotation also keeps the rotation path practised: a path used only in an emergency is a path that has never been tested. A key born on a card or in a cloud key service cannot be copied, so the calendar adds nothing; what ends it is something that happens to the device, the service or the algorithm. In 2024, for example, a side channel in the ECDSA code inside some security keys let someone with physical access and specialised equipment recover the private key; the devices took no firmware update, so the remedy was a new device and a new key ([ADR 0012](/decisions/0012-personal-openpgp-the-primary-offline-in-a-file-the-daily-subkey-on-a-card/#how-long-a-persons-primary-lives) has the sources).
+
+**So every yearly ceremony includes a review of the advisories** for the cards, the services and the algorithms you use, and the record says you did it. An advisory is the one event you can miss by not looking ([ADR 0002](/decisions/0002-key-custody-every-key-is-born-in-its-store-two-root-cards-or-one-kms-root-and-a-replica/#validity-renewal-and-replacement)).
 
 ## Why not every year
 
@@ -50,7 +52,7 @@ Two patterns follow. **Extend the same key's expiry** when the key is safe (Tail
 
 ## The rule
 
-> **Re-sign yearly. Rotate on an event, or after at most three years.** ([principle 3](/principles/))
+> **Re-sign yearly. Rotate on an event; a key in software also after at most three years.** ([principle 3](/principles/))
 
 ## What can go wrong
 

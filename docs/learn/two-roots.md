@@ -22,7 +22,7 @@ ritueel takes the other branch for two reasons: no key is ever copied, so each c
 
 ## How the cards alternate
 
-An intermediate's certificate is signed by the card of the year and lasts about 13 months. At the yearly ceremony the other card signs a new certificate over the same intermediate key, so years overlap by about a month. The key is not made again each year; it is replaced only on an event, or at most every three years. Between ceremonies there is no always-online intermediate.
+An intermediate's certificate is signed by the card of the year and lasts about 13 months. At the yearly ceremony the other card signs a new certificate over the same intermediate key, so years overlap by about a month. The key is not made again each year; it is replaced on an event, and a key in software also at most every three years. Between ceremonies there is no always-online intermediate.
 
 | Year | Card at the ceremony | Certified that year | Still valid from the year before |
 |---|---|---|---|

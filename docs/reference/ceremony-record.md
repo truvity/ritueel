@@ -112,6 +112,7 @@ A ceremony that makes keys also creates `attempts/<ceremony>.births.jsonl`, with
 | `artifacts` | A list of `{ "path", "sha256" }`: every file the ceremony wrote other than the plan, the attempt, the record and the transcript, in path order. The trust products are among them. |
 | `trust_sequence` | As in the plan. |
 | `transcript_sha256` | The SHA-256 of the transcript. |
+| `advisory_review` | `yearly` only: `{ "at", "note" }`, the holder's answer that they reviewed the advisories for the cards, services and algorithms in use, and a short note of what they read. ritueel asks and records; it does not judge the answer ([ADR 0002](/decisions/0002-key-custody-every-key-is-born-in-its-store-two-root-cards-or-one-kms-root-and-a-replica/#validity-renewal-and-replacement)). |
 | `declined` | A declining record only: `{ "stem", "reason" }`, the request declined and the reason the person gave. Such a record has no `signatures`, and its `artifacts` are the refused answer. |
 | `closes` | A closing record only: `{ "ceremony", "attempt_sha256", "reason" }`, the attempt it resolves, its digest, and the reason the person gave. |
 | `revocations` | A ceremony that made revocation signatures: a list of `{ "label", "reason", "sha256" }`, the digest of each signature packet. The signatures themselves are never in the record ([revocation material](/reference/revocation-material/)). |

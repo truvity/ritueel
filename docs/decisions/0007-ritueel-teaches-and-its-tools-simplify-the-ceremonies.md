@@ -63,7 +63,7 @@ Each procedure gets a page under Learn that says why and when, a guide that give
 
 - **Backup and restore drills:** rebuild the state on a clean machine from the ledger and the password manager, and compare it with the cards.
 - **Revocation,** including **OpenPGP revocation certificates generated in advance** and kept apart, and CRLs and root lists for X.509.
-- **Re-sign versus rotate** (principle 3): re-sign yearly, the same key with a new validity; rotate to a new key on an event or after at most three years.
+- **Re-sign versus rotate** (principle 3): re-sign yearly, the same key with a new validity; rotate to a new key on an event, and a key in software also after at most three years.
 - **Card loss and replacement.**
 
 ## Consequences
