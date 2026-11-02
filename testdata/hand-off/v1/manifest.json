@@ -482,12 +482,44 @@
       "reason": "algorithm-unsupported"
     },
     {
+      "id": "pgp-capabilities-two",
+      "type": "openpgp-subkey",
+      "config": "production",
+      "files": [
+        "requests/pgp-capabilities-two.subkey.pgp",
+        "requests/pgp-capabilities-two.proof.json"
+      ],
+      "expect": "refuse",
+      "reason": "malformed"
+    },
+    {
+      "id": "pgp-capability-encrypt",
+      "type": "openpgp-subkey",
+      "config": "production",
+      "files": [
+        "requests/pgp-capability-encrypt.subkey.pgp",
+        "requests/pgp-capability-encrypt.proof.json"
+      ],
+      "expect": "refuse",
+      "reason": "malformed"
+    },
+    {
       "id": "pgp-response-request",
       "type": "openpgp-subkey",
       "config": "development",
       "files": [
         "requests/pgp-response-request.subkey.pgp",
         "requests/pgp-response-request.proof.json"
+      ],
+      "expect": "accept"
+    },
+    {
+      "id": "pgp-openpgp-card-authenticate",
+      "type": "openpgp-subkey",
+      "config": "production",
+      "files": [
+        "requests/pgp-openpgp-card-authenticate.subkey.pgp",
+        "requests/pgp-openpgp-card-authenticate.proof.json"
       ],
       "expect": "accept"
     },
@@ -940,6 +972,27 @@
       ],
       "expect": "refuse",
       "reason": "validity"
+    },
+    {
+      "id": "pgp-openpgp-card-authenticate",
+      "type": "openpgp-subkey",
+      "request": "pgp-openpgp-card-authenticate",
+      "files": [
+        "responses/pgp-openpgp-card-authenticate.bound.pgp",
+        "responses/pgp-openpgp-card-authenticate.result.json"
+      ],
+      "expect": "install"
+    },
+    {
+      "id": "pgp-response-authenticate-bound-for-signing",
+      "type": "openpgp-subkey",
+      "request": "pgp-openpgp-card-authenticate",
+      "files": [
+        "responses/pgp-response-authenticate-bound-for-signing.bound.pgp",
+        "responses/pgp-response-authenticate-bound-for-signing.result.json"
+      ],
+      "expect": "refuse",
+      "reason": "profile"
     },
     {
       "id": "ssh-piv-valid",
