@@ -24,6 +24,7 @@ ritueel writes the three files together, under `products/<sequence>/` in [the di
 - `root-list.json` has the member `version`, an integer. This page is version `1`.
 - A reader that does not know the version refuses the list with `version-unsupported`.
 - A change to a member, a rule or a reason code that can turn an accepted list into a refused one, or the reverse, is a new version. The vectors are versioned with it (`testdata/root-list/v1/`), and a change to a vector that flips its outcome is a new version.
+- While no reader of the list has been released, version 1 is rewritten in place, as the hand-off contract is: so it was on 2026-11-02, when a change of the root set came to need every current root. From the first release, the rule above holds without exception.
 
 ## The list
 
