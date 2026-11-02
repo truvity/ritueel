@@ -9,7 +9,7 @@
 //   lines, and the line says so;
 // - the milestones are the rows of the table in docs/roadmap.md, which names M1 to M4, what
 //   each delivers and, for the page, the order. GitHub (src/lib-github.ts) adds the issues.
-import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { decisionFacts, listDecisions } from './lib-decisions';
 import type { GhIssue, Github } from './lib-github';
@@ -24,12 +24,13 @@ const countFiles = (dir: string, keep: (name: string) => boolean): number =>
   readdirSync(join(root, dir)).filter((name) => name.endsWith('.md') && keep(name)).length;
 
 const SKIP = new Set(['.git', 'node_modules', 'site', 'dist']);
+// Directory entries carry their own type, so no file is checked and then read.
 const goLines = (dir: string): number =>
-  readdirSync(dir).reduce((sum, name) => {
-    if (SKIP.has(name)) return sum;
-    const path = join(dir, name);
-    if (statSync(path).isDirectory()) return sum + goLines(path);
-    return name.endsWith('.go') ? sum + readFileSync(path, 'utf8').split('\n').length : sum;
+  readdirSync(dir, { withFileTypes: true }).reduce((sum, entry) => {
+    if (SKIP.has(entry.name)) return sum;
+    const path = join(dir, entry.name);
+    if (entry.isDirectory()) return sum + goLines(path);
+    return entry.isFile() && entry.name.endsWith('.go') ? sum + readFileSync(path, 'utf8').split('\n').length : sum;
   }, 0);
 
 export interface DesignFacts {
