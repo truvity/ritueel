@@ -1,11 +1,13 @@
 ---
 title: Re-sign every year
-description: The yearly ceremony in steps. Re-sign each intermediate over the same key, extend the root that signs, publish the next trust sequence, and check expiry.
+description: The yearly ceremony in steps. Re-sign each intermediate over the same key, extend the root, publish the next trust sequence; or let a cloud root renew.
 sidebar:
   order: 3
 ---
 
-*Design phase: not built yet. This page is the plan that `ritueel yearly` will follow (M2, [issue #30](https://github.com/truvity/ritueel/issues/30)). To learn why you re-sign and why yearly, read [Re-sign](/learn/re-sign/) first.*
+*Design phase: not built yet. This page is the plan that `ritueel yearly` will follow (M2, [issue #30](https://github.com/truvity/ritueel/issues/30)), and `ritueel renew` for a cloud root (M3). To learn why you re-sign and why yearly, and which acts may run unattended, read [Re-sign](/learn/re-sign/) first.*
+
+There are two paths. **Card roots** take the steps below once a year, with the card of the year; nothing renews them without you. **A cloud root** can take the same steps, or let the operator's scheduler run `ritueel renew` under a declared renewal policy ([below](/guides/re-sign-yearly/#a-cloud-root-under-a-renewal-policy)).
 
 ## What you start with
 
@@ -29,6 +31,17 @@ sidebar:
 - `ritueel records verify` passes, and `ritueel status` shows no intermediate expiring within the warning period.
 - Each intermediate serves its new certificate, and a client with the old and a client with the new bundle both validate.
 - No key was made: the fingerprints are the ones from before.
+
+## A cloud root under a renewal policy
+
+`ritueel renew` re-signs what the ledger already holds, over the same keys, as the renewal role and with no person: the intermediates the policy names, the root list and the other trust products with the same content, and the root's own certificate and primary ([renewal under a policy](/reference/kms-root/#renewal-under-a-policy)). It refuses anything new.
+
+1. **Declare the policy** in `ritueel.yaml` under `aws_kms.renewal`: the renewal role, the intermediates it may renew, and how many days before expiry it may run. Result: the next ceremony renders a key policy with the Renew statement, which you confirm in its plan.
+2. **Have the operator make the renewal role and the schedule** ([Prepare the cloud root](/guides/prepare-the-cloud-root/)). The scheduler runs `ritueel status --output json` and calls `ritueel renew` when a finding falls within the policy's days. Result: a run that is too early is refused with `too-early`, and one that is due writes a record whose confirmation is `policy`.
+3. **Publish and hand back** as in steps 5 and 6 above, from the operator's pipeline. Result: each system that holds an intermediate installs its new certificate or binding.
+4. **Read the alerts.** A failed run is an alert from the scheduler, and `status` keeps warning at 60, 30 and 14 days. Result: a broken schedule is noticed a month before anything expires.
+
+A person still meets the root for everything that is not a renewal: a new key, a change of the root set, a revocation, and the yearly [restore drill](/guides/run-a-drill/).
 
 ## Drill
 

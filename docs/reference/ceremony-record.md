@@ -105,7 +105,8 @@ A ceremony that makes keys also creates `attempts/<ceremony>.births.jsonl`, with
 | `started_at`, `finished_at` | When the attempt was written, and when the record was. |
 | `root`, `root_reason` | As in the plan. Absent in a closing record. |
 | `slot_map_version` | For a root on a card: the version of the slot map ([ADR 0003](/decisions/0003-key-stores-and-the-card-layer/#the-piv-store-and-the-root-cards)). Absent for a software root. |
-| `confirmation` | `{ "by", "at" }`: `typed` or `flag`, and when. |
+| `confirmation` | `{ "by", "at" }`: `typed` or `flag`, and when; `policy` for a run of `renew`, which no person confirms ([renewal under a policy](/reference/kms-root/#renewal-under-a-policy)). |
+| `renewal` | `renew` only: `{ "policy_sha256", "role_session" }`, the SHA-256 of the canonical JSON of the `renewal` block that was applied, and the renewal role's session (the assumed-role ARN and session name, never a credential). |
 | `limit_shown` | `init` only: true, because `init` prints the [accepted limit](/decisions/0002-key-custody-every-key-is-born-in-its-store-two-root-cards-or-one-kms-root-and-a-replica/#the-accepted-limit). |
 | `requests` | One for each request, below. |
 | `signatures` | The plan's list, each with `signature_sha256`: the SHA-256 of the signature made. |

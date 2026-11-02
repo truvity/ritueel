@@ -38,6 +38,22 @@ If nothing has gone wrong, no advisory touches the key, and a key in software is
 - **The wrong key is re-signed.** If the request is not checked, you extend the authority of a key you should have retired. A ceremony shows the key's fingerprint and where it lives before the touch.
 - **It is used to paper over a compromise.** Re-signing extends trust in a key. If the key may be stolen, re-signing it is the opposite of what you want.
 
+## What may run unattended
+
+A renewal changes nothing about who is trusted, which is why it can be automated where the key store allows it ([principle 7](/principles/)). The test that separates the routine from the decisions: **if every byte the root will sign is fixed by the ledger and the clock, it is routine; if any byte names a key, a subject or a constraint the ledger does not already hold, a person decides.**
+
+| Act | Card roots | Cloud root | Why |
+|---|---|---|---|
+| Make a root; add, retire or revoke one | Ceremony | Ceremony: the ceremony role, multi-factor authentication and the typed plan digest | It changes who is trusted ([root transitions](/reference/transitions/)). |
+| Certify a new intermediate key, bind a new subkey, list a new SSH CA key | Ceremony | Ceremony | A person compares the fingerprint and the evidence of a key nobody has seen before. |
+| Re-sign the same intermediate key or subkey binding, within its profile, before it expires | Ceremony: the PIN and the touch are physical. `status` reminds at 60, 30 and 14 days. | Unattended, under the declared renewal policy, run by the operator's scheduler | Every byte is fixed by the ledger and the clock. |
+| Re-sign the root list, the SSH CA key list or a CRL with the same content, and rebuild the CA bundle | Ceremony | Unattended, as above | The same: a new validity and the next trust sequence. |
+| Extend the root's own certificate and primary over the same keys | Ceremony | Unattended, as above | The same. |
+| Revoke an intermediate or a subkey | Ceremony | Ceremony | A revocation is a decision. |
+| Issue a leaf certificate, or an SSH user or host certificate | Never | Never | ritueel holds no online key ([ADR 0001](/decisions/0001-scope-roots-and-transitions-systems-like-sluis-hold-intermediates/)). |
+
+A cloud root's renewal runs under a second role that can sign only what the ledger already holds, so it can extend trust but never create it ([The cloud root](/reference/kms-root/#renewal-under-a-policy)). A card root cannot be left to a machine: its PIN and touch are the protection, so its holder comes once a year, and the long warning is what keeps that from being forgotten.
+
 ## In ritueel
 
-The `yearly` command re-signs every registered intermediate with the root of the year, extends that root, and publishes the next trust sequence. It is planned for M2. The steps and a drill are in the [guide](/guides/re-sign-yearly/), and the details of validity and extension are in [the command line](/tools/cli/#root-validity-and-its-extension).
+The `yearly` command re-signs every registered intermediate with the root of the year, extends that root, and publishes the next trust sequence. It is planned for M2. For a cloud root, `ritueel renew` does the same unattended under a declared policy, planned for M3. The steps and a drill are in the [guide](/guides/re-sign-yearly/), and the details of validity and extension are in [the command line](/tools/cli/#root-validity-and-its-extension).
