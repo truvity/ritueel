@@ -40,6 +40,10 @@ A revocation made after a key is lost cannot be made at all, and one made in a h
 
 A root that expires is a transition that is already scheduled. An expiring root, treated as an emergency on the last day, is a failure of planning. A root lasts about three years, and each use extends it: the next yearly ceremony that uses its card gives it a new validity of about three years (see [the ceremony](/tools/cli/#root-validity-and-its-extension)). A root whose card is dead or lost is not extended, so it shows itself by running out. ritueel tracks expiry and warns well before it, with enough lead time to run the overlap.
 
+## In ritueel
+
+`root add` makes the new root and has an active root vouch for it, `root retire` ends the overlap, and `root revoke` is the emergency exit. You say how long the overlap lasts; ritueel refuses to retire a root while something still hangs from it alone, and calls a set that is short of its target an alert. The states, the checks and the files are in [the transitions reference](/reference/transitions/), and the reasons in [ADR 0009](/decisions/0009-root-transitions-vouch-overlap-retire-and-revoke/).
+
 ## What outsiders install
 
 Outsiders need only the tools they already have. Every product carries one *trust sequence*, an integer that grows by one whenever any of them changes, so a client can tell whether it is current ([ADR 0005](/decisions/0005-trust-products-the-root-list-the-ca-bundle-the-ssh-ca-key-list-and-the-trust-sequence/)).

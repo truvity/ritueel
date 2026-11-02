@@ -49,3 +49,5 @@ Every record has these parts, in this order:
 | [0006](0006-release-keys-and-the-keyring-package.md) | Release keys and the keyring package | Accepted |
 | [0007](0007-ritueel-teaches-and-its-tools-simplify-the-ceremonies.md) | ritueel teaches, and its tools simplify the ceremonies | Accepted |
 | [0008](0008-the-operator-prepares-the-holder-and-ritueel-creates-attests-and-verifies-the-root.md) | The operator prepares the holder; ritueel creates, attests and verifies the root | Accepted |
+| [0009](0009-root-transitions-vouch-overlap-retire-and-revoke.md) | Root transitions: vouch, overlap, retire and revoke | Accepted |
+| [0010](0010-readiness-is-made-at-birth-and-proved-by-a-drill.md) | Readiness is made at birth and proved by a drill | Accepted |
