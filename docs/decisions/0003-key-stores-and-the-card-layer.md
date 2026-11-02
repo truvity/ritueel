@@ -45,10 +45,10 @@ The six steps, the plan, the checks and the records are the same for every store
 
 ### The software store
 
-The `software` store has three backends, chosen when the root is made ([0007](/decisions/0007-ritueel-teaches-and-its-tools-simplify-the-ceremonies/)). The key is generated in memory and written directly into the backend, never to a file on disk.
+The `software` store has three backends, chosen when the root is made ([0007](/decisions/0007-ritueel-teaches-and-its-tools-simplify-the-ceremonies/)). The key is generated in memory and written directly into the backend, never to a file on disk. The formats and the limits of each backend are in [the software store](/reference/software-store/).
 
-- **An encrypted file,** protected by a passphrase: the default for drills and tests.
-- **1Password,** the proposed persistent store. Its sync is redundancy against loss, not against compromise.
+- **An encrypted file,** protected by a passphrase: the default for drills and tests, and the home of a person's own primary, which stays offline ([0012](/decisions/0012-personal-openpgp-the-primary-offline-in-a-file-the-daily-subkey-on-a-card/)).
+- **1Password,** a persistent home for the software keys of test roots, intermediates and subkeys, reached through its `op` command line. Its sync is redundancy against loss, not against compromise: whoever unlocks the vault has the key. It is never the home of a production root or of a person's master key.
 - **The OS keyring,** through `github.com/zalando/go-keyring`, with a warning in the creation output and in every record that it can be insecure and has no copy. ritueel refuses to fall back to a file when no keyring exists.
 
 ### What a store can prove decides what it may hold
@@ -59,7 +59,7 @@ The stores give three kinds of evidence, and the kind sets the work a store may 
 |---|---|---|---|
 | **Attested** | `piv`, `openpgp-card` | A chain to the maker's root says the key was made inside this device, with this firmware and these policies. | Roots, intermediates and subkeys. |
 | **Read from the service** | `aws-kms` | The key's description, policy and audit trail, read from the service every time. Not that it was made in an HSM. | Roots, intermediates and subkeys. |
-| **None** | `software` and its backends; a token that cannot attest | Nothing about where the key lives. | Test roots, drills, development and a person's own primary. Intermediates and subkeys only where `policy.stores` lists the store. Never a root that others rely on. |
+| **None** | `software` and its backends; a token that cannot attest | Nothing about where the key lives. | Test roots, drills, development; a person's own primary, in the encrypted file only. Intermediates and subkeys only where `policy.stores` lists the store. Never a root that others rely on. |
 
 `init` and `root add` refuse a hardware or cloud root that cannot be attested or read, as [0004](/decisions/0004-ceremonies-plan-confirm-reserve-sign-verify-record/#the-roots-at-init) says. A store with no evidence is the `software` store, marked as copyable in every record.
 

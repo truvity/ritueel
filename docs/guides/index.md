@@ -26,6 +26,7 @@ Your daily subkeys, put to work. Each of these uses the tools you have today; cr
 
 | Guide | When | Learn first |
 |---|---|---|
+| [Your own OpenPGP key](/guides/personal-openpgp/) | You want a master key offline and a daily subkey on a card. | [OpenPGP custody chain](/learn/chain-openpgp/) |
 | [An authentication subkey for SSH](/guides/openpgp-ssh-authentication/) | You want to log in to servers with a key on a card. | [OpenPGP custody chain](/learn/chain-openpgp/) |
 | [Sign git commits and tags](/guides/openpgp-sign-git/) | You want commits and tags shown as verified. | [OpenPGP custody chain](/learn/chain-openpgp/) |
 | [Sign software and releases](/guides/openpgp-sign-releases/) | You publish downloads that users should be able to verify. | [OpenPGP release keys](/learn/openpgp-release-keys/) |

@@ -68,6 +68,8 @@ keyring:
 | `intermediates` | The intermediates ritueel may certify, one entry each. `name` is the `NAME` of the commands: lower-case letters, digits and hyphens, 1 to 63 characters, unique. `type` is `x509-intermediate`, `openpgp-subkey` or `ssh-ca-key`. |
 | `intermediates[].permitted_uri_hosts` | For `x509-intermediate`: the hosts a request's name constraints must stay inside. Required when `require_name_constraints` is true. Only URI hosts are expressible in version 1. **Planned:** permitted and excluded DNS subtrees and excluded IP ranges, for an intermediate that issues for DNS names and for per-environment limits; the schema will grow when a first installation needs it. |
 | `intermediates[].use` | For `ssh-ca-key`: `user` or `host`, required. A request for another `use` is refused with `policy`; the key is listed with this use ([the contract](/reference/hand-off-contract/#ssh-ca-key)). |
+| `kind` | Optional. `personal` for a person's own OpenPGP key; absent for a company directory. A personal directory has `person` instead of `name` and `release_address` ([personal OpenPGP](/reference/personal-openpgp/)). |
+| `person` | Only with `kind: personal`: `name` (1 to 64 characters) and `address`. |
 | `aws_kms` | Optional, from M2; required when a root's store is `aws-kms`. The root account, the two Regions and the two roles ([the block](/reference/kms-root/#ritueelyaml)). |
 | `keyring` | Optional. `license` is the SPDX identifier written into the `.rpm`, required to build one: the operator's choice, which ritueel does not default ([the keyring package](/reference/keyring-package/)). |
 | `intermediates[].kms_read_roles` | For a requester's KMS key in another account: the read-only role to assume, by account ([the contract](/reference/hand-off-contract/#aws-kms)). The role is never taken from a request. |
@@ -85,9 +87,24 @@ The schema, in JSON Schema (draft 2020-12), which the code ships and checks the 
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "type": "object",
   "additionalProperties": false,
-  "required": ["version", "name", "release_address", "policy"],
+  "required": ["version", "policy"],
+  "allOf": [
+    { "if": { "required": ["kind"] },
+      "then": { "required": ["person"], "not": { "anyOf": [{ "required": ["name"] }, { "required": ["release_address"] }] } },
+      "else": { "required": ["name", "release_address"] } }
+  ],
   "properties": {
     "version": { "const": 1 },
+    "kind": { "const": "personal" },
+    "person": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "address"],
+      "properties": {
+        "name": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9 .'-]{0,63}$" },
+        "address": { "type": "string", "format": "email" }
+      }
+    },
     "name": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9 -]{0,63}$" },
     "release_address": { "type": "string", "format": "email" },
     "policy": {

@@ -30,8 +30,8 @@ There is no designated revoker: RFC 9580 deprecates the mechanism ([ADR 0002](/d
 
 | Root's store | Where | Form |
 |---|---|---|
-| `piv`, `aws-kms`, and a person's primary on a card-free setup | The directory named by `--revocation-dir DIR`, required by every command that makes one. | One file for each reason, `<fingerprint>.<reason>.asc`: the signature packet, ASCII-armoured (RFC 9580, section 6.2), so it can be printed. Mode `0600`. |
-| `software` | The key directory, with the key files ([the directory](/reference/directory/#the-software-roots-key-files)). | `<label>.revocation.<reason>.pgp.age`, encrypted like the key files; a test root writes `<label>.revocation.<reason>.asc`. |
+| `piv`, `aws-kms`, and the `software` backends `onepassword` and `keyring` | The directory named by `--revocation-dir DIR`, required by every command that makes one. | One file for each reason, `<fingerprint>.<reason>.asc`: the signature packet, ASCII-armoured (RFC 9580, section 6.2), so it can be printed. Mode `0600`. |
+| `software`, backend `file` | The key directory, with the key files ([the directory](/reference/directory/#the-software-roots-key-files)). | `<label>.revocation.<reason>.pgp.age`, encrypted like the key files; a test root writes `<label>.revocation.<reason>.asc`. |
 
 ritueel refuses, with the code `revocation-dir`, a directory that:
 

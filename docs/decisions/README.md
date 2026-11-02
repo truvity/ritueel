@@ -51,3 +51,5 @@ Every record has these parts, in this order:
 | [0008](0008-the-operator-prepares-the-holder-and-ritueel-creates-attests-and-verifies-the-root.md) | The operator prepares the holder; ritueel creates, attests and verifies the root | Accepted |
 | [0009](0009-root-transitions-vouch-overlap-retire-and-revoke.md) | Root transitions: vouch, overlap, retire and revoke | Accepted |
 | [0010](0010-readiness-is-made-at-birth-and-proved-by-a-drill.md) | Readiness is made at birth and proved by a drill | Accepted |
+| [0011](0011-the-wizards-one-engine-two-faces-and-a-web-page-that-cannot-confirm-anything.md) | The wizards: one engine, two faces, and a web page that cannot confirm anything | Accepted |
+| [0012](0012-personal-openpgp-the-primary-offline-in-a-file-the-daily-subkey-on-a-card.md) | Personal OpenPGP: the primary offline in a file, the daily subkey on a card | Proposed |
