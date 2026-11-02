@@ -7,7 +7,7 @@ The plan is public and small. Each milestone delivers something a person can use
 
 **Status as of 2026-11-02:** design phase. The [decision records](/decisions/) are accepted, and every format that M1 to M4 build is specified on the [reference pages](/reference/). The hand-off contract (with the SSH CA key request), the root list, the SSH CA key list and the CRLs have test vectors; the keyring package is a specification that its builder will check. No code exists yet. What is open lives in the issues and their milestones, not on this page.
 
-**Design: 12 decision records, 16 reference pages. Code: 0 lines.** Counted on 2026-11-02; the home page counts them at each build.
+**Design: 12 decision records, 16 reference pages. Code: 0 lines.** Counted on 2026-11-02; the home page counts them at each build, and the [project status](/status/) page adds the issues closed in each milestone.
 
 ## The first version
 
@@ -42,4 +42,4 @@ None of these is planned in detail. Each starts as a decision proposal.
 
 ## How to follow
 
-The milestones are GitHub milestones on the repository. The issues carry the labels `area:*` and `type:*`. A change to this plan is a pull request to this page.
+The milestones are GitHub milestones on the repository, and the [project status](/status/) page shows how many issues each has closed. The issues carry the labels `area:*` and `type:*`. A change to this plan is a pull request to this page.

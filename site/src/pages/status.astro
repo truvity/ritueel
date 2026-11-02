@@ -1,0 +1,230 @@
+---
+// The project status page: what exists and how far each milestone has got, counted at build time.
+// Nothing here runs in the browser; the page is static HTML and loads no script, so the
+// Content-Security-Policy needs nothing new.
+//
+// - The design facts (decision records by status, reference pages, lines of code) are counted
+//   from the repository, with the same code as the home page's status line (src/lib-status.ts).
+// - The milestones and what each delivers are the rows of docs/roadmap.md.
+// - The issues per milestone are the repository's GitHub issues, read over REST when the build
+//   has a token (src/lib-github.ts). Without one the page still builds and says the issue
+//   numbers are unavailable.
+import StarlightPage from '@astrojs/starlight/components/StarlightPage.astro';
+import { Aside, Badge } from '@astrojs/starlight/components';
+import '../styles/status.css';
+import { readGithub, REPO } from '../lib-github';
+import { BUILT_AT, designFacts, designLine, milestoneNameDrift, milestoneRows, NO_MILESTONE, roadmapMilestones } from '../lib-status';
+
+const facts = await designFacts();
+const roadmap = roadmapMilestones();
+const github = await readGithub();
+const rows = milestoneRows(roadmap, github);
+for (const line of milestoneNameDrift(roadmap, github)) console.log(`status: roadmap and GitHub differ: ${line}`);
+
+const asOf = BUILT_AT.replace('T', ' ').replace(/:\d{2}Z$/, ' UTC');
+const issueUrl = (n: number) => `https://github.com/${REPO}/issues/${n}`;
+const percent = (a: number, b: number) => (b ? Math.round((100 * a) / b) : 0);
+const headings = [
+  { depth: 2, slug: 'milestones', text: 'Milestones' },
+  { depth: 2, slug: 'design', text: 'Design' },
+  { depth: 2, slug: 'issues-by-milestone', text: 'Issues by milestone' },
+  { depth: 2, slug: 'how-this-page-is-built', text: 'How this page is built' },
+];
+---
+
+<StarlightPage
+  frontmatter={{
+    title: 'Project status',
+    description:
+      'How far ritueel has got: decision records and reference pages counted from the repository, and the issues closed in each milestone.',
+    tableOfContents: false,
+  }}
+  headings={headings}
+>
+  <div class="ps" data-github={github.available ? 'available' : 'unavailable'}>
+    <p class="ps-design"><strong>{designLine(facts)}</strong></p>
+    <p>
+      ritueel is in its <a href="/roadmap/">design phase</a>: there is no release yet. This page counts what exists, for each
+      milestone of the roadmap. <a href="#how-this-page-is-built">How this page is built</a> is at the end.
+    </p>
+    <p class="ps-legend">
+      <Badge text="repository" variant="note" /> counted from this repository at the build.{' '}
+      <Badge text="GitHub" variant="tip" /> issues of this repository, read from GitHub at the build. Both are as of {asOf}; the page
+      is a snapshot and does not update until the site is built again.
+    </p>
+
+    {
+      !github.available && (
+        <Aside type="caution" title="Issue figures not available in this build">
+          <p>
+            This build could not read the issues from GitHub ({github.reason}), so the issue figures show "—". The decision records, the
+            reference pages and the milestones below are counted from the repository and do not depend on it.
+          </p>
+          <p>
+            A build that has a GitHub token fills the issue figures in. The site's CI builds pass the workflow's read-only token.
+          </p>
+        </Aside>
+      )
+    }
+
+    <h2 id="milestones">Milestones</h2>
+    <p>
+      The four milestones of the <a href="/roadmap/">roadmap</a>, in the order they are built. The current milestone is the first
+      one that still has open issues.
+    </p>
+    <div class="ps-cards not-content" data-count={roadmap.length}>
+      {
+        rows.filter((r) => r.roadmap).map((r) => (
+          <article class:list={['ps-card', r.current && 'ps-current']} data-milestone={r.key} aria-labelledby={`card-${r.key}`}>
+            <p class="ps-card-k">
+              {r.key}
+              {r.current && (
+                <>
+                  {' · '}
+                  <strong>current</strong>
+                </>
+              )}
+            </p>
+            <p class="ps-card-n" id={`card-${r.key}`}>{r.name}</p>
+            <p class="ps-delivers">{r.delivers}</p>
+            {r.issues ? (
+              <>
+                <div class="ps-bar" aria-hidden="true">
+                  <span style={`width: ${percent(r.closed!, r.issues.length)}%`} />
+                </div>
+                <p class="ps-v">
+                  {r.closed} of {r.issues.length} issues closed
+                </p>
+              </>
+            ) : (
+              <p class="ps-v ps-na" title="Not available in this build">
+                — issues closed
+              </p>
+            )}
+          </article>
+        ))
+      }
+    </div>
+
+    <h2 id="design">Design</h2>
+    <p>
+      <Badge text="repository" variant="note" />{' '}
+      Counted from <a href="https://github.com/truvity/ritueel/tree/main/docs"><code>docs/</code></a> at the build. The{' '}
+      <a href="/decisions/">decision records</a> are listed with the status each one states.
+    </p>
+    <div class="ps-wrap not-content" tabindex="0" role="region" aria-labelledby="design-caption">
+      <table class="ps-table">
+        <caption id="design-caption">What exists in the repository</caption>
+        <thead>
+          <tr>
+            <th scope="col">Count</th>
+            <th scope="col" class="ps-r">Now</th>
+            <th scope="col">Of which</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr data-fact="records">
+            <th scope="row">Decision records</th>
+            <td class="ps-num">{facts.records}</td>
+            <td>
+              Accepted: <span class="ps-num">{facts.accepted}</span>
+              {facts.amended > 0 && <>{' '}(<span class="ps-num">{facts.amended}</span> amended by a later record)</>}
+              {'; '}Proposed: <span class="ps-num">{facts.proposed}</span>
+              {facts.other.map((o) => <>{'; '}{o.status}: <span class="ps-num">{o.count}</span></>)}
+            </td>
+          </tr>
+          <tr data-fact="reference">
+            <th scope="row">Reference pages</th>
+            <td class="ps-num">{facts.reference}</td>
+            <td><a href="/reference/">Formats, commands and the hand-off contract</a></td>
+          </tr>
+          <tr data-fact="code">
+            <th scope="row">Code</th>
+            <td class="ps-num">{facts.code}</td>
+            <td>lines of Go; the first code is in milestone M1</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h2 id="issues-by-milestone">Issues by milestone</h2>
+    <p>
+      <Badge text="GitHub" variant="tip" />{' '}
+      The issues of the repository, grouped by their GitHub milestone. Pull requests and the
+      dependency dashboard are not counted. Issues with no milestone are the ones the roadmap lists under "After the first version",
+      and any not placed yet.
+    </p>
+    {
+      !github.available ? (
+        <p class="ps-none">Not available in this build.</p>
+      ) : (
+        rows.map((r) => (
+          <details class:list={['ps-detail', r.current && 'ps-current']} open={r.current} data-group={r.key}>
+            <summary>
+              <strong>{r.roadmap ? `${r.key}: ${r.name}` : r.name}</strong>
+              {r.current && <span class="ps-tag">current</span>}
+              <span class="ps-asof">
+                {r.open} open, {r.closed} closed
+              </span>
+            </summary>
+            {r.issues!.length === 0 ? (
+              <p class="ps-none">No issues.</p>
+            ) : (
+              [
+                { label: 'Open', list: r.issues!.filter((i) => i.open) },
+                { label: 'Closed', list: r.issues!.filter((i) => !i.open) },
+              ].map(({ label, list }) => (
+                <>
+                  <p class="ps-chips-k">
+                    {label} ({list.length})
+                  </p>
+                  {list.length === 0 ? (
+                    <p class="ps-none">None.</p>
+                  ) : (
+                    <ul class="ps-chips">
+                      {list.map((i) => (
+                        <li>
+                          <a class="ps-chip" href={issueUrl(i.number)}>
+                            <span class="ps-no">#{i.number}</span> {i.title}
+                          </a>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </>
+              ))
+            )}
+          </details>
+        ))
+      )
+    }
+
+    <h2 id="how-this-page-is-built">How this page is built</h2>
+    <p>
+      The page is static. The site's build writes it from three sources, and it runs no script in your browser.
+    </p>
+    <ul>
+      <li>
+        <strong>The milestones</strong> and what each delivers are the rows of the table in <a href="/roadmap/">the roadmap</a>{' '}
+        (<code>docs/roadmap.md</code>). A roadmap with no milestone row fails the build.
+      </li>
+      <li>
+        <strong>The design figures</strong> are counted from the repository: decision records are <code>docs/decisions/NNNN-*.md</code>{' '}
+        without the template, each with the status its own <code>Status</code> line states; reference pages are{' '}
+        <code>docs/reference/*.md</code> without the index; code is the lines of every Go file outside <code>site/</code>. The home
+        page's status line is counted by the same code, so the two always agree.
+      </li>
+      <li>
+        <strong>The issues</strong> come from the GitHub REST API (<code>/repos/{REPO}/issues</code> and{' '}
+        <code>/milestones</code>), read during the build with the token the build is given, and grouped by each issue's GitHub
+        milestone. A milestone is matched to the roadmap by its number, M1 to M4. Pull requests and bot issues are left out.
+        Without a token, or when GitHub does not answer, the page still builds and shows "—" in place of the issue figures, with a
+        notice at the top.
+      </li>
+    </ul>
+    <p>
+      The page is as of the last build of the site, {asOf}, and shows no later change until the site is built again. It reads no
+      live data. The repository's <a href="/contributing/tools/#the-site">tools page</a> says how the site is built and deployed.
+    </p>
+  </div>
+</StarlightPage>

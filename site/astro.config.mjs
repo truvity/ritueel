@@ -46,18 +46,21 @@ export default defineConfig({
         { label: 'Principles', slug: 'principles' },
         { label: 'Research', items: [{ autogenerate: { directory: 'research' } }] },
         { label: 'Roadmap', slug: 'roadmap' },
+        // Built from the repository and the issues (src/pages/status.astro).
+        { label: 'Project status', link: '/status/' },
         {
           label: 'Contributing',
           items: [{ label: 'Overview', slug: 'contributing' }, { autogenerate: { directory: 'contributing' } }],
         },
       ],
       plugins: [
-        // Fails the build on a broken internal link or anchor. The decision pages are
-        // generated in src/pages from docs/decisions (custom pages the validator cannot see);
-        // site/scripts/check-anchors.mjs checks their links in the built site instead.
+        // Fails the build on a broken internal link or anchor. The decision pages and the status
+        // page are generated in src/pages (custom pages the validator cannot see);
+        // site/scripts/check-anchors.mjs checks the links of the decision pages in the built site
+        // instead, and site/scripts/check-built.sh checks that the status page is built.
         starlightLinksValidator({
           errorOnRelativeLinks: false,
-          exclude: ['/decisions/', '/decisions/**'],
+          exclude: ['/decisions/', '/decisions/**', '/status/'],
         }),
       ],
     }),

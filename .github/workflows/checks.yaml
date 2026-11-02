@@ -25,7 +25,11 @@ jobs:
         with:
           persist-credentials: false
       - uses: truvity/ci-actions/setup-devbox@c0af6f2725824b0f199f7590be79b84b0ee895e6 # v3.8.0
+      # The build reads the issues for the status page (/status/) with the workflow's read-only
+      # token; without one the page builds and says the issue figures are unavailable.
       - run: devbox run -- just site-check
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
       # What the deploy job of site.yaml builds, minus the deploy: `wrangler deploy --dry-run`
       # on the build. It uploads nothing and holds no Cloudflare credential.
       - run: devbox run -- just site-workers
