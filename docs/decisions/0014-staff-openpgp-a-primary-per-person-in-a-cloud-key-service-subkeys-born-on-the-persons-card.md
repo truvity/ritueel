@@ -1,4 +1,4 @@
-# 0013 — Staff OpenPGP: a primary per person in a cloud key service, subkeys born on the person's card
+# 0014 — Staff OpenPGP: a primary per person in a cloud key service, subkeys born on the person's card
 
 **Status:** Accepted
 **Date:** 2026-11-06

@@ -5,13 +5,13 @@ sidebar:
   order: 16
 ---
 
-*Not built yet. This is the page that [ADR 0013](/decisions/0013-staff-openpgp-a-primary-per-person-in-a-cloud-key-service-subkeys-born-on-the-persons-card/) leaves for the details; that record is `Accepted`. The code is [issue #103](https://github.com/truvity/ritueel/issues/103), after the first version. It builds on the `aws-kms` store ([issue #12](https://github.com/truvity/ritueel/issues/12)), the `openpgp-card` store ([issue #18](https://github.com/truvity/ritueel/issues/18)) and the keyring builder ([issue #15](https://github.com/truvity/ritueel/issues/15)). A person's own key is a different flow: [Personal OpenPGP](/reference/personal-openpgp/).*
+*Not built yet. This is the page that [ADR 0014](/decisions/0014-staff-openpgp-a-primary-per-person-in-a-cloud-key-service-subkeys-born-on-the-persons-card/) leaves for the details; that record is `Accepted`. The code is [issue #103](https://github.com/truvity/ritueel/issues/103), after the first version. It builds on the `aws-kms` store ([issue #12](https://github.com/truvity/ritueel/issues/12)), the `openpgp-card` store ([issue #18](https://github.com/truvity/ritueel/issues/18)) and the keyring builder ([issue #15](https://github.com/truvity/ritueel/issues/15)). A person's own key is a different flow: [Personal OpenPGP](/reference/personal-openpgp/).*
 
 A staff key is an OpenPGP key the company issues to a member of staff: one primary per person in a KMS key that ritueel uses, and signing and authentication subkeys born on the person's card, which ritueel binds after checking the card with the person present. sluis certifies the primary online and syncs the keyring to the person's hosting account; neither is specified here.
 
 ## The staff directory
 
-An ordinary directory with `kind: staff`, in the operator's custody like any other. It holds no root: the company's roots are in their own directory, and the delegation to sluis's certification key is a ceremony of that one ([Company OpenPGP](/decisions/0013-staff-openpgp-a-primary-per-person-in-a-cloud-key-service-subkeys-born-on-the-persons-card/#the-company-root-and-sluis)). Its `ritueel.yaml`:
+An ordinary directory with `kind: staff`, in the operator's custody like any other. It holds no root: the company's roots are in their own directory, and the delegation to sluis's certification key is a ceremony of that one ([Company OpenPGP](/decisions/0014-staff-openpgp-a-primary-per-person-in-a-cloud-key-service-subkeys-born-on-the-persons-card/#the-company-root-and-sluis)). Its `ritueel.yaml`:
 
 ```yaml
 version: 1
