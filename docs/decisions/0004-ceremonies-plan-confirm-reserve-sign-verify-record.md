@@ -1,7 +1,7 @@
 # 0004 — Ceremonies: plan, confirm, reserve, sign, verify, record
 
 **Status:** Accepted
-**Date:** 2026-11-01
+**Date:** 2026-11-06
 
 ## Context
 
@@ -57,7 +57,7 @@ Software mode runs the same commands and steps. Its root is a passphrase-protect
 
 ### KMS roots and wizards
 
-A KMS root follows the same steps; the confirmation is the typed digest plus a role that needs multi-factor authentication, through the caller's standard credential chain. The record holds the key ARN, the digest of the key policy and the role session. The wizards ([#16](https://github.com/truvity/ritueel/issues/16), [#17](https://github.com/truvity/ritueel/issues/17)) only fill in flags and show the plan; the web wizard listens on `127.0.0.1`, on a random port, with a per-session token.
+A KMS root follows the same steps; the confirmation is the typed digest plus the ceremony role, which needs a recent sign-in with a hardware key ([0013](/decisions/0013-the-kms-ceremony-role-trusts-a-hardware-sign-in-session-tag/)), through the caller's standard credential chain. The record holds the key ARN, the digest of the key policy and the role session. The wizards ([#16](https://github.com/truvity/ritueel/issues/16), [#17](https://github.com/truvity/ritueel/issues/17)) only fill in flags and show the plan; the web wizard listens on `127.0.0.1`, on a random port, with a per-session token.
 
 ## Consequences
 

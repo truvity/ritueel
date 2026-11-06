@@ -1,7 +1,7 @@
 # 0008 — The operator prepares the holder; ritueel creates, attests and verifies the root
 
 **Status:** Accepted
-**Date:** 2026-11-02
+**Date:** 2026-11-06
 
 ## Context
 
@@ -28,14 +28,14 @@ M2 puts the roots on two cards or in a cloud root account. [0002](/decisions/000
 
 ### The cloud root
 
-- **The operator provides the dedicated account, an admin role and a ceremony role.** The admin role creates, replicates and reads, and can never sign. The ceremony role may `Sign`, only with multi-factor authentication, and is the only principal that may sign anything new. Controls around them (an organisation policy, an alarm on `Sign`) are the operator's and are taught, not checked ([Prepare the cloud root](/guides/prepare-the-cloud-root/)).
+- **The operator provides the dedicated account, an admin role and a ceremony role.** The admin role creates, replicates and reads, and can never sign. The ceremony role may `Sign`, only on a session that carries the proof of a hardware-key sign-in ([0013](/decisions/0013-the-kms-ceremony-role-trusts-a-hardware-sign-in-session-tag/)), and is the only principal that may sign anything new. Controls around them (an organisation policy, an alarm on `Sign`) are the operator's and are taught, not checked ([Prepare the cloud root](/guides/prepare-the-cloud-root/)).
 - **ritueel makes the keys, and the policy.** At `init` it creates the three keys of a root (the X.509 root, the OpenPGP primary and the break-glass SSH CA key) as multi-Region keys born in KMS, replicates each to the declared Region, and gives each key, and each replica, the one key policy that it renders from `ritueel.yaml`. A key policy is not shared between the keys of a multi-Region set, so the replica's policy is checked on its own.
 - **ritueel reads it all back, every time it signs.** The checks, with their reason codes, are in [The cloud root in AWS KMS](/reference/kms-root/#the-checks). A changed policy is shown in the plan and confirmed by the person; it is never silently accepted.
-- **The confirmation is the typed plan digest plus the ceremony role's session,** as in [0004](/decisions/0004-ceremonies-plan-confirm-reserve-sign-verify-record/#kms-roots-and-wizards). The multi-factor code is typed at the terminal and never stored.
+- **The confirmation is the typed plan digest plus the ceremony role's session,** as in [0004](/decisions/0004-ceremonies-plan-confirm-reserve-sign-verify-record/#kms-roots-and-wizards). ritueel holds no credential and mints no proof; the person arrives with the session.
 
 ### Renewal of a cloud root under a policy
 
-- **A cloud root may be renewed without a person.** The operator may declare a **renewal policy** in `ritueel.yaml` and create a **renewal role**: a second `kms:Sign` principal on the X.509 root key and the OpenPGP primary, sign-only, with no multi-factor authentication, assumable only by the operator's scheduler identity. The operator's scheduler runs `ritueel renew` under it; ritueel stays a command-line tool and holds no key and no credential.
+- **A cloud root may be renewed without a person.** The operator may declare a **renewal policy** in `ritueel.yaml` and create a **renewal role**: a second `kms:Sign` principal on the X.509 root key and the OpenPGP primary, sign-only, with no hardware-key proof, assumable only by the operator's scheduler identity. The operator's scheduler runs `ritueel renew` under it; ritueel stays a command-line tool and holds no key and no credential.
 - **The renewal role may sign only what the ledger already holds:** the same key, subject, constraints and profile for an intermediate, and the same content of the root list, the CA bundle, the SSH CA key list and the CRLs, and the root's own certificate and primary, each with a new validity. A byte that names a key, a name, a root or a constraint the ledger does not hold is refused. It can extend trust; it can never create it, and it never revokes. New keys, changes of the root set and revocations stay ceremonies; [Re-sign](/learn/re-sign/#what-may-run-unattended) has the table of which acts are which.
 - **ritueel refuses any third `Sign` principal** on a root key, and a renewal role that the policy does not declare (`extra-sign-principal`). It reads the key policy back at every run, as at every ceremony. The policy, the checks and the codes are in [The cloud root in AWS KMS](/reference/kms-root/#renewal-under-a-policy).
 - **A card root cannot be renewed this way:** its PIN and touch are physical. It has the yearly ceremony and the reminders of `status`.
@@ -69,7 +69,7 @@ M2 puts the roots on two cards or in a cloud root account. [0002](/decisions/000
 - **Resume a half-finished birth.** Saves a reset, but needs state ritueel cannot verify on a card, and a resumed key was never seen by the person in a plan.
 - **One `Sign` principal only, with the reminder automated.** No new path to the root keys, but the cloud root would still stop being renewed in month 13 when no person came, and a renewal whose every byte is fixed by the ledger and the clock gains nothing from a person.
 - **KMS grants instead of a renewal role.** No change to the key policy, but a grant cannot limit what is signed any better and is less visible than a statement the checks read; root keys refuse grants.
-- **The renewal role with multi-factor authentication.** One more barrier, but a scheduler cannot answer it, so it would be the ceremony role again.
+- **The renewal role with the hardware-key proof.** One more barrier, but a scheduler cannot answer it, so it would be the ceremony role again.
 - **A second confirmation after each birth.** More caution, but the fingerprint before each touch already gives the person the chance to stop, and a second prompt is the key press habit that [0004](/decisions/0004-ceremonies-plan-confirm-reserve-sign-verify-record/) refuses.
 
 ## Follow-ups

@@ -24,7 +24,7 @@ A root that is online is exposed to all of them every day. A root that comes out
 |---|---|---|
 | **A machine in a safe, no network** | The key never touches a network. | A machine to keep alive, a live system to build for every use, a place to store it. Most people do not do this more than twice. |
 | **A key that cannot leave a card** | A computer at a ceremony cannot copy the key, even if it is hostile. Possession of the card, its PIN and a touch are needed. | A card can be lost or break, so you need two (see [layered trust](/learn/layered-trust/)). |
-| **A key in a cloud service with a hard gate** | Nobody downloads the key. Every use is an audited call to the service, and a role that needs multi-factor authentication gates it. | Trust in the provider and in the account. Losing the account loses the key. |
+| **A key in a cloud service with a hard gate** | Nobody downloads the key. Every use is an audited call to the service, and a role that needs a sign-in with a hardware key gates it. | Trust in the provider and in the account. Losing the account loses the key. |
 
 ritueel's approach is the second and third. A ceremony runs on an ordinary workstation, because the private key never leaves its card or cloud key: a compromised workstation cannot copy a key it never holds.
 
