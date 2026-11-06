@@ -7,7 +7,7 @@ The plan is public and small. Each milestone delivers something a person can use
 
 **Status as of 2026-11-02:** design phase. The [decision records](/decisions/) are accepted, and every format that M1 to M4 build is specified on the [reference pages](/reference/). The hand-off contract (with the SSH CA key request), the root list, the SSH CA key list and the CRLs have test vectors; the keyring package is a specification that its builder will check. No code exists yet. What is open lives in the issues and their milestones, not on this page.
 
-**Design: 12 decision records, 16 reference pages. Code: 0 lines.** Counted on 2026-11-02; the home page counts them at each build, and the [project status](/status/) page adds the issues closed in each milestone.
+**Design: 14 decision records, 17 reference pages. Code: 0 lines.** Counted on 2026-11-06; the home page counts them at each build, and the [project status](/status/) page adds the issues closed in each milestone.
 
 ## The first version
 
@@ -34,7 +34,10 @@ No release is signed until the real roots exist and a drill has shown they can b
 
 ## After the first version
 
-- Company-wide OpenPGP, with its own decision record. Its first item is the delegation a company root makes, by a domain-scoped trust signature at a ritueel ceremony, to an online certifier.
+- **Staff OpenPGP** ([ADR 0014](/decisions/0014-staff-openpgp-primaries-born-on-cards-bound-and-certified-by-sluis-ritueel-makes-the-card-ready-and-runs-the-delegation/), [the reference](/reference/staff-openpgp/), [issue #103](https://github.com/truvity/ritueel/issues/103)): a staff key is a primary born on the person's card, bound and certified by sluis. ritueel's part is the delegation ceremony and a card helper that writes the proof bundle `sluis key bind` reads. It is designed and decided, and built after M4 because it needs the `openpgp-card` store (M4) and real roots (M3). Its order:
+  1. The conformance test on a real test card: the attestation of a card-born certify-and-sign primary, and the key accepted by `gpg`, `gpgv`, `sqv` and the hosting platform.
+  2. The card helper and the proof bundle, with their vectors. The first use is the maintainer's own move to a staff key.
+  3. The delegation ceremony: the root's trust signature over sluis's certifying intermediate, once the real roots exist. The binding, the certification, the keyring and the sync are sluis's work, not ritueel's.
 - More key stores, each arriving with its first real installation and passing [the admission test](/decisions/0003-key-stores-and-the-card-layer/#planned-stores): Google Cloud KMS, Azure Key Vault ([issue #67](https://github.com/truvity/ritueel/issues/67)) and Nitrokey ([issue #66](https://github.com/truvity/ritueel/issues/66)) are planned, then other clouds, HSMs, TPMs and other cards. The site compares them and says which to buy for testing.
 - A post-quantum root ([issue #32](https://github.com/truvity/ritueel/issues/32)).
 
