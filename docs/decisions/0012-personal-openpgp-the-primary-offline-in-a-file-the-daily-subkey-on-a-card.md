@@ -9,6 +9,8 @@
 
 ## Decision
 
+This record is for a person's own key. A key the company issues to staff, with a primary the company holds, is a different flow: [0013](/decisions/0013-staff-openpgp-a-primary-per-person-in-a-cloud-key-service-subkeys-born-on-the-persons-card/).
+
 - **The primary is certify-only, version 4, ECDSA on P-384, and lives in the `software` store, in the encrypted file backend, offline.** It is not on a card, not in 1Password and not in the system keyring. A person uses it a few times a year, so the protection that matters is that it is off the network, and the protection against loss is a copy: a primary born on a card has no copy, and losing it loses the identity every contact has certified. The records say, as for every software key, that it can be copied ([0002](/decisions/0002-key-custody-every-key-is-born-in-its-store-two-root-cards-or-one-kms-root-and-a-replica/), [0003](/decisions/0003-key-stores-and-the-card-layer/#the-software-store)). The passphrase is in the person's password manager.
 - **A personal directory is an ordinary directory** with `kind: personal`: one root that has an OpenPGP primary and no X.509 key, no CA bundle, no CRL, no root list and no SSH CA key list. It uses the same engine, the same six steps, the same records and the same hand-off files; [the reference](/reference/personal-openpgp/) lists what changes. The `init` that makes it makes the primary and its revocation signatures ([0010](/decisions/0010-readiness-is-made-at-birth-and-proved-by-a-drill/)).
 - **The identity is the person's own,** a name and an address, unlike a root's release identity ([0006](/decisions/0006-release-keys-and-the-keyring-package/)).

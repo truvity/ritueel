@@ -7,7 +7,7 @@ The plan is public and small. Each milestone delivers something a person can use
 
 **Status as of 2026-11-02:** design phase. The [decision records](/decisions/) are accepted, and every format that M1 to M4 build is specified on the [reference pages](/reference/). The hand-off contract (with the SSH CA key request), the root list, the SSH CA key list and the CRLs have test vectors; the keyring package is a specification that its builder will check. No code exists yet. What is open lives in the issues and their milestones, not on this page.
 
-**Design: 12 decision records, 16 reference pages. Code: 0 lines.** Counted on 2026-11-02; the home page counts them at each build, and the [project status](/status/) page adds the issues closed in each milestone.
+**Design: 13 decision records, 17 reference pages. Code: 0 lines.** Counted on 2026-11-06; the home page counts them at each build, and the [project status](/status/) page adds the issues closed in each milestone.
 
 ## The first version
 
@@ -34,7 +34,11 @@ No release is signed until the real roots exist and a drill has shown they can b
 
 ## After the first version
 
-- Company-wide OpenPGP, with its own decision record. Its first item is the delegation a company root makes, by a domain-scoped trust signature at a ritueel ceremony, to an online certifier.
+- **Staff OpenPGP** ([ADR 0013](/decisions/0013-staff-openpgp-a-primary-per-person-in-a-cloud-key-service-subkeys-born-on-the-persons-card/), [the reference](/reference/staff-openpgp/), [issue #103](https://github.com/truvity/ritueel/issues/103)): a company-held primary for each person in a cloud key service, and subkeys born on the person's card that ritueel binds after checking the attestation with the person present. It is designed and decided, and built after M4 because it needs the `aws-kms` store (M2), the keyring builder and the adoption of the real roots (M3), and the `openpgp-card` store (M4). Its order:
+  1. The Ed25519 conformance test of the cloud key, which also settles the fallback to P-384 ([the reference](/reference/staff-openpgp/#the-primary-in-aws-kms)).
+  2. The staff directory, the joiner flow and the staff keyring. The first use is the maintainer's own migration from a key with imported subkeys.
+  3. The mover, leaver and card-replacement flows, and the yearly batch ceremony.
+  4. The delegation a company root makes, by a domain-scoped trust signature, to the online certifier of a system that holds intermediates, once the real roots exist. The certification and the sync to the hosting accounts are that system's work, not ritueel's.
 - More key stores, each arriving with its first real installation and passing [the admission test](/decisions/0003-key-stores-and-the-card-layer/#planned-stores): Google Cloud KMS, Azure Key Vault ([issue #67](https://github.com/truvity/ritueel/issues/67)) and Nitrokey ([issue #66](https://github.com/truvity/ritueel/issues/66)) are planned, then other clouds, HSMs, TPMs and other cards. The site compares them and says which to buy for testing.
 - A post-quantum root ([issue #32](https://github.com/truvity/ritueel/issues/32)).
 
