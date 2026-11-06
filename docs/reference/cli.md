@@ -22,7 +22,7 @@ sidebar:
 | `ritueel revocation make`, `revocation check` | Make one more revocation signature, or the removal authorisation again, while the root's key exists, and check a stored one without printing it ([revocation material](/reference/revocation-material/#making-one-later-and-checking-one)). | `make` only |
 | `ritueel drill restore` | The restore check on a clean machine: the records, the roots against their holders, the revocation signatures. It signs nothing ([drills](/reference/drill/#the-restore-check)). | No |
 | `ritueel status` | Lists roots, intermediates, the root list and unresolved attempts, with what expires when. | No |
-| `ritueel renew` | A cloud root only: renews, as the renewal role and under the declared renewal policy, what the ledger already holds, over the same keys, with the next trust sequence. Non-interactive, for the operator's scheduler; it never prompts, and refuses a card or software root with `not-in-policy`, an early run with `too-early`, and anything new with `key-not-in-ledger`. Exit codes 0, 1, 2, 3 ([renewal under a policy](/reference/kms-root/#renewal-under-a-policy)). | No |
+| `ritueel renew` | A cloud root only: renews, as the renewal role and under the declared renewal policy, what the ledger already holds, over the same keys, with the next trust sequence. Non-interactive, for the operator's scheduler; it never prompts, and refuses a card or software root with `not-in-policy`, an early run with `too-early`, and anything new with `key-not-in-ledger`. Exit codes 0, 1, 2, 3, 4 ([renewal under a policy](/reference/kms-root/#renewal-under-a-policy)). | No |
 | `ritueel handoff check STEM` | Runs every check of the [hand-off contract](/reference/hand-off-contract/) on the request `STEM`, and signs nothing. | No |
 | `ritueel bundle build`, `ritueel keyring build` | Build the CA bundle and the [keyring package](/reference/keyring-package/) from the directory. Same directory, same bytes. | No |
 | `ritueel root-list verify`, `ssh-ca-keys verify`, `crl verify`, `keyring verify` | The host's and the relying party's side of each trust product: run its checks on a file, signing and writing nothing. | No |
@@ -62,7 +62,7 @@ A PIN is never a flag or an environment variable; the holder types it at the ter
 | 1 | Failure. |
 | 2 | Usage error. |
 | 3 | Refused by a check or by the policy. |
-| 4 | Refused by the card or its PIN state, or by a locked key store backend. |
+| 4 | Refused by the card or its PIN state, or by the key store backend: a locked store, or a KMS session without the hardware-key proof (`kms-session`). |
 | 5 | Not confirmed. |
 | 10, 11, 12 | `status` only: notice, alert and critical. Intermediates warn at 60, 30 and 14 days, the root list, the SSH CA key list and each CRL at 60, 30 and 14 days, roots at 6 months, 3 months and 30 days. An unresolved attempt is critical, because it may mean a signature that was made and never recorded. A short root set is an alert, an overdue overlap an alert and a running one a notice ([root transitions](/reference/transitions/#the-target)); a restore drill older than 13 months is a notice ([drills](/reference/drill/#when-it-is-due)). The highest finding wins. |
 
