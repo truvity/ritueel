@@ -21,7 +21,7 @@ The maintainer decided on 2026-11-06:
 >
 > **GH1 A:** the keys synced to a person's own GitHub account are only the company-issued ones.
 >
-> **O1 a** (2026-11-01): the company root delegates, by a domain-scoped trust signature made at a ritueel ceremony, to an online certifier in sluis ([sluis ADR 0024](https://github.com/truvity/sluis/blob/main/docs/decisions/0024-root-custody-and-the-signing-api/)).
+> **O1 a** (2026-11-01): the company root delegates, by a domain-scoped trust signature made at a ritueel ceremony, to an online certifier in sluis ([sluis ADR 0024](https://github.com/truvity/sluis/blob/main/docs/decisions/0024-root-custody-and-the-signing-api.md)).
 >
 > **SK1 E, BK1 A, BK2 A, BK3 A.**
 >
