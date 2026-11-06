@@ -17,6 +17,8 @@ A system that holds intermediate keys, called the **requester** on this page, an
 | OpenPGP subkey, for signing or authentication (`openpgp-subkey`) | The public subkey and its back-signatures (one for every active primary) as OpenPGP packets, and a proof file | The subkey bound by a primary, as OpenPGP packets, and a result file |
 | SSH CA key (`ssh-ca-key`) | The public key as an OpenSSH line, an SSH signature by that key, and a proof file | A result file: the key is on the next [SSH CA key list](/reference/ssh-ca-key-list/) |
 
+A further message, the staff proof bundle, goes the other way: from ritueel's card helper to a system that binds a person's key. It is specified on [Staff OpenPGP](/reference/staff-openpgp/#the-proof-bundle), not here, and follows this page's P-384 rule.
+
 The key is made where it will live (a YubiKey slot, a card's OpenPGP applet, an AWS KMS key, or a file in development) and never leaves. Only public keys, signatures and certificates travel. The proof file says where the key lives and carries the evidence for it. An SSH CA key is not certified: a host trusts it by being given its public key, so ritueel lists it instead.
 
 ## The floor: PKCS#10 in, X.509 out
