@@ -15,10 +15,10 @@ A staff card is a YubiKey 5 with firmware 5.7.0 or newer, dedicated to the staff
 
 | Key | Slot | Algorithm | Key flags | Made by the helper |
 |---|---|---|---|---|
-| Primary | signature | ECDSA P-384, version 4, SHA-384 | certify and sign, `0x03` | Generated on the card. One user ID, `<name> <address>`, self-certified by the card. No calendar expiry. |
+| Primary | signature | ECDSA P-384, version 4, SHA-384 | certify and sign, `0x03` | Generated on the card. One user ID, `<name> <address>`, self-certified by the card. Expires after about 3 years (PX1), extended at the card. |
 | Authentication subkey | authentication | ECDSA P-384 | authenticate, `0x20` | Generated on the card, bound by the primary, with a back-signature by the subkey, for SSH through `gpg-agent` ([the guide](/guides/openpgp-ssh-authentication/)). |
 
-There is no encryption key. P-384 and SHA-384 are the rule of the [hand-off contract](/reference/hand-off-contract/#keys-and-hashes), so the card primary needs no exception to it. The primary has no calendar expiry because a card cannot be copied; it is replaced on an event, as [0012](/decisions/0012-personal-openpgp-the-primary-offline-in-a-file-the-daily-subkey-on-a-card/#how-long-a-persons-primary-lives) says for a hardware key, and the company's trust in it ends when sluis's certification ends.
+There is no encryption key. P-384 and SHA-384 are the rule of the [hand-off contract](/reference/hand-off-contract/#keys-and-hashes), so the card primary needs no exception to it. The primary expires after about three years (the maintainer's decision PX1, 2026-11-06) and the person extends it at the card with the PIN and a touch; a key on a lost card, or one nobody extends, ends by itself. The key is otherwise replaced on an event, as [0012](/decisions/0012-personal-openpgp-the-primary-offline-in-a-file-the-daily-subkey-on-a-card/#how-long-a-persons-primary-lives) says for a hardware key, and the company's trust in it also ends when sluis's certification ends. After an extension the person gives sluis the extended certificate, and sluis's App uploads the key again to the hosting account.
 
 ## The commands
 
@@ -27,6 +27,7 @@ There is no encryption key. P-384 and SHA-384 are the rule of the [hand-off cont
 | `ritueel staff card prepare --card SERIAL` | Checks the firmware floor; changes the PIN and the Admin PIN at the terminal, without echo; sets the touch policy for each key. Stores no PIN. | Yes |
 | `ritueel staff proof make --card SERIAL --name NAME --address ADDRESS [--challenge TEXT] --out DIR` | One ceremony ([below](/reference/staff-openpgp/#the-ceremony-of-proof-make)): generates the primary and the authentication key on the card, reads the attestations, self-certifies, signs the challenge, and writes the proof bundle. Also writes the revocation signature, apart, to `--revocation-out`. | Yes |
 | `ritueel staff proof check BUNDLE` | The helper's own check of a bundle, for the person to see before giving it to sluis: the same checks as [below](/reference/staff-openpgp/#what-a-binder-checks), offline. | No |
+| `ritueel staff expiry extend --card SERIAL` | Extends the primary's expiry by a new self-certification made by the card, about 3 years from now, and rewrites the bundle for sluis. Warns when the expiry is within 6 months. | Yes |
 | `ritueel staff user-id add --card SERIAL --address ADDRESS` | The mover: the card's primary certifies a new user ID, and the bundle is rewritten for a new bind. | Yes |
 
 No command makes a network call. The bundle is files the person carries to `sluis key bind`. `--challenge` is the text sluis gives for the bind; its content and freshness are sluis's. Without it the possession proof is the self-certification alone, which proves the key but not that it is fresh.
@@ -90,6 +91,7 @@ The card attests a key that was generated on it. `ykman openpgp keys attest` tak
 - generate a P-384 primary in the signature slot of a test card, attest it, and check that the attested public key is the primary's;
 - make a self-certification, a subkey binding and a certification of another key with it, and check them with `gpg`, `gpgv` and `sqv`;
 - upload the certificate to a test account on the hosting platform, and sign and verify a commit with the card;
+- extend the expiry on the card, upload the extended certificate to the same account, and see whether the platform accepts it over the stored one or needs the old key deleted first (unmeasured; its REST documentation lists create, list, get and delete only, read 2026-11-06);
 - record the extensions of the attestation, to read the PIN and touch policy from them later.
 
 ## The delegation
