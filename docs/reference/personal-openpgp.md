@@ -7,7 +7,7 @@ sidebar:
 
 *Not built yet. This is the page that [ADR 0012](/decisions/0012-personal-openpgp-the-primary-offline-in-a-file-the-daily-subkey-on-a-card/) leaves for the details, and that record is `Accepted`. It decides that the first version makes a signing subkey and an authentication subkey and no encryption subkey, and how long a person's primary lives; the [hand-off contract](/reference/hand-off-contract/#openpgp-subkey) carries both capabilities, with their test vectors. The code is [issue #18](https://github.com/truvity/ritueel/issues/18), in M4. How to use the result is in [Sign git commits and tags](/guides/openpgp-sign-git/) and [Your own OpenPGP key](/guides/personal-openpgp/).*
 
-A key the company issues to staff is a different flow, bound and certified by sluis: [Staff OpenPGP](/reference/staff-openpgp/). A person's own OpenPGP key is the same ritual as a service's subkey: a key is made in a store and bound under a primary. Here the primary is the person's, offline in a file, and the subkey is born on the person's card. ritueel runs it with the engine of the company case, with the X.509 half switched off.
+A key the company issues to staff is a different flow, with the primary held by sluis: [Staff OpenPGP](/reference/staff-openpgp/). A person's own OpenPGP key is the same ritual as a service's subkey: a key is made in a store and bound under a primary. Here the primary is the person's, offline in a file, and the subkey is born on the person's card. ritueel runs it with the engine of the company case, with the X.509 half switched off.
 
 ## The directory
 
