@@ -12,18 +12,18 @@ A cloud root is the recommended path for a team with a cloud account ([which pat
 ## What you start with
 
 - A cloud account for the roots and for nothing else. If it also runs services, a service's problem becomes the root's problem.
-- Someone who can create roles in it, and an identity provider that can set a session tag after a sign-in with a hardware key ([the proof](/reference/kms-root/#the-hardware-key-proof)).
+- Someone who can create roles in it, and an identity provider, other than IAM Identity Center, that asks for a fresh hardware-key sign-in for each ceremony, sets a session tag only after it, issues tokens of 5 minutes or less and never mints the tag from a refresh token ([what the provider must do](/reference/kms-root/#what-the-provider-must-do)).
 - The names you will put in `ritueel.yaml`: the account id, two Regions, and the two role names, and a third if you want unattended renewal.
 
 ## Steps
 
 1. **Make the account,** inside your organisation, with nothing deployed in it. Result: an account whose only job is to hold roots.
 2. **Make the admin role.** It may create keys, replicate them, tag them and read them, and nothing else. It must not be able to `Sign`. Result: the role that `ritueel init` uses to make the keys.
-3. **Make the ceremony role.** It trusts your identity provider and allows `sts:TagSession`, and requires the session tag `mfa` to be `hardware`: the provider sets it only after a sign-in with a hardware key. Its maximum session duration is one hour. It may be given nothing but the right to use the root keys; the key policy that ritueel makes names this role as the only one that may sign anything new. Result: the role the person assumes at a ceremony.
+3. **Make the ceremony role.** Its trust policy names your identity provider as the only principal (`Federated`; no `AWS` principal, no account root, no other role), allows `AssumeRoleWithWebIdentity` (or `AssumeRoleWithSAML`) and `sts:TagSession`, and requires the session tag `mfa` to be `hardware` on both statements ([the full text](/reference/kms-root/#the-trust-policy)). The provider sets the tag only after a sign-in with a hardware key. **Never let another role assume this one:** `AssumeRole` lets its caller write any tag, so a chained role could forge the proof. IAM Identity Center is not a provider for this role ([why](/decisions/0013-the-kms-ceremony-role-trusts-a-hardware-sign-in-session-tag/#roads-not-taken)). Its maximum session duration is one hour. It may be given nothing but the right to use the root keys; the key policy that ritueel makes names this role as the only one that may sign anything new. Result: the role the person assumes at a ceremony.
 4. **Optionally, make the renewal role.** Make it only if you want the root's renewals to run without a person ([renewal under a policy](/reference/kms-root/#renewal-under-a-policy)). It trusts only the identity your scheduler runs as (a CI job, a scheduled function), with no hardware-key proof, and may be given nothing but the right to use the root keys; the key policy that ritueel makes lets it sign only on the X.509 root key and the primary, and ritueel lets it sign only what the ledger already holds. If the renewal role is misused, the most it can do is keep an intermediate that should have lapsed working until you revoke it at a ceremony, and every use shows in the audit trail under its own name. Result: the role your scheduler assumes to run `ritueel renew`.
 5. **Add the controls you can.** None is checked by ritueel, all are worth having:
    - an organisation policy that stops the keys being deleted or disabled by anyone but the admin role;
-   - an alarm on every `Sign` by the roots, to a place you read, so a use you did not make is noticed (ritueel makes a `Sign` dry run at each ceremony to check the hardware-key proof, and it shows in the trail as a `Sign`), and one on every `Sign` by the renewal role outside the days your policy allows;
+   - an alarm on every `Sign` by the roots, to a place you read, so a use you did not make is noticed (ritueel may make a `Sign` dry run at each ceremony to check the hardware-key proof, and it may show in the trail as a `Sign`; this is still [to be tested](/reference/kms-root/#the-hardware-key-proof)), and one on every `Sign` by the renewal role outside the days your policy allows;
    - the audit trail kept somewhere the account's own roles cannot erase.
 6. **Write the names into `ritueel.yaml`** ([the block](/reference/kms-root/#ritueelyaml)). Run the drill on test keys: `ritueel init --store aws-kms` in a test account, then the restore drill.
 
@@ -37,7 +37,7 @@ A cloud root is the recommended path for a team with a cloud account ([which pat
 ## When something goes wrong
 
 - **ritueel says the policy has a principal that can sign that it does not expect** (`extra-sign-principal`). A role or user was added to the key policy, or a renewal role is there that `ritueel.yaml` does not declare. Find out why before anything else: this is the check doing its job.
-- **ritueel says the session has no hardware-key proof** (`kms-session`, exit code 4). The session was made without the tag, or it has expired. Sign in again with your hardware key, through a provider that sets the `mfa` tag, and run the ceremony on the new session. If it still fails, read the trust policy: it must allow `sts:TagSession` for the provider.
+- **ritueel says the session has no hardware-key proof** (`kms-session`, exit code 4). The session was made without the tag, or it has expired. Sign in again with your hardware key, through a provider that sets the `mfa` tag, and run the ceremony on the new session; do not reach the role from another AWS session. If it still fails, read the trust policy: it must allow `sts:TagSession` for the provider, with the tag condition on both statements.
 - **The replica is refused.** The two Regions must differ, and the admin role needs the right to create keys in the second one.
 
 Next: [Adopting the roots](/guides/root-adoption/).
