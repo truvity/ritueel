@@ -27,7 +27,7 @@ The chain is checked against the maker's root, which ritueel carries and refresh
 
 ## What the cloud gives instead
 
-A cloud key service cannot attest where its key was made, but it can tell you, truthfully and every time you ask, who may use the key. For a root, ritueel reads three things from the service and compares them with what it expects: the key's description (its type, its Region, that it is enabled), its policy (that one role may sign anything new, and only with multi-factor authentication; and, if you declared one, that a renewal role may only re-sign what you already certified), and its replica. If the policy changed since the last ceremony, you are shown the change before you confirm anything ([The cloud root](/reference/kms-root/)).
+A cloud key service cannot attest where its key was made, but it can tell you, truthfully and every time you ask, who may use the key. For a root, ritueel reads three things from the service and compares them with what it expects: the key's description (its type, its Region, that it is enabled), its policy (that one role may sign anything new, and only on a session that a sign-in with a hardware key made; and, if you declared one, that a renewal role may only re-sign what you already certified), and its replica. If the policy changed since the last ceremony, you are shown the change before you confirm anything ([The cloud root](/reference/kms-root/)).
 
 ## What the kind allows a store to hold
 

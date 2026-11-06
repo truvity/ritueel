@@ -53,3 +53,4 @@ Every record has these parts, in this order:
 | [0010](0010-readiness-is-made-at-birth-and-proved-by-a-drill.md) | Readiness is made at birth and proved by a drill | Accepted |
 | [0011](0011-the-wizards-one-engine-two-faces-and-a-web-page-that-cannot-confirm-anything.md) | The wizards: one engine, two faces, and a web page that cannot confirm anything | Accepted |
 | [0012](0012-personal-openpgp-the-primary-offline-in-a-file-the-daily-subkey-on-a-card.md) | Personal OpenPGP: the primary offline in a file, the daily subkey on a card | Accepted |
+| [0013](0013-the-kms-ceremony-role-trusts-a-hardware-sign-in-session-tag.md) | The KMS ceremony role trusts a hardware-sign-in session tag | Accepted |
