@@ -51,6 +51,8 @@ Two paths lead to a root that others rely on. Pick the first unless you cannot.
 
 **AWS KMS makes the key a permission.** The key is as safe as the account's access control, and every use is in the audit trail. There is no card to lose, but an account to lose, and a deletion that can be undone only during a waiting period. A root that is "present" because a role was assumed is weaker than a touch unless the role is hard to assume, so ritueel gates the role on a sign-in with a hardware key and has the person confirm the plan. It reads the key's description, policy and public key from the service, never from a claim.
 
+The two hardware and cloud stores are opened up in [How a YubiKey holds keys](/learn/how-a-yubikey-holds-keys/) and [How a KMS key works](/learn/how-a-kms-key-works/).
+
 A company root in KMS is **one root and a multi-Region replica, in one dedicated root account** ([ADR 0002](/decisions/0002-key-custody-every-key-is-born-in-its-store-two-root-cards-or-one-kms-root-and-a-replica/)). A company that wants a root that does not depend on one provider adds a card root.
 
 ## Planned stores

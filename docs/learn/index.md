@@ -19,6 +19,8 @@ ritueel teaches first, and for now the teaching is the product: these pages expl
 | [Custody chains compared](/learn/custody-chains/) | Public PKI, private PKI, OpenPGP and SSH side by side: who holds what, what you control, how revocation works. |
 | [Where a key lives](/learn/key-stores/) | Software and its backends, YubiKey PIV and OpenPGP card, AWS KMS and the planned stores, compared in the open. |
 | [What a key store can prove](/learn/what-a-store-can-prove/) | How you can tell that a key really lives where you are told: an attestation chain, a policy read from a service, or nothing. |
+| [How a YubiKey holds keys](/learn/how-a-yubikey-holds-keys/) | What is inside a YubiKey 5, how PIV, OpenPGP and FIDO2 differ, how a PIV signature happens, and what locks or wipes a card. |
+| [How a KMS key works](/learn/how-a-kms-key-works/) | What an AWS KMS signing key is made of, what limits it, how a signature happens, and how it compares with a card slot. |
 | [Which keys to buy](/learn/which-keys-to-buy/) | The hardware worth buying to learn and test, what each can and cannot do, and prices with their dates. |
 | [The ledger](/learn/the-ledger/) | The record of what you did: where it lives, how it is backed up, and how it is restored. |
 | [The life of a root](/learn/life-of-a-root/) | Create, sign, record, back up, re-sign, rotate, revoke, recover: the whole story in order. |
