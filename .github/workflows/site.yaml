@@ -46,7 +46,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: truvity/ci-actions/setup-devbox@07baa32692f4ad11e5b1a37ceae5bcadb6faefc4 # v3.11.0
+      - uses: truvity/ci-actions/setup-devbox@20ac3b00eb467df81a8288192feda853d8e7085d # v3.12.0
       - name: Build the site (strict)
         run: devbox run -- just site-build
         env:
@@ -99,7 +99,7 @@ jobs:
         if: ${{ steps.gate.outputs.ready == 'true' }}
         with:
           persist-credentials: false
-      - uses: truvity/ci-actions/setup-devbox@07baa32692f4ad11e5b1a37ceae5bcadb6faefc4 # v3.11.0
+      - uses: truvity/ci-actions/setup-devbox@20ac3b00eb467df81a8288192feda853d8e7085d # v3.12.0
         if: ${{ steps.gate.outputs.ready == 'true' }}
       - name: Build the site (strict)
         if: ${{ steps.gate.outputs.ready == 'true' }}

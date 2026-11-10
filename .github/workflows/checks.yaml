@@ -24,7 +24,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: truvity/ci-actions/setup-devbox@07baa32692f4ad11e5b1a37ceae5bcadb6faefc4 # v3.11.0
+      - uses: truvity/ci-actions/setup-devbox@20ac3b00eb467df81a8288192feda853d8e7085d # v3.12.0
       # The build reads the issues for the status page (/status/) with the workflow's read-only
       # token; without one the page builds and says the issue figures are unavailable.
       - run: devbox run -- just site-check
@@ -45,7 +45,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: truvity/ci-actions/setup-devbox@07baa32692f4ad11e5b1a37ceae5bcadb6faefc4 # v3.11.0
+      - uses: truvity/ci-actions/setup-devbox@20ac3b00eb467df81a8288192feda853d8e7085d # v3.12.0
       - run: devbox run -- actionlint
 
   # The repository rules (tools/checks/, `just check-rules`), and the same public-content scan
@@ -67,7 +67,7 @@ jobs:
           # The commit range origin/main..HEAD needs the history.
           fetch-depth: 0
           persist-credentials: false
-      - uses: truvity/ci-actions/setup-devbox@07baa32692f4ad11e5b1a37ceae5bcadb6faefc4 # v3.11.0
+      - uses: truvity/ci-actions/setup-devbox@20ac3b00eb467df81a8288192feda853d8e7085d # v3.12.0
       - run: devbox run -- just check-rules
       - name: Commit messages and the pull request text
         env:
