@@ -8,18 +8,13 @@ import { LearnLink } from './Page';
 
 const LINK = 'inline-flex min-h-11 items-center font-semibold text-accent underline underline-offset-4';
 
-/** The lede of the Start screen in the demo: what ritueel is in one sentence, then what this page is. */
+/** The lede of the Start screen in the demo: what ritueel is, in one sentence that fits the first screen of a phone. */
 export function DemoLede() {
   return (
-    <div className="space-y-2">
-      <p>
-        ritueel helps you keep a root (the key that everything else trusts) safe: it shows what is due, builds the plan for each ceremony (one sitting at a terminal
-        where the root is used), and keeps a ledger (the book of records).
-      </p>
-      <p>
-        This page shows one bundle: the directory that holds everything ritueel knows about one set of keys. It only shows. You run each plan yourself, in a terminal.
-      </p>
-    </div>
+    <p>
+      ritueel helps you keep a root (the key that everything else trusts) safe: it shows what is due, builds a plan for each ceremony (one sitting at a terminal where the
+      root is used), and keeps a ledger (the book of records).
+    </p>
   );
 }
 
@@ -28,14 +23,19 @@ export function StartHere() {
   const steps: { to: string; name: string; what: string }[] = [
     { to: href.roots(), name: 'Roots', what: 'the keys this bundle looks after.' },
     { to: href.findings(), name: 'Findings', what: 'what is wrong, and the next step for each.' },
-    { to: href.plan(), name: 'Make a plan', what: 'the steps and the command. Nothing runs here.' },
+    { to: href.plan(), name: 'Make a plan', what: 'the steps and an example command. Nothing runs here, and the ritueel command line is not built yet.' },
   ];
   return (
     <section aria-labelledby="start-here-h" className="max-w-[70ch] border-l-4 border-accent bg-sunk px-4 py-3">
       <h2 id="start-here-h" className="text-base font-bold">
         Start here
       </h2>
-      <p className="mt-1 text-[0.9375rem]">The alarms below are made up. Try these three, in order:</p>
+      <p className="mt-1 text-[0.9375rem]">Everything on this page is made up.</p>
+      <p className="mt-1 text-[0.9375rem]">
+        The bar above has two demo switches. Example bundle changes the made-up keys (a bundle is the directory that holds everything ritueel knows about one set of
+        keys). Page state shows each screen when the bundle is empty, cannot be read, or has not answered yet.
+      </p>
+      <p className="mt-2 text-[0.9375rem]">Try these three, in order:</p>
       <ol className="mt-1 list-decimal pl-6 text-[0.9375rem]">
         {steps.map((s) => (
           <li key={s.to}>
@@ -46,10 +46,6 @@ export function StartHere() {
           </li>
         ))}
       </ol>
-      <p className="mt-1 text-sm text-dim">
-        The bar at the top has two demo switches. Example bundle picks a made-up set of keys. Page state shows each screen when the bundle is empty, cannot be read,
-        or has not answered yet.
-      </p>
       <p className="mt-1 flex flex-wrap gap-x-6">
         <LearnLink path="/learn/what-is-a-root/">Read what a root is</LearnLink>
         <LearnLink path="/glossary/">All the words</LearnLink>

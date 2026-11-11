@@ -66,7 +66,7 @@ for (const [name, dir, demo] of [['demo build (dist)', join(root, 'dist'), true]
     expect(!has('Try the states') && !has('Page state'), 'holds no state switch');
     expect(!has('Try a bundle') && !has('Example bundle'), 'holds no bundle switch');
     // the help for a first visitor of the demo is the demo's alone
-    for (const phrase of ['helps you keep a root', 'Start here', 'command line is not built yet', 'never answers, on purpose', 'this bundle is empty']) {
+    for (const phrase of ['helps you keep a root', 'Start here', 'ceremony, ledger and more', 'All the words', 'command line is not built yet', 'never answers, on purpose', 'this bundle is empty']) {
       expect(!has(phrase), `holds no demo help: "${phrase}"`);
     }
     expect(!has('globex') && !has('acme-keyring') && !has('acme-gateway'), 'holds none of the example bundles');

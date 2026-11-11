@@ -54,12 +54,12 @@ check('Start is the first screen and the tab has a title', (await evalJs('docume
 const lede = await rectOf('helps you keep a root', 'p');
 check('Start says in its first sentence what ritueel is, inside the first screen at 1440x900', lede && lede.top >= 0 && lede.bottom <= lede.height, JSON.stringify(lede));
 check('the lede explains root, ceremony and ledger where they first appear', /keep a root \(the key that everything else trusts\)/.test((await text()).replace(/\s+/g, ' ')) && /ceremony \(one sitting at a terminal/.test((await text()).replace(/\s+/g, ' ')) && /ledger \(the book of records\)/.test((await text()).replace(/\s+/g, ' ')));
-check('Start says what a bundle is before it uses the word as a given', /the directory that holds everything ritueel knows about one set of keys/.test((await text()).replace(/\s+/g, ' ')));
+check('Start says what a bundle is, in the Start-here box next to the switch that names it', /Example bundle changes the made-up keys \(a bundle is the directory that holds everything ritueel knows about one set of keys\)/.test((await text()).replace(/\s+/g, ' ')));
 const startHere = await rectOf('Start here', 'h2');
 check('the Start-here box begins inside the first screen at 1440x900', startHere && startHere.top >= 0 && startHere.top < startHere.height, JSON.stringify(startHere));
 const pathLinks = JSON.parse(await evalJs(`JSON.stringify([...document.querySelectorAll('section[aria-labelledby="start-here-h"] ol a')].map((a) => [a.getAttribute('href'), a.textContent.trim()]))`));
 check('Start here lists three links, in order: Roots, Findings, Make a plan', JSON.stringify(pathLinks) === JSON.stringify([['#/roots', 'Roots'], ['#/findings', 'Findings'], ['#/plan', 'Make a plan']]), JSON.stringify(pathLinks));
-check('the Start-here box explains the two switches in the bar and links to the words', /Example bundle picks a made-up set of keys/.test((await text()).replace(/\s+/g, ' ')) && /Page state shows each screen/.test((await text()).replace(/\s+/g, ' ')) && /All the words/.test(await text()) && /Read what a root is/.test(await text()));
+check('the Start-here box explains the two switches in the bar and links to the words', /Example bundle changes the made-up keys/.test((await text()).replace(/\s+/g, ' ')) && /Page state shows each screen/.test((await text()).replace(/\s+/g, ' ')) && /All the words/.test(await text()) && /Read what a root is/.test(await text()));
 for (const [i, [hash]] of pathLinks.entries()) {
   await evalJs(`document.querySelectorAll('section[aria-labelledby="start-here-h"] ol a')[${i}].click()`);
   await sleep(500);
@@ -142,7 +142,7 @@ const clip = await evalJs(`navigator.clipboard.readText().catch((e) => 'ERR ' + 
 check('Copy writes exactly the command that is shown', shownCmd.length > 10 && clip === shownCmd, JSON.stringify({ shownCmd, clip }));
 check('every command in the demo says the command line is not built yet', /Example only\. The ritueel command line is not built yet\./.test(await text()) && (await evalJs(`document.querySelectorAll('code').length`)) === (await evalJs(`[...document.querySelectorAll('p[role=note]')].filter((p) => /not built yet/.test(p.textContent)).length`)));
 check('the Copy toast says the command is an example', /not built yet/.test(await evalJs(`document.querySelector('.MuiSnackbarContent-message')?.textContent || ''`)));
-check('Copy answers on screen, and in the demo says nothing ran', /Copied\.|Could not copy/.test(await text()) && /demo/i.test(await evalJs(`document.querySelector('.MuiSnackbarContent-message')?.textContent || ''`)) || /Could not copy/.test(await text()));
+check('Copy answers on screen, and in the demo says the command is an example', /Copied\.|Could not copy/.test(await text()) && /demo/i.test(await evalJs(`document.querySelector('.MuiSnackbarContent-message')?.textContent || ''`)) || /Could not copy/.test(await text()));
 
 // ---- findings filter (min_severity goes through the transport) -----------------------------
 await go('#/findings');
@@ -261,7 +261,7 @@ await go('#/plan');
 await clickText(evalJs, 'Empty');
 await sleep(500);
 const emptyGoals = await text();
-check('Empty: the goals say a card goal cannot be planned because the bundle holds no card, and point to no screen', /The bundle holds no card yet\./.test(emptyGoals) && /No card is registered yet, and the demo has no card to connect\./.test(emptyGoals) && !/Cards screen|Mark one|lost or retired/.test(emptyGoals));
+check('Empty: the goals say a card goal cannot be planned because the bundle holds no card, and point to no screen', /The bundle holds no card yet\./.test(emptyGoals) && /No card is registered yet, and the demo has no card to connect\./.test(emptyGoals) && !/Cards screen|Mark one/.test(emptyGoals));
 await go('#/plan/add-card');
 check('Empty: a card goal is refused, not planned from the loaded bundle', /cannot be planned now/.test(await text()) && !/personal-subkey-revoke/.test(await text()));
 await go('#/plan/retire-subkeys');
@@ -323,7 +323,7 @@ check('no text on Start is smaller than 12px at 390', tiny >= 12, String(tiny));
 const plede = await rectOf('helps you keep a root', 'p');
 check('on a phone the first sentence of what ritueel is lies inside the first screen (390x844)', plede && plede.top >= 0 && plede.bottom <= plede.height, JSON.stringify(plede));
 const pstart = await rectOf('Start here', 'h2');
-check('on a phone the Start-here box begins within the first two screens', pstart && pstart.top >= 0 && pstart.top < 2 * pstart.height, JSON.stringify(pstart));
+check('on a phone the Start-here box begins inside the first screen (390x844)', pstart && pstart.top >= 0 && pstart.top < pstart.height, JSON.stringify(pstart));
 check('on a phone the demo bar keeps its two switches, and the page does not scroll sideways', /Example bundle/.test(await text()) && /Page state/.test(await text()) && (await evalJs('document.documentElement.scrollWidth <= window.innerWidth')));
 
 check('the page logged no error, no exception and no policy violation', problems.length === 0, problems.slice(0, 5).join(' | '));

@@ -52,9 +52,9 @@ An unknown hash shows a "not found" screen, never another screen.
 Every screen handles four states, in honest words: **loaded**, **empty** (the read
 worked and nothing is there, with what comes next), **failed** (the read did not
 work: never drawn as empty, with the reason and a retry) and **waiting** (no
-answer yet). In the demo, a switch in the bar at the top ("Try a bundle") chooses
-the example bundle, and a second ("Try the states") makes the in-memory transport
-answer in each state.
+answer yet). In the demo, a switch in the bar at the top ("Example bundle") chooses
+the example bundle, and a second ("Page state") makes the in-memory transport
+answer in each state. The Waiting state never ends by itself, on purpose, and the screen says so. The ritueel command line is not built yet, and the demo says so under every command.
 
 ## Install, test, build, serve
 
@@ -110,8 +110,8 @@ no library (they drive headless Chrome over the DevTools protocol).
   roots `acme/A` and `acme/B` on a pair of root cards, delegated keys and seven trust
   files (a CRL for each root). `globex` is another company's cloud root
   `globex/A`, with no card.
-- The bundle switch (`src/api/demoState.ts`, "Try a bundle", beside "Try the
-  states") is demo chrome only. It is not in the contract and not in the real
+- The bundle switch (`src/api/demoState.ts`, "Example bundle", beside "Page
+  state") is demo chrome only. It is not in the contract and not in the real
   build (`npm run check:dist` checks that it is absent from `dist-real/`). Screens
   never name a bundle: they read its name from `GetSummary.bundle.name` and write
   roots as `bundle/label`. Switching also returns the page to `#/start`, so no route
@@ -266,7 +266,7 @@ tell whether a user ID inside it is quoted.
   ledger.
 - The demo's wizard returns the same plan whatever is chosen (the fixtures have one
   plan per goal).
-- The empty state ("Try the states") answers the same for every example bundle, and its
+- The empty state ("Page state") answers the same for every example bundle, and its
   adoption plan is the company, cloud-key case: a root on the workstation and a first
   root list. A personal bundle has no root list and adopts an existing OpenPGP key; the
   demo does not show that adoption.

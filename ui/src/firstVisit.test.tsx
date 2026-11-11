@@ -2,6 +2,8 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { renderToStaticMarkup } from 'react-dom/server';
+import { fromJson } from '@bufbuild/protobuf';
+import { GetSummaryResponseSchema } from './gen/ritueel/local/v1alpha1/inspect_service_pb';
 import { setViewState, VIEW_STATES } from './api/demoState';
 
 // What a first visitor of the demo is helped with, and the four defects the owner named
@@ -30,7 +32,7 @@ afterEach(() => {
 
 const SRC = new URL('./', import.meta.url).pathname;
 const source = (f: string) => readFileSync(join(SRC, f), 'utf8');
-const plain = (html: string) => html.replace(/<[^>]*>/g, ' ').replace(/&#x27;/g, "'").replace(/\s+/g, ' ');
+const plain = (html: string) => html.split(/<[^>]*>/).join(' ').replace(/&#x27;/g, "'").replace(/\s+/g, ' ');
 
 describe('defect 1: the step bar reaches Save', () => {
   it('wizardStage: choices are 2, a plan is 3, a saved plan is 4, and unsaving goes back to 3', async () => {
@@ -127,7 +129,7 @@ describe('first-visit help is in the demo and not in the real build', () => {
       const text = plain(renderToStaticMarkup(<Start />));
       expect(text, name).toContain('ritueel helps you keep a root');
       expect(text, name).toContain('Start here');
-      expect(text, name).toContain('The alarms below are made up.');
+      expect(text, name).toContain('Everything on this page is made up.');
     }
   });
   it('the Start screen of the real build has neither the lede nor the Start-here box', async () => {
@@ -149,14 +151,14 @@ describe('first-visit help is in the demo and not in the real build', () => {
       expect(source(f), f).not.toMatch(/FirstVisit/);
     }
   });
-  it('DemoLede names root, bundle, ceremony and ledger, each with its gloss', async () => {
+  it('DemoLede names root, ceremony and ledger, each with its gloss, in one paragraph', async () => {
     const { DemoLede } = await import('./ui/FirstVisit');
-    const text = plain(renderToStaticMarkup(<DemoLede />));
+    const html = renderToStaticMarkup(<DemoLede />);
+    expect(html.match(/<p\b/g)).toHaveLength(1);
+    const text = plain(html);
     expect(text).toMatch(/keep a root \(the key that everything else trusts\)/);
     expect(text).toMatch(/ceremony \(one sitting at a terminal where the root is used\)/);
     expect(text).toMatch(/ledger \(the book of records\)/);
-    expect(text).toMatch(/bundle: the directory that holds everything ritueel knows about one set of keys/);
-    expect(text).toContain('It only shows. You run each plan yourself, in a terminal.');
   });
   it('StartHere is a path of three links: Roots, Findings, Make a plan, in that order', async () => {
     const { StartHere } = await import('./ui/FirstVisit');
@@ -169,7 +171,12 @@ describe('first-visit help is in the demo and not in the real build', () => {
       ['#/plan', 'Make a plan'],
     ]);
     const text = plain(html);
-    expect(text).toContain('Example bundle picks a made-up set of keys.');
+    expect(text).toContain('Everything on this page is made up.');
+    expect(text).toContain('The bar above has two demo switches. Example bundle changes the made-up keys');
+    expect(text).toContain('a bundle is the directory that holds everything ritueel knows about one set of keys');
+    expect(text).toContain('the ritueel command line is not built yet');
+    // the switches are explained before the path, not after it
+    expect(text.indexOf('Example bundle changes')).toBeLessThan(text.indexOf('Try these three, in order:'));
     expect(text).toContain('Page state shows each screen');
     expect(text).toContain('Read what a root is');
     expect(text).toContain('All the words');
@@ -191,10 +198,18 @@ describe('first-visit help is in the demo and not in the real build', () => {
     expect(renderToStaticMarkup(<Cmd>{'ritueel status'}</Cmd>)).not.toContain('not built yet');
     expect(source('ui/Cmd.tsx')).toContain('Copied. This is a demo: the ritueel command line is not built yet, so this command is an example.');
   });
-  it('the Words box names its words in the summary and links to the whole glossary', () => {
-    const start = source('screens/Start.tsx');
-    expect(start).toContain('Words on this page: root, bundle, ceremony, ledger and more');
-    expect(start).toMatch(/<LearnLink path="\/glossary\/">All the words<\/LearnLink>/);
+  it('the Words box names its words in the summary and links to the whole glossary, in the demo only', async () => {
+    const { Start } = await import('./screens/Start');
+    const data = fromJson(GetSummaryResponseSchema, JSON.parse(source('fixtures/personal/inspect.get-summary.json')));
+    h.summary = { state: 'ready', data };
+    const demo = plain(renderToStaticMarkup(<Start />));
+    expect(demo).toContain('Words on this page: root, bundle, ceremony, ledger and more');
+    expect(demo).toContain('All the words');
+    h.demo = false;
+    const real = plain(renderToStaticMarkup(<Start />));
+    expect(real).toContain('Words on this page');
+    expect(real).not.toContain('ceremony, ledger and more');
+    expect(real).not.toContain('All the words');
   });
   it('everything new is at least 14 px: no text-xs or text-[0.75rem] in the new component', () => {
     expect(source('ui/FirstVisit.tsx')).not.toMatch(/text-xs|text-\[0\.7|text-\[1[01]px\]|text-\[12px\]/);

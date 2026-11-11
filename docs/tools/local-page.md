@@ -22,10 +22,11 @@ The local page is the third face of the program, beside the command line and the
 Every name, fingerprint and serial in it is invented and looks it.
 
 - **It acts on nothing.** Every screen that names an action shows the command and a Copy button. "Save the plan" shows what it would write and says that nothing was written.
+- **It says the command line is not built yet,** under every command and in the message after Copy: the commands are examples.
 - **It says it is a demo,** on every screen, with a link back here.
-- **You can try a bundle.** A switch in the bar, "Try a bundle", changes which example bundle the page shows. It exists only in the demo: the program serves the one bundle it was started on.
-- **You can try the states.** A second switch makes the page answer as an empty bundle, a failed read, or no answer yet, so you see how each screen speaks in each case.
-- **The wizard is one sequence:** goal, choices, plan with its digest and the exact command, then save. The plan says where it runs: on the offline system for a root on cards or a real software root in a key file, on your workstation for a cloud root. The USB-stick step shows only where it is needed. In the demo the plan is the same whatever you choose.
+- **You can change the example bundle.** A switch in the bar, "Example bundle", changes which example bundle the page shows. It exists only in the demo: the program serves the one bundle it was started on.
+- **You can change the page state.** A second switch, "Page state", makes the page answer as an empty bundle, a failed read, or no answer yet, so you see how each screen speaks in each case. The Waiting state never ends by itself, on purpose, and the screen says so; choose another page state to end it. In the Empty state the wizard answers as an empty bundle, not with the loaded bundle's data.
+- **The wizard is one sequence:** goal, choices, plan with its digest and the exact command, then save. The plan says where it runs: on the offline system for a root on cards or a real software root in a key file, on your workstation for a cloud root. The USB-stick step shows only where it is needed. In the demo the plan is the same whatever you choose, except in the Empty state, where it is an example plan for an empty bundle.
 - **Its commands follow the [command reference](/reference/cli/)** where a command exists there, with `--dir` naming the bundle in a command that runs a plan; a few are proposals that the reference does not have yet (the personal key's `primary`, `userid` and `subkey revoke` commands, and the flag that names a cloud key to adopt).
 - **Where the saved plan goes is a proposal.** The decision records say only that the process writes the plan inside your bundle. The demo shows it at `ledger/<ceremony>/plan.json`, the place [the bundle reference](/reference/bundle/#the-layout) proposes, and that path is not settled.
 

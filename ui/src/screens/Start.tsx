@@ -339,7 +339,7 @@ function Words() {
   return (
     <details className="border border-line bg-panel">
       <summary className="flex min-h-11 cursor-pointer items-center px-4 text-[0.9375rem] font-semibold text-accent">
-        Words on this page: root, bundle, ceremony, ledger and more
+        {isDemo ? 'Words on this page: root, bundle, ceremony, ledger and more' : 'Words on this page'}
       </summary>
       <dl className="grid gap-x-6 gap-y-2 border-t border-line p-4 text-[0.9375rem] sm:grid-cols-[10rem_minmax(0,1fr)]">
         {words.map(([w, d]) => (
@@ -349,9 +349,11 @@ function Words() {
           </div>
         ))}
       </dl>
-      <p className="border-t border-line px-4 text-[0.9375rem]">
-        <LearnLink path="/glossary/">All the words</LearnLink>
-      </p>
+      {isDemo ? (
+        <p className="border-t border-line px-4 text-[0.9375rem]">
+          <LearnLink path="/glossary/">All the words</LearnLink>
+        </p>
+      ) : null}
     </details>
   );
 }
