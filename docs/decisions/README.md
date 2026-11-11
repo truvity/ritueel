@@ -55,7 +55,7 @@ Every record has these parts, in this order:
 | [0012](0012-personal-openpgp-the-primary-offline-in-a-file-the-daily-subkey-on-a-card.md) | Personal OpenPGP: the primary offline in a file, the daily subkey on a card | Accepted |
 | [0013](0013-the-kms-ceremony-role-is-the-only-signer-and-ritueel-asks-nothing-of-its-sign-in.md) | The KMS ceremony role is the only signer, and ritueel asks nothing of its sign-in | Accepted |
 | [0014](0014-staff-openpgp-primaries-sealed-in-sluis-subkeys-born-on-cards-ritueel-makes-the-card-ready-and-runs-the-delegation.md) | Staff OpenPGP: primaries sealed in sluis, subkeys born on cards; ritueel makes the card ready and runs the delegation | Accepted |
-| [0015](0015-key-files-open-with-a-passkey-on-each-root-card-and-card-secrets-are-sealed-in-the-directory.md) | Key files open with a passkey on each root card, and card secrets are sealed in the directory | Accepted |
-| [0016](0016-several-roots-share-one-pair-of-root-cards-and-the-directory-keeps-a-card-inventory.md) | Several roots share one pair of root cards, and the directory keeps a card inventory | Accepted |
+| [0015](0015-key-files-open-with-a-passkey-on-each-root-card-and-card-secrets-are-sealed-in-the-bundle.md) | Key files open with a passkey on each root card, and card secrets are sealed in the bundle | Accepted |
+| [0016](0016-several-bundles-share-one-pair-of-root-cards-and-the-bundle-keeps-a-card-inventory.md) | Several bundles share one pair of root cards, and the bundle keeps a card inventory | Accepted |
 | [0017](0017-a-persons-openpgp-key-in-two-stages-an-adopted-primary-first-then-card-born-primaries.md) | A person's OpenPGP key in two stages: an adopted primary first, then card-born primaries | Accepted |
 | [0018](0018-a-cloud-root-may-be-an-existing-key-that-ritueel-adopts.md) | A cloud root may be an existing key that ritueel adopts | Accepted |

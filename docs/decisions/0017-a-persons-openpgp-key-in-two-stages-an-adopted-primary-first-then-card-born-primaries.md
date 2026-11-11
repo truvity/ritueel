@@ -15,19 +15,19 @@ This record makes one stated exception to "nothing is imported", on purpose, for
 
 ### Stage one
 
-- **An existing primary may be adopted as it is, with its history,** as a software key in a key file opened as [0015](/decisions/0015-key-files-open-with-a-passkey-on-each-root-card-and-card-secrets-are-sealed-in-the-directory/) says. This is the one stated exception to "nothing is imported".
+- **An existing primary may be adopted as it is, with its history,** as a software key in a key file opened as [0015](/decisions/0015-key-files-open-with-a-passkey-on-each-root-card-and-card-secrets-are-sealed-in-the-bundle/) says. This is the one stated exception to "nothing is imported".
 - **The key is marked adopted in its record.** It may be RSA-4096 and without expiry on arrival. It gets an expiry at adoption.
 - **It is replaced within three years of adoption,** or moved to stage two. The rule of 0012, "How long a person's primary lives", runs from the adoption.
 
 ### Stage two
 
-- **Two card-born primaries, one on each root card,** in the personal root's row ([0016](/decisions/0016-several-roots-share-one-pair-of-root-cards-and-the-directory-keeps-a-card-inventory/#the-rows)). One is published. The other is a standby, and the published one certifies it.
+- **Two card-born primaries, one on each root card,** in the personal bundle's row ([0016](/decisions/0016-several-bundles-share-one-pair-of-root-cards-and-the-bundle-keeps-a-card-inventory/#the-rows)). One is published. The other is a standby, and the published one certifies it.
 - **The old key vouches for the published one, with an overlap, and then ends** ([0009](/decisions/0009-root-transitions-vouch-overlap-retire-and-revoke/)).
 
 ### Day-to-day cards
 
 - **A signing subkey and an authentication subkey are born on each day-to-day card,** one set per card.
-- **An encryption subkey is made in software, loaded onto each day-to-day card, and kept in a wrapped backup in the directory.** This overrides "no encryption subkey in the first version" of 0012 for a person's own key. The reason: a lost card must not lose the mail it decrypted, so this key cannot be card-born.
+- **An encryption subkey is made in software, loaded onto each day-to-day card, and kept in a wrapped backup in the bundle.** This overrides "no encryption subkey in the first version" of 0012 for a person's own key. The reason: a lost card must not lose the mail it decrypted, so this key cannot be card-born.
 - **The format and the command** for the encryption subkey are fixed with stage one.
 - **The touch setting of each key is the holder's choice.** The guide says what each choice costs.
 
@@ -43,7 +43,7 @@ This record makes one stated exception to "nothing is imported", on purpose, for
 - A person's encryption key exists in software and in a wrapped backup, so it can be copied. The records and the guide say so.
 - A tag signed by a retired or expired subkey may no longer verify with `git verify-tag` (see the research note), and how to check old tags is not yet measured. The guide says so.
 - The standby primary is a second card-born key to certify and to store apart.
-- Stage two is decided and not built. It depends on [0016](/decisions/0016-several-roots-share-one-pair-of-root-cards-and-the-directory-keeps-a-card-inventory/) and on the card proofs.
+- Stage two is decided and not built. It depends on [0016](/decisions/0016-several-bundles-share-one-pair-of-root-cards-and-the-bundle-keeps-a-card-inventory/) and on the card proofs.
 
 ## Roads not taken
 
