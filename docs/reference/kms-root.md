@@ -17,7 +17,7 @@ Before `init`, with the operator's own infrastructure tools ([Prepare the cloud 
 |---|---|
 | The root account | A dedicated AWS account that holds nothing else. |
 | The admin role | Creates the keys and reads them. It replicates only before the policy that refuses replicas is in force, or through the break-glass principal. It can never `kms:Sign`. |
-| The ceremony role | The principal that may `kms:Sign` with a root key at a ceremony, and the only one that may sign anything new. ritueel asks for no particular sign-in to assume it ([ADR 0013](/decisions/0013-the-kms-ceremony-role-trusts-a-hardware-sign-in-session-tag/)); how it is assumed is the operator's. |
+| The ceremony role | The principal that may `kms:Sign` with a root key at a ceremony, and the only one that may sign anything new. ritueel asks for no particular sign-in to assume it ([ADR 0013](/decisions/0013-the-kms-ceremony-role-is-the-only-signer-and-ritueel-asks-nothing-of-its-sign-in/)); how it is assumed is the operator's. |
 | The renewal role | Optional, with a [renewal policy](/reference/kms-root/#renewal-under-a-policy). The second and last principal that may `kms:Sign`: sign-only, assumable only by the operator's scheduler. ritueel lets it sign only what the directory already holds. |
 | The break-glass principal | The one principal that may still replicate a key or move its primary Region, for example after the loss of a Region. It is created like the admin role and is never named after a person. Using it is a manual, logged act ([ADR 0018](/decisions/0018-a-cloud-root-may-be-an-existing-key-that-ritueel-adopts/#the-reference-key-policy)). It can never `kms:Sign`. |
 | The keys | Optional. An existing key that ritueel [adopts](/reference/kms-root/#adopting-an-existing-key), with its alias and policy owned by the operator's own infrastructure code. Without one, ritueel creates the keys. |
@@ -94,7 +94,7 @@ The reference key policy: the same text for every key, with the role ARNs and th
 
 ## A later option: a hardware-key sign-in
 
-**Not required, not built and not checked by ritueel.** The maintainer dropped it for now and it may come back ([ADR 0013](/decisions/0013-the-kms-ceremony-role-trusts-a-hardware-sign-in-session-tag/)). This section keeps what was learned, so that it need not be found again. If it returns, the decision is rewritten and this section becomes the detail.
+**Not required, not built and not checked by ritueel.** The maintainer dropped it for now and it may come back ([ADR 0013](/decisions/0013-the-kms-ceremony-role-is-the-only-signer-and-ritueel-asks-nothing-of-its-sign-in/)). This section keeps what was learned, so that it need not be found again. If it returns, the decision is rewritten and this section becomes the detail.
 
 A KMS root has no card, so a gate on the ceremony role is the only way to ask for a person with a hardware key. AWS does not set `aws:MultiFactorAuthPresent` for a federated sign-in (read 2026-11-06, [IAM condition keys](https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_condition-keys.html)). The way AWS documents is a session tag that the identity provider sets from the sign-in (read 2026-11-06, [session tags](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_session-tags.html)):
 
@@ -105,7 +105,7 @@ A KMS root has no card, so a gate on the ceremony role is the only way to ask fo
 - **Freshness.** A policy variable cannot be used in a date comparison, so a tag cannot carry its own expiry. The bound is the provider's token plus the role's session, at most one hour.
 - **No call returns a session's own tags** (read 2026-11-06, [GetCallerIdentity](https://docs.aws.amazon.com/STS/latest/APIReference/API_GetCallerIdentity.html)), so a check by ritueel would need a different way to ask AWS; none was tested.
 
-[ADR 0013](/decisions/0013-the-kms-ceremony-role-trusts-a-hardware-sign-in-session-tag/) decides that it is not required.
+[ADR 0013](/decisions/0013-the-kms-ceremony-role-is-the-only-signer-and-ritueel-asks-nothing-of-its-sign-in/) decides that it is not required.
 
 ## The checks
 

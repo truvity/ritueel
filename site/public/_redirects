@@ -11,6 +11,9 @@
 # Decision record 0011 renamed on 2026-11-11 (three faces, not two), during the design phase.
 /decisions/0011-the-wizards-one-engine-two-faces-and-a-web-page-that-cannot-confirm-anything/ /decisions/0011-the-wizards-one-engine-three-faces-and-a-web-page-that-cannot-confirm-anything/ 301
 
+# Decision record 0013 renamed on 2026-11-11 (no hardware sign-in is asked any more), during the design phase.
+/decisions/0013-the-kms-ceremony-role-trusts-a-hardware-sign-in-session-tag/ /decisions/0013-the-kms-ceremony-role-is-the-only-signer-and-ritueel-asks-nothing-of-its-sign-in/ 301
+
 # Contributing pages merged on 2026-11-01.
 /contributing/writing/ /contributing/pages/ 301
 

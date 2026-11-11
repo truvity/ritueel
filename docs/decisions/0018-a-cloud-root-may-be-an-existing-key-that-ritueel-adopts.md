@@ -9,7 +9,7 @@
 
 A replica of a cloud key is a copy made by an administrator. Without a rule in the key policy, an administrator could copy the key to another Region with no alarm.
 
-The proposal is the design round of 2026-11-10 and 11, tracked in the issue under Follow-ups. Nothing new is decided about the hardware sign-in proof: [0013](/decisions/0013-the-kms-ceremony-role-trusts-a-hardware-sign-in-session-tag/) stays the target for the ceremony role and stays "enforced later".
+The proposal is the design round of 2026-11-10 and 11, tracked in the issue under Follow-ups. Nothing new is decided about how a person signs in to the ceremony role: [0013](/decisions/0013-the-kms-ceremony-role-is-the-only-signer-and-ritueel-asks-nothing-of-its-sign-in/) says ritueel asks nothing of it.
 
 ## Decision
 
