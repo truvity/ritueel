@@ -111,7 +111,7 @@ Other programs already use the extension this way. `systemd-cryptenroll` accepts
 
 **Decided, not yet proven.** [record 0002](../decisions/0002-where-a-key-lives.md) and [record 0007](../decisions/0007-changing-and-losing-a-root.md) word it so: a passkey secret with PIN and touch over USB from a static binary, and the offline system reaching the card's passkey side, are tried on a rehearsal card before anything is built (milestone M1). If the proof fails, a key-agreement key in PIV slot 9d of each root card opens the file instead, and nothing else in record 0002 changes. The format of the wrapped key is fixed by the proof, so this page does not invent one.
 
-**What the passkey does not remove.** A reset ends every passkey on the card, so the key file must also open another way. The record keeps a recovery key for this. If you lose the recovery key and both root cards, the key files cannot be opened. Without its key handle a card cannot rebuild the passkey, so the key handle is as important as the card; where it is kept is fixed by the proof.
+**What the passkey does not remove.** A reset ends every passkey on the card, so the key file must also open another way. The record keeps a recovery key for this. If you lose the recovery key and every card named to open the file, the key files cannot be opened. Without its key handle a card cannot rebuild the passkey, so the key handle is as important as the card; where it is kept is fixed by the proof.
 
 Next: [how a KMS key works](/learn/how-a-kms-key-works/).
 

@@ -51,7 +51,7 @@ The exact names of the members of the request folder, and of the files inside `h
 
 ## On the stick
 
-A key that can be copied, such as a key file, is used only in the offline system, which boots from a USB stick; a root on cards may also run there; a cloud root always runs on the workstation, because the offline system has no network ([record 0005](../decisions/0005-a-ceremony-and-where-it-runs.md), rule 18). The stick carries one extra partition, and ritueel defines its layout. The picture is on [the bundle and the USB stick](/how-it-works/bundle-and-stick/#the-usb-stick).
+A key that can be copied, such as a key file, is used only in the offline system, which boots from a USB stick; a root on cards may also run there; a cloud root always runs on the workstation, because the offline system has no network ([record 0005](../decisions/0005-a-ceremony-and-where-it-runs.md), rules 18 and 20). The stick carries one extra partition, and ritueel defines its layout. The picture is on [the bundle and the USB stick](/how-it-works/bundle-and-stick/#the-usb-stick).
 
 :::note[Proposed]
 The names below are the smallest layout that serves the decision. They are a proposal, awaiting the maintainer's word.
@@ -74,7 +74,7 @@ RITUEEL/                          the extra partition
 - **`ritueel/<version>/<system>-<arch>/ritueel`** holds the program, and nothing else, because it is one static file. The version comes first, so that the run can use the exact version that made the plan. The system and the architecture come second, so that several machines can use one stick.
 - **`bundles/<name>/`** is a bundle copied whole, so the plan in its history and the bundle the plan was made from arrive together. It is the directory that your workstation already uses with `--dir`, with no second format.
 - **`keys/<bundle>/`** holds the key files of that bundle. Key files are never inside a bundle, so a copy of a bundle cannot carry a key by accident. The folder has the name of the bundle, so a person finds a file without a lookup.
-- **The plan records the copy that made it** in a new member `ritueel`: `{ "version", "os_arch", "sha256" }`, where `sha256` is the digest of that copy. The run is then `<stick>/ritueel/<version>/<system>-<arch>/ritueel --dir <stick>/bundles/acme run history/<ceremony>/plan.json --confirm …`. When a plan is prepared online, ritueel refreshes its copy on the stick first.
+- **The plan records the copy that made it** in a new member `ritueel`: `{ "version", "os_arch", "sha256" }`, where `sha256` is the digest of that copy. The run is then `<stick>/ritueel/<version>/<system>-<arch>/ritueel --dir <stick>/bundles/acme run history/<ceremony>/plan.json`, and the person types the first eight characters of the digest. When a plan is prepared online, ritueel refreshes its copy on the stick first.
 
 Not decided: the label and the file system of the partition, whether a checksum file sits beside each binary, and whether the `keys/` folder of a bundle may sit inside the parent of the bundle.
 :::
@@ -125,7 +125,7 @@ keyring:
 | `person` | Only with `kind: personal`: `name` (1 to 64 characters) and `address`. |
 | `aws_kms` | Optional, from M2; required when a root's store is `aws-kms`. The root account, the two Regions and the two roles, and, proposed for M7, the renewal policy ([the block](/reference/kms-root/#ritueelyaml), [the policy](/reference/kms-root/#the-policy-in-ritueelyaml)). |
 | `keyring` | Proposed; no record has this member. `license` would be the SPDX identifier written into the `.rpm`, which the release pipeline builds ([record 0009](../decisions/0009-release-keys-and-the-keyring.md), rule 21): the operator's choice, which ritueel does not default ([the keyring package](/reference/keyring-package/)). |
-| `keyservers` | Proposed; no record has this member. The keyservers `ritueel publish` may send the public OpenPGP key to, one entry for each server (an address and the kind, the keys.openpgp.org interface or HKP). The holder lists them; `init` ships no default that sends, and keys.openpgp.org and keyserver.ubuntu.com are commented examples ([record 0011](../decisions/0011-publishing-and-what-to-do-after-a-ceremony.md)). It is not in the schema below until it is decided. |
+| `keyservers` | Proposed in record 0011 (rule 4 decides a managed list; the block and its member names are proposed). The keyservers `ritueel publish` may send the public OpenPGP key to, one entry for each server (an address and the kind, the keys.openpgp.org interface or HKP). The holder lists them; `init` ships no default that sends, and keys.openpgp.org and keyserver.ubuntu.com are commented examples ([record 0011](../decisions/0011-publishing-and-what-to-do-after-a-ceremony.md)). It is not in the schema below until it is decided. |
 | `intermediates[].kms_read_roles` | For a requester's KMS key in another account: the read-only role to assume, by account ([the contract](/reference/hand-off-contract/#aws-kms)). The role is never taken from a request. |
 
 A test vector's configuration in `testdata/hand-off/v1/manifest.json` is the `policy` block together with the one intermediate entry its requests are for: the `permitted_uri_hosts` and `kms_read_roles` there are that entry's.

@@ -60,7 +60,7 @@ The encryption subkey is the exception: it is made in software, loaded onto each
 |---|---|---|
 | `ritueel init --kind personal --store software --backend file --key-dir DIR --revocation-dir DIR` | Makes the bundle, the primary and its revocation signatures ([revocation material](/reference/revocation-material/)), and the first certificate. | Yes |
 | `ritueel personal subkey add NAME --card SERIAL` | One ceremony: the card makes the subkey of the entry `NAME`, with its capability, and its back-signature, the primary binds it, and the certificate is rebuilt. It writes the request and the proof into `requests/` like any requester, then answers them. | Yes |
-| `ritueel personal userid change` | Proposed; the name is not decided. One ceremony: the primary certifies the new user ID and makes it primary, and the old user ID may get a revocation that says it is no longer valid. The fingerprint and all trust stay. The certificate is rebuilt. | Yes |
+| `ritueel personal userid change` | Proposed; the name is not decided. One ceremony: the primary certifies the new user ID and makes it primary, and the old user ID gets a revocation that says it is no longer valid (record 0008, rule 17). The fingerprint and all trust stay. The certificate is rebuilt. | Yes |
 
 Everything else is planned: the renewal plan (`ritueel due`, then `ritueel run PLAN`) renews the binding and extends the primary, `status` warns at 60, 30 and 14 days for the binding and at 6 months, 3 months and 30 days for the primary, and `revocation make`, `revocation check` and `drill restore` work as for a root.
 
