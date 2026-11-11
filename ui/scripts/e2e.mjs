@@ -36,6 +36,10 @@ const b64 = (t) => Buffer.from(t, 'utf8').toString('base64');
 const rectOf = (needle, tag = '*') =>
   evalJs(`(() => { const el = [...document.querySelectorAll(atob('${b64(tag)}'))].find((e) => e.children.length === 0 || e.tagName === 'P' ? e.textContent.includes(new TextDecoder().decode(Uint8Array.from(atob('${b64(needle)}'), (c) => c.charCodeAt(0)))) : false); if (!el) return null; const r = el.getBoundingClientRect(); return JSON.stringify({ top: r.top, bottom: r.bottom, height: innerHeight }); })()`).then((v) => (v ? JSON.parse(v) : null));
 
+// the rectangle of the first element that matches a CSS selector, relative to the window (null when there is none)
+const rectOfSel = (selector) =>
+  evalJs(`(() => { const el = document.querySelector(atob('${b64(selector)}')); if (!el) return null; const r = el.getBoundingClientRect(); return JSON.stringify({ left: r.left, right: r.right, top: r.top, bottom: r.bottom, width: r.width, height: r.height, innerWidth, innerHeight }); })()`).then((v) => (v ? JSON.parse(v) : null));
+
 await send('Emulation.setDeviceMetricsOverride', { width: 1440, height: 900, deviceScaleFactor: 1, mobile: false });
 await send('Browser.grantPermissions', { permissions: ['clipboardReadWrite', 'clipboardSanitizedWrite'] }).catch(() => {});
 await send('Page.navigate', { url: base });
@@ -68,6 +72,25 @@ for (const [i, [hash]] of pathLinks.entries()) {
   check(`the Start-here link ${i + 1} lands on ${hash}, a screen that exists`, (await evalJs('location.hash')) === hash && !/no such screen/i.test(await text()), await evalJs('location.hash'));
   await go('#/start');
 }
+
+// ---- layout, desktop: the sidebar ends at the bottom of the window, whatever the height of the demo bar (1280x900) ----------
+// The sidebar used to be sized for a 48 px bar under a 64 px bar, so its last control (Auto, Light, Dark) lay below the window.
+await send('Emulation.setDeviceMetricsOverride', { width: 1280, height: 900, deviceScaleFactor: 1, mobile: false });
+await sleep(300);
+await go('#/start');
+for (const y of [0, 800]) {
+  await evalJs(`window.scrollTo(0, ${y})`);
+  await sleep(300);
+  const group = await rectOfSel('aside [aria-label="Colour scheme"]');
+  const dark = await evalJs(`(() => { const b = [...document.querySelectorAll('aside [aria-label="Colour scheme"] button')].find((x) => x.textContent.trim() === 'Dark'); if (!b) return null; const r = b.getBoundingClientRect(); return JSON.stringify({ top: r.top, bottom: r.bottom, innerHeight }); })()`).then((v) => (v ? JSON.parse(v) : null));
+  const box = await rectOfSel('aside > div');
+  check(`at 1280x900 and scroll ${y} the colour scheme group lies inside the window`, group && group.top >= 0 && group.bottom <= group.innerHeight, JSON.stringify(group));
+  check(`at 1280x900 and scroll ${y} the Dark button lies inside the window`, dark && dark.top >= 0 && dark.bottom <= dark.innerHeight, JSON.stringify(dark));
+  check(`at 1280x900 and scroll ${y} the sidebar ends at or above the bottom of the window`, box && box.bottom <= box.innerHeight, JSON.stringify(box));
+}
+await evalJs('window.scrollTo(0, 0)');
+await send('Emulation.setDeviceMetricsOverride', { width: 1440, height: 900, deviceScaleFactor: 1, mobile: false });
+await sleep(300);
 await go('#/findings');
 check('a change of screen sets the title', (await evalJs('document.title')).startsWith('Findings'));
 check('a change of screen moves focus to the heading', (await active()).id === 'page-title');
@@ -361,19 +384,42 @@ const plede = await rectOf('helps you keep a root', 'p');
 check('on a phone the first sentence of what ritueel is lies inside the first screen (390x844)', plede && plede.top >= 0 && plede.bottom <= plede.height, JSON.stringify(plede));
 const pstart = await rectOf('Start here', 'h2');
 check('on a phone the Start-here box begins inside the first screen (390x844)', pstart && pstart.top >= 0 && pstart.top < pstart.height, JSON.stringify(pstart));
-// the aim of the phone's first screen: the three links of Start here are fully visible above the fixed bottom bar on first load
-await evalJs('window.scrollTo(0, 0)');
-await sleep(200);
-const phoneLinks = JSON.parse(
-  await evalJs(`JSON.stringify((() => { const bar = document.querySelector('nav[aria-label=Screens].fixed'); const barTop = bar ? bar.getBoundingClientRect().top : innerHeight; return { barTop, height: innerHeight, links: [...document.querySelectorAll('section[aria-labelledby="start-here-h"] ol a')].map((a) => { const r = a.getBoundingClientRect(); return [a.textContent.trim(), Math.round(r.top), Math.round(r.bottom)]; }) }; })())`),
-);
-check(
-  'on a phone the three Start-here links are fully visible above the bottom bar on first load (390x844)',
-  phoneLinks.links.length === 3 && phoneLinks.barTop < phoneLinks.height && phoneLinks.links.every(([, top, bottom]) => top >= 0 && bottom <= phoneLinks.barTop),
-  JSON.stringify(phoneLinks),
-);
+// The three Start-here links lie above the fixed bottom bar at scroll 0: checked at 390x844 here and at 360x740 in the layout section.
+const startHereAboveBar = async (name, size) => {
+  await evalJs('window.scrollTo(0, 0)');
+  await sleep(200);
+  const found = JSON.parse(
+    await evalJs(`JSON.stringify((() => { const bar = document.querySelector('nav[aria-label=Screens].fixed'); const barTop = bar ? bar.getBoundingClientRect().top : innerHeight; return { barTop, height: innerHeight, links: [...document.querySelectorAll('section[aria-labelledby="start-here-h"] ol a')].map((a) => { const r = a.getBoundingClientRect(); return [a.textContent.trim(), Math.round(r.top), Math.round(r.bottom)]; }) }; })())`),
+  );
+  check(
+    `${name} the three Start-here links are fully visible above the bottom bar on first load (${size})`,
+    found.links.length === 3 && found.barTop < found.height && found.links.every(([, top, bottom]) => top >= 0 && bottom <= found.barTop),
+    JSON.stringify(found),
+  );
+};
+await startHereAboveBar('on a phone', '390x844');
 check('on a phone the Start-here box still says the data is made up, and explains the switches, below the links', /Everything on this page is made up\./.test(await text()) && /Example bundle changes the made-up keys/.test((await text()).replace(/\s+/g, ' ')));
 check('on a phone the demo bar keeps its two switches, and the page does not scroll sideways', /Example bundle/.test(await text()) && /Page state/.test(await text()) && (await evalJs('document.documentElement.scrollWidth <= window.innerWidth')));
+
+// ---- layout, small phone (360x740): nothing is wider than the window, and the first screen still holds the path ---------------
+// At 360 px the header was 368 px wide: Dark was cut, the document scrolled sideways, the layout viewport widened and pushed More off the bottom bar.
+// The pixel values behind these limits are estimates; this check is the measurement.
+await send('Emulation.setDeviceMetricsOverride', { width: 360, height: 740, deviceScaleFactor: 2, mobile: true });
+await send('Page.navigate', { url: base });
+await sleep(1200);
+await go('#/start');
+check('at 360x740 the layout viewport is the window (nothing widens it)', (await evalJs('window.innerWidth')) === 360, String(await evalJs('window.innerWidth')));
+check('at 360x740 the document does not scroll sideways', await evalJs('document.documentElement.scrollWidth <= document.documentElement.clientWidth'), await evalJs('document.documentElement.scrollWidth + " > " + document.documentElement.clientWidth'));
+const schemeButtons = JSON.parse(await evalJs(`JSON.stringify([...document.querySelectorAll('header [aria-label="Colour scheme"] button')].map((b) => { const r = b.getBoundingClientRect(); return [b.textContent.trim(), Math.round(r.left), Math.round(r.right)]; }))`));
+check('at 360x740 Auto, Light and Dark all lie inside the window', schemeButtons.length === 3 && schemeButtons.every(([, left, right]) => left >= 0 && right <= 360), JSON.stringify(schemeButtons));
+const fixedBar = await rectOfSel('nav[aria-label=Screens].fixed');
+check('at 360x740 the bottom bar is not wider than the window', fixedBar && fixedBar.right <= fixedBar.innerWidth && fixedBar.width <= fixedBar.innerWidth, JSON.stringify(fixedBar));
+const lastTab = await rectOfSel('nav[aria-label=Screens].fixed > :last-child');
+check('at 360x740 More, the last tab, lies inside the window', lastTab && lastTab.left >= 0 && lastTab.right <= lastTab.innerWidth, JSON.stringify(lastTab));
+await startHereAboveBar('at 360x740', '360x740');
+const switchRights = JSON.parse(await evalJs(`JSON.stringify(['bundle-switch-label', 'state-switch-label'].map((id) => { const g = document.querySelector('[aria-labelledby="' + id + '"]'); if (!g) return [id, null]; return [id, Math.round(g.getBoundingClientRect().right)]; }))`));
+check('at 360x740 the Example bundle and Page state switches end inside the window', switchRights.every(([, right]) => right !== null && right <= 360), JSON.stringify(switchRights));
+check('at 360x740 the three links of Start here keep their text and order', (await evalJs(`JSON.stringify([...document.querySelectorAll('section[aria-labelledby="start-here-h"] ol a')].map((a) => a.textContent.trim()))`)) === '["Roots","Findings","Make a plan"]');
 
 check('the page logged no error, no exception and no policy violation', problems.length === 0, problems.slice(0, 5).join(' | '));
 
