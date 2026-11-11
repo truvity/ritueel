@@ -6,7 +6,7 @@ import { learnPathOk, learnUrl } from '../lib/finding';
 export function Page({ kicker, title, lede, aside, children }: { kicker: string; title: string; lede?: ReactNode; aside?: ReactNode; children: ReactNode }) {
   return (
     <>
-      <header className="mb-7 flex flex-wrap items-end justify-between gap-x-8 gap-y-3">
+      <header className="mb-7 [@media(max-height:760px)]:mb-4 flex flex-wrap items-end justify-between gap-x-8 gap-y-3">
         <div className="min-w-0 max-w-[48rem]">
           <Typography variant="overline" component="p" color="text.secondary">
             {kicker}
