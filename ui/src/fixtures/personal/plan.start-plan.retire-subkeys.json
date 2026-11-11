@@ -92,6 +92,7 @@
     "savePath": "ledger/20261111T090000Z-personal-subkey-revoke/plan.json",
     "cardSerials": [
       "00000001"
-    ]
+    ],
+    "runPlace": "RUN_PLACE_OFFLINE_SYSTEM"
   }
 }

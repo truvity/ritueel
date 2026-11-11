@@ -5,7 +5,7 @@
 // key, a key file, a management key or a revocation signature, and none
 // will be added. The page is a view. It never confirms a ceremony;
 // confirmation, PINs, passphrases and touches happen in the terminal, on
-// the ceremony machine. What the page may show about a key is public:
+// the offline system or the workstation. What the page may show about a key is public:
 // fingerprints, algorithms, dates, the use of a slot.
 //
 // Everything the page shows is about one bundle: the directory of one trust

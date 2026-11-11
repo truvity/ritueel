@@ -166,7 +166,7 @@ function RenewAll({ count }: { count: number }) {
   return (
     <div className="mt-3 border border-line bg-panel p-4">
       <p className="mb-2">
-        <strong>One plan can renew all {count}.</strong> <span className="text-dim">You build it here and run it on the ceremony machine.</span>
+        <strong>One plan can renew all {count}.</strong> <span className="text-dim">You build it here and run it on the offline system.</span>
       </p>
       {cmd.state === 'ready' && cmd.data ? <Cmd label="Make the plan that renews what is due">{cmd.data}</Cmd> : null}
       {cmd.state === 'loading' ? <p className="text-sm text-dim">Reading the command ...</p> : null}
@@ -326,8 +326,10 @@ function Words() {
     ['Root', 'The key that everything else is trusted from. It stays safe, and it is used rarely.'],
     ['Subkey', 'A key the primary key hands the daily work to: signing, logging in, encrypting. Its binding is renewed each year, and it is replaced only on an event, so the primary key can stay put.'],
     ['Delegated key', 'A key a root has handed a job to, for a requester (a system that asks for it). It works for a while and must be renewed.'],
-    ['Ceremony', 'One sitting at the ceremony machine, where a plan is run and something about your keys changes.'],
-    ['Ceremony machine', 'The offline computer where ceremonies are run, with your root cards plugged in. A plan is run there, and confirmed in its terminal.'],
+    ['Bundle', 'The directory of one trust domain, for example personal or acme: its ledger, roots, cards and trust files. A root in it is written bundle/label, for example acme/A.'],
+    ['Ceremony', 'One sitting at a terminal, where a plan is run and something about your keys changes.'],
+    ['Offline system', 'A computer booted from a read-only stick, where a root on cards or in a key file is used.'],
+    ['Your workstation', 'The computer you work on. A cloud root is used from here, with your hardware-key sign-in.'],
     ['Ledger', 'The book of records. Each ceremony writes one record, and each names the one before it by digest, which is the chain.'],
     ['Trust files', 'The files your machines and users read to trust your roots: root list, CA bundle, revocation list. ritueel builds them; you publish them.'],
   ];
@@ -420,8 +422,8 @@ export function Start() {
       title="What needs you"
       lede={
         <p>
-          This is the bundle where ritueel keeps the records of your keys. This page reads it and shows it. To change something, you make a plan here and run it in
-          the terminal, on the ceremony machine.
+          This is the bundle where ritueel keeps the records of one trust domain. This page reads it and shows it. To change something, you make a plan here and run it in
+          a terminal, on the offline system or your workstation, as the plan says.
         </p>
       }
     >

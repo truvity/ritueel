@@ -287,16 +287,22 @@ export const CountsSchema: GenMessage<Counts> = /*@__PURE__*/
   messageDesc(file_ritueel_local_v1alpha1_inspect_service, 5);
 
 /**
+ * A plan that was saved and that no ceremony has attempted or recorded yet.
+ *
  * @generated from message ritueel.local.v1alpha1.PendingPlan
  */
 export type PendingPlan = Message<"ritueel.local.v1alpha1.PendingPlan"> & {
   /**
+   * The plan's name: the name of its ceremony.
+   *
    * @generated from field: string plan_id = 1;
    */
   planId: string;
 
   /**
-   * Path inside the bundle, for example "pending/2026-11-11-renew-due.plan".
+   * Path inside the bundle: ledger/<ceremony>/plan.json, for example
+   * "ledger/20261111T090000Z-due/plan.json". The ledger holds a sub-folder
+   * for a plan from the day it is saved; record_count counts records only.
    *
    * @generated from field: string path = 2;
    */

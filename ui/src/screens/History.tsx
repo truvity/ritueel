@@ -97,7 +97,7 @@ function List() {
       lede={<p>Every time something about your keys changed, a record was written. Here they are, newest first.</p>}
     >
       <Explain term="A ceremony">
-        is one sitting at the ceremony machine, where a plan is run and something about your keys changes. The ledger is the book that keeps one record for each. Every record
+        is one sitting at a terminal, where a plan is run and something about your keys changes. The ledger is the book that keeps one record for each. Every record
         names the one before it by digest, so a change to one record breaks the chain after it.
       </Explain>
       <Load res={res} what="the ledger" isEmpty={(d) => d.ceremonies.length === 0} empty={

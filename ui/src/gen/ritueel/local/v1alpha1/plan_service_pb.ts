@@ -2,8 +2,17 @@
 //
 // The wizard helps the holder build a plan, ends with a preview of it and
 // the exact command to run, and can save the plan file so that the holder
-// can boot the offline system and run it there. It never confirms: the
-// holder confirms in the terminal, with `ritueel run PLAN --confirm DIGEST`.
+// can run it where the plan says: on the offline system (a root on cards or
+// in a key file) or on the workstation (a cloud root). It never confirms:
+// the holder confirms in the terminal, with `ritueel run PLAN --confirm
+// DIGEST`.
+//
+// Who answers. One long-running background process, started on demand, serves
+// this API from the bundle it was started on. The command line reaches it on
+// a Unix socket; a browser cannot open a Unix socket, so while this page is in
+// use the same process also answers on the loopback address, with the same
+// calls and the same answers. The page and the command line work the same way
+// and neither does anything the other cannot.
 //
 // No call takes or returns a secret, a PIN or a passphrase. The wizard
 // asks only questions with a fixed list of answers (no free text), and the
@@ -30,7 +39,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file ritueel/local/v1alpha1/plan_service.proto.
  */
 export const file_ritueel_local_v1alpha1_plan_service: GenFile = /*@__PURE__*/
-  fileDesc("CilyaXR1ZWVsL2xvY2FsL3YxYWxwaGExL3BsYW5fc2VydmljZS5wcm90bxIWcml0dWVlbC5sb2NhbC52MWFscGhhMSIXChVMaXN0SW50ZW50aW9uc1JlcXVlc3QiUgoWTGlzdEludGVudGlvbnNSZXNwb25zZRI4CgdvcHRpb25zGAEgAygLMicucml0dWVlbC5sb2NhbC52MWFscGhhMS5JbnRlbnRpb25PcHRpb24i4gEKD0ludGVudGlvbk9wdGlvbhI0CglpbnRlbnRpb24YASABKA4yIS5yaXR1ZWVsLmxvY2FsLnYxYWxwaGExLkludGVudGlvbhINCgV0aXRsZRgCIAEoCRIQCghzZW50ZW5jZRgDIAEoCRIUCgx0eXBpY2FsX3RpbWUYBCABKAkSEgoKYXBwbGljYWJsZRgFIAEoCBIdChVub3RfYXBwbGljYWJsZV9yZWFzb24YBiABKAkSEwoLcmVjb21tZW5kZWQYByABKAgSGgoScmVjb21tZW5kZWRfcmVhc29uGAggASgJIq8BChBTdGFydFBsYW5SZXF1ZXN0EjQKCWludGVudGlvbhgBIAEoDjIhLnJpdHVlZWwubG9jYWwudjFhbHBoYTEuSW50ZW50aW9uEg8KB2R1ZV9pZHMYAiADKAkSEwoLZmluZGluZ19pZHMYAyADKAkSDgoGdGFyZ2V0GAQgASgJEi8KB2Fuc3dlcnMYBSADKAsyHi5yaXR1ZWVsLmxvY2FsLnYxYWxwaGExLkFuc3dlciIxCgZBbnN3ZXISEwoLcXVlc3Rpb25faWQYASABKAkSEgoKb3B0aW9uX2lkcxgCIAMoCSKFAQoRU3RhcnRQbGFuUmVzcG9uc2USMwoJcXVlc3Rpb25zGAEgAygLMiAucml0dWVlbC5sb2NhbC52MWFscGhhMS5RdWVzdGlvbhIqCgRwbGFuGAIgASgLMhwucml0dWVlbC5sb2NhbC52MWFscGhhMS5QbGFuEg8KB3JlZnVzYWwYAyABKAkivQEKCFF1ZXN0aW9uEgoKAmlkGAEgASgJEg4KBnByb21wdBgCIAEoCRIMCgRoZWxwGAMgASgJEjIKBGtpbmQYBCABKA4yJC5yaXR1ZWVsLmxvY2FsLnYxYWxwaGExLlF1ZXN0aW9uS2luZBI3CgdvcHRpb25zGAUgAygLMiYucml0dWVlbC5sb2NhbC52MWFscGhhMS5RdWVzdGlvbk9wdGlvbhIaChJkZWZhdWx0X29wdGlvbl9pZHMYBiADKAkiQAoOUXVlc3Rpb25PcHRpb24SCgoCaWQYASABKAkSDQoFbGFiZWwYAiABKAkSEwoLZGVzY3JpcHRpb24YAyABKAkiiwMKBFBsYW4SCgoCaWQYASABKAkSNAoJaW50ZW50aW9uGAIgASgOMiEucml0dWVlbC5sb2NhbC52MWFscGhhMS5JbnRlbnRpb24SDQoFdGl0bGUYAyABKAkSDwoHc3VtbWFyeRgEIAEoCRIsCghidWlsdF9hdBgFIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASGgoSbGVkZ2VyX2hlYWRfc2hhMjU2GAYgASgJEg4KBmRpZ2VzdBgHIAEoCRIvCgVzdGVwcxgIIAMoCzIgLnJpdHVlZWwubG9jYWwudjFhbHBoYTEuUGxhblN0ZXASPAoOYnVuZGxlX2NoYW5nZXMYCSADKAsyJC5yaXR1ZWVsLmxvY2FsLnYxYWxwaGExLkJ1bmRsZUNoYW5nZRIaChJlcXVpdmFsZW50X2NvbW1hbmQYCiABKAkSEwoLcnVuX2NvbW1hbmQYCyABKAkSEQoJc2F2ZV9wYXRoGAwgASgJEhQKDGNhcmRfc2VyaWFscxgNIAMoCSK1AQoIUGxhblN0ZXASDwoHb3JkaW5hbBgBIAEoBRINCgV0aXRsZRgCIAEoCRIOCgZkZXRhaWwYAyABKAkSFAoMd2hhdF9jaGFuZ2VzGAQgASgJEjkKDHJlcXVpcmVtZW50cxgFIAMoDjIjLnJpdHVlZWwubG9jYWwudjFhbHBoYTEuUmVxdWlyZW1lbnQSFAoMY2FyZF9zZXJpYWxzGAYgAygJEhIKCmxlYXJuX3BhdGgYByABKAkibQoMQnVuZGxlQ2hhbmdlEgwKBHBhdGgYASABKAkSOgoGYWN0aW9uGAIgASgOMioucml0dWVlbC5sb2NhbC52MWFscGhhMS5CdW5kbGVDaGFuZ2VBY3Rpb24SEwoLZGVzY3JpcHRpb24YAyABKAkiMgoPU2F2ZVBsYW5SZXF1ZXN0Eg8KB3BsYW5faWQYASABKAkSDgoGZGlnZXN0GAIgASgJIvQBChBTYXZlUGxhblJlc3BvbnNlEg8KB3BsYW5faWQYASABKAkSEwoLYnVuZGxlX3BhdGgYAiABKAkSDAoEcGF0aBgDIAEoCRIOCgZkaWdlc3QYBCABKAkSEgoKc2l6ZV9ieXRlcxgFIAEoAxIPCgd3cml0dGVuGAYgASgIEg4KBm5vdGljZRgHIAEoCRITCgtydW5fY29tbWFuZBgIIAEoCRIVCg1jb3B5X3RvX3N0aWNrGAkgAygJEg0KBWJyaW5nGAogAygJEhEKCXdoZW5fYmFjaxgLIAEoCRIZChFwbGFuX2ZpbGVfcHJldmlldxgMIAEoCSpxCgxRdWVzdGlvbktpbmQSHQoZUVVFU1RJT05fS0lORF9VTlNQRUNJRklFRBAAEh8KG1FVRVNUSU9OX0tJTkRfU0lOR0xFX0NIT0lDRRABEiEKHVFVRVNUSU9OX0tJTkRfTVVMVElQTEVfQ0hPSUNFEAIqzQEKC1JlcXVpcmVtZW50EhsKF1JFUVVJUkVNRU5UX1VOU1BFQ0lGSUVEEAASHAoYUkVRVUlSRU1FTlRfQ0FSRF9QUkVTRU5UEAESHwobUkVRVUlSRU1FTlRfUElOX0FUX1RFUk1JTkFMEAISFQoRUkVRVUlSRU1FTlRfVE9VQ0gQAxIfChtSRVFVSVJFTUVOVF9LRVlfRklMRV9VTkxPQ0sQBBIqCiZSRVFVSVJFTUVOVF9DT05GSVJNX0RJR0VTVF9BVF9URVJNSU5BTBAFKn0KEkJ1bmRsZUNoYW5nZUFjdGlvbhIkCiBCVU5ETEVfQ0hBTkdFX0FDVElPTl9VTlNQRUNJRklFRBAAEh8KG0JVTkRMRV9DSEFOR0VfQUNUSU9OX0NSRUFURRABEiAKHEJVTkRMRV9DSEFOR0VfQUNUSU9OX1JFUExBQ0UQAjLLAgoLUGxhblNlcnZpY2USdAoOTGlzdEludGVudGlvbnMSLS5yaXR1ZWVsLmxvY2FsLnYxYWxwaGExLkxpc3RJbnRlbnRpb25zUmVxdWVzdBouLnJpdHVlZWwubG9jYWwudjFhbHBoYTEuTGlzdEludGVudGlvbnNSZXNwb25zZSIDkAIBEmUKCVN0YXJ0UGxhbhIoLnJpdHVlZWwubG9jYWwudjFhbHBoYTEuU3RhcnRQbGFuUmVxdWVzdBopLnJpdHVlZWwubG9jYWwudjFhbHBoYTEuU3RhcnRQbGFuUmVzcG9uc2UiA5ACARJfCghTYXZlUGxhbhInLnJpdHVlZWwubG9jYWwudjFhbHBoYTEuU2F2ZVBsYW5SZXF1ZXN0Gigucml0dWVlbC5sb2NhbC52MWFscGhhMS5TYXZlUGxhblJlc3BvbnNlIgBiBnByb3RvMw", [file_google_protobuf_timestamp, file_ritueel_local_v1alpha1_common]);
+  fileDesc("CilyaXR1ZWVsL2xvY2FsL3YxYWxwaGExL3BsYW5fc2VydmljZS5wcm90bxIWcml0dWVlbC5sb2NhbC52MWFscGhhMSIXChVMaXN0SW50ZW50aW9uc1JlcXVlc3QiUgoWTGlzdEludGVudGlvbnNSZXNwb25zZRI4CgdvcHRpb25zGAEgAygLMicucml0dWVlbC5sb2NhbC52MWFscGhhMS5JbnRlbnRpb25PcHRpb24i4gEKD0ludGVudGlvbk9wdGlvbhI0CglpbnRlbnRpb24YASABKA4yIS5yaXR1ZWVsLmxvY2FsLnYxYWxwaGExLkludGVudGlvbhINCgV0aXRsZRgCIAEoCRIQCghzZW50ZW5jZRgDIAEoCRIUCgx0eXBpY2FsX3RpbWUYBCABKAkSEgoKYXBwbGljYWJsZRgFIAEoCBIdChVub3RfYXBwbGljYWJsZV9yZWFzb24YBiABKAkSEwoLcmVjb21tZW5kZWQYByABKAgSGgoScmVjb21tZW5kZWRfcmVhc29uGAggASgJIq8BChBTdGFydFBsYW5SZXF1ZXN0EjQKCWludGVudGlvbhgBIAEoDjIhLnJpdHVlZWwubG9jYWwudjFhbHBoYTEuSW50ZW50aW9uEg8KB2R1ZV9pZHMYAiADKAkSEwoLZmluZGluZ19pZHMYAyADKAkSDgoGdGFyZ2V0GAQgASgJEi8KB2Fuc3dlcnMYBSADKAsyHi5yaXR1ZWVsLmxvY2FsLnYxYWxwaGExLkFuc3dlciIxCgZBbnN3ZXISEwoLcXVlc3Rpb25faWQYASABKAkSEgoKb3B0aW9uX2lkcxgCIAMoCSKFAQoRU3RhcnRQbGFuUmVzcG9uc2USMwoJcXVlc3Rpb25zGAEgAygLMiAucml0dWVlbC5sb2NhbC52MWFscGhhMS5RdWVzdGlvbhIqCgRwbGFuGAIgASgLMhwucml0dWVlbC5sb2NhbC52MWFscGhhMS5QbGFuEg8KB3JlZnVzYWwYAyABKAkivQEKCFF1ZXN0aW9uEgoKAmlkGAEgASgJEg4KBnByb21wdBgCIAEoCRIMCgRoZWxwGAMgASgJEjIKBGtpbmQYBCABKA4yJC5yaXR1ZWVsLmxvY2FsLnYxYWxwaGExLlF1ZXN0aW9uS2luZBI3CgdvcHRpb25zGAUgAygLMiYucml0dWVlbC5sb2NhbC52MWFscGhhMS5RdWVzdGlvbk9wdGlvbhIaChJkZWZhdWx0X29wdGlvbl9pZHMYBiADKAkiQAoOUXVlc3Rpb25PcHRpb24SCgoCaWQYASABKAkSDQoFbGFiZWwYAiABKAkSEwoLZGVzY3JpcHRpb24YAyABKAkiwAMKBFBsYW4SCgoCaWQYASABKAkSNAoJaW50ZW50aW9uGAIgASgOMiEucml0dWVlbC5sb2NhbC52MWFscGhhMS5JbnRlbnRpb24SDQoFdGl0bGUYAyABKAkSDwoHc3VtbWFyeRgEIAEoCRIsCghidWlsdF9hdBgFIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASGgoSbGVkZ2VyX2hlYWRfc2hhMjU2GAYgASgJEg4KBmRpZ2VzdBgHIAEoCRIvCgVzdGVwcxgIIAMoCzIgLnJpdHVlZWwubG9jYWwudjFhbHBoYTEuUGxhblN0ZXASPAoOYnVuZGxlX2NoYW5nZXMYCSADKAsyJC5yaXR1ZWVsLmxvY2FsLnYxYWxwaGExLkJ1bmRsZUNoYW5nZRIaChJlcXVpdmFsZW50X2NvbW1hbmQYCiABKAkSEwoLcnVuX2NvbW1hbmQYCyABKAkSEQoJc2F2ZV9wYXRoGAwgASgJEhQKDGNhcmRfc2VyaWFscxgNIAMoCRIzCglydW5fcGxhY2UYDiABKA4yIC5yaXR1ZWVsLmxvY2FsLnYxYWxwaGExLlJ1blBsYWNlIrUBCghQbGFuU3RlcBIPCgdvcmRpbmFsGAEgASgFEg0KBXRpdGxlGAIgASgJEg4KBmRldGFpbBgDIAEoCRIUCgx3aGF0X2NoYW5nZXMYBCABKAkSOQoMcmVxdWlyZW1lbnRzGAUgAygOMiMucml0dWVlbC5sb2NhbC52MWFscGhhMS5SZXF1aXJlbWVudBIUCgxjYXJkX3NlcmlhbHMYBiADKAkSEgoKbGVhcm5fcGF0aBgHIAEoCSJtCgxCdW5kbGVDaGFuZ2USDAoEcGF0aBgBIAEoCRI6CgZhY3Rpb24YAiABKA4yKi5yaXR1ZWVsLmxvY2FsLnYxYWxwaGExLkJ1bmRsZUNoYW5nZUFjdGlvbhITCgtkZXNjcmlwdGlvbhgDIAEoCSIyCg9TYXZlUGxhblJlcXVlc3QSDwoHcGxhbl9pZBgBIAEoCRIOCgZkaWdlc3QYAiABKAki9AEKEFNhdmVQbGFuUmVzcG9uc2USDwoHcGxhbl9pZBgBIAEoCRITCgtidW5kbGVfcGF0aBgCIAEoCRIMCgRwYXRoGAMgASgJEg4KBmRpZ2VzdBgEIAEoCRISCgpzaXplX2J5dGVzGAUgASgDEg8KB3dyaXR0ZW4YBiABKAgSDgoGbm90aWNlGAcgASgJEhMKC3J1bl9jb21tYW5kGAggASgJEhUKDWNvcHlfdG9fc3RpY2sYCSADKAkSDQoFYnJpbmcYCiADKAkSEQoJd2hlbl9iYWNrGAsgASgJEhkKEXBsYW5fZmlsZV9wcmV2aWV3GAwgASgJKnEKDFF1ZXN0aW9uS2luZBIdChlRVUVTVElPTl9LSU5EX1VOU1BFQ0lGSUVEEAASHwobUVVFU1RJT05fS0lORF9TSU5HTEVfQ0hPSUNFEAESIQodUVVFU1RJT05fS0lORF9NVUxUSVBMRV9DSE9JQ0UQAipeCghSdW5QbGFjZRIZChVSVU5fUExBQ0VfVU5TUEVDSUZJRUQQABIcChhSVU5fUExBQ0VfT0ZGTElORV9TWVNURU0QARIZChVSVU5fUExBQ0VfV09SS1NUQVRJT04QAirNAQoLUmVxdWlyZW1lbnQSGwoXUkVRVUlSRU1FTlRfVU5TUEVDSUZJRUQQABIcChhSRVFVSVJFTUVOVF9DQVJEX1BSRVNFTlQQARIfChtSRVFVSVJFTUVOVF9QSU5fQVRfVEVSTUlOQUwQAhIVChFSRVFVSVJFTUVOVF9UT1VDSBADEh8KG1JFUVVJUkVNRU5UX0tFWV9GSUxFX1VOTE9DSxAEEioKJlJFUVVJUkVNRU5UX0NPTkZJUk1fRElHRVNUX0FUX1RFUk1JTkFMEAUqfQoSQnVuZGxlQ2hhbmdlQWN0aW9uEiQKIEJVTkRMRV9DSEFOR0VfQUNUSU9OX1VOU1BFQ0lGSUVEEAASHwobQlVORExFX0NIQU5HRV9BQ1RJT05fQ1JFQVRFEAESIAocQlVORExFX0NIQU5HRV9BQ1RJT05fUkVQTEFDRRACMssCCgtQbGFuU2VydmljZRJ0Cg5MaXN0SW50ZW50aW9ucxItLnJpdHVlZWwubG9jYWwudjFhbHBoYTEuTGlzdEludGVudGlvbnNSZXF1ZXN0Gi4ucml0dWVlbC5sb2NhbC52MWFscGhhMS5MaXN0SW50ZW50aW9uc1Jlc3BvbnNlIgOQAgESZQoJU3RhcnRQbGFuEigucml0dWVlbC5sb2NhbC52MWFscGhhMS5TdGFydFBsYW5SZXF1ZXN0Gikucml0dWVlbC5sb2NhbC52MWFscGhhMS5TdGFydFBsYW5SZXNwb25zZSIDkAIBEl8KCFNhdmVQbGFuEicucml0dWVlbC5sb2NhbC52MWFscGhhMS5TYXZlUGxhblJlcXVlc3QaKC5yaXR1ZWVsLmxvY2FsLnYxYWxwaGExLlNhdmVQbGFuUmVzcG9uc2UiAGIGcHJvdG8z", [file_google_protobuf_timestamp, file_ritueel_local_v1alpha1_common]);
 
 /**
  * @generated from message ritueel.local.v1alpha1.ListIntentionsRequest
@@ -302,8 +311,10 @@ export const QuestionOptionSchema: GenMessage<QuestionOption> = /*@__PURE__*/
  */
 export type Plan = Message<"ritueel.local.v1alpha1.Plan"> & {
   /**
-   * The plan's name, which is also the stem of its file, for example
-   * "2026-11-11-renew-due".
+   * The plan's name: the name of its ceremony, the time as YYYYMMDDThhmmssZ
+   * in UTC, a hyphen, and the command with its words joined by hyphens, for
+   * example "20261111T090000Z-due". It is also the name of its sub-folder of
+   * the ledger, and it is unique inside a bundle.
    *
    * @generated from field: string id = 1;
    */
@@ -369,14 +380,16 @@ export type Plan = Message<"ritueel.local.v1alpha1.Plan"> & {
   equivalentCommand: string;
 
   /**
-   * The exact command to run on the ceremony machine, with the full digest.
+   * The exact command to run, from the bundle's directory, with the full
+   * digest: ritueel run ledger/<ceremony>/plan.json --confirm <64 hex>.
    *
    * @generated from field: string run_command = 11;
    */
   runCommand: string;
 
   /**
-   * Where SavePlan will put the file, relative to the bundle.
+   * Where SavePlan will put the file, relative to the bundle:
+   * ledger/<ceremony>/plan.json.
    *
    * @generated from field: string save_path = 12;
    */
@@ -388,6 +401,15 @@ export type Plan = Message<"ritueel.local.v1alpha1.Plan"> & {
    * @generated from field: repeated string card_serials = 13;
    */
   cardSerials: string[];
+
+  /**
+   * Where the plan is run. It decides the words of the hand-over and whether
+   * a stick is needed. The page cannot tell a root in a key file from a cloud
+   * root by the data it has (neither has a card serial), so the plan says.
+   *
+   * @generated from field: ritueel.local.v1alpha1.RunPlace run_place = 14;
+   */
+  runPlace: RunPlace;
 };
 
 /**
@@ -484,6 +506,8 @@ export const BundleChangeSchema: GenMessage<BundleChange> = /*@__PURE__*/
  */
 export type SavePlanRequest = Message<"ritueel.local.v1alpha1.SavePlanRequest"> & {
   /**
+   * The plan's name (Plan.id): the name of its ceremony.
+   *
    * @generated from field: string plan_id = 1;
    */
   planId: string;
@@ -521,13 +545,16 @@ export type SavePlanResponse = Message<"ritueel.local.v1alpha1.SavePlanResponse"
   bundlePath: string;
 
   /**
-   * Where the file is (or would be), relative to the bundle.
+   * Where the file is (or would be), relative to the bundle:
+   * ledger/<ceremony>/plan.json.
    *
    * @generated from field: string path = 3;
    */
   path: string;
 
   /**
+   * The SHA-256 of the file, which is the digest of the plan.
+   *
    * @generated from field: string digest = 4;
    */
   digest: string;
@@ -553,15 +580,16 @@ export type SavePlanResponse = Message<"ritueel.local.v1alpha1.SavePlanResponse"
   notice: string;
 
   /**
-   * The exact command to run on the ceremony machine.
+   * The exact command to run, from the bundle's directory.
    *
    * @generated from field: string run_command = 8;
    */
   runCommand: string;
 
   /**
-   * What to copy to the stick, what to bring, and what happens when the
-   * stick comes back.
+   * What to copy to the stick (empty when the plan runs on the workstation and
+   * needs no stick), what to bring, and what happens when the stick comes
+   * back.
    *
    * @generated from field: repeated string copy_to_stick = 9;
    */
@@ -578,7 +606,8 @@ export type SavePlanResponse = Message<"ritueel.local.v1alpha1.SavePlanResponse"
   whenBack: string;
 
   /**
-   * The first lines of the plan file, as text: what saving writes. A plan
+   * An excerpt of plan.json, laid out for reading with one member on a line:
+   * what saving writes. The file itself is canonical JSON on one line. A plan
    * file holds no secret.
    *
    * @generated from field: string plan_file_preview = 12;
@@ -620,7 +649,43 @@ export const QuestionKindSchema: GenEnum<QuestionKind> = /*@__PURE__*/
   enumDesc(file_ritueel_local_v1alpha1_plan_service, 0);
 
 /**
- * What a step needs from the holder at the ceremony machine. These are
+ * Where a plan is run.
+ *
+ * @generated from enum ritueel.local.v1alpha1.RunPlace
+ */
+export enum RunPlace {
+  /**
+   * Not said; the page then writes "the terminal where you run it".
+   *
+   * @generated from enum value: RUN_PLACE_UNSPECIFIED = 0;
+   */
+  UNSPECIFIED = 0,
+
+  /**
+   * A computer booted from a read-only stick: a root on cards or in a key
+   * file is used there. The bundle goes there on a USB stick.
+   *
+   * @generated from enum value: RUN_PLACE_OFFLINE_SYSTEM = 1;
+   */
+  OFFLINE_SYSTEM = 1,
+
+  /**
+   * The computer the holder works on: a cloud root is used from here, with the
+   * holder's hardware-key sign-in. No stick is needed.
+   *
+   * @generated from enum value: RUN_PLACE_WORKSTATION = 2;
+   */
+  WORKSTATION = 2,
+}
+
+/**
+ * Describes the enum ritueel.local.v1alpha1.RunPlace.
+ */
+export const RunPlaceSchema: GenEnum<RunPlace> = /*@__PURE__*/
+  enumDesc(file_ritueel_local_v1alpha1_plan_service, 1);
+
+/**
+ * What a step needs from the holder where the plan is run. These are
  * facts about the ceremony; none of them is a value the page can see.
  *
  * @generated from enum ritueel.local.v1alpha1.Requirement
@@ -663,7 +728,7 @@ export enum Requirement {
  * Describes the enum ritueel.local.v1alpha1.Requirement.
  */
 export const RequirementSchema: GenEnum<Requirement> = /*@__PURE__*/
-  enumDesc(file_ritueel_local_v1alpha1_plan_service, 1);
+  enumDesc(file_ritueel_local_v1alpha1_plan_service, 2);
 
 /**
  * @generated from enum ritueel.local.v1alpha1.BundleChangeAction
@@ -691,7 +756,7 @@ export enum BundleChangeAction {
  * Describes the enum ritueel.local.v1alpha1.BundleChangeAction.
  */
 export const BundleChangeActionSchema: GenEnum<BundleChangeAction> = /*@__PURE__*/
-  enumDesc(file_ritueel_local_v1alpha1_plan_service, 2);
+  enumDesc(file_ritueel_local_v1alpha1_plan_service, 3);
 
 /**
  * @generated from service ritueel.local.v1alpha1.PlanService
@@ -722,10 +787,12 @@ export const PlanService: GenService<{
     output: typeof StartPlanResponseSchema;
   },
   /**
-   * Save the plan file into the bundle's "pending" area. This is the one
-   * call of the package that writes. It writes one inert file, create-only,
-   * and answers with the path and the digest. The demo writes nothing and
-   * says so (see SavePlanResponse.written).
+   * Save the plan as ledger/<ceremony>/plan.json in the bundle, where the
+   * engine writes any plan. The file is canonical JSON (RFC 8785, no trailing
+   * newline) and its SHA-256 is the digest. This is the one call of the
+   * package that writes. It writes one inert file, create-only, and answers
+   * with the path and the digest. The demo writes nothing and says so (see
+   * SavePlanResponse.written).
    *
    * @generated from rpc ritueel.local.v1alpha1.PlanService.SavePlan
    */

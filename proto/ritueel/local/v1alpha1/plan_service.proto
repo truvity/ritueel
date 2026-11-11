@@ -2,8 +2,17 @@
 //
 // The wizard helps the holder build a plan, ends with a preview of it and
 // the exact command to run, and can save the plan file so that the holder
-// can boot the offline system and run it there. It never confirms: the
-// holder confirms in the terminal, with `ritueel run PLAN --confirm DIGEST`.
+// can run it where the plan says: on the offline system (a root on cards or
+// in a key file) or on the workstation (a cloud root). It never confirms:
+// the holder confirms in the terminal, with `ritueel run PLAN --confirm
+// DIGEST`.
+//
+// Who answers. One long-running background process, started on demand, serves
+// this API from the bundle it was started on. The command line reaches it on
+// a Unix socket; a browser cannot open a Unix socket, so while this page is in
+// use the same process also answers on the loopback address, with the same
+// calls and the same answers. The page and the command line work the same way
+// and neither does anything the other cannot.
 //
 // No call takes or returns a secret, a PIN or a passphrase. The wizard
 // asks only questions with a fixed list of answers (no free text), and the
@@ -36,10 +45,12 @@ service PlanService {
     option idempotency_level = NO_SIDE_EFFECTS;
   }
 
-  // Save the plan file into the bundle's "pending" area. This is the one
-  // call of the package that writes. It writes one inert file, create-only,
-  // and answers with the path and the digest. The demo writes nothing and
-  // says so (see SavePlanResponse.written).
+  // Save the plan as ledger/<ceremony>/plan.json in the bundle, where the
+  // engine writes any plan. The file is canonical JSON (RFC 8785, no trailing
+  // newline) and its SHA-256 is the digest. This is the one call of the
+  // package that writes. It writes one inert file, create-only, and answers
+  // with the path and the digest. The demo writes nothing and says so (see
+  // SavePlanResponse.written).
   rpc SavePlan(SavePlanRequest) returns (SavePlanResponse) {}
 }
 
@@ -122,8 +133,10 @@ message QuestionOption {
 // ------------------------------------------------------------------- plan
 
 message Plan {
-  // The plan's name, which is also the stem of its file, for example
-  // "2026-11-11-renew-due".
+  // The plan's name: the name of its ceremony, the time as YYYYMMDDThhmmssZ
+  // in UTC, a hyphen, and the command with its words joined by hyphens, for
+  // example "20261111T090000Z-due". It is also the name of its sub-folder of
+  // the ledger, and it is unique inside a bundle.
   string id = 1;
   Intention intention = 2;
   string title = 3;
@@ -142,15 +155,33 @@ message Plan {
   repeated BundleChange bundle_changes = 9;
   // The command that builds this same plan on the command line.
   string equivalent_command = 10;
-  // The exact command to run on the ceremony machine, with the full digest.
+  // The exact command to run, from the bundle's directory, with the full
+  // digest: ritueel run ledger/<ceremony>/plan.json --confirm <64 hex>.
   string run_command = 11;
-  // Where SavePlan will put the file, relative to the bundle.
+  // Where SavePlan will put the file, relative to the bundle:
+  // ledger/<ceremony>/plan.json.
   string save_path = 12;
   // The serials of the cards the ceremony needs.
   repeated string card_serials = 13;
+  // Where the plan is run. It decides the words of the hand-over and whether
+  // a stick is needed. The page cannot tell a root in a key file from a cloud
+  // root by the data it has (neither has a card serial), so the plan says.
+  RunPlace run_place = 14;
 }
 
-// What a step needs from the holder at the ceremony machine. These are
+// Where a plan is run.
+enum RunPlace {
+  // Not said; the page then writes "the terminal where you run it".
+  RUN_PLACE_UNSPECIFIED = 0;
+  // A computer booted from a read-only stick: a root on cards or in a key
+  // file is used there. The bundle goes there on a USB stick.
+  RUN_PLACE_OFFLINE_SYSTEM = 1;
+  // The computer the holder works on: a cloud root is used from here, with the
+  // holder's hardware-key sign-in. No stick is needed.
+  RUN_PLACE_WORKSTATION = 2;
+}
+
+// What a step needs from the holder where the plan is run. These are
 // facts about the ceremony; none of them is a value the page can see.
 enum Requirement {
   REQUIREMENT_UNSPECIFIED = 0;
@@ -192,6 +223,7 @@ message BundleChange {
 // ------------------------------------------------------------- save a plan
 
 message SavePlanRequest {
+  // The plan's name (Plan.id): the name of its ceremony.
   string plan_id = 1;
   // The digest the page was shown. The engine builds the plan again and
   // refuses to save if its digest differs: the page cannot change a plan.
@@ -202,8 +234,10 @@ message SavePlanResponse {
   string plan_id = 1;
   // The bundle, as the holder knows it, for example "~/ritueel/acme".
   string bundle_path = 2;
-  // Where the file is (or would be), relative to the bundle.
+  // Where the file is (or would be), relative to the bundle:
+  // ledger/<ceremony>/plan.json.
   string path = 3;
+  // The SHA-256 of the file, which is the digest of the plan.
   string digest = 4;
   int64 size_bytes = 5;
   // False in the demo, and whenever nothing was written.
@@ -211,14 +245,16 @@ message SavePlanResponse {
   // A sentence for people. In the demo: "This is a demo. Nothing was
   // written; this is what saving would write."
   string notice = 7;
-  // The exact command to run on the ceremony machine.
+  // The exact command to run, from the bundle's directory.
   string run_command = 8;
-  // What to copy to the stick, what to bring, and what happens when the
-  // stick comes back.
+  // What to copy to the stick (empty when the plan runs on the workstation and
+  // needs no stick), what to bring, and what happens when the stick comes
+  // back.
   repeated string copy_to_stick = 9;
   repeated string bring = 10;
   string when_back = 11;
-  // The first lines of the plan file, as text: what saving writes. A plan
+  // An excerpt of plan.json, laid out for reading with one member on a line:
+  // what saving writes. The file itself is canonical JSON on one line. A plan
   // file holds no secret.
   string plan_file_preview = 12;
 }

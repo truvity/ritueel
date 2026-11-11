@@ -12,8 +12,12 @@ export const isDemo = __RITUEEL_MODE__ === 'demo';
  * no fixtures and no in-memory transport.
  *
  * Demo: an in-memory ConnectRPC transport that answers from fixture files.
- * Real: the page is embedded in the binary and talks to the local ritueel
- * process on the same origin.
+ * Real: the page is embedded in the binary and talks to the ritueel process.
+ * That process is one long-running background process, started on demand and
+ * bound to a Unix socket, which the command line uses. A browser cannot open a
+ * Unix socket, so while the page is in use the same process also answers on
+ * the loopback address, with the same calls and answers. The page is served
+ * from that address, so baseUrl '/' below is that origin.
  */
 async function loadTransport(): Promise<Transport> {
   if (__RITUEEL_MODE__ === 'demo') {
