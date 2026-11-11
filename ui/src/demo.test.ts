@@ -382,6 +382,9 @@ describe('the commands in the made-up answers follow docs/reference/cli.md', () 
   const PROPOSED_COMMANDS = ['personal subkey revoke', 'personal primary extend', 'personal primary add', 'personal userid revoke'];
   const PROPOSED_FLAGS = ['--key', '--expires-in'];
 
+  /** The flags the reference lists for every command, in rows that begin with the flag. */
+  const GLOBAL_FLAGS = new Set([...CLI.matchAll(/^\| `(--[a-z][a-z-]*)/gm)].map((m) => m[1]));
+
   /** Every `ritueel ...` code span of the reference, cut at the first word that is not a lower-case command word. */
   const known = new Set<string>();
   for (const m of CLI.matchAll(/`ritueel ([^`]*)`/g)) {
@@ -427,9 +430,12 @@ describe('the commands in the made-up answers follow docs/reference/cli.md', () 
       }
       const name = words.join(' ');
       if (!known.has(name) && !PROPOSED_COMMANDS.includes(name)) bad.push(`${f}: ${name}: ${c}`);
+      // A flag must be a flag of the whole reference (its table of flags) or be on a line of the command itself.
+      if (PROPOSED_COMMANDS.includes(name)) continue; // every flag of a proposed command is a proposal too
+      const own = CLI.split('\n').filter((line) => line.includes(`\`ritueel ${name}`));
       for (const flag of c.match(/--[a-z][a-z-]*/g) ?? []) {
-        if (PROPOSED_FLAGS.includes(flag)) continue;
-        if (!new RegExp(`${flag}(?![a-z-])`).test(CLI)) bad.push(`${f}: ${flag}: ${c}`);
+        if (PROPOSED_FLAGS.includes(flag) || GLOBAL_FLAGS.has(flag)) continue;
+        if (!own.some((line) => new RegExp(`${flag}(?![a-z-])`).test(line))) bad.push(`${f}: ${flag}: ${c}`);
       }
     }
     expect(bad).toEqual([]);
@@ -446,5 +452,35 @@ describe('the commands in the made-up answers follow docs/reference/cli.md', () 
     setBundle('personal');
     const files = (await inspect.listTrustFiles({})).files;
     expect(files.map((x) => x.path.split('.').pop()).sort()).toEqual(['asc', 'pgp']);
+  });
+});
+
+describe('the dates of the acme bundle follow the pages', () => {
+  const HERE = new URL('./', import.meta.url).pathname;
+  const read = (name: string) => JSON.parse(readFileSync(join(HERE, 'fixtures/acme', name), 'utf8'));
+  /** The date a number of calendar months after a day, the last day of the month if it has none. */
+  function plusMonths(day: string, months: number): string {
+    const [y, m, d] = day.split('-').map(Number);
+    const last = new Date(Date.UTC(y, m - 1 + months + 1, 0)).getUTCDate();
+    return new Date(Date.UTC(y, m - 1 + months, Math.min(d, last))).toISOString().slice(0, 10);
+  }
+  // The newest ceremony that wrote a trust sequence with a root's card is the last time that root signed.
+  const ceremonies = read('inspect.list-ceremonies.json').ceremonies as { id: string; cardSerials: string[]; trustSequence?: number }[];
+  const lastSigned = (serial: string) => {
+    const hit = ceremonies.filter((c) => c.trustSequence !== undefined && c.cardSerials.length === 1 && c.cardSerials[0] === serial).map((c) => c.id.slice(0, 8))[0];
+    return `${hit.slice(0, 4)}-${hit.slice(4, 6)}-${hit.slice(6, 8)}`;
+  };
+
+  it('a root certificate lives 36 months from the last ceremony that signed with the root', () => {
+    for (const r of read('inspect.list-roots.json').roots as { label: string; cardSerials: string[]; keys: { kind: string; expiresAt?: string }[] }[]) {
+      const want = plusMonths(lastSigned(r.cardSerials[0]), 36);
+      for (const k of r.keys.filter((x) => x.expiresAt)) expect(k.expiresAt!.slice(0, 10), `${r.label} ${k.kind}`).toBe(want);
+    }
+  });
+  it('a CRL stays current 25 months from the ceremony of the root that signed it', () => {
+    const files = read('inspect.list-trust-files.json').files as { name: string; validUntil?: string }[];
+    const until = (n: string) => files.find((f) => f.name === n)!.validUntil!.slice(0, 10);
+    expect(until('crl-A.pem')).toBe(plusMonths(lastSigned('00000011'), 25));
+    expect(until('crl-B.pem')).toBe(plusMonths(lastSigned('00000012'), 25));
   });
 });

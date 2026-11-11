@@ -14,7 +14,8 @@
       "evidence": [
         "1B220123456789ABCDEF0123456789ABCDEF0123: signing subkey of 2022, valid until 2027-03-14, replaced by the 2025 set",
         "1B320123456789ABCDEF0123456789ABCDEF0123: signing subkey of 2023, valid until 2027-04-02, replaced by the 2025 set",
-        "Neither has a revocation. Both are on card 00000102."
+        "Neither has a revocation. Both are on card 00000102.",
+        "The fix command is a proposal: the command reference does not have it yet."
       ],
       "fixCommand": "ritueel personal subkey revoke --reason superseded 1B220123456789ABCDEF0123456789ABCDEF0123 1B320123456789ABCDEF0123456789ABCDEF0123 --plan-only",
       "fixIntention": "INTENTION_RETIRE_SUBKEYS",
@@ -34,7 +35,8 @@
       },
       "evidence": [
         "RSA-4096 primary, created 2012-06-19, no expiry set",
-        "Adopted on 2026-11-03; the adoption did not set an expiry"
+        "Adopted on 2026-11-03; the adoption did not set an expiry",
+        "The fix command is a proposal: the command reference does not have it yet."
       ],
       "fixCommand": "ritueel personal primary extend --expires-in 3y --plan-only",
       "learnPath": "/guides/personal-openpgp/#if-you-already-have-a-primary",
@@ -72,7 +74,8 @@
         "label": "Exmaple Holder"
       },
       "evidence": [
-        "\"Exmaple Holder <holder@example.com>\" differs from \"Example Holder <holder@example.com>\" by two letters swapped"
+        "\"Exmaple Holder <holder@example.com>\" differs from \"Example Holder <holder@example.com>\" by two letters swapped",
+        "The fix command is a proposal: the command reference does not have it yet."
       ],
       "fixCommand": "ritueel personal userid revoke \"Exmaple Holder <holder@example.com>\" --plan-only",
       "visibleFromPublicKey": true
@@ -107,7 +110,8 @@
       },
       "evidence": [
         "Adopted on 2026-11-03",
-        "Row 2 of both root cards is reserved for stage two"
+        "Row 2 of both root cards is reserved for stage two",
+        "The fix command is a proposal: the command reference does not have it yet."
       ],
       "fixCommand": "ritueel personal primary add --card 00000001 --plan-only",
       "learnPath": "/guides/personal-openpgp/#if-you-already-have-a-primary",
