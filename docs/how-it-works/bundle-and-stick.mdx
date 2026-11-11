@@ -1,24 +1,22 @@
 ---
 title: The bundle and the USB stick
-description: What a bundle holds, and what sits on the USB stick that carries ritueel to the offline system. Not built yet; the layouts are proposed.
+description: What a bundle holds, and what sits on the USB stick that carries ritueel to the offline system. Not built yet; the stick's layout is proposed.
 ---
 
 import Figure from '../../site/src/components/Figure.astro';
 import Proposed from '../../site/src/components/Proposed.astro';
 
-Not built yet. The program does not exist; the pictures show how ritueel is designed to work. The file and directory names are proposed.
+The program does not exist yet; the pictures show how ritueel is designed to work. The directory names on the stick are proposed.
 
 ## The bundle
 
 A bundle holds everything ritueel knows about one trust domain: plain files, and never a private key in clear ([the layout](/reference/bundle/#the-layout)). You write two places; ritueel writes the rest.
 
 <Figure name="bundle-folder">
-  A bundle is one directory of plain files for one trust domain. Its history of ceremonies, the [glossary](/glossary/)’s “ledger”, is write-once.
+  A bundle is one directory of plain files for one trust domain. Its history of ceremonies, the [glossary](/glossary/)’s “ledger”, is never changed afterwards.
 </Figure>
 
-<Proposed>
-  The names inside a bundle are proposed in [the bundle reference](/reference/bundle/#the-layout). Two directory names are being changed, so the picture prints none for the history and the trust files.
-</Proposed>
+Two parts of the bundle are drawn without a directory name because their names are being changed.
 
 ## The USB stick
 
@@ -31,7 +29,5 @@ The stick holds vanilla AirgapOS and one extra partition for ritueel: several ve
 </Figure>
 
 <Proposed>
-  The directory names on the partition are a proposal, not yet in a record. The label and the file system are open.
+  The directory names on the partition, and the plan member that records the digest, are proposals, not yet in a record; the label and the file system are open. That AirgapOS boots from such a stick and uses the extra partition is still to be proven on hardware.
 </Proposed>
-
-Still to be proven on hardware: that AirgapOS boots from such a stick and uses the extra partition.

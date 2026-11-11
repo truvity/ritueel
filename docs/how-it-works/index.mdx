@@ -1,6 +1,6 @@
 ---
 title: How it works
-description: ritueel in pictures: its five ideas, then the ceremony, signing an intermediate certificate and binding the subkeys of your card. Not built yet.
+description: ritueel in pictures. Its five ideas, then the ceremony, signing an intermediate certificate and binding the subkeys of your card. Not built yet.
 sidebar:
   label: Overview
   order: 0
@@ -9,13 +9,15 @@ sidebar:
 import Figure from '../../site/src/components/Figure.astro';
 import Proposed from '../../site/src/components/Proposed.astro';
 
+ritueel guides each use of a root key (the top key of your certificates, or your OpenPGP master key) and keeps a record of it. Below: the five ideas, then two real jobs drawn as comics. Jump to [sign an intermediate](#sign-an-intermediate) or [bind the subkeys](#bind-the-subkeys-of-your-card).
+
 ritueel is in its design phase: the program does not exist yet. These pictures show how it is designed to work.
 
 ## Five ideas
 
 <Figure name="ideas">
 
-1. [One set of ceremonies](/how-it-works/#every-ceremony-has-six-steps) for a key file, root cards or a cloud key service. The steps are the same; the guarantees are not.
+1. [One set of ceremonies](/how-it-works/#every-ceremony-has-six-steps) for a key file, root cards or a cloud key service: the steps are the same, the guarantees are not.
 2. [Prefer a key that cannot be copied](/how-it-works/cards/): born on a card or in a cloud key service, not in a file.
 3. [One bundle](/how-it-works/bundle-and-stick/) keeps the roots of a PKI and of OpenPGP together, with what is known about the cards.
 4. [Requests in, answers out](/how-it-works/#sign-an-intermediate): other systems use files, and a plan made in one place runs in another.
@@ -31,17 +33,17 @@ Every use of a root is a ceremony. Only step 4 uses the root.
 
 ## Sign an intermediate
 
-A requester, such as sluis, needs a certificate for its intermediate key. The root is on a card.
+A requester, such as sluis, needs a certificate for its intermediate key. The root is on a card; a root in a cloud key service would run on your workstation instead.
 
 <Figure name="sign-intermediate" />
 
 <Proposed>
-  The stick and the digest of ritueel's copy are proposals. That the offline system boots from such a stick is not yet proven. A cloud root runs on your workstation.
+  The directory names on the stick and the plan member that records the digest are proposals. That the offline system boots from such a stick is not yet proven.
 </Proposed>
 
 ## Bind the subkeys of your card
 
-ritueel binds the subkeys of your day-to-day card to your own OpenPGP primary, kept in a key file.
+ritueel binds the subkeys of your day-to-day card to your own OpenPGP primary, kept in a key file. Each subkey is its own ceremony.
 
 <Figure name="bind-subkeys">
   A passkey on a root card opens the key file: decided, not yet proven.
