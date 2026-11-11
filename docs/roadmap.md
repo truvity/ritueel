@@ -41,16 +41,20 @@ The first signed release (M5) follows the adoption of the project's root and its
 
 ## After the first version
 
-None of these is planned in detail. Each starts as a decision proposal; the staff delegation and the renewal of a cloud root are also listed in M7.
+None of these is planned in detail. Each starts as a decision proposal. The decisions behind them are the sections "Not yet proven or only proposed" of the [records](https://github.com/truvity/ritueel/tree/main/docs/decisions), and [the design in brief](/design/) lists them.
 
-- **Staff OpenPGP** ([ADR 0014](/decisions/0014-staff-openpgp-primaries-sealed-in-sluis-subkeys-born-on-cards-ritueel-makes-the-card-ready-and-runs-the-delegation/), [the reference](/reference/staff-openpgp/), [issue #103](https://github.com/truvity/ritueel/issues/103)): a staff key is a primary that sluis seals for each person and company, with subkeys born on the person's card. ritueel's part is the delegation ceremony and a card helper that writes the proof bundle `sluis key bind` reads. It is designed and decided, and built after the first signed release because it needs the `openpgp-card` store (M3) and real roots (M4). Its order:
-  1. The conformance test on a real rehearsal card: the attestation of the card-born subkeys, the card's back-signature over a software primary, and the certificate accepted by `gpg`, `gpgv`, `sqv` and the hosting platform.
-  2. The card helper and the proof bundle, with their vectors.
-  3. The delegation ceremony: the root's trust signature over each company's certification key, and an ordinary certification over its keyring-signing key, once the real roots exist. The primary, the binding, the certification, the keyring and the sync are sluis's work, not ritueel's.
-- Renewal of a cloud root without a person ([the cloud root](/reference/kms-root/#renewal-under-a-policy)): designed, built after the first release candidate.
-- Files for a key on one's own domain (WKD) and the DNS record text, as a later output of ritueel with a guide.
-- More key stores, each arriving with its first real installation and passing [the admission test](/decisions/0003-key-stores-and-the-card-layer/#planned-stores): Google Cloud KMS, Azure Key Vault ([issue #67](https://github.com/truvity/ritueel/issues/67)) and Nitrokey ([issue #66](https://github.com/truvity/ritueel/issues/66)) are planned, then other clouds, HSMs, TPMs and other cards. The site compares them and says which to buy for testing.
 - A post-quantum root ([issue #32](https://github.com/truvity/ritueel/issues/32)).
+- More key stores, each arriving with its first real installation: Google Cloud KMS, Azure Key Vault ([issue #67](https://github.com/truvity/ritueel/issues/67)) and Nitrokey ([issue #66](https://github.com/truvity/ritueel/issues/66)) are planned, then other clouds, HSMs, TPMs and other cards. A new store passes an admission test first: a dated research page that measures P-384 over SHA-384, the evidence the store gives, access from a second process, and a replica or backup. The site compares the stores and says which to buy for testing.
+- A fallback driver for the `openpgp-card` store.
+- References and test vectors of the trust files, by milestone (M2, M4), and files for a key on one's own domain (WKD) and the DNS record text, as a later output with a guide.
+- The oldest rpm that imports per-primary key files, and a Go library for infrastructure code made from the same policy package.
+- Stage two of a person's key (two card-born primaries) and the build list of stage one (the M3 row).
+- How the first replica of a cloud root is made under the key policy, and renewing a cloud root without a person (M7).
+- The build and test list of the cards (the M6 row), and packing single-key roots into one card row.
+- The format of the wrapped key, fixed by the M1 proof.
+- The build of revocation make and check, the restore check, the drill scripts and the adoption drill; root add, retire and revoke with their vectors; an advisory review asked for in the plan (all in the M4 and M7 rows).
+- The guided mode and the program side of the page (the M2 and M7 rows).
+- Three teaching pages wait: user IDs, checking your cards, and renewing a delegated key.
 
 ### What is delivered
 

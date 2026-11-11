@@ -20,17 +20,18 @@ Every record has these parts, in this order:
 
 - **Status.** One of `Proposed`, `Accepted`, `Rejected`, `Superseded by NNNN`, or `Accepted; amended by NNNN`.
 - **Date.** The day the status or the text last changed.
-- **Context.** The forces at play. What problem, what constraints, what the reader needs to know.
-- **Decision.** What we do, in the active voice.
-- **Consequences.** What gets easier, what gets harder, what must follow. Include costs.
+- **Decision.** Numbered plain sentences, one rule each, in the active voice. No sub-headings, tables or code blocks: an exact format is only named and linked to its reference page.
+- **Why.** The reasons, in a short paragraph or a few bullets.
+- **What it costs.** What gets harder, what must follow. Include costs.
 - **Roads not taken.** One line for each other option that was weighed: what it would have given, what it costs, and why it lost. This part is required.
-- **Follow-ups.** Tasks that verify or implement the decision and cannot change it, each with the issue that carries it, or `None.`. A task whose result could change the decision is not a follow-up: it is an open part, and the record stays `Proposed`.
+- **Not yet proven or only proposed.** `None.`, or bullets that start `**Not yet proven.**` (decided, waits for a test on a card or an account) or `**Proposed.**` (not decided), each ending in the issue that carries it. A point whose answer could change a numbered sentence is moved here.
+- **Replaces.** The records of the first eighteen that flow into this one, or `Nothing; new in the rewrite.`
 
 ## Rules
 
-- **One decision per record.** Keep it short. A page of reasoning is better than ten. Measurements are cited, not reproduced: they live in dated pages under `docs/research/`. Formats and command tables live under `docs/reference/`.
-- **Accepted means decided.** A record is `Accepted` when every part is decided. Follow-ups do not keep it `Proposed`; an open part does.
-- **Design phase: rewritten in place.** Until the first release of ritueel, the maintainer may have a record rewritten, merged with another, renumbered or removed, so that the set stays small and current. The earlier text stays in git history. A renumbered or removed record's address on the site redirects to its successor (`site/public/_redirects`).
+- **One decision per record.** Keep it short: the aim is 900 words for Decision, Why and What it costs together, and the checker allows 1,100. Measurements are cited, not reproduced: they live in dated pages under `docs/research/`. Formats and command tables live under `docs/reference/`.
+- **Accepted means decided.** The numbered sentences of an `Accepted` record are decided. A point that is decided but waits for a test, or that is only proposed, sits in its own section with its issue and does not keep the record `Proposed`; an `Open` heading does.
+- **Design phase: rewritten in place.** Until the first release of ritueel, the maintainer may have a record rewritten, merged with another, renumbered or removed, so that the set stays small and current. The earlier text stays in git history.
 - **After the first release: append-only.** A changed mind gets a new record that supersedes the old one. The old record's status line changes to point at the new one, and its body stays. Typos and links may be fixed in place.
 - **Public means generic.** A record names no private deployment, account, hostname, ticket or person other than the maintainer. Use neutral examples.
 - **Draft ADRs are internal.** Reasoning starts in internal discussion. Only the final record is written here, once the maintainer has decided.
@@ -41,21 +42,49 @@ Every record has these parts, in this order:
 
 | ADR | Decision | Status |
 |-----|----------|--------|
-| [0001](0001-scope-roots-and-transitions-systems-like-sluis-hold-intermediates.md) | Scope: roots and transitions; systems like sluis hold intermediates | Accepted; amended by 0007 |
-| [0002](0002-key-custody-every-key-is-born-in-its-store-two-root-cards-or-one-kms-root-and-a-replica.md) | Key custody: every key is born in its store; two root cards, or one KMS root and a replica | Accepted |
-| [0003](0003-key-stores-and-the-card-layer.md) | Key stores and the card layer | Accepted; amended by 0007 |
-| [0004](0004-ceremonies-plan-confirm-reserve-sign-verify-record.md) | Ceremonies: plan, confirm, reserve, sign, verify, record | Accepted |
-| [0005](0005-trust-products-the-root-list-the-ca-bundle-the-ssh-ca-key-list-and-the-trust-sequence.md) | Trust products: the root list, the CA bundle, the SSH CA key list, CRLs and the trust sequence | Accepted |
-| [0006](0006-release-keys-and-the-keyring-package.md) | Release keys and the keyring package | Accepted |
-| [0007](0007-ritueel-teaches-and-its-tools-simplify-the-ceremonies.md) | ritueel teaches, and its tools simplify the ceremonies | Accepted |
-| [0008](0008-the-operator-prepares-the-holder-and-ritueel-creates-attests-and-verifies-the-root.md) | The operator prepares the holder; ritueel creates, attests and verifies the root | Accepted |
-| [0009](0009-root-transitions-vouch-overlap-retire-and-revoke.md) | Root transitions: vouch, overlap, retire and revoke | Accepted |
-| [0010](0010-readiness-is-made-at-birth-and-proved-by-a-drill.md) | Readiness is made at birth and proved by a drill | Accepted |
-| [0011](0011-the-wizards-one-engine-three-faces-and-a-web-page-that-cannot-confirm-anything.md) | The wizards: one engine, three faces, and a web page that cannot confirm anything | Accepted |
-| [0012](0012-personal-openpgp-the-primary-offline-in-a-file-the-daily-subkey-on-a-card.md) | Personal OpenPGP: the primary offline in a file, the daily subkey on a card | Accepted |
-| [0013](0013-the-kms-ceremony-role-is-the-only-signer-and-ritueel-asks-nothing-of-its-sign-in.md) | The KMS ceremony role is the only signer, and ritueel asks nothing of its sign-in | Accepted |
-| [0014](0014-staff-openpgp-primaries-sealed-in-sluis-subkeys-born-on-cards-ritueel-makes-the-card-ready-and-runs-the-delegation.md) | Staff OpenPGP: primaries sealed in sluis, subkeys born on cards; ritueel makes the card ready and runs the delegation | Accepted |
-| [0015](0015-key-files-open-with-a-passkey-on-each-root-card-and-card-secrets-are-sealed-in-the-bundle.md) | Key files open with a passkey on each root card, and card secrets are sealed in the bundle | Accepted |
-| [0016](0016-several-bundles-share-one-pair-of-root-cards-and-the-bundle-keeps-a-card-inventory.md) | Several bundles share one pair of root cards, and the bundle keeps a card inventory | Accepted |
-| [0017](0017-a-persons-openpgp-key-in-two-stages-an-adopted-primary-first-then-card-born-primaries.md) | A person's OpenPGP key in two stages: an adopted primary first, then card-born primaries | Accepted |
-| [0018](0018-a-cloud-root-may-be-an-existing-key-that-ritueel-adopts.md) | A cloud root may be an existing key that ritueel adopts | Accepted |
+| [0001](0001-what-ritueel-is.md) | ritueel keeps roots and teaches how; systems that issue every day keep intermediates | Accepted |
+| [0002](0002-where-a-key-lives.md) | A key is born in its store and never leaves it; a key file opens with a passkey on each root card | Accepted |
+| [0003](0003-root-cards.md) | Roots live on two independent root cards laid out as six rows of four slots | Accepted |
+| [0004](0004-the-cloud-root.md) | A cloud root is one dedicated account with three replicated keys, created or adopted | Accepted |
+| [0005](0005-a-ceremony-and-where-it-runs.md) | A ceremony has six steps; a key that cannot be copied may be used on the workstation | Accepted |
+| [0006](0006-bundle-history-and-trust-files.md) | A bundle is one trust domain; its history is write-once and its trust files are numbered sets | Accepted |
+| [0007](0007-changing-and-losing-a-root.md) | A root changes by add, overlap, retire and revoke; revocation material and a drill prove the way back | Accepted |
+| [0008](0008-a-persons-own-key.md) | A person uses OpenPGP as their own key, an adopted primary first and card-born primaries later | Accepted |
+| [0009](0009-release-keys-and-the-keyring.md) | Release keys are the root primaries; the keyring is a file that ritueel makes and a pipeline packages | Accepted |
+| [0010](0010-the-engine-the-process-and-the-page.md) | One engine with three faces, one process on one fixed port, and a page that cannot confirm anything | Accepted |
+
+## The first eighteen records
+
+The first set of records, 0001 to 0018, was rewritten on 2026-11-11 from a checked list of decisions into the ten records above. The numbers 0001 to 0010 are now used again, which the design phase allows; a number is never reused after the first release. The old files are in git at commit [1634be4](https://github.com/truvity/ritueel/tree/1634be413c5e7d8d173e421928665ba30971a46e/docs/decisions), and their old site addresses redirect to them. Each new record's "Replaces" section says which parts flow into it; where an old number appears in an issue, a pull request or a note, read it in this table.
+
+| Old | Old title | Flows into |
+|-----|-----------|------------|
+| 0001 | Scope: roots and transitions; systems like sluis hold intermediates | [0001], [0002], [0005], [0006], [0007], [0008], [0010] |
+| 0002 | Key custody: every key is born in its store; two root cards, or one KMS root and a replica | [0001], [0002], [0003], [0004], [0005], [0007] |
+| 0003 | Key stores and the card layer | [0002], [0003], [0004], [0005], [0006], [0008], [0010] |
+| 0004 | Ceremonies: plan, confirm, reserve, sign, verify, record | [0002], [0003], [0004], [0005], [0006], [0007], [0008], [0010] |
+| 0005 | Trust products: the root list, the CA bundle, the SSH CA key list, CRLs and the trust sequence | [0004], [0006], [0007], [0009] |
+| 0006 | Release keys and the keyring package | [0001], [0006], [0009] |
+| 0007 | ritueel teaches, and its tools simplify the ceremonies | [0001], [0002], [0005], [0006], [0007], [0010] |
+| 0008 | The operator prepares the holder; ritueel creates, attests and verifies the root | [0001], [0002], [0003], [0004], [0005], [0010] |
+| 0009 | Root transitions: vouch, overlap, retire and revoke | [0006], [0007] |
+| 0010 | Readiness is made at birth and proved by a drill | [0006], [0007], [0009] |
+| 0011 | The wizards: one engine, three faces, and a web page that cannot confirm anything | [0010] |
+| 0012 | Personal OpenPGP: the primary offline in a file, the daily subkey on a card | [0003], [0008] |
+| 0013 | The KMS ceremony role is the only signer, and ritueel asks nothing of its sign-in | [0004] |
+| 0014 | Staff OpenPGP: primaries sealed in sluis, subkeys born on cards; ritueel makes the card ready and runs the delegation | [0001], [0008] |
+| 0015 | Key files open with a passkey on each root card, and card secrets are sealed in the bundle | [0002], [0003], [0006], [0007] |
+| 0016 | Several bundles share one pair of root cards, and the bundle keeps a card inventory | [0003], [0005], [0006], [0007] |
+| 0017 | A person's OpenPGP key in two stages: an adopted primary first, then card-born primaries | [0002], [0008] |
+| 0018 | A cloud root may be an existing key that ritueel adopts | [0004], [0006] |
+
+[0001]: 0001-what-ritueel-is.md
+[0002]: 0002-where-a-key-lives.md
+[0003]: 0003-root-cards.md
+[0004]: 0004-the-cloud-root.md
+[0005]: 0005-a-ceremony-and-where-it-runs.md
+[0006]: 0006-bundle-history-and-trust-files.md
+[0007]: 0007-changing-and-losing-a-root.md
+[0008]: 0008-a-persons-own-key.md
+[0009]: 0009-release-keys-and-the-keyring.md
+[0010]: 0010-the-engine-the-process-and-the-page.md
