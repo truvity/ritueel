@@ -33,6 +33,7 @@ A **key fingerprint** in these files is the SHA-256 of the DER `SubjectPublicKey
 | `command` | The command, as typed: `init`, `intermediate add` and so on. |
 | `arguments` | An object with every argument that changes what is signed: the intermediate's name, the request's stem, `--root` and its reason, `--allow-missing` names. Flags that change only how ritueel runs (`--output`, `--passphrase-fd`) are not in it. |
 | `made_at` | When the plan was written. |
+| `ritueel` | Proposed. The copy of ritueel that made the plan: `{ "version", "os_arch", "sha256" }`. See the note below the table. |
 | `ceremony_time` | The time every signature carries and every validity starts from. Drawn once, here. |
 | `inputs` | A list of `{ "path", "sha256" }`: every file of the bundle the plan was made from, `ritueel.yaml` and the request files included, in path order. |
 | `last_record_sha256` | The SHA-256 of the newest record in the bundle, or absent when there is none. |
@@ -44,6 +45,10 @@ A **key fingerprint** in these files is the SHA-256 of the DER `SubjectPublicKey
 | `touches` | The number of touches the holder will give: one for each signature by a card, 0 for a software root. |
 | `base_sequence` | The trust sequence of the newest trust products when the plan was made, the state it was made against. |
 | `trust_sequence` | The trust sequence of the trust products the ceremony writes: `base_sequence` plus one. |
+
+:::note[Proposed]
+The member `ritueel` holds the version of the program that made the plan, its system and architecture as `os_arch`, and the SHA-256 of that copy. The run uses that version, and ritueel refuses to run the plan with another one. This is what lets the offline system keep several versions on the [USB stick](/reference/bundle/#on-the-stick). It is a proposal, awaiting the maintainer's word.
+:::
 
 Each member of `signatures`:
 
