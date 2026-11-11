@@ -1,20 +1,20 @@
 ---
 title: The wizard
-description: A local wizard, in the terminal and as a page served on localhost, that guides a ceremony, keeps you in charge, and leaves the PIN and the touch on the card.
+description: A guided mode in the terminal and a read-only page on localhost that guide a ceremony, keep you in charge, and leave the PIN and the touch on the card.
 sidebar:
   order: 2
 ---
 
 :::caution[Not built yet]
-The wizard is planned for milestone M4 ([issue #16](https://github.com/truvity/ritueel/issues/16) for the terminal, [issue #17](https://github.com/truvity/ritueel/issues/17) for the web page). This page is the design that [ADR 0007](/decisions/0007-ritueel-teaches-and-its-tools-simplify-the-ceremonies/) accepts and [ADR 0011](/decisions/0011-the-wizards-one-engine-two-faces-and-a-web-page-that-cannot-confirm-anything/) details; the exact rules are in [the reference](/reference/wizard/).
+The wizard is planned: the read-only page for milestone M2 ([issue #17](https://github.com/truvity/ritueel/issues/17)) and the guided mode after the first signed release ([issue #16](https://github.com/truvity/ritueel/issues/16)). This page is the design that [ADR 0007](/decisions/0007-ritueel-teaches-and-its-tools-simplify-the-ceremonies/) accepts and [ADR 0011](/decisions/0011-the-wizards-one-engine-three-faces-and-a-web-page-that-cannot-confirm-anything/) details; the exact rules are in [the reference](/reference/wizard/).
 :::
 
-Some people prefer a page to a terminal, and a ceremony is easier to follow when each step is shown with its explanation next to it. The wizard is that: a guided front end that looks good and keeps you in charge.
+Some people prefer a page to a terminal, and a ceremony is easier to follow when each step is shown with its explanation next to it. The wizard is that: a guided front end that keeps you in charge. It has two parts, a guided mode in the terminal and a read-only page.
 
 ## What it is
 
-- **A second face of the same engine.** The wizard asks the ceremony engine for the plan, shows it, and asks you to confirm. It does not sign, verify or record by any code of its own ([principle 14](/principles/#the-principles)).
-- **In the terminal, or in a browser.** The terminal wizard asks line by line in plain text, so a screen reader and a log both work. The web wizard is a page served by the program on your own computer, beside the terminal wizard, which keeps the confirmation.
+- **A face of the same engine.** The command line, the guided mode and the page are three faces of one engine. The wizard asks the ceremony engine for the plan and shows it. It does not sign, verify or record by any code of its own ([principle 14](/principles/#the-principles)).
+- **In the terminal, or in a browser.** The guided mode asks line by line in plain text, so a screen reader and a log both work; there is no full-screen interface and no background service. The page is a read-only view served by the program on your own computer, beside the guided mode.
 - **The user is in charge.** Nothing happens without your confirmation. The PIN is typed at the terminal and goes to the card, and the touch is a touch on the card. The page never sees either.
 
 ## What the page may and may not do
@@ -25,11 +25,11 @@ Some people prefer a page to a terminal, and a ceremony is easier to follow when
 | Collect choices: which root, which request, which store. | Ask for, receive or show a PIN, a passphrase or a key. |
 | Show progress, the record and what outsiders will see. | Load anything from outside your computer. |
 
-The confirmation of every irreversible step is given in the terminal, or by the touch on the card, never by a click in the page. The page shows the plan and its digest, and tells you to type the first eight characters in the terminal; the terminal waits for you.
+The confirmation of every irreversible step is given in the terminal, or by the touch on the card, never by a click in the page. The page shows the plan and its digest, and ends with a preview and the command to run, `ritueel run PLAN --confirm DIGEST`. It can save the plan file, so that you can boot the offline system for a card root and run it there. You give the confirmation in the terminal.
 
 ## Security rules
 
-The web wizard is a program on your computer that acts on root keys, so it is built to be hard to reach from anywhere else, including from another page open in the same browser.
+The page is served by a program on your computer that sits beside the ceremony engine, so it is built to be hard to reach from anywhere else, including from another page open in the same browser. It is read-only, and it never sees a secret.
 
 1. **It listens on 127.0.0.1 only,** and refuses to start on any other address.
 2. **On a random port,** chosen at each start.
@@ -44,4 +44,4 @@ Each rule has a test in the plan for the wizard: a request with the wrong token,
 
 ## What it drives
 
-The ceremonies and the checks: adopting the roots, the yearly ceremony, intermediates, the five transitions, the trust products, the drills and a person's own key. It does not prepare a card, change a PIN or publish; it names the guide for those ([the list](/reference/wizard/#what-the-wizards-drive)).
+The ceremonies and the checks: adopting the roots, the renewals of the yearly ceremony, intermediates, the five transitions, the trust products, the drills and a person's own key. It does not prepare a card, change a PIN or publish; it names the guide for those ([the list](/reference/wizard/#what-the-guided-mode-and-the-page-drive)).

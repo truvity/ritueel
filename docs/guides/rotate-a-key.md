@@ -5,7 +5,7 @@ sidebar:
   order: 4
 ---
 
-*Design phase: not built yet. This page is the plan that `ritueel intermediate replace`, `root add` and `root retire` will follow (M2 and M3). Read [Rotate](/learn/rotate/) first for why and when.*
+*Design phase: not built yet. This page is the plan that `ritueel intermediate replace`, `root add` and `root retire` will follow (M4). Read [Rotate](/learn/rotate/) first for why and when.*
 
 ## Before you start
 

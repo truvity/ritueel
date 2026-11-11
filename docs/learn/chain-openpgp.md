@@ -13,7 +13,7 @@ OpenPGP has no certificate authorities. It has one identity, one master key and 
 |---|---|---|---|---|
 | Master key | The primary key, set to *certify only*. | You. | Offline, in a store only a ceremony reaches. | Self-certified when created. Its fingerprint is what people record. |
 | Signing subkey | Signs commits, tags, releases, documents. | You. | A card used every day. | A binding signature from the master key; renewed by re-signing the binding. |
-| Encryption subkey | Decrypts what people send you. | You. | The same card. | The same. |
+| Encryption subkey | Decrypts what people send you. | You. | Made in software and loaded onto the card, with a wrapped backup. | The same. |
 | Authentication subkey | Logs you in, for example to SSH servers. | You. | The same card. | The same. |
 
 The master key carries no daily duties: it certifies identities, binds subkeys, extends expiry, and revokes. Setting it to *certify only* means that even a program that wanted to use it for signing a document could not. Each subkey does one job, so a break in one is limited to that job. The subkeys live on a card, so the daily key cannot be copied; the master key lives where only a ceremony reaches it.
@@ -43,4 +43,4 @@ The master key's revocation certificate is made when the key is born and kept ap
 
 ## Where ritueel fits
 
-ritueel creates the master key in its store, makes the revocation certificate, binds the subkeys, including onto a card, extends the expiry each year and builds the keyring package. How to use the subkeys day to day is in the guides: [SSH login](/guides/openpgp-ssh-authentication/), [signing git commits and tags](/guides/openpgp-sign-git/), [signing releases](/guides/openpgp-sign-releases/), and [OpenPGP or Sigstore](/guides/openpgp-and-sigstore/).
+ritueel creates the master key in its store (or, in stage one, adopts an existing one), makes the revocation certificate, binds the subkeys, including onto a card, extends the expiry each year and builds the keyring package. How to use the subkeys day to day is in the guides: [SSH login](/guides/openpgp-ssh-authentication/), [signing git commits and tags](/guides/openpgp-sign-git/), [signing releases](/guides/openpgp-sign-releases/), and [OpenPGP or Sigstore](/guides/openpgp-and-sigstore/).

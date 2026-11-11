@@ -62,4 +62,4 @@ Two patterns follow. **Extend the same key's expiry** when the key is safe (Tail
 
 ## In ritueel
 
-`intermediate replace` certifies a new key for a registered intermediate; `root add` and `root retire` carry out a root transition. Both are planned (M2, M3). The steps and a drill are in the [guide](/guides/rotate-a-key/).
+`intermediate replace` certifies a new key for a registered intermediate; `root add` and `root retire` carry out a root transition. Both are planned (M4). The steps and a drill are in the [guide](/guides/rotate-a-key/).

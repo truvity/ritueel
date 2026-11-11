@@ -1,6 +1,6 @@
 ---
 title: Tools
-description: The ritueel tools that simplify the ceremonies, a command line and a wizard on localhost, and what is built today. Both are planned, and both drive one engine.
+description: "The ritueel tools that simplify the ceremonies: a command line, a guided mode and a read-only page on localhost. All are planned, and all drive one engine."
 sidebar:
   label: Overview
   order: 0
@@ -14,16 +14,16 @@ ritueel is in the design phase and has no release. Every tool on this page is pl
 
 | Tool | What it is | Status |
 |---|---|---|
-| [The command line](/tools/cli/) | One to three commands for each ceremony, with a plan, a confirmation, a record and the checks before every touch. | Planned (M1 to M3) |
-| [The wizard](/tools/wizard/) | A guided front end in the terminal, and a web page served on your own computer only. | Planned (M4) |
+| [The command line](/tools/cli/) | One to three commands for each ceremony, with a plan, a confirmation, a record and the checks before every touch. | Planned (M2 to M7) |
+| [The wizard](/tools/wizard/) | A guided mode in the terminal, and a read-only page served on your own computer only. | Planned (page M2, guided mode after the first signed release) |
 | [Command reference](/reference/cli/) | The commands, flags, files and exit codes. | Specified |
 
-## One engine, two faces
+## One engine, three faces
 
-The command line and the wizard are two faces of the **same** ceremony engine: plan, confirm, reserve, sign, verify, record ([ADR 0004](/decisions/0004-ceremonies-plan-confirm-reserve-sign-verify-record/)). The wizard fills in flags and shows the plan; it does not implement a ceremony of its own. What the command line refuses, the wizard refuses.
+The command line, the guided mode and the local page are three faces of the **same** ceremony engine: plan, confirm, reserve, sign, verify, record ([ADR 0004](/decisions/0004-ceremonies-plan-confirm-reserve-sign-verify-record/)). The guided mode fills in flags and the page shows the plan; neither implements a ceremony of its own, and the page never confirms one. What the command line refuses, they refuse.
 
 ## What the tools never do
 
-- Hold a private key outside the store that made it, or keep a PIN or a passphrase.
+- Hold a private key outside the store that made it (a person's own key has one stated exception: [ADR 0017](/decisions/0017-a-persons-openpgp-key-in-two-stages-an-adopted-primary-first-then-card-born-primaries/)), or keep a PIN or a passphrase that a person types.
 - Confirm an irreversible step for you.
 - Sign online, or issue the certificates of servers and people. That belongs to a system that holds intermediates.
