@@ -1,0 +1,32 @@
+# The pages of docs/ that the site publishes: one path per line, relative to docs/, with its
+# extension. A file of docs/ that is not listed here stays in the repository, at its path, as the
+# design's working material; it gets no page, no search entry and no sitemap entry. Its old
+# address answers with a redirect to the same file on GitHub, and a link to it from a published
+# page is written as a link to that file (site/lib/docs-links.mjs).
+#
+# The decision records (docs/decisions/NNNN-*.md, without the template) are not listed: the
+# `decisions` collection and src/pages/decisions publish all of them, as an archive.
+#
+# To publish a page again, add its line here and run `just site-redirects`. The sidebar slugs in
+# astro.config.mjs, ui/src/links.test.ts and site/scripts/gen-redirects.mjs read this file too.
+# A line that names no file, a duplicate, a record or a file whose name starts with `_` fails.
+
+index.mdx
+
+learn/index.md
+learn/what-is-a-root.md
+learn/why-the-root-stays-offline.md
+learn/how-a-yubikey-holds-keys.md
+learn/how-passkeys-work.md
+learn/how-a-kms-key-works.md
+learn/choosing-where-a-root-lives.md
+learn/life-of-a-root.md
+learn/revoke.md
+learn/custody-chain.md
+learn/chain-openpgp.md
+
+glossary.md
+roadmap.md
+
+# Another project reads the hand-off contract at this address; its test vectors stay where they are.
+reference/hand-off-contract.md
