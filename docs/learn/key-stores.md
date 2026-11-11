@@ -32,7 +32,7 @@ To walk the questions in order, read [Choosing where a root lives](/learn/choosi
 | **Protects against** | A casual thief who finds the file, if the passphrase is strong. | Loss of one device. Theft of one device that is locked. | Theft of a powered-off, encrypted disk. | Theft of the computer, and a copy of the key by malware. | The same. | Theft of a computer, loss of a card. Gives an audit trail. |
 | **Does not protect against** | Malware that reads the file and the passphrase. A copy anywhere. | Malware on an unlocked device. A compromised account. | Malware, or any program of the same user. A lost laptop is a lost key: there is no copy. | Loss, fire, a thief who has the PIN and the token. | The same. | A locked or compromised account. A deleted key after the waiting period. |
 | **Redundancy** | More copies, which raises the chance of theft. | The sync, which is the replication. Protects against loss only. | None. | A second, independent card. | A second, independent card. | A replica in another Region. |
-| **What "present" means** | The passphrase. | Unlocking the vault. | The user session. | Possession, PIN and a touch. | Possession and PIN, and a touch if set. | Cloud permissions, plus what you add: a role that needs a sign-in with a hardware key. |
+| **What "present" means** | The passphrase. | Unlocking the vault. | The user session. | Possession, PIN and a touch. | Possession and PIN, and a touch if set. | Cloud permissions, plus what you add: a role, and the controls around it. |
 | **Proof of where it lives** ([what that means](/learn/what-a-store-can-prove/)) | None. | None. | None. | An attestation certificate from the token. | An attestation from the card. | The key's description and policy, read from the service. |
 | **Cost** | Free. | A subscription you probably have. | Free. | A token, bought twice. | A card, bought twice. | Per key and per use; an account to secure. |
 | **Good for** | Drills, tests, development; a person's own primary, kept offline. | The keys of test roots, intermediates and subkeys; a drill that survives a lost laptop. Not a root, not a master key. | Trying ritueel out. Not for a key others rely on. | The root keys; a service's intermediate. | A person's daily subkeys. | A company root; a service's intermediate. |
@@ -51,7 +51,7 @@ To walk the questions in order, read [Choosing where a root lives](/learn/choosi
 
 **An OpenPGP card holds a person's daily key.** A signing or authentication subkey is born on the card's OpenPGP applet, so `gpg` uses it directly, and an offline master key binds it. An encryption subkey is the exception: it is made in software and loaded onto each day-to-day card, with a wrapped backup, so a lost card does not lose the mail it decrypted ([ADR 0017](/decisions/0017-a-persons-openpgp-key-in-two-stages-an-adopted-primary-first-then-card-born-primaries/#day-to-day-cards)). The PIV and OpenPGP applets of one card are independent, but a program that holds the card keeps the others out, so a root card holds only roots and the daily card is another card.
 
-**AWS KMS makes the key a permission.** The key is as safe as the account's access control, and every use is in the audit trail. There is no card to lose, but an account to lose, and a deletion that can be undone only during a waiting period. A root that is "present" because a role was assumed is weaker than a touch unless the role is hard to assume, so ritueel gates the role on a sign-in with a hardware key and has the person confirm the plan. It reads the key's description, policy and public key from the service, never from a claim.
+**AWS KMS makes the key a permission.** The key is as safe as the account's access control, and every use is in the audit trail. There is no card to lose, but an account to lose, and a deletion that can be undone only during a waiting period. A root that is "present" because a role was assumed is weaker than a touch unless the role is hard to assume. ritueel has the person confirm the plan and reads the key's policy, but it does not gate the role on a hardware-key sign-in (dropped for now), so the role's reach is the account's access control; making the role hard to assume is the operator's job. It reads the key's description, policy and public key from the service, never from a claim.
 
 The two hardware and cloud stores are opened up in [How a YubiKey holds keys](/learn/how-a-yubikey-holds-keys/) and [How a KMS key works](/learn/how-a-kms-key-works/).
 
@@ -78,7 +78,7 @@ These are not supported and not scheduled. Each arrives with its first real inst
 | You want a drill to survive a lost laptop | 1Password, on a root that is still only a drill. |
 | One person or a small team holds the roots, and no cloud is involved | Two independent root cards, in two places ([which path is yours](#which-path-is-yours)). |
 | A person wants a daily OpenPGP key | A subkey born on an OpenPGP card, bound by a master key kept offline. |
-| An organisation already runs on AWS and wants audited, policy-gated roots | One KMS root with a multi-Region replica, in a dedicated root account, with a role that needs a sign-in with a hardware key. |
+| An organisation already runs on AWS and wants audited, policy-gated roots | One KMS root with a multi-Region replica, in a dedicated root account, with a ceremony role and the controls around it. |
 | You want the strongest story | Roots on different kinds of store: for example a card root and a KMS root. A failure of one kind does not take out the other. |
 
 ## Moving between stores
@@ -88,7 +88,7 @@ Every move is a transition ([moving from one root to another](/learn/transitions
 | From | To | What changes | What to check |
 |---|---|---|---|
 | Software | PIV card | The key stops being copyable. | The new root is attested, and the chain verifies against the maker's root. |
-| Software | AWS KMS | The key moves under cloud access control and audit. | The key's policy names one actor, and the role needs a sign-in with a hardware key. |
+| Software | AWS KMS | The key moves under cloud access control and audit. | The key's policy names one actor. |
 | PIV card | AWS KMS | A physical key becomes a permission. | The confirmation step still needs a person. |
 | AWS KMS | PIV card | A permission becomes a physical key. | A second card exists in another place before the first is relied on. |
 | Same kind | Same kind | A replaced token, or a KMS key in another account. The key is new. | The overlap is long enough for slow clients. |

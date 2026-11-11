@@ -9,7 +9,7 @@ sidebar:
 The tools exist to simplify the rituals you learn about in [Learn](/learn/). They are not a reason to skip learning: a tool that signs the wrong thing signs it quickly.
 
 :::caution[Not built yet]
-ritueel is in the design phase and has no release. Every tool on this page is planned; only a demo of the local page exists, as a design to look at and click through. The [roadmap](/roadmap/) has the order; each page says what is built.
+ritueel is in the design phase and has no release. The program is planned, and so is every command. The local page exists as code and a demo (`ui/`, `proto/`), as a design to look at and click through; the program that serves it does not. The [roadmap](/roadmap/) has the order; each page says what is built.
 :::
 
 | Tool | What it is | Status |
@@ -21,7 +21,7 @@ ritueel is in the design phase and has no release. Every tool on this page is pl
 
 ## One engine, three faces
 
-The command line, the guided mode and the local page are three faces of the **same** ceremony engine: plan, confirm, reserve, sign, verify, record ([ADR 0004](/decisions/0004-ceremonies-plan-confirm-reserve-sign-verify-record/)). The guided mode fills in flags and the page shows the plan; neither implements a ceremony of its own, and the page never confirms one. What the command line refuses, they refuse.
+The command line, the guided mode and the local page are three faces of the **same** ceremony engine: plan, confirm, reserve, sign, verify, record ([ADR 0004](/decisions/0004-ceremonies-plan-confirm-reserve-sign-verify-record/)). The guided mode fills in flags and the page shows the plan; neither implements a ceremony of its own, and the page never confirms one. The command line and the page also call the same API of one ritueel process. What the command line refuses, they refuse.
 
 ## What the tools never do
 

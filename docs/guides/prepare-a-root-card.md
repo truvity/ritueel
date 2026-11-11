@@ -11,7 +11,7 @@ A new token ships with a PIN, a PUK and a management key that everyone knows. Wi
 
 ## What you start with
 
-- A new token with firmware 5.7.4 or later, which is ritueel's floor for a root card ([ADR 0016](/decisions/0016-several-roots-share-one-pair-of-root-cards-and-the-directory-keeps-a-card-inventory/#rules-for-a-shared-card)), bought to hold roots and nothing else ([Which keys to buy](/learn/which-keys-to-buy/)). It is never also a day-to-day card or a board card.
+- A new token with firmware 5.7.4 or later, which is ritueel's floor for a root card ([ADR 0016](/decisions/0016-several-roots-share-one-pair-of-root-cards-and-the-directory-keeps-a-card-inventory/#rules-for-a-shared-card)), bought to hold roots and nothing else ([Which keys to buy](/learn/which-keys-to-buy/)). It is never also a day-to-day card or an HSM card.
 - `ykman` on your workstation, and no other program holding the card: stop `scdaemon` first (`gpgconf --kill scdaemon`).
 - Your password manager open, with an entry for this card.
 
