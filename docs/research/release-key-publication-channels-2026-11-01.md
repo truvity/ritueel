@@ -17,6 +17,8 @@ Beyond the first version, which channels should publish the release keys and the
 
 **Keep the first version's channels and add none now.** Each further channel serves a consumer that does not exist yet, and each is one more place to keep current at every yearly ceremony, because the keyring changes every year. If a consumer asks, the order is: GitHub releases (no new trust, it carries the files already published), then the WKD direct method (static files, a standard consumers already speak), then the keyserver; DNS `OPENPGPKEY` last, because it needs DNSSEC and serves mail clients, not package managers. What users verify with does not change: the keyring and `gpgv`, `sqv` or `gpg --status-fd`. Provenance tools are an optional second check.
 
+Update of 2026-11-11: the maintainer decided that ritueel publishes the public OpenPGP key to the keyservers the holder lists ([record 0011](../decisions/0011-publishing-and-what-to-do-after-a-ceremony.md); [the research](/research/after-the-ceremony-consumers-2026-11-11/)). The order above predates this decision for the keyserver channel; the other channels are unchanged.
+
 ## Method
 
 Read: the keys.openpgp.org about and FAQ pages; the Internet-Draft for the Web Key Directory; RFC 7929; the GitHub CLI manual for `gh attestation verify`. The consumer of each channel was taken from what those documents say it is for. Cost was judged against ritueel's yearly cadence: every ceremony writes a new keyring, so a channel that holds a copy needs an update step after each one.
