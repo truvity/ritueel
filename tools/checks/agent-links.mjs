@@ -25,7 +25,10 @@ const r = reporter('check-agent-links');
 
 const sources = new Set();
 for (const f of ['AGENTS.md', 'CLAUDE.md']) if (existsSync(join(root, f))) sources.add(f);
-for (const f of trackedFiles(root)) if (/(^|\/)(AGENTS|CLAUDE)\.md$/.test(f)) sources.add(f);
+// An AGENTS.md or CLAUDE.md inside a skill folder is part of that skill, which may be copied from
+// upstream (.claude/skills/NOTICE-mui.md): the paths it names are upstream's, not this repository's.
+// The skill's own SKILL.md is still checked, below.
+for (const f of trackedFiles(root)) if (/(^|\/)(AGENTS|CLAUDE)\.md$/.test(f) && !f.startsWith('.claude/skills/')) sources.add(f);
 const skills = join(root, '.claude', 'skills');
 if (existsSync(skills)) {
   for (const d of readdirSync(skills, { withFileTypes: true })) {
