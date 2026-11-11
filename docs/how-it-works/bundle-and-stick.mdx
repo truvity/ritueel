@@ -1,10 +1,37 @@
 ---
 title: The bundle and the USB stick
-description: What a bundle holds and what sits on the USB stick that carries ritueel to the offline system. Being drawn; the layout is proposed.
+description: What a bundle holds, and what sits on the USB stick that carries ritueel to the offline system. Not built yet; the layouts are proposed.
 ---
 
+import Figure from '../../site/src/components/Figure.astro';
 import Proposed from '../../site/src/components/Proposed.astro';
 
+Not built yet. The program does not exist; the pictures show how ritueel is designed to work. The file and directory names are proposed.
+
+## The bundle
+
+A bundle holds everything ritueel knows about one trust domain: plain files, and never a private key in clear ([the layout](/reference/bundle/#the-layout)). You write two places; ritueel writes the rest.
+
+<Figure name="bundle-folder">
+  A bundle is one directory of plain files for one trust domain. Its history of ceremonies, the [glossary](/glossary/)’s “ledger”, is write-once.
+</Figure>
+
 <Proposed>
-  This page is being drawn. The layout of the extra partition on the stick is a proposal, and that the offline system boots from such a stick is not yet proven on hardware.
+  The names inside a bundle are proposed in [the bundle reference](/reference/bundle/#the-layout). Two directory names are being changed, so the picture prints none for the history and the trust files.
 </Proposed>
+
+## The USB stick
+
+A root on cards or in a key file runs on the offline system, and the plan is carried there on a stick ([record 0016](/decisions/0016-several-bundles-share-one-pair-of-root-cards-and-the-bundle-keeps-a-card-inventory/#where-a-plan-runs)). A cloud root needs no stick: it runs on your workstation.
+
+The stick holds vanilla AirgapOS and one extra partition for ritueel: several versions of ritueel, several bundles and the encrypted key files. When you prepare a plan online, ritueel refreshes its copy on the stick and the plan records its digest, so the run uses the version that made the plan.
+
+<Figure name="usb-stick">
+  Key files sit beside the bundles, not inside: a bundle is made to be copied and shared; a key file is the root itself, even though it is encrypted.
+</Figure>
+
+<Proposed>
+  The directory names on the partition are a proposal, not yet in a record. The label and the file system are open.
+</Proposed>
+
+Still to be proven on hardware: that AirgapOS boots from such a stick and uses the extra partition.

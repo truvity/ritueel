@@ -7,7 +7,9 @@ import ideas from './ideas.mjs';
 import rootCard from './root-card.mjs';
 import dayToDayCard from './day-to-day-card.mjs';
 import serverCard from './server-card.mjs';
+import bundleFolder from './bundle-folder.mjs';
+import usbStick from './usb-stick.mjs';
 
-const list = [signIntermediate, rootCard, dayToDayCard, serverCard, ceremony, bindSubkeys, ideas];
+const list = [signIntermediate, rootCard, dayToDayCard, serverCard, ceremony, bindSubkeys, ideas, bundleFolder, usbStick];
 
 export const figures = Object.fromEntries(list.map((fig) => [fig.id, fig]));
