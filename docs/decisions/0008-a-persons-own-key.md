@@ -18,9 +18,10 @@
 11. A primary on hardware (a card) or in a cloud KMS is replaced on events, not by calendar: an advisory about the device or firmware that affects the key, deprecation of the algorithm, or loss or end of life of the card. At the yearly ceremony the holder reviews the advisories and records that they did. A primary in a KMS is not served for a person.
 12. A lost card is answered by the primary, which revokes the subkey and binds a new one. The primary's own revocation signatures are for the day the primary is lost.
 13. A replaced subkey is retired by a revocation with the reason "superseded", dated on the day of the switch, or by expiry; "compromised" is for compromise only. Leftover software-only subkey sets are left to expire. What verifiers do with the signatures of a retired subkey was measured on 2026-11-10 and is in [a dated research note](../research/openpgp-subkey-retirement-2026-11-10.md).
-14. The output is the person's public certificate as binary and armoured files, to import into gpg and upload to a hosting platform. No package is built. A person with no card can run a personal bundle for a drill, with the subkey in software, as a test.
+14. The output is the person's public certificate as binary and armoured files, to import into gpg. ritueel can send it to the listed keyservers and prints how to add it to a code host ([0011](0011-publishing-and-what-to-do-after-a-ceremony.md)). No package is built. A person with no card can run a personal bundle for a drill, with the subkey in software, as a test.
 15. A passkey for an employer's sign-in may live on a person's own day-to-day card.
 16. On a day-to-day card, anything done daily or more often (signing, SSH to non-production) has touch off and a PIN once per insertion. Rarer operations and production access need a touch. Every decryption needs a touch. The touch setting of each key is the holder's choice, and the guide says what each choice costs.
+17. Changing an identity is a ceremony like any other: adding and retiring a user ID of an OpenPGP primary is a new self-certification by the primary, and the old user ID gets a revocation that says it is no longer valid. The fingerprint and all trust stay. It is in the command line and the page's Make a plan, and for a person's own key in the milestone of a person's key (M3).
 
 ## Why
 
@@ -51,12 +52,15 @@ A person is the smallest case of the root ritual, so it shares the engine and co
 - **The primary lives until an event, whatever its store.** It is what most people do, but a copyable file ages unobserved and the replace path is exercised only by accident.
 - **Replace every primary at most every three years, whatever its store.** It is one rule, but it forces a new key on a card that cannot be copied, at every contact's cost.
 - **Replace a primary every six years.** It halves the cost, but the number is invented and no standard gives it.
+- **A new key and a new fingerprint for a new address.** The simplest, but the fingerprint and its trust would be lost.
+- **Retire the old user ID as compromised.** The usual wording, but a user ID no longer valid is not a compromise; the reason says what happened.
 - **Retire a replaced subkey as "compromised".** It is the simplest wording, but it states a compromise that did not happen, and verifiers treat it more harshly.
 - **The upstream go-openpgp-card as it is.** There is nothing to maintain, but it needs three fixes on firmware 5.8 and has had no functional commit since December 2024.
 
 ## Not yet proven or only proposed
 
-None.
+- **Proposed.** Stage two, the layout of card-born primaries: one on each root card, in the personal bundle's row; one published, the other a standby that it certifies; the old key vouches for the published one with an overlap (record 0007). Open: whether the standby is a second root or a second key of one root ([#18](https://github.com/truvity/ritueel/issues/18)).
+- **Proposed.** The names of the user ID commands (`personal userid change` in the research) are not decided; the plan certifies the new user ID, makes it primary and may revoke the old one ([#18](https://github.com/truvity/ritueel/issues/18)).
 
 ## Replaces
 
