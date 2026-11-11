@@ -1,17 +1,17 @@
 // Which files of docs/ the site publishes, and where each one lives. Plain Node, no dependency:
 // astro.config.mjs, src/content.config.ts, the scripts and the tests all import it.
 //
-// The list is site/published.txt. The decision records are published by the `decisions`
-// collection and src/pages/decisions, not by the list.
+// The list is site/published.txt. The decision records are working material like the reference
+// pages: they have no page, and their old addresses are redirects (site/old-records.txt).
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 export const GITHUB_DOCS = 'https://github.com/truvity/ritueel/blob/main/docs/';
 
-// Addresses of the site that are not a file of docs/ and are served as they are: the decisions
-// index, the live status page, the demo and the Worker's data. Nothing may redirect from them.
-export const OTHER_ADDRESSES = ['/decisions/', '/status/', '/demo/'];
+// Addresses of the site that are not a file of docs/ and are served as they are: the live status
+// page, the demo and the Worker's data. Nothing may redirect from them.
+export const OTHER_ADDRESSES = ['/status/', '/demo/'];
 
 /**
  * The repository root: the first directory above this file that has docs/decisions. A build may
@@ -76,7 +76,7 @@ export function publishedDocs(root = repoRoot()) {
     if (seen.has(line)) throw new Error(`${at}: ${line} is listed twice`);
     seen.add(line);
     if (line.startsWith('decisions/')) {
-      throw new Error(`${at}: ${line} is a decision record; the records are published without the list`);
+      throw new Error(`${at}: ${line} is a decision record; the records have no page, and are not listed`);
     }
     if (line.split('/').some((part) => part.startsWith('_'))) {
       throw new Error(`${at}: ${line} starts with an underscore; such files are not pages`);
@@ -89,9 +89,8 @@ export function publishedDocs(root = repoRoot()) {
 
 const cache = new Map();
 
-/** Is this docs file a page of the site: on the list, or a decision record. */
+/** Is this docs file a page of the site: on the list. A decision record never is. */
 export function isPublished(file, root = repoRoot()) {
-  if (isRecord(file)) return true;
   let set = cache.get(root);
   if (!set) cache.set(root, (set = new Set(publishedDocs(root))));
   return set.has(file);

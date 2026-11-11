@@ -18,7 +18,7 @@ for f in index.html 404.html sitemap-index.xml robots.txt \
          learn/custody-chain/index.html learn/chain-openpgp/index.html \
          how-it-works/index.html how-it-works/cards/index.html how-it-works/bundle-and-stick/index.html \
          glossary/index.html roadmap/index.html reference/hand-off-contract/index.html \
-         decisions/index.html status/index.html \
+         design/index.html status/index.html \
          demo/index.html demo/scheme.js demo/favicon.svg demo/THIRD-PARTY-LICENSES.md; do
   [ -s "$dist/$f" ] || bad "missing or empty: $f"
 done
@@ -119,33 +119,29 @@ fi
 # "Edit page" links: each one is a file in this checkout (and the page's own source).
 site/scripts/check-edit-links.mjs "$dist" || bad "an edit link does not point at its file in the repository (above)"
 
-# A decision record page exists for every record, and the template is not one.
-if [ -s "$dist/decisions/index.html" ]; then
-  if grep -q '0000-template' "$dist/decisions/index.html"; then bad "decisions/index.html lists the template"; fi
-  [ ! -e "$dist/decisions/0000-template" ] || bad "the template is built as a decision page"
-  for rec in docs/decisions/[0-9][0-9][0-9][0-9]-*.md; do
-    name=$(basename "$rec" .md)
-    [ "$name" = "0000-template" ] && continue
-    [ -s "$dist/decisions/$name/index.html" ] || bad "no page for the decision record $name"
-  done
-fi
-
-# Links in the decision pages, which the build's link validator cannot see: every in-site
-# link leads to a built page, and every #anchor to an id on it.
-site/scripts/check-anchors.mjs "$dist" || bad "a decision page links a missing page or anchor (above)"
+# The decision records have no page: nothing is built under decisions/ (the old addresses are
+# redirects, and the design page says what the records decide).
+[ ! -e "$dist/decisions" ] || bad "decisions/ is built: the records have no pages"
 
 # The redirects file reached the output. A rule that leads to a page of docs/ which is not published
-# is a 302 to that file on GitHub, and the file exists in this checkout; any other rule is a 301 to a
-# built page. A source is never a built page (a redirect is followed even where a page exists) and
+# is a 302 to that file on GitHub, and the file exists in this checkout; a rule that leads to an old
+# decision record is a 301 to that file at a fixed commit, and the file is named in site/old-records.txt;
+# any other rule is a 301 to a built page. A source is never a built page (a redirect is followed even where a page exists) and
 # no source appears twice.
 if [ -s "$dist/_redirects" ]; then
   seen=$'\n'
   gh=https://github.com/truvity/ritueel/blob/main/docs/
+  pinned='^https://github\.com/truvity/ritueel/blob/[0-9a-f]{40}/docs/decisions/(.+)$'
   while read -r from to code; do
     case "$from" in ''|'#'*) continue ;; esac
     case "$seen" in *$'\n'"$from"$'\n'*) bad "_redirects: $from is the source of two rules" ;; esac
     seen+="$from"$'\n'
     [ ! -e "$dist${from%/}/index.html" ] || bad "_redirects: $from is a built page, which a redirect would hide"
+    if [[ "$to" =~ $pinned ]]; then
+      [ "$code" = 301 ] || bad "_redirects: $from points to an old record at a commit and must be a 301, not a $code"
+      grep -qE "^[0-9]{4}-[a-z0-9-]+ ${BASH_REMATCH[1]//./\\.}\$" site/old-records.txt || bad "_redirects: $from points to ${BASH_REMATCH[1]}, which site/old-records.txt does not name"
+      continue
+    fi
     case "$to" in
       "$gh"*)
         [ "$code" = 302 ] || bad "_redirects: $from points to a file on GitHub and must be a 302, not a $code"

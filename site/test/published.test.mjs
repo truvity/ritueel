@@ -32,13 +32,13 @@ test('addresses', () => {
   assert.equal(githubUrl('learn/revoke.md'), 'https://github.com/truvity/ritueel/blob/main/docs/learn/revoke.md');
 });
 
-test('records are published, the template is not, and the list decides the rest', () => {
+test('records are not published, nor is the template, and the list decides the rest', () => {
   const root = tree(['index.mdx', 'learn/a.md', 'learn/b.md'], '# c\nindex.mdx\n\nlearn/a.md\n');
   try {
     assert.deepEqual(publishedDocs(root), ['index.mdx', 'learn/a.md']);
     assert.ok(isPublished('learn/a.md', root));
     assert.ok(!isPublished('learn/b.md', root));
-    assert.ok(isPublished('decisions/0001-a.md', root));
+    assert.ok(!isPublished('decisions/0001-a.md', root));
     assert.ok(!isPublished('decisions/0000-template.md', root));
   } finally {
     rmSync(root, { recursive: true, force: true });

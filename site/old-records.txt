@@ -1,0 +1,35 @@
+# The first eighteen decision records, rewritten on 2026-11-11 (docs/decisions/README.md, "The first
+# eighteen records"). They have no page on the site. Each old address, with and without the closing
+# slash, answers with a permanent redirect to the old file at the commit below, in one hop
+# (site/scripts/gen-redirects.mjs writes the rules into site/public/_redirects).
+#
+# `commit <full sha>`, then one line per old address: `<address stem> <file name at that commit>`.
+# The stem is the last part of /decisions/<stem>/. Eighteen stems are the file names; the others
+# are older names of a record, which already redirected to it.
+
+commit 1634be413c5e7d8d173e421928665ba30971a46e
+0001-scope-roots-and-transitions-systems-like-sluis-hold-intermediates 0001-scope-roots-and-transitions-systems-like-sluis-hold-intermediates.md
+0002-every-key-is-born-in-its-store-two-roots-one-holder-yearly-alternation 0002-key-custody-every-key-is-born-in-its-store-two-root-cards-or-one-kms-root-and-a-replica.md
+0002-key-custody-every-key-is-born-in-its-store-two-root-cards-or-one-kms-root-and-a-replica 0002-key-custody-every-key-is-born-in-its-store-two-root-cards-or-one-kms-root-and-a-replica.md
+0003-ceremonies-plan-confirm-reserve-sign-record-and-the-ritueel-commands 0004-ceremonies-plan-confirm-reserve-sign-verify-record.md
+0003-key-stores-and-the-card-layer 0003-key-stores-and-the-card-layer.md
+0004-ceremonies-plan-confirm-reserve-sign-verify-record 0004-ceremonies-plan-confirm-reserve-sign-verify-record.md
+0004-release-keys-primaries-on-the-roots-signing-subkeys-and-the-keyring-package 0006-release-keys-and-the-keyring-package.md
+0005-trust-products-the-root-list-the-ca-bundle-the-ssh-ca-key-list-and-the-trust-sequence 0005-trust-products-the-root-list-the-ca-bundle-the-ssh-ca-key-list-and-the-trust-sequence.md
+0006-release-keys-and-the-keyring-package 0006-release-keys-and-the-keyring-package.md
+0007-ritueel-teaches-and-its-tools-simplify-the-ceremonies 0007-ritueel-teaches-and-its-tools-simplify-the-ceremonies.md
+0008-the-operator-prepares-the-holder-and-ritueel-creates-attests-and-verifies-the-root 0008-the-operator-prepares-the-holder-and-ritueel-creates-attests-and-verifies-the-root.md
+0009-root-transitions-vouch-overlap-retire-and-revoke 0009-root-transitions-vouch-overlap-retire-and-revoke.md
+0010-readiness-is-made-at-birth-and-proved-by-a-drill 0010-readiness-is-made-at-birth-and-proved-by-a-drill.md
+0011-the-wizards-one-engine-three-faces-and-a-web-page-that-cannot-confirm-anything 0011-the-wizards-one-engine-three-faces-and-a-web-page-that-cannot-confirm-anything.md
+0011-the-wizards-one-engine-two-faces-and-a-web-page-that-cannot-confirm-anything 0011-the-wizards-one-engine-three-faces-and-a-web-page-that-cannot-confirm-anything.md
+0012-personal-openpgp-the-primary-offline-in-a-file-the-daily-subkey-on-a-card 0012-personal-openpgp-the-primary-offline-in-a-file-the-daily-subkey-on-a-card.md
+0013-the-kms-ceremony-role-is-the-only-signer-and-ritueel-asks-nothing-of-its-sign-in 0013-the-kms-ceremony-role-is-the-only-signer-and-ritueel-asks-nothing-of-its-sign-in.md
+0013-the-kms-ceremony-role-trusts-a-hardware-sign-in-session-tag 0013-the-kms-ceremony-role-is-the-only-signer-and-ritueel-asks-nothing-of-its-sign-in.md
+0014-staff-openpgp-primaries-sealed-in-sluis-subkeys-born-on-cards-ritueel-makes-the-card-ready-and-runs-the-delegation 0014-staff-openpgp-primaries-sealed-in-sluis-subkeys-born-on-cards-ritueel-makes-the-card-ready-and-runs-the-delegation.md
+0015-key-files-open-with-a-passkey-on-each-root-card-and-card-secrets-are-sealed-in-the-bundle 0015-key-files-open-with-a-passkey-on-each-root-card-and-card-secrets-are-sealed-in-the-bundle.md
+0015-key-files-open-with-a-passkey-on-each-root-card-and-card-secrets-are-sealed-in-the-directory 0015-key-files-open-with-a-passkey-on-each-root-card-and-card-secrets-are-sealed-in-the-bundle.md
+0016-several-bundles-share-one-pair-of-root-cards-and-the-bundle-keeps-a-card-inventory 0016-several-bundles-share-one-pair-of-root-cards-and-the-bundle-keeps-a-card-inventory.md
+0016-several-roots-share-one-pair-of-root-cards-and-the-directory-keeps-a-card-inventory 0016-several-bundles-share-one-pair-of-root-cards-and-the-bundle-keeps-a-card-inventory.md
+0017-a-persons-openpgp-key-in-two-stages-an-adopted-primary-first-then-card-born-primaries 0017-a-persons-openpgp-key-in-two-stages-an-adopted-primary-first-then-card-born-primaries.md
+0018-a-cloud-root-may-be-an-existing-key-that-ritueel-adopts 0018-a-cloud-root-may-be-an-existing-key-that-ritueel-adopts.md

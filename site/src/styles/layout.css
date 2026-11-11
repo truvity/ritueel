@@ -64,7 +64,7 @@ mobile-starlight-toc .dropdown {
    column sat off the screen with nothing to say so. Below 50rem each row is a block instead: the
    word, its meaning, and the two other cells under it with the names of their columns. The
    header row stays for screen readers. Only a table whose fourth column holds links is meant;
-   the decisions index (a date in its fourth column) keeps its own scroll. */
+   any other wide table keeps its own scroll. */
 @media (max-width: 50rem) {
   .sl-markdown-content > table:has(> tbody > tr > td:nth-child(4) a) {
     display: block;

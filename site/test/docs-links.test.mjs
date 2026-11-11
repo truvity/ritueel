@@ -9,7 +9,7 @@ import { docsLinksMdastPlugin, rewriteHref } from '../lib/docs-links.mjs';
 const GH = 'https://github.com/truvity/ritueel/blob/main/docs/';
 const REC = 'decisions/0007-ritueel-teaches.md';
 
-// A small docs tree: two published pages, two that are not, a record, the README and the template.
+// A small docs tree: four published pages, some that are not, a record (it has no page), the README and the template.
 const published = new Set(['index.mdx', 'learn/index.md', 'learn/what-is-a-root.md', 'glossary.md']);
 const files = [
   ...published,
@@ -31,7 +31,7 @@ before(() => {
     mkdirSync(dirname(join(tmp, 'docs', f)), { recursive: true });
     writeFileSync(join(tmp, 'docs', f), '# x\n');
   }
-  ctx = { docsRoot: join(tmp, 'docs'), isPublished: (f) => published.has(f) || f === REC };
+  ctx = { docsRoot: join(tmp, 'docs'), isPublished: (f) => published.has(f) };
 });
 after(() => rmSync(tmp, { recursive: true, force: true }));
 
@@ -47,8 +47,10 @@ const cases = [
   ['/learn/', REC, '/learn/'],
   ['/', 'learn/index.md', '/'],
   ['/glossary/#bundle', REC, '/glossary/#bundle'],
-  ['/decisions/0007-ritueel-teaches/', 'learn/index.md', '/decisions/0007-ritueel-teaches/'],
-  ['/decisions/0007-ritueel-teaches/#status', 'reference/cards.md', '/decisions/0007-ritueel-teaches/#status'],
+  ['/decisions/0007-ritueel-teaches/', 'learn/index.md', GH + 'decisions/0007-ritueel-teaches.md'],
+  ['/decisions/0007-ritueel-teaches/#status', 'reference/cards.md', GH + 'decisions/0007-ritueel-teaches.md#status'],
+  ['decisions/0007-ritueel-teaches.md#why', 'index.mdx', GH + 'decisions/0007-ritueel-teaches.md#why'],
+  // The old index has no file behind it any more: the address stays, and the redirect answers it.
   ['/decisions/', REC, '/decisions/'],
   ['/status/', REC, '/status/'],
   ['/demo/', REC, '/demo/'],

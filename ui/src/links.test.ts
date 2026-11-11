@@ -7,7 +7,7 @@ import { join, resolve } from 'node:path';
 // (learnPathOk). This test reads every made-up answer in fixtures/ and fails unless each
 // site path in it is a PUBLISHED page of the site and each #anchor is a heading of that page.
 // docs/ is the site's source, but the site publishes only the pages listed in
-// site/published.txt, and the decision records as an archive; the rest of docs/ stays in the
+// site/published.txt; the rest of docs/ (the decision records among it) stays in the
 // repository as working material and has no page. A link to such a page is a dead end too.
 
 const FIXTURES = new URL('./fixtures/', import.meta.url).pathname;
@@ -15,14 +15,12 @@ const DOCS = new URL('../../docs/', import.meta.url).pathname;
 const PUBLISHED_LIST = new URL('../../site/published.txt', import.meta.url).pathname;
 
 // The allowlist of the site, read as a plain file (no import across packages): one path
-// relative to docs/ for each line, `#` starts a comment. The decision records are not in it:
-// the site publishes all of them as an archive (PUBLISHED_RECORD).
+// relative to docs/ for each line, `#` starts a comment. The decision records are not in it.
 const PUBLISHED: string[] = readFileSync(PUBLISHED_LIST, 'utf8')
   .split('\n')
   .map((line) => line.trim())
   .filter((line) => line !== '' && !line.startsWith('#'));
 const PUBLISHED_SET = new Set(PUBLISHED);
-const PUBLISHED_RECORD = /^decisions\/\d{4}-.+\.md$/;
 
 // The fields the page turns into a link to the site (LearnLink in ui/Page.tsx):
 // Finding.learn_path and PlanStep.learn_path through FindingCard and Plan, and
@@ -95,7 +93,7 @@ function pageFile(path: string): string | undefined {
   const candidates = rel === '' ? ['index.md', 'index.mdx'] : [`${rel}.md`, `${rel}.mdx`, `${rel}/index.md`, `${rel}/index.mdx`];
   const root = resolve(DOCS);
   const file = candidates
-    .filter((c) => PUBLISHED_SET.has(c) || (PUBLISHED_RECORD.test(c) && !c.startsWith('decisions/0000-')))
+    .filter((c) => PUBLISHED_SET.has(c))
     .map((c) => resolve(DOCS, c))
     .find((c) => c.startsWith(root + '/') && existsSync(c));
   // A draft page is not published.
@@ -217,7 +215,7 @@ describe('the demo links only to pages the site has', () => {
     expect(pageFile('/reference/cli/'), 'is a page of the repository, not of the site').toBeUndefined();
     expect(pageFile('/reference/cards/'), 'is a page of the repository, not of the site').toBeUndefined();
     expect(pageFile('/reference/hand-off-contract/')).toBeDefined();
-    expect(pageFile('/decisions/0018-a-cloud-root-may-be-an-existing-key-that-ritueel-adopts/')).toBeDefined();
+    expect(pageFile('/design/')).toBeDefined();
     expect(pageFile('/learn/no-such-page/')).toBeUndefined();
     // The site serves /learn/, not /learn/index/, and no path that climbs out of docs/.
     expect(pageFile('/learn/index/')).toBeUndefined();

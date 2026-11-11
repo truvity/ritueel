@@ -66,7 +66,7 @@ export default defineConfig({
       routeMiddleware: './src/route-middleware.ts',
       // The menu is six entries: only the target (docs/contributing/pages.md, "What is published").
       // The pages are those of site/published.txt; a slug that is not on the list fails the build.
-      // The hand-off contract is not in the menu; the decisions index links it.
+      // The hand-off contract is not in the menu; the design page links it.
       sidebar: [
         {
           label: 'Learn',
@@ -107,19 +107,19 @@ export default defineConfig({
           // The status page is built from the repository and the issues (src/pages/status.astro).
           items: [{ label: 'Status', link: '/status/' }, { slug: 'roadmap' }],
         },
-        { label: 'Decisions', link: '/decisions/' },
+        { label: 'The design', slug: 'design' },
       ],
       plugins: [
         // Fails the build on a broken internal link or anchor of a published page; a link to a page
         // that is not published is a link to its file on GitHub before the validator reads it
-        // (docsLinks above). The decision pages and the status
-        // page are generated in src/pages (custom pages the validator cannot see); the demo of the local
-        // page (/demo/) is built by `just ui-demo` into public/demo, so no page of the site is its source;
-        // site/scripts/check-anchors.mjs checks the links of the decision pages in the built site
-        // instead, and site/scripts/check-built.sh checks that the status page is built.
+        // (docsLinks above). The decision records have no page, so a left-over link to one of their
+        // addresses fails the build. The status page is generated in src/pages (a custom page the
+        // validator cannot see); the demo of the local page (/demo/) is built by `just ui-demo` into
+        // public/demo, so no page of the site is its source; site/scripts/check-built.sh checks that
+        // the status page is built.
         starlightLinksValidator({
           errorOnRelativeLinks: false,
-          exclude: ['/decisions/', '/decisions/**', '/status/', '/demo/', '/demo/**'],
+          exclude: ['/status/', '/demo/', '/demo/**'],
         }),
       ],
     }),
