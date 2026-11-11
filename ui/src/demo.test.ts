@@ -342,7 +342,7 @@ describe('the four states of a read', () => {
   });
 });
 
-describe('the words of the owner stay', () => {
+describe('the words of the maintainer stay', () => {
   const HERE = new URL('./', import.meta.url).pathname;
   const OLD_WORDS = /folder|ceremony machine|offline machine|\bdaily\b|pending\/|hardware.key sign-in/i;
   function files(dir: string, ext: RegExp): string[] {
@@ -350,7 +350,7 @@ describe('the words of the owner stay', () => {
       e.isDirectory() ? files(`${dir}/${e.name}`, ext) : ext.test(e.name) ? [`${dir}/${e.name}`] : [],
     );
   }
-  it('no fixture or screen uses a word the owner replaced', () => {
+  it('no fixture or screen uses a word the maintainer replaced', () => {
     const hits: string[] = [];
     for (const f of [...files('fixtures', /\.json$/), ...files('screens', /\.tsx$/), ...files('lib', /\.ts$/), ...files('ui', /\.tsx$/)]) {
       // "sub-folder" is the word the ledger's own page uses for ledger/<ceremony>/.
