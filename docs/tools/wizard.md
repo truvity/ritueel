@@ -25,7 +25,7 @@ Some people prefer a page to a terminal, and a ceremony is easier to follow when
 | Collect choices: which root, which request, which store. | Ask for, receive or show a PIN, a passphrase or a key. |
 | Show progress, the record and what outsiders will see. | Load anything from outside your computer. |
 
-The confirmation of every irreversible step is given in the terminal, or by the touch on the card, never by a click in the page. The page shows the plan and its digest, and ends with a preview and the command to run, `ritueel run PLAN --confirm DIGEST`. The program saves the plan file for you in your directory (`ledger/<ceremony>/plan.json`), so that you can boot the offline system and run it there; only a card root or a real software root needs that. A cloud root runs from your workstation, and a test root may too. You give the confirmation in the terminal.
+The confirmation of every irreversible step is given in the terminal, or by the touch on the card, never by a click in the page. The page shows the plan and its digest, and ends with a preview and the command to run, `ritueel run PLAN --confirm DIGEST`. The program saves the plan file for you in your directory (`ledger/<ceremony>/plan.json`), so that you can boot the offline system and run it there; only a card root or a real software root needs that. A cloud root runs from your workstation, and a test root may too, or it may use a rehearsal card. You give the confirmation in the terminal.
 
 ## Security rules
 
