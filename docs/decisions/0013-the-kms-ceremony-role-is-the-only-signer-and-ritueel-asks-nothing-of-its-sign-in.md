@@ -9,7 +9,7 @@
 
 The earlier design of this record (2026-11-06) gated the role on a session tag that a federated identity provider sets after a sign-in with a hardware key, because AWS does not set `aws:MultiFactorAuthPresent` for a federated sign-in. It asked a lot of the operator: a provider with three obligations, a trust policy that names only that provider, no role chaining, and a dry-run pre-check.
 
-On 2026-11-11 the maintainer dropped the hardware-key requirement, and with it an organisation-policy lock on the keys ("Oh, just drop it. Just AWS KMS Key without additional protection"). Neither is a rule of ritueel.
+The maintainer dropped the hardware-key requirement, and with it an organisation-policy lock on the keys. Neither is a rule of ritueel.
 
 ## Decision
 
@@ -30,10 +30,10 @@ On 2026-11-11 the maintainer dropped the hardware-key requirement, and with it a
 
 ## Roads not taken
 
-- **Keep the hardware-key session tag (the earlier design).** The only proof that a person with a hardware key is present, but it needs an identity provider that meets three obligations; the maintainer dropped it (2026-11-11).
-- **Drop the condition.** The simplest. The earlier text weighed it on 2026-11-06 and refused it as too weak for the root of a trust chain; the maintainer chose it (2026-11-11).
+- **Keep the hardware-key session tag (the earlier design).** The only proof that a person with a hardware key is present, but it needs an identity provider that meets three obligations; the maintainer dropped it (see the Decision).
+- **Drop the condition.** The simplest. The earlier text weighed it on 2026-11-06 and refused it as too weak for the root of a trust chain; the maintainer chose it (see the Decision).
 - **Gate on `aws:MultiFactorAuthPresent`.** The natural condition, but AWS does not set it for a federated sign-in (read 2026-11-06, [IAM condition keys](https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_condition-keys.html)), so most operators could never pass it.
-- **An organisation-policy lock on the keys.** A second wall around the key policy, but it needs the operator's organisation to carry it; the maintainer dropped it (2026-11-11).
+- **An organisation-policy lock on the keys.** A second wall around the key policy, but it needs the operator's organisation to carry it; the maintainer dropped it (see the Decision).
 - **A dedicated IAM user with a hardware MFA device.** `aws:MultiFactorAuthPresent` would work unchanged, but it adds a long-lived principal with an access key and a second device to keep.
 - **IAM Identity Center as the provider.** People already sign in there, but its permission sets and attribute mapping stop it from carrying the tag (read 2026-11-06).
 - **`aws:MultiFactorAuthPresent` with `BoolIfExists`.** It would pass federated sessions, but only because the key is absent, so it would also pass a session with no second factor.

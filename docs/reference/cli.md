@@ -33,7 +33,7 @@ sidebar:
 | `ritueel card adopt` | Adopts a card: replaces the management key and the PUK with random ones, seals them in the directory, and registers the card in the inventory. The holder has set the PIN ([root cards](/reference/cards/), [ADR 0015](/decisions/0015-key-files-open-with-a-passkey-on-each-root-card-and-card-secrets-are-sealed-in-the-directory/#card-secrets)). | Yes |
 | `ritueel card check` | The read-only check of a card against the built-in layout. It writes `cards.yaml` and `cards/NAME.yaml` and changes nothing on the card ([root cards](/reference/cards/#what-is-checked-on-a-card)). | No |
 | `ritueel wizard [--web]` | The guided mode, which asks line by line in the terminal; with `--web`, also a read-only page served on localhost. The page cannot confirm anything; it ends with a preview and the command to run, and can save the plan file ([the wizard](/reference/wizard/)). The page calls the same API as the commands; the process writes the saved plan where `--plan-only` writes it. The loopback listener exists only while `--web` runs. | Yes |
-| `ritueel stop` | Ends the ritueel process of this directory, if one runs, and exits 0 also when none runs. The process otherwise ends by itself after 15 minutes without a call ([the process](/reference/wizard/#the-ritueel-process)). | No |
+| `ritueel stop` | Proposed. Ends the ritueel process of this directory, if one runs, and exits 0 also when none runs. The process otherwise ends by itself after an idle time ([the process](/reference/wizard/#the-ritueel-process)). | No |
 
 The verbs of a transition map onto the commands: *create* and *vouch* are `root add`, *overlap* is a state and not a command, *supersede* is `root retire`, and *revoke* is `root revoke`.
 

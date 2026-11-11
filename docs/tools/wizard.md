@@ -13,7 +13,7 @@ Some people prefer a page to a terminal, and a ceremony is easier to follow when
 
 ## What it is
 
-- **A face of the same engine.** The command line, the guided mode and the page are three faces of one engine, and the command line and the page use one API of one ritueel process. The wizard asks the ceremony engine for the plan and shows it. It does not sign, verify or record by any code of its own ([principle 14](/principles/#the-principles)). The process behind them is started by the first command that needs it, is not a system service, and ends by itself when it is idle or on `ritueel stop` ([the process](/reference/wizard/#the-ritueel-process)).
+- **A face of the same engine.** The command line, the guided mode and the page are three faces of one engine, and the command line and the page use one API of one ritueel process. The wizard asks the ceremony engine for the plan and shows it. It does not sign, verify or record by any code of its own ([principle 14](/principles/#the-principles)). The process behind them is started by the first command that needs it, and is not a system service ([the process](/reference/wizard/#the-ritueel-process)).
 - **In the terminal, or in a browser.** The guided mode asks line by line in plain text, so a screen reader and a log both work; there is no full-screen interface, and the program is not installed as a service. The page is a read-only view served by the program on your own computer, only while you use it, beside the guided mode.
 - **The user is in charge.** Nothing happens without your confirmation. The PIN is typed at the terminal and goes to the card, and the touch is a touch on the card. The page never sees either.
 
@@ -25,7 +25,7 @@ Some people prefer a page to a terminal, and a ceremony is easier to follow when
 | Collect choices: which root, which request, which store. | Ask for, receive or show a PIN, a passphrase or a key. |
 | Show progress, the record and what outsiders will see. | Load anything from outside your computer. |
 
-The confirmation of every irreversible step is given in the terminal, or by the touch on the card, never by a click in the page. The page shows the plan and its digest, and ends with a preview and the command to run, `ritueel run PLAN --confirm DIGEST`. The program saves the plan file for you in your directory (`ledger/<ceremony>/plan.json`), so that you can boot the offline system and run it there; only a card root or a real software root needs that. A cloud root runs from your workstation, and a test root may too, or it may use a rehearsal card. You give the confirmation in the terminal.
+The confirmation of every irreversible step is given in the terminal, or by the touch on the card, never by a click in the page. The page shows the plan and its digest, and ends with a preview and the command to run, `ritueel run PLAN --confirm DIGEST`. It can save the plan file, so that you can boot the offline system and run it there; only a card root or a real software root needs that. A cloud root runs from your workstation, and a test root may too, or it may use a rehearsal card. You give the confirmation in the terminal.
 
 ## Security rules
 
