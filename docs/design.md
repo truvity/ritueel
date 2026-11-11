@@ -68,7 +68,7 @@ Decided in [0002](decisions/0002-where-a-key-lives.md).
 ## Where a root is used
 
 - A copyable key is used only in the offline system.
-- A key that cannot be copied may be used on the workstation, with four conditions (for a cloud key see Proposed or open): a touch for every signature; the count stated in the plan; no retry of a failed touch; and a check against the plan on a second device.
+- A key that cannot be copied may be used on the workstation, with four conditions: a touch for every signature; the count stated in the plan; no retry of a failed touch; and a check against the plan on a second device. The touch is for a root on cards only: a cloud key has no touch, and for a cloud root the typed digest and the role session stand; the other three conditions apply to both kinds.
 - Every record says where the ceremony ran.
 - The limit: a card has no screen, so one tricked touch gives one signature that no card logs.
 
@@ -136,7 +136,7 @@ Decided in [0009](decisions/0009-release-keys-and-the-keyring.md).
 ## Proposed or open
 
 - The port number 7488 ([0010](decisions/0010-the-engine-the-process-and-the-page.md#not-yet-proven-or-only-proposed)) and the exact file names in a bundle ([0006](decisions/0006-bundle-history-and-trust-files.md#not-yet-proven-or-only-proposed)).
-- How the touch reads for a cloud root, and which conditions the program enforces ([0005](decisions/0005-a-ceremony-and-where-it-runs.md#not-yet-proven-or-only-proposed)).
+- Which conditions the program enforces ([0005](decisions/0005-a-ceremony-and-where-it-runs.md#not-yet-proven-or-only-proposed)).
 - One passkey credential for each bundle on a shared card ([0002](decisions/0002-where-a-key-lives.md#not-yet-proven-or-only-proposed)).
 
 ## What comes later
