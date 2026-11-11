@@ -1,7 +1,9 @@
 /* Page layout: one wide column beside the left sidebar.
 
-   THE WIDE LAYOUT STARTS AT 100rem (1600px). It is the only breakpoint of this file, and every
-   @media (min-width: 100rem) below is that same one (a media query cannot read a variable).
+   THE WIDE LAYOUT STARTS AT 100rem (1600px). It is the only breakpoint of the wide layout, and
+   every @media (min-width: 100rem) below is that same one (a media query cannot read a variable).
+   Nothing is written for "just under" it: the rules below it are the default, and the rules from
+   it are in the min-width blocks, so no width falls between the two.
    Below it a page is as it was: the text column beside the left sidebar, and "On this page" as
    the dropdown at the top of the content. From it:
    - "On this page" is a column of 18.75rem fixed at the right of the window (PageSidebar.astro),
@@ -9,7 +11,19 @@
      without, so the text column does not move sideways between pages;
    - a page that asks for `flow: rows` in its front matter shows its sections two by two
      (lib/parts.mjs wraps them; see "Sections in rows" below).
-   The home page (a splash page, no sidebar) is not a documentation page and keeps its own layout. */
+   The home page (a splash page, no sidebar) is not a documentation page and keeps its own layout.
+
+   WHAT THIS FILE RELIES ON IN STARLIGHT (0.42.10; look at each after an update of @astrojs/starlight,
+   and read the same list in components/PageSidebar.astro and components/TwoColumnContent.astro):
+   the `data-has-toc` and `data-has-sidebar` attributes on <html>; `--sl-mobile-toc-height`, which
+   Starlight sets to 0 from 72rem; the header's private variable `--__toc-width` and its fallback
+   `--sl-sidebar-width`; `--sl-sidebar-pad-x`, `--sl-nav-height` and
+   `--sl-color-hairline`; the classes `.sl-heading-wrapper.level-h2` and `.starlight-aside`.
+
+   Known limits, kept on purpose and written in docs/contributing/pages.md: between 1600 and about
+   1815px the text column is narrower than 72rem, because the sidebar and the reserved 300px take
+   600px of the window; a list of more than about 30 entries does not fit a window under 975px high,
+   and Starlight's script marks the current heading without scrolling the list. */
 
 :root {
   /* The content column. Starlight's default is 45rem, which wraps a wide table
@@ -20,23 +34,22 @@
      whole column. */
   --ritueel-prose-width: 75ch;
   /* Starlight sizes the page header's grid for a right-hand column (--__toc-width, its own
-     variable). Below 100rem there is none. */
+     variable). Below 100rem there is none; from it, see the min-width block. */
   --__toc-width: 0rem;
 }
 
-/* BELOW 100rem: the dropdown. Starlight drops its height from the layout at 72rem, where it has
-   the right-hand column instead; here the dropdown is there up to 100rem, so the content starts
-   below it and anchors scroll clear of it. */
-@media (max-width: 99.99rem) {
-  :root[data-has-toc] {
-    --sl-mobile-toc-height: 3rem;
-  }
-  html:root[data-has-toc] {
-    scroll-padding-top: calc(1.5rem + var(--sl-nav-height) + var(--sl-mobile-toc-height));
-  }
-  .ritueel-toc-rail {
-    display: none;
-  }
+/* BELOW 100rem (the default): the dropdown. Starlight drops its height from the layout at 72rem,
+   where it has the right-hand column instead; here the dropdown is there up to 100rem, so the
+   content starts below it and anchors scroll clear of it. The column of "On this page" is hidden
+   until 100rem. */
+:root[data-has-toc] {
+  --sl-mobile-toc-height: 3rem;
+}
+html:root[data-has-toc] {
+  scroll-padding-top: calc(1.5rem + var(--sl-nav-height) + var(--sl-mobile-toc-height));
+}
+.ritueel-toc-rail {
+  display: none;
 }
 
 /* Line the dropdown button and its panel up with the content column's left edge
@@ -59,10 +72,14 @@ mobile-starlight-toc .dropdown {
 /* FROM 100rem: the column. Starlight's own rules for its right-hand column, at this site's
    breakpoint. */
 @media (min-width: 100rem) {
+  :root[data-has-toc] {
+    --sl-mobile-toc-height: 0rem;
+  }
   .ritueel-toc-bar {
     display: none;
   }
   .ritueel-toc-rail {
+    display: block;
     position: fixed;
     top: 0;
     inset-inline-end: 0;
@@ -79,10 +96,12 @@ mobile-starlight-toc .dropdown {
   :root[data-has-sidebar] .ritueel-main {
     padding-inline-end: var(--sl-sidebar-width);
   }
-  /* The header's grid was sized for a right-hand column of this width (Starlight's default
-     when --__toc-width is not set), so the search box lines up with the left edge of the content column. */
+  /* Starlight's header counts --__toc-width three times for the right-hand column (Header.astro:
+     once for the column and twice for its padding). The column here is --sl-sidebar-width with no
+     padding, so a third of it makes the header's grid agree and the search box lines up with the
+     left edge of the content column (measured: 377px at 1920 and 517px at 2200, both level with it). */
   :root[data-has-sidebar] {
-    --__toc-width: initial;
+    --__toc-width: calc(var(--sl-sidebar-width) / 3);
   }
 }
 
@@ -106,6 +125,9 @@ mobile-starlight-toc .dropdown {
    its size). The heading is the first thing in its part, so the part carries that space. */
 .sl-markdown-content > .ritueel-part {
   margin-top: calc(1.5 * var(--sl-text-h2));
+}
+.sl-markdown-content > .ritueel-part:first-child {
+  margin-top: 0;
 }
 
 /* Text inside a note box has the same measure as other running text: the box is as wide as that
@@ -170,7 +192,11 @@ mobile-starlight-toc .dropdown {
    `##` heading and what follows it, up to the next one, in <section class="ritueel-part">, while
    the page is built; here the parts are laid out two by two, left to right and then down, in the
    order of the source. A part is never split. The text before the first heading spans both
-   columns. Below 100rem the sections are blocks, one under the other, as on any page. */
+   columns. Below 100rem the sections are blocks, one under the other, as on any page.
+   Two things follow from reading left to right. A row is as high as its taller part, so the
+   shorter one leaves a gap under it. And Starlight's script marks the current heading in the
+   order of the source, so with two parts side by side the mark follows the left one; every entry
+   of the list is still a working link. */
 @media (min-width: 100rem) {
   .sl-markdown-content:has(> .ritueel-part) {
     display: grid;

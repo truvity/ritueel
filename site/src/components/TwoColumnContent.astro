@@ -6,6 +6,10 @@
 // every documentation page, whether the page has a list or not, so the text does not move
 // between pages. The content column itself is left to ContentPanel (centred in the space
 // that is left).
+// Copied from @astrojs/starlight 0.42.10, dist/components/TwoColumnContent.astro; on an update,
+// diff it against the new original (PageSidebar.astro is the other file). It relies on the
+// `right-sidebar` slot that Starlight's Page.astro fills. The CSS that relies on Starlight's
+// internals is listed at the top of styles/layout.css.
 // Upgrade note: the default component also positions the right column and narrows the main
 // pane for it, with its own breakpoint (72rem); none of that applies here.
 ---
