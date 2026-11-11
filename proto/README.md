@@ -6,7 +6,7 @@ The API between ritueel's local page (`ui/`) and the ritueel process, written in
 
 The process is one long-running background process, started on demand, that serves one bundle (the directory with a fixed structure that holds everything ritueel knows about one trust domain). It is the one described by [record 0010](../docs/decisions/0010-the-engine-the-process-and-the-page.md). It serves this API on a Unix socket for the command line, and the page's part of it, the reads and `SavePlan`, on the loopback address for the browser while the page is in use, because a browser cannot open a Unix socket. A call that confirms or runs a ceremony is never registered on the loopback door: the digest typed in the terminal arrives over the socket. Same API, not the same trust: the loopback listener binds 127.0.0.1 on a random port, lets a request in only with the one-time token of the session (then a cookie), checks the Host header exactly, for a POST checks Sec-Fetch-Site or Origin, and ends after 15 minutes without a request ([record 0010](../docs/decisions/0010-the-engine-the-process-and-the-page.md), rules 6 to 12). Other programs of the same user can reach that port while the page is in use, so it is trusted no more than any other web request.
 
-**No call takes or returns a secret, a PIN or a passphrase.** There is no field for one, and none will be added. The page is a view: it never confirms a ceremony. `ritueel --dir BUNDLE run PLAN --confirm DIGEST` happens in the terminal, on the offline system or on your workstation. The only value that goes from the page to the process, other than choices from a fixed list, is the digest of a plan, which is public.
+**No call takes or returns a secret, a PIN or a passphrase.** There is no field for one, and none will be added. The page is a view: it never confirms a ceremony. `ritueel --dir BUNDLE run PLAN --confirm DIGEST` happens in the terminal, in the offline system or on your workstation. The only value that goes from the page to the process, other than choices from a fixed list, is the digest of a plan, which is public.
 
 ## What is here
 
@@ -31,21 +31,21 @@ The Go side comes with the program: `protoc-gen-go` and `protoc-gen-connect-go` 
 | `InspectService` | `GetSummary` | `GetSummaryRequest` | `GetSummaryResponse` (bundle, as_of, history, due items, finding counts, counts, pending plans, setup steps) | no |
 | | `ListFindings` | `ListFindingsRequest` (min severity) | `ListFindingsResponse` (`Finding`: reason, severity, subject, evidence, fix command, fix intention, learn path) | no |
 | | `ListRoots` | `ListRootsRequest` | `ListRootsResponse` (`Root`: label A or B, keys and card, `OpenPgpCertificate` with primary, user IDs, `SubkeySet` by year and card, `Subkey`; `CloudKey`; `DelegatedKey`) | no |
-| | `ListCeremonies` | `ListCeremoniesRequest` | `ListCeremoniesResponse` (`HistoryStatus` and `Ceremony`, newest first) | no |
+| | `ListCeremonies` | `ListCeremoniesRequest` | `ListCeremoniesResponse` (`HistoryStatus` and `Ceremony`, newest first, each with the `run_place` where it ran) | no |
 | | `ListCards` | `ListCardsRequest` | `ListCardsResponse` (`Card`: `PivApplication` in six `PivRow`s of four `Slot`s, `OpenPgpApplication`, `Fido2Application`) | no |
 | | `ListTrustFiles` | `ListTrustFilesRequest` | `ListTrustFilesResponse` (`TrustFile` with its check) | no |
 | `PlanService` | `ListIntentions` | `ListIntentionsRequest` | `ListIntentionsResponse` (`IntentionOption`: applicable or greyed with a reason, recommended) | no |
-| | `StartPlan` | `StartPlanRequest` (intention, due ids, finding ids, target, `Answer`s) | `StartPlanResponse` (`Question`s, or the `Plan` with its `run_place`, or a refusal) | no (builds in memory) |
+| | `StartPlan` | `StartPlanRequest` (intention, due ids, finding ids, target, `Answer`s) | `StartPlanResponse` (`Question`s, or the `Plan` with its `run_place`, `signing_store`, `signature_count`, `touch_count` and `test_root`, or a refusal) | no (builds in memory) |
 | | `SavePlan` | `SavePlanRequest` (plan id, digest) | `SavePlanResponse` (bundle path, path inside the bundle, digest, `written`, notice, run command, what to copy and bring, file preview) | **yes**, one inert file; the demo writes nothing |
 
 Enums, all with an `_UNSPECIFIED = 0` first value and the enum name as prefix:
-`Severity`, `Store`, `SubjectKind`, `Intention`, `ChainState` (common);
+`Severity`, `Store`, `RunPlace`, `SubjectKind`, `Intention`, `ChainState` (common);
 `DueKind`, `RootKind`, `RootState`, `RootKeyKind`, `DelegatedKeyKind`,
 `DelegatedKeyState`, `SubkeyUsage`, `SubkeyState`, `RevocationReason`,
 `SubkeyOrigin`, `CeremonyKind`, `CeremonyOutcome`, `CardKind`, `CardState`,
 `ApplicationUse`, `SlotState`, `SlotUse`, `PinRule`, `TouchRule`,
 `TrustFileKind`, `TrustCheckResult` (inspect); `QuestionKind`, `Requirement`,
-`BundleChangeAction`, `RunPlace` (plan).
+`BundleChangeAction` (plan).
 
 ## Which calls feed which screen
 
@@ -81,7 +81,11 @@ Enums, all with an `_UNSPECIFIED = 0` first value and the enum name as prefix:
    jobs; `Root.card_row` is 1 to 6 as drawn, so roots start at row 2, and a root
    owns one row on its card. A slot's
    `SlotState` is empty, used, reserved (planned, not born) or spare (a row no root
-   owns yet); on a day-to-day card all PIV slots are empty, not spare.
+   owns yet); on a day-to-day card all PIV slots are empty, not spare. A row that
+   belongs to another bundle of the same holder (a shared pair of root cards) is
+   declared in the card's file and arrives as used slots with `SLOT_USE_OTHER_BUNDLE`
+   and no `public_key_sha256`; an occupied row nobody declared is a used slot with no
+   use, and a finding. The value and the finding are proposed (record 0003, issue 11).
 6. **Counting days.** Use `as_of` from `GetSummary` as "now". `DueItem.severity`
    is already computed (notice at 60 days, alert at 30, critical at 14).
 7. **The command is shown, never run.** `fix_command`, `equivalent_command`
@@ -101,13 +105,20 @@ Enums, all with an `_UNSPECIFIED = 0` first value and the enum name as prefix:
    place a secret could be typed. `ListIntentions` marks goals that do not apply,
    with the reason; show them greyed.
 9. **Nothing happens here.** A plan's steps are what `ritueel run` does where the
-   plan says: `Plan.run_place` is the offline system (a root on cards, or a real
-   software root in a key file) or the workstation (a cloud root, used in a session of
-   its ceremony role: ritueel asks nothing of how the holder signed in, so there is no
-   hardware-key step). The USB-stick fields of the answer
-   (what to copy and bring) are empty on the workstation, and the page then shows
-   no stick step. A `Requirement` says that a card, a PIN, a touch or a
-   passkey unlock is needed there; the PIN is never in the page. `SavePlan`
+   plan says. `Plan.run_place` follows record 0005, rules 17 and 18: a key that can be
+   copied (a key file) is used only in the offline system (vanilla AirgapOS, started
+   from the ceremony USB stick), and a key that cannot be copied (a root on cards, a
+   cloud root) may be used on the workstation under four conditions: a touch for every
+   signature, the number of signatures stated in the plan, no retry of a failed touch,
+   and the result checked against the plan on a second device. The plan carries what the
+   page needs to say so: `signing_store` (the page cannot tell a key file from a cloud
+   key by the other fields), `signature_count` (the sum of the steps' counts),
+   `touch_count` (0 for a cloud key, whose touch condition is only proposed, issue 30)
+   and `test_root`. The stick fields of the answer (what goes on the stick, what to
+   bring) are empty on the workstation, and the page then shows no stick step. A
+   `Requirement` says that a card, a PIN, a touch or a passkey unlock is needed there;
+   the PIN is never in the page.
+   `SavePlan`
    in the demo answers `written: false` with a notice and a file preview: show
    the preview as "what saving would write". The real call rebuilds the plan, refuses a
    digest that is not the rebuilt plan's, and writes canonical JSON (RFC 8785); its
@@ -139,5 +150,6 @@ Enums, all with an `_UNSPECIFIED = 0` first value and the enum name as prefix:
     server of a requester system and signs for its services. It is an ordinary card,
     not a hardware security module product; ritueel lists it and only ever reads it, so
     it has no adoption, no sealed file and no layout check. A rehearsal card never holds
-    a real key, may be reset, and serves only a test root. The demo shows no server
-    card.
+    a real key, may be reset, and serves only a test root. A root card holds roots by
+    row and may serve up to four bundles of one holder. The demo shows a shared pair
+    (the personal example) and no server card.
