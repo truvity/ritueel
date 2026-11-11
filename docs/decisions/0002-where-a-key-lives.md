@@ -24,12 +24,12 @@
 17. Accepted limit: whoever holds one root card and its PIN, or the cloud root's role, can sign things outsiders trust until that root is revoked and the update reaches them; standard tools cannot require m-of-n. A stolen card without its PIN locks after three tries. Whoever will hold a cloud root's renewal role (later, M7) can only keep alive what the bundle holds, past its lapse, until a ceremony revokes it. Whoever tricks the holder into one extra touch on the workstation gets one signature that no card logs. ritueel shows this at init.
 18. Succession is the holder's organisational duty; ritueel reminds and does not enforce.
 19. The break-glass SSH CA is kept as one of a root's key kinds.
-20. A software key file opens by default with a passkey on each root card: a CTAP2 hmac-secret credential that stores nothing on the card, with user verification required. It unwraps the private half of an age key, the unlock key. Any one root card is enough. No PIV slot is used.
+20. A software key file opens by default with a passkey on each root card named to open it: a CTAP2 hmac-secret credential that stores nothing on the card, with user verification required. It unwraps the private half of an age key, the unlock key. Any one is enough; a file may name more than two. No PIV slot is used.
 21. A key file is an age file encrypted to two recipients, the unlock key's public half and a recovery recipient. Encrypting needs no card.
-22. Every card-opened key file has a recovery key: an age identity in a passphrase-protected file, apart from the cards; file and passphrase never sit together. A password manager holds a backup of the encrypted key file and the recovery passphrase, never a usable key.
+22. Every card-opened key file has a recovery key: an age identity in a passphrase-protected file, apart from the cards. Its passphrase, the break-glass, may live in a password manager, never beside the file it protects. A password manager holds a backup of the encrypted key file and the recovery passphrase, never a usable key.
 23. A passphrase alone also opens a key file, for a holder without cards. It holds only the passphrase recipient, because age v1 requires an scrypt stanza to be the only stanza in the header.
 24. The fallback is a key-agreement key in PIV slot 9d of each root card, made only if passkey unlocking cannot be used. If the proof of the passkey way fails, 9d is the way and nothing else here changes. It spends slot 9d and the PIV PIN that also guards the root keys.
-25. A synced passkey, unlocking inside the local page, and a day-to-day card for a root-level key file are not supported as unlockers.
+25. A synced passkey, for now a password-manager passkey or unlock item, unlocking inside the local page, and a day-to-day card for a root-level key file are not supported as unlockers.
 26. The two root cards may also unlock software keys and sealed backups, in ceremonies only.
 27. Opening a key file with a passkey must work in the static (no-cgo) build.
 28. Each bundle has its own unlock key and recovery key.
@@ -60,7 +60,7 @@ A card or KMS key cannot be copied, so a calendar would force a new anchor on ev
 - **The age key in PIV slot 9d as the default.** No second protocol, but it spends the slot and the PIV PIN that guard the root keys; kept as the fallback.
 - **A card secret that wraps each file directly, with no age key between.** No key in memory, but encrypting would need a card present, and there is no standard format.
 - **Keeping the PIV age key first and the passkey as a later step.** The research advice, overruled by the maintainer's preference for the passkey as default.
-- **A synced passkey as the unlocker.** Easy to have, but it puts a root-level key file behind a cloud account.
+- **A synced or password-manager passkey as the unlocker.** Easy, but it puts a root-level key file behind a cloud account: the recovery passphrase in the manager gives what it would add, and the offline system has no network.
 - **Unlocking inside the local page.** Friendly, but the browser would hand the secret to the page's script; the page never receives a secret, and the offline system has no browser.
 - **A day-to-day card as the unlocker.** Always at hand, but carried and used every day, and it must not open a root-level file.
 

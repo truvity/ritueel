@@ -32,6 +32,7 @@
 25. A drill is due once a year with the yearly ceremony; `status` notes a newest report older than 13 months. ritueel teaches the rhythm and does not enforce it. Cards are checked every six months (card check, read-only comparison, proof of life), per bundle for its own rows; the restore drill stays yearly. Drill reports are files the holder commits, not records, and stay out of the hash chain.
 26. `root.json` holds `revocations` instead of `revocation_sha256`. A software root's key files sit beside the bundles on the stick partition, not in the bundle.
 27. ritueel covers backup and restore drills (rebuild the state on a clean machine from the bundle and the password manager, compare it with the cards), revocation (OpenPGP certificates made in advance and kept apart; CRLs and root lists for X.509), and card loss and replacement.
+28. An X.509 root is not renamed: its name is inside the certificate and every intermediate names it as issuer. A new name is a new root, by add, overlap and retire, and the command line and the page say so.
 
 ## Why
 
@@ -70,6 +71,7 @@ A root must change, and may be lost, without the trust files failing. So each ch
 - **Verify the bundle's commits against keys in the bundle.** No extra file, but an attacker who rewrites history rewrites the signers too.
 - **A card check only at the yearly ceremony.** One rhythm, but a dead card shows only at the next ceremony, up to a year later.
 - **A sign-off per drill in the hash chain.** One history, but a drill signs nothing and the chain is for what was signed.
+- **Rename an X.509 root in place.** One step, but the name is signed into the certificate and into every intermediate below it, so a rename would break every chain.
 
 ## Not yet proven or only proposed
 

@@ -29,9 +29,10 @@
 22. ritueel does not build, sign or publish the package. The user's repository signs the package with the current subkey, so a package that adds a primary is signed by an old key.
 23. Users verify with the keyring, never with one primary's certificate, because a subkey may be bound by either.
 24. In the first version the package goes in the user's own repository. The fingerprints of the primaries are published on the project's site and in its security file.
-25. The root's key is published in more than one place that would have to be broken into separately: a key server, the release page with the keyring file, and a "how to verify" page with the commands.
+25. The root's key is published in more than one place that would have to be broken into separately: a key server (ritueel's publish step sends the public key to the keyservers the holder lists, [0011](0011-publishing-and-what-to-do-after-a-ceremony.md)), the release page with the keyring file, and a "how to verify" page with the commands. The last two belong to the user's own pipeline; ritueel prints what to do.
 26. Sigstore and build provenance are a complement. ritueel neither issues nor verifies provenance for a user's releases.
 27. Nothing is done for old releases in the first version. A user keeps the keyring version of the time.
+28. The release primary's user ID, the release address, is changed the same way as a person's: adding and retiring a user ID of an OpenPGP primary is a ceremony ([0008](0008-a-persons-own-key.md), rule 17). The primary stays, and so does the trust in it.
 
 ## Why
 
@@ -71,6 +72,7 @@ A release is trusted because its signature verifies against a key the user alrea
 ## Not yet proven or only proposed
 
 - **Not yet proven.** The release workflow, the small signer program, the binding of the temporary release subkey and the keyless signature are not built yet ([#10](https://github.com/truvity/ritueel/issues/10)).
+- **Proposed.** Whether a well-known package repository (Maven Central) accepts a signing subkey under a certify-only primary is not known; its page says it can only verify against a primary key. A test comes before the first signed release ([#25](https://github.com/truvity/ritueel/issues/25)).
 
 ## Replaces
 
