@@ -41,8 +41,8 @@ function p3() {
   let b = '';
   b += terminal(8, 116, 62, 44) + text(15, 144, '$ run', 't t-s t-mono');
   b += arrow(76, 138, 112, 138, 'writes', { lx: 94, ly: 130 });
-  // the ledger sheet with the attempt marked, and a stamp
-  b += sheet(118, 44, 92, 124, { rows: 0 }) + text(128, 66, 'ledger', 't t-s t-b');
+  // the history sheet with the attempt marked, and a stamp
+  b += sheet(118, 44, 92, 124, { rows: 0 }) + text(128, 66, 'history', 't t-s t-b');
   b += rect(126, 78, 76, 18, 'hl', 3) + text(164, 91, 'attempt', 't t-s t-b', 'm');
   b += line(128, 110, 196, 110, 'ln ln-thin') + line(128, 122, 186, 122, 'ln ln-thin');
   b += circle(178, 148, 14, 'paper') + circle(178, 148, 10, 'ln ln-thin') + poly([[172, 148], [176, 152], [184, 143]], 'ln');
@@ -50,7 +50,7 @@ function p3() {
   b += rect(226, 110, 44, 28, 'paper-g', 4);
   b += text(248, 154, 'not yet', 't t-s t-dim', 'm');
   b += under(140, 'before the first signature', 192, 't t-s t-long');
-  return pnl(3, '', b, 'A terminal writes an attempt line into the ledger sheet and stamps it; a dashed ghost card shows that nothing has been signed yet.');
+  return pnl(3, '', b, 'A terminal writes an attempt line into the history sheet and stamps it; a dashed ghost card shows that nothing has been signed yet.');
 }
 
 function p4() {
@@ -62,30 +62,30 @@ function p4() {
   b += under(151, 'root card');
   b += arrow(142, 120, 142, 84, 'signs', { lx: 172, ly: 98 });
   b += sheet(126, 46, 32, 40, { rows: 0 }) + text(142, 70, 'cert', 't t-s t-b', 'm');
-  b += text(174, 120, 'touch', 't t-s t-b', 'm');
-  b += person(238, B, [[-1, 192, 146]]);
-  b += under(238, 'you');
+  b += text(172, 120, 'touch', 't t-s t-b', 'm');
+  b += person(232, B, [[-1, 188, 146]]);
+  b += under(232, 'you');
   return pnl(4, '', b, 'The terminal shows the fingerprint first; the holder touches the root card in its reader, and an arrow from the card to a certificate sheet shows what the card signs.');
 }
 
 function p5() {
   let b = '';
-  b += terminal(6, 112, 48, 40) + text(13, 140, '$ run', 't t-s t-mono');
-  b += arrow(60, 132, 110, 132, 'verifies', { lx: 85, ly: 124 });
-  b += note(114, 108, 34, 48, 'cert') + plan(154, 106, 82, 50);
-  b += circle(154, 88, 22, 'ln') + line(170, 72, 184, 58, 'arm-o') + line(170, 72, 184, 58, 'arm-i');
-  b += check(248, 134, 1.2);
+  b += terminal(6, 116, 50, 40) + text(13, 144, '$ run', 't t-s t-mono');
+  b += arrow(64, 138, 114, 138, 'verifies', { lx: 89, ly: 128 });
+  b += note(120, 108, 34, 48, 'cert') + plan(160, 106, 82, 50);
+  b += circle(160, 88, 22, 'ln') + line(176, 72, 190, 58, 'arm-o') + line(176, 72, 190, 58, 'arm-i');
+  b += check(250, 134, 1.2);
   b += under(140, 'by code that did not sign', 192, 't t-s t-long');
-  return pnl(5, '', b, 'A magnifier rests over the certificate sheet and the plan sheet, with a tick beside them; the check is done by a second terminal.');
+  return pnl(5, '', b, 'A magnifier rests over the certificate sheet and the plan sheet, with a tick beside them; the check is made by code that did not sign.');
 }
 
 function p6() {
   let b = '';
-  b += terminal(6, 112, 56, 40) + text(13, 140, '$ done', 't t-s t-mono');
-  b += arrow(66, 132, 108, 132, 'writes', { lx: 87, ly: 124 });
-  b += note(112, 80, 66, 46, 'record') + note(184, 80, 80, 46, 'transcript');
-  b += bundle(104, 172, 166, 48, 'ledger');
-  return pnl(6, '', b, 'A terminal writes two sheets, the record and the transcript, into the ledger.');
+  b += terminal(6, 124, 60, 40) + text(13, 152, '$ done', 't t-s t-mono');
+  b += arrow(74, 150, 110, 150, 'writes', { lx: 92, ly: 140 });
+  b += note(112, 62, 66, 44, 'record') + note(188, 62, 78, 44, 'transcript');
+  b += bundle(116, 178, 154, 54, 'history');
+  return pnl(6, '', b, 'A terminal writes two sheets, the record and the transcript, into the history part of the bundle.');
 }
 
 export default {

@@ -7,6 +7,8 @@ import { B, terminal } from './parts.mjs';
 export const AY = 122; // the height of the arrows between the objects
 export const LY = 188; // the baseline of the labels under the objects
 
+export const CH = 60; // the height of the flat card, as in the cards figures
+
 export const ground = () => line(8, B + 2, 272, B + 2, 'ln ln-thin ln-dash ln-dim');
 
 /** The program: a terminal standing on the ground line; `lines` are mono lines inside it. */
@@ -30,10 +32,10 @@ export function browser(x, w, addr, ok = '', h = 80) {
  * shaded (2 is FIDO2). Its face carries a chip and a line, or, with `touch`, the round touch spot.
  */
 export function cardAt(x, w, sel = 2, touch = false) {
-  const y = B - 8 - 82;
+  const y = B - 8 - CH;
   const cw = (w - 8 - 24) / 3;
-  let s = rect(x, B - 8, w, 8, 'paper-t', 2) + rect(x + 4, y, w - 8, 82, 'paper', 7);
-  for (let i = 0; i < 3; i++) s += rect(x + 12 + i * (cw + 4), y + 10, cw, 18, i === sel ? 'hl' : 'paper-t', 3);
-  if (touch) return s + circle(x + 34, y + 56, 12, 'paper-t') + circle(x + 34, y + 56, 19, 'paper-g') + text(x + w - 12, y + 60, 'touch', 't t-s t-b', 'e');
-  return s + rect(x + 12, y + 40, 14, 12, 'paper-t', 2) + line(x + 34, y + 62, x + w - 16, y + 62, 'ln ln-thin') + line(x + 34, y + 70, x + w - 28, y + 70, 'ln ln-thin');
+  let s = rect(x, B - 8, w, 8, 'paper-t', 2) + rect(x + 4, y, w - 8, CH, 'paper', 7);
+  for (let i = 0; i < 3; i++) s += rect(x + 12 + i * (cw + 4), y + 8, cw, 16, i === sel ? 'hl' : 'paper-t', 3);
+  if (touch) return s + circle(x + 34, y + 38, 10, 'paper-t') + circle(x + 34, y + 38, 16, 'paper-g') + text(x + w - 12, y + 42, 'touch', 't t-s t-b', 'e');
+  return s + rect(x + 12, y + 32, 14, 12, 'paper-t', 2) + line(x + 34, y + 38, x + w - 16, y + 38, 'ln ln-thin') + line(x + 34, y + 47, x + w - 28, y + 47, 'ln ln-thin');
 }

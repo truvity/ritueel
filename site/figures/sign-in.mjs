@@ -29,7 +29,7 @@ function p2() {
 }
 
 function p3() {
-  let b = ground() + person(36, B, [[1, 82, 144]]) + browser(80, 80, '••••') + cardAt(192, 80);
+  let b = ground() + person(44, B, [[1, 84, 144]]) + browser(80, 80, '••••') + cardAt(192, 80);
   b += bubble(30, 30, 84, 30, 44, 38, 80, ['PIN ••••']);
   b += arrow(164, AY + 6, 190, AY + 6, 'PIN', { lx: 177, ly: AY - 2 });
   b += under(36, 'you', LY) + under(120, 'browser', LY) + under(232, 'card', LY);
@@ -38,7 +38,7 @@ function p3() {
 
 function p4() {
   const x = 148;
-  let b = ground() + person(56, B, [[1, x + 34, B - 8 - 82 + 56]]) + cardAt(x, 124, 2, true);
+  let b = ground() + cardAt(x, 124, 2, true) + person(56, B, [[1, x + 34, B - 8 - 60 + 38]]);
   b += under(56, 'you', LY) + under(x + 62, 'card', LY);
   return pnl(4, '', b, 'A person on a ground line reaches an arm to a card in its reader and rests a hand on a round touch spot on the card, which has a dashed ring around it.');
 }
@@ -72,7 +72,7 @@ export default {
   label: 'Six panels: a sign-in with a passkey, from the challenge to the site checking the signature',
   caption: 'A sign-in with a passkey. The card signs a challenge after the PIN and the touch, and the site checks the signature.',
   panels: [
-    { n: 1, title: 'Challenge', caption: 'The site sends a random challenge, and for a passkey not kept on the card, the key handle.', svg: p1() },
+    { n: 1, title: 'Challenge', caption: 'The site sends a random challenge to the browser.', svg: p1() },
     { n: 2, title: 'Name check', caption: 'The browser checks the site name against the address. It hands the card the name and a hash.', svg: p2() },
     { n: 3, title: 'PIN', caption: 'You type the PIN, if the site requires it.', svg: p3() },
     { n: 4, title: 'Touch', caption: 'You touch the card.', svg: p4() },

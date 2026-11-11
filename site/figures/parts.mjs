@@ -40,7 +40,7 @@ export const plan = (x, y, w = 78, h = 50) =>
   acc('plan', sheet(x, y, w, h, { accent: true, rows: 0 }) + text(x + 8, y + 22, 'plan', 't t-s t-b t-acc') + text(x + 8, y + 40, DIGEST, 't t-s t-mono t-acc t-b'));
 
 /** A sheet with a word on it (certificate, request, record). */
-export const note = (x, y, w, h, word, accent = false) => sheet(x, y, w, h, { rows: 0, accent }) + text(x + w / 2, y + h / 2 + 8, word, 't t-s t-b', 'm');
+export const note = (x, y, w, h, word, accent = false, bold = true) => sheet(x, y, w, h, { rows: 0, accent }) + text(x + w / 2, y + h / 2 + 8, word, 't t-s' + (bold ? ' t-b' : ''), 'm');
 
 /** A bundle: a folder with its name on it, `base` the bottom edge. */
 export function bundle(x, base, w, h, name) {
@@ -68,7 +68,8 @@ export function walker(cx, hx, hy, side = 1) {
 /** A stick big enough to show what is on it. chips: [{text, accent, lock}]; the connector is on the right. */
 export function stickBig(x, y, w, chips) {
   const h = 14 + chips.length * 18;
-  let s = rect(x + w, y + h / 2 - 9, 10, 18, 'paper-t', 2) + rect(x, y, w, h, 'paper', 6) + circle(x + 10, y + 8, 2, 'fill-ink');
+  // the plug: a metal shell on the right with two contacts, as on the stick of the stick figure
+  let s = rect(x + w, y + h / 2 - 10, 12, 20, 'paper-t', 2) + rect(x + w + 4, y + h / 2 - 6, 4, 4, 'fill-ink', 1) + rect(x + w + 4, y + h / 2 + 2, 4, 4, 'fill-ink', 1) + rect(x, y, w, h, 'paper', 6) + circle(x + 10, y + 8, 2, 'fill-ink');
   chips.forEach((c, i) => {
     const cy = y + 14 + i * 18;
     const chip = rect(x + 8, cy, w - 16, 15, c.accent ? 'acc-f' : 'paper-t', 3) + text(x + (c.lock ? w / 2 - 10 : w / 2), cy + 11.5, c.text, 't t-s' + (c.accent ? ' t-acc' : ''), 'm') + (c.lock ? lock(x + w - 24, cy + 1) : '');
@@ -77,21 +78,21 @@ export function stickBig(x, y, w, chips) {
   return s;
 }
 
-/** The walk of the stick: you in mid-stride with the stick, the offline laptop and the ghost stick at the destination. */
+/** The walk of the stick: you in mid-stride with the stick, the offline laptop it goes to, a ground line under both. */
 export function carryBody(chips) {
   const h = 14 + chips.length * 18;
   const y = 150 - h;
   let b = '';
   b += line(8, B + 2, 272, B + 2, 'ln ln-thin ln-dash ln-dim');
-  b += walker(34, 72, y + h / 2);
-  b += stickBig(72, y, 76, chips);
+  b += walker(46, 84, y + h / 2);
+  b += stickBig(84, y, 76, chips);
+  b += under(122, 'USB stick', 164);
   b += rect(190, 108, 78, 52, 'paper', 5) + rect(182, 160, 94, 7, 'paper', 3.5);
   b += wifiOff(229, 114);
   b += text(229, 154, 'no network', 't t-s t-dim', 'm');
-  b += rect(160, 146, 24, 11, 'paper-g', 3) + rect(184, 149, 6, 5, 'paper-g', 1.5);
-  b += arrowq(110, y - 6, 170, 44, 226, 98, 'carries', { lx: 172, ly: 52 });
-  b += text(34, 52, 'you', 't t-s', 'm');
-  b += under(229, 'offline system', 188);
-  b += text(110, 192, 'the plan holds the digest', 't t-s t-long', 'm') + text(110, 206, 'of this ritueel copy', 't t-s t-long', 'm');
+  b += arrowq(122, y - 6, 176, 44, 226, 98, 'carries', { lx: 176, ly: 52 });
+  b += text(46, 52, 'you', 't t-s', 'm');
+  b += under(229, 'offline system', 186);
+  b += text(12, 196, 'the plan holds the digest', 't t-s t-long') + text(12, 211, 'of this ritueel copy', 't t-s t-long');
   return b;
 }

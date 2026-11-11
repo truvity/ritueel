@@ -4,7 +4,7 @@
 // secret unwraps the private half of the unlock key, and a recovery key is the other way in. The
 // accent is the unlock key. The badge "decided, not yet proven" is drawn once, in panel 2. There is no
 // site and no signature here. Where the key handle is kept is not decided, so nothing here draws it.
-import { acc, arrow, bubble, card, key, line, person, rect, sheet, text } from './draw.mjs';
+import { acc, arrow, bubble, card, key, line, person, poly, rect, sheet, text } from './draw.mjs';
 import { keyBig } from './key-big.mjs';
 import { B, lock, pnl, terminal, under } from './parts.mjs';
 import { AY, LY, cardAt, ground, program } from './passkey-parts.mjs';
@@ -28,7 +28,7 @@ function p2() {
 }
 
 function p3() {
-  let b = ground() + person(36, B, [[1, 82, 144]]) + program(80, 80, ['> ••••']) + cardAt(192, 80);
+  let b = ground() + person(44, B, [[1, 84, 144]]) + program(80, 80, ['> ••••']) + cardAt(192, 80);
   b += bubble(30, 30, 84, 30, 44, 38, 80, ['PIN ••••']);
   b += arrow(164, AY, 190, AY, 'PIN', { lx: 177, ly: AY - 8 });
   b += under(36, 'you', LY) + under(120, 'program', LY) + under(232, 'card', LY);
@@ -37,7 +37,7 @@ function p3() {
 
 function p4() {
   const x = 148;
-  let b = ground() + person(56, B, [[1, x + 34, B - 8 - 82 + 56]]) + cardAt(x, 124, 2, true);
+  let b = ground() + cardAt(x, 124, 2, true) + person(56, B, [[1, x + 34, B - 8 - 60 + 38]]);
   b += under(56, 'you', LY) + under(x + 62, 'card', LY);
   return pnl(4, '', b, 'A person on a ground line reaches an arm to a card in its reader and rests a hand on a round touch spot on the card, which has a dashed ring around it.');
 }
@@ -55,16 +55,17 @@ function p5() {
 function p6() {
   let b = sheet(118, 36, 44, 46, { rows: 0 }) + lock(128, 44) + text(140, 74, 'file', 't t-s', 'm');
   // two root cards of a pair, one overlapping the other
-  b += card(12, 100, 52, 34) + card(34, 114, 52, 34);
-  b += arrow(78, 106, 116, 84, 'opens', { lx: 76, ly: 88 });
+  b += card(10, 108, 52, 34) + card(70, 108, 52, 34);
+  b += poly([[10, 150], [10, 156], [122, 156], [122, 150]], 'ln ln-thin');
+  b += arrow(96, 104, 118, 82, 'opens', { lx: 80, ly: 90 });
   // the drawer with the recovery key, kept apart
   b += rect(196, 96, 74, 62, 'paper', 5) + line(196, 127, 270, 127, 'ln ln-thin');
   b += line(222, 116, 244, 116, 'ln ln-thin') + line(222, 146, 244, 146, 'ln ln-thin') + key(238, 108, 'ln ln-key');
   b += arrow(200, 94, 164, 80, 'opens', { lx: 212, ly: 80 });
   b += line(176, 96, 176, 204, 'ln ln-thin ln-dash ln-dim');
-  b += under(50, 'any one card', 172) + under(50, 'of the pair', 186) + under(50, 'is enough', 200);
+  b += under(66, 'any one card', 174) + under(66, 'of the pair', 188) + under(66, 'is enough', 202);
   b += under(233, 'recovery key', 176) + under(233, 'kept apart', 190);
-  return pnl(6, '', b, 'A key file sheet with a padlock at the top. Two arrows lead to it: one from a pair of overlapping root cards on the left, one from a drawer holding the recovery key on the right. A dashed line sets the drawer apart from the cards.');
+  return pnl(6, '', b, 'A key file sheet with a padlock at the top. Two arrows lead to it: one from a pair of root cards side by side under a bracket on the left, one from a drawer holding the recovery key on the right. A dashed line sets the drawer apart from the cards.');
 }
 
 export default {
