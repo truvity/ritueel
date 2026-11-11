@@ -18,7 +18,7 @@ Judge every new page, tool or option against it. The first three questions are a
 1. **Does it teach first?** The reader meets the reason before the command, and a Learn page exists before a guide or a tool depends on it.
 2. **Does the tool only simplify a ritual** a careful person could do by hand? A tool that decides for the person, or hides a step they should understand, fails.
 3. **Does the person stay in charge?** Every irreversible step is confirmed by the person, in the terminal or by touch, never by a click alone.
-4. **Does a reader of the target need it on the site?** If not, write it under `docs/` and leave it out of `site/published.txt`; the site holds the path of six, the glossary, where it stands, the demo and the decision records.
+4. **Does a reader of the target need it on the site?** If not, write it under `docs/` and leave it out of `site/published.txt`; the site holds the path of six, [How it works](/how-it-works/) (three pages of pictures), the glossary, where it stands, the demo and the decision records.
 
 A change that fails one of the first three is reworked or dropped, or it goes to the maintainer as a conflict ([below](#ask-only-real-conflicts)).
 
