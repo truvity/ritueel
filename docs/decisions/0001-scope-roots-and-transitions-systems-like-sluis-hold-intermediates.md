@@ -1,7 +1,7 @@
 # 0001 — Scope: roots and transitions; systems like sluis hold intermediates
 
 **Status:** Accepted; amended by 0007
-**Date:** 2026-11-01
+**Date:** 2026-11-11
 
 ## Context
 
@@ -17,14 +17,14 @@ ritueel owns root keys and root transitions for X.509 CA roots and OpenPGP prima
 - **Ceremonies for intermediates.** ritueel verifies where an intermediate key lives, signs its PKCS#10 request into an intermediate CA certificate, and binds its OpenPGP subkey after checking the back-signatures ([0004](/decisions/0004-ceremonies-plan-confirm-reserve-sign-verify-record/)).
 - **Trust products.** ritueel builds what outsiders install: CA bundles, signed root lists, SSH CA key lists and the keyring packages of release keys (`.deb`, `.rpm`, plain files). The staff keyring is not one of them: a system that holds intermediates produces it ([0014](/decisions/0014-staff-openpgp-primaries-sealed-in-sluis-subkeys-born-on-cards-ritueel-makes-the-card-ready-and-runs-the-delegation/)). The user's own pipeline publishes them.
 - **Ceremony records.** Every ceremony leaves a record of what was done, with which keys, on which store, and what outsiders see as a result.
-- **Personal OpenPGP.** A person's primary, a daily subkey born on a card, and keyring upkeep are in scope. Company-wide OpenPGP has its own record, [0014](/decisions/0014-staff-openpgp-primaries-sealed-in-sluis-subkeys-born-on-cards-ritueel-makes-the-card-ready-and-runs-the-delegation/); its first item is the delegation a company root makes, by a domain-scoped trust signature at a ritueel ceremony, to an online certifier such as the one sluis plans.
-- **How a person uses it.** A ceremony is interactive, with a person present, and is one to three commands. Routine work is automated. Wizards guide a ceremony: one in the terminal, one in a browser on localhost only. Both are faces of the one ceremony engine ([0007](/decisions/0007-ritueel-teaches-and-its-tools-simplify-the-ceremonies/)).
+- **Personal OpenPGP.** A person's primary (an existing one may be adopted first, [0017](/decisions/0017-a-persons-openpgp-key-in-two-stages-an-adopted-primary-first-then-card-born-primaries/)), a daily subkey born on a card, and keyring upkeep are in scope. Company-wide OpenPGP has its own record, [0014](/decisions/0014-staff-openpgp-primaries-sealed-in-sluis-subkeys-born-on-cards-ritueel-makes-the-card-ready-and-runs-the-delegation/); its first item is the delegation a company root makes, by a domain-scoped trust signature at a ritueel ceremony, to an online certifier such as the one sluis plans.
+- **How a person uses it.** A ceremony is interactive, with a person present, and is one to three commands. Routine work is automated. ritueel has three faces of the one ceremony engine: the command line, a guided mode that asks line by line, and a read-only local page served by the same binary on localhost ([0011](/decisions/0011-the-wizards-one-engine-three-faces-and-a-web-page-that-cannot-confirm-anything/), [0007](/decisions/0007-ritueel-teaches-and-its-tools-simplify-the-ceremonies/)). There is no full-screen terminal interface and no background service.
 - **A teaching product, first.** The purpose is a smooth and safe experience of managing a root, not the tools. The site teaches the logic of roots and intermediates, with one guide per procedure and drills on test keys, and the tools simplify the rituals ([0007](/decisions/0007-ritueel-teaches-and-its-tools-simplify-the-ceremonies/)). The site is part of the product.
-- **The whole life of a root.** Opinionated help for where the ledger lives, backup and restore, re-signing and rotating, revocation, and card loss and replacement ([0007](/decisions/0007-ritueel-teaches-and-its-tools-simplify-the-ceremonies/)).
+- **The whole life of a root.** Opinionated help for where the directory lives, backup and restore, re-signing and rotating, revocation, and card loss and replacement ([0007](/decisions/0007-ritueel-teaches-and-its-tools-simplify-the-ceremonies/)).
 - **Language and stores.** A Go command-line tool with key stores behind one ceremony: `software` (an encrypted file, 1Password or the OS keyring), `piv`, `openpgp-card` and `aws-kms` first; Google Cloud KMS, Azure Key Vault and Nitrokey are planned ([0003](/decisions/0003-key-stores-and-the-card-layer/)).
 - **Generic, with no hard dependency.** ritueel and sluis depend on neither each other nor shared code. They exchange standard formats (PKCS#10, X.509, OpenPGP packets, attestation certificates) through the versioned [hand-off contract](/reference/hand-off-contract/), so either side can be replaced by another system that speaks it.
 - **The floor is PKCS#10 in, X.509 out.** A system that holds intermediates meets a root through a PKCS#10 request and gets back a certificate in a stated profile, which any certificate authority can issue ([the floor](/reference/hand-off-contract/#the-floor-pkcs10-in-x509-out)). ritueel's contract adds the proof of where the key lives, the result file, the reason codes and the signed root list with its trust sequence. On the floor, the requester's anchors are the CA certificates the operator installed, with no trust sequence and no rollback protection.
-- **Out of scope.** Online signing, leaf certificates and secret storage. ritueel never keeps a private key outside the store that made it, and keeps no PIN or passphrase.
+- **Out of scope.** Online signing, leaf certificates and secret storage. ritueel never keeps a private key outside the store that made it, except the one stated exception for a person's own key ([0017](/decisions/0017-a-persons-openpgp-key-in-two-stages-an-adopted-primary-first-then-card-born-primaries/)). It keeps no PIN or passphrase that a person types; the random secrets of a card that it makes (the management key, the PUK and the Admin PIN) are kept only sealed in the directory ([0015](/decisions/0015-key-files-open-with-a-passkey-on-each-root-card-and-card-secrets-are-sealed-in-the-directory/)).
 
 ## Consequences
 
@@ -33,7 +33,7 @@ ritueel owns root keys and root transitions for X.509 CA roots and OpenPGP prima
 - A system that holds intermediates can be certified and tested on the floor by any CA, before ritueel exists. The full contract, with the proof and the trust sequence, needs ritueel's software-root mode, which is therefore built first.
 - A requester has two trust modes to test: the floor's installed anchors, and the signed root list.
 - Four stores teach every transition shape: from a file, to a card, to a cloud service, and back. Other stores wait for their first real installation.
-- The localhost-only wizard avoids a network service that holds ceremony state, and cannot be shared between machines.
+- The read-only local page, on localhost only, avoids a network service that holds ceremony state, and cannot be shared between machines.
 - ritueel carries a security-critical code base by itself: key handling, signing and revocation need review, tests on real test devices, and the rules in `GOVERNANCE.md`.
 
 ## Roads not taken

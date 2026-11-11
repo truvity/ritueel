@@ -8,6 +8,9 @@
 /decisions/0003-ceremonies-plan-confirm-reserve-sign-record-and-the-ritueel-commands/ /decisions/0004-ceremonies-plan-confirm-reserve-sign-verify-record/ 301
 /decisions/0004-release-keys-primaries-on-the-roots-signing-subkeys-and-the-keyring-package/ /decisions/0006-release-keys-and-the-keyring-package/ 301
 
+# Decision record 0011 renamed on 2026-11-11 (three faces, not two), during the design phase.
+/decisions/0011-the-wizards-one-engine-two-faces-and-a-web-page-that-cannot-confirm-anything/ /decisions/0011-the-wizards-one-engine-three-faces-and-a-web-page-that-cannot-confirm-anything/ 301
+
 # Contributing pages merged on 2026-11-01.
 /contributing/writing/ /contributing/pages/ 301
 

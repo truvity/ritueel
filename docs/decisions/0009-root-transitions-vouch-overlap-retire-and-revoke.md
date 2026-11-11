@@ -1,7 +1,7 @@
 # 0009 — Root transitions: vouch, overlap, retire and revoke
 
 **Status:** Accepted
-**Date:** 2026-11-02
+**Date:** 2026-11-11
 
 ## Context
 
@@ -20,8 +20,8 @@
 - **Growing or shrinking the set is a decision.** The **target** is the number of active roots the holder intends. `init` sets it; `root add` without `--replaces` and `root retire` without a replacement need `--target N`. `status` raises an alert while the set is short of its target, which is the state between `root revoke` and the replacement, and a notice while an overlap runs.
 - **A vouch is made by an active root at the ceremony of `root add`:** an X.509 cross-certificate for the new root's key, and an OpenPGP certification of the new primary by the vouching primary. The profiles are in [the transitions page](/reference/transitions/#the-vouch). The cross-certificate lets a client that trusts only the old root build a path to the new one. It is not a trust anchor and is in no bundle.
 - **The OpenPGP vouch is published beside the keyring package, not in it.** [0006](/decisions/0006-release-keys-and-the-keyring-package/) keeps third-party certifications out so that every verifier sees the same few packets; a file in `vouches/` serves the people who follow certifications, and the package, signed by an old key, is what apt and rpm act on.
-- **`root retire` checks that nothing hangs from the root alone.** Every registered intermediate must have a certificate, or a binding, from another active root over the same key, valid for 30 more days. It lists what is missing (`still-needed`). The fix is a `yearly` ceremony with fresh requests over the same keys.
-- **`root revoke` waits for nothing but the stored revocation material:** the revocation signature, and the removal authorisation when the revoked root cannot sign the new root list ([0005](/decisions/0005-trust-products-the-root-list-the-ca-bundle-the-ssh-ca-key-list-and-the-trust-sequence/#the-signed-root-list)). It checks both against the digests in the ledger and publishes the products without the root. What only that root had certified shows as critical in `status` until a `yearly` ceremony re-certifies it. An emergency exit that waits for tidying is not one.
+- **`root retire` checks that nothing hangs from the root alone.** Every registered intermediate must have a certificate, or a binding, from another active root over the same key, valid for 30 more days. It lists what is missing (`still-needed`). The fix is a yearly ceremony (the plan that `ritueel due` writes, run with `ritueel run`) with fresh requests over the same keys.
+- **`root revoke` waits for nothing but the stored revocation material:** the revocation signature, and the removal authorisation when the revoked root cannot sign the new root list ([0005](/decisions/0005-trust-products-the-root-list-the-ca-bundle-the-ssh-ca-key-list-and-the-trust-sequence/#the-signed-root-list)). It checks both against the digests in the directory and publishes the products without the root. What only that root had certified shows as critical in `status` until a yearly ceremony re-certifies it. An emergency exit that waits for tidying is not one.
 - **The root of the year is the active root whose last signing is the oldest,** ties to the lowest label. With two cards that is the alternation of [0004](/decisions/0004-ceremonies-plan-confirm-reserve-sign-verify-record/#who-signs-and-when); after a replacement the new root signs next.
 - **A transition never moves a key,** whatever the stores: the five transitions of the key-stores page are one command with the new store's own checks, and the new store must give evidence for a root ([0003](/decisions/0003-key-stores-and-the-card-layer/#what-a-store-can-prove-decides-what-it-may-hold)).
 
@@ -29,8 +29,8 @@
 
 - A replaced root is never dropped by the clock: the overlap ends when the holder says and the checks pass, and a forgotten overlap is an alert, not a silent state.
 - A lost card leaves a one-root set that `status` calls short, so the unsafe state cannot be forgotten.
-- The cross-certificate lasts 13 months and is made again at each `yearly` ceremony while an overlap lasts. An overlap longer than that is the holder's choice, with a ceremony of its own each year.
-- `root retire` can send the holder to a `yearly` ceremony first, and an OpenPGP subkey requested before the new primary existed has to be requested again with a back-signature for it ([the contract](/reference/hand-off-contract/#the-request-1)).
+- The cross-certificate lasts 13 months and is made again at each yearly ceremony while an overlap lasts. An overlap longer than that is the holder's choice, with a ceremony of its own each year.
+- `root retire` can send the holder to a yearly ceremony first, and an OpenPGP subkey requested before the new primary existed has to be requested again with a back-signature for it ([the contract](/reference/hand-off-contract/#the-request-1)).
 - Two more files per transition, in `vouches/`, to publish or to ignore.
 - The `status` findings `root-set` and `root-overlap` add to the exit codes 10 to 12, and `roots_target` to every root record.
 

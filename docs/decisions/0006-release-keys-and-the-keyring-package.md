@@ -1,11 +1,11 @@
 # 0006 — Release keys and the keyring package
 
 **Status:** Accepted
-**Date:** 2026-11-01
+**Date:** 2026-11-11
 
 ## Context
 
-A release, or an apt or rpm repository, is trusted because its OpenPGP signature verifies against a key the user already holds in a *keyring*. [0002](/decisions/0002-key-custody-every-key-is-born-in-its-store-two-root-cards-or-one-kms-root-and-a-replica/) puts the OpenPGP primaries on the root cards, used once a year, so they cannot sign releases; a system that holds intermediates signs, with a subkey a primary has bound ([the hand-off contract](/reference/hand-off-contract/)). ritueel is not in the signing path: it makes the keys others sign with, and the package others verify with. The proposal was [issue #33](https://github.com/truvity/ritueel/issues/33).
+A release, or an apt or rpm repository, is trusted because its OpenPGP signature verifies against a key the user already holds in a *keyring*. [0002](/decisions/0002-key-custody-every-key-is-born-in-its-store-two-root-cards-or-one-kms-root-and-a-replica/) puts the OpenPGP primaries in the roots, on the root cards or in the cloud root, used once a year, so they cannot sign releases; a signer signs with a subkey a primary has bound ([the hand-off contract](/reference/hand-off-contract/)): a system that holds intermediates, or, for ritueel's own releases, the release workflow. ritueel is not in the signing path: it makes the keys others sign with, and the package others verify with. The proposal was [issue #33](https://github.com/truvity/ritueel/issues/33).
 
 The verdicts of [the verifier matrix](/research/openpgp-verifier-matrix-2026-11/) (2026-10-29 to 2026-11-01) that this record rests on: ECDSA P-384 version 4 keys and SHA-384 work with `gpg`, `gpgv`, `sqv`, apt and rpm, in a PIV slot and in KMS; GnuPG cannot parse a version 6 certificate; `gpgv`, and so apt, ignores revocation signatures; `gpg` 2.2 rejects a signature without the Issuer Key ID subpacket; a signing subkey without a back-signature is refused.
 
@@ -13,7 +13,7 @@ The verdicts of [the verifier matrix](/research/openpgp-verifier-matrix-2026-11/
 
 ### The keys
 
-- **The primaries are the root primaries:** one on each root card (or the one cloud root), certify-only, version 4, ECDSA P-384, SHA-384, valid about three years and extended at each use. Version 6 comes once the verifiers people use accept it.
+- **The primaries are the root primaries:** the OpenPGP primary of each root of the project, on a root card or in the cloud root, certify-only, version 4, ECDSA P-384, SHA-384, valid about three years and extended at each use. Version 6 comes once the verifiers people use accept it.
 - **A dedicated release identity.** Every primary carries the project's release address and no person's name, and **no personal key certifies a primary.**
 - **Signing subkeys.** The holder of an intermediate makes a signing-only subkey where it lives. Its request back-signs for every active primary, so either root can bind it; one primary, the root of the year, binds it for about 13 months, and each yearly ceremony re-signs the binding. The subkey is replaced only on an event or at most every three years.
 - **Packet rule.** Every signature ritueel writes, and every back-signature it accepts, carries both the Issuer Fingerprint subpacket (hashed) and the Issuer Key ID subpacket (unhashed). The test matrix imports every certificate into the oldest `gpg` it supports.
@@ -28,7 +28,13 @@ The verdicts of [the verifier matrix](/research/openpgp-verifier-matrix-2026-11/
 
 ### No signed release before the gate
 
-The first root ceremony on the two cards, with attestation, and the adoption drill come first; only then is a release signed ([#48](https://github.com/truvity/ritueel/issues/48)). For a company on a cloud key service, signed releases also wait until its root account exists. There is no provisional software primary, no bootstrap key and no release signed by a person's key. The first keyring is the final one, so the first transition users see is a real one.
+The first signed release (M5) follows the adoption of the project's root and its drill (M4): the root adopted, attested or read, with its revocation signatures stored apart, and the adoption drill passed ([#48](https://github.com/truvity/ritueel/issues/48)). Card roots are added after it (M6), as a transition the keyring package already carries (see the keyring package, below). There is no provisional software primary, no bootstrap key and no release signed by a person's key; the temporary release subkey of the next section is bound by the real root.
+
+### ritueel's own releases
+
+- **The proof of a release of ritueel is a checksum file** (`SHA256SUMS`) signed by a release subkey that the project's root binds, with a keyless cosign signature beside it. There is no personal signature of the maintainer on a release.
+- **The release subkey may be temporary:** a cloud key with exactly one signer, the release workflow, used through a small signer program, until the requester system signs natively. It is then revoked as superseded on the day of the switch, as [0017](/decisions/0017-a-persons-openpgp-key-in-two-stages-an-adopted-primary-first-then-card-born-primaries/#retiring-a-subkey) decides for a subkey that is replaced. It signs the checksum file only, never a git tag.
+- **The root's key is published in more than one place that would have to be broken into separately:** a key server, the release page with the keyring file, and a "how to verify" page with the commands. Writing the files for a key on one's own domain (WKD) and the DNS record text is a later output of ritueel, with a guide.
 
 ### The keyring package
 
@@ -37,16 +43,16 @@ The first root ceremony on the two cards, with attestation, and the adoption dri
 - **Built by ritueel, deterministically,** without `dpkg-deb` or `rpmbuild`: the same directory gives the same bytes. The builder reads its output back with a checker of its own (`keyring verify`), and a pipeline can run the same checker on a package it received.
 - **Not signed or published by ritueel.** The user's repository signs it like every other file, with the current subkey, so a package that adds a primary is signed by an old key, which is how an existing keyring accepts the new one.
 - **Users verify with the keyring,** never with one primary's certificate, because a subkey may be bound by either.
-- **Where it is published, first version.** The keyring package goes in the user's own repository. The primaries' fingerprints are published on the project's site and in its security file. Keyservers, WKD and DNS `OPENPGPKEY` wait for a consumer.
+- **Where it is published, first version.** The keyring package goes in the user's own repository. The primaries' fingerprints are published on the project's site and in its security file. For a user's keyring package, WKD files and DNS `OPENPGPKEY` text wait for a consumer; ritueel's own root is published in more than one place, as [above](/decisions/0006-release-keys-and-the-keyring-package/#ritueels-own-releases) says.
 
 ### Sigstore and old releases
 
-Sigstore and build provenance say how a file was built; OpenPGP says who vouches for it, and is what apt and rpm read. Provenance is a complement and ritueel neither issues nor verifies it. Nothing is done for old releases in the first version: a user keeps the keyring version of the time.
+Sigstore and build provenance say how a file was built; OpenPGP says who vouches for it, and is what apt and rpm read. Provenance is a complement and ritueel neither issues nor verifies it for a user's releases; ritueel's own releases carry a keyless signature made by the release workflow ([above](/decisions/0006-release-keys-and-the-keyring-package/#ritueels-own-releases)). Nothing is done for old releases in the first version: a user keeps the keyring version of the time.
 
 ## Consequences
 
 - Users install one package that carries every root; a user who has one primary's certificate cannot verify a release, and the instructions say so.
-- No release is signed until the gate is passed; in return, no provisional key is ever trusted.
+- No release is signed until the gate is passed; in return, no provisional primary is ever trusted.
 - A compromised subkey leaves the package, and with it the old releases it signed, as far as the new package is concerned.
 - After a theft, apt users are protected only when the new package arrives, so the speed of the ceremony and of the user's pipeline is what counts.
 - ritueel writes OpenPGP code of its own (binding, certification, revocation, a keyring writer) and a deterministic package builder, each tested against `gpg`, `gpgv`, `sqv`, apt and rpm, with checks that read status output and not exit codes.
@@ -54,7 +60,7 @@ Sigstore and build provenance say how a file was built; OpenPGP says who vouches
 
 ## Roads not taken
 
-- **Sigstore keyless signing as the main mechanism.** No key to hold, but apt and rpm do not read it and trust moves to a public service.
+- **Sigstore keyless signing as the main mechanism.** No key to hold, but apt and rpm do not read it and trust moves to a public service. ritueel's own releases carry one beside the OpenPGP proof, not instead of it.
 - **Sign releases with a primary, or with a person's key.** Nothing to bind, but a primary is used once a year, and a person's key puts a person in the chain.
 - **A keyring with only the primary of the year.** Smaller, but a lost card breaks verification at once.
 - **One package for each primary.** Each root moves alone, but users install two and a missing one looks like a bug.
@@ -67,10 +73,13 @@ Sigstore and build provenance say how a file was built; OpenPGP says who vouches
 - **A provisional software primary for the first releases.** Releases start sooner, but early users trust a copyable key and live through a transition with no purpose.
 - **A personal key certifies each primary.** A path for people who trust the person, but release trust then rests on a key usually kept in software.
 - **A shorter expiry for primaries and subkeys.** Bounds an unrevoked key further, at the cost of more ceremonies and more keyring updates, for a gain the 13-month bindings already give.
-- **Keyservers, WKD and DNS `OPENPGPKEY` in the first version.** More reach, but each is a channel to keep current with no consumer asking yet.
+- **WKD files and DNS `OPENPGPKEY` text in the first version.** More reach, but each is a channel to keep current with no consumer asking yet.
+- **A personal signature of the maintainer on releases.** Nothing to build, but a person sits in the chain.
+- **The release subkey also signs git tags.** One key for two jobs, but a tag signature would let the release workflow vouch for source it did not build; the subkey signs the checksum file only.
 - **A historical keyring package for old releases.** Helps late verifiers, but is one more package to build and keep trusted.
 
 ## Follow-ups
 
+- The release workflow, the small signer program, the binding of the temporary release subkey and the keyless signature ([#10](https://github.com/truvity/ritueel/issues/10)), and the tests of the release keys ([#25](https://github.com/truvity/ritueel/issues/25)).
 - Research the publication channels beyond the first version and the verification tools, for the guide ([#28](https://github.com/truvity/ritueel/issues/28)).
 - Measure the oldest rpm releases that import the per-primary key files and verify a signature by the P-384 subkey, which sets the floor of rpm support, and choose the archive writer by the criteria above ([#15](https://github.com/truvity/ritueel/issues/15)).

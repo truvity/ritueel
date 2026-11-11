@@ -1,7 +1,7 @@
 # 0014 — Staff OpenPGP: primaries sealed in sluis, subkeys born on cards; ritueel makes the card ready and runs the delegation
 
 **Status:** Accepted
-**Date:** 2026-11-06
+**Date:** 2026-11-11
 
 ## Context
 
@@ -16,8 +16,6 @@ The maintainer decided on 2026-11-06:
 > **G4 A:** keys born on the card, with the attestation recorded in ritueel's ledger; PIN and Admin PIN changed at issue; a second card per person; cards shipped through Yubico Delivery; touch policy decided per key.
 >
 > **G5 A**, for a leaver: remove them from the org and delete their keys from their GitHub account; let the sluis certification lapse and drop the key from the staff keyring; revoke only on compromise.
->
-> **C1:** the maintainer migrates their own key (a software primary with imported subkeys) through ritueel's flow: "Ritueel will help me rotate master keys; after that we continue as we agree".
 >
 > **GH1 A:** the keys synced to a person's own GitHub account are only the company-issued ones.
 >
@@ -39,11 +37,13 @@ These decisions replace three earlier ones of the same day: a per-person primary
 
 The binding, the record, the primary and its sealing, the certification, the renewal, the keyring and the sync are sluis's, and are decided in [sluis ADR 0043 on key bindings](https://github.com/truvity/sluis/blob/main/docs/decisions/0043-a-person-binds-their-own-keys-to-their-identity-in-sluis.md), accepted and merged on sluis `main` ([pull request #1493](https://github.com/truvity/sluis/pull/1493)). This record states them only as far as ritueel's part cannot be read without them, and **it is the sluis record that decides if the two differ:** the bundle's file names, the challenge's bytes, the notation name, the trust-signature expression, the key identity and the lifetimes are copied from it here, and a change there is a change here.
 
+The roadmap builds the card helper and the delegation after the first signed release.
+
 ## Decision
 
 ### Staff keys and personal keys are two flows
 
-A **staff key** is an OpenPGP primary that sluis holds, sealed, for one person in one company, with card-born subkeys under it, for the staff address. A **personal key** is a person's own ([0012](/decisions/0012-personal-openpgp-the-primary-offline-in-a-file-the-daily-subkey-on-a-card/)), **and that flow is unchanged:** a person's own primary is theirs, in their file, and ritueel's part is the ceremony of 0012. Only a staff key is bound, certified and synced by the company. The OpenPGP applet of a card holds one key in each of its slots, so a card that holds staff subkeys holds no personal key: a person who has both uses two cards.
+A **staff key** is an OpenPGP primary that sluis holds, sealed, for one person in one company, with card-born subkeys under it, for the staff address. A **personal key** is a person's own ([0012](/decisions/0012-personal-openpgp-the-primary-offline-in-a-file-the-daily-subkey-on-a-card/), [0017](/decisions/0017-a-persons-openpgp-key-in-two-stages-an-adopted-primary-first-then-card-born-primaries/)), **and that flow is unchanged:** a person's own primary is theirs, in their file, and ritueel's part is the ceremony of 0012. Only a staff key is bound, certified and synced by the company. The OpenPGP applet of a card holds one key in each of its slots, so a card that holds staff subkeys holds no personal key: a person who has both uses two cards.
 
 ### What ritueel does and what sluis does
 
@@ -52,7 +52,7 @@ A **staff key** is an OpenPGP primary that sluis holds, sealed, for one person i
 | Holds the company roots; runs their ceremonies and transitions ([0002](/decisions/0002-key-custody-every-key-is-born-in-its-store-two-root-cards-or-one-kms-root-and-a-replica/), [0009](/decisions/0009-root-transitions-vouch-overlap-retire-and-revoke/)). | Generates and seals each person's primary, per company, under that company's own data key. The primary signs only the person's own certificate, certify-only, and only for a one-shot grant that `policy` sealed for one use, with packets that key@ builds itself. |
 | **The delegation ceremony:** the root makes a domain-scoped trust signature over each company's certification key, and an ordinary certification over each company's keyring-signing key, with a hand-off (below). | Receives them, installs them (`sluis key install` refuses a certification key whose trust signature differs), and warns before they expire, as for every intermediate ([0001](/decisions/0001-scope-roots-and-transitions-systems-like-sluis-hold-intermediates/)). |
 | **The card helper:** makes a person's card ready, generates the subkey candidates on it, and writes the proof bundle (below). It makes no network call. Its job is the card side only. | `sluis key bind`: the fresh hardware step-up, the check of the bundle on the server, the binding of the subkeys under the primary, the record, the class (`hardware-attested`, `hardware-unlisted` or `unattested`), the certification, and the renewal. |
-| Personal keys (0012). | The staff keyring, built from the bindings, and its sync to the hosting platform; ending a binding for a leaver or a lost card. |
+| Personal keys (0012, 0017). | The staff keyring, built from the bindings, and its sync to the hosting platform; ending a binding for a leaver or a lost card. |
 | Teaches all of it. | The audit record of every bind, renewal and unbind. |
 
 ritueel holds no staff primary, binds no subkey, certifies no person and runs no ceremony per person. The reasons are in the roads not taken.
@@ -117,9 +117,9 @@ Who does each step: **ritueel** (the helper or the delegation ceremony), **sluis
 
 **What stays.** sluis ADR 0043 says it plainly: anyone who controls key@ for a company can make a subkey of their own and bind it under any of that company's people, a compromised `exchange` can obtain a grant for evidence that is false (the one-shot grant, the packets key@ builds itself and its re-check of the signatures stop it from binding any other subkey, not from presenting a forged attestation and approval for a key someone really holds), and one who takes the wrapping key and the ciphertext can do it quietly and offline, with no call to sluis and no audit record; detection is the only control, by the published keyring that anyone can diff and, later, a CI check of commit signers against it. A card with its PIN and touch policy is the person's private key, as for any card. The record states the limit and does not hide it.
 
-### The maintainer's own key
+### A person's own key
 
-The maintainer's current key, a software primary with subkeys imported into cards, is neither a staff key nor, any longer, the company identity: those subkeys were not born on a card and cannot be attested (principle 1). The maintainer's company identity is now a primary that sluis holds, with subkeys born on a staff card, bound with the helper as its first real use (C1). The maintainer's personal key is re-made by the flow of 0012, with a new offline primary whose subkeys are born on a different card. "Ritueel will help me rotate master keys; after that we continue as we agree."
+A person's own key is handled by [0012](/decisions/0012-personal-openpgp-the-primary-offline-in-a-file-the-daily-subkey-on-a-card/) and [0017](/decisions/0017-a-persons-openpgp-key-in-two-stages-an-adopted-primary-first-then-card-born-primaries/); a staff key by this record.
 
 ### Choices of the author
 
@@ -128,7 +128,6 @@ These are the author's way of filling what the decisions left open, and the main
 - **P-384 and the signature and authentication slots for the card subkeys;** no encryption subkey.
 - **The 1095 days of PX1 are the expiry of the card subkeys' binding,** as sluis ADR 0043 reads it; PX1 was decided for a card-born primary.
 - **BK1 A, BK2 A and BK3 A are read from the maintainer's relayed answers as:** the helper is ritueel's (BK1); a key with no attestation can be bound, in the class sluis calls `unattested`, and staff company signing refuses it (BK2); sealed software keys for non-human identities are a later feature (BK3).
-- **The old key of the maintainer is removed from the hosting account by hand,** and the personal key is re-made by the flow of 0012.
 - **The person is present** whenever a subkey is born or a challenge is signed: it needs the card, its PIN and a touch.
 - **A staff card is dedicated:** it holds no personal key.
 
@@ -152,13 +151,13 @@ These are the author's way of filling what the decisions left open, and the main
 - **An SSH-signing fallback for people without a card.** Easy to start, but it has no OpenPGP identity and nothing the company can certify, and two standards would have to be taught and checked; the maintainer ruled it out (G1).
 - **ritueel certifies each person online.** One fewer system for the staff path, but ritueel is a command-line tool and not a network service ([0001](/decisions/0001-scope-roots-and-transitions-systems-like-sluis-hold-intermediates/)), and a root that signs every joiner is not offline.
 - **The person's staff key as a subkey under their personal primary.** One identity, but then the company would certify a key it does not control and could not unbind it, and the personal primary is the person's own (0012).
-- **Subkeys made in software and imported into the card.** The usual practice, with a backup of the subkeys, but the key existed outside its store and cannot be attested; it is also the maintainer's own old key.
+- **Subkeys made in software and imported into the card.** The usual practice, with a backup of the subkeys, but the key existed outside its store and cannot be attested.
 - **Ed25519 for the card subkeys.** Native on the applet, but the card layer was measured with P-384, the contract accepts nothing else for a subkey, and the verifier matrix has no Ed25519 subkey on a card.
 - **A copy of the subkeys on the second card.** One set of keys per person, but a card-born key cannot be copied without having existed outside its device; the second card has subkeys of its own, as its own binding.
 - **A plain document signature (type `0x00`) over a labelled challenge.** The simplest packet, but a label is not domain separation: the same signature form is what a tool takes for a document signature. A standalone signature with the challenge in a critical notation signs nothing else.
 - **The keyring signed by the certification key.** One key fewer, but certifying a person and signing a manifest would share a key, and one compromise would give both powers; a dedicated key keeps them apart under one root.
 - **Revoking a leaver's key.** Looks final, but the hosting platform never re-checks old commits, so it changes nothing there; it is kept for a compromise.
-- **The helper makes an encryption subkey too.** A complete personal-style key, but a lost card would lose the mail it decrypted, which 0012 rules out; nothing needs it.
+- **The helper makes an encryption subkey too.** A complete personal-style key, but a lost card would lose the mail it decrypted, which [0017](/decisions/0017-a-persons-openpgp-key-in-two-stages-an-adopted-primary-first-then-card-born-primaries/#day-to-day-cards) avoids for a person's own key only with a software key and a wrapped backup; nothing needs it for staff.
 - **The helper talks to sluis.** The challenge and the upload would be automatic, but the helper would depend on a network service and on sluis being up; the bundle is files the person carries.
 
 ## Follow-ups
