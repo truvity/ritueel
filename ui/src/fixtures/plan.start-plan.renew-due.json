@@ -66,7 +66,7 @@
       {
         "ordinal": 5,
         "title": "Renew acme-release",
-        "detail": "Binds the release subkey again under the OpenPGP primary of acme, side B, for 13 months. The subkey is read through the read-only role named in the configuration.",
+        "detail": "Binds the release subkey again under the OpenPGP primary of acme, side B, for 13 months. The subkey is read with the admin role named in the configuration.",
         "whatChanges": "A new binding for the release subkey",
         "requirements": [
           "REQUIREMENT_CARD_PRESENT",
@@ -105,7 +105,7 @@
       {
         "path": "ledger/20261111T090000Z-due/record.json",
         "action": "FOLDER_CHANGE_ACTION_CREATE",
-        "description": "The record of this ceremony; it names 2026-11-03-adopt-personal-key as the one before."
+        "description": "The record of this ceremony; it names the record of 2026-11-03-adopt-personal-key by digest as the one before."
       },
       {
         "path": "ledger/20261111T090000Z-due/plan.json",
