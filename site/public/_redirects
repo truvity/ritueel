@@ -128,6 +128,8 @@
 /contributing/workflow https://github.com/truvity/ritueel/blob/main/docs/contributing/workflow.md 302
 /guides/ https://github.com/truvity/ritueel/blob/main/docs/guides/index.md 302
 /guides https://github.com/truvity/ritueel/blob/main/docs/guides/index.md 302
+/guides/after-a-ceremony/ https://github.com/truvity/ritueel/blob/main/docs/guides/after-a-ceremony.md 302
+/guides/after-a-ceremony https://github.com/truvity/ritueel/blob/main/docs/guides/after-a-ceremony.md 302
 /guides/back-up-and-restore/ https://github.com/truvity/ritueel/blob/main/docs/guides/back-up-and-restore.md 302
 /guides/back-up-and-restore https://github.com/truvity/ritueel/blob/main/docs/guides/back-up-and-restore.md 302
 /guides/lost-root-card/ https://github.com/truvity/ritueel/blob/main/docs/guides/lost-root-card.md 302
@@ -228,8 +230,12 @@
 /reference/wizard https://github.com/truvity/ritueel/blob/main/docs/reference/wizard.md 302
 /research/ https://github.com/truvity/ritueel/blob/main/docs/research/index.md 302
 /research https://github.com/truvity/ritueel/blob/main/docs/research/index.md 302
+/research/after-the-ceremony-consumers-2026-11-11/ https://github.com/truvity/ritueel/blob/main/docs/research/after-the-ceremony-consumers-2026-11-11.md 302
+/research/after-the-ceremony-consumers-2026-11-11 https://github.com/truvity/ritueel/blob/main/docs/research/after-the-ceremony-consumers-2026-11-11.md 302
 /research/card-libraries-and-tooling-2026-11-01/ https://github.com/truvity/ritueel/blob/main/docs/research/card-libraries-and-tooling-2026-11-01.md 302
 /research/card-libraries-and-tooling-2026-11-01 https://github.com/truvity/ritueel/blob/main/docs/research/card-libraries-and-tooling-2026-11-01.md 302
+/research/earlier-records-two-sources-2026-11-11/ https://github.com/truvity/ritueel/blob/main/docs/research/earlier-records-two-sources-2026-11-11.md 302
+/research/earlier-records-two-sources-2026-11-11 https://github.com/truvity/ritueel/blob/main/docs/research/earlier-records-two-sources-2026-11-11.md 302
 /research/local-wizard-threats-2026-11-01/ https://github.com/truvity/ritueel/blob/main/docs/research/local-wizard-threats-2026-11-01.md 302
 /research/local-wizard-threats-2026-11-01 https://github.com/truvity/ritueel/blob/main/docs/research/local-wizard-threats-2026-11-01.md 302
 /research/openpgp-subkey-retirement-2026-11-10/ https://github.com/truvity/ritueel/blob/main/docs/research/openpgp-subkey-retirement-2026-11-10.md 302
