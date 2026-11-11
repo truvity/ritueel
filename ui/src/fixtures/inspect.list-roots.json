@@ -535,7 +535,7 @@
           "algorithm": "ecdsa-p384",
           "fingerprint": "20010123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789AB",
           "createdAt": "2023-12-02T10:05:00Z",
-          "expiresAt": "2028-12-02T00:00:00Z",
+          "expiresAt": "2029-09-15T00:00:00Z",
           "slot": "86",
           "cardSerial": "00000001"
         },
@@ -545,7 +545,7 @@
           "algorithm": "ecdsa-p384",
           "fingerprint": "20020123456789ABCDEF0123456789ABCDEF0123",
           "createdAt": "2023-12-02T10:05:00Z",
-          "expiresAt": "2028-12-02T00:00:00Z",
+          "expiresAt": "2029-09-15T00:00:00Z",
           "slot": "87",
           "cardSerial": "00000001"
         },
@@ -564,7 +564,7 @@
           "algorithm": "ecdsa-p384",
           "fingerprint": "21010123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789AB",
           "createdAt": "2023-12-02T10:05:00Z",
-          "expiresAt": "2028-12-02T00:00:00Z",
+          "expiresAt": "2029-09-15T00:00:00Z",
           "slot": "86",
           "cardSerial": "00000002"
         },
@@ -574,7 +574,7 @@
           "algorithm": "ecdsa-p384",
           "fingerprint": "21020123456789ABCDEF0123456789ABCDEF0123",
           "createdAt": "2023-12-02T10:05:00Z",
-          "expiresAt": "2028-12-02T00:00:00Z",
+          "expiresAt": "2029-09-15T00:00:00Z",
           "slot": "87",
           "cardSerial": "00000002"
         },
@@ -595,7 +595,7 @@
           "algorithm": "ecdsa-p384",
           "fingerprint": "20020123456789ABCDEF0123456789ABCDEF0123",
           "createdAt": "2023-12-02T10:05:00Z",
-          "expiresAt": "2028-12-02T00:00:00Z",
+          "expiresAt": "2029-09-15T00:00:00Z",
           "slot": "87",
           "cardSerial": "00000001"
         },
@@ -667,14 +667,14 @@
           "algorithm": "ecdsa-p384",
           "fingerprint": "30010123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789AB",
           "createdAt": "2026-09-15T13:00:00Z",
-          "expiresAt": "2031-09-15T00:00:00Z"
+          "expiresAt": "2029-09-15T00:00:00Z"
         },
         {
           "kind": "ROOT_KEY_KIND_OPENPGP_PRIMARY",
           "algorithm": "ecdsa-p384",
           "fingerprint": "30020123456789ABCDEF0123456789ABCDEF0123",
           "createdAt": "2026-09-15T13:00:00Z",
-          "expiresAt": "2031-09-15T00:00:00Z"
+          "expiresAt": "2029-09-15T00:00:00Z"
         }
       ],
       "cloudKey": {

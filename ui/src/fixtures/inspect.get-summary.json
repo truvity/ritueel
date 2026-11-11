@@ -24,7 +24,7 @@
       "id": "card-check-root-cards",
       "kind": "DUE_KIND_CARD_CHECK",
       "title": "Check the root cards and prove they are alive",
-      "detail": "Every six months both root cards are read against the layout and each signs a test digest. The last check was 2026-06-02.",
+      "detail": "Every six months both root cards are read against the layout and each passes the proof of life, a short test that the card still works for its holder. The last check was 2026-06-02.",
       "subject": {
         "kind": "SUBJECT_KIND_CARD",
         "identifier": "00000001",

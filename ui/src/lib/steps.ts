@@ -2,8 +2,9 @@ import { CeremonyKind } from '../gen/ritueel/local/v1alpha1/inspect_service_pb';
 
 // The usual steps of each kind of ceremony, in the words of the plan steps.
 // The contract's Ceremony message carries the digest of the plan it ran but
-// not its steps, so the page shows the usual steps by kind and says so.
-// (The real program should send the steps with the record.)
+// not its steps; the demo has no plan files, so the page shows the usual steps
+// by kind and says so (the real program would read them from plan.json in the
+// ledger).
 
 export interface UsualStep {
   title: string;
@@ -43,13 +44,13 @@ export const USUAL_STEPS: Partial<Record<CeremonyKind, UsualStep[]>> = {
   [CeremonyKind.CARD_CHECK]: [
     CHECK,
     CARDS,
-    { title: 'Prove each card is alive', detail: 'Each card signs a test digest with the key of its root row. Nothing changes outside the record.' },
+    { title: 'Prove each card is alive', detail: 'Each card passes the proof of life. Nothing changes outside the record.' },
     RECORD,
   ],
   [CeremonyKind.RESTORE_DRILL]: [
-    CHECK,
-    { title: 'Open a copy of the key file', detail: 'The copy is opened with the recovery key, to prove that the backup can be restored.' },
-    { title: 'Compare', detail: 'The restored key is compared with the one in the folder. Nothing is kept.' },
-    RECORD,
+    { title: 'Clone the folder on a clean machine', detail: 'The check runs on a copy of the folder, so nothing in your own folder is touched.' },
+    { title: 'Verify the records, the last digest and the signed commits', detail: 'Every record is checked against the one before it, the newest digest against the one you kept apart, and the commits against their signatures.' },
+    { title: 'Compare the roots with their holders and check the revocation signatures', detail: 'Each root is compared with the keys its holder has, and every revocation is checked for a valid signature.' },
+    { title: 'Write the report', detail: 'The report is written for you to read. No record is written to the ledger.' },
   ],
 };

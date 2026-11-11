@@ -28,9 +28,9 @@ export const STORE_WORD: Record<number, string> = {
 };
 
 export const STORE_SENTENCE: Record<number, string> = {
-  [Store.SOFTWARE_FILE]: 'The key is a file in your folder, locked. A passkey on each root card opens it, and a recovery key is kept apart.',
-  [Store.ROOT_CARDS]: 'The key lives on two root cards and never leaves them. You use it only at the ceremony machine, with the cards present.',
-  [Store.CLOUD_KMS]: 'The key lives in a cloud key service. ritueel adopted it: it reads the public key and the policy, and it does not change the key.',
+  [Store.SOFTWARE_FILE]: 'The key is an encrypted file in a key folder outside your ritueel folder. A passkey on each root card opens it, and a recovery key is kept apart.',
+  [Store.ROOT_CARDS]: 'Each root card holds its own key, born on that card, and the keys never leave the cards. You use them only at the ceremony machine, with the card present.',
+  [Store.CLOUD_KMS]: 'The key lives in a cloud key service and never leaves it. If ritueel adopted it, it read the public key and the policy and did not change the key.',
 };
 
 export const ROOT_STATE_WORD: Record<number, string> = {

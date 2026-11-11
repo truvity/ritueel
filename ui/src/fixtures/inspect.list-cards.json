@@ -837,7 +837,7 @@
             "algorithm": "cv25519",
             "pinRule": "PIN_RULE_ONCE",
             "touchRule": "TOUCH_RULE_NEVER",
-            "publicKeySha256": "50490123456789abcdef0123456789abcdef0123456789abcdef0123456789ab",
+            "publicKeySha256": "50390123456789abcdef0123456789abcdef0123456789abcdef0123456789ab",
             "bornAt": "2025-03-18T00:00:00Z"
           },
           {
@@ -1061,7 +1061,7 @@
             "algorithm": "cv25519",
             "pinRule": "PIN_RULE_ONCE",
             "touchRule": "TOUCH_RULE_NEVER",
-            "publicKeySha256": "50590123456789abcdef0123456789abcdef0123456789abcdef0123456789ab",
+            "publicKeySha256": "50390123456789abcdef0123456789abcdef0123456789abcdef0123456789ab",
             "bornAt": "2025-03-18T00:00:00Z"
           },
           {
@@ -1142,32 +1142,23 @@
           },
           {
             "number": 2,
-            "label": "practice",
-            "rootLabel": "practice",
+            "label": "free",
             "slots": [
               {
                 "id": "82",
-                "state": "SLOT_STATE_EMPTY"
+                "state": "SLOT_STATE_SPARE"
               },
               {
                 "id": "83",
-                "state": "SLOT_STATE_USED",
-                "use": "SLOT_USE_REHEARSAL",
-                "purpose": "Practice key, row of a practice root",
-                "rootLabel": "practice",
-                "algorithm": "ecdsa-p384",
-                "pinRule": "PIN_RULE_ALWAYS",
-                "touchRule": "TOUCH_RULE_ALWAYS",
-                "publicKeySha256": "50610123456789abcdef0123456789abcdef0123456789abcdef0123456789ab",
-                "bornAt": "2026-11-05T00:00:00Z"
+                "state": "SLOT_STATE_SPARE"
               },
               {
                 "id": "84",
-                "state": "SLOT_STATE_EMPTY"
+                "state": "SLOT_STATE_SPARE"
               },
               {
                 "id": "85",
-                "state": "SLOT_STATE_EMPTY"
+                "state": "SLOT_STATE_SPARE"
               }
             ]
           },
@@ -1311,7 +1302,7 @@
         ]
       },
       "changesSinceLastReading": [
-        "Slots 83, 86 and 87 hold new practice keys, born on 2026-11-05. The card was reset on that day first."
+        "Slots 86 and 87 hold new practice keys, born on 2026-11-05. The card was reset on that day first."
       ]
     }
   ],

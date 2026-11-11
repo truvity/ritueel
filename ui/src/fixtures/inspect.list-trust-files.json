@@ -21,7 +21,7 @@
       "path": "products/8/ca-bundle.pem",
       "trustSequence": 8,
       "builtAt": "2026-09-15T13:40:00Z",
-      "validUntil": "2028-12-02T00:00:00Z",
+      "validUntil": "2029-09-15T00:00:00Z",
       "checkResult": "TRUST_CHECK_RESULT_PASSED",
       "checkDetail": "Three X.509 roots, and each is in the root list.",
       "sha256": "70020123456789abcdef0123456789abcdef0123456789abcdef0123456789ab",
@@ -58,9 +58,9 @@
       "rebuildCommand": "ritueel due --plan-only"
     },
     {
-      "name": "acme-keyring.pgp",
+      "name": "acme-keyring.gpg",
       "kind": "TRUST_FILE_KIND_KEYRING",
-      "path": "products/8/keyring/acme-keyring.pgp",
+      "path": "products/8/keyring/acme-keyring.gpg",
       "trustSequence": 8,
       "builtAt": "2026-09-15T13:40:00Z",
       "validUntil": "2027-02-27T00:00:00Z",
@@ -68,20 +68,20 @@
       "checkDetail": "Holds the OpenPGP primaries of acme and the release subkey acme-release, which is valid until 2027-02-27.",
       "sha256": "70050123456789abcdef0123456789abcdef0123456789abcdef0123456789ab",
       "sizeBytes": "4310",
-      "verifyCommand": "ritueel keyring verify products/8/keyring/acme-keyring.pgp --root-list products/8/root-list.json",
+      "verifyCommand": "ritueel keyring verify products/8/keyring/acme-keyring.gpg --root-list products/8/root-list.json",
       "rebuildCommand": "ritueel keyring build --name acme"
     },
     {
-      "name": "acme-keyring.rpm",
+      "name": "acme-keyring-2026.8-1.noarch.rpm",
       "kind": "TRUST_FILE_KIND_KEYRING",
-      "path": "products/8/keyring/acme-keyring.rpm",
+      "path": "products/8/keyring/acme-keyring-2026.8-1.noarch.rpm",
       "trustSequence": 8,
       "builtAt": "2026-09-15T13:40:00Z",
       "checkResult": "TRUST_CHECK_RESULT_NOT_RUN",
       "checkDetail": "Not built: the folder's configuration names no licence for the package, and ritueel does not choose one for you.",
       "sha256": "70060123456789abcdef0123456789abcdef0123456789abcdef0123456789ab",
       "sizeBytes": "0",
-      "verifyCommand": "ritueel keyring verify products/8/keyring/acme-keyring.rpm --root-list products/8/root-list.json",
+      "verifyCommand": "ritueel keyring verify products/8/keyring/acme-keyring-2026.8-1.noarch.rpm --root-list products/8/root-list.json",
       "rebuildCommand": "ritueel keyring build --name acme"
     }
   ]

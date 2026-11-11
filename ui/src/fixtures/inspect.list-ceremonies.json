@@ -43,6 +43,10 @@
       "subjectLabels": [
         "globex-cloud"
       ],
+      "cardSerials": [
+        "00000001",
+        "00000002"
+      ],
       "trustSequence": 8,
       "guidePath": "/reference/kms-root/#adopting-an-existing-key"
     },
@@ -132,7 +136,7 @@
       "id": "2025-01-28-renew-acme-release",
       "kind": "CEREMONY_KIND_RENEW",
       "title": "Renewed acme-release",
-      "summary": "The binding of the release subkey was renewed for 13 months over the same key.",
+      "summary": "The binding of the release subkey was renewed for 13 months over the same key, by acme side B.",
       "completedAt": "2025-01-28T14:20:00Z",
       "outcome": "CEREMONY_OUTCOME_DONE",
       "previousId": "2024-12-03-renew-acme-ca",
@@ -144,7 +148,7 @@
         "acme-release"
       ],
       "cardSerials": [
-        "00000001"
+        "00000002"
       ],
       "trustSequence": 5,
       "guidePath": "/guides/re-sign-yearly/"
@@ -153,7 +157,7 @@
       "id": "2024-12-03-renew-acme-ca",
       "kind": "CEREMONY_KIND_RENEW",
       "title": "Renewed acme-ca",
-      "summary": "The same key of acme-gateway was certified again for 13 months. The next trust sequence was written.",
+      "summary": "The same key of acme-gateway was certified again for 13 months, under acme root side B. The next trust sequence was written.",
       "completedAt": "2024-12-03T14:20:00Z",
       "outcome": "CEREMONY_OUTCOME_DONE",
       "previousId": "2024-06-10-card-check",
@@ -165,7 +169,7 @@
         "acme-ca"
       ],
       "cardSerials": [
-        "00000001"
+        "00000002"
       ],
       "trustSequence": 4,
       "guidePath": "/guides/re-sign-yearly/"
@@ -174,7 +178,7 @@
       "id": "2024-06-10-card-check",
       "kind": "CEREMONY_KIND_CARD_CHECK",
       "title": "Checked both root cards and proved they are alive",
-      "summary": "Every slot of both root cards matched the built-in layout. Each card signed a test digest with PIN and touch. Nothing else changed.",
+      "summary": "Every slot of both root cards matched the built-in layout and both passed the proof of life. Nothing else changed.",
       "completedAt": "2024-06-10T14:20:00Z",
       "outcome": "CEREMONY_OUTCOME_DONE",
       "previousId": "2024-01-20-add-acme-release",

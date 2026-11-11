@@ -21,7 +21,7 @@
       {
         "ordinal": 2,
         "title": "Read the key",
-        "detail": "Asks the cloud provider for the public key and the policy of the key, through the read-only role named in the configuration.",
+        "detail": "Asks the cloud provider for the public key and the policy of the key, with the admin role named in the configuration.",
         "whatChanges": "Nothing changes",
         "learnPath": "/reference/kms-root/#adopting-an-existing-key"
       },
@@ -42,8 +42,17 @@
       {
         "ordinal": 5,
         "title": "Write the certificate",
-        "detail": "The key signs its own certificate, digest only, through the provider. The root is added to the next root list.",
+        "detail": "The key signs its own certificate, digest only, as the ceremony role after a sign-in with a hardware key. Every current root and the new root sign the next root list.",
         "whatChanges": "A new root in the folder",
+        "requirements": [
+          "REQUIREMENT_CARD_PRESENT",
+          "REQUIREMENT_PIN_AT_TERMINAL",
+          "REQUIREMENT_TOUCH"
+        ],
+        "cardSerials": [
+          "00000001",
+          "00000002"
+        ],
         "learnPath": "/reference/root-list/"
       },
       {
@@ -56,19 +65,24 @@
     ],
     "folderChanges": [
       {
-        "path": "records/2026-11-11-adopt-cloud-key.json",
+        "path": "ledger/20261111T090000Z-root-add/record.json",
         "action": "FOLDER_CHANGE_ACTION_CREATE",
         "description": "The record of this ceremony."
       },
       {
-        "path": "plans/2026-11-11-adopt-cloud-key.json",
+        "path": "ledger/20261111T090000Z-root-add/plan.json",
         "action": "FOLDER_CHANGE_ACTION_CREATE",
         "description": "The plan as it was confirmed."
       },
       {
-        "path": "transcripts/2026-11-11-adopt-cloud-key.txt",
+        "path": "ledger/20261111T090000Z-root-add/transcript.txt",
         "action": "FOLDER_CHANGE_ACTION_CREATE",
         "description": "What the terminal showed."
+      },
+      {
+        "path": "ledger/20261111T090000Z-root-add/attempt.json",
+        "action": "FOLDER_CHANGE_ACTION_CREATE",
+        "description": "Written just before the first signature."
       },
       {
         "path": "roots/example-staging/root.json",
@@ -76,9 +90,19 @@
         "description": "The facts of the new root."
       },
       {
-        "path": "roots/example-staging/attestation/key-description.json",
+        "path": "roots/example-staging/attestation/x509-root.key.json",
         "action": "FOLDER_CHANGE_ACTION_CREATE",
-        "description": "The key and its policy, as read."
+        "description": "The key, as read."
+      },
+      {
+        "path": "roots/example-staging/attestation/x509-root.policy.json",
+        "action": "FOLDER_CHANGE_ACTION_CREATE",
+        "description": "The key policy as GetKeyPolicy returned it."
+      },
+      {
+        "path": "roots/example-staging/attestation/result.json",
+        "action": "FOLDER_CHANGE_ACTION_CREATE",
+        "description": "The checks that ran."
       },
       {
         "path": "products/9/",
@@ -88,6 +112,10 @@
     ],
     "equivalentCommand": "ritueel root add --store aws-kms --key alias/example-staging-signing --plan-only",
     "runCommand": "ritueel run ./ritueel/pending/2026-11-11-adopt-cloud-key.plan --confirm a92d5e600123456789abcdef0123456789abcdef0123456789abcdefdeadbeef",
-    "savePath": "pending/2026-11-11-adopt-cloud-key.plan"
+    "savePath": "pending/2026-11-11-adopt-cloud-key.plan",
+    "cardSerials": [
+      "00000001",
+      "00000002"
+    ]
   }
 }

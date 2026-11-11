@@ -1905,7 +1905,7 @@ export enum RevocationReason {
   UNSPECIFIED = 0,
 
   /**
-   * Replaced by a newer key; signatures made before still stand.
+   * Replaced by a newer key. sqv and gpgv keep signatures made before the revocation; git verify-tag fails for any revoked key (measured 2026-11-10).
    *
    * @generated from enum value: REVOCATION_REASON_SUPERSEDED = 1;
    */
