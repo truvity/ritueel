@@ -49,6 +49,44 @@
         }
       }
     },
+    "buf@1.75.0": {
+      "last_modified": "2026-11-06T15:06:19Z",
+      "resolved": "github:NixOS/nixpkgs/4fe25e12eb9f4c744966dd3de5a05246cf098601#buf",
+      "source": "devbox-search",
+      "version": "1.75.0",
+      "systems": {
+        "aarch64-darwin": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/7dc7a9slffzl71ar44gxdkp8322kzwzy-buf-1.75.0",
+              "default": true
+            }
+          ],
+          "store_path": "/nix/store/7dc7a9slffzl71ar44gxdkp8322kzwzy-buf-1.75.0"
+        },
+        "aarch64-linux": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/gbdfc7gpdcal8wab28zivlx99an24lck-buf-1.75.0",
+              "default": true
+            }
+          ],
+          "store_path": "/nix/store/gbdfc7gpdcal8wab28zivlx99an24lck-buf-1.75.0"
+        },
+        "x86_64-linux": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/rxpwhb4swl5bzlady2l3chihmrnrssk3-buf-1.75.0",
+              "default": true
+            }
+          ],
+          "store_path": "/nix/store/rxpwhb4swl5bzlady2l3chihmrnrssk3-buf-1.75.0"
+        }
+      }
+    },
     "github:NixOS/nixpkgs/nixpkgs-unstable": {
       "last_modified": "2026-11-06T15:06:19Z",
       "resolved": "github:NixOS/nixpkgs/4fe25e12eb9f4c744966dd3de5a05246cf098601?lastModified=1793977579"
