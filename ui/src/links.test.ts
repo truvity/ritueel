@@ -282,7 +282,7 @@ describe('the static links of the source are published pages', () => {
   it('finds the links (an empty sweep proves nothing)', () => {
     expect(files.length).toBeGreaterThan(10);
     const values = new Set(found.map((l) => l.value));
-    for (const v of ['/glossary/', '/learn/what-is-a-root/', '/design/#where-a-root-is-used']) expect(values.has(v), v).toBe(true);
+    for (const v of ['/glossary/', '/learn/what-is-a-root/', '/learn/where-a-root-is-used/']) expect(values.has(v), v).toBe(true);
   });
 
   it('every one is a path of the site, a published page, and an anchor that is a heading of it', () => {

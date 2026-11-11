@@ -311,7 +311,7 @@ export function WhereItRuns({ plan }: { plan: PlanMessage }) {
           {cloud
             ? 'The limit: a compromised workstation could ask for one more signature. A cloud key does better than a card, because its audit trail records every signature. These conditions bound it. The offline system stays open to you if you want a clean machine. '
             : 'The limit: the card has no screen and signs what it is sent. A compromised workstation could ask for one more touch and get one more signature that no card logs. These conditions bound it. The offline system stays open to you if you want a clean machine. '}
-          <LearnLink path="/design/#where-a-root-is-used">Read why</LearnLink>
+          <LearnLink path="/learn/where-a-root-is-used/">Read why</LearnLink>
         </p>
       </>,
     );
@@ -324,7 +324,7 @@ export function WhereItRuns({ plan }: { plan: PlanMessage }) {
           {store === Store.SOFTWARE_FILE
             ? 'The root is a key file and can be copied, so it is used only there: vanilla AirgapOS, started from the ceremony USB stick, which has one extra partition. The stick step follows.'
             : 'You chose the clean machine: vanilla AirgapOS, started from the ceremony USB stick, which has one extra partition. Any root may be used there. The stick step follows.'}{' '}
-          <LearnLink path="/design/#where-a-root-is-used">Read why</LearnLink>
+          <LearnLink path="/learn/where-a-root-is-used/">Read why</LearnLink>
         </p>
       </>,
     );
@@ -333,7 +333,7 @@ export function WhereItRuns({ plan }: { plan: PlanMessage }) {
     return frame(
       'Where it runs: on your workstation',
       <p>
-        A test root, marked TEST ONLY, may run here. No stick is needed. <LearnLink path="/design/#where-a-root-is-used">Read why</LearnLink>
+        A test root, marked TEST ONLY, may run here. No stick is needed. <LearnLink path="/learn/where-a-root-is-used/">Read why</LearnLink>
       </p>,
     );
   }
@@ -343,7 +343,7 @@ export function WhereItRuns({ plan }: { plan: PlanMessage }) {
       'Where it runs: on your workstation, but the record does not allow it',
       <p>
         This plan says workstation for a root that can be copied. The record allows that only in the offline system. Do not run it; make the plan again.{' '}
-        <LearnLink path="/design/#where-a-root-is-used">Read why</LearnLink>
+        <LearnLink path="/learn/where-a-root-is-used/">Read why</LearnLink>
       </p>,
     );
   }
