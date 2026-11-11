@@ -11,7 +11,7 @@ Every ceremony writes four kinds of file into its own sub-folder of the ledger, 
 
 | File | Written at | Holds |
 |---|---|---|
-| `ledger/<ceremony>/plan.json` | Step 1, plan | Every byte that will be signed, fixed in advance. |
+| `ledger/<ceremony>/plan.json` | Step 1, plan | Every byte that will be signed, fixed in advance. Written by any command with `--plan-only` and by the process when the page saves a plan; this is the one place for saved plans. |
 | `ledger/<ceremony>/attempt.json` | Step 3, reserve | That signatures may exist from this plan. |
 | `ledger/<ceremony>/record.json` | Step 6, record | What was checked, signed and written. |
 | `ledger/<ceremony>/transcript.txt` | Step 6, record | What ritueel printed. |

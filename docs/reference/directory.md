@@ -18,9 +18,9 @@ The maintainer decided that the ledger is a plain write-once folder with one sub
 | Path | Written by | Holds |
 |---|---|---|
 | `ritueel.yaml` | The operator | The name, the release address, the policy and the intermediates ([below](/reference/directory/#ritueelyaml)). |
-| `cards.yaml` | ritueel | The inventory list: every card the holder registered, from M2. Absent while every root is in software ([the inventory](/reference/cards/#the-inventory-cardsyaml-and-cardsnameyaml)). |
+| `cards.yaml` | ritueel | The inventory list: every card the holder registered, of the four kinds root, day-to-day, hsm and rehearsal, from M2. Absent while every root is in software ([the inventory](/reference/cards/#the-inventory-cardsyaml-and-cardsnameyaml)). |
 | `cards/NAME.yaml` | ritueel | The map of one card: every slot of its PIV, OpenPGP and FIDO2 applications and its use. Written from the read-only check ([cards](/reference/cards/#the-map-of-one-card-cardsnameyaml)). |
-| `cards/NAME.sealed.age` | ritueel | The card's management key, PUK and, on a day-to-day card, the Admin PIN, sealed to the recipients of the key files. One file for each card ([ADR 0015](/decisions/0015-key-files-open-with-a-passkey-on-each-root-card-and-card-secrets-are-sealed-in-the-directory/#card-secrets)). |
+| `cards/NAME.sealed.age` | ritueel | The card's management key, PUK and, on a day-to-day card, the Admin PIN, sealed to the recipients of the key files. One file for each card that ritueel adopted, root and day-to-day ([ADR 0015](/decisions/0015-key-files-open-with-a-passkey-on-each-root-card-and-card-secrets-are-sealed-in-the-directory/#card-secrets)). |
 | `roots/<label>/root.json` | ritueel | The facts of one root ([below](/reference/directory/#rootjson)). |
 | `roots/<label>/x509.pem` | ritueel | The root's current certificate. |
 | `roots/<label>/openpgp.pgp` | ritueel | The primary's current public certificate, binary. |
@@ -28,7 +28,7 @@ The maintainer decided that the ledger is a plain write-once folder with one sub
 | `roots/<label>/ssh-break-glass.pub` | ritueel | From M2, with the cloud store: the root's break-glass SSH CA key, one OpenSSH line ([the SSH CA key list](/reference/ssh-ca-key-list/#how-a-key-enters-the-list)). |
 | `requests/<stem>.*` | The operator | Pending requests: the files of the [hand-off contract](/reference/hand-off-contract/#messages-and-files), one stem each. |
 | `answers/<stem>.*` | ritueel | The answers: `<stem>.result.json`, and `<stem>.cert.pem` or `<stem>.bound.pgp`. |
-| `ledger/<ceremony>/` | ritueel | The ledger: one sub-folder for each ceremony, holding its [ceremony files](/reference/ceremony-record/) `plan.json`, `attempt.json`, `record.json` and `transcript.txt`. A ceremony that makes keys also writes `births.jsonl`, the [birth journal](/reference/ceremony-record/#the-birth-journal). Each sub-folder names the one before it. A sealed single-file form of the ledger is later. |
+| `ledger/<ceremony>/` | ritueel | The ledger: one sub-folder for each ceremony, holding its [ceremony files](/reference/ceremony-record/) `plan.json`, `attempt.json`, `record.json` and `transcript.txt`. A ceremony that makes keys also writes `births.jsonl`, the [birth journal](/reference/ceremony-record/#the-birth-journal). The plan file that the local page saves is written here too. Each sub-folder names the one before it. A sealed single-file form of the ledger is later. |
 | `products/<sequence>/` | ritueel | The trust products of one trust sequence: `root-list.json`, `root-list.jws` and `ca-bundle.pem` ([the root list](/reference/root-list/#files)); from M4 `crl-<label>.pem` for each active root ([the CRLs](/reference/crl/#files)); from M4 `ssh-ca-keys.json`, `ssh-ca-keys.jws` and `ssh-user-ca-keys.pub` ([the SSH CA key list](/reference/ssh-ca-key-list/#files)) and `revocations/`; from M5 `keyring/` ([the keyring package](/reference/keyring-package/#files)). |
 
 - ritueel never writes `ritueel.yaml` or `requests/`, and the operator does not edit the other paths.
@@ -188,7 +188,7 @@ Six rules the schema cannot state: the two Regions of `aws_kms` differ, both its
 | `version` | `1`. |
 | `label` | The root's label: one upper-case letter, `A` and `B` for the two roots `init` makes, then the next free letter for each root `root add` makes, whatever its key store. It never names the store and is never reused. |
 | `store` | `software`, `piv` or `aws-kms`. |
-| `test` | True for a root made with `--test-root`. |
+| `test` | True for a root made with `--test-root`. Set at birth and never changed; a real root never becomes a test root. |
 | `created_at` | When the root was made: the time of its ceremony. |
 | `x509_spki_sha256` | The pin of the X.509 root key. |
 | `openpgp_fingerprint` | The primary's fingerprint. |

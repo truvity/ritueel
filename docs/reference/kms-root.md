@@ -17,11 +17,11 @@ Before `init`, with the operator's own infrastructure tools ([Prepare the cloud 
 |---|---|
 | The root account | A dedicated AWS account that holds nothing else. |
 | The admin role | Creates the keys and reads them. It replicates only before the policy that refuses replicas is in force, or through the break-glass principal. It can never `kms:Sign`. |
-| The ceremony role | The principal that may `kms:Sign` with a root key at a ceremony, and the only one that may sign anything new. It can be assumed only through a sign-in with a hardware key, which the identity provider records as a [session tag](/reference/kms-root/#the-hardware-key-proof) ([ADR 0013](/decisions/0013-the-kms-ceremony-role-trusts-a-hardware-sign-in-session-tag/)). |
-| The renewal role | Optional, with a [renewal policy](/reference/kms-root/#renewal-under-a-policy). The second and last principal that may `kms:Sign`: sign-only, with no hardware-key proof, assumable only by the operator's scheduler. ritueel lets it sign only what the directory already holds. |
+| The ceremony role | The principal that may `kms:Sign` with a root key at a ceremony, and the only one that may sign anything new. ritueel asks for no particular sign-in to assume it ([ADR 0013](/decisions/0013-the-kms-ceremony-role-trusts-a-hardware-sign-in-session-tag/)); how it is assumed is the operator's. |
+| The renewal role | Optional, with a [renewal policy](/reference/kms-root/#renewal-under-a-policy). The second and last principal that may `kms:Sign`: sign-only, assumable only by the operator's scheduler. ritueel lets it sign only what the directory already holds. |
 | The break-glass principal | The one principal that may still replicate a key or move its primary Region, for example after the loss of a Region. It is created like the admin role and is never named after a person. Using it is a manual, logged act ([ADR 0018](/decisions/0018-a-cloud-root-may-be-an-existing-key-that-ritueel-adopts/#the-reference-key-policy)). It can never `kms:Sign`. |
 | The keys | Optional. An existing key that ritueel [adopts](/reference/kms-root/#adopting-an-existing-key), with its alias and policy owned by the operator's own infrastructure code. Without one, ritueel creates the keys. |
-| Controls around them | Optional and the operator's: an organisation policy against deleting or disabling the keys, an alarm on every `Sign`, retention of the audit trail. The guide teaches them; ritueel does not create or check them. |
+| Controls around them | Optional and the operator's: an alarm on every `Sign`, retention of the audit trail. The guide teaches them; ritueel does not create or check them. |
 
 One person may be able to assume the admin and the ceremony role ([ADR 0002](/decisions/0002-key-custody-every-key-is-born-in-its-store-two-root-cards-or-one-kms-root-and-a-replica/#the-accepted-limit)). The roles separate the acts (creating, signing) so that each is a decision and leaves its own trail.
 
@@ -45,7 +45,7 @@ aws_kms:
 | `admin_role`, `ceremony_role` | The two roles, by ARN, in `account`. |
 | `renewal` | Optional: the [renewal policy](/reference/kms-root/#renewal-under-a-policy). Absent, no principal but the ceremony role may sign. |
 
-Credentials come from the caller's standard chain ([ADR 0004](/decisions/0004-ceremonies-plan-confirm-reserve-sign-verify-record/#kms-roots-and-wizards)). ritueel assumes the admin role to create and read, and the ceremony role to sign. ritueel does not sign the person in and holds no credential: the chain hands it a session of the ceremony role, made after a sign-in with a hardware key ([below](/reference/kms-root/#the-hardware-key-proof)). The `aws_kms` block is added to the schema of [the directory](/reference/directory/#ritueelyaml) with the store; it is additive, so `version` stays `1`.
+Credentials come from the caller's standard chain ([ADR 0004](/decisions/0004-ceremonies-plan-confirm-reserve-sign-verify-record/#kms-roots-and-wizards)). ritueel assumes the admin role to create and read, and the ceremony role to sign. ritueel does not sign the person in and holds no credential: the chain hands it a session of the ceremony role, and ritueel checks only that the session is the ceremony role's (check 9). The `aws_kms` block is added to the schema of [the directory](/reference/directory/#ritueelyaml) with the store; it is additive, so `version` stays `1`.
 
 ## What ritueel creates
 
@@ -83,84 +83,29 @@ The reference key policy: the same text for every key, with the role ARNs and th
 | Statement | Principal | Allows | Condition |
 |---|---|---|---|
 | Read | the admin role, the ceremony role | `DescribeKey`, `GetPublicKey`, `GetKeyPolicy`, `ListResourceTags`, `ListGrants` | none |
-| Sign | the ceremony role only | `Sign` | the session tag `mfa` is `hardware` (`aws:PrincipalTag/mfa`); `kms:SigningAlgorithm` is `ECDSA_SHA_384`; `kms:MessageType` is `DIGEST` |
+| Sign | the ceremony role only | `Sign` | `kms:SigningAlgorithm` is `ECDSA_SHA_384`; `kms:MessageType` is `DIGEST` |
 | Renew | the renewal role, only when `renewal` is declared, and only on the `x509-root` and `openpgp-primary` keys | `Sign`, and the five read actions above | `kms:SigningAlgorithm` is `ECDSA_SHA_384`; `kms:MessageType` is `DIGEST` |
 | Manage | the admin role only | `PutKeyPolicy`, `TagResource`, `ScheduleKeyDeletion`, `DisableKey`, `EnableKey` | none |
 | Break glass | the break-glass principal only | `ReplicateKey`, `UpdatePrimaryRegion` | none |
 | Deny replicas | every principal except the break-glass principal | `ReplicateKey`, `UpdatePrimaryRegion` | none |
 | Deny grants | every principal | `CreateGrant`, `RetireGrant`, `RevokeGrant` | none |
 
-`PutKeyPolicy` stays with the admin role because AWS refuses a policy that would lock out its own caller. The policy refuses new replicas and moving the primary Region to everyone but the break-glass principal, so that an administrator cannot copy the key to a Region where no one watches; it allows digests only (the Sign row). The replicas are made before the refusal applies, or by the break-glass principal; the sequence for the keys that ritueel creates is written here when the store is built ([ADR 0018](/decisions/0018-a-cloud-root-may-be-an-existing-key-that-ritueel-adopts/#the-reference-key-policy)). No statement names the account root, and none allows `Sign` to the admin role or the break-glass principal. The break-glass SSH CA key has no Renew statement: nothing it signs is ever renewed. The `kms:` condition keys are those of the KMS documentation (read 2026-11-02, [AWS KMS condition keys](https://docs.aws.amazon.com/kms/latest/developerguide/conditions-kms.html)); `aws:PrincipalTag` is a global condition key (read 2026-11-06, [IAM condition keys](https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_condition-keys.html)). The digest of the policy text, as the service returns it, is `policy_sha256` in the record.
+`PutKeyPolicy` stays with the admin role because AWS refuses a policy that would lock out its own caller. The policy refuses new replicas and moving the primary Region to everyone but the break-glass principal, so that an administrator cannot copy the key to a Region where no one watches; it allows digests only (the Sign row). The replicas are made before the refusal applies, or by the break-glass principal; the sequence for the keys that ritueel creates is written here when the store is built ([ADR 0018](/decisions/0018-a-cloud-root-may-be-an-existing-key-that-ritueel-adopts/#the-reference-key-policy)). No statement names the account root, and none allows `Sign` to the admin role or the break-glass principal. The break-glass SSH CA key has no Renew statement: nothing it signs is ever renewed. The `kms:` condition keys are those of the KMS documentation (read 2026-11-02, [AWS KMS condition keys](https://docs.aws.amazon.com/kms/latest/developerguide/conditions-kms.html)); The digest of the policy text, as the service returns it, is `policy_sha256` in the record.
 
-## The hardware-key proof
+## A later option: a hardware-key sign-in
 
-A KMS root has no card, so the ceremony role is the only proof that a person with a hardware key is present. AWS does not set `aws:MultiFactorAuthPresent` for a federated sign-in (read 2026-11-06, [IAM condition keys](https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_condition-keys.html)), so the proof is a session tag that the identity provider sets ([ADR 0013](/decisions/0013-the-kms-ceremony-role-trusts-a-hardware-sign-in-session-tag/)). What each party does:
+**Not required, not built and not checked by ritueel.** The maintainer dropped it on 2026-11-10 and 2026-11-11 and it may come back ([ADR 0013](/decisions/0013-the-kms-ceremony-role-trusts-a-hardware-sign-in-session-tag/)). This section keeps what was learned, so that it need not be found again. If it returns, the decision is rewritten and this section becomes the detail.
 
-| Party | Does |
-|---|---|
-| The identity provider | After a sign-in with a device-bound hardware key, and only then, puts the tag `mfa` = `hardware` in the token or assertion. In an OIDC token the nested form is the claim `https://aws.amazon.com/tags`, then `principal_tags`, then `mfa`, an array of one string: `{"https://aws.amazon.com/tags": {"principal_tags": {"mfa": ["hardware"]}}}`. The flattened form, for providers that cannot nest, is the claim `https://aws.amazon.com/tags/principal_tags/mfa` with the string `hardware`. In SAML it is the attribute `https://aws.amazon.com/SAML/Attributes/PrincipalTag:mfa`. It may add `auth_time`; nothing tests it ([session tags](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_session-tags.html), read 2026-11-06). |
-| The ceremony role's trust policy | Names the federated provider as its only principal, and nothing else (below). Its maximum session duration is one hour, the least AWS allows. The operator writes it ([Prepare the cloud root](/guides/prepare-the-cloud-root/)). |
-| The key policy | Allows `Sign` to the ceremony role only when `aws:PrincipalTag/mfa` is `hardware` (the Sign row above). |
-| ritueel | Asks AWS in check 9; sets nothing and reads no tag. |
+A KMS root has no card, so a gate on the ceremony role is the only way to ask for a person with a hardware key. AWS does not set `aws:MultiFactorAuthPresent` for a federated sign-in (read 2026-11-06, [IAM condition keys](https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_condition-keys.html)). The way AWS documents is a session tag that the identity provider sets from the sign-in (read 2026-11-06, [session tags](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_session-tags.html)):
 
-### The trust policy
+- **The tag.** Key `mfa`, value `hardware`, set by the provider only after a sign-in with a device-bound hardware key. In an OIDC token it is the claim `https://aws.amazon.com/tags`, then `principal_tags`, then `mfa`; in SAML it is the attribute `https://aws.amazon.com/SAML/Attributes/PrincipalTag:mfa`.
+- **The key policy.** The `Sign` statement would add `StringEquals` on `aws:PrincipalTag/mfa` with the value `hardware`.
+- **The trust policy.** Its only principal would be the federated provider, with `sts:TagSession` and `aws:RequestTag/mfa` on both statements, and no role chaining: `AssumeRole` takes caller-supplied `Tags`, so a chained principal could write the tag itself.
+- **The provider.** It would have to ask for a fresh hardware-key sign-in for each ceremony, issue tokens of 5 minutes or less, and never mint the tag from a refresh token or an earlier sign-in. IAM Identity Center cannot be that provider (read 2026-11-06, [attributes for access control](https://docs.aws.amazon.com/singlesignon/latest/userguide/attributesforaccesscontrol.html), [permission sets](https://docs.aws.amazon.com/singlesignon/latest/userguide/permissionsetsconcept.html)).
+- **Freshness.** A policy variable cannot be used in a date comparison, so a tag cannot carry its own expiry. The bound is the provider's token plus the role's session, at most one hour.
+- **No call returns a session's own tags** (read 2026-11-06, [GetCallerIdentity](https://docs.aws.amazon.com/STS/latest/APIReference/API_GetCallerIdentity.html)), so a check by ritueel would need a different way to ask AWS; none was tested.
 
-For an OIDC provider (`123456789012` and `idp.example.com` are placeholders):
-
-```json
-{
-  "Version": "2012-10-17",
-  "Statement": [
-    {
-      "Sid": "SignInWithProof",
-      "Effect": "Allow",
-      "Principal": { "Federated": "arn:aws:iam::123456789012:oidc-provider/idp.example.com" },
-      "Action": "sts:AssumeRoleWithWebIdentity",
-      "Condition": {
-        "StringEquals": {
-          "idp.example.com:aud": "ritueel-ceremony",
-          "aws:RequestTag/mfa": "hardware"
-        }
-      }
-    },
-    {
-      "Sid": "PassTheProof",
-      "Effect": "Allow",
-      "Principal": { "Federated": "arn:aws:iam::123456789012:oidc-provider/idp.example.com" },
-      "Action": "sts:TagSession",
-      "Condition": {
-        "StringEquals": { "aws:RequestTag/mfa": "hardware" }
-      }
-    }
-  ]
-}
-```
-
-For a SAML provider, the principal is `arn:aws:iam::123456789012:saml-provider/idp.example.com`, the first action is `sts:AssumeRoleWithSAML`, and the audience condition is `"SAML:aud": "https://signin.aws.amazon.com/saml"`. Whether `aws:RequestTag` is evaluated on the assume statement itself, and not only on `sts:TagSession`, is tested with the store ([issue #12](https://github.com/truvity/ritueel/issues/12)); the condition is on both so that neither statement alone lets a call through without the tag.
-
-**Rules for the trust policy.**
-
-- **The only principal is the federated provider.** No `AWS` principal, no account root, no other role. `AssumeRole` takes caller-supplied `Tags`, so any principal that may assume the role and call `sts:TagSession` could write `mfa=hardware` itself; the tag is a proof only because the provider's signed token is the only way to set it. **Role chaining into the ceremony role is forbidden**, from a person's session or from another role.
-- **IAM Identity Center is not a provider for this role.** A directory attribute mapping replaces the value the identity provider sends, its permission-set roles carry trust policies the operator cannot edit, and a ceremony role reached from an SSO session is role chaining ([ADR 0013](/decisions/0013-the-kms-ceremony-role-trusts-a-hardware-sign-in-session-tag/#roads-not-taken)).
-- **The tag is not transitive.** The provider does not set `transitive_tag_keys`.
-
-### What the provider must do
-
-AWS cannot see how the person signed in, so the proof is only as good as the provider. The operator picks a provider that:
-
-1. asks for a fresh hardware-key sign-in for each ceremony (`max_age` in OIDC, `ForceAuthn` in SAML) and sets the tag only if `auth_time` meets that recency;
-2. issues a token or assertion that lives 5 minutes or less;
-3. never mints a token that carries `mfa=hardware` from a refresh token, a session cookie or an earlier sign-in without a fresh hardware-key sign-in.
-
-**How fresh the proof is.** A date comparison cannot use a policy variable, so a tag cannot carry its own expiry. The bound is the provider's token (5 minutes or less) plus the role's session (at most one hour): about an hour and five minutes at the last use, for this one hop; chaining is forbidden, so it is not carried further. For a tighter bound the person's SDK credential chain (the profile or environment setting that asks for a `DurationSeconds`; this is not role chaining) requests a 15-minute session, which AWS allows.
-
-**Why check 9 asks with a dry run.** No call returns a session's own tags: `sts get-caller-identity` returns the account, the ARN and the user id, and `sts get-session-token` is for the long-term credentials of an IAM user or the root user, which a federated session does not have (read 2026-11-06, [GetCallerIdentity](https://docs.aws.amazon.com/STS/latest/APIReference/API_GetCallerIdentity.html), [GetSessionToken](https://docs.aws.amazon.com/STS/latest/APIReference/API_GetSessionToken.html)).
-
-:::caution[Unverified]
-That a `Sign` dry run evaluates the key policy's principal-tag condition is an assumption from the documentation of `DryRun` ([Testing your permissions](https://docs.aws.amazon.com/kms/latest/developerguide/testing-permissions.html), read 2026-11-06), which says the call returns `DryRunOperationException` when the request would succeed and `AccessDeniedException` when it would not. It does not say that principal-tag conditions are evaluated, nor which CloudTrail `eventName` and `errorCode` a dry run leaves. [Issue #12](https://github.com/truvity/ritueel/issues/12) tests both before check 9 is built. **Fallback:** if a dry run skips the condition, check 9 does only its first step, and the ceremony's first real `Sign` fails closed: AWS denies it without the tag and nothing is signed. A real `Sign` over a fixed test digest was weighed and refused: it is a signature by the root key.
-:::
-
-[ADR 0013](/decisions/0013-the-kms-ceremony-role-trusts-a-hardware-sign-in-session-tag/) is the decision; this page is the detail. The enforcement is built with the store ([issue #12](https://github.com/truvity/ritueel/issues/12)).
+[ADR 0013](/decisions/0013-the-kms-ceremony-role-trusts-a-hardware-sign-in-session-tag/) decides that it is not required.
 
 ## The checks
 
@@ -170,7 +115,7 @@ Made at `init` after the keys exist, and again, reading from the service, at eve
 |---|---|---|
 | 1 | The ARN carries `account` and the expected Region; the key is enabled and not pending deletion. | `kms-account`, `kms-state` |
 | 2 | Spec, usage and origin are as above; the key is a multi-Region primary; its `GetPublicKey` answer equals the public key in the directory. | `kms-key-spec`, `kms-key-mismatch` |
-| 3 | The statement that allows `Sign` to the ceremony role carries the three conditions. | `kms-policy-sign` |
+| 3 | The statement that allows `Sign` to the ceremony role carries the two conditions. | `kms-policy-sign` |
 | 3a | Every statement that allows `Sign`, directly or through `kms:*` or a wildcard action, names the ceremony role, or the renewal role when `renewal` is declared, on a key that may have it and with its two conditions. Any other principal (the break-glass principal included), a renewal role that is not declared, or one on the break-glass key is refused. This is the root's form of the contract's single-principal rule ([the contract](/reference/hand-off-contract/#what-the-certifier-checks)), with the one declared exception. | `extra-sign-principal` |
 | 3b | A statement denies `ReplicateKey` and `UpdatePrimaryRegion` to every principal except the break-glass principal, and no other statement allows them to anyone else. | `kms-policy-replica` |
 | 4 | No statement allows the admin role or the break-glass principal to sign, and none names the account root or a wildcard principal. | `kms-policy-admin` |
@@ -178,7 +123,7 @@ Made at `init` after the keys exist, and again, reading from the service, at eve
 | 6 | The replica exists in `replica_region`, has the same public key, and passes checks 1 to 5 on its own policy. | `kms-replica` |
 | 7 | For a key ritueel created, the tags are present and `ritueel:openpgp-created` equals the creation time in the directory. For an adopted key, a tag is read when present and must equal the directory's value; it is not required. | `kms-tags` |
 | 8 | The policy is the one the last ceremony recorded. If its digest changed, the plan says so in words and shows both digests, and the person confirms the change as part of the plan; the record keeps both. | none |
-| 9 | At a ceremony that signs: `sts get-caller-identity` names a session of the ceremony role, in `account`. Then, unverified until [issue #12](https://github.com/truvity/ritueel/issues/12) tests it, a `Sign` dry run on the key under that session ends in `DryRunOperationException`, which AWS returns when the real call would succeed (the fallback is in [the proof](/reference/kms-root/#the-hardware-key-proof)). At a renewal: the same with the renewal role, without the proof. A different role, an `AccessDeniedException` (the tag is missing or is not `hardware`) or an expired session (the proof lapses with it) stops the run, and the message says to sign in again with the hardware key. | `kms-session` |
+| 9 | At a ceremony that signs: `sts get-caller-identity` names a session of the ceremony role, in `account`. At a renewal: the same with the renewal role. A different role or an expired session stops the run, and the message says to take a session of the ceremony role again. | `kms-session` |
 
 ## Renewal under a policy
 
