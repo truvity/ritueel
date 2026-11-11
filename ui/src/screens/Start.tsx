@@ -7,6 +7,7 @@ import { daysBetween, inDays, plural, ymd } from '../lib/format';
 import { planHref } from '../lib/finding';
 import { safeString } from '../lib/safe';
 import { href } from '../lib/route';
+import { onPlace } from '../lib/words';
 import { Cmd } from '../ui/Cmd';
 import { FindingCard } from '../ui/FindingCard';
 import { Fp } from '../ui/Fp';
@@ -161,14 +162,14 @@ function RenewAll({ count }: { count: number }) {
     const first = await plans.startPlan({ intention: Intention.RENEW_DUE });
     const answers = first.questions.map((q) => ({ questionId: q.id, optionIds: q.defaultOptionIds }));
     const second = await plans.startPlan({ intention: Intention.RENEW_DUE, answers });
-    return second.plan?.equivalentCommand ?? '';
+    return { command: second.plan?.equivalentCommand ?? '', place: second.plan?.runPlace };
   });
   return (
     <div className="mt-3 border border-line bg-panel p-4">
       <p className="mb-2">
-        <strong>One plan can renew all {count}.</strong> <span className="text-dim">You build it here and run it on the offline system.</span>
+        <strong>One plan can renew all {count}.</strong> <span className="text-dim">You build it here and run it {onPlace(cmd.state === 'ready' ? cmd.data.place : undefined)}.</span>
       </p>
-      {cmd.state === 'ready' && cmd.data ? <Cmd label="Make the plan that renews what is due">{cmd.data}</Cmd> : null}
+      {cmd.state === 'ready' && cmd.data.command ? <Cmd label="Make the plan that renews what is due">{cmd.data.command}</Cmd> : null}
       {cmd.state === 'loading' ? <p className="text-sm text-dim">Reading the command ...</p> : null}
       <div className="mt-3">
         <Button variant="outlined" href={planHref(Intention.RENEW_DUE)}>
@@ -324,7 +325,7 @@ function WhatIsWrong({ total }: { total: number }) {
 function Words() {
   const words: [string, string][] = [
     ['Root', 'The key that everything else is trusted from. It stays safe, and it is used rarely.'],
-    ['Subkey', 'A key the primary key hands the daily work to: signing, logging in, encrypting. Its binding is renewed each year, and it is replaced only on an event, so the primary key can stay put.'],
+    ['Subkey', 'A key the primary key hands the day-to-day work to: signing, logging in, encrypting. Its binding is renewed each year, and it is replaced only on an event, so the primary key can stay put.'],
     ['Delegated key', 'A key a root has handed a job to, for a requester (a system that asks for it). It works for a while and must be renewed.'],
     ['Bundle', 'The directory of one trust domain, for example personal or acme: its ledger, roots, cards and trust files. A root in it is written bundle/label, for example acme/A.'],
     ['Ceremony', 'One sitting at a terminal, where a plan is run and something about your keys changes.'],

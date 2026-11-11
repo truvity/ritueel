@@ -9,8 +9,8 @@
       "state": "CARD_STATE_ACTIVE",
       "kept": "in the safe, place one",
       "layoutVersion": 1,
-      "lastSeenAt": "2026-06-02T10:40:00Z",
-      "lastCheckedAt": "2026-06-02T10:40:00Z",
+      "lastSeenAt": "2026-06-02T14:20:00Z",
+      "lastCheckedAt": "2026-06-02T14:20:00Z",
       "oneTimeCodesOff": true,
       "roleSummary": "Root card. Holds the root acme/A in row 2. Its partner root, acme/B, is on root card B. Only goes into the offline system.",
       "rootLabels": [
@@ -211,7 +211,7 @@
             "algorithm": "hmac-secret",
             "pinRule": "PIN_RULE_ALWAYS",
             "touchRule": "TOUCH_RULE_ALWAYS",
-            "bornAt": "2026-10-20T00:00:00Z"
+            "bornAt": "2023-12-02T00:00:00Z"
           }
         ]
       }
@@ -225,8 +225,8 @@
       "state": "CARD_STATE_ACTIVE",
       "kept": "in the safe, place two",
       "layoutVersion": 1,
-      "lastSeenAt": "2026-06-02T10:40:00Z",
-      "lastCheckedAt": "2026-06-02T10:40:00Z",
+      "lastSeenAt": "2026-06-02T14:20:00Z",
+      "lastCheckedAt": "2026-06-02T14:20:00Z",
       "oneTimeCodesOff": true,
       "roleSummary": "Root card. Holds the root acme/B in row 2. Its partner root, acme/A, is on root card A. Only goes into the offline system.",
       "rootLabels": [
@@ -427,7 +427,7 @@
             "algorithm": "hmac-secret",
             "pinRule": "PIN_RULE_ALWAYS",
             "touchRule": "TOUCH_RULE_ALWAYS",
-            "bornAt": "2026-10-20T00:00:00Z"
+            "bornAt": "2023-12-02T00:00:00Z"
           }
         ]
       }

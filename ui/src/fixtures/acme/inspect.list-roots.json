@@ -2,7 +2,7 @@
   "roots": [
     {
       "label": "A",
-      "name": "Acme root A",
+      "name": "Acme Root A",
       "kind": "ROOT_KIND_COMPANY",
       "store": "STORE_ROOT_CARDS",
       "state": "ROOT_STATE_ACTIVE",
@@ -51,7 +51,7 @@
         },
         "userIds": [
           {
-            "text": "Acme Release <release@example.com>",
+            "text": "Acme Release Root A <release@example.com>",
             "primary": true,
             "createdAt": "2023-12-02T10:05:00Z"
           }
@@ -105,7 +105,7 @@
     },
     {
       "label": "B",
-      "name": "Acme root B",
+      "name": "Acme Root B",
       "kind": "ROOT_KIND_COMPANY",
       "store": "STORE_ROOT_CARDS",
       "state": "ROOT_STATE_ACTIVE",
@@ -154,7 +154,7 @@
         },
         "userIds": [
           {
-            "text": "Acme Release <release@example.com>",
+            "text": "Acme Release Root B <release@example.com>",
             "primary": true,
             "createdAt": "2023-12-02T10:05:00Z"
           }

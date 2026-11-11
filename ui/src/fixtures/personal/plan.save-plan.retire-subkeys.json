@@ -7,11 +7,12 @@
   "notice": "This is a demo. Nothing was written. This is what saving the plan would write.",
   "runCommand": "ritueel run ledger/20261111T090000Z-personal-subkey-revoke/plan.json --confirm c41e08b50123456789abcdef0123456789abcdef0123456789abcdefdeadbeef",
   "copyToStick": [
-    "Copy the bundle directory ~/ritueel/personal to a USB stick, with ledger/20261111T090000Z-personal-subkey-revoke/plan.json inside it. This is the stick you carry to the offline system."
+    "Copy the bundle ~/ritueel/personal to a USB stick, with ledger/20261111T090000Z-personal-subkey-revoke/plan.json inside it. This is the stick you carry to the offline system."
   ],
   "bring": [
     "Root card one (00000001)",
-    "The PINs of the cards: you type them at the terminal there, never here",
+    "The PIN of root card one: you type it at the terminal there, never here",
+    "The key file of your primary: it sits in its key directory on the offline system, outside the bundle, so it is not on the stick",
     "The offline system, booted from its own read-only stick"
   ],
   "whenBack": "Bring the USB stick back, copy the bundle over ~/ritueel/personal and reload this page. The new record appears in History.",
