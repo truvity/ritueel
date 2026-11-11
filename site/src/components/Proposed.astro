@@ -1,0 +1,9 @@
+---
+// A note that marks what is proposed and not yet decided (a layout, a name). Starlight's own Aside,
+// titled "Proposed". A page of docs/ that is .mdx imports this file by a relative path, because a bare
+// import of '@astrojs/starlight/components' from a file under docs/ would be looked up from docs/,
+// where there is no node_modules (they live in site/). A .md page writes `:::note[Proposed]`.
+import { Aside } from '@astrojs/starlight/components';
+---
+
+<Aside type="note" title="Proposed"><slot /></Aside>

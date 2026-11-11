@@ -1,0 +1,27 @@
+---
+// A figure of the site: an inline SVG drawn in site/figures/<name>.mjs, with its caption. Usage in an
+// .mdx page of docs/ (a relative import, like docs/index.mdx does):
+//
+//   import Figure from '../../site/src/components/Figure.astro';
+//   <Figure name="sign-intermediate">One or two sentences: what the figure shows.</Figure>
+//
+// The caption is the slot, so that a reader on GitHub still sees it; without a slot the module's own
+// caption is used. An unknown name stops the build. The stylesheet is imported here, so it ships only
+// on pages that have a figure.
+import '../styles/figures.css';
+import { figures } from '../../figures/index.mjs';
+import { renderFigure } from '../../figures/markup.mjs';
+import { esc } from '../../figures/draw.mjs';
+
+interface Props {
+  name: string;
+}
+const { name } = Astro.props;
+const fig = figures[name];
+if (!fig) {
+  throw new Error(`Figure: no figure named "${name}" (site/figures/index.mjs has: ${Object.keys(figures).join(', ')})`);
+}
+const caption = Astro.slots.has('default') ? await Astro.slots.render('default') : esc(fig.caption);
+---
+
+<Fragment set:html={renderFigure(fig, caption)} />

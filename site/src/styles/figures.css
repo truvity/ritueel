@@ -1,0 +1,128 @@
+/* The figures of the site (site/src/components/Figure.astro, drawn by site/figures/*.mjs).
+   Colours come only from Starlight's own variables (props.css), which switch with its light and dark
+   theme by themselves: there is no media query and no second copy for a theme here. Ink is
+   currentColor; the one accent (--sl-color-accent and its low and high forms) marks the one thing a
+   figure is about, and a second cue besides colour (a heavier outline) goes with it.
+   site/test/figures.test.mjs reads this file: every class a drawing uses is defined here, and no
+   font size is under 12px. */
+
+.fig {
+  margin: 1.5rem 0;
+  color: var(--sl-color-gray-1);
+}
+.fig svg {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  height: auto;
+}
+.fig figcaption {
+  margin: 0.9rem 0 0;
+  max-width: var(--ritueel-prose-width, 75ch);
+  font-size: var(--sl-text-sm);
+  line-height: 1.5;
+  color: var(--sl-color-text);
+}
+
+/* A strip of panels: one column on a phone (the panel is 280 units wide and never drawn narrower),
+   two, then three, as the column allows; never more than three, so that six panels fill 1x6, 2x3 or
+   3x2 and never leave a short last row. */
+.fig-panels {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 1.25rem 1rem;
+  grid-template-columns: repeat(auto-fill, minmax(max(17.5rem, calc((100% - 2rem) / 3)), 1fr));
+}
+.fig-panels > li {
+  margin: 0;
+  padding: 0;
+}
+.fig-cap {
+  margin: 0.4rem 0.2rem 0;
+  max-width: none;
+  font-size: var(--sl-text-sm);
+  line-height: 1.45;
+  color: var(--sl-color-text);
+}
+.fig-cap strong {
+  color: var(--sl-color-white);
+}
+
+/* A layout has a wide drawing and a tall one for a phone, both made from one table
+   (site/figures/slots.mjs); the narrower the column, the taller the drawing. The switch sits where
+   the wide drawing (760 units) would be drawn smaller than 1:1, so its text stays at 12px or more. */
+.fig-layout,
+.fig-strip {
+  container-type: inline-size;
+}
+.fig-layout .fig-narrow {
+  display: none;
+  max-width: 26rem;
+}
+@container (max-width: 48rem) {
+  .fig-layout .fig-wide {
+    display: none;
+  }
+  .fig-layout .fig-narrow {
+    display: block;
+  }
+}
+.fig-single svg {
+  max-width: 40rem;
+}
+
+/* Ink and paper. A panel is slightly tinted (the nav background); things on it are paper. */
+.fig .p-frame { fill: var(--sl-color-bg-nav); stroke: currentColor; stroke-width: 2.5; }
+.fig .paper { fill: var(--sl-color-bg); stroke: currentColor; stroke-width: 2; stroke-linejoin: round; }
+.fig .paper-t { fill: var(--sl-color-bg-nav); stroke: currentColor; stroke-width: 1.5; stroke-linejoin: round; }
+.fig .paper-g { fill: none; stroke: var(--sl-color-gray-3); stroke-width: 1.5; stroke-dasharray: 4 3; stroke-linejoin: round; }
+.fig .hl { fill: var(--sl-color-gray-5); stroke: currentColor; stroke-width: 1.5; }
+.fig .shadow { fill: currentColor; stroke: none; }
+.fig .fill-ink { fill: currentColor; }
+
+/* Lines: one weight of ink (2px), thin for detail, round joins. */
+.fig .ln { fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.fig .ln-thin { stroke-width: 1.4; }
+.fig .ln-key { stroke-width: 1.8; }
+.fig .ln-dim { stroke: var(--sl-color-gray-3); }
+.fig .ln-dash { stroke-dasharray: 5 4; }
+.fig .ar { stroke-linejoin: round; }
+.fig .t { font-style: normal; }
+.fig .hd { fill: currentColor; stroke: none; }
+.fig .arm-o { fill: none; stroke: currentColor; stroke-width: 9; stroke-linecap: round; }
+.fig .arm-i { fill: none; stroke: var(--sl-color-bg-nav); stroke-width: 5; stroke-linecap: round; }
+
+/* The accent: the one thing a figure is about. A heavier outline goes with the colour. */
+.fig .acc-f { fill: var(--sl-color-accent-low); stroke: var(--sl-color-accent); stroke-width: 2.4; stroke-linejoin: round; }
+.fig .acc-b { fill: var(--sl-color-bg); stroke: var(--sl-color-accent); stroke-width: 2.4; }
+.fig .ln-acc { stroke: var(--sl-color-accent); }
+.fig .hd-acc { fill: var(--sl-color-accent); }
+
+/* Slot states are told by line style as well as by colour: held is a solid outline with a key,
+   empty is dashed, a row kept free is dotted and heavy and hatched. Grey 3 is the dimmest grey that
+   keeps 3:1 against the panel in both themes. */
+.fig .cell-held { stroke-width: 2.2; }
+.fig .cell-empty { fill: none; stroke: var(--sl-color-gray-3); stroke-width: 1.5; stroke-dasharray: 4 3; }
+.fig .cell-free { fill: none; stroke: currentColor; stroke-width: 2.4; stroke-dasharray: 1 5; stroke-linecap: round; }
+
+/* Type: 13px, with 12px as the floor. The panel is never drawn smaller than 1:1. */
+.fig text {
+  font-family: var(--sl-font-system, system-ui, sans-serif);
+  font-size: 13px;
+  fill: currentColor;
+}
+.fig .t-s { font-size: 12px; }
+.fig .t-d { font-size: 14px; }
+.fig .t-b { font-weight: 700; }
+.fig .t-mono { font-family: var(--sl-font-system-mono, ui-monospace, monospace); }
+.fig .t-dim { fill: var(--sl-color-gray-3); }
+.fig .t-acc { fill: var(--sl-color-accent-high); }
+.fig .t-mid { text-anchor: middle; }
+.fig .t-end { text-anchor: end; }
+.fig .t-num { fill: var(--sl-color-bg); }
+.fig .t-id { letter-spacing: 0; }
+.fig .t-row { font-weight: 700; }
+.fig .t-long { font-size: 12px; }
+.fig .halo { fill: var(--sl-color-bg-nav); stroke: var(--sl-color-bg-nav); stroke-width: 5; stroke-linejoin: round; }
