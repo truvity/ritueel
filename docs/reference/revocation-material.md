@@ -5,13 +5,13 @@ sidebar:
   order: 12
 ---
 
-*Not built yet. This is the page that [ADR 0010](/decisions/0010-readiness-is-made-at-birth-and-proved-by-a-drill/#revocation-material) leaves for the format and the commands; the code is [issue #69](https://github.com/truvity/ritueel/issues/69), in M2, with the roots of [issue #48](https://github.com/truvity/ritueel/issues/48). The ideas are taught in [Revoke](/learn/revoke/).*
+*Not built yet. This is the page that [record 0007](../decisions/0007-changing-and-losing-a-root.md) leaves for the format and the commands; the code is [issue #69](https://github.com/truvity/ritueel/issues/69), in M2, with the roots of [issue #48](https://github.com/truvity/ritueel/issues/48). The ideas are taught in [Revoke](/learn/revoke/).*
 
-A revocation made after a master key is lost cannot be made at all. So ritueel makes the revocation signatures when the key is born, for every OpenPGP master key it creates: the primary of each root, and a person's own primary when personal OpenPGP is built (M3, [issue #18](https://github.com/truvity/ritueel/issues/18)). For the same reason every root also makes its **removal authorisation** at birth, which lets it leave the root set without signing ([below](/reference/revocation-material/#the-removal-authorisation)).
+A revocation made after a primary key is lost cannot be made at all. So ritueel makes the revocation signatures when the key is born, for every OpenPGP primary key it creates: the primary of each root, and a person's own primary when personal OpenPGP is built (M3, [issue #18](https://github.com/truvity/ritueel/issues/18)). For the same reason every root also makes its **removal authorisation** at birth, which lets it leave the root set without signing ([below](/reference/revocation-material/#the-removal-authorisation)).
 
 ## What is made
 
-For each master key, one **key revocation signature** (RFC 9580, section 5.2.1.11, type `0x20`) for each reason:
+For each primary key, one **key revocation signature** (RFC 9580, section 5.2.1.11, type `0x20`) for each reason:
 
 | Reason | Code | Made by default | What verifiers do with old signatures |
 |---|---|---|---|
@@ -24,7 +24,7 @@ For each master key, one **key revocation signature** (RFC 9580, section 5.2.1.1
 
 Each signature is version 4, SHA-384, over the primary's public key packet alone. Its hashed area holds the signature creation time (the ceremony time), the reason for revocation (the code and the word of the table), and the issuer fingerprint; its unhashed area holds the issuer key ID ([the packet rule](/reference/hand-off-contract/#issuer-key-id)). It is signed through the store that holds the primary, so a card key takes a touch: one for each reason, counted in the plan.
 
-There is no designated revoker: RFC 9580 deprecates the mechanism ([ADR 0002](/decisions/0002-key-custody-every-key-is-born-in-its-store-two-root-cards-or-one-kms-root-and-a-replica/#revocation-readiness)).
+There is no designated revoker: RFC 9580 deprecates the mechanism ([record 0007](../decisions/0007-changing-and-losing-a-root.md)).
 
 ## Where it is written
 
@@ -39,7 +39,7 @@ ritueel refuses, with the code `revocation-dir`, a directory that:
 - does not exist, or cannot be written;
 - already holds a file of the same name (`revocation-exists`): a revocation signature is never overwritten.
 
-It never prints a revocation signature to the terminal, the transcript, a log or the record, and it does not record the path, which means nothing on another machine. The holder stores the files apart from the cards, in at least two places ([The ledger](/learn/the-ledger/#what-else-must-be-backed-up-and-where)).
+It never prints a revocation signature to the terminal, the transcript, a log or the record, and it does not record the path, which means nothing on another machine. The holder stores the files apart from the cards, in at least two places ([The history](/learn/the-history/#what-else-must-be-backed-up-and-where)).
 
 ## What the bundle keeps
 

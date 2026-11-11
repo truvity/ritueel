@@ -30,10 +30,10 @@ Under each option below, "what ritueel adds" is designed or taught, not built, u
 ritueel adds three things. None of the options above, as read on 2026-11-02, does all three.
 
 1. **Teaching with measurements.** Which verifier honours a revocation ([What a revocation reaches](/learn/revoke/#what-a-revocation-reaches)), how Go and OpenSSL differ on name constraints ([Private PKI](/learn/chain-private-pki/)), why two certificates for one intermediate can break a path builder ([Two roots](/learn/two-roots/)), and what a custody chain is as distinct from a signature chain ([Custody chain](/learn/custody-chain/)). This is built: the pages exist.
-2. **Roots born in their store, with attestation, a ledger and a trust sequence.** A root is made inside its card or its cloud key and never leaves, a token's attestation proves it ([What a store can prove](/learn/what-a-store-can-prove/)), every ceremony is written to a hash-chained record ([The ledger](/learn/the-ledger/)), and a signed list of roots carries a sequence number that a host can check ([ADR 0005](/decisions/0005-trust-products-the-root-list-the-ca-bundle-the-ssh-ca-key-list-and-the-trust-sequence/)). This is designed, not built.
+2. **Roots born in their store, with attestation, a history and a trust sequence.** A root is made inside its card or its cloud key and never leaves, a token's attestation proves it ([What a store can prove](/learn/what-a-store-can-prove/)), every ceremony is written to a hash-chained record ([The history](/learn/the-history/)), and a signed list of roots carries a sequence number that a host can check ([record 0006](../decisions/0006-bundle-history-and-trust-files.md)). This is designed, not built.
 3. **A written hand-off with test vectors** between a root custodian and a system that holds intermediates ([the contract](/reference/hand-off-contract/#test-vectors)). The contract and its vectors exist; no tool implements either end yet.
 
-ritueel does not offer **M-of-N control**: any one active root signs alone, and [the accepted limit](/decisions/0002-key-custody-every-key-is-born-in-its-store-two-root-cards-or-one-kms-root-and-a-replica/#the-accepted-limit) says so. It does not offer **Ed25519 roots**, because a PIV slot cannot sign with them ([ADR 0006](/decisions/0006-release-keys-and-the-keyring-package/)). And it is **not the daily tool**: you will keep using `gpg` and `step` for daily work, and ritueel is the occasional ceremony, a single command-line program that is planned ([the roadmap](/roadmap/)).
+ritueel does not offer **M-of-N control**: any one active root signs alone, and [the accepted limit](../decisions/0002-where-a-key-lives.md) says so. It does not offer **Ed25519 roots**, because a PIV slot cannot sign with them ([record 0002](../decisions/0002-where-a-key-lives.md)). And it is **not the daily tool**: you will keep using `gpg` and `step` for daily work, and ritueel is the occasional ceremony, a single command-line program that is planned ([the roadmap](/roadmap/)).
 
 ## offline-pki
 
@@ -41,7 +41,7 @@ ritueel does not offer **M-of-N control**: any one active root signs alone, and 
 
 **Better when** you want almost exactly this niche today, from a small project, and a copied root on two cards is acceptable to you.
 
-**What ritueel adds:** an attestation for a key made on the card, a revocation list, a ledger, and the teaching. **What it lacks:** a tool that runs. The key is not copied in ritueel, so a lost card is a loss to survive with the second root, as [Two roots](/learn/two-roots/) explains.
+**What ritueel adds:** an attestation for a key made on the card, a revocation list, a history, and the teaching. **What it lacks:** a tool that runs. The key is not copied in ritueel, so a lost card is a loss to survive with the second root, as [Two roots](/learn/two-roots/) explains.
 
 ## Smallstep's YubiKey recipe
 
@@ -49,7 +49,7 @@ ritueel does not offer **M-of-N control**: any one active root signs alone, and 
 
 **Better when** you want one toolset for the root ceremony and the online CA, and you accept a root that existed as a file once.
 
-**What ritueel adds:** a root that was never a file, and a record. **What it lacks:** the online CA. ritueel never holds an intermediate; a system like [sluis](https://sluis.id) does ([ADR 0001](/decisions/0001-scope-roots-and-transitions-systems-like-sluis-hold-intermediates/)).
+**What ritueel adds:** a root that was never a file, and a record. **What it lacks:** the online CA. ritueel never holds an intermediate; a system like [sluis](https://sluis.id) does ([record 0001](../decisions/0001-what-ritueel-is.md)).
 
 ## The drduh YubiKey guide
 
@@ -57,7 +57,7 @@ ritueel does not offer **M-of-N control**: any one active root signs alone, and 
 
 **Better when** you want a person's OpenPGP identity today. It is widely followed, and it teaches the commands.
 
-**What ritueel adds:** revocation signatures made at birth and stored apart, a drill that proves the restore, and a ledger. The primary of a person stays offline in a file in both ([ADR 0012](/decisions/0012-personal-openpgp-the-primary-offline-in-a-file-the-daily-subkey-on-a-card/)), so the difference is in the record and the drills, not in where the key lives. **What it lacks:** the years of use.
+**What ritueel adds:** revocation signatures made at birth and stored apart, a drill that proves the restore, and a history. The primary of a person stays offline in a file in both ([record 0008](../decisions/0008-a-persons-own-key.md)), so the difference is in the record and the drills, not in where the key lives. **What it lacks:** the years of use.
 
 ## OpenBao
 
@@ -73,7 +73,7 @@ ritueel does not offer **M-of-N control**: any one active root signs alone, and 
 
 **Better when** you need a hardware module, an on-device audit log or the backup split, and the price is acceptable.
 
-**What ritueel adds:** a root on a card, whose price is on [Which keys to buy](/learn/which-keys-to-buy/), with a card's attestation, and the teaching. **What it lacks:** a hardware module, an on-device log and the backup split. ritueel's [two cards are redundancy, not control](/decisions/0002-key-custody-every-key-is-born-in-its-store-two-root-cards-or-one-kms-root-and-a-replica/#the-accepted-limit).
+**What ritueel adds:** a root on a card, whose price is on [Which keys to buy](/learn/which-keys-to-buy/), with a card's attestation, and the teaching. **What it lacks:** a hardware module, an on-device log and the backup split. ritueel's [two cards are redundancy, not control](../decisions/0002-where-a-key-lives.md).
 
 ## Sequoia `sq`
 
@@ -81,7 +81,7 @@ ritueel does not offer **M-of-N control**: any one active root signs alone, and 
 
 **Better when** you want modern OpenPGP tooling, or a verifier that honours revocations.
 
-**What ritueel adds:** the root ceremonies around an OpenPGP primary key, and X.509 as well. ritueel plans to build OpenPGP packets itself, with a patched library, rather than call `sq` ([ADR 0003](/decisions/0003-key-stores-and-the-card-layer/)). **What it lacks:** the tool.
+**What ritueel adds:** the root ceremonies around an OpenPGP primary key, and X.509 as well. ritueel plans to build OpenPGP packets itself, with a patched library, rather than call `sq` ([record 0010](../decisions/0010-the-engine-the-process-and-the-page.md)). **What it lacks:** the tool.
 
 ## AWS KMS alone
 

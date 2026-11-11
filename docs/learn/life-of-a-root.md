@@ -5,13 +5,13 @@ sidebar:
   order: 14
 ---
 
-A root lives for years, and most of what happens to it is waiting. This page follows one root through every ritual it will meet, in the order it meets them, and says when each is done. The steps are the same for an X.509 root and an OpenPGP master key; where they differ, the page says so.
+A root lives for years, and most of what happens to it is waiting. This page follows one root through every ritual it will meet, in the order it meets them, and says when each is done. The steps are the same for an X.509 root and an OpenPGP primary key; where they differ, the page says so.
 
 | Ritual | When | What changes |
 |---|---|---|
 | [Create](#create) | Once | A new key exists in its store. |
 | [Sign intermediates or subkeys](#sign-intermediates-or-subkeys) | When one is needed, then every year | A key below the root gets authority. |
-| [Record](#record) | After every ceremony | The ledger says what was done. |
+| [Record](#record) | After every ceremony | The history says what was done. |
 | [Back up](#back-up) | Right after creating, and after every change | Loss becomes survivable. |
 | [Re-sign](#re-sign) | Every year | The same key gets a new validity. |
 | [Rotate](#rotate) | On an event; a key in software also after at most three years | A new key replaces the old one. |
@@ -25,7 +25,7 @@ A root is created at a ceremony, in the store where it will live: on a card, or 
 Three things are made at the same time as the root, because they cannot be made later:
 
 - the **evidence of where it was born**: a card's attestation, or a cloud key's description and policy;
-- for an OpenPGP master key, a **revocation certificate**, kept apart from the card;
+- for an OpenPGP primary key, a **revocation certificate**, kept apart from the card;
 - the **second root**, on a second card, if you use cards: an independent key, never a copy.
 
 Because a first ceremony is the one you have practised least, practise on test keys first. That is the point of a [drill](/guides/root-adoption/).
@@ -34,17 +34,17 @@ Because a first ceremony is the one you have practised least, practise on test k
 
 A root with nothing below it is useless. At a ceremony the root authorises each intermediate CA, or binds each OpenPGP subkey, after checking the request and the proof of where the key lives. The result goes to the system or the person that holds the key.
 
-For a person's OpenPGP key the same step puts subkeys onto a card: the card makes the key, and the master key binds it. The signing and authentication subkeys are born on the card, an encryption subkey is made in software and loaded onto it with a backup, and only the binding signatures come from the offline master.
+For a person's OpenPGP key the same step puts subkeys onto a card: the card makes the key, and the primary key binds it. The signing and authentication subkeys are born on the card, an encryption subkey is made in software and loaded onto it with a backup, and only the binding signatures come from the offline primary.
 
 ## Record
 
-A ceremony without a record is a ceremony you cannot audit. The [ledger](/learn/the-ledger/) gets one record per ceremony: what was signed, by which key, in which store, and what outsiders now see. The record holds no secret and is chained to the one before.
+A ceremony without a record is a ceremony you cannot audit. The [history](/learn/the-history/) gets one record per ceremony: what was signed, by which key, in which store, and what outsiders now see. The record holds no secret and is chained to the one before.
 
 ## Back up
 
 After the first ceremony, and after every change:
 
-- push the bundle, with its [ledger](/learn/the-ledger/), to its remotes and write the last digest apart;
+- push the bundle, with its [history](/learn/the-history/), to its remotes and write the last digest apart;
 - put the revocation certificates in their two places;
 - check that the second card exists, in a second place;
 - make sure the PINs are in the password manager.

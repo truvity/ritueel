@@ -23,7 +23,7 @@ It describes the project as it is today: one maintainer, no release yet, and a p
 
 ## Scope
 
-ritueel owns root keys and root transitions: X.509 CA roots and OpenPGP primary keys, across key stores. It creates them, vouches for the next one, overlaps, supersedes, revokes and expires them, and it runs the ceremonies for intermediates, produces the trust artifacts, and keeps ceremony records. It does not sign online, issue leaf certificates or store secrets. The scope is recorded in [ADR 0001](docs/decisions/0001-scope-roots-and-transitions-systems-like-sluis-hold-intermediates.md).
+ritueel owns root keys and root transitions: X.509 CA roots and OpenPGP primary keys, across key stores. It creates them, vouches for the next one, overlaps, supersedes, revokes and expires them, and it runs the ceremonies for intermediates, produces the trust artifacts, and keeps ceremony records. It does not sign online, issue leaf certificates or store secrets. The scope is recorded in [record 0001](docs/decisions/0001-what-ritueel-is.md).
 New scope enters only through an ADR that names its owner, its boundary and its non-goals.
 A change to the design model (the shape of the parts and how they depend on each other) also needs an ADR.
 

@@ -42,11 +42,11 @@ A root that expires is a transition that is already scheduled. An expiring root,
 
 ## In ritueel
 
-`root add` makes the new root and has an active root vouch for it, `root retire` ends the overlap, and `root revoke` is the emergency exit. You say how long the overlap lasts; ritueel refuses to retire a root while something still hangs from it alone, and calls a set that is short of its target an alert. The states, the checks and the files are in [the transitions reference](/reference/transitions/), and the reasons in [ADR 0009](/decisions/0009-root-transitions-vouch-overlap-retire-and-revoke/).
+`root add` makes the new root and has an active root vouch for it, `root retire` ends the overlap, and `root revoke` is the emergency exit. You say how long the overlap lasts; ritueel refuses to retire a root while something still hangs from it alone, and calls a set that is short of its target an alert. The states, the checks and the files are in [the transitions reference](/reference/transitions/), and the reasons in [record 0007](../decisions/0007-changing-and-losing-a-root.md).
 
 ## What outsiders install
 
-Outsiders need only the tools they already have. Every product carries one *trust sequence*, an integer that grows by one whenever any of them changes, so a client can tell whether it is current ([ADR 0005](/decisions/0005-trust-products-the-root-list-the-ca-bundle-the-ssh-ca-key-list-and-the-trust-sequence/)).
+Outsiders need only the tools they already have. Every product carries one *trust sequence*, an integer that grows by one whenever any of them changes, so a client can tell whether it is current ([record 0006](../decisions/0006-bundle-history-and-trust-files.md)).
 
 | For | They install | How it is made |
 |---|---|---|
@@ -60,6 +60,6 @@ A keyring package is also how a new OpenPGP root reaches people: the new package
 
 ## What ritueel does not do
 
-ritueel does not sign online, issue leaf certificates for servers or people, or store secrets. Those belong to the system that holds an intermediate. The two meet at standard formats: a certificate request in, a certificate or a binding signature out. Neither depends on the other ([ADR 0001](/decisions/0001-scope-roots-and-transitions-systems-like-sluis-hold-intermediates/)).
+ritueel does not sign online, issue leaf certificates for servers or people, or store secrets. Those belong to the system that holds an intermediate. The two meet at standard formats: a certificate request in, a certificate or a binding signature out. Neither depends on the other ([record 0001](../decisions/0001-what-ritueel-is.md)).
 
 Next: [two roots in practice](/learn/two-roots/).

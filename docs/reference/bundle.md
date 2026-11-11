@@ -7,7 +7,7 @@ sidebar:
 
 *Not built yet. This is the layout the M2 code writes ([issue #8](https://github.com/truvity/ritueel/issues/8), [issue #9](https://github.com/truvity/ritueel/issues/9)); the rules it follows are in [record 0006](../decisions/0006-bundle-history-and-trust-files.md).*
 
-ritueel keeps everything it knows about one trust domain in one **bundle**, a directory of plain files with a fixed structure. Its write-once part is the history, below. [Learn](/learn/the-ledger/) advises on where to keep the bundle and how to back it up and restore it: ritueel needs no git, and the holder is still advised to keep the bundle in version control. It holds public material and the sealed secrets of cards ([record 0003](../decisions/0003-root-cards.md)), and, in a personal bundle, the wrapped backup of the person's encryption subkey ([record 0008](../decisions/0008-a-persons-own-key.md)). It never holds a private key in clear, a PIN the holder types, a passphrase or a revocation signature. Losing it loses the inventory, the attestations and the OpenPGP creation times, so it is part of every key's identity ([record 0006](../decisions/0006-bundle-history-and-trust-files.md)). A software root's private keys live in **key files outside it**.
+ritueel keeps everything it knows about one trust domain in one **bundle**, a directory of plain files with a fixed structure. Its write-once part is the history, below. [Learn](/learn/the-history/) advises on where to keep the bundle and how to back it up and restore it: ritueel needs no git, and the holder is still advised to keep the bundle in version control. It holds public material and the sealed secrets of cards ([record 0003](../decisions/0003-root-cards.md)), and, in a personal bundle, the wrapped backup of the person's encryption subkey ([record 0008](../decisions/0008-a-persons-own-key.md)). It never holds a private key in clear, a PIN the holder types, a passphrase or a revocation signature. Losing it loses the inventory, the attestations and the OpenPGP creation times, so it is part of every key's identity ([record 0006](../decisions/0006-bundle-history-and-trust-files.md)). A software root's private keys live in **key files outside it**.
 
 ## One bundle, one trust domain
 
@@ -16,18 +16,18 @@ A bundle has its own history, trust sequence and roots, and a company bundle its
 A bundle is named by its directory.
 
 :::note[Proposed]
-No file stores the bundle's name. `name` in `ritueel.yaml` is the name in the roots' subjects, `CN=Example Root A`, and is not the bundle's name: the bundle `acme` may have `name: Acme Corp`. Two bundles may then issue the same subject, and whether `name` must differ between bundles is open. Each bundle would have its own unlock key and recovery key, which open its key files as [record 0002](../decisions/0002-where-a-key-lives.md) says; with the passkey way a card shared by two bundles would then hold one credential for each, and with the slot 9d fallback the one 9d key of the card would be shared by them.
+No file stores the bundle's name. `name` in `ritueel.yaml` is the name in the roots' subjects, `CN=Example Root A`, and is not the bundle's name: the bundle `acme` may have `name: Acme Corp`. Two bundles may then issue the same subject, and whether `name` must differ between bundles is open. Each bundle has its own unlock key and recovery key, which open its key files as [record 0002](../decisions/0002-where-a-key-lives.md) says. Proposed, not decided: with the passkey way a card shared by two bundles holds one credential for each, and how the slot 9d fallback works for two bundles is open (the card has one 9d key).
 :::
 
 ## The layout
 
 :::note[Proposed]
-The maintainer decided that the history is a plain write-once folder with one sub-folder for each ceremony, each naming the one before, and that the bundle holds an inventory of cards and the sealed secrets of cards. The file names inside them (`plan.json`, `attempt.json`, `record.json`, `transcript.txt`, `births.jsonl`, `cards.yaml`, `cards/NAME.sealed.age`) and the `adopted` member of `root.json` are the proposed shape, awaiting the maintainer's word, and are fixed with the code.
+The folders are decided ([record 0006](../decisions/0006-bundle-history-and-trust-files.md)): `ritueel.yaml`, the write-once `history/` with one sub-folder for each ceremony, each naming the one before, `trust/<number>/` and `requests/<name>/`, and the bundle holds an inventory of cards and the sealed secrets of cards. The member names inside them are proposed: (`plan.json`, `attempt.json`, `record.json`, `transcript.txt`, `births.jsonl`, `cards.yaml`, `cards/NAME.sealed.age`) and the `adopted` member of `root.json` are the proposed shape, awaiting the maintainer's word, and are fixed with the code.
 :::
 
 | Path | Written by | Holds |
 |---|---|---|
-| `ritueel.yaml` | The operator | The name, the release address, the policy and the intermediates ([below](/reference/bundle/#ritueelyaml)). |
+| `ritueel.yaml` | The operator, the one file a person writes | The name, the release address, the policy and the intermediates ([below](/reference/bundle/#ritueelyaml)). |
 | `cards.yaml` | ritueel | The inventory list: every card this bundle uses, of the four kinds root, day-to-day, server and rehearsal, from M2. Absent while every root is in software ([the inventory](/reference/cards/#the-inventory-cardsyaml-and-cardsnameyaml)). |
 | `cards/NAME.yaml` | ritueel | The map of one card: every slot of its PIV, OpenPGP and FIDO2 applications and its use. Written from the read-only check ([cards](/reference/cards/#the-map-of-one-card-cardsnameyaml)). |
 | `cards/NAME.sealed.age` | ritueel | This bundle's own copy of the card's secrets: the management key, the PUK and, on a day-to-day card, the Admin PIN, sealed to the recipients of the key files. One file for each card that ritueel adopted, root and day-to-day ([record 0003](../decisions/0003-root-cards.md)). |
@@ -36,23 +36,22 @@ The maintainer decided that the history is a plain write-once folder with one su
 | `roots/<label>/openpgp.pgp` | ritueel | The primary's current public certificate, binary. |
 | `roots/<label>/attestation/` | ritueel | For a root on a card or in KMS: the attestation or the key's description and policy, as read at `init` ([cards](/reference/cards/#files), [KMS](/reference/kms-root/#evidence-files)). |
 | `roots/<label>/ssh-break-glass.pub` | ritueel | From M2, with the cloud store: the root's break-glass SSH CA key, one OpenSSH line ([the SSH CA key list](/reference/ssh-ca-key-list/#how-a-key-enters-the-list)). |
-| `requests/<stem>.*` | The operator | Pending requests: the files of the [hand-off contract](/reference/hand-off-contract/#messages-and-files), one stem each. |
-| `answers/<stem>.*` | ritueel | The answers: `<stem>.result.json`, and `<stem>.cert.pem` or `<stem>.bound.pgp`. |
-| `ledger/<ceremony>/` | ritueel | The history: one sub-folder for each ceremony, holding its [ceremony files](/reference/ceremony-record/) `plan.json`, `attempt.json`, `record.json` and `transcript.txt`. A ceremony that makes keys also writes `births.jsonl`, the [birth journal](/reference/ceremony-record/#the-birth-journal). Each sub-folder names the one before it. A sealed single-file form of the history is later. |
-| `products/<sequence>/` | ritueel | The trust products of one trust sequence: `root-list.json`, `root-list.jws` and `ca-bundle.pem` ([the root list](/reference/root-list/#files)); from M4 `crl-<label>.pem` for each active root ([the CRLs](/reference/crl/#files)); from M4 `ssh-ca-keys.json`, `ssh-ca-keys.jws` and `ssh-user-ca-keys.pub` ([the SSH CA key list](/reference/ssh-ca-key-list/#files)) and `revocations/`; from M5 `keyring/` ([the keyring package](/reference/keyring-package/#files)). |
+| `requests/<name>/` | The operator puts the request in; ritueel adds the answer | One folder for each request: the files of the [hand-off contract](/reference/hand-off-contract/#messages-and-files) and, once given, the answer beside them: `<name>.result.json`, and `<name>.cert.pem` or `<name>.bound.pgp` ([record 0006](../decisions/0006-bundle-history-and-trust-files.md)). |
+| `history/<ceremony>/` | ritueel | The history: one sub-folder for each ceremony, holding its [ceremony files](/reference/ceremony-record/) `plan.json`, `attempt.json`, `record.json` and `transcript.txt`. A ceremony that makes keys also writes `births.jsonl`, the [birth journal](/reference/ceremony-record/#the-birth-journal). Each sub-folder names the one before it. A sealed single-file form of the history is later. |
+| `trust/<number>/` | ritueel | The trust files of one trust sequence: `root-list.json`, `root-list.jws` and `ca-bundle.pem` ([the root list](/reference/root-list/#files)); from M4 `crl-<label>.pem` for each active root ([the CRLs](/reference/crl/#files)); from M4 `ssh-ca-keys.json`, `ssh-ca-keys.jws` and `ssh-user-ca-keys.pub` ([the SSH CA key list](/reference/ssh-ca-key-list/#files)) and `revocations/`; from M5 `keyring/` ([the keyring package](/reference/keyring-package/#files)). |
 
-- ritueel never writes `ritueel.yaml` or `requests/`, and the operator does not edit the other paths.
-- A file that a ceremony replaces, such as `x509.pem`, keeps its history in `products/` and in version control. Nothing under `products/` or `ledger/` is ever overwritten.
-- ritueel refuses a request whose stem already has an answer.
+- ritueel never writes `ritueel.yaml` and never changes a request; it adds the answer beside it. The operator does not edit the other paths.
+- A file that a ceremony replaces, such as `x509.pem`, keeps its history in `trust/` and in version control. Nothing under `trust/` or `history/` is ever overwritten.
+- ritueel refuses a request whose folder already has an answer.
 - The bundle is found by `--dir DIR`, or is the current directory when it holds `ritueel.yaml` ([Commands](/reference/cli/#flags-every-ceremony-shares)).
 
 :::note[Proposed]
-Requests and their answers are to live together in `requests/`, ritueel writing each answer beside its request, so that answered and waiting requests are seen in one place. The `answers/` row and the first bullet above are then rewritten. The directories `ledger/` and `products/` are also to be renamed. The pictures on [the bundle and the USB stick](/how-it-works/bundle-and-stick/) follow this reading and print no name for those two parts.
+The exact names of the members of the request folder, and of the files inside `history/` and `trust/<number>/`, are fixed with the code. The pictures on [the bundle and the USB stick](/how-it-works/bundle-and-stick/) print the names of the folders and none of the files.
 :::
 
 ## On the stick
 
-A root on cards or in a key file runs on the offline system, which boots from a USB stick ([record 0005](../decisions/0005-a-ceremony-and-where-it-runs.md)). The stick carries one extra partition, and ritueel defines its layout. The picture is on [the bundle and the USB stick](/how-it-works/bundle-and-stick/#the-usb-stick).
+A key that can be copied, such as a key file, is used only in the offline system, which boots from a USB stick; a root on cards or in the cloud may also run there ([record 0005](../decisions/0005-a-ceremony-and-where-it-runs.md)). The stick carries one extra partition, and ritueel defines its layout. The picture is on [the bundle and the USB stick](/how-it-works/bundle-and-stick/#the-usb-stick).
 
 :::note[Proposed]
 The names below are the smallest layout that serves the decision. They are a proposal, awaiting the maintainer's word.
@@ -65,7 +64,7 @@ RITUEEL/                          the extra partition
 │   │   └── linux-arm64/ritueel
 │   └── 0.2.0/ …
 ├── bundles/                      several bundles
-│   ├── acme/                     ritueel.yaml, roots/, requests/, ledger/<ceremony>/plan.json, …
+│   ├── acme/                     ritueel.yaml, roots/, requests/, history/<ceremony>/plan.json, …
 │   └── personal/
 └── keys/                         the encrypted key files, one folder for each bundle
     └── personal/A.openpgp.key.age
@@ -75,7 +74,7 @@ RITUEEL/                          the extra partition
 - **`ritueel/<version>/<system>-<arch>/ritueel`** holds the program, and nothing else, because it is one static file. The version comes first, so that the run can use the exact version that made the plan. The system and the architecture come second, so that several machines can use one stick.
 - **`bundles/<name>/`** is a bundle copied whole, so the plan in its history and the bundle the plan was made from arrive together. It is the directory that your workstation already uses with `--dir`, with no second format.
 - **`keys/<bundle>/`** holds the key files of that bundle. Key files are never inside a bundle, so a copy of a bundle cannot carry a key by accident. The folder has the name of the bundle, so a person finds a file without a lookup.
-- **The plan records the copy that made it** in a new member `ritueel`: `{ "version", "os_arch", "sha256" }`, where `sha256` is the digest of that copy. The run is then `<stick>/ritueel/<version>/<system>-<arch>/ritueel --dir <stick>/bundles/acme run ledger/<ceremony>/plan.json --confirm …`. When a plan is prepared online, ritueel refreshes its copy on the stick first.
+- **The plan records the copy that made it** in a new member `ritueel`: `{ "version", "os_arch", "sha256" }`, where `sha256` is the digest of that copy. The run is then `<stick>/ritueel/<version>/<system>-<arch>/ritueel --dir <stick>/bundles/acme run history/<ceremony>/plan.json --confirm …`. When a plan is prepared online, ritueel refreshes its copy on the stick first.
 
 Not decided: the label and the file system of the partition, whether a checksum file sits beside each binary, and whether the `keys/` folder of a bundle may sit inside the parent of the bundle.
 :::
@@ -300,7 +299,7 @@ A software root ([the `software` store](../decisions/0002-where-a-key-lives.md))
 ## Follow-ups
 
 - The code that writes `cards.yaml`, `cards/NAME.yaml`, the sealed files, the `attestation/` files and the `aws_kms` block ([issue #11](https://github.com/truvity/ritueel/issues/11), [issue #12](https://github.com/truvity/ritueel/issues/12)); their formats are on [the cards page](/reference/cards/) and [the cloud root page](/reference/kms-root/).
-- The CRLs, the SSH CA key list and the keyring files under `products/<sequence>/` come with their builders ([issue #30](https://github.com/truvity/ritueel/issues/30), [issue #55](https://github.com/truvity/ritueel/issues/55), [issue #15](https://github.com/truvity/ritueel/issues/15)), in M4 (the CRLs and the SSH CA key list) and M5 (the keyring).
+- The CRLs, the SSH CA key list and the keyring files under `trust/<number>/` come with their builders ([issue #30](https://github.com/truvity/ritueel/issues/30), [issue #55](https://github.com/truvity/ritueel/issues/55), [issue #15](https://github.com/truvity/ritueel/issues/15)), in M4 (the CRLs and the SSH CA key list) and M5 (the keyring).
 
 ## Standards
 

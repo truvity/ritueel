@@ -19,7 +19,7 @@ A chain of trust has two kinds of key, and they live different lives. The root i
 
 ## In OpenPGP
 
-OpenPGP has no certificate chains, but it has the same split. The **primary key**, or master key, is the root of an identity. **Subkeys** are the intermediates: the primary key binds each one with a signature, and says what it may do.
+OpenPGP has no certificate chains, but it has the same split. The **primary key**, or primary key, is the root of an identity. **Subkeys** are the intermediates: the primary key binds each one with a signature, and says what it may do.
 
 | | Master (primary) key | Subkey |
 |---|---|---|
@@ -29,7 +29,7 @@ OpenPGP has no certificate chains, but it has the same split. The **primary key*
 | Lifetime | Years. | A year or two, renewed by re-signing the binding. |
 | Cost of a mistake | Everyone who has your fingerprint must learn the change. | Revoke one subkey and bind another. The fingerprint stays. |
 
-The master key is rarely needed, and that is why a person with a card for daily use can keep the master key somewhere else entirely.
+The primary key is rarely needed, and that is why a person with a card for daily use can keep the primary key somewhere else entirely.
 
 ## Why the split exists
 

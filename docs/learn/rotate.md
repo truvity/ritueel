@@ -14,9 +14,9 @@ sidebar:
 | **An event** | An advisory about the card, its firmware or the cloud key service that affects the key; the deprecation of its algorithm; a lost card, or one at its end of life; a suspected compromise; a change of key store (from a file to a card); a change of who holds the key. |
 | **Age, for a key in software** | After at most three years, whatever else happened. |
 
-**What ages a key depends on where it lives.** A key in a file can be copied and read without leaving a trace, so a calendar limit bounds how long an unnoticed copy stays useful. Three years is the top of the cryptoperiod that NIST SP 800-57 Part 1 gives a private signing key, and a forced rotation also keeps the rotation path practised: a path used only in an emergency is a path that has never been tested. A key born on a card or in a cloud key service cannot be copied, so the calendar adds nothing; what ends it is something that happens to the device, the service or the algorithm. In 2024, for example, a side channel in the ECDSA code inside some security keys let someone with physical access and specialised equipment recover the private key; the devices took no firmware update, so the remedy was a new device and a new key ([ADR 0012](/decisions/0012-personal-openpgp-the-primary-offline-in-a-file-the-daily-subkey-on-a-card/#how-long-a-persons-primary-lives) has the sources).
+**What ages a key depends on where it lives.** A key in a file can be copied and read without leaving a trace, so a calendar limit bounds how long an unnoticed copy stays useful. Three years is the top of the cryptoperiod that NIST SP 800-57 Part 1 gives a private signing key, and a forced rotation also keeps the rotation path practised: a path used only in an emergency is a path that has never been tested. A key born on a card or in a cloud key service cannot be copied, so the calendar adds nothing; what ends it is something that happens to the device, the service or the algorithm. In 2024, for example, a side channel in the ECDSA code inside some security keys let someone with physical access and specialised equipment recover the private key; the devices took no firmware update, so the remedy was a new device and a new key ([record 0008](../decisions/0008-a-persons-own-key.md) has the sources).
 
-**So every yearly ceremony includes a review of the advisories** for the cards, the services and the algorithms you use, and the record says you did it. An advisory is the one event you can miss by not looking ([ADR 0002](/decisions/0002-key-custody-every-key-is-born-in-its-store-two-root-cards-or-one-kms-root-and-a-replica/#validity-renewal-and-replacement)).
+**So every yearly ceremony includes a review of the advisories** for the cards, the services and the algorithms you use, and the record says you did it. An advisory is the one event you can miss by not looking ([record 0007](../decisions/0007-changing-and-losing-a-root.md)).
 
 ## Why not every year
 
@@ -37,14 +37,14 @@ For an intermediate:
 
 For a root, rotating is a [transition](/learn/transitions/): create the new root, have the old one vouch for it, overlap, supersede. A root rotation is the biggest ritual there is; it is planned years ahead, which is why a root has an expiry and the warning that goes with it.
 
-For OpenPGP subkeys, make a new subkey, bind it, and let the old one expire or revoke it with a soft reason (*superseded*), so old signatures stay valid. Rotating the master key means a new identity: everyone who recorded your fingerprint must record the new one, so it is the most expensive rotation.
+For OpenPGP subkeys, make a new subkey, bind it, and let the old one expire or revoke it with a soft reason (*superseded*), so old signatures stay valid. Rotating the primary key means a new identity: everyone who recorded your fingerprint must record the new one, so it is the most expensive rotation.
 
 ## How others do it
 
 | Project | Practice |
 |---|---|
 | Debian archive | A signing key for each release, with the new key signed by other archive keys after a fingerprint check, and announced well in advance. |
-| Qubes | An offline master key certifies a signing key for each release; developer keys expire after one year, the master and release keys do not. |
+| Qubes | An offline primary key certifies a signing key for each release; developer keys expire after one year, the primary and release keys do not. |
 | Tails | The same key, its expiry extended again and again, with subkeys on smartcards. |
 | Linux kernel | A compromised key is revoked, and the developer signs earlier releases again with a new key. |
 

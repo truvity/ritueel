@@ -28,7 +28,7 @@ Whatever the tool, a good ceremony has the same six steps:
 5. **Verify.** Check each result with code that did not sign it.
 6. **Record.** Write what was done, with which keys, in which store, and what outsiders now see. The record holds no secret.
 
-These steps are the same in every key store and in every tool. ritueel's engine is built around them ([the tools](/tools/cli/), [ADR 0004](/decisions/0004-ceremonies-plan-confirm-reserve-sign-verify-record/)).
+These steps are the same in every key store and in every tool. ritueel's engine is built around them ([the tools](/tools/cli/), [record 0005](../decisions/0005-a-ceremony-and-where-it-runs.md)).
 
 ## What a tool may do, and what it may not
 

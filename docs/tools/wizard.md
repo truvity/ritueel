@@ -6,7 +6,7 @@ sidebar:
 ---
 
 :::caution[Not built yet]
-The page exists as code and a demo (`ui/`, `proto/`); the program that serves it is planned for milestone M2 ([issue #17](https://github.com/truvity/ritueel/issues/17)), and the guided mode comes after the first signed release ([issue #16](https://github.com/truvity/ritueel/issues/16)). This page is the design that [ADR 0007](/decisions/0007-ritueel-teaches-and-its-tools-simplify-the-ceremonies/) accepts and [ADR 0011](/decisions/0011-the-wizards-one-engine-three-faces-and-a-web-page-that-cannot-confirm-anything/) details; the exact rules are in [the reference](/reference/wizard/).
+The page exists as code and a demo (`ui/`, `proto/`); the program that serves it is planned for milestone M2 ([issue #17](https://github.com/truvity/ritueel/issues/17)), and the guided mode comes after the first signed release ([issue #16](https://github.com/truvity/ritueel/issues/16)). This page is the design that [record 0001](../decisions/0001-what-ritueel-is.md) accepts and [record 0010](../decisions/0010-the-engine-the-process-and-the-page.md) details; the exact rules are in [the reference](/reference/wizard/).
 :::
 
 Some people prefer a page to a terminal, and a ceremony is easier to follow when each step is shown with its explanation next to it. The wizard is that: a guided front end that keeps you in charge. It has two parts, a guided mode in the terminal and a read-only page.
@@ -25,7 +25,7 @@ Some people prefer a page to a terminal, and a ceremony is easier to follow when
 | Collect choices: which root, which request, which store. | Ask for, receive or show a PIN, a passphrase or a key. |
 | Show progress, the record and what outsiders will see. | Load anything from outside your computer. |
 
-The confirmation of every irreversible step is given in the terminal, or by the touch on the card, never by a click in the page. The page shows the plan and its digest, and ends with a preview and the command to run, `ritueel run PLAN --confirm DIGEST`. It can save the plan file, so that you can boot the offline system and run it there; only a card root or a real software root needs that. A cloud root runs from your workstation, and a test root may too, or it may use a rehearsal card. You give the confirmation in the terminal.
+The confirmation of every irreversible step is given in the terminal, or by the touch on the card, never by a click in the page. The page shows the plan and its digest, and ends with a preview and the command to run, `ritueel run PLAN --confirm DIGEST`. It can save the plan file, so that you can run it on your workstation or boot the offline system and run it there. A key that can be copied is used only in the offline system; a key that cannot be copied, a root on cards or a cloud root, may also be used on your workstation. A test root may use the workstation or a rehearsal card. You give the confirmation in the terminal.
 
 ## Security rules
 
@@ -44,4 +44,4 @@ Each rule has a test in the plan for the wizard: a request with the wrong token,
 
 ## What it drives
 
-The ceremonies and the checks: adopting the roots, the renewals of the yearly ceremony, intermediates, the five transitions, the trust products, the drills and a person's own key. It does not prepare a card, change a PIN or publish; it names the guide for those ([the list](/reference/wizard/#what-the-guided-mode-and-the-page-drive)).
+The ceremonies and the checks: adopting the roots, the renewals of the yearly ceremony, intermediates, the five transitions, the trust files, the drills and a person's own key. It does not prepare a card, change a PIN or publish; it names the guide for those ([the list](/reference/wizard/#what-the-guided-mode-and-the-page-drive)).

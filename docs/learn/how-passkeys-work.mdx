@@ -100,7 +100,7 @@ This is the use that ritueel's design rests on ([record 0002](../decisions/0002-
 ritueel locks key files with age, a small file-encryption format. A file can be locked to several recipients, each of which can open it alone. The key file has two: an **unlock key** and a recovery key. The private half of the unlock key is wrapped, and a passkey on each root card unwraps it. Any one root card of the pair is enough. The secret is not used on the file itself. It unwraps a second key, the unlock key, so that locking a new file needs no card.
 
 <Figure name="passkey-opens-key-file">
-  A passkey on a root card opens a key file. There is no site and no signature. ADR 0015; decided, not yet proven.
+  A passkey on a root card opens a key file. There is no site and no signature. Decided in [record 0002](../decisions/0002-where-a-key-lives.md), not yet proven.
 </Figure>
 
 The passkey is of the second kind, so a key handle has to be given to the card; where it is kept is not decided. The record says the unlock key's private half is in memory at each unlock.
@@ -122,7 +122,7 @@ Read 2026-11-10, except the lines that say 2026-11-11.
 - Yubico, [YubiKey 5 firmware 5.7](https://docs.yubico.com/hardware/yubikey/yk-tech-manual/yk5-firmware-5.7.html): 100 passkeys from firmware 5.7.4.
 - Yubico, [YubiKey 5 FIDO](https://docs.yubico.com/hardware/yubikey/yk-tech-manual/yk5-apps-fido.html): PIN, tries, reset, deleting a passkey, nothing stored for a passkey not kept on the card, enterprise attestation from firmware 5.7. Read again 2026-11-11 for sign-in with no user name, and for registering again with every site after a reset. The page still says "up to 25 resident keys" (older text); the firmware 5.7 page gives 100 from firmware 5.7.4.
 - Yubico, [hmac-secret deep dive](https://developers.yubico.com/WebAuthn/Concepts/PRF_Extension/CTAP2_HMAC_Secret_Deep_Dive.html), [Developer's Guide to PRF](https://developers.yubico.com/WebAuthn/Concepts/PRF_Extension/Developers_Guide_to_PRF.html) (a lost authenticator means lost data) and [Securing WebAuthn with Attestation](https://developers.yubico.com/WebAuthn/Concepts/Securing_WebAuthn_with_Attestation.html).
-- FIDO Alliance, [CTAP 2.2](https://fidoalliance.org/specs/fido-v2.2-ps-20250714/fido-client-to-authenticator-protocol-v2.2-ps-20250714.html): section 12.7 (hmac-secret) and section 6.6 (reset). ADR 0015 cites CTAP 2.1, section 12.5, for the same extension.
+- FIDO Alliance, [CTAP 2.2](https://fidoalliance.org/specs/fido-v2.2-ps-20250714/fido-client-to-authenticator-protocol-v2.2-ps-20250714.html): section 12.7 (hmac-secret) and section 6.6 (reset). An earlier version of the design cited CTAP 2.1, section 12.5, for the same extension.
 - W3C, [WebAuthn Level 3](https://www.w3.org/TR/webauthn-3/): the site name (relying party ID) and the credential. Read again 2026-11-11 for the public key credential source (its items, including otherUI), the server-side credential and "Relying Party Identifier" (section 4), authenticator data and its flags (section 6.1) and verifying an assertion (section 7.2: the UV flag is checked if user verification is required, and otherwise ignored).
 - NIST, [SP 800-63B-4](https://pages.nist.gov/800-63-4/sp800-63b.html): syncable authenticators at the highest assurance level.
 - OpenSSH, [PROTOCOL.u2f](https://raw.githubusercontent.com/openssh/openssh-portable/master/PROTOCOL.u2f), read 2026-11-11: U2F hardware derives a private key from the key handle and a small secret of the device.

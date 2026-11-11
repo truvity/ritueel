@@ -5,9 +5,9 @@ sidebar:
   order: 7
 ---
 
-*Not built yet. This is version 1 of the format that [ADR 0005](/decisions/0005-trust-products-the-root-list-the-ca-bundle-the-ssh-ca-key-list-and-the-trust-sequence/#the-ssh-ca-key-list) leaves to a reference page; the code is [issue #55](https://github.com/truvity/ritueel/issues/55), in M4, and its [test vectors](/reference/ssh-ca-key-list/#test-vectors) match this page. It has the shape of the [root list](/reference/root-list/), which it follows wherever it can.*
+*Not built yet. This is version 1 of the format that [record 0006](../decisions/0006-bundle-history-and-trust-files.md) leaves to a reference page; the code is [issue #55](https://github.com/truvity/ritueel/issues/55), in M4, and its [test vectors](/reference/ssh-ca-key-list/#test-vectors) match this page. It has the shape of the [root list](/reference/root-list/), which it follows wherever it can.*
 
-SSH hosts trust a CA by holding its public key. The **SSH CA key list** tells a host which SSH CA keys are current: the keys of the systems that hold intermediates, which keep their private halves, and the break-glass SSH CA of each root, which ritueel holds offline. It carries the [trust sequence](/decisions/0005-trust-products-the-root-list-the-ca-bundle-the-ssh-ca-key-list-and-the-trust-sequence/#one-counter-the-trust-sequence) and is signed by one active root, with the X.509 root key that signs the root list, so a host that already trusts the root list needs nothing new to trust this one.
+SSH hosts trust a CA by holding its public key. The **SSH CA key list** tells a host which SSH CA keys are current: the keys of the systems that hold intermediates, which keep their private halves, and the break-glass SSH CA of each root, which ritueel holds offline. It carries the [trust sequence](../decisions/0006-bundle-history-and-trust-files.md) and is signed by one active root, with the X.509 root key that signs the root list, so a host that already trusts the root list needs nothing new to trust this one.
 
 ## Files
 
@@ -17,7 +17,7 @@ SSH hosts trust a CA by holding its public key. The **SSH CA key list** tells a 
 | `ssh-ca-keys.jws` | Its signature: a detached JSON Web Signature over the bytes of `ssh-ca-keys.json`. |
 | `ssh-user-ca-keys.pub` | The keys with use `user`, for sshd's `TrustedUserCAKeys` ([below](/reference/ssh-ca-key-list/#the-file-for-sshd)). |
 
-ritueel writes the three files with the other trust products, under `products/<sequence>/` in [the bundle](/reference/bundle/#the-layout). It writes them at every trust sequence from the first one that lists a key, so the list a host holds is always as recent as its root list. Publishing them is the operator's pipeline.
+ritueel writes the three files with the other trust files, under `trust/<number>/` in [the bundle](/reference/bundle/#the-layout). It writes them at every trust sequence from the first one that lists a key, so the list a host holds is always as recent as its root list. Publishing them is the operator's pipeline.
 
 ## Versioning
 
@@ -61,7 +61,7 @@ An example, wrapped here for reading; the file is one line:
 ## How a key enters the list
 
 - **A system's key** enters by the [hand-off](/reference/hand-off-contract/#ssh-ca-key): a request of type `ssh-ca-key` with a proof of where the key lives, answered at a ceremony. The key is listed under the name of the intermediate whose entry in `ritueel.yaml` has the type `ssh-ca-key` and the `use` the request asks for. `intermediate replace` swaps the key under its name, and `intermediate revoke` takes it off the next list.
-- **A break-glass key** is made by ritueel, in the store of the root it belongs to, when the root is made (`init` and `root add`): a retired PIV slot recorded in the slot map for a card ([ADR 0003](/decisions/0003-key-stores-and-the-card-layer/#the-piv-store-and-the-root-cards)), a key of its own in the root account for a cloud root, a file for a software root. A bundle whose roots were made before this exists gets one with `ritueel ssh-ca break-glass ROOT`, a ceremony that needs that root's card. The key is listed as `break-glass-<label>`, use `user`, and leaves the list with its root.
+- **A break-glass key** is made by ritueel, in the store of the root it belongs to, when the root is made (`init` and `root add`): a retired PIV slot recorded in the slot map for a card ([record 0003](../decisions/0003-root-cards.md)), a key of its own in the root account for a cloud root, a file for a software root. A bundle whose roots were made before this exists gets one with `ritueel ssh-ca break-glass ROOT`, a ceremony that needs that root's card. The key is listed as `break-glass-<label>`, use `user`, and leaves the list with its root.
 - **Nothing else** enters. The operator does not edit the list, and `ritueel.yaml` does not name keys, only the intermediates that may have one.
 
 ## The signature
@@ -87,7 +87,7 @@ A host holds one list: the last good one, beside the root list it holds. It chec
 
 A host takes a new root list **before** the SSH CA key list of the same sequence, so that check 2 reads the roots of that sequence; a list signed by a root the host's root list does not yet show is `unknown-signer`, and the host tries again after it has updated the root list. A host that holds no root list uses its initial pins for check 2, as for the root list. The host verifies the bytes it received and does not re-serialise them. When every check passes, the new list replaces the one it holds, and the keys of the old list that are not on the new one are no longer trusted. Receiving the current list again is not an error.
 
-**When the list a host holds expires** and no newer one has arrived, it keeps the list, goes on trusting its keys, and raises a warning, as for the root list ([ADR 0005](/decisions/0005-trust-products-the-root-list-the-ca-bundle-the-ssh-ca-key-list-and-the-trust-sequence/#the-signed-root-list)). `status` warns 60, 30 and 14 days before the newest list expires.
+**When the list a host holds expires** and no newer one has arrived, it keeps the list, goes on trusting its keys, and raises a warning, as for the root list ([record 0006](../decisions/0006-bundle-history-and-trust-files.md)). `status` warns 60, 30 and 14 days before the newest list expires.
 
 These codes belong to the host and are not sent anywhere.
 
@@ -101,7 +101,7 @@ These codes belong to the host and are not sent anywhere.
 
 It is the file sshd reads as `TrustedUserCAKeys`; a line that begins with `#` is a comment there. It is deterministic, and it is not signed: a host that holds the list checks the file against it (`user-keys-mismatch`) before it installs it. A host key list for `known_hosts` is not derived, because a `@cert-authority` line names the hosts it applies to, and ritueel does not know them; the entries with use `host` are in the list for the system that does.
 
-**The command.** `ritueel ssh-ca-keys verify FILE (--held FILE | --root-list FILE) [--user-keys FILE]` runs the host's checks on the list `FILE` (its `ssh-ca-keys.json`; the signature is the `.jws` beside it) against the list the host holds, with the roots of the root list it holds (`--root-list FILE`, checked as `root-list verify` checks it; the roots that signed it are in the `.jws` beside it, which check 2 reads when the sequences are equal). `--user-keys FILE` also checks the file for sshd. It signs and writes nothing, and exits 0 when the list is accepted and 3 with the code when it is refused ([Commands](/reference/cli/#commands-for-the-trust-products-that-come-later)).
+**The command.** `ritueel ssh-ca-keys verify FILE (--held FILE | --root-list FILE) [--user-keys FILE]` runs the host's checks on the list `FILE` (its `ssh-ca-keys.json`; the signature is the `.jws` beside it) against the list the host holds, with the roots of the root list it holds (`--root-list FILE`, checked as `root-list verify` checks it; the roots that signed it are in the `.jws` beside it, which check 2 reads when the sequences are equal). `--user-keys FILE` also checks the file for sshd. It signs and writes nothing, and exits 0 when the list is accepted and 3 with the code when it is refused ([Commands](/reference/cli/#commands-for-the-trust-files-that-come-later)).
 
 ## Test vectors
 
@@ -125,7 +125,7 @@ CI checks that the manifest names every file of the set, that the pins match the
 |---|---|---|---|
 | One list or two | One list with a `use` for each key. | One list for user CAs and one for host CAs. | One signature, one expiry and one sequence to follow. The two kinds differ in what a host does with them, and the `use` member is where it learns that. |
 | `use` | In the list, from the request. | A key may do both; a host decides. | A user CA key trusted as a host CA lets whoever holds it vouch for hosts, and the reverse. Keeping the two apart costs one key more for a system that wants both. |
-| The signer's key | An X.509 root key that signs the root list. | A key of its own for the list. | The audience, lifetime and revocation are those of the root list ([ADR 0005](/decisions/0005-trust-products-the-root-list-the-ca-bundle-the-ssh-ca-key-list-and-the-trust-sequence/#roads-not-taken)). A third key would cost a slot and a touch. |
+| The signer's key | An X.509 root key that signs the root list. | A key of its own for the list. | The audience, lifetime and revocation are those of the root list ([record 0006](../decisions/0006-bundle-history-and-trust-files.md)). A third key would cost a slot and a touch. |
 | Which roots check 2 reads | The root list the host holds, with the one exception of a signer of the root list of the same sequence. | Only the held root list; any root of the new root list. | A retiring root signs the ceremony that removes it, so a strict rule would refuse the list of that very ceremony. Reading the new root list would let a list vouch for its own signer. |
 | Break-glass key in the list | Listed like any other key, by name. | A separate file; not published, kept by the holder. | Hosts need it to accept an emergency login, and one list is one place to look. The key leaves with its root. |
 | A file for sshd | Derived, with the sequence in a comment, and checked against the list. | Only the JSON; a `known_hosts` file as well. | `TrustedUserCAKeys` is the file sshd reads, and a comment line is allowed in it. A `known_hosts` line needs host patterns that only the consumer knows. |

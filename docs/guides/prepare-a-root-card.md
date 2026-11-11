@@ -5,13 +5,13 @@ sidebar:
   order: 0.5
 ---
 
-*These steps use `ykman`, the YubiKey Manager command line, which exists today (commands checked against ykman 5.8.0 on 2026-11-02). ritueel does not set the PIN you type: it checks the result and refuses a card that is not ready. It then adopts the card, which replaces the PUK and the management key with random ones sealed in the bundle ([ADR 0008](/decisions/0008-the-operator-prepares-the-holder-and-ritueel-creates-attests-and-verifies-the-root/#root-cards), [ADR 0015](/decisions/0015-key-files-open-with-a-passkey-on-each-root-card-and-card-secrets-are-sealed-in-the-bundle/#card-secrets)). The read-only check and the inventory come with M2; card adoption and the `piv` store with M6 ([issue #11](https://github.com/truvity/ritueel/issues/11)). Do this on a rehearsal card first.*
+*These steps use `ykman`, the YubiKey Manager command line, which exists today (commands checked against ykman 5.8.0 on 2026-11-02). ritueel does not set the PIN you type: it checks the result and refuses a card that is not ready. It then adopts the card, which replaces the PUK and the management key with random ones sealed in the bundle ([record 0003](../decisions/0003-root-cards.md)). The read-only check and the inventory come with M2; card adoption and the `piv` store with M6 ([issue #11](https://github.com/truvity/ritueel/issues/11)). Do this on a rehearsal card first.*
 
 A new token ships with a PIN, a PUK and a management key that everyone knows. With the management key, anyone who holds the token can put their own key in a slot; with the default PIN, anyone can use a key. A root card must not leave the box like that. This guide sets the PIN, and nothing else; ritueel's adoption of the card changes the other two, as the steps say. Why the cards are dedicated and why there are two is in [Two roots in practice](/learn/two-roots/). A pair may later serve a second bundle of the same holder; how that works is proposed and is on the [card page](/reference/cards/#a-pair-shared-by-bundles).
 
 ## What you start with
 
-- A new token with firmware 5.7.4 or later, which is ritueel's floor for a root card ([ADR 0016](/decisions/0016-several-bundles-share-one-pair-of-root-cards-and-the-bundle-keeps-a-card-inventory/#rules-for-a-shared-card)), bought to hold roots and nothing else ([Which keys to buy](/learn/which-keys-to-buy/)). It is never also a day-to-day card or a server card.
+- A new token with firmware 5.7.4 or later, which is ritueel's floor for a root card ([record 0003](../decisions/0003-root-cards.md)), bought to hold roots and nothing else ([Which keys to buy](/learn/which-keys-to-buy/)). It is never also a day-to-day card or a server card.
 - `ykman` on your workstation, and no other program holding the card: stop `scdaemon` first (`gpgconf --kill scdaemon`).
 - Your password manager open, with an entry for this card.
 

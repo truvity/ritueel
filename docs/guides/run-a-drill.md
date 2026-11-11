@@ -5,7 +5,7 @@ sidebar:
   order: 7
 ---
 
-*Design phase: not built yet. The command and the scripts are specified in [Drills and the restore check](/reference/drill/) ([issue #68](https://github.com/truvity/ritueel/issues/68), [issue #20](https://github.com/truvity/ritueel/issues/20)); the reasons are in [ADR 0010](/decisions/0010-readiness-is-made-at-birth-and-proved-by-a-drill/). The ideas are in [The ledger](/learn/the-ledger/).*
+*Design phase: not built yet. The command and the scripts are specified in [Drills and the restore check](/reference/drill/) ([issue #68](https://github.com/truvity/ritueel/issues/68), [issue #20](https://github.com/truvity/ritueel/issues/20)); the reasons are in [record 0007](../decisions/0007-changing-and-losing-a-root.md). The ideas are in [The history](/learn/the-history/).*
 
 A ceremony happens about once a year, so nobody is practised, and the day you need a recovery is the worst day to learn it. A drill is a practice with a known start and a known end, on test keys, in which a mistake costs nothing. There are two kinds, and you run both: the **walk-through**, on test keys, and the **restore check**, on your real bundle.
 

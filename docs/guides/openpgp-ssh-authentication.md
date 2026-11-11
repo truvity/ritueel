@@ -5,13 +5,13 @@ sidebar:
   order: 10
 ---
 
-*These steps use `gpg` and `ssh`, which exist today. Making the subkey with ritueel, so that an offline master key binds a subkey born on the card, is planned ([issue #18](https://github.com/truvity/ritueel/issues/18)). Try everything on a test key first. To learn how the master key and the subkeys fit, read [the OpenPGP custody chain](/learn/chain-openpgp/).*
+*These steps use `gpg` and `ssh`, which exist today. Making the subkey with ritueel, so that an offline primary key binds a subkey born on the card, is planned ([issue #18](https://github.com/truvity/ritueel/issues/18)). Try everything on a test key first. To learn how the primary key and the subkeys fit, read [the OpenPGP custody chain](/learn/chain-openpgp/).*
 
-An OpenPGP key can log you in to SSH servers. The key is a subkey with the *authentication* flag (`A`), kept on a card, so it cannot be copied off your computer and each use needs the PIN and, if the card asks, a touch. The master key stays offline.
+An OpenPGP key can log you in to SSH servers. The key is a subkey with the *authentication* flag (`A`), kept on a card, so it cannot be copied off your computer and each use needs the PIN and, if the card asks, a touch. The primary key stays offline.
 
 ## What you start with
 
-- A card with an authentication subkey born on it, bound by your master key. A signing and an encryption subkey may be on the same card.
+- A card with an authentication subkey born on it, bound by your primary key. A signing and an encryption subkey may be on the same card.
 - `gpg` 2.2 or later with `scdaemon`, and an `ssh` client.
 - The card's PIN in your password manager.
 

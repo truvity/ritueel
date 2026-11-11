@@ -5,7 +5,7 @@ sidebar:
   order: 8
 ---
 
-*Not built yet. This is the page that [ADR 0005](/decisions/0005-trust-products-the-root-list-the-ca-bundle-the-ssh-ca-key-list-and-the-trust-sequence/#revoking-an-intermediate-a-crl-for-each-root) leaves for the format, cadence and rules; the code is [issue #30](https://github.com/truvity/ritueel/issues/30), in M4, and its [test vectors](/reference/crl/#test-vectors) match this page.*
+*Not built yet. This is the page that [record 0006](../decisions/0006-bundle-history-and-trust-files.md) leaves for the format, cadence and rules; the code is [issue #30](https://github.com/truvity/ritueel/issues/30), in M4, and its [test vectors](/reference/crl/#test-vectors) match this page.*
 
 An intermediate certificate is revoked by a certificate revocation list (CRL), the standard way an X.509 client learns that a certificate it can still build a chain to must not be used (RFC 5280, section 5). Each root signs a CRL of its own, because a CRL is per issuer, and a client that builds a path through either root may ask for either list ([Two roots in practice](/learn/two-roots/#what-to-expect-from-clients)). A root that has revoked nothing signs an empty one, so that the client always has a current list to check.
 
@@ -17,7 +17,7 @@ ritueel puts **no CRL distribution point in any certificate** it issues ([the pr
 |---|---|
 | `crl-<label>.pem` | The CRL of the root `<label>`: one `X509 CRL` in PEM armour (RFC 7468), with LF line endings and Base64 in lines of 64 characters. |
 
-ritueel writes the CRL of every active root into `products/<sequence>/` with the other trust products ([the bundle](/reference/bundle/#the-layout)). A ceremony **signs** the CRL of the root that signs it, and **copies unchanged** the newest CRL of every other active root, so the folder of any sequence holds a current CRL for each root and the same bundle gives the same bytes.
+ritueel writes the CRL of every active root into `trust/<number>/` with the other trust files ([the bundle](/reference/bundle/#the-layout)). A ceremony **signs** the CRL of the root that signs it, and **copies unchanged** the newest CRL of every other active root, so the folder of any sequence holds a current CRL for each root and the same bundle gives the same bytes.
 
 ## When a root signs its CRL
 
@@ -46,7 +46,7 @@ Version 2 (RFC 5280, section 5.1). A relying party can check every row.
 
 **Why 25 months.** The cards alternate by year, so a root signs about every second year, and its CRL has to stay current until the next time it signs: two yearly ceremonies and a month for a late one. A CRL that lasted 13 months would be expired for most of every other year, and a client that checks CRLs refuses an expired one. The cost is that a CRL says less about how recently its issuer was used; the root list's 13 months still do that for the whole system, and a missed ceremony shows there first.
 
-**What a CRL does not say.** An entry lasts until the certificate it names expires, which is at most 13 months. After that the entry is useless, and the next signing of that CRL drops it. A CRL says nothing about OpenPGP: a subkey is revoked by a revocation signature and a keyring package without it ([ADR 0006](/decisions/0006-release-keys-and-the-keyring-package/#revocation)).
+**What a CRL does not say.** An entry lasts until the certificate it names expires, which is at most 13 months. After that the entry is useless, and the next signing of that CRL drops it. A CRL says nothing about OpenPGP: a subkey is revoked by a revocation signature and a keyring package without it ([record 0009](../decisions/0009-release-keys-and-the-keyring.md)).
 
 ## How a relying party reads it
 
@@ -66,7 +66,7 @@ A CRL whose number equals the held one and whose bytes are the same passes: ritu
 
 **Is this certificate revoked.** A certificate is revoked when the current CRL of its issuing root lists its serial number. The party takes the issuer from the certificate, so it needs the CRL of each root that may have issued a certificate in the chains it accepts, and both when two roots are active. With OpenSSL this is `openssl verify -CAfile ca-bundle.pem -crl_check -CRLfile crl-A.pem -CRLfile crl-B.pem CERT`: it reports a listed certificate as `certificate revoked` and refuses an expired CRL with `CRL has expired` (OpenSSL 3.5.5, checked 2026-11-01 with the vectors' files). Servers built on OpenSSL take the same file in their own setting (for example nginx `ssl_crl` and PostgreSQL `ssl_crl_file`, from their documentation).
 
-**The command.** `ritueel crl verify FILE --ca-bundle FILE [--held FILE] [--cert FILE]` runs these checks on `FILE`, against the CA bundle that lists the roots the party trusts (its first line names the sequence of the root list; a root not in it is not trusted) and the CRL the party holds. `--cert FILE` also says whether the certificate is listed: exit code 3 with the code `revoked`. It signs and writes nothing ([Commands](/reference/cli/#commands-for-the-trust-products-that-come-later)).
+**The command.** `ritueel crl verify FILE --ca-bundle FILE [--held FILE] [--cert FILE]` runs these checks on `FILE`, against the CA bundle that lists the roots the party trusts (its first line names the sequence of the root list; a root not in it is not trusted) and the CRL the party holds. `--cert FILE` also says whether the certificate is listed: exit code 3 with the code `revoked`. It signs and writes nothing ([Commands](/reference/cli/#commands-for-the-trust-files-that-come-later)).
 
 ## Test vectors
 
@@ -92,9 +92,9 @@ CI checks that the manifest names every file of the set, that the pins match the
 | How an intermediate is revoked for X.509 | A CRL that each root signs, which a relying party loads. | OCSP; a distribution point in every certificate; no revocation, only short lives; a revoked-certificate list in the root list. | A CRL is a file, which fits a tool that runs a ceremony once a year and publishes nothing live. OCSP needs a responder that signs online, which ritueel never holds. A distribution point would name a host in a certificate that outlives it, and TLS libraries do not fetch it by default anyway. Short lives are already the case (13 months) and cannot answer a theft this month. The root list pins keys, and an entry per certificate would make it grow with every renewal. |
 | Which root signs | The issuer of each certificate, each for its own list. | One root of the year signs one CRL for both roots (an indirect CRL); a single CRL for all. | Standard clients accept a CRL only from the issuer, or from a CRL issuer the certificate names, which ritueel's certificates do not. An indirect CRL is poorly supported. |
 | Validity of a CRL | 25 months. | 13 months, like the root list; both roots sign at every ceremony. | The cards alternate. 13 months would leave every other CRL expired, and signing both at every ceremony needs both cards every year, which is what the alternation exists to avoid. |
-| CRL number | The trust sequence. | A counter of its own for each CRL. | One counter ([ADR 0005](/decisions/0005-trust-products-the-root-list-the-ca-bundle-the-ssh-ca-key-list-and-the-trust-sequence/#one-counter-the-trust-sequence)). RFC 5280 asks only that the number grows, so gaps are allowed. |
+| CRL number | The trust sequence. | A counter of its own for each CRL. | One counter ([record 0006](../decisions/0006-bundle-history-and-trust-files.md)). RFC 5280 asks only that the number grows, so gaps are allowed. |
 | Reason codes | Three, from the command. | All of RFC 5280's; none. | Nothing reads the others. A reason is what a person reading the CRL gets for free. |
-| Format | PEM. | DER. | The files OpenSSL-based servers load are PEM, and the other trust products are text. A DER file is a conversion away for a party that wants it. |
+| Format | PEM. | DER. | The files OpenSSL-based servers load are PEM, and the other trust files are text. A DER file is a conversion away for a party that wants it. |
 
 ## Follow-ups
 

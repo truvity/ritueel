@@ -11,7 +11,7 @@ A signed commit says that the holder of a key made it. A signed tag says that th
 
 ## What you start with
 
-- A signing subkey (`S`) on a card, bound by your master key, and its public key.
+- A signing subkey (`S`) on a card, bound by your primary key, and its public key.
 - `git` and `gpg`, and the card's PIN.
 - A user ID on the key with an email address you also use in git and on your hosting platform.
 
@@ -25,7 +25,7 @@ A signed commit says that the holder of a key made it. A signed tag says that th
 
 ## How platforms decide a signature is verified
 
-A platform cannot see your master key or your card. It checks three things:
+A platform cannot see your primary key or your card. It checks three things:
 
 | Platform checks | What it means for you |
 |---|---|

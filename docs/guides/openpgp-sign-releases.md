@@ -5,13 +5,13 @@ sidebar:
   order: 12
 ---
 
-*These steps use `gpg` and `sqv`, which exist today. The release key, its keyring package and the guide's drill are planned in ritueel ([ADR 0006](/decisions/0006-release-keys-and-the-keyring-package/)); no release is signed until the project's root is adopted and drilled. Try everything on a test key first.*
+*These steps use `gpg` and `sqv`, which exist today. The release key, its keyring package and the guide's drill are planned in ritueel ([record 0009](../decisions/0009-release-keys-and-the-keyring.md)); no release is signed until the project's root is adopted and drilled. Try everything on a test key first.*
 
 A release signature lets a user check that the file they downloaded is the one you published. It only means something if the user knows which key to trust and the key's custody is sound. This page covers signing, publishing and verifying.
 
 ## What you start with
 
-- A release signing subkey held in a store (a card, or a cloud key service), bound by a master key that stays offline ([the OpenPGP chain](/learn/chain-openpgp/)).
+- A release signing subkey held in a store (a card, or a cloud key service), bound by a primary key that stays offline ([the OpenPGP chain](/learn/chain-openpgp/)).
 - The release files, built reproducibly if you can.
 - A place to publish: your site, your repository's releases, a package repository.
 
@@ -55,7 +55,7 @@ Read from the projects' pages on 2026-11-01. Publish **version 4** certificates,
 
 A release key that sits in a file on a build server can be copied. Prefer a subkey held in a card or a cloud key service, so that signing is a call that CI makes with its own identity and audit trail, and the private key cannot be taken. The key is replaced, not copied, when custody changes ([Rotate](/learn/rotate/)). Compare the options in [Where a key lives](/learn/key-stores/).
 
-ritueel's own releases follow the same rule. The proof of a release of ritueel is a checksum file signed by a release subkey that the project's root binds, with a keyless signature beside it, and there is no personal signature of the maintainer ([ADR 0006](/decisions/0006-release-keys-and-the-keyring-package/#ritueels-own-releases)).
+ritueel's own releases follow the same rule. The proof of a release of ritueel is a checksum file signed by a release subkey that the project's root binds, with a keyless signature beside it, and there is no personal signature of the maintainer ([record 0009](../decisions/0009-release-keys-and-the-keyring.md)).
 
 ## How you know it worked
 
