@@ -50,7 +50,7 @@ A root is valid for about three years, and each use extends it. The card that si
 
 ## One process behind the commands
 
-Every command that reads or writes a bundle talks to one ritueel process. The first command that needs it starts it; it is not installed as a system service, is never started at login or boot. The command line and the local page reach it on one fixed port of the loopback address (7488 is proposed), with a token read from a file that only you can read. It ends by itself after 15 minutes without a call, at once on a stop command, and at logout or reboot. It keeps no PIN, no passphrase and no secret between calls, and holds no card between calls. When you confirm a ceremony, the digest you type in the terminal goes to it with that token. ([record 0010](../decisions/0010-the-engine-the-process-and-the-page.md), [the details](/reference/wizard/#the-ritueel-process).)
+Every command that reads or writes a bundle talks to one ritueel process. The first command that needs it starts it; it is not installed as a system service, is never started at login or boot. The command line and the local page reach it on one fixed port of the loopback address (7488), with a token read from a file that only you can read. It ends by itself after 15 minutes without a call, at once on a stop command, and at logout or reboot. It keeps no PIN, no passphrase and no secret between calls, and holds no card between calls. When you confirm a ceremony, the digest you type in the terminal goes to it with that token. ([record 0010](../decisions/0010-the-engine-the-process-and-the-page.md), [the details](/reference/wizard/#the-ritueel-process).)
 
 ## Which code talks to the cards
 
