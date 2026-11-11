@@ -263,7 +263,7 @@ export function PlanView({ plan }: { plan: PlanMessage }) {
           <p className="text-sm font-semibold">Its digest</p>
           <Fp value={plan.digest} />
           <p className="mt-1 max-w-[70ch] text-sm text-dim">
-            The digest is a fingerprint of the whole plan. If a single step changes, the digest changes. You check it at the terminal, on the ceremony machine. This page never
+            The digest is a hash of the whole plan. If a single step changes, the digest changes. You check it at the terminal, on the ceremony machine. This page never
             asks you to type it, and it cannot confirm the plan.
           </p>
         </div>

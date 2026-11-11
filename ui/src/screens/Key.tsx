@@ -438,8 +438,8 @@ function Subkeys({ r, cards, asOf }: { r: Root; cards: Card[] | undefined; asOf:
     <>
       <Sec title="Subkeys by year and by card" aside={`${plural(sets.length, 'set')} on ${plural(cardCount, 'card')}`}>
         <Explain term="A subkey set">
-          is the group of subkeys made together, one to sign, one to authenticate and one to encrypt. The primary key stays safe, and the subkeys do the daily work, so a
-          new set each year replaces the old one.
+          is the group of subkeys made together on one card, one to sign and one to authenticate; the encryption subkey is made in software and loaded onto each card. The
+          primary key stays safe, and the subkeys do the daily work. Their binding is renewed each year; a new set is made only on an event, such as a lost card.
         </Explain>
         {many ? (
           <>

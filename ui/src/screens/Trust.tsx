@@ -77,7 +77,7 @@ function File({ f, asOf }: { f: TrustFile; asOf: Parameters<typeof daysBetween>[
         </dl>
         {built && f.sha256 ? (
           <div>
-            <p className="text-sm text-dim">Fingerprint of the file (SHA-256)</p>
+            <p className="text-sm text-dim">Digest of the file (SHA-256)</p>
             <Fp value={f.sha256} className="text-xs" />
           </div>
         ) : null}
