@@ -2,9 +2,9 @@
 
 ritueel helps one person or a small team keep a private root and an OpenPGP primary key for years without losing it, leaking it, misusing it or letting it expire. It teaches the model first, and its tools run each ceremony with the person deciding.
 
-The site at [ritueel.id](https://ritueel.id) teaches first: the logic of keeping root keys and intermediates, the [custody chain](docs/learn/custody-chain.md), the key stores compared in the open, and the whole life of a root. The tools come after, because the steps are mostly manual ceremonies. ritueel is open source (MIT) and written in Go.
+The site at [ritueel.id](https://ritueel.id) teaches first: the logic of keeping root keys and intermediates, the [custody chain](docs/learn/custody-chain.md), the key stores compared in the open, and the whole life of a root. The tools come after, because the steps are mostly manual ceremonies. ritueel is open source (MIT). The program is written in Go; its local page is written in TypeScript (`ui/`).
 
-> **Status as of 2026-11-11: design phase, no code yet.** The decision records are accepted and M0 is this round of records and M1 the proofs on a rehearsal card, as the [roadmap](docs/roadmap.md) says.
+> **Status as of 2026-11-11: design phase. The program has no code yet; the local page exists as code and as a demo (`ui/`, `proto/`).** The decision records are accepted and M0 is this round of records and M1 the proofs on a rehearsal card, as the [roadmap](docs/roadmap.md) says.
 
 ## What ritueel does
 
