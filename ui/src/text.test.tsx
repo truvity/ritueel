@@ -6,10 +6,10 @@ import { Cmd } from './ui/Cmd';
 import { Fp } from './ui/Fp';
 import { T } from './ui/T';
 
-// Text from the folder is data. Bidirectional, zero-width and control
+// Text from the bundle is data. Bidirectional, zero-width and control
 // characters show as visible U+XXXX escapes, and a long text is capped.
 
-describe('text from the folder is data', () => {
+describe('text from the bundle is data', () => {
   it('passes plain ASCII as it is', () => {
     expect(safeString('Example Holder <holder@example.com>')).toBe('Example Holder <holder@example.com>');
   });

@@ -29,10 +29,10 @@ const screens = [
   ['start', '#/start'],
   ['findings', '#/findings'],
   ['roots', '#/roots'],
-  ['key-personal', key('A')],
-  ['key-acme-a', '#/start', via('acme', key('A'))],
-  ['key-acme-b', '#/start', via('acme', key('B'))],
-  ['key-cloud', '#/start', via('globex', key('A'))],
+  ['key-personal-A', key('A')],
+  ['key-acme-A', '#/start', via('acme', key('A'))],
+  ['key-acme-B', '#/start', via('acme', key('B'))],
+  ['key-globex-A', '#/start', via('globex', key('A'))],
   ['roots-acme', '#/start', via('acme', '#/roots')],
   ['cards-acme', '#/start', via('acme', '#/cards')],
   ['cards-globex', '#/start', via('globex', '#/cards')],
@@ -61,7 +61,7 @@ const states = [];
 for (const [name, hash] of [['start', '#/start'], ['findings', '#/findings'], ['cards', '#/cards'], ['history', '#/history'], ['trust', '#/trust'], ['roots', '#/roots'], ['plan-goals', '#/plan']]) {
   for (const st of ['Empty', 'Failed read', 'Waiting']) states.push([`${name}-${st.split(' ')[0].toLowerCase()}`, hash, st]);
 }
-states.push(['key-personal-failed', key('A'), 'Failed read'], ['plan-saved-failed', '#/plan/retire-subkeys', 'Failed read']);
+states.push(['key-personal-A-failed', key('A'), 'Failed read'], ['plan-saved-failed', '#/plan/retire-subkeys', 'Failed read']);
 
 const sizes = [
   ['1440', 1440, 900, 1],
