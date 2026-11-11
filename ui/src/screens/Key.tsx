@@ -115,7 +115,7 @@ function Certificate({ r, bundle }: { r: Root; bundle: string | undefined }) {
         </dl>
         {none ? (
           <p className="border-t border-rule bg-sunk px-4 py-2.5 text-[0.9375rem]">
-            A key with no expiry stays valid for ever if you lose track of it. An expiry that you extend each year is a safety net.
+            A key with no expiry stays valid for ever if you lose track of it. An expiry that you extend at each use (about three years each time) is a safety net.
           </p>
         ) : null}
         {r.note ? (
