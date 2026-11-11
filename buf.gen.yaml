@@ -1,0 +1,16 @@
+# Generates the TypeScript of the local page's API into ui/src/gen/ (messages, enums and the
+# service descriptors, in one *_pb.ts file for each .proto file). The code is committed, so the
+# page builds without buf; `just proto-check` fails when it differs from what the generator makes.
+#
+# The plugin is the one the page locks, from ui/node_modules (`just ui-install`): nothing is
+# global and nothing is fetched from the Buf Schema Registry.
+#
+# Later, for the program (not generated yet): protoc-gen-go and protoc-gen-connect-go, as two
+# more entries under `plugins`, into gen/go with `paths=source_relative`.
+version: v2
+clean: true
+plugins:
+  - local: ui/node_modules/.bin/protoc-gen-es
+    out: ui/src/gen
+    opt:
+      - target=ts

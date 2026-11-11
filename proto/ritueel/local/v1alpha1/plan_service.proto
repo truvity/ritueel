@@ -1,0 +1,224 @@
+// The plan service: what the wizard needs.
+//
+// The wizard helps the holder build a plan, ends with a preview of it and
+// the exact command to run, and can save the plan file so that the holder
+// can boot the offline system and run it there. It never confirms: the
+// holder confirms in the terminal, with `ritueel run PLAN --confirm DIGEST`.
+//
+// No call takes or returns a secret, a PIN or a passphrase. The wizard
+// asks only questions with a fixed list of answers (no free text), and the
+// only value that comes back to the process is the digest of a plan, which
+// is public. A step may say that a PIN or a touch is needed, because that
+// is a fact about the ceremony; the PIN itself is typed in the terminal.
+//
+// A plan is built by the same engine as the command line (`--plan-only`).
+// The page never builds one on its own.
+
+syntax = "proto3";
+
+package ritueel.local.v1alpha1;
+
+import "google/protobuf/timestamp.proto";
+import "ritueel/local/v1alpha1/common.proto";
+
+service PlanService {
+  // The goals the wizard offers, each with whether it applies to this
+  // folder and why not if it does not.
+  rpc ListIntentions(ListIntentionsRequest) returns (ListIntentionsResponse) {
+    option idempotency_level = NO_SIDE_EFFECTS;
+  }
+
+  // Start from an intention. Without answers, the engine may ask two or
+  // three questions; with the answers it returns the plan: the ordered
+  // steps, the digest and the exact command to run. It writes nothing:
+  // the plan exists only in the answer until SavePlan is called.
+  rpc StartPlan(StartPlanRequest) returns (StartPlanResponse) {
+    option idempotency_level = NO_SIDE_EFFECTS;
+  }
+
+  // Save the plan file into the folder's "pending" area. This is the one
+  // call of the package that writes. It writes one inert file, create-only,
+  // and answers with the path and the digest. The demo writes nothing and
+  // says so (see SavePlanResponse.written).
+  rpc SavePlan(SavePlanRequest) returns (SavePlanResponse) {}
+}
+
+// -------------------------------------------------------------- intentions
+
+message ListIntentionsRequest {}
+
+message ListIntentionsResponse {
+  repeated IntentionOption options = 1;
+}
+
+message IntentionOption {
+  Intention intention = 1;
+  string title = 2;
+  // One sentence.
+  string sentence = 3;
+  // How long the whole thing usually takes, for example "about 30 minutes".
+  string typical_time = 4;
+  // False when the goal does not apply to this folder; the page shows it
+  // greyed with the reason.
+  bool applicable = 5;
+  string not_applicable_reason = 6;
+  // True when due items or findings point at this goal.
+  bool recommended = 7;
+  string recommended_reason = 8;
+}
+
+// ------------------------------------------------------------- start a plan
+
+message StartPlanRequest {
+  Intention intention = 1;
+  // Items the holder arrives with from Start or Findings, already chosen.
+  repeated string due_ids = 2;
+  repeated string finding_ids = 3;
+  // A key the plan is about: a full fingerprint, or a cloud key alias.
+  string target = 4;
+  // The answers so far. Empty on the first call.
+  repeated Answer answers = 5;
+}
+
+// An answer is a choice among the options of a question, by option id.
+// There is no free text: nothing a holder types here can be a secret.
+message Answer {
+  string question_id = 1;
+  repeated string option_ids = 2;
+}
+
+// The engine answers with questions, or with a plan, or with a refusal.
+message StartPlanResponse {
+  // Not empty when the engine needs answers before it can build the plan.
+  repeated Question questions = 1;
+  // Set when the plan is built.
+  Plan plan = 2;
+  // Set when the engine cannot plan this: a sentence in plain words.
+  string refusal = 3;
+}
+
+enum QuestionKind {
+  QUESTION_KIND_UNSPECIFIED = 0;
+  QUESTION_KIND_SINGLE_CHOICE = 1;
+  QUESTION_KIND_MULTIPLE_CHOICE = 2;
+}
+
+message Question {
+  string id = 1;
+  string prompt = 2;
+  // What each choice costs, in a sentence or two.
+  string help = 3;
+  QuestionKind kind = 4;
+  repeated QuestionOption options = 5;
+  repeated string default_option_ids = 6;
+}
+
+message QuestionOption {
+  string id = 1;
+  string label = 2;
+  string description = 3;
+}
+
+// ------------------------------------------------------------------- plan
+
+message Plan {
+  // The plan's name, which is also the stem of its file, for example
+  // "2026-11-11-renew-due".
+  string id = 1;
+  Intention intention = 2;
+  string title = 3;
+  // One or two plain sentences.
+  string summary = 4;
+  google.protobuf.Timestamp built_at = 5;
+  // The hash of the newest record of the ledger the plan was built on. If
+  // the ledger moves, the plan is stale and `run` refuses it.
+  string ledger_head_sha256 = 6;
+  // The digest of the plan, in full: 64 hexadecimal characters. The holder
+  // compares its first eight characters in the terminal.
+  string digest = 7;
+  // The steps `ritueel run` takes, in order.
+  repeated PlanStep steps = 8;
+  // What the ceremony will add to the folder, or replace in it.
+  repeated FolderChange folder_changes = 9;
+  // The command that builds this same plan on the command line.
+  string equivalent_command = 10;
+  // The exact command to run on the ceremony machine, with the full digest.
+  string run_command = 11;
+  // Where SavePlan will put the file, relative to the folder.
+  string save_path = 12;
+  // The serials of the cards the ceremony needs.
+  repeated string card_serials = 13;
+}
+
+// What a step needs from the holder at the ceremony machine. These are
+// facts about the ceremony; none of them is a value the page can see.
+enum Requirement {
+  REQUIREMENT_UNSPECIFIED = 0;
+  REQUIREMENT_CARD_PRESENT = 1;
+  REQUIREMENT_PIN_AT_TERMINAL = 2;
+  REQUIREMENT_TOUCH = 3;
+  // The passkey on a root card opens the key file (PIN and touch).
+  REQUIREMENT_KEY_FILE_UNLOCK = 4;
+  REQUIREMENT_CONFIRM_DIGEST_AT_TERMINAL = 5;
+}
+
+message PlanStep {
+  int32 ordinal = 1;
+  string title = 2;
+  // What happens, in plain words.
+  string detail = 3;
+  // What changes in the world, or "Nothing changes" for a check.
+  string what_changes = 4;
+  repeated Requirement requirements = 5;
+  repeated string card_serials = 6;
+  // The guide on the site for this step.
+  string learn_path = 7;
+}
+
+enum FolderChangeAction {
+  FOLDER_CHANGE_ACTION_UNSPECIFIED = 0;
+  FOLDER_CHANGE_ACTION_CREATE = 1;
+  // A file that a ceremony replaces keeps its history under products/.
+  FOLDER_CHANGE_ACTION_REPLACE = 2;
+}
+
+message FolderChange {
+  // Path inside the folder.
+  string path = 1;
+  FolderChangeAction action = 2;
+  string description = 3;
+}
+
+// ------------------------------------------------------------- save a plan
+
+message SavePlanRequest {
+  string plan_id = 1;
+  // The digest the page was shown. The engine builds the plan again and
+  // refuses to save if its digest differs: the page cannot change a plan.
+  string digest = 2;
+}
+
+message SavePlanResponse {
+  string plan_id = 1;
+  // The folder, as the holder knows it, for example "~/ritueel".
+  string folder_path = 2;
+  // Where the file is (or would be), relative to the folder.
+  string path = 3;
+  string digest = 4;
+  int64 size_bytes = 5;
+  // False in the demo, and whenever nothing was written.
+  bool written = 6;
+  // A sentence for people. In the demo: "This is a demo. Nothing was
+  // written; this is what saving would write."
+  string notice = 7;
+  // The exact command to run on the ceremony machine.
+  string run_command = 8;
+  // What to copy to the stick, what to bring, and what happens when the
+  // stick comes back.
+  repeated string copy_to_stick = 9;
+  repeated string bring = 10;
+  string when_back = 11;
+  // The first lines of the plan file, as text: what saving writes. A plan
+  // file holds no secret.
+  string plan_file_preview = 12;
+}
