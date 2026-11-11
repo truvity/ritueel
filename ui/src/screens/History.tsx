@@ -1,10 +1,10 @@
-import { ChainState } from '../gen/ritueel/local/v1alpha1/common_pb';
+import { ChainState, RunPlace } from '../gen/ritueel/local/v1alpha1/common_pb';
 import { CeremonyKind, CeremonyOutcome, type Ceremony } from '../gen/ritueel/local/v1alpha1/inspect_service_pb';
 import { useBundleName, useCeremonies, useRoots } from '../api/hooks';
 import { plural, rootRef, ymd } from '../lib/format';
 import { href } from '../lib/route';
 import { USUAL_STEPS } from '../lib/steps';
-import { CEREMONY_KIND_WORD, OUTCOME_WORD } from '../lib/words';
+import { CEREMONY_KIND_WORD, OUTCOME_WORD, RAN_PLACE_VALUE, RAN_PLACE_WORD } from '../lib/words';
 import { Fp } from '../ui/Fp';
 import { Glyph } from '../ui/Glyph';
 import { LearnLink, Page } from '../ui/Page';
@@ -71,6 +71,7 @@ function Entry({ c }: { c: Ceremony }) {
             <Glyph level={outcomeLevel(c.outcome)} size={14} /> {OUTCOME_WORD[c.outcome]}
           </span>
           {c.trustSequence ? <span>trust sequence {c.trustSequence}</span> : null}
+          {RAN_PLACE_WORD[c.runPlace] ? <span>{RAN_PLACE_WORD[c.runPlace]}</span> : null}
           {c.cardSerials.length > 0 ? (
             <span>
               cards{' '}
@@ -176,6 +177,15 @@ function Detail({ id }: { id: string }) {
                       <dt className="text-sm text-dim">Completed</dt>
                       <dd className="font-mono">{ymd(c.completedAt)}</dd>
                     </div>
+                    {RAN_PLACE_VALUE[c.runPlace] ? (
+                      <div>
+                        <dt className="text-sm text-dim">Where it ran</dt>
+                        <dd>
+                          <span className="font-bold">{RAN_PLACE_VALUE[c.runPlace]}</span>
+                          {c.runPlace === RunPlace.WORKSTATION ? <span className="block text-sm text-dim">A root that cannot be copied: a touch for every signature, no retry.</span> : null}
+                        </dd>
+                      </div>
+                    ) : null}
                     {c.subjectLabels.length > 0 ? (
                       <div>
                         <dt className="text-sm text-dim">About</dt>

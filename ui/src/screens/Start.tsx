@@ -331,8 +331,8 @@ function Words() {
     ['Delegated key', 'A key a root has handed a job to, for a requester (a system that asks for it). It works for a while and must be renewed.'],
     ['Bundle', 'The directory with a fixed structure that holds everything ritueel knows about one trust domain, for example personal or acme: its history, roots, cards and trust files. Across bundles a root is written with the bundle\'s name, for example acme/A.'],
     ['Ceremony', 'One sitting at a terminal, where a plan is run and something about your keys changes.'],
-    ['Offline system', 'A computer booted from a read-only stick, where a root on cards or a real software root (a key file) is used.'],
-    ['Your workstation', 'The computer you work on. A cloud root is used from here, and no USB stick is needed. A test root may run here too.'],
+    ['Offline system', 'Vanilla AirgapOS, started from the ceremony USB stick. A root that can be copied (a key file) is used only here. Any root may be used here.'],
+    ['Your workstation', 'The computer you work on. A root that cannot be copied (on cards or in the cloud) may be used here, with a touch for every signature, the count in the plan, no retry and a check on a second device. No stick is needed.'],
     ['History', 'The write-once part of the bundle, history/, with one sub-folder for each ceremony. Each record names the one before it by digest, which is the chain.'],
     ['Trust files', 'The files your machines and users read to trust your roots, in numbered sets, trust/<number>/: root list, CA bundle, revocation lists, SSH CA key list and the public OpenPGP keyring. A personal bundle has only your public certificate. ritueel builds them; you publish them.'],
   ];
@@ -436,7 +436,7 @@ export function Start() {
         ) : (
           <p>
             This is the bundle where ritueel keeps the records of one trust domain. This page reads it and shows it. To change something, you make a plan here and run it in
-            a terminal, on the offline system or your workstation, as the plan says.
+            a terminal, in the offline system or on your workstation, as the plan says.
           </p>
         )
       }

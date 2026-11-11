@@ -257,8 +257,8 @@ export function Shell({ route, children }: { route: Route; children: ReactNode }
               {children}
               <footer className="mt-14 border-t border-line pt-4 text-sm text-dim">
                 <p className="max-w-[70ch]">
-                  This page only shows. It never asks for a PIN, a passphrase or any secret, and it never confirms a ceremony. You confirm in the terminal, on the
-                  offline system or your workstation, as the plan says.
+                  This page only shows. It never asks for a PIN, a passphrase or any secret, and it never confirms a ceremony. You confirm in the terminal, in the
+                  offline system or on your workstation, as the plan says.
                 </p>
                 <p className="mt-2 max-w-[70ch]">
                   <a className="inline-flex min-h-11 items-center underline underline-offset-4" href={`${import.meta.env.BASE_URL}THIRD-PARTY-LICENSES.md`}>
