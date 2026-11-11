@@ -139,7 +139,7 @@ The root that signs a yearly ceremony is the **active root whose last signing re
 
 ## The five transitions
 
-Software to a PIV card, software to AWS KMS, a PIV card to AWS KMS, AWS KMS to a PIV card, and a card or a KMS key replaced by one of the same kind are one command, `root add --store S`, with the new store's own checks ([cards](/reference/cards/#what-is-checked-on-a-card), [the cloud root](/reference/kms-root/#the-checks)). A store that gives no evidence cannot be the new root's store unless it is the `software` store of a test root ([record 0003](../decisions/0003-root-cards.md)). The [guides](/guides/) walk through each one.
+Software to a PIV card, software to AWS KMS, a PIV card to AWS KMS, AWS KMS to a PIV card, and a card or a KMS key replaced by one of the same kind are one command, `root add --store S`, with the new store's own checks ([cards](/reference/cards/#what-is-checked-on-a-card), [the cloud root](/reference/kms-root/#the-checks)). A store that gives no evidence cannot be the new root's store unless it is the `software` store of a test root ([record 0007](../decisions/0007-changing-and-losing-a-root.md), rule 10, and [record 0002](../decisions/0002-where-a-key-lives.md), rule 6). The [guides](/guides/) walk through each one.
 
 ## Test vectors
 

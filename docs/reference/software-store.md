@@ -5,7 +5,7 @@ sidebar:
   order: 16
 ---
 
-*Not built yet. The encrypted file is built with M2 ([issue #8](https://github.com/truvity/ritueel/issues/8)); 1Password ([issue #59](https://github.com/truvity/ritueel/issues/59)) and the OS keyring ([issue #60](https://github.com/truvity/ritueel/issues/60)) are M7. The reasons are in [record 0002](../decisions/0002-where-a-key-lives.md) and [record 0001](../decisions/0001-what-ritueel-is.md); the facts behind the choices are in [the research](/research/software-key-backends-2026-11-01/).*
+*Not built yet. The encrypted file is built with M2 ([issue #8](https://github.com/truvity/ritueel/issues/8)); 1Password ([issue #59](https://github.com/truvity/ritueel/issues/59)) and the OS keyring ([issue #60](https://github.com/truvity/ritueel/issues/60)) are M7. The reasons are in [record 0002](../decisions/0002-where-a-key-lives.md); the facts behind the choices are in [the research](/research/software-key-backends-2026-11-01/).*
 
 A software key has no evidence of where it lives and can be copied ([what a store can prove](/learn/what-a-store-can-prove/)). The backend decides where the bytes sit between ceremonies. In every backend the key is generated in memory and written straight into its backend, never to a file on disk.
 

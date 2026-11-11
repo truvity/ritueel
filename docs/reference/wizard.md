@@ -42,7 +42,7 @@ The contract is in `proto/ritueel/local/v1alpha1/` and is not copied here. The v
 
 - **`InspectService`:** six read calls, marked `NO_SIDE_EFFECTS`, so that they may be `GET`.
 - **`PlanService`:** `ListIntentions` and `StartPlan`, which read; and `SavePlan`, the only write.
-- **No call has a field for a secret, a PIN or a passphrase.** The calls of the page's listener do not confirm, sign, create a key or run a ceremony.
+- **No call has a field for a secret, a PIN or a passphrase.** The calls made with the page-rights token do not confirm, sign, create a key or run a ceremony.
 
 ### The ritueel process
 
@@ -78,7 +78,7 @@ The page is served by the one ritueel process, on its one fixed loopback port, f
 | # | Rule | How | Test |
 |---|---|---|---|
 | 1 | Loopback only | `net.Listen("tcp4", "127.0.0.1:PORT")`, on the one fixed port, 7488. There is no flag for another address, and any other address is refused. The literal is printed, never `localhost` ([the research](/research/local-wizard-threats-2026-11-01/#numbers)). | Starting with another address in the environment or arguments still binds 127.0.0.1; a connection from a non-loopback address is impossible. |
-| 2 | One fixed port | The port is the same for the command line and the page, and for every start. It is not chosen by the operating system. | Two starts bind the same port; a second process of the same user is refused by the lock. |
+| 2 | One fixed port | The port is the same for the command line and the page, and for every start. It is not chosen by the operating system. | Two starts use the same port; a second process cannot bind it. |
 | 3 | A one-time page-rights token | 128 random bits, printed once in the address `http://127.0.0.1:7488/?token=TOKEN`. The first request that carries it is answered with a redirect to `/` and a cookie `ritueel_session`, `HttpOnly; SameSite=Strict; Path=/`; the token then stops working. | A request without a token or a cookie is refused (403); a second use of the token is refused; the address after the redirect has no token; the cookie has the flags. |
 | 4 | Host and Origin | `Host` must be exactly `127.0.0.1:7488`, or the request is refused (403, no detail). For `POST`, `Sec-Fetch-Site` must be `same-origin`, or `Origin` must match `Host` (Go's `http.CrossOriginProtection`). The two checks are separate: the second is no defence against rebinding. | Wrong `Host`, a rebinding-style name, wrong `Origin` and `Sec-Fetch-Site: cross-site` are each refused. |
 | 5 | No remote assets | The built files of the page (HTML, scripts, stylesheet) are embedded in the binary; no font, image, script or style from elsewhere, no inline script. The component library writes inline styles at run time (see row 6). | A headless browser with the network blocked loads the page with every asset; the page contains no `http` URL that it loads; the built JavaScript bundles contain no remote URL (`check:dist` checks this for the page; the program's own test is still to write). |

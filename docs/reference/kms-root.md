@@ -1,6 +1,6 @@
 ---
 title: The cloud root in AWS KMS
-description: What the operator provides for a KMS root, the ritueel.yaml block, the keys ritueel creates or adopts, the reference key policy, its checks, and renewal.
+description: What the operator provides for a KMS root, the ritueel.yaml block, the keys ritueel creates or adopts, the reference key policy, its checks, and the proposed renewal.
 sidebar:
   order: 10
 ---
@@ -18,7 +18,7 @@ Before `init`, with the operator's own infrastructure tools ([Prepare the cloud 
 | The root account | A dedicated AWS account that holds nothing else. |
 | The admin role | Creates the keys and reads them. It replicates only before the policy that refuses replicas is in force, or through the break-glass principal. It can never `kms:Sign`. |
 | The ceremony role | The principal that may `kms:Sign` with a root key at a ceremony, and the only one that may sign anything new. ritueel asks for no particular sign-in to assume it ([record 0004](../decisions/0004-the-cloud-root.md)); how it is assumed is the operator's. |
-| The renewal role | Optional, with a [renewal policy](/reference/kms-root/#renewal-under-a-policy). The second and last principal that may `kms:Sign`: sign-only, assumable only by the operator's scheduler. ritueel lets it sign only what the bundle already holds. |
+| The renewal role | Proposed, later (M7). Optional, with a [renewal policy](/reference/kms-root/#renewal-under-a-policy). The second and last principal that may `kms:Sign`: sign-only, assumable only by the operator's scheduler. ritueel lets it sign only what the bundle already holds. |
 | The break-glass principal | The one principal that may still replicate a key or move its primary Region, for example after the loss of a Region. It is created like the admin role and is never named after a person. Using it is a manual, logged act ([record 0004](../decisions/0004-the-cloud-root.md)). It can never `kms:Sign`. |
 | The keys | Optional. An existing key that ritueel [adopts](/reference/kms-root/#adopting-an-existing-key), with its alias and policy owned by the operator's own infrastructure code. Without one, ritueel creates the keys. |
 | Controls around them | Optional and the operator's: an alarm on every `Sign`, retention of the audit trail. The guide teaches them; ritueel does not create or check them. |
@@ -43,7 +43,7 @@ aws_kms:
 | `account` | The root account's 12-digit id. Every ARN ritueel reads or writes must carry it. |
 | `region`, `replica_region` | The Region of the primary keys, and the one Region of the replicas. They differ. |
 | `admin_role`, `ceremony_role` | The two roles, by ARN, in `account`. |
-| `renewal` | Optional: the [renewal policy](/reference/kms-root/#renewal-under-a-policy). Absent, no principal but the ceremony role may sign. |
+| `renewal` | Proposed, later (M7). Optional: the [renewal policy](/reference/kms-root/#renewal-under-a-policy). Absent, no principal but the ceremony role may sign. |
 
 Credentials come from the caller's standard chain ([record 0004](../decisions/0004-the-cloud-root.md)). ritueel assumes the admin role to create and read, and the ceremony role to sign. ritueel does not sign the person in and holds no credential: the chain hands it a session of the ceremony role, and ritueel checks only that the session is the ceremony role's (check 9). The `aws_kms` block is added to the schema of [the bundle](/reference/bundle/#ritueelyaml) with the store; it is additive, so `version` stays `1`.
 
@@ -112,7 +112,13 @@ Made at `init` after the keys exist, and again, reading from the service, at eve
 
 ## Renewal under a policy
 
-*Designed, built later (M7): [record 0001](../decisions/0001-what-ritueel-is.md) moves it after the first release candidate.* A cloud root can renew what it already certified without a person. A card root cannot: its PIN and touch are physical, so it has the [yearly ceremony](/guides/re-sign-yearly/) and the reminders of `status`. Which acts may run unattended, and why, is taught in [Re-sign](/learn/re-sign/#what-may-run-unattended).
+Until a record decides otherwise, a cloud root signs every year at a ceremony ([record 0004](../decisions/0004-the-cloud-root.md), rule 3).
+
+:::note[Proposed]
+[Record 0002](../decisions/0002-where-a-key-lives.md), rule 17, names a renewal role of a cloud root as later (M7), and [record 0001](../decisions/0001-what-ritueel-is.md), rule 30, puts M7 in "Afterwards". No record decides the role, the `renew` command, the `renewal` block, the Renew statement or the checks 10 to 14. Everything in this section is proposed, and so is every mention of the renewal role, the `renewal` member and the Renew statement above.
+:::
+
+A cloud root could renew what it already certified without a person. A card root cannot: its PIN and touch are physical, so it has the [yearly ceremony](/guides/re-sign-yearly/) and the reminders of `status`. Which acts may run unattended, and why, is taught in [Re-sign](/learn/re-sign/#what-may-run-unattended).
 
 **The rule.** `ritueel renew` signs only what the bundle already holds: the same keys, the same subjects, the same constraints and key flags, the same profile, and the same content of the root list, the CA bundle, the SSH CA key list, the CRLs and the root's own certificate and primary, each with a new validity from the time of the run and the next trust sequence. If any byte it would sign names a key, a name, a root or a constraint the bundle does not already hold, it refuses. It can extend trust; it never creates it, and it never revokes.
 

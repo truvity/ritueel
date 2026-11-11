@@ -61,7 +61,7 @@ An example, wrapped here for reading; the file is one line:
 ## How a key enters the list
 
 - **A system's key** enters by the [hand-off](/reference/hand-off-contract/#ssh-ca-key): a request of type `ssh-ca-key` with a proof of where the key lives, answered at a ceremony. The key is listed under the name of the intermediate whose entry in `ritueel.yaml` has the type `ssh-ca-key` and the `use` the request asks for. `intermediate replace` swaps the key under its name, and `intermediate revoke` takes it off the next list.
-- **A break-glass key** is made by ritueel, in the store of the root it belongs to, when the root is made (`init` and `root add`): a retired PIV slot recorded in the slot map for a card ([record 0003](../decisions/0003-root-cards.md)), a key of its own in the root account for a cloud root, a file for a software root. A bundle whose roots were made before this exists gets one with `ritueel ssh-ca break-glass ROOT`, a ceremony that needs that root's card. The key is listed as `break-glass-<label>`, use `user`, and leaves the list with its root.
+- **A break-glass key** is made by ritueel, in the store of the root it belongs to, when the root is made (`init` and `root add`): a retired PIV slot recorded in the slot map for a card ([record 0003](../decisions/0003-root-cards.md)), a key of its own in the root account for a cloud root, a file for a software root ([record 0006](../decisions/0006-bundle-history-and-trust-files.md)). The key is listed as `break-glass-<label>`, use `user`, and leaves the list with its root.
 - **Nothing else** enters. The operator does not edit the list, and `ritueel.yaml` does not name keys, only the intermediates that may have one.
 
 ## The signature
@@ -135,7 +135,7 @@ CI checks that the manifest names every file of the set, that the pins match the
 ## Follow-ups
 
 - The code: writing, signing and reading the list and the file for sshd, with the host rules, and a test that the same inputs give the same bytes ([issue #55](https://github.com/truvity/ritueel/issues/55)).
-- The break-glass key in each store: the retired slot of the slot map, the cloud root account's key, and the command `ssh-ca break-glass` ([issue #55](https://github.com/truvity/ritueel/issues/55)).
+- The break-glass key in each store: the retired slot of the slot map, the cloud root account's key and the file of a software root ([issue #55](https://github.com/truvity/ritueel/issues/55)).
 
 ## Standards
 
