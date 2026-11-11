@@ -12,7 +12,7 @@
         {
           "kind": "ROOT_KEY_KIND_X509_ROOT",
           "algorithm": "ecdsa-p384",
-          "fingerprint": "30010123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789AB",
+          "fingerprint": "30010123456789abcdef0123456789abcdef0123456789abcdef0123456789ab",
           "createdAt": "2026-09-15T13:00:00Z",
           "expiresAt": "2029-09-15T00:00:00Z"
         },

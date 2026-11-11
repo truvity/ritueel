@@ -42,7 +42,7 @@
       "detail": "The certificate of the intermediate ends on 2027-01-02. After that the requester acme-gateway can no longer issue certificates. acme/B signs this year.",
       "subject": {
         "kind": "SUBJECT_KIND_DELEGATED_KEY",
-        "identifier": "23010123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789AB",
+        "identifier": "23010123456789abcdef0123456789abcdef0123456789abcdef0123456789ab",
         "label": "acme-ca"
       },
       "dueAt": "2027-01-02T00:00:00Z",
