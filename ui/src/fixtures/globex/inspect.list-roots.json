@@ -22,6 +22,12 @@
           "fingerprint": "30020123456789ABCDEF0123456789ABCDEF0123",
           "createdAt": "2026-09-15T13:00:00Z",
           "expiresAt": "2029-09-15T00:00:00Z"
+        },
+        {
+          "kind": "ROOT_KEY_KIND_SSH_CA",
+          "algorithm": "ecdsa-p384",
+          "fingerprint": "30030123456789abcdef0123456789abcdef0123456789abcdef0123456789ab",
+          "createdAt": "2026-09-15T13:00:00Z"
         }
       ],
       "cloudKey": {
@@ -39,7 +45,7 @@
         ],
         "adoptedAt": "2026-09-15T13:00:00Z"
       },
-      "note": "An existing key that ritueel adopted: it read the public key, checked the policy, and fixed and recorded the OpenPGP creation time. It did not create the key."
+      "note": "An existing cloud key that ritueel adopted: it read the public key, checked the policy, and fixed and recorded the OpenPGP creation time. It did not create the key. The break-glass SSH CA key of the root is the third key of the root (record 0004)."
     }
   ]
 }

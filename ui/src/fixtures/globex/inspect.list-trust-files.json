@@ -28,6 +28,48 @@
       "sizeBytes": "614",
       "verifyCommand": "ritueel root-list verify trust/1/root-list.json --pin 30010123456789abcdef0123456789abcdef0123456789abcdef0123456789ab --ca-bundle trust/1/ca-bundle.pem",
       "rebuildCommand": "ritueel ca-bundle build --out trust/1/ca-bundle.pem"
+    },
+    {
+      "name": "crl-A.pem",
+      "kind": "TRUST_FILE_KIND_CRL",
+      "path": "trust/1/crl-A.pem",
+      "trustSequence": 1,
+      "builtAt": "2026-09-15T13:40:00Z",
+      "checkResult": "TRUST_CHECK_RESULT_PASSED",
+      "validUntil": "2027-10-15T00:00:00Z",
+      "checkDetail": "No certificate issued by globex/A is revoked. Signed by globex/A when the set was made; the list is empty.",
+      "sha256": "72030123456789abcdef0123456789abcdef0123456789abcdef0123456789ab",
+      "sizeBytes": "598",
+      "verifyCommand": "ritueel crl verify trust/1/crl-A.pem --ca-bundle trust/1/ca-bundle.pem",
+      "rebuildCommand": "ritueel due"
+    },
+    {
+      "name": "ssh-ca-keys.json",
+      "kind": "TRUST_FILE_KIND_SSH_CA_KEYS",
+      "path": "trust/1/ssh-ca-keys.json",
+      "trustSequence": 1,
+      "builtAt": "2026-09-15T13:40:00Z",
+      "checkResult": "TRUST_CHECK_RESULT_PASSED",
+      "validUntil": "2027-10-15T00:00:00Z",
+      "checkDetail": "The break-glass SSH CA key of globex/A. It is the first list, so there is none to hold it against.",
+      "sha256": "72040123456789abcdef0123456789abcdef0123456789abcdef0123456789ab",
+      "sizeBytes": "412",
+      "verifyCommand": "ritueel ssh-ca-keys verify trust/1/ssh-ca-keys.json",
+      "rebuildCommand": "ritueel due"
+    },
+    {
+      "name": "globex-keyring.gpg",
+      "kind": "TRUST_FILE_KIND_KEYRING",
+      "path": "trust/1/keyring/globex-keyring.gpg",
+      "trustSequence": 1,
+      "builtAt": "2026-09-15T13:40:00Z",
+      "checkResult": "TRUST_CHECK_RESULT_PASSED",
+      "validUntil": "2027-10-15T00:00:00Z",
+      "checkDetail": "Holds the OpenPGP primary of globex/A.",
+      "sha256": "72050123456789abcdef0123456789abcdef0123456789abcdef0123456789ab",
+      "sizeBytes": "1290",
+      "verifyCommand": "ritueel keyring verify trust/1/keyring/globex-keyring.gpg --root-list trust/1/root-list.json",
+      "rebuildCommand": "ritueel keyring build --name globex"
     }
   ]
 }

@@ -70,7 +70,7 @@
       {
         "path": "history/20261111T090000Z-personal-subkey-revoke/transcript.txt",
         "action": "BUNDLE_CHANGE_ACTION_CREATE",
-        "description": "What the terminal showed, without any PIN or passphrase."
+        "description": "What ritueel printed, written by ritueel (not a capture of the terminal)."
       },
       {
         "path": "history/20261111T090000Z-personal-subkey-revoke/attempt.json",
