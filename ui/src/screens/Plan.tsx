@@ -6,7 +6,7 @@ import FormControlLabel from '@mui/material/FormControlLabel';
 import FormLabel from '@mui/material/FormLabel';
 import Radio from '@mui/material/Radio';
 import RadioGroup from '@mui/material/RadioGroup';
-import { RunPlace, type Intention } from '../gen/ritueel/local/v1alpha1/common_pb';
+import { RunPlace, Store, type Intention } from '../gen/ritueel/local/v1alpha1/common_pb';
 import {
   QuestionKind,
   type Answer,
@@ -81,8 +81,8 @@ function Goals() {
       title="What do you want to do?"
       lede={
         <p>
-          A plan is a list of steps, built here and run later in a terminal: on the offline system for a root on cards or in a key file, on your workstation for a cloud
-          root. Making a plan changes nothing. It ends with a preview of the steps, a digest, and the exact command you run there.
+          A plan is a list of steps, built here and run later in a terminal: in the offline system for a key file that can be copied, on your workstation for a root on cards or in
+          the cloud, under four conditions the plan lists. Making a plan changes nothing. It ends with a preview of the steps, a digest, and the exact command you run there.
         </p>
       }
     >
@@ -256,7 +256,90 @@ function Needs({ step, place }: { step: PlanStep; place: RunPlace }) {
           card <T cap={20}>{s}</T>
         </a>
       ))}
+      {step.signatureCount > 0 ? <span className="font-semibold">Signs {step.signatureCount} {step.signatureCount === 1 ? 'time' : 'times'}</span> : null}
     </div>
+  );
+}
+
+const count = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
+
+/**
+ * Where the ceremony runs, and why (record 0005, rules 17 to 21). Static words and the counts of the plan: the page shows
+ * the rule, it asks for nothing and it confirms nothing. The place and the store come from the plan, because the page
+ * cannot tell a key file from a cloud key by the other data it has.
+ */
+export function WhereItRuns({ plan }: { plan: PlanMessage }) {
+  const place = plan.runPlace;
+  const store = plan.signingStore;
+  const signatures = count(plan.signatureCount, 'signature', 'signatures');
+  const touches = count(plan.touchCount, 'touch', 'touches');
+  const confirm = <p className="mt-3 max-w-[70ch]">You confirm in the terminal: ritueel asks you to type the first eight characters of the digest.</p>;
+  const frame = (title: string, children: ReactNode) => (
+    <Sec title={title} id="where">
+      <div className="max-w-[70ch] border border-line bg-panel p-4">
+        {children}
+        {confirm}
+      </div>
+    </Sec>
+  );
+
+  if (place === RunPlace.WORKSTATION && (store === Store.ROOT_CARDS || store === Store.CLOUD_KMS)) {
+    const cloud = store === Store.CLOUD_KMS;
+    return frame(
+      'Where it runs: on your workstation',
+      <>
+        <p>
+          {cloud
+            ? 'This root is a cloud key and cannot be copied, so the ceremony may run on the computer you work on. ritueel asks nothing of how you signed in. Four conditions hold:'
+            : 'This root is on cards and cannot be copied, so the ceremony may run on the computer you work on. Four conditions hold:'}
+        </p>
+        <ol className="mt-2 list-decimal space-y-1.5 pl-6">
+          {cloud ? (
+            <li>
+              <strong>Proposed (record 0005, issue 30):</strong> a cloud key has no touch, so condition 1 is for cards. This plan asks for {touches}; the typed digest and the session of the ceremony role stand.
+            </li>
+          ) : (
+            <li>
+              A touch for every signature. This plan makes {signatures} and asks for {touches}.
+            </li>
+          )}
+          <li>The number of signatures is fixed in this plan: {plan.signatureCount}.</li>
+          <li>No retry. If a touch fails, the ceremony ends.</li>
+          <li>Check the result against this plan on a second device before you hand it over or publish it.</li>
+        </ol>
+        <p className="mt-3 text-sm text-dim">
+          {cloud
+            ? 'The limit: a compromised workstation could ask for one more signature. A cloud key does better than a card, because its audit trail records every signature. These conditions bound it. The offline system stays open to you if you want a clean machine. '
+            : 'The limit: the card has no screen and signs what it is sent. A compromised workstation could ask for one more touch and get one more signature that no card logs. These conditions bound it. The offline system stays open to you if you want a clean machine. '}
+          <LearnLink path="/design/#where-a-root-is-used">Read why</LearnLink>
+        </p>
+      </>,
+    );
+  }
+  if (place === RunPlace.OFFLINE_SYSTEM) {
+    return frame(
+      'Where it runs: in the offline system',
+      <>
+        <p>
+          {store === Store.SOFTWARE_FILE
+            ? 'The root is a key file and can be copied, so it is used only there: vanilla AirgapOS, started from the ceremony USB stick, which has one extra partition. The stick step follows.'
+            : 'You chose the clean machine: vanilla AirgapOS, started from the ceremony USB stick, which has one extra partition. Any root may be used there. The stick step follows.'}{' '}
+          <LearnLink path="/design/#where-a-root-is-used">Read why</LearnLink>
+        </p>
+      </>,
+    );
+  }
+  if (place === RunPlace.WORKSTATION && plan.testRoot) {
+    return frame(
+      'Where it runs: on your workstation',
+      <p>
+        A test root, marked TEST ONLY, may run here. No stick is needed. <LearnLink path="/design/#where-a-root-is-used">Read why</LearnLink>
+      </p>,
+    );
+  }
+  return frame(
+    'Where it runs',
+    <p>The plan does not say where it runs. Run it in the terminal where you run ritueel.</p>,
   );
 }
 
@@ -270,6 +353,19 @@ function PlanDemoNote() {
         : 'Demo: this plan is the same whatever you chose. The real program builds it from your answers.'}
     </p>
   );
+}
+
+/** Where and how the holder types the run command (record 0005, rules 18 and 20). */
+function typeSentence(plan: PlanMessage): string {
+  if (plan.runPlace === RunPlace.OFFLINE_SYSTEM) {
+    return 'You type this in the terminal there, after you restart from the ceremony stick. The terminal asks for what the ceremony needs, such as a PIN and a touch on a card. This page never does.';
+  }
+  if (plan.runPlace === RunPlace.WORKSTATION) {
+    return plan.signingStore === Store.CLOUD_KMS
+      ? 'You type this in a terminal on your workstation, in a session of the ceremony role. The terminal asks you to type the first eight characters of the digest. This page never does.'
+      : 'You type this in a terminal on your workstation. The terminal asks for the PIN and for a touch at every signature. This page never does.';
+  }
+  return 'You type this in a terminal where you run it, after you save the plan. The terminal asks for what the ceremony needs, such as a PIN and a touch on a card. This page never does.';
 }
 
 export function PlanView({ plan, onSaved }: { plan: PlanMessage; onSaved?: (saved: boolean) => void }) {
@@ -293,6 +389,8 @@ export function PlanView({ plan, onSaved }: { plan: PlanMessage; onSaved?: (save
         </div>
         {isDemo ? <PlanDemoNote /> : null}
       </div>
+
+      <WhereItRuns plan={plan} />
 
       <Sec title="Steps, in order" aside={`${plan.steps.length} steps`}>
         <ol className="border border-line bg-panel">
@@ -346,9 +444,8 @@ export function PlanView({ plan, onSaved }: { plan: PlanMessage; onSaved?: (save
           <div>
             <p className="mb-1 font-bold">To run it, {onPlace(plan.runPlace)}</p>
             <p className="mb-2 max-w-[70ch] text-sm text-dim">
-              You type this in {plan.runPlace === RunPlace.OFFLINE_SYSTEM ? 'the terminal there' : 'a terminal ' + (plan.runPlace === RunPlace.WORKSTATION ? 'on your workstation' : 'where you run it')}, after you save the plan
-              {plan.runPlace === RunPlace.OFFLINE_SYSTEM ? ' and carry it over' : ''}. <span className="font-mono">--dir</span> names the bundle{plan.runPlace === RunPlace.OFFLINE_SYSTEM ? ': there, give the place where you copied it' : ''}. The terminal asks for what the
-              ceremony needs, such as a PIN and a touch on a card. This page never does.
+              {typeSentence(plan)} <span className="font-mono">--dir</span> names the bundle
+              {plan.runPlace === RunPlace.OFFLINE_SYSTEM ? ': there, give the place of the bundle in the stick\'s extra partition' : ''}.
             </p>
             <Cmd label={`Run the plan ${onPlace(plan.runPlace)}`}>{plan.runCommand}</Cmd>
           </div>
@@ -453,15 +550,16 @@ function stickSentence(place: RunPlace | undefined, stick: boolean): string {
   if (place === RunPlace.WORKSTATION) return 'This plan runs on your workstation, the computer this page is open on. No stick is needed.';
   if (place === RunPlace.OFFLINE_SYSTEM) {
     return stick
-      ? 'The offline system is the computer where the ceremony runs. A USB stick carries the plan, in your bundle, from this computer to it.'
-      : 'The offline system is the computer where the ceremony runs. The plan lists nothing to copy to it.';
+      ? "The offline system is vanilla AirgapOS, started from the ceremony USB stick. The stick's extra partition carries ritueel, your bundle with the plan inside it, and the key files beside the bundle."
+      : 'The offline system is vanilla AirgapOS, started from the ceremony USB stick. The plan lists nothing to put on the stick.';
   }
   return 'The plan does not say where it runs. Run it in the terminal where you run ritueel.';
 }
 
 export function Saved({ data, place }: { data: SavePlanResponse; place?: RunPlace }) {
   const written = data.written;
-  const stick = data.copyToStick.length > 0;
+  // The stick step is shown only for the offline system (record 0005, rule 21).
+  const stick = place === RunPlace.OFFLINE_SYSTEM && data.copyToStick.length > 0;
   const box = useRef<HTMLDivElement>(null);
   // The button that was pressed has left the page: put the focus on the result, so a keyboard or screen-reader user is not dropped at the top.
   useEffect(() => {
@@ -501,7 +599,7 @@ export function Saved({ data, place }: { data: SavePlanResponse; place?: RunPlac
         {stickSentence(place, stick)}
       </p>
       <div className={`grid gap-6 ${stick ? 'lg:grid-cols-2' : ''}`}>
-        <HandOver title="Copy to the offline system" items={data.copyToStick} />
+        <HandOver title="On the ceremony stick" items={place === RunPlace.OFFLINE_SYSTEM ? data.copyToStick : []} />
         <HandOver title="Bring with you" items={data.bring} />
       </div>
       {data.whenBack ? (

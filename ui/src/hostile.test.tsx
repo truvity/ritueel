@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { ReactElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { fromJson, type DescMessage, type JsonValue, type Message } from '@bufbuild/protobuf';
+import { create, fromJson, type DescMessage, type JsonValue, type Message } from '@bufbuild/protobuf';
 import {
   GetSummaryResponseSchema,
   ListCardsResponseSchema,
@@ -10,8 +10,8 @@ import {
   ListRootsResponseSchema,
   ListTrustFilesResponseSchema,
 } from './gen/ritueel/local/v1alpha1/inspect_service_pb';
-import { RunPlace } from './gen/ritueel/local/v1alpha1/common_pb';
-import { ListIntentionsResponseSchema, SavePlanResponseSchema, StartPlanResponseSchema } from './gen/ritueel/local/v1alpha1/plan_service_pb';
+import { RunPlace, Store } from './gen/ritueel/local/v1alpha1/common_pb';
+import { ListIntentionsResponseSchema, PlanSchema, SavePlanResponseSchema, StartPlanResponseSchema } from './gen/ritueel/local/v1alpha1/plan_service_pb';
 
 // Every string that comes from the bundle is data. This test gives each screen a
 // world (one for each example bundle: personal, acme and globex, so acme/B, the cloud
@@ -168,7 +168,8 @@ describe('hostile text never reaches the markup raw', () => {
     const offline = text(<Saved data={empty} place={RunPlace.OFFLINE_SYSTEM} />);
     expect(offline).not.toContain('your workstation, the computer');
     expect(offline).not.toContain('No stick is needed');
-    expect(offline).toContain('The plan lists nothing to copy');
+    expect(offline).toContain('The plan lists nothing to put on the stick');
+    expect(offline).toContain('vanilla AirgapOS');
     const unknown = text(<Saved data={empty} place={RunPlace.UNSPECIFIED} />);
     expect(unknown).not.toContain('No stick is needed');
     expect(unknown).toContain('does not say where it runs');
@@ -176,6 +177,62 @@ describe('hostile text never reaches the markup raw', () => {
     expect(none).not.toContain('No stick is needed');
     const workstation = text(<Saved data={empty} place={RunPlace.WORKSTATION} />);
     expect(workstation).toContain('No stick is needed');
+  });
+
+  it('the stick step is shown only for the offline system, with the new title and sentence', async () => {
+    loadWorld('personal', 'retire-subkeys');
+    const { Saved } = await import('./screens/Plan');
+    const text = (el: ReactElement) => renderToStaticMarkup(el).split(/<[^>]*>/).join('').replace(/&#x27;/g, "'");
+    const offline = text(<Saved data={w.d.saved} place={RunPlace.OFFLINE_SYSTEM} />);
+    expect(offline).toContain('On the ceremony stick');
+    expect(offline).not.toContain('Copy to the offline system');
+    expect(offline).toContain("The stick's extra partition carries ritueel, your bundle with the plan inside it, and the key files beside the bundle.");
+    // The same answer read as a plan for the workstation draws no stick step.
+    const workstation = text(<Saved data={w.d.saved} place={RunPlace.WORKSTATION} />);
+    expect(workstation).not.toContain('On the ceremony stick');
+    expect(workstation).toContain('No stick is needed');
+  });
+
+  it('WhereItRuns: five cases, each says what the record says and asks for nothing', async () => {
+    const { WhereItRuns } = await import('./screens/Plan');
+    const flat = (el: ReactElement) => renderToStaticMarkup(el).split(/<[^>]*>/).join('');
+    const html = (p: ReturnType<typeof create<typeof PlanSchema>>) => renderToStaticMarkup(<WhereItRuns plan={p} />);
+    const plan = (init: Parameters<typeof create<typeof PlanSchema>>[1]) => create(PlanSchema, init);
+    const A = plan({ runPlace: RunPlace.WORKSTATION, signingStore: Store.ROOT_CARDS, signatureCount: 7, touchCount: 7 });
+    const B = plan({ runPlace: RunPlace.WORKSTATION, signingStore: Store.CLOUD_KMS, signatureCount: 4, touchCount: 0 });
+    const C = plan({ runPlace: RunPlace.OFFLINE_SYSTEM, signingStore: Store.SOFTWARE_FILE, signatureCount: 2, touchCount: 1 });
+    const D = plan({ runPlace: RunPlace.WORKSTATION, signingStore: Store.SOFTWARE_FILE, testRoot: true });
+    const E = plan({});
+    const a = flat(<WhereItRuns plan={A} />);
+    expect(a).toContain('Where it runs: on your workstation');
+    expect(a).toContain('A touch for every signature. This plan makes 7 signatures and asks for 7 touches.');
+    expect(a).toContain('The number of signatures is fixed in this plan: 7.');
+    expect(a).toContain('No retry');
+    expect(a).toContain('second device');
+    expect(a).not.toContain('Proposed');
+    const b = flat(<WhereItRuns plan={B} />);
+    expect(b).toContain('Proposed');
+    expect(b).toContain('0 touches');
+    expect(b).toContain('second device');
+    expect(b).toContain('ritueel asks nothing of how you signed in.');
+    expect(b).not.toContain('A touch for every signature');
+    const c = flat(<WhereItRuns plan={C} />);
+    expect(c).toContain('Where it runs: in the offline system');
+    expect(c).toContain('vanilla AirgapOS');
+    expect(c).toContain('The stick step follows.');
+    const d = flat(<WhereItRuns plan={D} />);
+    expect(d).toContain('A test root, marked TEST ONLY, may run here.');
+    const e = flat(<WhereItRuns plan={E} />);
+    expect(e).toContain('does not say where it runs');
+    // The stick is spoken of only where the stick step is.
+    for (const [name, text] of [['A', a], ['B', b], ['D', d], ['E', e]] as const) expect(text, name).not.toMatch(/USB stick|AirgapOS/);
+    for (const [name, text] of [['A', a], ['B', b], ['C', c], ['D', d], ['E', e]] as const) {
+      expect(text, name).toContain('You confirm in the terminal');
+      expect(text, name).not.toMatch(/type your PIN|passphrase/i);
+      expect(text, name).not.toMatch(/hardware key|YubiKey/i);
+    }
+    // The panel shows words only: no control that takes a value.
+    for (const p of [A, B, C, D, E]) expect(html(p)).not.toMatch(/<(input|textarea|select|button)\b/i);
   });
 
   it('the marked name of the bundle reaches a root written bundle/label as an escape, never raw', async () => {
