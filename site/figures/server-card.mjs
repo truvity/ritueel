@@ -10,7 +10,7 @@ import { serverCardCells } from './slots.mjs';
 const LABEL =
   'A server card drawn as a rack with two drawers and its card standing in a slot, with an arrow to the services it signs for, ' +
   'and the 24 PIV slots of that card as a grid, each used slot named by its purpose in the example plan of the requester sluis. ' +
-  'The slot for the x509 intermediate is in the accent colour. Ten slots are held; the other fourteen are dashed, thirteen spare and one unused. ' +
+  'The slot for the x509 intermediate, which the root signs, is in the accent colour. Ten slots are held; the other fourteen are dashed, thirteen spare and one unused. ' +
   'A tag says ritueel only reads this card.';
 
 const TAG = ['ritueel only reads this card:', 'it lists it, adopts nothing,', 'seals nothing, checks no layout.'];
@@ -20,16 +20,13 @@ function slot(x, y, w, h, c, narrow) {
   const held = c.state !== 'empty';
   const a = c.state === 'acme';
   let s = rect(x, y, w, h, held ? (a ? 'acc-f cell-held' : 'paper cell-held') : 'cell-empty', 5);
-  const ty = narrow ? y + 19 : y + 15;
+  const ty = narrow ? y + 14 : y + 15;
   s += text(x + 7, ty, c.id, 't t-s t-mono t-id' + (a ? ' t-acc' : ' t-dim'));
-  if (held) s += key(x + w - (narrow ? 13 : 21), y + (narrow ? 15 : 12), 'ln ln-key' + (a ? ' ln-acc' : ''));
+  // the key glyph stays inside the cell: its teeth end 9 units short of the border
+  if (held) s += key(x + w - 21, y + (narrow ? 10 : 12), 'ln ln-key' + (a ? ' ln-acc' : ''));
   const cls = 't t-s' + (a ? (narrow ? ' t-acc' : ' t-acc t-b') : c.state === 'empty' ? ' t-dim' : '');
-  const px = narrow ? x + 27 : x + 8;
-  if (c.two) {
-    s += text(px, narrow ? y + 13 : y + 28, c.use, cls) + text(px, narrow ? y + 26 : y + 40, c.two, cls);
-  } else {
-    s += text(px, narrow ? y + 19 : y + 36, c.use, cls);
-  }
+  // the purpose has a line of its own under the id and the key
+  s += text(x + 8, narrow ? y + 29 : y + 36, c.use, cls);
   return a ? acc('x509', s) : s;
 }
 
@@ -37,13 +34,13 @@ function legend(x, y, step, wrap) {
   const items = [
     ['held', (sx, sy) => rect(sx, sy, 26, 16, 'paper cell-held', 4) + key(sx + 14, sy + 8, 'ln ln-key')],
     ['empty', (sx, sy) => rect(sx, sy, 26, 16, 'cell-empty', 4)],
-    ['root certifies this', (sx, sy) => acc('x509', rect(sx, sy, 26, 16, 'acc-f', 4))],
+    ['signed by the root', (sx, sy) => acc('x509', rect(sx, sy, 26, 16, 'acc-f', 4))],
   ];
   let s = '';
   items.forEach(([name, draw], i) => {
     const sx = x + (wrap ? (i % 2) * step : i * step);
     const sy = y + (wrap ? Math.floor(i / 2) * 26 : 0);
-    s += draw(sx, sy) + text(sx + 34, sy + 12.5, name, 't t-s');
+    s += draw(sx, sy) + text(sx + 34, sy + 12.5, name, 't t-s' + (name.split(' ').length > 3 ? ' t-long' : ''));
   });
   return s;
 }
@@ -91,9 +88,9 @@ function narrow() {
   s += text(16, 224, 'Example: sluis’s own slot plan', 't t-s t-b t-long') + text(16, 239, '(default map, version 1)', 't t-s t-long');
   const y0 = 254;
   cells.forEach((c, i) => {
-    s += slot(12 + (i % 2) * 170, y0 + Math.floor(i / 2) * 35, 164, 30, c, true);
+    s += slot(12 + (i % 2) * 170, y0 + Math.floor(i / 2) * 44, 164, 38, c, true);
   });
-  const ly = y0 + 11 * 35 + 30 + 22;
+  const ly = y0 + 11 * 44 + 38 + 22;
   s += legend(16, ly, 160, true);
   const H = ly + 52 + 6;
   return svgBox(W, H, LABEL, rect(2, 2, W - 4, H - 4, 'p-frame', 10) + s, 'fig-narrow');

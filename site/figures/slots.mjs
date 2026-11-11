@@ -4,12 +4,14 @@
 //
 // What is decided (decision records 0015 and 0016; the owner's words of 2026-11-11):
 //  - A root card is a YubiKey whose PIV application has 24 key slots, read as six rows of four.
-//  - Row 1 (9a 9c 9d 9e) is the card's own jobs and holds no root. Three slots stay empty. What 9d
-//    holds is a conditional fallback of record 0015, not an example: a spare key-agreement key for
-//    opening key files, made only if the passkey way cannot be used.
+//  - Row 1 (9a 9c 9d 9e) is the card's own jobs and holds no root. All four are drawn empty: three stay
+//    empty, and 9d is tagged "spare key" because record 0015 makes a spare key-agreement key there only
+//    if the passkey way cannot be used (a fallback, never a held key in the picture).
 //  - Rows 2 to 6 hold one root each, the same kind of key in the same column: X.509 root key,
 //    OpenPGP primary, break-glass SSH CA key, empty. One row is kept free so that a replacement root
-//    can be born beside the old one: four bundles on a pair of cards.
+//    can be born beside the old one: four bundles on a pair of cards. Which row stays free is drawn as
+//    row 6 only for the picture; the rule that the plan takes the lowest empty row is Proposed
+//    (reference/cards), so no caption states it.
 //  - The partner root of the same bundle sits in the same row on the second card (acme/A on card
 //    one, acme/B on card two).
 //  - The bundle names acme, personal and initech are made-up examples (the public repository holds no real name).
@@ -36,11 +38,11 @@ const KEY_COLUMNS = COLUMNS.map((c) => c.type);
 const held = (n, label, accent = false) => ({
   n,
   label,
-  sub: 'B on card two',
+  sub: 'root A',
   kind: 'bundle',
   accent,
   states: [accent ? 'acme' : 'held', accent ? 'acme' : 'held', accent ? 'acme' : 'held', 'empty'],
-  types: KEY_COLUMNS,
+  types: [...KEY_COLUMNS.slice(0, 3), null],
 });
 
 /**
@@ -48,8 +50,8 @@ const held = (n, label, accent = false) => ({
  * four slots; `types` names the key inside a held slot; `tags` is a short word written in an empty
  * slot. The accent marks the example bundle acme (row 2) and nothing else. The bundle names are made
  * up. A row with fewer kinds of key leaves its other cells empty (personal/A has an OpenPGP primary
- * only; initech/A has no SSH CA key). Which row is the free one is not fixed: the plan takes the
- * lowest empty row, so row 6 is how the picture draws it.
+ * only; initech/A has no SSH CA key). Which row is the free one is not fixed; row 6 is how the picture
+ * draws it.
  */
 export const ROOT_CARD_ROWS = [
   {
@@ -59,13 +61,13 @@ export const ROOT_CARD_ROWS = [
     kind: 'own',
     states: ['empty', 'empty', 'empty', 'empty'],
     types: [null, null, null, null],
-    tags: [null, null, 'spare', 'never used'],
+    tags: ['empty', 'empty', 'spare key', 'never used'],
   },
-  held(2, 'acme/A', true),
-  { ...held(3, 'personal/A'), states: ['empty', 'held', 'empty', 'empty'], types: [null, 'OpenPGP', null, null] },
-  { ...held(4, 'initech/A'), states: ['held', 'held', 'empty', 'empty'], types: ['X.509', 'OpenPGP', null, null] },
-  { n: 5, label: 'room', sub: 'for a bundle', kind: 'room', states: ['empty', 'empty', 'empty', 'empty'] },
-  { n: 6, label: 'kept free', sub: 'replacement', kind: 'free', states: ['free', 'free', 'free', 'free'] },
+  held(2, 'bundle acme', true),
+  { ...held(3, 'bundle personal'), states: ['empty', 'held', 'empty', 'empty'], types: [null, 'OpenPGP', null, null] },
+  { ...held(4, 'bundle initech'), states: ['held', 'held', 'empty', 'empty'], types: ['X.509', 'OpenPGP', null, null] },
+  { n: 5, label: 'room', sub: 'for a new bundle', kind: 'room', states: ['empty', 'empty', 'empty', 'empty'] },
+  { n: 6, label: 'kept free', sub: 'for a replacement', kind: 'free', states: ['free', 'free', 'free', 'free'] },
 ];
 
 /** Every cell of the root card with its slot id: [{id, row, col, state, type}]. */
@@ -85,7 +87,7 @@ export function rootCardCells() {
  */
 export const ROOT_CARD_NOTES = {
   own: ['Row 1', 'the card’s own jobs, no root.', '9d: a spare key to open key', 'files, only if the passkey', 'way cannot be used.'],
-  bundles: ['Rows 2 to 5', 'one root of one bundle each,', 'the same key kind in a column:', 'four bundles on a pair of cards.', 'Fewer kinds leave cells empty.'],
+  bundles: ['Rows 2 to 5', 'one root of one bundle each,', 'the same key kind in a column:', 'four bundles on a pair of cards.', 'Root B: same row, second card.', 'Fewer kinds leave cells empty.'],
   free: ['Row 6', 'kept free: a replacement root', 'is born here, beside the old one.'],
 };
 
@@ -96,7 +98,7 @@ export const ROOT_CARD_PASSKEY = ['FIDO2: a passkey opens key files', '(decided,
 export const DAY_CARD = {
   openpgp: [
     { name: 'signing', how: ['born on', 'the card'] },
-    { name: 'decryption', how: ['made in software,', 'loaded on,', 'wrapped backup', 'in the bundle'] },
+    { name: 'decryption', how: ['made on', 'your computer,', 'loaded on card'] },
     { name: 'authentication', how: ['born on', 'the card'] },
   ],
 };
@@ -104,10 +106,9 @@ export const DAY_CARD = {
 /**
  * The server card of the example requester sluis: its own slot plan, "default card slot map, version
  * 1", read 2026-11-11 at https://sluis.id/reference/keys/#board-slot-plan (the same text is
- * docs/reference/keys.md, section "Board slot plan", of https://github.com/truvity/sluis on main,
+ * docs/reference/keys.md, section "Board slot plan", the source's own heading, of https://github.com/truvity/sluis on main,
  * commit bc1b3729b840c8d4ea0309db4b420d0182c83ad9). Another requester's plan will differ. ritueel
- * lists a server card and only reads it; it checks no layout. `use` is the purpose, `two` the
- * second line for a name too long for one.
+ * lists a server card and only reads it; it checks no layout. `use` is the purpose, as the source names it.
  */
 const SPARE = { state: 'empty', use: 'spare' };
 export const SERVER_PLAN = {
@@ -121,7 +122,7 @@ export const SERVER_PLAN = {
   '85': { state: 'held', use: 'release-signing' },
   '86': { state: 'held', use: 'workload-issuer' },
   '87': { state: 'held', use: 'pin-release' },
-  '88': { state: 'held', use: 'token-signing', two: 'RS256' },
+  '88': { state: 'held', use: 'token-signing-rs256' },
 };
 
 /** The 24 cells of the server card in PIV order: [{id, state, use, two}]. */
