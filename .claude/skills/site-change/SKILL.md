@@ -10,10 +10,10 @@ Checklist:
 - [ ] HSTS in `site/public/_headers` is not lowered (one year, `includeSubDomains`, `preload`), and no name is served over plain HTTP.
 - [ ] The Content-Security-Policy stays `'self'` plus Cloudflare Web Analytics only: `https://static.cloudflareinsights.com` in `script-src` and `https://cloudflareinsights.com` in `connect-src`. Inline scripts are listed by hash; `site/scripts/check-csp.mjs` passes.
 - [ ] No remote asset: no font, script, image, style or embed from another host. Inline SVG, or a CC0 icon (simple-icons) inlined and used nominatively, or a file in the repository.
-- [ ] A moved or renamed page has a 301 line in `site/public/_redirects` in the same pull request.
+- [ ] A moved or renamed page has a 301 line in the hand-written part of `site/public/_redirects` in the same pull request. An unpublished page is redirected (302) to its file on GitHub by the generated block: run `just site-redirects` and commit the result.
 - [ ] The link check stays bounded: `lychee` with a timeout, bounded retries and redirects, a wall-clock `timeout` around the run, and `-v`. A host that loops on redirects is excluded in `lychee.toml`. A job that runs long is a finding, not a rerun.
 - [ ] A page is `.md`; `.mdx` is only for a page that places components ("Page format" in `docs/contributing/pages.md`, checked by `just check-mdx-pages`).
-- [ ] A home page, or the first screen of a section, starts from the reader's pain, then the mission, then what the project does about each pain, with honest status.
+- [ ] A home page says what the project is, what exists today, who it is for and where to start, in about 200 words with about ten links, with honest status. Pain-first prose belongs in the Learn pages.
 - [ ] You built the site, served it, and took screenshots with headless Chrome at 1440 px and 390 px, in light and dark. You looked at all four, fixed what was off, and found no horizontal scroll at 375 px. Say so in the pull request.
 - [ ] `devbox run -- just site-lint`, `site-build` and `check-rules` pass; CI is green.
 - [ ] After the maintainer merges and the Site deploy is green, check with `curl` and report the result:
@@ -23,4 +23,4 @@ Checklist:
   curl -s -o /dev/null -w '%{http_code} %{redirect_url}\n' https://ritueel.id/<old-path>/
   ```
 
-  The page answers 200, each moved page answers 301 to its new address, and both headers are intact.
+  The page answers 200, each moved page answers 301 to its new address, each unpublished address answers 302 to its file on GitHub, and both headers are intact.

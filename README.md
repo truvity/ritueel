@@ -4,6 +4,8 @@ ritueel helps one person or a small team keep a private root and an OpenPGP prim
 
 The site at [ritueel.id](https://ritueel.id) teaches first: the logic of keeping root keys and intermediates, the [custody chain](docs/learn/custody-chain.md), the key stores compared in the open, and the whole life of a root. The tools come after, because the steps are mostly manual ceremonies. ritueel is open source (MIT). The program is written in Go; its local page is written in TypeScript (`ui/`).
 
+The guides, tool pages, specifications and research are written under `docs/` and read here on GitHub: the site publishes only the Learn path, a demo, the glossary, where the project stands and the decision records.
+
 > **Status as of 2026-11-11: design phase. The program has no code yet; the local page exists as code and as a demo (`ui/`, `proto/`).** The decision records are accepted and M0 is this round of records and M1 the proofs on a rehearsal card, as the [roadmap](docs/roadmap.md) says.
 
 ## What ritueel does
@@ -15,7 +17,7 @@ The site at [ritueel.id](https://ritueel.id) teaches first: the logic of keeping
 | Trust products | CA bundles, signed root lists, SSH CA key lists, and keyring `.deb` and `.rpm` packages that your own pipeline publishes. |
 | Records | A hash-chained record of every ceremony. |
 | Personal OpenPGP | A primary key (an existing one may be adopted), daily subkeys on a card, and keyring upkeep. |
-| Teaching | The Learn section, one guide per ritual and transition, and drills on test keys. |
+| Teaching | The Learn section, and one guide per ritual and transition with drills on test keys (the guides are read here on GitHub). |
 | Guided mode and local page | A guided mode that asks line by line, and a read-only page on localhost. Nothing happens without your confirmation; the PIN and the touch stay on the card. |
 
 ritueel does not sign online, issue leaf certificates or store secrets. A system that holds intermediates, such as [sluis](https://sluis.id), does that; the two exchange standard formats through a versioned contract and depend on neither each other nor shared code.

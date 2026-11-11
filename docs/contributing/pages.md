@@ -7,19 +7,25 @@ sidebar:
 
 The pages on this site teach first: the logic of handling roots and intermediates securely, then what the tools do to simplify it. Everything in this repository is written for an engineer who has not followed the discussion: pages, decision records, research, pull requests and commit messages.
 
+## What is published
+
+What ritueel.id publishes is the list in `site/published.txt`, and nothing else. A new page is added to the list only if a reader of the target needs it: the path of six, the going-further pages, the glossary, where it stands, the decisions. Everything else is written under `docs/` at its usual path and read on GitHub: it is working material of the design. Do not add a page to the list to make a link work; link it as usual, and the build turns a link to an unpublished page into a link to the file on GitHub.
+
+Today the site publishes the ten Learn pages of the list, the glossary, the roadmap, the decision records and the hand-off contract. Guides, Tools, Reference (apart from the hand-off contract), Principles, Research and Contributing are not on the site.
+
 ## Where a page lives
 
-Docs live in `docs/`, next to the thing they describe. When the thing changes, its docs change in the same pull request.
+Docs live in `docs/`, next to the thing they describe. When the thing changes, its docs change in the same pull request. The last column says whether the kind is on the site ([What is published](#what-is-published)).
 
-| Kind | Where | For |
-|---|---|---|
-| Learn | `docs/learn/` | The teaching: what a root is, why it stays offline, the custody chain, the key stores compared, the life of a root. Written before any tool exists, and kept true after. It comes first on the site. |
-| Guides | `docs/guides/` | One guide per ritual, ceremony or transition, step by step, with its drill on test keys. A guide says how; the matching Learn page says why and when. |
-| Tools | `docs/tools/` | What the command line and the wizard do, and whether each is built. |
-| Principles | `docs/principles.md` | The rules the design follows, each linked to the record that decides it. |
-| Reference | `docs/reference/` | Commands, file formats and the hand-off contract. Exact, versioned, no reasoning. |
-| Research | `docs/research/` | Dated results of spikes and research, verdict first ([Spikes and research](/contributing/research/)). The name ends in the date. |
-| Decisions | `docs/decisions/` | The decision records. They cite research and reference pages and do not repeat them. |
+| Kind | Where | For | Published? |
+|---|---|---|---|
+| Learn | `docs/learn/` | The teaching: what a root is, why it stays offline, the custody chain, the key stores compared, the life of a root. Written before any tool exists, and kept true after. It comes first on the site. | The ten pages of the list |
+| Guides | `docs/guides/` | One guide per ritual, ceremony or transition, step by step, with its drill on test keys. A guide says how; the matching Learn page says why and when. | No |
+| Tools | `docs/tools/` | What the command line and the wizard do, and whether each is built. | No |
+| Principles | `docs/principles.md` | The rules the design follows, each linked to the record that decides it. | No |
+| Reference | `docs/reference/` | Commands, file formats and the hand-off contract. Exact, versioned, no reasoning. | Only the hand-off contract |
+| Research | `docs/research/` | Dated results of spikes and research, verdict first ([Spikes and research](/contributing/research/)). The name ends in the date. | No |
+| Decisions | `docs/decisions/` | The decision records. They cite research and reference pages and do not repeat them. | Yes, as an archive |
 
 Say a thing once, in the page that owns it, and link to it from the others: a measurement in its research page, a rule in its record, a format in its reference page.
 
@@ -43,9 +49,11 @@ Use a table or a short numbered list rather than a diagram. A Mermaid diagram (a
 
 A link to another page uses its site path with a trailing slash, `/learn/key-stores/`. A link to a heading, on the same page or another, uses the full form `/learn/key-stores/#choosing`: the link check is strict and resolves both.
 
+Write this site path form for every page, published or not. The build rewrites a link to a page that is not published into a link to its file on GitHub, anchor kept (`site/lib/docs-links.mjs`), so a link comes back to the site by itself when the page is published. `site/scripts/check-github-links.mjs` checks that the file and the heading of each rewritten link exist.
+
 ## Home pages
 
-A home page, and the first screen of a section, starts from the reader's pain: what goes wrong when a root is handled badly. Then the mission, then what the project does about each pain, with honest status (designed, built or planned). The mission and the pain come before the feature list and before any logo or badge.
+A home page says what the project is, what exists today, who it is for and where to start, in about 200 words with about ten links. It gives an honest status (designed, built or planned) and promises no tool that is not built. Prose that starts from the reader's pain belongs in the Learn pages, not on the home page.
 
 ## Plain and short
 
@@ -64,7 +72,7 @@ A Learn or Guides page is written for a reader who is new to PKI and OpenPGP but
 - **Mark a tool that is planned as planned,** in the first paragraph ([What is built](#what-is-built)).
 - Show a transition as numbered steps with the result of each step: what exists now, what an outsider sees.
 - A drill states what the learner starts with, what they do, and how they know it worked.
-- A moved or renamed page keeps its old address alive with a redirect ([Changing the site](#changing-the-site)).
+- A moved or renamed page keeps its old address alive with a redirect ([Changing the site](#changing-the-site)). A Learn or Guides page reaches the site only if it is in `site/published.txt`.
 
 ## Dated and checkable
 
@@ -95,9 +103,9 @@ The `site-change` skill is the checklist for a change to `site/`, `site/public/`
 - **The Worker runs first for `/api/*` only.** Every other request is a static asset and never invokes the Worker, which keeps the site off the Free plan's daily Worker request limit. Never widen `assets.run_worker_first` in `site/wrangler.jsonc`, and never turn on Workers Cache. The page script of the live status stays a file of this site (`vite.build.assetsInlineLimit` is 0), so the Content-Security-Policy needs no new entry.
 - **No remote assets:** no font, script, image, style or embed from another host. Use inline SVG, or a CC0 icon (for example from simple-icons) inlined and used only to name the product it stands for, or an asset in the repository.
 - **Edit links point at the real file.** `site/src/route-middleware.ts` rewrites Starlight's "Edit page" URL from `site/src/content/docs/<id>.md` to `docs/<id>.md`, and `site/scripts/check-edit-links.mjs` (run by `check-built.sh`) fails when a link in the built site is not a file in the checkout or not the source of its page. Do not point `editLink.baseUrl` back at `docs/`.
-- **A moved or renamed page** gets a `301` line in `site/public/_redirects` in the same pull request, and every link to it is updated.
+- **A moved or renamed page** gets a `301` line in the hand-written part of `site/public/_redirects` in the same pull request, and every link to it is updated. A page that is not published is redirected (`302`) to its file on GitHub by the generated block of the same file: run `just site-redirects` and commit the result. `just site-lint` fails when the block is out of date.
 - **Link checking is bounded.** `lychee` runs with a timeout, bounded retries, a limit on redirects and a wall-clock `timeout` around the whole run, and with `-v` so a stall names its URL. A host that loops on redirects, such as `www.rfc-editor.org`, is excluded in `lychee.toml`. A job that runs past its usual time is a finding: cancel one run, read its log, fix the bound, then rerun.
 - **A strict build fails on one warning.** A slow external fetch is such a warning. Retry that one failure; keep strict mode for everything else.
 - **Rerunning an old run uses its old merge commit** and so its old configuration. After a fix lands on `main`, a stuck pull request needs a fresh push or a rebuilt branch ([Branches and pull requests](/contributing/workflow/#rebuild-instead-of-rewriting)).
 - **A change you can see is seen.** Build and serve the site, then take screenshots with headless Chrome at 1440 px and 390 px wide, in the light and the dark theme. Look at all four and fix what is off before the pull request. There is no horizontal scroll at 375 px.
-- **After every deploy,** check with `curl`: the page answers 200, a moved page answers 301 to its new address, and the `Strict-Transport-Security` and `Content-Security-Policy` headers are intact.
+- **After every deploy,** check with `curl`: the page answers 200, a moved page answers 301 to its new address, an unpublished address answers 302 to `github.com/truvity/ritueel/blob/main/docs/...`, and the `Strict-Transport-Security` and `Content-Security-Policy` headers are intact.

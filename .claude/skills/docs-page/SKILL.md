@@ -14,5 +14,5 @@ Checklist:
 - [ ] Diagrams keep to the size limits on the page.
 - [ ] A Learn or Guides page also follows the `teaching-page` skill; a change to `site/` follows `site-change`.
 - [ ] Every external fact has a source and a date, and no unverified fact is on the page.
-- [ ] Links to other pages use site paths, and the linked pages exist.
+- [ ] Links to other pages use site paths, and the linked pages exist. A page is published only by a line in `site/published.txt`; a link to an unpublished page opens its file on GitHub.
 - [ ] `devbox run -- just check` passes; then follow `docs/contributing/workflow.md`.
