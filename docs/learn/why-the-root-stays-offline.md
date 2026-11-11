@@ -26,7 +26,7 @@ A root that is online is exposed to all of them every day. A root that comes out
 | **A key that cannot leave a card** | A computer at a ceremony cannot copy the key, even if it is hostile. Possession of the card, its PIN and a touch are needed. | A card can be lost or break, so you need two (see [layered trust](/learn/layered-trust/)). |
 | **A key in a cloud service behind a role** | Nobody downloads the key. Every use is an audited call to the service, and a role gates it. | Trust in the provider and in the account. Losing the account loses the key. |
 
-ritueel's approach is the second and third. A card root or a real software root is used only in a machine booted from a read-only system made for the purpose (the offline system), never in the everyday system; a cloud root is signed from the holder's workstation through the ceremony role; a test root may run on the workstation or on a rehearsal card ([ADR 0016](/decisions/0016-several-roots-share-one-pair-of-root-cards-and-the-directory-keeps-a-card-inventory/#where-a-plan-runs)). In all these cases the machine is not trusted: the private key never leaves its card or cloud key, so a compromised machine cannot copy a key it never holds.
+ritueel's approach is the second and third. A card root or a real software root is used only in a machine booted from a read-only system made for the purpose (the offline system), never in the everyday system; a cloud root is signed from the holder's workstation through the ceremony role; a test root may run on the workstation or on a rehearsal card ([ADR 0016](/decisions/0016-several-bundles-share-one-pair-of-root-cards-and-the-bundle-keeps-a-card-inventory/#where-a-plan-runs)). In all these cases the machine is not trusted: the private key never leaves its card or cloud key, so a compromised machine cannot copy a key it never holds.
 
 ## What offline does not give you
 
@@ -36,6 +36,6 @@ Offline also does not protect against loss. A key on one card in one drawer is s
 
 ## Offline for software keys
 
-A software key, a file or an entry in a password manager, can be copied by whatever can read it. It is "offline" only to the extent that the machine it sits on is. That is why ritueel treats a software root as fit for drills, tests and a person's own key, and not for a root others rely on. ritueel teaches running a real software root in the offline system too; the program does not check where it runs ([ADR 0016](/decisions/0016-several-roots-share-one-pair-of-root-cards-and-the-directory-keeps-a-card-inventory/#where-a-plan-runs)). [Where a key lives](/learn/key-stores/) compares the options.
+A software key, a file or an entry in a password manager, can be copied by whatever can read it. It is "offline" only to the extent that the machine it sits on is. That is why ritueel treats a software root as fit for drills, tests and a person's own key, and not for a root others rely on. ritueel teaches running a real software root in the offline system too; the program does not check where it runs ([ADR 0016](/decisions/0016-several-bundles-share-one-pair-of-root-cards-and-the-bundle-keeps-a-card-inventory/#where-a-plan-runs)). [Where a key lives](/learn/key-stores/) compares the options.
 
 Next: [what a ceremony is](/learn/ceremonies/).

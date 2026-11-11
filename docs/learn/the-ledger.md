@@ -5,7 +5,7 @@ sidebar:
   order: 13
 ---
 
-*Design phase: the layout described here is what the first version will write ([the directory](/reference/directory/)). The advice is ritueel's opinion; the reasons are in [ADR 0007](/decisions/0007-ritueel-teaches-and-its-tools-simplify-the-ceremonies/).*
+*Design phase: the layout described here is what the first version will write ([the directory](/reference/bundle/)). The advice is ritueel's opinion; the reasons are in [ADR 0007](/decisions/0007-ritueel-teaches-and-its-tools-simplify-the-ceremonies/).*
 
 Every ceremony changes what outsiders can trust, and in a year nobody remembers what was done. ritueel keeps the written memory in one **directory** of plain files that says which roots exist, where each lives, what was signed, and when. Its write-once part is the **ledger**: one sub-folder for each ceremony, holding its plan, record and transcript, each naming the one before it ([ceremony files](/reference/ceremony-record/)). Nothing needs git. This page is about how to keep the directory, because the ledger alone is not enough.
 
@@ -23,7 +23,7 @@ Every ceremony changes what outsiders can trust, and in a year nobody remembers 
 
 The creation times matter more than they look. An OpenPGP fingerprint depends on the key's creation time, and a card does not store that time. Lose the directory and you can lose the ability to reproduce the fingerprint of a key that is still safe on its card. That is why the directory is part of every key's identity, and why it is backed up like a key.
 
-The sealed files are not public. A copy that leaks is safe only as long as the keys that open them are: the unlock key and the recovery key ([ADR 0015](/decisions/0015-key-files-open-with-a-passkey-on-each-root-card-and-card-secrets-are-sealed-in-the-directory/)).
+The sealed files are not public. A copy that leaks is safe only as long as the keys that open them are: the unlock key and the recovery key ([ADR 0015](/decisions/0015-key-files-open-with-a-passkey-on-each-root-card-and-card-secrets-are-sealed-in-the-bundle/)).
 
 ## Where it should live: ritueel's opinion
 
@@ -31,7 +31,7 @@ The sealed files are not public. A copy that leaks is safe only as long as the k
 2. **With a remote on a service you control, and a second copy elsewhere.** Two different providers, or one provider and one machine of your own. The directory holds public material and sealed secrets, so a copy that leaks is not a compromise while your recipients' keys are safe. What you protect it against is loss, and against a quiet edit.
 3. **Signed commits, and review before they land.** An attacker who can rewrite the directory can mislead you at the next ceremony: a different root, a different expiry. A signed history and a second pair of eyes (or, for one holder, the delay of a pull request) catch it.
 4. **The digest of the last record, kept apart.** The records are a hash chain. Write the latest digest somewhere that is not the repository, such as a note in the password manager. Anyone who later rewrites the history cannot reproduce it. ritueel also puts the digest into each signed root list, which anchors the chain without using the root again.
-5. **Not on the machine you use for the ceremony only.** A card root or a real software root is used only in a machine booted from a read-only system made for the purpose (the offline system), which keeps nothing. The directory is brought onto it, used, and taken back ([ADR 0016](/decisions/0016-several-roots-share-one-pair-of-root-cards-and-the-directory-keeps-a-card-inventory/#where-a-plan-runs)).
+5. **Not on the machine you use for the ceremony only.** A card root or a real software root is used only in a machine booted from a read-only system made for the purpose (the offline system), which keeps nothing. The directory is brought onto it, used, and taken back ([ADR 0016](/decisions/0016-several-bundles-share-one-pair-of-root-cards-and-the-bundle-keeps-a-card-inventory/#where-a-plan-runs)).
 
 ## What else must be backed up, and where
 

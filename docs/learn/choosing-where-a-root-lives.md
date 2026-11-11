@@ -43,7 +43,7 @@ Two rules matter most when you adopt a key. The key must have been born in the s
 
 ### 4. How will the key file be opened?
 
-ritueel keeps the key of a software root in a file encrypted with age, a small file-encryption format. An age file can be locked to more than one secret (each is a "recipient"), and any one of them opens it alone. This question is for a software key, and also for the secrets that ritueel makes for a card and seals (encrypts) in the directory, the folder where ritueel keeps its records ([the directory](/reference/directory/)). Those are opened the same way ([ADR 0015](/decisions/0015-key-files-open-with-a-passkey-on-each-root-card-and-card-secrets-are-sealed-in-the-directory/)).
+ritueel keeps the key of a software root in a file encrypted with age, a small file-encryption format. An age file can be locked to more than one secret (each is a "recipient"), and any one of them opens it alone. This question is for a software key, and also for the secrets that ritueel makes for a card and seals (encrypts) in the directory, the folder where ritueel keeps its records ([the directory](/reference/bundle/)). Those are opened the same way ([ADR 0015](/decisions/0015-key-files-open-with-a-passkey-on-each-root-card-and-card-secrets-are-sealed-in-the-bundle/)).
 
 - **You have root cards:** the default is **a passkey on each root card.** A passkey is a key pair that lives on the card and is opened with the card's PIN and a touch ([how a YubiKey holds keys](/learn/how-a-yubikey-holds-keys/#passkeys-in-brief)). Any one card of the pair opens the file. The next section says what that means.
 - **You have no cards:** use **a passphrase.** A passphrase file has no second way in: the age format says a passphrase recipient must be the only recipient (age v1, read 2026-11-11, [age-encryption.org/v1](https://age-encryption.org/v1)). Lose the passphrase and you lose the file.
@@ -68,7 +68,7 @@ The rows that decide are below. Where a key is born, whether it can be copied, r
 | **When the key ends** | Replaced at most every three years, because it can be copied. | On an event: an advisory, a lost card, a compromise, a change of store. Not on a date. | The same events. |
 | **Built in** | M2 (the file). | M6, after the first signed release. | M2 (the store), and adoption is drilled in M4. |
 
-Sources of the rows: [ADR 0002](/decisions/0002-key-custody-every-key-is-born-in-its-store-two-root-cards-or-one-kms-root-and-a-replica/), [ADR 0003](/decisions/0003-key-stores-and-the-card-layer/), [ADR 0016](/decisions/0016-several-roots-share-one-pair-of-root-cards-and-the-directory-keeps-a-card-inventory/), [ADR 0018](/decisions/0018-a-cloud-root-may-be-an-existing-key-that-ritueel-adopts/), [the software store](/reference/software-store/), [root cards](/reference/cards/), [the cloud root](/reference/kms-root/) and the [roadmap](/roadmap/).
+Sources of the rows: [ADR 0002](/decisions/0002-key-custody-every-key-is-born-in-its-store-two-root-cards-or-one-kms-root-and-a-replica/), [ADR 0003](/decisions/0003-key-stores-and-the-card-layer/), [ADR 0016](/decisions/0016-several-bundles-share-one-pair-of-root-cards-and-the-bundle-keeps-a-card-inventory/), [ADR 0018](/decisions/0018-a-cloud-root-may-be-an-existing-key-that-ritueel-adopts/), [the software store](/reference/software-store/), [root cards](/reference/cards/), [the cloud root](/reference/kms-root/) and the [roadmap](/roadmap/).
 
 ## What it costs you each year
 
@@ -89,7 +89,7 @@ How to read the table:
 - **The yearly ceremony and the checks** come from ADR 0002, ADR 0010 and ADR 0016. A drill is due once a year, with the yearly ceremony. ritueel teaches the rhythm and does not enforce it.
 - **The advisory review** is a step of every yearly ceremony, whatever the store, and the record says it was done; a practice software root has no yearly ceremony and so no review. A missed advisory is the one event a holder can fail to notice ([ADR 0002](/decisions/0002-key-custody-every-key-is-born-in-its-store-two-root-cards-or-one-kms-root-and-a-replica/#validity-renewal-and-replacement)).
 - **Renewing a cloud root without a person** is designed and built later (M7). A card root cannot be renewed that way.
-- **Firmware.** A card with firmware older than 5.7.4 cannot hold a root ([ADR 0016](/decisions/0016-several-roots-share-one-pair-of-root-cards-and-the-directory-keeps-a-card-inventory/#rules-for-a-shared-card)).
+- **Firmware.** A card with firmware older than 5.7.4 cannot hold a root ([ADR 0016](/decisions/0016-several-bundles-share-one-pair-of-root-cards-and-the-bundle-keeps-a-card-inventory/#rules-for-a-shared-card)).
 
 ## The limit every choice accepts
 

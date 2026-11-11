@@ -7,7 +7,7 @@ sidebar:
 
 *Design phase: this page teaches the model of [ADR 0002](/decisions/0002-key-custody-every-key-is-born-in-its-store-two-root-cards-or-one-kms-root-and-a-replica/). Checks of other projects were made on 2026-10-29; check again before you rely on one.*
 
-Two roots are redundancy, not control. One holder operates both cards, which are stored in two separate locations, and the cards alternate by year. This page shows that the practice is ordinary, and what to expect from clients. It is about cards, which cannot be copied, and one pair of cards may hold several roots of one holder, each in its own row ([ADR 0016](/decisions/0016-several-roots-share-one-pair-of-root-cards-and-the-directory-keeps-a-card-inventory/#the-rows)); a cloud root is one key and a replica ([ADR 0002](/decisions/0002-key-custody-every-key-is-born-in-its-store-two-root-cards-or-one-kms-root-and-a-replica/)).
+Two roots are redundancy, not control. One holder operates both cards, which are stored in two separate locations, and the cards alternate by year. This page shows that the practice is ordinary, and what to expect from clients. It is about cards, which cannot be copied, and one pair of cards may hold several roots of one holder, each in its own row ([ADR 0016](/decisions/0016-several-bundles-share-one-pair-of-root-cards-and-the-bundle-keeps-a-card-inventory/#the-rows)); a cloud root is one key and a replica ([ADR 0002](/decisions/0002-key-custody-every-key-is-born-in-its-store-two-root-cards-or-one-kms-root-and-a-replica/)).
 
 ## What others do
 

@@ -12,7 +12,7 @@ sidebar:
 - The directory in its repository, with two remotes. Its ledger is the write-once part.
 - The revocation certificates in their two places.
 - The PINs you type in the password manager.
-- The recovery key, apart from the cards and apart from its passphrase. The sealed secrets of the cards are in the directory; the PUK and the management key are not kept by hand ([ADR 0015](/decisions/0015-key-files-open-with-a-passkey-on-each-root-card-and-card-secrets-are-sealed-in-the-directory/#card-secrets)).
+- The recovery key, apart from the cards and apart from its passphrase. The sealed secrets of the cards are in the directory; the PUK and the management key are not kept by hand ([ADR 0015](/decisions/0015-key-files-open-with-a-passkey-on-each-root-card-and-card-secrets-are-sealed-in-the-bundle/#card-secrets)).
 - A clean machine, or a freshly made user account.
 
 ## Back up
