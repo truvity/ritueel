@@ -2,7 +2,7 @@ import { createContext, useCallback, useContext, useMemo, useState, type ReactNo
 import Snackbar from '@mui/material/Snackbar';
 
 // One small message at the bottom, for what a button did ("Copied"). In the
-// demo it also says that nothing ran.
+// demo the copy message also says the command is an example.
 
 const ToastContext = createContext<(message: string) => void>(() => {});
 
