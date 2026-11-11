@@ -2,11 +2,11 @@
 // other figure that names a slot, are functions of this file, so a change is made once and the two
 // drawings cannot drift apart (site/test/figures.test.mjs compares their slot ids and row labels).
 //
-// What is decided (decision records 0015 and 0016; the owner's words of 2026-11-11):
+// What is decided (decision records 0002 and 0003; the owner's words of 2026-11-11):
 //  - A root card is a YubiKey whose PIV application has 24 key slots, read as six rows of four.
 //  - Row 1 (9a 9c 9d 9e) is the card's own jobs and holds no root. All four are drawn empty: three stay
-//    empty, and 9d is tagged "spare key" because record 0015 makes a spare key-agreement key there only
-//    if the passkey way cannot be used (a fallback, never a held key in the picture).
+//    empty, and 9d is tagged "spare key" because records 0002 (rule 24) and 0003 (rule 3) make a spare
+//    key there only if the passkey way cannot be used (a fallback, never a held key in the picture).
 //  - Rows 2 to 6 hold one root each, the same kind of key in the same column: X.509 root key,
 //    OpenPGP primary, break-glass SSH CA key, empty. One row is kept free so that a replacement root
 //    can be born beside the old one: four bundles on a pair of cards. Which row stays free is drawn as
@@ -83,7 +83,7 @@ export function rootCardCells() {
 
 /**
  * The notes next to the rows, one list of lines each. Row 1's 9d is a conditional fallback of record
- * 0015, not an example: it is made only if the passkey way cannot be used.
+ * 0002, not an example: it is made only if the passkey way cannot be used.
  */
 export const ROOT_CARD_NOTES = {
   own: ['Row 1', 'the card’s own jobs, no root.', '9d: a spare key to open key', 'files, only if the passkey', 'way cannot be used.'],
@@ -91,10 +91,10 @@ export const ROOT_CARD_NOTES = {
   free: ['Row 6', 'kept free: a replacement root', 'is born here, beside the old one.'],
 };
 
-/** The pill under the card: the key file opens with a passkey (record 0015). */
+/** The pill under the card: the key file opens with a passkey (record 0002). */
 export const ROOT_CARD_PASSKEY = ['FIDO2: a passkey opens key files', '(decided, not yet proven)'];
 
-/** The day-to-day card: three applications, one set of keys per card (record 0017, owner decision of 2026-11-11). */
+/** The day-to-day card: three applications, one set of keys per card (record 0008, rule 7; owner decision of 2026-11-11). */
 export const DAY_CARD = {
   openpgp: [
     { name: 'signing', how: ['born on', 'the card'] },

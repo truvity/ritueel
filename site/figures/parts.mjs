@@ -72,7 +72,7 @@ export function stickBig(x, y, w, chips) {
   let s = rect(x + w, y + h / 2 - 10, 12, 20, 'paper-t', 2) + rect(x + w + 4, y + h / 2 - 6, 4, 4, 'fill-ink', 1) + rect(x + w + 4, y + h / 2 + 2, 4, 4, 'fill-ink', 1) + rect(x, y, w, h, 'paper', 6) + circle(x + 10, y + 8, 2, 'fill-ink');
   chips.forEach((c, i) => {
     const cy = y + 14 + i * 18;
-    const chip = rect(x + 8, cy, w - 16, 15, c.accent ? 'acc-f' : 'paper-t', 3) + text(x + (c.lock ? w / 2 - 10 : w / 2), cy + 11.5, c.text, 't t-s' + (c.accent ? ' t-acc' : ''), 'm') + (c.lock ? lock(x + w - 24, cy + 1) : '');
+    const chip = rect(x + 8, cy, w - 16, 15, c.accent ? 'acc-f' : 'paper-t', 3) + text(x + (c.lock ? w / 2 - 12 : w / 2), cy + 11.5, c.text, 't t-s' + (c.accent ? ' t-acc' : ''), 'm') + (c.lock ? lock(x + w - 24, cy + 1) : '');
     s += c.accent ? acc(c.accent, chip) : chip;
   });
   return s;
@@ -85,14 +85,14 @@ export function carryBody(chips) {
   let b = '';
   b += line(8, B + 2, 272, B + 2, 'ln ln-thin ln-dash ln-dim');
   b += walker(46, 84, y + h / 2);
-  b += stickBig(84, y, 76, chips);
-  b += under(122, 'USB stick', 164);
+  b += stickBig(84, y, 84, chips);
+  b += under(126, 'USB stick', 164);
   b += rect(190, 108, 78, 52, 'paper', 5) + rect(182, 160, 94, 7, 'paper', 3.5);
   b += wifiOff(229, 114);
   b += text(229, 154, 'no network', 't t-s t-dim', 'm');
-  b += arrowq(122, y - 6, 176, 44, 226, 98, 'carries', { lx: 176, ly: 52 });
+  b += arrowq(126, y - 6, 176, 44, 226, 98, 'carries', { lx: 176, ly: 52 });
   b += text(46, 52, 'you', 't t-s', 'm');
   b += under(229, 'offline system', 186);
-  b += text(12, 196, 'the plan holds the digest', 't t-s t-long') + text(12, 211, 'of this ritueel copy', 't t-s t-long');
+  b += text(12, 196, 'the plan records the digest', 't t-s t-long') + text(12, 211, 'of the ritueel that made it', 't t-s t-long');
   return b;
 }

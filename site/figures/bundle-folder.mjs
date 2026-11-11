@@ -1,14 +1,16 @@
 // What a bundle holds: one directory of plain files for one trust domain, drawn as a tree of labelled
-// parts, one entry to a line, with a small tag saying who writes it ("you", "ritueel", or both). The
-// names of the places are those of record 0006: ritueel.yaml, history/, trust/<number>/, requests/. The
-// names of the files inside them are only proposed, so none is drawn. The accent marks the history, which
+// parts, one entry to a line, with a small tag saying who writes it. Only the names that record 0006
+// decides are printed as names: ritueel.yaml, history/, trust/<number>/ and requests/<name>/. The card
+// inventory and the roots are parts of the bundle (rule 1) but their folder and file names are only
+// proposed (reference/bundle), so they are printed as plain words, "Cards" and "Roots". The names of
+// the files inside the places are proposed too, so none is drawn. The accent marks the history, which
 // is never changed afterwards. Key files are not in the bundle: a dashed box outside it says so, and the
 // stick figure shows where they sit.
 import { acc, circle, f, line, path, rect, sheet, text } from './draw.mjs';
 import { svgBox } from './svg.mjs';
 
 const LABEL =
-  'A bundle drawn as an open directory named acme, holding six labelled parts in a tree: the file ritueel.yaml, the directories cards and roots, ' +
+  'A bundle drawn as an open directory named acme, holding six labelled parts in a tree: the file ritueel.yaml, the cards and the roots, ' +
   'the requests directory with its answers beside them, the history directory in the accent colour, and the numbered trust directory. A small tag on each part says who writes it. ' +
   'Under the bundle sits a second, closed bundle named personal, and a dashed box that says key files stay outside the bundle.';
 
@@ -20,17 +22,17 @@ const dir = (x, y, cls = 'paper') =>
 
 /** The tag at the right of a name: who writes the part. */
 function tag(y, word, inset = 0) {
-  const w = word === 'you' ? 42 : word === 'ritueel' ? 60 : 84;
+  const w = word === 'you' ? 42 : word === 'ritueel' ? 60 : word === 'requester, ritueel' ? 118 : 84;
   const x = W - 22 - inset - w;
   return rect(x, y, w, 19, 'paper-t', 9.5) + text(x + w / 2, y + 13.5, word, 't t-s' + (word === 'you' ? ' t-b' : ''), 'm');
 }
 
-// The parts of a bundle, top to bottom. `name` is printed in mono only where it is settled.
+// The parts of a bundle, top to bottom. `name` is printed in mono only where record 0006 settles it.
 const PARTS = [
   { icon: 'sheet', name: 'ritueel.yaml', mono: true, tag: 'you', desc: ['the one file you write'] },
-  { icon: 'dir', name: 'cards/', mono: true, tag: 'ritueel', desc: ['each card’s map and this bundle’s', 'own sealed copy of its secrets'] },
-  { icon: 'dir', name: 'roots/A, roots/B', mono: true, tag: 'ritueel', desc: ['the public facts of each root'] },
-  { icon: 'dir', name: 'requests/', mono: true, tag: 'you, ritueel', desc: ['each request, with its answer beside it'] },
+  { icon: 'dir', name: 'Cards', mono: false, tag: 'ritueel', desc: ['each card’s map and this bundle’s', 'own sealed copy of its secrets'] },
+  { icon: 'dir', name: 'Roots', mono: false, tag: 'ritueel', desc: ['the public facts of each root'] },
+  { icon: 'dir', name: 'requests/', mono: true, tag: 'requester, ritueel', desc: ['each request, with its answer beside it'] },
   { icon: 'dir', name: 'history/', mono: true, accent: true, tag: 'ritueel', desc: ['one set per ceremony: plan,', 'attempt, record, transcript', 'Never changed; each links to the one before.'] },
   { icon: 'dir', name: 'trust/<number>/', mono: true, tag: 'ritueel', desc: ['one numbered set of trust files each time', 'they change: root list, CA bundle, lists, keyring'] },
 ];
