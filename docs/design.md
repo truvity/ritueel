@@ -82,7 +82,7 @@ Decided in [0005](decisions/0005-a-ceremony-and-where-it-runs.md).
 
 ## The process and the page
 
-- One process, started by the first command, serves the command line and the local page on one fixed loopback port.
+- One process, started by the first command, serves the command line and the local page on one fixed loopback port, 7488.
 - It ends after 15 minutes idle, never mid-ceremony, and keeps no PIN between calls.
 - The page never confirms or runs a ceremony.
 
@@ -135,7 +135,7 @@ Decided in [0009](decisions/0009-release-keys-and-the-keyring.md).
 
 ## Proposed or open
 
-- The port number 7488 ([0010](decisions/0010-the-engine-the-process-and-the-page.md#not-yet-proven-or-only-proposed)) and the exact file names in a bundle ([0006](decisions/0006-bundle-history-and-trust-files.md#not-yet-proven-or-only-proposed)).
+- The exact file names in a bundle ([0006](decisions/0006-bundle-history-and-trust-files.md#not-yet-proven-or-only-proposed)).
 - Which conditions the program enforces ([0005](decisions/0005-a-ceremony-and-where-it-runs.md#not-yet-proven-or-only-proposed)).
 - One passkey credential for each bundle on a shared card ([0002](decisions/0002-where-a-key-lives.md#not-yet-proven-or-only-proposed)).
 
