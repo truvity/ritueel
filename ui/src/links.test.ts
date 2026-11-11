@@ -96,12 +96,16 @@ function headingIds(file: string): Set<string> {
     if (fence) return;
     const m = /^ {0,3}(#{1,6})[ \t]+(.*?)(?:[ \t]+#+)?[ \t]*$/.exec(line);
     if (!m) return;
-    const text = m[2]
+    let text = m[2]
       .replace(/!?\[([^\]]*)\]\([^)]*\)/g, '$1')
       .replace(/`/g, '')
       .replace(/\*/g, '')
-      .replace(/(^|\W)_(.+?)_(?=\W|$)/g, '$1$2')
-      .replace(/<[^>]+>/g, '');
+      .replace(/(^|\W)_(.+?)_(?=\W|$)/g, '$1$2');
+    // Drop inline HTML tags until none is left, so a tag nested in another one cannot survive a single pass.
+    for (let prev = ''; prev !== text; ) {
+      prev = text;
+      text = text.replace(/<[^>]+>/g, '');
+    }
     const base = text
       .toLowerCase()
       .replace(/[^\p{L}\p{N}\p{M}_ -]/gu, '')
@@ -155,7 +159,7 @@ describe('the demo links only to pages the site has', () => {
 
   it('every link is a path of the site, with the trailing slash the site uses', () => {
     // Each segment starts and ends with a letter or digit, so there is no "", "." or ".." segment.
-    const bad = links.filter((l) => !/^(\/[a-z0-9]+(?:[a-z0-9_.-]*[a-z0-9])?)+\/(#[a-z0-9_-]+)?$/.test(l.value));
+    const bad = links.filter((l) => !/^(?:\/[a-z0-9]+(?:[_.-]+[a-z0-9]+)*)+\/(?:#[a-z0-9_-]+)?$/.test(l.value));
     expect(bad.map((l) => `${l.file} ${l.at}: ${l.value}`)).toEqual([]);
   });
 
