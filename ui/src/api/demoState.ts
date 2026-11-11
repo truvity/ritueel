@@ -40,14 +40,18 @@ export function getBundle(): DemoBundle {
   return currentBundle;
 }
 
-const NOTHING: BundleContents = { roots: [], cards: [], records: [], goals: [] };
-let contentsOfBundle: () => BundleContents = () => NOTHING;
+let contentsOfBundle: (() => BundleContents) | undefined;
 
 /**
  * The demo transport (api/demo.ts) says what the open bundle holds, so that this
  * file never imports the fixtures: it is read by the pages of the real build too.
- * Until the transport is loaded the bundle is taken to hold nothing, and a
- * detail view then falls back to its list.
+ * Until the transport is loaded (it loads on the first call) nothing says what a
+ * bundle holds, and the address is left alone: a detail view the new bundle lacks
+ * then shows its own "not in the inventory" page, which is better than dropping
+ * a place that every bundle has.
+ *
+ * The Failed and Waiting page states use the contents of the loaded bundle, on
+ * purpose: the detail screens then show the failure or the wait, and not a list.
  */
 export function provideBundleContents(read: () => BundleContents): void {
   contentsOfBundle = read;
@@ -56,15 +60,20 @@ export function provideBundleContents(read: () => BundleContents): void {
 /**
  * Choose the example bundle. The page keeps the screen it is on. Only a detail
  * view the new bundle cannot show falls back to its list (routeForBundle), and
- * the address changes only then.
+ * the address changes only then. The fallback replaces the history entry, so
+ * Back never returns to an address the new bundle cannot show.
  */
 export function setBundle(next: DemoBundle): void {
   if (next === currentBundle) return;
   currentBundle = next;
-  if (typeof window !== 'undefined' && window.location) {
-    const now = parseHash(window.location.hash);
-    const to = routeForBundle(now, contentsOfBundle());
-    if (to !== now) window.location.hash = hrefOf(to);
+  if (typeof window !== 'undefined' && window.location && contentsOfBundle) {
+    try {
+      const now = parseHash(window.location.hash);
+      const to = routeForBundle(now, contentsOfBundle());
+      if (to !== now) window.location.replace(hrefOf(to));
+    } catch {
+      // The contents could not be read: keep the address.
+    }
   }
   bundleListeners.forEach((l) => l());
 }

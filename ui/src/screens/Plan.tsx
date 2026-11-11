@@ -17,7 +17,7 @@ import {
   type SavePlanResponse,
 } from '../gen/ritueel/local/v1alpha1/plan_service_pb';
 import { isDemo, plans } from '../api/client';
-import { useViewState } from '../api/demoState';
+import { useBundle, useViewState } from '../api/demoState';
 import { messageOf, useCall, useGoalMap, useIntentions } from '../api/hooks';
 import { intentionFromSlug, INTENTION_SLUG } from '../lib/finding';
 import { ymd } from '../lib/format';
@@ -633,6 +633,7 @@ function Wizard({ intention, slug }: { intention: Intention; slug: string }) {
 }
 
 export function Plan({ goal }: { goal?: string }) {
+  const bundle = useBundle();
   if (!goal) return <Goals />;
   const intention = intentionFromSlug(goal);
   if (intention === undefined) {
@@ -648,6 +649,7 @@ export function Plan({ goal }: { goal?: string }) {
       </Page>
     );
   }
-  return <Wizard key={goal} intention={intention} slug={goal} />;
+  // Keyed by the bundle too: the answers belong to the bundle they were given for.
+  return <Wizard key={`${bundle}:${goal}`} intention={intention} slug={goal} />;
 }
 
