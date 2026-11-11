@@ -57,6 +57,8 @@ for (const [name, dir, demo] of [['demo build (dist)', join(root, 'dist'), true]
     expect(has('Start here'), 'holds the Start-here path');
     expect(has('command line is not built yet'), 'says the command line is not built');
     expect(has('never answers, on purpose'), 'says the Waiting state is on purpose');
+    expect(has('Where it runs'), 'says on the plan where the ceremony runs');
+    expect(has('A touch for every signature'), 'states the four conditions of the workstation');
     expect(has('this bundle is empty'), 'says the plan of the empty state is an example');
     expect(has('globex') && has('acme-keyring') && has('acme-gateway'), 'holds the three example bundles');
     expect(has('history/20261111T090000Z-due/plan.json'), 'holds a plan saved as history/<ceremony>/plan.json');

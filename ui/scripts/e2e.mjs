@@ -134,6 +134,7 @@ await sleep(400);
 check('Escape closes the details', !(await evalJs(`!!document.querySelector('[role=dialog][aria-label^="Slot"]')`)));
 check('focus returns to the slot', (await active()).label === slotLabel, JSON.stringify(await active()));
 check('the card page also writes every slot out', /What every slot is for/.test(await text()));
+check('the card page draws the row of another bundle as OTHER, with no key digest', /OTHER/.test(await text()) && /another bundle/.test(await text()));
 
 // ---- copy -------------------------------------------------------------------------------
 await go('#/findings');
@@ -148,12 +149,13 @@ check('Copy answers on screen, and in the demo says the command is an example', 
 
 // ---- findings filter (min_severity goes through the transport) -----------------------------
 await go('#/findings');
-check('Findings lists all seven of the personal bundle', /7 findings, worst first/.test(await text()));
+check('Findings lists all eight of the personal bundle', /8 findings, worst first/.test(await text()));
+check('Findings names the row of root card two that no bundle declares', /Root card two holds a key in row 4 that no bundle declares/.test(await text()));
 await clickText(evalJs, 'Critical only');
 await sleep(400);
 check('Critical only lists one', /1 finding, worst first/.test(await text()));
 
-// ---- the wizard, in the personal bundle: a key file, run on the offline system ------------------------
+// ---- the wizard, in the personal bundle: a key file, run in the offline system ------------------------
 await go('#/plan');
 const goalsText = await text();
 check('the goals point to no control that does not exist (no "Cards screen", no "Mark one")', !/Cards screen|Mark one/.test(goalsText) && /No card in this bundle is lost or retired\./.test(goalsText));
@@ -164,14 +166,16 @@ check('the wizard of the personal bundle asks about subkeys first', /A few choic
 await clickText(evalJs, 'Show me the plan');
 await sleep(500);
 const pplan = await text();
-check('the plan retires subkeys, runs on the offline system and shows the digest and the plan.json command', /C41E/i.test(pplan) && /To run it, on the offline system/.test(pplan) && /ritueel --dir ~\/ritueel\/personal run history\/20261111T090000Z-personal-subkey-revoke\/plan\.json --confirm/.test(pplan), pplan.slice(0, 200));
+check('the plan retires subkeys, runs in the offline system and shows the digest and the plan.json command', /C41E/i.test(pplan) && /To run it, in the offline system/.test(pplan) && /ritueel --dir ~\/ritueel\/personal run history\/20261111T090000Z-personal-subkey-revoke\/plan\.json --confirm/.test(pplan), pplan.slice(0, 200));
 check('the plan lists what changes in the bundle', /What changes in the bundle/.test(pplan));
+check('the plan of a key file says where it runs: in the offline system, vanilla AirgapOS from the ceremony stick', /Where it runs: in the offline system/.test(pplan) && /vanilla AirgapOS/i.test(pplan) && !/A touch for every signature/.test(pplan), pplan.slice(0, 200));
 await clickText(evalJs, 'Save the plan');
 await sleep(500);
 const psaved = await text();
 check('the saved plan of the personal bundle: written nowhere, inside the bundle at history/<ceremony>/plan.json', /Nothing was written\./.test(psaved) && /Would be written to\s*~\/ritueel\/personal\/history\/20261111T090000Z-personal-subkey-revoke\/plan\.json/.test(psaved));
 const pbar = await stepBar();
 check('after "Save the plan" the step bar reaches Save, with Goal, Choices and Plan done', pbar && /Save/.test(pbar.current) && pbar.items === 4 && pbar.done === 3, JSON.stringify(pbar));
+check('the saved plan of the personal bundle has the stick step, titled On the ceremony stick', /On the ceremony stick/.test(psaved) && /extra partition/.test(psaved) && !/Copy to the offline system/.test(psaved));
 check('it is canonical JSON, and no pending area or .plan file is named', /canonical JSON/.test(psaved) && !/pending/i.test(psaved) && !/\.plan\b/.test(psaved));
 
 // ---- the bundle switch: a company with two roots on two cards -----------------------------------------
@@ -189,6 +193,14 @@ await go('#/key/B');
 check('the key of acme/B says it has certified no delegated key at the moment', /Primary key of\s+acme\/B/.test(await text()) && /certified no delegated key at the moment/.test(await text()));
 await go('#/cards');
 check('Cards of acme lists two root cards, and no personal serial', /2 cards/.test(await text()) && /00000011/.test(await text()) && /00000012/.test(await text()) && !/00000004/.test(await text()));
+await go('#/history');
+const ahist = await text();
+check('History of acme says where each ceremony ran: on the workstation, and in the offline system for the first', /ran on the workstation/.test(ahist) && /ran in the offline system/.test(ahist));
+await go('#/history/20260602T142000Z-card-check');
+check('the detail of a record shows where it ran', /Where it ran/.test(await text()) && /On the workstation/.test(await text()));
+await go('#/trust');
+const atrust = await text();
+check('Trust files of acme: six files in trust/7/, and no package file', /6 files/.test(atrust) && /trust\/7\//.test(atrust) && !/rpm/i.test(atrust), atrust.slice(0, 200));
 await go('#/plan');
 check('the goals of acme grey four goals, and suggest one: the renewals', ((await text()).match(/Not now\./g) ?? []).length === 4 && ((await text()).match(/Suggested/gi) ?? []).length === 1 && /Nothing waits to be adopted in this bundle/.test(await text()));
 await go('#/plan/renew-due');
@@ -200,7 +212,8 @@ await sleep(500);
 check('after "Show me the plan" the focus is on the page heading', (await active()).id === 'page-title', JSON.stringify(await active()));
 const plan = await text();
 check('the plan shows its steps, digest and the exact commands', /Steps, in order/.test(plan) && /7F3A/i.test(plan) && /ritueel --dir ~\/ritueel\/acme run/.test(plan) && /deadbeef|DEAD BEEF/i.test(plan.replace(/\s/g, '')));
-check('the plan says it runs on the offline system, and the digest is not typed here', /To run it, on the offline system/.test(plan) && /never\s+asks you to type it/i.test(plan.replace(/\n/g, ' ')));
+check('the plan says it runs on your workstation, and the digest is not typed here', /To run it, on your workstation/.test(plan) && /never\s+asks you to type it/i.test(plan.replace(/\n/g, ' ')));
+check('the plan of acme states the four conditions with its counts, and has no stick', /Where it runs/.test(plan) && /7 signatures/.test(plan) && /A touch for every signature/.test(plan) && /No retry/.test(plan) && /second device/.test(plan) && !/USB stick/.test(plan) && !/On the ceremony stick/.test(plan), plan.slice(0, 200));
 const abar = await stepBar();
 check('before saving, the step bar is on Plan, not on Save', abar && /Plan/.test(abar.current) && !/Save/.test(abar.current) && abar.done === 2, JSON.stringify(abar));
 await clickText(evalJs, 'Save the plan');
@@ -209,7 +222,7 @@ check('after "Save the plan" the focus is on the result', (await active()).id ==
 const saved = await text();
 check('Save the plan says nothing was written and what would be', /Nothing was written\./.test(saved) && /This is a demo/.test(saved) && /Would be written to/.test(saved) && /"ceremony": "20261111T090000Z-due"/.test(saved));
 check('the plan is saved inside the bundle as history/<ceremony>/plan.json', /~\/ritueel\/acme\/history\/20261111T090000Z-due\/plan\.json/.test(saved) && /ritueel --dir ~\/ritueel\/acme run history\/20261111T090000Z-due\/plan\.json --confirm/.test(saved));
-check('the saved view shows what to copy and bring, the stick, and the run command', /Copy to the offline system/.test(saved) && /USB stick/.test(saved) && /Bring with you/.test(saved) && /--confirm/.test(saved));
+check('the saved view of acme shows what to bring and the run command, and no stick step', !/USB stick/.test(saved) && !/On the ceremony stick/.test(saved) && /No stick is needed/.test(saved) && /Bring with you/.test(saved) && /second device/.test(saved) && /--confirm/.test(saved));
 await go('#/plan/add-card');
 check('a goal that cannot be planned is refused with its reason', /cannot be planned now/.test(await text()));
 // a goal that applies in another bundle is refused here, with the reason the goals screen gives
@@ -232,11 +245,12 @@ check('the wizard of globex asks about the key first', /A few choices/.test(awai
 await clickText(evalJs, 'Show me the plan');
 await sleep(500);
 const gplan = await text();
-check('the plan of a cloud root runs on your workstation, not the offline system', /To run it, on your workstation/.test(gplan) && !/To run it, on the offline system/.test(gplan) && /A92D/i.test(gplan), gplan.slice(0, 200));
+check('the plan of a cloud root runs on your workstation, not in the offline system', /To run it, on your workstation/.test(gplan) && !/To run it, in the offline system/.test(gplan) && /A92D/i.test(gplan), gplan.slice(0, 200));
+check('the plan of a cloud root marks the touch condition as proposed and asks for 0 touches', /Proposed/.test(gplan) && /0 touches/.test(gplan) && /second device/.test(gplan), gplan.slice(0, 200));
 await clickText(evalJs, 'Save the plan');
 await sleep(500);
 const gsaved = await text();
-check('the saved plan of globex needs no USB stick and no copy to the offline system', /No stick is needed/.test(gsaved) && !/USB stick/.test(gsaved) && !/Copy to the offline system/.test(gsaved) && /Bring with you/.test(gsaved));
+check('the saved plan of globex needs no USB stick and no stick step', /No stick is needed/.test(gsaved) && !/USB stick/.test(gsaved) && !/On the ceremony stick/.test(gsaved) && /Bring with you/.test(gsaved));
 check('it is still shown saved as history/<ceremony>/plan.json inside its bundle', /~\/ritueel\/globex\/history\/20261111T090000Z-root-add\/plan\.json/.test(gsaved) && /then, on your workstation/i.test(gsaved.replace(/\n/g, ' ')));
 // a screen every bundle has stays where it is
 await go('#/trust');
@@ -266,10 +280,10 @@ await sleep(600);
 check('Waiting: says it is reading, and shows neither empty nor failed', /Reading the findings/.test(await text()) && !/Could not read/.test(await text()) && !/Nothing to check yet/.test(await text()));
 check('Waiting: says at once that ritueel never answers here, on purpose, and how to end the wait', /never answers, on purpose/.test(await text()) && /Choose another page state to end the wait/.test(await text()));
 await sleep(3800);
-check('Waiting: it is still waiting after the late notice (it does not end by itself)', /Reading the findings/.test(await text()) && /Still waiting for ritueel/.test(await text()) && !/7 findings/.test(await text()));
+check('Waiting: it is still waiting after the late notice (it does not end by itself)', /Reading the findings/.test(await text()) && /Still waiting for ritueel/.test(await text()) && !/8 findings/.test(await text()));
 await clickText(evalJs, 'Loaded');
 await sleep(500);
-check('Loaded again: the findings are back, and the wait is over', /7 findings, worst first/.test(await text()) && !/never answers, on purpose/.test(await text()));
+check('Loaded again: the findings are back, and the wait is over', /8 findings, worst first/.test(await text()) && !/never answers, on purpose/.test(await text()));
 
 // ---- Empty: the wizard answers by itself, never with the loaded bundle's made-up data -----------------
 await go('#/plan');
@@ -321,7 +335,7 @@ for (const hash of ['#/start', '#/roots', '#/key/A', '#/cards', '#/history', '#/
 // ---- the phone: bottom bar and the More menu ---------------------------------------------------------
 await send('Emulation.setDeviceMetricsOverride', { width: 390, height: 844, deviceScaleFactor: 2, mobile: true });
 await go('#/start');
-check('the phone has a bottom bar with the findings count', await evalJs(`!!document.querySelector('nav[aria-label=Screens].fixed') && /7/.test(document.querySelector('nav[aria-label=Screens].fixed').textContent)`));
+check('the phone has a bottom bar with the findings count', await evalJs(`!!document.querySelector('nav[aria-label=Screens].fixed') && /8/.test(document.querySelector('nav[aria-label=Screens].fixed').textContent)`));
 await clickText(evalJs, 'More');
 await sleep(400);
 const menu = await evalJs(`[...document.querySelectorAll('[role=menuitem]')].map((e) => e.textContent.trim()).join('|')`);
