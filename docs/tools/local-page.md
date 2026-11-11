@@ -9,7 +9,7 @@ sidebar:
 The page itself and its [demo](/demo/) exist, as a design to look at and click through. **Planned, not built:** the program that serves the page from your own computer, and every call it makes. It comes with milestone M2 of the [roadmap](/roadmap/). Nothing on the demo reads a real folder or a real card. ritueel is in its design phase.
 :::
 
-The local page is the third face of the program, beside the command line and the guided mode in the terminal ([The wizard](/tools/wizard/)). It is served by ritueel on your own computer, to your own browser, and it is a **view**: it shows your keys, what is due and what is wrong, which card holds what, and it helps you build a plan for the next ceremony. It never confirms anything, and it never asks for or receives a PIN, a passphrase or any secret. You confirm in the terminal, on the ceremony machine.
+The local page is the third face of the program, beside the command line and the guided mode in the terminal ([The wizard](/tools/wizard/)). It is served by the one ritueel process on your own computer, to your own browser, only while you use it, and it is a **view**: it shows your keys, what is due and what is wrong, which card holds what, and it helps you build a plan for the next ceremony. It never confirms anything, and it never asks for or receives a PIN, a passphrase or any secret. You confirm in the terminal, on the ceremony machine.
 
 ## The demo
 
@@ -26,13 +26,13 @@ The local page is the third face of the program, beside the command line and the
 | | In the demo | In the program (planned) |
 |---|---|---|
 | The screens, the words, the states | The real ones | The same bundle |
-| Where the answers come from | Fixtures in the bundle, through an in-memory transport | The ritueel process, over ConnectRPC on your computer |
+| Where the answers come from | Fixtures in the bundle, through an in-memory transport | The ritueel process, over ConnectRPC on the loopback address, while the page is in use |
 | Saving a plan | Shows the file it would write | Writes one inert file into your folder |
 | Steps of a ceremony in History | The usual steps of that kind of ceremony | The steps in the plan.json of the ceremony's sub-folder of the ledger |
 
 ## How it is built
 
-The page and the program talk through an API written in Protobuf and served with ConnectRPC; the page is React with TypeScript, Material UI and Tailwind CSS, built with Vite. The contract is `proto/`, the page is `ui/`, and the page's own README lists its safety rules and what enforces each: no `innerHTML` or `eval`, nothing fetched from another host, every string from the data shown with unusual characters as visible `U+XXXX` codes, and a key identified by its full fingerprint. These are checked by tests on every pull request.
+The page and the program talk through an API written in Protobuf and served with ConnectRPC; the command line calls the same process through a Unix socket ([ADR 0011](/decisions/0011-the-wizards-one-engine-three-faces-and-a-web-page-that-cannot-confirm-anything/)), and the page's listener offers only the reads and `SavePlan`; the page is React with TypeScript, Material UI and Tailwind CSS, built with Vite. The contract is `proto/`, the page is `ui/`, and the page's own README lists its safety rules and what enforces each: no `innerHTML` or `eval`, nothing fetched from another host, every string from the data shown with unusual characters as visible `U+XXXX` codes, and a key identified by its full fingerprint. These are checked by tests on every pull request.
 
 ## Run it yourself
 
