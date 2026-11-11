@@ -22,7 +22,7 @@ import {
   TrustCheckResult,
   TrustFileKind,
 } from '../gen/ritueel/local/v1alpha1/inspect_service_pb';
-import { BundleChangeAction, Requirement } from '../gen/ritueel/local/v1alpha1/plan_service_pb';
+import { BundleChangeAction, Requirement, RunPlace } from '../gen/ritueel/local/v1alpha1/plan_service_pb';
 
 export const STORE_WORD: Record<number, string> = {
   [Store.SOFTWARE_FILE]: 'Encrypted file',
@@ -166,6 +166,21 @@ export const REQUIREMENT_WORD: Record<number, string> = {
   [Requirement.KEY_FILE_UNLOCK]: 'Key file opened by a passkey',
   [Requirement.CONFIRM_DIGEST_AT_TERMINAL]: 'Digest confirmed at the terminal',
 };
+
+/** Where a plan is run, in a sentence: on the offline system for a root on cards or in a key file, on the workstation for a cloud root. */
+export const RUN_PLACE_WORD: Record<number, string> = {
+  [RunPlace.OFFLINE_SYSTEM]: 'the offline system',
+  [RunPlace.WORKSTATION]: 'your workstation',
+};
+
+/** What the page says when a plan does not say where it is run. */
+export const RUN_PLACE_DEFAULT = 'the terminal where you run it';
+
+/** "on the offline system", "on your workstation", or "in the terminal where you run it". */
+export function onPlace(place: RunPlace | undefined): string {
+  const word = RUN_PLACE_WORD[place ?? RunPlace.UNSPECIFIED];
+  return word ? `on ${word}` : `in ${RUN_PLACE_DEFAULT}`;
+}
 
 export const BUNDLE_ACTION_WORD: Record<number, string> = {
   [BundleChangeAction.CREATE]: 'create',

@@ -13,6 +13,7 @@ import {
   type Plan as PlanMessage,
   type PlanStep,
   type Question,
+  RunPlace,
   type SavePlanResponse,
 } from '../gen/ritueel/local/v1alpha1/plan_service_pb';
 import { isDemo, plans } from '../api/client';
@@ -21,7 +22,7 @@ import { intentionFromSlug, INTENTION_SLUG } from '../lib/finding';
 import { ymd } from '../lib/format';
 import { href } from '../lib/route';
 import { safeString } from '../lib/safe';
-import { BUNDLE_ACTION_WORD, REQUIREMENT_WORD } from '../lib/words';
+import { BUNDLE_ACTION_WORD, REQUIREMENT_WORD, onPlace } from '../lib/words';
 import { Cmd } from '../ui/Cmd';
 import { Fp } from '../ui/Fp';
 import { Glyph } from '../ui/Glyph';
@@ -70,8 +71,8 @@ function Goals() {
       title="What do you want to do?"
       lede={
         <p>
-          A plan is a list of steps, built here and run later on the ceremony machine. Making a plan changes nothing. It ends with a preview of the steps, a digest, and the
-          exact command you run there.
+          A plan is a list of steps, built here and run later in a terminal: on the offline system for a root on cards or in a key file, on your workstation for a cloud
+          root. Making a plan changes nothing. It ends with a preview of the steps, a digest, and the exact command you run there.
         </p>
       }
     >
@@ -229,11 +230,12 @@ function Option({ label, description }: { label: string; description: string }) 
 
 // ---- 3. the plan ------------------------------------------------------------------------
 
-function Needs({ step }: { step: PlanStep }) {
+function Needs({ step, place }: { step: PlanStep; place: RunPlace }) {
   if (step.requirements.length === 0 && step.cardSerials.length === 0) return null;
+  const where = onPlace(place);
   return (
     <div className="mt-2 flex flex-wrap items-center gap-1.5 text-sm">
-      <span className="text-dim">At the ceremony machine:</span>
+      <span className="text-dim">{where.charAt(0).toUpperCase() + where.slice(1)}:</span>
       {step.requirements.map((r) => (
         <span key={r} className="border border-ink px-1.5 py-0.5 font-semibold">
           {REQUIREMENT_WORD[r]}
@@ -263,7 +265,7 @@ export function PlanView({ plan }: { plan: PlanMessage }) {
           <p className="text-sm font-semibold">Its digest</p>
           <Fp kind="Digest" value={plan.digest} />
           <p className="mt-1 max-w-[70ch] text-sm text-dim">
-            The digest is a hash of the whole plan. If a single step changes, the digest changes. You check it at the terminal, on the ceremony machine. This page never
+            The digest is a hash of the whole plan. If a single step changes, the digest changes. You check it in the terminal where you run the plan. This page never
             asks you to type it, and it cannot confirm the plan.
           </p>
         </div>
@@ -289,7 +291,7 @@ export function PlanView({ plan }: { plan: PlanMessage }) {
                 <p className="mt-1 text-sm">
                   <span className="text-dim">What changes:</span> <strong><T cap={120}>{st.whatChanges}</T></strong>
                 </p>
-                <Needs step={st} />
+                <Needs step={st} place={plan.runPlace} />
                 {st.learnPath ? (
                   <p className="mt-1 text-sm">
                     <LearnLink path={st.learnPath}>Read about this step</LearnLink>
@@ -324,9 +326,12 @@ export function PlanView({ plan }: { plan: PlanMessage }) {
       <Sec title="The commands">
         <div className="space-y-5">
           <div>
-            <p className="mb-1 font-bold">To run it, on the ceremony machine</p>
-            <p className="mb-2 max-w-[70ch] text-sm text-dim">You type this in the terminal there, after you save the plan and carry it over. The terminal asks for the PIN and the touch. This page never does.</p>
-            <Cmd label="Run the plan on the ceremony machine">{plan.runCommand}</Cmd>
+            <p className="mb-1 font-bold">To run it, {onPlace(plan.runPlace)}</p>
+            <p className="mb-2 max-w-[70ch] text-sm text-dim">
+              You type this in {plan.runPlace === RunPlace.OFFLINE_SYSTEM ? 'the terminal there' : 'a terminal ' + (plan.runPlace === RunPlace.WORKSTATION ? 'on your workstation' : 'where you run it')}, from the
+              directory of the bundle, after you save the plan{plan.runPlace === RunPlace.OFFLINE_SYSTEM ? ' and carry it over' : ''}. The terminal asks for the PIN and the touch. This page never does.
+            </p>
+            <Cmd label={`Run the plan ${onPlace(plan.runPlace)}`}>{plan.runCommand}</Cmd>
           </div>
           <div>
             <p className="mb-1 font-bold">To build this same plan in a terminal instead</p>
@@ -366,8 +371,8 @@ function SavePlan({ plan }: { plan: PlanMessage }) {
             <span className="font-mono [overflow-wrap:anywhere]">
               <T cap={120}>{plan.savePath}</T>
             </span>{' '}
-            in your bundle. The file only describes the steps: it holds no key and no
-            secret, and nothing runs until you run it at the ceremony machine.
+            in your bundle. The file is canonical JSON. It only describes the steps: it holds no key and no
+            secret, and nothing runs until you run it {onPlace(plan.runPlace)}.
           </p>
           {isDemo ? <p className="mt-2 text-sm font-semibold">In this demo, saving writes nothing. It shows what it would write.</p> : null}
           <div className="mt-3 flex flex-wrap items-center gap-3">
@@ -396,7 +401,7 @@ function SavePlan({ plan }: { plan: PlanMessage }) {
           ) : null}
         </div>
       ) : (
-        <Saved data={save.data} />
+        <Saved data={save.data} place={plan.runPlace} />
       )}
     </Sec>
   );
@@ -416,8 +421,9 @@ function Lines({ text }: { text: string }) {
   );
 }
 
-export function Saved({ data }: { data: SavePlanResponse }) {
+export function Saved({ data, place }: { data: SavePlanResponse; place?: RunPlace }) {
   const written = data.written;
+  const stick = data.copyToStick.length > 0;
   const box = useRef<HTMLDivElement>(null);
   // The button that was pressed has left the page: put the focus on the result, so a keyboard or screen-reader user is not dropped at the top.
   useEffect(() => {
@@ -449,11 +455,16 @@ export function Saved({ data }: { data: SavePlanResponse }) {
       <div>
         <h3 className="mb-2 text-lg font-bold">{written ? 'What the file holds' : 'What saving would write'}</h3>
         <Lines text={data.planFilePreview} />
+        <p className="mt-2 max-w-[70ch] text-sm text-dim">
+          The file is canonical JSON on one line. The excerpt above is laid out for reading; the SHA-256 of the file is the digest.
+        </p>
       </div>
       <p className="max-w-[70ch] text-sm text-dim">
-        The offline system is the computer where the ceremony runs. A USB stick carries the plan, in your bundle, from this computer to it.
+        {stick
+          ? 'The offline system is the computer where the ceremony runs. A USB stick carries the plan, in your bundle, from this computer to it.'
+          : 'This plan runs on your workstation, the computer this page is open on. No stick is needed.'}
       </p>
-      <div className="grid gap-6 lg:grid-cols-2">
+      <div className={`grid gap-6 ${stick ? 'lg:grid-cols-2' : ''}`}>
         <HandOver title="Copy to the offline system" items={data.copyToStick} />
         <HandOver title="Bring with you" items={data.bring} />
       </div>
@@ -463,8 +474,8 @@ export function Saved({ data }: { data: SavePlanResponse }) {
         </p>
       ) : null}
       <div>
-        <p className="mb-1 font-bold">Then, on the ceremony machine</p>
-        <Cmd label="Run the plan on the ceremony machine">{data.runCommand}</Cmd>
+        <p className="mb-1 font-bold">Then, {onPlace(place)}</p>
+        <Cmd label={`Run the plan ${onPlace(place)}`}>{data.runCommand}</Cmd>
       </div>
       <div className="flex flex-wrap gap-3">
         <Button variant="outlined" href={href.start()}>
@@ -561,7 +572,7 @@ function Wizard({ intention, slug }: { intention: Intention; slug: string }) {
       title={answers !== null || (first.state === 'ready' && first.data.plan) ? 'Your plan' : 'A few choices'}
       lede={
         answers !== null || (first.state === 'ready' && first.data.plan) ? (
-          <p>This is a preview. Nothing has happened and nothing will until you run the plan at the ceremony machine.</p>
+          <p>This is a preview. Nothing has happened and nothing will until you run the plan in a terminal, where the plan says.</p>
         ) : (
           <p>ritueel needs a few choices from you to build the plan. You can change them and look again as often as you like.</p>
         )

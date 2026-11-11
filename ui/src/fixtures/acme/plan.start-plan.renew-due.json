@@ -154,6 +154,7 @@
     "cardSerials": [
       "00000011",
       "00000012"
-    ]
+    ],
+    "runPlace": "RUN_PLACE_OFFLINE_SYSTEM"
   }
 }

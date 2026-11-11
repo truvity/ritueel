@@ -138,9 +138,13 @@ message Counts {
   int32 trust_files = 4;
 }
 
+// A plan that was saved and that no ceremony has attempted or recorded yet.
 message PendingPlan {
+  // The plan's name: the name of its ceremony.
   string plan_id = 1;
-  // Path inside the bundle, for example "pending/2026-11-11-renew-due.plan".
+  // Path inside the bundle: ledger/<ceremony>/plan.json, for example
+  // "ledger/20261111T090000Z-due/plan.json". The ledger holds a sub-folder
+  // for a plan from the day it is saved; record_count counts records only.
   string path = 2;
   Intention intention = 3;
   string title = 4;

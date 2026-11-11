@@ -138,7 +138,7 @@ await clickText(evalJs, 'Save the plan');
 await sleep(500);
 check('after "Save the plan" the focus is on the result', (await active()).id === 'saved-result', JSON.stringify(await active()));
 const saved = await text();
-check('Save the plan says nothing was written and what would be', /Nothing was written\./.test(saved) && /This is a demo/.test(saved) && /Would be written to/.test(saved) && /ritueel plan v1/.test(saved));
+check('Save the plan says nothing was written and what would be', /Nothing was written\./.test(saved) && /This is a demo/.test(saved) && /Would be written to/.test(saved) && /"ceremony": "20261111T090000Z-due"/.test(saved));
 check('the saved view shows what to copy and bring, and the run command', /Copy to the offline system/.test(saved) && /USB stick/.test(saved) && /Bring with you/.test(saved) && /--confirm/.test(saved));
 await go('#/plan/add-card');
 check('a goal that cannot be planned is refused with its reason', /cannot be planned now/.test(await text()));
