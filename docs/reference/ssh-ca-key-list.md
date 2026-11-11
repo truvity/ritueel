@@ -5,7 +5,7 @@ sidebar:
   order: 7
 ---
 
-*Not built yet. This is version 1 of the format that [ADR 0005](/decisions/0005-trust-products-the-root-list-the-ca-bundle-the-ssh-ca-key-list-and-the-trust-sequence/#the-ssh-ca-key-list) leaves to a reference page; the code is [issue #55](https://github.com/truvity/ritueel/issues/55), in M3, and its [test vectors](/reference/ssh-ca-key-list/#test-vectors) match this page. It has the shape of the [root list](/reference/root-list/), which it follows wherever it can.*
+*Not built yet. This is version 1 of the format that [ADR 0005](/decisions/0005-trust-products-the-root-list-the-ca-bundle-the-ssh-ca-key-list-and-the-trust-sequence/#the-ssh-ca-key-list) leaves to a reference page; the code is [issue #55](https://github.com/truvity/ritueel/issues/55), in M4, and its [test vectors](/reference/ssh-ca-key-list/#test-vectors) match this page. It has the shape of the [root list](/reference/root-list/), which it follows wherever it can.*
 
 SSH hosts trust a CA by holding its public key. The **SSH CA key list** tells a host which SSH CA keys are current: the keys of the systems that hold intermediates, which keep their private halves, and the break-glass SSH CA of each root, which ritueel holds offline. It carries the [trust sequence](/decisions/0005-trust-products-the-root-list-the-ca-bundle-the-ssh-ca-key-list-and-the-trust-sequence/#one-counter-the-trust-sequence) and is signed by one active root, with the X.509 root key that signs the root list, so a host that already trusts the root list needs nothing new to trust this one.
 
@@ -101,7 +101,7 @@ These codes belong to the host and are not sent anywhere.
 
 It is the file sshd reads as `TrustedUserCAKeys`; a line that begins with `#` is a comment there. It is deterministic, and it is not signed: a host that holds the list checks the file against it (`user-keys-mismatch`) before it installs it. A host key list for `known_hosts` is not derived, because a `@cert-authority` line names the hosts it applies to, and ritueel does not know them; the entries with use `host` are in the list for the system that does.
 
-**The command.** `ritueel ssh-ca-keys verify FILE (--held FILE | --root-list FILE) [--user-keys FILE]` runs the host's checks on the list `FILE` (its `ssh-ca-keys.json`; the signature is the `.jws` beside it) against the list the host holds, with the roots of the root list it holds (`--root-list FILE`, checked as `root-list verify` checks it; the roots that signed it are in the `.jws` beside it, which check 2 reads when the sequences are equal). `--user-keys FILE` also checks the file for sshd. It signs and writes nothing, and exits 0 when the list is accepted and 3 with the code when it is refused ([Commands](/reference/cli/#commands-for-the-trust-products-after-m1)).
+**The command.** `ritueel ssh-ca-keys verify FILE (--held FILE | --root-list FILE) [--user-keys FILE]` runs the host's checks on the list `FILE` (its `ssh-ca-keys.json`; the signature is the `.jws` beside it) against the list the host holds, with the roots of the root list it holds (`--root-list FILE`, checked as `root-list verify` checks it; the roots that signed it are in the `.jws` beside it, which check 2 reads when the sequences are equal). `--user-keys FILE` also checks the file for sshd. It signs and writes nothing, and exits 0 when the list is accepted and 3 with the code when it is refused ([Commands](/reference/cli/#commands-for-the-trust-products-that-come-later)).
 
 ## Test vectors
 

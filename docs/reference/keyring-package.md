@@ -5,7 +5,7 @@ sidebar:
   order: 3
 ---
 
-*Not built yet. The package is decided in [ADR 0006](/decisions/0006-release-keys-and-the-keyring-package/#the-keyring-package); the builder is [issue #15](https://github.com/truvity/ritueel/issues/15), in M3. This page is the specification the builder follows: what is in the package, how it is built and checked, and which installers it is tested on. What it says was measured carries a date.*
+*Not built yet. The package is decided in [ADR 0006](/decisions/0006-release-keys-and-the-keyring-package/#the-keyring-package); the builder is [issue #15](https://github.com/truvity/ritueel/issues/15), in M5. This page is the specification the builder follows: what is in the package, how it is built and checked, and which installers it is tested on. What it says was measured carries a date.*
 
 The keyring package carries the public certificates of every active primary to apt, rpm and `gpg` users, so that a signature by any subkey a primary bound verifies. ritueel builds it. It does not sign or publish it: the user's repository signs it with its current subkey ([ADR 0006](/decisions/0006-release-keys-and-the-keyring-package/#the-keyring-package)).
 
@@ -73,7 +73,7 @@ ritueel does not sign the package. A pipeline signs the `.deb` and the `.rpm`, o
 | 6 | No encryption subkey, no third-party certification, and nothing that is revoked hard. With `--dir`, every subkey the directory's answers bound and the records did not revoke hard is present. | `contents-mismatch` |
 | 7 | The `.gpg` and the `.asc` hold the same packets, and the digests in `SHA256SUMS` are those of the files. | `malformed` |
 
-Without `--dir`, check 6 can only look at what is inside. It exits 0 when every check passes and 3 with the code when one fails; it writes nothing ([Commands](/reference/cli/#commands-for-the-trust-products-after-m1)). These codes belong to the checker and are not sent anywhere.
+Without `--dir`, check 6 can only look at what is inside. It exits 0 when every check passes and 3 with the code when one fails; it writes nothing ([Commands](/reference/cli/#commands-for-the-trust-products-that-come-later)). These codes belong to the checker and are not sent anywhere.
 
 ## The installer matrix, and what older rpm means
 

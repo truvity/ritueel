@@ -5,7 +5,7 @@ sidebar:
   order: 8
 ---
 
-*Not built yet. This is the page that [ADR 0005](/decisions/0005-trust-products-the-root-list-the-ca-bundle-the-ssh-ca-key-list-and-the-trust-sequence/#revoking-an-intermediate-a-crl-for-each-root) leaves for the format, cadence and rules; the code is [issue #30](https://github.com/truvity/ritueel/issues/30), in M2, and its [test vectors](/reference/crl/#test-vectors) match this page.*
+*Not built yet. This is the page that [ADR 0005](/decisions/0005-trust-products-the-root-list-the-ca-bundle-the-ssh-ca-key-list-and-the-trust-sequence/#revoking-an-intermediate-a-crl-for-each-root) leaves for the format, cadence and rules; the code is [issue #30](https://github.com/truvity/ritueel/issues/30), in M4, and its [test vectors](/reference/crl/#test-vectors) match this page.*
 
 An intermediate certificate is revoked by a certificate revocation list (CRL), the standard way an X.509 client learns that a certificate it can still build a chain to must not be used (RFC 5280, section 5). Each root signs a CRL of its own, because a CRL is per issuer, and a client that builds a path through either root may ask for either list ([Two roots in practice](/learn/two-roots/#what-to-expect-from-clients)). A root that has revoked nothing signs an empty one, so that the client always has a current list to check.
 
@@ -66,7 +66,7 @@ A CRL whose number equals the held one and whose bytes are the same passes: ritu
 
 **Is this certificate revoked.** A certificate is revoked when the current CRL of its issuing root lists its serial number. The party takes the issuer from the certificate, so it needs the CRL of each root that may have issued a certificate in the chains it accepts, and both when two roots are active. With OpenSSL this is `openssl verify -CAfile ca-bundle.pem -crl_check -CRLfile crl-A.pem -CRLfile crl-B.pem CERT`: it reports a listed certificate as `certificate revoked` and refuses an expired CRL with `CRL has expired` (OpenSSL 3.5.5, checked 2026-11-01 with the vectors' files). Servers built on OpenSSL take the same file in their own setting (for example nginx `ssl_crl` and PostgreSQL `ssl_crl_file`, from their documentation).
 
-**The command.** `ritueel crl verify FILE --bundle FILE [--held FILE] [--cert FILE]` runs these checks on `FILE`, against the CA bundle that lists the roots the party trusts (its first line names the sequence of the root list; a root not in it is not trusted) and the CRL the party holds. `--cert FILE` also says whether the certificate is listed: exit code 3 with the code `revoked`. It signs and writes nothing ([Commands](/reference/cli/#commands-for-the-trust-products-after-m1)).
+**The command.** `ritueel crl verify FILE --bundle FILE [--held FILE] [--cert FILE]` runs these checks on `FILE`, against the CA bundle that lists the roots the party trusts (its first line names the sequence of the root list; a root not in it is not trusted) and the CRL the party holds. `--cert FILE` also says whether the certificate is listed: exit code 3 with the code `revoked`. It signs and writes nothing ([Commands](/reference/cli/#commands-for-the-trust-products-that-come-later)).
 
 ## Test vectors
 

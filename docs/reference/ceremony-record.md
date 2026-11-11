@@ -5,18 +5,18 @@ sidebar:
   order: 5
 ---
 
-*Not built yet. This is version 1 of the files that the six steps of [ADR 0004](/decisions/0004-ceremonies-plan-confirm-reserve-sign-verify-record/#six-steps-every-ceremony) write. The code is [issue #9](https://github.com/truvity/ritueel/issues/9), in M1; it follows this page.*
+*Not built yet. This is version 1 of the files that the six steps of [ADR 0004](/decisions/0004-ceremonies-plan-confirm-reserve-sign-verify-record/#six-steps-every-ceremony) write. The code is [issue #9](https://github.com/truvity/ritueel/issues/9), in M2; it follows this page.*
 
-Every ceremony writes four kinds of file into [the directory](/reference/directory/#the-layout): a **plan** before anything is signed, an **attempt** just before the first signature, then a **record** and a **transcript** when it ends. They hold public material only: never a private key, a PIN, a passphrase or a revocation signature.
+Every ceremony writes four kinds of file into its own sub-folder of the ledger, `ledger/<ceremony>/`, in [the directory](/reference/directory/#the-layout): a **plan** before anything is signed, an **attempt** just before the first signature, then a **record** and a **transcript** when it ends. The ledger is the write-once part of the directory. These files hold public material only: never a private key, a PIN, a passphrase or a revocation signature.
 
 | File | Written at | Holds |
 |---|---|---|
-| `plans/<ceremony>.json` | Step 1, plan | Every byte that will be signed, fixed in advance. |
-| `attempts/<ceremony>.json` | Step 3, reserve | That signatures may exist from this plan. |
-| `records/<ceremony>.json` | Step 6, record | What was checked, signed and written. |
-| `transcripts/<ceremony>.txt` | Step 6, record | What ritueel printed. |
+| `ledger/<ceremony>/plan.json` | Step 1, plan | Every byte that will be signed, fixed in advance. |
+| `ledger/<ceremony>/attempt.json` | Step 3, reserve | That signatures may exist from this plan. |
+| `ledger/<ceremony>/record.json` | Step 6, record | What was checked, signed and written. |
+| `ledger/<ceremony>/transcript.txt` | Step 6, record | What ritueel printed. |
 
-`<ceremony>` is the ceremony's name: its time as `YYYYMMDDThhmmssZ` in UTC, a hyphen, and the command with its words joined by hyphens, for example `20261115T120000Z-intermediate-add`. The time is the plan's `ceremony_time`, or for a closing record of `records close`, which has no plan, the time it is written.
+`<ceremony>` is the name of the sub-folder, which is the ceremony's name: its time as `YYYYMMDDThhmmssZ` in UTC, a hyphen, and the command with its words joined by hyphens, for example `20261115T120000Z-intermediate-add`. The time is the plan's `ceremony_time`, or for a closing record of `records close`, which has no plan, the time it is written.
 
 ## Common rules
 
@@ -71,11 +71,11 @@ The **plan digest** is the SHA-256 of the bytes of the plan file, shown as 64 lo
 - **A script** passes `--confirm DIGEST` with all 64 digits, which it can only have by reading the plan ritueel wrote (`--plan-only --output json` prints it, see [Commands](/reference/cli/#machine-readable-output)).
 - **A wrong or missing confirmation is refused before the attempt is written** (exit code 5). Nothing is signed and nothing is reserved.
 
-`--plan FILE` runs from a plan made earlier. **A plan is bound to the state it was made against, not to a clock:** ritueel refuses it with the reason code `plan-stale` (exit code 3) when the newest trust sequence is no longer `base_sequence`, the newest record is no longer `last_record_sha256`, or any file of `inputs` has another digest. A plan that still matches runs however old it is, with its own `ceremony_time`. A confirmation never replaces a touch.
+`ritueel run PLAN --confirm DIGEST` executes a plan made earlier. **A plan is bound to the state it was made against, not to a clock:** ritueel refuses it with the reason code `plan-stale` (exit code 3) when the newest trust sequence is no longer `base_sequence`, the newest record is no longer `last_record_sha256`, or any file of `inputs` has another digest. A plan that still matches runs however old it is, with its own `ceremony_time`. A confirmation never replaces a touch.
 
 ### Declining
 
-A person who has read the plan may **decline** a request instead of confirming: by typing `decline` at the confirmation prompt, then a reason, or with `--decline REASON` and `--plan FILE` from a script. Declining is a deliberate act and is recorded: ritueel writes the answer `answers/<stem>.result.json` with `outcome` `refused` and the code `declined` ([the contract's check 10](/reference/hand-off-contract/#what-the-certifier-checks)), and a record with `outcome` `declined` that holds the reason. No attempt is written and nothing is signed; the exit code is 3. A wrong or missing confirmation is not a decline: it writes nothing and exits 5.
+A person who has read the plan may **decline** a request instead of confirming: by typing `decline` at the confirmation prompt, then a reason, or with `--decline REASON` and `run PLAN` from a script. Declining is a deliberate act and is recorded: ritueel writes the answer `answers/<stem>.result.json` with `outcome` `refused` and the code `declined` ([the contract's check 10](/reference/hand-off-contract/#what-the-certifier-checks)), and a record with `outcome` `declined` that holds the reason. No attempt is written and nothing is signed; the exit code is 3. A wrong or missing confirmation is not a decline: it writes nothing and exits 5.
 
 ## The attempt
 
@@ -91,7 +91,7 @@ ritueel creates the file only if it does not exist (exclusive create), writes it
 
 ### The birth journal
 
-A ceremony that makes keys also creates `attempts/<ceremony>.births.jsonl`, with the attempt and before the first birth. After each key exists, and before the next birth begins, ritueel appends one line and syncs the file: `{ "at", "label", "purpose", "store", "place", "public_key_sha256" }`, where `place` is as in the plan with the key's ARN for KMS. The journal holds no secret. If the run stops, `records close` prints it, so that the holder can reset the card or the operator can schedule the key for deletion; ritueel does neither ([ADR 0008](/decisions/0008-the-operator-prepares-the-holder-and-ritueel-creates-attests-and-verifies-the-root/#births-and-what-a-crash-leaves)). An attempt is resolved by a record, as before; the journal is not a second record.
+A ceremony that makes keys also creates `ledger/<ceremony>/births.jsonl`, with the attempt and before the first birth. After each key exists, and before the next birth begins, ritueel appends one line and syncs the file: `{ "at", "label", "purpose", "store", "place", "public_key_sha256" }`, where `place` is as in the plan with the key's ARN for KMS. The journal holds no secret. If the run stops, `records close` prints it, so that the holder can delete the slot of the half-born key (that deleting one slot works on firmware 5.7.4 is tried on a rehearsal card in M1; a card that holds roots is never reset: [ADR 0016](/decisions/0016-several-roots-share-one-pair-of-root-cards-and-the-directory-keeps-a-card-inventory/#rules-for-a-shared-card)) or the operator can schedule the key for deletion; ritueel does neither ([ADR 0008](/decisions/0008-the-operator-prepares-the-holder-and-ritueel-creates-attests-and-verifies-the-root/#births-and-what-a-crash-leaves)). An attempt is resolved by a record, as before; the journal is not a second record.
 
 ## The record
 
@@ -113,7 +113,7 @@ A ceremony that makes keys also creates `attempts/<ceremony>.births.jsonl`, with
 | `artifacts` | A list of `{ "path", "sha256" }`: every file the ceremony wrote other than the plan, the attempt, the record and the transcript, in path order. The trust products are among them. |
 | `trust_sequence` | As in the plan. |
 | `transcript_sha256` | The SHA-256 of the transcript. |
-| `advisory_review` | `yearly` only: `{ "at", "note" }`, the holder's answer that they reviewed the advisories for the cards, services and algorithms in use, and a short note of what they read. ritueel asks and records; it does not judge the answer ([ADR 0002](/decisions/0002-key-custody-every-key-is-born-in-its-store-two-root-cards-or-one-kms-root-and-a-replica/#validity-renewal-and-replacement)). |
+| `advisory_review` | The renewal plan only: `{ "at", "note" }`, the holder's answer that they reviewed the advisories for the cards, services and algorithms in use, and a short note of what they read. ritueel asks and records; it does not judge the answer ([ADR 0002](/decisions/0002-key-custody-every-key-is-born-in-its-store-two-root-cards-or-one-kms-root-and-a-replica/#validity-renewal-and-replacement)). |
 | `declined` | A declining record only: `{ "stem", "reason" }`, the request declined and the reason the person gave. Such a record has no `signatures`, and its `artifacts` are the refused answer. |
 | `closes` | A closing record only: `{ "ceremony", "attempt_sha256", "reason" }`, the attempt it resolves, its digest, and the reason the person gave. |
 | `revocations` | A ceremony that made revocation material: a list of `{ "label", "reason", "sha256" }`, the digest of each signature packet, and of each removal authorisation with the reason `root-removal`. The material itself is never in the record ([revocation material](/reference/revocation-material/)). |
@@ -127,10 +127,10 @@ Each member of `requests` holds what the [hand-off contract records](/reference/
 
 ### The hash chain
 
-Records form one chain. The first record of a directory has no `prev_record_sha256`; every other names the record before it. `records verify` walks the chain from the first record and fails when:
+Records form one chain. The first record of a directory has no `prev_record_sha256`; every other names the record before it, so each sub-folder of the ledger names the one before it. `records verify` walks the chain from the first record and fails when:
 
 - a record's `prev_record_sha256` is not the digest of a record, or two records name the same one;
-- a file in `records/` is not on the chain;
+- a `record.json` in a sub-folder of `ledger/` is not on the chain;
 - a record is not in canonical form, or its version is unknown;
 - a transcript's digest is not the record's `transcript_sha256`;
 - a trust product in `products/` is not an artifact of a record, which shows that the newest record was removed;
@@ -140,7 +140,7 @@ The records are not signed by a root. The digest of the newest record goes into 
 
 ## The transcript
 
-`transcripts/<ceremony>.txt` is UTF-8 text with LF line endings: every line ritueel printed during the ceremony, on either stream, in order, without terminal control sequences. ritueel writes it itself; it is never a capture of the terminal, so it holds nothing the holder typed. It ends with the last line printed before the record is written; its SHA-256 is in the record.
+`ledger/<ceremony>/transcript.txt` is UTF-8 text with LF line endings: every line ritueel printed during the ceremony, on either stream, in order, without terminal control sequences. ritueel writes it itself; it is never a capture of the terminal, so it holds nothing the holder typed. It ends with the last line printed before the record is written; its SHA-256 is in the record.
 
 ## Versions and compatibility
 

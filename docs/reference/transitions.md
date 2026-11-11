@@ -5,7 +5,7 @@ sidebar:
   order: 11
 ---
 
-*Not built yet. This is the page that [ADR 0009](/decisions/0009-root-transitions-vouch-overlap-retire-and-revoke/) leaves for the rules and profiles; the code is [issue #13](https://github.com/truvity/ritueel/issues/13), in M3. The ideas are taught in [Moving from one root to another](/learn/transitions/).*
+*Not built yet. This is the page that [ADR 0009](/decisions/0009-root-transitions-vouch-overlap-retire-and-revoke/) leaves for the rules and profiles; the code is [issue #13](https://github.com/truvity/ritueel/issues/13), in M4. The ideas are taught in [Moving from one root to another](/learn/transitions/).*
 
 A transition moves trust from one root to another without breaking a client that has not learned of the change. It never moves a key: the new root is born in its store, and an active root vouches for it ([principle 1](/principles/)).
 
@@ -64,7 +64,7 @@ Refused unless all of these hold:
 | The overlap has ended (`overlap_until` has passed). `--now REASON` overrides this, and the reason is recorded. | `overlap-open` |
 | Nothing depends on this root alone: every registered intermediate has a certificate, or a binding, from another active root over the same key, valid for at least 30 more days. | `still-needed` |
 
-`still-needed` lists what is missing. The fix is a `yearly` ceremony with a fresh request for each intermediate over its same key, which an OpenPGP subkey also needs when a new primary joined after the subkey's request ([the contract](/reference/hand-off-contract/#the-request-1): a request back-signs for every active primary). The retired root's certificate is no longer in the bundle, its CRL is no longer written, and its primary leaves the keyring package.
+`still-needed` lists what is missing. The fix is a yearly ceremony (the renewal plan of `ritueel due`, then `ritueel run`) with a fresh request for each intermediate over its same key, which an OpenPGP subkey also needs when a new primary joined after the subkey's request ([the contract](/reference/hand-off-contract/#the-request-1): a request back-signs for every active primary). The retired root's certificate is no longer in the bundle, its CRL is no longer written, and its primary leaves the keyring package.
 
 ### `root revoke`
 
@@ -74,10 +74,10 @@ It never waits for anything but the stored revocation material, because it is th
 |---|---|
 | At least one other root stays active, and it can sign. | `last-root` |
 | Every other active root can sign the next root list. | `root-absent` |
-| The file's digest equals the digest the ledger holds for this root and reason, and its signature verifies over the root's primary. | `revocation-mismatch`, `revocation-invalid` |
-| Unless the root signs the new list itself, `--removal FILE` is its removal authorisation, with the digest the ledger holds and a signature that verifies over its pin ([revocation material](/reference/revocation-material/#the-removal-authorisation)). | `revocation-mismatch`, `revocation-invalid` |
+| The file's digest equals the digest the directory holds for this root and reason, and its signature verifies over the root's primary. | `revocation-mismatch`, `revocation-invalid` |
+| Unless the root signs the new list itself, `--removal FILE` is its removal authorisation, with the digest the directory holds and a signature that verifies over its pin ([revocation material](/reference/revocation-material/#the-removal-authorisation)). | `revocation-mismatch`, `revocation-invalid` |
 
-It then writes a root list without the root, signed by the other roots and carrying its removal authorisation, a bundle, a keyring and an SSH CA key list without it, copies the revocation signature to `products/<sequence>/revocations/` (armoured, named by the fingerprint, as the [keyring page](/reference/keyring-package/#files) says), and stops writing the root's CRL. What the root alone had certified is **not** re-certified here: `status` reports each such intermediate as critical until a `yearly` ceremony does it, over the same keys ([A lost root card](/guides/lost-root-card/)).
+It then writes a root list without the root, signed by the other roots and carrying its removal authorisation, a bundle, a keyring and an SSH CA key list without it, copies the revocation signature to `products/<sequence>/revocations/` (armoured, named by the fingerprint, as the [keyring page](/reference/keyring-package/#files) says), and stops writing the root's CRL. What the root alone had certified is **not** re-certified here: `status` reports each such intermediate as critical until a yearly ceremony does it, over the same keys ([A lost root card](/guides/lost-root-card/)).
 
 ## The vouch
 
@@ -94,7 +94,7 @@ Both vouches are signed by the vouching root, at the ceremony of `root add`, and
 | Issuer | The subject of the vouching root's current certificate. |
 | Subject | The subject of the new root's certificate. |
 | Subject public key | The new root's X.509 key. |
-| Validity | `notBefore` is the ceremony time. `notAfter` is 13 calendar months later, as for an intermediate. It is made again by each `yearly` ceremony while the overlap lasts. |
+| Validity | `notBefore` is the ceremony time. `notAfter` is 13 calendar months later, as for an intermediate. It is made again by each yearly ceremony while the overlap lasts. |
 | Basic constraints | Critical. `cA` true, no path length. |
 | Key usage | Critical. `keyCertSign` and `cRLSign`. |
 | Subject key identifier | The new key's, as in the [root certificate profile](/reference/directory/#the-root-certificate). |

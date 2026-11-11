@@ -5,9 +5,9 @@ sidebar:
   order: 12
 ---
 
-*Not built yet. This is the page that [ADR 0010](/decisions/0010-readiness-is-made-at-birth-and-proved-by-a-drill/#revocation-material) leaves for the format and the commands; the code is [issue #69](https://github.com/truvity/ritueel/issues/69), in M3, with the roots of [issue #48](https://github.com/truvity/ritueel/issues/48). The ideas are taught in [Revoke](/learn/revoke/).*
+*Not built yet. This is the page that [ADR 0010](/decisions/0010-readiness-is-made-at-birth-and-proved-by-a-drill/#revocation-material) leaves for the format and the commands; the code is [issue #69](https://github.com/truvity/ritueel/issues/69), in M2, with the roots of [issue #48](https://github.com/truvity/ritueel/issues/48). The ideas are taught in [Revoke](/learn/revoke/).*
 
-A revocation made after a master key is lost cannot be made at all. So ritueel makes the revocation signatures when the key is born, for every OpenPGP master key it creates: the primary of each root, and a person's own primary when personal OpenPGP is built (M4, [issue #18](https://github.com/truvity/ritueel/issues/18)). For the same reason every root also makes its **removal authorisation** at birth, which lets it leave the root set without signing ([below](/reference/revocation-material/#the-removal-authorisation)).
+A revocation made after a master key is lost cannot be made at all. So ritueel makes the revocation signatures when the key is born, for every OpenPGP master key it creates: the primary of each root, and a person's own primary when personal OpenPGP is built (M3, [issue #18](https://github.com/truvity/ritueel/issues/18)). For the same reason every root also makes its **removal authorisation** at birth, which lets it leave the root set without signing ([below](/reference/revocation-material/#the-removal-authorisation)).
 
 ## What is made
 
@@ -35,13 +35,13 @@ There is no designated revoker: RFC 9580 deprecates the mechanism ([ADR 0002](/d
 
 ritueel refuses, with the code `revocation-dir`, a directory that:
 
-- is inside the ledger directory (`--dir`), or inside the work tree of the repository that holds it;
+- is inside the directory (`--dir`), or inside the work tree of the repository that holds it;
 - does not exist, or cannot be written;
 - already holds a file of the same name (`revocation-exists`): a revocation signature is never overwritten.
 
 It never prints a revocation signature to the terminal, the transcript, a log or the record, and it does not record the path, which means nothing on another machine. The holder stores the files apart from the cards, in at least two places ([The ledger](/learn/the-ledger/#what-else-must-be-backed-up-and-where)).
 
-## What the ledger keeps
+## What the directory keeps
 
 The **digest** of each signature: the SHA-256 of the binary signature packet, so that the armoured file, the encrypted file and the binary packet all check against it. At birth the digests are in `root.json` as `revocations`, an object from reason to digest, and in the record of the ceremony as a list of `{ "label", "reason", "sha256" }`. A signature made later by `revocation make` adds its entry to the record of that ceremony, and `status` and the drill read the full set from `root.json` and the records together.
 
@@ -58,7 +58,7 @@ It is revocation material, and is handled like a revocation signature:
 | `piv`, `aws-kms`, and the `software` backends `onepassword` and `keyring` | `--revocation-dir DIR`, with the revocation signatures. | `<x509_spki_sha256>.removal.jws`, the compact JWS as text. Mode `0600`. |
 | `software`, backend `file` | The key directory. | `<label>.removal.jws.age`, encrypted like the key files; a test root writes `<label>.removal.jws`. |
 
-The same refusals apply (`revocation-dir`, `revocation-exists`), it is never printed, and the holder stores it apart from the cards with the revocation signatures. The ledger keeps its digest, the SHA-256 of the JWS text, in `root.json` as `removal_sha256`, and the record of the ceremony lists it in `revocations` as `{ "label", "reason": "root-removal", "sha256" }`. Its signature is one of the plan's, of kind `root-removal`, and on a card it takes a touch.
+The same refusals apply (`revocation-dir`, `revocation-exists`), it is never printed, and the holder stores it apart from the cards with the revocation signatures. The directory keeps its digest, the SHA-256 of the JWS text, in `root.json` as `removal_sha256`, and the record of the ceremony lists it in `revocations` as `{ "label", "reason": "root-removal", "sha256" }`. Its signature is one of the plan's, of kind `root-removal`, and on a card it takes a touch.
 
 `root revoke` attaches it to the list that removes the root, when the root does not sign that list itself ([root transitions](/reference/transitions/#root-revoke)). Anyone who holds it and the other roots can remove that root from the set, so it is kept with the same care as the revocation signatures.
 
@@ -67,9 +67,9 @@ The same refusals apply (`revocation-dir`, `revocation-exists`), it is never pri
 | Command | Does | Needs a person |
 |---|---|---|
 | `ritueel revocation make --root LABEL (--reason REASON \| --removal) --revocation-dir DIR` | A ceremony, with the plan, the confirmation and the record: signs one more revocation signature, or the removal authorisation again, while the root's key and its PIN still exist, and writes it as above. | Yes |
-| `ritueel revocation check FILE [--root LABEL]` | Reads a stored file, armoured or binary, and prints only the verdict: well formed, type `0x20` and the reason, or a removal authorisation and its pin; the issuer; and whether its digest is the ledger's. It signs and writes nothing. | No |
+| `ritueel revocation check FILE [--root LABEL]` | Reads a stored file, armoured or binary, and prints only the verdict: well formed, type `0x20` and the reason, or a removal authorisation and its pin; the issuer; and whether its digest is the directory's. It signs and writes nothing. | No |
 
-`revocation check` exits 0 when the file is a revocation signature of a primary, or a removal authorisation of a root, in the directory with the digest the ledger holds, and 3 with the code otherwise: `revocation-invalid` (not a revocation signature or removal authorisation, or one that does not verify), `revocation-mismatch` (a different digest), `reason-unknown`. A missing file is a refusal of the caller's, not a pass. The restore check runs it on every stored file ([drills](/reference/drill/#the-restore-check)).
+`revocation check` exits 0 when the file is a revocation signature of a primary, or a removal authorisation of a root, in the directory with the digest the directory holds, and 3 with the code otherwise: `revocation-invalid` (not a revocation signature or removal authorisation, or one that does not verify), `revocation-mismatch` (a different digest), `reason-unknown`. A missing file is a refusal of the caller's, not a pass. The restore check runs it on every stored file ([drills](/reference/drill/#the-restore-check)).
 
 ## Using one
 
