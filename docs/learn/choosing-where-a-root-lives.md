@@ -55,7 +55,7 @@ The file is locked to an unlock key and a recovery key. A secret from the passke
 
 Three ways are refused, each with a reason in ADR 0015: a **synced passkey** (it puts a root-level file behind a cloud account), **unlocking in ritueel's browser page, which runs on your own machine** (the browser would hand the secret to the page, and the offline system has no browser), and **a day-to-day card as the unlocker** (it is carried and used every day).
 
-**Decided, not yet proven.** Whether this works with PIN and touch over USB is tried first on a test card (milestone M1 in the [roadmap](/roadmap/)). If it fails, a key in a slot of the card's PIV application (slot 9d) opens the file instead. Both outcomes are decided, so only the result is waited for; [the YubiKey page](/learn/how-a-yubikey-holds-keys/#a-passkey-that-opens-a-key-file) has the full account.
+**Decided, not yet proven.** Whether this works with PIN and touch over USB is tried first on a rehearsal card (milestone M1 in the [roadmap](/roadmap/)). If it fails, a key in a slot of the card's PIV application (slot 9d) opens the file instead. Both outcomes are decided, so only the result is waited for; [the YubiKey page](/learn/how-a-yubikey-holds-keys/#a-passkey-that-opens-a-key-file) has the full account.
 
 ## The three stores side by side
 
@@ -64,7 +64,7 @@ The rows that decide are below. Where a key is born, whether it can be copied, r
 | | Software key in a file | Two root cards | Cloud key |
 |---|---|---|---|
 | **May hold** | Test roots, drills, development, a person's own primary. Never a root that others rely on. | The roots of one holder, up to five on a pair of cards, each in its own row. | One dedicated root account with one root. |
-| **A ceremony runs on** | Any machine that can open the file; the key is in memory while it signs. | A machine booted from a read-only system made for the purpose (the offline system). | Your workstation, through the ceremony role. |
+| **A ceremony runs on** | A real root: the offline system, like a card root. A test root: any machine that can open the file, or a rehearsal card; the key is in memory while it signs. | A machine booted from a read-only system made for the purpose (the offline system). | Your workstation, through the ceremony role. |
 | **When the key ends** | Replaced at most every three years, because it can be copied. | On an event: an advisory, a lost card, a compromise, a change of store. Not on a date. | The same events. |
 | **Built in** | M2 (the file). | M6, after the first signed release. | M2 (the store), and adoption is drilled in M4. |
 
