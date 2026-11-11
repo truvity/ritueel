@@ -106,8 +106,8 @@ describe('a command is copied only as the page shows it', () => {
 
 describe('other data the page puts into an address, an id or a command', () => {
   it('a guide path is a plain site path or no link', () => {
-    expect(learnPathOk('/learn/expiry/')).toBe(true);
-    expect(learnPathOk('/learn/stage-two/#why')).toBe(true);
+    expect(learnPathOk('/learn/revoke/')).toBe(true);
+    expect(learnPathOk('/guides/personal-openpgp/#if-you-already-have-a-primary')).toBe(true);
     for (const bad of ['//evil.example.com/', 'https://evil.example.com/', '/learn/../x', '/learn/x y', '/learn/' + String.fromCodePoint(0x202e), '', undefined]) {
       expect(learnPathOk(bad as string | undefined), String(bad)).toBe(false);
     }
