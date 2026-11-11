@@ -119,7 +119,7 @@ The host verifies the bytes it received and does not re-serialise them. When eve
 
 These codes belong to the host and are not sent anywhere. The vectors fix the outcome and the code, not the wording of a message.
 
-**The command.** `ritueel root-list verify FILE` runs these checks on the list `FILE` (its `root-list.json`; the signature is the `.jws` file beside it), against the list the host holds (`--held FILE`) or its initial pins (`--pin SHA256`, once for each). `--ca-bundle FILE` also checks a CA bundle against the list: its first line names the list's `sequence`, and its certificates are the keys of the list's `roots`, in that order, or it is refused with `bundle-mismatch`. It signs and writes nothing ([Commands](/reference/cli/#the-first-versions-commands)).
+**The command.** `ritueel root-list verify FILE` runs these checks on the list `FILE` (its `root-list.json`; the signature is the `.jws` file beside it), against the list the host holds (`--held FILE`) or its initial pins (`--pin SHA256`, once for each). `--ca-bundle FILE` also checks a CA bundle against the list: its first line names the list's `sequence`, and its certificates are the keys of the list's `roots`, in that order, or it is refused with `ca-bundle-mismatch`. It signs and writes nothing ([Commands](/reference/cli/#the-first-versions-commands)).
 
 ## The CA bundle
 
@@ -129,7 +129,7 @@ These codes belong to the host and are not sent anywhere. The vectors fix the ou
 2. Then the current certificate of each root on that list, in the order of `roots`, each PEM-armoured with the label `CERTIFICATE` (RFC 7468), Base64 in lines of 64 characters.
 3. Nothing else.
 
-It is deterministic: the same bundle gives the same bytes. A PEM parser skips the text outside the armour (RFC 7468, section 2), so OpenSSL reads the file as a list of trust anchors (checked with OpenSSL 3.5.5 on 2026-11-01: `openssl verify -CAfile` with the vectors' CA bundles accepts the hand-off answers of the roots in the CA bundle and refuses the others). The root certificates follow the [root profile](/reference/bundle/#the-root-certificate).
+It is deterministic: the same roots in the same order give the same bytes. A PEM parser skips the text outside the armour (RFC 7468, section 2), so OpenSSL reads the file as a list of trust anchors (checked with OpenSSL 3.5.5 on 2026-11-01: `openssl verify -CAfile` with the vectors' CA bundles accepts the hand-off answers of the roots in the CA bundle and refuses the others). The root certificates follow the [root profile](/reference/bundle/#the-root-certificate).
 
 The CA bundle is not signed: a TLS client trusts the file it was given. A system that also holds the signed root list uses a certificate from the CA bundle as an anchor only when its key is on the list it holds, and its sequence is the list's.
 

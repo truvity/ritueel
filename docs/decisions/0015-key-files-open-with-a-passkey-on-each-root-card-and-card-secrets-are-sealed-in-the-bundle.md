@@ -29,13 +29,13 @@ The root cards are always present at a ceremony, so they can do the unlocking. T
 
 ### Card secrets
 
-- **When ritueel adopts a card,** it replaces the management key by a random one that needs a touch to use, and seals it in the bundle, one file per card, to the same recipients as the key file. A card that two bundles use is sealed in each of them, to that bundle's own recipients; the unlock key and the recovery key are each bundle's own.
+- **When ritueel adopts a card,** it replaces the management key by a random one that needs a touch to use, and seals it in the bundle, one file per card, to the same recipients as the key file. A card that two bundles use is sealed in each of them, to that bundle's own recipients.
 - **The PUK is random and sealed the same way.** So is the Admin PIN of the OpenPGP application on a day-to-day card.
 - **The holder remembers only the PINs the holder types.** This replaces "the management key is PIN-protected" of [0008](/decisions/0008-the-operator-prepares-the-holder-and-ritueel-creates-attests-and-verifies-the-root/#root-cards) for cards that ritueel adopts.
 
 ### Decided, not yet proven
 
-- **To be proven on a rehearsal card before the store is built (milestone M1):** a passkey secret with PIN and touch over USB, from a static binary, and that the offline system of [0016](/decisions/0016-several-bundles-share-one-pair-of-root-cards-and-the-bundle-keeps-a-card-inventory/#where-a-root-card-is-used) reaches the card's passkey side, and that one root card holds a passkey credential for each bundle that uses it (the credential is the non-resident kind, so the card stores nothing per bundle). Until then this part is decided, not yet proven.
+- **To be proven on a rehearsal card before the store is built (milestone M1):** a passkey secret with PIN and touch over USB, from a static binary, and that the offline system of [0016](/decisions/0016-several-bundles-share-one-pair-of-root-cards-and-the-bundle-keeps-a-card-inventory/#where-a-root-card-is-used) reaches the card's passkey side. Until then this part is decided, not yet proven.
 - **If the proof passes,** the passkey is the default as above. **If it fails,** the PIV slot 9d key-agreement key is the way for a holder with root cards, and nothing else in this record changes. Both outcomes are decided here, so the proof is a follow-up and not an open part.
 - **The format of the wrapped key** is fixed by the proof and then written on [the software store](/reference/software-store/) and [the bundle](/reference/bundle/). This record fixes no file layout.
 
@@ -46,7 +46,7 @@ The root cards are always present at a ceremony, so they can do the unlocking. T
 - ritueel reaches the card's passkey side as well as its PIV side. How, and that it works in a static binary, is what the proof shows.
 - A lost recovery key together with both root cards means the key files cannot be opened. The guides say where the recovery file and its passphrase go.
 - The holder types fewer secrets: PINs only. The PUK and the management key stop living in a password manager.
-- The fallback spends slot 9d and uses the PIV PIN that also guards the root keys. The slot 9d key is one for each card, so bundles that share a pair would then share one unlock key.
+- The fallback spends slot 9d and uses the PIV PIN that also guards the root keys.
 - Test roots and scripts are unchanged ([0004](/decisions/0004-ceremonies-plan-confirm-reserve-sign-verify-record/#software-roots-and-tests)).
 
 ## Roads not taken
