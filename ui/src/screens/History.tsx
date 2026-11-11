@@ -36,7 +36,7 @@ function Seal({ l }: { l: LedgerStatus | undefined }) {
           {l?.headRecordSha256 ? (
             <div className="mt-3">
               <p className="text-sm text-dim">Digest of the newest record (it stands for the whole chain):</p>
-              <Fp value={l.headRecordSha256} />
+              <Fp kind="Digest" value={l.headRecordSha256} />
             </div>
           ) : null}
           {l?.checkedAt ? <p className="mt-2 text-sm text-dim">Checked {ymd(l.checkedAt)}.</p> : null}
@@ -252,7 +252,7 @@ function Detail({ id }: { id: string }) {
                       <p className="font-mono text-sm text-dim">
                         <T cap={80}>{c.id}</T>
                       </p>
-                      <Fp value={c.recordSha256} />
+                      <Fp kind="Digest" value={c.recordSha256} />
                     </dd>
                   </div>
                   <div>
@@ -267,7 +267,7 @@ function Detail({ id }: { id: string }) {
                       ) : (
                         <p className="text-dim">None: this is the first record.</p>
                       )}
-                      {c.previousRecordSha256 ? <Fp value={c.previousRecordSha256} /> : null}
+                      {c.previousRecordSha256 ? <Fp kind="Digest" value={c.previousRecordSha256} /> : null}
                     </dd>
                   </div>
                   <div>
@@ -286,7 +286,7 @@ function Detail({ id }: { id: string }) {
                     <div>
                       <dt className="text-sm font-semibold">Digest of the plan that was run</dt>
                       <dd>
-                        <Fp value={c.planDigest} />
+                        <Fp kind="Digest" value={c.planDigest} />
                       </dd>
                     </div>
                   ) : null}

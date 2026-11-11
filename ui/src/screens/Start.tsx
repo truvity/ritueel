@@ -208,7 +208,7 @@ function Seal({ s }: { s: GetSummaryResponse }) {
         <p className="mt-2 text-xs text-dim">
           Newest record, digest of its contents:
           <br />
-          <Fp value={l.headRecordSha256} className="text-xs" />
+          <Fp kind="Digest" value={l.headRecordSha256} className="text-xs" />
         </p>
       ) : null}
     </a>
