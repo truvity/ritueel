@@ -1,6 +1,6 @@
 ---
 title: Keyring package
-description: The keyring file that ritueel makes, and the proposed name, version, files, build and verify steps of the keyring package that the release pipeline builds from it as .deb, .rpm and plain files, and what older rpm support means.
+description: The keyring file that ritueel makes, and the proposed name, files, build and verify steps of the keyring package that the release pipeline builds from it.
 sidebar:
   order: 3
 ---
