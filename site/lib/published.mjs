@@ -104,7 +104,13 @@ export function isPublished(file, root = repoRoot()) {
  * as it is written.
  */
 export function fileOfPath(path, docs = join(repoRoot(), 'docs')) {
-  const rel = path.replace(/^\/+/, '').replace(/\/+$/, '');
+  let start = 0;
+  while (start < path.length && path[start] === '/') start++;
+  let end = path.length;
+  while (end > start && path[end - 1] === '/') end--;
+  const rel = path.slice(start, end);
+  // A path that climbs out of docs/ (or stands still) is not a page of docs/.
+  if (rel.split('/').some((part) => part === '..' || part === '.')) return undefined;
   if (/\.mdx?$/.test(rel)) return existsSync(join(docs, rel)) ? rel : undefined;
   const candidates = rel === '' ? ['index.mdx', 'index.md'] : [`${rel}.md`, `${rel}.mdx`, `${rel}/index.md`, `${rel}/index.mdx`];
   return candidates.find((c) => existsSync(join(docs, c)));

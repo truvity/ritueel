@@ -64,7 +64,7 @@ for (const page of pages(dist)) {
     seen.add(key);
     const rest = url.slice(url.indexOf('/main/') + '/main/'.length);
     const hash = rest.indexOf('#');
-    const path = decode(hash === -1 ? rest : rest.slice(0, hash)).replace(/\/+$/, '');
+    const path = trimSlashes(decode(hash === -1 ? rest : rest.slice(0, hash)));
     const fragment = hash === -1 ? '' : decode(rest.slice(hash + 1));
     const full = join(root, path);
     if (path === '' || path.split('/').includes('..') || !existsSync(full)) {
@@ -94,3 +94,10 @@ if (problems.length) {
   process.exit(1);
 }
 console.log(`check-github-links: ok (${all} links, ${onDecisions} on decision pages)`);
+
+/** The text without the slashes at its end. */
+function trimSlashes(text) {
+  let end = text.length;
+  while (end > 0 && text[end - 1] === '/') end--;
+  return text.slice(0, end);
+}

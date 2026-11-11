@@ -28,8 +28,12 @@ export function rewriteHref(href, sourceFile, ctx = defaults()) {
   // 3. A site path, or a relative path to a Markdown file; any other relative path is not ours.
   let sitePath;
   if (path.startsWith('/')) sitePath = path;
-  else if (/\.mdx?$/.test(path)) sitePath = posix.join('/', posix.dirname(sourceFile), path);
-  else return href;
+  else if (/\.mdx?$/.test(path)) {
+    // Without clamping at the root: a link that climbs out of docs/ is not a link to a docs file.
+    const joined = posix.normalize(`${posix.dirname(sourceFile)}/${path}`);
+    if (joined === '..' || joined.startsWith('../')) return href;
+    sitePath = `/${joined}`;
+  } else return href;
   // 4. The docs file behind it. 5. None: a page made by src/pages, an asset, a stale address.
   const file = fileOfPath(sitePath, ctx.docsRoot);
   if (!file) return href;

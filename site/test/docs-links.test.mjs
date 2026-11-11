@@ -72,6 +72,8 @@ const cases = [
   ['/decisions/0000-template/', 'learn/index.md', GH + 'decisions/0000-template.md'],
   ['image.png', 'learn/index.md', 'image.png'],
   ['../../README.md', 'learn/index.md', '../../README.md'],
+  ['/../../README.md', 'learn/index.md', '/../../README.md'],
+  ['../../glossary.md', 'learn/x.md', '../../glossary.md'],
 ];
 
 for (const [href, source, want] of cases) {

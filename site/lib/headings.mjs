@@ -21,9 +21,9 @@ export function githubHeadingIds(markdown) {
       return;
     }
     if (fence) return;
-    const m = /^ {0,3}(#{1,6})[ \t]+(.*?)(?:[ \t]+#+)?[ \t]*$/.exec(line);
+    const m = /^ {0,3}(#{1,6})[ \t]+(\S.*)$/.exec(line.trimEnd());
     if (!m) return;
-    let text = m[2]
+    let text = dropClosingHashes(m[2])
       .replace(/!?\[([^\]]*)\]\([^)]*\)/g, '$1')
       .replace(/`/g, '')
       .replace(/\*/g, '')
@@ -42,4 +42,13 @@ export function githubHeadingIds(markdown) {
     ids.add(n === 0 ? base : `${base}-${n}`);
   });
   return ids;
+}
+
+/** "Title ##" -> "Title": the closing hashes of a heading, and the spaces before them. */
+function dropClosingHashes(text) {
+  let end = text.length;
+  while (end > 0 && text[end - 1] === '#') end--;
+  if (end === text.length || end === 0 || (text[end - 1] !== ' ' && text[end - 1] !== '\t')) return text;
+  while (end > 0 && (text[end - 1] === ' ' || text[end - 1] === '\t')) end--;
+  return text.slice(0, end);
 }
