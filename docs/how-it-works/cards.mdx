@@ -11,13 +11,19 @@ ritueel is in its design phase: the program does not exist, and the pictures sho
 
 ## Root card
 
-A root card holds roots and nothing else, and goes only into the offline system ([record 0003](../decisions/0003-root-cards.md)). The partner root of the same bundle sits in the same row of the second card; the bundle names here are made up.
+A root card holds roots and nothing else ([record 0003](../decisions/0003-root-cards.md)). You keep two root cards, A and B. Each makes its own keys; they are never copies, so if one is lost the other still holds a root. The partner root of the same bundle sits in the same row of the second card; the bundle names here are made up.
+
+A root card may be used on your own workstation, under four conditions: a touch for every signature, the number of signatures stated in the plan, no retry of a failed touch, and the result checked against the plan on a second device. It may also be used in the offline system, which stays available ([record 0005](../decisions/0005-a-ceremony-and-where-it-runs.md)).
 
 <Figure name="root-card">
-  Six rows of four PIV slots. Row 1 is the card’s own jobs; each other row holds one root of one bundle, the same key kind in each column.
+  Six rows of four PIV slots. Row 1 is the card’s own jobs; each other row holds one root of one bundle, the same key kind in each column. Each bundle on the pair keeps its own card list and its own sealed copy of the card’s secrets.
 </Figure>
 
-A key file opens with a passkey on each root card, with a recovery key kept apart. This is decided and not yet proven on hardware; if the proof fails, the spare key in 9d is the way ([record 0002](../decisions/0002-where-a-key-lives.md)).
+One pair of cards serves up to four bundles. The card has one PIN. Each bundle has its own card list, its own sealed copy of the card’s secrets, its own unlock key and its own recovery key. A second bundle gets its copy by a request to the first bundle, which wraps the secrets for it. A row that belongs to another bundle is declared in the card’s file ([record 0003](../decisions/0003-root-cards.md)).
+
+<Figure name="two-bundles-one-pair" />
+
+A key file opens with a passkey on each root card: the passkey unlocks the key, and a recovery key is kept apart in case the cards are lost. This is decided and not yet proven on hardware; if the proof fails, the spare key in 9d is the way ([record 0002](../decisions/0002-where-a-key-lives.md)).
 
 ## Day-to-day card
 

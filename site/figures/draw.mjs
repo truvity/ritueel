@@ -279,7 +279,7 @@ export function cell(x, y, w, h, id, state, kind = '') {
         if (x1 > x2 + 1) s += line(x + x1, y + y1 + 2, x + x2 + 2, y + y2, 'ln ln-thin ln-dim');
       }
     }
-    s += (state === 'free' ? halo(x + 7, y + 15, id, 't t-s t-mono t-dim t-id') : text(x + 7, y + 15, id, 't t-s t-mono t-dim t-id'));
+    s += (state === 'free' ? rect(x + 3, y + 3, 24, 17, 'chip', 3) + text(x + 7, y + 15, id, 't t-s t-mono t-dim t-id') : text(x + 7, y + 15, id, 't t-s t-mono t-dim t-id'));
   } else {
     const a = state === 'acme';
     s += rect(x, y, w, h, a ? 'acc-f cell-held' : 'paper cell-held', 5);

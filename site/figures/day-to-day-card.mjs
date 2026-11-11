@@ -1,7 +1,7 @@
 // The day-to-day card: one card, three applications. The OpenPGP application holds one set of a
 // person's subkeys (signing, decryption, authentication); the FIDO2 application holds passkeys for
 // signing in; the PIV application stays empty. The accent marks the one set of OpenPGP keys. What is
-// born on the card and what is made in software is record 0017, "Day-to-day cards".
+// born on the card and what is made in software is record 0008 (a person's own key) and record 0003 (the kinds of card).
 import { acc, key, line, rect, text } from './draw.mjs';
 import { svgBox } from './svg.mjs';
 import { DAY_CARD } from './slots.mjs';

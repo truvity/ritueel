@@ -1,5 +1,5 @@
-// Every ceremony is the same six steps, and only step 4 uses the root. Rests on ADR 0004, "Six steps,
-// every ceremony". The accent is the plan, whose digest is the one thing the person types.
+// Every ceremony is the same six steps, and only step 4 uses the root. Rests on record 0005 (a ceremony has six
+// steps, in this order). The accent is the plan, whose digest is the one thing the person types.
 import { acc, arrow, bubble, card, check, circle, line, person, poly, rect, sheet, text } from './draw.mjs';
 import { B, DIGEST, FP, bundle, note, plan, pnl, terminal, under } from './parts.mjs';
 

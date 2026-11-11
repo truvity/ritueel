@@ -1,7 +1,8 @@
 // How ritueel helps you bind the subkeys of your day-to-day card to your own OpenPGP primary: six panels.
-// Rests on the personal reference ("The ceremony of personal subkey add"), ADR 0017 (day-to-day cards),
-// ADR 0015 (the key file opens with a passkey on each root card: decided, not yet proven) and ADR 0016
-// (a software root runs on the offline system). The accent is the plan, as in the other strips.
+// Rests on the personal reference ("The ceremony of personal subkey add"), record 0008 (a person's own
+// key: the primary is a software key in a key file, used only in the offline system because it can be
+// copied, record 0005 rule 17) and record 0002 (the key file opens with a passkey on each root card:
+// decided, not yet proven). The accent is the plan, as in the other strips.
 import { acc, arrow, bubble, card, key, line, person, rect, sheet, text } from './draw.mjs';
 import { B, DIGEST, FP, bundle, carryBody, lock, plan, pnl, terminal, under } from './parts.mjs';
 
@@ -82,8 +83,8 @@ function p6() {
   b += arrow(60, 114, 104, 114, 'writes', { lx: 82, ly: 106 });
   b += arrow(60, 146, 104, 146, 'rebuilds', { lx: 82, ly: 138 });
   b += person(232, B, [[-1, 204, 124]]);
-  b += card(192, 92, 26, 20) + text(205, 66, 'git', 't t-s', 'm') + text(205, 80, 'ssh', 't t-s', 'm');
-  b += text(232, 52, 'you', 't t-s', 'm');
+  b += card(196, 32, 26, 20) + text(246, 46, 'git, ssh', 't t-s', 'm');
+  b += text(232, 76, 'you', 't t-s', 'm');
   return pnl(6, 'Offline system', b, 'A terminal writes a record into the history part of the personal bundle and rebuilds the certificate sheet. You hold the unplugged card, marked for git and ssh.');
 }
 
