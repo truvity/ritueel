@@ -288,6 +288,14 @@ await clickText(evalJs, 'Show me the plan');
 await sleep(500);
 const eplan = await text();
 check('Empty: the plan says it is an example of an empty bundle, and holds nothing of the loaded personal bundle', /this bundle is empty/.test(eplan) && /The key named here is made up/.test(eplan) && !/personal-subkey-revoke|C41E/i.test(eplan), eplan.slice(0, 200));
+// the wizard stays on adopt-key in another bundle (the address is kept), but its answers do not: it asks again
+await clickText(evalJs, 'acme');
+await sleep(500);
+check('Empty: switching the bundle on the plan keeps the goal and asks the choices again', (await evalJs('location.hash')) === '#/plan/adopt-key' && /A few choices/.test(await text()) && /~\/ritueel\/acme/.test(await text()));
+await clickText(evalJs, 'personal');
+await sleep(500);
+await clickText(evalJs, 'Show me the plan');
+await sleep(500);
 await clickText(evalJs, 'Save the plan');
 await sleep(500);
 const esaved = await text();

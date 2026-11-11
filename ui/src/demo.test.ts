@@ -590,18 +590,25 @@ describe('the dates of the acme bundle follow the pages', () => {
 });
 
 describe('switching the example bundle keeps the screen', () => {
-  // The tests run in Node, which has no window: this is the page's address bar, with a log of every write.
+  // The tests run in Node, which has no window: this is the page's address bar. A fallback must replace the
+  // history entry (`replace`, logged in `writes`); assigning the hash would push an entry (logged in `pushes`).
   let bar: string;
   let writes: string[];
+  let pushes: string[];
   beforeEach(() => {
     bar = '';
     writes = [];
+    pushes = [];
     vi.stubGlobal('window', {
       location: {
         get hash() {
           return bar;
         },
         set hash(v: string) {
+          pushes.push(v);
+          bar = v.startsWith('#') ? v : `#${v}`;
+        },
+        replace(v: string) {
           writes.push(v);
           bar = v.startsWith('#') ? v : `#${v}`;
         },
@@ -617,7 +624,9 @@ describe('switching the example bundle keeps the screen', () => {
     setBundle(from);
     bar = hash;
     writes = [];
+    pushes = [];
     setBundle(to);
+    expect(pushes, `${from} to ${to} on ${hash}: no history entry is pushed`).toEqual([]);
     return { hash: bar, writes: [...writes] };
   }
 
@@ -725,6 +734,41 @@ describe('switching the example bundle keeps the screen', () => {
         }
       }
     }
+  });
+  it('in the Failed and Waiting page states the detail views of the loaded bundle stay, the others fall back', () => {
+    for (const state of ['failed', 'waiting'] as const) {
+      setViewState(state);
+      expect(switchFrom('personal', '#/key/A', 'acme'), state).toEqual({ hash: '#/key/A', writes: [] });
+      expect(switchFrom('acme', '#/key/B', 'globex'), state).toEqual({ hash: '#/roots', writes: ['#/roots'] });
+      expect(switchFrom('personal', '#/cards/00000001', 'acme'), state).toEqual({ hash: '#/cards', writes: ['#/cards'] });
+      expect(switchFrom('personal', '#/plan/retire-subkeys', 'acme'), state).toEqual({ hash: '#/plan', writes: ['#/plan'] });
+      expect(switchFrom('globex', '#/plan/adopt-key', 'acme'), state).toEqual({ hash: '#/plan', writes: ['#/plan'] });
+      expect(switchFrom('personal', '#/history/20261103T142000Z-init', 'acme'), state).toEqual({ hash: '#/history', writes: ['#/history'] });
+      expect(switchFrom('personal', '#/trust', 'acme'), state).toEqual({ hash: '#/trust', writes: [] });
+    }
+  });
+  it('before the demo transport has said what a bundle holds, the address is left alone', async () => {
+    vi.resetModules();
+    const fresh = await import('./api/demoState');
+    bar = '#/key/A';
+    fresh.setBundle('acme');
+    expect({ hash: bar, writes, pushes }).toEqual({ hash: '#/key/A', writes: [], pushes: [] });
+    // once it is provided, the same switch falls back where it must
+    fresh.provideBundleContents(() => ({ roots: [], cards: [], records: [], goals: [] }));
+    fresh.setBundle('globex');
+    expect({ hash: bar, writes }).toEqual({ hash: '#/roots', writes: ['#/roots'] });
+  });
+  it('a fixture that cannot be read keeps the address and still tells the listeners', async () => {
+    vi.resetModules();
+    const fresh = await import('./api/demoState');
+    fresh.provideBundleContents(() => {
+      throw new Error('missing fixture');
+    });
+    let told = 0;
+    fresh.subscribeBundle(() => told++);
+    bar = '#/key/A';
+    fresh.setBundle('acme');
+    expect({ hash: bar, writes, told, bundle: fresh.getBundle() }).toEqual({ hash: '#/key/A', writes: [], told: 1, bundle: 'acme' });
   });
   it('in the Empty page state nothing is held, so every detail view falls back and only adopting a key stays', () => {
     setViewState('empty');
