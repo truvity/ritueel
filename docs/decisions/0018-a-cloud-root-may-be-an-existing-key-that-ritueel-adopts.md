@@ -29,7 +29,7 @@ The proposal is the design round of 2026-11-10 and 11, tracked in the issue unde
 ## Consequences
 
 - The operator's infrastructure code and ritueel's checks must agree on one policy, so the policy lives in one package that both use (the later Go library of the roadmap).
-- The OpenPGP creation time of an adopted key is kept in the directory and in the certificate. A key tag is read when it is present and is not required, so check 7 of the KMS reference is reworded.
+- The OpenPGP creation time of an adopted key is kept in the bundle and in the certificate. A key tag is read when it is present and is not required, so check 7 of the KMS reference is reworded.
 - A lost Region is answered by the break-glass principal, which is a manual, logged act.
 - "Digests only" is already in the Sign statement of the KMS reference; what is new is the refusal of replicas and of moving the primary Region.
 - This is decided, not yet tried against a real account. The store is built with the cloud root.
