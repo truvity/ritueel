@@ -21,16 +21,26 @@ Decided in [0001](decisions/0001-what-ritueel-is.md) and [0010](decisions/0010-t
 - A teaching product first: each procedure has a Learn page, a guide and a drill.
 - Kept apart from systems that issue certificates every day. They exchange standard formats through the [hand-off contract](/reference/hand-off-contract/).
 - Out of scope: online signing, leaf certificates, secret storage and staff keys.
+- Changes only your bundle. The one thing it may send out is your public OpenPGP key, to the keyservers you list. For everything else it prints what to do.
 
-Decided in [0001](decisions/0001-what-ritueel-is.md) and [0010](decisions/0010-the-engine-the-process-and-the-page.md).
+Decided in [0001](decisions/0001-what-ritueel-is.md) and [0011](decisions/0011-publishing-and-what-to-do-after-a-ceremony.md).
 
 ## A ceremony
 
 - Six steps for every store: plan, confirm, reserve, sign, verify, record.
-- The plan fixes every byte to sign except the new keys. The person confirms by typing the first eight characters of its digest.
+- The plan fixes every byte to sign except the new keys. The person confirms by typing the first eight characters of its digest. In the page the person edits and a plan is written; in the terminal one short command runs it, and the page shows that command without the digest.
 - Plans and requests are detachable: they travel by any channel, run elsewhere, and the answer returns.
 
-Decided in [0005](decisions/0005-a-ceremony-and-where-it-runs.md).
+Decided in [0005](decisions/0005-a-ceremony-and-where-it-runs.md) and [0010](decisions/0010-the-engine-the-process-and-the-page.md).
+
+## After a ceremony
+
+- After a ceremony ritueel prints what to do. For an OpenPGP key the optional last step is to publish it.
+- Publishing is a separate command, run after a ceremony and never inside one, in a process that never opens a card and is left out of the offline build. The page shows the step with its command; the terminal sends after a typed confirmation. The page has no button.
+- A web site, a JSON Web Key Set and the key file of your software get content and links only.
+- cert-manager in a company's clusters gets its certificates from the system that issues every day. Consumers that need a change of the hand-off contract come later.
+
+Decided in [0011](decisions/0011-publishing-and-what-to-do-after-a-ceremony.md).
 
 ## The bundle and its parts
 
@@ -61,13 +71,13 @@ Decided in [0003](decisions/0003-root-cards.md).
 ## Opening a key file
 
 - An age file with an unlock key and a recovery key for each bundle.
-- The default unlock is a passkey on each root card. If that cannot be used, a key in slot 9d is the fallback. A holder without cards may use a passphrase.
+- The default unlock is a passkey on each card named as a way to open the file (the root cards); a file may name more than two. If that cannot be used, a key in slot 9d is the fallback. A holder without cards may use a passphrase. The recovery passphrase is the break-glass and may live in a password manager. There is no password-manager passkey for now.
 
 Decided in [0002](decisions/0002-where-a-key-lives.md).
 
 ## Where a root is used
 
-- A copyable key is used only in the offline system.
+- A copyable key is used only in the offline system. A cloud root always runs on the workstation, because the offline system has no network; the offline system is an option for a root on cards.
 - A key that cannot be copied may be used on the workstation, with four conditions: a touch for every signature; the count stated in the plan; no retry of a failed touch; and a check against the plan on a second device. The touch is for a root on cards only: a cloud key has no touch, and for a cloud root the typed digest and the role session stand; the other three conditions apply to both kinds.
 - Every record says where the ceremony ran.
 - The limit: a card has no screen, so one tricked touch gives one signature that no card logs.
@@ -84,7 +94,7 @@ Decided in [0005](decisions/0005-a-ceremony-and-where-it-runs.md).
 
 - One process, started by the first command, serves the command line and the local page on one fixed loopback port, 7488.
 - It ends after 15 minutes idle, never mid-ceremony, and keeps no PIN between calls.
-- The page never confirms or runs a ceremony.
+- The page never confirms or runs a ceremony. It shows the run command without the digest and the keyserver upload with its command; both are done in the terminal.
 
 Decided in [0010](decisions/0010-the-engine-the-process-and-the-page.md).
 
@@ -92,6 +102,7 @@ Decided in [0010](decisions/0010-the-engine-the-process-and-the-page.md).
 
 - Everyone uses OpenPGP as their own key. ritueel has no staff keys.
 - Stage one adopts an existing primary as a software key with an expiry. Card-born primaries come later.
+- Changing a name or address is a ceremony: a new user ID, the old one revoked as no longer valid; the key and its trust stay. For a person's own key it is part of M3.
 
 Decided in [0008](decisions/0008-a-persons-own-key.md).
 
@@ -100,6 +111,7 @@ Decided in [0008](decisions/0008-a-persons-own-key.md).
 - A root changes by add, overlap, retire and revoke. A compromise is answered by revocation, never a second copy.
 - A cloud root is one dedicated account with three keys, each replicated to a second Region. ritueel creates or adopts them.
 - The operator supplies the roles; ritueel writes no hardware-key rule.
+- An X.509 root is not renamed: its name is inside the certificate and every intermediate names it as issuer. A new name is a new root (add, overlap, retire).
 
 Decided in [0007](decisions/0007-changing-and-losing-a-root.md), [0006](decisions/0006-bundle-history-and-trust-files.md) and [0004](decisions/0004-the-cloud-root.md).
 
@@ -117,7 +129,7 @@ Decided in [0005](decisions/0005-a-ceremony-and-where-it-runs.md) and [0007](dec
 - A host refuses a lower sequence, a bad signature and an expired list.
 - The site publishes only a small target (`site/published.txt`).
 
-Decided in [0001](decisions/0001-what-ritueel-is.md), [0003](decisions/0003-root-cards.md), [0006](decisions/0006-bundle-history-and-trust-files.md) and [0007](decisions/0007-changing-and-losing-a-root.md).
+Decided in [0001](decisions/0001-what-ritueel-is.md), [0003](decisions/0003-root-cards.md), [0005](decisions/0005-a-ceremony-and-where-it-runs.md), [0006](decisions/0006-bundle-history-and-trust-files.md) and [0007](decisions/0007-changing-and-losing-a-root.md).
 
 ## Releases
 
@@ -138,9 +150,11 @@ Decided in [0009](decisions/0009-release-keys-and-the-keyring.md).
 - The exact file names in a bundle ([0006](decisions/0006-bundle-history-and-trust-files.md#not-yet-proven-or-only-proposed)).
 - Which conditions the program enforces ([0005](decisions/0005-a-ceremony-and-where-it-runs.md#not-yet-proven-or-only-proposed)).
 - One passkey credential for each bundle on a shared card ([0002](decisions/0002-where-a-key-lives.md#not-yet-proven-or-only-proposed)).
+- What the publish step shows and refuses, where the keyserver list lives, and the names of the new commands ([0011](decisions/0011-publishing-and-what-to-do-after-a-ceremony.md#not-yet-proven-or-only-proposed)).
+- Whether keys.openpgp.org accepts a certify-only primary ([0011](decisions/0011-publishing-and-what-to-do-after-a-ceremony.md#not-yet-proven-or-only-proposed)), and whether Maven Central accepts a signing subkey under one ([0009](decisions/0009-release-keys-and-the-keyring.md#not-yet-proven-or-only-proposed)).
 
 ## What comes later
 
-More stores, a person's card-born primaries (stage two), a post-quantum root and a Go library.
+More stores, a person's card-born primaries (stage two), a post-quantum root and a Go library. Recipes for consumers that need a change of the hand-off contract, a check of the local trust store, and calling a code host's own tool.
 
 Listed in [the roadmap](/roadmap/#after-the-first-version).
