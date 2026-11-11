@@ -19,13 +19,13 @@ A chain of trust has two kinds of key, and they live different lives. The root i
 
 ## In OpenPGP
 
-OpenPGP has no certificate chains, but it has the same split. The **primary key**, or primary key, is the root of an identity. **Subkeys** are the intermediates: the primary key binds each one with a signature, and says what it may do.
+OpenPGP has no certificate chains, but it has the same split. The **primary key** is the root of an identity. **Subkeys** are the intermediates: the primary key binds each one with a signature, and says what it may do.
 
-| | Master (primary) key | Subkey |
+| | Primary key | Subkey |
 |---|---|---|
 | What it does | Certifies: it signs identities, binds subkeys, and revokes. It signs nothing else. | Signs data, encrypts, or authenticates (for example to an SSH server), one purpose per subkey. |
 | Used | When a subkey is added, renewed or revoked. | Every day, by `gpg`, `git` or a release script. |
-| Held by | Offline, in a store only a ceremony reaches. | On a card or in a key service, close to the work. |
+| Held by | In a store only a ceremony reaches: a root card, the cloud root, or, for a person's own primary, an encrypted file kept offline. | On a card or in a key service, close to the work. |
 | Lifetime | Years. | A year or two, renewed by re-signing the binding. |
 | Cost of a mistake | Everyone who has your fingerprint must learn the change. | Revoke one subkey and bind another. The fingerprint stays. |
 

@@ -46,13 +46,13 @@ A renewal changes nothing about who is trusted, which is why it can be automated
 |---|---|---|---|
 | Make a root; add, retire or revoke one | Ceremony | Ceremony: the ceremony role and the typed plan digest | It changes who is trusted ([root transitions](/reference/transitions/)). |
 | Certify a new intermediate key, bind a new subkey, list a new SSH CA key | Ceremony | Ceremony | A person compares the fingerprint and the evidence of a key nobody has seen before. |
-| Re-sign the same intermediate key or subkey binding, within its profile, before it expires | Ceremony: the PIN and the touch are physical. `status` reminds at 60, 30 and 14 days. | Unattended, under the declared renewal policy, run by the operator's scheduler | Every byte is fixed by the bundle and the clock. |
-| Re-sign the root list, the SSH CA key list or a CRL with the same content, and rebuild the CA bundle | Ceremony | Unattended, as above | The same: a new validity and the next trust sequence. |
-| Extend the root's own certificate and primary over the same keys | Ceremony | Unattended, as above | The same. |
+| Re-sign the same intermediate key or subkey binding, within its profile, before it expires | Ceremony: the PIN and the touch are physical. `status` reminds at 60, 30 and 14 days. | Ceremony now; unattended under a declared renewal policy, run by the operator's scheduler, later (M7) | Every byte is fixed by the bundle and the clock. |
+| Re-sign the root list, the SSH CA key list or a CRL with the same content, and rebuild the CA bundle | Ceremony | Ceremony now; unattended later (M7), as above | The same: a new validity and the next trust sequence. |
+| Extend the root's own certificate and primary over the same keys | Ceremony | Ceremony now; unattended later (M7), as above | The same. |
 | Revoke an intermediate or a subkey | Ceremony | Ceremony | A revocation is a decision. |
 | Issue a leaf certificate, or an SSH user or host certificate | Never | Never | ritueel holds no online key ([record 0001](../decisions/0001-what-ritueel-is.md)). |
 
-A cloud root's renewal runs under a second role that can sign only what the bundle already holds, so it can extend trust but never create it ([The cloud root](/reference/kms-root/#renewal-under-a-policy)). A card root cannot be left to a machine: its PIN and touch are the protection, so its holder comes once a year, and the long warning is what keeps that from being forgotten.
+A cloud root's renewal will run (later, M7) under a second role that can sign only what the bundle already holds, so it can extend trust but never create it ([The cloud root](/reference/kms-root/#renewal-under-a-policy)). A card root cannot be left to a machine: its PIN and touch are the protection, so its holder comes once a year, and the long warning is what keeps that from being forgotten.
 
 ## In ritueel
 

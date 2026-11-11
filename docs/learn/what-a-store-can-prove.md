@@ -21,7 +21,7 @@ It sits in the middle of [the custody chain](/learn/custody-chain/): the questio
 
 ## Why a key made elsewhere can be told apart
 
-A key that was *imported* into a token can be copied before it went in. A key *generated* on the token cannot, because it never existed outside. The token signs a statement about the second kind only: an imported key has no attestation, which is how you tell them apart. That is why ritueel never imports a key ([principle 1](/principles/)) and why a root whose key cannot be attested is refused.
+A key that was *imported* into a token can be copied before it went in. A key *generated* on the token cannot, because it never existed outside. The token signs a statement about the second kind only: an imported key has no attestation, which is how you tell them apart. That is why ritueel imports no key ([principle 1](/principles/)), apart from the two exceptions of [record 0002](../decisions/0002-where-a-key-lives.md), rule 2, and why a root whose key cannot be attested is refused.
 
 The chain is checked against the maker's root, which ritueel carries and refreshes ([the attestation bundle](/reference/cards/#the-attestation-bundle)), and never against a certificate the token or the requester hands over by itself: a root inside the evidence is not trusted ([principle 4](/principles/)). If the chain cannot be checked, ritueel reports that the check did not run. It never reports it as passed.
 
@@ -41,7 +41,7 @@ A new device or service is judged the same way before it joins: what does it pro
 
 ## What evidence cannot fix
 
-- **A lying workstation.** Evidence says where a key lives, not what you are about to sign. That is the job of the plan and its digest, which you read before you confirm.
+- **A lying workstation.** Evidence says where a key lives, not what you are about to sign. The plan and its digest fix what is signed, but a compromised workstation can show the right digest and still ask for one more signature. On the workstation four conditions bound that: a touch for every signature on a root card (a cloud key has no touch, and its audit trail records every signature), the count stated in the plan, no retry, and the result checked on a second device ([record 0005](../decisions/0005-a-ceremony-and-where-it-runs.md), rules 18 and 19).
 - **A stolen card and its PIN.** The key is where it should be, and in the wrong hands. Revocation answers that ([Revoke](/learn/revoke/)).
 - **The maker.** You trust the maker's root, as you trust any root. Compare it, pin it, and refresh it by reviewed change.
 
