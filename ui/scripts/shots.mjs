@@ -15,25 +15,44 @@ const { send, evalJs, close } = await launch();
 
 // name, hash, steps to run after the page is up, [state to show]
 const key = (n) => `#/key/${n}`;
+// The demo starts on the personal bundle. A screen of another bundle starts on Start, picks the bundle in the
+// demo bar (which sends the page back to Start), then goes to its own address.
+const via = (bundle, target, more) => async () => {
+  await clickText(evalJs, bundle);
+  await sleep(300);
+  await evalJs(`location.hash = ${JSON.stringify(target.slice(1))}`);
+  await sleep(500);
+  if (more) await more();
+};
+const saveThePlan = async () => { await clickText(evalJs, 'Show me the plan'); await sleep(500); await clickText(evalJs, 'Save the plan'); await sleep(500); };
 const screens = [
   ['start', '#/start'],
   ['findings', '#/findings'],
   ['roots', '#/roots'],
-  ['key-personal', key('personal')],
-  ['key-acme', key('acme')],
-  ['key-cloud', key('globex-cloud')],
+  ['key-personal', key('A')],
+  ['key-acme-a', '#/start', via('acme', key('A'))],
+  ['key-acme-b', '#/start', via('acme', key('B'))],
+  ['key-cloud', '#/start', via('globex', key('A'))],
+  ['roots-acme', '#/start', via('acme', '#/roots')],
+  ['cards-acme', '#/start', via('acme', '#/cards')],
+  ['cards-globex', '#/start', via('globex', '#/cards')],
+  ['start-acme', '#/start', via('acme', '#/start')],
+  ['start-globex', '#/start', via('globex', '#/start')],
   ['cards', '#/cards'],
   ['card-root', '#/cards/00000001'],
   ['card-day-to-day', '#/cards/00000004'],
   ['card-slot-open', '#/cards/00000001', async () => { await evalJs(`document.querySelector('button[aria-haspopup=dialog]')?.click()`); await sleep(400); }],
   ['card-unlisted', '#/cards/00000102'],
   ['history', '#/history'],
-  ['ceremony', '#/history/2026-11-03-adopt-personal-key'],
+  ['ceremony', '#/history/20261103T142000Z-init'],
+  ['history-acme', '#/start', via('acme', '#/history')],
   ['trust', '#/trust'],
   ['plan-goals', '#/plan'],
-  ['plan-questions', '#/plan/renew-due'],
-  ['plan-preview', '#/plan/renew-due', async () => { await clickText(evalJs, 'Show me the plan'); await sleep(500); }],
-  ['plan-saved', '#/plan/renew-due', async () => { await clickText(evalJs, 'Show me the plan'); await sleep(500); await clickText(evalJs, 'Save the plan'); await sleep(500); }],
+  ['plan-questions', '#/start', via('acme', '#/plan/renew-due')],
+  ['plan-preview', '#/start', via('acme', '#/plan/renew-due', async () => { await clickText(evalJs, 'Show me the plan'); await sleep(500); })],
+  ['plan-saved', '#/start', via('acme', '#/plan/renew-due', saveThePlan)],
+  ['plan-saved-offline-key-file', '#/plan/retire-subkeys', saveThePlan],
+  ['plan-saved-workstation', '#/start', via('globex', '#/plan/adopt-key', saveThePlan)],
   ['plan-refused', '#/plan/add-card'],
   ['notfound', '#/nothing-here'],
 ];
@@ -42,7 +61,7 @@ const states = [];
 for (const [name, hash] of [['start', '#/start'], ['findings', '#/findings'], ['cards', '#/cards'], ['history', '#/history'], ['trust', '#/trust'], ['roots', '#/roots'], ['plan-goals', '#/plan']]) {
   for (const st of ['Empty', 'Failed read', 'Waiting']) states.push([`${name}-${st.split(' ')[0].toLowerCase()}`, hash, st]);
 }
-states.push(['key-personal-failed', key('personal'), 'Failed read'], ['plan-saved-failed', '#/plan/renew-due', 'Failed read']);
+states.push(['key-personal-failed', key('A'), 'Failed read'], ['plan-saved-failed', '#/plan/retire-subkeys', 'Failed read']);
 
 const sizes = [
   ['1440', 1440, 900, 1],

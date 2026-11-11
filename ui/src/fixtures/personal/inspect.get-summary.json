@@ -1,0 +1,71 @@
+{
+  "bundle": {
+    "path": "~/ritueel/personal",
+    "name": "personal",
+    "exists": true,
+    "createdAt": "2026-11-03T14:00:00Z",
+    "holderLabel": "the holder"
+  },
+  "asOf": "2026-11-11T09:00:00Z",
+  "demo": true,
+  "programVersion": "0.0.0-demo",
+  "ledger": {
+    "recordCount": 1,
+    "chainState": "CHAIN_STATE_VERIFIED",
+    "headRecordSha256": "600c0123456789abcdef0123456789abcdef0123456789abcdef0123456789ab",
+    "lastRecordId": "20261103T142000Z-init",
+    "lastRecordTitle": "Adopted the holder's OpenPGP key, stage one",
+    "lastRecordAt": "2026-11-03T14:20:00Z",
+    "checkedAt": "2026-11-11T09:00:00Z",
+    "message": "The only record checks out. It is 8 days old."
+  },
+  "due": [],
+  "findingCounts": [
+    {
+      "severity": "SEVERITY_CRITICAL",
+      "count": 1
+    },
+    {
+      "severity": "SEVERITY_ALERT",
+      "count": 2
+    },
+    {
+      "severity": "SEVERITY_NOTICE",
+      "count": 2
+    },
+    {
+      "severity": "SEVERITY_INFO",
+      "count": 2
+    }
+  ],
+  "counts": {
+    "roots": 1,
+    "delegatedKeys": 0,
+    "cards": 6,
+    "trustFiles": 2
+  },
+  "setupSteps": [
+    {
+      "id": "bundle",
+      "title": "Open your ritueel bundle",
+      "detail": "The bundle holds plain files, the ledger and your plans.",
+      "done": true
+    },
+    {
+      "id": "public-key",
+      "title": "Bring in your public key",
+      "detail": "Only the public half is ever needed here.",
+      "done": true
+    },
+    {
+      "id": "cards",
+      "title": "Register the cards that hold your subkeys",
+      "detail": "3 of the 5 cards that hold your subkeys are registered. 00000101 and 00000102 are not."
+    },
+    {
+      "id": "first-plan",
+      "title": "Make your first plan",
+      "detail": "Start from what is due, or from a finding."
+    }
+  ]
+}

@@ -5,7 +5,7 @@ import MenuItem from '@mui/material/MenuItem';
 import ToggleButton from '@mui/material/ToggleButton';
 import ToggleButtonGroup from '@mui/material/ToggleButtonGroup';
 import { isDemo } from '../api/client';
-import { VIEW_STATES, setViewState, useViewState } from '../api/demoState';
+import { DEMO_BUNDLES, VIEW_STATES, setBundle, setViewState, useBundle, useViewState } from '../api/demoState';
 import { useSummary } from '../api/hooks';
 import { ymd } from '../lib/format';
 import { href, routeTitle, siteUrl, type Route } from '../lib/route';
@@ -93,6 +93,32 @@ function StateSwitch() {
   );
 }
 
+/** Demo mode only. Chooses which example bundle the demo answers for; the real process serves one bundle and has no such switch. */
+function BundleSwitch() {
+  const bundle = useBundle();
+  return (
+    <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+      <span id="bundle-switch-label" className="text-sm font-semibold">
+        Try a bundle
+      </span>
+      <ToggleButtonGroup
+        exclusive
+        size="small"
+        value={bundle}
+        onChange={(_e, value) => value && setBundle(value)}
+        aria-labelledby="bundle-switch-label"
+        sx={{ '& .MuiToggleButton-root': { minHeight: { xs: 44, lg: 34 }, fontSize: '0.8125rem', paddingInline: '0.7rem' } }}
+      >
+        {DEMO_BUNDLES.map((b) => (
+          <ToggleButton key={b.value} value={b.value} title={b.hint}>
+            {b.label}
+          </ToggleButton>
+        ))}
+      </ToggleButtonGroup>
+    </div>
+  );
+}
+
 /**
  * The calm mark that this is a demo: on every screen, in words, with the way
  * back to the site. It only exists in the demo build.
@@ -108,7 +134,10 @@ function DemoBar() {
             Back to ritueel.id
           </a>
         </p>
-        <StateSwitch />
+        <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
+          <BundleSwitch />
+          <StateSwitch />
+        </div>
       </div>
     </div>
   );
@@ -187,7 +216,10 @@ export function Shell({ route, children }: { route: Route; children: ReactNode }
                   <dl className="grid grid-cols-[auto_1fr] gap-x-2 gap-y-0.5">
                     <dt>Bundle</dt>
                     <dd className="font-mono text-ink">
-                      <T cap={40}>{summary.data.bundle?.path}</T>
+                      <T cap={40}>{summary.data.bundle?.name}</T>
+                      <span className="block text-dim">
+                        <T cap={40}>{summary.data.bundle?.path}</T>
+                      </span>
                     </dd>
                     <dt>As of</dt>
                     <dd className="font-mono text-ink">{ymd(summary.data.asOf)}</dd>

@@ -1,6 +1,6 @@
 import Button from '@mui/material/Button';
 import { Intention } from '../gen/ritueel/local/v1alpha1/common_pb';
-import type { Finding } from '../gen/ritueel/local/v1alpha1/inspect_service_pb';
+import type { Finding, Root } from '../gen/ritueel/local/v1alpha1/inspect_service_pb';
 import type { IntentionOption } from '../gen/ritueel/local/v1alpha1/plan_service_pb';
 import { planHref, subjectHref } from '../lib/finding';
 import { safeString } from '../lib/safe';
@@ -19,17 +19,20 @@ const ACTION_LINK = 'inline-flex min-h-11 items-center font-semibold text-accent
 export function FindingCard({
   f,
   goals,
+  roots,
   showEvidence = true,
   compact = false,
 }: {
   f: Finding;
   goals?: Map<Intention, IntentionOption>;
+  /** The roots of the bundle, so "Open the key" opens the right one. */
+  roots?: Root[];
   showEvidence?: boolean;
   /** The command and the next step fold away, except on a critical finding. */
   compact?: boolean;
 }) {
   const k = sevKey(f.severity);
-  const where = subjectHref(f.subject);
+  const where = subjectHref(f.subject, roots);
   const goal = f.fixIntention !== Intention.UNSPECIFIED ? goals?.get(f.fixIntention) : undefined;
   const blocked = goal && !goal.applicable;
 

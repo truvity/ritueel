@@ -218,9 +218,11 @@ enum RootState {
 }
 
 message Root {
-  // The root's label in the bundle: A, B ... as in root.json. The page
-  // writes it bundle/label, for example acme/A.
+  // The root's label in the bundle: A, B ... as in root.json, and the next
+  // free letter for a later root. The page writes it bundle/label, for
+  // example acme/A.
   string label = 1;
+  // For example "Acme root A".
   string name = 2;
   RootKind kind = 3;
   Store store = 4;
@@ -228,18 +230,20 @@ message Root {
   // True when the key existed before ritueel and was adopted as it is.
   bool adopted = 6;
   // A personal key has two stages. 1: an adopted software key, with its
-  // history. 2: two card-born primaries, one on each root card. 0 for
-  // other roots.
+  // history. 2: two more roots, card-born primaries (B and C), one on each
+  // root card. 0 for other roots.
   int32 stage = 7;
   // The row of the root cards' layout that this root owns, 1 to 6 as drawn
   // (row 1 is the card's own jobs, so roots start at row 2). 0 when the
-  // root is not on cards. The map is built into the program and versioned.
+  // root is not on cards; a personal root at stage 1 names the row that is
+  // kept for stage two. The map is built into the program and versioned.
   int32 card_row = 8;
-  // The root cards that hold it (empty unless the store is root cards).
+  // The root card that holds it: one serial for a card-born root (empty
+  // unless the store is root cards).
   repeated string card_serials = 9;
   // The OpenPGP creation time ritueel fixed and recorded.
   google.protobuf.Timestamp created_at = 10;
-  // The keys of the root itself, one entry for each key and side.
+  // The keys of the root itself, one entry for each key.
   repeated RootKey keys = 11;
   // Set when the root has an OpenPGP primary.
   OpenPgpCertificate certificate = 12;
@@ -261,8 +265,10 @@ enum RootKeyKind {
 
 message RootKey {
   RootKeyKind kind = 1;
-  // "A" or "B" for the two root cards; empty for a software or cloud key.
-  string side = 2;
+  // The two sides of a pair of root cards are two roots now (acme/A and
+  // acme/B), each with its own keys, so a key has no side.
+  reserved 2;
+  reserved "side";
   // For example "rsa4096", "ecdsa-p384".
   string algorithm = 3;
   // The full fingerprint: 40 hexadecimal characters for OpenPGP, 64 for the
@@ -461,7 +467,7 @@ message Ceremony {
   string previous_record_sha256 = 9;
   // The digest of the plan that was confirmed (64 hexadecimal characters).
   string plan_digest = 10;
-  // Labels of the roots and names of the delegated keys it touched.
+  // Labels of the roots (A) and names of the delegated keys it touched.
   repeated string subject_labels = 11;
   repeated string card_serials = 12;
   // The trust sequence this ceremony wrote; 0 if none.
@@ -482,7 +488,7 @@ message ListCardsResponse {
 
 enum CardKind {
   CARD_KIND_UNSPECIFIED = 0;
-  // A root card: it holds roots, and only goes into the offline machine.
+  // A root card: it holds roots, and only goes into the offline system.
   CARD_KIND_ROOT = 1;
   // A day-to-day card: signing and authentication subkeys, passkeys.
   CARD_KIND_DAY_TO_DAY = 2;
@@ -524,7 +530,7 @@ message Card {
   google.protobuf.Timestamp last_checked_at = 10;
   // One line: what the card is for and what it holds.
   string role_summary = 11;
-  // Labels of the roots that have a row on this card.
+  // Labels of the roots (A) that have a row on this card.
   repeated string root_labels = 12;
   // True when the one-time code application is switched off.
   bool one_time_codes_off = 13;
@@ -548,7 +554,7 @@ message PivApplication {
 message PivRow {
   // 1 to 6.
   int32 number = 1;
-  // A word for the row: "card", or the label of the root that owns it,
+  // A word for the row: "card", or the label of the root that owns it (A),
   // or "free" for a row that no root owns yet.
   string label = 2;
   // The label of the root that owns the row; empty for row 1 and for free
@@ -621,7 +627,7 @@ message Slot {
   string id = 1;
   SlotState state = 2;
   SlotUse use = 3;
-  // The use in plain words, for example "X.509 root of acme, side A".
+  // The use in plain words, for example "X.509 root of acme/A".
   string purpose = 4;
   // The root the slot belongs to; empty if none.
   string root_label = 5;

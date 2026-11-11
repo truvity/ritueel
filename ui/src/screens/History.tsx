@@ -1,7 +1,7 @@
 import { ChainState } from '../gen/ritueel/local/v1alpha1/common_pb';
 import { CeremonyKind, CeremonyOutcome, type Ceremony } from '../gen/ritueel/local/v1alpha1/inspect_service_pb';
-import { useCeremonies, useRoots } from '../api/hooks';
-import { plural, ymd } from '../lib/format';
+import { useBundleName, useCeremonies, useRoots } from '../api/hooks';
+import { plural, rootRef, ymd } from '../lib/format';
 import { href } from '../lib/route';
 import { USUAL_STEPS } from '../lib/steps';
 import { CEREMONY_KIND_WORD, OUTCOME_WORD } from '../lib/words';
@@ -132,6 +132,7 @@ function List() {
 function Detail({ id }: { id: string }) {
   const res = useCeremonies();
   const roots = useRoots();
+  const bundle = useBundleName();
   return (
     <Page kicker="History" title="One ceremony" aside={<a className={LINK} href={href.history()}>Back to the ledger</a>}>
       <Load res={res} what="the ledger">
@@ -182,7 +183,7 @@ function Detail({ id }: { id: string }) {
                           {c.subjectLabels.map((l) =>
                             rootLabels.has(l) ? (
                               <a key={l} className={LINK} href={href.key(l)}>
-                                <T cap={40}>{l}</T>
+                                <T cap={60}>{rootRef(bundle, l)}</T>
                               </a>
                             ) : (
                               <span key={l} className="font-mono">

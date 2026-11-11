@@ -1,0 +1,100 @@
+{
+  "version": 1,
+  "note": "Maps a call to the fixture that answers it. 'when' lists the request fields that select the file; a call that matches no entry is an error in the demo.",
+  "responses": [
+    {
+      "service": "ritueel.local.v1alpha1.InspectService",
+      "method": "GetSummary",
+      "file": "inspect.get-summary.json"
+    },
+    {
+      "service": "ritueel.local.v1alpha1.InspectService",
+      "method": "ListFindings",
+      "file": "inspect.list-findings.json",
+      "note": "min_severity is applied by the transport, not by the file"
+    },
+    {
+      "service": "ritueel.local.v1alpha1.InspectService",
+      "method": "ListRoots",
+      "file": "inspect.list-roots.json"
+    },
+    {
+      "service": "ritueel.local.v1alpha1.InspectService",
+      "method": "ListCeremonies",
+      "file": "inspect.list-ceremonies.json"
+    },
+    {
+      "service": "ritueel.local.v1alpha1.InspectService",
+      "method": "ListCards",
+      "file": "inspect.list-cards.json"
+    },
+    {
+      "service": "ritueel.local.v1alpha1.InspectService",
+      "method": "ListTrustFiles",
+      "file": "inspect.list-trust-files.json"
+    },
+    {
+      "service": "ritueel.local.v1alpha1.PlanService",
+      "method": "ListIntentions",
+      "file": "plan.list-intentions.json"
+    },
+    {
+      "service": "ritueel.local.v1alpha1.PlanService",
+      "method": "StartPlan",
+      "when": {
+        "intention": "INTENTION_RENEW_DUE"
+      },
+      "file": "common/plan.start-plan.not-now.json"
+    },
+    {
+      "service": "ritueel.local.v1alpha1.PlanService",
+      "method": "StartPlan",
+      "when": {
+        "intention": "INTENTION_RETIRE_SUBKEYS"
+      },
+      "file": "common/plan.start-plan.not-now.json"
+    },
+    {
+      "service": "ritueel.local.v1alpha1.PlanService",
+      "method": "StartPlan",
+      "when": {
+        "intention": "INTENTION_ADOPT_KEY",
+        "answers": "none"
+      },
+      "file": "plan.start-plan.adopt-key.questions.json"
+    },
+    {
+      "service": "ritueel.local.v1alpha1.PlanService",
+      "method": "StartPlan",
+      "when": {
+        "intention": "INTENTION_ADOPT_KEY",
+        "answers": "any"
+      },
+      "file": "plan.start-plan.adopt-key.json"
+    },
+    {
+      "service": "ritueel.local.v1alpha1.PlanService",
+      "method": "StartPlan",
+      "when": {
+        "intention": "INTENTION_ADD_CARD"
+      },
+      "file": "common/plan.start-plan.refused.json"
+    },
+    {
+      "service": "ritueel.local.v1alpha1.PlanService",
+      "method": "StartPlan",
+      "when": {
+        "intention": "INTENTION_REPLACE_CARD"
+      },
+      "file": "common/plan.start-plan.refused.json"
+    },
+    {
+      "service": "ritueel.local.v1alpha1.PlanService",
+      "method": "SavePlan",
+      "when": {
+        "planId": "20261111T090000Z-root-add"
+      },
+      "file": "plan.save-plan.adopt-key.json"
+    }
+  ]
+}

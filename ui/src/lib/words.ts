@@ -26,13 +26,13 @@ import { BundleChangeAction, Requirement } from '../gen/ritueel/local/v1alpha1/p
 
 export const STORE_WORD: Record<number, string> = {
   [Store.SOFTWARE_FILE]: 'Encrypted file',
-  [Store.ROOT_CARDS]: 'Pair of root cards',
+  [Store.ROOT_CARDS]: 'Root card',
   [Store.CLOUD_KMS]: 'Cloud KMS key',
 };
 
 export const STORE_SENTENCE: Record<number, string> = {
-  [Store.SOFTWARE_FILE]: 'The key is an encrypted file in a key directory outside your bundle. A passkey on each root card opens it, and a recovery key is kept apart.',
-  [Store.ROOT_CARDS]: 'Each root card holds its own key, born on that card, and the keys never leave the cards. You use them only at the ceremony machine, with the card present.',
+  [Store.SOFTWARE_FILE]: 'The key is an encrypted file in a key directory outside your bundle. A passkey on each root card opens it, and a recovery key is kept apart. You use it on the offline system.',
+  [Store.ROOT_CARDS]: 'The root has its own key, born on one root card and never leaving it. Its partner root is on the other card. You use it only on the offline system, with the card present.',
   [Store.CLOUD_KMS]: 'The key lives in a cloud key service and never leaves it. If ritueel adopted it, it read the public key and the policy and did not change the key.',
 };
 

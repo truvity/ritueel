@@ -12,8 +12,8 @@ import {
   type Subkey,
   type SubkeySet,
 } from '../gen/ritueel/local/v1alpha1/inspect_service_pb';
-import { useCards, useFindings, useGoalMap, useRoots, useSummary } from '../api/hooks';
-import { daysBetween, inDays, plural, yearFraction, ymd } from '../lib/format';
+import { useBundleName, useCards, useFindings, useGoalMap, useRoots, useSummary } from '../api/hooks';
+import { daysBetween, inDays, plural, rootRef, yearFraction, ymd } from '../lib/format';
 import { href } from '../lib/route';
 import { domId, safeString } from '../lib/safe';
 import { touching } from '../lib/touch';
@@ -43,9 +43,12 @@ function Fact({ label, children, tone }: { label: string; children: ReactNode; t
   );
 }
 
-function RootPicker({ roots, current }: { roots: Root[]; current: string }) {
+// The picker has one column for each root, up to three (the class names are whole, so Tailwind finds them).
+const PICKER_COLUMNS: Record<number, string> = { 1: 'sm:grid-cols-1', 2: 'sm:grid-cols-2' };
+
+function RootPicker({ roots, current, bundle }: { roots: Root[]; current: string; bundle: string | undefined }) {
   return (
-    <nav aria-label="Roots" className="grid border-2 border-rule sm:grid-cols-3">
+    <nav aria-label="Roots" className={`grid border-2 border-rule ${PICKER_COLUMNS[roots.length] ?? 'sm:grid-cols-3'}`}>
       {roots.map((r, i) => {
         const on = r.label === current;
         return (
@@ -56,7 +59,7 @@ function RootPicker({ roots, current }: { roots: Root[]; current: string }) {
             className={`min-h-14 min-w-0 px-3 py-2 no-underline ${i > 0 ? 'border-t-2 border-rule sm:border-t-0 sm:border-l-2' : ''} ${on ? 'bg-ink text-bg' : 'text-ink hover:bg-sunk'}`}
           >
             <span className="block text-base leading-tight font-bold">
-              <T cap={40}>{r.name}</T>
+              <T cap={60}>{rootRef(bundle, r.label)}</T>
             </span>
             <span className={`block text-sm leading-tight ${on ? 'text-bg opacity-90' : 'text-dim'}`}>{STORE_WORD[r.store]}</span>
           </a>
@@ -68,7 +71,7 @@ function RootPicker({ roots, current }: { roots: Root[]; current: string }) {
 
 // ---- the certificate -------------------------------------------------------
 
-function Certificate({ r }: { r: Root }) {
+function Certificate({ r, bundle }: { r: Root; bundle: string | undefined }) {
   const primary = r.certificate?.primary;
   const none = primary && !primary.expiresAt;
   return (
@@ -76,7 +79,10 @@ function Certificate({ r }: { r: Root }) {
       <div className="border border-rule">
         <div className="p-4 sm:p-6">
           <p className="font-mono text-xs font-semibold tracking-wider text-dim uppercase">
-            OpenPGP certificate, {r.kind === RootKind.PERSONAL ? 'personal root' : 'company root'}, {ROOT_STATE_WORD[r.state]}
+            <span className="normal-case">
+              <T cap={60}>{rootRef(bundle, r.label)}</T>
+            </span>
+            : OpenPGP certificate, {r.kind === RootKind.PERSONAL ? 'personal root' : 'company root'}, {ROOT_STATE_WORD[r.state]}
             {r.adopted ? `, adopted, stage ${r.stage}` : ''}
           </p>
           <h2 className="mt-1 text-2xl leading-tight font-bold sm:text-3xl">
@@ -85,7 +91,7 @@ function Certificate({ r }: { r: Root }) {
           {primary ? (
             <div className="mt-4">
               <p className="mb-1 text-sm text-dim">
-                Primary key{primary.side ? `, side ${safeString(primary.side, 12)}` : ''}. This is its whole fingerprint: it is what names the key.
+                Primary key of <T cap={60}>{rootRef(bundle, r.label)}</T>. This is its whole fingerprint: it is what names the key.
               </p>
               <Fp value={primary.fingerprint} className="text-base sm:text-lg" />
             </div>
@@ -474,10 +480,7 @@ function KeysTable({ keys }: { keys: RootKey[] }) {
     <ul className="border border-line bg-panel">
       {keys.map((k) => (
         <li key={k.fingerprint} className="grid gap-x-4 gap-y-1 border-t border-line p-3 first:border-t-0 sm:grid-cols-[13rem_minmax(0,1fr)]">
-          <p className="font-bold">
-            {ROOT_KEY_WORD[k.kind]}
-            {k.side ? <span className="ml-2 font-normal text-dim">side <T cap={12}>{k.side}</T></span> : null}
-          </p>
+          <p className="font-bold">{ROOT_KEY_WORD[k.kind]}</p>
           <div className="min-w-0">
             <Fp value={k.fingerprint} />
             <p className="mt-0.5 text-sm text-dim">
@@ -570,7 +573,7 @@ function CloudFacts({ r }: { r: Root }) {
 
 // ---- the screen -----------------------------------------------------------------
 
-function RootBody({ r }: { r: Root }) {
+function RootBody({ r, all, bundle }: { r: Root; all: Root[]; bundle: string | undefined }) {
   const findings = useFindings();
   const cards = useCards();
   const summary = useSummary();
@@ -581,11 +584,14 @@ function RootBody({ r }: { r: Root }) {
   return (
     <div className="space-y-9">
       {cert ? (
-        <Certificate r={r} />
+        <Certificate r={r} bundle={bundle} />
       ) : (
         <div className="border-2 border-rule bg-panel p-4 sm:p-5">
           <p className="font-mono text-xs font-semibold tracking-wider text-dim uppercase">
-            {r.kind === RootKind.PERSONAL ? 'Personal root' : 'Company root'}, {ROOT_STATE_WORD[r.state]}
+            <span className="normal-case">
+              <T cap={60}>{rootRef(bundle, r.label)}</T>
+            </span>
+            : {r.kind === RootKind.PERSONAL ? 'personal root' : 'company root'}, {ROOT_STATE_WORD[r.state]}
             {r.adopted ? ', adopted' : ''}
           </p>
           <h2 className="mt-1 text-2xl font-bold">
@@ -612,7 +618,7 @@ function RootBody({ r }: { r: Root }) {
               <ul className="space-y-3">
                 {list.map((f) => (
                   <li key={f.id}>
-                    <FindingCard f={f} goals={goals} showEvidence={false} compact />
+                    <FindingCard f={f} goals={goals} roots={all} showEvidence={false} compact />
                   </li>
                 ))}
               </ul>
@@ -635,7 +641,16 @@ function RootBody({ r }: { r: Root }) {
       ) : null}
 
       {r.keys.length > 0 && r.kind !== RootKind.PERSONAL ? (
-        <Sec title="Root keys, by side and card" aside={r.cardRow ? `row ${r.cardRow} of each root card` : undefined}>
+        <Sec
+          title="Keys of this root"
+          aside={
+            r.cardRow && r.cardSerials.length > 0 ? (
+              <>
+                row {r.cardRow} of root card <T cap={20}>{r.cardSerials[0]}</T>
+              </>
+            ) : undefined
+          }
+        >
           <KeysTable keys={r.keys} />
         </Sec>
       ) : null}
@@ -643,6 +658,10 @@ function RootBody({ r }: { r: Root }) {
       {r.delegatedKeys.length > 0 ? (
         <Sec title="Delegated keys" aside={`${r.delegatedKeys.length}`}>
           <Delegated list={r.delegatedKeys} asOf={asOf} />
+        </Sec>
+      ) : all.some((x) => x.delegatedKeys.length > 0) ? (
+        <Sec title="Delegated keys" aside="0">
+          <p className="border border-dashed border-line p-3">This root has certified no delegated key at the moment.</p>
         </Sec>
       ) : null}
 
@@ -657,6 +676,7 @@ function RootBody({ r }: { r: Root }) {
 
 export function Key({ root }: { root: string }) {
   const roots = useRoots();
+  const bundle = useBundleName();
   return (
     <Page
       kicker="Key"
@@ -683,19 +703,19 @@ export function Key({ root }: { root: string }) {
           if (!known) {
             return (
               <>
-                <Empty title="There is no root with that name.">
+                <Empty title="There is no root with that label in this bundle.">
                   <p>
                     The bundle holds {plural(d.roots.length, 'root')}. Choose one below, or see <a className={LINK} href={href.roots()}>all roots</a>.
                   </p>
                 </Empty>
-                <RootPicker roots={d.roots} current="" />
+                <RootPicker roots={d.roots} current="" bundle={bundle} />
               </>
             );
           }
           return (
             <>
-              <RootPicker roots={d.roots} current={known.label} />
-              <RootBody r={known} />
+              <RootPicker roots={d.roots} current={known.label} bundle={bundle} />
+              <RootBody r={known} all={d.roots} bundle={bundle} />
             </>
           );
         }}

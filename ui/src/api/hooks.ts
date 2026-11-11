@@ -3,7 +3,7 @@ import { ConnectError } from '@connectrpc/connect';
 import { Severity, type Intention } from '../gen/ritueel/local/v1alpha1/common_pb';
 import type { IntentionOption } from '../gen/ritueel/local/v1alpha1/plan_service_pb';
 import { inspect, plans } from './client';
-import { useViewState } from './demoState';
+import { useBundle, useViewState } from './demoState';
 
 /**
  * What a read can be. "error" is its own state: a read that failed is never
@@ -21,6 +21,7 @@ export function messageOf(e: unknown): string {
 
 export function useCall<T>(key: string, run: () => Promise<T>): Loaded<T> {
   const view = useViewState();
+  const bundle = useBundle();
   const [tick, setTick] = useState(0);
   const [value, setValue] = useState<Loaded<T>>({ state: 'loading' });
   const latest = useRef(run);
@@ -36,7 +37,7 @@ export function useCall<T>(key: string, run: () => Promise<T>): Loaded<T> {
     return () => {
       live = false;
     };
-  }, [key, view, tick, retry]);
+  }, [key, view, bundle, tick, retry]);
   return value;
 }
 
@@ -53,6 +54,11 @@ export function combine(...all: Loaded<unknown>[]): Loaded<unknown[]> {
 
 export const useSummary = () => useCall('summary', () => inspect.getSummary({}));
 export const useFindings = (min: Severity = Severity.UNSPECIFIED) => useCall(`findings:${min}`, () => inspect.listFindings({ minSeverity: min }));
+/** The name of the bundle the process serves (acme), from the summary. Undefined until it is read. */
+export function useBundleName(): string | undefined {
+  const res = useSummary();
+  return res.state === 'ready' ? res.data.bundle?.name || undefined : undefined;
+}
 export const useRoots = () => useCall('roots', () => inspect.listRoots({}));
 export const useCards = () => useCall('cards', () => inspect.listCards({}));
 export const useCeremonies = () => useCall('ceremonies', () => inspect.listCeremonies({}));

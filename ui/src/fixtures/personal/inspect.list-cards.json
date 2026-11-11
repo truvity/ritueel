@@ -12,10 +12,9 @@
       "lastSeenAt": "2026-06-02T10:40:00Z",
       "lastCheckedAt": "2026-06-02T10:40:00Z",
       "oneTimeCodesOff": true,
-      "roleSummary": "Root card, side A. Holds the acme root (row 3) and has row 2 reserved for the personal key's stage two. Only goes into the offline machine.",
+      "roleSummary": "Root card. Its row 2 is kept for stage two of personal/A: personal/B will be born here and personal/C on the other root card. A passkey on it opens the key file of personal/A. Only goes into the offline system.",
       "rootLabels": [
-        "acme",
-        "personal"
+        "B"
       ],
       "piv": {
         "use": "APPLICATION_USE_IN_USE",
@@ -46,8 +45,8 @@
           },
           {
             "number": 2,
-            "label": "personal",
-            "rootLabel": "personal",
+            "label": "B",
+            "rootLabel": "B",
             "slots": [
               {
                 "id": "82",
@@ -57,8 +56,8 @@
                 "id": "83",
                 "state": "SLOT_STATE_RESERVED",
                 "use": "SLOT_USE_OPENPGP_PRIMARY",
-                "purpose": "OpenPGP primary of the personal key, side A (stage two, not born yet)",
-                "rootLabel": "personal"
+                "purpose": "OpenPGP primary of personal/B (stage two, not born yet)",
+                "rootLabel": "B"
               },
               {
                 "id": "84",
@@ -72,51 +71,23 @@
           },
           {
             "number": 3,
-            "label": "acme",
-            "rootLabel": "acme",
+            "label": "free",
             "slots": [
               {
                 "id": "86",
-                "state": "SLOT_STATE_USED",
-                "use": "SLOT_USE_X509_ROOT",
-                "purpose": "X.509 root of acme, side A",
-                "rootLabel": "acme",
-                "algorithm": "ecdsa-p384",
-                "pinRule": "PIN_RULE_ALWAYS",
-                "touchRule": "TOUCH_RULE_ALWAYS",
-                "publicKeySha256": "50110123456789abcdef0123456789abcdef0123456789abcdef0123456789ab",
-                "bornAt": "2023-12-02T00:00:00Z",
-                "attested": true
+                "state": "SLOT_STATE_SPARE"
               },
               {
                 "id": "87",
-                "state": "SLOT_STATE_USED",
-                "use": "SLOT_USE_OPENPGP_PRIMARY",
-                "purpose": "OpenPGP primary of acme, side A",
-                "rootLabel": "acme",
-                "algorithm": "ecdsa-p384",
-                "pinRule": "PIN_RULE_ALWAYS",
-                "touchRule": "TOUCH_RULE_ALWAYS",
-                "publicKeySha256": "50120123456789abcdef0123456789abcdef0123456789abcdef0123456789ab",
-                "bornAt": "2023-12-02T00:00:00Z",
-                "attested": true
+                "state": "SLOT_STATE_SPARE"
               },
               {
                 "id": "88",
-                "state": "SLOT_STATE_USED",
-                "use": "SLOT_USE_SSH_CA",
-                "purpose": "Break-glass SSH CA key of acme, side A",
-                "rootLabel": "acme",
-                "algorithm": "ecdsa-p384",
-                "pinRule": "PIN_RULE_ALWAYS",
-                "touchRule": "TOUCH_RULE_ALWAYS",
-                "publicKeySha256": "50130123456789abcdef0123456789abcdef0123456789abcdef0123456789ab",
-                "bornAt": "2023-12-02T00:00:00Z",
-                "attested": true
+                "state": "SLOT_STATE_SPARE"
               },
               {
                 "id": "89",
-                "state": "SLOT_STATE_EMPTY"
+                "state": "SLOT_STATE_SPARE"
               }
             ]
           },
@@ -233,10 +204,9 @@
       "lastSeenAt": "2026-06-02T10:40:00Z",
       "lastCheckedAt": "2026-06-02T10:40:00Z",
       "oneTimeCodesOff": true,
-      "roleSummary": "Root card, side B. Holds the acme root (row 3) and has row 2 reserved for the personal key's stage two. Only goes into the offline machine.",
+      "roleSummary": "Root card. Its row 2 is kept for stage two of personal/A: personal/C will be born here and personal/B on the other root card. A passkey on it opens the key file of personal/A. Only goes into the offline system.",
       "rootLabels": [
-        "acme",
-        "personal"
+        "C"
       ],
       "piv": {
         "use": "APPLICATION_USE_IN_USE",
@@ -267,8 +237,8 @@
           },
           {
             "number": 2,
-            "label": "personal",
-            "rootLabel": "personal",
+            "label": "C",
+            "rootLabel": "C",
             "slots": [
               {
                 "id": "82",
@@ -278,8 +248,8 @@
                 "id": "83",
                 "state": "SLOT_STATE_RESERVED",
                 "use": "SLOT_USE_OPENPGP_PRIMARY",
-                "purpose": "OpenPGP primary of the personal key, side B (stage two, not born yet)",
-                "rootLabel": "personal"
+                "purpose": "OpenPGP primary of personal/C (stage two, not born yet)",
+                "rootLabel": "C"
               },
               {
                 "id": "84",
@@ -293,51 +263,23 @@
           },
           {
             "number": 3,
-            "label": "acme",
-            "rootLabel": "acme",
+            "label": "free",
             "slots": [
               {
                 "id": "86",
-                "state": "SLOT_STATE_USED",
-                "use": "SLOT_USE_X509_ROOT",
-                "purpose": "X.509 root of acme, side B",
-                "rootLabel": "acme",
-                "algorithm": "ecdsa-p384",
-                "pinRule": "PIN_RULE_ALWAYS",
-                "touchRule": "TOUCH_RULE_ALWAYS",
-                "publicKeySha256": "50210123456789abcdef0123456789abcdef0123456789abcdef0123456789ab",
-                "bornAt": "2023-12-02T00:00:00Z",
-                "attested": true
+                "state": "SLOT_STATE_SPARE"
               },
               {
                 "id": "87",
-                "state": "SLOT_STATE_USED",
-                "use": "SLOT_USE_OPENPGP_PRIMARY",
-                "purpose": "OpenPGP primary of acme, side B",
-                "rootLabel": "acme",
-                "algorithm": "ecdsa-p384",
-                "pinRule": "PIN_RULE_ALWAYS",
-                "touchRule": "TOUCH_RULE_ALWAYS",
-                "publicKeySha256": "50220123456789abcdef0123456789abcdef0123456789abcdef0123456789ab",
-                "bornAt": "2023-12-02T00:00:00Z",
-                "attested": true
+                "state": "SLOT_STATE_SPARE"
               },
               {
                 "id": "88",
-                "state": "SLOT_STATE_USED",
-                "use": "SLOT_USE_SSH_CA",
-                "purpose": "Break-glass SSH CA key of acme, side B",
-                "rootLabel": "acme",
-                "algorithm": "ecdsa-p384",
-                "pinRule": "PIN_RULE_ALWAYS",
-                "touchRule": "TOUCH_RULE_ALWAYS",
-                "publicKeySha256": "50230123456789abcdef0123456789abcdef0123456789abcdef0123456789ab",
-                "bornAt": "2023-12-02T00:00:00Z",
-                "attested": true
+                "state": "SLOT_STATE_SPARE"
               },
               {
                 "id": "89",
-                "state": "SLOT_STATE_EMPTY"
+                "state": "SLOT_STATE_SPARE"
               }
             ]
           },
@@ -599,8 +541,8 @@
             "id": "sig",
             "state": "SLOT_STATE_USED",
             "use": "SLOT_USE_OPENPGP_SIGN",
-            "purpose": "Signing subkey of the personal key (2025 set)",
-            "rootLabel": "personal",
+            "purpose": "Signing subkey of personal/A (2025 set)",
+            "rootLabel": "A",
             "algorithm": "ed25519",
             "pinRule": "PIN_RULE_ONCE",
             "touchRule": "TOUCH_RULE_ALWAYS",
@@ -611,8 +553,8 @@
             "id": "dec",
             "state": "SLOT_STATE_USED",
             "use": "SLOT_USE_OPENPGP_DECRYPT",
-            "purpose": "Encryption subkey of the personal key, made in software and loaded onto this card",
-            "rootLabel": "personal",
+            "purpose": "Encryption subkey of personal/A, made in software and loaded onto this card",
+            "rootLabel": "A",
             "algorithm": "cv25519",
             "pinRule": "PIN_RULE_ONCE",
             "touchRule": "TOUCH_RULE_NEVER",
@@ -623,8 +565,8 @@
             "id": "aut",
             "state": "SLOT_STATE_USED",
             "use": "SLOT_USE_OPENPGP_AUTHENTICATE",
-            "purpose": "Authentication subkey of the personal key, for SSH (2025 set)",
-            "rootLabel": "personal",
+            "purpose": "Authentication subkey of personal/A, for SSH (2025 set)",
+            "rootLabel": "A",
             "algorithm": "ed25519",
             "pinRule": "PIN_RULE_ONCE",
             "touchRule": "TOUCH_RULE_ALWAYS",
@@ -820,8 +762,8 @@
             "id": "sig",
             "state": "SLOT_STATE_USED",
             "use": "SLOT_USE_OPENPGP_SIGN",
-            "purpose": "Signing subkey of the personal key (2025 set)",
-            "rootLabel": "personal",
+            "purpose": "Signing subkey of personal/A (2025 set)",
+            "rootLabel": "A",
             "algorithm": "ed25519",
             "pinRule": "PIN_RULE_ONCE",
             "touchRule": "TOUCH_RULE_CACHED",
@@ -832,8 +774,8 @@
             "id": "dec",
             "state": "SLOT_STATE_USED",
             "use": "SLOT_USE_OPENPGP_DECRYPT",
-            "purpose": "Encryption subkey of the personal key, made in software and loaded onto this card",
-            "rootLabel": "personal",
+            "purpose": "Encryption subkey of personal/A, made in software and loaded onto this card",
+            "rootLabel": "A",
             "algorithm": "cv25519",
             "pinRule": "PIN_RULE_ONCE",
             "touchRule": "TOUCH_RULE_NEVER",
@@ -844,8 +786,8 @@
             "id": "aut",
             "state": "SLOT_STATE_USED",
             "use": "SLOT_USE_OPENPGP_AUTHENTICATE",
-            "purpose": "Authentication subkey of the personal key, for SSH (2025 set)",
-            "rootLabel": "personal",
+            "purpose": "Authentication subkey of personal/A, for SSH (2025 set)",
+            "rootLabel": "A",
             "algorithm": "ed25519",
             "pinRule": "PIN_RULE_ONCE",
             "touchRule": "TOUCH_RULE_ALWAYS",
@@ -1044,8 +986,8 @@
             "id": "sig",
             "state": "SLOT_STATE_USED",
             "use": "SLOT_USE_OPENPGP_SIGN",
-            "purpose": "Signing subkey of the personal key (2025 set)",
-            "rootLabel": "personal",
+            "purpose": "Signing subkey of personal/A (2025 set)",
+            "rootLabel": "A",
             "algorithm": "ed25519",
             "pinRule": "PIN_RULE_ONCE",
             "touchRule": "TOUCH_RULE_ALWAYS",
@@ -1056,8 +998,8 @@
             "id": "dec",
             "state": "SLOT_STATE_USED",
             "use": "SLOT_USE_OPENPGP_DECRYPT",
-            "purpose": "Encryption subkey of the personal key, made in software and loaded onto this card",
-            "rootLabel": "personal",
+            "purpose": "Encryption subkey of personal/A, made in software and loaded onto this card",
+            "rootLabel": "A",
             "algorithm": "cv25519",
             "pinRule": "PIN_RULE_ONCE",
             "touchRule": "TOUCH_RULE_NEVER",
@@ -1068,8 +1010,8 @@
             "id": "aut",
             "state": "SLOT_STATE_USED",
             "use": "SLOT_USE_OPENPGP_AUTHENTICATE",
-            "purpose": "Authentication subkey of the personal key, for SSH (2025 set)",
-            "rootLabel": "personal",
+            "purpose": "Authentication subkey of personal/A, for SSH (2025 set)",
+            "rootLabel": "A",
             "algorithm": "ed25519",
             "pinRule": "PIN_RULE_ONCE",
             "touchRule": "TOUCH_RULE_ALWAYS",
@@ -1165,14 +1107,12 @@
           {
             "number": 3,
             "label": "practice",
-            "rootLabel": "practice",
             "slots": [
               {
                 "id": "86",
                 "state": "SLOT_STATE_USED",
                 "use": "SLOT_USE_REHEARSAL",
                 "purpose": "Practice X.509 root",
-                "rootLabel": "practice",
                 "algorithm": "ecdsa-p384",
                 "pinRule": "PIN_RULE_ALWAYS",
                 "touchRule": "TOUCH_RULE_ALWAYS",
@@ -1184,7 +1124,6 @@
                 "state": "SLOT_STATE_USED",
                 "use": "SLOT_USE_REHEARSAL",
                 "purpose": "Practice OpenPGP primary",
-                "rootLabel": "practice",
                 "algorithm": "ecdsa-p384",
                 "pinRule": "PIN_RULE_ALWAYS",
                 "touchRule": "TOUCH_RULE_ALWAYS",

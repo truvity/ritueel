@@ -21,6 +21,11 @@ function cardSerialsOf(r: Root): Set<string> {
   return out;
 }
 
+/** The root a fingerprint (of its key, a subkey or a delegated key) belongs to. Joined on the full fingerprint, never on a name. */
+export function rootOf(roots: Root[] | undefined, identifier: string): Root | undefined {
+  return roots?.find((r) => fingerprintsOf(r).has(identifier));
+}
+
 /** The findings that are about this root, worst first. */
 export function touching(r: Root, all: Finding[]): Finding[] {
   const fps = fingerprintsOf(r);

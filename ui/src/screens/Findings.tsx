@@ -2,7 +2,7 @@ import { useState } from 'react';
 import ToggleButton from '@mui/material/ToggleButton';
 import ToggleButtonGroup from '@mui/material/ToggleButtonGroup';
 import { Severity } from '../gen/ritueel/local/v1alpha1/common_pb';
-import { combine, useFindings, useGoalMap, useSummary } from '../api/hooks';
+import { combine, useFindings, useGoalMap, useRoots, useSummary } from '../api/hooks';
 import { plural } from '../lib/format';
 import { href } from '../lib/route';
 import { FindingCard } from '../ui/FindingCard';
@@ -22,6 +22,8 @@ export function Findings() {
   const findings = useFindings(min);
   const summary = useSummary();
   const goals = useGoalMap();
+  const roots = useRoots();
+  const rootList = roots.state === 'ready' ? roots.data.roots : undefined;
   const both = combine(findings, summary);
   return (
     <Page
@@ -87,7 +89,7 @@ export function Findings() {
                       .sort((a, b) => b.severity - a.severity)
                       .map((x) => (
                         <li key={x.id}>
-                          <FindingCard f={x} goals={goals} />
+                          <FindingCard f={x} goals={goals} roots={rootList} />
                         </li>
                       ))}
                   </ul>

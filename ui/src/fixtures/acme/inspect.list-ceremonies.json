@@ -1,256 +1,220 @@
 {
   "ledger": {
-    "recordCount": 12,
+    "recordCount": 10,
     "chainState": "CHAIN_STATE_VERIFIED",
-    "headRecordSha256": "600c0123456789abcdef0123456789abcdef0123456789abcdef0123456789ab",
-    "lastRecordId": "2026-11-03-adopt-personal-key",
-    "lastRecordTitle": "Adopted the holder's OpenPGP key, stage one",
-    "lastRecordAt": "2026-11-03T14:20:00Z",
+    "headRecordSha256": "600a0123456789abcdef0123456789abcdef0123456789abcdef0123456789ab",
+    "lastRecordId": "20260602T142000Z-card-check",
+    "lastRecordTitle": "Checked both root cards and proved they are alive",
+    "lastRecordAt": "2026-06-02T14:20:00Z",
     "checkedAt": "2026-11-11T09:00:00Z",
-    "message": "All 12 records check out. The newest is 8 days old."
+    "message": "All 10 records check out. The newest is 162 days old."
   },
   "ceremonies": [
     {
-      "id": "2026-11-03-adopt-personal-key",
-      "kind": "CEREMONY_KIND_ADOPT_KEY",
-      "title": "Adopted the holder's OpenPGP key, stage one",
-      "summary": "The existing primary was adopted as it is, with its history of subkeys: RSA-4096, no expiry. It now lives in an encrypted key file that a passkey on each root card opens. The adoption did not set the expiry that an adopted key should get: a later plan does it.",
-      "completedAt": "2026-11-03T14:20:00Z",
-      "outcome": "CEREMONY_OUTCOME_DONE",
-      "previousId": "2026-09-15-adopt-globex-cloud-root",
-      "recordSha256": "600c0123456789abcdef0123456789abcdef0123456789abcdef0123456789ab",
-      "previousRecordSha256": "600b0123456789abcdef0123456789abcdef0123456789abcdef0123456789ab",
-      "planDigest": "4b310bab0123456789abcdef0123456789abcdef0123456789abcdefdeadbeef",
-      "subjectLabels": [
-        "personal"
-      ],
-      "cardSerials": [
-        "00000001"
-      ],
-      "guidePath": "/guides/personal-openpgp/#if-you-already-have-a-primary"
-    },
-    {
-      "id": "2026-09-15-adopt-globex-cloud-root",
-      "kind": "CEREMONY_KIND_ADOPT_KEY",
-      "title": "Adopted the cloud root globex-cloud",
-      "summary": "ritueel read the public key of an existing cloud key, checked its policy against the rules, fixed and recorded the OpenPGP creation time, and wrote the certificate. The key was not created or changed.",
-      "completedAt": "2026-09-15T14:20:00Z",
-      "outcome": "CEREMONY_OUTCOME_DONE",
-      "previousId": "2026-06-02-card-check",
-      "recordSha256": "600b0123456789abcdef0123456789abcdef0123456789abcdef0123456789ab",
-      "previousRecordSha256": "600a0123456789abcdef0123456789abcdef0123456789abcdef0123456789ab",
-      "planDigest": "4a2e0aaa0123456789abcdef0123456789abcdef0123456789abcdefdeadbeef",
-      "subjectLabels": [
-        "globex-cloud"
-      ],
-      "cardSerials": [
-        "00000001",
-        "00000002"
-      ],
-      "trustSequence": 8,
-      "guidePath": "/reference/kms-root/#adopting-an-existing-key"
-    },
-    {
-      "id": "2026-06-02-card-check",
+      "id": "20260602T142000Z-card-check",
       "kind": "CEREMONY_KIND_CARD_CHECK",
       "title": "Checked both root cards and proved they are alive",
       "summary": "Both root cards matched the layout. The next check is due in six months.",
       "completedAt": "2026-06-02T14:20:00Z",
       "outcome": "CEREMONY_OUTCOME_DONE",
-      "previousId": "2026-01-27-renew-acme-release",
+      "previousId": "20260127T142000Z-due",
       "recordSha256": "600a0123456789abcdef0123456789abcdef0123456789abcdef0123456789ab",
       "previousRecordSha256": "60090123456789abcdef0123456789abcdef0123456789abcdef0123456789ab",
       "planDigest": "492b09a90123456789abcdef0123456789abcdef0123456789abcdefdeadbeef",
       "subjectLabels": [
-        "acme"
+        "A",
+        "B"
       ],
       "cardSerials": [
-        "00000001",
-        "00000002"
+        "00000011",
+        "00000012"
       ],
       "guidePath": "/reference/cards/#every-six-months"
     },
     {
-      "id": "2026-01-27-renew-acme-release",
+      "id": "20260127T142000Z-due",
       "kind": "CEREMONY_KIND_RENEW",
       "title": "Renewed acme-release",
       "summary": "The release subkey was bound again for 13 months.",
       "completedAt": "2026-01-27T14:20:00Z",
       "outcome": "CEREMONY_OUTCOME_DONE",
-      "previousId": "2025-12-02-renew-acme-ca",
+      "previousId": "20251202T142000Z-due",
       "recordSha256": "60090123456789abcdef0123456789abcdef0123456789abcdef0123456789ab",
       "previousRecordSha256": "60080123456789abcdef0123456789abcdef0123456789abcdef0123456789ab",
       "planDigest": "482808a80123456789abcdef0123456789abcdef0123456789abcdefdeadbeef",
       "subjectLabels": [
-        "acme",
+        "A",
         "acme-release"
       ],
       "cardSerials": [
-        "00000001"
+        "00000011"
       ],
       "trustSequence": 7,
       "guidePath": "/guides/re-sign-yearly/"
     },
     {
-      "id": "2025-12-02-renew-acme-ca",
+      "id": "20251202T142000Z-due",
       "kind": "CEREMONY_KIND_RENEW",
       "title": "Renewed acme-ca",
       "summary": "acme-ca was certified again for 13 months and the trust files were rebuilt.",
       "completedAt": "2025-12-02T14:20:00Z",
       "outcome": "CEREMONY_OUTCOME_DONE",
-      "previousId": "2025-06-09-card-check",
+      "previousId": "20250609T142000Z-card-check",
       "recordSha256": "60080123456789abcdef0123456789abcdef0123456789abcdef0123456789ab",
       "previousRecordSha256": "60070123456789abcdef0123456789abcdef0123456789abcdef0123456789ab",
       "planDigest": "472507a70123456789abcdef0123456789abcdef0123456789abcdefdeadbeef",
       "subjectLabels": [
-        "acme",
+        "A",
         "acme-ca"
       ],
       "cardSerials": [
-        "00000001"
+        "00000011"
       ],
       "trustSequence": 6,
       "guidePath": "/guides/re-sign-yearly/"
     },
     {
-      "id": "2025-06-09-card-check",
+      "id": "20250609T142000Z-card-check",
       "kind": "CEREMONY_KIND_CARD_CHECK",
       "title": "Checked both root cards and proved they are alive",
       "summary": "Both root cards matched the layout. The firmware floor of 5.7.4 is met.",
       "completedAt": "2025-06-09T14:20:00Z",
       "outcome": "CEREMONY_OUTCOME_DONE",
-      "previousId": "2025-01-28-renew-acme-release",
+      "previousId": "20250128T142000Z-due",
       "recordSha256": "60070123456789abcdef0123456789abcdef0123456789abcdef0123456789ab",
       "previousRecordSha256": "60060123456789abcdef0123456789abcdef0123456789abcdef0123456789ab",
       "planDigest": "462206a60123456789abcdef0123456789abcdef0123456789abcdefdeadbeef",
       "subjectLabels": [
-        "acme"
+        "A",
+        "B"
       ],
       "cardSerials": [
-        "00000001",
-        "00000002"
+        "00000011",
+        "00000012"
       ],
       "guidePath": "/reference/cards/#every-six-months"
     },
     {
-      "id": "2025-01-28-renew-acme-release",
+      "id": "20250128T142000Z-due",
       "kind": "CEREMONY_KIND_RENEW",
       "title": "Renewed acme-release",
-      "summary": "The binding of the release subkey was renewed for 13 months over the same key, by acme side B.",
+      "summary": "The binding of the release subkey was renewed for 13 months over the same key, by acme/B.",
       "completedAt": "2025-01-28T14:20:00Z",
       "outcome": "CEREMONY_OUTCOME_DONE",
-      "previousId": "2024-12-03-renew-acme-ca",
+      "previousId": "20241203T142000Z-due",
       "recordSha256": "60060123456789abcdef0123456789abcdef0123456789abcdef0123456789ab",
       "previousRecordSha256": "60050123456789abcdef0123456789abcdef0123456789abcdef0123456789ab",
       "planDigest": "451f05a50123456789abcdef0123456789abcdef0123456789abcdefdeadbeef",
       "subjectLabels": [
-        "acme",
+        "B",
         "acme-release"
       ],
       "cardSerials": [
-        "00000002"
+        "00000012"
       ],
       "trustSequence": 5,
       "guidePath": "/guides/re-sign-yearly/"
     },
     {
-      "id": "2024-12-03-renew-acme-ca",
+      "id": "20241203T142000Z-due",
       "kind": "CEREMONY_KIND_RENEW",
       "title": "Renewed acme-ca",
-      "summary": "The same key of acme-gateway was certified again for 13 months, under acme root side B. The next trust sequence was written.",
+      "summary": "The same key of acme-gateway was certified again for 13 months, under acme/B. The next trust sequence was written.",
       "completedAt": "2024-12-03T14:20:00Z",
       "outcome": "CEREMONY_OUTCOME_DONE",
-      "previousId": "2024-06-10-card-check",
+      "previousId": "20240610T142000Z-card-check",
       "recordSha256": "60050123456789abcdef0123456789abcdef0123456789abcdef0123456789ab",
       "previousRecordSha256": "60040123456789abcdef0123456789abcdef0123456789abcdef0123456789ab",
       "planDigest": "441c04a40123456789abcdef0123456789abcdef0123456789abcdefdeadbeef",
       "subjectLabels": [
-        "acme",
+        "B",
         "acme-ca"
       ],
       "cardSerials": [
-        "00000002"
+        "00000012"
       ],
       "trustSequence": 4,
       "guidePath": "/guides/re-sign-yearly/"
     },
     {
-      "id": "2024-06-10-card-check",
+      "id": "20240610T142000Z-card-check",
       "kind": "CEREMONY_KIND_CARD_CHECK",
       "title": "Checked both root cards and proved they are alive",
       "summary": "Every slot of both root cards matched the built-in layout and both passed the proof of life. Nothing else changed.",
       "completedAt": "2024-06-10T14:20:00Z",
       "outcome": "CEREMONY_OUTCOME_DONE",
-      "previousId": "2024-01-20-add-acme-release",
+      "previousId": "20240120T142000Z-intermediate-add",
       "recordSha256": "60040123456789abcdef0123456789abcdef0123456789abcdef0123456789ab",
       "previousRecordSha256": "60030123456789abcdef0123456789abcdef0123456789abcdef0123456789ab",
       "planDigest": "431903a30123456789abcdef0123456789abcdef0123456789abcdefdeadbeef",
       "subjectLabels": [
-        "acme"
+        "A",
+        "B"
       ],
       "cardSerials": [
-        "00000001",
-        "00000002"
+        "00000011",
+        "00000012"
       ],
       "guidePath": "/reference/cards/#every-six-months"
     },
     {
-      "id": "2024-01-20-add-acme-release",
+      "id": "20240120T142000Z-intermediate-add",
       "kind": "CEREMONY_KIND_ADD_DELEGATED_KEY",
       "title": "Bound the release subkey acme-release",
       "summary": "The OpenPGP primary of acme bound a signing subkey made in a cloud KMS key for the release workflow. The key has exactly one signer.",
       "completedAt": "2024-01-20T14:20:00Z",
       "outcome": "CEREMONY_OUTCOME_DONE",
-      "previousId": "2023-12-09-add-acme-ca",
+      "previousId": "20231209T142000Z-intermediate-add",
       "recordSha256": "60030123456789abcdef0123456789abcdef0123456789abcdef0123456789ab",
       "previousRecordSha256": "60020123456789abcdef0123456789abcdef0123456789abcdef0123456789ab",
       "planDigest": "421602a20123456789abcdef0123456789abcdef0123456789abcdefdeadbeef",
       "subjectLabels": [
-        "acme",
+        "A",
         "acme-release"
       ],
       "cardSerials": [
-        "00000001"
+        "00000011"
       ],
       "trustSequence": 3,
       "guidePath": "/learn/openpgp-release-keys/"
     },
     {
-      "id": "2023-12-09-add-acme-ca",
+      "id": "20231209T142000Z-intermediate-add",
       "kind": "CEREMONY_KIND_ADD_DELEGATED_KEY",
       "title": "Certified acme-ca for the requester acme-gateway",
-      "summary": "The requester acme-gateway sent a request for an intermediate. All checks passed, acme root side A certified it for 13 months, and the trust files were rebuilt.",
+      "summary": "The requester acme-gateway sent a request for an intermediate. All checks passed, acme/A certified it for 13 months, and the trust files were rebuilt.",
       "completedAt": "2023-12-09T14:20:00Z",
       "outcome": "CEREMONY_OUTCOME_DONE",
-      "previousId": "2023-12-02-init-acme",
+      "previousId": "20231202T142000Z-init",
       "recordSha256": "60020123456789abcdef0123456789abcdef0123456789abcdef0123456789ab",
       "previousRecordSha256": "60010123456789abcdef0123456789abcdef0123456789abcdef0123456789ab",
       "planDigest": "411301a10123456789abcdef0123456789abcdef0123456789abcdefdeadbeef",
       "subjectLabels": [
-        "acme",
+        "A",
         "acme-ca"
       ],
       "cardSerials": [
-        "00000001"
+        "00000011"
       ],
       "trustSequence": 2,
       "guidePath": "/reference/hand-off-contract/"
     },
     {
-      "id": "2023-12-02-init-acme",
+      "id": "20231202T142000Z-init",
       "kind": "CEREMONY_KIND_INIT",
-      "title": "Created the acme root on the pair of root cards",
-      "summary": "The X.509 root, the OpenPGP primary and the break-glass SSH CA key of acme were born on root card one (side A) and root card two (side B), in row 3 of the layout. Each key has PIN always and touch always. The first trust files were written.",
+      "title": "Created the roots acme/A and acme/B on two root cards",
+      "summary": "The X.509 root, the OpenPGP primary and the break-glass SSH CA key of acme/A were born on root card A, and those of acme/B on root card B, in row 2 of the layout. Each key has PIN always and touch always. The first trust files were written.",
       "completedAt": "2023-12-02T14:20:00Z",
       "outcome": "CEREMONY_OUTCOME_DONE",
       "recordSha256": "60010123456789abcdef0123456789abcdef0123456789abcdef0123456789ab",
       "planDigest": "401000a00123456789abcdef0123456789abcdef0123456789abcdefdeadbeef",
       "subjectLabels": [
-        "acme"
+        "A",
+        "B"
       ],
       "cardSerials": [
-        "00000001",
-        "00000002"
+        "00000011",
+        "00000012"
       ],
       "trustSequence": 1,
       "guidePath": "/learn/key-stores/#which-path-is-yours"

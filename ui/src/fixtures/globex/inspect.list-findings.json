@@ -1,0 +1,24 @@
+{
+  "findings": [
+    {
+      "id": "cloud-key-waiting",
+      "code": "cloud-key-not-adopted",
+      "severity": "SEVERITY_INFO",
+      "title": "A cloud key is waiting to be adopted",
+      "reason": "ritueel found a key with this alias in the configuration of the bundle that no record mentions. Adopting it reads its public key and checks its policy; it changes nothing in the cloud.",
+      "subject": {
+        "kind": "SUBJECT_KIND_CLOUD_KEY",
+        "identifier": "alias/globex-staging-signing",
+        "label": "alias/globex-staging-signing"
+      },
+      "evidence": [
+        "Region eu-west-1, replica in eu-central-1",
+        "Not in the ledger",
+        "Once adopted it becomes a second root, globex/B"
+      ],
+      "fixCommand": "ritueel root add --store aws-kms --key alias/globex-staging-signing --plan-only",
+      "fixIntention": "INTENTION_ADOPT_KEY",
+      "learnPath": "/reference/kms-root/#adopting-an-existing-key"
+    }
+  ]
+}

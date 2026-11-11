@@ -1,7 +1,7 @@
 import { Store } from '../gen/ritueel/local/v1alpha1/common_pb';
 import { RootKind, type DelegatedKey, type Root } from '../gen/ritueel/local/v1alpha1/inspect_service_pb';
-import { combine, useFindings, useRoots, useSummary } from '../api/hooks';
-import { daysBetween, inDays, plural, ymd } from '../lib/format';
+import { combine, useBundleName, useFindings, useRoots, useSummary } from '../api/hooks';
+import { daysBetween, inDays, plural, rootRef, ymd } from '../lib/format';
 import { href } from '../lib/route';
 import { safeString } from '../lib/safe';
 import { touching } from '../lib/touch';
@@ -14,13 +14,16 @@ import type { Finding } from '../gen/ritueel/local/v1alpha1/inspect_service_pb';
 
 const STORES = [Store.SOFTWARE_FILE, Store.ROOT_CARDS, Store.CLOUD_KMS];
 
-function RootCard({ r, findings }: { r: Root; findings: Finding[] | undefined }) {
+function RootCard({ r, findings, bundle }: { r: Root; findings: Finding[] | undefined; bundle: string | undefined }) {
   const n = findings ? touching(r, findings) : undefined;
   return (
     <article className="border-2 border-rule bg-panel" aria-label={safeString(r.name, 80)}>
       <header className="border-b border-line bg-sunk px-4 py-3">
         <p className="font-mono text-xs font-semibold tracking-wider text-dim uppercase">
-          {r.kind === RootKind.PERSONAL ? 'Personal root' : 'Company root'}, {ROOT_STATE_WORD[r.state]}
+          <span className="normal-case">
+            <T cap={60}>{rootRef(bundle, r.label)}</T>
+          </span>
+          , {r.kind === RootKind.PERSONAL ? 'personal root' : 'company root'}, {ROOT_STATE_WORD[r.state]}
           {r.adopted ? ', adopted' : ''}
         </p>
         <h3 className="mt-0.5 text-xl leading-tight font-bold">
@@ -36,10 +39,7 @@ function RootCard({ r, findings }: { r: Root; findings: Finding[] | undefined })
         <ul className="space-y-1 text-sm">
           {r.keys.map((k) => (
             <li key={k.fingerprint} className="flex flex-wrap gap-x-2">
-              <span className="font-semibold">
-                {ROOT_KEY_WORD[k.kind]}
-                {k.side ? `, side ${safeString(k.side, 12)}` : ''}
-              </span>
+              <span className="font-semibold">{ROOT_KEY_WORD[k.kind]}</span>
               <span className="font-mono text-dim">
                 <T cap={20}>{k.algorithm}</T>, {k.expiresAt ? `ends ${ymd(k.expiresAt)}` : 'no expiry'}
               </span>
@@ -48,7 +48,7 @@ function RootCard({ r, findings }: { r: Root; findings: Finding[] | undefined })
         </ul>
         {r.store === Store.ROOT_CARDS ? (
           <p className="text-sm">
-            On cards{' '}
+            On the root card{r.cardSerials.length === 1 ? '' : 's'}{' '}
             {r.cardSerials.map((s, i) => (
               <span key={s}>
                 {i > 0 ? ' and ' : ''}
@@ -62,7 +62,8 @@ function RootCard({ r, findings }: { r: Root; findings: Finding[] | undefined })
         ) : null}
         {r.store === Store.SOFTWARE_FILE ? (
           <p className="text-sm">
-            Stage {r.stage}. A later stage moves the key to two card-born primaries in row {r.cardRow} of the root cards.
+            Stage {r.stage}. A later stage adds two card-born primaries in row {r.cardRow} of the root cards:{' '}
+            <T cap={60}>{rootRef(bundle, 'B')}</T> and <T cap={60}>{rootRef(bundle, 'C')}</T>.
           </p>
         ) : null}
         {r.cloudKey ? (
@@ -90,7 +91,7 @@ function RootCard({ r, findings }: { r: Root; findings: Finding[] | undefined })
   );
 }
 
-function Delegated({ list, asOf }: { list: { d: DelegatedKey; root: Root }[]; asOf: Parameters<typeof daysBetween>[0] }) {
+function Delegated({ list, asOf, bundle }: { list: { d: DelegatedKey; root: Root }[]; asOf: Parameters<typeof daysBetween>[0]; bundle: string | undefined }) {
   return (
     <ul className="space-y-3">
       {list.map(({ d, root }) => {
@@ -114,7 +115,7 @@ function Delegated({ list, asOf }: { list: { d: DelegatedKey; root: Root }[]; as
               </strong>
               . Kept in: {STORE_WORD[d.store]}. Certified under{' '}
               <a className="font-semibold text-accent underline underline-offset-4" href={href.key(root.label)}>
-                <T cap={60}>{root.name}</T>
+                <T cap={60}>{rootRef(bundle, root.label)}</T>
               </a>{' '}
               on {ymd(d.certifiedAt)}. Ends <strong className="text-ink">{ymd(d.expiresAt)}</strong> ({inDays(days)}).
             </p>
@@ -129,6 +130,7 @@ export function Roots() {
   const roots = useRoots();
   const findings = useFindings();
   const summary = useSummary();
+  const bundle = useBundleName();
   return (
     <Page
       kicker="Roots"
@@ -170,7 +172,7 @@ export function Roots() {
                       {here.length === 0 ? (
                         <p className="border border-dashed border-line p-3 text-sm text-dim">No root is kept this way.</p>
                       ) : (
-                        here.map((x) => <RootCard key={x.label} r={x} findings={f} />)
+                        here.map((x) => <RootCard key={x.label} r={x} findings={f} bundle={bundle} />)
                       )}
                     </section>
                   );
@@ -178,7 +180,7 @@ export function Roots() {
               </div>
               {delegated.length > 0 ? (
                 <Sec title="Delegated keys" aside={`${delegated.length}`}>
-                  <Delegated list={delegated} asOf={s.asOf} />
+                  <Delegated list={delegated} asOf={s.asOf} bundle={bundle} />
                 </Sec>
               ) : null}
             </>
