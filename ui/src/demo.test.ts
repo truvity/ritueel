@@ -342,6 +342,108 @@ describe('the four states of a read', () => {
   });
 });
 
+describe('the empty state answers by itself, never with the loaded bundle (defect 2)', () => {
+  const LOADED_PLAN_IDS = Object.values(SAVED).map((x) => x.id);
+  const GOALS = [Intention.RENEW_DUE, Intention.ADOPT_KEY, Intention.RETIRE_SUBKEYS, Intention.ADD_CARD, Intention.REPLACE_CARD];
+  it('StartPlan answers a goal with the common answer or a refusal, never with a plan of the loaded bundle', async () => {
+    setViewState('empty');
+    for (const b of BUNDLES) {
+      setBundle(b);
+      for (const goal of GOALS) {
+        for (const answers of [undefined, [{ questionId: 'use', optionIds: ['root'] }]]) {
+          const r = await plans.startPlan({ intention: goal, answers });
+          const where = `${b} ${Intention[goal]} ${answers ? 'with' : 'without'} answers`;
+          expect(LOADED_PLAN_IDS, where).not.toContain(r.plan?.id ?? '');
+          expect(JSON.stringify(r, (_k, v) => (typeof v === 'bigint' ? String(v) : v)), where).not.toMatch(/personal-subkey-revoke|20261111T090000Z-(due|root-add)/);
+          if (goal === Intention.ADOPT_KEY) expect(r.refusal, where).toBe('');
+          else {
+            expect(r.plan, where).toBeUndefined();
+            expect(r.questions, where).toHaveLength(0);
+            expect(r.refusal, where).not.toBe('');
+          }
+        }
+      }
+    }
+  });
+  it('the goals that need a card are refused as the card refusal, in the empty bundle', async () => {
+    setViewState('empty');
+    for (const b of BUNDLES) {
+      setBundle(b);
+      for (const goal of [Intention.ADD_CARD, Intention.REPLACE_CARD]) {
+        expect((await plans.startPlan({ intention: goal })).refusal, `${b} ${Intention[goal]}`).toBe('This goal needs a card connected to this computer. The demo has none.');
+      }
+    }
+  });
+  it('a goal the empty switch does not name fails loudly, as the contract asks', async () => {
+    setViewState('empty');
+    const err = await plans.startPlan({ intention: Intention.UNSPECIFIED }).then(
+      () => undefined,
+      (e: unknown) => e,
+    );
+    expect(err).toBeInstanceOf(ConnectError);
+    expect((err as ConnectError).code).toBe(Code.Unimplemented);
+    expect((err as ConnectError).message).toMatch(/no recorded answer for this StartPlan request/);
+  });
+  it('SavePlan of a plan of a loaded bundle is not answered in the empty state; the common adoption plan is', async () => {
+    setViewState('empty');
+    for (const b of BUNDLES) {
+      setBundle(b);
+      for (const [other, w] of Object.entries(SAVED)) {
+        const err = await plans.savePlan({ planId: w.id, digest: '' }).then(
+          () => undefined,
+          (e: unknown) => e,
+        );
+        expect(err, `${other} plan in empty ${b}`).toBeInstanceOf(ConnectError);
+        expect((err as ConnectError).code, `${other} plan in empty ${b}`).toBe(Code.Unimplemented);
+        expect((err as ConnectError).message).toMatch(/no recorded answer for this SavePlan request/);
+      }
+      const adopt = await plans.startPlan({ intention: Intention.ADOPT_KEY, answers: [{ questionId: 'use', optionIds: ['root'] }] });
+      await expect(plans.savePlan({ planId: adopt.plan?.id ?? '', digest: adopt.plan?.digest ?? '' }), b).resolves.toBeDefined();
+    }
+  });
+  it('the empty goals screen gives the two card goals reasons that fit a bundle with no card', async () => {
+    setViewState('empty');
+    for (const b of BUNDLES) {
+      setBundle(b);
+      const goals = (await plans.listIntentions({})).options;
+      const add = goals.find((g) => g.intention === Intention.ADD_CARD);
+      const replace = goals.find((g) => g.intention === Intention.REPLACE_CARD);
+      expect(add?.applicable, b).toBe(false);
+      expect(replace?.applicable, b).toBe(false);
+      expect(add?.notApplicableReason, b).toBe('No card is registered yet, and the demo has no card to connect.');
+      expect(replace?.notApplicableReason, b).toBe('The bundle holds no card yet.');
+    }
+  });
+});
+
+describe('no text points to a control that does not exist (defect 3)', () => {
+  it('every goal reason of every bundle, in every state, is free of an instruction to mark or to go to a screen', async () => {
+    for (const state of ['loaded', 'empty'] as const) {
+      setViewState(state);
+      for (const b of BUNDLES) {
+        setBundle(b);
+        for (const g of (await plans.listIntentions({})).options) {
+          expect(g.notApplicableReason, `${state} ${b} ${Intention[g.intention]}`).not.toMatch(/\bMark\b|Cards screen|\bon the [A-Za-z ]+ screen/i);
+        }
+      }
+    }
+  });
+  it('the replace-card reason reads the same in the three loaded bundles', async () => {
+    for (const b of BUNDLES) {
+      setBundle(b);
+      const g = (await plans.listIntentions({})).options.find((x) => x.intention === Intention.REPLACE_CARD);
+      expect(g?.notApplicableReason, b).toBe('No card in this bundle is lost or retired.');
+    }
+  });
+  it('no fixture holds the dead pointer', () => {
+    const HERE = new URL('./', import.meta.url).pathname;
+    const walk = (dir: string): string[] =>
+      readdirSync(join(HERE, dir), { withFileTypes: true }).flatMap((e) => (e.isDirectory() ? walk(`${dir}/${e.name}`) : /\.json$/.test(e.name) ? [`${dir}/${e.name}`] : []));
+    const hits = walk('fixtures').filter((f) => /Mark one|Cards screen|on the [A-Za-z ]+ screen/.test(readFileSync(join(HERE, f), 'utf8')));
+    expect(hits).toEqual([]);
+  });
+});
+
 describe('the words of the maintainer stay', () => {
   const HERE = new URL('./', import.meta.url).pathname;
   const OLD_WORDS = /folder|ceremony machine|offline machine|\bdaily\b|pending\/|hardware.key sign-in/i;
