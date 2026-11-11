@@ -4,7 +4,9 @@ Status: a design, version `v1alpha1`. Nothing serves it yet: the program is not 
 
 The API between ritueel's local page (`ui/`) and the ritueel process, written in Protobuf (package `ritueel.local.v1alpha1`). The program will serve it with ConnectRPC; the page calls it with `@connectrpc/connect`. See [the local page](https://ritueel.id/tools/local-page/).
 
-**No call takes or returns a secret, a PIN or a passphrase.** There is no field for one, and none will be added. The page is a view: it never confirms a ceremony. `ritueel run PLAN --confirm DIGEST` happens in the terminal, on the ceremony machine. The only value that goes from the page to the process, other than choices from a fixed list, is the digest of a plan, which is public.
+The process is one long-running background process, started on demand, that serves one bundle (the directory of one trust domain). It serves this API twice with the same handlers: on a Unix socket for the command line, and on the loopback address for the browser while the page is in use, because a browser cannot open a Unix socket. The command line and the page get the same calls and the same answers.
+
+**No call takes or returns a secret, a PIN or a passphrase.** There is no field for one, and none will be added. The page is a view: it never confirms a ceremony. `ritueel run PLAN --confirm DIGEST` happens in the terminal, on the offline system or on your workstation. The only value that goes from the page to the process, other than choices from a fixed list, is the digest of a plan, which is public.
 
 ## What is here
 
@@ -20,21 +22,21 @@ The API between ritueel's local page (`ui/`) and the ritueel process, written in
 
 `just proto-lint` lints (buf, from devbox). `just proto-gen` lints and regenerates `ui/src/gen/` with `protoc-gen-es` from the page's lock file (`ui/node_modules`). `just proto-check` regenerates and fails on any difference, so the committed code is always what the generator makes. Both run in CI.
 
-The Go side comes with the program: `protoc-gen-go` and `protoc-gen-connect-go` as two more entries in `buf.gen.yaml`, and `option go_package` in the three files.
+The Go side comes with the program: `protoc-gen-go` and `protoc-gen-connect-go` as two more entries in `buf.gen.yaml`, and `option go_package` in the three files. The same generated handlers are mounted on both listeners, the Unix socket and the loopback address.
 
 ## The services
 
 | Service | Call | Request | Response | Writes? |
 |---|---|---|---|---|
-| `InspectService` | `GetSummary` | `GetSummaryRequest` | `GetSummaryResponse` (folder, as_of, ledger, due items, finding counts, counts, pending plans, setup steps) | no |
+| `InspectService` | `GetSummary` | `GetSummaryRequest` | `GetSummaryResponse` (bundle, as_of, ledger, due items, finding counts, counts, pending plans, setup steps) | no |
 | | `ListFindings` | `ListFindingsRequest` (min severity) | `ListFindingsResponse` (`Finding`: reason, severity, subject, evidence, fix command, fix intention, learn path) | no |
-| | `ListRoots` | `ListRootsRequest` | `ListRootsResponse` (`Root`: keys by side and card, `OpenPgpCertificate` with primary, user IDs, `SubkeySet` by year and card, `Subkey`; `CloudKey`; `DelegatedKey`) | no |
+| | `ListRoots` | `ListRootsRequest` | `ListRootsResponse` (`Root`: label A or B, keys and card, `OpenPgpCertificate` with primary, user IDs, `SubkeySet` by year and card, `Subkey`; `CloudKey`; `DelegatedKey`) | no |
 | | `ListCeremonies` | `ListCeremoniesRequest` | `ListCeremoniesResponse` (`LedgerStatus` and `Ceremony`, newest first) | no |
 | | `ListCards` | `ListCardsRequest` | `ListCardsResponse` (`Card`: `PivApplication` in six `PivRow`s of four `Slot`s, `OpenPgpApplication`, `Fido2Application`) | no |
 | | `ListTrustFiles` | `ListTrustFilesRequest` | `ListTrustFilesResponse` (`TrustFile` with its check) | no |
 | `PlanService` | `ListIntentions` | `ListIntentionsRequest` | `ListIntentionsResponse` (`IntentionOption`: applicable or greyed with a reason, recommended) | no |
-| | `StartPlan` | `StartPlanRequest` (intention, due ids, finding ids, target, `Answer`s) | `StartPlanResponse` (`Question`s, or the `Plan`, or a refusal) | no (builds in memory) |
-| | `SavePlan` | `SavePlanRequest` (plan id, digest) | `SavePlanResponse` (path, digest, `written`, notice, run command, what to copy and bring, file preview) | **yes**, one inert file; the demo writes nothing |
+| | `StartPlan` | `StartPlanRequest` (intention, due ids, finding ids, target, `Answer`s) | `StartPlanResponse` (`Question`s, or the `Plan` with its `run_place`, or a refusal) | no (builds in memory) |
+| | `SavePlan` | `SavePlanRequest` (plan id, digest) | `SavePlanResponse` (bundle path, path `ledger/<ceremony>/plan.json`, digest, `written`, notice, run command, what to copy and bring, file preview) | **yes**, one inert file; the demo writes nothing |
 
 Enums, all with an `_UNSPECIFIED = 0` first value and the enum name as prefix:
 `Severity`, `Store`, `SubjectKind`, `Intention`, `ChainState` (common);
@@ -43,7 +45,7 @@ Enums, all with an `_UNSPECIFIED = 0` first value and the enum name as prefix:
 `SubkeyOrigin`, `CeremonyKind`, `CeremonyOutcome`, `CardKind`, `CardState`,
 `ApplicationUse`, `SlotState`, `SlotUse`, `PinRule`, `TouchRule`,
 `TrustFileKind`, `TrustCheckResult` (inspect); `QuestionKind`, `Requirement`,
-`FolderChangeAction` (plan).
+`BundleChangeAction`, `RunPlace` (plan).
 
 ## Which calls feed which screen
 
@@ -56,12 +58,12 @@ Enums, all with an `_UNSPECIFIED = 0` first value and the enum name as prefix:
 | **Cards** (inventory and the use of every slot) | `ListCards`. |
 | **Trust files** | `ListTrustFiles`. |
 | **Wizard: goals** | `ListIntentions`. |
-| **Wizard: questions and preview** | `StartPlan` twice: first without answers (questions), then with them (the plan: steps, folder changes, digest, equivalent command, run command). |
-| **Wizard: save and hand-over** | `SavePlan` (path, digest, what to copy and bring, what the plan file holds). In the demo `written` is false and `notice` says so. |
+| **Wizard: questions and preview** | `StartPlan` twice: first without answers (questions), then with them (the plan: steps, bundle changes, digest, equivalent command, run command). |
+| **Wizard: save and hand-over** | `SavePlan` (path `ledger/<ceremony>/plan.json`, digest, what to copy and bring, what the plan file holds). In the demo `written` is false and `notice` says so. |
 
 ## Things a designer must know
 
-1. **Text is data.** Every string in a response is written by the folder, not
+1. **Text is data.** Every string in a response is written by the bundle, not
    by the program: user IDs, card names, summaries. Render it as text only, cap
    its length, and show any non-ASCII, bidirectional, zero-width or control
    character as a `U+XXXX` escape. The fixture is plain ASCII; real data will not be.
@@ -76,13 +78,16 @@ Enums, all with an `_UNSPECIFIED = 0` first value and the enum name as prefix:
    `00000101` and `00000102`; there is no `Card` for them. Design that state.
 5. **The row layout is fixed.** `PivApplication.rows` always has six rows of
    four slots in the order 9a, 9c, 9d, 9e, then 82 to 95. Row 1 is the card's own
-   jobs; `Root.card_row` is 1 to 6 as drawn, so roots start at row 2. A slot's
+   jobs; `Root.card_row` is 1 to 6 as drawn, so roots start at row 2, and a root
+   owns one row on its card. A slot's
    `SlotState` is empty, used, reserved (planned, not born) or spare (a row no root
    owns yet); on a day-to-day card all PIV slots are empty, not spare.
 6. **Counting days.** Use `as_of` from `GetSummary` as "now". `DueItem.severity`
    is already computed (notice at 60 days, alert at 30, critical at 14).
 7. **The command is shown, never run.** `fix_command`, `equivalent_command`
-   and `run_command` are exact strings to display and copy. Their names follow
+   and `run_command` are exact strings to display and copy. They run from the
+   bundle's directory, so a plan is named by its path in the bundle,
+   `ledger/<ceremony>/plan.json`. Their names follow
    `docs/reference/cli.md` where a command exists there; a few (`personal
    primary extend`, `personal primary add`, `personal userid revoke`, `personal subkey revoke`, and the `--key` flag that names a
    cloud key to adopt) are proposals until the command set is built; `card adopt`
@@ -92,14 +97,26 @@ Enums, all with an `_UNSPECIFIED = 0` first value and the enum name as prefix:
    a refusal. Questions are choices only; there is no free-text answer, so no
    place a secret could be typed. `ListIntentions` marks goals that do not apply,
    with the reason; show them greyed.
-9. **Nothing happens here.** A plan's steps are what `ritueel run` does on the
-   ceremony machine. A `Requirement` says that a card, a PIN, a touch or a
+9. **Nothing happens here.** A plan's steps are what `ritueel run` does where the
+   plan says: `Plan.run_place` is the offline system (a root on cards or in a key
+   file) or the workstation (a cloud root). The USB-stick fields of the answer
+   (what to copy and bring) are empty on the workstation, and the page then shows
+   no stick step. A `Requirement` says that a card, a PIN, a touch or a
    passkey unlock is needed there; the PIN is never in the page. `SavePlan`
    in the demo answers `written: false` with a notice and a file preview: show
-   the preview as "what saving would write".
+   the preview as "what saving would write". The real call writes canonical JSON
+   (RFC 8785), and its SHA-256 is the digest.
 10. **`int64` is a string in JSON** (`size_bytes`), and `Timestamp` is an
     RFC 3339 string; the generated types turn them into `bigint` and `Timestamp`.
 11. **One addition to the world of the brief:** a ninth finding, "a cloud key is
-    waiting to be adopted" (`alias/example-staging-signing`), so that the wizard
-    goal "adopt a key" has something to adopt, since the personal key and the
-    cloud root are already adopted.
+    waiting to be adopted" (`alias/globex-staging-signing`), in the `globex`
+    example bundle, so that the wizard goal "adopt a key" has something to adopt,
+    since the personal key and the cloud root are already adopted.
+12. **A root is written `bundle/label`.** `Root.label` is `A`, `B` and so on, as in
+    the bundle's `root.json`; the bundle name comes from `GetSummary.bundle.name`.
+    One process serves one bundle, so no call names or selects a bundle. The demo
+    has three example bundles and a switch for them; the switch is in the page, not
+    in this API.
+13. **The four card kinds** are root, day-to-day, server and rehearsal. A server
+    card (`CARD_KIND_SERVER`) is a card that stays in a server and does a hardware
+    key's work there. The demo shows no server card.

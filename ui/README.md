@@ -15,10 +15,16 @@ what, and to build a plan for the next ceremony. Built in **demo mode** it is th
 demo that is served under `/demo/` on the site: the real interface, answering
 from made-up fixtures, refusing to act.
 
+The page shows **one bundle** at a time. A bundle is the directory of one trust
+domain (for example `personal` or `acme`), with its own ledger, root list and roots.
+A root is written `bundle/label`, for example `acme/A`. The real process serves the
+one bundle it was started on. The demo has three example bundles and a switch to
+choose between them (see "How the demo mode works").
+
 The page is a view. It never confirms a ceremony and never asks for or receives a
 PIN, a passphrase or any secret. Every screen that names an action shows the
 command that does it, and no screen performs one. Confirmation happens in the
-terminal, on the ceremony machine.
+terminal, on the offline system or on your workstation.
 
 ## Screens
 
@@ -26,21 +32,23 @@ terminal, on the ceremony machine.
 |---|---|
 | `#/start` | The verdict, what is wrong, what is due, the ledger seal, getting started |
 | `#/findings` | Every finding with its reason, evidence, command and one next step; filter by level |
-| `#/roots` | The roots by store (encrypted file, root cards, cloud KMS) and the delegated keys |
-| `#/key/<root>` | One root in full: `personal` (the certificate, subkeys by year and by card, a validity chart), `acme` (the company OpenPGP root, its root keys by side and card, delegated keys), `globex-cloud` (the cloud root) |
+| `#/roots` | The roots of the bundle by store (encrypted file, root cards, cloud KMS) and its delegated keys |
+| `#/key/<root label>` | One root of the bundle in full, for example `acme/A`: its certificate, keys, card and delegated keys. In `personal` it adds the subkeys by year and by card and a validity chart |
 | `#/cards` and `#/cards/<serial>` | The inventory; one card opened with every slot (a slot opens its details) |
 | `#/history` and `#/history/<id>` | The ledger; one ceremony opened with its steps and records |
 | `#/trust` | The trust files and their checks |
 | `#/plan` and `#/plan/<goal>` | The wizard: goal, choices, plan with its digest and commands, save |
 
-Goals: `renew-due`, `replace-subkeys`, `adopt-key`, `add-card`, `replace-card`.
+Goals: `renew-due`, `retire-subkeys`, `adopt-key`, `add-card`, `replace-card`. A
+goal that does not apply to the bundle is greyed, with the reason.
 An unknown hash shows a "not found" screen, never another screen.
 
 Every screen handles four states, in honest words: **loaded**, **empty** (the read
 worked and nothing is there, with what comes next), **failed** (the read did not
 work: never drawn as empty, with the reason and a retry) and **waiting** (no
 answer yet). In the demo, a switch in the bar at the top ("Try the states") makes
-the in-memory transport answer in each state.
+the in-memory transport answer in each state. A second switch ("Try a bundle")
+chooses the example bundle.
 
 ## Install, test, build, serve
 
@@ -48,12 +56,12 @@ From the repository, inside the devbox shell, the recipes are: `just ui-install`
 `ui-lint`, `ui-test`, `ui-build`, `ui-demo` (builds the demo into
 `site/public/demo/`, where the site build picks it up), `ui-e2e` (the page in Chrome
 under the site's own policy), and `proto-gen` / `proto-check` for the generated code
-in `src/gen/`. CI runs them. The same steps by hand, from this folder (`cd` there first):
+in `src/gen/`. CI runs them. The same steps by hand, from this directory (`cd` there first):
 
 ```sh
 npm ci                 # or npm install; the network is needed only for this step
 npm run typecheck      # tsc --noEmit
-npm test               # vitest: 70 tests (banned calls, text safety, every screen with hostile text, demo transport, routes)
+npm test               # vitest: banned calls, text safety, every screen with hostile text, demo transport, every example bundle, links, routes
 npm run build          # the demo: tsc, then vite build -> dist/, base path /demo/
 node scripts/serve.mjs 8765    # serves dist/ under /demo/ on 127.0.0.1:8765, prints the URL
 # open http://127.0.0.1:8765/demo/
@@ -79,17 +87,37 @@ no library (they drive headless Chrome over the DevTools protocol).
   from `src/api/demo.ts`, in a chunk of its own with the fixtures; in the real
   build it is `createConnectTransport` from `@connectrpc/connect-web` and the
   fixtures are not in the bundle (`npm run check:dist` checks this).
-- The demo handlers answer from `src/fixtures/*.json` (the same messages as the
-  real service, parsed with the generated schema, so a wrong field is an error),
-  chosen by `manifest.json`. `ListFindings` applies `min_severity` in the
-  transport. A call with no recorded answer fails loudly.
+- The demo handlers answer from `src/fixtures/<bundle>/*.json`, one directory for
+  each example bundle (the same messages as the real service, parsed with the
+  generated schema, so a wrong field is an error). Each directory has its own
+  `manifest.json`, which chooses the file for a call. `src/fixtures/common/` holds
+  the refusals the bundles share; a manifest names them as `common/...`.
+  `ListFindings` applies `min_severity` in the transport. A call with no recorded
+  answer fails loudly.
+- The three example bundles are trust domains of their own, each with its own
+  ledger, roots, cards, findings, trust files and goals. `personal` is one holder's
+  OpenPGP key in a key file, with its subkeys by year and by card, and six cards.
+  `acme` is a company with roots `acme/A` and `acme/B` on a pair of root cards,
+  delegated keys and six trust files. `globex` is another company's cloud root
+  `globex/A`, with no card.
+- The bundle switch (`src/api/demoState.ts`, "Try a bundle", beside "Try the
+  states") is demo chrome only. It is not in the contract and not in the real
+  build (`npm run check:dist` checks that it is absent from `dist-real/`). Screens
+  never name a bundle: they read its name from `GetSummary.bundle.name` and write
+  roots as `bundle/label`. Switching also returns the page to `#/start`, so no route
+  points at a card or a root the new bundle lacks.
 - The one call that would act, `SavePlan`, answers with `written: false`, a notice
-  that this is a demo and nothing was written, and the file it would have written.
-  Nothing is written anywhere. The wizard builds a plan in memory (`StartPlan`:
-  questions, then the plan with its steps, digest and commands). In the demo the
-  plan is the same whatever is chosen.
-- The state switch (`src/api/demoState.ts`) makes the same transport answer as an
-  empty folder, with an error, or not at all until the state changes.
+  that this is a demo and nothing was written, and the file it would have written:
+  `ledger/<ceremony>/plan.json` inside the bundle, where the engine writes any
+  plan. The file is canonical JSON and its SHA-256 is the digest
+  ([the ceremony record](https://ritueel.id/reference/ceremony-record/)). Nothing is
+  written anywhere. The wizard builds a plan in memory (`StartPlan`: questions,
+  then the plan with its steps, digest and commands). In the demo the plan is the
+  same whatever is chosen. The plan says where it runs (`Plan.run_place`): on the
+  offline system for a root on cards or in a key file, on your workstation for a
+  cloud root. The USB-stick step shows only on the offline system.
+- The state switch makes the same transport answer as an empty bundle, with an
+  error, or not at all until the state changes.
 - Routes are hash routes, so a static host needs no fallback.
 - Nothing is fetched from another host: no CDN, no remote font, no analytics. A
   Content-Security-Policy in `index.html` (`default-src 'self'`, `connect-src
@@ -181,14 +209,21 @@ No router, no state library, no font package, no ESLint, no screenshot library.
 
 ## What the real program replaces
 
-Only the transport. In the real program the same bundle (`npm run build:real`,
-`BASE=./`) is embedded in the binary and served from the local process;
-`src/api/client.ts` then builds `createConnectTransport({ baseUrl: '/' })` and the
-program serves `InspectService` and `PlanService` with connect-go. Gone from the
-real build: the fixtures, the in-memory transport, the demo bar and the state
-switch. The screens, hooks and generated code do not change. What the real program
-must add: `SavePlan` actually writes one inert file; the step list of a ceremony
-(see below); and the shell quoting of every name inside a command it sends
+Only the transport. The process is the owner's decision of 2026-11-11: one
+long-running background process, started on demand, bound to a Unix socket. The
+command line uses the socket. A browser cannot open a Unix socket, so the page
+reaches the same process over the loopback address while the page is in use. Both
+get the same calls and the same answers, and the process serves one bundle.
+
+In the real program the same page bundle (`npm run build:real`, `BASE=./`) is
+embedded in the binary and served by that process; `src/api/client.ts` then builds
+`createConnectTransport({ baseUrl: '/' })` and the process serves `InspectService`
+and `PlanService` with connect-go. Gone from the real build: the fixtures, the
+in-memory transport, the demo bar, the state switch and the bundle switch. The
+screens, hooks and generated code do not change. What the real program must add:
+`SavePlan` actually writes `ledger/<ceremony>/plan.json` into the bundle, one inert
+file, create-only, in the form the engine uses for any plan; the step list of a
+ceremony (see below); and the shell quoting of every name inside a command it sends
 (`fix_command`, `equivalent_command`, `run_command`): the page shows a command as
 it is given and copies it only when it is plain, one line and short, but it cannot
 tell whether a user ID inside it is quoted.
