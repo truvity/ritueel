@@ -1,6 +1,7 @@
 // A browser test over the DevTools protocol (headless Chrome, no library):
 // keyboard and focus, the slot popover, the colour scheme toggle and its
-// stored choice, the wizard, the four states, copy, the phone menu, routes.
+// stored choice, the wizard and its step bar, the four states, copy, the phone menu, routes,
+// and the help for a first visitor (what ritueel is, the Start-here path, the named switches, the notes).
 // usage: node scripts/e2e.mjs http://127.0.0.1:PORT/demo/
 import { clickText, launch, sleep } from './cdp.mjs';
 
@@ -26,6 +27,12 @@ const go = async (hash) => {
 };
 const active = () => evalJs(`(() => { const a = document.activeElement; return JSON.stringify({ tag: a.tagName, id: a.id, text: (a.textContent || '').trim().slice(0, 40), label: a.getAttribute('aria-label') || '', ring: getComputedStyle(a).outlineStyle + ' ' + getComputedStyle(a).outlineWidth }); })()`).then(JSON.parse);
 const text = () => evalJs(`document.body.innerText`);
+// where the wizard's step bar is: the item marked as the current step, and how many items are done
+const stepBar = () =>
+  evalJs(`(() => { const ol = document.querySelector('ol[aria-label="Where you are in the wizard"]'); if (!ol) return null; const cur = ol.querySelector('li[aria-current="step"]'); return JSON.stringify({ current: cur ? cur.textContent.replace(/\\s+/g, ' ').trim() : '', done: [...ol.querySelectorAll('li')].filter((li) => /\\(done\\)/.test(li.textContent)).length, items: ol.querySelectorAll('li').length }); })()`).then((v) => (v ? JSON.parse(v) : null));
+// the rectangle of the first element whose own text matches, relative to the window
+const rectOf = (needle, tag = '*') =>
+  evalJs(`(() => { const el = [...document.querySelectorAll(${JSON.stringify(tag)})].find((e) => e.children.length === 0 || e.tagName === 'P' ? e.textContent.includes(${JSON.stringify(needle)}) : false); if (!el) return null; const r = el.getBoundingClientRect(); return JSON.stringify({ top: r.top, bottom: r.bottom, height: innerHeight }); })()`).then((v) => (v ? JSON.parse(v) : null));
 
 await send('Emulation.setDeviceMetricsOverride', { width: 1440, height: 900, deviceScaleFactor: 1, mobile: false });
 await send('Browser.grantPermissions', { permissions: ['clipboardReadWrite', 'clipboardSanitizedWrite'] }).catch(() => {});
@@ -35,13 +42,30 @@ await sleep(1200);
 // ---- the demo bar: the bundle switch (demo chrome, not part of the contract) -----------------
 const switchState = () => evalJs(`JSON.stringify([...document.querySelectorAll('button[aria-pressed]')].map((b) => [b.textContent.trim(), b.getAttribute('aria-pressed')]))`).then(JSON.parse);
 const pressed = (all, name) => all.some(([n, on]) => n === name && on === 'true');
-check('the demo bar has a bundle switch next to the state switch', /Try a bundle/.test(await text()) && /Try the states/.test(await text()));
+check('the demo bar names its two switches: Example bundle and Page state', /Example bundle/.test(await text()) && /Page state/.test(await text()) && !/Try a bundle|Try the states/.test(await text()));
 const sw0 = await switchState();
 check('the switch offers personal, acme and globex, and the demo starts on personal', ['personal', 'acme', 'globex'].every((n) => sw0.some(([x]) => x === n)) && pressed(sw0, 'personal') && !pressed(sw0, 'acme') && !pressed(sw0, 'globex'), JSON.stringify(sw0));
 check('the sidebar names the bundle and where it is', /personal/.test(await text()) && /~\/ritueel\/personal/.test(await text()));
 
 // ---- routes, titles, focus -------------------------------------------------
 check('Start is the first screen and the tab has a title', (await evalJs('document.title')).startsWith('Start - ritueel local page (demo)'));
+
+// ---- the first visit: what ritueel is, and a path (1440 px; the phone is checked at the end) -----------
+const lede = await rectOf('helps you keep a root', 'p');
+check('Start says in its first sentence what ritueel is, inside the first screen at 1440x900', lede && lede.top >= 0 && lede.bottom <= lede.height, JSON.stringify(lede));
+check('the lede explains root, ceremony and ledger where they first appear', /keep a root \(the key that everything else trusts\)/.test((await text()).replace(/\s+/g, ' ')) && /ceremony \(one sitting at a terminal/.test((await text()).replace(/\s+/g, ' ')) && /ledger \(the book of records\)/.test((await text()).replace(/\s+/g, ' ')));
+check('Start says what a bundle is before it uses the word as a given', /the directory that holds everything ritueel knows about one set of keys/.test((await text()).replace(/\s+/g, ' ')));
+const startHere = await rectOf('Start here', 'h2');
+check('the Start-here box begins inside the first screen at 1440x900', startHere && startHere.top >= 0 && startHere.top < startHere.height, JSON.stringify(startHere));
+const pathLinks = JSON.parse(await evalJs(`JSON.stringify([...document.querySelectorAll('section[aria-labelledby="start-here-h"] ol a')].map((a) => [a.getAttribute('href'), a.textContent.trim()]))`));
+check('Start here lists three links, in order: Roots, Findings, Make a plan', JSON.stringify(pathLinks) === JSON.stringify([['#/roots', 'Roots'], ['#/findings', 'Findings'], ['#/plan', 'Make a plan']]), JSON.stringify(pathLinks));
+check('the Start-here box explains the two switches in the bar and links to the words', /Example bundle picks a made-up set of keys/.test((await text()).replace(/\s+/g, ' ')) && /Page state shows each screen/.test((await text()).replace(/\s+/g, ' ')) && /All the words/.test(await text()) && /Read what a root is/.test(await text()));
+for (const [i, [hash]] of pathLinks.entries()) {
+  await evalJs(`document.querySelectorAll('section[aria-labelledby="start-here-h"] ol a')[${i}].click()`);
+  await sleep(500);
+  check(`the Start-here link ${i + 1} lands on ${hash}, a screen that exists`, (await evalJs('location.hash')) === hash && !/no such screen/i.test(await text()), await evalJs('location.hash'));
+  await go('#/start');
+}
 await go('#/findings');
 check('a change of screen sets the title', (await evalJs('document.title')).startsWith('Findings'));
 check('a change of screen moves focus to the heading', (await active()).id === 'page-title');
@@ -116,6 +140,8 @@ await sleep(400);
 const shownCmd = await evalJs(`document.querySelector('code')?.textContent ?? ''`);
 const clip = await evalJs(`navigator.clipboard.readText().catch((e) => 'ERR ' + e.message)`);
 check('Copy writes exactly the command that is shown', shownCmd.length > 10 && clip === shownCmd, JSON.stringify({ shownCmd, clip }));
+check('every command in the demo says the command line is not built yet', /Example only\. The ritueel command line is not built yet\./.test(await text()) && (await evalJs(`document.querySelectorAll('code').length`)) === (await evalJs(`[...document.querySelectorAll('p[role=note]')].filter((p) => /not built yet/.test(p.textContent)).length`)));
+check('the Copy toast says the command is an example', /not built yet/.test(await evalJs(`document.querySelector('.MuiSnackbarContent-message')?.textContent || ''`)));
 check('Copy answers on screen, and in the demo says nothing ran', /Copied\.|Could not copy/.test(await text()) && /demo/i.test(await evalJs(`document.querySelector('.MuiSnackbarContent-message')?.textContent || ''`)) || /Could not copy/.test(await text()));
 
 // ---- findings filter (min_severity goes through the transport) -----------------------------
@@ -128,6 +154,7 @@ check('Critical only lists one', /1 finding, worst first/.test(await text()));
 // ---- the wizard, in the personal bundle: a key file, run on the offline system ------------------------
 await go('#/plan');
 const goalsText = await text();
+check('the goals point to no control that does not exist (no "Cards screen", no "Mark one")', !/Cards screen|Mark one/.test(goalsText) && /No card in this bundle is lost or retired\./.test(goalsText));
 check('the goals grey four goals with their reason', (goalsText.match(/Not now\./g) ?? []).length === 4 && /card connected to this computer/.test(goalsText), String((goalsText.match(/Not now\./g) ?? []).length));
 await go('#/plan/retire-subkeys');
 await sleep(300);
@@ -141,6 +168,8 @@ await clickText(evalJs, 'Save the plan');
 await sleep(500);
 const psaved = await text();
 check('the saved plan of the personal bundle: written nowhere, inside the bundle at ledger/<ceremony>/plan.json', /Nothing was written\./.test(psaved) && /Would be written to\s*~\/ritueel\/personal\/ledger\/20261111T090000Z-personal-subkey-revoke\/plan\.json/.test(psaved));
+const pbar = await stepBar();
+check('after "Save the plan" the step bar reaches Save, with Goal, Choices and Plan done', pbar && /Save/.test(pbar.current) && pbar.items === 4 && pbar.done === 3, JSON.stringify(pbar));
 check('it is canonical JSON, and no pending area or .plan file is named', /canonical JSON/.test(psaved) && !/pending/i.test(psaved) && !/\.plan\b/.test(psaved));
 
 // ---- the bundle switch: a company with two roots on two cards -----------------------------------------
@@ -168,6 +197,8 @@ check('after "Show me the plan" the focus is on the page heading', (await active
 const plan = await text();
 check('the plan shows its steps, digest and the exact commands', /Steps, in order/.test(plan) && /7F3A/i.test(plan) && /ritueel --dir ~\/ritueel\/acme run/.test(plan) && /deadbeef|DEAD BEEF/i.test(plan.replace(/\s/g, '')));
 check('the plan says it runs on the offline system, and the digest is not typed here', /To run it, on the offline system/.test(plan) && /never\s+asks you to type it/i.test(plan.replace(/\n/g, ' ')));
+const abar = await stepBar();
+check('before saving, the step bar is on Plan, not on Save', abar && /Plan/.test(abar.current) && !/Save/.test(abar.current) && abar.done === 2, JSON.stringify(abar));
 await clickText(evalJs, 'Save the plan');
 await sleep(500);
 check('after "Save the plan" the focus is on the result', (await active()).id === 'saved-result', JSON.stringify(await active()));
@@ -218,9 +249,40 @@ check('Failed read: is an alert with a retry', await evalJs(`!!document.querySel
 await clickText(evalJs, 'Waiting');
 await sleep(600);
 check('Waiting: says it is reading, and shows neither empty nor failed', /Reading the findings/.test(await text()) && !/Could not read/.test(await text()) && !/Nothing to check yet/.test(await text()));
+check('Waiting: says at once that ritueel never answers here, on purpose, and how to end the wait', /never answers, on purpose/.test(await text()) && /Choose another page state to end the wait/.test(await text()));
+await sleep(3800);
+check('Waiting: it is still waiting after the late notice (it does not end by itself)', /Reading the findings/.test(await text()) && /Still waiting for ritueel/.test(await text()) && !/7 findings/.test(await text()));
 await clickText(evalJs, 'Loaded');
 await sleep(500);
-check('Loaded again: the findings are back', /7 findings, worst first/.test(await text()));
+check('Loaded again: the findings are back, and the wait is over', /7 findings, worst first/.test(await text()) && !/never answers, on purpose/.test(await text()));
+
+// ---- Empty: the wizard answers by itself, never with the loaded bundle's made-up data -----------------
+await go('#/plan');
+await clickText(evalJs, 'Empty');
+await sleep(500);
+const emptyGoals = await text();
+check('Empty: the goals say a card goal cannot be planned because the bundle holds no card, and point to no screen', /The bundle holds no card yet\./.test(emptyGoals) && /No card is registered yet, and the demo has no card to connect\./.test(emptyGoals) && !/Cards screen|Mark one|lost or retired/.test(emptyGoals));
+await go('#/plan/add-card');
+check('Empty: a card goal is refused, not planned from the loaded bundle', /cannot be planned now/.test(await text()) && !/personal-subkey-revoke/.test(await text()));
+await go('#/plan/retire-subkeys');
+check('Empty: a goal that needs a key is refused too', /cannot be planned now/.test(await text()) && !/personal-subkey-revoke|C41E/i.test(await text()));
+await go('#/plan/adopt-key');
+await sleep(300);
+check('Empty: the one goal that applies asks its choices', /A few choices/.test(await text()));
+await clickText(evalJs, 'Show me the plan');
+await sleep(500);
+const eplan = await text();
+check('Empty: the plan says it is an example of an empty bundle, and holds nothing of the loaded personal bundle', /this bundle is empty/.test(eplan) && /The key named here is made up/.test(eplan) && !/personal-subkey-revoke|C41E/i.test(eplan), eplan.slice(0, 200));
+await clickText(evalJs, 'Save the plan');
+await sleep(500);
+const esaved = await text();
+const ebar = await stepBar();
+check('Empty: saving shows the common adoption plan only, with nothing written', /Nothing was written\./.test(esaved) && !/personal-subkey-revoke/.test(esaved));
+check('Empty: the step bar reaches Save after saving', ebar && /Save/.test(ebar.current) && ebar.done === 3, JSON.stringify(ebar));
+await clickText(evalJs, 'Loaded');
+await sleep(500);
+check('Loaded again from the Empty wizard: the step bar is no longer on Save (the saved plan left the screen)', !(await stepBar())?.current?.includes('Save'));
+await go('#/start');
 for (const hash of ['#/start', '#/roots', '#/key/A', '#/cards', '#/history', '#/trust', '#/plan']) {
   await go(hash);
   await clickText(evalJs, 'Failed read');
@@ -256,6 +318,13 @@ check('and the page does not scroll sideways', await evalJs('document.documentEl
 await go('#/start');
 const tiny = await evalJs(`(() => { let worst = 99; for (const e of document.querySelectorAll('body *')) { if (e.children.length === 0 && e.textContent.trim() && e.offsetParent !== null) { const s = parseFloat(getComputedStyle(e).fontSize); if (s < worst && !e.closest('svg')) worst = s; } } return worst; })()`);
 check('no text on Start is smaller than 12px at 390', tiny >= 12, String(tiny));
+
+// ---- the first visit on a phone ----------------------------------------------------------------------
+const plede = await rectOf('helps you keep a root', 'p');
+check('on a phone the first sentence of what ritueel is lies inside the first screen (390x844)', plede && plede.top >= 0 && plede.bottom <= plede.height, JSON.stringify(plede));
+const pstart = await rectOf('Start here', 'h2');
+check('on a phone the Start-here box begins within the first two screens', pstart && pstart.top >= 0 && pstart.top < 2 * pstart.height, JSON.stringify(pstart));
+check('on a phone the demo bar keeps its two switches, and the page does not scroll sideways', /Example bundle/.test(await text()) && /Page state/.test(await text()) && (await evalJs('document.documentElement.scrollWidth <= window.innerWidth')));
 
 check('the page logged no error, no exception and no policy violation', problems.length === 0, problems.slice(0, 5).join(' | '));
 
