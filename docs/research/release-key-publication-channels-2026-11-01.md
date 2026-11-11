@@ -7,7 +7,7 @@ sidebar:
 
 ## Question
 
-Beyond the first version, which channels should publish the release keys and the keyring package, who would consume each, and which commands does the release-key guide teach for verifying? This feeds the guide ([issue #25](https://github.com/truvity/ritueel/issues/25)) and does not change [record 0009](../decisions/0009-release-keys-and-the-keyring.md) (earlier ADR 0006), whose first version is decided: the keyring package in the user's own repository, and the primaries' fingerprints on the project's site and in its security file ([issue #28](https://github.com/truvity/ritueel/issues/28)).
+Beyond the first version, which channels should publish the release keys and the keyring package, who would consume each, and which commands does the release-key guide teach for verifying? This feeds the guide ([issue #25](https://github.com/truvity/ritueel/issues/25)) and does not change [ADR 0006](https://github.com/truvity/ritueel/blob/d0ae12da2432d5ae95cf95d68fb85ba3dda6cfee/docs/decisions/0006-release-keys-and-the-keyring-package.md) (now [record 0009](../decisions/0009-release-keys-and-the-keyring.md)), whose first version is decided: the keyring package in the user's own repository, and the primaries' fingerprints on the project's site and in its security file ([issue #28](https://github.com/truvity/ritueel/issues/28)).
 
 ## When
 
@@ -53,7 +53,7 @@ The guide teaches these; each is checked against the matrix before it goes in.
 ## Roads not taken
 
 - **Running each service to measure it.** Would turn documentation claims into measurements, but ritueel has no key to publish and no consumer asking, so the measurement would be of nothing it ships.
-- **Recommending a provenance tool.** The names are known, but none was read or run here, and provenance is a complement ([record 0009](../decisions/0009-release-keys-and-the-keyring.md) (earlier ADR 0006)).
+- **Recommending a provenance tool.** The names are known, but none was read or run here, and provenance is a complement ([ADR 0006](https://github.com/truvity/ritueel/blob/d0ae12da2432d5ae95cf95d68fb85ba3dda6cfee/docs/decisions/0006-release-keys-and-the-keyring-package.md#sigstore-and-old-releases), now rule 26 of [record 0009](../decisions/0009-release-keys-and-the-keyring.md)).
 
 ## Open questions
 

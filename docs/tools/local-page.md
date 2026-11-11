@@ -24,20 +24,20 @@ Every name, fingerprint and serial in it is invented and looks it.
 - **It acts on nothing.** Every screen that names an action shows the command and a Copy button. "Save the plan" shows what it would write and says that nothing was written.
 - **It says the command line is not built yet,** under every command and in the message after Copy: the commands are examples.
 - **It says it is a demo,** on every screen, with a link back here.
-- **You can change the example bundle.** A switch in the bar, "Example bundle", changes which example bundle the page shows. It exists only in the demo: the program serves the one bundle it was started on.
+- **You can change the example bundle.** A switch in the bar, "Example bundle", changes which example bundle the page shows. It exists only in the demo: the program shows the bundle the page is opened on.
 - **You can change the page state.** A second switch, "Page state", makes the page answer as an empty bundle, a failed read, or no answer yet, so you see how each screen speaks in each case. The Waiting state never ends by itself, on purpose, and the screen says so; choose another page state to end it. In the Empty state the wizard answers as an empty bundle, not with the loaded bundle's data.
 - **The wizard is one sequence:** goal, choices, plan with its digest and the exact command, then save. The plan says where it runs: in the offline system for a key that can be copied, a key file; on your workstation or in the offline system for a root on cards or a cloud root. The USB-stick step shows only where it is needed. In the demo the plan is the same whatever you choose, except in the Empty state, where it is an example plan for an empty bundle.
 - **Its commands follow the [command reference](/reference/cli/)** where a command exists there, with `--dir` naming the bundle in a command that runs a plan; a few are proposals that the reference does not have yet (the personal key's `primary`, `userid` and `subkey revoke` commands, and the flag that names a cloud key to adopt).
-- **Where the saved plan goes is a proposal.** The decision records say only that the process writes the plan inside your bundle. The demo shows it at `history/<ceremony>/plan.json`, the place [the bundle reference](/reference/bundle/#the-layout) proposes, and that path is not settled.
+- **Where the saved plan goes.** [Record 0006](../decisions/0006-bundle-history-and-trust-files.md) decides that the running process writes it inside your bundle, at `history/<ceremony>/plan.json`. The demo shows that place. The exact member names inside the folders are still to be fixed with the code, so the file name is not final.
 
 ## What is the same in the program and what is not
 
 | | In the demo | In the program (planned) |
 |---|---|---|
 | The screens, the words, the states | The real ones | The same build |
-| Which bundle | Three example bundles and a switch | The one bundle the process was started on |
+| Which bundle | Three example bundles and a switch | The bundle the page is opened on |
 | Where the answers come from | Fixtures in the page's build, through an in-memory transport | The ritueel process: one background process, started by the first command, that serves the command line and the page on one fixed loopback port (7488), with a full-rights token for the command line and a one-time page-rights token for the browser. It is guarded as [the wizard's profile](/reference/wizard/#the-web-page-the-security-profile) says (127.0.0.1 only, an exact Host check and a separate Origin check, one lock for each bundle), and ends after 15 minutes without a call |
-| Saving a plan | Shows the file it would write, at the proposed `history/<ceremony>/plan.json`, and says that nothing was written | The process rebuilds the plan, and writes one inert file inside your bundle (the path is proposed, see above) |
+| Saving a plan | Shows the file it would write, at `history/<ceremony>/plan.json`, and says that nothing was written | The process rebuilds the plan, and writes one inert file inside your bundle (the place is in [record 0006](../decisions/0006-bundle-history-and-trust-files.md), see above) |
 | Steps of a ceremony in History | The usual steps of that kind of ceremony | The steps in the plan.json of the ceremony's sub-folder of the history |
 
 ## How it is built
