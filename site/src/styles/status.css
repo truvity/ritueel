@@ -56,3 +56,8 @@ a.ps-chip:hover { border-color: var(--sl-color-accent); color: var(--sl-color-wh
 .ps-tag.ps-tag-build { border-color: var(--sl-color-gray-4); background-color: var(--sl-color-gray-5); color: var(--sl-color-white); }
 .ps-state { color: var(--sl-color-gray-3); font-size: var(--sl-text-xs); }
 .ps-chip.ps-chip-bad { border-color: var(--sl-color-red); }
+
+/* Running text of the page has the same measure as the other pages (the page's own wrapper is as
+   wide as the column, so its lines ran to 140 characters and more). The cards, the table and the
+   boxes stay as wide as the column. */
+.ps > :is(p, ul, ol) { max-width: var(--ritueel-prose-width); }

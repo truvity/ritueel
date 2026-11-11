@@ -108,6 +108,13 @@ mobile-starlight-toc .dropdown {
   margin-top: calc(1.5 * var(--sl-text-h2));
 }
 
+/* Text inside a note box has the same measure as other running text: the box is as wide as that
+   measure plus its own padding (1rem each side) and border (0.25rem). Without it the lines of a
+   note ran to the whole column, 144 characters and more. */
+.sl-markdown-content .starlight-aside {
+  max-width: calc(var(--ritueel-prose-width) + 2.25rem);
+}
+
 /* The wide tables of the docs: use the column, scroll inside the table when it
    is still too wide (Starlight makes a Markdown table a scrolling block). */
 .sl-markdown-content > table,
