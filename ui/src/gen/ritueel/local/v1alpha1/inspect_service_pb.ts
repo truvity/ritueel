@@ -860,7 +860,7 @@ export type OpenPgpCertificate = Message<"ritueel.local.v1alpha1.OpenPgpCertific
   userIds: UserId[];
 
   /**
-   * Oldest year first. One set is the subkeys made in one year on one card.
+   * Oldest year first. One set is the subkeys made in one year on one card, or in one cloud key.
    *
    * @generated from field: repeated ritueel.local.v1alpha1.SubkeySet subkey_sets = 3;
    */

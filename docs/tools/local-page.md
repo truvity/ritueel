@@ -34,7 +34,7 @@ Every name, fingerprint and serial in it is invented and looks it.
 |---|---|---|
 | The screens, the words, the states | The real ones | The same build |
 | Which bundle | Three example bundles and a switch | The one bundle the process was started on |
-| Where the answers come from | Fixtures in the page's build, through an in-memory transport | The ritueel process: one long-running background process, started on demand, on a Unix socket for the command line and on the loopback address for the browser while the page is in use |
+| Where the answers come from | Fixtures in the page's build, through an in-memory transport | The ritueel process: one long-running background process, started on demand, on a Unix socket for the command line and on the loopback address for the browser while the page is in use. The loopback listener is guarded as the [wizard's rules](/reference/wizard/) say (127.0.0.1 only, exact Host, Origin and Sec-Fetch-Site on every request, no permissive CORS), and is trusted no more than any other web request |
 | Saving a plan | Shows the file it would write, `ledger/<ceremony>/plan.json` | Writes one inert file inside your bundle |
 | Steps of a ceremony in History | The usual steps of that kind of ceremony | The steps in the plan.json of the ceremony's sub-folder of the ledger |
 

@@ -341,7 +341,7 @@ message DelegatedKey {
 message OpenPgpCertificate {
   RootKey primary = 1;
   repeated UserId user_ids = 2;
-  // Oldest year first. One set is the subkeys made in one year on one card.
+  // Oldest year first. One set is the subkeys made in one year on one card, or in one cloud key.
   repeated SubkeySet subkey_sets = 3;
 }
 

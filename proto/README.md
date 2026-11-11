@@ -4,7 +4,7 @@ Status: a design, version `v1alpha1`. Nothing serves it yet: the program is not 
 
 The API between ritueel's local page (`ui/`) and the ritueel process, written in Protobuf (package `ritueel.local.v1alpha1`). The program will serve it with ConnectRPC; the page calls it with `@connectrpc/connect`. See [the local page](https://ritueel.id/tools/local-page/).
 
-The process is one long-running background process, started on demand, that serves one bundle (the directory of one trust domain). It serves this API twice with the same handlers: on a Unix socket for the command line, and on the loopback address for the browser while the page is in use, because a browser cannot open a Unix socket. The command line and the page get the same calls and the same answers.
+The process is one long-running background process, started on demand, that serves one bundle (the directory of one trust domain). It serves this API twice with the same handlers: on a Unix socket for the command line, and on the loopback address for the browser while the page is in use, because a browser cannot open a Unix socket. The command line and the page get the same calls and the same answers. Same calls, not the same trust: the loopback listener binds 127.0.0.1 only, checks the Host header exactly and Origin or Sec-Fetch-Site on every request, and sets no permissive CORS header ([reference/wizard](https://ritueel.id/reference/wizard/), rules 1 and 4). It has the same calls as the socket, but any program or web page on the computer can send it a request, so it is trusted no more than any other web request.
 
 **No call takes or returns a secret, a PIN or a passphrase.** There is no field for one, and none will be added. The page is a view: it never confirms a ceremony. `ritueel run PLAN --confirm DIGEST` happens in the terminal, on the offline system or on your workstation. The only value that goes from the page to the process, other than choices from a fixed list, is the digest of a plan, which is public.
 
@@ -86,7 +86,7 @@ Enums, all with an `_UNSPECIFIED = 0` first value and the enum name as prefix:
    is already computed (notice at 60 days, alert at 30, critical at 14).
 7. **The command is shown, never run.** `fix_command`, `equivalent_command`
    and `run_command` are exact strings to display and copy. They run from the
-   bundle's directory, so a plan is named by its path in the bundle,
+   bundle, so a plan is named by its path in the bundle,
    `ledger/<ceremony>/plan.json`. Their names follow
    `docs/reference/cli.md` where a command exists there; a few (`personal
    primary extend`, `personal primary add`, `personal userid revoke`, `personal subkey revoke`, and the `--key` flag that names a
@@ -108,10 +108,14 @@ Enums, all with an `_UNSPECIFIED = 0` first value and the enum name as prefix:
    (RFC 8785), and its SHA-256 is the digest.
 10. **`int64` is a string in JSON** (`size_bytes`), and `Timestamp` is an
     RFC 3339 string; the generated types turn them into `bigint` and `Timestamp`.
-11. **One addition to the world of the brief:** a ninth finding, "a cloud key is
-    waiting to be adopted" (`alias/globex-staging-signing`), in the `globex`
-    example bundle, so that the wizard goal "adopt a key" has something to adopt,
-    since the personal key and the cloud root are already adopted.
+11. **What each example bundle finds.** `globex` has one finding, a cloud key
+    waiting to be adopted (`alias/globex-staging-signing`), so that the wizard goal
+    "adopt a key" has something to adopt; `personal` and `acme` have none of that
+    kind. An empty bundle in the demo recommends the same goal and answers it with a
+    plan of its own, `common/plan.start-plan.adopt-key.json`, whichever bundle is open.
+    `PendingPlan` (`GetSummaryResponse.pending_plans`) lists plans saved as
+    `ledger/<ceremony>/plan.json` and not yet run; no example bundle has one and no
+    screen shows the list yet.
 12. **A root is written `bundle/label`.** `Root.label` is `A`, `B` and so on, as in
     the bundle's `root.json`; the bundle name comes from `GetSummary.bundle.name`.
     One process serves one bundle, so no call names or selects a bundle. The demo
