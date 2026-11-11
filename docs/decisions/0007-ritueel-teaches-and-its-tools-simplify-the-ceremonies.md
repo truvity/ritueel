@@ -40,7 +40,7 @@ A software key is generated in memory and written **directly into its store, nev
 
 | Backend | Role | Said plainly |
 |---|---|---|
-| Encrypted file | The default for drills and tests; opened as [0015](/decisions/0015-key-files-open-with-a-passkey-on-each-root-card-and-card-secrets-are-sealed-in-the-directory/) says. | A copy by nature. A backup is another copy. |
+| Encrypted file | The default for drills and tests; opened as [0015](/decisions/0015-key-files-open-with-a-passkey-on-each-root-card-and-card-secrets-are-sealed-in-the-bundle/) says. | A copy by nature. A backup is another copy. |
 | 1Password, through its `op` command line | A persistent home for the software keys of **test roots, intermediates and subkeys**; never a production root or a person's master key. | Its sync gives redundancy against loss, not against compromise (principle 2). Whoever unlocks the vault has the key. |
 | OS keyring, through `github.com/zalando/go-keyring` | Offered, with a warning in the creation output, in every record and on the site. | It can be insecure: programs of the same user can read it, and it has no copy. ritueel refuses to fall back to a file when no keyring exists. |
 
@@ -50,20 +50,20 @@ ritueel **never exports a key from a card or a cloud key** for backup. For cards
 
 The site compares the stores with what each protects against and what each costs: software and its backends, YubiKey (PIV and OpenPGP card) and AWS KMS today. **Google Cloud KMS, Azure Key Vault and other hardware such as Nitrokey are planned.** Each arrives with its first real installation, on a real account or a real device (principle 8), and not before. The site recommends which devices to buy for testing, with the date of each claim.
 
-### An opinionated directory
+### An opinionated bundle
 
-The **directory** of [0004](/decisions/0004-ceremonies-plan-confirm-reserve-sign-verify-record/) is what the holder keeps; its write-once part, the **ledger**, holds the ceremony records. ritueel advises, and the guides say so plainly:
+The **bundle** of [0004](/decisions/0004-ceremonies-plan-confirm-reserve-sign-verify-record/) is what the holder keeps; its write-once part, the **ledger**, holds the ceremony records. ritueel advises, and the guides say so plainly:
 
 - It lives **in a git repository of its own,** with signed commits and review before a change lands, if the holder uses git; ritueel itself needs no git ([0004](/decisions/0004-ceremonies-plan-confirm-reserve-sign-verify-record/)).
 - It is **backed up** to a second remote on another provider, and the digest of the last record is kept apart from the repository.
-- It holds public material, the sealed secrets of cards ([0015](/decisions/0015-key-files-open-with-a-passkey-on-each-root-card-and-card-secrets-are-sealed-in-the-directory/#card-secrets)) and the wrapped backup of a person's encryption subkey ([0017](/decisions/0017-a-persons-openpgp-key-in-two-stages-an-adopted-primary-first-then-card-born-primaries/#day-to-day-cards)). **Revocation certificates, the PINs a person types and passphrases are not in it.** The revocation certificates are kept apart from the cards, in at least two places.
+- It holds public material, the sealed secrets of cards ([0015](/decisions/0015-key-files-open-with-a-passkey-on-each-root-card-and-card-secrets-are-sealed-in-the-bundle/#card-secrets)) and the wrapped backup of a person's encryption subkey ([0017](/decisions/0017-a-persons-openpgp-key-in-two-stages-an-adopted-primary-first-then-card-born-primaries/#day-to-day-cards)). **Revocation certificates, the PINs a person types and passphrases are not in it.** The revocation certificates are kept apart from the cards, in at least two places.
 - It is part of every key's identity, because it holds the OpenPGP creation times ([0003](/decisions/0003-key-stores-and-the-card-layer/)). Losing it is a loss; the backup is practised.
 
 ### The procedures ritueel will cover
 
 Each procedure gets a page under Learn that says why and when, a guide that gives the steps, and a drill on test keys:
 
-- **Backup and restore drills:** rebuild the state on a clean machine from the directory and the password manager, and compare it with the cards.
+- **Backup and restore drills:** rebuild the state on a clean machine from the bundle and the password manager, and compare it with the cards.
 - **Revocation,** including **OpenPGP revocation certificates generated in advance** and kept apart, and CRLs and root lists for X.509.
 - **Re-sign versus rotate** (principle 3): re-sign yearly, the same key with a new validity; rotate to a new key on an event, and a key in software also after at most three years.
 - **Card loss and replacement.**
