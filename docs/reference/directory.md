@@ -18,7 +18,7 @@ The maintainer decided that the ledger is a plain write-once folder with one sub
 | Path | Written by | Holds |
 |---|---|---|
 | `ritueel.yaml` | The operator | The name, the release address, the policy and the intermediates ([below](/reference/directory/#ritueelyaml)). |
-| `cards.yaml` | ritueel | The inventory list: every card the holder registered, of the four kinds root, day-to-day, hsm and rehearsal, from M2. Absent while every root is in software ([the inventory](/reference/cards/#the-inventory-cardsyaml-and-cardsnameyaml)). |
+| `cards.yaml` | ritueel | The inventory list: every card the holder registered, of the four kinds root, day-to-day, server and rehearsal, from M2. Absent while every root is in software ([the inventory](/reference/cards/#the-inventory-cardsyaml-and-cardsnameyaml)). |
 | `cards/NAME.yaml` | ritueel | The map of one card: every slot of its PIV, OpenPGP and FIDO2 applications and its use. Written from the read-only check ([cards](/reference/cards/#the-map-of-one-card-cardsnameyaml)). |
 | `cards/NAME.sealed.age` | ritueel | The card's management key, PUK and, on a day-to-day card, the Admin PIN, sealed to the recipients of the key files. One file for each card that ritueel adopted, root and day-to-day ([ADR 0015](/decisions/0015-key-files-open-with-a-passkey-on-each-root-card-and-card-secrets-are-sealed-in-the-directory/#card-secrets)). |
 | `roots/<label>/root.json` | ritueel | The facts of one root ([below](/reference/directory/#rootjson)). |

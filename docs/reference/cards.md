@@ -7,22 +7,20 @@ sidebar:
 
 *Not built yet. This is the page that [ADR 0008](/decisions/0008-the-operator-prepares-the-holder-and-ritueel-creates-attests-and-verifies-the-root/) leaves for the formats of the `piv` store; the code is [issue #11](https://github.com/truvity/ritueel/issues/11): the inventory files come with M2, and the `piv` store and the card adoption with M6. The rows of slots are in [ADR 0016](/decisions/0016-several-roots-share-one-pair-of-root-cards-and-the-directory-keeps-a-card-inventory/#the-rows) and [ADR 0003](/decisions/0003-key-stores-and-the-card-layer/#the-piv-store-and-the-root-cards) and are not repeated here.*
 
-A root card is a hardware token that holds roots and nothing else: the roots of one holder, each in its own row ([ADR 0016](/decisions/0016-several-roots-share-one-pair-of-root-cards-and-the-directory-keeps-a-card-inventory/#the-rows)). It is never also a day-to-day card, an HSM card or a rehearsal card. Before it holds anything, the holder sets its PIN with the maker's tool ([Prepare a root card](/guides/prepare-a-root-card/)). ritueel then adopts it, which replaces the PUK and the management key with random ones sealed in the directory ([ADR 0015](/decisions/0015-key-files-open-with-a-passkey-on-each-root-card-and-card-secrets-are-sealed-in-the-directory/#card-secrets)); it registers the card, checks it before every ceremony, and keeps the evidence that a key was born on it. A root card goes only into a machine booted from the read-only offline system ([ADR 0016](/decisions/0016-several-roots-share-one-pair-of-root-cards-and-the-directory-keeps-a-card-inventory/#where-a-root-card-is-used)).
+A root card is a hardware token that holds roots and nothing else: the roots of one holder, each in its own row ([ADR 0016](/decisions/0016-several-roots-share-one-pair-of-root-cards-and-the-directory-keeps-a-card-inventory/#the-rows)). It is never also a day-to-day card, a server card or a rehearsal card. Before it holds anything, the holder sets its PIN with the maker's tool ([Prepare a root card](/guides/prepare-a-root-card/)). ritueel then adopts it, which replaces the PUK and the management key with random ones sealed in the directory ([ADR 0015](/decisions/0015-key-files-open-with-a-passkey-on-each-root-card-and-card-secrets-are-sealed-in-the-directory/#card-secrets)); it registers the card, checks it before every ceremony, and keeps the evidence that a key was born on it. A root card goes only into a machine booted from the read-only offline system ([ADR 0016](/decisions/0016-several-roots-share-one-pair-of-root-cards-and-the-directory-keeps-a-card-inventory/#where-a-root-card-is-used)).
 
 ## The four kinds
 
 The inventory knows four kinds of card. A card has one kind and never changes it.
 
-:::note[Proposed]
-The name `hsm` for the third kind, and the rules of the `hsm` and `rehearsal` kinds below (read only; may be reset), are proposed and wait for the maintainer's word ([ADR 0016](/decisions/0016-several-roots-share-one-pair-of-root-cards-and-the-directory-keeps-a-card-inventory/#the-inventory)). An HSM card is an ordinary card that stays in a server, not a hardware security module product ([ADR 0002](/decisions/0002-key-custody-every-key-is-born-in-its-store-two-root-cards-or-one-kms-root-and-a-replica/)).
-:::
+A server card works like a small do-it-yourself HSM, but it is an ordinary card, not a hardware security module product ([ADR 0002](/decisions/0002-key-custody-every-key-is-born-in-its-store-two-root-cards-or-one-kms-root-and-a-replica/)).
 
 | Kind | What it is | What ritueel does with it |
 |---|---|---|
 | `root` | Holds roots by row. | Adopts it, seals its secrets, checks its layout; used in the offline system only. |
 | `day-to-day` | A person's signing and authentication subkeys, and passkeys. | Adopts it; the Admin PIN is sealed. |
-| `hsm` | Stays plugged into a server of a requester system and signs for its services. | Lists it in the inventory and only ever reads it. Its slots follow the requester's layout. No adoption, no sealed file, no layout check. |
-| `rehearsal` | Practice and tests (earlier pages and dated research call it a "test card"). It never holds a real key and may be reset. | Lists it. The M1 proofs and the drills use it. |
+| `server` | Stays plugged into a server of a requester system and signs for its services. | Lists it in the inventory and only ever reads it. Its slots follow the requester's layout. No adoption, no sealed file, no layout check. |
+| `rehearsal` | Practice and tests (earlier pages and dated research call it a "test card"). It never holds a real key, may be reset, and serves only a test root. | Lists it. The M1 proofs and the drills use it. |
 
 ## Files
 
@@ -70,14 +68,14 @@ cards:
 | `version` | `1`. |
 | `name` | The holder's name for the card. It names the card's map file and its sealed file. |
 | `serial` | The serial number the card reports about itself, as a string of digits. It identifies the card in every later check. |
-| `kind` | `root`, `day-to-day`, `hsm` or `rehearsal` ([the four kinds](/reference/cards/#the-four-kinds)). A card has one kind and never changes it. |
+| `kind` | `root`, `day-to-day`, `server` or `rehearsal` ([the four kinds](/reference/cards/#the-four-kinds)). A card has one kind and never changes it. |
 | `roots` | For a root card only: the roots it holds, each as `{ root, row }`, where `root` is the root's label and `row` its row in the slot map ([ADR 0016](/decisions/0016-several-roots-share-one-pair-of-root-cards-and-the-directory-keeps-a-card-inventory/#the-rows)). |
 | `maker` | The maker whose attestation roots verify it. `yubico` today. |
 | `model` | The model, as read from the card. |
 | `firmware` | The firmware version read when the card was registered. For a root card it is at least 5.7.4, which is ritueel's floor for a root card ([ADR 0016](/decisions/0016-several-roots-share-one-pair-of-root-cards-and-the-directory-keeps-a-card-inventory/#rules-for-a-shared-card)). |
 | `form_factor` | As read from the slot certificate. |
 | `applications` | The applications of the card that are in use: a list of `piv`, `openpgp` and `fido2`. The one-time-code application is switched off on the root and day-to-day cards that ritueel adopts. |
-| `management_key` | For root and day-to-day cards only, and absent for `hsm` and `rehearsal`. `sealed`: a random key that needs a touch to use, sealed in `cards/NAME.sealed.age`. Nothing else is accepted for a root card ([ADR 0008](/decisions/0008-the-operator-prepares-the-holder-and-ritueel-creates-attests-and-verifies-the-root/#root-cards), [ADR 0015](/decisions/0015-key-files-open-with-a-passkey-on-each-root-card-and-card-secrets-are-sealed-in-the-directory/#card-secrets)). |
+| `management_key` | For root and day-to-day cards only, and absent for `server` and `rehearsal`. `sealed`: a random key that needs a touch to use, sealed in `cards/NAME.sealed.age`. Nothing else is accepted for a root card ([ADR 0008](/decisions/0008-the-operator-prepares-the-holder-and-ritueel-creates-attests-and-verifies-the-root/#root-cards), [ADR 0015](/decisions/0015-key-files-open-with-a-passkey-on-each-root-card-and-card-secrets-are-sealed-in-the-directory/#card-secrets)). |
 | `slot_map` | The version of the slot map in force when the card was registered. |
 | `registered_at` | The time of that ceremony, UTC. |
 | `retired_at` | Present once the card holds no active root. The entry stays: a serial is never reused for another holder's card. |
@@ -122,7 +120,11 @@ The format is version 1 and is fixed with the card proofs (M1), when the read-on
 
 ## What is checked on a card
 
-Checks 5 to 10 apply to adopted cards (root, day-to-day), and checks 8 to 10 to root cards. For an `hsm` card the read-only check lists what it finds (serial, model, firmware, applications, slots as found) and fails nothing about its layout. For a `rehearsal` card, check 3 refuses it for any ceremony that needs another kind (`card-wrong-role`), so a real root can never be born on it.
+Checks 5 to 10 apply to adopted cards (root, day-to-day), and checks 8 to 10 to root cards. For a `server` card the read-only check lists what it finds (serial, model, firmware, applications, slots as found) and fails nothing about its layout. For a `rehearsal` card, check 3 refuses it for any ceremony that needs another kind (`card-wrong-role`), so a real root can never be born on it. A test root is the one root a rehearsal card serves.
+
+:::note[Proposed]
+How a test root is born on a rehearsal card (`init --test-root` with a card) is proposed and fixed with the card proofs (M1). No flag is added for it.
+:::
 
 Before anything is written, in this order. A check that cannot run is `not-run` and the ceremony stops: it is never reported as passed ([principle 4](/principles/)). The code is the reason code of the command's JSON `reasons`.
 

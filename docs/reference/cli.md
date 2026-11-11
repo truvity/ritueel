@@ -32,7 +32,8 @@ sidebar:
 | `ritueel personal subkey add NAME --card SERIAL` | In a personal directory: the card makes the daily subkey and its back-signature, and the person's primary binds it ([personal OpenPGP](/reference/personal-openpgp/#the-commands)). `init --kind personal` makes the directory. | Yes |
 | `ritueel card adopt` | Adopts a card: replaces the management key and the PUK with random ones, seals them in the directory, and registers the card in the inventory. The holder has set the PIN ([root cards](/reference/cards/), [ADR 0015](/decisions/0015-key-files-open-with-a-passkey-on-each-root-card-and-card-secrets-are-sealed-in-the-directory/#card-secrets)). | Yes |
 | `ritueel card check` | The read-only check of a card against the built-in layout. It writes `cards.yaml` and `cards/NAME.yaml` and changes nothing on the card ([root cards](/reference/cards/#what-is-checked-on-a-card)). | No |
-| `ritueel wizard [--web]` | The guided mode, which asks line by line in the terminal; with `--web`, also a read-only page served on localhost. The page cannot confirm anything; it ends with a preview and the command to run, and can save the plan file ([the wizard](/reference/wizard/)). The page calls the same API as the commands; the process writes the saved plan where `--plan-only` writes it. | Yes |
+| `ritueel wizard [--web]` | The guided mode, which asks line by line in the terminal; with `--web`, also a read-only page served on localhost. The page cannot confirm anything; it ends with a preview and the command to run, and can save the plan file ([the wizard](/reference/wizard/)). The page calls the same API as the commands; the process writes the saved plan where `--plan-only` writes it. The loopback listener exists only while `--web` runs. | Yes |
+| `ritueel stop` | Ends the ritueel process of this directory, if one runs, and exits 0 also when none runs. The process otherwise ends by itself after 15 minutes without a call ([the process](/reference/wizard/#the-ritueel-process)). | No |
 
 The verbs of a transition map onto the commands: *create* and *vouch* are `root add`, *overlap* is a state and not a command, *supersede* is `root retire`, and *revoke* is `root revoke`.
 
@@ -51,10 +52,10 @@ The verbs of a transition map onto the commands: *create* and *vouch* are `root 
 | `--backend file\|onepassword\|keyring` | Software roots: the backend ([the software store](/reference/software-store/)). `--op-vault NAME` names the vault for `onepassword`. `init --kind personal` makes a personal directory. |
 | `--passphrase-fd N` | Software roots whose key file is opened by a passphrase (a test root, a script, a holder without cards): read the passphrase from this file descriptor. |
 | `--key-dir DIR` | Software roots: the directory of the [key files](/reference/directory/#the-software-roots-key-files). Refused when it is inside `--dir`. |
-| `--test-root` | Software roots: no passphrase, marked `TEST ONLY` everywhere. Products refuse to mix test and real roots. A test root may run its ceremonies on the workstation; the program checks nothing about where it runs. |
+| `--test-root` | A test root: marked `TEST ONLY` everywhere, and products refuse to mix test and real roots. With a software store it has no passphrase; its key may also live on a rehearsal card. It may run its ceremonies on the workstation or on a rehearsal card; the program checks nothing about where it runs, and there is no flag for that. |
 | `--output json` | Every command, ceremony or not: print one JSON object on standard output ([below](/reference/cli/#machine-readable-output)). The default is `--output text`. |
 
-A PIN is never a flag or an environment variable; the holder types it at the terminal.
+A PIN is never a flag or an environment variable; the holder types it at the terminal. The ritueel process never keeps one between calls.
 
 ## Exit codes
 
@@ -75,6 +76,7 @@ M2 builds these, with the software store and the cloud store ([issue #8](https:/
 | Command | Reads | Writes | Exit codes |
 |---|---|---|---|
 | `ritueel version` | Nothing. | The version and the commit it was built from. | 0 |
+| `ritueel stop [--dir DIR]` | The socket of the directory. | Nothing; it asks the process to end. | 0, 1, 2 |
 | `ritueel init --store software [--roots N] [--test-root] --key-dir DIR` | `ritueel.yaml`, which the operator writes first. | `roots/<label>/` for each root (`A`, then `B`), the key files in `DIR`, and the first trust products (`products/1/`). | 0, 1, 2, 3, 5 |
 | `ritueel intermediate add NAME --request STEM` | The entry `NAME` of `ritueel.yaml`, and the request `requests/STEM.*`. | The answer `answers/STEM.*`, and the trust products. | 0, 1, 2, 3, 5 |
 | `ritueel handoff check STEM [--intermediate NAME]` | The request `requests/STEM.*`, `ritueel.yaml`. | Nothing. | 0, 1, 2, 3 |
@@ -94,7 +96,7 @@ M2 builds these, with the software store and the cloud store ([issue #8](https:/
 - **`bundle build`** gives the bytes of `products/<sequence>/ca-bundle.pem` for the newest sequence, and refuses to mix test and real roots.
 - **`root-list verify`** is the host's side: it runs [the host's checks](/reference/root-list/#how-a-host-reads-it) on `FILE` (a `root-list.json`, with its `.jws` beside it) against `--held FILE`, the list the host holds, or `--pin`, its initial pins. `--bundle FILE` also checks a CA bundle against the list. It exits 0 when the list is accepted and 3 with the code when it is refused; a held list that has expired is a warning in the output. It needs no directory.
 
-`due` and `run` come with M2, `card adopt` with M6 and `card check` with M2 (the names of these two commands are proposed, awaiting the maintainer). `intermediate replace` and `revoke` and the `root` commands come with M4, `keyring build` with M5, and `renew` and the guided mode come after the first signed release; the read-only page of `wizard --web` comes with M2. The commands of the trust products that come later are below.
+`due` and `run` come with M2, `card adopt` with M6 and `card check` with M2 (the names of these two commands and of `stop` are proposed, awaiting the maintainer). `intermediate replace` and `revoke` and the `root` commands come with M4, `keyring build` with M5, and `renew` and the guided mode come after the first signed release; the read-only page of `wizard --web` comes with M2. The commands of the trust products that come later are below.
 
 ## Commands for the trust products that come later
 
