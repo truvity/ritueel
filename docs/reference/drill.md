@@ -15,17 +15,17 @@ A restore you have never practised is a hope. A drill is a practice run with a k
 ritueel drill restore [--dir DIR] [--expect-last DIGEST] [--allowed-signers FILE] [--revocation-dir DIR] [--accept-not-run CHECK]... [--output json]
 ```
 
-Run it on a clean machine with the directory cloned. It signs nothing, writes only its report, needs no person, and prints no certificate, key or PIN.
+Run it on a clean machine with the bundle cloned. It signs nothing, writes only its report, needs no person, and prints no certificate, key or PIN.
 
 | # | Check | Passes when | Cannot run when |
 |---|---|---|---|
 | 1 | The records | `records verify` passes: the hash chain is whole. | never |
 | 2 | The last digest | The newest record's digest equals `--expect-last`, the note the holder kept apart ([The ledger](/learn/the-ledger/)). | `--expect-last` is not given |
-| 3 | The signed commits | Every commit of the directory verifies against `--allowed-signers` (the holder's own signers file; `git verify-commit` does the check). | `--allowed-signers` is not given |
+| 3 | The signed commits | Every commit of the bundle verifies against `--allowed-signers` (the holder's own signers file; `git verify-commit` does the check). | `--allowed-signers` is not given |
 | 4 | The roots and what expires | `status` lists the roots, the root list, the CRLs and the SSH CA key list, with nothing critical and no unresolved attempt. | never |
 | 5 | Each root against its holder | For a card: the serial is the inventory's, the keys have the recorded fingerprints, and the attestation chain verifies again. For a KMS root: [the checks](/reference/kms-root/#the-checks) read the key, its policy and its replica from the service. | the card is not connected; the credentials are not available; the root is in software |
-| 6 | The revocation signatures | For every root and every reason in the directory, and for every root's removal authorisation, a file in `--revocation-dir` passes `revocation check` and has the directory's digest. A missing file fails; it is not skipped. | `--revocation-dir` is not given |
-| 7 | The trust products | The newest root list verifies, is not expired, and names exactly the active roots; the bundle, the CRLs and the SSH CA key list agree with it. | never |
+| 6 | The revocation signatures | For every root and every reason in the bundle, and for every root's removal authorisation, a file in `--revocation-dir` passes `revocation check` and has the bundle's digest. A missing file fails; it is not skipped. | `--revocation-dir` is not given |
+| 7 | The trust products | The newest root list verifies, is not expired, and names exactly the active roots; the CA bundle, the CRLs and the SSH CA key list agree with it. | never |
 
 A check that cannot run is reported `not-run`, never `passed` ([principle 4](/principles/)). **The drill exits 0 only when every check ran and passed.** It exits 3 if one failed or did not run; `--accept-not-run CHECK` (by number) lets one pass that the holder knows cannot run on this machine, as in CI with software roots, and the report says it was accepted.
 
@@ -49,19 +49,19 @@ A walk-through is a guide that can also be run as a script. It lives in the ritu
 
 | File | Does |
 |---|---|
-| `setup.sh` | Makes the starting state on test keys: a scratch directory, `ritueel.yaml`, test roots, and the intermediates the drill needs. |
+| `setup.sh` | Makes the starting state on test keys: a scratch bundle with its `ritueel.yaml`, test roots, and the intermediates the drill needs. |
 | `run.sh` | Runs the steps of the guide. With `--cards` it pauses at each prompt and each touch, on rehearsal cards named in the environment by serial. |
 | `check.sh` | Checks the end state, and writes `drills/<time>-<name>.json` with the duration of every ceremony, taken from the `started_at` and `finished_at` of the records. |
 
 The drills, in the order they are built: the lost-card drill (two roots and an intermediate, a card out of use, `root revoke`, `root add`, a yearly re-certification), a routine yearly renewal, an expiring root with an overlap, a stale root list, the adoption drill ([issue #48](https://github.com/truvity/ritueel/issues/48)), and one for each transition guide ([issue #19](https://github.com/truvity/ritueel/issues/19)).
 
-- **CI runs every drill with test roots** (`--test-root`) and fails when a drill's check fails. The restore check runs there with `--accept-not-run 5` and `--accept-not-run 3`, because a software root has no holder to compare and the CI directory has no signer.
-- **A drill never needs a real key or a real account.** The scripts use test roots, or rehearsal cards (the `rehearsal` kind) chosen by serial from the environment; a card whose inventory entry is not in the drill's own directory is refused.
+- **CI runs every drill with test roots** (`--test-root`) and fails when a drill's check fails. The restore check runs there with `--accept-not-run 5` and `--accept-not-run 3`, because a software root has no holder to compare and the CI bundle has no signer.
+- **A drill never needs a real key or a real account.** The scripts use test roots, or rehearsal cards (the `rehearsal` kind) chosen by serial from the environment; a card whose inventory entry is not in the drill's own bundle is refused.
 - **A drill on rehearsal cards runs once**, by the holder, and its report says how long each step took.
 
 ## When it is due
 
-Once a year, with the yearly ceremony, and after any change to where the directory or the revocation signatures live. `status` raises a notice (exit code 10, kind `drill`) when the newest restore report is older than 13 months, or when there is none and a yearly ceremony has been recorded. The yearly rhythm is ritueel's own policy, chosen to match the yearly ceremony. The card check and the proof of life that run every six months ([ADR 0016](/decisions/0016-several-roots-share-one-pair-of-root-cards-and-the-directory-keeps-a-card-inventory/#where-a-root-card-is-used)) are not drills, and the restore check stays yearly.
+Once a year, with the yearly ceremony, and after any change to where the bundle or the revocation signatures live. `status` raises a notice (exit code 10, kind `drill`) when the newest restore report is older than 13 months, or when there is none and a yearly ceremony has been recorded. The yearly rhythm is ritueel's own policy, chosen to match the yearly ceremony. The card check and the proof of life that run every six months ([ADR 0016](/decisions/0016-several-bundles-share-one-pair-of-root-cards-and-the-bundle-keeps-a-card-inventory/#where-a-root-card-is-used)) are not drills, and the restore check stays yearly.
 
 ## Follow-ups
 

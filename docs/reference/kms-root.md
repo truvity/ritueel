@@ -18,7 +18,7 @@ Before `init`, with the operator's own infrastructure tools ([Prepare the cloud 
 | The root account | A dedicated AWS account that holds nothing else. |
 | The admin role | Creates the keys and reads them. It replicates only before the policy that refuses replicas is in force, or through the break-glass principal. It can never `kms:Sign`. |
 | The ceremony role | The principal that may `kms:Sign` with a root key at a ceremony, and the only one that may sign anything new. ritueel asks for no particular sign-in to assume it ([ADR 0013](/decisions/0013-the-kms-ceremony-role-is-the-only-signer-and-ritueel-asks-nothing-of-its-sign-in/)); how it is assumed is the operator's. |
-| The renewal role | Optional, with a [renewal policy](/reference/kms-root/#renewal-under-a-policy). The second and last principal that may `kms:Sign`: sign-only, assumable only by the operator's scheduler. ritueel lets it sign only what the directory already holds. |
+| The renewal role | Optional, with a [renewal policy](/reference/kms-root/#renewal-under-a-policy). The second and last principal that may `kms:Sign`: sign-only, assumable only by the operator's scheduler. ritueel lets it sign only what the bundle already holds. |
 | The break-glass principal | The one principal that may still replicate a key or move its primary Region, for example after the loss of a Region. It is created like the admin role and is never named after a person. Using it is a manual, logged act ([ADR 0018](/decisions/0018-a-cloud-root-may-be-an-existing-key-that-ritueel-adopts/#the-reference-key-policy)). It can never `kms:Sign`. |
 | The keys | Optional. An existing key that ritueel [adopts](/reference/kms-root/#adopting-an-existing-key), with its alias and policy owned by the operator's own infrastructure code. Without one, ritueel creates the keys. |
 | Controls around them | Optional and the operator's: an alarm on every `Sign`, retention of the audit trail. The guide teaches them; ritueel does not create or check them. |
@@ -45,7 +45,7 @@ aws_kms:
 | `admin_role`, `ceremony_role` | The two roles, by ARN, in `account`. |
 | `renewal` | Optional: the [renewal policy](/reference/kms-root/#renewal-under-a-policy). Absent, no principal but the ceremony role may sign. |
 
-Credentials come from the caller's standard chain ([ADR 0004](/decisions/0004-ceremonies-plan-confirm-reserve-sign-verify-record/#kms-roots-and-wizards)). ritueel assumes the admin role to create and read, and the ceremony role to sign. ritueel does not sign the person in and holds no credential: the chain hands it a session of the ceremony role, and ritueel checks only that the session is the ceremony role's (check 9). The `aws_kms` block is added to the schema of [the directory](/reference/directory/#ritueelyaml) with the store; it is additive, so `version` stays `1`.
+Credentials come from the caller's standard chain ([ADR 0004](/decisions/0004-ceremonies-plan-confirm-reserve-sign-verify-record/#kms-roots-and-wizards)). ritueel assumes the admin role to create and read, and the ceremony role to sign. ritueel does not sign the person in and holds no credential: the chain hands it a session of the ceremony role, and ritueel checks only that the session is the ceremony role's (check 9). The `aws_kms` block is added to the schema of [the bundle](/reference/bundle/#ritueelyaml) with the store; it is additive, so `version` stays `1`.
 
 ## What ritueel creates
 
@@ -71,10 +71,10 @@ A cloud root may be a key that already exists in the service ([ADR 0018](/decisi
 
 1. reads the public key from the service;
 2. reads the key policy and runs [the checks](/reference/kms-root/#the-checks) on it, the same checks as for a key it created;
-3. fixes the OpenPGP creation time and records it in the directory and in the certificate;
+3. fixes the OpenPGP creation time and records it in the bundle and in the certificate;
 4. writes the certificate.
 
-The identity of the key is its ARN, not its alias. ritueel reads the policy at every ceremony and never edits an adopted key's policy. An adopted key must be one born in the service: key material imported from outside is refused, as it is for a created key. A key that fails a check is refused with the check's reason code. How the operator names the key to adopt is fixed with the store ([issue #12](https://github.com/truvity/ritueel/issues/12)). The root's record says it was adopted ([`adopted`](/reference/directory/#rootjson)).
+The identity of the key is its ARN, not its alias. ritueel reads the policy at every ceremony and never edits an adopted key's policy. An adopted key must be one born in the service: key material imported from outside is refused, as it is for a created key. A key that fails a check is refused with the check's reason code. How the operator names the key to adopt is fixed with the store ([issue #12](https://github.com/truvity/ritueel/issues/12)). The root's record says it was adopted ([`adopted`](/reference/bundle/#rootjson)).
 
 ## The key policy
 
@@ -99,14 +99,14 @@ Made at `init` after the keys exist, and again, reading from the service, at eve
 | # | Check | Code |
 |---|---|---|
 | 1 | The ARN carries `account` and the expected Region; the key is enabled and not pending deletion. | `kms-account`, `kms-state` |
-| 2 | Spec, usage and origin are as above; the key is a multi-Region primary; its `GetPublicKey` answer equals the public key in the directory. | `kms-key-spec`, `kms-key-mismatch` |
+| 2 | Spec, usage and origin are as above; the key is a multi-Region primary; its `GetPublicKey` answer equals the public key in the bundle. | `kms-key-spec`, `kms-key-mismatch` |
 | 3 | The statement that allows `Sign` to the ceremony role carries the two conditions. | `kms-policy-sign` |
 | 3a | Every statement that allows `Sign`, directly or through `kms:*` or a wildcard action, names the ceremony role, or the renewal role when `renewal` is declared, on a key that may have it and with its two conditions. Any other principal (the break-glass principal included), a renewal role that is not declared, or one on the break-glass key is refused. This is the root's form of the contract's single-principal rule ([the contract](/reference/hand-off-contract/#what-the-certifier-checks)), with the one declared exception. | `extra-sign-principal` |
 | 3b | A statement denies `ReplicateKey` and `UpdatePrimaryRegion` to every principal except the break-glass principal, and no other statement allows them to anyone else. | `kms-policy-replica` |
 | 4 | No statement allows the admin role or the break-glass principal to sign, and none names the account root or a wildcard principal. | `kms-policy-admin` |
 | 5 | The key has no grant. | `kms-grants` |
 | 6 | The replica exists in `replica_region`, has the same public key, and passes checks 1 to 5 on its own policy. | `kms-replica` |
-| 7 | For a key ritueel created, the tags are present and `ritueel:openpgp-created` equals the creation time in the directory. For an adopted key, a tag is read when present and must equal the directory's value; it is not required. | `kms-tags` |
+| 7 | For a key ritueel created, the tags are present and `ritueel:openpgp-created` equals the creation time in the bundle. For an adopted key, a tag is read when present and must equal the bundle's value; it is not required. | `kms-tags` |
 | 8 | The policy is the one the last ceremony recorded. If its digest changed, the plan says so in words and shows both digests, and the person confirms the change as part of the plan; the record keeps both. | none |
 | 9 | At a ceremony that signs: `sts get-caller-identity` names a session of the ceremony role, in `account`. At a renewal: the same with the renewal role. A different role or an expired session stops the run, and the message says to take a session of the ceremony role again. | `kms-session` |
 
@@ -114,7 +114,7 @@ Made at `init` after the keys exist, and again, reading from the service, at eve
 
 *Designed, built later (M7): [ADR 0008](/decisions/0008-the-operator-prepares-the-holder-and-ritueel-creates-attests-and-verifies-the-root/#the-cloud-root) moves it after the first release candidate.* A cloud root can renew what it already certified without a person. A card root cannot: its PIN and touch are physical, so it has the [yearly ceremony](/guides/re-sign-yearly/) and the reminders of `status`. Which acts may run unattended, and why, is taught in [Re-sign](/learn/re-sign/#what-may-run-unattended).
 
-**The rule.** `ritueel renew` signs only what the directory already holds: the same keys, the same subjects, the same constraints and key flags, the same profile, and the same content of the root list, the CA bundle, the SSH CA key list, the CRLs and the root's own certificate and primary, each with a new validity from the time of the run and the next trust sequence. If any byte it would sign names a key, a name, a root or a constraint the directory does not already hold, it refuses. It can extend trust; it never creates it, and it never revokes.
+**The rule.** `ritueel renew` signs only what the bundle already holds: the same keys, the same subjects, the same constraints and key flags, the same profile, and the same content of the root list, the CA bundle, the SSH CA key list, the CRLs and the root's own certificate and primary, each with a new validity from the time of the run and the next trust sequence. If any byte it would sign names a key, a name, a root or a constraint the bundle does not already hold, it refuses. It can extend trust; it never creates it, and it never revokes.
 
 ### The policy in `ritueel.yaml`
 
@@ -139,10 +139,10 @@ The validity of everything `renew` signs is the profile's (13 calendar months fo
 
 1. **Read, under the renewal role.** The checks 1 to 9 above, on every key it will use. A key policy with a third principal that can sign stops it (`extra-sign-principal`).
 2. **Plan.** For each intermediate in `intermediates` that is not revoked or replaced, the certificate or binding over the key of its last one, with that one's subject, extensions or key flags; then the root list with the same roots, the SSH CA key list with the same keys, each root's CRL with the entries of its last one that have not expired, the root's certificate and self-signature over the same keys, the CA bundle and the keyring. It prints the plan in words and its digest, as for every ceremony, and writes it. `--plan-only` stops there.
-3. **Check the plan against the directory and the policy,** below. A refused check stops the run before anything is signed.
+3. **Check the plan against the bundle and the policy,** below. A refused check stops the run before anything is signed.
 4. **Reserve, sign, verify and record,** as the six steps of every ceremony, with no confirmation by a person: the record says `confirmation.by` `policy` ([the record](/reference/ceremony-record/#the-record)).
 
-A request that a requester left in `requests/` is used when its key, subject and extensions equal the directory's; one that differs is refused, and the change waits for a ceremony.
+A request that a requester left in `requests/` is used when its key, subject and extensions equal the bundle's; one that differs is refused, and the change waits for a ceremony.
 
 ### The checks of a renewal
 
@@ -150,9 +150,9 @@ Exit code 3 for each, except `kms-session` (4). They follow the KMS checks above
 
 | # | Check | Code |
 |---|---|---|
-| 10 | Every active root of the directory is in `aws-kms`, and `renewal` is declared. A card or software root is refused with a message that names the yearly ceremony. | `not-in-policy` |
+| 10 | Every active root of the bundle is in `aws-kms`, and `renewal` is declared. A card or software root is refused with a message that names the yearly ceremony. | `not-in-policy` |
 | 11 | Every intermediate to renew is named in `intermediates`, and is neither revoked nor replaced. | `not-in-policy` |
-| 12 | Every key, subject, constraint, key flag, `use`, root and list entry in the plan is one the directory already holds for that item, and every CRL entry of the last CRL that has not expired is kept. | `key-not-in-ledger` |
+| 12 | Every key, subject, constraint, key flag, `use`, root and list entry in the plan is one the bundle already holds for that item, and every CRL entry of the last CRL that has not expired is kept. | `key-not-in-ledger` |
 | 13 | The item that expires first among those to renew expires within `within_days`. An earlier run is refused, so a schedule that runs too often cannot move the trust sequence every day. | `too-early` |
 | 14 | The session is the renewal role (check 9). | `kms-session` |
 

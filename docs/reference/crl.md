@@ -17,7 +17,7 @@ ritueel puts **no CRL distribution point in any certificate** it issues ([the pr
 |---|---|
 | `crl-<label>.pem` | The CRL of the root `<label>`: one `X509 CRL` in PEM armour (RFC 7468), with LF line endings and Base64 in lines of 64 characters. |
 
-ritueel writes the CRL of every active root into `products/<sequence>/` with the other trust products ([the directory](/reference/directory/#the-layout)). A ceremony **signs** the CRL of the root that signs it, and **copies unchanged** the newest CRL of every other active root, so the folder of any sequence holds a current CRL for each root and the same directory gives the same bytes.
+ritueel writes the CRL of every active root into `products/<sequence>/` with the other trust products ([the bundle](/reference/bundle/#the-layout)). A ceremony **signs** the CRL of the root that signs it, and **copies unchanged** the newest CRL of every other active root, so the folder of any sequence holds a current CRL for each root and the same bundle gives the same bytes.
 
 ## When a root signs its CRL
 
@@ -66,7 +66,7 @@ A CRL whose number equals the held one and whose bytes are the same passes: ritu
 
 **Is this certificate revoked.** A certificate is revoked when the current CRL of its issuing root lists its serial number. The party takes the issuer from the certificate, so it needs the CRL of each root that may have issued a certificate in the chains it accepts, and both when two roots are active. With OpenSSL this is `openssl verify -CAfile ca-bundle.pem -crl_check -CRLfile crl-A.pem -CRLfile crl-B.pem CERT`: it reports a listed certificate as `certificate revoked` and refuses an expired CRL with `CRL has expired` (OpenSSL 3.5.5, checked 2026-11-01 with the vectors' files). Servers built on OpenSSL take the same file in their own setting (for example nginx `ssl_crl` and PostgreSQL `ssl_crl_file`, from their documentation).
 
-**The command.** `ritueel crl verify FILE --bundle FILE [--held FILE] [--cert FILE]` runs these checks on `FILE`, against the CA bundle that lists the roots the party trusts (its first line names the sequence of the root list; a root not in it is not trusted) and the CRL the party holds. `--cert FILE` also says whether the certificate is listed: exit code 3 with the code `revoked`. It signs and writes nothing ([Commands](/reference/cli/#commands-for-the-trust-products-that-come-later)).
+**The command.** `ritueel crl verify FILE --ca-bundle FILE [--held FILE] [--cert FILE]` runs these checks on `FILE`, against the CA bundle that lists the roots the party trusts (its first line names the sequence of the root list; a root not in it is not trusted) and the CRL the party holds. `--cert FILE` also says whether the certificate is listed: exit code 3 with the code `revoked`. It signs and writes nothing ([Commands](/reference/cli/#commands-for-the-trust-products-that-come-later)).
 
 ## Test vectors
 

@@ -64,7 +64,7 @@ Refused unless all of these hold:
 | The overlap has ended (`overlap_until` has passed). `--now REASON` overrides this, and the reason is recorded. | `overlap-open` |
 | Nothing depends on this root alone: every registered intermediate has a certificate, or a binding, from another active root over the same key, valid for at least 30 more days. | `still-needed` |
 
-`still-needed` lists what is missing. The fix is a yearly ceremony (the renewal plan of `ritueel due`, then `ritueel run`) with a fresh request for each intermediate over its same key, which an OpenPGP subkey also needs when a new primary joined after the subkey's request ([the contract](/reference/hand-off-contract/#the-request-1): a request back-signs for every active primary). The retired root's certificate is no longer in the bundle, its CRL is no longer written, and its primary leaves the keyring package.
+`still-needed` lists what is missing. The fix is a yearly ceremony (the renewal plan of `ritueel due`, then `ritueel run`) with a fresh request for each intermediate over its same key, which an OpenPGP subkey also needs when a new primary joined after the subkey's request ([the contract](/reference/hand-off-contract/#the-request-1): a request back-signs for every active primary). The retired root's certificate is no longer in the CA bundle, its CRL is no longer written, and its primary leaves the keyring package.
 
 ### `root revoke`
 
@@ -74,14 +74,14 @@ It never waits for anything but the stored revocation material, because it is th
 |---|---|
 | At least one other root stays active, and it can sign. | `last-root` |
 | Every other active root can sign the next root list. | `root-absent` |
-| The file's digest equals the digest the directory holds for this root and reason, and its signature verifies over the root's primary. | `revocation-mismatch`, `revocation-invalid` |
-| Unless the root signs the new list itself, `--removal FILE` is its removal authorisation, with the digest the directory holds and a signature that verifies over its pin ([revocation material](/reference/revocation-material/#the-removal-authorisation)). | `revocation-mismatch`, `revocation-invalid` |
+| The file's digest equals the digest the bundle holds for this root and reason, and its signature verifies over the root's primary. | `revocation-mismatch`, `revocation-invalid` |
+| Unless the root signs the new list itself, `--removal FILE` is its removal authorisation, with the digest the bundle holds and a signature that verifies over its pin ([revocation material](/reference/revocation-material/#the-removal-authorisation)). | `revocation-mismatch`, `revocation-invalid` |
 
-It then writes a root list without the root, signed by the other roots and carrying its removal authorisation, a bundle, a keyring and an SSH CA key list without it, copies the revocation signature to `products/<sequence>/revocations/` (armoured, named by the fingerprint, as the [keyring page](/reference/keyring-package/#files) says), and stops writing the root's CRL. What the root alone had certified is **not** re-certified here: `status` reports each such intermediate as critical until a yearly ceremony does it, over the same keys ([A lost root card](/guides/lost-root-card/)).
+It then writes a root list without the root, signed by the other roots and carrying its removal authorisation, a CA bundle, a keyring and an SSH CA key list without it, copies the revocation signature to `products/<sequence>/revocations/` (armoured, named by the fingerprint, as the [keyring page](/reference/keyring-package/#files) says), and stops writing the root's CRL. What the root alone had certified is **not** re-certified here: `status` reports each such intermediate as critical until a yearly ceremony does it, over the same keys ([A lost root card](/guides/lost-root-card/)).
 
 ## The vouch
 
-Both vouches are signed by the vouching root, at the ceremony of `root add`, and are published in `products/<sequence>/vouches/`. They are not trust anchors and are in no bundle.
+Both vouches are signed by the vouching root, at the ceremony of `root add`, and are published in `products/<sequence>/vouches/`. They are not trust anchors and are in no CA bundle.
 
 ### The X.509 cross-certificate
 
@@ -97,12 +97,12 @@ Both vouches are signed by the vouching root, at the ceremony of `root add`, and
 | Validity | `notBefore` is the ceremony time. `notAfter` is 13 calendar months later, as for an intermediate. It is made again by each yearly ceremony while the overlap lasts. |
 | Basic constraints | Critical. `cA` true, no path length. |
 | Key usage | Critical. `keyCertSign` and `cRLSign`. |
-| Subject key identifier | The new key's, as in the [root certificate profile](/reference/directory/#the-root-certificate). |
+| Subject key identifier | The new key's, as in the [root certificate profile](/reference/bundle/#the-root-certificate). |
 | Authority key identifier | The vouching root's subject key identifier. |
 | Name constraints | Absent: constraints belong to the intermediates. |
 | Anything else | Absent: no CRL distribution point, no authority information access. |
 
-A client that trusts only the old root can build a path from an intermediate that the new root issued: intermediate, then this certificate, then the old root. A client that has the new bundle needs it not at all.
+A client that trusts only the old root can build a path from an intermediate that the new root issued: intermediate, then this certificate, then the old root. A client that has the new CA bundle needs it not at all.
 
 ### The OpenPGP certification
 
@@ -123,7 +123,7 @@ It is **not in the keyring package**: that package holds only the primaries' own
 
 ## In `root.json`
 
-Written at `root add`, and not changed except the last three ([the directory](/reference/directory/#rootjson)).
+Written at `root add`, and not changed except the last three ([the bundle](/reference/bundle/#rootjson)).
 
 | Member | Meaning |
 |---|---|

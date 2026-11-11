@@ -7,7 +7,7 @@ sidebar:
 
 *Not built yet. This is version 1 of the files that the six steps of [ADR 0004](/decisions/0004-ceremonies-plan-confirm-reserve-sign-verify-record/#six-steps-every-ceremony) write. The code is [issue #9](https://github.com/truvity/ritueel/issues/9), in M2; it follows this page.*
 
-Every ceremony writes four kinds of file into its own sub-folder of the ledger, `ledger/<ceremony>/`, in [the directory](/reference/directory/#the-layout): a **plan** before anything is signed, an **attempt** just before the first signature, then a **record** and a **transcript** when it ends. The ledger is the write-once part of the directory. These files hold public material only: never a private key, a PIN, a passphrase or a revocation signature.
+Every ceremony writes four kinds of file into its own sub-folder of the ledger, `ledger/<ceremony>/`, in [the bundle](/reference/bundle/#the-layout): a **plan** before anything is signed, an **attempt** just before the first signature, then a **record** and a **transcript** when it ends. The ledger is the write-once part of the bundle. These files hold public material only: never a private key, a PIN, a passphrase or a revocation signature.
 
 | File | Written at | Holds |
 |---|---|---|
@@ -34,8 +34,8 @@ A **key fingerprint** in these files is the SHA-256 of the DER `SubjectPublicKey
 | `arguments` | An object with every argument that changes what is signed: the intermediate's name, the request's stem, `--root` and its reason, `--allow-missing` names. Flags that change only how ritueel runs (`--output`, `--passphrase-fd`) are not in it. |
 | `made_at` | When the plan was written. |
 | `ceremony_time` | The time every signature carries and every validity starts from. Drawn once, here. |
-| `inputs` | A list of `{ "path", "sha256" }`: every file of the directory the plan was made from, `ritueel.yaml` and the request files included, in path order. |
-| `last_record_sha256` | The SHA-256 of the newest record in the directory, or absent when there is none. |
+| `inputs` | A list of `{ "path", "sha256" }`: every file of the bundle the plan was made from, `ritueel.yaml` and the request files included, in path order. |
+| `last_record_sha256` | The SHA-256 of the newest record in the bundle, or absent when there is none. |
 | `root` | The root that signs: `{ "label", "store", "x509", "openpgp", "test", "copyable" }`, with the two key fingerprints, `test` true for a test root, and `copyable` true for a software root. |
 | `root_reason` | Present only when `--root` chose another root than the root of the year: the reason given. |
 | `requests` | A list, one for each request the ceremony answers: `{ "stem", "type", "request_sha256", "proof_sha256", "store", "key" }`, where `key` is the fingerprint of the requester's key. |
@@ -59,7 +59,7 @@ Each member of `signatures`:
 | `tbs_sha256` | The SHA-256 of the exact bytes the key signs: the DER `TBSCertificate`, the OpenPGP data hashed for the signature (RFC 9580, section 5.2.4), the JWS signing input of the root list (one for each root that signs it) or of the SSH CA key list, or the DER `TBSCertList` of a CRL. |
 | `derived` | True for a signature that covers a key born in this ceremony; it has no `tbs_sha256`, and no `key` when the new key signs itself ([below](/reference/ceremony-record/#the-plan)). Absent otherwise. |
 
-`tbs_sha256` is what makes the plan exact: two machines that build the same plan from the same directory compute the same bytes to sign, and the verify step compares each artifact with it.
+`tbs_sha256` is what makes the plan exact: two machines that build the same plan from the same bundle compute the same bytes to sign, and the verify step compares each artifact with it.
 
 **A key that is born in the ceremony is the exception.** `init`, `root add` and `ssh-ca break-glass` make keys, and a signature that covers a new key (its root certificate, its primary's self-signature and revocation signatures, a vouching signature, a cross-certificate) cannot have its bytes fixed before the key exists. The plan lists such a signature with `derived` set to true and without `tbs_sha256` (and without `key` when the new key signs itself), and lists the keys to be born in `births`: for each, `{ "label", "purpose", "store", "place", "creation_time" }`, where `place` is the card's serial and slot, or the Region, and `creation_time` is the OpenPGP creation time drawn here. The verify step checks every derived artifact against the profile and the key that was born, with code that did not sign it, and the record carries the digests that the plan could not ([ADR 0008](/decisions/0008-the-operator-prepares-the-holder-and-ritueel-creates-attests-and-verifies-the-root/#births-and-what-a-crash-leaves)).
 
@@ -91,7 +91,7 @@ ritueel creates the file only if it does not exist (exclusive create), writes it
 
 ### The birth journal
 
-A ceremony that makes keys also creates `ledger/<ceremony>/births.jsonl`, with the attempt and before the first birth. After each key exists, and before the next birth begins, ritueel appends one line and syncs the file: `{ "at", "label", "purpose", "store", "place", "public_key_sha256" }`, where `place` is as in the plan with the key's ARN for KMS. The journal holds no secret. If the run stops, `records close` prints it, so that the holder can delete the slot of the half-born key (that deleting one slot works on firmware 5.7.4 is tried on a rehearsal card in M1; a card that holds roots is never reset: [ADR 0016](/decisions/0016-several-roots-share-one-pair-of-root-cards-and-the-directory-keeps-a-card-inventory/#rules-for-a-shared-card)) or the operator can schedule the key for deletion; ritueel does neither ([ADR 0008](/decisions/0008-the-operator-prepares-the-holder-and-ritueel-creates-attests-and-verifies-the-root/#births-and-what-a-crash-leaves)). An attempt is resolved by a record, as before; the journal is not a second record.
+A ceremony that makes keys also creates `ledger/<ceremony>/births.jsonl`, with the attempt and before the first birth. After each key exists, and before the next birth begins, ritueel appends one line and syncs the file: `{ "at", "label", "purpose", "store", "place", "public_key_sha256" }`, where `place` is as in the plan with the key's ARN for KMS. The journal holds no secret. If the run stops, `records close` prints it, so that the holder can delete the slot of the half-born key (that deleting one slot works on firmware 5.7.4 is tried on a rehearsal card in M1; a card that holds roots is never reset: [ADR 0016](/decisions/0016-several-bundles-share-one-pair-of-root-cards-and-the-bundle-keeps-a-card-inventory/#rules-for-a-shared-card)) or the operator can schedule the key for deletion; ritueel does neither ([ADR 0008](/decisions/0008-the-operator-prepares-the-holder-and-ritueel-creates-attests-and-verifies-the-root/#births-and-what-a-crash-leaves)). An attempt is resolved by a record, as before; the journal is not a second record.
 
 ## The record
 
@@ -101,7 +101,7 @@ A ceremony that makes keys also creates `ledger/<ceremony>/births.jsonl`, with t
 | `ceremony`, `command`, `arguments` | As in the plan. |
 | `outcome` | `completed`; `declined` when the person declined the request ([Declining](/reference/ceremony-record/#declining)); or `closed` for a closing record. |
 | `plan_sha256` | The plan digest. Absent in a closing record, which has no plan of its own. |
-| `prev_record_sha256` | The SHA-256 of the record before it in the chain. Absent in the first record of the directory, and only there. |
+| `prev_record_sha256` | The SHA-256 of the record before it in the chain. Absent in the first record of the bundle, and only there. |
 | `started_at`, `finished_at` | When the attempt was written, and when the record was. |
 | `root`, `root_reason` | As in the plan. Absent in a closing record. |
 | `slot_map_version` | For a root on a card: the version of the slot map ([ADR 0003](/decisions/0003-key-stores-and-the-card-layer/#the-piv-store-and-the-root-cards)). Absent for a software root. |
@@ -122,12 +122,12 @@ A ceremony that makes keys also creates `ledger/<ceremony>/births.jsonl`, with t
 Each member of `requests` holds what the [hand-off contract records](/reference/hand-off-contract/#what-the-certifier-records): `stem`, `type`, `request_sha256`, `proof_sha256`, `store`, `key`, `evidence`, `policy`, `outcome` and `artifacts`.
 
 - `evidence` holds what was read from the proof and checked. For a software key it is `{ "unprotected": true }`: the key proves nothing about where it lives. The members for `piv` (serial, firmware, PIN and touch policy, form factor, slot), `aws-kms` (the ARN, the key's description and the digest of its policy) and `openpgp-card` are fixed with those stores, in M2 and M4.
-- `policy` is a copy of the policy applied to the request: the `policy` block of `ritueel.yaml` and the intermediate's entry ([the directory](/reference/directory/#ritueelyaml)).
+- `policy` is a copy of the policy applied to the request: the `policy` block of `ritueel.yaml` and the intermediate's entry ([the bundle](/reference/bundle/#ritueelyaml)).
 - `outcome` is `issued`, and `artifacts` the answer's files with their digests, as in `result.json`; in a declining record, `outcome` is `refused` with the code `declined`.
 
 ### The hash chain
 
-Records form one chain. The first record of a directory has no `prev_record_sha256`; every other names the record before it, so each sub-folder of the ledger names the one before it. `records verify` walks the chain from the first record and fails when:
+Records form one chain. The first record of a bundle has no `prev_record_sha256`; every other names the record before it, so each sub-folder of the ledger names the one before it. `records verify` walks the chain from the first record and fails when:
 
 - a record's `prev_record_sha256` is not the digest of a record, or two records name the same one;
 - a `record.json` in a sub-folder of `ledger/` is not on the chain;
