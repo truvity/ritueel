@@ -43,7 +43,7 @@ function legend(x, y, step, wrap) {
   return s;
 }
 
-/** The pill under the card: a passkey on each root card opens key files (record 0015). */
+/** The pill under the card: a passkey on each root card opens key files (record 0002). */
 function pill(x, y, w, lines) {
   const h = lines.length === 1 ? 30 : 42;
   let s = rect(x, y, w, h, 'paper-t', h / 2 > 15 ? 15 : h / 2) + key(x + 26, y + h / 2, 'ln ln-key');
