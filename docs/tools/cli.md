@@ -21,7 +21,7 @@ Every ceremony runs the same steps: **plan** every byte that will be signed, **c
 4. **The result.** After signing, verify the certificate or binding against the request and the plan.
 5. **The record.** Write a hash-chained ceremony record that contains no PIN, no key and no secret.
 
-A PIN is entered by the holder at the terminal. The tool never retries a wrong PIN and refuses to run when fewer than three tries are left, because the card blocks after three and then needs the PUK. The PINs the holder types live in the holder's password manager, one entry per card; the PUK and the management key are random and sealed in the directory ([ADR 0015](/decisions/0015-key-files-open-with-a-passkey-on-each-root-card-and-card-secrets-are-sealed-in-the-bundle/#card-secrets)).
+A PIN is entered by the holder at the terminal. The tool never retries a wrong PIN and refuses to run when fewer than three tries are left, because the card blocks after three and then needs the PUK. The PINs the holder types live in the holder's password manager, one entry per card; the PUK and the management key are random and sealed in the bundle ([ADR 0015](/decisions/0015-key-files-open-with-a-passkey-on-each-root-card-and-card-secrets-are-sealed-in-the-bundle/#card-secrets)).
 
 ## The three ceremonies
 
@@ -50,7 +50,7 @@ A root is valid for about three years, and each use extends it. The card that si
 
 ## One process behind the commands
 
-Every command that reads or writes a directory talks to one ritueel process. The first command that needs it starts it; it is not installed as a system service, is never started at login or boot. The command line reaches it through a Unix socket that only you can open. How it ends (an idle time, a `ritueel stop` command) is proposed, and so is that it keeps no PIN, no passphrase and no session between calls and opens a card only for the length of a ceremony. When you confirm a ceremony, the digest you type in the terminal goes over that socket. ([ADR 0011](/decisions/0011-the-wizards-one-engine-three-faces-and-a-web-page-that-cannot-confirm-anything/), [the details](/reference/wizard/#the-ritueel-process).)
+Every command that reads or writes a bundle talks to one ritueel process. The first command that needs it starts it; it is not installed as a system service, is never started at login or boot. The command line reaches it through a Unix socket that only you can open. How it ends (an idle time, a `ritueel stop` command) is proposed, and so is that it keeps no PIN, no passphrase and no session between calls and opens a card only for the length of a ceremony. When you confirm a ceremony, the digest you type in the terminal goes over that socket. ([ADR 0011](/decisions/0011-the-wizards-one-engine-three-faces-and-a-web-page-that-cannot-confirm-anything/), [the details](/reference/wizard/#the-ritueel-process).)
 
 ## Which code talks to the cards
 

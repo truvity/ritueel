@@ -41,7 +41,7 @@ The `Justfile` holds the recipes, and CI runs the same recipes. Run the recipe, 
 | `just ui-install` | Installs the local page's dependencies from `ui/package-lock.json` |
 | `just ui-lint` | The page's TypeScript (strict) and its safety scan: no `innerHTML`, `eval`, `fetch` or remote URL, no text under 12 px |
 | `just ui-test` | The page's tests (vitest): the safety scan, the text rule, every screen with hostile text, the demo transport, the routes, and that every site link in the demo is a page of the site, with its anchor a heading of that page (`ui/src/links.test.ts`) |
-| `just ui-build` | Both builds of the page, the demo (base `/demo/`) and the real one, and what each bundle must and must not hold |
+| `just ui-build` | Both builds of the page, the demo (base `/demo/`) and the real one, and what each JavaScript bundle must and must not hold |
 | `just ui-demo` | The demo for the site: the page in demo mode, base path `/demo/`, built into `site/public/demo/` (a build product, not committed). `site-build` runs it first |
 | `just ui-e2e` | The page in headless Chrome, served under the site's own Content-Security-Policy; fails on a console error or a policy violation. Needs Chrome or Chromium |
 | `just proto-lint` | `buf lint` of `proto/`, the page's API |
