@@ -29,9 +29,11 @@ and a switch to choose between them (see "How the demo mode works").
 The page is a view. It never confirms a ceremony and never asks for or receives a
 PIN, a passphrase or any secret. Every screen that names an action shows the
 command that does it, and no screen performs one. Confirmation happens in the
-terminal, on the offline system or on your workstation. The offline system is for a
-root on cards or a real software root in a key file; a cloud root is used from your
-workstation; a test root may run on your workstation (wording only, no flag).
+terminal, in the offline system or on your workstation. A key that can be copied (a
+key file) is used only in the offline system. A key that cannot be copied (a root on
+cards or in the cloud) may be used on your workstation, under four conditions that the
+plan lists with its counts of signatures and touches (record 0005, rules 17 and 18). A
+test root may run on your workstation (wording only, no flag).
 
 ## Screens
 
@@ -107,9 +109,14 @@ no library (they drive headless Chrome over the DevTools protocol).
   history, roots, cards, findings, trust files and goals. `personal` is one holder's
   OpenPGP key in a key file, with its subkeys by year and by card, and six cards
   (two root cards, three day-to-day cards and a rehearsal card); its trust files are its
-  public certificate, as a personal bundle has no root list. `acme` is a company with
-  roots `acme/A` and `acme/B` on a pair of root cards, delegated keys and seven trust
-  files (a CRL for each root). `globex` is another company's cloud root
+  public certificate, as a personal bundle has no root list. Its pair of root cards is
+  shared with another bundle of the holder: row 3 of both cards is declared in the card's
+  file as that bundle's (drawn as OTHER, with no key digest), and row 4 of card two is
+  occupied by a key nobody declared, which is a finding (the names are proposed, record
+  0003, issue 11). `acme` is a company with roots `acme/A` and `acme/B` on a pair of
+  root cards, delegated keys and six trust files (a CRL for each root). Each record of
+  the history says where its ceremony ran (record 0005, rule 2): the first record of
+  `acme` ran in the offline system, the others on the workstation. `globex` is another company's cloud root
   `globex/A`, with no card.
 - The bundle switch (`src/api/demoState.ts`, "Example bundle", beside "Page
   state") is demo chrome only. It is not in the contract and not in the real
@@ -135,11 +142,16 @@ no library (they drive headless Chrome over the DevTools protocol).
   digest ([the ceremony record](../docs/reference/ceremony-record.md)).
   Nothing is written anywhere. The wizard builds a plan in memory (`StartPlan`: questions,
   then the plan with its steps, digest and commands). In the demo the plan is the
-  same whatever is chosen. The plan says where it runs (`Plan.run_place`): on the
-  offline system for a root on cards or a real software root in a key file, on your
-  workstation for a cloud root (with no hardware-key sign-in: ritueel asks nothing of
-  how you signed in). The USB-stick step shows only on the offline system. A test
-  root may run on the workstation; that is wording only, as there is no flag for it.
+  same whatever is chosen. The plan says where it runs (`Plan.run_place`) and with which
+  store it signs (`Plan.signing_store`), because the page cannot tell a key file from a
+  cloud key by its other data. A key that can be copied (a key file) is used only in the
+  offline system. A key that cannot be copied (a root on cards or in the cloud) may be
+  used on the workstation, under four conditions: a touch for every signature, the number
+  of signatures stated in the plan (`signature_count`, with `touch_count`), no retry of a
+  failed touch, and the result checked against the plan on a second device. How the touch
+  reads for a cloud key is only proposed (record 0005, issue 30), and the page marks it. The
+  stick step (vanilla AirgapOS on the ceremony stick) shows only in the offline system. A
+  test root may run on the workstation; that is wording only, as there is no flag for it.
   The commands follow [the command reference](../docs/reference/cli.md): the
   run command is `ritueel --dir BUNDLE run PLAN --confirm DIGEST`, and a plan of an
   empty bundle starts with `init`.
@@ -288,9 +300,9 @@ tell whether a user ID inside it is quoted.
   bundle sits at another path, so the `--dir` value is only the path on this computer.
   The preview of the bundle changes lists the history files and the trust files, not each
   root certificate that a ceremony re-issues.
-- The made-up data shows no server card, no test root and no pair of root cards shared by
-  two bundles (record 0003, rules 5 to 7, allows it). The kind exists in the contract and the Cards screen
-  has a place for it; no example draws it.
+- The personal example shares its pair of root cards with another bundle (a declared row
+  and one undeclared row); no server card and no test root are drawn. The kind exists in
+  the contract and the Cards screen has a place for it; no example draws it.
 - The times of day in the made-up dates are approximate: the days follow the pages, the
   clock does not always follow the ceremony time. The page shows days only.
 - Fonts depend on what is installed (see Design).
