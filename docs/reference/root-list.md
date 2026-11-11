@@ -17,7 +17,7 @@ A system that updates its own trust, such as a system that holds intermediates, 
 | `root-list.jws` | Its signatures: a detached JSON Web Signature over the bytes of `root-list.json`, with one signature for each root that signs it. |
 | `ca-bundle.pem` | The certificates of the roots on the list, in its order, with the trust sequence in the first line. |
 
-ritueel writes the three files together, under `products/<sequence>/` in [the directory](/reference/directory/#the-layout). Publishing them is the operator's pipeline; the names a host fetches them under are the operator's choice.
+ritueel writes the three files together, under `products/<sequence>/` in [the bundle](/reference/bundle/#the-layout). Publishing them is the operator's pipeline; the names a host fetches them under are the operator's choice.
 
 ## Versioning
 
@@ -28,7 +28,7 @@ ritueel writes the three files together, under `products/<sequence>/` in [the di
 
 ## The list
 
-`root-list.json` is one UTF-8 object with no byte order mark and no more than 256 KiB. A member name appears once; a member this page does not define is an error. Numbers are integers. A time is `YYYY-MM-DDThh:mm:ssZ` in UTC (RFC 3339, whole seconds). A digest is SHA-256 in lower-case hexadecimal. The writer serialises it in the canonical form of RFC 8785, with no trailing newline, so the same directory gives the same bytes.
+`root-list.json` is one UTF-8 object with no byte order mark and no more than 256 KiB. A member name appears once; a member this page does not define is an error. Numbers are integers. A time is `YYYY-MM-DDThh:mm:ssZ` in UTC (RFC 3339, whole seconds). A digest is SHA-256 in lower-case hexadecimal. The writer serialises it in the canonical form of RFC 8785, with no trailing newline, so the same bundle gives the same bytes.
 
 | Member | Required | Meaning |
 |---|---|---|
@@ -37,14 +37,14 @@ ritueel writes the three files together, under `products/<sequence>/` in [the di
 | `signed_at` | yes | When the list was signed: the time of the ceremony. |
 | `expires_at` | yes | 13 calendar months after `signed_at`: the same day and time of the month, or the last day of the month if it has none, as for an intermediate. |
 | `roots` | yes | The active roots, one or more, in a fixed order: the order in which a hand-off request lists `primaries`. Each is an object below. |
-| `last_record_sha256` | yes, except in the list `init` makes | The SHA-256 of the newest [ceremony record](/reference/ceremony-record/) in the directory when the ceremony's plan was made. It anchors the hash chain of the records up to the ceremony before this one; the record of this ceremony is anchored by the next list. The list that `init` makes has no record before it, and leaves the member out. |
+| `last_record_sha256` | yes, except in the list `init` makes | The SHA-256 of the newest [ceremony record](/reference/ceremony-record/) in the bundle when the ceremony's plan was made. It anchors the hash chain of the records up to the ceremony before this one; the record of this ceremony is anchored by the next list. The list that `init` makes has no record before it, and leaves the member out. |
 | `removals` | only in a list that removes a root that does not sign it | One entry for each such root, in label order: `label`, `x509_spki_sha256` and `authorisation`, the root's [removal authorisation](/reference/root-list/#the-removal-authorisation) as a string. Absent when there is none. |
 
 Each member of `roots`:
 
 | Member | Required | Meaning |
 |---|---|---|
-| `label` | yes | The root's label, as in its certificate's subject: one upper-case letter. `init` names its roots `A` and `B`, and `root add` takes the next free letter (`C`, `D`, and so on) whatever the key store. A label names a root, never its store, and is never reused. |
+| `label` | yes | The root's label, as in its certificate's subject: one upper-case letter. `init` names its roots `A` and `B`, and `root add` takes the next free letter (`C`, `D`, and so on) whatever the key store. A label names a root, never its store, and is never reused. It is the root's label inside its bundle (`acme/A` across bundles); the list carries no bundle name. |
 | `x509_spki_sha256` | yes | The SHA-256 of the DER `SubjectPublicKeyInfo` of the root's X.509 key: the pin. It is the `issuer` member of a hand-off answer for X.509. |
 | `openpgp_fingerprint` | yes | The fingerprint of the root's OpenPGP primary, 40 hexadecimal digits (version 4). It is a member of `primaries` in a hand-off request. |
 
@@ -119,7 +119,7 @@ The host verifies the bytes it received and does not re-serialise them. When eve
 
 These codes belong to the host and are not sent anywhere. The vectors fix the outcome and the code, not the wording of a message.
 
-**The command.** `ritueel root-list verify FILE` runs these checks on the list `FILE` (its `root-list.json`; the signature is the `.jws` file beside it), against the list the host holds (`--held FILE`) or its initial pins (`--pin SHA256`, once for each). `--bundle FILE` also checks a CA bundle against the list: its first line names the list's `sequence`, and its certificates are the keys of the list's `roots`, in that order, or it is refused with `bundle-mismatch`. It signs and writes nothing ([Commands](/reference/cli/#the-first-versions-commands)).
+**The command.** `ritueel root-list verify FILE` runs these checks on the list `FILE` (its `root-list.json`; the signature is the `.jws` file beside it), against the list the host holds (`--held FILE`) or its initial pins (`--pin SHA256`, once for each). `--ca-bundle FILE` also checks a CA bundle against the list: its first line names the list's `sequence`, and its certificates are the keys of the list's `roots`, in that order, or it is refused with `bundle-mismatch`. It signs and writes nothing ([Commands](/reference/cli/#the-first-versions-commands)).
 
 ## The CA bundle
 
@@ -129,15 +129,15 @@ These codes belong to the host and are not sent anywhere. The vectors fix the ou
 2. Then the current certificate of each root on that list, in the order of `roots`, each PEM-armoured with the label `CERTIFICATE` (RFC 7468), Base64 in lines of 64 characters.
 3. Nothing else.
 
-It is deterministic: the same directory gives the same bytes. A PEM parser skips the text outside the armour (RFC 7468, section 2), so OpenSSL reads the file as a list of trust anchors (checked with OpenSSL 3.5.5 on 2026-11-01: `openssl verify -CAfile` with the vectors' bundles accepts the hand-off answers of the roots in the bundle and refuses the others). The root certificates follow the [root profile](/reference/directory/#the-root-certificate).
+It is deterministic: the same bundle gives the same bytes. A PEM parser skips the text outside the armour (RFC 7468, section 2), so OpenSSL reads the file as a list of trust anchors (checked with OpenSSL 3.5.5 on 2026-11-01: `openssl verify -CAfile` with the vectors' CA bundles accepts the hand-off answers of the roots in the CA bundle and refuses the others). The root certificates follow the [root profile](/reference/bundle/#the-root-certificate).
 
-The bundle is not signed: a TLS client trusts the file it was given. A system that also holds the signed root list uses a certificate from the bundle as an anchor only when its key is on the list it holds, and its sequence is the list's.
+The CA bundle is not signed: a TLS client trusts the file it was given. A system that also holds the signed root list uses a certificate from the CA bundle as an anchor only when its key is on the list it holds, and its sequence is the list's.
 
 ## Test vectors
 
 The vectors are in [`testdata/root-list/v1/`](https://github.com/truvity/ritueel/tree/main/testdata/root-list/v1). They are public material only, made by the same run of [`generate.py`](https://github.com/truvity/ritueel/blob/main/testdata/hand-off/generate.py) as the hand-off vectors, so the roots are the same test roots: A and B are active, C is a root that a list adds, Z is on no list, and the list `seq7-a` is the root list of trust sequence 7, which the hand-off answers carry.
 
-- `manifest.json` names each root with its pins and files, the initial pins (A and B), the removal authorisation of A, B and C as the holder stores them (`removals/`), every list with its signers, every case and every bundle.
+- `manifest.json` names each root with its pins and files, the initial pins (A and B), the removal authorisation of A, B and C as the holder stores them (`removals/`), every list with its signers, every case and every CA bundle.
 - A case gives the list the host holds (`held`, or `null` for the initial pins), the list it receives (`candidate`), the clock if it is not the manifest's `2026-11-15T12:00:00Z`, and the expected outcome: `accept`, `refuse` with a reason code, or `warn` with a warning.
 - The record digests in the lists are made up.
 
@@ -148,7 +148,7 @@ The vectors are in [`testdata/root-list/v1/`](https://github.com/truvity/ritueel
 | Warned | The held list expired and no newer one came. |
 | CA bundles | Sequence 7 with A and B; sequence 8 with B only. |
 
-CI checks that the manifest names every file of the set, that the pins match the root files, that every list carries exactly the signatures of its signers and that each verifies except in the list a case expects to fail, that every removal authorisation is valid except the one a case expects to be refused, and that each bundle holds the roots it names under its sequence (`just check-vectors`).
+CI checks that the manifest names every file of the set, that the pins match the root files, that every list carries exactly the signatures of its signers and that each verifies except in the list a case expects to fail, that every removal authorisation is valid except the one a case expects to be refused, and that each CA bundle holds the roots it names under its sequence (`just check-vectors`).
 
 ## Choices made
 
@@ -166,7 +166,7 @@ CI checks that the manifest names every file of the set, that the pins match the
 
 ## Follow-ups
 
-- The code: writing, signing and reading the list and the bundle, with the host rules, and a test that the same inputs give the same bytes ([issue #14](https://github.com/truvity/ritueel/issues/14)).
+- The code: writing, signing and reading the list and the CA bundle, with the host rules, and a test that the same inputs give the same bytes ([issue #14](https://github.com/truvity/ritueel/issues/14)).
 - The SSH CA key list in the same shape, with its own `typ` and vectors, is specified on [its page](/reference/ssh-ca-key-list/) ([issue #55](https://github.com/truvity/ritueel/issues/55)).
 
 ## Standards

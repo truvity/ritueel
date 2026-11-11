@@ -29,7 +29,7 @@ The package puts these files on the system. The same files are written beside th
 
 The builder writes them under `products/<sequence>/keyring/`: the two packages, `<name>-keyring_<version>_all.deb` and `<name>-keyring-<version>-1.noarch.rpm`, and the plain files beside them. A `.deb` holds only the first two files, and a `.rpm` the first three. The key files of a package do not replace a user's own keyring: apt reads `Signed-By`, and rpm imports only when told to.
 
-Beside the packages, not in them, in `products/<sequence>/revocations/`: the revocation signature of every primary or subkey that was revoked hard and dropped from this version, armoured, one file for each, named by the fingerprint it revokes. The holder gives a primary's stored revocation signature to `root revoke`, which checks its digest against `revocation_sha256` of the root ([the directory](/reference/directory/#rootjson)) before it publishes it; a subkey's revocation is made at the ceremony.
+Beside the packages, not in them, in `products/<sequence>/revocations/`: the revocation signature of every primary or subkey that was revoked hard and dropped from this version, armoured, one file for each, named by the fingerprint it revokes. The holder gives a primary's stored revocation signature to `root revoke`, which checks its digest against `revocation_sha256` of the root ([the bundle](/reference/bundle/#rootjson)) before it publishes it; a subkey's revocation is made at the ceremony.
 
 ## What the certificates hold
 
@@ -39,21 +39,21 @@ For each active primary, in the order of the root list, one complete public cert
 2. The user ID packet (the release identity) with every certification ritueel made on it, in creation order. The yearly extension adds one each time; a verifier takes the newest as of the time it checks.
 3. For every subkey the primary ever bound, in the order of the subkey's creation time and then its fingerprint: the subkey packet, every binding signature ritueel made for it (each with its embedded back-signature), in creation order, then its subkey revocation if it was retired softly.
 
-Left out: an encryption subkey, a third-party certification, a notation, and anything revoked hard, which means a whole certificate of a revoked primary and the whole subkey of one revoked as compromised ([ADR 0006](/decisions/0006-release-keys-and-the-keyring-package/#revocation)). The binding signatures are kept even when newer ones exist, so that a signature made before a renewal verifies at its own time. The certificates are read from the directory: the primary's `openpgp.pgp` and the bindings in `answers/`.
+Left out: an encryption subkey, a third-party certification, a notation, and anything revoked hard, which means a whole certificate of a revoked primary and the whole subkey of one revoked as compromised ([ADR 0006](/decisions/0006-release-keys-and-the-keyring-package/#revocation)). The binding signatures are kept even when newer ones exist, so that a signature made before a renewal verifies at its own time. The certificates are read from the bundle: the primary's `openpgp.pgp` and the bindings in `answers/`.
 
 The binary form is the packets, concatenated; the armoured form is a single block of the same bytes (RFC 9580, section 6) with the header `-----BEGIN PGP PUBLIC KEY BLOCK-----`, no `Version` or `Comment` header, Base64 in lines of 64 characters and the CRC-24 line, because every reader of armour reads it.
 
 ## Build
 
-The build needs neither `dpkg-deb` nor `rpmbuild`, and the same directory gives the same bytes. In order:
+The build needs neither `dpkg-deb` nor `rpmbuild`, and the same bundle gives the same bytes. In order:
 
-1. **Read** the newest root list of the directory ([the root list](/reference/root-list/)) and the certificates it names. The list's `sequence` and the year of its `signed_at` give the version. A test root and a real root are never mixed, as for the CA bundle.
+1. **Read** the newest root list of the bundle ([the root list](/reference/root-list/)) and the certificates it names. The list's `sequence` and the year of its `signed_at` give the version. A test root and a real root are never mixed, as for the CA bundle.
 2. **Assemble** the certificates as above, drop what is revoked hard, and write the binary and armoured forms and one armoured file for each primary.
 3. **Write the `.deb`**: an `ar` archive of three members in this order, `debian-binary` (`2.0`), `control.tar` and `data.tar`, then the `.rpm`: the lead, the header with the tags a noarch package of files needs, and a `cpio` payload (`newc` format).
 4. **Fix every variable field**: the build time and every file's modification time is the ceremony time (`SOURCE_DATE_EPOCH`), entries are sorted, owner and group are root (numeric 0), files have mode 0644 and directories 0755, there are no extended attributes, and the `.rpm` has no build host or signature.
 5. **Verify** the result ([below](/reference/keyring-package/#verify)) and only then write it out. ritueel never writes a package it has not read back.
 
-**Compression.** The tar and cpio members are not compressed. They are a few kilobytes of keys, and a compressor's output changes with its version, which would break the rule that the same directory gives the same bytes across toolchains. `dpkg-deb` 1.23.7 reads an uncompressed `control.tar` and `data.tar` (checked 2026-11-01). Whether the oldest rpm in the matrix reads an uncompressed payload is part of the matrix below; if one refuses it, the payload is gzip from one pinned implementation, and the goldens move with the pin.
+**Compression.** The tar and cpio members are not compressed. They are a few kilobytes of keys, and a compressor's output changes with its version, which would break the rule that the same bundle gives the same bytes across toolchains. `dpkg-deb` 1.23.7 reads an uncompressed `control.tar` and `data.tar` (checked 2026-11-01). Whether the oldest rpm in the matrix reads an uncompressed payload is part of the matrix below; if one refuses it, the payload is gzip from one pinned implementation, and the goldens move with the pin.
 
 **The writer.** An archive writer is chosen for `ar`, `tar`, `cpio` and the rpm header: a library such as nfpm, or code of our own. The criteria are the ones above and in [issue #15](https://github.com/truvity/ritueel/issues/15): no external tool, byte-identical output on a second run, and a reader of its own that the verify step uses, so that nothing is checked by the code that wrote it.
 
@@ -70,7 +70,7 @@ ritueel does not sign the package. A pipeline signs the `.deb` and the `.rpm`, o
 | 3 | The package holds exactly the files of the table above for its kind, with the owner, modes and times of the build. | `files-mismatch` |
 | 4 | The primaries in the certificates are exactly the `openpgp_fingerprint` of the roots on the root list, in its order, and each rpm key file holds one of them, named by its short fingerprint. | `primaries-mismatch` |
 | 5 | Every binding signature verifies with its primary over the primary and the subkey, with the embedded back-signature of the subkey for that primary; every certification verifies; every signature has both the issuer fingerprint and the issuer key ID ([the packet rule](/reference/hand-off-contract/#issuer-key-id)). | `signature-invalid` |
-| 6 | No encryption subkey, no third-party certification, and nothing that is revoked hard. With `--dir`, every subkey the directory's answers bound and the records did not revoke hard is present. | `contents-mismatch` |
+| 6 | No encryption subkey, no third-party certification, and nothing that is revoked hard. With `--dir`, every subkey the bundle's answers bound and the records did not revoke hard is present. | `contents-mismatch` |
 | 7 | The `.gpg` and the `.asc` hold the same packets, and the digests in `SHA256SUMS` are those of the files. | `malformed` |
 
 Without `--dir`, check 6 can only look at what is inside. It exits 0 when every check passes and 3 with the code when one fails; it writes nothing ([Commands](/reference/cli/#commands-for-the-trust-products-that-come-later)). These codes belong to the checker and are not sent anywhere.

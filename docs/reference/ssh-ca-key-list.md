@@ -17,7 +17,7 @@ SSH hosts trust a CA by holding its public key. The **SSH CA key list** tells a 
 | `ssh-ca-keys.jws` | Its signature: a detached JSON Web Signature over the bytes of `ssh-ca-keys.json`. |
 | `ssh-user-ca-keys.pub` | The keys with use `user`, for sshd's `TrustedUserCAKeys` ([below](/reference/ssh-ca-key-list/#the-file-for-sshd)). |
 
-ritueel writes the three files with the other trust products, under `products/<sequence>/` in [the directory](/reference/directory/#the-layout). It writes them at every trust sequence from the first one that lists a key, so the list a host holds is always as recent as its root list. Publishing them is the operator's pipeline.
+ritueel writes the three files with the other trust products, under `products/<sequence>/` in [the bundle](/reference/bundle/#the-layout). It writes them at every trust sequence from the first one that lists a key, so the list a host holds is always as recent as its root list. Publishing them is the operator's pipeline.
 
 ## Versioning
 
@@ -61,7 +61,7 @@ An example, wrapped here for reading; the file is one line:
 ## How a key enters the list
 
 - **A system's key** enters by the [hand-off](/reference/hand-off-contract/#ssh-ca-key): a request of type `ssh-ca-key` with a proof of where the key lives, answered at a ceremony. The key is listed under the name of the intermediate whose entry in `ritueel.yaml` has the type `ssh-ca-key` and the `use` the request asks for. `intermediate replace` swaps the key under its name, and `intermediate revoke` takes it off the next list.
-- **A break-glass key** is made by ritueel, in the store of the root it belongs to, when the root is made (`init` and `root add`): a retired PIV slot recorded in the slot map for a card ([ADR 0003](/decisions/0003-key-stores-and-the-card-layer/#the-piv-store-and-the-root-cards)), a key of its own in the root account for a cloud root, a file for a software root. A directory whose roots were made before this exists gets one with `ritueel ssh-ca break-glass ROOT`, a ceremony that needs that root's card. The key is listed as `break-glass-<label>`, use `user`, and leaves the list with its root.
+- **A break-glass key** is made by ritueel, in the store of the root it belongs to, when the root is made (`init` and `root add`): a retired PIV slot recorded in the slot map for a card ([ADR 0003](/decisions/0003-key-stores-and-the-card-layer/#the-piv-store-and-the-root-cards)), a key of its own in the root account for a cloud root, a file for a software root. A bundle whose roots were made before this exists gets one with `ritueel ssh-ca break-glass ROOT`, a ceremony that needs that root's card. The key is listed as `break-glass-<label>`, use `user`, and leaves the list with its root.
 - **Nothing else** enters. The operator does not edit the list, and `ritueel.yaml` does not name keys, only the intermediates that may have one.
 
 ## The signature

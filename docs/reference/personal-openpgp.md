@@ -32,7 +32,7 @@ intermediates:
     capability: authenticate
 ```
 
-`kind: personal` replaces `name` and `release_address` with `person` (a name of 1 to 64 characters and an address) and is otherwise [the same file](/reference/directory/#ritueelyaml). It is additive: a file without `kind` is a company directory, as before.
+`kind: personal` replaces `name` and `release_address` with `person` (a name of 1 to 64 characters and an address) and is otherwise [the same file](/reference/bundle/#ritueelyaml). It is additive: a file without `kind` is a company directory, as before.
 
 | Part | In a company directory | In a personal directory |
 |---|---|---|
@@ -46,7 +46,7 @@ intermediates:
 
 ## The profiles
 
-The primary is the profile of [the OpenPGP primary](/reference/directory/#the-openpgp-primary) with two changes: its one user ID is `<name> <address>` of the person, and it is made in the `software` store with the encrypted file backend, whose key file is `A.openpgp.key.age` in the key directory, opened as [ADR 0015](/decisions/0015-key-files-open-with-a-passkey-on-each-root-card-and-card-secrets-are-sealed-in-the-directory/) says. It is valid 36 months and extended at each use. In stage one an existing primary may be adopted instead ([below](/reference/personal-openpgp/#stage-one-an-adopted-primary)).
+The primary is the profile of [the OpenPGP primary](/reference/bundle/#the-openpgp-primary) with two changes: its one user ID is `<name> <address>` of the person, and it is made in the `software` store with the encrypted file backend, whose key file is `A.openpgp.key.age` in the key directory, opened as [ADR 0015](/decisions/0015-key-files-open-with-a-passkey-on-each-root-card-and-card-secrets-are-sealed-in-the-bundle/) says. It is valid 36 months and extended at each use. In stage one an existing primary may be adopted instead ([below](/reference/personal-openpgp/#stage-one-an-adopted-primary)).
 
 The two subkeys are the subkeys of [the contract](/reference/hand-off-contract/#openpgp-subkey): ECDSA P-384, version 4, a back-signature made by the subkey, a binding of about 13 months. The signing subkey (`daily` above) has key flags `0x02`; the authentication subkey (`ssh` above) has `0x20` and serves SSH through `gpg-agent` ([the guide](/guides/openpgp-ssh-authentication/)). One set of signing and authentication subkeys is born on each day-to-day card.
 
@@ -67,7 +67,7 @@ Everything else is planned: the renewal plan (`ritueel due`, then `ritueel run P
 2. **Confirm** by typing the first eight characters of the plan digest, as always.
 3. **Reserve, and birth.** The attempt is written; the card makes the key on its OpenPGP applet and the back-signature, after the user PIN is verified at the terminal.
 4. **Attest.** The card's attestation of the key is read with the maker's command (`80 FB 01 00` on a YubiKey) and checked against the bundle ([cards](/reference/cards/#the-attestation-bundle)). Until the encoding of the extensions under `1.3.6.1.4.1.41482.5` is measured, the key is recorded as attested and no PIN or touch policy is enforced from it.
-5. **Sign.** The primary's key file is opened as [ADR 0015](/decisions/0015-key-files-open-with-a-passkey-on-each-root-card-and-card-secrets-are-sealed-in-the-directory/) says, and the primary binds the subkey. The fingerprint is shown first.
+5. **Sign.** The primary's key file is opened as [ADR 0015](/decisions/0015-key-files-open-with-a-passkey-on-each-root-card-and-card-secrets-are-sealed-in-the-bundle/) says, and the primary binds the subkey. The fingerprint is shown first.
 6. **Verify and record,** and write the certificate.
 
 A lost card is answered with `ritueel personal subkey add` on a new card after the primary has revoked the old subkey (a subkey revocation, type `0x28`, made by the primary at that ceremony). No pre-made file is needed, because the primary is a file.
@@ -76,7 +76,7 @@ A lost card is answered with `ritueel personal subkey add` on a new card after t
 
 A person who already has a primary, with years of certifications, may adopt it as it is, as a software key in a key file ([ADR 0017](/decisions/0017-a-persons-openpgp-key-in-two-stages-an-adopted-primary-first-then-card-born-primaries/#stage-one)). This is the one stated exception to "nothing is imported".
 
-- The key is marked `adopted` in its `root.json` ([the directory](/reference/directory/#rootjson)).
+- The key is marked `adopted` in its `root.json` ([the bundle](/reference/bundle/#rootjson)).
 - It may be RSA-4096 and without expiry on arrival, so it is outside the P-384 profile above until it is replaced.
 - It gets an expiry at adoption, and is replaced within three years of adoption, or moved to stage two.
 
@@ -84,7 +84,7 @@ The adoption command is fixed with the code ([issue #18](https://github.com/truv
 
 ## Stage two: card-born primaries
 
-Decided, not built; it depends on the root cards and their proofs (M1, M6). Two primaries are born, one on each root card, in the personal root's row ([ADR 0016](/decisions/0016-several-roots-share-one-pair-of-root-cards-and-the-directory-keeps-a-card-inventory/#the-rows)). One is published; the other is a standby that the published one certifies. The old key vouches for the published one, with an overlap, and then ends ([ADR 0009](/decisions/0009-root-transitions-vouch-overlap-retire-and-revoke/)).
+Decided, not built; it depends on the root cards and their proofs (M1, M6). Two primaries are born, one on each root card, in the personal root's row ([ADR 0016](/decisions/0016-several-bundles-share-one-pair-of-root-cards-and-the-bundle-keeps-a-card-inventory/#the-rows)). One is published; the other is a standby that the published one certifies. The old key vouches for the published one, with an overlap, and then ends ([ADR 0009](/decisions/0009-root-transitions-vouch-overlap-retire-and-revoke/)).
 
 ## Retiring a subkey
 
