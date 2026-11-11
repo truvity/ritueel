@@ -16,7 +16,7 @@ index.mdx
 learn/index.md
 learn/what-is-a-root.md
 learn/why-the-root-stays-offline.md
-learn/how-a-yubikey-holds-keys.md
+learn/how-a-yubikey-holds-keys.mdx
 learn/how-passkeys-work.md
 learn/how-a-kms-key-works.md
 learn/choosing-where-a-root-lives.md

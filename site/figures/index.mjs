@@ -9,7 +9,10 @@ import dayToDayCard from './day-to-day-card.mjs';
 import serverCard from './server-card.mjs';
 import bundleFolder from './bundle-folder.mjs';
 import usbStick from './usb-stick.mjs';
+import insideAYubikey from './inside-a-yubikey.mjs';
+import onePivSlot from './one-piv-slot.mjs';
+import pivSignature from './piv-signature.mjs';
 
-const list = [signIntermediate, rootCard, dayToDayCard, serverCard, ceremony, bindSubkeys, ideas, bundleFolder, usbStick];
+const list = [signIntermediate, rootCard, dayToDayCard, serverCard, ceremony, bindSubkeys, ideas, bundleFolder, usbStick, insideAYubikey, onePivSlot, pivSignature];
 
 export const figures = Object.fromEntries(list.map((fig) => [fig.id, fig]));
