@@ -78,7 +78,7 @@ function File({ f, asOf }: { f: TrustFile; asOf: Parameters<typeof daysBetween>[
         {built && f.sha256 ? (
           <div>
             <p className="text-sm text-dim">Digest of the file (SHA-256)</p>
-            <Fp value={f.sha256} className="text-xs" />
+            <Fp kind="Digest" value={f.sha256} className="text-xs" />
           </div>
         ) : null}
         <div className="grid gap-3 lg:grid-cols-2">

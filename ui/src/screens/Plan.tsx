@@ -261,7 +261,7 @@ export function PlanView({ plan }: { plan: PlanMessage }) {
         </p>
         <div className="mt-4 border-t border-line pt-3">
           <p className="text-sm font-semibold">Its digest</p>
-          <Fp value={plan.digest} />
+          <Fp kind="Digest" value={plan.digest} />
           <p className="mt-1 max-w-[70ch] text-sm text-dim">
             The digest is a hash of the whole plan. If a single step changes, the digest changes. You check it at the terminal, on the ceremony machine. This page never
             asks you to type it, and it cannot confirm the plan.
@@ -443,7 +443,7 @@ export function Saved({ data }: { data: SavePlanResponse }) {
         <dd className="font-mono">{String(data.sizeBytes)} bytes</dd>
         <dt className="text-dim">Digest</dt>
         <dd>
-          <Fp value={data.digest} />
+          <Fp kind="Digest" value={data.digest} />
         </dd>
       </dl>
       <div>
