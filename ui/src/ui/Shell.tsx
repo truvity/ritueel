@@ -7,7 +7,7 @@ import ToggleButtonGroup from '@mui/material/ToggleButtonGroup';
 import { isDemo } from '../api/client';
 import { DEMO_BUNDLES, VIEW_STATES, setBundle, setViewState, useBundle, useViewState } from '../api/demoState';
 import { useSummary } from '../api/hooks';
-import { ymd } from '../lib/format';
+import { plural, ymd } from '../lib/format';
 import { href, routeTitle, siteUrl, type Route } from '../lib/route';
 import { T } from './T';
 import { ToastProvider } from './Toast';
@@ -175,7 +175,7 @@ export function Shell({ route, children }: { route: Route; children: ReactNode }
     key === 'findings' && total !== undefined ? (
       <span
         className={`font-mono text-xs font-bold ${urgent > 0 ? 'bg-critical px-1.5 text-bg' : 'text-dim'}`}
-        aria-label={`${total} findings${urgent > 0 ? `, ${urgent} need you` : ''}`}
+        aria-label={`${plural(total, 'finding')}${urgent > 0 ? `, ${urgent} ${urgent === 1 ? 'needs' : 'need'} you` : ''}`}
       >
         {total}
       </span>
@@ -295,7 +295,7 @@ export function Shell({ route, children }: { route: Route; children: ReactNode }
               >
                 <span className="max-w-full min-w-0 truncate text-sm leading-none">{n.label}</span>
                 {k === 'findings' && total !== undefined ? (
-                  <span className={`font-mono text-xs leading-none font-bold ${active === k ? 'text-bg' : urgent > 0 ? 'text-critical' : 'text-dim'}`} aria-label={`${total} findings`}>
+                  <span className={`font-mono text-xs leading-none font-bold ${active === k ? 'text-bg' : urgent > 0 ? 'text-critical' : 'text-dim'}`} aria-label={plural(total, 'finding')}>
                     {total}
                   </span>
                 ) : null}

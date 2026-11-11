@@ -310,7 +310,7 @@ function ValidityChart({ sets, asOf }: { sets: SubkeySet[]; asOf: Timestamp | un
     <figure className="border-2 border-rule bg-panel p-3 sm:p-4">
       <div
         role="img"
-        aria-label={`Chart of when each of ${all.length} subkeys is valid, from ${x0} to ${x1}. ${replaced} signing subkeys are still valid though a newer key replaced them. The same facts are in the table of subkeys by year and by card.`}
+        aria-label={`Chart of when each of ${plural(all.length, 'subkey')} is valid, from ${x0} to ${x1}. ${plural(replaced, 'signing subkey')} ${replaced === 1 ? 'is' : 'are'} still valid though a newer key replaced ${replaced === 1 ? 'it' : 'them'}. The same facts are in the table of subkeys by year and by card.`}
         className="relative"
       >
         {LANES.map(([usage, label]) => {

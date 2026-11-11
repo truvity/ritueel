@@ -291,15 +291,16 @@ export function WhereItRuns({ plan }: { plan: PlanMessage }) {
       <>
         <p>
           {cloud
-            ? 'This root is a cloud key and cannot be copied, so the ceremony may run on the computer you work on. ritueel asks nothing of how you signed in. Four conditions hold:'
+            ? 'This root is a cloud key and cannot be copied, so the ceremony may run on the computer you work on. ritueel asks nothing of how you signed in. Of the four conditions of record 0005, rule 18, the first, a touch for every signature, is for a root on cards only. Three hold for a cloud key, numbered as in the record:'
             : 'This root is on cards and cannot be copied, so the ceremony may run on the computer you work on. Four conditions hold:'}
         </p>
-        <ol className="mt-2 list-decimal space-y-1.5 pl-6">
-          {cloud ? (
-            <li>
-              A cloud key has no touch, so condition 1 is for cards only. This plan asks for {touches}; the typed digest and the session of the ceremony role stand, and the audit trail of the key records every signature.
-            </li>
-          ) : (
+        {cloud ? (
+          <p className="mt-2">
+            A cloud key has no touch. This plan asks for {touches}; the typed digest and the session of the ceremony role stand, and the audit trail of the key records every signature.
+          </p>
+        ) : null}
+        <ol className="mt-2 list-decimal space-y-1.5 pl-6" start={cloud ? 2 : 1}>
+          {cloud ? null : (
             <li>
               A touch for every signature. This plan makes {signatures} and asks for {touches}.
             </li>
@@ -323,8 +324,8 @@ export function WhereItRuns({ plan }: { plan: PlanMessage }) {
       <>
         <p>
           {store === Store.SOFTWARE_FILE
-            ? 'The root is a key file and can be copied, so it is used only there: vanilla AirgapOS, started from the ceremony USB stick, which has one extra partition. The stick step follows.'
-            : 'You chose the clean machine: vanilla AirgapOS, started from the ceremony USB stick, which has one extra partition. Any root may be used there. The stick step follows.'}{' '}
+            ? 'The root is a key file and can be copied, so it is used only there: vanilla AirgapOS, started from the ceremony USB stick, which has one extra partition. When you save the plan, this page lists what goes on the stick.'
+            : 'You chose the clean machine: vanilla AirgapOS, started from the ceremony USB stick, which has one extra partition. Any root may be used there. When you save the plan, this page lists what goes on the stick.'}{' '}
           <LearnLink path="/learn/where-a-root-is-used/">Read why</LearnLink>
         </p>
       </>,
@@ -403,7 +404,7 @@ export function PlanView({ plan, onSaved }: { plan: PlanMessage; onSaved?: (save
 
       <WhereItRuns plan={plan} />
 
-      <Sec title="Steps, in order" aside={`${plan.steps.length} steps`}>
+      <Sec title="Steps, in order" aside={count(plan.steps.length, 'step', 'steps')}>
         <ol className="border border-line bg-panel">
           {plan.steps.map((st, i) => (
             <li key={st.ordinal} className={`grid grid-cols-[2.25rem_minmax(0,1fr)] gap-3 p-4 ${i > 0 ? 'border-t border-line' : ''}`}>
@@ -602,7 +603,7 @@ export function Saved({ data, place }: { data: SavePlanResponse; place?: RunPlac
           <T cap={CAPS['SavePlanResponse.bundle_path']}>{data.bundlePath}</T>/<T cap={CAPS['SavePlanResponse.path']}>{data.path}</T>
         </dd>
         <dt className="text-dim">Size</dt>
-        <dd className="font-mono">{String(data.sizeBytes)} bytes</dd>
+        <dd className="font-mono">{String(data.sizeBytes)} {data.sizeBytes === 1n ? 'byte' : 'bytes'}</dd>
         <dt className="text-dim">Digest</dt>
         <dd>
           <Fp kind="Digest" value={data.digest} />

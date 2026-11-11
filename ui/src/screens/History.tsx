@@ -29,7 +29,7 @@ function Seal({ l }: { l: HistoryStatus | undefined }) {
           <Glyph level={none ? 'info' : ok ? 'ok' : 'critical'} size={32} />
           <div className="leading-tight">
             <p className="font-mono text-4xl font-bold">{l?.recordCount ?? 0}</p>
-            <p className="font-mono text-xs font-semibold tracking-wider uppercase">records</p>
+            <p className="font-mono text-xs font-semibold tracking-wider uppercase">{l?.recordCount === 1 ? 'record' : 'records'}</p>
           </div>
         </div>
         <div className="min-w-0 flex-1">
