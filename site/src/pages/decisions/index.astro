@@ -11,13 +11,19 @@ const records = (await listDecisions()).map(decisionFacts);
   frontmatter={{
     title: 'Decisions',
     description:
-      'The architecture decision records for ritueel: what was decided, why, and which options were set aside. The index is built from docs/decisions.',
+      'The archive of the architecture decision records for ritueel: what was decided, why, and which options were set aside. Built from docs/decisions.',
   }}
 >
   <p>
-    Significant choices are recorded as architecture decision records (ADRs) in
+    This is the archive of the architecture decision records (ADRs) of ritueel: what was decided, why, and which options were set
+    aside. The records live in
     <a href="https://github.com/truvity/ritueel/tree/main/docs/decisions"><code>docs/decisions/</code></a>
-    in the repository. This index is built from that directory on every build; each status is the one the record states.
+    in the repository; this index is built from that directory on every build, and each status is the one the record states.
+  </p>
+  <p>
+    A record links to the specifications and the research it was written with. This site does not publish those pages; such a
+    link opens the file in the repository on GitHub. The one specification published here is the
+    <a href="/reference/hand-off-contract/">hand-off contract</a>, because another project reads it at that address.
   </p>
   {
     records.length === 0 ? (

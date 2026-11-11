@@ -2,8 +2,7 @@
 // The project status page: what exists and how far each milestone has got.
 //
 // - The design facts (decision records by status, reference pages, lines of code) are counted
-//   from the repository at build time, with the same code as the home page's status line
-//   (src/lib-status.ts). They never change after the build.
+//   from the repository at build time, with src/lib-status.ts. They never change after the build.
 // - The milestones and what each delivers are the rows of docs/roadmap.md, also read at build
 //   time and published as /data/status.json.
 // - The issues per milestone and the checks on `main` are the live parts. The build writes a
@@ -15,6 +14,7 @@
 import StarlightPage from '@astrojs/starlight/components/StarlightPage.astro';
 import { Aside, Badge } from '@astrojs/starlight/components';
 import '../styles/status.css';
+import { docsHref } from '../../lib/docs-links.mjs';
 import { readGithub } from '../lib-github';
 import { milestoneNameDrift, milestoneRows } from '../lib-milestones';
 import { partHtml } from '../lib-status-html';
@@ -113,7 +113,7 @@ const headings = [
           <tr data-fact="reference">
             <th scope="row">Reference pages</th>
             <td class="ps-num">{facts.reference}</td>
-            <td><a href="/reference/">Formats, commands and the hand-off contract</a></td>
+            <td><a href={docsHref('/reference/')}>Formats, commands and the hand-off contract</a></td>
           </tr>
           <tr data-fact="code">
             <th scope="row">Code</th>
@@ -144,7 +144,7 @@ const headings = [
     <p>
       The page is static, with one live part. The site's build writes it from three sources; a small script served from this site
       then swaps the live parts in. It loads nothing from another host, and the page's{' '}
-      <a href="/contributing/tools/#the-site">Content-Security-Policy</a> is unchanged.
+      <a href={docsHref('/contributing/tools/#the-site')}>Content-Security-Policy</a> is unchanged.
     </p>
     <ul>
       <li>
@@ -155,8 +155,7 @@ const headings = [
       <li>
         <strong>The design figures</strong> are counted from the repository: decision records are <code>docs/decisions/NNNN-*.md</code>{' '}
         without the template, each with the status its own <code>Status</code> line states; reference pages are{' '}
-        <code>docs/reference/*.md</code> without the index; code is the lines of every Go file outside <code>site/</code>. The home
-        page's status line is counted by the same code, so the two always agree. They change only when the site is built again.
+        <code>docs/reference/*.md</code> without the index; code is the lines of every Go file outside <code>site/</code>. They change only when the site is built again.
       </li>
       <li>
         <strong>The issues and the checks</strong> are read from GitHub by the site's Worker, as a read-only GitHub App, about every
@@ -171,7 +170,7 @@ const headings = [
     <p>
       <strong>Without JavaScript, or when the Worker has nothing,</strong> the page shows the snapshot the build took of the issues
       (as of {asOf}), and a note above it says so. A build with no GitHub token shows "—" in its place. The live data is as old as
-      its last refresh, and each block says when that was. The repository's <a href="/contributing/tools/#the-site">tools page</a>{' '}
+      its last refresh, and each block says when that was. The repository's <a href={docsHref('/contributing/tools/#the-site')}>tools page</a>{' '}
       says how the site is built and deployed.
     </p>
   </div>
