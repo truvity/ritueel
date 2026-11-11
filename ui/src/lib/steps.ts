@@ -11,7 +11,7 @@ export interface UsualStep {
   detail: string;
 }
 
-const CHECK: UsualStep = { title: 'Check the plan', detail: 'ritueel compares the plan with the folder and the ledger, and you confirm its digest at the terminal.' };
+const CHECK: UsualStep = { title: 'Check the plan', detail: 'ritueel compares the plan with the bundle and the ledger, and you confirm its digest at the terminal.' };
 const CARDS: UsualStep = { title: 'Read the cards', detail: 'Every slot of each card in the plan is read and compared with the layout. Nothing is written to a card in this step.' };
 const TRUST: UsualStep = { title: 'Build the trust files', detail: 'The root list, the CA bundle, the revocation list, the SSH CA keys and the keyring are built as the next trust sequence.' };
 const RECORD: UsualStep = { title: 'Write the record', detail: 'The record of this ceremony is written. It names the record before it, so the ledger stays a chain.' };
@@ -21,7 +21,7 @@ export const USUAL_STEPS: Partial<Record<CeremonyKind, UsualStep[]>> = {
     CHECK,
     CARDS,
     { title: 'Make the root keys on each card', detail: 'The X.509 root, the OpenPGP primary and the SSH CA are born in their own row of each root card.' },
-    { title: 'Certify the public keys', detail: 'The public halves are written to the folder with their creation time fixed.' },
+    { title: 'Certify the public keys', detail: 'The public halves are written to the bundle with their creation time fixed.' },
     TRUST,
     RECORD,
   ],
@@ -40,7 +40,7 @@ export const USUAL_STEPS: Partial<Record<CeremonyKind, UsualStep[]>> = {
   ],
   [CeremonyKind.RENEW]: [CHECK, CARDS, { title: 'Sign the renewal', detail: 'A root signs a new certificate or binding for the delegated key. The old one stays valid until it ends.' }, TRUST, RECORD],
   [CeremonyKind.REPLACE]: [CHECK, CARDS, { title: 'Make the new key', detail: 'The new key is made, and the old one is marked as replaced.' }, TRUST, RECORD],
-  [CeremonyKind.REVOKE]: [CHECK, CARDS, { title: 'Revoke', detail: 'The revocation is signed with its reason and written to the folder.' }, TRUST, RECORD],
+  [CeremonyKind.REVOKE]: [CHECK, CARDS, { title: 'Revoke', detail: 'The revocation is signed with its reason and written to the bundle.' }, TRUST, RECORD],
   [CeremonyKind.CARD_CHECK]: [
     CHECK,
     CARDS,
@@ -48,7 +48,7 @@ export const USUAL_STEPS: Partial<Record<CeremonyKind, UsualStep[]>> = {
     RECORD,
   ],
   [CeremonyKind.RESTORE_DRILL]: [
-    { title: 'Clone the folder on a clean machine', detail: 'The check runs on a copy of the folder, so nothing in your own folder is touched.' },
+    { title: 'Clone the bundle on a clean machine', detail: 'The check runs on a copy of the bundle, so nothing in your own bundle is touched.' },
     { title: 'Verify the records, the last digest and the signed commits', detail: 'Every record is checked against the one before it, the newest digest against the one you kept apart, and the commits against their signatures.' },
     { title: 'Compare the roots with their holders and check the revocation signatures', detail: 'Each root is compared with the keys its holder has, and every revocation is checked for a valid signature.' },
     { title: 'Write the report', detail: 'The report is written for you to read. No record is written to the ledger.' },

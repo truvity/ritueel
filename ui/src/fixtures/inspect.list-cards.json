@@ -444,8 +444,8 @@
     },
     {
       "serial": "00000003",
-      "name": "Daily, desk",
-      "kind": "CARD_KIND_DAILY",
+      "name": "Day-to-day, desk",
+      "kind": "CARD_KIND_DAY_TO_DAY",
       "model": "YubiKey 5C NFC",
       "firmware": "5.8.0",
       "state": "CARD_STATE_ACTIVE",
@@ -665,8 +665,8 @@
     },
     {
       "serial": "00000004",
-      "name": "Daily, keychain",
-      "kind": "CARD_KIND_DAILY",
+      "name": "Day-to-day, keychain",
+      "kind": "CARD_KIND_DAY_TO_DAY",
       "model": "YubiKey 5C NFC",
       "firmware": "5.8.0",
       "state": "CARD_STATE_ACTIVE",
@@ -889,8 +889,8 @@
     },
     {
       "serial": "00000005",
-      "name": "Daily, laptop",
-      "kind": "CARD_KIND_DAILY",
+      "name": "Day-to-day, laptop",
+      "kind": "CARD_KIND_DAY_TO_DAY",
       "model": "YubiKey 5 Nano",
       "firmware": "5.8.0",
       "state": "CARD_STATE_ACTIVE",

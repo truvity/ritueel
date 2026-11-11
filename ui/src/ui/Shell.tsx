@@ -185,9 +185,9 @@ export function Shell({ route, children }: { route: Route; children: ReactNode }
               <div className="mt-auto space-y-3 border-t border-line pt-4 text-sm text-dim">
                 {summary.state === 'ready' ? (
                   <dl className="grid grid-cols-[auto_1fr] gap-x-2 gap-y-0.5">
-                    <dt>Folder</dt>
+                    <dt>Bundle</dt>
                     <dd className="font-mono text-ink">
-                      <T cap={40}>{summary.data.folder?.path}</T>
+                      <T cap={40}>{summary.data.bundle?.path}</T>
                     </dd>
                     <dt>As of</dt>
                     <dd className="font-mono text-ink">{ymd(summary.data.asOf)}</dd>

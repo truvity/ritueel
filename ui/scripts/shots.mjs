@@ -24,7 +24,7 @@ const screens = [
   ['key-cloud', key('globex-cloud')],
   ['cards', '#/cards'],
   ['card-root', '#/cards/00000001'],
-  ['card-daily', '#/cards/00000004'],
+  ['card-day-to-day', '#/cards/00000004'],
   ['card-slot-open', '#/cards/00000001', async () => { await evalJs(`document.querySelector('button[aria-haspopup=dialog]')?.click()`); await sleep(400); }],
   ['card-unlisted', '#/cards/00000102'],
   ['history', '#/history'],

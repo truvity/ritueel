@@ -5,7 +5,7 @@
 // written=false and that this is a demo, and nothing is written anywhere.
 //
 // The demo also shows the four states of a read. The switch in the demo bar
-// (api/demoState.ts) makes the transport answer as an empty folder, fail, or
+// (api/demoState.ts) makes the transport answer as an empty bundle, fail, or
 // not answer yet.
 import { Code, ConnectError, createRouterTransport, type Transport } from '@connectrpc/connect';
 import { create, fromJson, type DescMessage, type JsonValue, type MessageShape } from '@bufbuild/protobuf';
@@ -56,7 +56,7 @@ const manifest = (load('manifest.json') as unknown as { responses: ManifestEntry
 const INTENTION_NAMES: Record<number, string> = {
   [Intention.RENEW_DUE]: 'INTENTION_RENEW_DUE',
   [Intention.ADOPT_KEY]: 'INTENTION_ADOPT_KEY',
-  [Intention.REPLACE_SUBKEYS]: 'INTENTION_REPLACE_SUBKEYS',
+  [Intention.RETIRE_SUBKEYS]: 'INTENTION_RETIRE_SUBKEYS',
   [Intention.ADD_CARD]: 'INTENTION_ADD_CARD',
   [Intention.REPLACE_CARD]: 'INTENTION_REPLACE_CARD',
 };
@@ -71,11 +71,11 @@ function pick(method: string, test: (when: NonNullable<ManifestEntry['when']>) =
 }
 
 export const FAILED_MESSAGE =
-  'ritueel could not read the folder at ~/ritueel. The reason, made up for this demo: the ledger file could not be opened.';
+  'ritueel could not read the bundle at ~/ritueel. The reason, made up for this demo: the ledger file could not be opened.';
 
 /**
  * The four states of a read. The failed and waiting answers are the same for
- * every call; "empty" has its own answer per call (the empty folder).
+ * every call; "empty" has its own answer per call (the empty bundle).
  */
 async function gate<T>(loaded: () => T | Promise<T>, empty: () => T): Promise<T> {
   const state = getViewState();
@@ -87,14 +87,14 @@ async function gate<T>(loaded: () => T | Promise<T>, empty: () => T): Promise<T>
   return state === 'empty' ? empty() : loaded();
 }
 
-// ---- the empty folder, built from the loaded one so the two never drift ------
+// ---- the empty bundle, built from the loaded one so the two never drift ------
 
 const SEVERITIES = [Severity.CRITICAL, Severity.ALERT, Severity.NOTICE, Severity.INFO];
 
 function emptySummary() {
   const full = parse(GetSummaryResponseSchema, 'inspect.get-summary.json');
   return create(GetSummaryResponseSchema, {
-    folder: full.folder,
+    bundle: full.bundle,
     asOf: full.asOf,
     demo: true,
     programVersion: full.programVersion,
@@ -110,8 +110,8 @@ function emptySummary() {
     setupSteps: full.setupSteps.map((s) =>
       create(SetupStepSchema, {
         ...s,
-        done: s.id === 'folder',
-        // The loaded folder's sentences name its keys and cards: an empty folder has none.
+        done: s.id === 'bundle',
+        // The loaded bundle's sentences name its keys and cards: an empty bundle has none.
         detail: s.id === 'cards' ? 'No cards are registered yet.' : s.id === 'first-plan' ? 'Start by adopting the key you already have.' : s.id === 'public-key' ? 'Only the public half is ever needed here.' : s.detail,
       }),
     ),
@@ -121,13 +121,13 @@ function emptySummary() {
 function emptyIntentions() {
   const full = parse(ListIntentionsResponseSchema, 'plan.list-intentions.json');
   const reasons: Partial<Record<Intention, string>> = {
-    [Intention.RENEW_DUE]: 'Nothing is due, because the folder holds no keys yet.',
-    [Intention.REPLACE_SUBKEYS]: 'There are no subkeys to retire yet.',
+    [Intention.RENEW_DUE]: 'Nothing is due, because the bundle holds no keys yet.',
+    [Intention.RETIRE_SUBKEYS]: 'There are no subkeys to retire yet.',
   };
   return create(ListIntentionsResponseSchema, {
     options: full.options.map((o) => {
       if (o.intention === Intention.ADOPT_KEY) {
-        return { ...o, applicable: true, recommended: true, recommendedReason: 'The folder holds no key yet. Adopt the one you already have.' };
+        return { ...o, applicable: true, recommended: true, recommendedReason: 'The bundle holds no key yet. Adopt the one you already have.' };
       }
       const why = reasons[o.intention];
       return why ? { ...o, applicable: false, recommended: false, notApplicableReason: why } : o;

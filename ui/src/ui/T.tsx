@@ -1,7 +1,7 @@
 import { groupFingerprint, safeParts, splitHexRuns } from '../lib/safe';
 
 /**
- * Every string that comes from the folder goes through here. It is written
+ * Every string that comes from the bundle goes through here. It is written
  * as text by React; anything outside plain printable ASCII shows as a
  * visible U+XXXX escape, and the length is capped. A long run of hexadecimal
  * inside a sentence (a fingerprint, a digest) is set in the data face in

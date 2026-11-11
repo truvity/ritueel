@@ -4,7 +4,7 @@ import { href, siteUrl } from './route';
 export const INTENTION_SLUG: Partial<Record<Intention, string>> = {
   [Intention.RENEW_DUE]: 'renew-due',
   [Intention.ADOPT_KEY]: 'adopt-key',
-  [Intention.REPLACE_SUBKEYS]: 'replace-subkeys',
+  [Intention.RETIRE_SUBKEYS]: 'retire-subkeys',
   [Intention.ADD_CARD]: 'add-card',
   [Intention.REPLACE_CARD]: 'replace-card',
 };

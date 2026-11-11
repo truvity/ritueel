@@ -14,7 +14,7 @@
         {
           "id": "delegated",
           "label": "As a delegated key",
-          "description": "A root certifies it for a requester. Not offered until the folder has a root that can."
+          "description": "A root certifies it for a requester. Not offered until the bundle has a root that can."
         }
       ],
       "defaultOptionIds": [

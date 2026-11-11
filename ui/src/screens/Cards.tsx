@@ -529,7 +529,7 @@ function Inventory() {
             <>
               <div className="flex flex-wrap items-center justify-between gap-x-8 gap-y-2 border border-line bg-panel px-4 py-3">
                 <p>
-                  <strong>{plural(list.length, 'card')}:</strong> {by(CardKind.ROOT)} root, {by(CardKind.DAILY)} day-to-day, {by(CardKind.REHEARSAL)} rehearsal.{' '}
+                  <strong>{plural(list.length, 'card')}:</strong> {by(CardKind.ROOT)} root, {by(CardKind.DAY_TO_DAY)} day-to-day, {by(CardKind.SERVER) > 0 ? `${by(CardKind.SERVER)} server, ` : ''}{by(CardKind.REHEARSAL)} rehearsal.{' '}
                   {changed > 0 ? (
                     <span className="inline-flex items-center gap-1.5 font-bold text-alert">
                       <Glyph level="alert" size={14} /> {changed} changed since the last reading.

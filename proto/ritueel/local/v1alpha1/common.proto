@@ -8,8 +8,15 @@
 // the ceremony machine. What the page may show about a key is public:
 // fingerprints, algorithms, dates, the use of a slot.
 //
-// The words are the glossary's: root, delegated key, holder, requester,
-// store, ceremony, ledger, record, renew, replace, trust files.
+// Everything the page shows is about one bundle: the directory of one trust
+// domain (for example personal or acme), with its ledger, its roots, its
+// cards and its trust files. The trust file keeps its full name, "CA
+// bundle"; the bare word "bundle" means only the directory.
+//
+// The words are the glossary's: bundle, root, delegated key, holder,
+// requester, store, ceremony, ledger, record, renew, replace, trust files.
+// Replace means making a new key; a goal that only revokes subkeys that a
+// newer one already replaced is called retire.
 
 syntax = "proto3";
 
@@ -31,9 +38,10 @@ enum Severity {
 // A store is where a key lives.
 enum Store {
   STORE_UNSPECIFIED = 0;
-  // A software key in an encrypted file, kept outside the folder.
+  // A software key in an encrypted file, kept outside the bundle.
   STORE_SOFTWARE_FILE = 1;
-  // A pair of root cards, each with its own card-born keys.
+  // A root card: the root's keys are born on one card; a bundle with two
+  // roots uses a pair.
   STORE_ROOT_CARDS = 2;
   // A cloud KMS key, with a replica. It may be a key that ritueel adopted.
   STORE_CLOUD_KMS = 3;
@@ -42,7 +50,7 @@ enum Store {
 // What a finding, a due item or a plan is about.
 enum SubjectKind {
   SUBJECT_KIND_UNSPECIFIED = 0;
-  SUBJECT_KIND_FOLDER = 1;
+  SUBJECT_KIND_BUNDLE = 1;
   SUBJECT_KIND_ROOT = 2;
   SUBJECT_KIND_DELEGATED_KEY = 3;
   // A subkey of an OpenPGP certificate.
@@ -58,7 +66,9 @@ message Subject {
   SubjectKind kind = 1;
   // How to find it. For a key: its FULL fingerprint, never a short id (a
   // key is identified by its full fingerprint, not by its name). For a
-  // card: its serial. For a root: its label. For a trust file: its path.
+  // card: its serial. For a root: its label (A, B ...), unique inside the
+  // bundle; the page writes it bundle/label, for example acme/A. For a
+  // trust file: its path.
   string identifier = 2;
   // A name for people. It is data, shown as text only, and never an
   // identity: two keys may carry the same label.
@@ -73,10 +83,10 @@ enum Intention {
   INTENTION_RENEW_DUE = 1;
   // Adopt a key that already exists: an OpenPGP key, or a cloud KMS key.
   INTENTION_ADOPT_KEY = 2;
-  // Replace subkeys that were superseded but are still valid, by
-  // revoking them with the reason "superseded".
-  INTENTION_REPLACE_SUBKEYS = 3;
-  // Register a new card in the folder's inventory.
+  // Retire subkeys that a newer one already replaced, by revoking them
+  // with the reason "superseded".
+  INTENTION_RETIRE_SUBKEYS = 3;
+  // Register a new card in the bundle's inventory.
   INTENTION_ADD_CARD = 4;
   // Replace a lost or retired card.
   INTENTION_REPLACE_CARD = 5;
@@ -93,14 +103,15 @@ enum ChainState {
   CHAIN_STATE_BROKEN = 3;
 }
 
-// The state of the ledger: the folder's write-once history of ceremonies,
-// one record for each.
+// The state of the ledger: the bundle's write-once history of ceremonies,
+// one record for each. record_count counts records, not saved plans.
 message LedgerStatus {
   int32 record_count = 1;
   ChainState chain_state = 2;
   // The hash of the newest record, in hexadecimal.
   string head_record_sha256 = 3;
-  // The id and title of the newest record, so a page can say "Last record".
+  // The id (the ceremony's name, for example 20260602T142000Z-card-check)
+  // and title of the newest record, so a page can say "Last record".
   string last_record_id = 4;
   string last_record_title = 5;
   google.protobuf.Timestamp last_record_at = 6;

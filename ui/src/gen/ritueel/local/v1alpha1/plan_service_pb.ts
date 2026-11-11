@@ -30,7 +30,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file ritueel/local/v1alpha1/plan_service.proto.
  */
 export const file_ritueel_local_v1alpha1_plan_service: GenFile = /*@__PURE__*/
-  fileDesc("CilyaXR1ZWVsL2xvY2FsL3YxYWxwaGExL3BsYW5fc2VydmljZS5wcm90bxIWcml0dWVlbC5sb2NhbC52MWFscGhhMSIXChVMaXN0SW50ZW50aW9uc1JlcXVlc3QiUgoWTGlzdEludGVudGlvbnNSZXNwb25zZRI4CgdvcHRpb25zGAEgAygLMicucml0dWVlbC5sb2NhbC52MWFscGhhMS5JbnRlbnRpb25PcHRpb24i4gEKD0ludGVudGlvbk9wdGlvbhI0CglpbnRlbnRpb24YASABKA4yIS5yaXR1ZWVsLmxvY2FsLnYxYWxwaGExLkludGVudGlvbhINCgV0aXRsZRgCIAEoCRIQCghzZW50ZW5jZRgDIAEoCRIUCgx0eXBpY2FsX3RpbWUYBCABKAkSEgoKYXBwbGljYWJsZRgFIAEoCBIdChVub3RfYXBwbGljYWJsZV9yZWFzb24YBiABKAkSEwoLcmVjb21tZW5kZWQYByABKAgSGgoScmVjb21tZW5kZWRfcmVhc29uGAggASgJIq8BChBTdGFydFBsYW5SZXF1ZXN0EjQKCWludGVudGlvbhgBIAEoDjIhLnJpdHVlZWwubG9jYWwudjFhbHBoYTEuSW50ZW50aW9uEg8KB2R1ZV9pZHMYAiADKAkSEwoLZmluZGluZ19pZHMYAyADKAkSDgoGdGFyZ2V0GAQgASgJEi8KB2Fuc3dlcnMYBSADKAsyHi5yaXR1ZWVsLmxvY2FsLnYxYWxwaGExLkFuc3dlciIxCgZBbnN3ZXISEwoLcXVlc3Rpb25faWQYASABKAkSEgoKb3B0aW9uX2lkcxgCIAMoCSKFAQoRU3RhcnRQbGFuUmVzcG9uc2USMwoJcXVlc3Rpb25zGAEgAygLMiAucml0dWVlbC5sb2NhbC52MWFscGhhMS5RdWVzdGlvbhIqCgRwbGFuGAIgASgLMhwucml0dWVlbC5sb2NhbC52MWFscGhhMS5QbGFuEg8KB3JlZnVzYWwYAyABKAkivQEKCFF1ZXN0aW9uEgoKAmlkGAEgASgJEg4KBnByb21wdBgCIAEoCRIMCgRoZWxwGAMgASgJEjIKBGtpbmQYBCABKA4yJC5yaXR1ZWVsLmxvY2FsLnYxYWxwaGExLlF1ZXN0aW9uS2luZBI3CgdvcHRpb25zGAUgAygLMiYucml0dWVlbC5sb2NhbC52MWFscGhhMS5RdWVzdGlvbk9wdGlvbhIaChJkZWZhdWx0X29wdGlvbl9pZHMYBiADKAkiQAoOUXVlc3Rpb25PcHRpb24SCgoCaWQYASABKAkSDQoFbGFiZWwYAiABKAkSEwoLZGVzY3JpcHRpb24YAyABKAkiiwMKBFBsYW4SCgoCaWQYASABKAkSNAoJaW50ZW50aW9uGAIgASgOMiEucml0dWVlbC5sb2NhbC52MWFscGhhMS5JbnRlbnRpb24SDQoFdGl0bGUYAyABKAkSDwoHc3VtbWFyeRgEIAEoCRIsCghidWlsdF9hdBgFIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASGgoSbGVkZ2VyX2hlYWRfc2hhMjU2GAYgASgJEg4KBmRpZ2VzdBgHIAEoCRIvCgVzdGVwcxgIIAMoCzIgLnJpdHVlZWwubG9jYWwudjFhbHBoYTEuUGxhblN0ZXASPAoOZm9sZGVyX2NoYW5nZXMYCSADKAsyJC5yaXR1ZWVsLmxvY2FsLnYxYWxwaGExLkZvbGRlckNoYW5nZRIaChJlcXVpdmFsZW50X2NvbW1hbmQYCiABKAkSEwoLcnVuX2NvbW1hbmQYCyABKAkSEQoJc2F2ZV9wYXRoGAwgASgJEhQKDGNhcmRfc2VyaWFscxgNIAMoCSK1AQoIUGxhblN0ZXASDwoHb3JkaW5hbBgBIAEoBRINCgV0aXRsZRgCIAEoCRIOCgZkZXRhaWwYAyABKAkSFAoMd2hhdF9jaGFuZ2VzGAQgASgJEjkKDHJlcXVpcmVtZW50cxgFIAMoDjIjLnJpdHVlZWwubG9jYWwudjFhbHBoYTEuUmVxdWlyZW1lbnQSFAoMY2FyZF9zZXJpYWxzGAYgAygJEhIKCmxlYXJuX3BhdGgYByABKAkibQoMRm9sZGVyQ2hhbmdlEgwKBHBhdGgYASABKAkSOgoGYWN0aW9uGAIgASgOMioucml0dWVlbC5sb2NhbC52MWFscGhhMS5Gb2xkZXJDaGFuZ2VBY3Rpb24SEwoLZGVzY3JpcHRpb24YAyABKAkiMgoPU2F2ZVBsYW5SZXF1ZXN0Eg8KB3BsYW5faWQYASABKAkSDgoGZGlnZXN0GAIgASgJIvQBChBTYXZlUGxhblJlc3BvbnNlEg8KB3BsYW5faWQYASABKAkSEwoLZm9sZGVyX3BhdGgYAiABKAkSDAoEcGF0aBgDIAEoCRIOCgZkaWdlc3QYBCABKAkSEgoKc2l6ZV9ieXRlcxgFIAEoAxIPCgd3cml0dGVuGAYgASgIEg4KBm5vdGljZRgHIAEoCRITCgtydW5fY29tbWFuZBgIIAEoCRIVCg1jb3B5X3RvX3N0aWNrGAkgAygJEg0KBWJyaW5nGAogAygJEhEKCXdoZW5fYmFjaxgLIAEoCRIZChFwbGFuX2ZpbGVfcHJldmlldxgMIAEoCSpxCgxRdWVzdGlvbktpbmQSHQoZUVVFU1RJT05fS0lORF9VTlNQRUNJRklFRBAAEh8KG1FVRVNUSU9OX0tJTkRfU0lOR0xFX0NIT0lDRRABEiEKHVFVRVNUSU9OX0tJTkRfTVVMVElQTEVfQ0hPSUNFEAIqzQEKC1JlcXVpcmVtZW50EhsKF1JFUVVJUkVNRU5UX1VOU1BFQ0lGSUVEEAASHAoYUkVRVUlSRU1FTlRfQ0FSRF9QUkVTRU5UEAESHwobUkVRVUlSRU1FTlRfUElOX0FUX1RFUk1JTkFMEAISFQoRUkVRVUlSRU1FTlRfVE9VQ0gQAxIfChtSRVFVSVJFTUVOVF9LRVlfRklMRV9VTkxPQ0sQBBIqCiZSRVFVSVJFTUVOVF9DT05GSVJNX0RJR0VTVF9BVF9URVJNSU5BTBAFKn0KEkZvbGRlckNoYW5nZUFjdGlvbhIkCiBGT0xERVJfQ0hBTkdFX0FDVElPTl9VTlNQRUNJRklFRBAAEh8KG0ZPTERFUl9DSEFOR0VfQUNUSU9OX0NSRUFURRABEiAKHEZPTERFUl9DSEFOR0VfQUNUSU9OX1JFUExBQ0UQAjLLAgoLUGxhblNlcnZpY2USdAoOTGlzdEludGVudGlvbnMSLS5yaXR1ZWVsLmxvY2FsLnYxYWxwaGExLkxpc3RJbnRlbnRpb25zUmVxdWVzdBouLnJpdHVlZWwubG9jYWwudjFhbHBoYTEuTGlzdEludGVudGlvbnNSZXNwb25zZSIDkAIBEmUKCVN0YXJ0UGxhbhIoLnJpdHVlZWwubG9jYWwudjFhbHBoYTEuU3RhcnRQbGFuUmVxdWVzdBopLnJpdHVlZWwubG9jYWwudjFhbHBoYTEuU3RhcnRQbGFuUmVzcG9uc2UiA5ACARJfCghTYXZlUGxhbhInLnJpdHVlZWwubG9jYWwudjFhbHBoYTEuU2F2ZVBsYW5SZXF1ZXN0Gigucml0dWVlbC5sb2NhbC52MWFscGhhMS5TYXZlUGxhblJlc3BvbnNlIgBiBnByb3RvMw", [file_google_protobuf_timestamp, file_ritueel_local_v1alpha1_common]);
+  fileDesc("CilyaXR1ZWVsL2xvY2FsL3YxYWxwaGExL3BsYW5fc2VydmljZS5wcm90bxIWcml0dWVlbC5sb2NhbC52MWFscGhhMSIXChVMaXN0SW50ZW50aW9uc1JlcXVlc3QiUgoWTGlzdEludGVudGlvbnNSZXNwb25zZRI4CgdvcHRpb25zGAEgAygLMicucml0dWVlbC5sb2NhbC52MWFscGhhMS5JbnRlbnRpb25PcHRpb24i4gEKD0ludGVudGlvbk9wdGlvbhI0CglpbnRlbnRpb24YASABKA4yIS5yaXR1ZWVsLmxvY2FsLnYxYWxwaGExLkludGVudGlvbhINCgV0aXRsZRgCIAEoCRIQCghzZW50ZW5jZRgDIAEoCRIUCgx0eXBpY2FsX3RpbWUYBCABKAkSEgoKYXBwbGljYWJsZRgFIAEoCBIdChVub3RfYXBwbGljYWJsZV9yZWFzb24YBiABKAkSEwoLcmVjb21tZW5kZWQYByABKAgSGgoScmVjb21tZW5kZWRfcmVhc29uGAggASgJIq8BChBTdGFydFBsYW5SZXF1ZXN0EjQKCWludGVudGlvbhgBIAEoDjIhLnJpdHVlZWwubG9jYWwudjFhbHBoYTEuSW50ZW50aW9uEg8KB2R1ZV9pZHMYAiADKAkSEwoLZmluZGluZ19pZHMYAyADKAkSDgoGdGFyZ2V0GAQgASgJEi8KB2Fuc3dlcnMYBSADKAsyHi5yaXR1ZWVsLmxvY2FsLnYxYWxwaGExLkFuc3dlciIxCgZBbnN3ZXISEwoLcXVlc3Rpb25faWQYASABKAkSEgoKb3B0aW9uX2lkcxgCIAMoCSKFAQoRU3RhcnRQbGFuUmVzcG9uc2USMwoJcXVlc3Rpb25zGAEgAygLMiAucml0dWVlbC5sb2NhbC52MWFscGhhMS5RdWVzdGlvbhIqCgRwbGFuGAIgASgLMhwucml0dWVlbC5sb2NhbC52MWFscGhhMS5QbGFuEg8KB3JlZnVzYWwYAyABKAkivQEKCFF1ZXN0aW9uEgoKAmlkGAEgASgJEg4KBnByb21wdBgCIAEoCRIMCgRoZWxwGAMgASgJEjIKBGtpbmQYBCABKA4yJC5yaXR1ZWVsLmxvY2FsLnYxYWxwaGExLlF1ZXN0aW9uS2luZBI3CgdvcHRpb25zGAUgAygLMiYucml0dWVlbC5sb2NhbC52MWFscGhhMS5RdWVzdGlvbk9wdGlvbhIaChJkZWZhdWx0X29wdGlvbl9pZHMYBiADKAkiQAoOUXVlc3Rpb25PcHRpb24SCgoCaWQYASABKAkSDQoFbGFiZWwYAiABKAkSEwoLZGVzY3JpcHRpb24YAyABKAkiiwMKBFBsYW4SCgoCaWQYASABKAkSNAoJaW50ZW50aW9uGAIgASgOMiEucml0dWVlbC5sb2NhbC52MWFscGhhMS5JbnRlbnRpb24SDQoFdGl0bGUYAyABKAkSDwoHc3VtbWFyeRgEIAEoCRIsCghidWlsdF9hdBgFIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASGgoSbGVkZ2VyX2hlYWRfc2hhMjU2GAYgASgJEg4KBmRpZ2VzdBgHIAEoCRIvCgVzdGVwcxgIIAMoCzIgLnJpdHVlZWwubG9jYWwudjFhbHBoYTEuUGxhblN0ZXASPAoOYnVuZGxlX2NoYW5nZXMYCSADKAsyJC5yaXR1ZWVsLmxvY2FsLnYxYWxwaGExLkJ1bmRsZUNoYW5nZRIaChJlcXVpdmFsZW50X2NvbW1hbmQYCiABKAkSEwoLcnVuX2NvbW1hbmQYCyABKAkSEQoJc2F2ZV9wYXRoGAwgASgJEhQKDGNhcmRfc2VyaWFscxgNIAMoCSK1AQoIUGxhblN0ZXASDwoHb3JkaW5hbBgBIAEoBRINCgV0aXRsZRgCIAEoCRIOCgZkZXRhaWwYAyABKAkSFAoMd2hhdF9jaGFuZ2VzGAQgASgJEjkKDHJlcXVpcmVtZW50cxgFIAMoDjIjLnJpdHVlZWwubG9jYWwudjFhbHBoYTEuUmVxdWlyZW1lbnQSFAoMY2FyZF9zZXJpYWxzGAYgAygJEhIKCmxlYXJuX3BhdGgYByABKAkibQoMQnVuZGxlQ2hhbmdlEgwKBHBhdGgYASABKAkSOgoGYWN0aW9uGAIgASgOMioucml0dWVlbC5sb2NhbC52MWFscGhhMS5CdW5kbGVDaGFuZ2VBY3Rpb24SEwoLZGVzY3JpcHRpb24YAyABKAkiMgoPU2F2ZVBsYW5SZXF1ZXN0Eg8KB3BsYW5faWQYASABKAkSDgoGZGlnZXN0GAIgASgJIvQBChBTYXZlUGxhblJlc3BvbnNlEg8KB3BsYW5faWQYASABKAkSEwoLYnVuZGxlX3BhdGgYAiABKAkSDAoEcGF0aBgDIAEoCRIOCgZkaWdlc3QYBCABKAkSEgoKc2l6ZV9ieXRlcxgFIAEoAxIPCgd3cml0dGVuGAYgASgIEg4KBm5vdGljZRgHIAEoCRITCgtydW5fY29tbWFuZBgIIAEoCRIVCg1jb3B5X3RvX3N0aWNrGAkgAygJEg0KBWJyaW5nGAogAygJEhEKCXdoZW5fYmFjaxgLIAEoCRIZChFwbGFuX2ZpbGVfcHJldmlldxgMIAEoCSpxCgxRdWVzdGlvbktpbmQSHQoZUVVFU1RJT05fS0lORF9VTlNQRUNJRklFRBAAEh8KG1FVRVNUSU9OX0tJTkRfU0lOR0xFX0NIT0lDRRABEiEKHVFVRVNUSU9OX0tJTkRfTVVMVElQTEVfQ0hPSUNFEAIqzQEKC1JlcXVpcmVtZW50EhsKF1JFUVVJUkVNRU5UX1VOU1BFQ0lGSUVEEAASHAoYUkVRVUlSRU1FTlRfQ0FSRF9QUkVTRU5UEAESHwobUkVRVUlSRU1FTlRfUElOX0FUX1RFUk1JTkFMEAISFQoRUkVRVUlSRU1FTlRfVE9VQ0gQAxIfChtSRVFVSVJFTUVOVF9LRVlfRklMRV9VTkxPQ0sQBBIqCiZSRVFVSVJFTUVOVF9DT05GSVJNX0RJR0VTVF9BVF9URVJNSU5BTBAFKn0KEkJ1bmRsZUNoYW5nZUFjdGlvbhIkCiBCVU5ETEVfQ0hBTkdFX0FDVElPTl9VTlNQRUNJRklFRBAAEh8KG0JVTkRMRV9DSEFOR0VfQUNUSU9OX0NSRUFURRABEiAKHEJVTkRMRV9DSEFOR0VfQUNUSU9OX1JFUExBQ0UQAjLLAgoLUGxhblNlcnZpY2USdAoOTGlzdEludGVudGlvbnMSLS5yaXR1ZWVsLmxvY2FsLnYxYWxwaGExLkxpc3RJbnRlbnRpb25zUmVxdWVzdBouLnJpdHVlZWwubG9jYWwudjFhbHBoYTEuTGlzdEludGVudGlvbnNSZXNwb25zZSIDkAIBEmUKCVN0YXJ0UGxhbhIoLnJpdHVlZWwubG9jYWwudjFhbHBoYTEuU3RhcnRQbGFuUmVxdWVzdBopLnJpdHVlZWwubG9jYWwudjFhbHBoYTEuU3RhcnRQbGFuUmVzcG9uc2UiA5ACARJfCghTYXZlUGxhbhInLnJpdHVlZWwubG9jYWwudjFhbHBoYTEuU2F2ZVBsYW5SZXF1ZXN0Gigucml0dWVlbC5sb2NhbC52MWFscGhhMS5TYXZlUGxhblJlc3BvbnNlIgBiBnByb3RvMw", [file_google_protobuf_timestamp, file_ritueel_local_v1alpha1_common]);
 
 /**
  * @generated from message ritueel.local.v1alpha1.ListIntentionsRequest
@@ -91,7 +91,7 @@ export type IntentionOption = Message<"ritueel.local.v1alpha1.IntentionOption"> 
   typicalTime: string;
 
   /**
-   * False when the goal does not apply to this folder; the page shows it
+   * False when the goal does not apply to this bundle; the page shows it
    * greyed with the reason.
    *
    * @generated from field: bool applicable = 5;
@@ -355,11 +355,11 @@ export type Plan = Message<"ritueel.local.v1alpha1.Plan"> & {
   steps: PlanStep[];
 
   /**
-   * What the ceremony will add to the folder, or replace in it.
+   * What the ceremony will add to the bundle, or replace in it.
    *
-   * @generated from field: repeated ritueel.local.v1alpha1.FolderChange folder_changes = 9;
+   * @generated from field: repeated ritueel.local.v1alpha1.BundleChange bundle_changes = 9;
    */
-  folderChanges: FolderChange[];
+  bundleChanges: BundleChange[];
 
   /**
    * The command that builds this same plan on the command line.
@@ -376,7 +376,7 @@ export type Plan = Message<"ritueel.local.v1alpha1.Plan"> & {
   runCommand: string;
 
   /**
-   * Where SavePlan will put the file, relative to the folder.
+   * Where SavePlan will put the file, relative to the bundle.
    *
    * @generated from field: string save_path = 12;
    */
@@ -451,20 +451,20 @@ export const PlanStepSchema: GenMessage<PlanStep> = /*@__PURE__*/
   messageDesc(file_ritueel_local_v1alpha1_plan_service, 9);
 
 /**
- * @generated from message ritueel.local.v1alpha1.FolderChange
+ * @generated from message ritueel.local.v1alpha1.BundleChange
  */
-export type FolderChange = Message<"ritueel.local.v1alpha1.FolderChange"> & {
+export type BundleChange = Message<"ritueel.local.v1alpha1.BundleChange"> & {
   /**
-   * Path inside the folder.
+   * Path inside the bundle.
    *
    * @generated from field: string path = 1;
    */
   path: string;
 
   /**
-   * @generated from field: ritueel.local.v1alpha1.FolderChangeAction action = 2;
+   * @generated from field: ritueel.local.v1alpha1.BundleChangeAction action = 2;
    */
-  action: FolderChangeAction;
+  action: BundleChangeAction;
 
   /**
    * @generated from field: string description = 3;
@@ -473,10 +473,10 @@ export type FolderChange = Message<"ritueel.local.v1alpha1.FolderChange"> & {
 };
 
 /**
- * Describes the message ritueel.local.v1alpha1.FolderChange.
- * Use `create(FolderChangeSchema)` to create a new message.
+ * Describes the message ritueel.local.v1alpha1.BundleChange.
+ * Use `create(BundleChangeSchema)` to create a new message.
  */
-export const FolderChangeSchema: GenMessage<FolderChange> = /*@__PURE__*/
+export const BundleChangeSchema: GenMessage<BundleChange> = /*@__PURE__*/
   messageDesc(file_ritueel_local_v1alpha1_plan_service, 10);
 
 /**
@@ -514,14 +514,14 @@ export type SavePlanResponse = Message<"ritueel.local.v1alpha1.SavePlanResponse"
   planId: string;
 
   /**
-   * The folder, as the holder knows it, for example "~/ritueel".
+   * The bundle, as the holder knows it, for example "~/ritueel/acme".
    *
-   * @generated from field: string folder_path = 2;
+   * @generated from field: string bundle_path = 2;
    */
-  folderPath: string;
+  bundlePath: string;
 
   /**
-   * Where the file is (or would be), relative to the folder.
+   * Where the file is (or would be), relative to the bundle.
    *
    * @generated from field: string path = 3;
    */
@@ -666,31 +666,31 @@ export const RequirementSchema: GenEnum<Requirement> = /*@__PURE__*/
   enumDesc(file_ritueel_local_v1alpha1_plan_service, 1);
 
 /**
- * @generated from enum ritueel.local.v1alpha1.FolderChangeAction
+ * @generated from enum ritueel.local.v1alpha1.BundleChangeAction
  */
-export enum FolderChangeAction {
+export enum BundleChangeAction {
   /**
-   * @generated from enum value: FOLDER_CHANGE_ACTION_UNSPECIFIED = 0;
+   * @generated from enum value: BUNDLE_CHANGE_ACTION_UNSPECIFIED = 0;
    */
   UNSPECIFIED = 0,
 
   /**
-   * @generated from enum value: FOLDER_CHANGE_ACTION_CREATE = 1;
+   * @generated from enum value: BUNDLE_CHANGE_ACTION_CREATE = 1;
    */
   CREATE = 1,
 
   /**
-   * A file that a ceremony replaces keeps its history under products/.
+   * A file that a ceremony rewrites keeps its history under products/.
    *
-   * @generated from enum value: FOLDER_CHANGE_ACTION_REPLACE = 2;
+   * @generated from enum value: BUNDLE_CHANGE_ACTION_REPLACE = 2;
    */
   REPLACE = 2,
 }
 
 /**
- * Describes the enum ritueel.local.v1alpha1.FolderChangeAction.
+ * Describes the enum ritueel.local.v1alpha1.BundleChangeAction.
  */
-export const FolderChangeActionSchema: GenEnum<FolderChangeAction> = /*@__PURE__*/
+export const BundleChangeActionSchema: GenEnum<BundleChangeAction> = /*@__PURE__*/
   enumDesc(file_ritueel_local_v1alpha1_plan_service, 2);
 
 /**
@@ -699,7 +699,7 @@ export const FolderChangeActionSchema: GenEnum<FolderChangeAction> = /*@__PURE__
 export const PlanService: GenService<{
   /**
    * The goals the wizard offers, each with whether it applies to this
-   * folder and why not if it does not.
+   * bundle and why not if it does not.
    *
    * @generated from rpc ritueel.local.v1alpha1.PlanService.ListIntentions
    */
@@ -722,7 +722,7 @@ export const PlanService: GenService<{
     output: typeof StartPlanResponseSchema;
   },
   /**
-   * Save the plan file into the folder's "pending" area. This is the one
+   * Save the plan file into the bundle's "pending" area. This is the one
    * call of the package that writes. It writes one inert file, create-only,
    * and answers with the path and the digest. The demo writes nothing and
    * says so (see SavePlanResponse.written).

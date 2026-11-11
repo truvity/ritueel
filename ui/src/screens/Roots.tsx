@@ -144,7 +144,7 @@ export function Roots() {
         isEmpty={([r]) => r.roots.length === 0}
         empty={
           <Empty title="No roots yet.">
-            <p>A root is the first thing a folder holds. Adopt the key you already have, or a cloud key, and it appears here with its store.</p>
+            <p>A root is the first thing a bundle holds. Adopt the key you already have, or a cloud key, and it appears here with its store.</p>
             <p>
               <a className="font-semibold text-accent underline underline-offset-4" href={href.plan('adopt-key')}>
                 Make a plan to adopt a key

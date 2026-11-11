@@ -60,19 +60,19 @@
       "service": "ritueel.local.v1alpha1.PlanService",
       "method": "StartPlan",
       "when": {
-        "intention": "INTENTION_REPLACE_SUBKEYS",
+        "intention": "INTENTION_RETIRE_SUBKEYS",
         "answers": "none"
       },
-      "file": "plan.start-plan.replace-subkeys.questions.json"
+      "file": "plan.start-plan.retire-subkeys.questions.json"
     },
     {
       "service": "ritueel.local.v1alpha1.PlanService",
       "method": "StartPlan",
       "when": {
-        "intention": "INTENTION_REPLACE_SUBKEYS",
+        "intention": "INTENTION_RETIRE_SUBKEYS",
         "answers": "any"
       },
-      "file": "plan.start-plan.replace-subkeys.json"
+      "file": "plan.start-plan.retire-subkeys.json"
     },
     {
       "service": "ritueel.local.v1alpha1.PlanService",
@@ -120,9 +120,9 @@
       "service": "ritueel.local.v1alpha1.PlanService",
       "method": "SavePlan",
       "when": {
-        "planId": "2026-11-11-replace-subkeys"
+        "planId": "2026-11-11-retire-subkeys"
       },
-      "file": "plan.save-plan.replace-subkeys.json"
+      "file": "plan.save-plan.retire-subkeys.json"
     },
     {
       "service": "ritueel.local.v1alpha1.PlanService",
