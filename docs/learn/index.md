@@ -9,7 +9,7 @@ sidebar:
 ritueel teaches first. These pages explain how to keep a root key safe, whatever tool you use; ritueel's own tools are not built yet. Read the first six in order. Each one assumes the one before.
 
 1. [What is a root?](/learn/what-is-a-root/): the key everything else hangs from, and what goes wrong when it is lost or stolen.
-2. [Why the root stays offline](/learn/why-the-root-stays-offline/): what offline protects against, and how much of it you can have without a vault.
+2. [Where a root is used](/learn/where-a-root-is-used/): who can use a root at all, which machine a ceremony runs on, what offline protects against, and how much of it you can have without a vault.
 3. [How a YubiKey holds keys](/learn/how-a-yubikey-holds-keys/): what is inside a YubiKey 5, how PIV, OpenPGP and FIDO2 differ, and what locks or wipes a card.
 4. [How passkeys work](/learn/how-passkeys-work/): what a passkey is, how a sign-in goes, what the PIN and the touch protect, and how a passkey can open a key file.
 5. [How a KMS key works](/learn/how-a-kms-key-works/): what an AWS KMS signing key is made of, what limits it, and how it compares with a card slot.

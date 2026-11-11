@@ -12,7 +12,7 @@ bad() { echo "check-built: $*" >&2; fail=1; }
 # The pages of site/published.txt (the eleven Learn pages, the three How it works pages, the glossary, the roadmap, the hand-off contract),
 # the pages made in src/pages, and the demo.
 for f in index.html 404.html sitemap-index.xml robots.txt \
-         learn/index.html learn/what-is-a-root/index.html learn/why-the-root-stays-offline/index.html \
+         learn/index.html learn/what-is-a-root/index.html learn/where-a-root-is-used/index.html \
          learn/how-a-yubikey-holds-keys/index.html learn/how-passkeys-work/index.html learn/how-a-kms-key-works/index.html \
          learn/choosing-where-a-root-lives/index.html learn/life-of-a-root/index.html learn/revoke/index.html \
          learn/custody-chain/index.html learn/chain-openpgp/index.html \

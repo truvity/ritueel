@@ -33,4 +33,4 @@ Three facts make a root unlike any other key.
 - **Used by mistake.** A person signs the wrong request, with a wrong lifetime or a wrong name. The signature is real, and cannot be taken back.
 - **Expired unnoticed.** A root with a fixed end date runs out on a bad day.
 
-Most of what the rest of Learn explains is a way to avoid one of these four. Next: [why the root stays offline](/learn/why-the-root-stays-offline/).
+Most of what the rest of Learn explains is a way to avoid one of these four. Next: [where a root is used](/learn/where-a-root-is-used/).

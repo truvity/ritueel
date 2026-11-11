@@ -73,7 +73,7 @@ export default defineConfig({
           items: [
             { slug: 'learn', label: 'Overview' },
             { slug: 'learn/what-is-a-root', label: '1. What is a root?' },
-            { slug: 'learn/why-the-root-stays-offline', label: '2. Why the root stays offline' },
+            { slug: 'learn/where-a-root-is-used', label: '2. Where a root is used' },
             { slug: 'learn/how-a-yubikey-holds-keys', label: '3. How a YubiKey holds keys' },
             { slug: 'learn/how-passkeys-work', label: '4. How passkeys work' },
             { slug: 'learn/how-a-kms-key-works', label: '5. How a KMS key works' },

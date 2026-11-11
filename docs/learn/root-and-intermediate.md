@@ -46,4 +46,4 @@ A system that holds intermediates, such as [sluis](https://sluis.id), lives in t
 
 The files that travel, and the checks on each side, are in the [hand-off contract](/reference/hand-off-contract/).
 
-Next: [why the root stays offline](/learn/why-the-root-stays-offline/).
+Next: [where a root is used](/learn/where-a-root-is-used/).
