@@ -29,7 +29,8 @@ The signature is worthless if users get the key from the same place an attacker 
 
 - the **fingerprint**, in full (40 hexadecimal characters), on your project's own site over HTTPS, in the release notes, and in the repository;
 - the **public key**, as a file next to the release, and in a **keyring package** that a package manager installs ([keyring package](/reference/keyring-package/));
-- for mail-based identities, a Web Key Directory entry.
+- for mail-based identities, a Web Key Directory entry;
+- a **keyserver**, if you list one: after the ceremony `ritueel publish` (proposed) sends the public key to the keyservers you list, after your typed confirmation; the release page and the how-to-verify page are your pipeline's ([record 0009](../decisions/0009-release-keys-and-the-keyring.md), rule 25).
 
 Also publish the revocation, if there ever is one, in the same places. Say in the instructions that users should check the fingerprint, and show how.
 

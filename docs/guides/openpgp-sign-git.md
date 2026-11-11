@@ -21,7 +21,7 @@ A signed commit says that the holder of a key made it. A signed tag says that th
 2. **Sign by default.** `git config --global commit.gpgsign true` and `git config --global tag.gpgsign true`. Without these, use `git commit -S` and `git tag -s`.
 3. **Make a commit and a tag in the scratch repository.** `gpg-agent` asks for the PIN, and the card may ask for a touch.
 4. **Check them.** `git log --show-signature -1`, `git verify-commit HEAD` and `git verify-tag <tag>`. Both commands read `gpg`'s verdict; they need the public key in your keyring.
-5. **Upload the public key to your platform** (below) and push.
+5. **Upload the public key to your platform** (below) and push. ritueel will print the key file, the link and the platform tool's command (`gh gpg-key add FILE` for GitHub); it holds no token ([After a ceremony](/guides/after-a-ceremony/)).
 
 ## How platforms decide a signature is verified
 

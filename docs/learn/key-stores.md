@@ -59,7 +59,7 @@ A company root in KMS is **three keys, each with a multi-Region replica, in one 
 
 ## Planned stores
 
-These are not supported and not scheduled. Each arrives with its first real installation, a real account or a real device, because a store that is only imagined cannot be tested ([principle 8](/principles/)). A store is called supported only after it is proven on real hardware or a real account ([record 0002](../decisions/0002-where-a-key-lives.md), rule 1). The list of tests a store passes first is in [the earlier record](https://github.com/truvity/ritueel/blob/d0ae12da2432d5ae95cf95d68fb85ba3dda6cfee/docs/decisions/0003-key-stores-and-the-card-layer.md#planned-stores).
+These are not supported and not scheduled. Each arrives with its first real installation, a real account or a real device, because a store that is only imagined cannot be tested ([principle 8](/principles/)). A store is called supported only after it is proven on real hardware or a real account ([record 0002](../decisions/0002-where-a-key-lives.md), rule 1). The list of tests a store passes first is in [a research note](/research/earlier-records-two-sources-2026-11-11/#the-tests-a-planned-key-store-passes).
 
 | Store | Why it is interesting | What has to be measured first |
 |---|---|---|
