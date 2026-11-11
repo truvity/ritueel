@@ -84,19 +84,6 @@
       "sizeBytes": "4310",
       "verifyCommand": "ritueel keyring verify trust/7/keyring/acme-keyring.gpg --root-list trust/7/root-list.json",
       "rebuildCommand": "ritueel keyring build"
-    },
-    {
-      "name": "acme-keyring-2026.7-1.noarch.rpm",
-      "kind": "TRUST_FILE_KIND_KEYRING",
-      "path": "trust/7/keyring/acme-keyring-2026.7-1.noarch.rpm",
-      "trustSequence": 7,
-      "builtAt": "2026-01-27T14:10:00Z",
-      "checkResult": "TRUST_CHECK_RESULT_NOT_RUN",
-      "checkDetail": "Not built: the bundle's configuration names no licence for the package, and ritueel does not choose one for you.",
-      "sha256": "70060123456789abcdef0123456789abcdef0123456789abcdef0123456789ab",
-      "sizeBytes": "0",
-      "verifyCommand": "ritueel keyring verify trust/7/keyring/acme-keyring-2026.7-1.noarch.rpm --root-list trust/7/root-list.json",
-      "rebuildCommand": "ritueel keyring build"
     }
   ]
 }

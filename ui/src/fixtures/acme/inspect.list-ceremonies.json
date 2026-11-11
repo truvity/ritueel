@@ -29,7 +29,8 @@
         "00000011",
         "00000012"
       ],
-      "guidePath": "/learn/choosing-where-a-root-lives/"
+      "guidePath": "/learn/choosing-where-a-root-lives/",
+      "runPlace": "RUN_PLACE_WORKSTATION"
     },
     {
       "id": "20260127T142000Z-due",
@@ -50,7 +51,8 @@
         "00000011"
       ],
       "trustSequence": 7,
-      "guidePath": "/learn/life-of-a-root/"
+      "guidePath": "/learn/life-of-a-root/",
+      "runPlace": "RUN_PLACE_WORKSTATION"
     },
     {
       "id": "20251202T142000Z-due",
@@ -71,7 +73,8 @@
         "00000011"
       ],
       "trustSequence": 6,
-      "guidePath": "/learn/life-of-a-root/"
+      "guidePath": "/learn/life-of-a-root/",
+      "runPlace": "RUN_PLACE_WORKSTATION"
     },
     {
       "id": "20250609T142000Z-card-check",
@@ -92,7 +95,8 @@
         "00000011",
         "00000012"
       ],
-      "guidePath": "/learn/choosing-where-a-root-lives/"
+      "guidePath": "/learn/choosing-where-a-root-lives/",
+      "runPlace": "RUN_PLACE_WORKSTATION"
     },
     {
       "id": "20250128T142000Z-due",
@@ -113,7 +117,8 @@
         "00000012"
       ],
       "trustSequence": 5,
-      "guidePath": "/learn/life-of-a-root/"
+      "guidePath": "/learn/life-of-a-root/",
+      "runPlace": "RUN_PLACE_WORKSTATION"
     },
     {
       "id": "20241203T142000Z-due",
@@ -134,7 +139,8 @@
         "00000012"
       ],
       "trustSequence": 4,
-      "guidePath": "/learn/life-of-a-root/"
+      "guidePath": "/learn/life-of-a-root/",
+      "runPlace": "RUN_PLACE_WORKSTATION"
     },
     {
       "id": "20240610T142000Z-card-check",
@@ -155,7 +161,8 @@
         "00000011",
         "00000012"
       ],
-      "guidePath": "/learn/choosing-where-a-root-lives/"
+      "guidePath": "/learn/choosing-where-a-root-lives/",
+      "runPlace": "RUN_PLACE_WORKSTATION"
     },
     {
       "id": "20240120T142000Z-intermediate-add",
@@ -176,7 +183,8 @@
         "00000011"
       ],
       "trustSequence": 3,
-      "guidePath": "/learn/chain-openpgp/"
+      "guidePath": "/learn/chain-openpgp/",
+      "runPlace": "RUN_PLACE_WORKSTATION"
     },
     {
       "id": "20231209T142000Z-intermediate-add",
@@ -197,13 +205,14 @@
         "00000011"
       ],
       "trustSequence": 2,
-      "guidePath": "/reference/hand-off-contract/"
+      "guidePath": "/reference/hand-off-contract/",
+      "runPlace": "RUN_PLACE_WORKSTATION"
     },
     {
       "id": "20231202T142000Z-init",
       "kind": "CEREMONY_KIND_INIT",
       "title": "Created the roots acme/A and acme/B on two root cards",
-      "summary": "The X.509 root, the OpenPGP primary and the break-glass SSH CA key of acme/A were born on root card A, and those of acme/B on root card B, in row 2 of the layout. Each key has PIN always and touch always. The first trust files were written.",
+      "summary": "The X.509 root, the OpenPGP primary and the break-glass SSH CA key of acme/A were born on root card A, and those of acme/B on root card B, in row 2 of the layout. Each key has PIN always and touch always. The first trust files were written. It ran in the offline system, from the ceremony stick.",
       "completedAt": "2023-12-02T14:20:00Z",
       "outcome": "CEREMONY_OUTCOME_DONE",
       "recordSha256": "60010123456789abcdef0123456789abcdef0123456789abcdef0123456789ab",
@@ -217,7 +226,8 @@
         "00000012"
       ],
       "trustSequence": 1,
-      "guidePath": "/learn/choosing-where-a-root-lives/"
+      "guidePath": "/learn/choosing-where-a-root-lives/",
+      "runPlace": "RUN_PLACE_OFFLINE_SYSTEM"
     }
   ]
 }

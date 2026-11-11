@@ -8,8 +8,9 @@
   "runCommand": "ritueel --dir ~/ritueel/example run history/20261111T090000Z-init/plan.json --confirm a92d5e600123456789abcdef0123456789abcdef0123456789abcdefdeadbeef",
   "copyToStick": [],
   "bring": [
-    "A session of the ceremony role, from the sign-in you already use: ritueel asks nothing of how you signed in. You type the first eight characters of the digest at the terminal there, never here"
+    "A session of the ceremony role, from the sign-in you already use: ritueel asks nothing of how you signed in. You type the first eight characters of the digest at the terminal there, never here",
+    "A second device, to check the result against the plan before you hand it over or publish it"
   ],
   "whenBack": "Reload this page. The new record appears in History.",
-  "planFilePreview": "{\n  \"version\": 1,\n  \"ceremony\": \"20261111T090000Z-init\",\n  \"command\": \"init\",\n  \"arguments\": { \"store\": \"aws-kms\", \"key\": \"alias/example-staging-signing\" },\n  \"made_at\": \"2026-11-11T09:00:00Z\",\n  \"ceremony_time\": \"2026-11-11T09:00:00Z\",\n  \"root\": { \"label\": \"A\", \"store\": \"aws-kms\", \"test\": false, \"copyable\": false },\n  \"touches\": 0,\n  \"trust_sequence\": 1,\n  \"signatures\": [ ... 1 more ]\n}\n"
+  "planFilePreview": "{\n  \"version\": 1,\n  \"ceremony\": \"20261111T090000Z-init\",\n  \"command\": \"init\",\n  \"arguments\": { \"store\": \"aws-kms\", \"key\": \"alias/example-staging-signing\" },\n  \"made_at\": \"2026-11-11T09:00:00Z\",\n  \"ceremony_time\": \"2026-11-11T09:00:00Z\",\n  \"root\": { \"label\": \"A\", \"store\": \"aws-kms\", \"test\": false, \"copyable\": false },\n  \"touches\": 0,\n  \"trust_sequence\": 1,\n  \"signatures\": [ ... 3 ]\n}\n"
 }

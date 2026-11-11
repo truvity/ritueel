@@ -23,7 +23,8 @@
         "A"
       ],
       "trustSequence": 1,
-      "guidePath": "/learn/choosing-where-a-root-lives/"
+      "guidePath": "/learn/choosing-where-a-root-lives/",
+      "runPlace": "RUN_PLACE_WORKSTATION"
     }
   ]
 }

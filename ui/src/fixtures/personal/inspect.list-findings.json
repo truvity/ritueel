@@ -98,6 +98,24 @@
       "learnPath": "/learn/how-a-yubikey-holds-keys/"
     },
     {
+      "id": "undeclared-row",
+      "code": "undeclared-row",
+      "severity": "SEVERITY_NOTICE",
+      "title": "Root card two holds a key in row 4 that no bundle declares",
+      "reason": "A key sits in a row that neither this bundle nor another bundle of the holder has declared. It may be a collision or a key that is not yours.",
+      "subject": {
+        "kind": "SUBJECT_KIND_CARD",
+        "identifier": "00000002",
+        "label": "Root card two"
+      },
+      "evidence": [
+        "Slot 8a is occupied",
+        "The severity and the name of this finding are proposed (record 0003, issue 11)"
+      ],
+      "fixCommand": "ritueel card check --card 00000002",
+      "learnPath": "/design/#cards"
+    },
+    {
       "id": "adopted-rsa-primary",
       "code": "adopted-stage-one",
       "severity": "SEVERITY_INFO",

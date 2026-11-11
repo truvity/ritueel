@@ -12,7 +12,7 @@
       "lastSeenAt": "2026-11-03T14:20:00Z",
       "lastCheckedAt": "2026-11-03T14:20:00Z",
       "oneTimeCodesOff": true,
-      "roleSummary": "Root card. Its row 2 is kept for stage two of personal/A: personal/B will be born here and personal/C on the other root card. A passkey on it opens the key file of personal/A. Only goes into the offline system.",
+      "roleSummary": "Root card. Its row 2 is kept for stage two of personal/A: personal/B will be born here and personal/C on the other root card. A passkey on it opens the key file of personal/A. It is used in the offline system while personal/A is a key file. Row 3 belongs to another bundle of the holder and is declared in this card's file.",
       "rootLabels": [
         "B"
       ],
@@ -71,25 +71,44 @@
           },
           {
             "number": 3,
-            "label": "free",
+            "label": "other bundle",
             "slots": [
               {
                 "id": "86",
-                "state": "SLOT_STATE_SPARE"
+                "state": "SLOT_STATE_USED",
+                "use": "SLOT_USE_OTHER_BUNDLE",
+                "purpose": "A row of another bundle of the holder, declared in this card's file",
+                "pinRule": "PIN_RULE_ALWAYS",
+                "touchRule": "TOUCH_RULE_ALWAYS",
+                "publicKeySha256": "",
+                "attested": false
               },
               {
                 "id": "87",
-                "state": "SLOT_STATE_SPARE"
+                "state": "SLOT_STATE_USED",
+                "use": "SLOT_USE_OTHER_BUNDLE",
+                "purpose": "A row of another bundle of the holder, declared in this card's file",
+                "pinRule": "PIN_RULE_ALWAYS",
+                "touchRule": "TOUCH_RULE_ALWAYS",
+                "publicKeySha256": "",
+                "attested": false
               },
               {
                 "id": "88",
-                "state": "SLOT_STATE_SPARE"
+                "state": "SLOT_STATE_USED",
+                "use": "SLOT_USE_OTHER_BUNDLE",
+                "purpose": "A row of another bundle of the holder, declared in this card's file",
+                "pinRule": "PIN_RULE_ALWAYS",
+                "touchRule": "TOUCH_RULE_ALWAYS",
+                "publicKeySha256": "",
+                "attested": false
               },
               {
                 "id": "89",
-                "state": "SLOT_STATE_SPARE"
+                "state": "SLOT_STATE_EMPTY"
               }
-            ]
+            ],
+            "rootLabel": ""
           },
           {
             "number": 4,
@@ -204,7 +223,7 @@
       "lastSeenAt": "2026-11-03T14:20:00Z",
       "lastCheckedAt": "2026-11-03T14:20:00Z",
       "oneTimeCodesOff": true,
-      "roleSummary": "Root card. Its row 2 is kept for stage two of personal/A: personal/C will be born here and personal/B on the other root card. A passkey on it opens the key file of personal/A. Only goes into the offline system.",
+      "roleSummary": "Root card. Its row 2 is kept for stage two of personal/A: personal/C will be born here and personal/B on the other root card. A passkey on it opens the key file of personal/A. It is used in the offline system while personal/A is a key file. Row 3 belongs to another bundle of the holder and is declared in this card's file.",
       "rootLabels": [
         "C"
       ],
@@ -263,33 +282,53 @@
           },
           {
             "number": 3,
-            "label": "free",
+            "label": "other bundle",
             "slots": [
               {
                 "id": "86",
-                "state": "SLOT_STATE_SPARE"
+                "state": "SLOT_STATE_USED",
+                "use": "SLOT_USE_OTHER_BUNDLE",
+                "purpose": "A row of another bundle of the holder, declared in this card's file",
+                "pinRule": "PIN_RULE_ALWAYS",
+                "touchRule": "TOUCH_RULE_ALWAYS",
+                "publicKeySha256": "",
+                "attested": false
               },
               {
                 "id": "87",
-                "state": "SLOT_STATE_SPARE"
+                "state": "SLOT_STATE_USED",
+                "use": "SLOT_USE_OTHER_BUNDLE",
+                "purpose": "A row of another bundle of the holder, declared in this card's file",
+                "pinRule": "PIN_RULE_ALWAYS",
+                "touchRule": "TOUCH_RULE_ALWAYS",
+                "publicKeySha256": "",
+                "attested": false
               },
               {
                 "id": "88",
-                "state": "SLOT_STATE_SPARE"
+                "state": "SLOT_STATE_USED",
+                "use": "SLOT_USE_OTHER_BUNDLE",
+                "purpose": "A row of another bundle of the holder, declared in this card's file",
+                "pinRule": "PIN_RULE_ALWAYS",
+                "touchRule": "TOUCH_RULE_ALWAYS",
+                "publicKeySha256": "",
+                "attested": false
               },
               {
                 "id": "89",
-                "state": "SLOT_STATE_SPARE"
+                "state": "SLOT_STATE_EMPTY"
               }
-            ]
+            ],
+            "rootLabel": ""
           },
           {
             "number": 4,
-            "label": "free",
+            "label": "undeclared",
             "slots": [
               {
                 "id": "8a",
-                "state": "SLOT_STATE_SPARE"
+                "state": "SLOT_STATE_USED",
+                "purpose": "A key in a row that no bundle declares"
               },
               {
                 "id": "8b",
