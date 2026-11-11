@@ -53,7 +53,7 @@ function load(name: string): JsonValue {
   if (!common) return hit;
   const summary = files[`../fixtures/${getBundle()}/inspect.get-summary.json`] as { bundle?: { path?: string } } | undefined;
   const bundlePath = summary?.bundle?.path;
-  return bundlePath ? (JSON.parse(JSON.stringify(hit).split(COMMON_BUNDLE_PATH).join(bundlePath)) as JsonValue) : hit;
+  return bundlePath ? (JSON.parse(JSON.stringify(hit).split(COMMON_BUNDLE_PATH).join(JSON.stringify(bundlePath).slice(1, -1))) as JsonValue) : hit;
 }
 
 function parse<S extends DescMessage>(schema: S, name: string): MessageShape<S> {

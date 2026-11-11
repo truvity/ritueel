@@ -62,8 +62,7 @@ function RootCard({ r, findings, bundle }: { r: Root; findings: Finding[] | unde
         ) : null}
         {r.store === Store.SOFTWARE_FILE ? (
           <p className="text-sm">
-            Stage {r.stage}. A later stage adds two card-born primaries in row {r.cardRow} of the root cards:{' '}
-            <T cap={60}>{rootRef(bundle, 'B')}</T> and <T cap={60}>{rootRef(bundle, 'C')}</T>.
+            Stage {r.stage}. A later stage adds two card-born primaries in row {r.cardRow} of the root cards, each its own root of this bundle.
           </p>
         ) : null}
         {r.cloudKey ? (

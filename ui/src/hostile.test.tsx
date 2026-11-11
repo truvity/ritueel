@@ -10,7 +10,7 @@ import {
   ListRootsResponseSchema,
   ListTrustFilesResponseSchema,
 } from './gen/ritueel/local/v1alpha1/inspect_service_pb';
-import { ListIntentionsResponseSchema, SavePlanResponseSchema, StartPlanResponseSchema } from './gen/ritueel/local/v1alpha1/plan_service_pb';
+import { ListIntentionsResponseSchema, RunPlace, SavePlanResponseSchema, StartPlanResponseSchema } from './gen/ritueel/local/v1alpha1/plan_service_pb';
 
 // Every string that comes from the bundle is data. This test gives each screen a
 // world (one for each example bundle: personal, acme and globex, so acme/B, the cloud
@@ -159,6 +159,24 @@ describe('hostile text never reaches the markup raw', () => {
     });
   }
 
+  it('the stick sentence follows where the plan runs, not whether files are listed', async () => {
+    loadWorld('globex', 'adopt-key');
+    const { Saved } = await import('./screens/Plan');
+    const text = (el: ReactElement) => renderToStaticMarkup(el).split(/<[^>]*>/).join('');
+    const empty = { ...w.d.saved, copyToStick: [] };
+    const offline = text(<Saved data={empty} place={RunPlace.OFFLINE_SYSTEM} />);
+    expect(offline).not.toContain('your workstation, the computer');
+    expect(offline).not.toContain('No stick is needed');
+    expect(offline).toContain('The plan lists nothing to copy');
+    const unknown = text(<Saved data={empty} place={RunPlace.UNSPECIFIED} />);
+    expect(unknown).not.toContain('No stick is needed');
+    expect(unknown).toContain('does not say where it runs');
+    const none = text(<Saved data={empty} />);
+    expect(none).not.toContain('No stick is needed');
+    const workstation = text(<Saved data={empty} place={RunPlace.WORKSTATION} />);
+    expect(workstation).toContain('No stick is needed');
+  });
+
   it('the marked name of the bundle reaches a root written bundle/label as an escape, never raw', async () => {
     loadWorld('acme', 'renew-due');
     const { Roots } = await import('./screens/Roots');
@@ -167,7 +185,7 @@ describe('hostile text never reaches the markup raw', () => {
       const html = renderToStaticMarkup(el);
       expect(offending(html), name).toEqual([]);
       // Each escape is a span of its own: read the text. acme/A, with the marker after "acme" and after "A".
-      const text = html.replace(/<style[\s\S]*?<\/style>/g, '').replace(/<[^>]+>/g, '');
+      const text = html.split(/<[^>]*>/).join('');
       expect(text, name).toContain('acmeU+202EU+200DU+0007/AU+202EU+200DU+0007');
     }
   });
