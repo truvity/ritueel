@@ -9,13 +9,14 @@ dist=${1:-site/dist}
 fail=0
 bad() { echo "check-built: $*" >&2; fail=1; }
 
-# The pages of site/published.txt (the ten Learn pages, the glossary, the roadmap, the hand-off contract),
+# The pages of site/published.txt (the eleven Learn pages, the three How it works pages, the glossary, the roadmap, the hand-off contract),
 # the pages made in src/pages, and the demo.
 for f in index.html 404.html sitemap-index.xml robots.txt \
          learn/index.html learn/what-is-a-root/index.html learn/why-the-root-stays-offline/index.html \
          learn/how-a-yubikey-holds-keys/index.html learn/how-passkeys-work/index.html learn/how-a-kms-key-works/index.html \
          learn/choosing-where-a-root-lives/index.html learn/life-of-a-root/index.html learn/revoke/index.html \
          learn/custody-chain/index.html learn/chain-openpgp/index.html \
+         how-it-works/index.html how-it-works/cards/index.html how-it-works/bundle-and-stick/index.html \
          glossary/index.html roadmap/index.html reference/hand-off-contract/index.html \
          decisions/index.html status/index.html \
          demo/index.html demo/scheme.js demo/favicon.svg demo/THIRD-PARTY-LICENSES.md; do
@@ -33,6 +34,17 @@ while read -r addr; do
   [ ! -e "$dist${addr%/}/index.html" ] || bad "an unpublished page is built: $addr"
   if grep -qF "<loc>https://ritueel.id$addr</loc>" "$dist"/sitemap-*.xml 2>/dev/null; then bad "the sitemap lists an unpublished page: $addr"; fi
 done <<< "$unpublished"
+
+# The figures (site/figures, placed by <Figure>) reached the output: a figure page holds its <figure>
+# and drawings that are images with a label, none of the drawings keeps its text in the search, and
+# the stylesheet of the figures is linked. (Starlight's own icons are <svg> too, so the check names
+# the drawings by role="img".)
+for f in how-it-works/index.html how-it-works/cards/index.html; do
+  [ -s "$dist/$f" ] || continue
+  grep -q '<figure class="fig ' "$dist/$f" || bad "$f has no figure"
+  [ "$(grep -o '<svg[^>]* role="img"[^>]* data-pagefind-ignore' "$dist/$f" | wc -l)" -ge 1 ] || bad "$f has no drawing with role=img and data-pagefind-ignore (did a sanitizer drop them?)"
+  if grep -Eo '<svg[^>]* (class="fig-[a-z]+" )?viewBox="[^"]*"[^>]*>' "$dist/$f" | grep -v 'role="img"' | grep -q 'viewBox="0 0 \(280 224\|760\|360\)'; then bad "$f has a drawing without role=img"; fi
+done
 
 # Search: Pagefind's index and its entry point.
 [ -s "$dist/pagefind/pagefind.js" ] || bad "no Pagefind entry point in $dist/pagefind"

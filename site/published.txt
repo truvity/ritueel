@@ -25,6 +25,10 @@ learn/revoke.md
 learn/custody-chain.md
 learn/chain-openpgp.md
 
+how-it-works/index.mdx
+how-it-works/cards.mdx
+how-it-works/bundle-and-stick.mdx
+
 glossary.md
 roadmap.md
 
