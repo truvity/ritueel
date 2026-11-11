@@ -120,7 +120,11 @@ no library (they drive headless Chrome over the DevTools protocol).
   has that serial, a ledger record to History unless it has that id, a root's key to
   Roots unless it has a root with that label, and the wizard of a goal to the goals
   unless the new bundle offers the goal (a goal that applies to it). So no route
-  points at a card, a root, a record or a goal the new bundle lacks.
+  points at a card, a root, a record or a goal the new bundle lacks. A fallback
+  replaces the history entry, so Back does not return to an address the new bundle
+  cannot show. Until the demo transport has loaded (on the first call) nothing says
+  what a bundle holds, and the address is left alone. The wizard is keyed by the
+  bundle as well as the goal, so after a switch it asks its choices again.
 - The one call that would act, `SavePlan`, answers with `written: false`, a notice
   that this is a demo and nothing was written, and the file it would have written.
   The demo shows that file at `ledger/<ceremony>/plan.json` inside the bundle. That
