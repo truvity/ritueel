@@ -1,6 +1,6 @@
 ---
 title: Where a root is used
-description: "Who can use a root at all, and on which machine a ceremony runs: a copyable key only offline, a key that cannot be copied also on a workstation under conditions."
+description: "Who can use a root, and on which machine a ceremony runs: a copyable key only offline, a key that cannot be copied also on a workstation under conditions."
 sidebar:
   order: 3
 ---

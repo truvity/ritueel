@@ -83,7 +83,7 @@
       "sha256": "70050123456789abcdef0123456789abcdef0123456789abcdef0123456789ab",
       "sizeBytes": "4310",
       "verifyCommand": "ritueel keyring verify products/7/keyring/acme-keyring.gpg --root-list products/7/root-list.json",
-      "rebuildCommand": "ritueel keyring build --name acme"
+      "rebuildCommand": "ritueel keyring build"
     },
     {
       "name": "acme-keyring-2026.7-1.noarch.rpm",
@@ -96,7 +96,7 @@
       "sha256": "70060123456789abcdef0123456789abcdef0123456789abcdef0123456789ab",
       "sizeBytes": "0",
       "verifyCommand": "ritueel keyring verify products/7/keyring/acme-keyring-2026.7-1.noarch.rpm --root-list products/7/root-list.json",
-      "rebuildCommand": "ritueel keyring build --name acme"
+      "rebuildCommand": "ritueel keyring build"
     }
   ]
 }
