@@ -67,12 +67,12 @@ export default defineConfig({
           label: 'Learn',
           items: [
             { slug: 'learn', label: 'Overview' },
-            { slug: 'learn/what-is-a-root' },
-            { slug: 'learn/why-the-root-stays-offline' },
-            { slug: 'learn/how-a-yubikey-holds-keys' },
-            { slug: 'learn/how-passkeys-work' },
-            { slug: 'learn/how-a-kms-key-works' },
-            { slug: 'learn/choosing-where-a-root-lives' },
+            { slug: 'learn/what-is-a-root', label: '1. What is a root?' },
+            { slug: 'learn/why-the-root-stays-offline', label: '2. Why the root stays offline' },
+            { slug: 'learn/how-a-yubikey-holds-keys', label: '3. How a YubiKey holds keys' },
+            { slug: 'learn/how-passkeys-work', label: '4. How passkeys work' },
+            { slug: 'learn/how-a-kms-key-works', label: '5. How a KMS key works' },
+            { slug: 'learn/choosing-where-a-root-lives', label: '6. Choosing where a root lives' },
             {
               label: 'Going further',
               collapsed: false,
@@ -80,7 +80,7 @@ export default defineConfig({
                 { slug: 'learn/life-of-a-root' },
                 { slug: 'learn/revoke' },
                 { slug: 'learn/custody-chain' },
-                { slug: 'learn/chain-openpgp' },
+                { slug: 'learn/chain-openpgp', label: 'OpenPGP: one identity, many keys' },
               ],
             },
           ],
@@ -93,7 +93,7 @@ export default defineConfig({
           // The status page is built from the repository and the issues (src/pages/status.astro).
           items: [{ label: 'Status', link: '/status/' }, { slug: 'roadmap' }],
         },
-        { label: 'Decisions', link: '/decisions/' },
+        { label: 'Decisions (archive)', link: '/decisions/' },
       ],
       plugins: [
         // Fails the build on a broken internal link or anchor of a published page; a link to a page
