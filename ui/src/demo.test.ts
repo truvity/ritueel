@@ -1,9 +1,12 @@
+import { readdirSync, readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 import { Code, ConnectError, createClient } from '@connectrpc/connect';
 import { Intention, Severity } from './gen/ritueel/local/v1alpha1/common_pb';
-import { InspectService } from './gen/ritueel/local/v1alpha1/inspect_service_pb';
+import { CardKind, InspectService } from './gen/ritueel/local/v1alpha1/inspect_service_pb';
 import { PlanService, RunPlace } from './gen/ritueel/local/v1alpha1/plan_service_pb';
 import { createDemoTransport } from './api/demo';
+import { CARD_KIND_WORD } from './lib/words';
 import { DEMO_BUNDLES, getBundle, setBundle, setViewState, type DemoBundle } from './api/demoState';
 
 const t = createDemoTransport();
@@ -126,13 +129,23 @@ describe('the fixtures tell the made-up world, one bundle at a time', () => {
     expect((await inspect.getSummary({})).setupSteps.map((x) => x.id)).not.toContain('cards');
   });
 
-  it('keeps the cards and roots of the bundles apart: no serial or fingerprint is shared', async () => {
-    const serials = new Map<string, DemoBundle>();
-    for (const b of ['personal', 'acme'] as const) {
+  it('keeps the cards and roots of the bundles apart: no serial, fingerprint or digest is shared', async () => {
+    const seen = new Map<string, DemoBundle>();
+    const note = (kind: string, value: string | undefined, b: DemoBundle) => {
+      if (!value) return;
+      expect(seen.get(`${kind} ${value}`), `${kind} ${value} in ${b}`).toBeUndefined();
+      seen.set(`${kind} ${value}`, b);
+    };
+    for (const b of BUNDLES) {
       setBundle(b);
-      for (const c of (await inspect.listCards({})).cards) {
-        expect(serials.get(c.serial), `serial ${c.serial} in ${b}`).toBeUndefined();
-        serials.set(c.serial, b);
+      for (const c of (await inspect.listCards({})).cards) note('serial', c.serial, b);
+      for (const r of (await inspect.listRoots({})).roots) {
+        for (const k of r.keys) note('root fingerprint', k.fingerprint, b);
+        for (const k of r.delegatedKeys) {
+          note('delegated fingerprint', k.fingerprint, b);
+          note('certified by', k.certifiedBy, b);
+        }
+        for (const set of r.certificate?.subkeySets ?? []) for (const k of set.subkeys) note('subkey', k.fingerprint, b);
       }
     }
   });
@@ -283,6 +296,16 @@ describe('the four states of a read', () => {
       expect(goals.find((g) => g.intention === Intention.ADOPT_KEY)?.recommended, b).toBe(true);
       expect(goals.find((g) => g.intention === Intention.RENEW_DUE)?.applicable, b).toBe(false);
       expect(goals.find((g) => g.intention === Intention.RETIRE_SUBKEYS)?.applicable, b).toBe(false);
+      // The goal the empty bundle recommends must lead somewhere, in every example bundle: not to
+      // "this goal does not apply" (the goals screen says it applies).
+      const questions = await plans.startPlan({ intention: Intention.ADOPT_KEY });
+      expect(questions.refusal, b).toBe('');
+      expect(questions.questions.length, b).toBeGreaterThan(0);
+      const adopt = await plans.startPlan({ intention: Intention.ADOPT_KEY, answers: [{ questionId: 'use', optionIds: ['root'] }] });
+      expect(adopt.plan?.runPlace, b).toBe(RunPlace.WORKSTATION);
+      const saved = await plans.savePlan({ planId: adopt.plan?.id ?? '', digest: adopt.plan?.digest ?? '' });
+      expect(saved.path, b).toBe(`ledger/${adopt.plan?.id}/plan.json`);
+      expect(saved.bundlePath, b).toBe((await inspect.getSummary({})).bundle?.path);
     }
   });
   it('failed: every read fails with an error, never an empty answer, and names the bundle it could not read', async () => {
@@ -310,5 +333,36 @@ describe('the four states of a read', () => {
     expect(first).toBe('still waiting');
     setViewState('loaded');
     expect(await pending).toBe('ended');
+  });
+});
+
+describe('the words of the owner stay', () => {
+  const HERE = new URL('./', import.meta.url).pathname;
+  const OLD_WORDS = /folder|ceremony machine|offline machine|\bdaily\b|pending\//i;
+  function files(dir: string, ext: RegExp): string[] {
+    return readdirSync(join(HERE, dir), { withFileTypes: true }).flatMap((e) =>
+      e.isDirectory() ? files(`${dir}/${e.name}`, ext) : ext.test(e.name) ? [`${dir}/${e.name}`] : [],
+    );
+  }
+  it('no fixture or screen uses a word the owner replaced', () => {
+    const hits: string[] = [];
+    for (const f of [...files('fixtures', /\.json$/), ...files('screens', /\.tsx$/), ...files('lib', /\.ts$/), ...files('ui', /\.tsx$/)]) {
+      // "sub-folder" is the word the ledger's own page uses for ledger/<ceremony>/.
+      const text = readFileSync(join(HERE, f), 'utf8').replace(/sub-folder/gi, '');
+      const m = OLD_WORDS.exec(text);
+      if (m) hits.push(`${f}: ${m[0]}`);
+      // A saved plan is ledger/<ceremony>/plan.json; there is no file called *.plan.
+      if (f.startsWith('fixtures/') && /\.plan\b/.test(text)) hits.push(`${f}: .plan`);
+    }
+    expect(hits).toEqual([]);
+  });
+});
+
+describe('every kind of card has a word', () => {
+  it('root, day-to-day, server and rehearsal each read as a card', () => {
+    const kinds = Object.values(CardKind).filter((v): v is CardKind => typeof v === 'number' && v !== CardKind.UNSPECIFIED);
+    expect(kinds).toHaveLength(4);
+    for (const k of kinds) expect(CARD_KIND_WORD[k], CardKind[k]).toMatch(/\bcard$/);
+    expect(CARD_KIND_WORD[CardKind.SERVER]).toBe('Server card');
   });
 });

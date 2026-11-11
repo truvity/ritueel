@@ -175,7 +175,8 @@ describe('the demo links only to pages the site has', () => {
     // The run command and the bundle path of a saved plan agree with it.
     for (const name of FIXTURE_FILES.filter((n) => n.includes('plan.save-plan.'))) {
       const d = JSON.parse(readFileSync(join(FIXTURES, name), 'utf8')) as { planId: string; path: string; bundlePath: string; runCommand: string };
-      const bundle = name.split('/')[0];
+      // common/ is shared by every bundle: the demo puts the path of the open bundle in its place.
+      const bundle = name.startsWith('common/') ? 'example' : name.split('/')[0];
       expect(d.path, name).toBe(`ledger/${d.planId}/plan.json`);
       expect(d.bundlePath, name).toBe(`~/ritueel/${bundle}`);
       expect(d.runCommand, name).toMatch(new RegExp(`^ritueel run ledger/${d.planId}/plan\\.json --confirm [0-9a-f]{64}$`));

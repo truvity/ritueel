@@ -63,10 +63,10 @@ function mark(v: unknown): unknown {
 const files = import.meta.glob('./fixtures/*/*.json', { eager: true, import: 'default' }) as Record<string, JsonValue>;
 const parse = <S extends DescMessage>(schema: S, bundle: string, name: string) => mark(fromJson(schema, files[`./fixtures/${bundle}/${name}`])) as Message;
 
-const BUNDLES: { bundle: string; goal: string; roots: number; cards: number }[] = [
-  { bundle: 'personal', goal: 'retire-subkeys', roots: 1, cards: 6 },
-  { bundle: 'acme', goal: 'renew-due', roots: 2, cards: 2 },
-  { bundle: 'globex', goal: 'adopt-key', roots: 1, cards: 0 },
+const BUNDLES: { bundle: string; goal: string; roots: number; cards: number; ceremonies: number }[] = [
+  { bundle: 'personal', goal: 'retire-subkeys', roots: 1, cards: 6, ceremonies: 1 },
+  { bundle: 'acme', goal: 'renew-due', roots: 2, cards: 2, ceremonies: 10 },
+  { bundle: 'globex', goal: 'adopt-key', roots: 1, cards: 0, ceremonies: 1 },
 ];
 
 /** Mark every string of one bundle's world, so that any screen that forgot T or safeString shows up. */
@@ -134,14 +134,16 @@ describe('hostile text never reaches the markup raw', () => {
   it('the marker is a bidi override, a joiner and a control character', () => {
     expect(RAW.test(BAD)).toBe(true);
   });
-  for (const { bundle, goal, roots, cards } of BUNDLES) {
+  for (const { bundle, goal, roots, cards, ceremonies } of BUNDLES) {
     it(`every screen of the ${bundle} bundle, with every string of the world marked`, async () => {
       loadWorld(bundle, goal);
       // The world is the bundle it is said to be: the test would prove nothing on an empty one.
       expect(w.d.roots.roots).toHaveLength(roots);
       expect(w.d.cards.cards).toHaveLength(cards);
+      expect(w.d.ceremonies.ceremonies).toHaveLength(ceremonies);
       const list = await screens(goal);
-      expect(list.length).toBeGreaterThan(14 + roots + cards);
+      // 16 fixed screens, and one for every root, card and ceremony of the bundle
+      expect(list.length).toBeGreaterThanOrEqual(16 + roots + cards + ceremonies);
       const failures: string[] = [];
       let sawEscape = 0;
       for (const [name, render] of list) {
@@ -153,7 +155,7 @@ describe('hostile text never reaches the markup raw', () => {
       }
       expect(failures).toEqual([]);
       // the marked world did reach the screens, drawn as escapes
-      expect(sawEscape, `${bundle} screens that show an escape`).toBeGreaterThan(Math.floor(list.length / 2));
+      expect(sawEscape, `${bundle} screens that show an escape`).toBeGreaterThanOrEqual(Math.max(15, list.length - 4));
     });
   }
 
