@@ -302,9 +302,11 @@ export type PendingPlan = Message<"ritueel.local.v1alpha1.PendingPlan"> & {
   planId: string;
 
   /**
-   * Path inside the bundle: ledger/<ceremony>/plan.json, for example
-   * "ledger/20261111T090000Z-due/plan.json". The ledger holds a sub-folder
-   * for a plan from the day it is saved; record_count counts records only.
+   * Path inside the bundle. The records say only that the process writes the
+   * plan inside the bundle; the bundle reference proposes
+   * ledger/<ceremony>/plan.json, for example
+   * "ledger/20261111T090000Z-due/plan.json", and that path is a proposal, not
+   * yet fixed. record_count counts records only.
    *
    * @generated from field: string path = 2;
    */

@@ -30,7 +30,7 @@ PIN, a passphrase or any secret. Every screen that names an action shows the
 command that does it, and no screen performs one. Confirmation happens in the
 terminal, on the offline system or on your workstation. The offline system is for a
 root on cards or a real software root in a key file; a cloud root is used from your
-workstation; a test root may run on either.
+workstation; a test root may run on your workstation (wording only, no flag).
 
 ## Screens
 
@@ -52,9 +52,9 @@ An unknown hash shows a "not found" screen, never another screen.
 Every screen handles four states, in honest words: **loaded**, **empty** (the read
 worked and nothing is there, with what comes next), **failed** (the read did not
 work: never drawn as empty, with the reason and a retry) and **waiting** (no
-answer yet). In the demo, a switch in the bar at the top ("Try the states") makes
-the in-memory transport answer in each state. A second switch ("Try a bundle")
-chooses the example bundle.
+answer yet). In the demo, a switch in the bar at the top ("Try a bundle") chooses
+the example bundle, and a second ("Try the states") makes the in-memory transport
+answer in each state.
 
 ## Install, test, build, serve
 
@@ -239,7 +239,7 @@ loopback listener lets a request in only with the one-time token of the session,
 becomes an `HttpOnly`, `SameSite=Strict` cookie, checks the `Host` header exactly and,
 for a `POST`, `Sec-Fetch-Site` or `Origin`, and ends after 15 minutes without a request
 ([the profile](https://ritueel.id/reference/wizard/#the-web-page-the-security-profile),
-rules 1 to 4 and 9). Other programs of the same user can reach that port while the page
+rules 1 to 4, 7 and 9). Other programs of the same user can reach that port while the page
 is in use, so it is trusted no more than any other web request. The records mark the
 details of how the process ends and where its socket lives as proposed; this page does
 not depend on them. The process serves one bundle.
@@ -266,5 +266,23 @@ tell whether a user ID inside it is quoted.
   ledger.
 - The demo's wizard returns the same plan whatever is chosen (the fixtures have one
   plan per goal).
+- The empty state ("Try the states") answers the same for every example bundle, and its
+  adoption plan is the company, cloud-key case: a root on the workstation and a first
+  root list. A personal bundle has no root list and adopts an existing OpenPGP key; the
+  demo does not show that adoption.
+- The `card-check` records in the acme ledger and the six-monthly card check among the
+  due items are the demo's own idea. The records say the check is read-only and write
+  `cards.yaml`; they do not say it writes a ledger record.
+- `PLAN` in the run command is shown as a path relative to the bundle
+  (`ritueel --dir ~/ritueel/acme run ledger/<ceremony>/plan.json ...`). The command
+  reference does not say what `PLAN` is relative to, and on the offline system the
+  bundle sits at another path, so the `--dir` value is only the path on this computer.
+  The preview of the bundle changes lists the ledger files and the products, not each
+  root certificate that a ceremony re-issues.
+- The made-up data shows no server card, no test root and no pair of root cards shared by
+  two bundles (ADR 0016 allows it). The kind exists in the contract and the Cards screen
+  has a place for it; no example draws it.
+- The times of day in the made-up dates are approximate: the days follow the pages, the
+  clock does not always follow the ceremony time. The page shows days only.
 - Fonts depend on what is installed (see Design).
 - Tested in headless Chrome only (1440 and 390 px, light and dark).
