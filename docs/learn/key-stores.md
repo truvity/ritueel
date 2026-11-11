@@ -78,7 +78,7 @@ These are not supported and not scheduled. Each arrives with its first real inst
 | You want a drill to survive a lost laptop | 1Password, on a root that is still only a drill. |
 | One person or a small team holds the roots, and no cloud is involved | Two independent root cards, in two places ([which path is yours](#which-path-is-yours)). |
 | A person wants a daily OpenPGP key | A subkey born on an OpenPGP card, bound by a primary key kept offline. |
-| An organisation already runs on AWS and wants audited, policy-gated roots | One KMS root with a multi-Region replica, in a dedicated root account, with a ceremony role and the controls around it. |
+| An organisation already runs on AWS and wants audited, policy-gated roots | A cloud root: three keys, each with a multi-Region replica, in a dedicated root account, with a ceremony role and the controls around it. |
 | You want the strongest story | Roots on different kinds of store: for example a card root and a KMS root. A failure of one kind does not take out the other. |
 
 ## Moving between stores

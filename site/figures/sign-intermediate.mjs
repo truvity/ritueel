@@ -81,9 +81,9 @@ function p6() {
   let b = '';
   b += server(14, B, 52);
   b += arrow(72, 86, 108, 86, 'checks', { lx: 90, ly: 78 });
-  b += rect(112, 44, 82, 56, 'paper', 5) + text(119, 64, 'chains to', 't t-s t-mono') + text(119, 80, 'root', 't t-s t-mono') + check(152, 76, 1);
+  b += rect(112, 44, 74, 56, 'paper', 5) + text(117, 64, 'chains to', 't t-s t-mono') + text(117, 80, 'root', 't t-s t-mono') + check(148, 76, 1);
   // the record that ritueel wrote at the workstation: it says where the ceremony ran
-  b += sheet(200, 40, 76, 58, { rows: 0 }) + text(238, 62, 'record', 't t-s t-b', 'm') + text(238, 78, 'ran on', 't t-s t-dim', 'm') + text(238, 92, 'workstation', 't t-s t-dim', 'm');
+  b += sheet(194, 40, 78, 58, { rows: 0 }) + text(233, 62, 'record', 't t-s t-b', 'm') + text(233, 78, 'ran on', 't t-s t-dim', 'm') + text(233, 92, 'workstation', 't t-s t-dim', 'm');
   b += arrow(204, 140, 72, 140, 'copies answer', { lx: 140, ly: 132 });
   b += note(100, 146, 46, 30, 'cert');
   b += laptop(206, 120, 52, 34);

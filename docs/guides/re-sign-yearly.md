@@ -5,9 +5,9 @@ sidebar:
   order: 3
 ---
 
-*Design phase: not built yet. This page is the plan that `ritueel due` and `ritueel run` will follow (M2, [issue #30](https://github.com/truvity/ritueel/issues/30)); there is no `yearly` command. `ritueel renew` for a cloud root comes later (M7). To learn why you re-sign and why yearly, and which acts may run unattended, read [Re-sign](/learn/re-sign/) first.*
+*Design phase: not built yet. This page is the plan that `ritueel due` and `ritueel run` will follow (M2, [issue #30](https://github.com/truvity/ritueel/issues/30)); there is no `yearly` command. A renewal role for a cloud root is planned for later (M7) and no record decides it yet. To learn why you re-sign and why yearly, and which acts may run unattended, read [Re-sign](/learn/re-sign/) first.*
 
-There are two paths. **Card roots and software roots** take the steps below once a year, with the card or the key file of the year; nothing renews them without you. A key file is used only in the offline system, a machine booted from a read-only system. A root on cards may also use your workstation, under the four conditions of [record 0005](../decisions/0005-a-ceremony-and-where-it-runs.md). **A cloud root** can take the same steps, or let the operator's scheduler run `ritueel renew` under a declared renewal policy ([below](/guides/re-sign-yearly/#a-cloud-root-under-a-renewal-policy)).
+There are two paths. **Card roots and software roots** take the steps below once a year, with the card or the key file of the year; nothing renews them without you. A key file is used only in the offline system, a machine booted from a read-only system. A root on cards may also use your workstation, under the four conditions of [record 0005](../decisions/0005-a-ceremony-and-where-it-runs.md). **A cloud root** takes the same steps ([record 0004](../decisions/0004-the-cloud-root.md), rule 3). A renewal under a policy, run by the operator's scheduler, is proposed for later and described [below](/guides/re-sign-yearly/#a-cloud-root-under-a-renewal-policy).
 
 ## What you start with
 
@@ -35,7 +35,7 @@ There are two paths. **Card roots and software roots** take the steps below once
 
 ## A cloud root under a renewal policy
 
-`ritueel renew` (planned for later, M7) re-signs what the bundle already holds, over the same keys, as the renewal role and with no person: the intermediates the policy names, the root list and the other trust files with the same content, and the root's own certificate and primary ([renewal under a policy](/reference/kms-root/#renewal-under-a-policy)). It refuses anything new.
+Proposed, for later (M7); no record decides it yet ([record 0002](../decisions/0002-where-a-key-lives.md), rule 17). `ritueel renew` would re-sign what the bundle already holds, over the same keys, as the renewal role and with no person present: the intermediates the policy names, the root list and the other trust files with the same content, and the root's own certificate and primary ([renewal under a policy](/reference/kms-root/#renewal-under-a-policy)). It refuses anything new.
 
 1. **Declare the policy** in `ritueel.yaml` under `aws_kms.renewal`: the renewal role, the intermediates it may renew, and how many days before expiry it may run. Result: the next ceremony renders a key policy with the Renew statement, which you confirm in its plan.
 2. **Have the operator make the renewal role and the schedule** ([Prepare the cloud root](/guides/prepare-the-cloud-root/)). The scheduler runs `ritueel status --output json` and calls `ritueel renew` when a finding falls within the policy's days. Result: a run that is too early is refused with `too-early`, and one that is due writes a record whose confirmation is `policy`.

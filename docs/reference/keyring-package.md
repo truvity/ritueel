@@ -10,7 +10,7 @@ sidebar:
 The keyring package carries the public certificates of every active primary to apt, rpm and `gpg` users, so that a signature by any subkey a primary bound verifies. ritueel makes the keyring file, which holds those certificates. The release pipeline builds the package from the file (`.deb`, `.rpm` and plain files) and publishes it. ritueel does not build, sign or publish the package: the user's repository signs it with its current subkey ([record 0009](../decisions/0009-release-keys-and-the-keyring.md), rules 20 to 22).
 
 :::note[Proposed]
-The records fix the content of the keyring file and the name and version of the package. They do not fix the file set of the package, the build steps, the byte-identical rule, `ritueel keyring verify` or the installer matrix below, which are the proposed specification for the pipeline's builder and its checks, awaiting the maintainer. Below, "the builder" is the pipeline's builder.
+The records fix the content of the keyring file and the name and version of the package. They do not fix the file set of the package, the maintainer field, the file names of the revocation signatures, the build steps, the byte-identical rule, `ritueel keyring verify` or the installer matrix below, which are the proposed specification for the pipeline's builder and its checks, awaiting the maintainer. Below, "the builder" is the pipeline's builder.
 :::
 
 ## Name and version
@@ -49,7 +49,7 @@ The binary form is the packets, concatenated; the armoured form is a single bloc
 
 ## Build
 
-Proposed: the build needs neither `dpkg-deb` nor `rpmbuild`, and the same bundle gives the same bytes. In order:
+Record 0009, rule 21, gives the package build to the release pipeline; who writes the archive writer and the verifier is not decided (proposed). Proposed: the build needs neither `dpkg-deb` nor `rpmbuild`, and the same bundle gives the same bytes. In order:
 
 1. **Read** the newest root list of the bundle ([the root list](/reference/root-list/)) and the certificates it names. The list's `sequence` and the year of its `signed_at` give the version. A test root and a real root are never mixed, as for the CA bundle.
 2. **Assemble** the certificates as above, drop what is revoked hard, and write the binary and armoured forms and one armoured file for each primary.
@@ -59,13 +59,13 @@ Proposed: the build needs neither `dpkg-deb` nor `rpmbuild`, and the same bundle
 
 **Compression.** The tar and cpio members are not compressed. They are a few kilobytes of keys, and a compressor's output changes with its version, which would break the rule that the same bundle gives the same bytes across toolchains. `dpkg-deb` 1.23.7 reads an uncompressed `control.tar` and `data.tar` (checked 2026-11-01). Whether the oldest rpm in the matrix reads an uncompressed payload is part of the matrix below; if one refuses it, the payload is gzip from one pinned implementation, and the goldens move with the pin.
 
-**The writer.** An archive writer is chosen for `ar`, `tar`, `cpio` and the rpm header: a library such as nfpm, or code of our own. The criteria are the ones above and in [issue #15](https://github.com/truvity/ritueel/issues/15): no external tool, byte-identical output on a second run, and a reader of its own that the verify step uses, so that nothing is checked by the code that wrote it.
+**The writer.** An archive writer is chosen for `ar`, `tar`, `cpio` and the rpm header: a library such as nfpm, or the pipeline's own tool. The criteria are the ones above and in [issue #15](https://github.com/truvity/ritueel/issues/15): no external tool, byte-identical output on a second run, and a reader of its own that the verify step uses, so that nothing is checked by the code that wrote it.
 
 ritueel does not sign the package. The user's repository signs the `.deb` and the `.rpm`, or the `Release` file of its repository, with the current subkey. The pipeline's own steps are a page of the guide, not a feature of ritueel.
 
 ## Verify
 
-`ritueel keyring verify FILE... --root-list FILE [--dir DIR]` reads packages and plain files and checks them with code of its own that did not build them. The builder runs the same checks on its output. The first check that fails gives the reason code.
+Record 0009, rule 21, gives the package build to the release pipeline; who writes the verifier is not decided (proposed). `ritueel keyring verify FILE... --root-list FILE [--dir DIR]` is a proposed command that reads packages and plain files and checks them with code that did not build them. The pipeline may run the same checks on its output. The first check that fails gives the reason code.
 
 | # | Check | Code |
 |---|---|---|
@@ -108,14 +108,14 @@ Measured on 2026-10-29 and 2026-10-31 ([the verifier matrix](/research/openpgp-v
 |---|---|---|---|
 | Binding signatures kept | All of them, in creation order. | Only the newest for each subkey. | A verifier judges a signature at its own time, and a binding made after the signature would leave it with no binding. The cost is a few hundred bytes a year for each subkey. |
 | Compression | None. | gzip or xz with fixed parameters. | Compressor output changes with the library, and the package is a few kilobytes. Gzip is the fallback if an installer in the matrix refuses an uncompressed member. |
-| Archive writer | Chosen by the criteria, nfpm or our own. | Fixed now. | The facts that decide it (does a library write the rpm header deterministically, does an old rpm read it) are measured in #15. |
+| Archive writer | Chosen by the criteria, nfpm or the pipeline's own tool. | Fixed now. | The facts that decide it (does a library write the rpm header deterministically, does an old rpm read it) are measured in #15. |
 | Where an old rpm stops | A measured floor. | Keep every rpm ever; change the key algorithm to reach old ones. | The algorithm is decided for `gpg` and the cards, and a promise that cannot be tested is not a promise. |
 | Combined armoured file | Not shipped. | One file for rpm users. | No consumer, and one installer imported it. |
-| Verify | A command of ritueel, run by the builder too. | CI only. | A pipeline that receives a package can check it against the root list it already trusts, and the builder never writes what it has not read back. |
+| Verify | A proposed command of ritueel; the pipeline may run it. | CI only. | A pipeline that receives a package can check it against the root list it already trusts, and the builder never writes what it has not read back. |
 
 ## Follow-ups
 
-- The builder and the verifier, passing a test that the same inputs give the same bytes, and the container-free install test ([issue #15](https://github.com/truvity/ritueel/issues/15)).
+- The pipeline's builder and the verifier, passing a test that the same inputs give the same bytes, and the container-free install test ([issue #15](https://github.com/truvity/ritueel/issues/15)).
 - The older-rpm matrix: the releases against the three checks, with versions and date, and the choice of the archive writer and of the payload compression ([issue #15](https://github.com/truvity/ritueel/issues/15)).
 - The guide to publishing the output with a pipeline ([issue #25](https://github.com/truvity/ritueel/issues/25)).
 
