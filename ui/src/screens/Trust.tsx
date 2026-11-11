@@ -86,13 +86,13 @@ function File({ f, asOf }: { f: TrustFile; asOf: Parameters<typeof daysBetween>[
           {f.verifyCommand && built ? (
             <div className="min-w-0">
               <p className="mb-1 text-sm font-semibold">Check it again</p>
-              <Cmd label={`Check ${safeString(f.name, 60)}`}>{f.verifyCommand}</Cmd>
+              <Cmd label={`Check ${safeString(f.name, CAPS['TrustFile.name#cmd'])}`}>{f.verifyCommand}</Cmd>
             </div>
           ) : null}
           {f.rebuildCommand ? (
             <div className="min-w-0">
               <p className="mb-1 text-sm font-semibold">{built ? 'Build it again' : 'Build it'}</p>
-              <Cmd label={`Build ${safeString(f.name, 60)}`}>{f.rebuildCommand}</Cmd>
+              <Cmd label={`Build ${safeString(f.name, CAPS['TrustFile.name#cmd'])}`}>{f.rebuildCommand}</Cmd>
             </div>
           ) : null}
         </div>

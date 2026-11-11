@@ -42,7 +42,7 @@ export function FindingCard({
       {f.fixCommand ? (
         <div className="mt-3">
           <p className="mb-1 text-sm font-semibold">The command that fixes it</p>
-          <Cmd label={`Fix for: ${safeString(f.title, 80)}`}>{f.fixCommand}</Cmd>
+          <Cmd label={`Fix for: ${safeString(f.title, CAPS['Finding.title#fix'])}`}>{f.fixCommand}</Cmd>
         </div>
       ) : null}
       <div className="mt-2 flex flex-wrap items-center gap-x-5 gap-y-0">

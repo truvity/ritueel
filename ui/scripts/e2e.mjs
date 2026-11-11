@@ -506,9 +506,9 @@ const desktopPass = async () => {
     await go('#/start');
     await clickText(evalJs, bundle);
     await sleep(500);
-    const roots = fixture(bundle, 'inspect.list-roots').roots.map((r) => `#/key/${r.label}`);
-    const cards = fixture(bundle, 'inspect.list-cards').cards.map((c) => `#/cards/${c.serial}`);
-    const records = fixture(bundle, 'inspect.list-ceremonies').ceremonies.map((c) => `#/history/${c.id}`);
+    const roots = (fixture(bundle, 'inspect.list-roots').roots ?? []).map((r) => `#/key/${r.label}`);
+    const cards = (fixture(bundle, 'inspect.list-cards').cards ?? []).map((c) => `#/cards/${c.serial}`);
+    const records = (fixture(bundle, 'inspect.list-ceremonies').ceremonies ?? []).map((c) => `#/history/${c.id}`);
     const screens = ['#/start', '#/roots', ...roots, '#/findings', '#/cards', ...cards, '#/history', ...records, '#/trust', '#/plan'];
     for (const hash of screens) {
       await go(hash);

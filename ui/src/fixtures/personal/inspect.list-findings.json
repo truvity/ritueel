@@ -84,7 +84,7 @@
       "id": "day-to-day-keychain-touch-cached",
       "code": "touch-rule-changed",
       "severity": "SEVERITY_NOTICE",
-      "title": "The signing key on \"Day-to-day, keychain\" now asks for a touch only once in a while",
+      "title": "The signing key on \"Day-to-day, keychain\" now caches its touch",
       "reason": "The last reading differs from the one before: the touch rule was always and is now cached. A cached touch lets a program on your computer sign several times after one touch.",
       "subject": {
         "kind": "SUBJECT_KIND_CARD",
