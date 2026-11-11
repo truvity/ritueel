@@ -17,6 +17,7 @@ import { Glyph, SEV_EDGE, SEV_ORDER, SEV_TEXT, SEV_WORD, Sev, sevKey, type SevKe
 import { LearnLink, Page } from '../ui/Page';
 import { Empty, Load, Sec } from '../ui/Sec';
 import { T } from '../ui/T';
+import { CAPS } from '../lib/caps';
 
 function countOf(s: GetSummaryResponse, sev: Severity): number {
   return s.findingCounts.find((c) => c.severity === sev)?.count ?? 0;
@@ -55,7 +56,7 @@ function Verdict({ s }: { s: GetSummaryResponse }) {
           <p className="mt-2 max-w-[60ch] text-base text-dim">
             {next ? (
               <>
-                Next date: <strong className="text-ink">{ymd(next.dueAt)}</strong>, {inDays(nextDays)}. <T cap={90}>{next.title}</T>.
+                Next date: <strong className="text-ink">{ymd(next.dueAt)}</strong>, {inDays(nextDays)}. <T cap={CAPS['DueItem.title#next']}>{next.title}</T>.
               </>
             ) : (
               'Nothing is due.'
@@ -143,10 +144,10 @@ function DueRow({ d, asOf }: { d: DueItem; asOf: GetSummaryResponse['asOf'] }) {
           <span className="text-sm text-dim">due {ymd(d.dueAt)}</span>
         </div>
         <h3 className="mt-1 text-lg leading-snug font-bold">
-          <T cap={120}>{d.title}</T>
+          <T cap={CAPS['DueItem.title']}>{d.title}</T>
         </h3>
         <p className="mt-0.5 max-w-[68ch]">
-          <T cap={260}>{d.detail}</T>
+          <T cap={CAPS['DueItem.detail']}>{d.detail}</T>
         </p>
         {last !== undefined ? (
           <p className="mt-1 text-sm text-dim">
@@ -200,7 +201,7 @@ function Seal({ s }: { s: GetSummaryResponse }) {
         </div>
       </div>
       <p className="mt-2 text-sm">
-        <T cap={200}>{l?.message}</T>
+        <T cap={CAPS['HistoryStatus.message']}>{l?.message}</T>
       </p>
       {!none ? (
         <p className="mt-2 text-sm text-dim">
@@ -237,15 +238,15 @@ function Steps({ steps }: { steps: SetupStep[] }) {
               <p className="leading-snug font-bold">
                 {links[st.id] && !st.done ? (
                   <a className="text-accent underline underline-offset-4" href={links[st.id]}>
-                    <T cap={100}>{st.title}</T>
+                    <T cap={CAPS['SetupStep.title']}>{st.title}</T>
                   </a>
                 ) : (
-                  <T cap={100}>{st.title}</T>
+                  <T cap={CAPS['SetupStep.title']}>{st.title}</T>
                 )}
                 <span className="ml-2 font-mono text-xs font-semibold tracking-wider text-dim">{st.done ? 'DONE' : 'TO DO'}</span>
               </p>
               <p className="mt-0.5 text-[0.9375rem] text-dim">
-                <T cap={220}>{st.detail}</T>
+                <T cap={CAPS['SetupStep.detail']}>{st.detail}</T>
               </p>
             </div>
           </li>
@@ -263,7 +264,7 @@ function Holds({ s }: { s: GetSummaryResponse }) {
     ['trust files', s.counts?.trustFiles ?? 0, href.trust()],
   ];
   return (
-    <Sec title="The bundle holds" aside={<span className="font-mono"><T cap={60}>{s.bundle?.path}</T></span>}>
+    <Sec title="The bundle holds" aside={<span className="font-mono"><T cap={CAPS['Bundle.path']}>{s.bundle?.path}</T></span>}>
       <ul className="grid grid-cols-2 border border-line bg-panel">
         {rows.map(([label, n, to], i) => (
           <li key={label} className={`${i % 2 === 1 ? 'border-l' : ''} ${i >= 2 ? 'border-t' : ''} border-line`}>

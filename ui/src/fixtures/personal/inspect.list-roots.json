@@ -514,7 +514,7 @@
           }
         ]
       },
-      "note": "Adopted on 2026-11-03 as it is: a software key in an encrypted file, with its history. Every subkey set so far (2020 to 2025, Ed25519 and Curve25519) was made by hand before the adoption; the sets ritueel makes use P-384 by default (record 0002). The adoption did not set an expiry, which it should have; a plan sets it. Replace it within three years, or move to stage two, with two card-born primaries in row 2 of the root cards: personal/B and personal/C."
+      "note": "Adopted on 2026-11-03 as it is: a software key in an encrypted file. Its subkey sets (2020 to 2025, Ed25519 and Curve25519) were made by hand before the adoption; ritueel's sets use P-384 by default (record 0002). The adoption set no expiry; a plan sets it. Replace it within three years, or move to stage two: card-born primaries personal/B and personal/C in row 2 of the root cards."
     }
   ]
 }

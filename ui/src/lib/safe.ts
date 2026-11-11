@@ -53,13 +53,16 @@ export function safeString(input: string | undefined | null, cap: number = DEFAU
     .join('');
 }
 
+/** The longest fingerprint or digest the page groups and shows whole. */
+export const FINGERPRINT_CAP = 130;
+
 /**
  * A fingerprint or a digest in groups of four. Only hexadecimal is split;
  * anything else is shown as safe text in one piece, so a name can never pass
  * for a fingerprint.
  */
 export function groupFingerprint(fp: string, size = 4): string[] {
-  const clean = safeString(fp, 130);
+  const clean = safeString(fp, FINGERPRINT_CAP);
   if (!/^[0-9A-Fa-f]+$/.test(clean)) return [clean];
   const groups: string[] = [];
   for (let i = 0; i < clean.length; i += size) groups.push(clean.slice(i, i + size));

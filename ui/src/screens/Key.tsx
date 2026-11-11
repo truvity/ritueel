@@ -25,6 +25,7 @@ import { Page } from '../ui/Page';
 import { Empty, Explain, Failed, Load, Sec } from '../ui/Sec';
 import { MARK_WORD, MarkLegend, SubkeyMark, markOf, type Mark } from '../ui/Subkey';
 import { T } from '../ui/T';
+import { CAPS } from '../lib/caps';
 
 const LINK = 'font-semibold text-accent underline underline-offset-4';
 
@@ -86,7 +87,7 @@ function Certificate({ r, bundle }: { r: Root; bundle: string | undefined }) {
             {r.adopted ? `, adopted, stage ${r.stage}` : ''}
           </p>
           <h2 className="mt-1 text-2xl leading-tight font-bold sm:text-3xl">
-            <T cap={80}>{r.name}</T>
+            <T cap={CAPS['Root.name']}>{r.name}</T>
           </h2>
           {primary ? (
             <div className="mt-4">
@@ -99,7 +100,7 @@ function Certificate({ r, bundle }: { r: Root; bundle: string | undefined }) {
         </div>
         <dl className="grid border-t border-rule sm:grid-cols-4">
           <Fact label="Algorithm">
-            <T cap={20}>{primary?.algorithm}</T>
+            <T cap={CAPS['RootKey.algorithm']}>{primary?.algorithm}</T>
           </Fact>
           <Fact label="Made">{ymd(primary?.createdAt ?? r.createdAt)}</Fact>
           <Fact label="Expires" tone={none ? 'alert' : undefined}>
@@ -120,7 +121,7 @@ function Certificate({ r, bundle }: { r: Root; bundle: string | undefined }) {
         ) : null}
         {r.note ? (
           <p className="border-t border-rule px-4 py-2.5">
-            <T cap={400}>{r.note}</T>
+            <T cap={CAPS['Root.note']}>{r.note}</T>
           </p>
         ) : null}
       </div>
@@ -138,7 +139,7 @@ function UserIds({ r, findings }: { r: Root; findings: Finding[] | undefined }) 
         return (
           <li key={i} className={`flex flex-col gap-x-4 gap-y-1 p-3 sm:flex-row sm:flex-wrap sm:items-center ${i > 0 ? 'border-t border-line' : ''}`}>
             <span className="min-w-0 font-mono text-sm [overflow-wrap:break-word] sm:flex-1">
-              <T cap={160}>{u.text}</T>
+              <T cap={CAPS['UserId.text']}>{u.text}</T>
             </span>
             <span className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-dim">
               {u.primary ? <span className="font-bold text-ink">Primary</span> : null}
@@ -207,10 +208,10 @@ function Matrix({ sets, cards }: { sets: SubkeySet[]; cards: Card[] | undefined 
                 {sn ? (
                   <a className="underline underline-offset-2" href={href.cards(sn)} aria-label={`Card ${safeString(sn, 20)}`}>
                     <span className="sm:hidden" aria-hidden>
-                      <T cap={20}>{`..${sn.slice(-4)}`}</T>
+                      <T cap={CAPS['Root.card_serials']}>{`..${sn.slice(-4)}`}</T>
                     </span>
                     <span className="hidden sm:inline" aria-hidden>
-                      <T cap={20}>{sn}</T>
+                      <T cap={CAPS['Root.card_serials']}>{sn}</T>
                     </span>
                   </a>
                 ) : (
@@ -219,7 +220,7 @@ function Matrix({ sets, cards }: { sets: SubkeySet[]; cards: Card[] | undefined 
               </p>
               <p className="mt-0.5 text-xs leading-tight">
                 {known && card ? (
-                  <T cap={30}>{card.name}</T>
+                  <T cap={CAPS['Card.name#key']}>{card.name}</T>
                 ) : known ? null : (
                   <span className="font-bold text-alert">
                     <Glyph level="alert" size={11} /> <span className="sm:hidden">not listed</span>
@@ -382,7 +383,7 @@ function SubkeyRow({ k }: { k: Subkey }) {
       <div className="min-w-0">
         <Fp value={k.fingerprint} />
         <p className="mt-0.5 text-sm text-dim">
-          <T cap={20}>{k.algorithm}</T>, {ORIGIN_WORD[k.origin] ?? 'origin unknown'}
+          <T cap={CAPS['Subkey.algorithm']}>{k.algorithm}</T>, {ORIGIN_WORD[k.origin] ?? 'origin unknown'}
           {m === 'revoked' ? ', revoked as superseded' : ''}
         </p>
         {m === 'replaced' && k.replacedBy ? (
@@ -404,12 +405,12 @@ function SetBlock({ s, cards }: { s: SubkeySet; cards: Card[] | undefined }) {
         <summary className="flex min-h-11 cursor-pointer flex-wrap items-center gap-x-4 gap-y-0.5 bg-sunk px-3 py-1.5">
           <span className="font-mono text-base font-bold">{s.year}</span>
           <span className="text-sm">
-            {s.cardSerial ? <>Card <T cap={20}>{s.cardSerial}</T></> : 'Not on a card'}
+            {s.cardSerial ? <>Card <T cap={CAPS['SubkeySet.card_serial']}>{s.cardSerial}</T></> : 'Not on a card'}
             {s.cardSerial ? (
               s.cardInInventory && card ? (
                 <span className="text-dim">
                   {' '}
-                  (<T cap={30}>{card.name}</T>)
+                  (<T cap={CAPS['Card.name#key']}>{card.name}</T>)
                 </span>
               ) : s.cardInInventory ? null : (
                 <span className="ml-2 inline-flex items-center gap-1 font-bold text-alert">
@@ -484,14 +485,14 @@ function KeysTable({ keys }: { keys: RootKey[] }) {
           <div className="min-w-0">
             <Fp value={k.fingerprint} />
             <p className="mt-0.5 text-sm text-dim">
-              <T cap={20}>{k.algorithm}</T>
+              <T cap={CAPS['RootKey.algorithm']}>{k.algorithm}</T>
               {k.cardSerial ? (
                 <>
                   , card{' '}
                   <a className={LINK} href={href.cards(k.cardSerial)}>
-                    <T cap={20}>{k.cardSerial}</T>
+                    <T cap={CAPS['RootKey.card_serial']}>{k.cardSerial}</T>
                   </a>
-                  , slot <T cap={12}>{k.slot}</T>
+                  , slot <T cap={CAPS['RootKey.slot']}>{k.slot}</T>
                 </>
               ) : null}
               , made {ymd(k.createdAt)}
@@ -511,17 +512,17 @@ function Delegated({ list, asOf }: { list: DelegatedKey[]; asOf: Timestamp | und
         <li key={d.fingerprint} className="border border-line bg-panel p-4">
           <div className="flex flex-wrap items-baseline gap-x-3 gap-y-0.5">
             <span className="font-mono text-lg font-bold">
-              <T cap={60}>{d.name}</T>
+              <T cap={CAPS['DelegatedKey.name']}>{d.name}</T>
             </span>
             <span className="text-sm text-dim">
-              {DELEGATED_WORD[d.kind]}, {DELEGATED_STATE_WORD[d.state]}, for the requester <T cap={60}>{d.requester}</T>
+              {DELEGATED_WORD[d.kind]}, {DELEGATED_STATE_WORD[d.state]}, for the requester <T cap={CAPS['DelegatedKey.requester']}>{d.requester}</T>
             </span>
           </div>
           <div className="mt-2">
             <Fp value={d.fingerprint} />
           </div>
           <p className="mt-1.5 max-w-[68ch]">
-            <T cap={260}>{d.detail}</T>
+            <T cap={CAPS['DelegatedKey.detail']}>{d.detail}</T>
           </p>
           <p className="mt-1 text-sm text-dim">
             Kept in: {STORE_WORD[d.store]}. Certified {ymd(d.certifiedAt)}. Ends <strong className="text-ink">{ymd(d.expiresAt)}</strong> (
@@ -536,22 +537,22 @@ function Delegated({ list, asOf }: { list: DelegatedKey[]; asOf: Timestamp | und
 function CloudFacts({ r }: { r: Root }) {
   const c = r.cloudKey;
   if (!c) return null;
-  const rows: [string, string][] = [
-    ['Alias', c.alias],
-    ['Provider', c.provider],
-    ['Region', c.region],
-    ['Replica region', c.replicaRegion],
-    ['Key', c.keyRef],
-    ['Replica', c.replicaRef],
+  const rows: [string, string, number][] = [
+    ['Alias', c.alias, CAPS['CloudKey.alias#facts']],
+    ['Provider', c.provider, CAPS['CloudKey.provider#facts']],
+    ['Region', c.region, CAPS['CloudKey.region#facts']],
+    ['Replica region', c.replicaRegion, CAPS['CloudKey.replica_region#facts']],
+    ['Key', c.keyRef, CAPS['CloudKey.key_ref']],
+    ['Replica', c.replicaRef, CAPS['CloudKey.replica_ref']],
   ];
   return (
     <>
       <dl className="grid gap-px border border-line bg-line sm:grid-cols-2">
-        {rows.map(([l, v]) => (
+        {rows.map(([l, v, cap]) => (
           <div key={l} className="min-w-0 bg-panel px-3 py-2">
             <dt className="font-mono text-xs font-semibold tracking-wider text-dim uppercase">{l}</dt>
             <dd className="mt-0.5 font-mono text-sm [overflow-wrap:anywhere]">
-              <T cap={200}>{v}</T>
+              <T cap={cap}>{v}</T>
             </dd>
           </div>
         ))}
@@ -563,7 +564,7 @@ function CloudFacts({ r }: { r: Root }) {
         </li>
         {c.policyNotes.map((n, i) => (
           <li key={i} className="pl-6 text-dim">
-            <T cap={260}>{n}</T>
+            <T cap={CAPS['CloudKey.policy_notes']}>{n}</T>
           </li>
         ))}
       </ul>
@@ -595,12 +596,12 @@ function RootBody({ r, all, bundle }: { r: Root; all: Root[]; bundle: string | u
             {r.adopted ? ', adopted' : ''}
           </p>
           <h2 className="mt-1 text-2xl font-bold">
-            <T cap={80}>{r.name}</T>
+            <T cap={CAPS['Root.name']}>{r.name}</T>
           </h2>
           <p className="mt-2 text-dim">Kept in: {STORE_WORD[r.store]}. Made {ymd(r.createdAt)}.</p>
           {r.note ? (
             <p className="mt-2 max-w-[70ch]">
-              <T cap={400}>{r.note}</T>
+              <T cap={CAPS['Root.note']}>{r.note}</T>
             </p>
           ) : null}
         </div>
@@ -646,7 +647,7 @@ function RootBody({ r, all, bundle }: { r: Root; all: Root[]; bundle: string | u
           aside={
             r.cardRow && r.cardSerials.length > 0 ? (
               <>
-                row {r.cardRow} of root card <T cap={20}>{r.cardSerials[0]}</T>
+                row {r.cardRow} of root card <T cap={CAPS['Root.card_serials']}>{r.cardSerials[0]}</T>
               </>
             ) : undefined
           }

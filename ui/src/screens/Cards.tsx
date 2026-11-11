@@ -22,6 +22,7 @@ import { Glyph } from '../ui/Glyph';
 import { Page } from '../ui/Page';
 import { Empty, Explain, Load, Sec } from '../ui/Sec';
 import { T } from '../ui/T';
+import { CAPS } from '../lib/caps';
 
 const LINK = 'font-semibold text-accent underline underline-offset-4';
 
@@ -51,10 +52,10 @@ function SlotInfo({ slot, group }: { slot: Slot; group: string }) {
   return (
     <div className="max-w-[24rem] min-w-[16rem] space-y-2 p-4">
       <p className="font-mono text-xs font-semibold tracking-wider text-dim uppercase">
-        {group} slot <T cap={12}>{slot.id}</T>
+        {group} slot <T cap={CAPS['Slot.id']}>{slot.id}</T>
       </p>
       <p className="text-lg leading-snug font-bold">
-        <T cap={200}>{slot.purpose || SLOT_STATE_WORD[slot.state]}</T>
+        <T cap={CAPS['Slot.purpose']}>{slot.purpose || SLOT_STATE_WORD[slot.state]}</T>
       </p>
       <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm">
         <dt className="text-dim">State</dt>
@@ -71,7 +72,7 @@ function SlotInfo({ slot, group }: { slot: Slot; group: string }) {
           <>
             <dt className="text-dim">Algorithm</dt>
             <dd className="font-mono">
-              <T cap={30}>{slot.algorithm}</T>
+              <T cap={CAPS['Slot.algorithm']}>{slot.algorithm}</T>
             </dd>
           </>
         ) : null}
@@ -113,7 +114,7 @@ function SlotCell({ slot, group, tagFallback }: { slot: Slot; group: string; tag
   const body = (
     <>
       <span className="text-xs leading-none font-bold">
-        <T cap={12}>{slot.id}</T>
+        <T cap={CAPS['Slot.id']}>{slot.id}</T>
       </span>
       <span className="truncate text-xs leading-none font-bold">{tag ? <T cap={20}>{tag}</T> : ' '}</span>
     </>
@@ -176,7 +177,7 @@ function RowLabel({ row }: { row: PivRow }) {
     <div className="flex min-w-0 flex-col justify-center pr-1 leading-tight">
       <span className="text-xs text-dim">row {row.number}</span>
       <span className={`truncate text-xs font-bold ${free ? 'text-dim' : ''}`}>
-        <T cap={20}>{row.label}</T>
+        <T cap={CAPS['PivRow.label']}>{row.label}</T>
       </span>
     </div>
   );
@@ -281,11 +282,11 @@ function WrittenOut({ card }: { card: Card }) {
       {all.map(({ s, group, row }) => (
         <div key={`${group}-${s.id}`} className="grid gap-x-4 gap-y-0.5 p-3 sm:grid-cols-[9rem_minmax(0,1fr)]">
           <dt className="font-mono text-sm font-bold">
-            {group} <T cap={12}>{s.id}</T>
+            {group} <T cap={CAPS['Slot.id']}>{s.id}</T>
             {row ? <span className="font-normal text-dim"> (row {row})</span> : null}
           </dt>
           <dd>
-            <T cap={200}>{s.purpose}</T>
+            <T cap={CAPS['Slot.purpose']}>{s.purpose}</T>
             <span className="block text-sm text-dim">
               {SLOT_STATE_WORD[s.state]}
               {s.algorithm ? `, ${safeString(s.algorithm, 30)}` : ''}. PIN {PIN_WORD[s.pinRule] ?? 'not set'}. Touch {TOUCH_WORD[s.touchRule] ?? 'not set'}.
@@ -311,11 +312,11 @@ function CardHead({ card, asOf }: { card: Card; asOf: Parameters<typeof daysBetw
               {CARD_KIND_WORD[card.kind] ?? 'Card'}
             </span>
             <span className="font-mono text-sm font-bold">
-              <T cap={20}>{card.serial}</T>
+              <T cap={CAPS['Card.serial']}>{card.serial}</T>
             </span>
           </p>
           <h2 className="mt-1 text-2xl leading-tight font-bold">
-            <T cap={60}>{card.name}</T>
+            <T cap={CAPS['Card.name']}>{card.name}</T>
           </h2>
         </div>
         <div className="text-sm leading-snug text-dim sm:text-right">
@@ -323,17 +324,17 @@ function CardHead({ card, asOf }: { card: Card; asOf: Parameters<typeof daysBetw
             <Glyph level={ok ? 'ok' : 'critical'} size={14} /> {CARD_STATE_WORD[card.state] ?? 'unknown'}
           </p>
           <p>
-            <T cap={30}>{card.model}</T>, firmware <T cap={12}>{card.firmware}</T>
+            <T cap={CAPS['Card.model']}>{card.model}</T>, firmware <T cap={CAPS['Card.firmware']}>{card.firmware}</T>
           </p>
         </div>
       </header>
       <div className="space-y-3 p-4">
         <p className="max-w-[70ch]">
-          <T cap={300}>{card.roleSummary}</T>
+          <T cap={CAPS['Card.role_summary']}>{card.roleSummary}</T>
         </p>
         <p className="flex flex-wrap gap-x-6 gap-y-1 text-sm text-dim">
           <span>
-            Kept: <span className="text-ink"><T cap={60}>{card.kept}</T></span>
+            Kept: <span className="text-ink"><T cap={CAPS['Card.kept']}>{card.kept}</T></span>
           </span>
           <span>
             Last read: <span className="text-ink">{ymd(card.lastCheckedAt)}</span> ({agoDays(checked)})
@@ -355,7 +356,7 @@ function ChangedBanner({ card }: { card: Card }) {
         <p className="font-mono text-xs font-bold tracking-wider text-alert uppercase">Changed since the last reading</p>
         {card.changesSinceLastReading.map((c, i) => (
           <p key={i}>
-            <T cap={260}>{c}</T>
+            <T cap={CAPS['Card.changes_since_last_reading']}>{c}</T>
           </p>
         ))}
       </div>
@@ -436,17 +437,17 @@ function CardTile({ card }: { card: Card }) {
         <p className="flex flex-wrap items-center gap-2">
           <span className={`px-2 py-0.5 font-mono text-xs font-bold tracking-wider uppercase ${card.kind === CardKind.ROOT ? 'bg-ink text-bg' : 'border border-ink'}`}>{CARD_KIND_WORD[card.kind]}</span>
           <span className="font-mono text-sm font-bold">
-            <T cap={20}>{card.serial}</T>
+            <T cap={CAPS['Card.serial']}>{card.serial}</T>
           </span>
         </p>
         <h3 className="mt-1 text-xl leading-tight font-bold">
-          <T cap={60}>{card.name}</T>
+          <T cap={CAPS['Card.name']}>{card.name}</T>
         </h3>
         <p className="mt-1 text-[0.9375rem] text-dim">
-          <T cap={300}>{card.roleSummary}</T>
+          <T cap={CAPS['Card.role_summary']}>{card.roleSummary}</T>
         </p>
         <p className="mt-2 text-sm text-dim">
-          {used} slots in use, kept: <T cap={50}>{card.kept}</T>
+          {used} slots in use, kept: <T cap={CAPS['Card.kept#compact']}>{card.kept}</T>
         </p>
         {card.changesSinceLastReading.length > 0 ? (
           <p className="mt-2 inline-flex items-center gap-1.5 text-sm font-bold text-alert">
@@ -484,7 +485,7 @@ function Unlisted() {
                     <p className="flex items-center gap-2 font-bold">
                       <Glyph level="alert" size={16} /> Card{' '}
                       <span className="font-mono">
-                        <T cap={20}>{sn}</T>
+                        <T cap={CAPS['Card.serial']}>{sn}</T>
                       </span>
                     </p>
                     <p className="mt-1 text-[0.9375rem]">

@@ -30,6 +30,7 @@ import { LearnLink, Page } from '../ui/Page';
 import { Empty, Load, Sec } from '../ui/Sec';
 import { T } from '../ui/T';
 import { useToast } from '../ui/Toast';
+import { CAPS } from '../lib/caps';
 
 const LINK = 'font-semibold text-accent underline underline-offset-4';
 
@@ -100,19 +101,19 @@ function Goals() {
                 >
                   <div className="flex flex-wrap items-center gap-2">
                     <h2 className={`text-xl leading-tight font-bold ${o.applicable ? '' : 'text-dim'}`}>
-                      <T cap={80}>{o.title}</T>
+                      <T cap={CAPS['IntentionOption.title']}>{o.title}</T>
                     </h2>
                     {o.recommended ? <span className="border border-accent bg-sunk px-1.5 font-mono text-xs font-bold tracking-wider text-accent uppercase">Suggested</span> : null}
                   </div>
                   <p className={`mt-1 ${o.applicable ? '' : 'text-dim'}`}>
-                    <T cap={240}>{o.sentence}</T>
+                    <T cap={CAPS['IntentionOption.sentence']}>{o.sentence}</T>
                   </p>
                   <p className="mt-1 text-sm text-dim">
-                    Usually <T cap={40}>{o.typicalTime}</T>.
+                    Usually <T cap={CAPS['IntentionOption.typical_time']}>{o.typicalTime}</T>.
                   </p>
                   {o.recommended && o.recommendedReason ? (
                     <p className="mt-2 text-[0.9375rem]">
-                      <strong>Why now:</strong> <T cap={200}>{o.recommendedReason}</T>
+                      <strong>Why now:</strong> <T cap={CAPS['IntentionOption.recommended_reason']}>{o.recommendedReason}</T>
                     </p>
                   ) : null}
                   <div className="mt-auto pt-3">
@@ -123,7 +124,7 @@ function Goals() {
                     ) : (
                       <p className="flex gap-2 border-l-4 border-line pl-3 text-[0.9375rem]">
                         <span>
-                          <strong>Not now.</strong> <T cap={240}>{o.notApplicableReason}</T>
+                          <strong>Not now.</strong> <T cap={CAPS['IntentionOption.not_applicable_reason']}>{o.notApplicableReason}</T>
                         </span>
                       </p>
                     )}
@@ -163,11 +164,11 @@ export function Questions({ questions, onSubmit }: { questions: Question[]; onSu
         return (
           <FormControl key={q.id} component="fieldset" error={err} className="w-full border-2 border-line bg-panel p-4">
             <FormLabel component="legend" sx={{ color: 'text.primary', fontWeight: 700, fontSize: '1.125rem', '&.Mui-focused': { color: 'text.primary' } }}>
-              <T cap={160}>{q.prompt}</T>
+              <T cap={CAPS['Question.prompt']}>{q.prompt}</T>
             </FormLabel>
             {q.help ? (
               <p className="mt-1 max-w-[68ch] text-[0.9375rem] text-dim">
-                <T cap={300}>{q.help}</T>
+                <T cap={CAPS['Question.help']}>{q.help}</T>
               </p>
             ) : null}
             {multiple ? (
@@ -227,11 +228,11 @@ function Option({ label, description }: { label: string; description: string }) 
   return (
     <span className="block">
       <span className="block font-semibold">
-        <T cap={160}>{label}</T>
+        <T cap={CAPS['QuestionOption.label']}>{label}</T>
       </span>
       {description ? (
         <span className="block text-[0.9375rem] text-dim">
-          <T cap={200}>{description}</T>
+          <T cap={CAPS['QuestionOption.description']}>{description}</T>
         </span>
       ) : null}
     </span>
@@ -253,7 +254,7 @@ function Needs({ step, place }: { step: PlanStep; place: RunPlace }) {
       ))}
       {step.cardSerials.map((s) => (
         <a key={s} className="border border-line px-1.5 py-0.5 font-mono underline underline-offset-2" href={href.cards(s)}>
-          card <T cap={20}>{s}</T>
+          card <T cap={CAPS['PlanStep.card_serials']}>{s}</T>
         </a>
       ))}
       {step.signatureCount > 0 ? <span className="font-semibold">Signs {step.signatureCount} {step.signatureCount === 1 ? 'time' : 'times'}</span> : null}
@@ -384,10 +385,10 @@ export function PlanView({ plan, onSaved }: { plan: PlanMessage; onSaved?: (save
       <div className="border-2 border-rule bg-panel p-4 sm:p-5">
         <p className="font-mono text-xs font-semibold tracking-wider text-dim uppercase">The plan, built {ymd(plan.builtAt)}, in memory</p>
         <h2 className="mt-1 text-2xl leading-tight font-bold">
-          <T cap={100}>{plan.title}</T>
+          <T cap={CAPS['Plan.title']}>{plan.title}</T>
         </h2>
         <p className="mt-2 max-w-[70ch] text-[1.0625rem]">
-          <T cap={400}>{plan.summary}</T>
+          <T cap={CAPS['Plan.summary']}>{plan.summary}</T>
         </p>
         <div className="mt-4 border-t border-line pt-3">
           <p className="text-sm font-semibold">Its digest</p>
@@ -409,13 +410,13 @@ export function PlanView({ plan, onSaved }: { plan: PlanMessage; onSaved?: (save
               <span className="flex h-8 w-8 items-center justify-center bg-ink font-mono text-sm font-bold text-bg">{st.ordinal}</span>
               <div className="min-w-0">
                 <h3 className="text-lg leading-snug font-bold">
-                  <T cap={100}>{st.title}</T>
+                  <T cap={CAPS['PlanStep.title']}>{st.title}</T>
                 </h3>
                 <p className="mt-0.5 max-w-[70ch]">
-                  <T cap={400}>{st.detail}</T>
+                  <T cap={CAPS['PlanStep.detail']}>{st.detail}</T>
                 </p>
                 <p className="mt-1 text-sm">
-                  <span className="text-dim">What changes:</span> <strong><T cap={120}>{st.whatChanges}</T></strong>
+                  <span className="text-dim">What changes:</span> <strong><T cap={CAPS['PlanStep.what_changes']}>{st.whatChanges}</T></strong>
                 </p>
                 <Needs step={st} place={plan.runPlace} />
                 {st.learnPath ? (
@@ -442,10 +443,10 @@ export function PlanView({ plan, onSaved }: { plan: PlanMessage; onSaved?: (save
                 <span className="font-mono text-xs font-bold tracking-wider uppercase">{BUNDLE_ACTION_WORD[c.action]}</span>
                 <span className="min-w-0">
                   <span className="block font-mono text-sm [overflow-wrap:anywhere]">
-                    <T cap={120}>{c.path}</T>
+                    <T cap={CAPS['BundleChange.path']}>{c.path}</T>
                   </span>
                   <span className="block text-[0.9375rem] text-dim">
-                    <T cap={240}>{c.description}</T>
+                    <T cap={CAPS['BundleChange.description']}>{c.description}</T>
                   </span>
                 </span>
               </li>
@@ -512,7 +513,7 @@ function SavePlan({ plan, onSaved }: { plan: PlanMessage; onSaved?: (saved: bool
           <p className="max-w-[70ch]">
             Saving writes one file, the plan, to{' '}
             <span className="font-mono [overflow-wrap:anywhere]">
-              <T cap={120}>{plan.savePath}</T>
+              <T cap={CAPS['Plan.save_path']}>{plan.savePath}</T>
             </span>{' '}
             in your bundle. The file is canonical JSON. It only describes the steps: it holds no key and no
             secret, and nothing runs until you run it {onPlace(plan.runPlace)}.
@@ -556,7 +557,7 @@ function Lines({ text }: { text: string }) {
     <pre className="border border-rule bg-sunk p-3 font-mono text-[0.8125rem] leading-relaxed [overflow-wrap:anywhere] whitespace-pre-wrap">
       {lines.map((l, i) => (
         <span key={i}>
-          <T cap={200}>{l}</T>
+          <T cap={CAPS['SavePlanResponse.plan_file_preview']}>{l}</T>
           {i < lines.length - 1 ? '\n' : ''}
         </span>
       ))}
@@ -592,13 +593,13 @@ export function Saved({ data, place }: { data: SavePlanResponse; place?: RunPlac
           <Glyph level={written ? 'ok' : 'notice'} size={18} /> {written ? 'The plan was saved.' : 'Nothing was written.'}
         </p>
         <p className="mt-1 max-w-[70ch]">
-          <T cap={300}>{data.notice}</T>
+          <T cap={CAPS['SavePlanResponse.notice']}>{data.notice}</T>
         </p>
       </div>
       <dl className="grid gap-x-8 gap-y-2 border border-line bg-panel p-4 sm:grid-cols-[auto_1fr]">
         <dt className="text-dim">{written ? 'Written to' : 'Would be written to'}</dt>
         <dd className="font-mono [overflow-wrap:anywhere]">
-          <T cap={120}>{data.bundlePath}</T>/<T cap={120}>{data.path}</T>
+          <T cap={CAPS['SavePlanResponse.bundle_path']}>{data.bundlePath}</T>/<T cap={CAPS['SavePlanResponse.path']}>{data.path}</T>
         </dd>
         <dt className="text-dim">Size</dt>
         <dd className="font-mono">{String(data.sizeBytes)} bytes</dd>
@@ -618,12 +619,12 @@ export function Saved({ data, place }: { data: SavePlanResponse; place?: RunPlac
         {stickSentence(place, stick)}
       </p>
       <div className={`grid gap-6 ${stick ? 'lg:grid-cols-2' : ''}`}>
-        <HandOver title="On the ceremony stick" items={place === RunPlace.OFFLINE_SYSTEM ? data.copyToStick : []} />
-        <HandOver title="Bring with you" items={data.bring} />
+        <HandOver title="On the ceremony stick" items={place === RunPlace.OFFLINE_SYSTEM ? data.copyToStick : []} cap={CAPS['SavePlanResponse.copy_to_stick']} />
+        <HandOver title="Bring with you" items={data.bring} cap={CAPS['SavePlanResponse.bring']} />
       </div>
       {data.whenBack ? (
         <p className="max-w-[70ch]">
-          <strong>When you are back.</strong> <T cap={300}>{data.whenBack}</T>
+          <strong>When you are back.</strong> <T cap={CAPS['SavePlanResponse.when_back']}>{data.whenBack}</T>
         </p>
       ) : null}
       <div>
@@ -646,7 +647,7 @@ export function Saved({ data, place }: { data: SavePlanResponse; place?: RunPlac
   );
 }
 
-function HandOver({ title, items }: { title: string; items: string[] }) {
+function HandOver({ title, items, cap }: { title: string; items: string[]; cap: number }) {
   if (items.length === 0) return null;
   return (
     <div className="border border-line bg-panel p-4">
@@ -654,7 +655,7 @@ function HandOver({ title, items }: { title: string; items: string[] }) {
       <ul className="list-disc space-y-1.5 pl-5">
         {items.map((x, i) => (
           <li key={i}>
-            <T cap={260}>{x}</T>
+            <T cap={cap}>{x}</T>
           </li>
         ))}
       </ul>
@@ -668,7 +669,7 @@ function Refusal({ text }: { text: string }) {
   return (
     <Empty title="This goal cannot be planned now.">
       <p>
-        <T cap={300}>{text}</T>
+        <T cap={CAPS['StartPlanResponse.refusal']}>{text}</T>
       </p>
       <p>
         <a className={LINK} href={href.plan()}>

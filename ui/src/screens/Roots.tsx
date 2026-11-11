@@ -11,6 +11,7 @@ import { Page } from '../ui/Page';
 import { Empty, Explain, Load, Sec } from '../ui/Sec';
 import { T } from '../ui/T';
 import type { Finding } from '../gen/ritueel/local/v1alpha1/inspect_service_pb';
+import { CAPS } from '../lib/caps';
 
 const STORES = [Store.SOFTWARE_FILE, Store.ROOT_CARDS, Store.CLOUD_KMS];
 
@@ -27,13 +28,13 @@ function RootCard({ r, findings, bundle }: { r: Root; findings: Finding[] | unde
           {r.adopted ? ', adopted' : ''}
         </p>
         <h3 className="mt-0.5 text-xl leading-tight font-bold">
-          <T cap={80}>{r.name}</T>
+          <T cap={CAPS['Root.name']}>{r.name}</T>
         </h3>
       </header>
       <div className="space-y-3 p-4">
         {r.note ? (
           <p>
-            <T cap={400}>{r.note}</T>
+            <T cap={CAPS['Root.note']}>{r.note}</T>
           </p>
         ) : null}
         <ul className="space-y-1 text-sm">
@@ -41,7 +42,7 @@ function RootCard({ r, findings, bundle }: { r: Root; findings: Finding[] | unde
             <li key={k.fingerprint} className="flex flex-wrap gap-x-2">
               <span className="font-semibold">{ROOT_KEY_WORD[k.kind]}</span>
               <span className="font-mono text-dim">
-                <T cap={20}>{k.algorithm}</T>, {k.expiresAt ? `ends ${ymd(k.expiresAt)}` : 'no expiry'}
+                <T cap={CAPS['RootKey.algorithm']}>{k.algorithm}</T>, {k.expiresAt ? `ends ${ymd(k.expiresAt)}` : 'no expiry'}
               </span>
             </li>
           ))}
@@ -53,7 +54,7 @@ function RootCard({ r, findings, bundle }: { r: Root; findings: Finding[] | unde
               <span key={s}>
                 {i > 0 ? ' and ' : ''}
                 <a className="font-mono font-semibold text-accent underline underline-offset-4" href={href.cards(s)}>
-                  <T cap={20}>{s}</T>
+                  <T cap={CAPS['Root.card_serials']}>{s}</T>
                 </a>
               </span>
             ))}
@@ -68,10 +69,10 @@ function RootCard({ r, findings, bundle }: { r: Root; findings: Finding[] | unde
         {r.cloudKey ? (
           <div className="text-sm">
             <p className="font-mono break-all">
-              <T cap={120}>{r.cloudKey.alias}</T>
+              <T cap={CAPS['CloudKey.alias']}>{r.cloudKey.alias}</T>
             </p>
             <p className="text-dim">
-              <T cap={30}>{r.cloudKey.provider}</T>, <T cap={30}>{r.cloudKey.region}</T>, replica in <T cap={30}>{r.cloudKey.replicaRegion}</T>
+              <T cap={CAPS['CloudKey.provider']}>{r.cloudKey.provider}</T>, <T cap={CAPS['CloudKey.region']}>{r.cloudKey.region}</T>, replica in <T cap={CAPS['CloudKey.replica_region']}>{r.cloudKey.replicaRegion}</T>
             </p>
             <p className="mt-1 flex items-center gap-2 font-semibold">
               <Glyph level={r.cloudKey.policyOk ? 'ok' : 'critical'} size={14} />
@@ -99,18 +100,18 @@ function Delegated({ list, asOf, bundle }: { list: { d: DelegatedKey; root: Root
           <li key={d.fingerprint} className="border border-line bg-panel p-4">
             <div className="flex flex-wrap items-baseline justify-between gap-x-4">
               <h3 className="font-mono text-lg font-bold">
-                <T cap={60}>{d.name}</T>
+                <T cap={CAPS['DelegatedKey.name']}>{d.name}</T>
               </h3>
               <span className="text-sm text-dim">
                 {DELEGATED_WORD[d.kind]}, {DELEGATED_STATE_WORD[d.state]}
               </span>
             </div>
             <p className="mt-1 max-w-[68ch]">
-              <T cap={260}>{d.detail}</T>
+              <T cap={CAPS['DelegatedKey.detail']}>{d.detail}</T>
             </p>
             <p className="mt-2 text-sm text-dim">
               For the requester <strong className="text-ink">
-                <T cap={60}>{d.requester}</T>
+                <T cap={CAPS['DelegatedKey.requester']}>{d.requester}</T>
               </strong>
               . Kept in: {STORE_WORD[d.store]}. Certified under{' '}
               <a className="font-semibold text-accent underline underline-offset-4" href={href.key(root.label)}>

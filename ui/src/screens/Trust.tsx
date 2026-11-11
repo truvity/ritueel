@@ -10,6 +10,7 @@ import { Glyph, type SevKey } from '../ui/Glyph';
 import { Page } from '../ui/Page';
 import { Empty, Explain, Load, Sec } from '../ui/Sec';
 import { T } from '../ui/T';
+import { CAPS } from '../lib/caps';
 
 function levelOf(r: TrustCheckResult): SevKey {
   switch (r) {
@@ -34,7 +35,7 @@ function File({ f, asOf }: { f: TrustFile; asOf: Parameters<typeof daysBetween>[
         <div className="min-w-0">
           <p className="font-mono text-xs font-semibold tracking-wider text-dim uppercase">{TRUST_KIND_WORD[f.kind]}</p>
           <h3 className="font-mono text-lg font-bold [overflow-wrap:anywhere]">
-            <T cap={80}>{f.name}</T>
+            <T cap={CAPS['TrustFile.name']}>{f.name}</T>
           </h3>
         </div>
         <p className="flex items-center gap-1.5 font-bold">
@@ -43,13 +44,13 @@ function File({ f, asOf }: { f: TrustFile; asOf: Parameters<typeof daysBetween>[
       </div>
       <div className="space-y-3 p-4">
         <p className="max-w-[70ch]">
-          <T cap={300}>{f.checkDetail}</T>
+          <T cap={CAPS['TrustFile.check_detail']}>{f.checkDetail}</T>
         </p>
         <dl className="grid gap-x-8 gap-y-1 text-sm sm:grid-cols-2">
           <div className="flex gap-2">
             <dt className="text-dim">Path</dt>
             <dd className="font-mono [overflow-wrap:anywhere]">
-              <T cap={80}>{f.path}</T>
+              <T cap={CAPS['TrustFile.path']}>{f.path}</T>
             </dd>
           </div>
           <div className="flex gap-2">

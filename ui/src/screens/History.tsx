@@ -11,6 +11,7 @@ import { LearnLink, Page } from '../ui/Page';
 import { Empty, Explain, Load, Sec } from '../ui/Sec';
 import { T } from '../ui/T';
 import type { HistoryStatus } from '../gen/ritueel/local/v1alpha1/common_pb';
+import { CAPS } from '../lib/caps';
 
 /** Kinds that read and compare but sign nothing (record 0007, rule 25): the conditions for a signature do not apply to them. */
 const SIGNS_NOTHING: ReadonlySet<CeremonyKind> = new Set([CeremonyKind.CARD_CHECK, CeremonyKind.RESTORE_DRILL]);
@@ -34,7 +35,7 @@ function Seal({ l }: { l: HistoryStatus | undefined }) {
         <div className="min-w-0 flex-1">
           <p className="text-lg font-bold">{none ? 'The history has no records yet.' : ok ? 'The chain is verified.' : broken ? 'The chain is broken.' : 'The chain has not been checked.'}</p>
           <p className="mt-0.5 max-w-[65ch]">
-            <T cap={240}>{l?.message}</T>
+            <T cap={CAPS['HistoryStatus.message#history']}>{l?.message}</T>
           </p>
           {l?.headRecordSha256 ? (
             <div className="mt-3">
@@ -63,11 +64,11 @@ function Entry({ c }: { c: Ceremony }) {
       <div className="min-w-0">
         <h3 className="text-lg leading-snug font-bold">
           <a className="text-ink underline decoration-line underline-offset-4 hover:decoration-accent" href={href.history(c.id)}>
-            <T cap={120}>{c.title}</T>
+            <T cap={CAPS['Ceremony.title']}>{c.title}</T>
           </a>
         </h3>
         <p className="mt-1 max-w-[70ch]">
-          <T cap={420}>{c.summary}</T>
+          <T cap={CAPS['Ceremony.summary']}>{c.summary}</T>
         </p>
         <p className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-dim">
           <span className="inline-flex items-center gap-1.5 font-semibold text-ink">
@@ -81,7 +82,7 @@ function Entry({ c }: { c: Ceremony }) {
               {c.cardSerials.map((s, i) => (
                 <span key={i}>
                   {i > 0 ? ', ' : ''}
-                  <T cap={20}>{s}</T>
+                  <T cap={CAPS['Ceremony.card_serials']}>{s}</T>
                 </span>
               ))}
             </span>
@@ -162,12 +163,12 @@ function Detail({ id }: { id: string }) {
                     {CEREMONY_KIND_WORD[c.kind]}, {ymd(c.completedAt)}
                   </p>
                   <h2 className="mt-1 text-2xl leading-tight font-bold">
-                    <T cap={120}>{c.title}</T>
+                    <T cap={CAPS['Ceremony.title']}>{c.title}</T>
                   </h2>
                 </header>
                 <div className="space-y-3 p-4">
                   <p className="max-w-[70ch] text-[1.0625rem]">
-                    <T cap={500}>{c.summary}</T>
+                    <T cap={CAPS['Ceremony.summary#open']}>{c.summary}</T>
                   </p>
                   <dl className="grid gap-x-8 gap-y-2 text-[0.9375rem] sm:grid-cols-2">
                     <div>
@@ -204,7 +205,7 @@ function Detail({ id }: { id: string }) {
                               </a>
                             ) : (
                               <span key={l} className="font-mono">
-                                <T cap={40}>{l}</T>
+                                <T cap={CAPS['Ceremony.subject_labels']}>{l}</T>
                               </span>
                             ),
                           )}
@@ -217,7 +218,7 @@ function Detail({ id }: { id: string }) {
                         <dd className="flex flex-wrap gap-x-3">
                           {c.cardSerials.map((s) => (
                             <a key={s} className={`${LINK} font-mono`} href={href.cards(s)}>
-                              <T cap={20}>{s}</T>
+                              <T cap={CAPS['Ceremony.card_serials']}>{s}</T>
                             </a>
                           ))}
                         </dd>
@@ -268,7 +269,7 @@ function Detail({ id }: { id: string }) {
                     <dt className="text-sm font-semibold">This record</dt>
                     <dd>
                       <p className="font-mono text-sm text-dim">
-                        <T cap={80}>{c.id}</T>
+                        <T cap={CAPS['Ceremony.id']}>{c.id}</T>
                       </p>
                       <Fp kind="Digest" value={c.recordSha256} />
                     </dd>
@@ -279,7 +280,7 @@ function Detail({ id }: { id: string }) {
                       {prev ? (
                         <p>
                           <a className={LINK} href={href.history(prev.id)}>
-                            <T cap={100}>{prev.title}</T>
+                            <T cap={CAPS['Ceremony.title#neighbour']}>{prev.title}</T>
                           </a>
                         </p>
                       ) : (
@@ -293,7 +294,7 @@ function Detail({ id }: { id: string }) {
                     <dd>
                       {next ? (
                         <a className={LINK} href={href.history(next.id)}>
-                          <T cap={100}>{next.title}</T>
+                          <T cap={CAPS['Ceremony.title#neighbour']}>{next.title}</T>
                         </a>
                       ) : (
                         <span className="text-dim">None yet: this is the newest record.</span>

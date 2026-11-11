@@ -2,12 +2,25 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { Code, ConnectError, createClient } from '@connectrpc/connect';
+import { fromJson, type DescMessage } from '@bufbuild/protobuf';
 import { Intention, RunPlace, Severity, Store } from './gen/ritueel/local/v1alpha1/common_pb';
-import { CardKind, InspectService, SlotUse } from './gen/ritueel/local/v1alpha1/inspect_service_pb';
-import { PlanService } from './gen/ritueel/local/v1alpha1/plan_service_pb';
+import {
+  CardKind,
+  GetSummaryResponseSchema,
+  InspectService,
+  ListCardsResponseSchema,
+  ListCeremoniesResponseSchema,
+  ListFindingsResponseSchema,
+  ListRootsResponseSchema,
+  ListTrustFilesResponseSchema,
+  SlotUse,
+} from './gen/ritueel/local/v1alpha1/inspect_service_pb';
+import { ListIntentionsResponseSchema, PlanService, SavePlanResponseSchema, StartPlanResponseSchema } from './gen/ritueel/local/v1alpha1/plan_service_pb';
 import { createDemoTransport } from './api/demo';
 import { CARD_KIND_WORD } from './lib/words';
 import { INTENTION_SLUG } from './lib/finding';
+import { CAPS } from './lib/caps';
+import { COMMAND_CAP, DEFAULT_CAP, FINGERPRINT_CAP } from './lib/safe';
 import { parseHash, type Route } from './lib/route';
 import { DEMO_BUNDLES, getBundle, setBundle, setViewState, type DemoBundle } from './api/demoState';
 
@@ -901,5 +914,109 @@ describe('switching the example bundle keeps the screen', () => {
       expect(switchFrom('personal', '#/plan/adopt-key', to).hash).toBe('#/plan/adopt-key');
       expect(switchFrom('personal', '#/roots', to).hash).toBe('#/roots');
     }
+  });
+});
+
+// ---- the example texts fit the page's own limits ----------------------------------------------
+//
+// The page cuts a text from the bundle at a limit and writes "(cut: the text is longer than N
+// characters)" (lib/safe.ts). That guard is for text no one wrote for this page. The texts of the
+// demo are written for it, so none of them may run into it. The limits are the ones the screens
+// use (lib/caps.ts, lib/safe.ts); nothing here copies a number.
+
+const FIXTURE_SCHEMAS: [string, DescMessage][] = [
+  ['inspect.get-summary', GetSummaryResponseSchema],
+  ['inspect.list-cards', ListCardsResponseSchema],
+  ['inspect.list-ceremonies', ListCeremoniesResponseSchema],
+  ['inspect.list-findings', ListFindingsResponseSchema],
+  ['inspect.list-roots', ListRootsResponseSchema],
+  ['inspect.list-trust-files', ListTrustFilesResponseSchema],
+  ['plan.list-intentions', ListIntentionsResponseSchema],
+  ['plan.save-plan', SavePlanResponseSchema],
+  ['plan.start-plan', StartPlanResponseSchema],
+];
+
+/** Commands go through Cmd (shown whole and copied only under COMMAND_CAP). */
+const COMMAND_FIELDS = new Set([
+  'Plan.run_command',
+  'Plan.equivalent_command',
+  'SavePlanResponse.run_command',
+  'Finding.fix_command',
+  'TrustFile.verify_command',
+  'TrustFile.rebuild_command',
+]);
+
+/** The limit of one text: the smallest limit of the places that draw the field. */
+function limitOf(key: string): number {
+  if (COMMAND_FIELDS.has(key)) return COMMAND_CAP;
+  const field = key.split('.')[1] ?? '';
+  if (/fingerprint|digest|sha256/.test(field)) return FINGERPRINT_CAP;
+  const own = Object.entries(CAPS)
+    .filter(([k]) => k.split('#')[0] === key)
+    .map(([, n]) => n);
+  return own.length > 0 ? Math.min(...own) : DEFAULT_CAP;
+}
+
+function* textsOf(d: DescMessage, m: Record<string, unknown>): Generator<[string, string]> {
+  for (const f of d.fields) {
+    const v = m[f.localName];
+    const items = f.fieldKind === 'list' ? (v as unknown[]) : f.fieldKind === 'map' ? [] : [v];
+    for (const x of items) {
+      if (f.fieldKind === 'message' || (f.fieldKind === 'list' && f.listKind === 'message')) {
+        if (x && f.message) yield* textsOf(f.message, x as Record<string, unknown>);
+      } else if (typeof x === 'string' && x.length > 0) {
+        const key = `${d.name}.${f.name}`;
+        // The file excerpt is drawn one line at a time.
+        if (key === 'SavePlanResponse.plan_file_preview') for (const line of x.split('\n')) yield [key, line];
+        else yield [key, x];
+      }
+    }
+  }
+}
+
+function* fieldsOf(d: DescMessage, seen = new Set<string>()): Generator<string> {
+  if (seen.has(d.typeName)) return;
+  seen.add(d.typeName);
+  for (const f of d.fields) {
+    yield `${d.name}.${f.name}`;
+    if (f.message) yield* fieldsOf(f.message, seen);
+  }
+}
+
+describe('the example texts fit the limits of the page', () => {
+  const dir = join(__dirname, 'fixtures');
+  const pathOf = (b: string) => (JSON.parse(readFileSync(join(dir, b, 'inspect.get-summary.json'), 'utf8')) as { bundle: { path: string } }).bundle.path;
+
+  it('no text of any fixture of any bundle is longer than the limit of the place that shows it', () => {
+    const tooLong: string[] = [];
+    let checked = 0;
+    for (const sub of readdirSync(dir)) {
+      for (const file of readdirSync(join(dir, sub))) {
+        if (file === 'manifest.json') continue;
+        const hit = FIXTURE_SCHEMAS.find(([prefix]) => file.startsWith(prefix));
+        expect(hit, `${sub}/${file} has a schema in this test`).toBeDefined();
+        if (!hit) continue;
+        const raw = readFileSync(join(dir, sub, file), 'utf8');
+        // The answers in common/ name the open bundle's place: check them with each place put in.
+        const variants = sub === 'common' ? BUNDLES.map((b) => raw.split('~/ritueel/example').join(pathOf(b))) : [raw];
+        for (const text of variants) {
+          const msg = fromJson(hit[1], JSON.parse(text)) as unknown as Record<string, unknown>;
+          for (const [key, value] of textsOf(hit[1], msg)) {
+            checked += 1;
+            const cap = limitOf(key);
+            if ([...value].length > cap) tooLong.push(`${sub}/${file} ${key}: ${[...value].length} characters, limit ${cap}, begins "${value.slice(0, 40)}"`);
+          }
+        }
+      }
+    }
+    expect(checked).toBeGreaterThan(1000);
+    expect([...new Set(tooLong)]).toEqual([]);
+  });
+
+  it('every limit in the table belongs to a field of the contract', () => {
+    const real = new Set<string>();
+    for (const [, schema] of FIXTURE_SCHEMAS) for (const k of fieldsOf(schema)) real.add(k);
+    const stale = Object.keys(CAPS).filter((k) => !real.has(k.split('#')[0]!));
+    expect(stale).toEqual([]);
   });
 });
