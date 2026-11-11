@@ -62,6 +62,12 @@ A figure is a drawing on the page. Draw when a picture says it better than a tab
 
 **Checks.** `site/test/figures.test.mjs` runs in `just site-lint` and checks every figure: the size and the number of panels, the label on each drawing, the classes against `figures.css`, no font under 12 px, the label length, a label on every arrow, one accent object, the banned words, and that every `<Figure name>` in `docs/` is registered and every registered figure is placed. `site/scripts/check-built.sh` checks the built pages: a figure page holds its `<figure>` and drawings with `role="img"`. Neither one sees what is drawn. Look at it: `node site/figures/preview.mjs <dir>` writes one standalone page per figure and theme, to open in headless Chrome. Check at 1280 px and at 390 px, in the light and the dark theme, that nothing overlaps or is cut off and that the page does not scroll sideways.
 
+## A page on a wide screen
+
+Below 100 rem (1600 px) a page is one column beside the menu, and "On this page" is a dropdown at the top. From 100 rem the list is a column of 300 px at the right, with the current heading marked, and the same 300 px stay free at the right of every page, with a list or without, so the text does not move between pages. The text column, the tables and the figures keep their widths, and running text keeps its measure of 75 characters: do not widen it to fill the screen. Text in a note box and the paragraphs of the status page have the same measure.
+
+A page made of many short sections can ask to show them in rows of two from 100 rem, left to right and then down, in the order of the file. Put `flow: rows` in its front matter. The build wraps each `##` heading and what follows it in one part, which never splits; the text before the first `##` spans both columns. Use it for a page of short parts such as the design page, not for a page with wide tables or figures in its sections. The page is not changed in any other way, and below 100 rem it reads as before. The code is `site/lib/parts.mjs` and the end of `site/src/styles/layout.css`, which names the breakpoint once.
+
 ## Links
 
 A link to another page uses its site path with a trailing slash, `/learn/key-stores/`. A link to a heading, on the same page or another, uses the full form `/learn/key-stores/#choosing`: the link check is strict and resolves both.
