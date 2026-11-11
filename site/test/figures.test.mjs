@@ -51,7 +51,9 @@ test('a strip has exactly six panels, numbered 1 to 6, each with a title and a s
 test('a layout has a wide and a narrow drawing', () => {
   for (const fig of all.filter((f) => f.kind === 'layout')) {
     assert.ok(/class="fig-wide"/.test(fig.wide) && /viewBox="0 0 760 /.test(fig.wide), `${fig.id}: wide`);
-    assert.ok(/class="fig-narrow"/.test(fig.narrow) && /viewBox="0 0 360 /.test(fig.narrow), `${fig.id}: narrow`);
+    // the home page's picture is drawn 320 units wide: a phone of 360 px has a column of 328 px, and 360 units would be drawn at 0.91
+    const narrowWidth = fig.id === 'whole-chain' ? 320 : 360;
+    assert.ok(/class="fig-narrow"/.test(fig.narrow) && new RegExp(`viewBox="0 0 ${narrowWidth} `).test(fig.narrow), `${fig.id}: narrow`);
   }
 });
 
@@ -235,7 +237,7 @@ test('the figure markup: a figure has its caption, a strip is a list of six, a l
     assert.ok(html.includes('<figcaption>The caption.</figcaption>'), fig.id);
     assert.ok(html.includes('not-content'), fig.id);
     const n = (html.match(/<svg /g) ?? []).length;
-    assert.equal(n, fig.kind === 'strip' ? 6 : fig.kind === 'layout' ? 2 : 1, `${fig.id}: svg count`);
+    assert.equal(n, fig.kind === 'strip' ? 6 : fig.kind === 'layout' ? (fig.id === 'whole-chain' ? 3 : 2) : 1, `${fig.id}: svg count`);
     if (fig.kind === 'strip') assert.equal((html.match(/<li>/g) ?? []).length, 6);
   }
   assert.throws(() => renderFigure({ id: 'x', kind: 'nope' }), /unknown kind/);
