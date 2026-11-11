@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { join, resolve } from 'node:path';
 
 // The demo is public on the site it links to. A link to a page the site does not have is a
 // dead end for the reader, and the page cannot tell: it only checks that a path is plain
@@ -16,6 +16,7 @@ const DOCS = new URL('../../docs/', import.meta.url).pathname;
 // Ceremony.guide_path through History.
 const SITE_LINK_FIELDS = new Set(['learnPath', 'guidePath']);
 // Fields of a fixture that are a path on the person's own computer, not on the site.
+// They are checked by their own test: never absolute, never a URL, never a way out of the folder.
 const LOCAL_PATH_FIELDS = new Set(['savePath', 'folderPath', 'path']);
 
 type Json = string | number | boolean | null | Json[] | { [k: string]: Json };
@@ -27,28 +28,50 @@ interface Found {
   value: string;
 }
 
-function collect(file: string, v: Json, at: string, out: Found[], others: Found[]): void {
-  if (Array.isArray(v)) v.forEach((x, i) => collect(file, x, `${at}[${i}]`, out, others));
+interface Sweep {
+  links: Found[];
+  unknownFields: Found[];
+  localPaths: Found[];
+  slashed: Found[];
+}
+
+function collect(file: string, v: Json, at: string, sweep: Sweep): void {
+  if (Array.isArray(v)) v.forEach((x, i) => collect(file, x, `${at}[${i}]`, sweep));
   else if (v && typeof v === 'object') {
     for (const [k, x] of Object.entries(v)) {
-      if (typeof x === 'string' && SITE_LINK_FIELDS.has(k)) out.push({ file, at: `${at}.${k}`, field: k, value: x });
-      else if (typeof x === 'string' && /(path|url|href|link)$/i.test(k) && !LOCAL_PATH_FIELDS.has(k)) others.push({ file, at: `${at}.${k}`, field: k, value: x });
-      collect(file, x, `${at}.${k}`, out, others);
+      if (typeof x === 'string') {
+        const found = { file, at: `${at}.${k}`, field: k, value: x };
+        if (SITE_LINK_FIELDS.has(k)) sweep.links.push(found);
+        else {
+          if (LOCAL_PATH_FIELDS.has(k)) sweep.localPaths.push(found);
+          else if (/(path|url|href|link)$/i.test(k)) sweep.unknownFields.push(found);
+          // A site path in a field with any other name (guide, page, docs ...) would go unchecked.
+          if (x.startsWith('/')) sweep.slashed.push(found);
+        }
+      }
+      collect(file, x, `${at}.${k}`, sweep);
     }
   }
 }
 
-const links: Found[] = [];
-const unknownFields: Found[] = [];
+const sweep: Sweep = { links: [], unknownFields: [], localPaths: [], slashed: [] };
 for (const name of readdirSync(FIXTURES).filter((n) => n.endsWith('.json')).sort()) {
-  collect(name, JSON.parse(readFileSync(join(FIXTURES, name), 'utf8')) as Json, '$', links, unknownFields);
+  collect(name, JSON.parse(readFileSync(join(FIXTURES, name), 'utf8')) as Json, '$', sweep);
 }
+const { links, unknownFields, localPaths, slashed } = sweep;
 
 /** The file that is the page at a site path such as /a/b/, or undefined. */
 function pageFile(path: string): string | undefined {
   const rel = path.replace(/^\/|\/$/g, '');
+  // The site serves /a/b/, never /a/b/index/; and it has no empty, "." or ".." segment.
+  if (rel !== '' && rel.split('/').some((seg) => seg === '' || seg === '.' || seg === '..')) return undefined;
+  if (/(^|\/)index$/.test(rel)) return undefined;
   const candidates = rel === '' ? ['index.md', 'index.mdx'] : [`${rel}.md`, `${rel}.mdx`, `${rel}/index.md`, `${rel}/index.mdx`];
-  return candidates.map((c) => join(DOCS, c)).find((c) => existsSync(c));
+  const root = resolve(DOCS);
+  const file = candidates.map((c) => resolve(DOCS, c)).find((c) => c.startsWith(root + '/') && existsSync(c));
+  // A draft page is not published.
+  if (file && /^---\n[\s\S]*?\ndraft:\s*true\s*\n[\s\S]*?\n---/.test(readFileSync(file, 'utf8'))) return undefined;
+  return file;
 }
 
 /** The ids the site gives the headings of a page: GitHub's slugs, as Starlight makes them. */
@@ -102,11 +125,26 @@ describe('the demo links only to pages the site has', () => {
     expect(unknownFields.map((f) => `${f.file} ${f.at}`)).toEqual([]);
   });
 
+  it('puts no site path in a field that is not checked as a link', () => {
+    expect(slashed.map((f) => `${f.file} ${f.at}: ${f.value}`)).toEqual([]);
+  });
+
+  it('keeps a path on the computer relative to its folder: no URL, no "..", no anchor', () => {
+    expect(localPaths.length).toBeGreaterThan(20);
+    const bad = localPaths.filter((f) => f.value.includes('://') || f.value.includes('..') || f.value.includes('#') || f.value.startsWith('/'));
+    expect(bad.map((f) => `${f.file} ${f.at}: ${f.value}`)).toEqual([]);
+  });
+
   it('finds the site pages and their headings', () => {
     expect(pageFile('/')).toBeDefined();
     expect(pageFile('/learn/')).toBeDefined();
     expect(pageFile('/reference/cli/')).toBeDefined();
     expect(pageFile('/learn/no-such-page/')).toBeUndefined();
+    // The site serves /learn/, not /learn/index/, and no path that climbs out of docs/.
+    expect(pageFile('/learn/index/')).toBeUndefined();
+    expect(pageFile('/learn//ceremonies/')).toBeUndefined();
+    expect(pageFile('/learn/../index/')).toBeUndefined();
+    expect(pageFile('/x/../../README/')).toBeUndefined();
     const cards = pageFile('/reference/cards/');
     expect(cards).toBeDefined();
     const ids = headingIds(cards as string);
@@ -116,7 +154,8 @@ describe('the demo links only to pages the site has', () => {
   });
 
   it('every link is a path of the site, with the trailing slash the site uses', () => {
-    const bad = links.filter((l) => !/^\/[a-z0-9][a-z0-9/_.-]*\/(#[a-z0-9_-]+)?$/.test(l.value));
+    // Each segment starts and ends with a letter or digit, so there is no "", "." or ".." segment.
+    const bad = links.filter((l) => !/^(\/[a-z0-9]+(?:[a-z0-9_.-]*[a-z0-9])?)+\/(#[a-z0-9_-]+)?$/.test(l.value));
     expect(bad.map((l) => `${l.file} ${l.at}: ${l.value}`)).toEqual([]);
   });
 
