@@ -41,6 +41,11 @@ export default defineConfig({
       social: [{ icon: 'github', label: 'GitHub', href: 'https://github.com/truvity/ritueel' }],
       editLink: { baseUrl: 'https://github.com/truvity/ritueel/edit/main/' },
       lastUpdated: false,
+      // Starlight's Markdown transforms (heading ids and anchor links, asides) run on files under
+      // the symlinked content directory. An .mdx page reaches them by its real path under docs/, and
+      // so do the decision records, so docs/ is named here; without it the link validator cannot see
+      // the headings of those pages and calls every link to one of them broken.
+      markdown: { processedDirs: ['../docs'] },
       // The 404 page is src/pages/404.astro.
       disable404Route: true,
       head: [
