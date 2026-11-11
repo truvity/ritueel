@@ -367,7 +367,7 @@ enum SubkeyState {
 
 enum RevocationReason {
   REVOCATION_REASON_UNSPECIFIED = 0;
-  // Replaced by a newer key; signatures made before still stand.
+  // Replaced by a newer key. sqv and gpgv keep signatures made before the revocation; git verify-tag fails for any revoked key (measured 2026-11-10).
   REVOCATION_REASON_SUPERSEDED = 1;
   // The key may be in someone else's hands; signatures no longer stand.
   REVOCATION_REASON_COMPROMISED = 2;

@@ -37,7 +37,7 @@
       {
         "ordinal": 3,
         "title": "Revoke the two subkeys",
-        "detail": "The primary revokes the signing subkey of 2022 and the signing subkey of 2023 with the reason superseded, dated on the day of the switch. Signatures made before that day keep their standing in strict verifiers.",
+        "detail": "The primary revokes the signing subkey of 2022 and the signing subkey of 2023 with the reason superseded, dated on the day of the switch. Signatures made before that day keep their standing in sqv and gpgv; git verify-tag no longer verifies them.",
         "whatChanges": "Two subkeys end",
         "learnPath": "/learn/revoke/"
       },
@@ -57,19 +57,24 @@
     ],
     "folderChanges": [
       {
-        "path": "records/2026-11-11-replace-subkeys.json",
+        "path": "ledger/20261111T090000Z-personal-subkey-revoke/record.json",
         "action": "FOLDER_CHANGE_ACTION_CREATE",
         "description": "The record of this ceremony."
       },
       {
-        "path": "plans/2026-11-11-replace-subkeys.json",
+        "path": "ledger/20261111T090000Z-personal-subkey-revoke/plan.json",
         "action": "FOLDER_CHANGE_ACTION_CREATE",
         "description": "The plan as it was confirmed."
       },
       {
-        "path": "transcripts/2026-11-11-replace-subkeys.txt",
+        "path": "ledger/20261111T090000Z-personal-subkey-revoke/transcript.txt",
         "action": "FOLDER_CHANGE_ACTION_CREATE",
         "description": "What the terminal showed, without any PIN or passphrase."
+      },
+      {
+        "path": "ledger/20261111T090000Z-personal-subkey-revoke/attempt.json",
+        "action": "FOLDER_CHANGE_ACTION_CREATE",
+        "description": "Written just before the first signature."
       },
       {
         "path": "roots/personal/openpgp.pgp",
