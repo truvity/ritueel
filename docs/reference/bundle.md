@@ -46,6 +46,38 @@ The maintainer decided that the ledger is a plain write-once folder with one sub
 - ritueel refuses a request whose stem already has an answer.
 - The bundle is found by `--dir DIR`, or is the current directory when it holds `ritueel.yaml` ([Commands](/reference/cli/#flags-every-ceremony-shares)).
 
+## On the stick
+
+A root on cards or in a key file runs on the offline system, which boots from a USB stick ([ADR 0016](/decisions/0016-several-bundles-share-one-pair-of-root-cards-and-the-bundle-keeps-a-card-inventory/#where-a-plan-runs)). The stick carries one extra partition, and ritueel defines its layout. The picture is on [the bundle and the USB stick](/how-it-works/bundle-and-stick/#the-usb-stick).
+
+:::note[Proposed]
+The names below are the smallest layout that serves the decision. They are a proposal, awaiting the maintainer's word.
+
+```text
+RITUEEL/                          the extra partition
+├── ritueel/                      the program
+│   ├── 0.1.0/
+│   │   ├── linux-amd64/ritueel
+│   │   └── linux-arm64/ritueel
+│   └── 0.2.0/ …
+├── bundles/                      several bundles
+│   ├── acme/                     ritueel.yaml, roots/, requests/, ledger/<ceremony>/plan.json, …
+│   └── personal/
+└── keys/                         the encrypted key files, one folder for each bundle
+    └── personal/A.openpgp.key.age
+```
+
+- **`RITUEEL/`** is the extra partition. AirgapOS's own partitions are not touched.
+- **`ritueel/<version>/<system>-<arch>/ritueel`** holds the program, and nothing else, because it is one static file. The version comes first, so that the run can use the exact version that made the plan. The system and the architecture come second, so that several machines can use one stick.
+- **`bundles/<name>/`** is a bundle copied whole, so the plan in its ledger and the bundle the plan was made from arrive together. It is the directory that your workstation already uses with `--dir`, with no second format.
+- **`keys/<bundle>/`** holds the key files of that bundle. Key files are never inside a bundle, so a copy of a bundle cannot carry a key by accident. The folder has the name of the bundle, so a person finds a file without a lookup.
+- **The plan records the copy that made it** in a new member `ritueel`: `{ "version", "os_arch", "sha256" }`, where `sha256` is the digest of that copy. The run is then `<stick>/ritueel/<version>/<system>-<arch>/ritueel --dir <stick>/bundles/acme run ledger/<ceremony>/plan.json --confirm …`. When a plan is prepared online, ritueel refreshes its copy on the stick first.
+
+Not decided: the label and the file system of the partition, whether a checksum file sits beside each binary, and whether the `keys/` folder of a bundle may sit inside the parent of the bundle.
+:::
+
+Not yet proven on hardware: that AirgapOS boots from a stick with such a partition and mounts it ([ADR 0016](/decisions/0016-several-bundles-share-one-pair-of-root-cards-and-the-bundle-keeps-a-card-inventory/#follow-ups)).
+
 ## `ritueel.yaml`
 
 The operator writes it before `init`. An unknown key is an error, as in the contract.
