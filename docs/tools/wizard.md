@@ -25,7 +25,7 @@ Some people prefer a page to a terminal, and a ceremony is easier to follow when
 | Collect choices: which root, which request, which store. | Ask for, receive or show a PIN, a passphrase or a key. |
 | Show progress, the record and what outsiders will see. | Load anything from outside your computer. |
 
-The confirmation of every irreversible step is given in the terminal, or by the touch on the card, never by a click in the page. The page shows the plan and its digest, and ends with a preview and the command to run, `ritueel run PLAN --confirm DIGEST`. It can save the plan file, so that you can run it on your workstation or boot the offline system and run it there. A key that can be copied is used only in the offline system; a key that cannot be copied, a root on cards or a cloud root, may also be used on your workstation. A test root may use the workstation or a rehearsal card. You give the confirmation in the terminal.
+The confirmation of every irreversible step is given in the terminal, or by the touch on the card, never by a click in the page. The page shows the plan and its digest, and ends with a preview and the short command to run, `ritueel run PLAN`, shown without the digest (a person could paste it without reading); you type the first eight characters of the digest in the terminal. It can save the plan file, so that you can run it on your workstation or boot the offline system and run it there. A key that can be copied is used only in the offline system; a key that cannot be copied may also be used on your workstation, and a cloud root always is, because the offline system has no network. The last step of a change, the keyserver upload, is shown in the page with its command and done in the terminal after a typed confirmation: there is no button. A test root may use the workstation or a rehearsal card. You give the confirmation in the terminal.
 
 ## Security rules
 
@@ -44,4 +44,4 @@ Each rule has a test in the plan for the wizard: a request with the wrong token,
 
 ## What it drives
 
-The ceremonies and the checks: adopting the roots, the renewals of the yearly ceremony, intermediates, the five transitions, the trust files, the drills and a person's own key. It does not prepare a card, change a PIN or publish; it names the guide for those ([the list](/reference/wizard/#what-the-guided-mode-and-the-page-drive)).
+The ceremonies and the checks: adopting the roots, the renewals of the yearly ceremony, intermediates, the five transitions, the trust files, the drills and a person's own key. It does not prepare a card or change a PIN; it names the guide for those. Publishing a key is a separate command after a ceremony; the page shows the step and its command ([the list](/reference/wizard/#what-the-guided-mode-and-the-page-drive)).
