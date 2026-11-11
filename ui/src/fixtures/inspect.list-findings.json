@@ -17,7 +17,7 @@
         "Neither has a revocation. Both are on card 00000102."
       ],
       "fixCommand": "ritueel personal subkey revoke --reason superseded 1B220123456789ABCDEF0123456789ABCDEF0123 1B320123456789ABCDEF0123456789ABCDEF0123 --plan-only",
-      "fixIntention": "INTENTION_REPLACE_SUBKEYS",
+      "fixIntention": "INTENTION_RETIRE_SUBKEYS",
       "learnPath": "/learn/revoke/",
       "visibleFromPublicKey": true
     },
@@ -78,15 +78,15 @@
       "visibleFromPublicKey": true
     },
     {
-      "id": "daily-keychain-touch-cached",
+      "id": "day-to-day-keychain-touch-cached",
       "code": "touch-rule-changed",
       "severity": "SEVERITY_NOTICE",
-      "title": "The signing key on \"Daily, keychain\" now asks for a touch only once in a while",
+      "title": "The signing key on \"Day-to-day, keychain\" now asks for a touch only once in a while",
       "reason": "The last reading differs from the one before: the touch rule was always and is now cached. A cached touch lets a program on your computer sign several times after one touch.",
       "subject": {
         "kind": "SUBJECT_KIND_CARD",
         "identifier": "00000004",
-        "label": "Daily, keychain"
+        "label": "Day-to-day, keychain"
       },
       "evidence": [
         "Slot sig: touch rule cached (was always) at the reading of 2026-10-28"
@@ -101,9 +101,9 @@
       "title": "No restore check has ever been recorded",
       "reason": "A backup you have never restored is a hope, not a backup. The restore check runs on a clean machine and signs nothing.",
       "subject": {
-        "kind": "SUBJECT_KIND_FOLDER",
+        "kind": "SUBJECT_KIND_BUNDLE",
         "identifier": "~/ritueel",
-        "label": "Your folder"
+        "label": "Your bundle"
       },
       "evidence": [
         "No restore report has ever been made; the ledger holds 12 records."
@@ -135,7 +135,7 @@
       "code": "cloud-key-not-adopted",
       "severity": "SEVERITY_INFO",
       "title": "A cloud key is waiting to be adopted",
-      "reason": "ritueel found a key with this alias in the configuration of the folder that no record mentions. Adopting it reads its public key and checks its policy; it changes nothing in the cloud.",
+      "reason": "ritueel found a key with this alias in the configuration of the bundle that no record mentions. Adopting it reads its public key and checks its policy; it changes nothing in the cloud.",
       "subject": {
         "kind": "SUBJECT_KIND_CLOUD_KEY",
         "identifier": "alias/example-staging-signing",

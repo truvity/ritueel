@@ -10,7 +10,7 @@
       "recommendedReason": "3 things are due in the next 4 months, the first on 2026-12-02."
     },
     {
-      "intention": "INTENTION_REPLACE_SUBKEYS",
+      "intention": "INTENTION_RETIRE_SUBKEYS",
       "title": "Retire superseded subkeys",
       "sentence": "Revokes subkeys that a newer one replaced, with the reason superseded.",
       "typicalTime": "about 20 minutes",
@@ -28,7 +28,7 @@
     {
       "intention": "INTENTION_ADD_CARD",
       "title": "Add a card",
-      "sentence": "Registers a card in the inventory and seals its secrets in the folder.",
+      "sentence": "Registers a card in the inventory and seals its secrets in the bundle.",
       "typicalTime": "about 15 minutes",
       "notApplicableReason": "This goal needs a card connected to this computer. The demo has none."
     },

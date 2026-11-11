@@ -11,7 +11,7 @@
       {
         "ordinal": 1,
         "title": "Check the plan",
-        "detail": "ritueel compares the plan with the folder and with the ledger, and asks you to type the first eight characters of the digest: 7f3a9c1e.",
+        "detail": "ritueel compares the plan with the bundle and with the ledger, and asks you to type the first eight characters of the digest: 7f3a9c1e.",
         "whatChanges": "Nothing changes",
         "requirements": [
           "REQUIREMENT_CONFIRM_DIGEST_AT_TERMINAL"
@@ -101,50 +101,50 @@
         "learnPath": "/learn/the-ledger/"
       }
     ],
-    "folderChanges": [
+    "bundleChanges": [
       {
         "path": "ledger/20261111T090000Z-due/record.json",
-        "action": "FOLDER_CHANGE_ACTION_CREATE",
+        "action": "BUNDLE_CHANGE_ACTION_CREATE",
         "description": "The record of this ceremony; it names the record of 2026-11-03-adopt-personal-key by digest as the one before."
       },
       {
         "path": "ledger/20261111T090000Z-due/plan.json",
-        "action": "FOLDER_CHANGE_ACTION_CREATE",
+        "action": "BUNDLE_CHANGE_ACTION_CREATE",
         "description": "The plan as it was confirmed."
       },
       {
         "path": "ledger/20261111T090000Z-due/transcript.txt",
-        "action": "FOLDER_CHANGE_ACTION_CREATE",
+        "action": "BUNDLE_CHANGE_ACTION_CREATE",
         "description": "What the terminal showed, without any PIN."
       },
       {
         "path": "ledger/20261111T090000Z-due/attempt.json",
-        "action": "FOLDER_CHANGE_ACTION_CREATE",
+        "action": "BUNDLE_CHANGE_ACTION_CREATE",
         "description": "Written just before the first signature."
       },
       {
         "path": "answers/acme-ca.cert.pem",
-        "action": "FOLDER_CHANGE_ACTION_REPLACE",
+        "action": "BUNDLE_CHANGE_ACTION_REPLACE",
         "description": "The new certificate of acme-ca; the old one stays under products/."
       },
       {
         "path": "roots/acme/openpgp.pgp",
-        "action": "FOLDER_CHANGE_ACTION_REPLACE",
+        "action": "BUNDLE_CHANGE_ACTION_REPLACE",
         "description": "The primary's certificate with the new binding of acme-release."
       },
       {
         "path": "products/9/",
-        "action": "FOLDER_CHANGE_ACTION_CREATE",
+        "action": "BUNDLE_CHANGE_ACTION_CREATE",
         "description": "Root list, CA bundle, CRL, SSH CA key list and keyring of trust sequence 9."
       },
       {
         "path": "cards/root-a.yaml",
-        "action": "FOLDER_CHANGE_ACTION_REPLACE",
+        "action": "BUNDLE_CHANGE_ACTION_REPLACE",
         "description": "The slot file of root card one, with the new reading."
       },
       {
         "path": "cards/root-b.yaml",
-        "action": "FOLDER_CHANGE_ACTION_REPLACE",
+        "action": "BUNDLE_CHANGE_ACTION_REPLACE",
         "description": "The slot file of root card two, with the new reading."
       }
     ],

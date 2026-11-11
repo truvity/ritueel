@@ -21,7 +21,7 @@ import { intentionFromSlug, INTENTION_SLUG } from '../lib/finding';
 import { ymd } from '../lib/format';
 import { href } from '../lib/route';
 import { safeString } from '../lib/safe';
-import { FOLDER_ACTION_WORD, REQUIREMENT_WORD } from '../lib/words';
+import { BUNDLE_ACTION_WORD, REQUIREMENT_WORD } from '../lib/words';
 import { Cmd } from '../ui/Cmd';
 import { Fp } from '../ui/Fp';
 import { Glyph } from '../ui/Glyph';
@@ -76,7 +76,7 @@ function Goals() {
       }
     >
       <Stepper current={1} />
-      <Load res={res} what="the goals" isEmpty={(d) => d.options.length === 0} empty={<Empty title="No goal is available.">ritueel offered no goal for this folder.</Empty>}>
+      <Load res={res} what="the goals" isEmpty={(d) => d.options.length === 0} empty={<Empty title="No goal is available.">ritueel offered no goal for this bundle.</Empty>}>
         {(d) => (
           <ul className="grid gap-4 lg:grid-cols-2">
             {[...d.options]
@@ -301,12 +301,12 @@ export function PlanView({ plan }: { plan: PlanMessage }) {
         </ol>
       </Sec>
 
-      {plan.folderChanges.length > 0 ? (
-        <Sec title="What changes in the folder">
+      {plan.bundleChanges.length > 0 ? (
+        <Sec title="What changes in the bundle">
           <ul className="border border-line bg-panel">
-            {plan.folderChanges.map((c, i) => (
+            {plan.bundleChanges.map((c, i) => (
               <li key={c.path} className={`grid gap-x-4 gap-y-0.5 p-3 sm:grid-cols-[6rem_minmax(0,1fr)] ${i > 0 ? 'border-t border-line' : ''}`}>
-                <span className="font-mono text-xs font-bold tracking-wider uppercase">{FOLDER_ACTION_WORD[c.action]}</span>
+                <span className="font-mono text-xs font-bold tracking-wider uppercase">{BUNDLE_ACTION_WORD[c.action]}</span>
                 <span className="min-w-0">
                   <span className="block font-mono text-sm [overflow-wrap:anywhere]">
                     <T cap={120}>{c.path}</T>
@@ -366,7 +366,7 @@ function SavePlan({ plan }: { plan: PlanMessage }) {
             <span className="font-mono [overflow-wrap:anywhere]">
               <T cap={120}>{plan.savePath}</T>
             </span>{' '}
-            in your folder. The file only describes the steps: it holds no key and no
+            in your bundle. The file only describes the steps: it holds no key and no
             secret, and nothing runs until you run it at the ceremony machine.
           </p>
           {isDemo ? <p className="mt-2 text-sm font-semibold">In this demo, saving writes nothing. It shows what it would write.</p> : null}
@@ -437,7 +437,7 @@ export function Saved({ data }: { data: SavePlanResponse }) {
       <dl className="grid gap-x-8 gap-y-2 border border-line bg-panel p-4 sm:grid-cols-[auto_1fr]">
         <dt className="text-dim">{written ? 'Written to' : 'Would be written to'}</dt>
         <dd className="font-mono [overflow-wrap:anywhere]">
-          <T cap={120}>{data.folderPath}</T>/<T cap={120}>{data.path}</T>
+          <T cap={120}>{data.bundlePath}</T>/<T cap={120}>{data.path}</T>
         </dd>
         <dt className="text-dim">Size</dt>
         <dd className="font-mono">{String(data.sizeBytes)} bytes</dd>
@@ -451,7 +451,7 @@ export function Saved({ data }: { data: SavePlanResponse }) {
         <Lines text={data.planFilePreview} />
       </div>
       <p className="max-w-[70ch] text-sm text-dim">
-        The offline system is the computer where the ceremony runs. A USB stick carries the plan, in your folder, from this computer to it.
+        The offline system is the computer where the ceremony runs. A USB stick carries the plan, in your bundle, from this computer to it.
       </p>
       <div className="grid gap-6 lg:grid-cols-2">
         <HandOver title="Copy to the offline system" items={data.copyToStick} />

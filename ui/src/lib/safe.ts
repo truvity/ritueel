@@ -1,4 +1,4 @@
-// Text from the folder is data. Before it is drawn, anything that is not
+// Text from the bundle is data. Before it is drawn, anything that is not
 // plain printable ASCII becomes a visible U+XXXX escape, and the length is
 // capped. The result is a list of parts so React can draw escapes in their
 // own style; React still writes every part as text.

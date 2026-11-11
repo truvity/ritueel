@@ -23,7 +23,7 @@ import "ritueel/local/v1alpha1/common.proto";
 
 service PlanService {
   // The goals the wizard offers, each with whether it applies to this
-  // folder and why not if it does not.
+  // bundle and why not if it does not.
   rpc ListIntentions(ListIntentionsRequest) returns (ListIntentionsResponse) {
     option idempotency_level = NO_SIDE_EFFECTS;
   }
@@ -36,7 +36,7 @@ service PlanService {
     option idempotency_level = NO_SIDE_EFFECTS;
   }
 
-  // Save the plan file into the folder's "pending" area. This is the one
+  // Save the plan file into the bundle's "pending" area. This is the one
   // call of the package that writes. It writes one inert file, create-only,
   // and answers with the path and the digest. The demo writes nothing and
   // says so (see SavePlanResponse.written).
@@ -58,7 +58,7 @@ message IntentionOption {
   string sentence = 3;
   // How long the whole thing usually takes, for example "about 30 minutes".
   string typical_time = 4;
-  // False when the goal does not apply to this folder; the page shows it
+  // False when the goal does not apply to this bundle; the page shows it
   // greyed with the reason.
   bool applicable = 5;
   string not_applicable_reason = 6;
@@ -138,13 +138,13 @@ message Plan {
   string digest = 7;
   // The steps `ritueel run` takes, in order.
   repeated PlanStep steps = 8;
-  // What the ceremony will add to the folder, or replace in it.
-  repeated FolderChange folder_changes = 9;
+  // What the ceremony will add to the bundle, or replace in it.
+  repeated BundleChange bundle_changes = 9;
   // The command that builds this same plan on the command line.
   string equivalent_command = 10;
   // The exact command to run on the ceremony machine, with the full digest.
   string run_command = 11;
-  // Where SavePlan will put the file, relative to the folder.
+  // Where SavePlan will put the file, relative to the bundle.
   string save_path = 12;
   // The serials of the cards the ceremony needs.
   repeated string card_serials = 13;
@@ -175,17 +175,17 @@ message PlanStep {
   string learn_path = 7;
 }
 
-enum FolderChangeAction {
-  FOLDER_CHANGE_ACTION_UNSPECIFIED = 0;
-  FOLDER_CHANGE_ACTION_CREATE = 1;
-  // A file that a ceremony replaces keeps its history under products/.
-  FOLDER_CHANGE_ACTION_REPLACE = 2;
+enum BundleChangeAction {
+  BUNDLE_CHANGE_ACTION_UNSPECIFIED = 0;
+  BUNDLE_CHANGE_ACTION_CREATE = 1;
+  // A file that a ceremony rewrites keeps its history under products/.
+  BUNDLE_CHANGE_ACTION_REPLACE = 2;
 }
 
-message FolderChange {
-  // Path inside the folder.
+message BundleChange {
+  // Path inside the bundle.
   string path = 1;
-  FolderChangeAction action = 2;
+  BundleChangeAction action = 2;
   string description = 3;
 }
 
@@ -200,9 +200,9 @@ message SavePlanRequest {
 
 message SavePlanResponse {
   string plan_id = 1;
-  // The folder, as the holder knows it, for example "~/ritueel".
-  string folder_path = 2;
-  // Where the file is (or would be), relative to the folder.
+  // The bundle, as the holder knows it, for example "~/ritueel/acme".
+  string bundle_path = 2;
+  // Where the file is (or would be), relative to the bundle.
   string path = 3;
   string digest = 4;
   int64 size_bytes = 5;

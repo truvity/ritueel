@@ -51,7 +51,7 @@ export function Findings() {
         what="the findings"
         isEmpty={([f, s]) => f.findings.length === 0 && min === Severity.UNSPECIFIED && (s.counts?.roots ?? 0) === 0}
         empty={
-          <Empty title="Nothing to check yet, because the folder holds no keys.">
+          <Empty title="Nothing to check yet, because the bundle holds no keys.">
             <p>A finding needs a key to be about. Bring in the key you already have, and ritueel will read it and tell you what it sees.</p>
             <p>
               <a className="font-semibold text-accent underline underline-offset-4" href={href.plan('adopt-key')}>

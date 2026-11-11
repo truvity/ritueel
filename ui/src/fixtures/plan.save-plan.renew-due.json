@@ -1,19 +1,19 @@
 {
   "planId": "2026-11-11-renew-due",
-  "folderPath": "~/ritueel",
+  "bundlePath": "~/ritueel",
   "path": "pending/2026-11-11-renew-due.plan",
   "digest": "7f3a9c1e0123456789abcdef0123456789abcdef0123456789abcdefdeadbeef",
   "sizeBytes": "1775",
   "notice": "This is a demo. Nothing was written. This is what saving the plan would write.",
   "runCommand": "ritueel run ./ritueel/pending/2026-11-11-renew-due.plan --confirm 7f3a9c1e0123456789abcdef0123456789abcdef0123456789abcdefdeadbeef",
   "copyToStick": [
-    "Copy the folder ~/ritueel to a USB stick, with pending/2026-11-11-renew-due.plan inside it. This is the stick you carry to the offline system."
+    "Copy the bundle ~/ritueel to a USB stick, with pending/2026-11-11-renew-due.plan inside it. This is the stick you carry to the offline system."
   ],
   "bring": [
     "Root card one (00000001) and root card two (00000002)",
     "The PINs of the cards: you type them at the terminal there, never here",
     "The offline system, booted from its own read-only stick"
   ],
-  "whenBack": "Bring the USB stick back, copy the folder over ~/ritueel and reload this page. The new record appears in History.",
+  "whenBack": "Bring the USB stick back, copy the bundle over ~/ritueel and reload this page. The new record appears in History.",
   "planFilePreview": "ritueel plan v1\nid: 2026-11-11-renew-due\nintention: renew-due\nbuilt: 2026-11-11T09:00:00Z\nledger-head: 600c0123456789ab...\nsteps:\n  1. Check the plan\n  2. Read both root cards\n  3. Prove the root cards are alive\n  4. Renew acme-ca\n  5. Renew acme-release\n  6. Build the trust files\n  7. Write the record\n# The digest of these lines is the digest you compare in the terminal.\n"
 }

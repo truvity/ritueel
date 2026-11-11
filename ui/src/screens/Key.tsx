@@ -669,7 +669,7 @@ export function Key({ root }: { root: string }) {
         isEmpty={(d) => d.roots.length === 0}
         empty={
           <Empty title="No key to show yet.">
-            <p>The folder holds no root, so there is no certificate to read. Adopt the key you already have, and it will appear here.</p>
+            <p>The bundle holds no root, so there is no certificate to read. Adopt the key you already have, and it will appear here.</p>
             <p>
               <a className={LINK} href={href.plan('adopt-key')}>
                 Make a plan to adopt a key
@@ -685,7 +685,7 @@ export function Key({ root }: { root: string }) {
               <>
                 <Empty title="There is no root with that name.">
                   <p>
-                    The folder holds {plural(d.roots.length, 'root')}. Choose one below, or see <a className={LINK} href={href.roots()}>all roots</a>.
+                    The bundle holds {plural(d.roots.length, 'root')}. Choose one below, or see <a className={LINK} href={href.roots()}>all roots</a>.
                   </p>
                 </Empty>
                 <RootPicker roots={d.roots} current="" />

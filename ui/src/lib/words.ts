@@ -1,5 +1,8 @@
-// The words of the page. The eleven fixed words are: root, delegated key,
+// The words of the page. The fixed words are: bundle, root, delegated key,
 // holder, requester, store, ceremony, ledger, record, renew, replace, trust files.
+// Replace means making a new key; retire is revoking a subkey that a newer one
+// already replaced. The bare word bundle means the directory of one trust
+// domain; the trust file keeps its full name, CA bundle.
 import { Store } from '../gen/ritueel/local/v1alpha1/common_pb';
 import {
   CardKind,
@@ -19,7 +22,7 @@ import {
   TrustCheckResult,
   TrustFileKind,
 } from '../gen/ritueel/local/v1alpha1/inspect_service_pb';
-import { FolderChangeAction, Requirement } from '../gen/ritueel/local/v1alpha1/plan_service_pb';
+import { BundleChangeAction, Requirement } from '../gen/ritueel/local/v1alpha1/plan_service_pb';
 
 export const STORE_WORD: Record<number, string> = {
   [Store.SOFTWARE_FILE]: 'Encrypted file',
@@ -28,7 +31,7 @@ export const STORE_WORD: Record<number, string> = {
 };
 
 export const STORE_SENTENCE: Record<number, string> = {
-  [Store.SOFTWARE_FILE]: 'The key is an encrypted file in a key folder outside your ritueel folder. A passkey on each root card opens it, and a recovery key is kept apart.',
+  [Store.SOFTWARE_FILE]: 'The key is an encrypted file in a key directory outside your bundle. A passkey on each root card opens it, and a recovery key is kept apart.',
   [Store.ROOT_CARDS]: 'Each root card holds its own key, born on that card, and the keys never leave the cards. You use them only at the ceremony machine, with the card present.',
   [Store.CLOUD_KMS]: 'The key lives in a cloud key service and never leaves it. If ritueel adopted it, it read the public key and the policy and did not change the key.',
 };
@@ -78,9 +81,9 @@ export const ORIGIN_WORD: Record<number, string> = {
 
 export const CARD_KIND_WORD: Record<number, string> = {
   [CardKind.ROOT]: 'Root card',
-  [CardKind.DAILY]: 'Day-to-day',
+  [CardKind.DAY_TO_DAY]: 'Day-to-day',
   [CardKind.REHEARSAL]: 'Rehearsal',
-  [CardKind.BOARD]: 'Board',
+  [CardKind.SERVER]: 'Server',
 };
 
 export const CARD_STATE_WORD: Record<number, string> = {
@@ -164,7 +167,7 @@ export const REQUIREMENT_WORD: Record<number, string> = {
   [Requirement.CONFIRM_DIGEST_AT_TERMINAL]: 'Digest confirmed at the terminal',
 };
 
-export const FOLDER_ACTION_WORD: Record<number, string> = {
-  [FolderChangeAction.CREATE]: 'create',
-  [FolderChangeAction.REPLACE]: 'replace',
+export const BUNDLE_ACTION_WORD: Record<number, string> = {
+  [BundleChangeAction.CREATE]: 'create',
+  [BundleChangeAction.REPLACE]: 'replace',
 };

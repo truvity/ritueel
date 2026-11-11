@@ -1,7 +1,7 @@
 {
-  "folder": {
+  "bundle": {
     "path": "~/ritueel",
-    "name": "Example folder",
+    "name": "Example bundle",
     "exists": true,
     "createdAt": "2023-12-02T09:50:00Z",
     "holderLabel": "the holder"
@@ -92,9 +92,9 @@
   },
   "setupSteps": [
     {
-      "id": "folder",
-      "title": "Open your ritueel folder",
-      "detail": "The folder holds plain files, the ledger and your plans.",
+      "id": "bundle",
+      "title": "Open your ritueel bundle",
+      "detail": "The bundle holds plain files, the ledger and your plans.",
       "done": true
     },
     {

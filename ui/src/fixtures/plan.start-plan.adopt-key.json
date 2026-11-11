@@ -11,7 +11,7 @@
       {
         "ordinal": 1,
         "title": "Check the plan",
-        "detail": "ritueel compares the plan with the folder and asks you to type the first eight characters of the digest: a92d5e60.",
+        "detail": "ritueel compares the plan with the bundle and asks you to type the first eight characters of the digest: a92d5e60.",
         "whatChanges": "Nothing changes",
         "requirements": [
           "REQUIREMENT_CONFIRM_DIGEST_AT_TERMINAL"
@@ -43,7 +43,7 @@
         "ordinal": 5,
         "title": "Write the certificate",
         "detail": "The key signs its own certificate, digest only, as the ceremony role after a sign-in with a hardware key. Every current root and the new root sign the next root list.",
-        "whatChanges": "A new root in the folder",
+        "whatChanges": "A new root in the bundle",
         "requirements": [
           "REQUIREMENT_CARD_PRESENT",
           "REQUIREMENT_PIN_AT_TERMINAL",
@@ -63,50 +63,50 @@
         "learnPath": "/learn/the-ledger/"
       }
     ],
-    "folderChanges": [
+    "bundleChanges": [
       {
         "path": "ledger/20261111T090000Z-root-add/record.json",
-        "action": "FOLDER_CHANGE_ACTION_CREATE",
+        "action": "BUNDLE_CHANGE_ACTION_CREATE",
         "description": "The record of this ceremony."
       },
       {
         "path": "ledger/20261111T090000Z-root-add/plan.json",
-        "action": "FOLDER_CHANGE_ACTION_CREATE",
+        "action": "BUNDLE_CHANGE_ACTION_CREATE",
         "description": "The plan as it was confirmed."
       },
       {
         "path": "ledger/20261111T090000Z-root-add/transcript.txt",
-        "action": "FOLDER_CHANGE_ACTION_CREATE",
+        "action": "BUNDLE_CHANGE_ACTION_CREATE",
         "description": "What the terminal showed."
       },
       {
         "path": "ledger/20261111T090000Z-root-add/attempt.json",
-        "action": "FOLDER_CHANGE_ACTION_CREATE",
+        "action": "BUNDLE_CHANGE_ACTION_CREATE",
         "description": "Written just before the first signature."
       },
       {
         "path": "roots/example-staging/root.json",
-        "action": "FOLDER_CHANGE_ACTION_CREATE",
+        "action": "BUNDLE_CHANGE_ACTION_CREATE",
         "description": "The facts of the new root."
       },
       {
         "path": "roots/example-staging/attestation/x509-root.key.json",
-        "action": "FOLDER_CHANGE_ACTION_CREATE",
+        "action": "BUNDLE_CHANGE_ACTION_CREATE",
         "description": "The key, as read."
       },
       {
         "path": "roots/example-staging/attestation/x509-root.policy.json",
-        "action": "FOLDER_CHANGE_ACTION_CREATE",
+        "action": "BUNDLE_CHANGE_ACTION_CREATE",
         "description": "The key policy as GetKeyPolicy returned it."
       },
       {
         "path": "roots/example-staging/attestation/result.json",
-        "action": "FOLDER_CHANGE_ACTION_CREATE",
+        "action": "BUNDLE_CHANGE_ACTION_CREATE",
         "description": "The checks that ran."
       },
       {
         "path": "products/9/",
-        "action": "FOLDER_CHANGE_ACTION_CREATE",
+        "action": "BUNDLE_CHANGE_ACTION_CREATE",
         "description": "A root list that includes the new root."
       }
     ],

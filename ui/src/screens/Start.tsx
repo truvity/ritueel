@@ -19,7 +19,7 @@ function countOf(s: GetSummaryResponse, sev: Severity): number {
   return s.findingCounts.find((c) => c.severity === sev)?.count ?? 0;
 }
 
-function isEmptyFolder(s: GetSummaryResponse): boolean {
+function isEmptyBundle(s: GetSummaryResponse): boolean {
   return (s.counts?.roots ?? 0) === 0 && (s.ledger?.recordCount ?? 0) === 0 && s.due.length === 0;
 }
 
@@ -179,7 +179,7 @@ function RenewAll({ count }: { count: number }) {
   );
 }
 
-// ---- the ledger seal, getting started, what the folder holds ---------------
+// ---- the ledger seal, getting started, what the bundle holds ---------------
 
 function Seal({ s }: { s: GetSummaryResponse }) {
   const l = s.ledger;
@@ -260,7 +260,7 @@ function Holds({ s }: { s: GetSummaryResponse }) {
     ['trust files', s.counts?.trustFiles ?? 0, href.trust()],
   ];
   return (
-    <Sec title="The folder holds" aside={<span className="font-mono"><T cap={60}>{s.folder?.path}</T></span>}>
+    <Sec title="The bundle holds" aside={<span className="font-mono"><T cap={60}>{s.bundle?.path}</T></span>}>
       <ul className="grid grid-cols-2 border border-line bg-panel">
         {rows.map(([label, n, to], i) => (
           <li key={label} className={`${i % 2 === 1 ? 'border-l' : ''} ${i >= 2 ? 'border-t' : ''} border-line`}>
@@ -346,13 +346,13 @@ function Words() {
 
 function Body({ s }: { s: GetSummaryResponse }) {
   const total = s.findingCounts.reduce((n, c) => n + c.count, 0);
-  if (isEmptyFolder(s)) {
+  if (isEmptyBundle(s)) {
     return (
       <div className="space-y-9">
         <Words />
-        <Empty title="Your folder is empty. There is nothing to check yet.">
+        <Empty title="Your bundle is empty. There is nothing to check yet.">
           <p>
-            Nothing is wrong and nothing is due, because the folder holds no keys. That is not a problem: it is where everyone starts. The first step is to
+            Nothing is wrong and nothing is due, because the bundle holds no keys. That is not a problem: it is where everyone starts. The first step is to
             bring in the key you already have.
           </p>
           <p>
@@ -418,12 +418,12 @@ export function Start() {
       title="What needs you"
       lede={
         <p>
-          This is the folder where ritueel keeps the records of your keys. This page reads it and shows it. To change something, you make a plan here and run it in
+          This is the bundle where ritueel keeps the records of your keys. This page reads it and shows it. To change something, you make a plan here and run it in
           the terminal, on the ceremony machine.
         </p>
       }
     >
-      <Load res={summary} what="the folder">
+      <Load res={summary} what="the bundle">
         {(s) => <Body s={s} />}
       </Load>
     </Page>

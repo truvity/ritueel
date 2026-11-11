@@ -1,11 +1,11 @@
-// The read service: everything the local page shows about the folder.
+// The read service: everything the local page shows about the bundle.
 //
 // Every call here only reads. No call takes or returns a secret, a PIN or a
 // passphrase (see common.proto). In the real program the answers come from
 // the same functions as `ritueel status`, `ritueel records list` and the
 // card check; in the demo they come from the fixture files.
 //
-// All text in an answer is data written by the folder, not by the program:
+// All text in an answer is data written by the bundle, not by the program:
 // the page shows it as text only, caps its length, and shows any character
 // that is not plain ASCII, any bidirectional, zero-width or control
 // character as a visible U+XXXX escape.
@@ -18,7 +18,7 @@ import "google/protobuf/timestamp.proto";
 import "ritueel/local/v1alpha1/common.proto";
 
 service InspectService {
-  // The start screen: the folder, what is due, how many findings of each
+  // The start screen: the bundle, what is due, how many findings of each
   // severity, the state of the ledger, and what is left to set up.
   rpc GetSummary(GetSummaryRequest) returns (GetSummaryResponse) {
     option idempotency_level = NO_SIDE_EFFECTS;
@@ -48,7 +48,7 @@ service InspectService {
     option idempotency_level = NO_SIDE_EFFECTS;
   }
 
-  // The trust files the folder can produce, with a check of each.
+  // The trust files the bundle can produce, with a check of each.
   // Publishing them is left to the holder.
   rpc ListTrustFiles(ListTrustFilesRequest) returns (ListTrustFilesResponse) {
     option idempotency_level = NO_SIDE_EFFECTS;
@@ -60,8 +60,8 @@ service InspectService {
 message GetSummaryRequest {}
 
 message GetSummaryResponse {
-  Folder folder = 1;
-  // The moment the folder was read. The page counts "days left" from this,
+  Bundle bundle = 1;
+  // The moment the bundle was read. The page counts "days left" from this,
   // never from its own clock, so a fixture stays the same on any day.
   google.protobuf.Timestamp as_of = 2;
   // True when the answers come from a fixture and nothing can act.
@@ -74,15 +74,20 @@ message GetSummaryResponse {
   // How many findings there are of each severity.
   repeated FindingCount finding_counts = 7;
   Counts counts = 8;
-  // Plans saved in the folder that no ceremony has run yet.
+  // Plans saved in the bundle that no ceremony has run yet.
   repeated PendingPlan pending_plans = 9;
   // The getting-started checklist, in order.
   repeated SetupStep setup_steps = 10;
 }
 
-message Folder {
-  // Where the folder is, as the holder knows it, for example "~/ritueel".
+// The directory of one trust domain: its ledger, roots, cards and trust
+// files. The process serves one bundle.
+message Bundle {
+  // Where the bundle is, as the holder knows it, for example
+  // "~/ritueel/acme".
   string path = 1;
+  // The trust domain, for example "personal" or "acme". Also the first half
+  // of a root's written name: acme/A.
   string name = 2;
   bool exists = 3;
   google.protobuf.Timestamp created_at = 4;
@@ -135,7 +140,7 @@ message Counts {
 
 message PendingPlan {
   string plan_id = 1;
-  // Path inside the folder, for example "pending/2026-11-11-renew-due.plan".
+  // Path inside the bundle, for example "pending/2026-11-11-renew-due.plan".
   string path = 2;
   Intention intention = 3;
   string title = 4;
@@ -213,7 +218,8 @@ enum RootState {
 }
 
 message Root {
-  // The root's label in the folder, for example "acme".
+  // The root's label in the bundle: A, B ... as in root.json. The page
+  // writes it bundle/label, for example acme/A.
   string label = 1;
   string name = 2;
   RootKind kind = 3;
@@ -304,7 +310,7 @@ enum DelegatedKeyState {
 // A key that a root has certified or bound for a requester system. The
 // private half stays where the requester made it.
 message DelegatedKey {
-  // The name in the folder's configuration, for example "acme-ca".
+  // The name in the bundle's configuration, for example "acme-ca".
   string name = 1;
   DelegatedKeyKind kind = 2;
   // The requester system that holds the key, as a name.
@@ -394,7 +400,7 @@ message Subkey {
   RevocationReason revocation_reason = 7;
   google.protobuf.Timestamp revoked_at = 8;
   SubkeyOrigin origin = 9;
-  // The cards that hold the private half, as far as the folder knows.
+  // The cards that hold the private half, as far as the bundle knows.
   repeated string card_serials = 10;
   // Fingerprint of the later subkey of the same use that replaces this
   // one; empty for the newest. A subkey that is valid and has this set is
@@ -439,7 +445,9 @@ enum CeremonyOutcome {
 
 // One record of the ledger.
 message Ceremony {
-  // The record's folder name, for example "2026-06-02-card-check".
+  // The record's name, which is also the name of its sub-folder of the
+  // ledger: the ceremony's time and command, for example
+  // "20260602T142000Z-card-check".
   string id = 1;
   CeremonyKind kind = 2;
   string title = 3;
@@ -477,11 +485,12 @@ enum CardKind {
   // A root card: it holds roots, and only goes into the offline machine.
   CARD_KIND_ROOT = 1;
   // A day-to-day card: signing and authentication subkeys, passkeys.
-  CARD_KIND_DAILY = 2;
+  CARD_KIND_DAY_TO_DAY = 2;
   // A card for practice. It holds nothing that matters.
   CARD_KIND_REHEARSAL = 3;
-  // A card in the board of a requester system.
-  CARD_KIND_BOARD = 4;
+  // A card that stays in a server of a requester system, used like a small
+  // hardware security module.
+  CARD_KIND_SERVER = 4;
 }
 
 enum CardState {
@@ -622,7 +631,7 @@ message Slot {
   // SHA-256 of the public key, in hexadecimal; empty for an empty slot.
   string public_key_sha256 = 9;
   google.protobuf.Timestamp born_at = 10;
-  // True when the folder holds the maker's attestation for the key.
+  // True when the bundle holds the maker's attestation for the key.
   bool attested = 11;
 }
 
@@ -657,7 +666,7 @@ message TrustFile {
   // The file name, for example "root-list.json".
   string name = 1;
   TrustFileKind kind = 2;
-  // Path inside the folder.
+  // Path inside the bundle.
   string path = 3;
   int32 trust_sequence = 4;
   google.protobuf.Timestamp built_at = 5;
