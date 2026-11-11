@@ -12,7 +12,12 @@
 // a Unix socket; a browser cannot open a Unix socket, so while this page is in
 // use the same process also answers on the loopback address, with the same
 // calls and the same answers. The page and the command line work the same way
-// and neither does anything the other cannot.
+// and neither does anything the other cannot. Same calls, not the same trust:
+// the loopback listener binds 127.0.0.1 only, checks Host exactly and Origin or
+// Sec-Fetch-Site on every request, and sets no permissive CORS header (the
+// wizard's rules 1 and 4, https://ritueel.id/reference/wizard/). Any program or
+// web page on the computer can send it a request, so it is trusted no more than
+// any other web request.
 //
 // No call takes or returns a secret, a PIN or a passphrase. The wizard
 // asks only questions with a fixed list of answers (no free text), and the
@@ -380,7 +385,7 @@ export type Plan = Message<"ritueel.local.v1alpha1.Plan"> & {
   equivalentCommand: string;
 
   /**
-   * The exact command to run, from the bundle's directory, with the full
+   * The exact command to run, from the bundle, with the full
    * digest: ritueel run ledger/<ceremony>/plan.json --confirm <64 hex>.
    *
    * @generated from field: string run_command = 11;
@@ -580,7 +585,7 @@ export type SavePlanResponse = Message<"ritueel.local.v1alpha1.SavePlanResponse"
   notice: string;
 
   /**
-   * The exact command to run, from the bundle's directory.
+   * The exact command to run, from the bundle.
    *
    * @generated from field: string run_command = 8;
    */

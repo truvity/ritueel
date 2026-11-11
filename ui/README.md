@@ -33,7 +33,7 @@ terminal, on the offline system or on your workstation.
 | `#/start` | The verdict, what is wrong, what is due, the ledger seal, getting started |
 | `#/findings` | Every finding with its reason, evidence, command and one next step; filter by level |
 | `#/roots` | The roots of the bundle by store (encrypted file, root cards, cloud KMS) and its delegated keys |
-| `#/key/<root label>` | One root of the bundle in full, for example `acme/A`: its certificate, keys, card and delegated keys. In `personal` it adds the subkeys by year and by card and a validity chart |
+| `#/key/<root label>` | One root of the bundle in full, for example `acme/A`: its certificate, keys, card and delegated keys. For a root that has subkeys, such as `personal/A` and `acme/A`, it adds the subkeys by year and by card or cloud key, and, from three sets on, a matrix and a validity chart |
 | `#/cards` and `#/cards/<serial>` | The inventory; one card opened with every slot (a slot opens its details) |
 | `#/history` and `#/history/<id>` | The ledger; one ceremony opened with its steps and records |
 | `#/trust` | The trust files and their checks |
@@ -213,7 +213,7 @@ Only the transport. The process is the owner's decision of 2026-11-11: one
 long-running background process, started on demand, bound to a Unix socket. The
 command line uses the socket. A browser cannot open a Unix socket, so the page
 reaches the same process over the loopback address while the page is in use. Both
-get the same calls and the same answers, and the process serves one bundle.
+get the same calls and the same answers, and the process serves one bundle. Same calls, not the same trust: the loopback listener binds 127.0.0.1 only, checks the Host header exactly and Origin or Sec-Fetch-Site on every request, and sets no permissive CORS header ([reference/wizard](https://ritueel.id/reference/wizard/), rules 1 and 4). It has the same calls as the socket, but any program or web page on the computer can send it a request, so it is trusted no more than any other web request.
 
 In the real program the same page bundle (`npm run build:real`, `BASE=./`) is
 embedded in the binary and served by that process; `src/api/client.ts` then builds
