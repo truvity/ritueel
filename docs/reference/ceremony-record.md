@@ -33,7 +33,7 @@ A **key fingerprint** in these files is the SHA-256 of the DER `SubjectPublicKey
 | `command` | The command, as typed: `init`, `intermediate add` and so on. |
 | `arguments` | An object with every argument that changes what is signed: the intermediate's name, the request's stem, `--root` and its reason, `--allow-missing` names. Flags that change only how ritueel runs (`--output`, `--passphrase-fd`) are not in it. |
 | `made_at` | When the plan was written. |
-| `ritueel` | Proposed. The copy of ritueel that made the plan: `{ "version", "os_arch", "sha256" }`. See the note below the table. |
+| `ritueel` | The copy of ritueel that made the plan: `{ "version", "os_arch", "sha256" }`. That the plan records the digest of the ritueel binary that made it, and that the run uses that version, is decided ([record 0005](../decisions/0005-a-ceremony-and-where-it-runs.md), rules 22 and 25); the member name and its members are proposed. See the note below the table. |
 | `ceremony_time` | The time every signature carries and every validity starts from. Drawn once, here. |
 | `inputs` | A list of `{ "path", "sha256" }`: every file of the bundle the plan was made from, `ritueel.yaml` and the request files included, in path order. |
 | `last_record_sha256` | The SHA-256 of the newest record in the bundle, or absent when there is none. |
@@ -76,7 +76,7 @@ The **plan digest** is the SHA-256 of the bytes of the plan file, shown as 64 lo
 - **A script** passes `--confirm DIGEST` with all 64 digits, which it can only have by reading the plan ritueel wrote (`--plan-only --output json` prints it, see [Commands](/reference/cli/#machine-readable-output)).
 - **A wrong or missing confirmation is refused before the attempt is written** (exit code 5). Nothing is signed and nothing is reserved.
 
-`ritueel run PLAN --confirm DIGEST` executes a plan made earlier. **A plan is bound to the state it was made against, not to a clock:** ritueel refuses it with the reason code `plan-stale` (exit code 3) when the newest trust sequence is no longer `base_sequence`, the newest record is no longer `last_record_sha256`, or any file of `inputs` has another digest. A plan that still matches runs however old it is, with its own `ceremony_time`. A confirmation never replaces a touch.
+`ritueel run PLAN` executes a plan made earlier (it asks for the first eight characters of the digest; `--confirm DIGEST` is the flag for scripts). **A plan is bound to the state it was made against, not to a clock:** ritueel refuses it with the reason code `plan-stale` (exit code 3) when the newest trust sequence is no longer `base_sequence`, the newest record is no longer `last_record_sha256`, or any file of `inputs` has another digest. A plan that still matches runs however old it is, with its own `ceremony_time`. A confirmation never replaces a touch.
 
 ### Declining
 

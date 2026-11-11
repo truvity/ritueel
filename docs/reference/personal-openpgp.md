@@ -60,8 +60,9 @@ The encryption subkey is the exception: it is made in software, loaded onto each
 |---|---|---|
 | `ritueel init --kind personal --store software --backend file --key-dir DIR --revocation-dir DIR` | Makes the bundle, the primary and its revocation signatures ([revocation material](/reference/revocation-material/)), and the first certificate. | Yes |
 | `ritueel personal subkey add NAME --card SERIAL` | One ceremony: the card makes the subkey of the entry `NAME`, with its capability, and its back-signature, the primary binds it, and the certificate is rebuilt. It writes the request and the proof into `requests/` like any requester, then answers them. | Yes |
+| `ritueel personal userid change` | Proposed; the name is not decided. One ceremony: the primary certifies the new user ID and makes it primary, and the old user ID may get a revocation that says it is no longer valid. The fingerprint and all trust stay. The certificate is rebuilt. | Yes |
 
-Everything else is planned: the renewal plan (`ritueel due`, then `ritueel run PLAN --confirm DIGEST`) renews the binding and extends the primary, `status` warns at 60, 30 and 14 days for the binding and at 6 months, 3 months and 30 days for the primary, and `revocation make`, `revocation check` and `drill restore` work as for a root.
+Everything else is planned: the renewal plan (`ritueel due`, then `ritueel run PLAN`) renews the binding and extends the primary, `status` warns at 60, 30 and 14 days for the binding and at 6 months, 3 months and 30 days for the primary, and `revocation make`, `revocation check` and `drill restore` work as for a root.
 
 ### The ceremony of `personal subkey add`
 
@@ -89,12 +90,16 @@ The adoption command is fixed with the code ([issue #18](https://github.com/truv
 Decided, not built; it depends on the root cards and their proofs (M1, M6). Card-born primaries come after adoption ([record 0008](../decisions/0008-a-persons-own-key.md)).
 
 :::note[Proposed]
-The layout is awaiting the maintainer. Two primaries are born, one on each root card, in the personal bundle's row ([record 0003](../decisions/0003-root-cards.md)). One is published; the other is a standby that the published one certifies. The old key vouches for the published one, with an overlap, and then ends ([record 0007](../decisions/0007-changing-and-losing-a-root.md)). Record 0008 names the standby primary only as the answer to a card that has no backup, and fixes no layout.
+The layout is awaiting the maintainer. Two primaries are born, one on each root card, in the personal bundle's row ([record 0003](../decisions/0003-root-cards.md)). One is published; the other is a standby that the published one certifies. The old key vouches for the published one, with an overlap, and then ends ([record 0007](../decisions/0007-changing-and-losing-a-root.md)). Record 0008 names the standby primary only as the answer to a card that has no backup, and fixes no layout. Record 0008 lists the layout under Not yet proven or only proposed.
 :::
 
 ## Retiring a subkey
 
 A subkey that is replaced is retired by a revocation with the reason "superseded", dated on the day of the switch, or by expiry; "compromised" is for compromise only ([record 0008](../decisions/0008-a-persons-own-key.md)). What the verifiers do with each was measured on 2026-11-10: [the research note](/research/openpgp-subkey-retirement-2026-11-10/).
+
+## Changing a name or address
+
+Adding and retiring a user ID of an OpenPGP primary is a ceremony like any other: a new self-certification by the primary, and the old user ID gets a revocation that says it is no longer valid, not compromised. The fingerprint and all trust stay, which a new key for a new address would lose. It is offered in the command line and in the page (Make a plan), and for a person's own key it is part of M3 ([record 0008](../decisions/0008-a-persons-own-key.md), rule 17). A published copy of the old user ID cannot be withdrawn; the revocation is what servers and hosts can show. After the ceremony ritueel prints the next steps; the guide is [After a ceremony](/guides/after-a-ceremony/).
 
 ## Follow-ups
 

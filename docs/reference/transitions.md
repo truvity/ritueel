@@ -33,6 +33,8 @@ The number of active roots the holder intends to have is the **target**: `init` 
 
 ## The commands
 
+An X.509 root is not renamed: its name is inside the certificate and every intermediate names it as issuer. A new name is a new root, made with `root add`, overlapped, then retired ([record 0007](../decisions/0007-changing-and-losing-a-root.md), rule 28).
+
 | Command | Needs | Writes |
 |---|---|---|
 | `ritueel root add --store S [--card SERIAL] [--replaces LABEL --overlap-until DATE \| --target N] [--root LABEL]` | The card, or the KMS roles, of the new root, and the card or role of every active root. A root that cannot come is revoked first. | The new root; its vouches; the next trust files. |

@@ -13,7 +13,7 @@ sidebar:
 |---|---|---|
 | `ritueel init` | Creates the bundle, the roots (`--roots N`, default 2, both cards present) with their attestations, their revocation signatures (one for each of two reasons) and their removal authorisations, and the first trust files. | Yes |
 | `ritueel due [--allow-missing NAME]` | Writes the plans for what is due: each renewal is a separate action in a plan, with the root of the year, and the plan includes the advisory review. It stops when the request of a registered intermediate is missing, unless `--allow-missing NAME` is given and recorded. It signs nothing. There is no `yearly` command ([record 0005](../decisions/0005-a-ceremony-and-where-it-runs.md)). | No |
-| `ritueel run PLAN --confirm DIGEST` | Executes a saved plan after checking that it still matches the bundle, then the steps of the ceremony from reserve to record. It replaces a `--plan FILE` flag: there is one way to execute a plan. | Yes |
+| `ritueel run PLAN` | Executes a saved plan after checking that it still matches the bundle, asks for the first eight characters of its digest, then the steps of the ceremony from reserve to record. `--confirm DIGEST` is the flag for scripts. It replaces a `--plan FILE` flag: there is one way to execute a plan. | Yes |
 | `ritueel intermediate add NAME --request STEM` | Registers an intermediate and certifies its first request. | Yes |
 | `ritueel intermediate replace NAME` | The event path: certifies a new key for a registered intermediate. `--revoke` also revokes the old one, with a reason. | Yes |
 | `ritueel intermediate revoke NAME` | Revokes the certificate and subkey binding of an intermediate, or withdraws its SSH CA key, with a reason (`--reason compromise`, `superseded` or `cessation`), without a replacement. It lists the intermediate's unexpired certificates on the [CRL](/reference/crl/) of each root that issued them, so it needs those roots' cards. | Yes |
@@ -29,12 +29,14 @@ sidebar:
 | `ritueel root-list verify`, `ssh-ca-keys verify`, `crl verify`, `keyring verify` | The host's and the relying party's side of each trust file: run its checks on a file, signing and writing nothing. | No |
 | `ritueel records list`, `records verify`, `records close` | Read the ceremony records, check their hash chain, and close an unresolved attempt. | `close` only |
 | `ritueel personal subkey add NAME --card SERIAL` | In a personal bundle: the card makes the daily subkey and its back-signature, and the person's primary binds it ([personal OpenPGP](/reference/personal-openpgp/#the-commands)). `init --kind personal` makes the bundle. | Yes |
-| `ritueel card adopt` | Adopts a card: replaces the management key and the PUK with random ones, seals them in the bundle, and registers the card in the inventory. The holder has set the PIN ([root cards](/reference/cards/), [record 0003](../decisions/0003-root-cards.md)). A card that another bundle of the holder adopted is not adopted again: this bundle gets its sealed copy by a request to the first bundle ([a pair shared by bundles](/reference/cards/#a-pair-shared-by-bundles)). | Yes |
+| `ritueel card adopt` | Adopts a card (the name is proposed; [record 0003](../decisions/0003-root-cards.md) decides the adoption, not the name): replaces the management key and the PUK with random ones, seals them in the bundle, and registers the card in the inventory. The holder has set the PIN ([root cards](/reference/cards/), [record 0003](../decisions/0003-root-cards.md)). A card that another bundle of the holder adopted is not adopted again: this bundle gets its sealed copy by a request to the first bundle ([a pair shared by bundles](/reference/cards/#a-pair-shared-by-bundles)). | Yes |
 | `ritueel card check` | The read-only check of a card against the built-in layout. It writes `cards.yaml` and `cards/NAME.yaml` and changes nothing on the card ([root cards](/reference/cards/#what-is-checked-on-a-card)). | No |
 | `ritueel wizard [--web]` | The guided mode, which asks line by line in the terminal; with `--web`, also a read-only page served on localhost. The page cannot confirm anything; it ends with a preview and the command to run, and can save the plan file ([the wizard](/reference/wizard/)). The page calls the same API as the commands, served by the same ritueel process on one fixed loopback port; `--web` prints its address ([the process](/reference/wizard/#the-ritueel-process)). The process writes the saved plan where `--plan-only` writes it. | Yes |
 | `ritueel stop` | Proposed. Ends the ritueel process, if one runs, and exits 0 also when none runs. The process otherwise ends by itself after an idle time ([the process](/reference/wizard/#the-ritueel-process)). | No |
 
 The verbs of a transition map onto the commands: *create* and *vouch* are `root add`, *overlap* is a state and not a command, *supersede* is `root retire`, and *revoke* is `root revoke`.
+
+There is no command that renames an X.509 root: its name is inside the certificate and every intermediate names it as issuer. A new name is a new root: `root add`, an overlap, then `root retire` ([record 0007](../decisions/0007-changing-and-losing-a-root.md), rule 28).
 
 ## Flags every ceremony shares
 
@@ -42,7 +44,7 @@ The verbs of a transition map onto the commands: *create* and *vouch* are `root 
 |---|---|
 | `--dir DIR` | The bundle. The default is the current directory when it holds `ritueel.yaml`. |
 | `--plan-only` | Write the plan (`history/<ceremony>/plan.json`) and stop. |
-| `--confirm DIGEST` | Confirm a plan from a script; the digest must be the plan's. With `run PLAN`, it is how a saved plan is executed. |
+| `--confirm DIGEST` | Confirm a plan from a script; the digest must be the plan's. Without it, `run PLAN` asks the person for the first eight characters. |
 | `--root ROOT` | Sign with this root instead of the root of the year; the reason is recorded. |
 | `--allow-missing NAME` | `due` only: plan without a request for this intermediate, and record it. |
 | `--card [LABEL=]SERIAL` | `piv` roots: the card that holds the root `LABEL`, by serial. `init` takes one for each root (`--card A=00000001 --card B=00000002`); `root add` takes one. Without it, the only card connected is used, and two cards are refused with `card-ambiguous` ([cards](/reference/cards/#what-is-checked-on-a-card)). |
@@ -131,6 +133,24 @@ ritueel --dir ca intermediate add example-ca --request req-1 --key-dir keys \
 ritueel --dir ca run "$(jq -r .plan.path plan.json)" --key-dir keys \
   --confirm "$(jq -r .plan.sha256 plan.json)" --output json
 ```
+
+## After a ceremony
+
+:::note[Proposed]
+Every name in this section is proposed, awaiting the maintainer; the rules are [record 0011](../decisions/0011-publishing-and-what-to-do-after-a-ceremony.md). ritueel changes only your bundle, sends out only a public OpenPGP key, and never runs a command with administrator rights.
+:::
+
+| Command | Does | Needs a person |
+|---|---|---|
+| `ritueel publish [--revocation FILE]` | A separate process, never inside a ceremony and absent from the offline build. Rebuilds the public key from the verified record, shows a preview (every user ID, subkeys, fingerprint, each server, "what is published cannot be withdrawn"), waits for the typed confirmation (the first 8 characters of the fingerprint and the server name; 16 characters for a revocation), sends to the keyservers listed in `ritueel.yaml`, reads back and compares. Refuses a test root and a run while a ceremony runs; reads no token. With `--revocation FILE` it sends the revocation signature the holder keeps apart. | Yes |
+| `ritueel personal userid change` | One plan: certify the new user ID, make it primary, optionally revoke the old one as no longer valid ([personal OpenPGP](/reference/personal-openpgp/#changing-a-name-or-address)). | Yes |
+| `ritueel run --latest` | Runs the plan saved less than 15 minutes ago in the same login; refuses if more than one is pending; says "saved from the browser page at HH:MM" and shows non-ASCII characters as U+XXXX. | Yes |
+| `ritueel check tls HOST:PORT` | Reads the chain a live service presents and says which intermediate and root it shows, with the time, the source and the facts; it is not proof that a key is not revoked. Whether Go exposes the full presented chain is not researched. | No |
+| `ritueel root-list verify -` | Reads a fetched root list from standard input (the host checks itself). | No |
+
+After every ceremony ritueel prints a list of next steps (its name, NEXT STEPS, is proposed): what changed, who needs it, how. Later: `check --local`, which matches installed roots to the bundle by key pin.
+
+Exit codes of these commands are fixed with the code.
 
 ## Machine-readable output
 

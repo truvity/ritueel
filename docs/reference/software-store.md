@@ -13,7 +13,7 @@ A software key has no evidence of where it lives and can be copied ([what a stor
 
 | Backend | May hold | Never holds | Platforms |
 |---|---|---|---|
-| `file`: an age-encrypted key file, opened by a passkey on each root card, a recovery key or a passphrase ([record 0002](../decisions/0002-where-a-key-lives.md)) | Test roots, drills, development; a person's own primary, new or adopted ([record 0008](../decisions/0008-a-persons-own-key.md)). | A root that others rely on. | Linux, macOS |
+| `file`: an age-encrypted key file, opened by a passkey on each card named as a way to open it (the root cards), a recovery key or a passphrase ([record 0002](../decisions/0002-where-a-key-lives.md)) | Test roots, drills, development; a person's own primary, new or adopted ([record 0008](../decisions/0008-a-persons-own-key.md)). | A root that others rely on. | Linux, macOS |
 | `onepassword`: 1Password, through `op` | The keys of test roots, intermediates and subkeys. | A production root, or a person's primary key. | Linux, macOS |
 | `keyring`: the OS keyring | A throwaway test key. | Anything else, and any passphrase. | Linux, macOS |
 
@@ -32,11 +32,11 @@ Decided, not yet proven: the passkey proof is M1 ([record 0002](../decisions/000
 
 | | Way | Detail |
 |---|---|---|
-| Default | A passkey on each root card | The key file is an age file encrypted to the public half of an age key (the unlock key) and to a recovery recipient. A passkey on each root card (CTAP2 hmac-secret; the kind that stores nothing on the card; user verification required) unwraps the private half of the unlock key. Any one root card of the pair is enough. Encrypting needs no card, and no PIV slot is used. |
-| Always kept | A recovery key | An age identity in a passphrase-protected file, kept apart from the cards. Its file and its passphrase never sit in the same place. |
+| Default | A passkey on each card named as a way to open the file (the root cards) | The key file is an age file encrypted to the public half of an age key (the unlock key) and to a recovery recipient. A passkey on each such card (CTAP2 hmac-secret; the kind that stores nothing on the card; user verification required) unwraps the private half of the unlock key. Any one of those cards is enough, and a file may name more than two. Encrypting needs no card, and no PIV slot is used. |
+| Always kept | A recovery key | An age identity in a passphrase-protected file, kept apart from the cards. Its file and its passphrase never sit in the same place. Its passphrase is the break-glass and may live in a password manager; the file it protects never sits beside it. |
 | Supported | A passphrase alone | For a holder without cards. A passphrase file holds only that recipient, because the age v1 specification says "An scrypt stanza, if present, MUST be the only stanza in the header" (read 2026-11-11, [age v1](https://age-encryption.org/v1)). |
 | Fallback | A key-agreement key in PIV slot 9d of each root card | Made only if passkey unlocking cannot be used. It is in row 1 of the card ([record 0003](../decisions/0003-root-cards.md)). |
-| Not supported | A synced passkey; unlocking inside the local page; a day-to-day card unlocking a root-level key file | The reasons are the roads not taken of record 0002. |
+| Not supported | A synced passkey, for now a password-manager passkey or unlock item; unlocking inside the local page; a day-to-day card unlocking a root-level key file | The reasons are the roads not taken of record 0002. |
 
 ## Revocation signatures
 
@@ -81,5 +81,5 @@ A ceremony with a software root writes in its record: `copyable` true (as the pl
 
 | Standard | Used for |
 |---|---|
-| [age v1](https://age-encryption.org/v1) | The `file` backend. |
+| [age v1](https://github.com/C2SP/C2SP/blob/main/age.md) | The `file` backend. |
 | [RFC 5958](https://datatracker.ietf.org/doc/html/rfc5958), [RFC 9580](https://datatracker.ietf.org/doc/html/rfc9580) | The key formats stored. |
