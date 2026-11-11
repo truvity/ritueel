@@ -296,7 +296,7 @@ export function WhereItRuns({ plan }: { plan: PlanMessage }) {
         <ol className="mt-2 list-decimal space-y-1.5 pl-6">
           {cloud ? (
             <li>
-              <strong>Proposed (record 0005, issue 30):</strong> a cloud key has no touch, so condition 1 is for cards. This plan asks for {touches}; the typed digest and the session of the ceremony role stand.
+              A cloud key has no touch, so condition 1 is for cards only. This plan asks for {touches}; the typed digest and the session of the ceremony role stand, and the audit trail of the key records every signature.
             </li>
           ) : (
             <li>

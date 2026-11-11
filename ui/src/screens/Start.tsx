@@ -332,7 +332,7 @@ function Words() {
     ['Bundle', 'The directory with a fixed structure that holds everything ritueel knows about one trust domain, for example personal or acme: its history, roots, cards and trust files. Across bundles a root is written with the bundle\'s name, for example acme/A.'],
     ['Ceremony', 'One sitting at a terminal, where a plan is run and something about your keys changes.'],
     ['Offline system', 'Vanilla AirgapOS, started from the ceremony USB stick. A root that can be copied (a key file) is used only here. Any root may be used here.'],
-    ['Your workstation', 'The computer you work on. A root that cannot be copied (on cards or in the cloud) may be used here, with the count in the plan, no retry and a check on a second device, and on cards a touch for every signature (how the touch reads for a cloud key is only proposed). No stick is needed.'],
+    ['Your workstation', 'The computer you work on. A root that cannot be copied (on cards or in the cloud) may be used here, with the count in the plan, no retry and a check on a second device, and on cards a touch for every signature (a cloud key has no touch: the typed digest and the role session stand, and its audit trail records every signature). No stick is needed.'],
     ['History', 'The write-once part of the bundle, history/, with one sub-folder for each ceremony. Each record names the one before it by digest, which is the chain.'],
     ['Trust files', 'The files your machines and users read to trust your roots, in numbered sets, trust/<number>/: root list, CA bundle, revocation lists, SSH CA key list and the public OpenPGP keyring. A personal bundle has only your public certificate. ritueel builds them; you publish them.'],
   ];
