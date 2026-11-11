@@ -3,7 +3,7 @@
 // Replace means making a new key; retire is revoking a subkey that a newer one
 // already replaced. The bare word bundle means the directory of one trust
 // domain; the trust file keeps its full name, CA bundle.
-import { Store } from '../gen/ritueel/local/v1alpha1/common_pb';
+import { RunPlace, Store } from '../gen/ritueel/local/v1alpha1/common_pb';
 import {
   CardKind,
   CardState,
@@ -22,7 +22,7 @@ import {
   TrustCheckResult,
   TrustFileKind,
 } from '../gen/ritueel/local/v1alpha1/inspect_service_pb';
-import { BundleChangeAction, Requirement, RunPlace } from '../gen/ritueel/local/v1alpha1/plan_service_pb';
+import { BundleChangeAction, Requirement } from '../gen/ritueel/local/v1alpha1/plan_service_pb';
 
 export const STORE_WORD: Record<number, string> = {
   [Store.SOFTWARE_FILE]: 'Encrypted file',

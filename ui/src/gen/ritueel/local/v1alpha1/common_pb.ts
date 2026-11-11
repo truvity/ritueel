@@ -32,7 +32,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file ritueel/local/v1alpha1/common.proto.
  */
 export const file_ritueel_local_v1alpha1_common: GenFile = /*@__PURE__*/
-  fileDesc("CiNyaXR1ZWVsL2xvY2FsL3YxYWxwaGExL2NvbW1vbi5wcm90bxIWcml0dWVlbC5sb2NhbC52MWFscGhhMSJfCgdTdWJqZWN0EjEKBGtpbmQYASABKA4yIy5yaXR1ZWVsLmxvY2FsLnYxYWxwaGExLlN1YmplY3RLaW5kEhIKCmlkZW50aWZpZXIYAiABKAkSDQoFbGFiZWwYAyABKAkiogIKDUhpc3RvcnlTdGF0dXMSFAoMcmVjb3JkX2NvdW50GAEgASgFEjcKC2NoYWluX3N0YXRlGAIgASgOMiIucml0dWVlbC5sb2NhbC52MWFscGhhMS5DaGFpblN0YXRlEhoKEmhlYWRfcmVjb3JkX3NoYTI1NhgDIAEoCRIWCg5sYXN0X3JlY29yZF9pZBgEIAEoCRIZChFsYXN0X3JlY29yZF90aXRsZRgFIAEoCRIyCg5sYXN0X3JlY29yZF9hdBgGIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASLgoKY2hlY2tlZF9hdBgHIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASDwoHbWVzc2FnZRgIIAEoCSp3CghTZXZlcml0eRIYChRTRVZFUklUWV9VTlNQRUNJRklFRBAAEhEKDVNFVkVSSVRZX0lORk8QARITCg9TRVZFUklUWV9OT1RJQ0UQAhISCg5TRVZFUklUWV9BTEVSVBADEhUKEVNFVkVSSVRZX0NSSVRJQ0FMEAQqYgoFU3RvcmUSFQoRU1RPUkVfVU5TUEVDSUZJRUQQABIXChNTVE9SRV9TT0ZUV0FSRV9GSUxFEAESFAoQU1RPUkVfUk9PVF9DQVJEUxACEhMKD1NUT1JFX0NMT1VEX0tNUxADKv4BCgtTdWJqZWN0S2luZBIcChhTVUJKRUNUX0tJTkRfVU5TUEVDSUZJRUQQABIXChNTVUJKRUNUX0tJTkRfQlVORExFEAESFQoRU1VCSkVDVF9LSU5EX1JPT1QQAhIeChpTVUJKRUNUX0tJTkRfREVMRUdBVEVEX0tFWRADEhcKE1NVQkpFQ1RfS0lORF9TVUJLRVkQBBIYChRTVUJKRUNUX0tJTkRfVVNFUl9JRBAFEhUKEVNVQkpFQ1RfS0lORF9DQVJEEAYSGgoWU1VCSkVDVF9LSU5EX0NMT1VEX0tFWRAHEhsKF1NVQkpFQ1RfS0lORF9UUlVTVF9GSUxFEAgqqgEKCUludGVudGlvbhIZChVJTlRFTlRJT05fVU5TUEVDSUZJRUQQABIXChNJTlRFTlRJT05fUkVORVdfRFVFEAESFwoTSU5URU5USU9OX0FET1BUX0tFWRACEhwKGElOVEVOVElPTl9SRVRJUkVfU1VCS0VZUxADEhYKEklOVEVOVElPTl9BRERfQ0FSRBAEEhoKFklOVEVOVElPTl9SRVBMQUNFX0NBUkQQBSp4CgpDaGFpblN0YXRlEhsKF0NIQUlOX1NUQVRFX1VOU1BFQ0lGSUVEEAASGwoXQ0hBSU5fU1RBVEVfTk9UX0NIRUNLRUQQARIYChRDSEFJTl9TVEFURV9WRVJJRklFRBACEhYKEkNIQUlOX1NUQVRFX0JST0tFThADYgZwcm90bzM", [file_google_protobuf_timestamp]);
+  fileDesc("CiNyaXR1ZWVsL2xvY2FsL3YxYWxwaGExL2NvbW1vbi5wcm90bxIWcml0dWVlbC5sb2NhbC52MWFscGhhMSJfCgdTdWJqZWN0EjEKBGtpbmQYASABKA4yIy5yaXR1ZWVsLmxvY2FsLnYxYWxwaGExLlN1YmplY3RLaW5kEhIKCmlkZW50aWZpZXIYAiABKAkSDQoFbGFiZWwYAyABKAkiogIKDUhpc3RvcnlTdGF0dXMSFAoMcmVjb3JkX2NvdW50GAEgASgFEjcKC2NoYWluX3N0YXRlGAIgASgOMiIucml0dWVlbC5sb2NhbC52MWFscGhhMS5DaGFpblN0YXRlEhoKEmhlYWRfcmVjb3JkX3NoYTI1NhgDIAEoCRIWCg5sYXN0X3JlY29yZF9pZBgEIAEoCRIZChFsYXN0X3JlY29yZF90aXRsZRgFIAEoCRIyCg5sYXN0X3JlY29yZF9hdBgGIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASLgoKY2hlY2tlZF9hdBgHIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASDwoHbWVzc2FnZRgIIAEoCSp3CghTZXZlcml0eRIYChRTRVZFUklUWV9VTlNQRUNJRklFRBAAEhEKDVNFVkVSSVRZX0lORk8QARITCg9TRVZFUklUWV9OT1RJQ0UQAhISCg5TRVZFUklUWV9BTEVSVBADEhUKEVNFVkVSSVRZX0NSSVRJQ0FMEAQqYgoFU3RvcmUSFQoRU1RPUkVfVU5TUEVDSUZJRUQQABIXChNTVE9SRV9TT0ZUV0FSRV9GSUxFEAESFAoQU1RPUkVfUk9PVF9DQVJEUxACEhMKD1NUT1JFX0NMT1VEX0tNUxADKl4KCFJ1blBsYWNlEhkKFVJVTl9QTEFDRV9VTlNQRUNJRklFRBAAEhwKGFJVTl9QTEFDRV9PRkZMSU5FX1NZU1RFTRABEhkKFVJVTl9QTEFDRV9XT1JLU1RBVElPThACKv4BCgtTdWJqZWN0S2luZBIcChhTVUJKRUNUX0tJTkRfVU5TUEVDSUZJRUQQABIXChNTVUJKRUNUX0tJTkRfQlVORExFEAESFQoRU1VCSkVDVF9LSU5EX1JPT1QQAhIeChpTVUJKRUNUX0tJTkRfREVMRUdBVEVEX0tFWRADEhcKE1NVQkpFQ1RfS0lORF9TVUJLRVkQBBIYChRTVUJKRUNUX0tJTkRfVVNFUl9JRBAFEhUKEVNVQkpFQ1RfS0lORF9DQVJEEAYSGgoWU1VCSkVDVF9LSU5EX0NMT1VEX0tFWRAHEhsKF1NVQkpFQ1RfS0lORF9UUlVTVF9GSUxFEAgqqgEKCUludGVudGlvbhIZChVJTlRFTlRJT05fVU5TUEVDSUZJRUQQABIXChNJTlRFTlRJT05fUkVORVdfRFVFEAESFwoTSU5URU5USU9OX0FET1BUX0tFWRACEhwKGElOVEVOVElPTl9SRVRJUkVfU1VCS0VZUxADEhYKEklOVEVOVElPTl9BRERfQ0FSRBAEEhoKFklOVEVOVElPTl9SRVBMQUNFX0NBUkQQBSp4CgpDaGFpblN0YXRlEhsKF0NIQUlOX1NUQVRFX1VOU1BFQ0lGSUVEEAASGwoXQ0hBSU5fU1RBVEVfTk9UX0NIRUNLRUQQARIYChRDSEFJTl9TVEFURV9WRVJJRklFRBACEhYKEkNIQUlOX1NUQVRFX0JST0tFThADYgZwcm90bzM", [file_google_protobuf_timestamp]);
 
 /**
  * The thing a line of text is about, so the page can link to it.
@@ -218,6 +218,49 @@ export const StoreSchema: GenEnum<Store> = /*@__PURE__*/
   enumDesc(file_ritueel_local_v1alpha1_common, 1);
 
 /**
+ * Where a ceremony runs, or ran (record 0005, rules 17 to 21). Every record
+ * says where its ceremony ran (rule 2), and a plan says where it will run.
+ *
+ * @generated from enum ritueel.local.v1alpha1.RunPlace
+ */
+export enum RunPlace {
+  /**
+   * Not said; the page then writes "the terminal where you run it".
+   *
+   * @generated from enum value: RUN_PLACE_UNSPECIFIED = 0;
+   */
+  UNSPECIFIED = 0,
+
+  /**
+   * Vanilla AirgapOS, started from the ceremony USB stick, which has one
+   * extra partition. Required for a key that can be copied (a key file); any
+   * root may use it. The bundle goes there inside the stick's extra partition.
+   *
+   * @generated from enum value: RUN_PLACE_OFFLINE_SYSTEM = 1;
+   */
+  OFFLINE_SYSTEM = 1,
+
+  /**
+   * The holder's own computer. Allowed for a key that cannot be copied (a
+   * root on cards, a cloud root) under four conditions: a touch for every
+   * signature, the number of signatures stated in the plan, no retry of a
+   * failed touch, and the result checked against the plan on a second device
+   * before it is handed over or published. A test root may also run here.
+   * How the touch reads for a cloud key is only proposed (record 0005, issue
+   * 30). No stick is needed.
+   *
+   * @generated from enum value: RUN_PLACE_WORKSTATION = 2;
+   */
+  WORKSTATION = 2,
+}
+
+/**
+ * Describes the enum ritueel.local.v1alpha1.RunPlace.
+ */
+export const RunPlaceSchema: GenEnum<RunPlace> = /*@__PURE__*/
+  enumDesc(file_ritueel_local_v1alpha1_common, 2);
+
+/**
  * What a finding, a due item or a plan is about.
  *
  * @generated from enum ritueel.local.v1alpha1.SubjectKind
@@ -275,7 +318,7 @@ export enum SubjectKind {
  * Describes the enum ritueel.local.v1alpha1.SubjectKind.
  */
 export const SubjectKindSchema: GenEnum<SubjectKind> = /*@__PURE__*/
-  enumDesc(file_ritueel_local_v1alpha1_common, 2);
+  enumDesc(file_ritueel_local_v1alpha1_common, 3);
 
 /**
  * What a holder wants to do. A plan is always built from one of these.
@@ -330,7 +373,7 @@ export enum Intention {
  * Describes the enum ritueel.local.v1alpha1.Intention.
  */
 export const IntentionSchema: GenEnum<Intention> = /*@__PURE__*/
-  enumDesc(file_ritueel_local_v1alpha1_common, 3);
+  enumDesc(file_ritueel_local_v1alpha1_common, 4);
 
 /**
  * Whether the hash chain of the history checks out.
@@ -369,5 +412,5 @@ export enum ChainState {
  * Describes the enum ritueel.local.v1alpha1.ChainState.
  */
 export const ChainStateSchema: GenEnum<ChainState> = /*@__PURE__*/
-  enumDesc(file_ritueel_local_v1alpha1_common, 4);
+  enumDesc(file_ritueel_local_v1alpha1_common, 5);
 

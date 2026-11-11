@@ -6,14 +6,13 @@ import FormControlLabel from '@mui/material/FormControlLabel';
 import FormLabel from '@mui/material/FormLabel';
 import Radio from '@mui/material/Radio';
 import RadioGroup from '@mui/material/RadioGroup';
-import type { Intention } from '../gen/ritueel/local/v1alpha1/common_pb';
+import { RunPlace, type Intention } from '../gen/ritueel/local/v1alpha1/common_pb';
 import {
   QuestionKind,
   type Answer,
   type Plan as PlanMessage,
   type PlanStep,
   type Question,
-  RunPlace,
   type SavePlanResponse,
 } from '../gen/ritueel/local/v1alpha1/plan_service_pb';
 import { isDemo, plans } from '../api/client';
