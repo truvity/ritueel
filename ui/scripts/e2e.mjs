@@ -30,9 +30,11 @@ const text = () => evalJs(`document.body.innerText`);
 // where the wizard's step bar is: the item marked as the current step, and how many items are done
 const stepBar = () =>
   evalJs(`(() => { const ol = document.querySelector('ol[aria-label="Where you are in the wizard"]'); if (!ol) return null; const cur = ol.querySelector('li[aria-current="step"]'); return JSON.stringify({ current: cur ? cur.textContent.replace(/\\s+/g, ' ').trim() : '', done: [...ol.querySelectorAll('li')].filter((li) => /\\(done\\)/.test(li.textContent)).length, items: ol.querySelectorAll('li').length }); })()`).then((v) => (v ? JSON.parse(v) : null));
+// base64 of a text, so a value can be put into the page's code without quoting it
+const b64 = (t) => Buffer.from(t, 'utf8').toString('base64');
 // the rectangle of the first element whose own text matches, relative to the window
 const rectOf = (needle, tag = '*') =>
-  evalJs(`(() => { const el = [...document.querySelectorAll(${JSON.stringify(tag)})].find((e) => e.children.length === 0 || e.tagName === 'P' ? e.textContent.includes(${JSON.stringify(needle)}) : false); if (!el) return null; const r = el.getBoundingClientRect(); return JSON.stringify({ top: r.top, bottom: r.bottom, height: innerHeight }); })()`).then((v) => (v ? JSON.parse(v) : null));
+  evalJs(`(() => { const el = [...document.querySelectorAll(atob('${b64(tag)}'))].find((e) => e.children.length === 0 || e.tagName === 'P' ? e.textContent.includes(new TextDecoder().decode(Uint8Array.from(atob('${b64(needle)}'), (c) => c.charCodeAt(0)))) : false); if (!el) return null; const r = el.getBoundingClientRect(); return JSON.stringify({ top: r.top, bottom: r.bottom, height: innerHeight }); })()`).then((v) => (v ? JSON.parse(v) : null));
 
 await send('Emulation.setDeviceMetricsOverride', { width: 1440, height: 900, deviceScaleFactor: 1, mobile: false });
 await send('Browser.grantPermissions', { permissions: ['clipboardReadWrite', 'clipboardSanitizedWrite'] }).catch(() => {});
