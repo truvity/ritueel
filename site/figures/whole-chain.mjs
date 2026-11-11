@@ -77,8 +77,9 @@ function daily(w) {
 // so the only difference between them is the replacement. `side` puts the row names left of the rows
 // (wide); otherwise above them (narrow).
 function timeline(W, y0, side) {
-  const ax = side ? 190 : 14;
-  const yw = side ? 140 : 83;
+  // the year cells fill what the row names leave: 190 + 4 x 140 in the 760-unit drawing, 250 + 4 x 210 in the 1100-unit one
+  const ax = side ? (W > 800 ? 250 : 190) : 14;
+  const yw = side ? (W > 800 ? 210 : 140) : 74;
   const h = 48;
   const yFile = y0 + (side ? 44 : 78);
   const yBar = yFile + h + (side ? 24 : 46);
@@ -114,26 +115,31 @@ const LABEL =
   'Keys for every day: an intermediate in your certificate system and subkeys on your day-to-day card. An arrow labelled used in leads from the root to the ceremony and one labelled signs from the ceremony to the keys. ' +
   'Under the chain, over four years: a key file is replaced on a calendar, with a new key in year one and again in year four, three years at most; a key on a card or in a cloud key service is the same key all four years, replaced only on an event.';
 
-function wide() {
-  const pw = [216, 224, 216];
+// The wide drawing in two sizes made from the same panels: 760 units for a column of 760 to 1100 px, and
+// 1100 units for the wide page, where the home page's column is 1100 to 1152 px. Each is shown at 1:1 or
+// a little more (never below it), so its text stays at 12px or more. Both are `fig-wide`; src/styles/home.css
+// tells them apart by the width of their viewBox and shows the one that fits the column.
+function wide(W = 760) {
+  const pw = W > 800 ? [330, 336, 330] : [216, 224, 216];
   const gap = 52;
   const px = [0, pw[0] + gap, pw[0] + gap + pw[1] + gap];
   let s = at(px[0], 0, stores(pw[0])) + at(px[1], 0, ceremony(pw[1])) + at(px[2], 0, daily(pw[2]));
   const ay = 140;
   s += arrow(px[0] + pw[0] + 4, ay, px[1] - 4, ay, 'used in') + arrow(px[1] + pw[1] + 4, ay, px[2] - 4, ay, 'signs');
   const y0 = PH + 14;
-  const t = timeline(760, y0, true);
-  return svgBox(760, y0 + t.H, LABEL, s + t.s, 'fig-wide');
+  const t = timeline(W, y0, true);
+  return svgBox(W, y0 + t.H, LABEL, s + t.s, 'fig-wide');
 }
 
+// The tall drawing is 320 units wide, so that on a phone of 360 px (a column of 328 px) it is drawn at 1:1 or more.
 function narrow() {
-  const W = 360;
+  const W = 320;
   const gap = 44;
   let s = '';
   let y = 0;
   [stores, ceremony, daily].forEach((fn, i) => {
     s += at(0, y, fn(W));
-    if (i < 2) s += arrow(180, y + PH + 4, 180, y + PH + gap - 4, i === 0 ? 'used in' : 'signs', { lx: 180 + 30, ly: y + PH + gap / 2 + 4 });
+    if (i < 2) s += arrow(W / 2, y + PH + 4, W / 2, y + PH + gap - 4, i === 0 ? 'used in' : 'signs', { lx: W / 2 + 30, ly: y + PH + gap / 2 + 4 });
     y += PH + gap;
   });
   const y0 = y - gap + 14;
@@ -147,6 +153,7 @@ export default {
   label: 'The whole chain of ritueel: from your root to the keys of every day',
   caption:
     'The design, not a program: a key in a file can be copied without a trace, so it is replaced on a calendar. A key on a card or in a cloud key service cannot be copied out, so only an event replaces it: you keep the same key, and the yearly ceremony renews what is due.',
-  wide: wide(),
+  // Both wide drawings are in `wide`: the figure kit shows one of them by the width of the column (src/styles/home.css).
+  wide: wide(1100) + wide(760),
   narrow: narrow(),
 };
