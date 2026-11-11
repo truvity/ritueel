@@ -5,7 +5,7 @@
 
 ## Context
 
-Outsiders never talk to ritueel. They install files: a TLS client a CA bundle and the CRLs of the roots, a package manager a keyring, an SSH host a list of SSH CA keys, and a system that updates its own trust a signed root list. These files carry every root change to the world, so they decide how fast a revocation reaches people and whether an old file can be replayed. A system that holds intermediates reads the root list before it asks for a subkey binding ([the hand-off contract](/reference/hand-off-contract/)), and pins root public keys rather than certificates, so that a re-issued root certificate breaks nothing.
+Outsiders never talk to ritueel. They install files: a TLS client a CA bundle and the CRLs of the roots, a package manager a keyring, an SSH host a list of SSH CA keys, and a system that updates its own trust a signed root list. These files carry every root change to the world, so they decide how fast a revocation reaches people and whether an old file can be replayed. A system that holds intermediates reads the root list before it asks for a subkey binding ([the hand-off contract](/reference/hand-off-contract/)), and pins root public keys rather than certificates, so that a re-issued root certificate breaks nothing. The trust file is always called the CA bundle in full, because "bundle" alone is the directory that holds everything ritueel knows about one trust domain ([0004](/decisions/0004-ceremonies-plan-confirm-reserve-sign-verify-record/#the-bundle-and-the-records)).
 
 The roots change every year: each use extends the root ([0002](/decisions/0002-key-custody-every-key-is-born-in-its-store-two-root-cards-or-one-kms-root-and-a-replica/)). Earlier work tracked the list in [issue #14](https://github.com/truvity/ritueel/issues/14) and the SSH CA keys in issue #31. An intermediate certificate that must stop being trusted had no channel at all: the profile of an intermediate has no CRL distribution point, and a root revocation covers a whole root only.
 
@@ -13,7 +13,7 @@ The roots change every year: each use extends the root ([0002](/decisions/0002-k
 
 ### One counter: the trust sequence
 
-The **trust sequence** is one integer that grows by one whenever any trust product changes: the root list, the CA bundle, the SSH CA key list, a CRL or the keyring. Every product carries it: the root list and the SSH CA key list as their `sequence` member, the CA bundle in a comment line, a CRL as its CRL number, the keyring package in its version ([0006](/decisions/0006-release-keys-and-the-keyring-package/)). A hand-off answer names the sequence it belongs to, and the requester holds a root list at least that recent before it installs. There is no second counter.
+The **trust sequence** is one integer for each bundle that grows by one whenever any trust product changes: the root list, the CA bundle, the SSH CA key list, a CRL or the keyring. Every product carries it: the root list and the SSH CA key list as their `sequence` member, the CA bundle in a comment line, a CRL as its CRL number, the keyring package in its version ([0006](/decisions/0006-release-keys-and-the-keyring-package/)). A hand-off answer names the sequence it belongs to, and the requester holds a root list at least that recent before it installs. There is no second counter.
 
 ### The signed root list
 
@@ -48,7 +48,7 @@ An intermediate certificate is revoked by a certificate revocation list, the sta
 
 ### The CA bundle
 
-The root certificates of the active roots in one PEM file, with the trust sequence in a comment line. It is deterministic: the same directory gives the same bytes.
+The root certificates of the active roots in one PEM file, with the trust sequence in a comment line. It is deterministic: the same bundle gives the same bytes.
 
 ### The format
 
