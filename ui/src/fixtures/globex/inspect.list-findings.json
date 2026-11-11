@@ -18,7 +18,7 @@
       ],
       "fixCommand": "ritueel root add --store aws-kms --key alias/globex-staging-signing --plan-only",
       "fixIntention": "INTENTION_ADOPT_KEY",
-      "learnPath": "/reference/kms-root/#adopting-an-existing-key"
+      "learnPath": "/learn/choosing-where-a-root-lives/#3-if-it-is-a-cloud-key-does-the-key-already-exist"
     }
   ]
 }

@@ -29,7 +29,7 @@
         "00000011",
         "00000012"
       ],
-      "guidePath": "/reference/cards/#every-six-months"
+      "guidePath": "/learn/choosing-where-a-root-lives/#what-it-costs-you-each-year"
     },
     {
       "id": "20260127T142000Z-due",
@@ -50,7 +50,7 @@
         "00000011"
       ],
       "trustSequence": 7,
-      "guidePath": "/guides/re-sign-yearly/"
+      "guidePath": "/learn/life-of-a-root/#re-sign"
     },
     {
       "id": "20251202T142000Z-due",
@@ -71,7 +71,7 @@
         "00000011"
       ],
       "trustSequence": 6,
-      "guidePath": "/guides/re-sign-yearly/"
+      "guidePath": "/learn/life-of-a-root/#re-sign"
     },
     {
       "id": "20250609T142000Z-card-check",
@@ -92,7 +92,7 @@
         "00000011",
         "00000012"
       ],
-      "guidePath": "/reference/cards/#every-six-months"
+      "guidePath": "/learn/choosing-where-a-root-lives/#what-it-costs-you-each-year"
     },
     {
       "id": "20250128T142000Z-due",
@@ -113,7 +113,7 @@
         "00000012"
       ],
       "trustSequence": 5,
-      "guidePath": "/guides/re-sign-yearly/"
+      "guidePath": "/learn/life-of-a-root/#re-sign"
     },
     {
       "id": "20241203T142000Z-due",
@@ -134,7 +134,7 @@
         "00000012"
       ],
       "trustSequence": 4,
-      "guidePath": "/guides/re-sign-yearly/"
+      "guidePath": "/learn/life-of-a-root/#re-sign"
     },
     {
       "id": "20240610T142000Z-card-check",
@@ -155,7 +155,7 @@
         "00000011",
         "00000012"
       ],
-      "guidePath": "/reference/cards/#every-six-months"
+      "guidePath": "/learn/choosing-where-a-root-lives/#what-it-costs-you-each-year"
     },
     {
       "id": "20240120T142000Z-intermediate-add",
@@ -176,7 +176,7 @@
         "00000011"
       ],
       "trustSequence": 3,
-      "guidePath": "/learn/openpgp-release-keys/"
+      "guidePath": "/learn/chain-openpgp/"
     },
     {
       "id": "20231209T142000Z-intermediate-add",
@@ -217,7 +217,7 @@
         "00000012"
       ],
       "trustSequence": 1,
-      "guidePath": "/learn/key-stores/#which-path-is-yours"
+      "guidePath": "/learn/choosing-where-a-root-lives/#two-questions-to-pick-two-to-follow-up"
     }
   ]
 }

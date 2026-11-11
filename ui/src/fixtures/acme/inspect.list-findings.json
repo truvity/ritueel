@@ -15,7 +15,7 @@
         "No restore report has ever been made; the ledger holds 10 records."
       ],
       "fixCommand": "ritueel drill restore",
-      "learnPath": "/guides/run-a-drill/"
+      "learnPath": "/decisions/0010-readiness-is-made-at-birth-and-proved-by-a-drill/"
     }
   ]
 }

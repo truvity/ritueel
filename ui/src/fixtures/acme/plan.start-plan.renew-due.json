@@ -16,7 +16,7 @@
         "requirements": [
           "REQUIREMENT_CONFIRM_DIGEST_AT_TERMINAL"
         ],
-        "learnPath": "/learn/ceremonies/"
+        "learnPath": "/learn/life-of-a-root/"
       },
       {
         "ordinal": 2,
@@ -30,7 +30,7 @@
           "00000011",
           "00000012"
         ],
-        "learnPath": "/reference/cards/#what-is-checked-on-a-card"
+        "learnPath": "/learn/how-a-yubikey-holds-keys/#one-piv-slot-up-close"
       },
       {
         "ordinal": 3,
@@ -46,7 +46,7 @@
           "00000011",
           "00000012"
         ],
-        "learnPath": "/reference/cards/#every-six-months"
+        "learnPath": "/learn/choosing-where-a-root-lives/#what-it-costs-you-each-year"
       },
       {
         "ordinal": 4,
@@ -61,7 +61,7 @@
         "cardSerials": [
           "00000012"
         ],
-        "learnPath": "/guides/re-sign-yearly/"
+        "learnPath": "/learn/life-of-a-root/#re-sign"
       },
       {
         "ordinal": 5,
@@ -76,7 +76,7 @@
         "cardSerials": [
           "00000012"
         ],
-        "learnPath": "/guides/re-sign-yearly/"
+        "learnPath": "/learn/life-of-a-root/#re-sign"
       },
       {
         "ordinal": 6,
@@ -91,14 +91,14 @@
         "cardSerials": [
           "00000012"
         ],
-        "learnPath": "/reference/root-list/"
+        "learnPath": "/decisions/0005-trust-products-the-root-list-the-ca-bundle-the-ssh-ca-key-list-and-the-trust-sequence/"
       },
       {
         "ordinal": 7,
         "title": "Write the record",
         "detail": "Writes the record of this ceremony, which names the one before it, and its transcript.",
         "whatChanges": "One new record in the ledger",
-        "learnPath": "/learn/the-ledger/"
+        "learnPath": "/learn/life-of-a-root/#record"
       }
     ],
     "bundleChanges": [
