@@ -174,6 +174,12 @@ expect('every pointer exists', 'agent-links', {
 expect('a link to a missing file', 'agent-links', { ...docs, 'AGENTS.md': 'Read [this](docs/contributing/gone.md).\n' }, 'fail', { has: ['AGENTS.md:1: docs/contributing/gone.md does not exist'] });
 expect('a code path to a missing file', 'agent-links', { ...docs, '.claude/skills/example/SKILL.md': 'Edit `docs/contributing/gone.md`.\n' }, 'fail', { has: ['gone.md does not exist'] });
 expect('a subagent file with a missing path', 'agent-links', { ...docs, '.claude/agents/docs.md': 'Edit `docs/contributing/gone.md`.\n' }, 'fail', { has: ['.claude/agents/docs.md:1: docs/contributing/gone.md does not exist'] });
+expect('the AGENTS.md of a copied skill names upstream paths', 'agent-links', {
+  ...docs,
+  'AGENTS.md': 'Read `docs/contributing/`.\n',
+  '.claude/skills/upstream/SKILL.md': 'See `docs/contributing/`.\n',
+  '.claude/skills/upstream/AGENTS.md': 'Upstream docs: `docs/data/material/gone.md`.\n',
+}, 'pass', { has: ['3 pointers in 3 agent files'] });
 expect('an agent file with no pointer', 'agent-links', { ...docs, 'AGENTS.md': 'Be careful.\n' }, 'fail', { has: ['empty sweep'] });
 
 // ---- test vectors: a manifest with one request and one answer
