@@ -1,0 +1,111 @@
+// Words and shapes shared by the two services of the local page.
+//
+// THE RULE OF THIS WHOLE PACKAGE: no call takes or returns a secret.
+// There is no field for a PIN, a passphrase, a recovery key, a private
+// key, a key file, a management key or a revocation signature, and none
+// will be added. The page is a view. It never confirms a ceremony;
+// confirmation, PINs, passphrases and touches happen in the terminal, on
+// the ceremony machine. What the page may show about a key is public:
+// fingerprints, algorithms, dates, the use of a slot.
+//
+// The words are the glossary's: root, delegated key, holder, requester,
+// store, ceremony, ledger, record, renew, replace, trust files.
+
+syntax = "proto3";
+
+package ritueel.local.v1alpha1;
+
+import "google/protobuf/timestamp.proto";
+
+// How serious a finding or a due item is. The three upper levels are the
+// ones of `ritueel status` (notice, alert, critical); `info` is for things
+// that are true and worth knowing but need no action by a date.
+enum Severity {
+  SEVERITY_UNSPECIFIED = 0;
+  SEVERITY_INFO = 1;
+  SEVERITY_NOTICE = 2;
+  SEVERITY_ALERT = 3;
+  SEVERITY_CRITICAL = 4;
+}
+
+// A store is where a key lives.
+enum Store {
+  STORE_UNSPECIFIED = 0;
+  // A software key in an encrypted file, kept outside the folder.
+  STORE_SOFTWARE_FILE = 1;
+  // A pair of root cards, each with its own card-born keys.
+  STORE_ROOT_CARDS = 2;
+  // A cloud KMS key, with a replica. It may be a key that ritueel adopted.
+  STORE_CLOUD_KMS = 3;
+}
+
+// What a finding, a due item or a plan is about.
+enum SubjectKind {
+  SUBJECT_KIND_UNSPECIFIED = 0;
+  SUBJECT_KIND_FOLDER = 1;
+  SUBJECT_KIND_ROOT = 2;
+  SUBJECT_KIND_DELEGATED_KEY = 3;
+  // A subkey of an OpenPGP certificate.
+  SUBJECT_KIND_SUBKEY = 4;
+  SUBJECT_KIND_USER_ID = 5;
+  SUBJECT_KIND_CARD = 6;
+  SUBJECT_KIND_CLOUD_KEY = 7;
+  SUBJECT_KIND_TRUST_FILE = 8;
+}
+
+// The thing a line of text is about, so the page can link to it.
+message Subject {
+  SubjectKind kind = 1;
+  // How to find it. For a key: its FULL fingerprint, never a short id (a
+  // key is identified by its full fingerprint, not by its name). For a
+  // card: its serial. For a root: its label. For a trust file: its path.
+  string identifier = 2;
+  // A name for people. It is data, shown as text only, and never an
+  // identity: two keys may carry the same label.
+  string label = 3;
+}
+
+// What a holder wants to do. A plan is always built from one of these.
+// Renewals are separate actions: there is no "yearly" intention.
+enum Intention {
+  INTENTION_UNSPECIFIED = 0;
+  // Renew what `ritueel due` lists: a delegated key, a card check.
+  INTENTION_RENEW_DUE = 1;
+  // Adopt a key that already exists: an OpenPGP key, or a cloud KMS key.
+  INTENTION_ADOPT_KEY = 2;
+  // Replace subkeys that were superseded but are still valid, by
+  // revoking them with the reason "superseded".
+  INTENTION_REPLACE_SUBKEYS = 3;
+  // Register a new card in the folder's inventory.
+  INTENTION_ADD_CARD = 4;
+  // Replace a lost or retired card.
+  INTENTION_REPLACE_CARD = 5;
+}
+
+// Whether the hash chain of the ledger checks out.
+enum ChainState {
+  CHAIN_STATE_UNSPECIFIED = 0;
+  // Not checked yet. What the page shows is then not authoritative.
+  CHAIN_STATE_NOT_CHECKED = 1;
+  // Every record names the one before and every hash matches.
+  CHAIN_STATE_VERIFIED = 2;
+  // A record is missing, changed or out of order.
+  CHAIN_STATE_BROKEN = 3;
+}
+
+// The state of the ledger: the folder's write-once history of ceremonies,
+// one record for each.
+message LedgerStatus {
+  int32 record_count = 1;
+  ChainState chain_state = 2;
+  // The hash of the newest record, in hexadecimal.
+  string head_record_sha256 = 3;
+  // The id and title of the newest record, so a page can say "Last record".
+  string last_record_id = 4;
+  string last_record_title = 5;
+  google.protobuf.Timestamp last_record_at = 6;
+  // When the chain was last checked.
+  google.protobuf.Timestamp checked_at = 7;
+  // A sentence for people, for example "All 12 records check out."
+  string message = 8;
+}
