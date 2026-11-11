@@ -5,7 +5,15 @@
 //   - the column (Starlight's TableOfContents, with its own script that marks the current
 //     heading) from 100rem, fixed at the right of the window.
 // Both are in the HTML and CSS shows one. It renders nothing when the page has no table of
-// contents (src/route-middleware.ts drops it for pages with fewer than two headings).
+// contents (src/route-middleware.ts drops it for pages with fewer than two headings). Neither
+// form prints.
+//
+// Copied from @astrojs/starlight 0.42.10, dist/components/PageSidebar.astro (TwoColumnContent.astro
+// is the other file). On an update of Starlight, diff both against the new originals. What this
+// relies on: the `right-sidebar` slot that Starlight's Page.astro fills with this component; the
+// virtual components MobileTableOfContents and TableOfContents; the `data-has-toc` attribute; the
+// class `print:hidden` of Starlight's print.css. The rules that rely on its CSS are listed at the
+// top of styles/layout.css.
 import MobileTableOfContents from 'virtual:starlight/components/MobileTableOfContents';
 import TableOfContents from 'virtual:starlight/components/TableOfContents';
 ---
@@ -13,7 +21,7 @@ import TableOfContents from 'virtual:starlight/components/TableOfContents';
 {
   Astro.locals.starlightRoute.toc && (
     <>
-      <div class="ritueel-toc-bar">
+      <div class="ritueel-toc-bar print:hidden">
         <MobileTableOfContents />
       </div>
       <div class="ritueel-toc-rail print:hidden">
@@ -24,8 +32,10 @@ import TableOfContents from 'virtual:starlight/components/TableOfContents';
 }
 
 <style>
-  /* The look of Starlight's own right-hand column (its PageSidebar.astro), unchanged. Where the
-     column sits, and the dropdown below 100rem, is in styles/layout.css. */
+  /* The look of the entries of Starlight's own right-hand column (its PageSidebar.astro). The
+     column itself differs in three ways: it is a plain <div> and not an <aside> (the <nav> inside
+     keeps its label), its scrollbar is thin and not hidden, and it has no 25 % cap on its width.
+     Where the column sits, and the dropdown below 100rem, is in styles/layout.css. */
   @layer starlight.core {
     .ritueel-toc-rail :global(h2) {
       margin-bottom: 0.5rem;
