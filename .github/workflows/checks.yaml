@@ -1,5 +1,7 @@
-# Judges pull requests: the site (description lint, a strict build, a link check, the Worker's tests
-# and dry-run deploy, the status page in a browser), the workflows themselves (actionlint) and the repository rules
+# Judges pull requests: the site (description lint, a strict build that includes the demo of the local
+# page, a link check, the Worker's tests and dry-run deploy, the status page in a browser), the local
+# page and its API (the Protobuf lint and generated code, the page's lint and tests, both builds, the page
+# in a browser under the site's policy), the workflows themselves (actionlint) and the repository rules
 # (`just check-rules`). It never publishes (site.yaml does), and it is not path-filtered, so
 # it can be made a required check on `main`.
 name: Checks
@@ -36,6 +38,24 @@ jobs:
       # The status page in headless Chrome (the runner's own): the live script against a stand-in
       # for the Worker, in light and dark, at 1440, 390 and 375 px.
       - run: devbox run -- just site-render
+
+  # The local page (ui/) and its API (proto/): the generated code is what buf makes, the page's
+  # TypeScript and its safety scan, its tests, both builds (the demo and the real one) and their
+  # checks, and the page in headless Chrome (the runner's own) under the site's own
+  # Content-Security-Policy. The demo as the site serves it is built by the `site` job.
+  ui:
+    name: ui (proto, lint, tests, builds, browser)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: truvity/ci-actions/setup-devbox@20ac3b00eb467df81a8288192feda853d8e7085d # v3.12.0
+      - run: devbox run -- just proto-check
+      - run: devbox run -- just ui-lint
+      - run: devbox run -- just ui-test
+      - run: devbox run -- just ui-e2e
 
   workflows:
     name: workflows (actionlint)
@@ -78,16 +98,16 @@ jobs:
 
   # One name to require. A job that was skipped or cancelled is not a pass.
   checks:
-    needs: [site, workflows, rules]
+    needs: [site, ui, workflows, rules]
     if: ${{ !cancelled() }}
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
       - name: Every check succeeded
         env:
-          RESULTS: ${{ needs.site.result }} ${{ needs.workflows.result }} ${{ needs.rules.result }}
+          RESULTS: ${{ needs.site.result }} ${{ needs.ui.result }} ${{ needs.workflows.result }} ${{ needs.rules.result }}
         run: |
-          echo "site workflows rules: $RESULTS"
+          echo "site ui workflows rules: $RESULTS"
           for r in $RESULTS; do
             [ "$r" = "success" ] || { echo "::error::a check did not succeed"; exit 1; }
           done

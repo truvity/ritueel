@@ -16,8 +16,15 @@ go.work.sum
 /site/.astro/
 /site/.wrangler/
 /site/wrangler.deploy.json
+# The demo of the local page: a build product of `just ui-demo`, served at /demo/
+/site/public/demo/
 .lycheecache
 .cache/
+
+# The local page (ui/): its builds and screenshots
+/ui/dist/
+/ui/dist-real/
+/ui/shots/
 
 # Node tooling
 node_modules/
