@@ -99,7 +99,7 @@ What the certifier reads from the slot certificate (checked on a test YubiKey 5,
 | `.8` | Two raw bytes: PIN policy (1 never, 2 once, 3 always), then touch policy (1 never, 2 always, 3 cached). |
 | `.9` | Form factor, one raw byte. |
 
-Firmware 5.7 and newer chain to the maker's *current* attestation root; older tokens chain to the earlier PIV root. The certifier pins whichever roots the holder lists, so a chain that ends in an unpinned root is refused. The certifier also needs the maker's **intermediates**: the list that piv-go v2.6.0 embeds lacks the intermediate that firmware 5.8 uses, and its built-in verification fails (measured 2026-11-01). The certifier's pinned set is therefore the maker's current root plus the full intermediate bundle, and a card whose intermediate is missing from it is refused until the bundle is refreshed.
+Firmware 5.7 and newer chain to the maker's *current* attestation root; older tokens chain to the earlier PIV root. The certifier pins whichever roots the holder lists, so a chain that ends in an unpinned root is refused. The certifier also needs the maker's **intermediates**: the list that piv-go v2.6.0 embeds lacks the intermediate that firmware 5.8 uses, and its built-in verification fails (measured 2026-11-01). The certifier's pinned set is therefore the maker's current root plus the full intermediate set in the attestation bundle, and a card whose intermediate is missing from it is refused until the attestation bundle is refreshed.
 
 ### `openpgp-card`
 
