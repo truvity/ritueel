@@ -13,12 +13,14 @@ import Destinations from '../site/src/components/home/Destinations.astro';
 <Actions
   actions={[
     { text: 'Start: what a root is', href: '/learn/what-is-a-root/', variant: 'primary' },
-    { text: 'Try the demo', href: '/demo/', variant: 'secondary' },
+    { text: 'How it works', href: '/how-it-works/', variant: 'secondary' },
+    { text: 'Try the demo', href: '/demo/', variant: 'minimal' },
   ]}
 />
 
 <Destinations
   links={[
+    { text: 'How it works', href: '/how-it-works/' },
     { text: 'Learn', href: '/learn/' },
     { text: 'Demo', href: '/demo/' },
     { text: 'Glossary', href: '/glossary/' },
@@ -27,32 +29,22 @@ import Destinations from '../site/src/components/home/Destinations.astro';
   ]}
 />
 
-ritueel helps one person or a small team keep a private CA root (the top key of a PKI, a system of certificates) or an OpenPGP master key for years without losing it, leaking it or letting it expire. A root is the one key that everything else trusts; if it is lost or stolen, everything signed under it is lost or suspect.
+ritueel helps one person or a small team keep a private CA root (the top key of a PKI, a system of certificates) or an OpenPGP master key for years without losing it, leaking it or letting it expire. The tools are planned: a program that guides you through each use of the root (a [ceremony](/glossary/)) and keeps a record of it.
 
-The tools are planned: a program that guides you through each use of the root (a [ceremony](/glossary/)) and keeps a record of it.
+## The ideas
+
+- [One set of ceremonies](/how-it-works/) over three kinds of store: a key file, a pair of root cards or a cloud key service.
+- [Prefer a key that cannot be copied](/how-it-works/): a root born on a card or in a cloud key service, over a key in a file.
+- [One bundle](/how-it-works/) keeps the roots of a PKI and of OpenPGP together, with what is known about the cards.
+- [Requests in, answers out](/how-it-works/): other systems connect through files, and a plan made in one place runs in another.
+- [A defined, automated workflow](/how-it-works/): ritueel says what is due, and every ceremony is plan, confirm, sign, verify, record.
 
 ## What exists today
 
-ritueel is in its design phase. There is a design, kept as [decision records](/decisions/), a set of teaching pages and a [demo](/demo/) of the program's local page, with made-up data. There is no program and no release yet. [Where it stands](/status/) says how far each step has got.
+ritueel is in its design phase. There is a design, kept as [decision records](/decisions/), a set of teaching pages, pictures of [how it works](/how-it-works/) and a [demo](/demo/) of the program's local page, with made-up data. There is no program and no release yet. [Where it stands](/status/) says how far each step has got.
 
 ## Is it for you?
 
-Yes, if you hold a private CA root or an OpenPGP master key and use it rarely, by hand, with a person present.
-No, if you look for a service that signs for you every day.
+Yes, if you hold a private CA root or an OpenPGP master key and use it rarely, by hand, with a person present. No, if you look for a service that signs for you every day. Nothing here needs a tool today: the [Learn](/learn/) pages teach the practice whichever tool you use. Lost or exposed a key? Read [revoke](/learn/revoke/) first.
 
-Nothing here needs a tool today: the pages teach the practice whichever tool you use.
-
-## What the site teaches
-
-- [How a YubiKey holds keys](/learn/how-a-yubikey-holds-keys/): what sits inside the card, what locks it and what wipes it.
-- [How passkeys work](/learn/how-passkeys-work/): what a passkey is, how a sign-in goes, and how a passkey can open a key file.
-- [How a KMS key works](/learn/how-a-kms-key-works/): what a cloud signing key is made of, and what limits it.
-- [Choosing where a root lives](/learn/choosing-where-a-root-lives/): a key file, a pair of root cards or a cloud key, and what each costs a year.
-
-The words are fixed in the [glossary](/glossary/). A first draft of a page on how to verify a release comes with the [release candidate](/roadmap/).
-
-Lost or exposed a key? Read [revoke](/learn/revoke/) first.
-
-## The design
-
-The design is kept as [decision records](/decisions/). The specifications, guides and research are working material in the [repository](https://github.com/truvity/ritueel/tree/main/docs), not on this site.
+The words are fixed in the [glossary](/glossary/). The design is kept as [decision records](/decisions/); the specifications, guides and research are working material in the [repository](https://github.com/truvity/ritueel/tree/main/docs), not on this site.

@@ -59,7 +59,7 @@ export default defineConfig({
       },
       customCss: ['./src/styles/layout.css', './src/styles/home.css'],
       routeMiddleware: './src/route-middleware.ts',
-      // The menu is five entries: only the target (docs/contributing/pages.md, "What is published").
+      // The menu is six entries: only the target (docs/contributing/pages.md, "What is published").
       // The pages are those of site/published.txt; a slug that is not on the list fails the build.
       // The hand-off contract is not in the menu; the decisions index links it.
       sidebar: [
@@ -83,6 +83,15 @@ export default defineConfig({
                 { slug: 'learn/chain-openpgp', label: 'OpenPGP: one identity, many keys' },
               ],
             },
+          ],
+        },
+        {
+          label: 'How it works',
+          collapsed: false,
+          items: [
+            { slug: 'how-it-works', label: 'Overview' },
+            { slug: 'how-it-works/cards', label: 'The three cards' },
+            { slug: 'how-it-works/bundle-and-stick', label: 'The bundle and the USB stick' },
           ],
         },
         // The demo of the local page is a build product (public/demo), not a page of the docs.
