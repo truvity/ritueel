@@ -422,6 +422,17 @@ function Lines({ text }: { text: string }) {
   );
 }
 
+/** What the page says about the stick. It follows where the plan says it runs, never a guess from the list of files. */
+function stickSentence(place: RunPlace | undefined, stick: boolean): string {
+  if (place === RunPlace.WORKSTATION) return 'This plan runs on your workstation, the computer this page is open on. No stick is needed.';
+  if (place === RunPlace.OFFLINE_SYSTEM) {
+    return stick
+      ? 'The offline system is the computer where the ceremony runs. A USB stick carries the plan, in your bundle, from this computer to it.'
+      : 'The offline system is the computer where the ceremony runs. The plan lists nothing to copy to it.';
+  }
+  return 'The plan does not say where it runs. Run it in the terminal where you run ritueel.';
+}
+
 export function Saved({ data, place }: { data: SavePlanResponse; place?: RunPlace }) {
   const written = data.written;
   const stick = data.copyToStick.length > 0;
@@ -461,9 +472,7 @@ export function Saved({ data, place }: { data: SavePlanResponse; place?: RunPlac
         </p>
       </div>
       <p className="max-w-[70ch] text-sm text-dim">
-        {stick
-          ? 'The offline system is the computer where the ceremony runs. A USB stick carries the plan, in your bundle, from this computer to it.'
-          : 'This plan runs on your workstation, the computer this page is open on. No stick is needed.'}
+        {stickSentence(place, stick)}
       </p>
       <div className={`grid gap-6 ${stick ? 'lg:grid-cols-2' : ''}`}>
         <HandOver title="Copy to the offline system" items={data.copyToStick} />
