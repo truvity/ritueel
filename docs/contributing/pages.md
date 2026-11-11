@@ -21,7 +21,7 @@ Docs live in `docs/`, next to the thing they describe. When the thing changes, i
 
 | Kind | Where | For | Published? |
 |---|---|---|---|
-| Learn | `docs/learn/` | The teaching: what a root is, why it stays offline, the custody chain, the key stores compared, the life of a root. Written before any tool exists, and kept true after. It comes first on the site. | The Learn index and ten pages of the list |
+| Learn | `docs/learn/` | The teaching: what a root is, where a root is used, the custody chain, the key stores compared, the life of a root. Written before any tool exists, and kept true after. It comes first on the site. | The Learn index and ten pages of the list |
 | How it works | `docs/how-it-works/` | ritueel in pictures: the five ideas, the ceremony, the three cards, the bundle and the USB stick. Few words, each picture with its caption. The program is not built, so each page says once that the pictures show the design. | Yes: the overview and two pages |
 | Guides | `docs/guides/` | One guide per ritual, ceremony or transition, step by step, with its drill on test keys. A guide says how; the matching Learn page says why and when. | No |
 | Tools | `docs/tools/` | What the command line and the wizard do, and whether each is built. | No |

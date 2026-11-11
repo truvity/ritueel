@@ -6,7 +6,7 @@ sidebar:
 ---
 
 :::caution[Not built yet]
-The page exists as code and a demo (`ui/`, `proto/`); the program that serves it is planned for milestone M2 ([issue #17](https://github.com/truvity/ritueel/issues/17)), and the guided mode comes after the first signed release ([issue #16](https://github.com/truvity/ritueel/issues/16)). This page is the design that [record 0001](../decisions/0001-what-ritueel-is.md) accepts and [record 0010](../decisions/0010-the-engine-the-process-and-the-page.md) details; the exact rules are in [the reference](/reference/wizard/).
+The page exists as code and a demo (`ui/`, `proto/`); the program that serves it is planned for milestone M2 ([issue #17](https://github.com/truvity/ritueel/issues/17)), and the guided mode comes after the first signed release ([issue #16](https://github.com/truvity/ritueel/issues/16)). This page is the design that [record 0010](../decisions/0010-the-engine-the-process-and-the-page.md) decides; the exact rules are in [the reference](/reference/wizard/).
 :::
 
 Some people prefer a page to a terminal, and a ceremony is easier to follow when each step is shown with its explanation next to it. The wizard is that: a guided front end that keeps you in charge. It has two parts, a guided mode in the terminal and a read-only page.
@@ -32,7 +32,7 @@ The confirmation of every irreversible step is given in the terminal, or by the 
 The page is served by a program on your computer that sits beside the ceremony engine, so it is built to be hard to reach from anywhere else, including from another page open in the same browser. It is read-only, and it never sees a secret.
 
 1. **It listens on 127.0.0.1 only,** and refuses to start on any other address.
-2. **On a random port,** chosen each time the page is opened.
+2. **On one fixed port,** the same one the command line uses (7488).
 3. **With a one-time token** in the address it prints. A request without the token is refused, and the token stops working when the wizard stops.
 4. **It checks the Host and Origin headers** of every request against its own address and port. This stops a web page you visit from talking to it, including by a trick that points a hostile name at your own computer (DNS rebinding).
 5. **It loads no remote assets:** no web fonts, no scripts, no images from other sites. The page works with the network cable out.

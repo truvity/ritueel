@@ -23,7 +23,7 @@ It describes the project as it is today: one maintainer, no release yet, and a p
 
 ## Scope
 
-ritueel owns root keys and root transitions: X.509 CA roots and OpenPGP primary keys, across key stores. It creates them, vouches for the next one, overlaps, supersedes, revokes and expires them, and it runs the ceremonies for intermediates, produces the trust artifacts, and keeps ceremony records. It does not sign online, issue leaf certificates or store secrets. The scope is recorded in [record 0001](docs/decisions/0001-what-ritueel-is.md).
+ritueel owns root keys and root transitions: X.509 CA roots and OpenPGP primary keys, across key stores. It creates them, vouches for the next one, overlaps, supersedes, revokes and expires them, and it runs the ceremonies for intermediates, produces the trust files, and keeps ceremony records. It does not sign online, issue leaf certificates or store secrets. The scope is recorded in [record 0001](docs/decisions/0001-what-ritueel-is.md).
 New scope enters only through an ADR that names its owner, its boundary and its non-goals.
 A change to the design model (the shape of the parts and how they depend on each other) also needs an ADR.
 
@@ -51,7 +51,7 @@ Roadmap, features, architecture and decisions are public. Internal reasoning and
 
 ## Review rules
 
-**Now.** Every change to `main` goes through a pull request. The maintainer reviews it, and the review agent reviews it too. The maintainer merges when checks pass, and findings from the review agent are answered or fixed. Changes that touch key handling, signing, revocation, trust artifacts or the hand-off contract also carry a short security note in the pull request: what could go wrong, and which test shows it does not.
+**Now.** Every change to `main` goes through a pull request. The maintainer reviews it, and the review agent reviews it too. The maintainer merges when checks pass, and findings from the review agent are answered or fixed. Changes that touch key handling, signing, revocation, trust files or the hand-off contract also carry a short security note in the pull request: what could go wrong, and which test shows it does not.
 
 **Agents.** The maintainer merges. An agent working for the maintainer opens the pull request, keeps CI green, answers or fixes the review bots' threads, and reports the pull request URL and the head sha. It never merges, never uses `--admin`, never decides scope, and never changes governance files without the maintainer.
 

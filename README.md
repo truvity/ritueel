@@ -14,7 +14,7 @@ The guides, tool pages, specifications and research are written under `docs/` an
 |---|---|
 | Roots | Create, vouch for, overlap, supersede, revoke and expire X.509 CA roots and OpenPGP primary keys, across key stores. |
 | Intermediate ceremonies | Verify where an intermediate key lives, sign its certificate request, and bind its OpenPGP subkey. |
-| Trust files | CA bundles, signed root lists, SSH CA key lists, and keyring `.deb` and `.rpm` packages that your own pipeline publishes. |
+| Trust files | CA bundles, signed root lists, SSH CA key lists and the public keyring file, which your own pipeline packages and publishes. |
 | Records | A hash-chained record of every ceremony. |
 | Personal OpenPGP | A primary key (an existing one may be adopted), daily subkeys on a card, and keyring upkeep. |
 | Teaching | The Learn section, and one guide per ritual and transition with drills on test keys (the guides are read here on GitHub). |
