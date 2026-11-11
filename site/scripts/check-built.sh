@@ -38,7 +38,7 @@ done <<< "$unpublished"
 # The figures (site/figures, placed by <Figure>) reached the output: a figure page holds its <figure>
 # and drawings that are images with a label, and none of the drawings keeps its text in the search.
 # (Starlight's own icons are <svg> too, so the check names the drawings by role="img".)
-for f in how-it-works/index.html how-it-works/cards/index.html how-it-works/bundle-and-stick/index.html \
+for f in index.html how-it-works/index.html how-it-works/cards/index.html how-it-works/bundle-and-stick/index.html \
          learn/how-a-yubikey-holds-keys/index.html learn/how-passkeys-work/index.html; do
   [ -s "$dist/$f" ] || continue
   grep -q '<figure class="fig ' "$dist/$f" || bad "$f has no figure"
