@@ -7,7 +7,7 @@ sidebar:
 
 *Not built yet: no ceremony command exists. This page describes what the commands will do ([ADR 0004](/decisions/0004-ceremonies-plan-confirm-reserve-sign-verify-record/)); the commands and their exit codes are in [the command reference](/reference/cli/). To learn what a ceremony is before you meet the tool, read [What a ceremony is](/learn/ceremonies/).*
 
-The command line is the first face of the ceremony engine ([the second is the wizard](/tools/wizard/)). A ceremony is a scripted, reviewable use of a root. It runs on the holder's ordinary workstation, with no live CD and no air gap, because the root keys never leave their cards: a compromised workstation cannot copy a key it never holds. It can still try to trick the holder, which is why the checks below exist.
+The command line is the first of three faces of the ceremony engine; the others are the guided mode and the read-only local page ([the wizard](/tools/wizard/)). A ceremony is a scripted, reviewable use of a root. A card root is used only in a machine booted from a read-only system made for the purpose (the offline system), never in the everyday system; a cloud root is signed from the holder's workstation ([ADR 0016](/decisions/0016-several-roots-share-one-pair-of-root-cards-and-the-directory-keeps-a-card-inventory/#where-a-root-card-is-used)). The machine is not trusted: the root keys never leave their store, so a compromised machine cannot copy a key it never holds. It can still try to trick the holder, which is why the checks below exist.
 
 ## Six steps
 
@@ -15,19 +15,19 @@ Every ceremony runs the same steps: **plan** every byte that will be signed, **c
 
 ## What the tool checks
 
-1. **The card.** Read its serial, and check it against the registry of known cards before anything is written: the right card for the role, PIN tries left, no default PIN, PUK or management key ([the checks](/reference/cards/#what-is-checked-on-a-card)). Preparing the card is the holder's job, with the maker's tool ([Prepare a root card](/guides/prepare-a-root-card/)).
+1. **The card.** Read its serial, and check it against the inventory of cards before anything is written: the right card for the root, PIN tries left, no default PIN, PUK or management key ([the checks](/reference/cards/#what-is-checked-on-a-card)). The holder sets the PIN with the maker's tool ([Prepare a root card](/guides/prepare-a-root-card/)); ritueel's adoption of the card replaces the PUK and the management key.
 2. **The attestation of every key it certifies, and of every root it creates.** A card's chain must lead to the maker's current root through the maker's intermediates, which ritueel ships and refreshes; a KMS key is read from the service, with its policy and replica ([the checks](/reference/kms-root/#the-checks)). A key that cannot be attested is refused, because an imported key cannot be.
 3. **What is about to be signed.** Show the key's fingerprint, its store, its lifetime and the serial before each touch. The holder confirms by comparing, not by pressing a button.
 4. **The result.** After signing, verify the certificate or binding against the request and the plan.
 5. **The record.** Write a hash-chained ceremony record that contains no PIN, no key and no secret.
 
-A PIN is entered by the holder at the terminal. The tool never retries a wrong PIN and refuses to run when fewer than three tries are left, because the card blocks after three and then needs the PUK. PINs live in the holder's password manager, one entry per card.
+A PIN is entered by the holder at the terminal. The tool never retries a wrong PIN and refuses to run when fewer than three tries are left, because the card blocks after three and then needs the PUK. The PINs the holder types live in the holder's password manager, one entry per card; the PUK and the management key are random and sealed in the directory ([ADR 0015](/decisions/0015-key-files-open-with-a-passkey-on-each-root-card-and-card-secrets-are-sealed-in-the-directory/#card-secrets)).
 
 ## The three ceremonies
 
 | Ceremony | When | Card | Result |
 |---|---|---|---|
-| Yearly | Month 12 of the intermediates' life | The card for the year | New 13-month certificates over the same intermediate keys, and new bindings that extend the same subkeys. The card's own root extended, a new keyring package and root list. |
+| Renewals, yearly: `ritueel due`, then `ritueel run` | Month 12 of the intermediates' life | The card for the year | New 13-month certificates over the same intermediate keys, and new bindings that extend the same subkeys. The card's own root extended, a new keyring package and root list. |
 | Intermediate add, replace or revoke | Between yearly ceremonies | The card for the year; for `revoke`, the card of each root that issued an unexpired certificate of the intermediate | `add`: a certificate, binding or SSH CA key listing for a new intermediate. `replace`: new key material, on an event. `revoke`: the certificate and binding withdrawn, and the certificate put on the issuing root's [CRL](/reference/crl/). |
 | Root add, retire or revoke | A card is lost, retired or compromised | Every active card; for a lost one, its stored removal authorisation | A new root that an active root vouches for, an overlap that ends on a day you name, or a root list without the old root ([root transitions](/reference/transitions/)). |
 
@@ -50,4 +50,4 @@ A root is valid for about three years, and each use extends it. The card that si
 
 ## Which code talks to the cards
 
-The CLI is written in Go. Both root keys of a card live in PIV slots, reached through piv-go, and ritueel builds the OpenPGP packets itself: one applet, one library, one binary, and no `gpg` at run time. The root cards are used for nothing else, because the program that holds a card keeps every other out. The reasons, and the roads not taken, are in [ADR 0003](/decisions/0003-key-stores-and-the-card-layer/), and the spike behind them in [Card libraries and tooling](/research/card-libraries-and-tooling-2026-11-01/).
+The CLI is written in Go. Both root keys of a card live in PIV slots, reached through piv-go, and ritueel builds the OpenPGP packets itself: one applet, one library, one binary, and no `gpg` at run time. The root cards hold only roots, because the program that holds a card keeps every other out. The reasons, and the roads not taken, are in [ADR 0003](/decisions/0003-key-stores-and-the-card-layer/), and the spike behind them in [Card libraries and tooling](/research/card-libraries-and-tooling-2026-11-01/).

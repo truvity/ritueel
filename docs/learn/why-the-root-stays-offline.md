@@ -1,6 +1,6 @@
 ---
 title: Why the root stays offline
-description: What offline protects a root against, what it cannot protect against, and how a card or a cloud key gets most of the benefit without a vault or a live CD.
+description: What offline protects a root against, what it cannot protect against, and how a card or a cloud key gets most of the benefit without a vault.
 sidebar:
   order: 3
 ---
@@ -26,11 +26,11 @@ A root that is online is exposed to all of them every day. A root that comes out
 | **A key that cannot leave a card** | A computer at a ceremony cannot copy the key, even if it is hostile. Possession of the card, its PIN and a touch are needed. | A card can be lost or break, so you need two (see [layered trust](/learn/layered-trust/)). |
 | **A key in a cloud service with a hard gate** | Nobody downloads the key. Every use is an audited call to the service, and a role that needs a sign-in with a hardware key gates it. | Trust in the provider and in the account. Losing the account loses the key. |
 
-ritueel's approach is the second and third. A ceremony runs on an ordinary workstation, because the private key never leaves its card or cloud key: a compromised workstation cannot copy a key it never holds.
+ritueel's approach is the second and third. A card root is used only in a machine booted from a read-only system made for the purpose (the offline system), never in the everyday system; a cloud root is signed from the holder's workstation through the ceremony role ([ADR 0016](/decisions/0016-several-roots-share-one-pair-of-root-cards-and-the-directory-keeps-a-card-inventory/#where-a-root-card-is-used)). In both cases the machine is not trusted: the private key never leaves its card or cloud key, so a compromised machine cannot copy a key it never holds.
 
 ## What offline does not give you
 
-A hostile workstation cannot steal the key from a card, but it can lie about what is being signed. You think you are certifying one request, and the computer sends another. This is why a ceremony shows you what will be signed in a form you can compare, and asks for a deliberate act, a typed digest and a touch, before each irreversible step. See [what a ceremony is](/learn/ceremonies/).
+A hostile machine cannot steal the key from a card, but it can lie about what is being signed. You think you are certifying one request, and the computer sends another. This is why a ceremony shows you what will be signed in a form you can compare, and asks for a deliberate act, a typed digest and a touch, before each irreversible step. See [what a ceremony is](/learn/ceremonies/).
 
 Offline also does not protect against loss. A key on one card in one drawer is safe from thieves and fragile against fire. The answer to loss is redundancy, and the answer to theft is revocation. They are different problems, and [layered trust](/learn/layered-trust/) explains why you cannot swap one for the other.
 

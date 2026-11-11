@@ -23,6 +23,8 @@ A revocation made after a key is lost cannot be made at all, and one made in a h
 
 Choose honestly. A soft reason on a stolen key tells verifiers to believe a thief's backdated signatures.
 
+For a subkey, measured on 2026-11-10 with GnuPG 2.4.7, `sqv` 1.3.0 and git 2.47.3 on throwaway P-384 keys: after a "superseded" revocation `sqv` accepts signatures dated before it and rejects later ones, while `gpgv` accepts all; after expiry `sqv` and `gpgv` accept earlier signatures; and `git verify-tag` fails for a revoked and for an expired key alike ([the note](/research/openpgp-subkey-retirement-2026-11-10/)).
+
 ## How to make an OpenPGP revocation certificate
 
 - `gpg --gen-revoke <fingerprint>` makes one on demand. It takes effect only after you import it and publish the result.
@@ -54,4 +56,4 @@ So for apt users **the effective revocation is a new keyring package without the
 
 ## In ritueel
 
-`root revoke` and `intermediate revoke` carry out the X.509 side. `init` makes the OpenPGP revocation certificates for every master key, one for each of two reasons (compromised and superseded), writes them to a place you name outside the ledger, and keeps only a digest of each. `ritueel revocation check` tells you, without printing anything, that a stored file is the right one. All of it is planned ([the formats](/reference/revocation-material/)). The steps and a drill are in the [guide](/guides/revoke-a-key/).
+`root revoke` and `intermediate revoke` carry out the X.509 side. `init` makes the OpenPGP revocation certificates for every master key, one for each of two reasons (compromised and superseded), writes them to a place you name outside the directory, and keeps only a digest of each. `ritueel revocation check` tells you, without printing anything, that a stored file is the right one. All of it is planned ([the formats](/reference/revocation-material/)). The steps and a drill are in the [guide](/guides/revoke-a-key/).

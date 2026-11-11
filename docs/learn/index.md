@@ -12,7 +12,7 @@ ritueel teaches first, and for now the teaching is the product: these pages expl
 |---|---|
 | [What is a root?](/learn/what-is-a-root/) | The key that everything else hangs from, and what goes wrong when it is lost or stolen. |
 | [Root and intermediate](/learn/root-and-intermediate/) | The two kinds of key in a chain of trust, and the same split in OpenPGP: the master key and its subkeys. |
-| [Why the root stays offline](/learn/why-the-root-stays-offline/) | What "offline" protects against, and how much of it you can have without a vault and a live CD. |
+| [Why the root stays offline](/learn/why-the-root-stays-offline/) | What "offline" protects against, and how much of it you can have without a vault. |
 | [What a ceremony is](/learn/ceremonies/) | The rare, manual use of a root, why it is manual, and why that is a feature. |
 | [Layered trust](/learn/layered-trust/) | Why trust comes in layers, what each layer is for, and where redundancy helps and where it does not. |
 | [The custody chain](/learn/custody-chain/) | Who or what holds each key from the root to the leaf, and what a verifier really trusts. |
@@ -20,7 +20,7 @@ ritueel teaches first, and for now the teaching is the product: these pages expl
 | [Where a key lives](/learn/key-stores/) | Software and its backends, YubiKey PIV and OpenPGP card, AWS KMS and the planned stores, compared in the open. |
 | [What a key store can prove](/learn/what-a-store-can-prove/) | How you can tell that a key really lives where you are told: an attestation chain, a policy read from a service, or nothing. |
 | [Which keys to buy](/learn/which-keys-to-buy/) | The hardware worth buying to learn and test, what each can and cannot do, and prices with their dates. |
-| [The ledger](/learn/the-ledger/) | The record of what you did: where it lives, how it is backed up, and how it is restored. |
+| [The ledger](/learn/the-ledger/) | The write-once record of what you did, and how to keep, back up and restore the directory that holds it. |
 | [The life of a root](/learn/life-of-a-root/) | Create, sign, record, back up, re-sign, rotate, revoke, recover: the whole story in order. |
 | [Re-sign](/learn/re-sign/), [rotate](/learn/rotate/), [revoke](/learn/revoke/), [recover](/learn/recover/) | One page for each ritual: why, when, and what can go wrong. |
 | [Moving from one root to another](/learn/transitions/) | How a new root takes over from an old one without breaking anyone, and what outsiders install. |

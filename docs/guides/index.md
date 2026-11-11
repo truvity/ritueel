@@ -10,9 +10,9 @@ A guide walks through one procedure step by step, with the result of each step a
 
 | Guide | When | Learn first |
 |---|---|---|
-| [Prepare a root card](/guides/prepare-a-root-card/) | Once for each new card, before anything else: its PIN, PUK and management key. | [Two roots in practice](/learn/two-roots/) |
+| [Prepare a root card](/guides/prepare-a-root-card/) | Once for each new card, before anything else: its PIN, then the adoption that replaces its PUK and management key. | [Two roots in practice](/learn/two-roots/) |
 | [Prepare the cloud root](/guides/prepare-the-cloud-root/) | Once, for a company on a cloud key service: the account and the two roles. | [What a key store can prove](/learn/what-a-store-can-prove/) |
-| [Adopting the roots](/guides/root-adoption/) | Once, at the start: the real roots on two cards, and the drill that comes first. | [The life of a root](/learn/life-of-a-root/) |
+| [Adopting the roots](/guides/root-adoption/) | Once, at the start: the real roots on two cards or in a cloud account, and the drill that comes first. | [The life of a root](/learn/life-of-a-root/) |
 | [Re-sign every year](/guides/re-sign-yearly/) | Every year: the same keys, a new validity. | [Re-sign](/learn/re-sign/) |
 | [Rotate a key](/guides/rotate-a-key/) | On an event, such as an advisory that affects the key; a key in software also after at most three years. | [Rotate](/learn/rotate/) |
 | [Revoke a key](/guides/revoke-a-key/) | A key is compromised, or retired for good. | [Revoke](/learn/revoke/) |
@@ -26,7 +26,7 @@ Your daily subkeys, put to work. Each of these uses the tools you have today; cr
 
 | Guide | When | Learn first |
 |---|---|---|
-| [Your own OpenPGP key](/guides/personal-openpgp/) | You want a master key offline and a daily subkey on a card. | [OpenPGP custody chain](/learn/chain-openpgp/) |
+| [Your own OpenPGP key](/guides/personal-openpgp/) | You want a master key offline and daily subkeys on a card. | [OpenPGP custody chain](/learn/chain-openpgp/) |
 | [An authentication subkey for SSH](/guides/openpgp-ssh-authentication/) | You want to log in to servers with a key on a card. | [OpenPGP custody chain](/learn/chain-openpgp/) |
 | [Sign git commits and tags](/guides/openpgp-sign-git/) | You want commits and tags shown as verified. | [OpenPGP custody chain](/learn/chain-openpgp/) |
 | [Sign software and releases](/guides/openpgp-sign-releases/) | You publish downloads that users should be able to verify. | [OpenPGP release keys](/learn/openpgp-release-keys/) |
