@@ -27,9 +27,12 @@
 20. The offline system is vanilla AirgapOS, unchanged, started from the ceremony USB stick, which carries one extra partition that ritueel lays out. ritueel builds no operating system of its own.
 21. The extra partition holds ritueel binaries (several versions and architectures), several bundles, and the encrypted key files beside the bundles, never inside one: a bundle is made to be copied and shared, and a key file is the root itself. The saved plan travels inside the bundle. The stick step is shown only for the offline system.
 22. Whenever a plan is prepared online and the stick is present, ritueel refreshes the partition itself, without a separate step, before the reboot into the offline system. The plan records the digest of the ritueel binary.
-23. Plans and requests are detachable. An operation that needs another holder's bundle or cards is a request or a plan that can travel by any channel, be run elsewhere, and have its answer return. The same steps run at one desk or in two places; with the bundles and cards at hand, ritueel chains the steps in one run.
-24. Software mode runs the same commands and steps. Its root is a key file opened as the key-file rule says, and `init`, every confirmation and every record say that a software root can be copied. A script root that is not a test root uses a passphrase through `--passphrase-fd N`; any script confirms with `--confirm DIGEST`.
-25. A test root is made with `--test-root`, has no passphrase, and is a key file or lives on a rehearsal card, which serves only a test root. It is born with the normal `init --test-root` on a registered rehearsal card; no flag is added. It is marked TEST ONLY in its certificate name and every record, and `ca-bundle build` and `keyring build` refuse to put a test root and a real root in one trust file. A real root never becomes a test root, because test is set at birth. A test root may run its ceremonies on the workstation or on a rehearsal card. The relaxed mode for tests is wording only; no flag turns the offline rule off.
+23. The partitions of AirgapOS on the stick are not touched: ritueel does not fork AirgapOS or build an image of it, and the holder trusts AirgapOS as published.
+24. The program, the bundles and the key files travel on the one stick that carries AirgapOS; there is no second stick for ritueel.
+25. The run uses the version of the program that made the plan, the copy refreshed on the stick; the offline system fetches nothing.
+26. Plans and requests are detachable. An operation that needs another holder's bundle or cards is a request or a plan that can travel by any channel, be run elsewhere, and have its answer return. The same steps run at one desk or in two places; with the bundles and cards at hand, ritueel chains the steps in one run.
+27. Software mode runs the same commands and steps. Its root is a key file opened as the key-file rule says, and `init`, every confirmation and every record say that a software root can be copied. A script root that is not a test root uses a passphrase through `--passphrase-fd N`; any script confirms with `--confirm DIGEST`.
+28. A test root is made with `--test-root`, has no passphrase, and is a key file or lives on a rehearsal card, which serves only a test root. It is born with the normal `init --test-root` on a registered rehearsal card; no flag is added. It is marked TEST ONLY in its certificate name and every record, and `ca-bundle build` and `keyring build` refuse to put a test root and a real root in one trust file. A real root never becomes a test root, because test is set at birth. A test root may run its ceremonies on the workstation or on a rehearsal card. The relaxed mode for tests is wording only; no flag turns the offline rule off.
 
 ## Why
 
@@ -41,6 +44,7 @@ A root signs for everything below it, so the person must see what will be signed
 - On the workstation, one tricked touch gives one unknown signature. The second-device check proves afterwards what was signed; it cannot prevent an extra one.
 - A stopped run leaves a critical attempt until a person closes it.
 - The reference pages (record, plan file, partition layout, commands) must follow this record.
+- The stick is kept with the same care as a root: a key file is the root itself, even though it is encrypted.
 
 ## Roads not taken
 
@@ -62,6 +66,9 @@ A root signs for everything below it, so the person must see what will be signed
 - **Key files inside the bundle.** A bundle is made to be copied and shared, and a copy would carry the root.
 - **One way at one desk and another for two places.** Two procedures to build, test and teach; the same steps under the hood in both are wanted.
 - **A flag that turns the offline rule off.** Faster tests, but the program checks nothing about the machine, so a flag would relax a rule nothing enforces, and `--test-root` already marks everything TEST ONLY.
+- **An AirgapOS fork or an image built by ritueel.** The stick would hold one system of ritueel's own, but ritueel would maintain an operating system, and the holder would trust that build instead of AirgapOS as published.
+- **A second stick for ritueel.** The boot stick stays untouched, but there are two sticks to carry and lose, and the plan, the program and the key files no longer travel together.
+- **Fetching the program at the offline system.** Nothing to keep on the stick, but it would need a network, which is the point of not having one.
 
 ## Not yet proven or only proposed
 
@@ -71,6 +78,7 @@ A root signs for everything below it, so the person must see what will be signed
 - **Proposed.** A cloud key has no touch, so condition (1) of rule 18 is for cards; the stated count, no retry and the second-device check apply to both kinds of key; for a cloud root the typed digest and the role session stand, with no hardware-key gate as a rule. The maintainer is to confirm ([#30](https://github.com/truvity/ritueel/issues/30)).
 - **Proposed.** The program enforces: (1) set in the card at birth; (2) the count and (3) no retry, kept by the program; (4) the second-device check is taught and recorded, because the program checks nothing about the machine. Whether the record carries a field that a second-device check was declared, and what is compared, is open ([#30](https://github.com/truvity/ritueel/issues/30)).
 - **Proposed.** When a plan is prepared online and no stick is present, the plan is still made, nothing is refreshed, and the person is told the stick is not current ([#30](https://github.com/truvity/ritueel/issues/30)).
+- **Proposed.** The names of the directories on the extra partition of the stick; the layout is decided, the names are not ([#30](https://github.com/truvity/ritueel/issues/30)).
 
 ## Replaces
 
