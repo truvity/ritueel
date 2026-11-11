@@ -5,7 +5,7 @@ sidebar:
   order: 12
 ---
 
-*These steps use `gpg` and `sqv`, which exist today. The release key, its keyring package and the guide's drill are planned in ritueel ([record 0009](../decisions/0009-release-keys-and-the-keyring.md)); no release is signed until the project's root is adopted and drilled. Try everything on a test key first.*
+*These steps use `gpg` and `sqv`, which exist today. The release key, its keyring file and the guide's drill are planned in ritueel; your pipeline builds and signs the package from the file ([record 0009](../decisions/0009-release-keys-and-the-keyring.md)); no release is signed until the project's root is adopted and drilled. Try everything on a test key first.*
 
 A release signature lets a user check that the file they downloaded is the one you published. It only means something if the user knows which key to trust and the key's custody is sound. This page covers signing, publishing and verifying.
 

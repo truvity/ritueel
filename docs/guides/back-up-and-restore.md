@@ -12,7 +12,7 @@ sidebar:
 - The bundle in its repository, with two remotes. Its history is the write-once part.
 - The revocation certificates in their two places.
 - The PINs you type in the password manager.
-- The recovery key, apart from the cards and apart from its passphrase. The sealed secrets of the cards are in the bundle; the PUK and the management key are not kept by hand ([record 0003](../decisions/0003-root-cards.md)).
+- The recovery key, apart from the cards and apart from its passphrase ([record 0002](../decisions/0002-where-a-key-lives.md)). The sealed secrets of the cards are in the bundle; the PUK and the management key are not kept by hand ([record 0003](../decisions/0003-root-cards.md)).
 - A clean machine, or a freshly made user account.
 
 ## Back up
