@@ -152,7 +152,7 @@ export default {
   kind: 'layout',
   label: 'The whole chain of ritueel: from your root to the keys of every day',
   caption:
-    'The design, not a program: a key in a file can be copied without a trace, so it is replaced on a calendar. A key on a card or in a cloud key service cannot be copied out. So there is no rotation on a calendar: you keep the same key, and the yearly ceremony renews what is due.',
+    'The design, not a program: a key in a file can be copied without a trace, so it is replaced on a calendar. A key on a card or in a cloud key service cannot be copied out. So there is no rotation on a calendar: you keep the same key, and the yearly ceremony only renews what is due.',
   // Both wide drawings are in `wide`: the figure kit shows one of them by the width of the column (src/styles/home.css).
   wide: wide(1100) + wide(760),
   narrow: narrow(),
