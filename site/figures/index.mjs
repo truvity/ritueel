@@ -12,7 +12,10 @@ import usbStick from './usb-stick.mjs';
 import insideAYubikey from './inside-a-yubikey.mjs';
 import onePivSlot from './one-piv-slot.mjs';
 import pivSignature from './piv-signature.mjs';
+import twoKindsOfPasskey from './two-kinds-of-passkey.mjs';
+import signIn from './sign-in.mjs';
+import passkeyOpensKeyFile from './passkey-opens-key-file.mjs';
 
-const list = [signIntermediate, rootCard, dayToDayCard, serverCard, ceremony, bindSubkeys, ideas, bundleFolder, usbStick, insideAYubikey, onePivSlot, pivSignature];
+const list = [signIntermediate, rootCard, dayToDayCard, serverCard, ceremony, bindSubkeys, ideas, bundleFolder, usbStick, insideAYubikey, onePivSlot, pivSignature, twoKindsOfPasskey, signIn, passkeyOpensKeyFile];
 
 export const figures = Object.fromEntries(list.map((fig) => [fig.id, fig]));
