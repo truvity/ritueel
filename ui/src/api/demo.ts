@@ -33,7 +33,9 @@ import {
   type SavePlanRequest,
   type StartPlanRequest,
 } from '../gen/ritueel/local/v1alpha1/plan_service_pb';
-import { getBundle, getViewState, whenViewStateChanges } from './demoState';
+import { INTENTION_SLUG } from '../lib/finding';
+import type { BundleContents } from '../lib/route';
+import { getBundle, getViewState, provideBundleContents, whenViewStateChanges } from './demoState';
 
 // One directory of fixtures for each example bundle (personal, acme, globex), each
 // with the same call-named files, and common/ for the answers all of them share.
@@ -158,6 +160,24 @@ function emptyIntentions() {
     }),
   });
 }
+
+/**
+ * What the open bundle holds, for the bundle switch: it keeps the screen, and a
+ * detail view falls back only if the bundle has no such card, record, root or
+ * goal. Read from the same answers the transport gives, in the page state shown now.
+ */
+function bundleContents(): BundleContents {
+  const goals = (r: { options: { intention: Intention; applicable: boolean }[] }) => r.options.filter((o) => o.applicable).flatMap((o) => INTENTION_SLUG[o.intention] ?? []);
+  // The empty state holds no root, card or record, and offers only the goal that applies to an empty bundle.
+  if (getViewState() === 'empty') return { roots: [], cards: [], records: [], goals: goals(emptyIntentions()) };
+  return {
+    roots: parse(ListRootsResponseSchema, 'inspect.list-roots.json').roots.map((r) => r.label),
+    cards: parse(ListCardsResponseSchema, 'inspect.list-cards.json').cards.map((c) => c.serial),
+    records: parse(ListCeremoniesResponseSchema, 'inspect.list-ceremonies.json').ceremonies.map((c) => c.id),
+    goals: goals(parse(ListIntentionsResponseSchema, 'plan.list-intentions.json')),
+  };
+}
+provideBundleContents(bundleContents);
 
 export function createDemoTransport(): Transport {
   return createRouterTransport(({ service }) => {

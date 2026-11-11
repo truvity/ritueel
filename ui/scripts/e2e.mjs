@@ -175,11 +175,13 @@ check('after "Save the plan" the step bar reaches Save, with Goal, Choices and P
 check('it is canonical JSON, and no pending area or .plan file is named', /canonical JSON/.test(psaved) && !/pending/i.test(psaved) && !/\.plan\b/.test(psaved));
 
 // ---- the bundle switch: a company with two roots on two cards -----------------------------------------
-// the demo bar picks the bundle; the page goes back to Start, and the bundle of a company has the renewals
+// the demo bar picks the bundle; the page keeps the screen, except for a detail view the new bundle cannot show
+// (the wizard of retire-subkeys, which personal offers and acme does not, falls back to the goals), and the bundle of a company has the renewals
 await clickText(evalJs, 'acme');
 await sleep(500);
-check('the bundle switch changes the bundle and sends the page back to Start', /~\/ritueel\/acme/.test(await text()) && (await evalJs('location.hash')) === '#/start');
+check('the bundle switch changes the bundle, and a goal acme does not offer falls back to the list of goals', /~\/ritueel\/acme/.test(await text()) && (await evalJs('location.hash')) === '#/plan');
 check('the switch now shows acme as the chosen bundle', pressed(await switchState(), 'acme') && !pressed(await switchState(), 'personal'));
+await go('#/start');
 check('Start of acme lists three due items', /3 in the next/i.test(await text()) && /Renew acme-ca/.test(await text()));
 await go('#/roots');
 check('Roots of acme writes its two roots as acme/A and acme/B', /acme\/A/.test(await text()) && /acme\/B/.test(await text()) && !/personal\/A/.test(await text()));
@@ -215,9 +217,11 @@ await go('#/plan/retire-subkeys');
 check('a goal of another bundle is refused here, not planned', /cannot be planned now/.test(await text()) && /does not apply to this bundle/.test(await text()));
 
 // ---- the bundle switch: a company with one cloud root, used from the workstation ---------------------
+// the key of acme/B is a detail view that globex lacks: the page falls back to Roots, not to Start
+await go('#/key/B');
 await clickText(evalJs, 'globex');
 await sleep(500);
-check('switching to globex goes back to Start and names the bundle', /~\/ritueel\/globex/.test(await text()) && (await evalJs('location.hash')) === '#/start' && pressed(await switchState(), 'globex'));
+check('switching to globex names the bundle, and the key of acme/B falls back to Roots', /~\/ritueel\/globex/.test(await text()) && (await evalJs('location.hash')) === '#/roots' && pressed(await switchState(), 'globex'));
 await go('#/roots');
 check('Roots of globex writes its one root as globex/A', /globex\/A/.test(await text()) && !/acme\/A/.test(await text()));
 await go('#/cards');
@@ -234,9 +238,18 @@ await sleep(500);
 const gsaved = await text();
 check('the saved plan of globex needs no USB stick and no copy to the offline system', /No stick is needed/.test(gsaved) && !/USB stick/.test(gsaved) && !/Copy to the offline system/.test(gsaved) && /Bring with you/.test(gsaved));
 check('it is still shown saved as ledger/<ceremony>/plan.json inside its bundle (a proposal in the demo)', /~\/ritueel\/globex\/ledger\/20261111T090000Z-root-add\/plan\.json/.test(gsaved) && /then, on your workstation/i.test(gsaved.replace(/\n/g, ' ')));
+// a screen every bundle has stays where it is
+await go('#/trust');
 await clickText(evalJs, 'personal');
 await sleep(500);
-check('switching back to personal goes back to Start', /~\/ritueel\/personal/.test(await text()) && (await evalJs('location.hash')) === '#/start' && pressed(await switchState(), 'personal'));
+check('switching back to personal keeps the Trust files screen', /~\/ritueel\/personal/.test(await text()) && (await evalJs('location.hash')) === '#/trust' && pressed(await switchState(), 'personal'));
+await go('#/cards/00000004');
+await clickText(evalJs, 'acme');
+await sleep(500);
+check('a card of personal is not in acme: the page falls back to Cards, and shows the cards of acme', (await evalJs('location.hash')) === '#/cards' && /00000011/.test(await text()) && !/00000004/.test(await text()));
+await clickText(evalJs, 'personal');
+await sleep(500);
+check('Cards stays on Cards when the bundle changes back', (await evalJs('location.hash')) === '#/cards' && /00000004/.test(await text()));
 
 // ---- the four states ------------------------------------------------------------------------
 await go('#/findings');

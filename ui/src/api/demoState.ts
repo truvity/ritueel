@@ -1,4 +1,5 @@
 import { useSyncExternalStore } from 'react';
+import { hrefOf, parseHash, routeForBundle, type BundleContents } from '../lib/route';
 
 // Demo mode only: which of the four states every read should show.
 //   loaded   the bundle answers
@@ -39,11 +40,32 @@ export function getBundle(): DemoBundle {
   return currentBundle;
 }
 
-/** Choose the example bundle. The hash goes back to Start, so no route names a card or a root the new bundle lacks. */
+const NOTHING: BundleContents = { roots: [], cards: [], records: [], goals: [] };
+let contentsOfBundle: () => BundleContents = () => NOTHING;
+
+/**
+ * The demo transport (api/demo.ts) says what the open bundle holds, so that this
+ * file never imports the fixtures: it is read by the pages of the real build too.
+ * Until the transport is loaded the bundle is taken to hold nothing, and a
+ * detail view then falls back to its list.
+ */
+export function provideBundleContents(read: () => BundleContents): void {
+  contentsOfBundle = read;
+}
+
+/**
+ * Choose the example bundle. The page keeps the screen it is on. Only a detail
+ * view the new bundle cannot show falls back to its list (routeForBundle), and
+ * the address changes only then.
+ */
 export function setBundle(next: DemoBundle): void {
   if (next === currentBundle) return;
   currentBundle = next;
-  if (typeof window !== 'undefined' && window.location) window.location.hash = '#/start';
+  if (typeof window !== 'undefined' && window.location) {
+    const now = parseHash(window.location.hash);
+    const to = routeForBundle(now, contentsOfBundle());
+    if (to !== now) window.location.hash = hrefOf(to);
+  }
   bundleListeners.forEach((l) => l());
 }
 

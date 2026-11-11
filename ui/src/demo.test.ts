@@ -1,12 +1,14 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { Code, ConnectError, createClient } from '@connectrpc/connect';
 import { Intention, Severity } from './gen/ritueel/local/v1alpha1/common_pb';
 import { CardKind, InspectService } from './gen/ritueel/local/v1alpha1/inspect_service_pb';
 import { PlanService, RunPlace } from './gen/ritueel/local/v1alpha1/plan_service_pb';
 import { createDemoTransport } from './api/demo';
 import { CARD_KIND_WORD } from './lib/words';
+import { INTENTION_SLUG } from './lib/finding';
+import { parseHash, type Route } from './lib/route';
 import { DEMO_BUNDLES, getBundle, setBundle, setViewState, type DemoBundle } from './api/demoState';
 
 const t = createDemoTransport();
@@ -584,5 +586,155 @@ describe('the dates of the acme bundle follow the pages', () => {
     const until = (n: string) => files.find((f) => f.name === n)!.validUntil!.slice(0, 10);
     expect(until('crl-A.pem')).toBe(plusMonths(lastSigned('00000011'), 25));
     expect(until('crl-B.pem')).toBe(plusMonths(lastSigned('00000012'), 25));
+  });
+});
+
+describe('switching the example bundle keeps the screen', () => {
+  // The tests run in Node, which has no window: this is the page's address bar, with a log of every write.
+  let bar: string;
+  let writes: string[];
+  beforeEach(() => {
+    bar = '';
+    writes = [];
+    vi.stubGlobal('window', {
+      location: {
+        get hash() {
+          return bar;
+        },
+        set hash(v: string) {
+          writes.push(v);
+          bar = v.startsWith('#') ? v : `#${v}`;
+        },
+      },
+    });
+  });
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  /** Be on `hash` in bundle `from`, switch to `to`, and say what the address bar shows and whether it was written. */
+  function switchFrom(from: DemoBundle, hash: string, to: DemoBundle) {
+    setBundle(from);
+    bar = hash;
+    writes = [];
+    setBundle(to);
+    return { hash: bar, writes: [...writes] };
+  }
+
+  /** What the bundle shown now holds, asked of the transport as the screens ask it. Independent of the code under test. */
+  async function held() {
+    return {
+      roots: (await inspect.listRoots({})).roots.map((r) => r.label),
+      cards: (await inspect.listCards({})).cards.map((c) => c.serial),
+      records: (await inspect.listCeremonies({})).ceremonies.map((c) => c.id),
+      goals: (await plans.listIntentions({})).options.filter((o) => o.applicable).map((o) => INTENTION_SLUG[o.intention]),
+    };
+  }
+  /** True if the address names a screen that the bundle shown now can draw: a list, or a detail view of something it holds. */
+  async function showable(hash: string): Promise<boolean> {
+    const r: Route = parseHash(hash);
+    const h = await held();
+    switch (r.name) {
+      case 'key':
+        return h.roots.includes(r.root);
+      case 'cards':
+        return r.serial === undefined || h.cards.includes(r.serial);
+      case 'history':
+        return r.id === undefined || h.records.includes(r.id);
+      case 'plan':
+        return r.goal === undefined || h.goals.includes(r.goal);
+      case 'notfound':
+        return false;
+      default:
+        return true;
+    }
+  }
+
+  const SCREENS = ['#/start', '#/findings', '#/roots', '#/cards', '#/history', '#/trust', '#/plan'];
+
+  it('every screen stays, for every pair of bundles, and the address is not written', () => {
+    for (const from of BUNDLES)
+      for (const to of BUNDLES)
+        for (const screen of SCREENS) {
+          const got = switchFrom(from, screen, to);
+          expect(got.hash, `${from} to ${to} on ${screen}`).toBe(screen);
+          expect(got.writes, `${from} to ${to} on ${screen}`).toEqual([]);
+        }
+  });
+  it('an empty address, a spelling without the slash and a hash that names nothing are left as they are', () => {
+    for (const hash of ['', '#', '#/', '#plan', '#/nope', '#/cards/a/b'])
+      for (const to of ['acme', 'globex'] as const) {
+        const got = switchFrom('personal', hash, to);
+        expect(got, `${JSON.stringify(hash)} to ${to}`).toEqual({ hash, writes: [] });
+      }
+  });
+  it('a card falls back to the Cards list when the new bundle has no card with that serial', () => {
+    expect(switchFrom('personal', '#/cards/00000001', 'acme')).toEqual({ hash: '#/cards', writes: ['#/cards'] });
+    expect(switchFrom('acme', '#/cards/00000011', 'personal')).toEqual({ hash: '#/cards', writes: ['#/cards'] });
+    expect(switchFrom('acme', '#/cards/00000012', 'globex')).toEqual({ hash: '#/cards', writes: ['#/cards'] });
+    // the demo's bundles share no serial (the pure function covers the case where one is shared)
+    for (const [from, serials] of [['personal', ['00000001', '00000006']], ['acme', ['00000011', '00000012']]] as const)
+      for (const to of BUNDLES.filter((b) => b !== from))
+        for (const sn of serials) expect(switchFrom(from, `#/cards/${sn}`, to).hash, `${from} ${sn} to ${to}`).toBe('#/cards');
+  });
+  it('a ledger record falls back to History', () => {
+    expect(switchFrom('personal', '#/history/20261103T142000Z-init', 'acme')).toEqual({ hash: '#/history', writes: ['#/history'] });
+    expect(switchFrom('acme', '#/history/20231202T142000Z-init', 'globex')).toEqual({ hash: '#/history', writes: ['#/history'] });
+    expect(switchFrom('globex', '#/history/20260915T142000Z-init', 'personal')).toEqual({ hash: '#/history', writes: ['#/history'] });
+  });
+  it('a root stays if the new bundle has a root with that letter, and goes to Roots if not', () => {
+    // A is in all three bundles, B only in acme
+    for (const from of BUNDLES)
+      for (const to of BUNDLES) expect(switchFrom(from, '#/key/A', to), `${from} to ${to}`).toEqual({ hash: '#/key/A', writes: [] });
+    expect(switchFrom('acme', '#/key/B', 'personal')).toEqual({ hash: '#/roots', writes: ['#/roots'] });
+    expect(switchFrom('acme', '#/key/B', 'globex')).toEqual({ hash: '#/roots', writes: ['#/roots'] });
+    expect(switchFrom('acme', '#/key/B', 'acme').hash).toBe('#/key/B');
+    // the bare #/key means the root A
+    expect(switchFrom('personal', '#/key', 'globex')).toEqual({ hash: '#/key', writes: [] });
+  });
+  it('the wizard of a goal stays if the new bundle offers the goal, and goes to the goals if not', () => {
+    // offered: personal retire-subkeys, acme renew-due, globex adopt-key
+    expect(switchFrom('personal', '#/plan/retire-subkeys', 'acme')).toEqual({ hash: '#/plan', writes: ['#/plan'] });
+    expect(switchFrom('acme', '#/plan/renew-due', 'personal')).toEqual({ hash: '#/plan', writes: ['#/plan'] });
+    expect(switchFrom('acme', '#/plan/renew-due', 'globex')).toEqual({ hash: '#/plan', writes: ['#/plan'] });
+    expect(switchFrom('globex', '#/plan/adopt-key', 'acme')).toEqual({ hash: '#/plan', writes: ['#/plan'] });
+    // a goal that applies to no bundle, and one this page does not know
+    expect(switchFrom('personal', '#/plan/add-card', 'acme').hash).toBe('#/plan');
+    expect(switchFrom('personal', '#/plan/no-such-goal', 'globex').hash).toBe('#/plan');
+  });
+  it('nothing ever ends on an address that the new bundle cannot show', async () => {
+    const goals = ['renew-due', 'retire-subkeys', 'adopt-key', 'add-card', 'replace-card', 'no-such-goal'];
+    for (const from of BUNDLES) {
+      setBundle(from);
+      const h = await held();
+      const details = [
+        ...h.roots.map((r) => `#/key/${r}`),
+        ...h.cards.map((c) => `#/cards/${c}`),
+        ...h.records.map((r) => `#/history/${r}`),
+        ...goals.map((g) => `#/plan/${g}`),
+        '#/key/Z',
+        '#/cards/99999999',
+        '#/history/20000101T000000Z-none',
+      ];
+      for (const to of BUNDLES.filter((b) => b !== from)) {
+        for (const hash of [...SCREENS, ...details]) {
+          const got = switchFrom(from, hash, to);
+          expect(await showable(got.hash), `${from} ${hash} to ${to} ended on ${got.hash}`).toBe(true);
+          // the address is written only when the route had to fall back
+          expect(got.writes.length, `${from} ${hash} to ${to}`).toBe(got.hash === hash ? 0 : 1);
+        }
+      }
+    }
+  });
+  it('in the Empty page state nothing is held, so every detail view falls back and only adopting a key stays', () => {
+    setViewState('empty');
+    for (const to of BUNDLES.filter((b) => b !== 'personal')) {
+      expect(switchFrom('personal', '#/cards/00000001', to).hash).toBe('#/cards');
+      expect(switchFrom('personal', '#/key/A', to).hash).toBe('#/roots');
+      expect(switchFrom('personal', '#/history/20261103T142000Z-init', to).hash).toBe('#/history');
+      expect(switchFrom('personal', '#/plan/renew-due', to).hash).toBe('#/plan');
+      expect(switchFrom('personal', '#/plan/adopt-key', to).hash).toBe('#/plan/adopt-key');
+      expect(switchFrom('personal', '#/roots', to).hash).toBe('#/roots');
+    }
   });
 });
