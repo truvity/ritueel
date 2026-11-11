@@ -174,18 +174,36 @@ export function createDemoTransport(): Transport {
     service(PlanService, {
       listIntentions: () => gate(() => parse(ListIntentionsResponseSchema, 'plan.list-intentions.json'), emptyIntentions),
       startPlan: (req: StartPlanRequest) => {
+        const hasAnswers = req.answers.length > 0;
         const build = () => {
           const name = INTENTION_NAMES[req.intention] ?? '';
-          const hasAnswers = req.answers.length > 0;
           const file = pick('StartPlan', (w) => w.intention === name && (w.answers === undefined || (w.answers === 'any') === hasAnswers));
           return parse(StartPlanResponseSchema, file);
         };
-        return gate(build, build);
+        // An empty bundle answers the same for every example bundle: the one goal that applies
+        // there, adopting a key, has a plan of its own; the goals that need a key are not now.
+        const buildEmpty = () => {
+          if (req.intention === Intention.ADOPT_KEY) {
+            return parse(StartPlanResponseSchema, hasAnswers ? 'common/plan.start-plan.adopt-key.json' : 'common/plan.start-plan.adopt-key.questions.json');
+          }
+          if (req.intention === Intention.RENEW_DUE || req.intention === Intention.RETIRE_SUBKEYS) {
+            return parse(StartPlanResponseSchema, 'common/plan.start-plan.not-now.json');
+          }
+          return build();
+        };
+        return gate(build, buildEmpty);
       },
       savePlan: (req: SavePlanRequest) => {
         // The one call that would act. The demo answers, writes nothing, and says so.
         const build = () => parse(SavePlanResponseSchema, pick('SavePlan', (w) => w.planId === req.planId));
-        return gate(build, build);
+        const buildEmpty = () => {
+          const common = parse(SavePlanResponseSchema, 'common/plan.save-plan.adopt-key.json');
+          if (req.planId !== common.planId) return build();
+          // The path of the bundle that is open, as the process would name it.
+          const bundlePath = parse(GetSummaryResponseSchema, 'inspect.get-summary.json').bundle?.path;
+          return bundlePath ? { ...common, bundlePath } : common;
+        };
+        return gate(build, buildEmpty);
       },
     });
   });
