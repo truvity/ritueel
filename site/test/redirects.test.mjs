@@ -54,9 +54,13 @@ test('the block holds one 302 for each unpublished page, sorted, and not the rec
   const block = out.slice(out.indexOf(BEGIN)).split('\n');
   assert.deepEqual(block.slice(1, -2), [
     '/contributing/ ' + GH + 'contributing.md 302',
+    '/contributing ' + GH + 'contributing.md 302',
     '/learn/b/ ' + GH + 'learn/b.md 302',
+    '/learn/b ' + GH + 'learn/b.md 302',
     '/reference/ ' + GH + 'reference/index.md 302',
+    '/reference ' + GH + 'reference/index.md 302',
     '/reference/c/ ' + GH + 'reference/c.md 302',
+    '/reference/c ' + GH + 'reference/c.md 302',
   ]);
   assert.equal(block[block.length - 2], END);
 });
