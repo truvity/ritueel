@@ -22,9 +22,10 @@ Instructions for AI agents working in this repository. People follow the same ru
 | answer a design question, or judge a new page or feature | `docs/contributing/design.md` |
 | create or edit a file in `docs/decisions/` | `docs/contributing/decisions.md` (skill `new-decision`) |
 | run a spike or write up research | `docs/contributing/research.md` |
-| write a Learn or Guides page | "Teaching pages" in `docs/contributing/pages.md` (skill `teaching-page`) |
+| write a Learn or Guides page | "Teaching pages" in `docs/contributing/pages.md` (skill `teaching-page`); the page is published only if it is in `site/published.txt` ("What is published") |
+| add a page to the site menu or the published list | "What is published" in `docs/contributing/pages.md` |
 | create or edit any other page under `docs/` | `docs/contributing/pages.md` (skill `docs-page`) |
-| change `site/`, the headers, the redirects or how a page looks | "Changing the site" in `docs/contributing/pages.md` (skill `site-change`) |
+| change `site/`, the headers, the redirects or how a page looks | "Changing the site" in `docs/contributing/pages.md` (skill `site-change`); `just site-redirects` rewrites the generated redirect lines |
 | create a branch, commit, push, open a pull request or answer a review | `docs/contributing/workflow.md` (skill `open-pr`) |
 | write to issues or the board in bulk | "Issues and the board" in `docs/contributing/workflow.md` (skill `maintainer-script`) |
 | run a build, a test or a check | `docs/contributing/tools.md` |

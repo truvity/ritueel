@@ -15,7 +15,11 @@ The steps are mostly manual ceremonies, which is why there is a command line. Tw
 
 > ritueel helps one person or a small team keep a private root and an OpenPGP primary key for years without losing it, leaking it, misusing it or letting it expire. It teaches the model first, and its tools run each ceremony with the person deciding.
 
-**ritueel.id teaches first.** It explains the general logic of handling root keys and intermediates securely: what a root is, why it stays offline, what a ceremony is, the custody chain, the key stores compared, and the life of a root. The tools exist to simplify the rituals. The site is organised in that order: Learn, Guides, Tools, Reference, Decisions, Principles.
+**ritueel.id teaches first.** It explains the general logic of handling root keys and intermediates securely: what a root is, why it stays offline, what a ceremony is, the custody chain, the key stores compared, and the life of a root. The tools exist to simplify the rituals. The site publishes only what a reader of that mission needs: Learn (a path of six pages and four more), a demo of the local page, the glossary, where it stands, and the decision records as an archive. Guides, tool pages, reference pages, principles and research are written under `docs/` and read in the repository. Which pages are published is the allowlist `site/published.txt`.
+
+### What the site publishes
+
+On 2026-11-11 the maintainer found the site overloaded and contradicting the target he had been given: about 106 source pages, 10 menu groups, 32 pages saying Not built yet. Only the target is published; the working material stays in the repository, nothing is deleted, and a page comes back by one line in the allowlist.
 
 ### Three faces of one engine
 
@@ -70,7 +74,7 @@ Each procedure gets a page under Learn that says why and when, a guide that give
 
 ## Consequences
 
-- The site is rebuilt around Learn. The old concepts pages are reorganised into Learn, Tools and Principles, and every old address redirects.
+- The site is rebuilt around Learn and cut to the target. The old addresses of pages that are not published redirect (302) to their file on GitHub; links from the records to those pages open the file on GitHub.
 - The tools are held to a stricter bar: a feature that makes a ceremony faster but takes the decision from the person is refused.
 - The local page is a security-critical component of its own: a read-only local web server in the same binary ([0011](/decisions/0011-the-wizards-one-engine-three-faces-and-a-web-page-that-cannot-confirm-anything/)). It needs its own tests and a security note in every pull request, but no second ceremony code.
 - Two more software backends mean two more integrations to keep, and a platform matrix for the keyring.
@@ -89,6 +93,8 @@ Each procedure gets a page under Learn that says why and when, a guide that give
 - **Exporting a key from a card or KMS for backup.** An easy restore, but it turns a key that cannot be copied into one that can, and the theft risk grows with every copy.
 - **The OS keyring as the default.** No account and no setup, but it is the weakest option, so ritueel offers it with a warning and does not choose it for the user.
 - **Google Cloud KMS, Azure Key Vault and Nitrokey in the first version.** Wider reach, but every store multiplies tests and guides and none has an installation to prove it.
+- **Publish every page and put the working material behind a Design entry.** Nothing is lost and no link changes, but the overload stays and 32 Not-built-yet pages keep contradicting the target, so it lost.
+- **Hold back only the unbuilt pages.** A smaller cut, but 53 pages remain to drift apart, so it lost; the maintainer chose to publish the target only.
 - **A hosted ledger.** Nothing for the holder to back up, but a service that every ceremony trusts, and ritueel has none.
 
 ## Follow-ups
