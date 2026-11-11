@@ -5,9 +5,9 @@ sidebar:
   order: 5
 ---
 
-*Not built yet. This is version 1 of the files that the six steps of [ADR 0004](/decisions/0004-ceremonies-plan-confirm-reserve-sign-verify-record/#six-steps-every-ceremony) write. The code is [issue #9](https://github.com/truvity/ritueel/issues/9), in M2; it follows this page.*
+*Not built yet. This is version 1 of the files that the six steps of [record 0005](../decisions/0005-a-ceremony-and-where-it-runs.md) write. The code is [issue #9](https://github.com/truvity/ritueel/issues/9), in M2; it follows this page.*
 
-Every ceremony writes four kinds of file into its own sub-folder of the ledger, `ledger/<ceremony>/`, in [the bundle](/reference/bundle/#the-layout): a **plan** before anything is signed, an **attempt** just before the first signature, then a **record** and a **transcript** when it ends. The ledger is the write-once part of the bundle. These files hold public material only: never a private key, a PIN, a passphrase or a revocation signature.
+Every ceremony writes four kinds of file into its own sub-folder of the history, `ledger/<ceremony>/`, in [the bundle](/reference/bundle/#the-layout): a **plan** before anything is signed, an **attempt** just before the first signature, then a **record** and a **transcript** when it ends. The history is the write-once part of the bundle. These files hold public material only: never a private key, a PIN, a passphrase or a revocation signature.
 
 | File | Written at | Holds |
 |---|---|---|
@@ -66,7 +66,7 @@ Each member of `signatures`:
 
 `tbs_sha256` is what makes the plan exact: two machines that build the same plan from the same bundle compute the same bytes to sign, and the verify step compares each artifact with it.
 
-**A key that is born in the ceremony is the exception.** `init`, `root add` and `ssh-ca break-glass` make keys, and a signature that covers a new key (its root certificate, its primary's self-signature and revocation signatures, a vouching signature, a cross-certificate) cannot have its bytes fixed before the key exists. The plan lists such a signature with `derived` set to true and without `tbs_sha256` (and without `key` when the new key signs itself), and lists the keys to be born in `births`: for each, `{ "label", "purpose", "store", "place", "creation_time" }`, where `place` is the card's serial and slot, or the Region, and `creation_time` is the OpenPGP creation time drawn here. The verify step checks every derived artifact against the profile and the key that was born, with code that did not sign it, and the record carries the digests that the plan could not ([ADR 0008](/decisions/0008-the-operator-prepares-the-holder-and-ritueel-creates-attests-and-verifies-the-root/#births-and-what-a-crash-leaves)).
+**A key that is born in the ceremony is the exception.** `init`, `root add` and `ssh-ca break-glass` make keys, and a signature that covers a new key (its root certificate, its primary's self-signature and revocation signatures, a vouching signature, a cross-certificate) cannot have its bytes fixed before the key exists. The plan lists such a signature with `derived` set to true and without `tbs_sha256` (and without `key` when the new key signs itself), and lists the keys to be born in `births`: for each, `{ "label", "purpose", "store", "place", "creation_time" }`, where `place` is the card's serial and slot, or the Region, and `creation_time` is the OpenPGP creation time drawn here. The verify step checks every derived artifact against the profile and the key that was born, with code that did not sign it, and the record carries the digests that the plan could not ([record 0005](../decisions/0005-a-ceremony-and-where-it-runs.md)).
 
 ### The plan digest and the confirmation
 
@@ -96,7 +96,7 @@ ritueel creates the file only if it does not exist (exclusive create), writes it
 
 ### The birth journal
 
-A ceremony that makes keys also creates `ledger/<ceremony>/births.jsonl`, with the attempt and before the first birth. After each key exists, and before the next birth begins, ritueel appends one line and syncs the file: `{ "at", "label", "purpose", "store", "place", "public_key_sha256" }`, where `place` is as in the plan with the key's ARN for KMS. The journal holds no secret. If the run stops, `records close` prints it, so that the holder can delete the slot of the half-born key (that deleting one slot works on firmware 5.7.4 is tried on a rehearsal card in M1; a card that holds roots is never reset: [ADR 0016](/decisions/0016-several-bundles-share-one-pair-of-root-cards-and-the-bundle-keeps-a-card-inventory/#rules-for-a-shared-card)) or the operator can schedule the key for deletion; ritueel does neither ([ADR 0008](/decisions/0008-the-operator-prepares-the-holder-and-ritueel-creates-attests-and-verifies-the-root/#births-and-what-a-crash-leaves)). An attempt is resolved by a record, as before; the journal is not a second record.
+A ceremony that makes keys also creates `ledger/<ceremony>/births.jsonl`, with the attempt and before the first birth. After each key exists, and before the next birth begins, ritueel appends one line and syncs the file: `{ "at", "label", "purpose", "store", "place", "public_key_sha256" }`, where `place` is as in the plan with the key's ARN for KMS. The journal holds no secret. If the run stops, `records close` prints it, so that the holder can delete the slot of the half-born key (that deleting one slot works on firmware 5.7.4 is tried on a rehearsal card in M1; a card that holds roots is never reset: [record 0003](../decisions/0003-root-cards.md)) or the operator can schedule the key for deletion; ritueel does neither ([record 0005](../decisions/0005-a-ceremony-and-where-it-runs.md)). An attempt is resolved by a record, as before; the journal is not a second record.
 
 ## The record
 
@@ -109,16 +109,16 @@ A ceremony that makes keys also creates `ledger/<ceremony>/births.jsonl`, with t
 | `prev_record_sha256` | The SHA-256 of the record before it in the chain. Absent in the first record of the bundle, and only there. |
 | `started_at`, `finished_at` | When the attempt was written, and when the record was. |
 | `root`, `root_reason` | As in the plan. Absent in a closing record. |
-| `slot_map_version` | For a root on a card: the version of the slot map ([ADR 0003](/decisions/0003-key-stores-and-the-card-layer/#the-piv-store-and-the-root-cards)). Absent for a software root. |
+| `slot_map_version` | For a root on a card: the version of the slot map ([record 0003](../decisions/0003-root-cards.md)). Absent for a software root. |
 | `confirmation` | `{ "by", "at" }`: `typed` or `flag`, and when; `policy` for a run of `renew`, which no person confirms ([renewal under a policy](/reference/kms-root/#renewal-under-a-policy)). |
 | `renewal` | `renew` only: `{ "policy_sha256", "role_session" }`, the SHA-256 of the canonical JSON of the `renewal` block that was applied, and the renewal role's session (the assumed-role ARN and session name, never a credential). |
-| `limit_shown` | `init` only: true, because `init` prints the [accepted limit](/decisions/0002-key-custody-every-key-is-born-in-its-store-two-root-cards-or-one-kms-root-and-a-replica/#the-accepted-limit). |
+| `limit_shown` | `init` only: true, because `init` prints the [accepted limit](../decisions/0005-a-ceremony-and-where-it-runs.md). |
 | `requests` | One for each request, below. |
 | `signatures` | The plan's list, each with `signature_sha256`: the SHA-256 of the signature made. |
 | `artifacts` | A list of `{ "path", "sha256" }`: every file the ceremony wrote other than the plan, the attempt, the record and the transcript, in path order. The trust products are among them. |
 | `trust_sequence` | As in the plan. |
 | `transcript_sha256` | The SHA-256 of the transcript. |
-| `advisory_review` | The renewal plan only: `{ "at", "note" }`, the holder's answer that they reviewed the advisories for the cards, services and algorithms in use, and a short note of what they read. ritueel asks and records; it does not judge the answer ([ADR 0002](/decisions/0002-key-custody-every-key-is-born-in-its-store-two-root-cards-or-one-kms-root-and-a-replica/#validity-renewal-and-replacement)). |
+| `advisory_review` | The renewal plan only: `{ "at", "note" }`, the holder's answer that they reviewed the advisories for the cards, services and algorithms in use, and a short note of what they read. ritueel asks and records; it does not judge the answer ([record 0007](../decisions/0007-changing-and-losing-a-root.md)). |
 | `declined` | A declining record only: `{ "stem", "reason" }`, the request declined and the reason the person gave. Such a record has no `signatures`, and its `artifacts` are the refused answer. |
 | `closes` | A closing record only: `{ "ceremony", "attempt_sha256", "reason" }`, the attempt it resolves, its digest, and the reason the person gave. |
 | `revocations` | A ceremony that made revocation material: a list of `{ "label", "reason", "sha256" }`, the digest of each signature packet, and of each removal authorisation with the reason `root-removal`. The material itself is never in the record ([revocation material](/reference/revocation-material/)). |
@@ -132,7 +132,7 @@ Each member of `requests` holds what the [hand-off contract records](/reference/
 
 ### The hash chain
 
-Records form one chain. The first record of a bundle has no `prev_record_sha256`; every other names the record before it, so each sub-folder of the ledger names the one before it. `records verify` walks the chain from the first record and fails when:
+Records form one chain. The first record of a bundle has no `prev_record_sha256`; every other names the record before it, so each sub-folder of the history names the one before it. `records verify` walks the chain from the first record and fails when:
 
 - a record's `prev_record_sha256` is not the digest of a record, or two records name the same one;
 - a `record.json` in a sub-folder of `ledger/` is not on the chain;
