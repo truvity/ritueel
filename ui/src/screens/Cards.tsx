@@ -541,8 +541,8 @@ function Inventory() {
               </div>
               <Sec title="How to read a card">
                 <Explain term="A slot">
-                  is one place on a card that can hold one key. A card has six rows of four PIV slots: row 1 is the card&apos;s own jobs, and each row below belongs to one root of this bundle
-                  (X.509 root, OpenPGP primary, SSH CA, one empty). The OpenPGP keys and the passkeys sit beside the grid.
+                  is one place on a card that can hold one key. A card has six rows of four PIV slots: row 1 is the card&apos;s own jobs, and each row below belongs to one root, of this bundle or of another bundle of the
+                  same holder that shares the pair (X.509 root, OpenPGP primary, SSH CA, one empty). The OpenPGP keys and the passkeys sit beside the grid.
                 </Explain>
                 <Legend />
                 <p className="mt-2 text-sm text-dim">Each tile below shows its 24 PIV slots in miniature. Open a card to see every slot and what it is for.</p>

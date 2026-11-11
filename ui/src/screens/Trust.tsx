@@ -110,8 +110,8 @@ export function Trust() {
       lede={<p>ritueel builds these files from your roots at a ceremony. You publish them where your machines and your users can read them. ritueel does not publish them for you.</p>}
     >
       <Explain term="Trust files">
-        are the root list, the CA bundle, the revocation list, the SSH CA keys and the keyrings. Each set is numbered, the trust sequence. A new ceremony builds the next one
-        and keeps the old one beside it.
+        are the root list, the CA bundle, the revocation lists, the SSH CA keys and the keyrings of a company bundle, and the public certificate of a personal bundle. Each set
+        is numbered, the trust sequence. A new ceremony builds the next one and keeps the old one beside it.
       </Explain>
       <Load
         res={combine(files, summary)}

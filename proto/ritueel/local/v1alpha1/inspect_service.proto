@@ -80,14 +80,16 @@ message GetSummaryResponse {
   repeated SetupStep setup_steps = 10;
 }
 
-// The directory of one trust domain: its ledger, roots, cards and trust
-// files. The process serves one bundle.
+// The directory with a fixed structure that holds everything ritueel knows
+// about one trust domain: its ledger, roots, cards and trust files. The
+// process serves one bundle.
 message Bundle {
   // Where the bundle is, as the holder knows it, for example
   // "~/ritueel/acme".
   string path = 1;
-  // The trust domain, for example "personal" or "acme". Also the first half
-  // of a root's written name: acme/A.
+  // The bundle's name, which is the name of its directory: for example
+  // "personal" or "acme". Also the first half of a root's written name across
+  // bundles: acme/A. No file stores it.
   string name = 2;
   bool exists = 3;
   google.protobuf.Timestamp created_at = 4;
@@ -456,8 +458,8 @@ enum CeremonyOutcome {
 // One record of the ledger.
 message Ceremony {
   // The record's name, which is also the name of its sub-folder of the
-  // ledger: the ceremony's time and command, for example
-  // "20260602T142000Z-card-check".
+  // ledger: the ceremony's time in UTC, a hyphen and the command with its
+  // words joined by hyphens, for example "20260127T142000Z-due".
   string id = 1;
   CeremonyKind kind = 2;
   string title = 3;
@@ -496,10 +498,13 @@ enum CardKind {
   CARD_KIND_ROOT = 1;
   // A day-to-day card: signing and authentication subkeys, passkeys.
   CARD_KIND_DAY_TO_DAY = 2;
-  // A card for practice. It holds nothing that matters.
+  // A rehearsal card: practice and tests. It never holds a real key, may be
+  // reset, and serves only a test root. A card never changes its kind.
   CARD_KIND_REHEARSAL = 3;
-  // A card that stays in a server of a requester system, used like a small
-  // hardware security module.
+  // A server card: a card that stays plugged into a server of a requester
+  // system and signs for its services. An ordinary card, not a hardware
+  // security module product. ritueel lists it in the inventory and only ever
+  // reads it: it adopts nothing on it, changes no secret and checks no layout.
   CARD_KIND_SERVER = 4;
 }
 
@@ -662,6 +667,9 @@ enum TrustFileKind {
   TRUST_FILE_KIND_CRL = 3;
   TRUST_FILE_KIND_SSH_CA_KEYS = 4;
   TRUST_FILE_KIND_KEYRING = 5;
+  // A person's public OpenPGP certificate, the one trust file of a personal
+  // bundle: products/<sequence>/<fingerprint>.pgp or .asc.
+  TRUST_FILE_KIND_OPENPGP_CERTIFICATE = 6;
 }
 
 enum TrustCheckResult {

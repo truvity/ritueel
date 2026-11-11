@@ -328,8 +328,9 @@ export function PlanView({ plan }: { plan: PlanMessage }) {
           <div>
             <p className="mb-1 font-bold">To run it, {onPlace(plan.runPlace)}</p>
             <p className="mb-2 max-w-[70ch] text-sm text-dim">
-              You type this in {plan.runPlace === RunPlace.OFFLINE_SYSTEM ? 'the terminal there' : 'a terminal ' + (plan.runPlace === RunPlace.WORKSTATION ? 'on your workstation' : 'where you run it')}, from the
-              bundle, after you save the plan{plan.runPlace === RunPlace.OFFLINE_SYSTEM ? ' and carry it over' : ''}. The terminal asks for the PIN and the touch. This page never does.
+              You type this in {plan.runPlace === RunPlace.OFFLINE_SYSTEM ? 'the terminal there' : 'a terminal ' + (plan.runPlace === RunPlace.WORKSTATION ? 'on your workstation' : 'where you run it')}, after you save the plan
+              {plan.runPlace === RunPlace.OFFLINE_SYSTEM ? ' and carry it over' : ''}. <span className="font-mono">--dir</span> names the bundle{plan.runPlace === RunPlace.OFFLINE_SYSTEM ? ': there, give the place where you copied it' : ''}. The terminal asks for what the
+              ceremony needs, such as a PIN and a touch on a card. This page never does.
             </p>
             <Cmd label={`Run the plan ${onPlace(plan.runPlace)}`}>{plan.runCommand}</Cmd>
           </div>

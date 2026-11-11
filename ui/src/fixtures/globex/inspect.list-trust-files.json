@@ -12,8 +12,8 @@
       "checkDetail": "Signed by globex/A. It is the first list, so there is none to hold it against.",
       "sha256": "72010123456789abcdef0123456789abcdef0123456789abcdef0123456789ab",
       "sizeBytes": "1203",
-      "verifyCommand": "ritueel root-list verify products/1/root-list.json",
-      "rebuildCommand": "ritueel due --plan-only"
+      "verifyCommand": "ritueel root-list verify products/1/root-list.json --pin 30010123456789abcdef0123456789abcdef0123456789abcdef0123456789ab",
+      "rebuildCommand": "ritueel due"
     },
     {
       "name": "ca-bundle.pem",
@@ -26,8 +26,8 @@
       "checkDetail": "One X.509 root, globex/A, and it is in the root list.",
       "sha256": "72020123456789abcdef0123456789abcdef0123456789abcdef0123456789ab",
       "sizeBytes": "614",
-      "verifyCommand": "ritueel root-list verify products/1/root-list.json --bundle products/1/ca-bundle.pem",
-      "rebuildCommand": "ritueel bundle build --out products/1/ca-bundle.pem"
+      "verifyCommand": "ritueel root-list verify products/1/root-list.json --pin 30010123456789abcdef0123456789abcdef0123456789abcdef0123456789ab --ca-bundle products/1/ca-bundle.pem",
+      "rebuildCommand": "ritueel ca-bundle build --out products/1/ca-bundle.pem"
     }
   ]
 }

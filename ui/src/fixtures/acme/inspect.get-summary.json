@@ -88,7 +88,7 @@
     "roots": 2,
     "delegatedKeys": 2,
     "cards": 2,
-    "trustFiles": 6
+    "trustFiles": 7
   },
   "setupSteps": [
     {

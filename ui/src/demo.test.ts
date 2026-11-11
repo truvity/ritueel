@@ -51,7 +51,7 @@ describe('every call of the contract answers', () => {
 // What each example bundle holds. One bundle is one trust domain, with its own ledger, roots and cards.
 const WORLD: Record<DemoBundle, { name: string; path: string; due: number; records: number; findings: number; alert: number; roots: number; delegated: number; cards: number; ceremonies: number; trustFiles: number }> = {
   personal: { name: 'personal', path: '~/ritueel/personal', due: 0, records: 1, findings: 7, alert: 3, roots: 1, delegated: 0, cards: 6, ceremonies: 1, trustFiles: 2 },
-  acme: { name: 'acme', path: '~/ritueel/acme', due: 3, records: 10, findings: 1, alert: 0, roots: 2, delegated: 2, cards: 2, ceremonies: 10, trustFiles: 6 },
+  acme: { name: 'acme', path: '~/ritueel/acme', due: 3, records: 10, findings: 1, alert: 0, roots: 2, delegated: 2, cards: 2, ceremonies: 10, trustFiles: 7 },
   globex: { name: 'globex', path: '~/ritueel/globex', due: 0, records: 1, findings: 1, alert: 0, roots: 1, delegated: 0, cards: 0, ceremonies: 1, trustFiles: 2 },
 };
 
@@ -203,7 +203,7 @@ describe('a call that would act answers that this is a demo', () => {
     expect(q.questions.length).toBeGreaterThan(0);
     const p = await plans.startPlan({ intention: Intention.RENEW_DUE, answers: q.questions.map((x) => ({ questionId: x.id, optionIds: x.defaultOptionIds })) });
     expect(p.plan?.digest).toMatch(/deadbeef$/);
-    expect(p.plan?.runCommand).toContain('ritueel run ledger/');
+    expect(p.plan?.runCommand).toContain(' run ledger/');
     expect(p.plan?.runCommand).toContain('/plan.json --confirm ');
     expect(p.plan?.savePath).toMatch(/^ledger\/[0-9]{8}T[0-9]{6}Z-[a-z0-9-]+\/plan\.json$/);
     expect(p.plan?.runPlace).toBe(RunPlace.OFFLINE_SYSTEM);
@@ -246,7 +246,8 @@ describe('a call that would act answers that this is a demo', () => {
       // The plan is saved inside the bundle, where the engine writes any plan.
       expect(saved.bundlePath, id).toBe(`~/ritueel/${b}`);
       expect(saved.path, id).toBe(`ledger/${id}/plan.json`);
-      expect(saved.runCommand, id).toBe(`ritueel run ledger/${id}/plan.json --confirm ${saved.digest}`);
+      // The run command names the bundle (--dir), as docs/reference/cli.md has it.
+      expect(saved.runCommand, id).toBe(`ritueel --dir ~/ritueel/${b} run ledger/${id}/plan.json --confirm ${saved.digest}`);
       expect(saved.digest, id).toMatch(/^[0-9a-f]{64}$/);
       expect(saved.planFilePreview, id).toContain(`"ceremony": "${id}"`);
       // The USB stick is a step only where the plan runs on the offline system.
@@ -305,7 +306,12 @@ describe('the four states of a read', () => {
       expect(adopt.plan?.runPlace, b).toBe(RunPlace.WORKSTATION);
       const saved = await plans.savePlan({ planId: adopt.plan?.id ?? '', digest: adopt.plan?.digest ?? '' });
       expect(saved.path, b).toBe(`ledger/${adopt.plan?.id}/plan.json`);
-      expect(saved.bundlePath, b).toBe((await inspect.getSummary({})).bundle?.path);
+      const here = (await inspect.getSummary({})).bundle?.path;
+      expect(saved.bundlePath, b).toBe(here);
+      // The commands of the shared answer name the open bundle, never the example one.
+      expect(adopt.plan?.runCommand, b).toContain(`--dir ${here} run `);
+      expect(adopt.plan?.equivalentCommand, b).toContain(`--dir ${here} init `);
+      expect(adopt.plan?.runCommand, b).not.toContain('ritueel/example');
     }
   });
   it('failed: every read fails with an error, never an empty answer, and names the bundle it could not read', async () => {
@@ -338,7 +344,7 @@ describe('the four states of a read', () => {
 
 describe('the words of the owner stay', () => {
   const HERE = new URL('./', import.meta.url).pathname;
-  const OLD_WORDS = /folder|ceremony machine|offline machine|\bdaily\b|pending\//i;
+  const OLD_WORDS = /folder|ceremony machine|offline machine|\bdaily\b|pending\/|hardware.key sign-in/i;
   function files(dir: string, ext: RegExp): string[] {
     return readdirSync(join(HERE, dir), { withFileTypes: true }).flatMap((e) =>
       e.isDirectory() ? files(`${dir}/${e.name}`, ext) : ext.test(e.name) ? [`${dir}/${e.name}`] : [],
@@ -364,5 +370,81 @@ describe('every kind of card has a word', () => {
     expect(kinds).toHaveLength(4);
     for (const k of kinds) expect(CARD_KIND_WORD[k], CardKind[k]).toMatch(/\bcard$/);
     expect(CARD_KIND_WORD[CardKind.SERVER]).toBe('Server card');
+  });
+});
+
+describe('the commands in the made-up answers follow docs/reference/cli.md', () => {
+  const HERE = new URL('./', import.meta.url).pathname;
+  const CLI = readFileSync(join(HERE, '../../docs/reference/cli.md'), 'utf8');
+  // What the page proposes and cli.md does not have yet. They are listed for the maintainer
+  // (the report of the change that added this test); a command or a flag not here and not in
+  // cli.md fails the test.
+  const PROPOSED_COMMANDS = ['personal subkey revoke', 'personal primary extend', 'personal primary add', 'personal userid revoke'];
+  const PROPOSED_FLAGS = ['--key', '--expires-in'];
+
+  /** Every `ritueel ...` code span of the reference, cut at the first word that is not a lower-case command word. */
+  const known = new Set<string>();
+  for (const m of CLI.matchAll(/`ritueel ([^`]*)`/g)) {
+    const words: string[] = [];
+    for (const w of m[1].split(' ')) {
+      if (!/^[a-z][a-z-]*$/.test(w)) break;
+      words.push(w);
+    }
+    if (words.length > 0) known.add(words.join(' '));
+  }
+
+  function commandsOf(v: unknown, out: string[] = []): string[] {
+    if (Array.isArray(v)) v.forEach((x) => commandsOf(x, out));
+    else if (v && typeof v === 'object') {
+      for (const [k, x] of Object.entries(v)) {
+        if (typeof x === 'string' && /Command$/.test(k)) out.push(x);
+        else commandsOf(x, out);
+      }
+    }
+    return out;
+  }
+  function fixtureFiles(dir: string): string[] {
+    return readdirSync(join(HERE, dir), { withFileTypes: true }).flatMap((e) => (e.isDirectory() ? fixtureFiles(`${dir}/${e.name}`) : e.name.endsWith('.json') ? [`${dir}/${e.name}`] : []));
+  }
+  const commands = fixtureFiles('fixtures').flatMap((f) => commandsOf(JSON.parse(readFileSync(join(HERE, f), 'utf8'))).map((c) => ({ f, c })));
+
+  it('has commands to check (an empty walk proves nothing)', () => {
+    expect(known.has('run') && known.has('due') && known.has('ca-bundle build') && known.has('card adopt') && known.has('card check')).toBe(true);
+    expect(commands.length).toBeGreaterThan(30);
+  });
+  it('every command is one cli.md has, or a listed proposal', () => {
+    const bad: string[] = [];
+    for (const { f, c } of commands) {
+      const m = /^ritueel (?:--dir \S+ )?(.*)$/.exec(c);
+      if (!m) {
+        bad.push(`${f}: ${c}`);
+        continue;
+      }
+      const words: string[] = [];
+      for (const w of m[1].split(' ')) {
+        if (!/^[a-z][a-z-]*$/.test(w)) break;
+        words.push(w);
+      }
+      const name = words.join(' ');
+      if (!known.has(name) && !PROPOSED_COMMANDS.includes(name)) bad.push(`${f}: ${name}: ${c}`);
+      for (const flag of c.match(/--[a-z][a-z-]*/g) ?? []) {
+        if (PROPOSED_FLAGS.includes(flag)) continue;
+        if (!new RegExp(`${flag}(?![a-z-])`).test(CLI)) bad.push(`${f}: ${flag}: ${c}`);
+      }
+    }
+    expect(bad).toEqual([]);
+  });
+  it('a command that runs a plan names the bundle, a verifier does not, and due plans without --plan-only', () => {
+    for (const { f, c } of commands) {
+      if (/^ritueel (--dir \S+ )?run /.test(c)) expect(c, f).toMatch(/^ritueel --dir ~\/ritueel\/[a-z]+ run [^ ]+ --confirm [0-9a-f]{64}$/);
+      if (/ (root-list|ssh-ca-keys|crl) verify /.test(c)) expect(c, f).not.toContain('--dir');
+      if (/ due( |$)/.test(c)) expect(c, f).not.toContain('--plan-only');
+    }
+  });
+  it('the trust file of the CA is called the CA bundle, and a personal bundle has no root list', async () => {
+    for (const { f, c } of commands) expect(c, f).not.toMatch(/ritueel bundle |--bundle\b/);
+    setBundle('personal');
+    const files = (await inspect.listTrustFiles({})).files;
+    expect(files.map((x) => x.path.split('.').pop()).sort()).toEqual(['asc', 'pgp']);
   });
 });
