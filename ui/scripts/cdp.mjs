@@ -73,11 +73,15 @@ export async function launch() {
 }
 
 /** Finds a button or link by its visible text (exact) and clicks it. Returns false when none is found. */
-export const clickText = (evalJs, text, scope = 'document') =>
-  evalJs(`(() => {
-    const els = [...${scope}.querySelectorAll('button, a, [role=button], summary')].filter((e) => e.offsetParent !== null || e.getClientRects().length);
-    const hit = els.find((e) => e.textContent.trim() === ${JSON.stringify(text)}) ?? els.find((e) => e.textContent.trim().startsWith(${JSON.stringify(text)}));
+export const clickText = (evalJs, text) => {
+  // The text goes into the script as character codes: numbers only, nothing to escape.
+  const codes = [...String(text)].map((c) => c.codePointAt(0)).join(',');
+  return evalJs(`(() => {
+    const want = String.fromCodePoint(${codes});
+    const els = [...document.querySelectorAll('button, a, [role=button], summary')].filter((e) => e.offsetParent !== null || e.getClientRects().length);
+    const hit = els.find((e) => e.textContent.trim() === want) ?? els.find((e) => e.textContent.trim().startsWith(want));
     if (!hit) return false;
     hit.click();
     return true;
   })()`);
+};

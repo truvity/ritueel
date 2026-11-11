@@ -6,7 +6,7 @@
 //               site's own Content-Security-Policy
 import { createServer } from 'node:http';
 import { readFileSync } from 'node:fs';
-import { readFile, stat } from 'node:fs/promises';
+import { readFile } from 'node:fs/promises';
 import { extname, join, normalize, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -47,14 +47,23 @@ const server = createServer(async (req, res) => {
     res.writeHead(403).end();
     return;
   }
+  // Read the file, and read index.html when the path is a directory: no stat first, so there is
+  // no gap between a check and the read.
+  let path = file;
+  let body;
   try {
-    const s = await stat(file);
-    const path = s.isDirectory() ? join(file, 'index.html') : file;
-    const body = await readFile(path);
-    res.writeHead(200, { ...extra, 'content-type': types[extname(path)] ?? 'application/octet-stream', 'cache-control': 'no-store' }).end(body);
-  } catch {
-    res.writeHead(404, { 'content-type': 'text/plain' }).end('not found');
+    body = await readFile(path);
+  } catch (e) {
+    if (e?.code === 'EISDIR') {
+      path = join(file, 'index.html');
+      body = await readFile(path).catch(() => undefined);
+    }
   }
+  if (body === undefined) {
+    res.writeHead(404, { 'content-type': 'text/plain' }).end('not found');
+    return;
+  }
+  res.writeHead(200, { ...extra, 'content-type': types[extname(path)] ?? 'application/octet-stream', 'cache-control': 'no-store' }).end(body);
 });
 
 server.listen(Number(args[0] ?? 0), '127.0.0.1', () => {
