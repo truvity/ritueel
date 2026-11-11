@@ -193,7 +193,7 @@ describe('hostile text never reaches the markup raw', () => {
     expect(workstation).toContain('No stick is needed');
   });
 
-  it('WhereItRuns: five cases, each says what the record says and asks for nothing', async () => {
+  it('WhereItRuns: six cases, each says what the record says and asks for nothing', async () => {
     const { WhereItRuns } = await import('./screens/Plan');
     const flat = (el: ReactElement) => renderToStaticMarkup(el).split(/<[^>]*>/).join('');
     const html = (p: ReturnType<typeof create<typeof PlanSchema>>) => renderToStaticMarkup(<WhereItRuns plan={p} />);
@@ -203,6 +203,7 @@ describe('hostile text never reaches the markup raw', () => {
     const C = plan({ runPlace: RunPlace.OFFLINE_SYSTEM, signingStore: Store.SOFTWARE_FILE, signatureCount: 2, touchCount: 1 });
     const D = plan({ runPlace: RunPlace.WORKSTATION, signingStore: Store.SOFTWARE_FILE, testRoot: true });
     const E = plan({});
+    const F = plan({ runPlace: RunPlace.WORKSTATION, signingStore: Store.SOFTWARE_FILE, testRoot: false });
     const a = flat(<WhereItRuns plan={A} />);
     expect(a).toContain('Where it runs: on your workstation');
     expect(a).toContain('A touch for every signature. This plan makes 7 signatures and asks for 7 touches.');
@@ -224,15 +225,32 @@ describe('hostile text never reaches the markup raw', () => {
     expect(d).toContain('A test root, marked TEST ONLY, may run here.');
     const e = flat(<WhereItRuns plan={E} />);
     expect(e).toContain('does not say where it runs');
+    const f = flat(<WhereItRuns plan={F} />);
+    expect(f).toContain('This plan says workstation for a root that can be copied.');
+    expect(f).toContain('Do not run it; make the plan again.');
+    expect(f).not.toContain('does not say where it runs');
     // The stick is spoken of only where the stick step is.
-    for (const [name, text] of [['A', a], ['B', b], ['D', d], ['E', e]] as const) expect(text, name).not.toMatch(/USB stick|AirgapOS/);
-    for (const [name, text] of [['A', a], ['B', b], ['C', c], ['D', d], ['E', e]] as const) {
+    for (const [name, text] of [['A', a], ['B', b], ['D', d], ['E', e], ['F', f]] as const) expect(text, name).not.toMatch(/USB stick|AirgapOS/);
+    for (const [name, text] of [['A', a], ['B', b], ['C', c], ['D', d], ['E', e], ['F', f]] as const) {
       expect(text, name).toContain('You confirm in the terminal');
       expect(text, name).not.toMatch(/type your PIN|passphrase/i);
       expect(text, name).not.toMatch(/hardware key|YubiKey/i);
     }
     // The panel shows words only: no control that takes a value.
-    for (const p of [A, B, C, D, E]) expect(html(p)).not.toMatch(/<(input|textarea|select|button)\b/i);
+    for (const p of [A, B, C, D, E, F]) expect(html(p)).not.toMatch(/<(input|textarea|select|button)\b/i);
+  });
+
+  it('the record of a workstation ceremony states no touch: the record does not say the root is on cards', async () => {
+    loadWorld('globex', 'adopt-key');
+    const { History } = await import('./screens/History');
+    // The world is marked, so the id carries the marker too: read it from the data.
+    const id = (w.d.ceremonies as unknown as { ceremonies: { id: string }[] }).ceremonies[0].id;
+    const text = renderToStaticMarkup(<History id={id} />).split(/<[^>]*>/).join('');
+    const at = text.indexOf('Where it ran');
+    expect(at).toBeGreaterThan(-1);
+    const sentence = text.slice(at, at + 220);
+    expect(sentence).toContain('The conditions of record 0005 applied');
+    expect(sentence).not.toMatch(/touch/i);
   });
 
   it('the marked name of the bundle reaches a root written bundle/label as an escape, never raw', async () => {

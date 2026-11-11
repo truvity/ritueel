@@ -182,7 +182,7 @@ function Detail({ id }: { id: string }) {
                         <dt className="text-sm text-dim">Where it ran</dt>
                         <dd>
                           <span className="font-bold">{RAN_PLACE_VALUE[c.runPlace]}</span>
-                          {c.runPlace === RunPlace.WORKSTATION ? <span className="block text-sm text-dim">A root that cannot be copied: a touch for every signature, no retry.</span> : null}
+                          {c.runPlace === RunPlace.WORKSTATION ? <span className="block text-sm text-dim">A key that cannot be copied, or a test root. The conditions of record 0005 applied: the count stated in the plan, no retry, a check on a second device.</span> : null}
                         </dd>
                       </div>
                     ) : null}

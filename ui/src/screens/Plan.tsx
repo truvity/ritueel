@@ -337,6 +337,16 @@ export function WhereItRuns({ plan }: { plan: PlanMessage }) {
       </p>,
     );
   }
+  if (place === RunPlace.WORKSTATION && store === Store.SOFTWARE_FILE) {
+    // Record 0005, rule 17: a key that can be copied is used only in the offline system. Say so, rather than call it "not said".
+    return frame(
+      'Where it runs: on your workstation, but the record does not allow it',
+      <p>
+        This plan says workstation for a root that can be copied. The record allows that only in the offline system. Do not run it; make the plan again.{' '}
+        <LearnLink path="/design/#where-a-root-is-used">Read why</LearnLink>
+      </p>,
+    );
+  }
   return frame(
     'Where it runs',
     <p>The plan does not say where it runs. Run it in the terminal where you run ritueel.</p>,
@@ -421,6 +431,11 @@ export function PlanView({ plan, onSaved }: { plan: PlanMessage; onSaved?: (save
 
       {plan.bundleChanges.length > 0 ? (
         <Sec title="What changes in the bundle">
+          <p className="mb-2 max-w-[70ch] text-sm text-dim">
+            Only the places (<span className="font-mono">history/</span>, <span className="font-mono">trust/&lt;number&gt;/</span>,{' '}
+            <span className="font-mono">requests/&lt;name&gt;/</span>) and <span className="font-mono">history/&lt;ceremony&gt;/plan.json</span> are
+            decided (record 0006, rule 7). The other file names here are proposed.
+          </p>
           <ul className="border border-line bg-panel">
             {plan.bundleChanges.map((c, i) => (
               <li key={c.path} className={`grid gap-x-4 gap-y-0.5 p-3 sm:grid-cols-[6rem_minmax(0,1fr)] ${i > 0 ? 'border-t border-line' : ''}`}>
@@ -448,6 +463,10 @@ export function PlanView({ plan, onSaved }: { plan: PlanMessage; onSaved?: (save
               {plan.runPlace === RunPlace.OFFLINE_SYSTEM ? ': there, give the place of the bundle in the stick\'s extra partition' : ''}.
             </p>
             <Cmd label={`Run the plan ${onPlace(plan.runPlace)}`}>{plan.runCommand}</Cmd>
+            <p className="mt-2 max-w-[70ch] text-sm text-dim">
+              This command already carries the digest. Check it against the digest on this page before you run it. To type the first eight characters
+              yourself, leave out <span className="font-mono">--confirm</span> and the digest.
+            </p>
           </div>
           <div>
             <p className="mb-1 font-bold">To build this same plan in a terminal instead</p>
@@ -610,6 +629,10 @@ export function Saved({ data, place }: { data: SavePlanResponse; place?: RunPlac
       <div>
         <p className="mb-1 font-bold">Then, {onPlace(place)}</p>
         <Cmd label={`Run the plan ${onPlace(place)}`}>{data.runCommand}</Cmd>
+        <p className="mt-2 max-w-[70ch] text-sm text-dim">
+          This command already carries the digest. Check it against the digest above before you run it. To type the first eight characters
+          yourself, leave out <span className="font-mono">--confirm</span> and the digest.
+        </p>
       </div>
       <div className="flex flex-wrap gap-3">
         <Button variant="outlined" href={href.start()}>

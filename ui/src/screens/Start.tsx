@@ -204,7 +204,7 @@ function Seal({ s }: { s: GetSummaryResponse }) {
       </p>
       {!none ? (
         <p className="mt-2 text-sm text-dim">
-          The chain: each record names the one before it by its digest. Verified means ritueel checked every link. A rewrite of the whole history is caught only if you compare the newest digest with the one you kept apart.
+          The chain: each record names the one before it by its digest. Verified means ritueel checked every link. A rewrite of the whole history is caught if you compare the newest digest with one you kept apart (the signed root list also carries it, in a company bundle).
         </p>
       ) : null}
       {l?.headRecordSha256 ? (
@@ -332,7 +332,7 @@ function Words() {
     ['Bundle', 'The directory with a fixed structure that holds everything ritueel knows about one trust domain, for example personal or acme: its history, roots, cards and trust files. Across bundles a root is written with the bundle\'s name, for example acme/A.'],
     ['Ceremony', 'One sitting at a terminal, where a plan is run and something about your keys changes.'],
     ['Offline system', 'Vanilla AirgapOS, started from the ceremony USB stick. A root that can be copied (a key file) is used only here. Any root may be used here.'],
-    ['Your workstation', 'The computer you work on. A root that cannot be copied (on cards or in the cloud) may be used here, with a touch for every signature, the count in the plan, no retry and a check on a second device. No stick is needed.'],
+    ['Your workstation', 'The computer you work on. A root that cannot be copied (on cards or in the cloud) may be used here, with the count in the plan, no retry and a check on a second device, and on cards a touch for every signature (how the touch reads for a cloud key is only proposed). No stick is needed.'],
     ['History', 'The write-once part of the bundle, history/, with one sub-folder for each ceremony. Each record names the one before it by digest, which is the chain.'],
     ['Trust files', 'The files your machines and users read to trust your roots, in numbered sets, trust/<number>/: root list, CA bundle, revocation lists, SSH CA key list and the public OpenPGP keyring. A personal bundle has only your public certificate. ritueel builds them; you publish them.'],
   ];
