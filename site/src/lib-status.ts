@@ -1,5 +1,5 @@
-// The facts of the home page's status line and of the project status page (/status/), both
-// counted from the repository at build time so that they cannot drift apart:
+// The facts of the project status page (/status/), both counted from the repository at build time
+// so that they cannot drift apart:
 //
 // - decision records are docs/decisions/NNNN-*.md without the template, read through the same
 //   collection as the decisions index (src/lib-decisions.ts), with the status each record states;

@@ -1,9 +1,8 @@
 ---
 // Starlight's Hero, replaced for the home page (the only page with `hero:` front matter): a short
-// title and one line, so the reader's pains (the clouds in the page body) are on the first screen.
-// Title and line come from the front matter of docs/index.mdx. The call-to-action links follow
-// the answers, further down the page (home/Actions.astro). Upgrade note: the default component
-// also renders a hero image, actions and a draft notice; the home page uses none of them.
+// title and one line. The call-to-action links come under it (home/Actions.astro, called from
+// docs/index.mdx). Upgrade note: the default component also renders a hero image, actions and a
+// draft notice; the home page uses none of them.
 const { data } = Astro.locals.starlightRoute.entry;
 const { title = data.title, tagline } = data.hero || {};
 ---
