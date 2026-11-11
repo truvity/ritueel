@@ -1,17 +1,52 @@
 ---
 title: How it works
-description: ritueel in pictures: how it is designed to help you sign an intermediate certificate, step by step. The program is not built yet.
+description: ritueel in pictures: its five ideas, then the ceremony, signing an intermediate certificate and binding the subkeys of your card. Not built yet.
 sidebar:
   label: Overview
   order: 0
 ---
 
 import Figure from '../../site/src/components/Figure.astro';
+import Proposed from '../../site/src/components/Proposed.astro';
 
-ritueel is in its design phase: the program does not exist yet, and these pictures show how it is designed to work.
+ritueel is in its design phase: the program does not exist yet. These pictures show how it is designed to work.
 
-<Figure name="sign-intermediate">
-  Signing an intermediate certificate for your PKI, step by step. The accent follows the plan, the one thing that travels from your workstation to the offline system.
+## Five ideas
+
+<Figure name="ideas">
+
+1. [One set of ceremonies](/how-it-works/#every-ceremony-has-six-steps) for a key file, root cards or a cloud key service. The steps are the same; the guarantees are not.
+2. [Prefer a key that cannot be copied](/how-it-works/cards/): born on a card or in a cloud key service, not in a file.
+3. [One bundle](/how-it-works/bundle-and-stick/) keeps the roots of a PKI and of OpenPGP together, with what is known about the cards.
+4. [Requests in, answers out](/how-it-works/#sign-an-intermediate): other systems use files, and a plan made in one place runs in another.
+5. [A defined workflow](/how-it-works/#every-ceremony-has-six-steps): ritueel says what is due, and every ceremony has the same six steps.
+
 </Figure>
 
-The cards in the pictures are explained on [the three cards](/how-it-works/cards/); where the bundle and its files live is on [the bundle and the USB stick](/how-it-works/bundle-and-stick/).
+## Every ceremony has six steps
+
+Every use of a root is a ceremony. Only step 4 uses the root.
+
+<Figure name="ceremony" />
+
+## Sign an intermediate
+
+A requester, such as sluis, needs a certificate for its intermediate key. The root is on a card.
+
+<Figure name="sign-intermediate" />
+
+<Proposed>
+  The stick and the digest of ritueel's copy are proposals. That the offline system boots from such a stick is not yet proven. A cloud root runs on your workstation.
+</Proposed>
+
+## Bind the subkeys of your card
+
+ritueel binds the subkeys of your day-to-day card to your own OpenPGP primary, kept in a key file.
+
+<Figure name="bind-subkeys">
+  A passkey on a root card opens the key file: decided, not yet proven.
+</Figure>
+
+## Where to go next
+
+The cards are on [the three cards](/how-it-works/cards/), the files and the stick on [the bundle and the USB stick](/how-it-works/bundle-and-stick/). The reasons are in [Learn](/learn/).
