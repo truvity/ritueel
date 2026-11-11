@@ -2,32 +2,26 @@
   "trustSequence": 1,
   "files": [
     {
-      "name": "root-list.json",
-      "kind": "TRUST_FILE_KIND_ROOT_LIST",
-      "path": "products/1/root-list.json",
+      "name": "10000123456789ABCDEF0123456789ABCDEF0123.pgp",
+      "kind": "TRUST_FILE_KIND_OPENPGP_CERTIFICATE",
+      "path": "products/1/10000123456789ABCDEF0123456789ABCDEF0123.pgp",
       "trustSequence": 1,
       "builtAt": "2026-11-03T14:10:00Z",
-      "validUntil": "2027-12-03T00:00:00Z",
-      "checkResult": "TRUST_CHECK_RESULT_PASSED",
-      "checkDetail": "Signed by personal/A. It is the first list, so there is none to hold it against.",
+      "checkResult": "TRUST_CHECK_RESULT_PASSED_WITH_WARNING",
+      "checkDetail": "The public certificate of personal/A, in binary form: the primary, its user ID and its subkeys. A personal bundle has no root list, no CA bundle and no keyring. Warning: the primary has no expiry.",
       "sha256": "71010123456789abcdef0123456789abcdef0123456789abcdef0123456789ab",
-      "sizeBytes": "1126",
-      "verifyCommand": "ritueel root-list verify products/1/root-list.json",
-      "rebuildCommand": "ritueel due --plan-only"
+      "sizeBytes": "9874"
     },
     {
-      "name": "personal-keyring.gpg",
-      "kind": "TRUST_FILE_KIND_KEYRING",
-      "path": "products/1/keyring/personal-keyring.gpg",
+      "name": "10000123456789ABCDEF0123456789ABCDEF0123.asc",
+      "kind": "TRUST_FILE_KIND_OPENPGP_CERTIFICATE",
+      "path": "products/1/10000123456789ABCDEF0123456789ABCDEF0123.asc",
       "trustSequence": 1,
       "builtAt": "2026-11-03T14:10:00Z",
-      "validUntil": "2027-12-03T00:00:00Z",
       "checkResult": "TRUST_CHECK_RESULT_PASSED_WITH_WARNING",
-      "checkDetail": "Holds the OpenPGP primary of personal/A. Warning: the primary has no expiry.",
+      "checkDetail": "The same certificate in ASCII armour, to paste into a mail or a web form. Warning: the primary has no expiry.",
       "sha256": "71020123456789abcdef0123456789abcdef0123456789abcdef0123456789ab",
-      "sizeBytes": "9874",
-      "verifyCommand": "ritueel keyring verify products/1/keyring/personal-keyring.gpg --root-list products/1/root-list.json",
-      "rebuildCommand": "ritueel keyring build --name personal"
+      "sizeBytes": "13412"
     }
   ]
 }

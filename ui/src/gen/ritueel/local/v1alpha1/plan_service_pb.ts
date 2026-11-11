@@ -8,16 +8,19 @@
 // DIGEST`.
 //
 // Who answers. One long-running background process, started on demand, serves
-// this API from the bundle it was started on. The command line reaches it on
-// a Unix socket; a browser cannot open a Unix socket, so while this page is in
-// use the same process also answers on the loopback address, with the same
-// calls and the same answers. The page and the command line work the same way
-// and neither does anything the other cannot. Same calls, not the same trust:
-// the loopback listener binds 127.0.0.1 only, checks Host exactly and Origin or
-// Sec-Fetch-Site on every request, and sets no permissive CORS header (the
-// wizard's rules 1 and 4, https://ritueel.id/reference/wizard/). Any program or
-// web page on the computer can send it a request, so it is trusted no more than
-// any other web request.
+// this API from the bundle it was started on (ADR 0011). The command line
+// reaches it on a Unix socket, which only the same user can open. A browser
+// cannot open a Unix socket, so while this page is in use the same process
+// also listens on the loopback address, and serves the page the reads and
+// SavePlan only: no call that confirms, signs, creates a key or runs a
+// ceremony is registered there. The digest of a ceremony is typed in the
+// terminal and travels over the Unix socket. Same API, not the same trust: the
+// loopback listener binds 127.0.0.1 on a random port, lets a request in only
+// with the one-time token of the session (then a cookie), checks the Host
+// header exactly and, for a POST, Sec-Fetch-Site or Origin (the wizard's
+// profile, rules 1 to 4 and 7, https://ritueel.id/reference/wizard/). Other
+// programs of the same user can reach that port while the page is in use, so
+// it is trusted no more than any other web request.
 //
 // No call takes or returns a secret, a PIN or a passphrase. The wizard
 // asks only questions with a fixed list of answers (no free text), and the
@@ -385,16 +388,17 @@ export type Plan = Message<"ritueel.local.v1alpha1.Plan"> & {
   equivalentCommand: string;
 
   /**
-   * The exact command to run, from the bundle, with the full
-   * digest: ritueel run ledger/<ceremony>/plan.json --confirm <64 hex>.
+   * The exact command to run, with the bundle's place (--dir) and the full
+   * digest: ritueel --dir <bundle> run <plan file> --confirm <64 hex>. The
+   * plan file is the one SavePlan writes.
    *
    * @generated from field: string run_command = 11;
    */
   runCommand: string;
 
   /**
-   * Where SavePlan will put the file, relative to the bundle:
-   * ledger/<ceremony>/plan.json.
+   * Where SavePlan will put the file, relative to the bundle. The demo shows
+   * the proposed ledger/<ceremony>/plan.json.
    *
    * @generated from field: string save_path = 12;
    */
@@ -550,8 +554,8 @@ export type SavePlanResponse = Message<"ritueel.local.v1alpha1.SavePlanResponse"
   bundlePath: string;
 
   /**
-   * Where the file is (or would be), relative to the bundle:
-   * ledger/<ceremony>/plan.json.
+   * Where the file is (or would be), relative to the bundle. The demo shows
+   * the proposed ledger/<ceremony>/plan.json.
    *
    * @generated from field: string path = 3;
    */
@@ -585,7 +589,7 @@ export type SavePlanResponse = Message<"ritueel.local.v1alpha1.SavePlanResponse"
   notice: string;
 
   /**
-   * The exact command to run, from the bundle.
+   * The exact command to run, with --dir naming the bundle.
    *
    * @generated from field: string run_command = 8;
    */
@@ -667,16 +671,18 @@ export enum RunPlace {
   UNSPECIFIED = 0,
 
   /**
-   * A computer booted from a read-only stick: a root on cards or in a key
-   * file is used there. The bundle goes there on a USB stick.
+   * A computer booted from a read-only stick: a root on cards, or a real
+   * software root in a key file, is used there. The bundle goes there on a
+   * USB stick.
    *
    * @generated from enum value: RUN_PLACE_OFFLINE_SYSTEM = 1;
    */
   OFFLINE_SYSTEM = 1,
 
   /**
-   * The computer the holder works on: a cloud root is used from here, with the
-   * holder's hardware-key sign-in. No stick is needed.
+   * The computer the holder works on: a cloud root is used from here, in a
+   * session of its ceremony role; ritueel asks nothing of how the holder
+   * signed in. No stick is needed. A test root may also run here.
    *
    * @generated from enum value: RUN_PLACE_WORKSTATION = 2;
    */
@@ -792,11 +798,14 @@ export const PlanService: GenService<{
     output: typeof StartPlanResponseSchema;
   },
   /**
-   * Save the plan as ledger/<ceremony>/plan.json in the bundle, where the
-   * engine writes any plan. The file is canonical JSON (RFC 8785, no trailing
-   * newline) and its SHA-256 is the digest. This is the one call of the
-   * package that writes. It writes one inert file, create-only, and answers
-   * with the path and the digest. The demo writes nothing and says so (see
+   * Save the plan inside the bundle. The records say only that the process
+   * writes the plan there; the demo shows the path the bundle reference
+   * proposes, ledger/<ceremony>/plan.json, which is a proposal and not yet
+   * fixed. The file is canonical JSON (RFC 8785, no trailing newline) and its
+   * SHA-256 is the digest. This is the one call of the package that writes.
+   * It rebuilds the plan, refuses a digest that is not the rebuilt plan's,
+   * writes one inert file, create-only, and answers with the path and the
+   * digest. The demo writes nothing and says so (see
    * SavePlanResponse.written).
    *
    * @generated from rpc ritueel.local.v1alpha1.PlanService.SavePlan

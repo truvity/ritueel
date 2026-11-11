@@ -13,7 +13,7 @@ export interface UsualStep {
 
 const CHECK: UsualStep = { title: 'Check the plan', detail: 'ritueel compares the plan with the bundle and the ledger, and you confirm its digest at the terminal.' };
 const CARDS: UsualStep = { title: 'Read the cards', detail: 'Every slot of each card in the plan is read and compared with the layout. Nothing is written to a card in this step.' };
-const TRUST: UsualStep = { title: 'Build the trust files', detail: 'The root list, the CA bundle, the revocation list, the SSH CA keys and the keyring are built as the next trust sequence.' };
+const TRUST: UsualStep = { title: 'Build the trust files', detail: 'The root list, the CA bundle, a revocation list for each root, the SSH CA keys and the keyring are built as the next trust sequence.' };
 const RECORD: UsualStep = { title: 'Write the record', detail: 'The record of this ceremony is written. It names the record before it, so the ledger stays a chain.' };
 
 export const USUAL_STEPS: Partial<Record<CeremonyKind, UsualStep[]>> = {

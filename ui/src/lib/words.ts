@@ -150,6 +150,7 @@ export const TRUST_KIND_WORD: Record<number, string> = {
   [TrustFileKind.CRL]: 'Revocation list (CRL)',
   [TrustFileKind.SSH_CA_KEYS]: 'SSH CA keys',
   [TrustFileKind.KEYRING]: 'Keyring',
+  [TrustFileKind.OPENPGP_CERTIFICATE]: 'Public certificate',
 };
 
 export const TRUST_CHECK_WORD: Record<number, string> = {

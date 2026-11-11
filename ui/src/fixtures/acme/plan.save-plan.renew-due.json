@@ -5,7 +5,7 @@
   "digest": "7f3a9c1e0123456789abcdef0123456789abcdef0123456789abcdefdeadbeef",
   "sizeBytes": "1775",
   "notice": "This is a demo. Nothing was written. This is what saving the plan would write.",
-  "runCommand": "ritueel run ledger/20261111T090000Z-due/plan.json --confirm 7f3a9c1e0123456789abcdef0123456789abcdef0123456789abcdefdeadbeef",
+  "runCommand": "ritueel --dir ~/ritueel/acme run ledger/20261111T090000Z-due/plan.json --confirm 7f3a9c1e0123456789abcdef0123456789abcdef0123456789abcdefdeadbeef",
   "copyToStick": [
     "Copy the bundle ~/ritueel/acme to a USB stick, with ledger/20261111T090000Z-due/plan.json inside it. This is the stick you carry to the offline system."
   ],
@@ -15,5 +15,5 @@
     "The offline system, booted from its own read-only stick"
   ],
   "whenBack": "Bring the USB stick back, copy the bundle over ~/ritueel/acme and reload this page. The new record appears in History.",
-  "planFilePreview": "{\n  \"version\": 1,\n  \"ceremony\": \"20261111T090000Z-due\",\n  \"command\": \"due\",\n  \"arguments\": { \"renew\": [\"acme-ca\", \"acme-release\"] },\n  \"ceremony_time\": \"2026-11-11T09:00:00Z\",\n  \"last_record_sha256\": \"600a0123456789ab...\",\n  \"root\": { \"label\": \"B\", \"store\": \"piv\", \"test\": false, \"copyable\": false },\n  \"base_sequence\": 7,\n  \"trust_sequence\": 8,\n  \"signatures\": [ ... 4 more ]\n}\n"
+  "planFilePreview": "{\n  \"version\": 1,\n  \"ceremony\": \"20261111T090000Z-due\",\n  \"command\": \"due\",\n  \"arguments\": { \"renew\": [\"acme-ca\", \"acme-release\"] },\n  \"made_at\": \"2026-11-11T09:00:00Z\",\n  \"ceremony_time\": \"2026-11-11T09:00:00Z\",\n  \"last_record_sha256\": \"600a0123456789ab...\",\n  \"root\": { \"label\": \"B\", \"store\": \"piv\", \"test\": false, \"copyable\": false },\n  \"touches\": 4,\n  \"base_sequence\": 7,\n  \"trust_sequence\": 8,\n  \"signatures\": [ ... 4 more ]\n}\n"
 }

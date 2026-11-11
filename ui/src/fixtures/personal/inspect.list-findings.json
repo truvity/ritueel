@@ -117,8 +117,8 @@
       "id": "rehearsal-card-old-firmware",
       "code": "firmware-old",
       "severity": "SEVERITY_INFO",
-      "title": "The rehearsal card cannot become a root card",
-      "reason": "A card that holds roots needs firmware 5.7.4 or later, so that one half-born key can be removed without resetting the card. The rehearsal card runs 5.2.6. That is fine for practice.",
+      "title": "The rehearsal card is below the firmware floor of a root card",
+      "reason": "A card that holds roots needs firmware 5.7.4 or later, so that one half-born key can be removed without resetting the card. The rehearsal card runs 5.2.6. A rehearsal card never holds a real key and never changes its kind, so this is fine for practice with a test root.",
       "subject": {
         "kind": "SUBJECT_KIND_CARD",
         "identifier": "00000006",

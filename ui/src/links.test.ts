@@ -179,7 +179,7 @@ describe('the demo links only to pages the site has', () => {
       const bundle = name.startsWith('common/') ? 'example' : name.split('/')[0];
       expect(d.path, name).toBe(`ledger/${d.planId}/plan.json`);
       expect(d.bundlePath, name).toBe(`~/ritueel/${bundle}`);
-      expect(d.runCommand, name).toMatch(new RegExp(`^ritueel run ledger/${d.planId}/plan\\.json --confirm [0-9a-f]{64}$`));
+      expect(d.runCommand, name).toMatch(new RegExp(`^ritueel --dir ~/ritueel/${bundle} run ledger/${d.planId}/plan\\.json --confirm [0-9a-f]{64}$`));
     }
     // No plan is written in a pending area any more.
     expect(localPaths.filter((f) => /pending|\.plan$/.test(f.value)).map((f) => `${f.file} ${f.at}: ${f.value}`)).toEqual([]);

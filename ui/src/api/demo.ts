@@ -39,12 +39,21 @@ import { getBundle, getViewState, whenViewStateChanges } from './demoState';
 // with the same call-named files, and common/ for the answers all of them share.
 const files = import.meta.glob('../fixtures/*/*.json', { eager: true, import: 'default' }) as Record<string, JsonValue>;
 
+// The answers in common/ are written for a bundle called "example". Where one names the
+// bundle's place (the --dir of a command, the bundle path of a saved plan) the open
+// bundle's own place is put in, as the process would name it.
+const COMMON_BUNDLE_PATH = '~/ritueel/example';
+
 /** A fixture of the current bundle, or of common/ when the name says so. */
 function load(name: string): JsonValue {
-  const path = name.startsWith('common/') ? name : `${getBundle()}/${name}`;
+  const common = name.startsWith('common/');
+  const path = common ? name : `${getBundle()}/${name}`;
   const hit = files[`../fixtures/${path}`];
   if (hit === undefined) throw new ConnectError(`demo: fixture ${path} is missing`, Code.Internal);
-  return hit;
+  if (!common) return hit;
+  const summary = files[`../fixtures/${getBundle()}/inspect.get-summary.json`] as { bundle?: { path?: string } } | undefined;
+  const bundlePath = summary?.bundle?.path;
+  return bundlePath ? (JSON.parse(JSON.stringify(hit).split(COMMON_BUNDLE_PATH).join(bundlePath)) as JsonValue) : hit;
 }
 
 function parse<S extends DescMessage>(schema: S, name: string): MessageShape<S> {
@@ -198,10 +207,7 @@ export function createDemoTransport(): Transport {
         const build = () => parse(SavePlanResponseSchema, pick('SavePlan', (w) => w.planId === req.planId));
         const buildEmpty = () => {
           const common = parse(SavePlanResponseSchema, 'common/plan.save-plan.adopt-key.json');
-          if (req.planId !== common.planId) return build();
-          // The path of the bundle that is open, as the process would name it.
-          const bundlePath = parse(GetSummaryResponseSchema, 'inspect.get-summary.json').bundle?.path;
-          return bundlePath ? { ...common, bundlePath } : common;
+          return req.planId === common.planId ? common : build();
         };
         return gate(build, buildEmpty);
       },
