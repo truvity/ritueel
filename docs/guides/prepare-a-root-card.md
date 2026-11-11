@@ -5,9 +5,9 @@ sidebar:
   order: 0.5
 ---
 
-*These steps use `ykman`, the YubiKey Manager command line, which exists today (commands checked against ykman 5.8.0 on 2026-11-02). ritueel does not set the PIN you type: it checks the result and refuses a card that is not ready. It then adopts the card, which replaces the PUK and the management key with random ones sealed in the directory ([ADR 0008](/decisions/0008-the-operator-prepares-the-holder-and-ritueel-creates-attests-and-verifies-the-root/#root-cards), [ADR 0015](/decisions/0015-key-files-open-with-a-passkey-on-each-root-card-and-card-secrets-are-sealed-in-the-bundle/#card-secrets)). The read-only check and the inventory come with M2; card adoption and the `piv` store with M6 ([issue #11](https://github.com/truvity/ritueel/issues/11)). Do this on a rehearsal card first.*
+*These steps use `ykman`, the YubiKey Manager command line, which exists today (commands checked against ykman 5.8.0 on 2026-11-02). ritueel does not set the PIN you type: it checks the result and refuses a card that is not ready. It then adopts the card, which replaces the PUK and the management key with random ones sealed in the bundle ([ADR 0008](/decisions/0008-the-operator-prepares-the-holder-and-ritueel-creates-attests-and-verifies-the-root/#root-cards), [ADR 0015](/decisions/0015-key-files-open-with-a-passkey-on-each-root-card-and-card-secrets-are-sealed-in-the-bundle/#card-secrets)). The read-only check and the inventory come with M2; card adoption and the `piv` store with M6 ([issue #11](https://github.com/truvity/ritueel/issues/11)). Do this on a rehearsal card first.*
 
-A new token ships with a PIN, a PUK and a management key that everyone knows. With the management key, anyone who holds the token can put their own key in a slot; with the default PIN, anyone can use a key. A root card must not leave the box like that. This guide sets the PIN, and nothing else; ritueel's adoption of the card changes the other two, as the steps say. Why the cards are dedicated and why there are two is in [Two roots in practice](/learn/two-roots/).
+A new token ships with a PIN, a PUK and a management key that everyone knows. With the management key, anyone who holds the token can put their own key in a slot; with the default PIN, anyone can use a key. A root card must not leave the box like that. This guide sets the PIN, and nothing else; ritueel's adoption of the card changes the other two, as the steps say. Why the cards are dedicated and why there are two is in [Two roots in practice](/learn/two-roots/). A pair may later serve a second bundle of the same holder; how that works is proposed and is on the [card page](/reference/cards/#a-pair-shared-by-bundles).
 
 ## What you start with
 
@@ -19,7 +19,7 @@ A new token ships with a PIN, a PUK and a management key that everyone knows. Wi
 
 1. **Look at the card.** `ykman list`, then `ykman piv info`. Result: the serial number and the firmware version. Put the serial in the password-manager entry's title, so you can tell two cards apart. A new card also prints `WARNING: Using default PIN!` and the same for the PUK and the management key.
 2. **Change the PIN.** `ykman piv access change-pin`. It asks for the current PIN and the new one. Choose a PIN you will not forget and others will not guess, and put it in the entry. Result: the warning for the PIN is gone.
-3. **Leave the PUK and the management key.** Do not change them with `ykman`. `ritueel card adopt` (planned) replaces both with random keys, makes the management key need a touch to use, and seals them in the directory, so you keep neither. Result: `ykman piv info` still warns about the PUK and the management key until the card is adopted.
+3. **Leave the PUK and the management key.** Do not change them with `ykman`. `ritueel card adopt` (planned) replaces both with random keys, makes the management key need a touch to use, and seals them in the bundle, so you keep neither. Result: `ykman piv info` still warns about the PUK and the management key until the card is adopted.
 4. **Check, and close.** `ykman piv info` shows that the PIN warning is gone. Put the card in its place. Result: a card that `ritueel card adopt` will accept, and then `ritueel init`.
 
 ## How you know it worked
@@ -30,7 +30,7 @@ A new token ships with a PIN, a PUK and a management key that everyone knows. Wi
 
 ## When something goes wrong
 
-- **A wrong PIN is typed.** Stop. Do not guess: three wrong tries block the PIN, and then the PUK is needed. The PUK is sealed in the directory, and ritueel opens it.
+- **A wrong PIN is typed.** Stop. Do not guess: three wrong tries block the PIN, and then the PUK is needed. The PUK is sealed in the bundle, and ritueel opens it.
 - **The card is blocked.** The sealed PUK unblocks the PIN (`ykman piv access unblock-pin`), not a PUK you typed. If the PUK is also blocked, the PIV applet can only be reset, which destroys every key in it. On a card with no key yet that costs nothing.
 - **ritueel says the card is held.** Another program has it. Close it, or stop `scdaemon`.
 - **ritueel says the management key is not the sealed one** (`management-key-unsealed`). The card was not adopted by ritueel, or a management key was set by hand. A card that holds no root yet can be adopted again; a card that holds roots is never reset.

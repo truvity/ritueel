@@ -31,10 +31,10 @@ A root rotation is a transition. It is planned, because a root has an expiry for
 
 ## How you know it worked
 
-- A client with the new bundle validates a fresh certificate; a client that has not updated still works during the overlap.
+- A client with the new CA bundle validates a fresh certificate; a client that has not updated still works during the overlap.
 - `ritueel status` lists the new key and no longer lists the old one as active.
 - The record names the reason for the rotation.
 
 ## Drill
 
-Rotate a software test intermediate in CI, then a test root, then a root on rehearsal cards. The drill ends when a client with only the old bundle fails after the overlap, as it should.
+Rotate a software test intermediate in CI, then a test root, then a root on rehearsal cards. The drill ends when a client with only the old CA bundle fails after the overlap, as it should.

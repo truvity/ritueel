@@ -18,12 +18,12 @@ You want to sign commits and releases, and maybe log in, with a key that cannot 
 
 ## Steps
 
-1. **Write `ritueel.yaml`** with `kind: personal`, your name and address, and one intermediate called `daily` ([the file](/reference/personal-openpgp/#the-bundle)). Result: a directory under version control.
+1. **Write `ritueel.yaml`** with `kind: personal`, your name and address, and one intermediate called `daily` ([the file](/reference/personal-openpgp/#the-bundle)). Result: a bundle under version control.
 2. **Make the master key.** `ritueel init --kind personal --store software --backend file --key-dir DIR --revocation-dir DIR2`. The key file is opened as [ADR 0015](/decisions/0015-key-files-open-with-a-passkey-on-each-root-card-and-card-secrets-are-sealed-in-the-bundle/) says; a passkey on each root card is the default way (decided, not yet proven on a card: milestone M1); with no root cards, ritueel asks for a passphrase, twice, without echo. Result: the master key in an encrypted file, two revocation signatures in the second directory (one for *compromised*, one for *superseded*), and a first public certificate. It tells you plainly that the master key can be copied.
 3. **Store the revocation files** apart from the key directory and from each other, as in [Revoke a key](/guides/revoke-a-key/). Result: you can revoke the master key even if the key directory is lost.
 4. **Make the daily subkey on the card.** `ritueel personal subkey add daily --card SERIAL`. Read the plan, type the first eight characters of its digest, type the card's PIN at the terminal, and open the key file as in step 2. Result: a subkey born on the card, bound by the master key for about 13 months, with the card's attestation recorded.
 5. **Use the certificate.** `gpg --import` the file in `products/`, then follow [Sign git commits and tags](/guides/openpgp-sign-git/) or [An authentication subkey for SSH](/guides/openpgp-ssh-authentication/). Result: `gpg` signs with the card.
-6. **Back up.** Copy the key directory to the second drive and commit the directory. Run [the restore drill](/guides/run-a-drill/). Result: you know the copy opens.
+6. **Back up.** Copy the key directory to the second drive and commit the bundle. Run [the restore drill](/guides/run-a-drill/). Result: you know the copy opens.
 
 ## If you already have a primary
 
@@ -31,7 +31,7 @@ Planned for stage one (M3): an existing primary may be adopted as it is, with it
 
 ## Day-to-day subkeys
 
-Planned: a signing subkey and an authentication subkey are born on each day-to-day card, one set per card. An encryption subkey is made in software and loaded onto each card, with a wrapped backup in the directory, so that a lost card does not lose the mail it decrypted. The touch setting of each key is your choice; what each choice costs is written here when stage one is built ([issue #18](https://github.com/truvity/ritueel/issues/18)).
+Planned: a signing subkey and an authentication subkey are born on each day-to-day card, one set per card. An encryption subkey is made in software and loaded onto each card, with a wrapped backup in the bundle, so that a lost card does not lose the mail it decrypted. The touch setting of each key is your choice; what each choice costs is written here when stage one is built ([issue #18](https://github.com/truvity/ritueel/issues/18)).
 
 ## Every year
 
