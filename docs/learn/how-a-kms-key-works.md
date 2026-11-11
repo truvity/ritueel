@@ -9,7 +9,7 @@ sidebar:
 
 A cloud root has no card, no PIN and no touch. What keeps it from being used by the wrong person, and what happens if it is deleted? AWS KMS (Key Management Service) keeps keys that can sign but cannot be taken out. A program asks it to sign a digest, and it answers with the signature. The rules about who may ask are the whole protection, so this page spends most of its words on them.
 
-A cloud root is link 1 of [the custody chain](/learn/custody-chain/), the way a root card is. The rare, manual use of it is [a ceremony](/learn/ceremonies/), and the steps to set one up are [Prepare the cloud root](/guides/prepare-the-cloud-root/). A deleted key or a locked account is a case for [Recover](/learn/recover/). This page is the cloud counterpart of [how a YubiKey holds keys](/learn/how-a-yubikey-holds-keys/), and it explains the "read from the service" kind of evidence in [what a key store can prove](/learn/what-a-store-can-prove/).
+A cloud root is link 1 of [the custody chain](/learn/custody-chain/), the way a root card is. The rare, manual use of it is [a ceremony](/glossary/), and the steps to set one up are [Prepare the cloud root](/guides/prepare-the-cloud-root/). A deleted key or a locked account is a case for [Recover](/learn/recover/). This page is the cloud counterpart of [how a YubiKey holds keys](/learn/how-a-yubikey-holds-keys/), and it explains the "read from the service" kind of evidence in [what a key store can prove](/learn/what-a-store-can-prove/).
 
 ## What it is made of
 
@@ -120,6 +120,8 @@ A key policy can also limit where a replica may go, with the condition keys `kms
 - **A loss.** A card reset deletes every key, so the answer is a second, independent card. A lost AWS account makes the key unreachable, and a replica may be the only other copy.
 - **A thief.** For KMS: a session of a role the policy allows, or the right to rewrite the policy, make grants or edit tags and aliases.
 - **Cost of a KMS key.** USD 1 a key a month, prorated hourly; a replica is billed as a key (AWS KMS pricing, read 2026-11-10). AWS's own example, an ECC P-256 key signing 100,000 files, is USD 0.15 per 10,000 requests; AWS shows no separate figure for P-384. Asymmetric requests are outside the free tier.
+
+Next: [choosing where a root lives](/learn/choosing-where-a-root-lives/).
 
 ## Sources
 

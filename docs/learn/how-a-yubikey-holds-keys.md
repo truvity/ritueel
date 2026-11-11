@@ -7,11 +7,11 @@ description: What a YubiKey 5 holds, how PIV, OpenPGP and FIDO2 differ, how a PI
 
 You are told the root is "on a YubiKey". What is in that card, what can wipe it, and what can it prove? This page opens a YubiKey 5 and shows what it holds, what limits it and how a signature happens.
 
-It is link 1 of [the custody chain](/learn/custody-chain/): the card that holds a root. The ritual that makes a root card ready is [Prepare a root card](/guides/prepare-a-root-card/), and a lost or reset card is [Recover](/learn/recover/). The card is the hardware side of [where a key lives](/learn/key-stores/), and it gives the attestation that [what a key store can prove](/learn/what-a-store-can-prove/) relies on. [Which keys to buy](/learn/which-keys-to-buy/) says which cards to get, and [how a KMS key works](/learn/how-a-kms-key-works/) asks the same questions of a cloud key.
+It is link 1 of [the custody chain](/learn/custody-chain/), the card that holds a root, and [how a KMS key works](/learn/how-a-kms-key-works/) asks the same questions of a cloud key.
 
 ## What is inside
 
-A YubiKey 5 carries several applications: one-time codes, OATH and U2F among them. Three hold keys that matter here: PIV, OpenPGP and FIDO2. Each has its own keys and its own PIN. Yubico describes the applications as separate, with separate storage for keys (YubiKey 5 applications page). A PIV reset has no effect on other applications such as FIDO (Yubico PIV PIN page).
+A YubiKey 5 carries several applications: one-time codes, OATH and U2F among them. Three hold keys that matter here: PIV, OpenPGP and FIDO2. PIV (Personal Identity Verification) is the smart-card part: numbered slots that each hold a key for signing. Each has its own keys and its own PIN. Yubico describes the applications as separate, with separate storage for keys (YubiKey 5 applications page). A PIV reset has no effect on other applications such as FIDO (Yubico PIV PIN page).
 
 | Application | Holds | Its lock |
 |---|---|---|
@@ -89,9 +89,11 @@ Three things follow:
 |---|---|---|
 | A root key (X.509 root or OpenPGP primary) | The root's row of the slot map: one slot for the X.509 root, one for the OpenPGP primary; PIN always, touch always | The card can vouch for the key, and the rules hold at every use ([ADR 0003](/decisions/0003-key-stores-and-the-card-layer/), [ADR 0016](/decisions/0016-several-bundles-share-one-pair-of-root-cards-and-the-bundle-keeps-a-card-inventory/#the-rows)) |
 | Daily git signing and SSH sign-in | The OpenPGP application: a signing subkey and an authentication subkey | `gpg`, `git` and `ssh` use it without extra tools ([ADR 0012](/decisions/0012-personal-openpgp-the-primary-offline-in-a-file-the-daily-subkey-on-a-card/)) |
-| Opening the key file of a software key | A passkey of the kind the card does not keep, on each root card | The holder types a PIN and touches the card, and the file has no passphrase to lose ([ADR 0015](/decisions/0015-key-files-open-with-a-passkey-on-each-root-card-and-card-secrets-are-sealed-in-the-bundle/)); decided, not yet proven; [how a passkey opens a key file](/learn/how-passkeys-work/#a-passkey-that-opens-a-key-file) |
+| Opening the key file of a software key | A passkey (the next page explains the kinds) of the kind the card does not keep, on each root card | The holder types a PIN and touches the card, and the file has no passphrase to lose ([ADR 0015](/decisions/0015-key-files-open-with-a-passkey-on-each-root-card-and-card-secrets-are-sealed-in-the-bundle/)); decided, not yet proven; [how a passkey opens a key file](/learn/how-passkeys-work/#a-passkey-that-opens-a-key-file) |
 
 All three are designs, not built tools. For the same question asked of a cloud key, read [how a KMS key works](/learn/how-a-kms-key-works/).
+
+Next: [how passkeys work](/learn/how-passkeys-work/).
 
 ## Sources
 

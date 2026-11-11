@@ -74,4 +74,4 @@ Revoking declares a key untrustworthy now. It is the emergency exit, and its mat
 
 Recovering is what you do after a loss: a card broken, stolen or forgotten in a taxi. It is a revocation, a replacement root, and a re-signing of whatever chained only to the lost one. See [recover](/learn/recover/) and [moving from one root to another](/learn/transitions/).
 
-Next: [moving from one root to another](/learn/transitions/).
+Next: [revoke](/learn/revoke/).

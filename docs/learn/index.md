@@ -15,6 +15,8 @@ ritueel teaches first. These pages explain how to keep a root key safe, whatever
 5. [How a KMS key works](/learn/how-a-kms-key-works/): what an AWS KMS signing key is made of, what limits it, and how it compares with a card slot.
 6. [Choosing where a root lives](/learn/choosing-where-a-root-lives/): two questions that pick a key file, a pair of root cards or a cloud key, and what each costs a year.
 
+Pages 1 and 2 are short; pages 3 to 6 are longer reference reading. A decision record (ADR) is an entry in the [Decisions](/decisions/) archive; pages cite them for the reason behind a rule. Words with one fixed sense are in the [glossary](/glossary/).
+
 ## Going further
 
 - [The life of a root](/learn/life-of-a-root/): create, sign, record, back up, re-sign, rotate, revoke, recover, in order.
