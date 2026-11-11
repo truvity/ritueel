@@ -11,6 +11,7 @@
   ],
   "bring": [
     "Root card one (00000001) and root card two (00000002), and the sign-in with your hardware key for the ceremony role.",
+    "The PINs of the cards: you type them at the terminal there, never here",
     "The offline system, booted from its own read-only stick"
   ],
   "whenBack": "Bring the USB stick back, copy the folder over ~/ritueel and reload this page. The new record appears in History.",

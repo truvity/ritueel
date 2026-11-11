@@ -35,7 +35,7 @@
       "path": "products/8/crl-acme.pem",
       "trustSequence": 8,
       "builtAt": "2026-09-15T13:40:00Z",
-      "validUntil": "2027-04-30T00:00:00Z",
+      "validUntil": "2028-10-15T00:00:00Z",
       "checkResult": "TRUST_CHECK_RESULT_PASSED",
       "checkDetail": "No certificate of acme is revoked. Signed by acme side A.",
       "sha256": "70030123456789abcdef0123456789abcdef0123456789abcdef0123456789ab",
