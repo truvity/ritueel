@@ -12,7 +12,7 @@ import { svgBox } from './svg.mjs';
 
 const LABEL_W =
   'Two framed panels side by side. On the left, a card that holds three records, each with a site name, an account id and a private key; a chip with the site name example.com points an arrow at the first record. ' +
-  'On the right, a card that holds only one small secret, with a dashed key below it that is rebuilt each time, and a separate accent sheet, the key handle, kept outside the card with an arrow that hands it back into the card.';
+  'On the right, a card that holds only one small secret, with a faint key below it that is rebuilt each time, and a separate accent sheet, the key handle, marked as kept by the site or the program, with an arrow that hands it back into the card.';
 const LABEL_N = LABEL_W.replace('side by side', 'one above the other');
 
 const P = 340; // the width of a panel
@@ -40,13 +40,14 @@ function kept(px, py) {
 function rebuilt(px, py) {
   let s = rect(px, py, P, PH, 'p-frame', 12);
   s += text(px + 16, py + 30, 'Not kept on the card', 't t-b t-long') + text(px + P - 16, py + 30, 'no limit', 't t-s', 'e');
-  s += rect(px + 16, py + 96, 150, 106, 'paper', 8);
-  s += rect(px + 26, py + 104, 130, 24, 'paper-t', 5) + key(px + 46, py + 116, 'ln ln-key') + text(px + 64, py + 121, 'one secret', 't t-s');
-  s += arrow(px + 91, py + 130, px + 91, py + 148, 'makes', { lx: px + 127, ly: py + 144 });
-  s += rect(px + 26, py + 150, 130, 44, 'paper-g', 5) + key(px + 91, py + 165, 'ln ln-key ln-dash') + text(px + 91, py + 186, 'rebuilt each time', 't t-s', 'm');
-  s += acc('handle', sheet(px + 250, py + 140, 74, 56, { accent: true, rows: 0 }) + text(px + 287, py + 165, 'key', 't t-s t-b t-acc', 'm') + text(px + 287, py + 181, 'handle', 't t-s t-b t-acc', 'm'));
-  s += arrow(px + 248, py + 172, px + 168, py + 172, 'hands back', { accent: 'handle', lx: px + 208, ly: py + 164 });
-  s += text(px + 324, py + 216, 'kept by the site', 't t-s t-long', 'e') + text(px + 324, py + 230, 'or the program', 't t-s t-long', 'e');
+  // the card: one secret, and the key it makes again each time
+  s += rect(px + 16, py + 60, 132, 128, 'paper', 8);
+  s += rect(px + 26, py + 70, 112, 26, 'paper-t', 5) + key(px + 44, py + 83, 'ln ln-key') + text(px + 60, py + 88, 'one secret', 't t-s');
+  s += arrow(px + 82, py + 98, px + 82, py + 118, 'makes', { lx: px + 118, ly: py + 112 });
+  s += rect(px + 26, py + 122, 112, 56, 'paper-g', 5) + key(px + 82, py + 138, 'ln ln-thin ln-dim') + text(px + 82, py + 166, 'rebuilt each time', 't t-s', 'm');
+  // the key handle: a sheet kept outside the card, by the site or the program
+  s += acc('handle', sheet(px + 232, py + 60, 92, 128, { accent: true, rows: 0 }) + text(px + 278, py + 86, 'key', 't t-s t-b t-acc', 'm') + text(px + 278, py + 102, 'handle', 't t-s t-b t-acc', 'm') + text(px + 278, py + 130, 'kept by', 't t-s t-acc', 'm') + text(px + 278, py + 146, 'the site or', 't t-s t-acc', 'm') + text(px + 278, py + 162, 'program', 't t-s t-acc', 'm'));
+  s += arrow(px + 230, py + 124, px + 152, py + 124, 'hands back', { accent: 'handle', lx: px + 191, ly: py + 116 });
   s += text(px + 16, py + 224, 'the card needs the handle', 't t-s t-long');
   s += text(px + 16, py + 244, 'after a FIDO reset: stops working', 't t-s t-b t-long');
   return s;

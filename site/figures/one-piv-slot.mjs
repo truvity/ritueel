@@ -10,7 +10,7 @@ import { svgBox } from './svg.mjs';
 
 const LABEL =
   'One PIV slot drawn as a frame with four parts side by side. A private key in an accent box, with an arrow that tries to leave the box and is crossed out at its wall. ' +
-  'A certificate sheet next to a dashed empty sheet marked or. Two switches, for the PIN rule and the touch rule. Two chips, signs and agrees, for what the key can do.';
+  'A certificate sheet next to a dashed empty sheet marked or. Two rows of options, the PIN rule (always, once, never) and the touch rule (yes, no), with the first option of each filled. Two chips, signs and key exchange, for what the key can do.';
 
 /** The four icons. `ix` is the left edge of a 150-wide icon, `y` its top; each is 60 high. */
 const ICONS = [
@@ -27,19 +27,28 @@ const ICONS = [
     path(`M${ix + 100} ${y} H${ix + 141} L${ix + 150} ${y + 9} V${y + 60} H${ix + 100} Z`, 'paper-g') +
     text(ix + 125, y + 38, 'none', 't t-s t-dim', 'm'),
   (ix, y) => {
-    const sw = (yy, word) => rect(ix, yy, 40, 22, 'paper-t', 11) + circle(ix + 29, yy + 11, 7, 'paper') + text(ix + 52, yy + 15.5, word, 't t-s');
-    return sw(y + 2, 'PIN rule') + sw(y + 36, 'touch rule');
+    // two rules, each a row of options with the chosen one filled: the choice is made at birth
+    const row = (yy, name, opts) => {
+      let s = text(ix + 4, yy, name, 't t-s t-b');
+      let cx = ix + 4;
+      opts.forEach(([word, w], i) => {
+        s += rect(cx, yy + 5, w, 19, i === 0 ? 'hl' : 'paper-t', 9.5) + text(cx + w / 2, yy + 18.5, word, 't t-s' + (i === 0 ? ' t-b' : ''), 'm');
+        cx += w + 4;
+      });
+      return s;
+    };
+    return row(y + 8, 'PIN rule', [['always', 54], ['once', 42], ['never', 46]]) + row(y + 46, 'touch rule', [['yes', 40], ['no', 36]]);
   },
   (ix, y) =>
-    rect(ix + 10, y, 76, 22, 'paper-t', 11) +
-    text(ix + 48, y + 15.5, 'signs', 't t-s', 'm') +
-    text(ix + 98, y + 31, 'or', 't t-s t-dim', 'm') +
-    rect(ix + 10, y + 38, 76, 22, 'paper-t', 11) +
-    text(ix + 48, y + 53.5, 'agrees', 't t-s', 'm'),
+    rect(ix + 20, y, 110, 22, 'paper-t', 11) +
+    text(ix + 75, y + 15.5, 'signs', 't t-s', 'm') +
+    text(ix + 75, y + 35.5, 'or', 't t-s t-dim', 'm') +
+    rect(ix + 20, y + 38, 110, 22, 'paper-t', 11) +
+    text(ix + 75, y + 53.5, 'key exchange', 't t-s', 'm'),
 ];
 
 const PARTS = [
-  { title: 'private key', sub: ['born on the card,', 'never read out'] },
+  { title: 'private key', sub: ['on the card,', 'never read out'] },
   { title: 'certificate', sub: ['a separate object,', 'optional'] },
   { title: 'chosen at birth', sub: ['never changed'] },
   { title: 'kind of key', sub: ['signs, or agrees on', 'a shared secret'] },

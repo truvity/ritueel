@@ -12,7 +12,7 @@ import { svgBox } from './svg.mjs';
 const LABEL =
   'A YubiKey 5 drawn as one card outline with three compartments. The PIV compartment holds 24 small slot squares in six rows of four, set apart from a separate square for the factory key f9, and a padlock for its PIN, PUK and management key. ' +
   'The OpenPGP compartment holds three keys, to sign, to decrypt and to authenticate, and a padlock for its PIN and Admin PIN. ' +
-  'The FIDO2 compartment holds eight passkey squares, up to a hundred on newer firmware, and a padlock for one PIN. A heavy wall labelled separate storage stands between each pair of compartments.';
+  'The FIDO2 compartment holds eight passkey squares, up to a hundred on newer firmware, and a padlock for one PIN. A heavy wall labelled separate storage stands between neighbouring compartments. A line under the title says three applications, each with its own keys and lock, and the factory key f9 is marked do not touch.';
 
 const FACTORY = 'f9';
 
@@ -48,7 +48,8 @@ function factory(x, y) {
     rect(x, y, 70, 46, 'paper cell-held', 5) +
     text(x + 8, y + 15, FACTORY, 't t-s t-mono t-id t-dim') +
     key(x + 35, y + 32, 'ln ln-key') +
-    text(x + 35, y + 66, 'factory key', 't t-s', 'm')
+    text(x + 35, y + 66, 'factory key', 't t-s', 'm') +
+    text(x + 35, y + 82, 'do not touch', 't t-s t-dim', 'm')
   );
 }
 
@@ -90,7 +91,7 @@ function wide() {
   const H = 330;
   const top = 46;
   const h = 262;
-  let s = rect(2, 2, W - 4, H - 4, 'p-frame', 14) + text(18, 29, 'A YubiKey 5', 't t-b');
+  let s = rect(2, 2, W - 4, H - 4, 'p-frame', 14) + text(18, 29, 'A YubiKey 5', 't t-b') + text(130, 29, 'three applications, each with its own keys and lock', 't t-s t-dim t-long');
   // PIV
   s += room(14, top, 300, h, 'PIV', '24 key slots');
   s += slots(28, top + 40, 40, 24, 6, 6);
@@ -112,8 +113,8 @@ function wide() {
 
 function narrow() {
   const W = 360;
-  let y = 44;
-  let s = text(16, 29, 'A YubiKey 5', 't t-b');
+  let y = 72;
+  let s = text(16, 29, 'A YubiKey 5', 't t-b') + text(16, 46, 'three applications, each with', 't t-s t-dim t-long') + text(16, 62, 'its own keys and lock', 't t-s t-dim t-long');
   // PIV
   const hp = 262;
   s += room(14, y, 332, hp, 'PIV', '24 key slots');
