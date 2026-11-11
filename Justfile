@@ -23,9 +23,18 @@ site-build: site-install ui-demo
     site/scripts/strict-build.sh
     site/scripts/check-built.sh site/dist
 
-# Front-matter descriptions of 40 to 160 characters on every page in docs/.
+# Front-matter descriptions of 40 to 160 characters on every page in docs/, the redirect block
+# of site/public/_redirects against site/published.txt, and the tests of the allowlist, the link
+# plugin and the redirect script (node:test, no install, no build).
 site-lint:
     site/scripts/check-descriptions.mjs
+    site/scripts/gen-redirects.mjs --check
+    node --test 'site/test/*.test.mjs'
+
+# Write site/public/_redirects again after a change to site/published.txt or to a hand line in it:
+# a 302 to its file on GitHub for the old address of every page the site does not publish.
+site-redirects:
+    site/scripts/gen-redirects.mjs
 
 # Every link in the built site, internal and external (lychee.toml). Needs `just site-build`.
 # Each try is bounded to 4 minutes (a normal run takes well under one), is verbose so that
