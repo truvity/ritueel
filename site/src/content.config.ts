@@ -17,7 +17,9 @@ const docsRoot = fileURLToPath(new URL('../../docs', import.meta.url));
 export const collections = {
   docs: defineCollection({
     loader: glob({ base: 'src/content/docs', pattern: publishedDocs() }),
-    schema: docsSchema(),
+    // `flow: rows` shows the sections of a page in rows of two on a wide screen (lib/parts.mjs wraps
+    // them, src/styles/layout.css lays them out). It is for a page of short parts.
+    schema: docsSchema({ extend: z.object({ flow: z.enum(['rows']).optional() }) }),
   }),
   i18n: defineCollection({ loader: i18nLoader(), schema: i18nSchema() }),
   decisions: defineCollection({

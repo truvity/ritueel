@@ -2,6 +2,7 @@ import { defineConfig } from 'astro/config';
 import starlight from '@astrojs/starlight';
 import starlightLinksValidator from 'starlight-links-validator';
 import { docsLinksMdastPlugin } from './lib/docs-links.mjs';
+import { partsMdastPlugin } from './lib/parts.mjs';
 
 // A link from a published page to a page of docs/ that is not published becomes a link to that
 // file on GitHub (site/lib/docs-links.mjs). Astro 7 renders Markdown with Satteri, so the rule is
@@ -20,6 +21,21 @@ const docsLinks = {
   },
 };
 
+// A page with `flow: rows` in its front matter gets its sections wrapped, for the rows of the wide
+// layout (site/lib/parts.mjs). The same Satteri processor, the same place in the order.
+const docsParts = {
+  name: 'ritueel-docs-parts',
+  hooks: {
+    'astro:config:setup': ({ config }) => {
+      const processor = config.markdown?.processor;
+      if (!processor || processor.name !== 'satteri' || !Array.isArray(processor.options?.mdastPlugins)) {
+        throw new Error('ritueel-docs-parts: the Markdown processor is not satteri; see site/lib/parts.mjs');
+      }
+      processor.options.mdastPlugins.push(() => partsMdastPlugin);
+    },
+  },
+};
+
 // https://ritueel.id. The custom domain and its DNS are managed outside this repository; the
 // site is static and is served from the root by a Cloudflare Worker with static assets
 // (site/wrangler.jsonc).
@@ -33,6 +49,7 @@ export default defineConfig({
   vite: { build: { assetsInlineLimit: 0 } },
   integrations: [
     docsLinks,
+    docsParts,
     starlight({
       title: 'ritueel',
       description:

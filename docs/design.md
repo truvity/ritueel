@@ -1,6 +1,7 @@
 ---
 title: The design in brief
 description: What ritueel decides, by area, in short sentences, with what is not yet proven and what is only proposed marked; each part links its record.
+flow: rows
 ---
 
 The program is not built. This page is the design as decided on 2026-11-11, and it marks the main points that are not yet proven or only proposed; each record lists all of its own under Not yet proven or only proposed.
