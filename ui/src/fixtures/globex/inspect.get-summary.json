@@ -42,7 +42,7 @@
     "roots": 1,
     "delegatedKeys": 0,
     "cards": 0,
-    "trustFiles": 2
+    "trustFiles": 5
   },
   "setupSteps": [
     {
