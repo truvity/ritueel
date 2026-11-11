@@ -5,7 +5,7 @@ sidebar:
   order: 16
 ---
 
-*Not built yet. The encrypted file is built with M1 ([issue #8](https://github.com/truvity/ritueel/issues/8)); 1Password ([issue #59](https://github.com/truvity/ritueel/issues/59)) and the OS keyring ([issue #60](https://github.com/truvity/ritueel/issues/60)) are M4. The reasons are in [ADR 0003](/decisions/0003-key-stores-and-the-card-layer/#the-software-store) and [ADR 0007](/decisions/0007-ritueel-teaches-and-its-tools-simplify-the-ceremonies/#software-keys-three-backends-all-born-in-the-store); the facts behind the choices are in [the research](/research/software-key-backends-2026-11-01/).*
+*Not built yet. The encrypted file is built with M2 ([issue #8](https://github.com/truvity/ritueel/issues/8)); 1Password ([issue #59](https://github.com/truvity/ritueel/issues/59)) and the OS keyring ([issue #60](https://github.com/truvity/ritueel/issues/60)) are M7. The reasons are in [ADR 0003](/decisions/0003-key-stores-and-the-card-layer/#the-software-store) and [ADR 0007](/decisions/0007-ritueel-teaches-and-its-tools-simplify-the-ceremonies/#software-keys-three-backends-all-born-in-the-store); the facts behind the choices are in [the research](/research/software-key-backends-2026-11-01/).*
 
 A software key has no evidence of where it lives and can be copied ([what a store can prove](/learn/what-a-store-can-prove/)). The backend decides where the bytes sit between ceremonies. In every backend the key is generated in memory and written straight into its backend, never to a file on disk.
 
@@ -13,7 +13,7 @@ A software key has no evidence of where it lives and can be copied ([what a stor
 
 | Backend | May hold | Never holds | Platforms |
 |---|---|---|---|
-| `file`: an age-encrypted file | Test roots, drills, development; a person's own primary ([ADR 0012](/decisions/0012-personal-openpgp-the-primary-offline-in-a-file-the-daily-subkey-on-a-card/)). | A root that others rely on. | Linux, macOS |
+| `file`: an age-encrypted key file, opened by a passkey on each root card, a recovery key or a passphrase ([ADR 0015](/decisions/0015-key-files-open-with-a-passkey-on-each-root-card-and-card-secrets-are-sealed-in-the-directory/)) | Test roots, drills, development; a person's own primary, new or adopted ([ADR 0012](/decisions/0012-personal-openpgp-the-primary-offline-in-a-file-the-daily-subkey-on-a-card/), [ADR 0017](/decisions/0017-a-persons-openpgp-key-in-two-stages-an-adopted-primary-first-then-card-born-primaries/)). | A root that others rely on. | Linux, macOS |
 | `onepassword`: 1Password, through `op` | The keys of test roots, intermediates and subkeys. | A production root, or a person's master key. | Linux, macOS |
 | `keyring`: the OS keyring | A throwaway test key. | Anything else, and any passphrase. | Linux, macOS |
 
@@ -26,9 +26,21 @@ It is chosen when a root is made: `ritueel init --store software --backend file|
 
 Windows has no consumer, so no backend is built for it; the release builds are for Linux and macOS ([tools](/contributing/tools/#how-a-consumer-gets-ritueel)).
 
+## Opening a key file
+
+Decided, not yet proven: the passkey proof is M1 ([ADR 0015](/decisions/0015-key-files-open-with-a-passkey-on-each-root-card-and-card-secrets-are-sealed-in-the-directory/#decided-not-yet-proven)). Until it passes, the format of the wrapped key is not written, and this page does not invent one. The file layout is in [the directory](/reference/directory/#the-software-roots-key-files).
+
+| | Way | Detail |
+|---|---|---|
+| Default | A passkey on each root card | The key file is an age file encrypted to the public half of an age key (the unlock key) and to a recovery recipient. A passkey on each root card (CTAP2 hmac-secret; the kind that stores nothing on the card; user verification required) unwraps the private half of the unlock key. Any one root card of the pair is enough. Encrypting needs no card, and no PIV slot is used. |
+| Always kept | A recovery key | An age identity in a passphrase-protected file, kept apart from the cards. Its file and its passphrase never sit in the same place. |
+| Supported | A passphrase alone | For a holder without cards. A passphrase file holds only that recipient, because the age v1 specification says "An scrypt stanza, if present, MUST be the only stanza in the header" (read 2026-11-11, [age v1](https://age-encryption.org/v1)). |
+| Fallback | A key-agreement key in PIV slot 9d of each root card | Made only if passkey unlocking cannot be used. It is in row 1 of the card ([ADR 0016](/decisions/0016-several-roots-share-one-pair-of-root-cards-and-the-directory-keeps-a-card-inventory/#the-rows)). |
+| Not supported | A synced passkey; unlocking inside the local page; a day-to-day card unlocking a root-level key file | The reasons are the roads not taken of ADR 0015. |
+
 ## Revocation signatures
 
-With the `file` backend they are in the key directory, as [the directory](/reference/directory/#the-software-roots-key-files) says. With `onepassword` and `keyring` they are written to `--revocation-dir`, outside the ledger and apart from the key ([revocation material](/reference/revocation-material/)): a revocation signature next to its key in the same vault or keyring would be one theft, not two.
+With the `file` backend they are in the key directory, as [the directory](/reference/directory/#the-software-roots-key-files) says. With `onepassword` and `keyring` they are written to `--revocation-dir`, outside the directory and apart from the key ([revocation material](/reference/revocation-material/)): a revocation signature next to its key in the same vault or keyring would be one theft, not two.
 
 ## 1Password
 
@@ -61,7 +73,7 @@ A ceremony with a software root writes in its record: `copyable` true (as the pl
 
 ## Follow-ups
 
-- The `file` backend ([issue #8](https://github.com/truvity/ritueel/issues/8)).
+- The passkey proof on a rehearsal card, then the key-file format and the unlock in the `file` backend ([issue #8](https://github.com/truvity/ritueel/issues/8)).
 - The 1Password backend, with the `op` stub tests and the restore drill against it ([issue #59](https://github.com/truvity/ritueel/issues/59)).
 - The keyring backend, with the warning and the refusal tests on Linux and macOS, and the dated size research ([issue #60](https://github.com/truvity/ritueel/issues/60)).
 
