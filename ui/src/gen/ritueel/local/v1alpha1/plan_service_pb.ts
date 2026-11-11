@@ -47,7 +47,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file ritueel/local/v1alpha1/plan_service.proto.
  */
 export const file_ritueel_local_v1alpha1_plan_service: GenFile = /*@__PURE__*/
-  fileDesc("CilyaXR1ZWVsL2xvY2FsL3YxYWxwaGExL3BsYW5fc2VydmljZS5wcm90bxIWcml0dWVlbC5sb2NhbC52MWFscGhhMSIXChVMaXN0SW50ZW50aW9uc1JlcXVlc3QiUgoWTGlzdEludGVudGlvbnNSZXNwb25zZRI4CgdvcHRpb25zGAEgAygLMicucml0dWVlbC5sb2NhbC52MWFscGhhMS5JbnRlbnRpb25PcHRpb24i4gEKD0ludGVudGlvbk9wdGlvbhI0CglpbnRlbnRpb24YASABKA4yIS5yaXR1ZWVsLmxvY2FsLnYxYWxwaGExLkludGVudGlvbhINCgV0aXRsZRgCIAEoCRIQCghzZW50ZW5jZRgDIAEoCRIUCgx0eXBpY2FsX3RpbWUYBCABKAkSEgoKYXBwbGljYWJsZRgFIAEoCBIdChVub3RfYXBwbGljYWJsZV9yZWFzb24YBiABKAkSEwoLcmVjb21tZW5kZWQYByABKAgSGgoScmVjb21tZW5kZWRfcmVhc29uGAggASgJIq8BChBTdGFydFBsYW5SZXF1ZXN0EjQKCWludGVudGlvbhgBIAEoDjIhLnJpdHVlZWwubG9jYWwudjFhbHBoYTEuSW50ZW50aW9uEg8KB2R1ZV9pZHMYAiADKAkSEwoLZmluZGluZ19pZHMYAyADKAkSDgoGdGFyZ2V0GAQgASgJEi8KB2Fuc3dlcnMYBSADKAsyHi5yaXR1ZWVsLmxvY2FsLnYxYWxwaGExLkFuc3dlciIxCgZBbnN3ZXISEwoLcXVlc3Rpb25faWQYASABKAkSEgoKb3B0aW9uX2lkcxgCIAMoCSKFAQoRU3RhcnRQbGFuUmVzcG9uc2USMwoJcXVlc3Rpb25zGAEgAygLMiAucml0dWVlbC5sb2NhbC52MWFscGhhMS5RdWVzdGlvbhIqCgRwbGFuGAIgASgLMhwucml0dWVlbC5sb2NhbC52MWFscGhhMS5QbGFuEg8KB3JlZnVzYWwYAyABKAkivQEKCFF1ZXN0aW9uEgoKAmlkGAEgASgJEg4KBnByb21wdBgCIAEoCRIMCgRoZWxwGAMgASgJEjIKBGtpbmQYBCABKA4yJC5yaXR1ZWVsLmxvY2FsLnYxYWxwaGExLlF1ZXN0aW9uS2luZBI3CgdvcHRpb25zGAUgAygLMiYucml0dWVlbC5sb2NhbC52MWFscGhhMS5RdWVzdGlvbk9wdGlvbhIaChJkZWZhdWx0X29wdGlvbl9pZHMYBiADKAkiQAoOUXVlc3Rpb25PcHRpb24SCgoCaWQYASABKAkSDQoFbGFiZWwYAiABKAkSEwoLZGVzY3JpcHRpb24YAyABKAkiwAMKBFBsYW4SCgoCaWQYASABKAkSNAoJaW50ZW50aW9uGAIgASgOMiEucml0dWVlbC5sb2NhbC52MWFscGhhMS5JbnRlbnRpb24SDQoFdGl0bGUYAyABKAkSDwoHc3VtbWFyeRgEIAEoCRIsCghidWlsdF9hdBgFIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASGgoSbGVkZ2VyX2hlYWRfc2hhMjU2GAYgASgJEg4KBmRpZ2VzdBgHIAEoCRIvCgVzdGVwcxgIIAMoCzIgLnJpdHVlZWwubG9jYWwudjFhbHBoYTEuUGxhblN0ZXASPAoOYnVuZGxlX2NoYW5nZXMYCSADKAsyJC5yaXR1ZWVsLmxvY2FsLnYxYWxwaGExLkJ1bmRsZUNoYW5nZRIaChJlcXVpdmFsZW50X2NvbW1hbmQYCiABKAkSEwoLcnVuX2NvbW1hbmQYCyABKAkSEQoJc2F2ZV9wYXRoGAwgASgJEhQKDGNhcmRfc2VyaWFscxgNIAMoCRIzCglydW5fcGxhY2UYDiABKA4yIC5yaXR1ZWVsLmxvY2FsLnYxYWxwaGExLlJ1blBsYWNlIrUBCghQbGFuU3RlcBIPCgdvcmRpbmFsGAEgASgFEg0KBXRpdGxlGAIgASgJEg4KBmRldGFpbBgDIAEoCRIUCgx3aGF0X2NoYW5nZXMYBCABKAkSOQoMcmVxdWlyZW1lbnRzGAUgAygOMiMucml0dWVlbC5sb2NhbC52MWFscGhhMS5SZXF1aXJlbWVudBIUCgxjYXJkX3NlcmlhbHMYBiADKAkSEgoKbGVhcm5fcGF0aBgHIAEoCSJtCgxCdW5kbGVDaGFuZ2USDAoEcGF0aBgBIAEoCRI6CgZhY3Rpb24YAiABKA4yKi5yaXR1ZWVsLmxvY2FsLnYxYWxwaGExLkJ1bmRsZUNoYW5nZUFjdGlvbhITCgtkZXNjcmlwdGlvbhgDIAEoCSIyCg9TYXZlUGxhblJlcXVlc3QSDwoHcGxhbl9pZBgBIAEoCRIOCgZkaWdlc3QYAiABKAki9AEKEFNhdmVQbGFuUmVzcG9uc2USDwoHcGxhbl9pZBgBIAEoCRITCgtidW5kbGVfcGF0aBgCIAEoCRIMCgRwYXRoGAMgASgJEg4KBmRpZ2VzdBgEIAEoCRISCgpzaXplX2J5dGVzGAUgASgDEg8KB3dyaXR0ZW4YBiABKAgSDgoGbm90aWNlGAcgASgJEhMKC3J1bl9jb21tYW5kGAggASgJEhUKDWNvcHlfdG9fc3RpY2sYCSADKAkSDQoFYnJpbmcYCiADKAkSEQoJd2hlbl9iYWNrGAsgASgJEhkKEXBsYW5fZmlsZV9wcmV2aWV3GAwgASgJKnEKDFF1ZXN0aW9uS2luZBIdChlRVUVTVElPTl9LSU5EX1VOU1BFQ0lGSUVEEAASHwobUVVFU1RJT05fS0lORF9TSU5HTEVfQ0hPSUNFEAESIQodUVVFU1RJT05fS0lORF9NVUxUSVBMRV9DSE9JQ0UQAipeCghSdW5QbGFjZRIZChVSVU5fUExBQ0VfVU5TUEVDSUZJRUQQABIcChhSVU5fUExBQ0VfT0ZGTElORV9TWVNURU0QARIZChVSVU5fUExBQ0VfV09SS1NUQVRJT04QAirNAQoLUmVxdWlyZW1lbnQSGwoXUkVRVUlSRU1FTlRfVU5TUEVDSUZJRUQQABIcChhSRVFVSVJFTUVOVF9DQVJEX1BSRVNFTlQQARIfChtSRVFVSVJFTUVOVF9QSU5fQVRfVEVSTUlOQUwQAhIVChFSRVFVSVJFTUVOVF9UT1VDSBADEh8KG1JFUVVJUkVNRU5UX0tFWV9GSUxFX1VOTE9DSxAEEioKJlJFUVVJUkVNRU5UX0NPTkZJUk1fRElHRVNUX0FUX1RFUk1JTkFMEAUqfQoSQnVuZGxlQ2hhbmdlQWN0aW9uEiQKIEJVTkRMRV9DSEFOR0VfQUNUSU9OX1VOU1BFQ0lGSUVEEAASHwobQlVORExFX0NIQU5HRV9BQ1RJT05fQ1JFQVRFEAESIAocQlVORExFX0NIQU5HRV9BQ1RJT05fUkVQTEFDRRACMssCCgtQbGFuU2VydmljZRJ0Cg5MaXN0SW50ZW50aW9ucxItLnJpdHVlZWwubG9jYWwudjFhbHBoYTEuTGlzdEludGVudGlvbnNSZXF1ZXN0Gi4ucml0dWVlbC5sb2NhbC52MWFscGhhMS5MaXN0SW50ZW50aW9uc1Jlc3BvbnNlIgOQAgESZQoJU3RhcnRQbGFuEigucml0dWVlbC5sb2NhbC52MWFscGhhMS5TdGFydFBsYW5SZXF1ZXN0Gikucml0dWVlbC5sb2NhbC52MWFscGhhMS5TdGFydFBsYW5SZXNwb25zZSIDkAIBEl8KCFNhdmVQbGFuEicucml0dWVlbC5sb2NhbC52MWFscGhhMS5TYXZlUGxhblJlcXVlc3QaKC5yaXR1ZWVsLmxvY2FsLnYxYWxwaGExLlNhdmVQbGFuUmVzcG9uc2UiAGIGcHJvdG8z", [file_google_protobuf_timestamp, file_ritueel_local_v1alpha1_common]);
+  fileDesc("CilyaXR1ZWVsL2xvY2FsL3YxYWxwaGExL3BsYW5fc2VydmljZS5wcm90bxIWcml0dWVlbC5sb2NhbC52MWFscGhhMSIXChVMaXN0SW50ZW50aW9uc1JlcXVlc3QiUgoWTGlzdEludGVudGlvbnNSZXNwb25zZRI4CgdvcHRpb25zGAEgAygLMicucml0dWVlbC5sb2NhbC52MWFscGhhMS5JbnRlbnRpb25PcHRpb24i4gEKD0ludGVudGlvbk9wdGlvbhI0CglpbnRlbnRpb24YASABKA4yIS5yaXR1ZWVsLmxvY2FsLnYxYWxwaGExLkludGVudGlvbhINCgV0aXRsZRgCIAEoCRIQCghzZW50ZW5jZRgDIAEoCRIUCgx0eXBpY2FsX3RpbWUYBCABKAkSEgoKYXBwbGljYWJsZRgFIAEoCBIdChVub3RfYXBwbGljYWJsZV9yZWFzb24YBiABKAkSEwoLcmVjb21tZW5kZWQYByABKAgSGgoScmVjb21tZW5kZWRfcmVhc29uGAggASgJIq8BChBTdGFydFBsYW5SZXF1ZXN0EjQKCWludGVudGlvbhgBIAEoDjIhLnJpdHVlZWwubG9jYWwudjFhbHBoYTEuSW50ZW50aW9uEg8KB2R1ZV9pZHMYAiADKAkSEwoLZmluZGluZ19pZHMYAyADKAkSDgoGdGFyZ2V0GAQgASgJEi8KB2Fuc3dlcnMYBSADKAsyHi5yaXR1ZWVsLmxvY2FsLnYxYWxwaGExLkFuc3dlciIxCgZBbnN3ZXISEwoLcXVlc3Rpb25faWQYASABKAkSEgoKb3B0aW9uX2lkcxgCIAMoCSKFAQoRU3RhcnRQbGFuUmVzcG9uc2USMwoJcXVlc3Rpb25zGAEgAygLMiAucml0dWVlbC5sb2NhbC52MWFscGhhMS5RdWVzdGlvbhIqCgRwbGFuGAIgASgLMhwucml0dWVlbC5sb2NhbC52MWFscGhhMS5QbGFuEg8KB3JlZnVzYWwYAyABKAkivQEKCFF1ZXN0aW9uEgoKAmlkGAEgASgJEg4KBnByb21wdBgCIAEoCRIMCgRoZWxwGAMgASgJEjIKBGtpbmQYBCABKA4yJC5yaXR1ZWVsLmxvY2FsLnYxYWxwaGExLlF1ZXN0aW9uS2luZBI3CgdvcHRpb25zGAUgAygLMiYucml0dWVlbC5sb2NhbC52MWFscGhhMS5RdWVzdGlvbk9wdGlvbhIaChJkZWZhdWx0X29wdGlvbl9pZHMYBiADKAkiQAoOUXVlc3Rpb25PcHRpb24SCgoCaWQYASABKAkSDQoFbGFiZWwYAiABKAkSEwoLZGVzY3JpcHRpb24YAyABKAkiwQMKBFBsYW4SCgoCaWQYASABKAkSNAoJaW50ZW50aW9uGAIgASgOMiEucml0dWVlbC5sb2NhbC52MWFscGhhMS5JbnRlbnRpb24SDQoFdGl0bGUYAyABKAkSDwoHc3VtbWFyeRgEIAEoCRIsCghidWlsdF9hdBgFIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASGwoTaGlzdG9yeV9oZWFkX3NoYTI1NhgGIAEoCRIOCgZkaWdlc3QYByABKAkSLwoFc3RlcHMYCCADKAsyIC5yaXR1ZWVsLmxvY2FsLnYxYWxwaGExLlBsYW5TdGVwEjwKDmJ1bmRsZV9jaGFuZ2VzGAkgAygLMiQucml0dWVlbC5sb2NhbC52MWFscGhhMS5CdW5kbGVDaGFuZ2USGgoSZXF1aXZhbGVudF9jb21tYW5kGAogASgJEhMKC3J1bl9jb21tYW5kGAsgASgJEhEKCXNhdmVfcGF0aBgMIAEoCRIUCgxjYXJkX3NlcmlhbHMYDSADKAkSMwoJcnVuX3BsYWNlGA4gASgOMiAucml0dWVlbC5sb2NhbC52MWFscGhhMS5SdW5QbGFjZSK1AQoIUGxhblN0ZXASDwoHb3JkaW5hbBgBIAEoBRINCgV0aXRsZRgCIAEoCRIOCgZkZXRhaWwYAyABKAkSFAoMd2hhdF9jaGFuZ2VzGAQgASgJEjkKDHJlcXVpcmVtZW50cxgFIAMoDjIjLnJpdHVlZWwubG9jYWwudjFhbHBoYTEuUmVxdWlyZW1lbnQSFAoMY2FyZF9zZXJpYWxzGAYgAygJEhIKCmxlYXJuX3BhdGgYByABKAkibQoMQnVuZGxlQ2hhbmdlEgwKBHBhdGgYASABKAkSOgoGYWN0aW9uGAIgASgOMioucml0dWVlbC5sb2NhbC52MWFscGhhMS5CdW5kbGVDaGFuZ2VBY3Rpb24SEwoLZGVzY3JpcHRpb24YAyABKAkiMgoPU2F2ZVBsYW5SZXF1ZXN0Eg8KB3BsYW5faWQYASABKAkSDgoGZGlnZXN0GAIgASgJIvQBChBTYXZlUGxhblJlc3BvbnNlEg8KB3BsYW5faWQYASABKAkSEwoLYnVuZGxlX3BhdGgYAiABKAkSDAoEcGF0aBgDIAEoCRIOCgZkaWdlc3QYBCABKAkSEgoKc2l6ZV9ieXRlcxgFIAEoAxIPCgd3cml0dGVuGAYgASgIEg4KBm5vdGljZRgHIAEoCRITCgtydW5fY29tbWFuZBgIIAEoCRIVCg1jb3B5X3RvX3N0aWNrGAkgAygJEg0KBWJyaW5nGAogAygJEhEKCXdoZW5fYmFjaxgLIAEoCRIZChFwbGFuX2ZpbGVfcHJldmlldxgMIAEoCSpxCgxRdWVzdGlvbktpbmQSHQoZUVVFU1RJT05fS0lORF9VTlNQRUNJRklFRBAAEh8KG1FVRVNUSU9OX0tJTkRfU0lOR0xFX0NIT0lDRRABEiEKHVFVRVNUSU9OX0tJTkRfTVVMVElQTEVfQ0hPSUNFEAIqXgoIUnVuUGxhY2USGQoVUlVOX1BMQUNFX1VOU1BFQ0lGSUVEEAASHAoYUlVOX1BMQUNFX09GRkxJTkVfU1lTVEVNEAESGQoVUlVOX1BMQUNFX1dPUktTVEFUSU9OEAIqzQEKC1JlcXVpcmVtZW50EhsKF1JFUVVJUkVNRU5UX1VOU1BFQ0lGSUVEEAASHAoYUkVRVUlSRU1FTlRfQ0FSRF9QUkVTRU5UEAESHwobUkVRVUlSRU1FTlRfUElOX0FUX1RFUk1JTkFMEAISFQoRUkVRVUlSRU1FTlRfVE9VQ0gQAxIfChtSRVFVSVJFTUVOVF9LRVlfRklMRV9VTkxPQ0sQBBIqCiZSRVFVSVJFTUVOVF9DT05GSVJNX0RJR0VTVF9BVF9URVJNSU5BTBAFKn0KEkJ1bmRsZUNoYW5nZUFjdGlvbhIkCiBCVU5ETEVfQ0hBTkdFX0FDVElPTl9VTlNQRUNJRklFRBAAEh8KG0JVTkRMRV9DSEFOR0VfQUNUSU9OX0NSRUFURRABEiAKHEJVTkRMRV9DSEFOR0VfQUNUSU9OX1JFUExBQ0UQAjLLAgoLUGxhblNlcnZpY2USdAoOTGlzdEludGVudGlvbnMSLS5yaXR1ZWVsLmxvY2FsLnYxYWxwaGExLkxpc3RJbnRlbnRpb25zUmVxdWVzdBouLnJpdHVlZWwubG9jYWwudjFhbHBoYTEuTGlzdEludGVudGlvbnNSZXNwb25zZSIDkAIBEmUKCVN0YXJ0UGxhbhIoLnJpdHVlZWwubG9jYWwudjFhbHBoYTEuU3RhcnRQbGFuUmVxdWVzdBopLnJpdHVlZWwubG9jYWwudjFhbHBoYTEuU3RhcnRQbGFuUmVzcG9uc2UiA5ACARJfCghTYXZlUGxhbhInLnJpdHVlZWwubG9jYWwudjFhbHBoYTEuU2F2ZVBsYW5SZXF1ZXN0Gigucml0dWVlbC5sb2NhbC52MWFscGhhMS5TYXZlUGxhblJlc3BvbnNlIgBiBnByb3RvMw", [file_google_protobuf_timestamp, file_ritueel_local_v1alpha1_common]);
 
 /**
  * @generated from message ritueel.local.v1alpha1.ListIntentionsRequest
@@ -322,8 +322,8 @@ export type Plan = Message<"ritueel.local.v1alpha1.Plan"> & {
    * The plan's name: the name of its ceremony, the time as YYYYMMDDThhmmssZ
    * in UTC, a hyphen, and the command with its words joined by hyphens, for
    * example "20261111T090000Z-due". It is the name its ceremony would have in
-   * the ledger (the saved path is a proposal, see SavePlan), and it is unique
-   * inside a bundle.
+   * the history (the saved path is history/<ceremony>/plan.json, see
+   * SavePlan), and it is unique inside a bundle.
    *
    * @generated from field: string id = 1;
    */
@@ -352,12 +352,12 @@ export type Plan = Message<"ritueel.local.v1alpha1.Plan"> & {
   builtAt?: Timestamp | undefined;
 
   /**
-   * The hash of the newest record of the ledger the plan was built on. If
-   * the ledger moves, the plan is stale and `run` refuses it.
+   * The hash of the newest record of the history the plan was built on. If
+   * the history moves, the plan is stale and `run` refuses it.
    *
-   * @generated from field: string ledger_head_sha256 = 6;
+   * @generated from field: string history_head_sha256 = 6;
    */
-  ledgerHeadSha256: string;
+  historyHeadSha256: string;
 
   /**
    * The digest of the plan, in full: 64 hexadecimal characters. The holder
@@ -398,8 +398,8 @@ export type Plan = Message<"ritueel.local.v1alpha1.Plan"> & {
   runCommand: string;
 
   /**
-   * Where SavePlan will put the file, relative to the bundle. The demo shows
-   * the proposed ledger/<ceremony>/plan.json.
+   * Where SavePlan will put the file, relative to the bundle:
+   * history/<ceremony>/plan.json.
    *
    * @generated from field: string save_path = 12;
    */
@@ -555,8 +555,8 @@ export type SavePlanResponse = Message<"ritueel.local.v1alpha1.SavePlanResponse"
   bundlePath: string;
 
   /**
-   * Where the file is (or would be), relative to the bundle. The demo shows
-   * the proposed ledger/<ceremony>/plan.json.
+   * Where the file is (or would be), relative to the bundle:
+   * history/<ceremony>/plan.json.
    *
    * @generated from field: string path = 3;
    */
@@ -757,7 +757,8 @@ export enum BundleChangeAction {
   CREATE = 1,
 
   /**
-   * A file that a ceremony rewrites keeps its history under products/.
+   * The earlier version of a trust file stays in its own numbered set under
+   * trust/.
    *
    * @generated from enum value: BUNDLE_CHANGE_ACTION_REPLACE = 2;
    */
@@ -799,10 +800,9 @@ export const PlanService: GenService<{
     output: typeof StartPlanResponseSchema;
   },
   /**
-   * Save the plan inside the bundle. The records say only that the process
-   * writes the plan there; the demo shows the path the bundle reference
-   * proposes, ledger/<ceremony>/plan.json, which is a proposal and not yet
-   * fixed. The file is canonical JSON (RFC 8785, no trailing newline) and its
+   * Save the plan inside the bundle, at history/<ceremony>/plan.json (record
+   * 0006, rule 7). The names of the other members of the folder are
+   * proposed. The file is canonical JSON (RFC 8785, no trailing newline) and its
    * SHA-256 is the digest. This is the one call of the package that writes.
    * It rebuilds the plan, refuses a digest that is not the rebuilt plan's,
    * writes one inert file, create-only, and answers with the path and the

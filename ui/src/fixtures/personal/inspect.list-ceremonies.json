@@ -1,5 +1,5 @@
 {
-  "ledger": {
+  "history": {
     "recordCount": 1,
     "chainState": "CHAIN_STATE_VERIFIED",
     "headRecordSha256": "600c0123456789abcdef0123456789abcdef0123456789abcdef0123456789ab",

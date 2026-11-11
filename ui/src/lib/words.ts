@@ -1,5 +1,5 @@
 // The words of the page. The fixed words are: bundle, root, delegated key,
-// holder, requester, store, ceremony, ledger, record, renew, replace, trust files.
+// holder, requester, store, ceremony, history, record, renew, replace, trust files.
 // Replace means making a new key; retire is revoking a subkey that a newer one
 // already replaced. The bare word bundle means the directory of one trust
 // domain; the trust file keeps its full name, CA bundle.

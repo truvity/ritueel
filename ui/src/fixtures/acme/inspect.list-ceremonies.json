@@ -1,5 +1,5 @@
 {
-  "ledger": {
+  "history": {
     "recordCount": 10,
     "chainState": "CHAIN_STATE_VERIFIED",
     "headRecordSha256": "600a0123456789abcdef0123456789abcdef0123456789abcdef0123456789ab",
@@ -29,7 +29,7 @@
         "00000011",
         "00000012"
       ],
-      "guidePath": "/learn/choosing-where-a-root-lives/#what-it-costs-you-each-year"
+      "guidePath": "/learn/choosing-where-a-root-lives/"
     },
     {
       "id": "20260127T142000Z-due",
@@ -50,7 +50,7 @@
         "00000011"
       ],
       "trustSequence": 7,
-      "guidePath": "/learn/life-of-a-root/#re-sign"
+      "guidePath": "/learn/life-of-a-root/"
     },
     {
       "id": "20251202T142000Z-due",
@@ -71,7 +71,7 @@
         "00000011"
       ],
       "trustSequence": 6,
-      "guidePath": "/learn/life-of-a-root/#re-sign"
+      "guidePath": "/learn/life-of-a-root/"
     },
     {
       "id": "20250609T142000Z-card-check",
@@ -92,7 +92,7 @@
         "00000011",
         "00000012"
       ],
-      "guidePath": "/learn/choosing-where-a-root-lives/#what-it-costs-you-each-year"
+      "guidePath": "/learn/choosing-where-a-root-lives/"
     },
     {
       "id": "20250128T142000Z-due",
@@ -113,7 +113,7 @@
         "00000012"
       ],
       "trustSequence": 5,
-      "guidePath": "/learn/life-of-a-root/#re-sign"
+      "guidePath": "/learn/life-of-a-root/"
     },
     {
       "id": "20241203T142000Z-due",
@@ -134,7 +134,7 @@
         "00000012"
       ],
       "trustSequence": 4,
-      "guidePath": "/learn/life-of-a-root/#re-sign"
+      "guidePath": "/learn/life-of-a-root/"
     },
     {
       "id": "20240610T142000Z-card-check",
@@ -155,7 +155,7 @@
         "00000011",
         "00000012"
       ],
-      "guidePath": "/learn/choosing-where-a-root-lives/#what-it-costs-you-each-year"
+      "guidePath": "/learn/choosing-where-a-root-lives/"
     },
     {
       "id": "20240120T142000Z-intermediate-add",
@@ -217,7 +217,7 @@
         "00000012"
       ],
       "trustSequence": 1,
-      "guidePath": "/learn/choosing-where-a-root-lives/#two-questions-to-pick-two-to-follow-up"
+      "guidePath": "/learn/choosing-where-a-root-lives/"
     }
   ]
 }

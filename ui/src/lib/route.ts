@@ -87,7 +87,7 @@ export function hrefOf(r: Route): string {
 
 /**
  * What a bundle holds that an address can name: the labels of its roots, the
- * serials of its cards, the ids of its ledger records, and the goals (their
+ * serials of its cards, the ids of its history records, and the goals (their
  * slugs in the address) it offers, that is, the ones that apply to it.
  */
 export interface BundleContents {

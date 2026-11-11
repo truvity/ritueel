@@ -12,7 +12,7 @@
 // not answer yet.
 import { Code, ConnectError, createRouterTransport, type Transport } from '@connectrpc/connect';
 import { create, fromJson, type DescMessage, type JsonValue, type MessageShape } from '@bufbuild/protobuf';
-import { ChainState, Intention, LedgerStatusSchema, Severity } from '../gen/ritueel/local/v1alpha1/common_pb';
+import { ChainState, Intention, HistoryStatusSchema, Severity } from '../gen/ritueel/local/v1alpha1/common_pb';
 import {
   CountsSchema,
   FindingCountSchema,
@@ -94,7 +94,7 @@ function pick(method: string, test: (when: NonNullable<ManifestEntry['when']>) =
 /** The made-up reason a failed read gives, built from the path of the current bundle. */
 export function failedMessage(): string {
   const path = parse(GetSummaryResponseSchema, 'inspect.get-summary.json').bundle?.path ?? '~/ritueel';
-  return `ritueel could not read the bundle at ${path}. The reason, made up for this demo: the ledger file could not be opened.`;
+  return `ritueel could not read the bundle at ${path}. The reason, made up for this demo: the history could not be opened.`;
 }
 
 /**
@@ -122,10 +122,10 @@ function emptySummary() {
     asOf: full.asOf,
     demo: true,
     programVersion: full.programVersion,
-    ledger: create(LedgerStatusSchema, {
+    history: create(HistoryStatusSchema, {
       recordCount: 0,
       chainState: ChainState.NOT_CHECKED,
-      message: 'The ledger has no records yet. The first ceremony writes the first record.',
+      message: 'The history has no records yet. The first ceremony writes the first record.',
     }),
     due: [],
     findingCounts: SEVERITIES.map((severity) => create(FindingCountSchema, { severity, count: 0 })),
@@ -197,7 +197,7 @@ export function createDemoTransport(): Transport {
       listCeremonies: () =>
         gate(
           () => parse(ListCeremoniesResponseSchema, 'inspect.list-ceremonies.json'),
-          () => create(ListCeremoniesResponseSchema, { ledger: emptySummary().ledger }),
+          () => create(ListCeremoniesResponseSchema, { history: emptySummary().history }),
         ),
       listCards: () => gate(() => parse(ListCardsResponseSchema, 'inspect.list-cards.json'), () => create(ListCardsResponseSchema, {})),
       listTrustFiles: () => gate(() => parse(ListTrustFilesResponseSchema, 'inspect.list-trust-files.json'), () => create(ListTrustFilesResponseSchema, {})),

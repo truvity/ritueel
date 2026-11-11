@@ -1,11 +1,11 @@
 {
   "planId": "20261111T090000Z-root-add",
   "bundlePath": "~/ritueel/globex",
-  "path": "ledger/20261111T090000Z-root-add/plan.json",
+  "path": "history/20261111T090000Z-root-add/plan.json",
   "digest": "a92d5e600123456789abcdef0123456789abcdef0123456789abcdefdeadbeef",
   "sizeBytes": "1743",
   "notice": "This is a demo. Nothing was written. This is what saving the plan would write.",
-  "runCommand": "ritueel --dir ~/ritueel/globex run ledger/20261111T090000Z-root-add/plan.json --confirm a92d5e600123456789abcdef0123456789abcdef0123456789abcdefdeadbeef",
+  "runCommand": "ritueel --dir ~/ritueel/globex run history/20261111T090000Z-root-add/plan.json --confirm a92d5e600123456789abcdef0123456789abcdef0123456789abcdefdeadbeef",
   "copyToStick": [],
   "bring": [
     "A session of the ceremony role, from the sign-in you already use: ritueel asks nothing of how you signed in. You type the first eight characters of the digest at the terminal there, never here"

@@ -86,7 +86,7 @@ describe('the route to show when the example bundle changes', () => {
     expect(routeForBundle({ name: 'cards', serial: '00000002' }, has)).toEqual({ name: 'cards' });
     expect(routeForBundle(c, none)).toEqual({ name: 'cards' });
   });
-  it('a ledger record stays if the bundle has that id, and goes to History if not', () => {
+  it('a history record stays if the bundle has that id, and goes to History if not', () => {
     const h: Route = { name: 'history', id: '20261103T142000Z-init' };
     expect(routeForBundle(h, has)).toBe(h);
     expect(routeForBundle({ name: 'history', id: '20260101T000000Z-due' }, has)).toEqual({ name: 'history' });

@@ -5,13 +5,13 @@
     "title": "Renew what is due",
     "summary": "Checks both root cards, renews acme-ca and acme-release, and builds the next trust files. Nothing happens until you run it on the offline system.",
     "builtAt": "2026-11-11T09:00:00Z",
-    "ledgerHeadSha256": "600a0123456789abcdef0123456789abcdef0123456789abcdef0123456789ab",
+    "historyHeadSha256": "600a0123456789abcdef0123456789abcdef0123456789abcdef0123456789ab",
     "digest": "7f3a9c1e0123456789abcdef0123456789abcdef0123456789abcdefdeadbeef",
     "steps": [
       {
         "ordinal": 1,
         "title": "Check the plan",
-        "detail": "ritueel compares the plan with the bundle and with the ledger, and asks you to type the first eight characters of the digest: 7f3a9c1e.",
+        "detail": "ritueel compares the plan with the bundle and with the history, and asks you to type the first eight characters of the digest: 7f3a9c1e.",
         "whatChanges": "Nothing changes",
         "requirements": [
           "REQUIREMENT_CONFIRM_DIGEST_AT_TERMINAL"
@@ -30,7 +30,7 @@
           "00000011",
           "00000012"
         ],
-        "learnPath": "/learn/how-a-yubikey-holds-keys/#one-piv-slot-up-close"
+        "learnPath": "/learn/how-a-yubikey-holds-keys/"
       },
       {
         "ordinal": 3,
@@ -46,7 +46,7 @@
           "00000011",
           "00000012"
         ],
-        "learnPath": "/learn/choosing-where-a-root-lives/#what-it-costs-you-each-year"
+        "learnPath": "/learn/choosing-where-a-root-lives/"
       },
       {
         "ordinal": 4,
@@ -61,7 +61,7 @@
         "cardSerials": [
           "00000012"
         ],
-        "learnPath": "/learn/life-of-a-root/#re-sign"
+        "learnPath": "/learn/life-of-a-root/"
       },
       {
         "ordinal": 5,
@@ -76,7 +76,7 @@
         "cardSerials": [
           "00000012"
         ],
-        "learnPath": "/learn/life-of-a-root/#re-sign"
+        "learnPath": "/learn/life-of-a-root/"
       },
       {
         "ordinal": 6,
@@ -97,35 +97,35 @@
         "ordinal": 7,
         "title": "Write the record",
         "detail": "Writes the record of this ceremony, which names the one before it, and its transcript.",
-        "whatChanges": "One new record in the ledger",
-        "learnPath": "/learn/life-of-a-root/#record"
+        "whatChanges": "One new record in the history",
+        "learnPath": "/learn/life-of-a-root/"
       }
     ],
     "bundleChanges": [
       {
-        "path": "ledger/20261111T090000Z-due/record.json",
+        "path": "history/20261111T090000Z-due/record.json",
         "action": "BUNDLE_CHANGE_ACTION_CREATE",
         "description": "The record of this ceremony; it names the record of 20260602T142000Z-card-check by digest as the one before."
       },
       {
-        "path": "ledger/20261111T090000Z-due/plan.json",
+        "path": "history/20261111T090000Z-due/plan.json",
         "action": "BUNDLE_CHANGE_ACTION_CREATE",
         "description": "The plan as it was confirmed. Already there if you saved it from this page; otherwise the ceremony writes it."
       },
       {
-        "path": "ledger/20261111T090000Z-due/transcript.txt",
+        "path": "history/20261111T090000Z-due/transcript.txt",
         "action": "BUNDLE_CHANGE_ACTION_CREATE",
         "description": "What the terminal showed, without any PIN."
       },
       {
-        "path": "ledger/20261111T090000Z-due/attempt.json",
+        "path": "history/20261111T090000Z-due/attempt.json",
         "action": "BUNDLE_CHANGE_ACTION_CREATE",
         "description": "Written just before the first signature."
       },
       {
-        "path": "answers/acme-ca.cert.pem",
+        "path": "requests/acme-ca-2026/acme-ca.cert.pem",
         "action": "BUNDLE_CHANGE_ACTION_REPLACE",
-        "description": "The new certificate of acme-ca; the old one stays under products/."
+        "description": "The new certificate of acme-ca, the answer beside its request."
       },
       {
         "path": "roots/B/openpgp.pgp",
@@ -133,7 +133,7 @@
         "description": "The primary's certificate with the new binding of acme-release."
       },
       {
-        "path": "products/8/",
+        "path": "trust/8/",
         "action": "BUNDLE_CHANGE_ACTION_CREATE",
         "description": "Root list, CA bundle, CRL, SSH CA key list and keyring of trust sequence 8."
       },
@@ -149,8 +149,8 @@
       }
     ],
     "equivalentCommand": "ritueel --dir ~/ritueel/acme due",
-    "runCommand": "ritueel --dir ~/ritueel/acme run ledger/20261111T090000Z-due/plan.json --confirm 7f3a9c1e0123456789abcdef0123456789abcdef0123456789abcdefdeadbeef",
-    "savePath": "ledger/20261111T090000Z-due/plan.json",
+    "runCommand": "ritueel --dir ~/ritueel/acme run history/20261111T090000Z-due/plan.json --confirm 7f3a9c1e0123456789abcdef0123456789abcdef0123456789abcdefdeadbeef",
+    "savePath": "history/20261111T090000Z-due/plan.json",
     "cardSerials": [
       "00000011",
       "00000012"

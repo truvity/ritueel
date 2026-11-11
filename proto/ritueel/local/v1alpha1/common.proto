@@ -9,12 +9,12 @@
 // fingerprints, algorithms, dates, the use of a slot.
 //
 // Everything the page shows is about one bundle: the directory of one trust
-// domain (for example personal or acme), with its ledger, its roots, its
+// domain (for example personal or acme), with its history, its roots, its
 // cards and its trust files. The trust file keeps its full name, "CA
 // bundle"; the bare word "bundle" means only the directory.
 //
 // The words are the glossary's: bundle, root, delegated key, holder,
-// requester, store, ceremony, ledger, record, renew, replace, trust files.
+// requester, store, ceremony, history, record, renew, replace, trust files.
 // Replace means making a new key; a goal that only revokes subkeys that a
 // newer one already replaced is called retire.
 
@@ -92,7 +92,7 @@ enum Intention {
   INTENTION_REPLACE_CARD = 5;
 }
 
-// Whether the hash chain of the ledger checks out.
+// Whether the hash chain of the history checks out.
 enum ChainState {
   CHAIN_STATE_UNSPECIFIED = 0;
   // Not checked yet. What the page shows is then not authoritative.
@@ -103,9 +103,10 @@ enum ChainState {
   CHAIN_STATE_BROKEN = 3;
 }
 
-// The state of the ledger: the bundle's write-once history of ceremonies,
-// one record for each. record_count counts records, not saved plans.
-message LedgerStatus {
+// The state of the history: the write-once part of the bundle, the folder
+// history/, with one sub-folder and one record for each ceremony.
+// record_count counts records, not saved plans.
+message HistoryStatus {
   int32 record_count = 1;
   ChainState chain_state = 2;
   // The hash of the newest record, in hexadecimal.

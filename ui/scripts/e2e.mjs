@@ -55,7 +55,7 @@ check('Start is the first screen and the tab has a title', (await evalJs('docume
 // ---- the first visit: what ritueel is, and a path (1440 px; the phone is checked at the end) -----------
 const lede = await rectOf('helps you keep a root', 'p');
 check('Start says in its first sentence what ritueel is, inside the first screen at 1440x900', lede && lede.top >= 0 && lede.bottom <= lede.height, JSON.stringify(lede));
-check('the lede explains root, ceremony and ledger where they first appear', /keep a root \(the key that everything else trusts\)/.test((await text()).replace(/\s+/g, ' ')) && /ceremony \(one sitting at a terminal/.test((await text()).replace(/\s+/g, ' ')) && /ledger \(the book of records\)/.test((await text()).replace(/\s+/g, ' ')));
+check('the lede explains root, ceremony and history where they first appear', /keep a root \(the key that everything else trusts\)/.test((await text()).replace(/\s+/g, ' ')) && /ceremony \(one sitting at a terminal/.test((await text()).replace(/\s+/g, ' ')) && /history \(the write-once record of every ceremony\)/.test((await text()).replace(/\s+/g, ' ')));
 check('Start says what a bundle is, in the Start-here box next to the switch that names it', /Example bundle changes the made-up keys \(a bundle is the directory that holds everything ritueel knows about one set of keys\)/.test((await text()).replace(/\s+/g, ' ')));
 const startHere = await rectOf('Start here', 'h2');
 check('the Start-here box begins inside the first screen at 1440x900', startHere && startHere.top >= 0 && startHere.top < startHere.height, JSON.stringify(startHere));
@@ -164,12 +164,12 @@ check('the wizard of the personal bundle asks about subkeys first', /A few choic
 await clickText(evalJs, 'Show me the plan');
 await sleep(500);
 const pplan = await text();
-check('the plan retires subkeys, runs on the offline system and shows the digest and the plan.json command', /C41E/i.test(pplan) && /To run it, on the offline system/.test(pplan) && /ritueel --dir ~\/ritueel\/personal run ledger\/20261111T090000Z-personal-subkey-revoke\/plan\.json --confirm/.test(pplan), pplan.slice(0, 200));
+check('the plan retires subkeys, runs on the offline system and shows the digest and the plan.json command', /C41E/i.test(pplan) && /To run it, on the offline system/.test(pplan) && /ritueel --dir ~\/ritueel\/personal run history\/20261111T090000Z-personal-subkey-revoke\/plan\.json --confirm/.test(pplan), pplan.slice(0, 200));
 check('the plan lists what changes in the bundle', /What changes in the bundle/.test(pplan));
 await clickText(evalJs, 'Save the plan');
 await sleep(500);
 const psaved = await text();
-check('the saved plan of the personal bundle: written nowhere, inside the bundle at ledger/<ceremony>/plan.json', /Nothing was written\./.test(psaved) && /Would be written to\s*~\/ritueel\/personal\/ledger\/20261111T090000Z-personal-subkey-revoke\/plan\.json/.test(psaved));
+check('the saved plan of the personal bundle: written nowhere, inside the bundle at history/<ceremony>/plan.json', /Nothing was written\./.test(psaved) && /Would be written to\s*~\/ritueel\/personal\/history\/20261111T090000Z-personal-subkey-revoke\/plan\.json/.test(psaved));
 const pbar = await stepBar();
 check('after "Save the plan" the step bar reaches Save, with Goal, Choices and Plan done', pbar && /Save/.test(pbar.current) && pbar.items === 4 && pbar.done === 3, JSON.stringify(pbar));
 check('it is canonical JSON, and no pending area or .plan file is named', /canonical JSON/.test(psaved) && !/pending/i.test(psaved) && !/\.plan\b/.test(psaved));
@@ -208,7 +208,7 @@ await sleep(500);
 check('after "Save the plan" the focus is on the result', (await active()).id === 'saved-result', JSON.stringify(await active()));
 const saved = await text();
 check('Save the plan says nothing was written and what would be', /Nothing was written\./.test(saved) && /This is a demo/.test(saved) && /Would be written to/.test(saved) && /"ceremony": "20261111T090000Z-due"/.test(saved));
-check('the plan is saved inside the bundle as ledger/<ceremony>/plan.json', /~\/ritueel\/acme\/ledger\/20261111T090000Z-due\/plan\.json/.test(saved) && /ritueel --dir ~\/ritueel\/acme run ledger\/20261111T090000Z-due\/plan\.json --confirm/.test(saved));
+check('the plan is saved inside the bundle as history/<ceremony>/plan.json', /~\/ritueel\/acme\/history\/20261111T090000Z-due\/plan\.json/.test(saved) && /ritueel --dir ~\/ritueel\/acme run history\/20261111T090000Z-due\/plan\.json --confirm/.test(saved));
 check('the saved view shows what to copy and bring, the stick, and the run command', /Copy to the offline system/.test(saved) && /USB stick/.test(saved) && /Bring with you/.test(saved) && /--confirm/.test(saved));
 await go('#/plan/add-card');
 check('a goal that cannot be planned is refused with its reason', /cannot be planned now/.test(await text()));
@@ -237,7 +237,7 @@ await clickText(evalJs, 'Save the plan');
 await sleep(500);
 const gsaved = await text();
 check('the saved plan of globex needs no USB stick and no copy to the offline system', /No stick is needed/.test(gsaved) && !/USB stick/.test(gsaved) && !/Copy to the offline system/.test(gsaved) && /Bring with you/.test(gsaved));
-check('it is still shown saved as ledger/<ceremony>/plan.json inside its bundle (a proposal in the demo)', /~\/ritueel\/globex\/ledger\/20261111T090000Z-root-add\/plan\.json/.test(gsaved) && /then, on your workstation/i.test(gsaved.replace(/\n/g, ' ')));
+check('it is still shown saved as history/<ceremony>/plan.json inside its bundle', /~\/ritueel\/globex\/history\/20261111T090000Z-root-add\/plan\.json/.test(gsaved) && /then, on your workstation/i.test(gsaved.replace(/\n/g, ' ')));
 // a screen every bundle has stays where it is
 await go('#/trust');
 await clickText(evalJs, 'personal');

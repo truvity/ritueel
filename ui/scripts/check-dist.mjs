@@ -59,14 +59,14 @@ for (const [name, dir, demo] of [['demo build (dist)', join(root, 'dist'), true]
     expect(has('never answers, on purpose'), 'says the Waiting state is on purpose');
     expect(has('this bundle is empty'), 'says the plan of the empty state is an example');
     expect(has('globex') && has('acme-keyring') && has('acme-gateway'), 'holds the three example bundles');
-    expect(has('ledger/20261111T090000Z-due/plan.json'), 'holds a plan saved as ledger/<ceremony>/plan.json');
+    expect(has('history/20261111T090000Z-due/plan.json'), 'holds a plan saved as history/<ceremony>/plan.json');
     expect(!has('createConnectTransport'), 'holds no connect-web transport');
   } else {
     expect(!has('Example Holder') && !has('deadbeef') && !has('0123456789ABCDEF'), 'holds no fixture');
     expect(!has('Try the states') && !has('Page state'), 'holds no state switch');
     expect(!has('Try a bundle') && !has('Example bundle'), 'holds no bundle switch');
     // the help for a first visitor of the demo is the demo's alone
-    for (const phrase of ['helps you keep a root', 'Start here', 'ceremony, ledger and more', 'All the words', 'command line is not built yet', 'never answers, on purpose', 'this bundle is empty']) {
+    for (const phrase of ['helps you keep a root', 'Start here', 'ceremony, history and more', 'All the words', 'command line is not built yet', 'never answers, on purpose', 'this bundle is empty']) {
       expect(!has(phrase), `holds no demo help: "${phrase}"`);
     }
     expect(!has('globex') && !has('acme-keyring') && !has('acme-gateway'), 'holds none of the example bundles');

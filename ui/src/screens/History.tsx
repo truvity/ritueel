@@ -10,11 +10,11 @@ import { Glyph } from '../ui/Glyph';
 import { LearnLink, Page } from '../ui/Page';
 import { Empty, Explain, Load, Sec } from '../ui/Sec';
 import { T } from '../ui/T';
-import type { LedgerStatus } from '../gen/ritueel/local/v1alpha1/common_pb';
+import type { HistoryStatus } from '../gen/ritueel/local/v1alpha1/common_pb';
 
 const LINK = 'font-semibold text-accent underline underline-offset-4';
 
-function Seal({ l }: { l: LedgerStatus | undefined }) {
+function Seal({ l }: { l: HistoryStatus | undefined }) {
   const ok = l?.chainState === ChainState.VERIFIED;
   const none = (l?.recordCount ?? 0) === 0;
   const broken = l?.chainState === ChainState.BROKEN;
@@ -29,7 +29,7 @@ function Seal({ l }: { l: LedgerStatus | undefined }) {
           </div>
         </div>
         <div className="min-w-0 flex-1">
-          <p className="text-lg font-bold">{none ? 'The ledger has no records yet.' : ok ? 'The chain is verified.' : broken ? 'The chain is broken.' : 'The chain has not been checked.'}</p>
+          <p className="text-lg font-bold">{none ? 'The history has no records yet.' : ok ? 'The chain is verified.' : broken ? 'The chain is broken.' : 'The chain has not been checked.'}</p>
           <p className="mt-0.5 max-w-[65ch]">
             <T cap={240}>{l?.message}</T>
           </p>
@@ -93,16 +93,16 @@ function List() {
   return (
     <Page
       kicker="History"
-      title="The ledger, one record per ceremony"
+      title="The history, one record per ceremony"
       lede={<p>Every time something about your keys changed, a record was written. Here they are, newest first.</p>}
     >
       <Explain term="A ceremony">
-        is one sitting at a terminal, where a plan is run and something about your keys changes. The ledger is the book that keeps one record for each. Every record
+        is one sitting at a terminal, where a plan is run and something about your keys changes. The history is the write-once part of your bundle: a sub-folder for each ceremony, with its plan, record and transcript. Every record
         names the one before it by digest, so a change to one record breaks the chain after it.
       </Explain>
-      <Load res={res} what="the ledger" isEmpty={(d) => d.ceremonies.length === 0} empty={
+      <Load res={res} what="the history" isEmpty={(d) => d.ceremonies.length === 0} empty={
         <>
-          <Empty title="The ledger is empty. No ceremony has been recorded yet.">
+          <Empty title="The history is empty. No ceremony has been recorded yet.">
             <p>The first ceremony writes the first record. Until then there is nothing to read here, and nothing is wrong.</p>
             <p>
               <a className={LINK} href={href.plan()}>
@@ -114,7 +114,7 @@ function List() {
       }>
         {(d) => (
           <>
-            <Seal l={d.ledger} />
+            <Seal l={d.history} />
             <Sec title="Ceremonies" aside={plural(d.ceremonies.length, 'ceremony', 'ceremonies')}>
               <ol className="space-y-3">
                 {d.ceremonies.map((c) => (
@@ -134,15 +134,15 @@ function Detail({ id }: { id: string }) {
   const roots = useRoots();
   const bundle = useBundleName();
   return (
-    <Page kicker="History" title="One ceremony" aside={<a className={LINK} href={href.history()}>Back to the ledger</a>}>
-      <Load res={res} what="the ledger">
+    <Page kicker="History" title="One ceremony" aside={<a className={LINK} href={href.history()}>Back to the history</a>}>
+      <Load res={res} what="the history">
         {(d) => {
           const at = d.ceremonies.findIndex((c) => c.id === id);
           const c = d.ceremonies[at];
           if (!c) {
             return (
               <Empty title="There is no record with that name.">
-                <p>The ledger holds {plural(d.ceremonies.length, 'record')}, and none is called that. Go back and choose one.</p>
+                <p>The history holds {plural(d.ceremonies.length, 'record')}, and none is called that. Go back and choose one.</p>
               </Empty>
             );
           }
@@ -240,7 +240,7 @@ function Detail({ id }: { id: string }) {
                   </ol>
                   <p className="mt-2 max-w-[70ch] text-sm text-dim">
                     The demo has no plan file for these ceremonies, so these are the usual steps of this kind of ceremony. In the program, the steps come from the plan in the
-                    ceremony's sub-folder of the ledger.
+                    ceremony's sub-folder of the history.
                   </p>
                 </Sec>
               ) : null}

@@ -5,7 +5,7 @@
     "title": "Retire two superseded signing subkeys",
     "summary": "Revokes the signing subkeys of 2022 and 2023 with the reason superseded, and rebuilds your public certificate. Nothing happens until you run it on the offline system.",
     "builtAt": "2026-11-11T09:00:00Z",
-    "ledgerHeadSha256": "600c0123456789abcdef0123456789abcdef0123456789abcdef0123456789ab",
+    "historyHeadSha256": "600c0123456789abcdef0123456789abcdef0123456789abcdef0123456789ab",
     "digest": "c41e08b50123456789abcdef0123456789abcdef0123456789abcdefdeadbeef",
     "steps": [
       {
@@ -32,7 +32,7 @@
         "cardSerials": [
           "00000001"
         ],
-        "learnPath": "/learn/how-passkeys-work/#a-passkey-that-opens-a-key-file"
+        "learnPath": "/learn/how-passkeys-work/"
       },
       {
         "ordinal": 3,
@@ -51,45 +51,45 @@
         "ordinal": 5,
         "title": "Write the record",
         "detail": "Writes the record of this ceremony and its transcript.",
-        "whatChanges": "One new record in the ledger",
-        "learnPath": "/learn/life-of-a-root/#record"
+        "whatChanges": "One new record in the history",
+        "learnPath": "/learn/life-of-a-root/"
       }
     ],
     "bundleChanges": [
       {
-        "path": "ledger/20261111T090000Z-personal-subkey-revoke/record.json",
+        "path": "history/20261111T090000Z-personal-subkey-revoke/record.json",
         "action": "BUNDLE_CHANGE_ACTION_CREATE",
         "description": "The record of this ceremony."
       },
       {
-        "path": "ledger/20261111T090000Z-personal-subkey-revoke/plan.json",
+        "path": "history/20261111T090000Z-personal-subkey-revoke/plan.json",
         "action": "BUNDLE_CHANGE_ACTION_CREATE",
         "description": "The plan as it was confirmed. Already there if you saved it from this page; otherwise the ceremony writes it."
       },
       {
-        "path": "ledger/20261111T090000Z-personal-subkey-revoke/transcript.txt",
+        "path": "history/20261111T090000Z-personal-subkey-revoke/transcript.txt",
         "action": "BUNDLE_CHANGE_ACTION_CREATE",
         "description": "What the terminal showed, without any PIN or passphrase."
       },
       {
-        "path": "ledger/20261111T090000Z-personal-subkey-revoke/attempt.json",
+        "path": "history/20261111T090000Z-personal-subkey-revoke/attempt.json",
         "action": "BUNDLE_CHANGE_ACTION_CREATE",
         "description": "Written just before the first signature."
       },
       {
         "path": "roots/A/openpgp.pgp",
         "action": "BUNDLE_CHANGE_ACTION_REPLACE",
-        "description": "The public certificate with two subkey revocations; the old one stays under products/."
+        "description": "The public certificate with two subkey revocations; the earlier trust set stays beside it in trust/<n>/."
       },
       {
-        "path": "products/2/",
+        "path": "trust/2/",
         "action": "BUNDLE_CHANGE_ACTION_CREATE",
         "description": "The public certificate of trust sequence 2, with the two revocations, as .pgp and .asc."
       }
     ],
     "equivalentCommand": "ritueel --dir ~/ritueel/personal personal subkey revoke --reason superseded 1B220123456789ABCDEF0123456789ABCDEF0123 1B320123456789ABCDEF0123456789ABCDEF0123 --plan-only",
-    "runCommand": "ritueel --dir ~/ritueel/personal run ledger/20261111T090000Z-personal-subkey-revoke/plan.json --confirm c41e08b50123456789abcdef0123456789abcdef0123456789abcdefdeadbeef",
-    "savePath": "ledger/20261111T090000Z-personal-subkey-revoke/plan.json",
+    "runCommand": "ritueel --dir ~/ritueel/personal run history/20261111T090000Z-personal-subkey-revoke/plan.json --confirm c41e08b50123456789abcdef0123456789abcdef0123456789abcdefdeadbeef",
+    "savePath": "history/20261111T090000Z-personal-subkey-revoke/plan.json",
     "cardSerials": [
       "00000001"
     ],

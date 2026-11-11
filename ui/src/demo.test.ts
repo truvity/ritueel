@@ -50,7 +50,7 @@ describe('every call of the contract answers', () => {
   });
 });
 
-// What each example bundle holds. One bundle is one trust domain, with its own ledger, roots and cards.
+// What each example bundle holds. One bundle is one trust domain, with its own history, roots and cards.
 const WORLD: Record<DemoBundle, { name: string; path: string; due: number; records: number; findings: number; alert: number; roots: number; delegated: number; cards: number; ceremonies: number; trustFiles: number }> = {
   personal: { name: 'personal', path: '~/ritueel/personal', due: 0, records: 1, findings: 7, alert: 3, roots: 1, delegated: 0, cards: 6, ceremonies: 1, trustFiles: 2 },
   acme: { name: 'acme', path: '~/ritueel/acme', due: 3, records: 10, findings: 1, alert: 0, roots: 2, delegated: 2, cards: 2, ceremonies: 10, trustFiles: 7 },
@@ -65,14 +65,14 @@ describe('the fixtures tell the made-up world, one bundle at a time', () => {
   for (const b of BUNDLES) {
     const w = WORLD[b];
     describe(b, () => {
-      it('summary: its name, path, due list, ledger and counts, a demo', async () => {
+      it('summary: its name, path, due list, history and counts, a demo', async () => {
         setBundle(b);
         const s = await inspect.getSummary({});
         expect(s.demo).toBe(true);
         expect(s.bundle?.name).toBe(w.name);
         expect(s.bundle?.path).toBe(w.path);
         expect(s.due).toHaveLength(w.due);
-        expect(s.ledger?.recordCount).toBe(w.records);
+        expect(s.history?.recordCount).toBe(w.records);
         expect(s.counts?.roots).toBe(w.roots);
         expect(s.counts?.delegatedKeys).toBe(w.delegated);
         expect(s.counts?.cards).toBe(w.cards);
@@ -97,13 +97,13 @@ describe('the fixtures tell the made-up world, one bundle at a time', () => {
         // A root is written <bundle>/<label>: labels are letters, A first, and unique inside the bundle.
         expect(roots.map((r) => r.label)).toEqual(['A', 'B', 'C'].slice(0, w.roots));
       });
-      it('the ledger head of the summary is the last record of the ceremonies list', async () => {
+      it('the history head of the summary is the last record of the ceremonies list', async () => {
         setBundle(b);
         const s = await inspect.getSummary({});
         const c = await inspect.listCeremonies({});
-        expect(c.ledger?.recordCount).toBe(c.ceremonies.length);
-        expect(c.ledger?.lastRecordId).toBe(s.ledger?.lastRecordId);
-        expect(c.ceremonies.map((x) => x.id)).toContain(s.ledger?.lastRecordId);
+        expect(c.history?.recordCount).toBe(c.ceremonies.length);
+        expect(c.history?.lastRecordId).toBe(s.history?.lastRecordId);
+        expect(c.ceremonies.map((x) => x.id)).toContain(s.history?.lastRecordId);
         // A record is named like a plan: the time in UTC, a hyphen, the command.
         for (const x of c.ceremonies) expect(x.id).toMatch(/^[0-9]{8}T[0-9]{6}Z-[a-z0-9]+(-[a-z0-9]+)*$/);
       });
@@ -205,9 +205,9 @@ describe('a call that would act answers that this is a demo', () => {
     expect(q.questions.length).toBeGreaterThan(0);
     const p = await plans.startPlan({ intention: Intention.RENEW_DUE, answers: q.questions.map((x) => ({ questionId: x.id, optionIds: x.defaultOptionIds })) });
     expect(p.plan?.digest).toMatch(/deadbeef$/);
-    expect(p.plan?.runCommand).toContain(' run ledger/');
+    expect(p.plan?.runCommand).toContain(' run history/');
     expect(p.plan?.runCommand).toContain('/plan.json --confirm ');
-    expect(p.plan?.savePath).toMatch(/^ledger\/[0-9]{8}T[0-9]{6}Z-[a-z0-9-]+\/plan\.json$/);
+    expect(p.plan?.savePath).toMatch(/^history\/[0-9]{8}T[0-9]{6}Z-[a-z0-9-]+\/plan\.json$/);
     expect(p.plan?.runPlace).toBe(RunPlace.OFFLINE_SYSTEM);
   });
   it('every plan says where it runs: the offline system for cards and key files, the workstation for a cloud root', async () => {
@@ -222,7 +222,7 @@ describe('a call that would act answers that this is a demo', () => {
       expect(p.plan?.runPlace, b).toBe(place);
       // The plan, the saved plan and the id of the bundle agree with each other.
       expect(p.plan?.id, b).toBe(SAVED[b].id);
-      expect(p.plan?.savePath, b).toBe(`ledger/${SAVED[b].id}/plan.json`);
+      expect(p.plan?.savePath, b).toBe(`history/${SAVED[b].id}/plan.json`);
     }
   });
   it('a goal of one bundle is not applicable in another: the not-now refusal answers', async () => {
@@ -247,9 +247,9 @@ describe('a call that would act answers that this is a demo', () => {
       expect(saved.planFilePreview.length).toBeGreaterThan(20);
       // The plan is saved inside the bundle, where the engine writes any plan.
       expect(saved.bundlePath, id).toBe(`~/ritueel/${b}`);
-      expect(saved.path, id).toBe(`ledger/${id}/plan.json`);
+      expect(saved.path, id).toBe(`history/${id}/plan.json`);
       // The run command names the bundle (--dir), as docs/reference/cli.md has it.
-      expect(saved.runCommand, id).toBe(`ritueel --dir ~/ritueel/${b} run ledger/${id}/plan.json --confirm ${saved.digest}`);
+      expect(saved.runCommand, id).toBe(`ritueel --dir ~/ritueel/${b} run history/${id}/plan.json --confirm ${saved.digest}`);
       expect(saved.digest, id).toMatch(/^[0-9a-f]{64}$/);
       expect(saved.planFilePreview, id).toContain(`"ceremony": "${id}"`);
       // The USB stick is a step only where the plan runs on the offline system.
@@ -287,7 +287,7 @@ describe('the four states of a read', () => {
       expect(s.bundle?.name, b).toBe(WORLD[b].name);
       expect(s.counts?.roots, b).toBe(0);
       expect(s.due, b).toHaveLength(0);
-      expect(s.ledger?.recordCount, b).toBe(0);
+      expect(s.history?.recordCount, b).toBe(0);
       expect(s.setupSteps.filter((x) => x.done), b).toHaveLength(1);
       expect(s.setupSteps.find((x) => x.done)?.id, b).toBe('bundle');
       expect((await inspect.listFindings({})).findings, b).toHaveLength(0);
@@ -307,7 +307,7 @@ describe('the four states of a read', () => {
       const adopt = await plans.startPlan({ intention: Intention.ADOPT_KEY, answers: [{ questionId: 'use', optionIds: ['root'] }] });
       expect(adopt.plan?.runPlace, b).toBe(RunPlace.WORKSTATION);
       const saved = await plans.savePlan({ planId: adopt.plan?.id ?? '', digest: adopt.plan?.digest ?? '' });
-      expect(saved.path, b).toBe(`ledger/${adopt.plan?.id}/plan.json`);
+      expect(saved.path, b).toBe(`history/${adopt.plan?.id}/plan.json`);
       const here = (await inspect.getSummary({})).bundle?.path;
       expect(saved.bundlePath, b).toBe(here);
       // The commands of the shared answer name the open bundle, never the example one.
@@ -457,11 +457,11 @@ describe('the words of the maintainer stay', () => {
   it('no fixture or screen uses a word the maintainer replaced', () => {
     const hits: string[] = [];
     for (const f of [...files('fixtures', /\.json$/), ...files('screens', /\.tsx$/), ...files('lib', /\.ts$/), ...files('ui', /\.tsx$/)]) {
-      // "sub-folder" is the word the ledger's own page uses for ledger/<ceremony>/.
+      // "sub-folder" is the word the history's own page uses for history/<ceremony>/.
       const text = readFileSync(join(HERE, f), 'utf8').replace(/sub-folder/gi, '');
       const m = OLD_WORDS.exec(text);
       if (m) hits.push(`${f}: ${m[0]}`);
-      // A saved plan is ledger/<ceremony>/plan.json; there is no file called *.plan.
+      // A saved plan is history/<ceremony>/plan.json; there is no file called *.plan.
       if (f.startsWith('fixtures/') && /\.plan\b/.test(text)) hits.push(`${f}: .plan`);
     }
     expect(hits).toEqual([]);
@@ -686,7 +686,7 @@ describe('switching the example bundle keeps the screen', () => {
       for (const to of BUNDLES.filter((b) => b !== from))
         for (const sn of serials) expect(switchFrom(from, `#/cards/${sn}`, to).hash, `${from} ${sn} to ${to}`).toBe('#/cards');
   });
-  it('a ledger record falls back to History', () => {
+  it('a history record falls back to History', () => {
     expect(switchFrom('personal', '#/history/20261103T142000Z-init', 'acme')).toEqual({ hash: '#/history', writes: ['#/history'] });
     expect(switchFrom('acme', '#/history/20231202T142000Z-init', 'globex')).toEqual({ hash: '#/history', writes: ['#/history'] });
     expect(switchFrom('globex', '#/history/20260915T142000Z-init', 'personal')).toEqual({ hash: '#/history', writes: ['#/history'] });
