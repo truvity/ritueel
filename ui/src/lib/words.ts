@@ -31,9 +31,9 @@ export const STORE_WORD: Record<number, string> = {
 };
 
 export const STORE_SENTENCE: Record<number, string> = {
-  [Store.SOFTWARE_FILE]: 'The key is an encrypted file in a key directory outside your bundle. A passkey on each root card opens it, and a recovery key is kept apart. You use it on the offline system.',
-  [Store.ROOT_CARDS]: 'The root has its own key, born on one root card and never leaving it. Its partner root is on the other card. You use it only on the offline system, with the card present.',
-  [Store.CLOUD_KMS]: 'The key lives in a cloud key service and never leaves it. If ritueel adopted it, it read the public key and the policy and did not change the key.',
+  [Store.SOFTWARE_FILE]: 'The key is an encrypted file in a key directory outside your bundle. A passkey on each root card opens it, and a recovery key is kept apart. It can be copied, so you use it only in the offline system.',
+  [Store.ROOT_CARDS]: 'The root has its own key, born on one root card and never leaving it. Its partner root is on the other card. It cannot be copied. You may use it on your workstation with a touch for every signature, the count in the plan, no retry and a check on a second device, or in the offline system.',
+  [Store.CLOUD_KMS]: 'The key lives in a cloud key service and never leaves it. If ritueel adopted it, it read the public key and the policy and did not change the key. It cannot be copied. You may use it from your workstation in a session of its ceremony role; the count, no retry and the second-device check apply. How a touch reads for a cloud key is only proposed.',
 };
 
 export const ROOT_STATE_WORD: Record<number, string> = {
@@ -112,6 +112,7 @@ export const SLOT_USE_TAG: Record<number, string> = {
   [SlotUse.PASSKEY_SSH]: 'SSH',
   [SlotUse.PASSKEY_UNLOCK]: 'UNLOCK',
   [SlotUse.REHEARSAL]: 'PRACTICE',
+  [SlotUse.OTHER_BUNDLE]: 'OTHER',
 };
 
 export const PIN_WORD: Record<number, string> = {
@@ -168,20 +169,34 @@ export const REQUIREMENT_WORD: Record<number, string> = {
   [Requirement.CONFIRM_DIGEST_AT_TERMINAL]: 'Digest confirmed at the terminal',
 };
 
-/** Where a plan is run, in a sentence: on the offline system for a root on cards or in a key file, on the workstation for a cloud root. */
+/**
+ * Where a plan is run (record 0005, rules 17 and 18): in the offline system for a key that can be copied (a key file),
+ * on your workstation for a key that cannot be copied (a root on cards or in the cloud), under four conditions the plan lists.
+ */
 export const RUN_PLACE_WORD: Record<number, string> = {
-  [RunPlace.OFFLINE_SYSTEM]: 'the offline system',
-  [RunPlace.WORKSTATION]: 'your workstation',
+  [RunPlace.OFFLINE_SYSTEM]: 'in the offline system',
+  [RunPlace.WORKSTATION]: 'on your workstation',
 };
 
 /** What the page says when a plan does not say where it is run. */
-export const RUN_PLACE_DEFAULT = 'the terminal where you run it';
+export const RUN_PLACE_DEFAULT = 'in the terminal where you run it';
 
-/** "on the offline system", "on your workstation", or "in the terminal where you run it". */
+/** "in the offline system", "on your workstation", or "in the terminal where you run it". */
 export function onPlace(place: RunPlace | undefined): string {
-  const word = RUN_PLACE_WORD[place ?? RunPlace.UNSPECIFIED];
-  return word ? `on ${word}` : `in ${RUN_PLACE_DEFAULT}`;
+  return RUN_PLACE_WORD[place ?? RunPlace.UNSPECIFIED] ?? RUN_PLACE_DEFAULT;
 }
+
+/** Where a ceremony of the history ran (record 0005, rule 2), in a clause: "ran on the workstation". */
+export const RAN_PLACE_WORD: Record<number, string> = {
+  [RunPlace.OFFLINE_SYSTEM]: 'ran in the offline system',
+  [RunPlace.WORKSTATION]: 'ran on the workstation',
+};
+
+/** The same as a value of a detail list: "In the offline system", "On the workstation". */
+export const RAN_PLACE_VALUE: Record<number, string> = {
+  [RunPlace.OFFLINE_SYSTEM]: 'In the offline system',
+  [RunPlace.WORKSTATION]: 'On the workstation',
+};
 
 export const BUNDLE_ACTION_WORD: Record<number, string> = {
   [BundleChangeAction.CREATE]: 'create',
