@@ -46,6 +46,17 @@ for f in index.html how-it-works/index.html how-it-works/cards/index.html how-it
   if grep -Eo '<svg[^>]* (class="fig-[a-z]+" )?viewBox="[^"]*"[^>]*>' "$dist/$f" | grep -v 'role="img"' | grep -q 'viewBox="0 0 \(280 224\|760\|360\)'; then bad "$f has a drawing without role=img"; fi
 done
 
+# The wide layout: a page with a list of headings holds both forms of it (the dropdown below 100rem
+# and the column from it), and a page with `flow: rows` in its front matter holds its parts
+# (site/lib/parts.mjs wraps them; the page has more than one).
+for f in design/index.html reference/hand-off-contract/index.html; do
+  grep -q 'ritueel-toc-bar' "$dist/$f" && grep -q 'ritueel-toc-rail' "$dist/$f" || bad "$f lacks the dropdown or the column of \"On this page\" (site/src/components/PageSidebar.astro)"
+done
+[ "$(grep -o '<section class="ritueel-part"' "$dist/design/index.html" | wc -l)" -ge 2 ] || bad "design/ has no parts: is flow: rows in docs/design.md, and does site/lib/parts.mjs run?"
+for f in glossary/index.html learn/what-is-a-root/index.html; do
+  ! grep -q '<section class="ritueel-part"' "$dist/$f" || bad "$f has parts but asks for no flow: rows"
+done
+
 # Search: Pagefind's index and its entry point.
 [ -s "$dist/pagefind/pagefind.js" ] || bad "no Pagefind entry point in $dist/pagefind"
 [ -n "$(ls "$dist"/pagefind/index 2>/dev/null)" ] || bad "no Pagefind index shards in $dist/pagefind/index"

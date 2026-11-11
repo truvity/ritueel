@@ -6,7 +6,9 @@
    the dropdown at the top of the content. From it:
    - "On this page" is a column of 18.75rem fixed at the right of the window (PageSidebar.astro),
      and the same width is kept free at the right of every documentation page, with a list or
-     without, so the text column does not move sideways between pages.
+     without, so the text column does not move sideways between pages;
+   - a page that asks for `flow: rows` in its front matter shows its sections two by two
+     (lib/parts.mjs wraps them; see "Sections in rows" below).
    The home page (a splash page, no sidebar) is not a documentation page and keeps its own layout. */
 
 :root {
@@ -95,9 +97,21 @@ mobile-starlight-toc .dropdown {
 .sl-markdown-content > .sl-heading-wrapper {
   max-width: var(--ritueel-prose-width);
 }
+/* A part of a page with `flow: rows` (the end of this file) is a block of the column too, so its
+   direct children keep the same measure below 100rem, where the parts are one under the other. */
+.sl-markdown-content > .ritueel-part > :is(p, ul, ol, dl, blockquote, h3, h4, h5, h6, .sl-heading-wrapper):not(.not-content) {
+  max-width: var(--ritueel-prose-width);
+}
+/* The space above a `##` heading is Starlight's rule for a heading after other text (1.5 times
+   its size). The heading is the first thing in its part, so the part carries that space. */
+.sl-markdown-content > .ritueel-part {
+  margin-top: calc(1.5 * var(--sl-text-h2));
+}
+
 /* The wide tables of the docs: use the column, scroll inside the table when it
    is still too wide (Starlight makes a Markdown table a scrolling block). */
-.sl-markdown-content > table {
+.sl-markdown-content > table,
+.sl-markdown-content > .ritueel-part > table {
   max-width: 100%;
 }
 
@@ -141,5 +155,33 @@ mobile-starlight-toc .dropdown {
   }
   .sl-markdown-content > table:has(> tbody > tr > td:nth-child(4) a) td:nth-child(4)::before {
     content: 'Decided in: ';
+  }
+}
+
+/* SECTIONS IN ROWS, from 100rem. A page whose front matter says `flow: rows` is made of short
+   parts (the design page: about twenty sections of three or four lines). lib/parts.mjs wraps each
+   `##` heading and what follows it, up to the next one, in <section class="ritueel-part">, while
+   the page is built; here the parts are laid out two by two, left to right and then down, in the
+   order of the source. A part is never split. The text before the first heading spans both
+   columns. Below 100rem the sections are blocks, one under the other, as on any page. */
+@media (min-width: 100rem) {
+  .sl-markdown-content:has(> .ritueel-part) {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 2rem 3rem;
+    align-items: start;
+  }
+  .sl-markdown-content:has(> .ritueel-part) > :not(.ritueel-part) {
+    grid-column: 1 / -1;
+  }
+  .sl-markdown-content > .ritueel-part {
+    /* A table, a figure or a code block in a part stays in its column and scrolls or shrinks there. */
+    min-width: 0;
+    margin-top: 0;
+  }
+  /* The headings are smaller in a column of about 35rem than across the page. */
+  .sl-markdown-content > .ritueel-part > .sl-heading-wrapper.level-h2,
+  .sl-markdown-content > .ritueel-part > .sl-heading-wrapper.level-h2 h2 {
+    font-size: var(--sl-text-2xl);
   }
 }
