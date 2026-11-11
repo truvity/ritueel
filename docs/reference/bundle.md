@@ -1,27 +1,35 @@
 ---
-title: The directory, ritueel.yaml, root profiles and key files
-description: The layout of the operator's ritueel directory, the ritueel.yaml schema, the root certificate and primary profiles, and the software root's key files.
+title: The bundle, ritueel.yaml, root profiles and key files
+description: The layout of a ritueel bundle, the ritueel.yaml schema, the root certificate and primary profiles, and the software root's key files.
 sidebar:
   order: 6
 ---
 
-*Not built yet. This is the layout the M2 code writes ([issue #8](https://github.com/truvity/ritueel/issues/8), [issue #9](https://github.com/truvity/ritueel/issues/9)); the rules it follows are in [ADR 0004](/decisions/0004-ceremonies-plan-confirm-reserve-sign-verify-record/#the-directory-and-the-records).*
+*Not built yet. This is the layout the M2 code writes ([issue #8](https://github.com/truvity/ritueel/issues/8), [issue #9](https://github.com/truvity/ritueel/issues/9)); the rules it follows are in [ADR 0004](/decisions/0004-ceremonies-plan-confirm-reserve-sign-verify-record/#the-bundle-and-the-records).*
 
-ritueel keeps everything it knows in **one directory of plain files**. Its write-once part is the *ledger*, below. [Learn](/learn/the-ledger/) advises on where to keep the directory and how to back it up and restore it: ritueel needs no git, and the holder is still advised to keep the directory in version control. It holds public material and the sealed secrets of cards ([ADR 0015](/decisions/0015-key-files-open-with-a-passkey-on-each-root-card-and-card-secrets-are-sealed-in-the-directory/#card-secrets)), and, in a personal directory, the wrapped backup of the person's encryption subkey ([ADR 0017](/decisions/0017-a-persons-openpgp-key-in-two-stages-an-adopted-primary-first-then-card-born-primaries/#day-to-day-cards)). It never holds a private key in clear, a PIN the holder types, a passphrase or a revocation signature. Losing it loses the inventory, the attestations and the OpenPGP creation times, so it is part of every key's identity ([ADR 0003](/decisions/0003-key-stores-and-the-card-layer/#consequences)). A software root's private keys live in **key files outside it**.
+ritueel keeps everything it knows about one trust domain in one **bundle**, a directory of plain files with a fixed structure. Its write-once part is the *ledger*, below. [Learn](/learn/the-ledger/) advises on where to keep the bundle and how to back it up and restore it: ritueel needs no git, and the holder is still advised to keep the bundle in version control. It holds public material and the sealed secrets of cards ([ADR 0015](/decisions/0015-key-files-open-with-a-passkey-on-each-root-card-and-card-secrets-are-sealed-in-the-bundle/#card-secrets)), and, in a personal bundle, the wrapped backup of the person's encryption subkey ([ADR 0017](/decisions/0017-a-persons-openpgp-key-in-two-stages-an-adopted-primary-first-then-card-born-primaries/#day-to-day-cards)). It never holds a private key in clear, a PIN the holder types, a passphrase or a revocation signature. Losing it loses the inventory, the attestations and the OpenPGP creation times, so it is part of every key's identity ([ADR 0003](/decisions/0003-key-stores-and-the-card-layer/#consequences)). A software root's private keys live in **key files outside it**.
+
+## One bundle, one trust domain
+
+A bundle has its own ledger, trust sequence, root list and roots. A holder with a personal key and a company keeps two bundles, for example `personal/` and `acme/`, each with its own unlock key and recovery key ([ADR 0004](/decisions/0004-ceremonies-plan-confirm-reserve-sign-verify-record/#the-bundle-and-the-records)). Inside a bundle the roots are `A` and `B`, then the next letter; across bundles a root is written with the bundle's name, `acme/A`. Two bundles may share a pair of root cards ([the cards page](/reference/cards/#the-inventory-cardsyaml-and-cardsnameyaml), [ADR 0016](/decisions/0016-several-bundles-share-one-pair-of-root-cards-and-the-bundle-keeps-a-card-inventory/)).
+
+:::note[Proposed]
+The bundle's name is the name of its directory, and no file stores it. `name` in `ritueel.yaml` is the name in the roots' subjects, `CN=Example Root A`, and is not the bundle's name: the bundle `acme` may have `name: Acme Corp`. Only the notation `acme/A` is the maintainer's; the name rule awaits his word.
+:::
 
 ## The layout
 
 :::note[Proposed]
-The maintainer decided that the ledger is a plain write-once folder with one sub-folder for each ceremony, each naming the one before, and that the directory holds an inventory of cards and the sealed secrets of cards. The file names inside them (`plan.json`, `attempt.json`, `record.json`, `transcript.txt`, `births.jsonl`, `cards.yaml`, `cards/NAME.sealed.age`) and the `adopted` member of `root.json` are the proposed shape, awaiting his word, and are fixed with the code.
+The maintainer decided that the ledger is a plain write-once folder with one sub-folder for each ceremony, each naming the one before, and that the bundle holds an inventory of cards and the sealed secrets of cards. The file names inside them (`plan.json`, `attempt.json`, `record.json`, `transcript.txt`, `births.jsonl`, `cards.yaml`, `cards/NAME.sealed.age`) and the `adopted` member of `root.json` are the proposed shape, awaiting his word, and are fixed with the code.
 :::
 
 | Path | Written by | Holds |
 |---|---|---|
-| `ritueel.yaml` | The operator | The name, the release address, the policy and the intermediates ([below](/reference/directory/#ritueelyaml)). |
-| `cards.yaml` | ritueel | The inventory list: every card the holder registered, of the four kinds root, day-to-day, server and rehearsal, from M2. Absent while every root is in software ([the inventory](/reference/cards/#the-inventory-cardsyaml-and-cardsnameyaml)). |
+| `ritueel.yaml` | The operator | The name, the release address, the policy and the intermediates ([below](/reference/bundle/#ritueelyaml)). |
+| `cards.yaml` | ritueel | The inventory list: every card this bundle uses, of the four kinds root, day-to-day, server and rehearsal, from M2. Absent while every root is in software ([the inventory](/reference/cards/#the-inventory-cardsyaml-and-cardsnameyaml)). |
 | `cards/NAME.yaml` | ritueel | The map of one card: every slot of its PIV, OpenPGP and FIDO2 applications and its use. Written from the read-only check ([cards](/reference/cards/#the-map-of-one-card-cardsnameyaml)). |
-| `cards/NAME.sealed.age` | ritueel | The card's management key, PUK and, on a day-to-day card, the Admin PIN, sealed to the recipients of the key files. One file for each card that ritueel adopted, root and day-to-day ([ADR 0015](/decisions/0015-key-files-open-with-a-passkey-on-each-root-card-and-card-secrets-are-sealed-in-the-directory/#card-secrets)). |
-| `roots/<label>/root.json` | ritueel | The facts of one root ([below](/reference/directory/#rootjson)). |
+| `cards/NAME.sealed.age` | ritueel | This bundle's own copy of the card's secrets: the management key, the PUK and, on a day-to-day card, the Admin PIN, sealed to the recipients of the key files. One file for each card that ritueel adopted, root and day-to-day ([ADR 0015](/decisions/0015-key-files-open-with-a-passkey-on-each-root-card-and-card-secrets-are-sealed-in-the-bundle/#card-secrets)). |
+| `roots/<label>/root.json` | ritueel | The facts of one root ([below](/reference/bundle/#rootjson)). |
 | `roots/<label>/x509.pem` | ritueel | The root's current certificate. |
 | `roots/<label>/openpgp.pgp` | ritueel | The primary's current public certificate, binary. |
 | `roots/<label>/attestation/` | ritueel | For a root on a card or in KMS: the attestation or the key's description and policy, as read at `init` ([cards](/reference/cards/#files), [KMS](/reference/kms-root/#evidence-files)). |
@@ -34,7 +42,7 @@ The maintainer decided that the ledger is a plain write-once folder with one sub
 - ritueel never writes `ritueel.yaml` or `requests/`, and the operator does not edit the other paths.
 - A file that a ceremony replaces, such as `x509.pem`, keeps its history in `products/` and in version control. Nothing under `products/` or `ledger/` is ever overwritten.
 - ritueel refuses a request whose stem already has an answer.
-- The directory is found by `--dir DIR`, or is the current directory when it holds `ritueel.yaml` ([Commands](/reference/cli/#flags-every-ceremony-shares)).
+- The bundle is found by `--dir DIR`, or is the current directory when it holds `ritueel.yaml` ([Commands](/reference/cli/#flags-every-ceremony-shares)).
 
 ## `ritueel.yaml`
 
@@ -69,14 +77,14 @@ keyring:
 | Key | Meaning |
 |---|---|
 | `version` | `1`. |
-| `name` | 1 to 64 characters: letters, digits, spaces and hyphens. It names the roots and their primaries ([below](/reference/directory/#the-root-certificate)). |
+| `name` | 1 to 64 characters: letters, digits, spaces and hyphens. It names the roots and their primaries ([below](/reference/bundle/#the-root-certificate)). |
 | `release_address` | The address in every primary's user ID: the project's release identity, never a person's ([ADR 0006](/decisions/0006-release-keys-and-the-keyring-package/#the-keys)). |
 | `policy` | The rules every request is checked against: `stores`, `min_firmware`, `pin_policy`, `require_name_constraints` and `validity_months`, with the meanings of the [reference policy](/reference/hand-off-contract/#what-the-certifier-checks). All five are required. |
 | `intermediates` | The intermediates ritueel may certify, one entry each. `name` is the `NAME` of the commands: lower-case letters, digits and hyphens, 1 to 63 characters, unique. `type` is `x509-intermediate`, `openpgp-subkey` or `ssh-ca-key`. |
 | `intermediates[].permitted_uri_hosts` | For `x509-intermediate`: the hosts a request's name constraints must stay inside. Required when `require_name_constraints` is true. Only URI hosts are expressible in version 1. **Planned:** permitted and excluded DNS subtrees and excluded IP ranges, for an intermediate that issues for DNS names and for per-environment limits; the schema will grow when a first installation needs it. |
 | `intermediates[].capability` | For `openpgp-subkey`: `sign` or `authenticate`, required. A request for another capability is refused with `policy`; the subkey is bound with this one's key flag ([the contract](/reference/hand-off-contract/#openpgp-subkey)). |
 | `intermediates[].use` | For `ssh-ca-key`: `user` or `host`, required. A request for another `use` is refused with `policy`; the key is listed with this use ([the contract](/reference/hand-off-contract/#ssh-ca-key)). |
-| `kind` | Optional. `personal` for a person's own OpenPGP key; absent for a company directory. A personal directory has `person` instead of `name` and `release_address` ([personal OpenPGP](/reference/personal-openpgp/)). |
+| `kind` | Optional. `personal` for a person's own OpenPGP key; absent for a company bundle. A personal bundle has `person` instead of `name` and `release_address` ([personal OpenPGP](/reference/personal-openpgp/)). |
 | `person` | Only with `kind: personal`: `name` (1 to 64 characters) and `address`. |
 | `aws_kms` | Optional, from M2; required when a root's store is `aws-kms`. The root account, the two Regions and the two roles, and optionally the renewal policy ([the block](/reference/kms-root/#ritueelyaml), [the policy](/reference/kms-root/#the-policy-in-ritueelyaml)). |
 | `keyring` | Optional. `license` is the SPDX identifier written into the `.rpm`, required to build one: the operator's choice, which ritueel does not default ([the keyring package](/reference/keyring-package/)). |
@@ -186,7 +194,7 @@ Six rules the schema cannot state: the two Regions of `aws_kms` differ, both its
 | Member | Meaning |
 |---|---|
 | `version` | `1`. |
-| `label` | The root's label: one upper-case letter, `A` and `B` for the two roots `init` makes, then the next free letter for each root `root add` makes, whatever its key store. It never names the store and is never reused. |
+| `label` | The root's label: one upper-case letter, `A` and `B` for the two roots `init` makes, then the next free letter for each root `root add` makes, whatever its key store. It never names the store, is unique inside its bundle and is never reused. |
 | `store` | `software`, `piv` or `aws-kms`. |
 | `test` | True for a root made with `--test-root`. Set at birth and never changed; a real root never becomes a test root. |
 | `created_at` | When the root was made: the time of its ceremony. |
@@ -194,9 +202,9 @@ Six rules the schema cannot state: the two Regions of `aws_kms` differ, both its
 | `openpgp_fingerprint` | The primary's fingerprint. |
 | `openpgp_created` | The OpenPGP creation time of the primary, which fixes its fingerprint and is on no card ([ADR 0003](/decisions/0003-key-stores-and-the-card-layer/#rules-for-every-store)). |
 | `revocations` | An object from reason (`compromised`, `superseded`, and any the holder added) to the SHA-256 of that revocation signature packet, which is stored elsewhere ([revocation material](/reference/revocation-material/)). |
-| `removal_sha256` | The SHA-256 of the root's removal authorisation, which is stored elsewhere with the revocation signatures ([revocation material](/reference/revocation-material/#the-removal-authorisation)). Absent in a personal directory. |
+| `removal_sha256` | The SHA-256 of the root's removal authorisation, which is stored elsewhere with the revocation signatures ([revocation material](/reference/revocation-material/#the-removal-authorisation)). Absent in a personal bundle. |
 | `adopted` | True for an OpenPGP primary adopted as it was ([ADR 0017](/decisions/0017-a-persons-openpgp-key-in-two-stages-an-adopted-primary-first-then-card-born-primaries/#stage-one)) or for a cloud key that ritueel adopted instead of creating ([ADR 0018](/decisions/0018-a-cloud-root-may-be-an-existing-key-that-ritueel-adopts/#adopting-a-key)). Absent otherwise. |
-| `store_ref` | For a root in `piv` (from M6) or `aws-kms` (from M2); absent for `software`. For `piv`: `{ "serial", "row" }`, the card's entry in [`cards.yaml`](/reference/cards/#the-inventory-cardsyaml-and-cardsnameyaml) and the root's row in the [slot map](/decisions/0016-several-roots-share-one-pair-of-root-cards-and-the-directory-keeps-a-card-inventory/#the-rows); the slots follow from the built-in map. For `aws-kms`: `{ "x509_arn", "openpgp_arn", "ssh_arn" }`, the ARNs of the primary keys ([the cloud root](/reference/kms-root/#what-ritueel-creates)). |
+| `store_ref` | For a root in `piv` (from M6) or `aws-kms` (from M2); absent for `software`. For `piv`: `{ "serial", "row" }`, the card's entry in [`cards.yaml`](/reference/cards/#the-inventory-cardsyaml-and-cardsnameyaml) and the root's row in the [slot map](/decisions/0016-several-bundles-share-one-pair-of-root-cards-and-the-bundle-keeps-a-card-inventory/#the-rows); the slots follow from the built-in map. For `aws-kms`: `{ "x509_arn", "openpgp_arn", "ssh_arn" }`, the ARNs of the primary keys ([the cloud root](/reference/kms-root/#what-ritueel-creates)). |
 | `revoked_at` | Present once the root is revoked. |
 | `replaces`, `overlap_until`, `vouched_by`, `vouches`, `retired_at`, `revoked_reason` | From M4, as [the transitions page](/reference/transitions/#in-rootjson) says. `retired_at` and `revoked_at` are the only members changed after the root is written. |
 
@@ -237,7 +245,7 @@ The test roots of the [hand-off vectors](/reference/hand-off-contract/#test-vect
 
 ## The software root's key files
 
-A software root ([the `software` store](/decisions/0003-key-stores-and-the-card-layer/#four-stores-behind-one-interface)) serves tests, drills and development, and never anchors a signed release ([ADR 0006](/decisions/0006-release-keys-and-the-keyring-package/#no-signed-release-before-the-gate)). Its private keys are in files in a **key directory**, given by `--key-dir DIR`, which ritueel refuses when it is inside the directory. Every command that writes them, and every record of a ceremony that uses them, says that a software root can be copied.
+A software root ([the `software` store](/decisions/0003-key-stores-and-the-card-layer/#four-stores-behind-one-interface)) serves tests, drills and development, and never anchors a signed release ([ADR 0006](/decisions/0006-release-keys-and-the-keyring-package/#no-signed-release-before-the-gate)). Its private keys are in files in a **key directory**, given by `--key-dir DIR`, which ritueel refuses when it is inside the bundle. Every command that writes them, and every record of a ceremony that uses them, says that a software root can be copied.
 
 | File | Content |
 |---|---|
@@ -246,7 +254,7 @@ A software root ([the `software` store](/decisions/0003-key-stores-and-the-card-
 | `<label>.revocation.<reason>.pgp.age` | The primary's revocation signature for one reason, `compromised` or `superseded` (or one the holder added), encrypted the same way. One file for each reason; the SHA-256 of the signature packet before encryption is the reason's entry in `revocations`. |
 | `<label>.removal.jws.age` | The root's removal authorisation, encrypted the same way; the SHA-256 of the JWS text before encryption is `removal_sha256`. |
 
-- **Encryption.** The age format (`age-encryption.org/v1`). By default a key file is encrypted to two recipients: the public half of an age key (the unlock key) and a recovery recipient. A passkey on each root card unwraps the private half of the unlock key; the recovery key is an age identity in a passphrase-protected file kept apart from the cards ([ADR 0015](/decisions/0015-key-files-open-with-a-passkey-on-each-root-card-and-card-secrets-are-sealed-in-the-directory/#the-key-file)). Encrypting needs no card. The members that hold the wrapped private half of the unlock key, and the recovery file, are fixed with the passkey proof (M1), and are not written here before it.
+- **Encryption.** The age format (`age-encryption.org/v1`). By default a key file is encrypted to two recipients: the public half of an age key (the unlock key) and a recovery recipient. A passkey on each root card unwraps the private half of the unlock key; the recovery key is an age identity in a passphrase-protected file kept apart from the cards ([ADR 0015](/decisions/0015-key-files-open-with-a-passkey-on-each-root-card-and-card-secrets-are-sealed-in-the-bundle/#the-key-file)). Encrypting needs no card. The members that hold the wrapped private half of the unlock key, and the recovery file, are fixed with the passkey proof (M1), and are not written here before it.
 - **A passphrase instead,** for a holder without cards: the age passphrase recipient, which derives the key with scrypt. A passphrase file holds only that recipient, because the age v1 specification says "An scrypt stanza, if present, MUST be the only stanza in the header" (read 2026-11-11, [age v1](https://age-encryption.org/v1)). The passphrase is read from the terminal without echo, or from `--passphrase-fd N`; it is never a flag, an environment variable or a line of output. A test root or a script uses it.
 - **`--test-root`** writes the same keys with no passphrase: `<label>.x509.key.pem` with the line `TEST ONLY: a test root with no passphrase; anyone with this file can sign as this root.` before the armour, `<label>.openpgp.key.asc` and `<label>.revocation.<reason>.asc`, ASCII-armoured with the header `Comment: TEST ONLY`, and `<label>.removal.jws`. The root's names carry ` (TEST ONLY)` too, and products refuse to mix test and real roots.
 - The holder keeps the revocation files and the removal authorisation apart from the key files, as for a card ([ADR 0002](/decisions/0002-key-custody-every-key-is-born-in-its-store-two-root-cards-or-one-kms-root-and-a-replica/#revocation-readiness)).

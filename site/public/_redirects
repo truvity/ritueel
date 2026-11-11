@@ -18,6 +18,9 @@
 /decisions/0015-key-files-open-with-a-passkey-on-each-root-card-and-card-secrets-are-sealed-in-the-directory/ /decisions/0015-key-files-open-with-a-passkey-on-each-root-card-and-card-secrets-are-sealed-in-the-bundle/ 301
 /decisions/0016-several-roots-share-one-pair-of-root-cards-and-the-directory-keeps-a-card-inventory/ /decisions/0016-several-bundles-share-one-pair-of-root-cards-and-the-bundle-keeps-a-card-inventory/ 301
 
+# Reference page renamed on 2026-11-11 (the directory is called the bundle), during the design phase.
+/reference/directory/ /reference/bundle/ 301
+
 # Contributing pages merged on 2026-11-01.
 /contributing/writing/ /contributing/pages/ 301
 
