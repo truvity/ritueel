@@ -27,15 +27,16 @@ export function StartHere() {
   ];
   // The defect was one of height: on a low window (a 360x740 phone) the third link lay behind the fixed bottom bar. So the fix keys on
   // the height, the query the bottom bar itself uses (it gets lower under 760 px). Under 760 px high the three links stand in one wrapping
-  // row and the note after each is hidden from the eye but kept for screen readers (sr-only, never display:none). The links keep their
-  // text and order. On a window that is high enough, at any width, the notes stay as they were.
+  // row, without number markers (the row must stay on one line even in a wide fallback serif such as DejaVu Serif, whose width was estimated
+  // from font metrics, not measured), and the note after each is hidden from the eye but kept for screen readers (sr-only, never display:none).
+  // The sentence above still says "in order", and the links keep their text and order. On a window that is high enough, at any width, the notes stay as they were.
   return (
     <section aria-labelledby="start-here-h" className="max-w-[70ch] border-l-4 border-accent bg-sunk px-4 py-3">
       <h2 id="start-here-h" className="text-base font-bold">
         Start here
       </h2>
       <p className="mt-2 text-[0.9375rem]">Try these three, in order:</p>
-      <ol className="mt-1 list-decimal pl-6 text-[0.9375rem] [@media(max-height:760px)]:flex [@media(max-height:760px)]:list-inside [@media(max-height:760px)]:flex-wrap [@media(max-height:760px)]:gap-x-5 [@media(max-height:760px)]:pl-0">
+      <ol className="mt-1 list-decimal pl-6 text-[0.9375rem] [@media(max-height:760px)]:flex [@media(max-height:760px)]:list-none [@media(max-height:760px)]:flex-wrap [@media(max-height:760px)]:gap-x-4 [@media(max-height:760px)]:pl-0">
         {steps.map((s) => (
           <li key={s.to}>
             <a className={LINK} href={s.to}>
