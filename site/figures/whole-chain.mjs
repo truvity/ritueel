@@ -1,13 +1,13 @@
 // "The whole chain" of the home page: one picture, read from left to right. Your root in one of three
 // stores, then the one ceremony of the year, then the keys used every day; under the chain, four
 // years as two rows, which tell the contrast: a key file can be copied, so it is replaced on a
-// calendar; a key that cannot be copied stays the same key and is renewed.
+// calendar; a key that cannot be copied stays the same key and is replaced only on an event.
 // Wide (760 units, three panels in a row) and narrow (360, the same panels in a column) are made from
 // the same three panel functions and one timeline function, so they cannot drift.
 // The accent is the root that cannot be copied: its two stores, the one step that uses it (sign), and
-// the same key that is renewed. Rests on the records 0001 (three stores), 0002 (cannot be copied),
-// 0005 (six steps; only step 4 uses the root), 0007 (same key, renewed; a copy replaced at the latest
-// after three years) and 0008 (subkeys on the day-to-day card).
+// the one key that stays. Rests on the records 0001 (three stores), 0002 (cannot be copied; a card or
+// cloud key replaced only on an event, a copy within three years), 0005 (six steps; only step 4 uses
+// the root), 0007 (rules 13 to 19: the same key is re-signed, not replaced) and 0008 (subkeys on the card).
 import { acc, arrow, card, circle, f, key, line, person, rect, sheet, text } from './draw.mjs';
 import { svgBox } from './svg.mjs';
 import { cloud } from './parts.mjs';
@@ -26,7 +26,7 @@ function stores(w) {
   const row = (i, shape, icon, name, state, long = false) => {
     const y = 60 + i * 56;
     const box = rect(12, y, w - 24, 50, shape === 'root' ? 'acc-f cell-held' : 'cell-empty', 6);
-    return (shape === 'root' ? acc(ACC, box) : box) + icon(y) + text(82, y + 22, name, 't t-b') + text(82, y + 39, state, 't t-s' + (long ? ' t-long' : ''));
+    return (shape === 'root' ? acc(ACC, box) : box) + icon(y) + text(76, y + 22, name, 't t-b') + text(76, y + 39, state, 't t-s' + (long ? ' t-long' : ''));
   };
   s += row(0, 'root', (y) => card(20, y + 12, 38, 24, 'paper') + card(28, y + 18, 38, 24, 'paper'), 'two root cards', 'cannot be copied');
   s += row(1, 'root', (y) => cloud(21, y + 7, 1.5) + key(43, y + 34, 'ln ln-key'), 'cloud key', 'cannot be copied out', true);
@@ -71,9 +71,11 @@ function daily(w) {
   return s;
 }
 
-// the contrast: four years as two rows. A key file is replaced on a calendar (the first key stays
-// until the fourth year); a key that cannot be copied is one key, renewed in each year. `side` puts
-// the row names left of the rows (wide); otherwise above them (narrow).
+// the contrast: four years as two rows. A key file is replaced on a calendar (a new key in year 1, the
+// next at the latest three years later); a key that cannot be copied stays one key and is replaced
+// only on an event. Nothing in the rows is "renewed": both rows are re-signed at the yearly ceremony,
+// so the only difference between them is the replacement. `side` puts the row names left of the rows
+// (wide); otherwise above them (narrow).
 function timeline(W, y0, side) {
   const ax = side ? 190 : 14;
   const yw = side ? 140 : 83;
@@ -85,22 +87,23 @@ function timeline(W, y0, side) {
   for (let i = 0; i < 4; i++) s += text(ax + i * yw + yw / 2, y0 + 30, `year ${i + 1}`, 't t-s t-dim', 'm');
   // row names
   if (side) {
-    s += text(24, yFile + 22, 'Key file', 't t-b') + text(24, yFile + 39, 'can be copied', 't t-s t-dim');
-    s += text(24, yBar + 22, 'Card, cloud key', 't t-b') + text(24, yBar + 39, 'cannot be copied out', 't t-s t-dim t-long');
+    s += text(24, yFile + 22, 'Key file', 't t-b') + text(24, yFile + 39, 'replaced on a calendar', 't t-s t-dim t-long');
+    s += text(24, yBar + 22, 'Card, cloud key', 't t-b') + text(24, yBar + 39, 'replaced on an event', 't t-s t-dim t-long');
   } else {
-    s += text(16, yFile - 10, 'Key file', 't t-b') + text(100, yFile - 10, 'can be copied', 't t-s t-dim');
-    s += text(16, yBar - 10, 'Card, cloud key', 't t-b') + text(124, yBar - 10, 'cannot be copied out', 't t-s t-dim t-long');
+    s += text(16, yFile - 10, 'Key file', 't t-b') + text(100, yFile - 10, 'replaced on a calendar', 't t-s t-dim t-long');
+    s += text(16, yBar - 10, 'Card, cloud key', 't t-b') + text(124, yBar - 10, 'replaced on an event', 't t-s t-dim t-long');
   }
-  // the key file: a new key in year 1 and in year 4; the first one stays in between
   const cell = (i) => ax + i * yw + 3;
   const cw = yw - 6;
   const cx = (i) => ax + i * yw + yw / 2;
+  // the key file: a new key in year 1 and in year 4 (three years at most); the first one stays in between
   s += line(cell(0) + cw, yFile + h / 2, cell(3), yFile + h / 2, 'ln ln-dash ln-dim');
+  s += text((cell(0) + cw + cell(3)) / 2, yFile + h / 2 - 6, 'three years at most', 't t-s t-dim t-long', 'm');
   for (const i of [0, 3]) s += rect(cell(i), yFile, cw, h, 'paper-g', 6) + key(cx(i), yFile + 17, 'ln ln-key ln-dim') + text(cx(i), yFile + 39, 'new key', 't t-s t-dim', 'm');
-  // the key that cannot be copied: one bar, the same key, renewed in each following year
+  // the key that cannot be copied: one bar, a new key in year 1 and the same key after it
   let bar = rect(ax + 3, yBar, 4 * yw - 6, h, 'acc-f', 6);
   for (let i = 1; i < 4; i++) bar += line(ax + i * yw, yBar + 8, ax + i * yw, yBar + h - 8, 'ln ln-thin ln-acc');
-  for (let i = 0; i < 4; i++) bar += key(cx(i), yBar + 17, 'ln ln-key ln-acc') + text(cx(i), yBar + 39, i === 0 ? 'same key' : 'renews', 't t-s t-acc', 'm');
+  for (let i = 0; i < 4; i++) bar += key(cx(i), yBar + 17, 'ln ln-key ln-acc') + text(cx(i), yBar + 39, i === 0 ? 'new key' : 'same key', 't t-s t-acc', 'm');
   s += acc(ACC, bar);
   return { s, H };
 }
@@ -108,8 +111,8 @@ function timeline(W, y0, side) {
 const LABEL =
   'The chain of ritueel from the root to the keys of every day, with a four-year contrast under it. Your root in three stores: two root cards and a cloud key, drawn solid because they cannot be copied, and a key file, drawn dashed because it can be copied. ' +
   'The ceremony: a holder with a root card, a calendar with one day marked, and six numbered steps, plan, confirm, reserve, sign, verify, record, of which only sign uses the root. ' +
-  'Keys for every day: an intermediate in your certificate system and subkeys on your day-to-day card. An arrow labelled uses leads from the root to the ceremony and one labelled signs from the ceremony to the keys. ' +
-  'Under the chain, over four years: a key file gets a new key in year one and again in year four; a key on a card or in a cloud key service is the same key all four years and is renewed each year.';
+  'Keys for every day: an intermediate in your certificate system and subkeys on your day-to-day card. An arrow labelled used in leads from the root to the ceremony and one labelled signs from the ceremony to the keys. ' +
+  'Under the chain, over four years: a key file is replaced on a calendar, with a new key in year one and again in year four, three years at most; a key on a card or in a cloud key service is the same key all four years, replaced only on an event.';
 
 function wide() {
   const pw = [216, 224, 216];
@@ -117,7 +120,7 @@ function wide() {
   const px = [0, pw[0] + gap, pw[0] + gap + pw[1] + gap];
   let s = at(px[0], 0, stores(pw[0])) + at(px[1], 0, ceremony(pw[1])) + at(px[2], 0, daily(pw[2]));
   const ay = 140;
-  s += arrow(px[0] + pw[0] + 4, ay, px[1] - 4, ay, 'uses') + arrow(px[1] + pw[1] + 4, ay, px[2] - 4, ay, 'signs');
+  s += arrow(px[0] + pw[0] + 4, ay, px[1] - 4, ay, 'used in') + arrow(px[1] + pw[1] + 4, ay, px[2] - 4, ay, 'signs');
   const y0 = PH + 14;
   const t = timeline(760, y0, true);
   return svgBox(760, y0 + t.H, LABEL, s + t.s, 'fig-wide');
@@ -130,7 +133,7 @@ function narrow() {
   let y = 0;
   [stores, ceremony, daily].forEach((fn, i) => {
     s += at(0, y, fn(W));
-    if (i < 2) s += arrow(180, y + PH + 4, 180, y + PH + gap - 4, i === 0 ? 'uses' : 'signs', { lx: 180 + 30, ly: y + PH + gap / 2 + 4 });
+    if (i < 2) s += arrow(180, y + PH + 4, 180, y + PH + gap - 4, i === 0 ? 'used in' : 'signs', { lx: 180 + 30, ly: y + PH + gap / 2 + 4 });
     y += PH + gap;
   });
   const y0 = y - gap + 14;
@@ -143,7 +146,7 @@ export default {
   kind: 'layout',
   label: 'The whole chain of ritueel: from your root to the keys of every day',
   caption:
-    'The design, not a program: a key in a file can be copied without a trace, so it is replaced on a calendar. A key on a card or in a cloud key service cannot be copied out, so there is no calendar: you keep the same key and renew it once a year.',
+    'The design, not a program: a key in a file can be copied without a trace, so it is replaced on a calendar. A key on a card or in a cloud key service cannot be copied out, so only an event replaces it: you keep the same key, and the yearly ceremony renews what is due.',
   wide: wide(),
   narrow: narrow(),
 };
