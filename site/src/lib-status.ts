@@ -2,7 +2,7 @@
 // so that they cannot drift apart:
 //
 // - decision records are docs/decisions/NNNN-*.md without the template, read through the same
-//   collection as the decisions index (src/lib-decisions.ts), with the status each record states;
+//   collection as src/lib-decisions.ts, with the status each record states (the records have no page);
 // - reference pages are docs/reference/*.md without the index;
 // - code is the lines of every Go file outside site/ and node_modules (the product is Go; the
 //   scripts under tools/ are repository checks and are not counted). Zero Go files is zero

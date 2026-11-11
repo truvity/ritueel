@@ -91,7 +91,7 @@
         "cardSerials": [
           "00000012"
         ],
-        "learnPath": "/decisions/0005-trust-products-the-root-list-the-ca-bundle-the-ssh-ca-key-list-and-the-trust-sequence/"
+        "learnPath": "/design/#a-companys-roots-and-a-cloud-root"
       },
       {
         "ordinal": 7,

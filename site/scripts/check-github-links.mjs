@@ -11,7 +11,7 @@
 //   fragment like L12 (a line) is allowed on any other file.
 //
 // It fails closed: a sweep that finds few links proves nothing, so it needs at least 100 links in
-// all and 50 on the decision pages. Edit links (/edit/main/) stay with check-edit-links.mjs.
+// all and 15 on the design page. Edit links (/edit/main/) stay with check-edit-links.mjs.
 //
 // usage: check-github-links.mjs [dist]   (default site/dist, relative to the repository root)
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
@@ -22,7 +22,7 @@ import { githubHeadingIds } from '../lib/headings.mjs';
 const root = fileURLToPath(new URL('../../', import.meta.url));
 const dist = join(root, process.argv[2] ?? 'site/dist');
 const MIN_ALL = 100;
-const MIN_DECISIONS = 50;
+const MIN_DESIGN = 15;
 const LINK = /\bhref="(https:\/\/github\.com\/truvity\/ritueel\/(blob|tree)\/main\/[^"]*)"/g;
 
 function* pages(dir) {
@@ -49,7 +49,7 @@ const headingIds = (file) => {
 
 const problems = [];
 let all = 0;
-let onDecisions = 0;
+let onDesign = 0;
 const seen = new Set();
 
 for (const page of pages(dist)) {
@@ -57,7 +57,7 @@ for (const page of pages(dist)) {
   const html = readFileSync(page, 'utf8');
   for (const m of html.matchAll(LINK)) {
     all++;
-    if (where.startsWith('decisions/') && where !== 'decisions/index.html') onDecisions++;
+    if (where === 'design/index.html') onDesign++;
     const url = m[1].replaceAll('&amp;', '&');
     const key = `${where} ${url}`;
     if (seen.has(key)) continue;
@@ -84,16 +84,16 @@ for (const page of pages(dist)) {
   }
 }
 
-if (all < MIN_ALL || onDecisions < MIN_DECISIONS) {
+if (all < MIN_ALL || onDesign < MIN_DESIGN) {
   problems.push(
-    `found ${all} links into the repository (${onDecisions} on decision pages); an empty sweep proves nothing, and at least ${MIN_ALL} (${MIN_DECISIONS}) are expected`,
+    `found ${all} links into the repository (${onDesign} on the design page); an empty sweep proves nothing, and at least ${MIN_ALL} (${MIN_DESIGN}) are expected`,
   );
 }
 if (problems.length) {
   for (const p of problems) console.error(`check-github-links: ${p}`);
   process.exit(1);
 }
-console.log(`check-github-links: ok (${all} links, ${onDecisions} on decision pages)`);
+console.log(`check-github-links: ok (${all} links, ${onDesign} on the design page)`);
 
 /** The text without the slashes at its end. */
 function trimSlashes(text) {

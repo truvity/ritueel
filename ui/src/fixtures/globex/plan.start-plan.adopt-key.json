@@ -44,7 +44,7 @@
         "title": "Write the certificate",
         "detail": "The key signs its own certificate, digest only, as the ceremony role, in the session you already have. Every current root and the new root sign the next root list.",
         "whatChanges": "A new root, globex/B, in the bundle",
-        "learnPath": "/decisions/0005-trust-products-the-root-list-the-ca-bundle-the-ssh-ca-key-list-and-the-trust-sequence/"
+        "learnPath": "/design/#a-companys-roots-and-a-cloud-root"
       },
       {
         "ordinal": 6,

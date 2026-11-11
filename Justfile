@@ -16,7 +16,7 @@ site-dev: site-install ui-demo
     cd site && yarn dev
 
 # A strict build into site/dist: no warnings, no broken internal link, and the built
-# output has what it must (search index, headers, the pages, the demo, a page per decision record).
+# output has what it must (search index, headers, the pages, the demo, no page for a decision record).
 # The demo of the local page is built first (`just ui-demo`) into site/public/demo, where Astro
 # copies it into site/dist/demo/.
 site-build: site-install ui-demo

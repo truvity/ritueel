@@ -4,14 +4,17 @@
 # address answers with a redirect to the same file on GitHub, and a link to it from a published
 # page is written as a link to that file (site/lib/docs-links.mjs).
 #
-# The decision records (docs/decisions/NNNN-*.md, without the template) are not listed: the
-# `decisions` collection and src/pages/decisions publish all of them, as an archive.
+# The decision records (docs/decisions/NNNN-*.md, without the template) are working material like
+# the reference pages: they have no page, are not listed, and a link to one is a link to its file on
+# GitHub. The old addresses of the first eighteen records redirect to the files at one commit
+# (site/old-records.txt); the design page, design.md, says in brief what the records decide.
 #
 # To publish a page again, add its line here and run `just site-redirects`. The sidebar slugs in
 # astro.config.mjs, ui/src/links.test.ts and site/scripts/gen-redirects.mjs read this file too.
 # A line that names no file, a duplicate, a record or a file whose name starts with `_` fails.
 
 index.mdx
+design.md
 
 learn/index.md
 learn/what-is-a-root.md

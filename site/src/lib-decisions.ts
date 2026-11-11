@@ -5,7 +5,7 @@ type Decision = CollectionEntry<'decisions'>;
 // The file every record is copied from; it is not a decision.
 export const TEMPLATE_ID = '0000-template';
 
-// The records, without the template.
+// The records, without the template. The status page counts them; they have no page of their own.
 export async function listDecisions(): Promise<Decision[]> {
   const entries = await getCollection('decisions');
   return entries.filter((entry) => entry.id !== TEMPLATE_ID).sort((a, b) => a.id.localeCompare(b.id));
@@ -16,12 +16,6 @@ export function decisionTitle(entry: Decision): string {
   const heading = /^#\s+(.+)$/m.exec(entry.body ?? '');
   return heading ? heading[1].trim() : entry.id;
 }
-
-export const sourceUrl = (entry: Decision): string =>
-  `https://github.com/truvity/ritueel/blob/main/docs/decisions/${entry.id}.md`;
-
-export const editUrl = (entry: Decision): string =>
-  `https://github.com/truvity/ritueel/edit/main/docs/decisions/${entry.id}.md`;
 
 // A record keeps its status and date as the `**Status:**` and `**Date:**` lines under its
 // heading (docs/decisions/README.md, checked by tools/checks/decisions.mjs).
