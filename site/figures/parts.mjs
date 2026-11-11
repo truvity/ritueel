@@ -52,6 +52,10 @@ export function bundle(x, base, w, h, name) {
   );
 }
 
+/** A cloud of width 28k and height 24k with its top left at (x,y); k = 1 is the cloud of the five ideas. */
+export const cloud = (x, y, k = 1) =>
+  path(`M${f(x)} ${f(y + 24 * k)} H${f(x + 28 * k)} A${f(8 * k)} ${f(8 * k)} 0 0 0 ${f(x + 26 * k)} ${f(y + 9 * k)} A${f(10 * k)} ${f(10 * k)} 0 0 0 ${f(x + 8 * k)} ${f(y + 11 * k)} A${f(7 * k)} ${f(7 * k)} 0 0 0 ${f(x)} ${f(y + 24 * k)} Z`, 'paper');
+
 /** A padlock mark, (x,y) its top left, 12 wide. */
 export const lock = (x, y) => path(`M${f(x + 2.5)} ${f(y + 6)} V${f(y + 3.5)} A3.5 3.5 0 0 1 ${f(x + 9.5)} ${f(y + 3.5)} V${f(y + 6)}`, 'ln ln-thin') + rect(x, y + 6, 12, 9, 'paper-t', 2);
 

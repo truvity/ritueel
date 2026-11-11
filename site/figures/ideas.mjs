@@ -4,10 +4,9 @@
 // drawing functions, so they cannot drift. The accent is the plan, which appears in the fifth tile.
 import { acc, arrow, check, circle, f, folder, key, line, path, poly, rect, sheet, text } from './draw.mjs';
 import { svgBox } from './svg.mjs';
-import { lock } from './parts.mjs';
+import { cloud, lock } from './parts.mjs';
 
 const planSheet = (x, y, w, h) => acc('plan', sheet(x, y, w, h, { accent: true, rows: 0 }) + text(x + w / 2, y + h / 2 + 7, 'plan', 't t-s t-b t-acc', 'm'));
-const cloud = (x, y) => path(`M${f(x)} ${f(y + 24)} H${f(x + 28)} A8 8 0 0 0 ${f(x + 26)} ${f(y + 9)} A10 10 0 0 0 ${f(x + 8)} ${f(y + 11)} A7 7 0 0 0 ${f(x)} ${f(y + 24)} Z`, 'paper');
 
 // each drawing is made in a box of 140 x 96, origin at its top left
 const draw = [
