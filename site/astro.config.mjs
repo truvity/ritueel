@@ -59,12 +59,13 @@ export default defineConfig({
       ],
       plugins: [
         // Fails the build on a broken internal link or anchor. The decision pages and the status
-        // page are generated in src/pages (custom pages the validator cannot see);
+        // page are generated in src/pages (custom pages the validator cannot see); the demo of the local
+        // page (/demo/) is built by `just ui-demo` into public/demo, so no page of the site is its source;
         // site/scripts/check-anchors.mjs checks the links of the decision pages in the built site
         // instead, and site/scripts/check-built.sh checks that the status page is built.
         starlightLinksValidator({
           errorOnRelativeLinks: false,
-          exclude: ['/decisions/', '/decisions/**', '/status/'],
+          exclude: ['/decisions/', '/decisions/**', '/status/', '/demo/', '/demo/**'],
         }),
       ],
     }),

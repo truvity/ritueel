@@ -16,6 +16,7 @@ ritueel is in the design phase and has no release. Every tool on this page is pl
 |---|---|---|
 | [The command line](/tools/cli/) | One to three commands for each ceremony, with a plan, a confirmation, a record and the checks before every touch. | Planned (M1 to M3) |
 | [The wizard](/tools/wizard/) | A guided front end in the terminal, and a web page served on your own computer only. | Planned (M4) |
+| [The local page](/tools/local-page/) | The browser view of your own folder, served on your computer. A [demo](/demo/) shows the real page over made-up data. | The page and its demo exist; the program that serves it is planned |
 | [Command reference](/reference/cli/) | The commands, flags, files and exit codes. | Specified |
 
 ## One engine, two faces

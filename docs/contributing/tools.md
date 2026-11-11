@@ -23,7 +23,7 @@ The `Justfile` holds the recipes, and CI runs the same recipes. Run the recipe, 
 
 | Recipe | What it checks |
 |---|---|
-| `just check` | Everything a pull request must pass: `check-rules`, `site-check`, `site-workers` and `site-render` |
+| `just check` | Everything a pull request must pass: `check-rules`, `site-check`, `site-workers`, `site-render`, `proto-check`, `ui-lint`, `ui-test` and `ui-e2e` |
 | `just check-rules` | The repository rules, below, after a self-test of the checks |
 | `just check-decisions` | The decision records: file names, the template's sections, the status, the index rows |
 | `just check-public` | Content that must not be public, in every tracked text file |
@@ -33,11 +33,21 @@ The `Justfile` holds the recipes, and CI runs the same recipes. Run the recipe, 
 | `just check-agent-links` | `AGENTS.md` exists, `CLAUDE.md` imports it, and every path that they and the skills point to exists |
 | `just site-check` | The site: `site-lint`, `site-build` and `site-links` |
 | `just site-lint` | Page descriptions of 40 to 160 characters |
-| `just site-build` | A strict site build: no warning and no broken internal link, and the built output has what it must |
+| `just site-build` | A strict site build, after `just ui-demo`: no warning and no broken internal link, and the built output has what it must, the demo included |
 | `just site-links` | Every link in the built site, internal and external |
 | `just site-test-worker` | The Worker's tests (`site/scripts/check-worker.mjs`): the GitHub App's token request, the KV write rules, a refresh and every route, with GitHub and KV faked |
 | `just site-workers` | `just site-test-worker`, then `wrangler deploy --dry-run` on the build: bundles the Worker, uploads nothing, needs no Cloudflare credential |
 | `just site-render` | The status page in headless Chrome (`site/scripts/check-render.mjs`): the live script against a stand-in for the Worker, light and dark, at 1440, 390 and 375 px. Needs `just site-build` |
+
+| `just ui-install` | Installs the local page's dependencies from `ui/package-lock.json` |
+| `just ui-lint` | The page's TypeScript (strict) and its safety scan: no `innerHTML`, `eval`, `fetch` or remote URL, no text under 12 px |
+| `just ui-test` | The page's tests (vitest): the safety scan, the text rule, every screen with hostile text, the demo transport, the routes |
+| `just ui-build` | Both builds of the page, the demo (base `/demo/`) and the real one, and what each bundle must and must not hold |
+| `just ui-demo` | The demo for the site: the page in demo mode, base path `/demo/`, built into `site/public/demo/` (a build product, not committed). `site-build` runs it first |
+| `just ui-e2e` | The page in headless Chrome, served under the site's own Content-Security-Policy; fails on a console error or a policy violation. Needs Chrome or Chromium |
+| `just proto-lint` | `buf lint` of `proto/`, the page's API |
+| `just proto-gen` | Lints, then regenerates the TypeScript in `ui/src/gen/` |
+| `just proto-check` | `proto-gen` must leave no difference: the committed `ui/src/gen/` is what the generator makes |
 
 Read the recipe, and the workflow in `.github/workflows/` that calls it, to know what CI really runs. Build and test recipes for the code arrive with the code, and this table grows with them.
 

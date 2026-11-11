@@ -32,5 +32,6 @@ Instructions for AI agents working in this repository. People follow the same ru
 | write a test that uses a hardware token or a cloud key | "Hardware tokens and cloud keys" in `docs/contributing/tools.md` |
 | write a hostname, an address, an id or a name | `docs/contributing/public-content.md` |
 | report a vulnerability you found or suspect | `SECURITY.md`, never an issue or a pull request |
+| change `ui/` (the local page) or `proto/` (its API) | `ui/README.md`, `docs/tools/local-page.md`, and the Material UI guidance for agents in `.claude/skills/material-ui-tailwind/`, `material-ui-theming/` and `material-ui-styling/`; `just ui-lint`, `ui-test`, `proto-check` |
 | change `GOVERNANCE.md`, `SECURITY.md` or `LICENSE` | stop: only with the maintainer's request |
 | take a role in a team of agents, or report back | `docs/contributing/agents.md` |

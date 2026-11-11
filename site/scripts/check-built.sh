@@ -12,7 +12,8 @@ bad() { echo "check-built: $*" >&2; fail=1; }
 for f in index.html 404.html sitemap-index.xml robots.txt \
          learn/index.html learn/what-is-a-root/index.html learn/custody-chain/index.html learn/key-stores/index.html \
          learn/life-of-a-root/index.html guides/index.html tools/index.html tools/wizard/index.html principles/index.html reference/index.html reference/cli/index.html research/index.html \
-         roadmap/index.html contributing/index.html decisions/index.html status/index.html; do
+         roadmap/index.html contributing/index.html decisions/index.html status/index.html \
+         demo/index.html demo/scheme.js demo/favicon.svg demo/THIRD-PARTY-LICENSES.md tools/local-page/index.html; do
   [ -s "$dist/$f" ] || bad "missing or empty: $f"
 done
 
@@ -23,6 +24,19 @@ done
 # Response headers (CSP and the rest): the Worker serves them from _headers.
 [ -s "$dist/_headers" ] || bad "no _headers: site/public/_headers did not reach the output"
 site/scripts/check-csp.mjs "$dist" || bad "the Content-Security-Policy does not match the pages (above)"
+
+# The demo of the local page (ui/, built by `just ui-demo` into site/public/demo): its page names its
+# files under /demo/, loads no script that is inline, and no file of it names a host other than the few
+# that are text, not requests: XML namespaces, the pages React and MUI name in an error message, the
+# link back to this site, the in-memory transport's placeholder and Tailwind's licence banner.
+# (`ui/scripts/check-dist.mjs` checks the bundles themselves; this is the same check on what is served.)
+if [ -s "$dist/demo/index.html" ]; then
+  grep -q 'src="/demo/assets/' "$dist/demo/index.html" || bad "demo/index.html does not load its bundle from /demo/assets/ (is the base path /demo/?)"
+  [ -n "$(ls "$dist"/demo/assets/*.js 2>/dev/null)" ] || bad "no script under demo/assets/"
+  if grep -rEoh 'https?://[A-Za-z0-9.-]+' "$dist"/demo/assets "$dist/demo/index.html" | sort -u | grep -Evx 'https?://(www\.w3\.org|mui\.com|react\.dev|ritueel\.id|in-memory|tailwindcss\.com)'; then
+    bad "the demo's files name a host other than those of its allow-list (above)"
+  fi
+fi
 
 # Fingerprinted assets (/_astro/*, content-hashed file names) are cached for a year and nothing
 # else is: the immutable Cache-Control must sit under /_astro/* and under no other path.

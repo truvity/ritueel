@@ -14,3 +14,4 @@ This file is written by hand, for the person who uses a release. It is not a lis
 ## Unreleased
 
 - Nothing is released yet. The first docs, the scope decision and the roadmap are in `docs/`.
+- The site has a demo of the local page, the browser view of a ritueel folder, at `/demo/`: the real page over made-up data. The program that serves it is not built.
