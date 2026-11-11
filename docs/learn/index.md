@@ -1,38 +1,29 @@
 ---
 title: Learn
-description: The general logic of keeping root keys and intermediates safe, in the order to learn it, from what a root is to the whole life of a root.
+description: Six pages in order, from what a root is to choosing where it lives, then four pages to go further.
 sidebar:
   label: Overview
   order: 0
 ---
 
-ritueel teaches first, and for now the teaching is the product: these pages explain how roots and intermediates are handled securely, whatever tool you use, and they work without ritueel's tools, which are not built yet. The tools exist to make the rituals simpler, and they come after. Read the pages in order. Each one assumes the page before it.
+ritueel teaches first. These pages explain how to keep a root key safe, whatever tool you use; ritueel's own tools are not built yet. Read the first six in order. Each one assumes the one before.
 
-| Page | What you learn |
-|---|---|
-| [What is a root?](/learn/what-is-a-root/) | The key that everything else hangs from, and what goes wrong when it is lost or stolen. |
-| [Root and intermediate](/learn/root-and-intermediate/) | The two kinds of key in a chain of trust, and the same split in OpenPGP: the master key and its subkeys. |
-| [Why the root stays offline](/learn/why-the-root-stays-offline/) | What "offline" protects against, and how much of it you can have without a vault. |
-| [What a ceremony is](/learn/ceremonies/) | The rare, manual use of a root, why it is manual, and why that is a feature. |
-| [Layered trust](/learn/layered-trust/) | Why trust comes in layers, what each layer is for, and where redundancy helps and where it does not. |
-| [The custody chain](/learn/custody-chain/) | Who or what holds each key from the root to the leaf, and what a verifier really trusts. |
-| [Custody chains compared](/learn/custody-chains/) | Public PKI, private PKI, OpenPGP and SSH side by side: who holds what, what you control, how revocation works. |
-| [Where a key lives](/learn/key-stores/) | Software and its backends, YubiKey PIV and OpenPGP card, AWS KMS and the planned stores, compared in the open. |
-| [What a key store can prove](/learn/what-a-store-can-prove/) | How you can tell that a key really lives where you are told: an attestation chain, a policy read from a service, or nothing. |
-| [How a YubiKey holds keys](/learn/how-a-yubikey-holds-keys/) | What is inside a YubiKey 5, how PIV, OpenPGP and FIDO2 differ, how a PIV signature and a passkey sign-in happen, how a passkey can open a key file, and what locks or wipes a card. |
-| [How a KMS key works](/learn/how-a-kms-key-works/) | What an AWS KMS signing key is made of, what limits it, how a signature happens, and how it compares with a card slot. |
-| [Choosing where a root lives](/learn/choosing-where-a-root-lives/) | Two questions that pick a key file, a pair of root cards or a cloud key, two that follow up, how a key file opens, and what each costs a year. |
-| [Which keys to buy](/learn/which-keys-to-buy/) | The hardware worth buying to learn and test, what each can and cannot do, and prices with their dates. |
-| [The ledger](/learn/the-ledger/) | The write-once record of what you did, and how to keep, back up and restore the bundle that holds it. |
-| [The life of a root](/learn/life-of-a-root/) | Create, sign, record, back up, re-sign, rotate, revoke, recover: the whole story in order. |
-| [Re-sign](/learn/re-sign/), [rotate](/learn/rotate/), [revoke](/learn/revoke/), [recover](/learn/recover/) | One page for each ritual: why, when, and what can go wrong. |
-| [Moving from one root to another](/learn/transitions/) | How a new root takes over from an old one without breaking anyone, and what outsiders install. |
-| [Two roots in practice](/learn/two-roots/) | What public CAs do, how clients behave when an intermediate has two certificates, and how two cards alternate. |
-| [OpenPGP release keys and the keyring](/learn/openpgp-release-keys/) | The primaries, an intermediate's subkey, the back-signature, the keyring package, and what a revocation reaches. |
-| [Compared with what you can use today](/learn/compared/) | What offline-pki, Smallstep's recipe, the drduh guide, OpenBao, YubiHSM 2, Sequoia and AWS KMS do, with dated sources, and what ritueel adds. |
+1. [What is a root?](/learn/what-is-a-root/): the key everything else hangs from, and what goes wrong when it is lost or stolen.
+2. [Why the root stays offline](/learn/why-the-root-stays-offline/): what offline protects against, and how much of it you can have without a vault.
+3. [How a YubiKey holds keys](/learn/how-a-yubikey-holds-keys/): what is inside a YubiKey 5, how PIV, OpenPGP and FIDO2 differ, and what locks or wipes a card.
+4. [How passkeys work](/learn/how-passkeys-work/): what a passkey is, how a sign-in goes, what the PIN and the touch protect, and how a passkey can open a key file.
+5. [How a KMS key works](/learn/how-a-kms-key-works/): what an AWS KMS signing key is made of, what limits it, and how it compares with a card slot.
+6. [Choosing where a root lives](/learn/choosing-where-a-root-lives/): two questions that pick a key file, a pair of root cards or a cloud key, and what each costs a year.
 
-When you are ready to act, the [guides](/guides/) give the steps. The [principles](/principles/) are the rules ritueel's design follows, and the [decision records](/decisions/) hold the reasons.
+## Going further
+
+- [The life of a root](/learn/life-of-a-root/): create, sign, record, back up, re-sign, rotate, revoke, recover, in order.
+- [Revoke](/learn/revoke/): lost or exposed a key? Make the certificate before you need it, and know what it reaches.
+- [The custody chain](/learn/custody-chain/): who or what holds each key from the root to the leaf.
+- [OpenPGP: one identity, many keys](/learn/chain-openpgp/): the master key, its subkeys, and how a verifier learns your fingerprint.
+
+The words these pages use are fixed in the [glossary](/glossary/).
 
 :::note[Design phase]
-ritueel has no release yet. These pages teach the model the tools will follow. Where a page says what a tool does, the tool is planned unless the page says it is built; the [roadmap](/roadmap/) has the order.
+ritueel has no release yet. Where a page says what a tool does, the tool is planned unless the page says it is built; the [roadmap](/roadmap/) has the order.
 :::
