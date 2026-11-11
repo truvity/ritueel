@@ -7,7 +7,7 @@ sidebar:
 
 *Design phase: no certifier or requester is built yet. This is version 1 of the specification ([issue #7](https://github.com/truvity/ritueel/issues/7)), and its [test vectors](/reference/hand-off-contract/#test-vectors) match it. The choices that had a real alternative are in [Choices made](/reference/hand-off-contract/#choices-made).*
 
-A system that holds intermediate keys, called the **requester** on this page, and ritueel, called the **certifier**, depend on neither product nor shared code. They meet at standard formats, and this page is the one place that says exactly which. A requester can be built from this page alone, and so can a certifier. The reasons are in [ADR 0001](/decisions/0001-scope-roots-and-transitions-systems-like-sluis-hold-intermediates/). The vocabulary (root, intermediate, ceremony) is in [Root and intermediate](/learn/root-and-intermediate/).
+A system that holds intermediate keys, called the **requester** on this page, and ritueel, called the **certifier**, depend on neither product nor shared code. They meet at standard formats, and this page is the one place that says exactly which. A requester can be built from this page alone, and so can a certifier. The reasons are in [record 0001](../decisions/0001-what-ritueel-is.md). The vocabulary (root, intermediate, ceremony) is in [Root and intermediate](/learn/root-and-intermediate/).
 
 ## What travels
 
@@ -215,7 +215,7 @@ Each failure gives one of these codes. They belong to the requester and are not 
 
 ### Keys and hashes
 
-Version 1 uses version 4 keys: the primary and the subkey are ECDSA on P-384 (algorithm 19, curve OID `1.3.132.0.34`). RFC 9580 (section 5.2.3.2) wants a digest of at least 384 bits for P-384. Every signature of the contract uses **SHA-384**, which is also the 48-byte digest a YubiKey or a KMS key signs as it is given; a KMS P-384 key accepts no other digest length. Other algorithms are refused with `algorithm-unsupported`. OpenPGP version 6 keys wait for a later version of the contract, once the verifiers people use accept them; GnuPG (`gpg` 2.4.8) refuses to parse a version 6 certificate ([ADR 0006](/decisions/0006-release-keys-and-the-keyring-package/#the-keys)).
+Version 1 uses version 4 keys: the primary and the subkey are ECDSA on P-384 (algorithm 19, curve OID `1.3.132.0.34`). RFC 9580 (section 5.2.3.2) wants a digest of at least 384 bits for P-384. Every signature of the contract uses **SHA-384**, which is also the 48-byte digest a YubiKey or a KMS key signs as it is given; a KMS P-384 key accepts no other digest length. Other algorithms are refused with `algorithm-unsupported`. OpenPGP version 6 keys wait for a later version of the contract, once the verifiers people use accept them; GnuPG (`gpg` 2.4.8) refuses to parse a version 6 certificate ([record 0009](../decisions/0009-release-keys-and-the-keyring.md)).
 
 ### The request
 
@@ -270,7 +270,7 @@ A verifier then needs nothing from ritueel. The first set of vectors was checked
 
 ### Issuer key ID
 
-Every version 4 signature ritueel writes, and every back-signature it accepts, carries **both** the Issuer Fingerprint subpacket (type 33, hashed) and the Issuer Key ID subpacket (type 16, unhashed). go-crypto v1.5.2 writes a version 4 signature with the fingerprint only, and `gpg` 2.2.27 rejects a certificate made of such signatures on import, so a signature without the key ID is not safe to ship (measured 2026-11-01). The rule is in [ADR 0006](/decisions/0006-release-keys-and-the-keyring-package/#the-keys) too.
+Every version 4 signature ritueel writes, and every back-signature it accepts, carries **both** the Issuer Fingerprint subpacket (type 33, hashed) and the Issuer Key ID subpacket (type 16, unhashed). go-crypto v1.5.2 writes a version 4 signature with the fingerprint only, and `gpg` 2.2.27 rejects a certificate made of such signatures on import, so a signature without the key ID is not safe to ship (measured 2026-11-01). The rule is in [record 0009](../decisions/0009-release-keys-and-the-keyring.md) too.
 
 ## SSH CA key
 
@@ -346,7 +346,7 @@ A refused answer holds no artifacts and no secret. The codes:
 
 The answer does not say which part of a policy failed. The certifier's output and its ceremony record do.
 
-**Trust products.** The CA bundle, the keyring, the signed root list, the SSH CA key list and the CRLs are not part of this contract, and the certifier publishes them as it does for everyone ([ADR 0005](/decisions/0005-trust-products-the-root-list-the-ca-bundle-the-ssh-ca-key-list-and-the-trust-sequence/)). The contract fixes one thing about them: they carry the **trust sequence**, one integer that grows by one each time any of them changes, and `trust_sequence` in the answer says which one the answer needs. The root list's own format, and the CA bundle's, are in [the root list reference](/reference/root-list/), the SSH CA key list's in [its reference](/reference/ssh-ca-key-list/), and the CRLs in [theirs](/reference/crl/), each with vectors made from the same test roots as these.
+**Trust products.** The CA bundle, the keyring, the signed root list, the SSH CA key list and the CRLs are not part of this contract, and the certifier publishes them as it does for everyone ([record 0006](../decisions/0006-bundle-history-and-trust-files.md)). The contract fixes one thing about them: they carry the **trust sequence**, one integer that grows by one each time any of them changes, and `trust_sequence` in the answer says which one the answer needs. The root list's own format, and the CA bundle's, are in [the root list reference](/reference/root-list/), the SSH CA key list's in [its reference](/reference/ssh-ca-key-list/), and the CRLs in [theirs](/reference/crl/), each with vectors made from the same test roots as these.
 
 ## What the certifier records
 
@@ -396,7 +396,7 @@ The choices that had a real alternative, with the reason each alternative lost.
 | Third request type in version 1 | `ssh-ca-key`, added to version 1 in place. | Contract version 2 for the new type; a separate contract for SSH. | Nothing has been released, so there is no receiver that version 1 could surprise, and a version that had to be read next to version 1 for 24 months would cost every reader a second code path for no one. The rule that a new type is a new version starts with the first release. |
 | Proof of possession of an SSH CA key | An SSHSIG signature over the request file, in a fixed namespace. | A self-signed SSH certificate; a signature in a made-up format; none, since the ceremony compares fingerprints. | `ssh-keygen -Y check-novalidate` verifies it, so a requester and a certifier can both be tested with a tool people already have, and a card or KMS key signs its digest as for every other type. A certificate would carry validity and principals that mean something else. Comparing fingerprints proves nothing about possession. |
 | An SSH CA key enters the list | By a request, a proof and a ceremony, like every other key. | The operator edits the list; a request that carries the list entry. | A key that is listed without a check of where it lives is the one place the contract's evidence rules would not apply, and a hand-edited list would be a second way to change what hosts trust. |
-| Subkey capabilities | One per subkey: `sign` or `authenticate`, each with its back-signatures, and the capability fixed by the intermediate's entry. | Several flags on one subkey; no back-signature for an authentication subkey; an encryption capability. | One purpose per subkey, as [Root and intermediate](/learn/root-and-intermediate/) teaches, and one proof of possession for both. Encryption waits for a record of its own, which states that a lost card loses the mail it decrypted ([ADR 0012](/decisions/0012-personal-openpgp-the-primary-offline-in-a-file-the-daily-subkey-on-a-card/)). |
+| Subkey capabilities | One per subkey: `sign` or `authenticate`, each with its back-signatures, and the capability fixed by the intermediate's entry. | Several flags on one subkey; no back-signature for an authentication subkey; an encryption capability. | One purpose per subkey, as [Root and intermediate](/learn/root-and-intermediate/) teaches, and one proof of possession for both. Encryption waits for a record of its own, which states that a lost card loses the mail it decrypted ([record 0008](../decisions/0008-a-persons-own-key.md)). |
 | OpenPGP request | The subkey and a back-signature for every active primary, plus the proof naming the primaries. | One primary per request, with a second request for the second root; the whole primary certificate in the request. | Either root card can make the binding, with no second request, and the requester need not know whose year it is. The certifier already holds the primaries. Cost: one more signature in the request for each active primary. |
 
 ## Follow-ups

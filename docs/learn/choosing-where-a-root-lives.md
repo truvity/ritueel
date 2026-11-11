@@ -11,7 +11,7 @@ You are about to make a root, and the first question is where it will live. The 
 
 This page sits at the first link of [the custody chain](/learn/custody-chain/): the store that holds the root. It helps you choose; the pages under "Where to go next" explain the stores.
 
-ritueel has three stores for a root ([ADR 0003](/decisions/0003-key-stores-and-the-card-layer/), [ADR 0002](/decisions/0002-key-custody-every-key-is-born-in-its-store-two-root-cards-or-one-kms-root-and-a-replica/)). They arrive in different milestones, as the table below shows:
+ritueel has three stores for a root ([record 0002](../decisions/0002-where-a-key-lives.md), [record 0003](../decisions/0003-root-cards.md), [record 0004](../decisions/0004-the-cloud-root.md)). They arrive in different milestones, as the table below shows:
 
 - **A software key in an encrypted key file.**
 - **A pair of root cards,** two independent hardware tokens.
@@ -23,7 +23,7 @@ Questions 1 and 2 pick the store. Ask them in order; the first answer that fits 
 
 ### 1. Will other people or systems rely on this root?
 
-If no, because it is for practice, a drill or development, use **a software key in an encrypted key file.** The records allow these uses and refuse one: the software store never holds a root that others rely on ([ADR 0003](/decisions/0003-key-stores-and-the-card-layer/#what-a-store-can-prove-decides-what-it-may-hold), [the software store](/reference/software-store/#the-backends)). A person's own OpenPGP primary is the one exception the records allow, because it stays offline in the file ([ADR 0012](/decisions/0012-personal-openpgp-the-primary-offline-in-a-file-the-daily-subkey-on-a-card/)); it is not a root a company relies on.
+If no, because it is for practice, a drill or development, use **a software key in an encrypted key file.** The records allow these uses and refuse one: the software store never holds a root that others rely on ([record 0002](../decisions/0002-where-a-key-lives.md), [the software store](/reference/software-store/#the-backends)). A person's own OpenPGP primary is the one exception the records allow, because it stays offline in the file ([record 0008](../decisions/0008-a-persons-own-key.md)); it is not a root a company relies on.
 
 The reason is in the key. A software key can be copied and read without a trace, and it gives no evidence of where it lives. Every record of a software root says so. If yes, go on to question 2.
 
@@ -37,13 +37,13 @@ A cloud root and a card root can also sit side by side. ADR 0002 says a company 
 
 ### 3. If it is a cloud key: does the key already exist?
 
-If no key exists, let ritueel create it. If your own infrastructure code (for example Terraform) already makes the key, let ritueel **adopt** it ([ADR 0018](/decisions/0018-a-cloud-root-may-be-an-existing-key-that-ritueel-adopts/)). When it adopts a key, ritueel reads the public key and the key policy and runs its checks on them. The key policy is the set of rules, kept by the service, about who may do what with the key; [how a KMS key works](/learn/how-a-kms-key-works/) explains it.
+If no key exists, let ritueel create it. If your own infrastructure code (for example Terraform) already makes the key, let ritueel **adopt** it ([record 0004](../decisions/0004-the-cloud-root.md)). When it adopts a key, ritueel reads the public key and the key policy and runs its checks on them. The key policy is the set of rules, kept by the service, about who may do what with the key; [how a KMS key works](/learn/how-a-kms-key-works/) explains it.
 
 Two rules matter most when you adopt a key. The key must have been born in the service: key material imported from outside is refused. And the key policy must refuse new replicas and moving the primary Region for everyone except the break-glass principal (the one account role kept for emergencies), and must let the key sign only a hash of the data (a "digest"), never the data itself. A key that fails a check is refused, with the reason. The full list of checks is on [the cloud root](/reference/kms-root/#the-checks) page ([adopting a key](/reference/kms-root/#adopting-an-existing-key)). Adoption is decided, and has not yet been tried against a real account.
 
 ### 4. How will the key file be opened?
 
-ritueel keeps the key of a software root in a file encrypted with age, a small file-encryption format. An age file can be locked to more than one secret (each is a "recipient"), and any one of them opens it alone. This question is for a software key, and also for the secrets that ritueel makes for a card and seals (encrypts) in the bundle, the directory of plain files with a fixed structure where ritueel keeps its records ([the bundle](/reference/bundle/)). Those are opened the same way ([ADR 0015](/decisions/0015-key-files-open-with-a-passkey-on-each-root-card-and-card-secrets-are-sealed-in-the-bundle/)).
+ritueel keeps the key of a software root in a file encrypted with age, a small file-encryption format. An age file can be locked to more than one secret (each is a "recipient"), and any one of them opens it alone. This question is for a software key, and also for the secrets that ritueel makes for a card and seals (encrypts) in the bundle, the directory of plain files with a fixed structure where ritueel keeps its records ([the bundle](/reference/bundle/)). Those are opened the same way ([record 0002](../decisions/0002-where-a-key-lives.md)).
 
 - **You have root cards:** the default is **a passkey on each root card.** A passkey is a key pair that lives on the card and is opened with the card's PIN and a touch ([how passkeys work](/learn/how-passkeys-work/#passkeys-in-brief)). Any one card of the pair opens the file. The next section says what that means.
 - **You have no cards:** use **a passphrase.** A passphrase file has no second way in: the age format says a passphrase recipient must be the only recipient (age v1, read 2026-11-11, [age-encryption.org/v1](https://age-encryption.org/v1)). Lose the passphrase and you lose the file.
@@ -68,7 +68,7 @@ The rows that decide are below. Where a key is born, whether it can be copied, r
 | **When the key ends** | Replaced at most every three years, because it can be copied. | On an event: an advisory, a lost card, a compromise, a change of store. Not on a date. | The same events. |
 | **Built in** | M2 (the file). | M6, after the first signed release. | M2 (the store), and adoption is drilled in M4. |
 
-Sources of the rows: [ADR 0002](/decisions/0002-key-custody-every-key-is-born-in-its-store-two-root-cards-or-one-kms-root-and-a-replica/), [ADR 0003](/decisions/0003-key-stores-and-the-card-layer/), [ADR 0016](/decisions/0016-several-bundles-share-one-pair-of-root-cards-and-the-bundle-keeps-a-card-inventory/), [ADR 0018](/decisions/0018-a-cloud-root-may-be-an-existing-key-that-ritueel-adopts/), [the software store](/reference/software-store/), [root cards](/reference/cards/), [the cloud root](/reference/kms-root/) and the [roadmap](/roadmap/).
+Sources of the rows: [record 0002](../decisions/0002-where-a-key-lives.md), [record 0003](../decisions/0003-root-cards.md), [record 0004](../decisions/0004-the-cloud-root.md), [the software store](/reference/software-store/), [root cards](/reference/cards/), [the cloud root](/reference/kms-root/) and the [roadmap](/roadmap/).
 
 ## What it costs you each year
 
@@ -87,13 +87,13 @@ How to read the table:
 - **The price.** AWS lists each KMS key at USD 1 a month, prorated hourly, and counts each primary and each replica multi-Region key (AWS KMS pricing, read 2026-11-11, [aws.amazon.com/kms/pricing](https://aws.amazon.com/kms/pricing/)). The cloud root page lists three keys: an X.509 root, an OpenPGP primary and a break-glass SSH CA key ([the cloud root](/reference/kms-root/#what-ritueel-creates)). Six keys at USD 1 for twelve months is USD 72. ADR 0002 names two keys (an X.509 root and an OpenPGP primary); a root without the SSH CA key costs USD 48. The two sources differ, and this page follows the reference. That is arithmetic, not a quote from AWS. A request costs extra: AWS's own example prices an ECC 256 signing key at USD 0.15 per 10,000 requests, and a root signs rarely. The root keys are P-384, and the pricing page lists no request price for P-384, so treat USD 0.15 as the example only.
 - **The words in the table.** A *revocation signature* is made when the key is born and kept apart; it cancels the key if its card is lost ([revoke](/learn/revoke/)). The *break-glass principal* is the one account role kept for emergencies. A *restore drill* is a yearly test that the backup brings the bundle back ([the ledger](/learn/the-ledger/)). A *proof of life* is a short test that a card still works for its holder.
 - **The yearly ceremony and the checks** come from ADR 0002, ADR 0010 and ADR 0016. A drill is due once a year, with the yearly ceremony. ritueel teaches the rhythm and does not enforce it.
-- **The advisory review** is a step of every yearly ceremony, whatever the store, and the record says it was done; a practice software root has no yearly ceremony and so no review. A missed advisory is the one event a holder can fail to notice ([ADR 0002](/decisions/0002-key-custody-every-key-is-born-in-its-store-two-root-cards-or-one-kms-root-and-a-replica/#validity-renewal-and-replacement)).
+- **The advisory review** is a step of every yearly ceremony, whatever the store, and the record says it was done; a practice software root has no yearly ceremony and so no review. A missed advisory is the one event a holder can fail to notice ([record 0007](../decisions/0007-changing-and-losing-a-root.md)).
 - **Renewing a cloud root without a person** is designed and built later (M7). A card root cannot be renewed that way.
-- **Firmware.** A card with firmware older than 5.7.4 cannot hold a root ([ADR 0016](/decisions/0016-several-bundles-share-one-pair-of-root-cards-and-the-bundle-keeps-a-card-inventory/#rules-for-a-shared-card)).
+- **Firmware.** A card with firmware older than 5.7.4 cannot hold a root ([record 0003](../decisions/0003-root-cards.md)).
 
 ## The limit every choice accepts
 
-Whoever has your key and what opens it can sign for you. For a software key that is the file and its passphrase or card. For a root card it is the card and its PIN. For a cloud root it is the role that may sign. They can sign until you revoke the key and the update reaches everyone who trusts it. No standard tool can require several people to agree (an "m of n" rule). A second root card is a second independent root, not a spare, and the custody is one holder's, not a two-person control. A replica is the same key, not a second root. A compromise is answered by revocation and a transition, never by a second copy ([ADR 0002](/decisions/0002-key-custody-every-key-is-born-in-its-store-two-root-cards-or-one-kms-root-and-a-replica/#the-accepted-limit)).
+Whoever has your key and what opens it can sign for you. For a software key that is the file and its passphrase or card. For a root card it is the card and its PIN. For a cloud root it is the role that may sign. They can sign until you revoke the key and the update reaches everyone who trusts it. No standard tool can require several people to agree (an "m of n" rule). A second root card is a second independent root, not a spare, and the custody is one holder's, not a two-person control. A replica is the same key, not a second root. A compromise is answered by revocation and a transition, never by a second copy ([record 0002](../decisions/0002-where-a-key-lives.md)).
 
 ## Where to go next
 

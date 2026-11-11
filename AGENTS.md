@@ -4,7 +4,7 @@ Instructions for AI agents working in this repository. People follow the same ru
 
 ## Every task
 
-- ritueel teaches first; its tools only simplify the rituals, and the person stays in charge (ADR 0007). Judge every page and feature against that: `docs/contributing/design.md`.
+- ritueel teaches first; its tools only simplify the rituals, and the person stays in charge (record 0001). Judge every page and feature against that: `docs/contributing/design.md`.
 - `main` is the only long-lived branch. Never push to `main`; every change goes through a pull request. Merging is rebase-only: never force-push (rebuild the branch instead) and never stack pull requests.
 - One change, one worktree: check `git remote -v`, then `git worktree add --no-track -b <type>/<short-name> <dir> origin/main`. Push with an explicit refspec: `git push origin <branch>:<branch>`.
 - Work in a fresh clone or worktree in your scratch area, never in someone else's checkout. Your shell may reset its working directory between calls: use absolute paths (`git -C <abs>`, or `cd <abs> && <cmd>` in one call). Run the narrow recipes (`just check-rules`, `site-lint`, `site-build`) and rely on CI for the rest: `docs/contributing/tools.md`.

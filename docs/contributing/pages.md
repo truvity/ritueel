@@ -9,11 +9,11 @@ The pages on this site teach first: the logic of handling roots and intermediate
 
 ## What is published
 
-What ritueel.id publishes is the list in `site/published.txt`, and nothing else. A new page is added to the list only if a reader of the target needs it: the path of six, the going-further pages, the three pictures pages of How it works, the glossary, where it stands, the decisions. Everything else is written under `docs/` at its usual path and read on GitHub: it is working material of the design. Do not add a page to the list to make a link work; link it as usual, and the build turns a link to an unpublished page into a link to the file on GitHub.
+What ritueel.id publishes is the list in `site/published.txt`, and nothing else. A new page is added to the list only if a reader of the target needs it: the path of six, the going-further pages, the three pictures pages of How it works, the glossary, where it stands, the design in brief. Everything else is written under `docs/` at its usual path and read on GitHub: it is working material of the design. Do not add a page to the list to make a link work; link it as usual, and the build turns a link to an unpublished page into a link to the file on GitHub.
 
-Today the site publishes the Learn index and its ten pages, the three How it works pages (the overview, the three cards, the bundle and the USB stick), the demo (`/demo/`, a build product of `ui/`), the glossary, the roadmap, the status page (`/status/`), the decision records as an archive, the hand-off contract and the 404 page. Guides, Tools, Reference (apart from the hand-off contract), Principles, Research and Contributing are not on the site.
+Today the site publishes the Learn index and its ten pages, the three How it works pages (the overview, the three cards, the bundle and the USB stick), the demo (`/demo/`, a build product of `ui/`), the glossary, the roadmap, the status page (`/status/`), the design in brief at `/design/`, the hand-off contract and the 404 page. Guides, Tools, Reference (apart from the hand-off contract), Principles, Research and Contributing are not on the site.
 
-The menu has six entries, Learn, How it works, Demo, Glossary, Where it stands and Decisions, written in `site/astro.config.mjs`. A page is added to the menu there, and its slug must also be a line of `site/published.txt`. The hand-off contract is not in the menu; the decisions index links it.
+The menu has six entries, Learn, How it works, Demo, Glossary, Where it stands and The design, written in `site/astro.config.mjs`. A page is added to the menu there, and its slug must also be a line of `site/published.txt`. The hand-off contract is not in the menu; the design page links it.
 
 ## Where a page lives
 
@@ -28,7 +28,7 @@ Docs live in `docs/`, next to the thing they describe. When the thing changes, i
 | Principles | `docs/principles.md` | The rules the design follows, each linked to the record that decides it. | No |
 | Reference | `docs/reference/` | Commands, file formats and the hand-off contract. Exact, versioned, no reasoning. | Only the hand-off contract |
 | Research | `docs/research/` | Dated results of spikes and research, verdict first ([Spikes and research](/contributing/research/)). The name ends in the date. | No |
-| Decisions | `docs/decisions/` | The decision records. They cite research and reference pages and do not repeat them. | Yes, as an archive |
+| Decisions | `docs/decisions/` | The decision records. They cite research and reference pages and do not repeat them. | No: the design page states them; they are read in the repository |
 
 Say a thing once, in the page that owns it, and link to it from the others: a measurement in its research page, a rule in its record, a format in its reference page.
 
@@ -40,7 +40,7 @@ Say it in the first paragraph of a page about a tool or a store: "Planned", "Not
 
 Pages are Markdown (`.md`). A page is MDX (`.mdx`) only when it places components. Today those are the home page (`docs/index.mdx`), the three pages of `docs/how-it-works/`, and the two Learn pages that carry figures, `how-a-yubikey-holds-keys.mdx` and `how-passkeys-work.mdx`. A page that places `<Figure>` or `<Proposed>` is `.mdx`; a page with only asides stays `.md`. The reasons: `.md` renders readably on GitHub and in other tools, reviews stay text-only, and a broken component in `.mdx` breaks the whole build. Starlight's Markdown already has asides, code blocks, tables and links, so a page that wants only those stays `.md`. `just check-mdx-pages` fails an `.mdx` file that imports no component or places none ("use .md: MDX only for pages that place components"). An `.mdx` page other than the home page also carries `slug:` with its own address (`slug: learn/how-passkeys-work`): the link validator reads an MDX page by its real path under `docs/`, outside the site's content directory, and without `slug:` it takes every link to the page, and every link to a heading of it, for broken. `site/test/figures.test.mjs` checks the value.
 
-The "Edit page" link of each page opens the file in `docs/` (`docs/<page>.md`, or `.mdx`). `site/src/route-middleware.ts` builds it, because Starlight alone would use the path of the symlink under `site/src/content/docs/`; the generated decision pages set their own source file. `check-built.sh` fails when a link does not point at a file in the repository.
+The "Edit page" link of each page opens the file in `docs/` (`docs/<page>.md`, or `.mdx`). `site/src/route-middleware.ts` builds it, because Starlight alone would use the path of the symlink under `site/src/content/docs/`. `check-built.sh` fails when a link does not point at a file in the repository.
 
 ## Asides
 
