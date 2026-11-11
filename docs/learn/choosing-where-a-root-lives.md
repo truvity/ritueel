@@ -88,14 +88,14 @@ How to read the table:
 - **The words in the table.** A *revocation signature* is made when the key is born and kept apart; it cancels the key if its card is lost ([revoke](/learn/revoke/)). The *break-glass principal* is the one account role kept for emergencies. A *restore drill* is a yearly test that the backup brings the bundle back ([the history](/learn/the-history/)). A *proof of life* is a short test that a card still works for its holder.
 - **The yearly ceremony and the checks** come from [record 0007](../decisions/0007-changing-and-losing-a-root.md). A drill is due once a year, with the yearly ceremony. ritueel teaches the rhythm and does not enforce it. `ritueel due` writes the plans for what is due ([record 0005](../decisions/0005-a-ceremony-and-where-it-runs.md), rule 11).
 - **The advisory review** is a step of every yearly ceremony, whatever the store, and the record says it was done; a practice software root has no yearly ceremony and so no review. A missed advisory is the one event a holder can fail to notice ([record 0007](../decisions/0007-changing-and-losing-a-root.md)).
-- **Renewing a cloud root without a person** is designed and built later (M7). A card root cannot be renewed that way.
+- **A renewal role for a cloud root** is planned for later (M7) ([record 0002](../decisions/0002-where-a-key-lives.md), rule 17).
 - **Firmware.** A card with firmware older than 5.7.4 cannot hold a root ([record 0003](../decisions/0003-root-cards.md)).
 
 ## The limit every choice accepts
 
 Whoever has your key and what opens it can sign for you. For a software key that is the file and its passphrase or card. For a root card it is the card and its PIN. For a cloud root it is the role that may sign. They can sign until you revoke the key and the update reaches everyone who trusts it. No standard tool can require several people to agree (an "m of n" rule). A second root card is a second independent root, not a spare, and the custody is one holder's, not a two-person control. A replica is the same key, not a second root. A compromise is answered by revocation and a transition, never by a second copy ([record 0002](../decisions/0002-where-a-key-lives.md)).
 
-Two more limits apply when a root is used on the workstation. If you are tricked into one extra touch, one unknown signature exists, and a card keeps no log of it ([record 0002](../decisions/0002-where-a-key-lives.md), rule 17). For a cloud root, nothing in AWS ties a signature to a person: anyone who can assume the ceremony role can sign any digest without ritueel, and only the audit trail records it ([record 0004](../decisions/0004-the-cloud-root.md), rule 10).
+Two more limits apply when a root is used on the workstation. If you are tricked into one extra touch, one unknown signature exists, and a card keeps no log of it ([record 0002](../decisions/0002-where-a-key-lives.md), rule 17). For a cloud root, nothing in AWS ties a signature to a person: anyone who can assume the ceremony role can sign any digest without ritueel, and its audit trail records it ([record 0004](../decisions/0004-the-cloud-root.md), rule 10; [record 0005](../decisions/0005-a-ceremony-and-where-it-runs.md), rule 19).
 
 ## Where to go next
 

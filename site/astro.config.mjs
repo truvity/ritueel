@@ -36,7 +36,7 @@ export default defineConfig({
     starlight({
       title: 'ritueel',
       description:
-        'ritueel teaches how to keep the root of a PKI and the master key of OpenPGP safe, and gives tools that simplify the ceremonies. Open source, taught in the open.',
+        'ritueel teaches how to keep the root of a PKI and the primary key of OpenPGP safe, and gives tools that simplify the ceremonies. Open source, taught in the open.',
       favicon: '/favicon.svg',
       social: [{ icon: 'github', label: 'GitHub', href: 'https://github.com/truvity/ritueel' }],
       editLink: { baseUrl: 'https://github.com/truvity/ritueel/edit/main/' },

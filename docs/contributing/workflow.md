@@ -71,7 +71,7 @@ Green CI is the merge gate: a pull request with a red or a skipped required chec
 - Every thread is read, and fixed or answered with the reason, before the maintainer merges. An open bot thread on a pull request you handed over is a defect in the hand-over.
 - Expect questions about tests, edge cases and failure modes. Answer them in the pull request, or fix the code.
 - Reply to every comment, even if only to say "done". Resolve a thread only when the reviewer agrees.
-- Changes to key handling, signing, revocation, trust artifacts or the hand-off contract get a security note in the pull request: what could go wrong, and which test shows it does not.
+- Changes to key handling, signing, revocation, trust files or the hand-off contract get a security note in the pull request: what could go wrong, and which test shows it does not.
 - Review comments are about the change, not the person.
 
 ## Issues and the board

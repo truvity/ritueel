@@ -41,7 +41,7 @@ A new device or service is judged the same way before it joins: what does it pro
 
 ## What evidence cannot fix
 
-- **A lying workstation.** Evidence says where a key lives, not what you are about to sign. The plan and its digest fix what is signed, but a compromised workstation can show the right digest and still ask for one more signature. On the workstation four conditions bound that: a touch for every signature on a root card (a cloud key has no touch, and its audit trail records every signature), the count stated in the plan, no retry, and the result checked on a second device ([record 0005](../decisions/0005-a-ceremony-and-where-it-runs.md), rules 18 and 19).
+- **A lying workstation.** Evidence says where a key lives, not what you are about to sign. The plan and its digest fix what is signed, but a compromised workstation can show the right digest and still ask for one more signature. On the workstation a touch for every signature on a root card (a cloud key has no touch, and its audit trail records every signature), the count stated in the plan and no retry bound that; the result checked on a second device shows afterwards what was signed ([record 0005](../decisions/0005-a-ceremony-and-where-it-runs.md), rules 18 and 19).
 - **A stolen card and its PIN.** The key is where it should be, and in the wrong hands. Revocation answers that ([Revoke](/learn/revoke/)).
 - **The maker.** You trust the maker's root, as you trust any root. Compare it, pin it, and refresh it by reviewed change.
 

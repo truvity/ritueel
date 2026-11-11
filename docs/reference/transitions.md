@@ -49,7 +49,7 @@ Refused with `root-absent` unless every active root can sign the next root list.
 
 1. The plan names the births ([record 0005](../decisions/0005-a-ceremony-and-where-it-runs.md)): the new root's X.509 root key, OpenPGP primary and break-glass SSH CA key, with their revocation signatures and the removal authorisation ([Revocation material](/reference/revocation-material/)).
 2. The new root's own certificate, self-signature and CRL are signed by the new keys.
-3. The vouching root signs the cross-certificate and the OpenPGP certification below, with a touch each, and the new fingerprints have been shown before the touch.
+3. The vouching root signs the cross-certificate and the OpenPGP certification below, with a touch each on a card (a cloud root signs on the typed digest and the role session), and the new fingerprints have been shown before the signature.
 4. Every active root and the new root sign the next root list, which holds them all; the vouching root signs the next CRL; the CA bundle, the SSH CA key list and the keyring are built with the new root.
 
 ### `root retire`

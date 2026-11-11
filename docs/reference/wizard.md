@@ -59,7 +59,7 @@ The contract is in `proto/ritueel/local/v1alpha1/` and is not copied here. The v
 Proposed, and waiting for the maintainer's word ([record 0010](../decisions/0010-the-engine-the-process-and-the-page.md), issue 17): what happens when a process of another version answers; and how a test makes sure that a process ends.
 
 - A card is opened for a ceremony and closed after it, so check 2 of the card checks (`card-held`) is not tripped by ritueel's own process between ceremonies.
-- `ritueel stop [--dir DIR]` ends the process and exits 0 also when none runs; the name of the command is proposed.
+- `ritueel stop` ends the process and exits 0 also when none runs; the name of the command is proposed.
 - The verifiers that need no bundle (`root-list verify`, `ssh-ca-keys verify`, `crl verify`, `keyring verify`) run in the command's own process and start nothing.
 :::
 

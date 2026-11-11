@@ -21,7 +21,7 @@
 /contributing/writing/ https://github.com/truvity/ritueel/blob/main/docs/contributing/pages.md 302
 
 # The concepts became Learn, and the principles and the tools got their own places on
-# 2026-11-01, when the site was rebuilt around the mission (ADR 0007).
+# 2026-11-01, when the site was rebuilt around the mission (old ADR 0007, at commit d0ae12d).
 /concepts/ /learn/ 301
 /concepts/principles/ https://github.com/truvity/ritueel/blob/main/docs/principles.md 302
 /concepts/roots-and-transitions/ https://github.com/truvity/ritueel/blob/main/docs/learn/root-and-intermediate.md 302
