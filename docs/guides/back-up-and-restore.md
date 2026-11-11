@@ -1,6 +1,6 @@
 ---
 title: Back up and restore
-description: Back up the directory, the revocation certificates and the PINs, then prove it by restoring on a clean machine and comparing the result with the cards.
+description: Back up the bundle, the revocation certificates and the PINs, then prove it by restoring on a clean machine and comparing the result with the cards.
 sidebar:
   order: 6
 ---
@@ -9,27 +9,27 @@ sidebar:
 
 ## What you start with
 
-- The directory in its repository, with two remotes. Its ledger is the write-once part.
+- The bundle in its repository, with two remotes. Its ledger is the write-once part.
 - The revocation certificates in their two places.
 - The PINs you type in the password manager.
-- The recovery key, apart from the cards and apart from its passphrase. The sealed secrets of the cards are in the directory; the PUK and the management key are not kept by hand ([ADR 0015](/decisions/0015-key-files-open-with-a-passkey-on-each-root-card-and-card-secrets-are-sealed-in-the-bundle/#card-secrets)).
+- The recovery key, apart from the cards and apart from its passphrase. The sealed secrets of the cards are in the bundle; the PUK and the management key are not kept by hand ([ADR 0015](/decisions/0015-key-files-open-with-a-passkey-on-each-root-card-and-card-secrets-are-sealed-in-the-bundle/#card-secrets)).
 - A clean machine, or a freshly made user account.
 
 ## Back up
 
-1. **Push the directory** to both remotes, and check each shows the latest commit.
+1. **Push the bundle** to both remotes, and check each shows the latest commit.
 2. **Note the last digest** of the record chain apart from the repository.
-3. **Check the revocation certificates:** both places hold them, and each digest equals the one in the directory.
+3. **Check the revocation certificates:** both places hold them, and each digest equals the one in the bundle.
 4. **Check the second card** is where you think it is.
 5. **Check the PINs** are in the password manager, one entry per card, and that the recovery key and its passphrase are in two different places.
 
 ## Restore, as a drill
 
 0. **Run the check.** `ritueel drill restore --expect-last DIGEST --allowed-signers FILE --revocation-dir DIR` does steps 1 to 4 below, compares the stored revocation signatures with their digests, and writes a report ([the check](/reference/drill/#the-restore-check)). The steps say what it does, so you can do each by hand once.
-1. **Clone the directory** on the clean machine from the remote, and verify the signed commits.
+1. **Clone the bundle** on the clean machine from the remote, and verify the signed commits.
 2. **Verify the chain.** `ritueel records verify`, then compare the last digest with the note. Result: the history is whole.
 3. **List the state.** `ritueel status`. Result: the roots, the intermediates and what expires when.
-4. **Compare with the keys.** For each root, read the serial and fingerprint from the card or the cloud key and compare with the directory. Result: the directory describes the keys you hold.
+4. **Compare with the keys.** For each root, read the serial and fingerprint from the card or the cloud key and compare with the bundle. Result: the bundle describes the keys you hold.
 5. **Walk through a loss.** Take one rehearsal card out of use and follow [A lost root card](/guides/lost-root-card/) with the stored revocation certificate.
 
 ## How you know it worked

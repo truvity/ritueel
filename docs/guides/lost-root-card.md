@@ -18,6 +18,8 @@ Until the revocation reaches outsiders, whoever holds the card **and** its PIN c
 5. **Publish the new trust products with the replacement root,** after the overlap that your slowest client needs.
 6. **Record it.** The ceremony record shows what was done, with which keys, and what outsiders now see.
 
+If the pair of cards is shared by more than one bundle, run these steps in each bundle that has a root on the lost card: the card is lost for all of them.
+
 ## How you know it worked
 
 - A client with only the new root list refuses a certificate issued under the lost root's key after the revocation.

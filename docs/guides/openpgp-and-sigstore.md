@@ -13,7 +13,7 @@ Two ways to sign software are common, and they answer different questions. This 
 
 **Sigstore's keyless signing uses a short-lived key and an identity.** At signing time the signer proves who they are with an OpenID Connect token, for example the token a CI system gives a job. A certificate authority issues a certificate that lasts minutes and binds a fresh key to that identity. The signature and the certificate are recorded in a public transparency log. The key is thrown away. A verifier checks that the certificate names the expected identity and that the entry is in the log.
 
-How keyless signing works, in the project's words (read 2026-11-01): the client makes an ephemeral key, the certificate authority issues a certificate that is valid for 10 minutes and bound to the identity, the signature goes to the Rekor transparency log, and the key is discarded. The signature, the certificate and the log proof travel together in a *bundle*. Verifying after the certificate has expired needs the log entry proof or a timestamp.
+How keyless signing works, in the project's words (read 2026-11-01): the client makes an ephemeral key, the certificate authority issues a certificate that is valid for 10 minutes and bound to the identity, the signature goes to the Rekor transparency log, and the key is discarded. The signature, the certificate and the log proof travel together in a *Sigstore bundle*. Verifying after the certificate has expired needs the log entry proof or a timestamp.
 
 ## What each proves
 
@@ -31,7 +31,7 @@ How keyless signing works, in the project's words (read 2026-11-01): the client 
 ## What is still moving
 
 - The public-good service stays on the first version of the log by default (2026-06-28); the project paused the rollout of the second version on 2026-10-02 to build a post-quantum-ready log, aims for a production post-quantum instance in mid-2027, and tentatively plans to turn the classical instance down in 2029 or 2030.
-- Offline verification needs the bundle, a trusted root and the pinned identity and issuer; the documentation has no single offline recipe.
+- Offline verification needs the Sigstore bundle, a trusted root and the pinned identity and issuer; the documentation has no single offline recipe.
 
 Date any claim about it, and check the project's current plans before you build on one.
 
