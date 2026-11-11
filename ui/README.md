@@ -114,8 +114,13 @@ no library (they drive headless Chrome over the DevTools protocol).
   state") is demo chrome only. It is not in the contract and not in the real
   build (`npm run check:dist` checks that it is absent from `dist-real/`). Screens
   never name a bundle: they read its name from `GetSummary.bundle.name` and write
-  roots as `bundle/label`. Switching also returns the page to `#/start`, so no route
-  points at a card or a root the new bundle lacks.
+  roots as `bundle/label`. Switching keeps the screen you are on. Only a detail view
+  falls back, and only as far as needed (`routeForBundle` in `src/lib/route.ts`, fed by
+  what the transport holds for the new bundle): a card to Cards unless the new bundle
+  has that serial, a ledger record to History unless it has that id, a root's key to
+  Roots unless it has a root with that label, and the wizard of a goal to the goals
+  unless the new bundle offers the goal (a goal that applies to it). So no route
+  points at a card, a root, a record or a goal the new bundle lacks.
 - The one call that would act, `SavePlan`, answers with `written: false`, a notice
   that this is a demo and nothing was written, and the file it would have written.
   The demo shows that file at `ledger/<ceremony>/plan.json` inside the bundle. That
