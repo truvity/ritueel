@@ -36,6 +36,9 @@
 # The page "The ledger" was renamed "The history" on 2026-11-11, when the word "ledger" went (record 0006).
 /learn/the-ledger/ https://github.com/truvity/ritueel/blob/main/docs/learn/the-history.md 302
 
+# The page "Why the root stays offline" was renamed "Where a root is used" on 2026-11-11 (the page answers where a root is used).
+/learn/why-the-root-stays-offline/ /learn/where-a-root-is-used/ 301
+
 # The staff-key reference page was deleted on 2026-11-11: staff keys are no longer part of ritueel (record 0008).
 # The design page says what happened to them. The old text is in the history of the repository.
 /reference/staff-openpgp/ /design/ 301
@@ -53,6 +56,7 @@
 /concepts/ceremonies https://github.com/truvity/ritueel/blob/main/docs/learn/ceremonies.md 302
 /reference/glossary /glossary/ 301
 /learn/the-ledger https://github.com/truvity/ritueel/blob/main/docs/learn/the-history.md 302
+/learn/why-the-root-stays-offline /learn/where-a-root-is-used/ 301
 /reference/staff-openpgp /design/ 301
 /decisions/0001-scope-roots-and-transitions-systems-like-sluis-hold-intermediates/ https://github.com/truvity/ritueel/blob/d0ae12da2432d5ae95cf95d68fb85ba3dda6cfee/docs/decisions/0001-scope-roots-and-transitions-systems-like-sluis-hold-intermediates.md 301
 /decisions/0001-scope-roots-and-transitions-systems-like-sluis-hold-intermediates https://github.com/truvity/ritueel/blob/d0ae12da2432d5ae95cf95d68fb85ba3dda6cfee/docs/decisions/0001-scope-roots-and-transitions-systems-like-sluis-hold-intermediates.md 301

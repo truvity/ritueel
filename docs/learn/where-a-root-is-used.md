@@ -1,11 +1,11 @@
 ---
-title: Why the root stays offline
-description: "What offline protects a root against, what it cannot, and where a root may be used: a copyable key offline, a card or a cloud key also on a workstation."
+title: Where a root is used
+description: "Who can use a root at all, and on which machine a ceremony runs: a copyable key only offline, a key that cannot be copied also on a workstation under conditions."
 sidebar:
   order: 3
 ---
 
-"Keep the root offline" is the oldest rule of PKI. It is worth knowing what it is for, because the rule has a literal form (a machine in a safe) and a practical form, and they are not the same.
+This page answers two questions. Who can use a root at all? Nobody, in any store, without a person present. On which machine does a ceremony run? A key that can be copied is used only in the offline system; a key that cannot be copied is used on your workstation, under four conditions, or in the offline system. Behind the second answer is the oldest rule of PKI, "keep the root offline". It is worth knowing what that rule is for, because it has a literal form (a machine in a safe) and a practical form, and they are not the same.
 
 ## What an online key is exposed to
 
