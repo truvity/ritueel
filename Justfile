@@ -10,13 +10,16 @@ default:
 site-install:
     cd site && yarn install --immutable
 
-# The site on http://localhost:4321 with live reload.
-site-dev: site-install
+# The site on http://localhost:4321 with live reload. The demo of the local page (/demo/) is the
+# build `just ui-demo` made, not a live one.
+site-dev: site-install ui-demo
     cd site && yarn dev
 
 # A strict build into site/dist: no warnings, no broken internal link, and the built
-# output has what it must (search index, headers, the pages, a page per decision record).
-site-build: site-install
+# output has what it must (search index, headers, the pages, the demo, a page per decision record).
+# The demo of the local page is built first (`just ui-demo`) into site/public/demo, where Astro
+# copies it into site/dist/demo/.
+site-build: site-install ui-demo
     site/scripts/strict-build.sh
     site/scripts/check-built.sh site/dist
 
@@ -115,8 +118,66 @@ check-selftest:
 check-vectors:
     tools/checks/vectors.mjs
 
+# The local page (ui/) and its API (proto/). Run the recipes inside the devbox shell like the rest.
+
+# Install the page's dependencies exactly as ui/package-lock.json says.
+ui-install:
+    cd ui && npm ci
+
+# TypeScript (strict) and the safety scan: no innerHTML, eval, fetch or remote URL in the source,
+# no text under 12px (ui/src/safety.test.ts, the page's lint).
+ui-lint: ui-install
+    cd ui && npm run lint
+
+# The page's tests (vitest): the safety scan, the text rule, every screen with hostile text, the
+# demo transport and the routes.
+ui-test: ui-install
+    cd ui && npm test
+
+# Both builds of the page, and what each bundle must and must not hold: the demo (base /demo/, in
+# ui/dist) and the real one (relative base, in ui/dist-real). Neither is committed.
+ui-build: ui-install
+    cd ui && npm run build && npm run build:real && npm run check:dist
+
+# The demo for the site: the page in demo mode, base path /demo/, built into site/public/demo.
+# That directory is a build product and is not committed: Astro copies site/public into
+# site/dist, so the demo is served at /demo/ by the same static assets as the pages, under the
+# same headers. `just site-build` runs this first.
+ui-demo: ui-install
+    cd ui && OUT_DIR=../site/public/demo npm run build
+
+# The page in headless Chrome (Chrome or Chromium on PATH, or CHROME): keyboard, focus, theme,
+# the wizard, the four states, copy, the phone. The demo is served under the site's own
+# Content-Security-Policy (site/public/_headers), and the run fails on a console error or a policy
+# violation. Needs no other server.
+ui-e2e: ui-build
+    #!/usr/bin/env bash
+    set -euo pipefail
+    cd ui
+    log=$(mktemp)
+    node scripts/serve.mjs 0 --headers ../site/public/_headers > "$log" &
+    server=$!
+    trap 'kill "$server" 2>/dev/null || true; rm -f "$log"' EXIT
+    for _ in $(seq 1 50); do [ -s "$log" ] && break; sleep 0.1; done
+    url=$(head -1 "$log")
+    [ -n "$url" ] || { echo "ui-e2e: the server printed no address" >&2; exit 1; }
+    npm run e2e -- "$url"
+
+# Lint proto/ (buf STANDARD). Needs nothing else.
+proto-lint:
+    buf lint
+
+# Lint proto/ and regenerate the page's TypeScript, ui/src/gen/ (protoc-gen-es from ui/node_modules).
+proto-gen: ui-install proto-lint
+    buf generate
+
+# proto-gen must leave no difference: the committed ui/src/gen/ is what the generator makes.
+proto-check: proto-gen
+    git diff --exit-code -- ui/src/gen proto
+    @test -z "$(git ls-files --others --exclude-standard -- ui/src/gen proto)" || { echo "proto-check: untracked generated files" >&2; exit 1; }
+
 # Every repository rule.
 check-rules: check-selftest check-decisions check-public check-yaml-ext check-mdx-pages check-agent-links check-vectors
 
 # Everything a pull request must pass.
-check: check-rules site-check site-workers site-render
+check: check-rules site-check site-workers site-render proto-check ui-lint ui-test ui-e2e
