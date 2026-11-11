@@ -50,20 +50,26 @@ function Mark({ size = 22 }: { size?: number }) {
   );
 }
 
+const SCHEME_BUTTON = { minWidth: 0, paddingInline: { xs: '0.5rem', sm: '0.75rem' } };
+
 function SchemeSwitch() {
   const { mode, setMode } = useColorScheme();
   return (
-    <ToggleButtonGroup
-      exclusive
-      size="small"
-      value={mode ?? null}
-      onChange={(_e, value: 'system' | 'light' | 'dark' | null) => value && setMode(value)}
-      aria-label="Colour scheme"
-    >
-      <ToggleButton value="system">Auto</ToggleButton>
-      <ToggleButton value="light">Light</ToggleButton>
-      <ToggleButton value="dark">Dark</ToggleButton>
-    </ToggleButtonGroup>
+    // The group may shrink (min-w-0) and its buttons carry less padding on a phone, so the header of a 360 px window is not wider than the window.
+    <div className="min-w-0 shrink">
+      <ToggleButtonGroup
+        exclusive
+        size="small"
+        value={mode ?? null}
+        onChange={(_e, value: 'system' | 'light' | 'dark' | null) => value && setMode(value)}
+        aria-label="Colour scheme"
+        sx={{ '& .MuiToggleButton-root': SCHEME_BUTTON }}
+      >
+        <ToggleButton value="system">Auto</ToggleButton>
+        <ToggleButton value="light">Light</ToggleButton>
+        <ToggleButton value="dark">Dark</ToggleButton>
+      </ToggleButtonGroup>
+    </div>
   );
 }
 
@@ -126,7 +132,7 @@ function BundleSwitch() {
 function DemoBar() {
   return (
     <div role="region" aria-label="This is a demo" data-print="hide" className="z-40 border-b border-rule bg-sunk lg:sticky lg:top-0">
-      <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-2 px-4 py-2 lg:min-h-12">
+      <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-1 px-4 py-1.5 lg:min-h-12">
         <p className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-0 text-sm">
           <span className="border border-rule bg-panel px-1.5 font-mono text-xs font-bold tracking-wider">DEMO</span>
           <span>The data is made up, and ritueel is still in design. Nothing here acts.</span>
@@ -136,7 +142,7 @@ function DemoBar() {
             Back to ritueel.id
           </a>
         </p>
-        <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
+        <div className="flex flex-wrap items-center gap-x-6 gap-y-1">
           <BundleSwitch />
           <StateSwitch />
         </div>
@@ -187,10 +193,9 @@ export function Shell({ route, children }: { route: Route; children: ReactNode }
         >
           Skip to the page
         </button>
-        {isDemo ? <DemoBar /> : null}
         <div className="lg:grid lg:grid-cols-[14rem_minmax(0,1fr)]">
           <aside data-print="hide" className="hidden border-r-[3px] border-double border-rule lg:block">
-            <div className="sticky top-12 flex h-[calc(100dvh-3rem)] flex-col overflow-y-auto px-4 py-5">
+            <div className="sticky top-0 flex h-dvh flex-col overflow-y-auto px-4 py-5">
               <a href={href.start()} className="mb-6 flex items-center gap-2.5 text-ink no-underline" aria-label="ritueel local page, start">
                 <Mark size={28} />
                 <span className="leading-none">
@@ -237,23 +242,24 @@ export function Shell({ route, children }: { route: Route; children: ReactNode }
           </aside>
 
           <div className="min-w-0">
-            <header data-print="hide" className="sticky top-0 z-40 flex items-center justify-between gap-2 border-b-[3px] border-double border-rule bg-bg px-4 py-2 lg:hidden">
-              <a href={href.start()} className="flex min-h-11 items-center gap-2 text-ink no-underline" aria-label="ritueel local page, start">
+            {isDemo ? <DemoBar /> : null}
+            <header data-print="hide" className="sticky top-0 z-40 flex min-w-0 items-center justify-between gap-1 border-b-[3px] border-double border-rule bg-bg px-3 py-1 sm:px-4 lg:hidden">
+              <a href={href.start()} className="flex min-h-11 items-center gap-2 text-ink no-underline max-[400px]:min-w-11 max-[400px]:justify-center" aria-label="ritueel local page, start">
                 <Mark size={22} />
-                <span className="font-mono text-base font-bold">ritueel</span>
+                <span className="font-mono text-base font-bold max-[400px]:sr-only">ritueel</span>
               </a>
               {isDemo ? (
                 <a
                   href={siteUrl()}
                   aria-label="This is a demo. Back to ritueel.id"
-                  className="inline-flex min-h-11 items-center border border-rule bg-sunk px-2 font-mono text-xs font-bold tracking-wider text-ink no-underline"
+                  className="inline-flex min-h-11 items-center border border-rule bg-sunk px-1.5 font-mono text-xs font-bold tracking-wider text-ink no-underline"
                 >
                   DEMO
                 </a>
               ) : null}
               <SchemeSwitch />
             </header>
-            <main className="mx-auto w-full max-w-[80rem] px-4 pt-6 pb-28 lg:px-8 lg:pt-8 lg:pb-14">
+            <main className="mx-auto w-full max-w-[80rem] px-4 pt-4 pb-28 lg:px-8 lg:pt-8 lg:pb-14">
               {children}
               <footer className="mt-14 border-t border-line pt-4 text-sm text-dim">
                 <p className="max-w-[70ch]">
@@ -278,7 +284,7 @@ export function Shell({ route, children }: { route: Route; children: ReactNode }
           </div>
         </div>
 
-        <nav aria-label="Screens" data-print="hide" className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-5 border-t-[3px] border-double border-rule bg-panel lg:hidden">
+        <nav aria-label="Screens" data-print="hide" className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-[repeat(5,minmax(0,1fr))] border-t-[3px] border-double border-rule bg-panel lg:hidden">
           {MAIN_TABS.map((k) => {
             const n = NAV.find((x) => x.key === k)!;
             return (
@@ -286,9 +292,9 @@ export function Shell({ route, children }: { route: Route; children: ReactNode }
                 key={k}
                 href={n.href}
                 aria-current={active === k ? 'page' : undefined}
-                className={`flex min-h-14 flex-col items-center justify-center gap-0.5 px-1 text-xs no-underline ${active === k ? 'bg-ink font-bold text-bg' : 'text-ink'}`}
+                className={`flex min-h-14 min-w-0 flex-col items-center justify-center gap-0.5 px-1 text-xs no-underline [@media(max-height:760px)]:min-h-12 ${active === k ? 'bg-ink font-bold text-bg' : 'text-ink'}`}
               >
-                <span className="text-sm leading-none">{n.label}</span>
+                <span className="max-w-full min-w-0 truncate text-sm leading-none">{n.label}</span>
                 {k === 'findings' && total !== undefined ? (
                   <span className={`font-mono text-xs leading-none font-bold ${active === k ? 'text-bg' : urgent > 0 ? 'text-critical' : 'text-dim'}`} aria-label={`${total} findings`}>
                     {total}
@@ -302,9 +308,9 @@ export function Shell({ route, children }: { route: Route; children: ReactNode }
             aria-haspopup="menu"
             aria-expanded={more ? 'true' : undefined}
             onClick={(e) => setMore(e.currentTarget)}
-            className={`flex min-h-14 cursor-pointer flex-col items-center justify-center gap-0.5 px-1 text-sm ${active && MORE.includes(active) ? 'bg-ink font-bold text-bg' : 'bg-transparent text-ink'}`}
+            className={`flex min-h-14 min-w-0 cursor-pointer flex-col items-center justify-center gap-0.5 px-1 text-sm ${active && MORE.includes(active) ? 'bg-ink font-bold text-bg' : 'bg-transparent text-ink'} [@media(max-height:760px)]:min-h-12`}
           >
-            More
+            <span className="max-w-full min-w-0 truncate">More</span>
           </button>
         </nav>
         <Menu anchorEl={more} open={more !== null} onClose={() => setMore(null)} anchorOrigin={{ vertical: 'top', horizontal: 'right' }} transformOrigin={{ vertical: 'bottom', horizontal: 'right' }}>

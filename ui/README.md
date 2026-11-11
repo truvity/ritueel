@@ -324,4 +324,4 @@ tell whether a user ID inside it is quoted.
 - The times of day in the made-up dates are approximate: the days follow the pages, the
   clock does not always follow the ceremony time. The page shows days only.
 - Fonts depend on what is installed (see Design).
-- Tested in headless Chrome only (1440 and 390 px, light and dark).
+- Tested in headless Chrome only (1440x900, 1280x900, 390x844 and 360x740, light and dark).

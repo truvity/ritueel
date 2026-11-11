@@ -25,6 +25,8 @@ export function StartHere() {
     { to: href.findings(), name: 'Findings', what: 'what is wrong.' },
     { to: href.plan(), name: 'Make a plan', what: 'the steps and an example command.' },
   ];
+  // Below 400 px the three links stand in a wrapping row and the note after each is left out, so they lie above the fixed bottom bar
+  // on a 360x740 phone. The links keep their text and order. The notes stay from 400 px up.
   // The three links come first and the notes after them: on a phone (390x844) the links must lie above the fixed bottom bar on the
   // first load, and the notes can be read below them. Each line of the path is short enough to stay on one line on a phone (the
   // link is 44 px high, a wrapped note would add a second line to each), so what the plan does and does not do sits in the notes.
@@ -34,13 +36,13 @@ export function StartHere() {
         Start here
       </h2>
       <p className="mt-2 text-[0.9375rem]">Try these three, in order:</p>
-      <ol className="mt-1 list-decimal pl-6 text-[0.9375rem]">
+      <ol className="mt-1 list-decimal pl-6 text-[0.9375rem] max-[400px]:flex max-[400px]:list-inside max-[400px]:flex-wrap max-[400px]:gap-x-5 max-[400px]:pl-0">
         {steps.map((s) => (
           <li key={s.to}>
             <a className={LINK} href={s.to}>
               {s.name}
             </a>
-            : {s.what}
+            <span className="max-[400px]:hidden">: {s.what}</span>
           </li>
         ))}
       </ol>
