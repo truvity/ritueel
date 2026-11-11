@@ -6,6 +6,7 @@ import {
   CardKind,
   CardState,
   SlotState,
+  SlotUse,
   type Card,
   type PivRow,
   type Slot,
@@ -84,9 +85,16 @@ function SlotInfo({ slot, group }: { slot: Slot; group: string }) {
             <dd>{ymd(slot.bornAt)}</dd>
           </>
         ) : null}
-        <dt className="text-dim">Attested</dt>
-        <dd>{slot.attested ? 'yes, the card vouches for it' : 'no'}</dd>
+        {slot.use === SlotUse.OTHER_BUNDLE ? null : (
+          <>
+            <dt className="text-dim">Attested</dt>
+            <dd>{slot.attested ? 'yes, the card vouches for it' : 'no'}</dd>
+          </>
+        )}
       </dl>
+      {slot.use === SlotUse.OTHER_BUNDLE ? (
+        <p className="text-sm">A row of another bundle of the holder, declared in this card&apos;s file. ritueel shows no key digest for it.</p>
+      ) : null}
       {slot.publicKeySha256 ? (
         <div>
           <p className="text-sm text-dim">Fingerprint of the public key (SHA-256)</p>
@@ -542,7 +550,9 @@ function Inventory() {
               <Sec title="How to read a card">
                 <Explain term="A slot">
                   is one place on a card that can hold one key. A card has six rows of four PIV slots: row 1 is the card&apos;s own jobs, and each row below belongs to one root, of this bundle or of another bundle of the
-                  same holder that shares the pair (X.509 root, OpenPGP primary, SSH CA, one empty). The OpenPGP keys and the passkeys sit beside the grid.
+                  same holder that shares the pair (X.509 root, OpenPGP primary, SSH CA, one empty). The OpenPGP keys and the passkeys sit beside the grid. A row of another bundle of the
+                  same holder is declared in this card&apos;s file and drawn as OTHER, with no key digest. An occupied row that nobody declared is a finding. Proposed: the shape
+                  &quot;use: other-bundle&quot; is proposed in record 0003 (issue 11).
                 </Explain>
                 <Legend />
                 <p className="mt-2 text-sm text-dim">Each tile below shows its 24 PIV slots in miniature. Open a card to see every slot and what it is for.</p>

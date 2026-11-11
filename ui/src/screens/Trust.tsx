@@ -110,8 +110,9 @@ export function Trust() {
       lede={<p>ritueel builds these files from your roots at a ceremony. You publish them where your machines and your users can read them. ritueel does not publish them for you.</p>}
     >
       <Explain term="Trust files">
-        are the root list, the CA bundle, the revocation lists, the SSH CA keys and the keyrings of a company bundle, and the public certificate of a personal bundle. Each set
-        is numbered, the trust sequence. A new ceremony builds the next one and keeps the old one beside it.
+        are the files outsiders read to decide whom to trust: the root list, the CA bundle, the revocation lists (CRLs), the SSH CA key list and the public OpenPGP keyring
+        (the public certificates of the roots and their subkeys). They sit in numbered sets, trust/&lt;number&gt;/; the number is the trust sequence, and every change writes the next set
+        beside the old one. A personal bundle has the person's public certificate only. ritueel makes the files; you publish them, and your release pipeline packages the keyring.
       </Explain>
       <Load
         res={combine(files, summary)}
@@ -131,7 +132,7 @@ export function Trust() {
         {([f, s]) => {
           const notBuilt = f.files.filter((x) => x.checkResult === TrustCheckResult.NOT_RUN).length;
           return (
-            <Sec title={`Trust sequence ${f.trustSequence}`} aside={`${plural(f.files.length, 'file')}${notBuilt > 0 ? `, ${notBuilt} not built` : ''}`}>
+            <Sec title={`Trust sequence ${f.trustSequence}`} aside={`trust/${f.trustSequence}/, ${plural(f.files.length, 'file')}${notBuilt > 0 ? `, ${notBuilt} not built` : ''}`}>
               <ul className="space-y-4">
                 {f.files.map((x) => (
                   <File key={x.path} f={x} asOf={s.asOf} />
