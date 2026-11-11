@@ -106,7 +106,7 @@ function Horizon({ s }: { s: GetSummaryResponse }) {
     <div
       className="mb-3 border border-line bg-panel px-4 pt-7 pb-3"
       role="img"
-      aria-label={`Timeline from ${ymd(s.asOf)}: ${s.due.map((d, i) => `${safeString(d.title, 80)} ${inDays(days[i])}`).join('; ')}`}
+      aria-label={`Timeline from ${ymd(s.asOf)}: ${s.due.map((d, i) => `${safeString(d.title, CAPS['DueItem.title#timeline'])} ${inDays(days[i])}`).join('; ')}`}
     >
       <div className="relative mx-3 h-8">
         <div className="absolute inset-x-0 top-[15px] h-[2px] bg-ink" />
@@ -189,6 +189,7 @@ function Seal({ s }: { s: GetSummaryResponse }) {
   const l = s.history;
   const ok = l?.chainState === ChainState.VERIFIED;
   const none = (l?.recordCount ?? 0) === 0;
+  const word = l?.recordCount === 1 ? 'record' : 'records';
   return (
     <a href={href.history()} className="block border-2 border-rule bg-panel p-4 text-ink no-underline hover:bg-sunk" aria-label="The history, open History">
       <div className="flex items-center gap-3">
@@ -196,7 +197,7 @@ function Seal({ s }: { s: GetSummaryResponse }) {
         <div className="leading-tight">
           <p className="font-mono text-3xl font-bold">{l?.recordCount ?? 0}</p>
           <p className="font-mono text-xs font-semibold tracking-wider uppercase">
-            {none ? 'records, none yet' : ok ? 'records, chain verified' : 'records, check the chain'}
+            {none ? 'records, none yet' : ok ? `${word}, chain verified` : `${word}, check the chain`}
           </p>
         </div>
       </div>

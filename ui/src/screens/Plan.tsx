@@ -83,7 +83,7 @@ function Goals() {
       lede={
         <p>
           A plan is a list of steps, built here and run later in a terminal: in the offline system for a key file that can be copied, on your workstation for a root on cards or in
-          the cloud, under four conditions the plan lists. Making a plan changes nothing. It ends with a preview of the steps, a digest, and the exact command you run there.
+          the cloud, under the conditions the plan lists (four for a root on cards, three for a cloud key). Making a plan changes nothing. It ends with a preview of the steps, a digest, and the exact command you run there.
         </p>
       }
     >
@@ -291,12 +291,12 @@ export function WhereItRuns({ plan }: { plan: PlanMessage }) {
       <>
         <p>
           {cloud
-            ? 'This root is a cloud key and cannot be copied, so the ceremony may run on the computer you work on. ritueel asks nothing of how you signed in. Of the four conditions of record 0005, rule 18, the first, a touch for every signature, is for a root on cards only. Three hold for a cloud key, numbered as in the record:'
+            ? 'This root is a cloud key and cannot be copied, so the ceremony may run on the computer you work on. ritueel asks nothing of how you signed in. Of the four conditions of record 0005, rule 18, the first, a touch for every signature, is for a root on cards only. Three hold for a cloud key, numbered as in the record.'
             : 'This root is on cards and cannot be copied, so the ceremony may run on the computer you work on. Four conditions hold:'}
         </p>
         {cloud ? (
           <p className="mt-2">
-            A cloud key has no touch. This plan asks for {touches}; the typed digest and the session of the ceremony role stand, and the audit trail of the key records every signature.
+            Condition 1 does not apply. A cloud key has no touch. This plan asks for {touches}; the typed digest and the session of the ceremony role stand, and the audit trail of the key records every signature.
           </p>
         ) : null}
         <ol className="mt-2 list-decimal space-y-1.5 pl-6" start={cloud ? 2 : 1}>

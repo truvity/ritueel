@@ -18,11 +18,13 @@ export const CAPS = {
   'HistoryStatus.message#history': 240,
   'DueItem.title': 120,
   'DueItem.title#next': 90,
+  'DueItem.title#timeline': 80, // the label of the timeline
   'DueItem.detail': 260,
   'SetupStep.title': 100,
   'SetupStep.detail': 220,
   // Findings.
   'Finding.title': 160,
+  'Finding.title#fix': 80, // the label of the fix command
   'Finding.reason': 400,
   'Finding.evidence': 300,
   'Subject.label': 60,
@@ -103,6 +105,7 @@ export const CAPS = {
   'DelegatedKey.requester': 60,
   // Trust files.
   'TrustFile.name': 80,
+  'TrustFile.name#cmd': 60, // the label of a command
   'TrustFile.path': 80,
   'TrustFile.check_detail': 300,
 } as const;

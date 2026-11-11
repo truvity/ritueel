@@ -294,6 +294,7 @@ describe('hostile text never reaches the markup raw', () => {
     // The number of records, under the seal of the history: globex holds one, acme ten.
     loadWorld('globex', 'adopt-key');
     expect(renderToStaticMarkup(<History />)).toMatch(/uppercase">record</);
+    expect(renderToStaticMarkup(<Start />)).toMatch(/uppercase">record, chain verified</);
     const oneStep = { ...w.d.plan.plan, steps: [w.d.plan.plan.steps[0]] };
     expect(renderToStaticMarkup(<PlanView plan={oneStep} />)).toContain('1 step<');
     expect(renderToStaticMarkup(<PlanView plan={w.d.plan.plan} />)).toContain('6 steps<');
@@ -305,6 +306,7 @@ describe('hostile text never reaches the markup raw', () => {
     expect(renderToStaticMarkup(<Trust />)).toMatch(/\d+ bytes?</);
     loadWorld('acme', 'renew-due');
     expect(renderToStaticMarkup(<History />)).toMatch(/uppercase">records</);
+    expect(renderToStaticMarkup(<Start />)).toMatch(/uppercase">records, chain verified</);
     // Every "N slots in use" and "N days left" of the example bundles agrees with its number.
     let slotTexts = 0;
     let dayTexts = 0;
