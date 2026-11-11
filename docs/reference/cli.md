@@ -143,10 +143,10 @@ Every name in this section is proposed, awaiting the maintainer; the rules are [
 | Command | Does | Needs a person |
 |---|---|---|
 | `ritueel publish [--revocation FILE]` | A separate process, never inside a ceremony and absent from the offline build. Rebuilds the public key from the verified record, shows a preview (every user ID, subkeys, fingerprint, each server, "what is published cannot be withdrawn"), waits for the typed confirmation (the first 8 characters of the fingerprint and the server name; 16 characters for a revocation), sends to the keyservers listed in `ritueel.yaml`, reads back and compares. Refuses a test root and a run while a ceremony runs; reads no token. With `--revocation FILE` it sends the revocation signature the holder keeps apart. | Yes |
-| `ritueel personal userid change` | One plan: certify the new user ID, make it primary, optionally revoke the old one as no longer valid ([personal OpenPGP](/reference/personal-openpgp/#changing-a-name-or-address)). | Yes |
+| `ritueel personal userid change` | One plan: certify the new user ID, make it primary, and the old user ID gets a revocation that says it is no longer valid (record 0008, rule 17) ([personal OpenPGP](/reference/personal-openpgp/#changing-a-name-or-address)). | Yes |
 | `ritueel run --latest` | Runs the plan saved less than 15 minutes ago in the same login; refuses if more than one is pending; says "saved from the browser page at HH:MM" and shows non-ASCII characters as U+XXXX. | Yes |
 | `ritueel check tls HOST:PORT` | Reads the chain a live service presents and says which intermediate and root it shows, with the time, the source and the facts; it is not proof that a key is not revoked. Whether Go exposes the full presented chain is not researched. | No |
-| `ritueel root-list verify -` | Reads a fetched root list from standard input (the host checks itself). | No |
+| `ritueel root-list verify FILE (--held FILE \| --pin SHA256...)` | Run on the two fetched files, the list and its `.jws` (the host checks itself). A form that reads standard input is not decided. | No |
 
 After every ceremony ritueel prints a list of next steps (its name, NEXT STEPS, is proposed): what changed, who needs it, how. Later: `check --local`, which matches installed roots to the bundle by key pin.
 

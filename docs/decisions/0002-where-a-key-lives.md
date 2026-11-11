@@ -1,4 +1,4 @@
-# 0002 — A key is born in its store and never leaves it; a key file opens with a passkey on each root card
+# 0002 — A key is born in its store and never leaves it; a key file opens with a passkey on a card named for it
 
 **Status:** Accepted
 **Date:** 2026-11-11
@@ -28,9 +28,9 @@
 21. A key file is an age file encrypted to two recipients, the unlock key's public half and a recovery recipient. Encrypting needs no card.
 22. Every card-opened key file has a recovery key: an age identity in a passphrase-protected file, apart from the cards. Its passphrase, the break-glass, may live in a password manager, never beside the file it protects. A password manager holds a backup of the encrypted key file and the recovery passphrase, never a usable key.
 23. A passphrase alone also opens a key file, for a holder without cards. It holds only the passphrase recipient, because age v1 requires an scrypt stanza to be the only stanza in the header.
-24. The fallback is a key-agreement key in PIV slot 9d of each root card, made only if passkey unlocking cannot be used. If the proof of the passkey way fails, 9d is the way and nothing else here changes. It spends slot 9d and the PIV PIN that also guards the root keys.
-25. A synced passkey, for now a password-manager passkey or unlock item, unlocking inside the local page, and a day-to-day card for a root-level key file are not supported as unlockers.
-26. The two root cards may also unlock software keys and sealed backups, in ceremonies only.
+24. The fallback is a key-agreement key in PIV slot 9d of each card named to open the file, made only if passkey unlocking cannot be used. If the proof of the passkey way fails, 9d is the way and nothing else here changes. It spends slot 9d and the PIV PIN that also guards the root keys.
+25. A synced passkey (a password-manager passkey is one), unlocking inside the local page and a day-to-day card for a root-level key file are not supported as unlockers. For now there is also no password-manager unlock item; the break-glass is the recovery passphrase (rule 22).
+26. The root cards named to open a key file (two or more) may also unlock software keys and sealed backups, in ceremonies only.
 27. Opening a key file with a passkey must work in the static (no-cgo) build.
 28. Each bundle has its own unlock key and recovery key.
 
@@ -42,7 +42,7 @@ A card or KMS key cannot be copied, so a calendar would force a new anchor on ev
 
 - The bundle is no longer public material only: sealed files rest on the unlock key and the recovery key, and the unlock key's private half is in memory at each unlock.
 - Test roots and scripts are unchanged.
-- A lost recovery key together with both root cards means the key files cannot be opened. The guides say where the recovery file and passphrase go.
+- A lost recovery key together with every card named as a way to open the file means the key files cannot be opened. The guides say where the recovery file and passphrase go.
 
 ## Roads not taken
 
@@ -60,7 +60,7 @@ A card or KMS key cannot be copied, so a calendar would force a new anchor on ev
 - **The age key in PIV slot 9d as the default.** No second protocol, but it spends the slot and the PIV PIN that guard the root keys; kept as the fallback.
 - **A card secret that wraps each file directly, with no age key between.** No key in memory, but encrypting would need a card present, and there is no standard format.
 - **Keeping the PIV age key first and the passkey as a later step.** The research advice, overruled by the maintainer's preference for the passkey as default.
-- **A synced or password-manager passkey as the unlocker.** Easy, but it puts a root-level key file behind a cloud account: the recovery passphrase in the manager gives what it would add, and the offline system has no network.
+- **A synced or password-manager passkey as the unlocker, or as an extra way next to the cards.** Easy, but it puts a root-level key file behind a cloud account and adds nothing the recovery passphrase kept in the manager does not give; a key file is opened in the offline system, which has no network, manager or browser, so a passphrase can be typed there and a passkey cannot.
 - **Unlocking inside the local page.** Friendly, but the browser would hand the secret to the page's script; the page never receives a secret, and the offline system has no browser.
 - **A day-to-day card as the unlocker.** Always at hand, but carried and used every day, and it must not open a root-level file.
 
@@ -69,6 +69,7 @@ A card or KMS key cannot be copied, so a calendar would force a new anchor on ev
 - **Not yet proven.** The 1Password and keyring backends of rule 7 stay planned until both issues are done ([#59](https://github.com/truvity/ritueel/issues/59), [#60](https://github.com/truvity/ritueel/issues/60)).
 - **Not yet proven.** The passkey way of rule 20 is proven on a rehearsal card at milestone M1; until then it is decided, not proven ([#8](https://github.com/truvity/ritueel/issues/8)).
 - **Not yet proven.** Opening a key file with a passkey in the static (no-cgo) build, rule 27 ([#8](https://github.com/truvity/ritueel/issues/8)).
+- **Proposed.** Open, not decided and not built: a password-manager item read by its command-line tool as a way to open a key file, on the workstation only, for personal keys; not planned unless the maintainer asks ([#8](https://github.com/truvity/ritueel/issues/8)).
 - **Proposed.** On a card shared by two bundles, the passkey way holds one credential for each bundle ([#8](https://github.com/truvity/ritueel/issues/8)).
 - **Proposed.** How the slot 9d fallback works for two bundles is open: the card has one 9d key and each bundle has its own unlock key; the earlier proposal had the bundles share the one 9d key ([#8](https://github.com/truvity/ritueel/issues/8)).
 

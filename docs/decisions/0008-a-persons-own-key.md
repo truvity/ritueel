@@ -59,8 +59,8 @@ A person is the smallest case of the root ritual, so it shares the engine and co
 
 ## Not yet proven or only proposed
 
-- **Proposed.** Stage two, the layout of card-born primaries: one on each root card, in the personal bundle's row; one published, the other a standby that it certifies; the old key vouches for the published one with an overlap (record 0007). Open: whether the standby is a second root or a second key of one root ([#18](https://github.com/truvity/ritueel/issues/18)).
-- **Proposed.** The names of the user ID commands (`personal userid change` in the research) are not decided; the plan certifies the new user ID, makes it primary and may revoke the old one ([#18](https://github.com/truvity/ritueel/issues/18)).
+- **Not yet proven.** Stage two (decided, not built, M6, after the card proofs): one card-born primary on each root card, in the personal bundle's row; one published, the other a standby that it certifies; the old key vouches for the published one with an overlap (record 0007). Not said: whether the standby is a second root or a second key of one root ([#18](https://github.com/truvity/ritueel/issues/18)).
+- **Proposed.** The names of the user ID commands (`personal userid change` in the research) are not decided; the plan certifies the new user ID, makes it primary and revokes the old one (rule 17; the research said "optionally"); the person types the new address as the confirmation, which may differ from the eight characters of the digest (record 0005, rule 10), and the records settle which; non-ASCII characters show as U+XXXX; the list of next steps ends with publishing ([#18](https://github.com/truvity/ritueel/issues/18)).
 
 ## Replaces
 

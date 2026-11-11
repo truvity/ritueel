@@ -52,6 +52,7 @@ A root signs for everything below it, so the person must see what will be signed
 - **A different ceremony for each store.** Each keeps its own shape, but plan, confirmation, records and refusals would be written and taught four times.
 - **Generate the keys before the plan.** Every byte is fixed, but the key would exist, and a slot be overwritten, before the person confirmed anything.
 - **Confirm by pressing a key.** Fast, but pressed without reading, and a script could confirm a plan it never read.
+- **Four characters to confirm instead of eight.** Rare ceremonies cost little to type, but four can be matched by a swapped plan at once, even from a browser tab, and the typed characters link the plan the page shows to the run in the terminal; neither length is the real protection.
 - **Resume a half-finished birth.** Saves a slot deletion, but needs state ritueel cannot verify on a card, and the person never saw the resumed key in a plan.
 - **A second confirmation after each birth.** More caution, but the fingerprint before the touch already allows a stop, and a second prompt is the key-press habit refused above.
 - **Accept a root without attestation at init.** Faster adoption, but nothing would show the root was born on its card.

@@ -29,19 +29,22 @@ What ritueel cannot do:
 - **A revocation** goes to a second kind of server too, because a revoked primary has no user IDs on keys.openpgp.org and plain `gpg` ignores that kind of revocation: `ritueel publish --revocation FILE` (proposed), after a stricter confirmation (sixteen characters), and never from a scheduler. See [Revoke a key](/guides/revoke-a-key/).
 - **Refused:** a test root, and any run while a ceremony is running.
 
-Not tested: whether keys.openpgp.org accepts a certify-only primary with its subkeys, and whether a later update needs no new click in the mail. The first real upload is one throwaway key, by hand ([issue #25](https://github.com/truvity/ritueel/issues/25)).
+Not tested: whether keys.openpgp.org accepts a certify-only primary with its subkeys, and whether a later update needs no new click in the mail. The first real upload is one throwaway key, by hand ([issue #18](https://github.com/truvity/ritueel/issues/18)).
 
 ## A code host
 
-For GitHub, GitLab and Codeberg ritueel prints text and does nothing else: the path of the public key file, the link where the key is added, and the command of the host's own tool. It holds no token and does not call the tool.
+For GitHub and GitLab (Codeberg is not checked, see below) ritueel prints text and does nothing else: the path of the public key file, the link where the key is added, and the command of the host's own tool. It holds no token and does not call the tool.
 
 For GitHub:
 
 - the file: the path of the armoured public key that ritueel prints;
 - the link: [github.com/settings/gpg/new](https://github.com/settings/gpg/new);
-- the command: `gh gpg-key add FILE`.
+- the command: `gh gpg-key add FILE`;
+- undo: `gh gpg-key delete KEY-ID`. Deleting needs the wide `admin:gpg_key` scope, which the default token of `gh` lacks. Not run; the scope hint of this command was not checked.
 
-For GitLab and Codeberg, open the key form in your account settings and paste the contents of the file.
+For GitLab: avatar, Edit profile, Access, GPG keys, Add new key, paste the contents of the file. A key cannot be edited there: delete it and add it again.
+
+Codeberg: not checked. The web steps were not read. The host's API documents a signed token when no email of the key is verified on the account; read the host's page before relying on it.
 
 The host has no update call. To replace a key, delete the old key and add the new one again; between the two, new commits show as unverified. When a key is revoked, GitLab marks the past commits signed by it as unverified; GitHub does not re-verify old commits ([sign git commits](/guides/openpgp-sign-git/#how-platforms-decide-a-signature-is-verified)). Read on 2026-11-11 in the hosts' documentation; no login was made.
 
@@ -65,7 +68,7 @@ spec:
       key: ca.crt
 ```
 
-During an overlap both roots stay in. Add the new root first; remove the old one only after the leaf certificates have moved to the new chain ([Rotate a key](/guides/rotate-a-key/)). Not tested: trust-manager with the comment line at the top of ritueel's file.
+Undo: delete the Bundle (`kubectl delete bundle acme-roots`) once the new roots are in somewhere else; not run. During an overlap both roots stay in. Add the new root first; remove the old one only after the leaf certificates have moved to the new chain ([Rotate a key](/guides/rotate-a-key/)). Not tested: trust-manager with the comment line at the top of ritueel's file.
 
 ## sshd
 
@@ -76,10 +79,10 @@ The SSH CA key list has a file made for sshd, `ssh-user-ca-keys.pub` ([the forma
 TrustedUserCAKeys /etc/ssh/ssh-user-ca-keys.pub
 ```
 
-Reload sshd (send it `SIGHUP`, or use the service manager's reload). Host certificates need a line in each client's `known_hosts`. ritueel does not know your host names, so it prints the line with a placeholder:
+Reload sshd (send it `SIGHUP`, or use the service manager's reload). Undo: remove the `TrustedUserCAKeys` line and the file, then reload; not run. Host certificates need a line in each client's `known_hosts`. ritueel does not know your host names, so it prints the line with a placeholder:
 
 ```text
-@cert-authority *.example.com ssh-ed25519 AAAA...placeholder-for-the-host-CA-key
+@cert-authority *.example.com ecdsa-sha2-nistp384 AAAA...placeholder-for-the-host-CA-key
 ```
 
 ## Certificates for clusters come from the issuing system
@@ -90,7 +93,7 @@ Some other consumers send bare requests, without the limits the hand-off contrac
 
 ## The trust store of one machine
 
-For one computer ritueel writes one certificate file per active root and prints the add and undo commands for that system. It never runs them, and never runs with administrator rights. It refuses a test root, a retired root, an expired root list and a root list with a lower sequence than this machine has seen (proposed). The commands below are examples with example names; the Debian and Ubuntu commands follow the maker's manual page for `update-ca-certificates`, and the macOS commands were read from the maker's pages on 2026-11-11 and not run.
+For one computer ritueel writes one certificate file per active root and prints the add and undo commands for that system. It never runs them, and never runs with administrator rights. It refuses a test root, a retired root, an expired root list and a root list with a lower sequence than this machine has seen (proposed). The commands below are examples with example names; the Debian and Ubuntu commands follow the [manual page of `update-ca-certificates`](https://manpages.debian.org/trixie/ca-certificates/update-ca-certificates.8.en.html), and the macOS commands were read on 2026-11-11 from a mirror of the `security(1)` man page (keith.github.io/xcode-man-pages/security.1.html) and not run. The macOS undo removes the trust setting and may leave the certificate in the keychain; it was not run.
 
 **Debian and Ubuntu.** One certificate in each file.
 
@@ -125,7 +128,7 @@ Read these warnings first:
 - **Never install a root whose key is a software file on this computer.** Whoever reads the file can intercept secure requests from the machine.
 - **Never install a test root or a retired root.**
 - **Chrome and Firefox on Linux do not read the system store.** They need separate steps (read from the makers' pages on 2026-11-11, not run).
-- **No store reads the root's revocation list.** To revoke an intermediate, replace the file and remove the trust.
+- **No store reads the root's revocation list.** To stop trusting a revoked root, remove its file with the undo command above.
 
 ## Is the world up to date?
 

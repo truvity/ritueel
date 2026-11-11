@@ -45,7 +45,7 @@ The bundle is only half. The other half is what it deliberately does not hold.
 |---|---|---|
 | **Revocation certificates** of the OpenPGP primary keys, made when each key was born, one for each of two reasons (compromised and superseded). | They are the only way to revoke a primary key whose card and PIN are gone. | Apart from the cards, in at least two places: for example printed and sealed, and in the password manager. A third place is not wasteful. |
 | **The PINs you type**, one entry per card, and the passphrase of the recovery key. | Without the PIN a card is a locked box; three wrong tries block it. The PUK and the management key are made and sealed by ritueel, so you do not keep them. | The password manager, never in the bundle. |
-| **The recovery key**: an age identity in a passphrase-protected file. | If both root cards are lost as well, the key files cannot be opened without it. | Apart from the cards, and apart from its passphrase: the file and the passphrase never sit in the same place. |
+| **The recovery key**: an age identity in a passphrase-protected file. | If all the cards named to open the file are lost as well, the key files cannot be opened without it. | Apart from the cards, and apart from its passphrase: the file and the passphrase never sit in the same place. |
 | **Software keys,** if any. | A software key is a copy by nature. | In the software store you chose, whose own replication is the backup (see [where a key lives](/learn/key-stores/)). |
 | **The second card.** | A card cannot be copied. | A second, independent card, in a second place. |
 
