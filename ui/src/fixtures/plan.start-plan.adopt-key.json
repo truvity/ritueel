@@ -86,7 +86,7 @@
         "description": "A root list that includes the new root."
       }
     ],
-    "equivalentCommand": "ritueel adopt --store aws-kms --key alias/example-staging-signing --plan-only",
+    "equivalentCommand": "ritueel root add --store aws-kms --key alias/example-staging-signing --plan-only",
     "runCommand": "ritueel run ./ritueel/pending/2026-11-11-adopt-cloud-key.plan --confirm a92d5e600123456789abcdef0123456789abcdef0123456789abcdefdeadbeef",
     "savePath": "pending/2026-11-11-adopt-cloud-key.plan"
   }

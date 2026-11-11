@@ -70,7 +70,7 @@ export function Failed({ what, message, retry }: { what: string; message: string
       </p>
       <div className="mt-3 max-w-[40rem] space-y-3">
         <p className="text-sm">In a terminal, this reads the same folder and prints the reason:</p>
-        <Cmd label="Read the folder in a terminal">ritueel due</Cmd>
+        <Cmd label="Read the folder in a terminal">ritueel status</Cmd>
         {retry ? (
           <Button variant="outlined" onClick={retry}>
             Try again

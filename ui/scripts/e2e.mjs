@@ -40,7 +40,7 @@ check('a change of screen moves focus to the heading', (await active()).id === '
 await go('#/nothing-here');
 check('an unknown address says so, and is not another screen', /no such screen/i.test(await text()));
 await go('#/cards/00000102');
-check('a card that is not in the inventory says so and shows the command', /not in your inventory/i.test(await text()) && /ritueel cards adopt 00000102/.test(await text()));
+check('a card that is not in the inventory says so and shows the command', /not in your inventory/i.test(await text()) && /ritueel card adopt --card 00000102/.test(await text()));
 
 // ---- keyboard: skip link, focus ring on MUI controls --------------------------
 await send('Page.navigate', { url: 'about:blank' });

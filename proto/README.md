@@ -84,8 +84,10 @@ Enums, all with an `_UNSPECIFIED = 0` first value and the enum name as prefix:
 7. **The command is shown, never run.** `fix_command`, `equivalent_command`
    and `run_command` are exact strings to display and copy. Their names follow
    `docs/reference/cli.md` where a command exists there; a few (`personal
-   primary extend`, `cards adopt`, `adopt`) are proposals until the command set is
-   built, so the page must show them as given and not parse them.
+   primary extend`, `personal subkey revoke`, and the `--key` flag that names a
+   cloud key to adopt) are proposals until the command set is built; `card adopt`
+   and `card check` are the names cli.md gives, marked Proposed there, so the page
+   must show them as given and not parse them.
 8. **The wizard has three outcomes.** `StartPlan` returns questions, a plan, or
    a refusal. Questions are choices only; there is no free-text answer, so no
    place a secret could be typed. `ListIntentions` marks goals that do not apply,
