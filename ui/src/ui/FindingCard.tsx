@@ -8,6 +8,7 @@ import { Cmd } from './Cmd';
 import { SEV_EDGE, Sev, sevKey } from './Glyph';
 import { LearnLink } from './Page';
 import { T } from './T';
+import { CAPS } from '../lib/caps';
 
 const ACTION_LINK = 'inline-flex min-h-11 items-center font-semibold text-accent underline underline-offset-4';
 
@@ -47,7 +48,7 @@ export function FindingCard({
       <div className="mt-2 flex flex-wrap items-center gap-x-5 gap-y-0">
         {goal && blocked ? (
           <p className="my-1 max-w-[60ch] border-l-4 border-line pl-3 text-sm">
-            <strong>No plan for this yet.</strong> <T cap={240}>{goal.notApplicableReason}</T>
+            <strong>No plan for this yet.</strong> <T cap={CAPS['IntentionOption.not_applicable_reason']}>{goal.notApplicableReason}</T>
           </p>
         ) : f.fixIntention !== Intention.UNSPECIFIED ? (
           <span className="my-1">
@@ -77,15 +78,15 @@ export function FindingCard({
         <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
           <Sev level={k} />
           <span className="text-sm text-dim">
-            About <T cap={60}>{f.subject?.label}</T>
+            About <T cap={CAPS['Subject.label']}>{f.subject?.label}</T>
             {f.visibleFromPublicKey ? <span className="ml-2 border border-line px-1.5 text-xs">seen from the public key alone</span> : null}
           </span>
         </div>
         <h3 className="mt-2 text-lg leading-snug font-bold">
-          <T cap={160}>{f.title}</T>
+          <T cap={CAPS['Finding.title']}>{f.title}</T>
         </h3>
         <p className="mt-1.5 max-w-[68ch] text-[1rem]">
-          <T cap={400}>{f.reason}</T>
+          <T cap={CAPS['Finding.reason']}>{f.reason}</T>
         </p>
         {showEvidence && f.evidence.length > 0 ? (
           <details open={k === 'critical'} className="mt-1 max-w-[68ch]">
@@ -93,7 +94,7 @@ export function FindingCard({
             <ul className="mt-1.5 list-disc space-y-1 pl-5 text-sm">
               {f.evidence.map((e, i) => (
                 <li key={i}>
-                  <T cap={300}>{e}</T>
+                  <T cap={CAPS['Finding.evidence']}>{e}</T>
                 </li>
               ))}
             </ul>

@@ -42,7 +42,7 @@
       {
         "ordinal": 5,
         "title": "Write the certificate",
-        "detail": "The new key signs, digest only, as the ceremony role, in the session you already have: its X.509 root certificate and its OpenPGP self-signature (two), the two revocation signatures and the removal authorisation made at birth (three), and its own CRL (one). The current root globex/A and the new root both sign the next root list and the next SSH CA key list (four), and globex/A signs its CRL again (one). Eleven signatures; a cloud key has no touch.",
+        "detail": "The new key signs, digest only, as the ceremony role, in your session: its X.509 root certificate and OpenPGP self-signature (two), the two revocation signatures and the removal authorisation (three), and its own CRL (one). globex/A and the new root both sign the next root list and the next SSH CA key list (four). globex/A signs its CRL again (one). Eleven signatures. A cloud key has no touch.",
         "whatChanges": "A new root, globex/B, in the bundle",
         "learnPath": "/design/#a-companys-roots-and-a-cloud-root",
         "signatureCount": 11

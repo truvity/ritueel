@@ -11,6 +11,7 @@ import { ymd } from '../lib/format';
 import { href, routeTitle, siteUrl, type Route } from '../lib/route';
 import { T } from './T';
 import { ToastProvider } from './Toast';
+import { CAPS } from '../lib/caps';
 
 type NavKey = 'start' | 'findings' | 'roots' | 'cards' | 'history' | 'trust' | 'plan';
 
@@ -221,16 +222,16 @@ export function Shell({ route, children }: { route: Route; children: ReactNode }
                   <dl className="grid grid-cols-[auto_1fr] gap-x-2 gap-y-0.5">
                     <dt>Bundle</dt>
                     <dd className="font-mono text-ink">
-                      <T cap={40}>{summary.data.bundle?.name}</T>
+                      <T cap={CAPS['Bundle.name']}>{summary.data.bundle?.name}</T>
                       <span className="block text-dim">
-                        <T cap={40}>{summary.data.bundle?.path}</T>
+                        <T cap={CAPS['Bundle.path#shell']}>{summary.data.bundle?.path}</T>
                       </span>
                     </dd>
                     <dt>As of</dt>
                     <dd className="font-mono text-ink">{ymd(summary.data.asOf)}</dd>
                     <dt>Build</dt>
                     <dd className="font-mono text-ink">
-                      <T cap={30}>{summary.data.programVersion}</T>
+                      <T cap={CAPS['GetSummaryResponse.program_version']}>{summary.data.programVersion}</T>
                     </dd>
                   </dl>
                 ) : null}

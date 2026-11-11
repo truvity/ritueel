@@ -3,6 +3,7 @@
 // stored choice, the wizard and its step bar, the four states, copy, the phone menu, routes,
 // and the help for a first visitor (what ritueel is, the Start-here path, the named switches, the notes).
 // usage: node scripts/e2e.mjs http://127.0.0.1:PORT/demo/
+import { readFileSync } from 'node:fs';
 import { clickText, launch, sleep } from './cdp.mjs';
 
 const base = process.argv[2];
@@ -421,12 +422,24 @@ const switchRights = JSON.parse(await evalJs(`JSON.stringify(['bundle-switch-lab
 check('at 360x740 the Example bundle and Page state switches end inside the window', switchRights.every(([, right]) => right !== null && right <= 360), JSON.stringify(switchRights));
 check('at 360x740 the three links of Start here keep their text and order', (await evalJs(`JSON.stringify([...document.querySelectorAll('section[aria-labelledby="start-here-h"] ol a')].map((a) => a.textContent.trim()))`)) === '["Roots","Findings","Make a plan"]');
 
+// ---- no example text runs into the page's own cut --------------------------------------------------
+// The page cuts a text from the bundle that is longer than its limit and writes this marker (src/lib/safe.ts). That guard stays; the texts of the
+// demo are written to fit, and the hostile test proves the guard on text that does not. So on no screen of the demo may the marker be seen. The
+// whole text of the page is read (textContent), so a closed <details> and a hidden part count too.
+const CUT_MARKER = 'cut: the text is longer';
+const notCut = async (label) => {
+  const whole = await evalJs('document.body.textContent');
+  const at = whole.indexOf(CUT_MARKER);
+  check(`${label}: no text is cut (the page's own marker is not shown)`, at < 0, at < 0 ? '' : whole.slice(Math.max(0, at - 120), at + 80));
+};
+
 // ---- no screen scrolls sideways on a phone: 360x740 and 390x844 -------------------------------------
 // The long unbreakable strings (the run command, a digest, a path in a record, a row of the cards) must wrap inside the window. Each screen is
 // measured, not only Start: the document must not be wider than the window and the window must be the size asked for.
 const sidewaysCheck = async (label, width) => {
   const wide = await evalJs('document.documentElement.scrollWidth + " > " + document.documentElement.clientWidth');
   check(`${label}: the document is not wider than the window, and the window is ${width} px`, (await evalJs('document.documentElement.scrollWidth <= document.documentElement.clientWidth')) && (await evalJs('window.innerWidth')) === width, wide);
+  await notCut(label);
 };
 const sidewaysPass = async (width, height) => {
   await send('Emulation.setDeviceMetricsOverride', { width, height, deviceScaleFactor: 1, mobile: true });
@@ -461,11 +474,60 @@ const sidewaysPass = async (width, height) => {
   await sleep(500);
   await sidewaysCheck(`at ${size} the saved plan of acme`, width);
   await go('#/start');
+  await clickText(evalJs, 'globex');
+  await sleep(500);
+  for (const hash of ['#/roots', '#/key/A', '#/cards', '#/history', '#/history/20260915T142000Z-init', '#/trust', '#/findings']) {
+    await go(hash);
+    await sidewaysCheck(`at ${size} ${hash} of globex`, width);
+  }
+  await go('#/plan/adopt-key');
+  await sleep(300);
+  await clickText(evalJs, 'Show me the plan');
+  await sleep(500);
+  await sidewaysCheck(`at ${size} the plan of globex`, width);
+  await clickText(evalJs, 'Save the plan');
+  await sleep(500);
+  await sidewaysCheck(`at ${size} the saved plan of globex`, width);
+  await go('#/start');
   await clickText(evalJs, 'personal');
   await sleep(500);
 };
 await sidewaysPass(360, 740);
 await sidewaysPass(390, 844);
+
+// ---- the desktop pass: every screen of every bundle, and every plan shown and saved, without the cut marker -----------
+// The routes come from the fixtures themselves (the roots, the cards and the records each bundle holds), so a new example screen is swept too.
+const fixture = (bundle, name) => JSON.parse(readFileSync(new URL(`../src/fixtures/${bundle}/${name}.json`, import.meta.url), 'utf8'));
+const desktopPass = async () => {
+  await send('Emulation.setDeviceMetricsOverride', { width: 1440, height: 900, deviceScaleFactor: 1, mobile: false });
+  await send('Page.navigate', { url: base });
+  await sleep(1200);
+  for (const bundle of ['personal', 'acme', 'globex']) {
+    await go('#/start');
+    await clickText(evalJs, bundle);
+    await sleep(500);
+    const roots = fixture(bundle, 'inspect.list-roots').roots.map((r) => `#/key/${r.label}`);
+    const cards = fixture(bundle, 'inspect.list-cards').cards.map((c) => `#/cards/${c.serial}`);
+    const records = fixture(bundle, 'inspect.list-ceremonies').ceremonies.map((c) => `#/history/${c.id}`);
+    const screens = ['#/start', '#/roots', ...roots, '#/findings', '#/cards', ...cards, '#/history', ...records, '#/trust', '#/plan'];
+    for (const hash of screens) {
+      await go(hash);
+      await notCut(`at 1440 ${hash} of ${bundle}`);
+    }
+    for (const slug of ['renew-due', 'adopt-key', 'retire-subkeys', 'add-card', 'replace-card']) {
+      await go(`#/plan/${slug}`);
+      await sleep(300);
+      await notCut(`at 1440 the choices of ${slug} of ${bundle}`);
+      if (!(await clickText(evalJs, 'Show me the plan'))) continue;
+      await sleep(500);
+      await notCut(`at 1440 the plan ${slug} of ${bundle}`);
+      if (!(await clickText(evalJs, 'Save the plan'))) continue;
+      await sleep(500);
+      await notCut(`at 1440 the saved plan ${slug} of ${bundle}`);
+    }
+  }
+};
+await desktopPass();
 
 check('the page logged no error, no exception and no policy violation', problems.length === 0, problems.slice(0, 5).join(' | '));
 
