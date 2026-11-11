@@ -200,7 +200,7 @@ await clickText(evalJs, 'Save the plan');
 await sleep(500);
 const gsaved = await text();
 check('the saved plan of globex needs no USB stick and no copy to the offline system', /No stick is needed/.test(gsaved) && !/USB stick/.test(gsaved) && !/Copy to the offline system/.test(gsaved) && /Bring with you/.test(gsaved));
-check('it is still shown saved as ledger/<ceremony>/plan.json inside its bundle (the demo's proposal)', /~\/ritueel\/globex\/ledger\/20261111T090000Z-root-add\/plan\.json/.test(gsaved) && /then, on your workstation/i.test(gsaved.replace(/\n/g, ' ')));
+check('it is still shown saved as ledger/<ceremony>/plan.json inside its bundle (a proposal in the demo)', /~\/ritueel\/globex\/ledger\/20261111T090000Z-root-add\/plan\.json/.test(gsaved) && /then, on your workstation/i.test(gsaved.replace(/\n/g, ' ')));
 await clickText(evalJs, 'personal');
 await sleep(500);
 check('switching back to personal goes back to Start', /~\/ritueel\/personal/.test(await text()) && (await evalJs('location.hash')) === '#/start' && pressed(await switchState(), 'personal'));
