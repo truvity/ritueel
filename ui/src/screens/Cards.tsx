@@ -447,7 +447,7 @@ function CardTile({ card }: { card: Card }) {
           <T cap={CAPS['Card.role_summary']}>{card.roleSummary}</T>
         </p>
         <p className="mt-2 text-sm text-dim">
-          {used} slots in use, kept: <T cap={CAPS['Card.kept#compact']}>{card.kept}</T>
+          {plural(used, 'slot')} in use, kept: <T cap={CAPS['Card.kept#compact']}>{card.kept}</T>
         </p>
         {card.changesSinceLastReading.length > 0 ? (
           <p className="mt-2 inline-flex items-center gap-1.5 text-sm font-bold text-alert">

@@ -3,7 +3,7 @@ import { ChainState, Intention, Severity } from '../gen/ritueel/local/v1alpha1/c
 import type { DueItem, GetSummaryResponse, SetupStep } from '../gen/ritueel/local/v1alpha1/inspect_service_pb';
 import { plans } from '../api/client';
 import { useCall, useFindings, useGoalMap, useRoots, useSummary } from '../api/hooks';
-import { daysBetween, inDays, plural, ymd } from '../lib/format';
+import { agoDays, daysBetween, inDays, plural, ymd } from '../lib/format';
 import { planHref } from '../lib/finding';
 import { safeString } from '../lib/safe';
 import { href } from '../lib/route';
@@ -81,7 +81,7 @@ function Verdict({ s }: { s: GetSummaryResponse }) {
             <a
               key={sev}
               href={href.findings()}
-              aria-label={`${n} ${SEV_WORD[k].toLowerCase()} findings`}
+              aria-label={plural(n, `${SEV_WORD[k].toLowerCase()} finding`)}
               className={`flex min-h-16 items-center gap-3 px-4 py-3 text-ink no-underline hover:bg-sunk ${i % 2 === 1 ? 'border-l' : ''} ${i >= 2 ? 'border-t sm:border-t-0' : ''} ${i > 0 ? 'sm:border-l' : ''} border-line`}
             >
               <Glyph level={k} size={20} />
@@ -136,7 +136,7 @@ function DueRow({ d, asOf }: { d: DueItem; asOf: GetSummaryResponse['asOf'] }) {
     <li className={`grid grid-cols-[4.5rem_minmax(0,1fr)] gap-3 border border-line border-l-[6px] bg-panel p-4 ${SEV_EDGE[k]} sm:grid-cols-[5.5rem_minmax(0,1fr)]`}>
       <div className="leading-none">
         <p className={`font-mono text-3xl font-bold ${SEV_TEXT[k]}`}>{n}</p>
-        <p className="mt-1 font-mono text-xs font-semibold text-dim uppercase">days left</p>
+        <p className="mt-1 font-mono text-xs font-semibold text-dim uppercase">{n === 1 ? 'day left' : 'days left'}</p>
       </div>
       <div className="min-w-0">
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
@@ -151,7 +151,7 @@ function DueRow({ d, asOf }: { d: DueItem; asOf: GetSummaryResponse['asOf'] }) {
         </p>
         {last !== undefined ? (
           <p className="mt-1 text-sm text-dim">
-            Last done {ymd(d.lastDoneAt)} ({last} days ago)
+            Last done {ymd(d.lastDoneAt)} ({agoDays(last)})
           </p>
         ) : null}
       </div>
@@ -293,7 +293,7 @@ function WhatIsWrong({ total }: { total: number }) {
       title="What is wrong"
       aside={
         <a href={href.findings()} className="inline-flex min-h-11 items-center font-semibold text-accent underline underline-offset-4">
-          {total > 0 ? `All ${total} findings` : 'Findings'}
+          {total > 0 ? `All ${plural(total, 'finding')}` : 'Findings'}
         </a>
       }
     >

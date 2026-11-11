@@ -208,6 +208,7 @@ describe('hostile text never reaches the markup raw', () => {
     expect(a).toContain('Where it runs: on your workstation');
     expect(a).toContain('A touch for every signature. This plan makes 7 signatures and asks for 7 touches.');
     expect(a).toContain('The number of signatures is fixed in this plan: 7.');
+    expect(a).toContain('Four conditions hold:');
     expect(a).toContain('No retry');
     expect(a).toContain('second device');
     expect(a).not.toContain('Proposed');
@@ -218,6 +219,12 @@ describe('hostile text never reaches the markup raw', () => {
     expect(b).toContain('0 touches');
     expect(b).toContain('second device');
     expect(b).toContain('ritueel asks nothing of how you signed in.');
+    // Record 0005, rule 18: of the four conditions the touch is for a root on cards; three hold for a cloud key.
+    expect(b).toContain('Of the four conditions of record 0005, rule 18, the first, a touch for every signature, is for a root on cards only. Three hold for a cloud key');
+    expect(b).not.toContain('Four conditions hold');
+    expect(b).toContain('The number of signatures is fixed in this plan: 4.');
+    expect(renderToStaticMarkup(<WhereItRuns plan={B} />)).toContain('<ol class="mt-2 list-decimal space-y-1.5 pl-6" start="2">');
+    expect(renderToStaticMarkup(<WhereItRuns plan={A} />)).toContain('<ol class="mt-2 list-decimal space-y-1.5 pl-6" start="1">');
     expect(b).not.toContain('A touch for every signature');
     // A cloud key has no touch to fail, and the second-device check cannot stop an extra signature (record 0005, "What it costs").
     expect(b).toContain('No retry of a failed step: a failure ends the ceremony.');
@@ -228,7 +235,9 @@ describe('hostile text never reaches the markup raw', () => {
     const c = flat(<WhereItRuns plan={C} />);
     expect(c).toContain('Where it runs: in the offline system');
     expect(c).toContain('vanilla AirgapOS');
-    expect(c).toContain('The stick step follows.');
+    // The stick step is on the save screen: the plan says where it is, and does not promise a step the list lacks.
+    expect(c).toContain('When you save the plan, this page lists what goes on the stick.');
+    expect(c).not.toContain('The stick step follows');
     const d = flat(<WhereItRuns plan={D} />);
     expect(d).toContain('A test root, marked TEST ONLY, may run here.');
     const e = flat(<WhereItRuns plan={E} />);
@@ -274,5 +283,43 @@ describe('hostile text never reaches the markup raw', () => {
       const text = html.split(/<[^>]*>/).join('');
       expect(text, name).toContain('acmeU+202EU+200DU+0007/AU+202EU+200DU+0007');
     }
+  });
+
+  it('a count of one reads in the singular wherever the page builds a count', async () => {
+    const { History } = await import('./screens/History');
+    const { Cards } = await import('./screens/Cards');
+    const { Start } = await import('./screens/Start');
+    const { PlanView, Saved } = await import('./screens/Plan');
+    const { Trust } = await import('./screens/Trust');
+    // The number of records, under the seal of the history: globex holds one, acme ten.
+    loadWorld('globex', 'adopt-key');
+    expect(renderToStaticMarkup(<History />)).toMatch(/uppercase">record</);
+    const oneStep = { ...w.d.plan.plan, steps: [w.d.plan.plan.steps[0]] };
+    expect(renderToStaticMarkup(<PlanView plan={oneStep} />)).toContain('1 step<');
+    expect(renderToStaticMarkup(<PlanView plan={w.d.plan.plan} />)).toContain('6 steps<');
+    const one = { ...w.d.saved, sizeBytes: 1n };
+    expect(renderToStaticMarkup(<Saved data={one} />)).toContain('1 byte<');
+    expect(renderToStaticMarkup(<Saved data={{ ...w.d.saved, sizeBytes: 2n }} />)).toContain('2 bytes<');
+    const trust = (w.d.trust.files as { sizeBytes: bigint }[]).length;
+    expect(trust).toBeGreaterThan(0);
+    expect(renderToStaticMarkup(<Trust />)).toMatch(/\d+ bytes?</);
+    loadWorld('acme', 'renew-due');
+    expect(renderToStaticMarkup(<History />)).toMatch(/uppercase">records</);
+    // Every "N slots in use" and "N days left" of the example bundles agrees with its number.
+    let slotTexts = 0;
+    let dayTexts = 0;
+    for (const bundle of ['personal', 'acme', 'globex']) {
+      loadWorld(bundle, bundle === 'personal' ? 'retire-subkeys' : bundle === 'acme' ? 'renew-due' : 'adopt-key');
+      for (const m of renderToStaticMarkup(<Cards />).matchAll(/(\d+) (slots?) in use/g)) {
+        slotTexts += 1;
+        expect(m[2], m[0]).toBe(m[1] === '1' ? 'slot' : 'slots');
+      }
+      for (const m of renderToStaticMarkup(<Start />).matchAll(/>(-?\d+)<\/p><p[^>]*>(days? left)</g)) {
+        dayTexts += 1;
+        expect(m[2], m[0]).toBe(m[1] === '1' ? 'day left' : 'days left');
+      }
+    }
+    expect(slotTexts).toBeGreaterThan(0);
+    expect(dayTexts).toBeGreaterThan(0);
   });
 });

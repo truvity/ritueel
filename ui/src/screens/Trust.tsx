@@ -72,7 +72,7 @@ function File({ f, asOf }: { f: TrustFile; asOf: Parameters<typeof daysBetween>[
           {built ? (
             <div className="flex gap-2">
               <dt className="text-dim">Size</dt>
-              <dd className="font-mono">{String(f.sizeBytes)} bytes</dd>
+              <dd className="font-mono">{String(f.sizeBytes)} {f.sizeBytes === 1n ? 'byte' : 'bytes'}</dd>
             </div>
           ) : null}
         </dl>
