@@ -14,23 +14,23 @@ A contributor or an agent presents the options, each with its pros and cons, and
 ## From proposal to record
 
 1. **Proposal.** Open an issue with the *Decision proposal* form: the question, the context, the options with pros and cons, and the options you would not take. The form labels it `type:decision`.
-2. **Record.** When the direction is clear, copy [the template](https://github.com/truvity/ritueel/blob/main/docs/decisions/0000-template.md) to `docs/decisions/NNNN-short-title-in-kebab-case.md`, with the next free number. Link the proposal issue in the context.
+2. **Record.** When the direction is clear, copy [the template](https://github.com/truvity/ritueel/blob/main/docs/decisions/0000-template.md) to `docs/decisions/NNNN-short-title-in-kebab-case.md`, with the next free number. Link the proposal issue in the *Why* section.
 3. **Index.** Add the record to the index table in `docs/decisions/README.md`, with its status. Every record has a row, and every row has a record.
 4. **Pages.** The pages that the decision changes follow in the same pull request, or in the next one ([Pages](/contributing/pages/)).
 5. **Pull request.** At most five records per pull request. A larger batch is split.
 
 ## Accepted means decided
 
-A record is `Accepted` when every part of it is decided. Two kinds of unfinished work differ:
+The numbered sentences of an `Accepted` record are decided. Two kinds of unfinished work sit outside them, in the section `## Not yet proven or only proposed`, one line each with its issue:
 
-- A **follow-up** verifies or implements the decision and cannot change it: a test at a card, a format page, a matrix of older tool versions. It goes under `## Follow-ups`, one line with its issue, and the record can still be `Accepted`.
-- An **open part** is a question whose answer could change the decision. While one exists, the record stays `Proposed`, and the open part is tracked in an issue the record links.
+- **Not yet proven.** The sentence is decided and waits for a test on a card or an account, a format page, or a matrix of older tool versions. The line starts `**Not yet proven.**`, and the record can still be `Accepted`.
+- **Proposed.** The point is not decided. The line starts `**Proposed.**`, and the record links the issue that tracks it.
 
-When in doubt, ask whether any result of the task would make you rewrite the Decision section. If it could, the part is open.
+When in doubt, ask whether any result of the task would make you rewrite a numbered sentence. If it could, move that sentence into this section: a numbered sentence is never a guess.
 
 ## Keep it short
 
-A record holds the choice, the reasons and the roads not taken. Measurements are cited from a dated page under `docs/research/` ([Spikes and research](/contributing/research/)); formats, file layouts and command tables live under `docs/reference/`. A record of about one screen of decision is the aim.
+A record has the shape of [the template](https://github.com/truvity/ritueel/blob/main/docs/decisions/0000-template.md): numbered sentences in *Decision*, then *Why*, *What it costs*, *Roads not taken*, *Not yet proven or only proposed* and *Replaces*. The aim is 900 words for *Decision*, *Why* and *What it costs* together. *Decision* has no sub-headings, tables or code blocks: an exact format (a slot table, file members, a byte layout, a flag list) is only named and linked to its page under `docs/reference/`. Measurements are cited from a dated page under `docs/research/` ([Spikes and research](/contributing/research/)).
 
 ## State each rule once
 
@@ -44,11 +44,11 @@ Every record keeps the options it did not take: one line each, saying what the o
 
 ## Changing a record
 
-- **Until the first release (design phase),** a record is rewritten in place, merged with another, renumbered or removed, so that the set stays small and current. The earlier text stays in git history. When a record's address changes, add a line to `site/public/_redirects` from the old address to the new one in the same pull request, update every link to it, and check after the deploy that the old address answers 301 ([Changing the site](/contributing/pages/#changing-the-site)). Do not amend a record with a note that the design phase would rather absorb.
+- **Until the first release (design phase),** a record is rewritten in place, merged with another, renumbered or removed, so that the set stays small and current. The earlier text stays in git history. Records have no page on the site, so a moved record needs no redirect line. In the same pull request, keep [the design in brief](/design/) and the glossary in step with the records they link, and update every link to the record. Do not amend a record with a note that the design phase would rather absorb.
 - **From the first release on,** records are append-only. A changed mind gets a new record that supersedes the old one, and the old status line says so (`Superseded by NNNN`, or `Accepted; amended by NNNN`). The decision is never edited; typos and links may be fixed in place. A number is never reused.
 
 The first release is the line between the two. Which side a record is on is the maintainer's to say when it is not clear.
 
 ## What CI checks
 
-CI checks the file name, the required sections, the status value, the one-line roads not taken, that every follow-up links its issue, that an `Accepted` record has no open part, and the index rows; run `just check-decisions`, then `just check`, before you push. Passing it is necessary, not sufficient: the maintainer reviews the reasoning.
+CI checks the file name, the required sections in order, the status value, that *Decision* is a numbered list with no heading, table or code block, the one-line roads not taken, that every line of *Not yet proven or only proposed* carries its label and links its issue, that *Replaces* is not empty, that an `Accepted` record has no open part, the size (a warning above 1,100 words for the three core sections or 1,800 for the whole record), and the index rows; run `just check-decisions`, then `just check`, before you push. Passing it is necessary, not sufficient: the maintainer reviews the reasoning.

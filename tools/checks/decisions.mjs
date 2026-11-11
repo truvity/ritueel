@@ -16,8 +16,13 @@
 //   - each section appears exactly once, in the template's order, and is not empty;
 //   - "Roads not taken" is a list of one-line bullets, one per option weighed, each a bold name and
 //     the reason it lost (`- **Option.** What it gives, what it costs, why it lost.`), at least one;
-//   - "Follow-ups" is `None.`, or a list of one-line bullets, each linking the issue that carries
-//     it: tasks that verify or implement the decision and cannot change it;
+//   - "Decision" is a numbered list, 1 to n, of sentences: no heading, table row or code fence
+//     (a format is named and linked to its reference page, not written out);
+//   - "Not yet proven or only proposed" is `None.`, or a list of one-line bullets, each starting
+//     `**Not yet proven.**` (decided, waits for a test) or `**Proposed.**` (not decided) and linking
+//     the issue that carries it; "Replaces" is not empty;
+//   - size: Decision, Why and What it costs together aim at 900 words, and a record over 1,100 (or
+//     1,800 as a whole) is reported as a warning; with RECORD_SIZE_STRICT=1 it is an error;
 //   - an `Accepted` record has no part marked open: no `Open` heading and no `:::caution[Open]`;
 //   - no line of the template's instructions comment (<!-- ... -->) is left;
 //   - the README index has exactly one row for it, linking the file, with the same status.
@@ -64,8 +69,12 @@ function sections(text) {
 const FIELD = /^\*\*([A-Z][A-Za-z ]*):\*\*\s*(.*?)\s*$/;
 // A road not taken: a bold option name, then the reason, on one line.
 const ROAD = /^- \*\*([^*]+?)\*\*[.:]?\s+(\S.{9,})$/;
-// A follow-up: a bullet that links an issue of a GitHub repository.
-const FOLLOW_UP = /^- \S.*\]\(https:\/\/github\.com\/[\w.-]+\/[\w.-]+\/issues\/\d+\)/;
+// A point not yet proven or only proposed: a label, then the text, and the link to its issue.
+const FOLLOW_UP = /^- \*\*(?:Not yet proven|Proposed)\.\*\* \S.*\]\(https:\/\/github\.com\/[\w.-]+\/[\w.-]+\/issues\/\d+\)/;
+// Size, in words: the aim is 900 for the three sections that carry the decision.
+const MAX_CORE = 1100;
+const MAX_ALL = 1800;
+const STRICT_SIZE = process.env.RECORD_SIZE_STRICT === '1';
 
 // ---- the format, from the template
 if (!existsSync(join(dir, TEMPLATE))) {
@@ -77,12 +86,14 @@ const tpl = sections(template);
 const FIELDS = tpl.head.map((l) => FIELD.exec(l.line)?.[1]).filter(Boolean);
 const SECTIONS = tpl.secs.map((s) => s.title);
 const ROADS = 'Roads not taken';
-const FOLLOW = 'Follow-ups';
+const FOLLOW = 'Not yet proven or only proposed';
+const DECISION = 'Decision';
+const CORE = [DECISION, 'Why', 'What it costs'];
 // The lines of the template's instructions comment; a record keeps none of them.
 const tplComment = (/<!--([\s\S]*?)--!?>/.exec(template)?.[1] ?? '').split('\n').map((l) => l.trim()).filter((l) => l.length >= 12);
 if (!FIELDS.includes('Status') || !FIELDS.includes('Date')) E(`${TEMPLATE}: no **Status:** and **Date:** fields found`);
 if (!SECTIONS.length) E(`${TEMPLATE}: no ## sections found`);
-for (const want of [ROADS, FOLLOW]) if (!SECTIONS.includes(want)) E(`${TEMPLATE}: no "## ${want}" section`);
+for (const want of [DECISION, ROADS, FOLLOW, 'Replaces']) if (!SECTIONS.includes(want)) E(`${TEMPLATE}: no "## ${want}" section`);
 
 // ---- the allowed statuses, from the README, cross-checked with the template comment
 const readme = existsSync(join(dir, 'README.md')) ? read('README.md') : '';
@@ -125,6 +136,7 @@ const isDay = (s) => {
 };
 
 // ---- each record
+let sizeWarnings = 0;
 for (const rec of records.values()) {
   const where = `docs/decisions/${rec.name}`;
   const text = read(rec.name);
@@ -173,12 +185,50 @@ for (const rec of records.values()) {
   const follow = body(FOLLOW);
   if (!(follow.length === 1 && follow[0].line.trim() === 'None.')) {
     for (const l of follow) {
-      if (!FOLLOW_UP.test(l.line)) E(`${where}:${l.n}: a follow-up is a bullet that links its issue, or the section is "None."`);
+      if (!FOLLOW_UP.test(l.line)) E(`${where}:${l.n}: a line of "## ${FOLLOW}" is "- **Not yet proven.** ..." or "- **Proposed.** ..." and links its issue, or the section is "None."`);
     }
+  }
+
+  // The decision is numbered sentences: 1. 2. 3. ..., a wrapped line indented, nothing else.
+  const decision = secs.find((x) => x.title === DECISION);
+  if (decision) {
+    let next = 1;
+    for (const l of decision.body) {
+      const t = l.line;
+      if (!t.trim()) continue;
+      const num = /^(\d+)\. \S/.exec(t);
+      if (/^#{1,6}\s/.test(t) || /^\s*\|/.test(t)) E(`${where}:${l.n}: "## ${DECISION}" has no heading or table, only numbered sentences`);
+      else if (num) {
+        if (Number(num[1]) !== next) E(`${where}:${l.n}: sentence ${num[1]} where ${next} is expected; "## ${DECISION}" is numbered 1 to n`);
+        next = Number(num[1]) + 1;
+      } else if (!/^\s+\S/.test(t) || next === 1) E(`${where}:${l.n}: "## ${DECISION}" is a numbered list, "1. A sentence."; indent a wrapped line`);
+    }
+    if (next === 1 && decision.body.some((l) => l.line.trim())) E(`${where}:${decision.n}: "## ${DECISION}" has no numbered sentence`);
+  }
+  // A code fence is dropped by lines(), so look for it in the raw text of the section.
+  {
+    const raw = text.split('\n');
+    const at = raw.findIndex((l) => l === `## ${DECISION}`);
+    if (at >= 0) {
+      let end = raw.findIndex((l, i) => i > at && /^## /.test(l));
+      if (end < 0) end = raw.length;
+      const f = raw.findIndex((l, i) => i > at && i < end && /^\s*(```|~~~)/.test(l));
+      if (f >= 0) E(`${where}:${f + 1}: "## ${DECISION}" has no code block; name the format and link its reference page`);
+    }
+  }
+
+  // Size, in words (whitespace-separated, headings and links as written).
+  const words = (t) => t.split(/\s+/).filter(Boolean).length;
+  const core = secs.filter((x) => CORE.includes(x.title)).reduce((n, x) => n + words(x.body.map((l) => l.line).join('\n')), 0);
+  const all = words(text);
+  if (core > MAX_CORE || all > MAX_ALL) {
+    const m = `${where}: ${core} words in ${CORE.join(', ')} (aim 900, limit ${MAX_CORE}) and ${all} in all (limit ${MAX_ALL})`;
+    if (STRICT_SIZE) E(m);
+    else { sizeWarnings++; console.warn(`warning: ${m}`); }
   }
   if (rec.Status === 'Accepted') {
     for (const l of lines(text)) {
-      if (/^#{2,6}\s+Open\b/.test(l.line) || /^:::caution\[Open\]/.test(l.line.trim())) E(`${where}:${l.n}: an Accepted record has no open part; decide it, or move a task that cannot change the decision to "## ${FOLLOW}"`);
+      if (/^#{2,6}\s+Open\b/.test(l.line) || /^:::caution\[Open\]/.test(l.line.trim())) E(`${where}:${l.n}: an Accepted record has no open part; decide it, or move the point to "## ${FOLLOW}"`);
     }
   }
 
@@ -208,4 +258,5 @@ for (const rec of records.values()) {
   if (!rows.has(rec.num)) E(`docs/decisions/${rec.name}: no row in the README index`);
 }
 
+if (sizeWarnings) console.warn(`check-decisions: ${sizeWarnings} records over the size limit (warnings; RECORD_SIZE_STRICT=1 makes them errors)`);
 r.finish(records.size, `records (${SECTIONS.length} sections, ${STATUSES.length} statuses from the template and README)`);
