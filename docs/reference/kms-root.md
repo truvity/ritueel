@@ -92,21 +92,6 @@ The reference key policy: the same text for every key, with the role ARNs and th
 
 `PutKeyPolicy` stays with the admin role because AWS refuses a policy that would lock out its own caller. The policy refuses new replicas and moving the primary Region to everyone but the break-glass principal, so that an administrator cannot copy the key to a Region where no one watches; it allows digests only (the Sign row). The replicas are made before the refusal applies, or by the break-glass principal; the sequence for the keys that ritueel creates is written here when the store is built ([ADR 0018](/decisions/0018-a-cloud-root-may-be-an-existing-key-that-ritueel-adopts/#the-reference-key-policy)). No statement names the account root, and none allows `Sign` to the admin role or the break-glass principal. The break-glass SSH CA key has no Renew statement: nothing it signs is ever renewed. The `kms:` condition keys are those of the KMS documentation (read 2026-11-02, [AWS KMS condition keys](https://docs.aws.amazon.com/kms/latest/developerguide/conditions-kms.html)); The digest of the policy text, as the service returns it, is `policy_sha256` in the record.
 
-## A later option: a hardware-key sign-in
-
-**Not required, not built and not checked by ritueel.** The maintainer dropped it for now and it may come back ([ADR 0013](/decisions/0013-the-kms-ceremony-role-is-the-only-signer-and-ritueel-asks-nothing-of-its-sign-in/)). This section keeps what was learned, so that it need not be found again. If it returns, the decision is rewritten and this section becomes the detail.
-
-A KMS root has no card, so a gate on the ceremony role is the only way to ask for a person with a hardware key. AWS does not set `aws:MultiFactorAuthPresent` for a federated sign-in (read 2026-11-06, [IAM condition keys](https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_condition-keys.html)). The way AWS documents is a session tag that the identity provider sets from the sign-in (read 2026-11-06, [session tags](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_session-tags.html)):
-
-- **The tag.** Key `mfa`, value `hardware`, set by the provider only after a sign-in with a device-bound hardware key. In an OIDC token it is the claim `https://aws.amazon.com/tags`, then `principal_tags`, then `mfa`; in SAML it is the attribute `https://aws.amazon.com/SAML/Attributes/PrincipalTag:mfa`.
-- **The key policy.** The `Sign` statement would add `StringEquals` on `aws:PrincipalTag/mfa` with the value `hardware`.
-- **The trust policy.** Its only principal would be the federated provider, with `sts:TagSession` and `aws:RequestTag/mfa` on both statements, and no role chaining: `AssumeRole` takes caller-supplied `Tags`, so a chained principal could write the tag itself.
-- **The provider.** It would have to ask for a fresh hardware-key sign-in for each ceremony, issue tokens of 5 minutes or less, and never mint the tag from a refresh token or an earlier sign-in. IAM Identity Center cannot be that provider (read 2026-11-06, [attributes for access control](https://docs.aws.amazon.com/singlesignon/latest/userguide/attributesforaccesscontrol.html), [permission sets](https://docs.aws.amazon.com/singlesignon/latest/userguide/permissionsetsconcept.html)).
-- **Freshness.** A policy variable cannot be used in a date comparison, so a tag cannot carry its own expiry. The bound is the provider's token plus the role's session, at most one hour.
-- **No call returns a session's own tags** (read 2026-11-06, [GetCallerIdentity](https://docs.aws.amazon.com/STS/latest/APIReference/API_GetCallerIdentity.html)), so a check by ritueel would need a different way to ask AWS; none was tested.
-
-[ADR 0013](/decisions/0013-the-kms-ceremony-role-is-the-only-signer-and-ritueel-asks-nothing-of-its-sign-in/) decides that it is not required.
-
 ## The checks
 
 Made at `init` after the keys exist, and again, reading from the service, at every ceremony that signs with the root and at the restore drill ([issue #68](https://github.com/truvity/ritueel/issues/68)). A check that cannot run is `not-run`, and the ceremony stops. Exit code 3 for each, except `kms-session`, which is 4: the key store's side refuses the session ([exit codes](/reference/cli/#exit-codes)).
