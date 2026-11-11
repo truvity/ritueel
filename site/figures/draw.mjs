@@ -128,7 +128,9 @@ export function person(cx, base = 168, hands = []) {
   for (const side of [-1, 1]) {
     const sx = cx + side * 22;
     const sy = base - 46;
-    const [hx, hy] = given.get(side) ?? [cx + side * 31, base - 12];
+    const [hx, hy] = given.get(side) ?? [cx + side * 29, base - 12];
+    // the holder (hands included) stays inside a 280-unit panel with a margin: shift the scene, not the holder
+    if (hx - 5 < 8 || hx + 5 > 272 || cx - 27 < 8 || cx + 27 > 272) throw new Error(`person: cx ${cx} / hand ${hx} is too close to the panel edge`);
     const qx = (sx + hx) / 2 + side * 3;
     const qy = (sy + hy) / 2 + 8;
     const d = `M${f(sx)} ${f(sy)} Q${f(qx)} ${f(qy)} ${f(hx)} ${f(hy)}`;
