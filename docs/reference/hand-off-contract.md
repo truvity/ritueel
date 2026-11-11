@@ -17,8 +17,6 @@ A system that holds intermediate keys, called the **requester** on this page, an
 | OpenPGP subkey, for signing or authentication (`openpgp-subkey`) | The public subkey and its back-signatures (one for every active primary) as OpenPGP packets, and a proof file | The subkey bound by a primary, as OpenPGP packets, and a result file |
 | SSH CA key (`ssh-ca-key`) | The public key as an OpenSSH line, an SSH signature by that key, and a proof file | A result file: the key is on the next [SSH CA key list](/reference/ssh-ca-key-list/) |
 
-A further message, the staff proof bundle, goes the other way: from ritueel's card helper to a system that binds a card's subkeys under a person's primary. It is specified on [Staff OpenPGP](/reference/staff-openpgp/#the-proof-bundle), not here, and follows this page's P-384 rule.
-
 The key is made where it will live (a YubiKey slot, a card's OpenPGP applet, an AWS KMS key, or a file in development) and never leaves. Only public keys, signatures and certificates travel. The proof file says where the key lives and carries the evidence for it. An SSH CA key is not certified: a host trusts it by being given its public key, so ritueel lists it instead.
 
 ## The floor: PKCS#10 in, X.509 out
@@ -346,7 +344,7 @@ A refused answer holds no artifacts and no secret. The codes:
 
 The answer does not say which part of a policy failed. The certifier's output and its ceremony record do.
 
-**Trust products.** The CA bundle, the keyring, the signed root list, the SSH CA key list and the CRLs are not part of this contract, and the certifier publishes them as it does for everyone ([record 0006](../decisions/0006-bundle-history-and-trust-files.md)). The contract fixes one thing about them: they carry the **trust sequence**, one integer that grows by one each time any of them changes, and `trust_sequence` in the answer says which one the answer needs. The root list's own format, and the CA bundle's, are in [the root list reference](/reference/root-list/), the SSH CA key list's in [its reference](/reference/ssh-ca-key-list/), and the CRLs in [theirs](/reference/crl/), each with vectors made from the same test roots as these.
+**Trust files.** The CA bundle, the keyring, the signed root list, the SSH CA key list and the CRLs are not part of this contract, and the certifier publishes them as it does for everyone ([record 0006](../decisions/0006-bundle-history-and-trust-files.md)). The contract fixes one thing about them: they carry the **trust sequence**, one integer that grows by one each time any of them changes, and `trust_sequence` in the answer says which one the answer needs. The root list's own format, and the CA bundle's, are in [the root list reference](/reference/root-list/), the SSH CA key list's in [its reference](/reference/ssh-ca-key-list/), and the CRLs in [theirs](/reference/crl/), each with vectors made from the same test roots as these.
 
 ## What the certifier records
 

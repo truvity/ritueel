@@ -5,13 +5,13 @@ sidebar:
   order: 15
 ---
 
-*Not built yet. This is the page that [ADR 0012](/decisions/0012-personal-openpgp-the-primary-offline-in-a-file-the-daily-subkey-on-a-card/) leaves for the details, and that record is `Accepted`. It decides the profile and how long a person's primary lives; [ADR 0017](/decisions/0017-a-persons-openpgp-key-in-two-stages-an-adopted-primary-first-then-card-born-primaries/) decides the two stages of the key, the day-to-day subkeys and how a subkey is retired. The [hand-off contract](/reference/hand-off-contract/#openpgp-subkey) carries the signing and the authentication capability, with their test vectors. The code is [issue #18](https://github.com/truvity/ritueel/issues/18): stage one is M3, and stage two is M6. How to use the result is in [Sign git commits and tags](/guides/openpgp-sign-git/) and [Your own OpenPGP key](/guides/personal-openpgp/).*
+*Not built yet. This is the page that [record 0008](../decisions/0008-a-persons-own-key.md) leaves for the details, and that record is `Accepted`. It decides the profile, how long a person's primary lives, the two stages of the key, the day-to-day subkeys and how a subkey is retired. The [hand-off contract](/reference/hand-off-contract/#openpgp-subkey) carries the signing and the authentication capability, with their test vectors. The code is [issue #18](https://github.com/truvity/ritueel/issues/18): stage one is M3, and stage two is M6. How to use the result is in [Sign git commits and tags](/guides/openpgp-sign-git/) and [Your own OpenPGP key](/guides/personal-openpgp/).*
 
-A key the company issues to staff is a different flow, with the primary held by sluis: [Staff OpenPGP](/reference/staff-openpgp/). A person's own OpenPGP key is the same ritual as a service's subkey: a key is made in a store and bound under a primary. Here the primary is the person's, offline in a key file, and the subkeys are born on the person's cards. ritueel runs it with the engine of the company case, with the X.509 half switched off.
+There is no key the company issues to staff: every person uses OpenPGP as their own key ([record 0008](../decisions/0008-a-persons-own-key.md)). A person's own OpenPGP key is the same ritual as a service's subkey: a key is made in a store and bound under a primary. Here the primary is the person's, offline in a key file, and the subkeys are born on the person's cards. ritueel runs it with the engine of the company case, with the X.509 half switched off.
 
 ## The bundle
 
-A person's own key is one trust domain, so it has a bundle of its own. A person who also runs a company keeps the personal bundle apart from the company's, and the same pair of root cards may serve both ([ADR 0016](/decisions/0016-several-bundles-share-one-pair-of-root-cards-and-the-bundle-keeps-a-card-inventory/)).
+A person's own key is one trust domain, so it has a bundle of its own. A person who also runs a company keeps the personal bundle apart from the company's, and the same pair of root cards may serve both ([record 0003](../decisions/0003-root-cards.md)).
 
 ```yaml
 version: 1
@@ -40,7 +40,7 @@ intermediates:
 |---|---|---|
 | Roots | `A` and `B` (two cards), or one cloud root. | One root, `A`, with an OpenPGP primary and no X.509 key. |
 | `root.json` | Has `x509_spki_sha256`. | Has no X.509 member. |
-| Trust products | Root list, CA bundle, CRLs, SSH CA key list, keyring package. | The person's public certificate, `products/<sequence>/<fingerprint>.pgp` and `.asc`. |
+| Trust files | Root list, CA bundle, CRLs, SSH CA key list, keyring package. | The person's public certificate, `trust/<number>/<fingerprint>.pgp` and `.asc`. |
 | Hand-off check 3 | The primaries equal those on the root list. | They equal the bundle's one primary ([the contract](/reference/hand-off-contract/#what-the-certifier-checks-1)). |
 | Target of the root set | 2 or 1. | 1; `status` raises no `root-set` finding for it. |
 | `root add`, `retire`, `revoke` | [As the transitions page says](/reference/transitions/). | The same, with the OpenPGP half only: no cross-certificate. |
@@ -48,11 +48,11 @@ intermediates:
 
 ## The profiles
 
-The primary is the profile of [the OpenPGP primary](/reference/bundle/#the-openpgp-primary) with two changes: its one user ID is `<name> <address>` of the person, and it is made in the `software` store with the encrypted file backend, whose key file is `A.openpgp.key.age` in the key directory, opened as [ADR 0015](/decisions/0015-key-files-open-with-a-passkey-on-each-root-card-and-card-secrets-are-sealed-in-the-bundle/) says. It is valid 36 months and extended at each use. In stage one an existing primary may be adopted instead ([below](/reference/personal-openpgp/#stage-one-an-adopted-primary)).
+The primary is the profile of [the OpenPGP primary](/reference/bundle/#the-openpgp-primary) with two changes: its one user ID is `<name> <address>` of the person, and it is made in the `software` store with the encrypted file backend, whose key file is `A.openpgp.key.age` in the key directory, opened as [record 0002](../decisions/0002-where-a-key-lives.md) says. It is valid 36 months and extended at each use. In stage one an existing primary may be adopted instead ([below](/reference/personal-openpgp/#stage-one-an-adopted-primary)).
 
 The two subkeys are the subkeys of [the contract](/reference/hand-off-contract/#openpgp-subkey): ECDSA P-384, version 4, a back-signature made by the subkey, a binding of about 13 months. The signing subkey (`daily` above) has key flags `0x02`; the authentication subkey (`ssh` above) has `0x20` and serves SSH through `gpg-agent` ([the guide](/guides/openpgp-ssh-authentication/)). One set of signing and authentication subkeys is born on each day-to-day card.
 
-The encryption subkey is the exception: it is made in software, loaded onto each day-to-day card, and has a wrapped backup in the bundle, so that a lost card does not lose the mail it decrypted ([ADR 0017](/decisions/0017-a-persons-openpgp-key-in-two-stages-an-adopted-primary-first-then-card-born-primaries/#day-to-day-cards)). The personal ceremony itself makes it and the primary binds it; it is not a capability of the hand-off contract. The wrapped backup's format and the command are fixed with stage one ([issue #18](https://github.com/truvity/ritueel/issues/18)). The touch setting of each key is the holder's choice, and [the guide](/guides/personal-openpgp/) says what each choice costs.
+The encryption subkey is the exception: it is made in software, loaded onto each day-to-day card, and has a wrapped backup in the bundle, so that a lost card does not lose the mail it decrypted ([record 0008](../decisions/0008-a-persons-own-key.md)). The personal ceremony itself makes it and the primary binds it; it is not a capability of the hand-off contract. The wrapped backup's format and the command are fixed with stage one ([issue #18](https://github.com/truvity/ritueel/issues/18)). The touch setting of each key is the holder's choice, and [the guide](/guides/personal-openpgp/) says what each choice costs.
 
 ## The commands
 
@@ -65,18 +65,18 @@ Everything else is planned: the renewal plan (`ritueel due`, then `ritueel run P
 
 ### The ceremony of `personal subkey add`
 
-1. **Plan.** The card's serial and slot, the creation time of the subkey, the validity of the binding and the number of touches. The subkey is a birth, so the binding is a derived signature ([ADR 0008](/decisions/0008-the-operator-prepares-the-holder-and-ritueel-creates-attests-and-verifies-the-root/#births-and-what-a-crash-leaves)).
+1. **Plan.** The card's serial and slot, the creation time of the subkey, the validity of the binding and the number of touches. The subkey is a birth, so the binding is a derived signature ([record 0005](../decisions/0005-a-ceremony-and-where-it-runs.md)).
 2. **Confirm** by typing the first eight characters of the plan digest, as always.
 3. **Reserve, and birth.** The attempt is written; the card makes the key on its OpenPGP applet and the back-signature, after the user PIN is verified at the terminal.
 4. **Attest.** The card's attestation of the key is read with the maker's command (`80 FB 01 00` on a YubiKey) and checked against the attestation bundle ([cards](/reference/cards/#the-attestation-bundle)). Until the encoding of the extensions under `1.3.6.1.4.1.41482.5` is measured, the key is recorded as attested and no PIN or touch policy is enforced from it.
-5. **Sign.** The primary's key file is opened as [ADR 0015](/decisions/0015-key-files-open-with-a-passkey-on-each-root-card-and-card-secrets-are-sealed-in-the-bundle/) says, and the primary binds the subkey. The fingerprint is shown first.
+5. **Sign.** The primary's key file is opened as [record 0002](../decisions/0002-where-a-key-lives.md) says, and the primary binds the subkey. The fingerprint is shown first.
 6. **Verify and record,** and write the certificate.
 
 A lost card is answered with `ritueel personal subkey add` on a new card after the primary has revoked the old subkey (a subkey revocation, type `0x28`, made by the primary at that ceremony). No pre-made file is needed, because the primary is a file.
 
 ## Stage one: an adopted primary
 
-A person who already has a primary, with years of certifications, may adopt it as it is, as a software key in a key file ([ADR 0017](/decisions/0017-a-persons-openpgp-key-in-two-stages-an-adopted-primary-first-then-card-born-primaries/#stage-one)). This is the one stated exception to "nothing is imported".
+A person who already has a primary, with years of certifications, may adopt it as it is, as a software key in a key file ([record 0008](../decisions/0008-a-persons-own-key.md)). This is the one stated exception to "nothing is imported".
 
 - The key is marked `adopted` in its `root.json` ([the bundle](/reference/bundle/#rootjson)).
 - It may be RSA-4096 and without expiry on arrival, so it is outside the P-384 profile above until it is replaced.
@@ -86,11 +86,11 @@ The adoption command is fixed with the code ([issue #18](https://github.com/truv
 
 ## Stage two: card-born primaries
 
-Decided, not built; it depends on the root cards and their proofs (M1, M6). Two primaries are born, one on each root card, in the personal bundle's row ([ADR 0016](/decisions/0016-several-bundles-share-one-pair-of-root-cards-and-the-bundle-keeps-a-card-inventory/#the-rows)). One is published; the other is a standby that the published one certifies. The old key vouches for the published one, with an overlap, and then ends ([ADR 0009](/decisions/0009-root-transitions-vouch-overlap-retire-and-revoke/)).
+Decided, not built; it depends on the root cards and their proofs (M1, M6). Two primaries are born, one on each root card, in the personal bundle's row ([record 0003](../decisions/0003-root-cards.md)). One is published; the other is a standby that the published one certifies. The old key vouches for the published one, with an overlap, and then ends ([record 0007](../decisions/0007-changing-and-losing-a-root.md)).
 
 ## Retiring a subkey
 
-A subkey that is replaced is retired by a revocation with the reason "superseded", dated on the day of the switch, or by expiry; "compromised" is for compromise only ([ADR 0017](/decisions/0017-a-persons-openpgp-key-in-two-stages-an-adopted-primary-first-then-card-born-primaries/#retiring-a-subkey)). What the verifiers do with each was measured on 2026-11-10: [the research note](/research/openpgp-subkey-retirement-2026-11-10/).
+A subkey that is replaced is retired by a revocation with the reason "superseded", dated on the day of the switch, or by expiry; "compromised" is for compromise only ([record 0008](../decisions/0008-a-persons-own-key.md)). What the verifiers do with each was measured on 2026-11-10: [the research note](/research/openpgp-subkey-retirement-2026-11-10/).
 
 ## Follow-ups
 
