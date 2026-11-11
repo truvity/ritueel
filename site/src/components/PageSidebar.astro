@@ -1,10 +1,48 @@
 ---
-// Starlight's right-hand "On this page" column replaced by its own collapsible
-// dropdown (the mobile table of contents), at every width. It is fixed under the
-// header, so it stays at the top while the page scrolls, and it renders nothing
-// when the page has no table of contents (src/route-middleware.ts drops it for
-// pages with fewer than two headings).
+// The "On this page" list, in the two forms Starlight's own PageSidebar draws, with the
+// breakpoint of this site (100rem, see styles/layout.css) in place of Starlight's 72rem:
+//   - the dropdown (Starlight's MobileTableOfContents) below 100rem, at the top of the content;
+//   - the column (Starlight's TableOfContents, with its own script that marks the current
+//     heading) from 100rem, fixed at the right of the window.
+// Both are in the HTML and CSS shows one. It renders nothing when the page has no table of
+// contents (src/route-middleware.ts drops it for pages with fewer than two headings).
 import MobileTableOfContents from 'virtual:starlight/components/MobileTableOfContents';
+import TableOfContents from 'virtual:starlight/components/TableOfContents';
 ---
 
-{Astro.locals.starlightRoute.toc && <MobileTableOfContents />}
+{
+  Astro.locals.starlightRoute.toc && (
+    <>
+      <div class="ritueel-toc-bar">
+        <MobileTableOfContents />
+      </div>
+      <div class="ritueel-toc-rail print:hidden">
+        <TableOfContents />
+      </div>
+    </>
+  )
+}
+
+<style>
+  /* The look of Starlight's own right-hand column (its PageSidebar.astro), unchanged. Where the
+     column sits, and the dropdown below 100rem, is in styles/layout.css. */
+  @layer starlight.core {
+    .ritueel-toc-rail :global(h2) {
+      margin-bottom: 0.5rem;
+      color: var(--sl-color-white);
+      font-size: var(--sl-text-h5);
+      font-weight: 600;
+      line-height: var(--sl-line-height-headings);
+    }
+    .ritueel-toc-rail :global(:where(a)) {
+      display: block;
+      font-size: var(--sl-text-xs);
+      text-decoration: none;
+      color: var(--sl-color-gray-3);
+      overflow-wrap: anywhere;
+    }
+    .ritueel-toc-rail :global(:where(a):hover) {
+      color: var(--sl-color-white);
+    }
+  }
+</style>

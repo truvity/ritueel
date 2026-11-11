@@ -1,10 +1,13 @@
 ---
-// Starlight's two-column layout (content plus a right-hand table of contents)
-// replaced by a single column. The table of contents is not a column any more:
-// PageSidebar.astro renders it as the collapsible "On this page" bar at the top
-// of the content, so the content gets the whole width beside the left sidebar.
-// Upgrade note: the default component also positions the right column and
-// narrows the main pane for it; none of that applies to one column.
+// Starlight's two-column layout (content plus a right-hand table of contents) without its
+// column arithmetic. Below 100rem the content is one column beside the left sidebar and the
+// table of contents is the dropdown at the top of it; from 100rem the table of contents is the
+// fixed column of PageSidebar.astro, and styles/layout.css keeps its width free at the right of
+// every documentation page, whether the page has a list or not, so the text does not move
+// between pages. The content column itself is left to ContentPanel (centred in the space
+// that is left).
+// Upgrade note: the default component also positions the right column and narrows the main
+// pane for it, with its own breakpoint (72rem); none of that applies here.
 ---
 
 <div class="ritueel-main">
