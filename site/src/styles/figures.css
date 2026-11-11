@@ -131,4 +131,5 @@
 .fig .t-id.t-dim { fill: var(--sl-color-gray-2); }
 .fig .t-row { font-weight: 700; }
 .fig .t-long { font-size: 12px; }
+.fig .chip { fill: var(--sl-color-bg-nav); stroke: none; }
 .fig .halo { fill: var(--sl-color-bg-nav); stroke: var(--sl-color-bg-nav); stroke-width: 5; stroke-linejoin: round; }
