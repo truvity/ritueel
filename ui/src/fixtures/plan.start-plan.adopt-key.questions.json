@@ -1,0 +1,44 @@
+{
+  "questions": [
+    {
+      "id": "use",
+      "prompt": "How will you use this key?",
+      "help": "You can add delegated keys under a root later.",
+      "kind": "QUESTION_KIND_SINGLE_CHOICE",
+      "options": [
+        {
+          "id": "root",
+          "label": "As a root",
+          "description": "ritueel certifies other keys with it and lists it in the root list."
+        },
+        {
+          "id": "delegated",
+          "label": "As a delegated key",
+          "description": "A root certifies it for a requester. Not offered until the folder has a root that can."
+        }
+      ],
+      "defaultOptionIds": [
+        "root"
+      ]
+    },
+    {
+      "id": "alias",
+      "prompt": "Keep the alias of the key?",
+      "help": "The operator's own code may own the key and its policy. ritueel never changes either.",
+      "kind": "QUESTION_KIND_SINGLE_CHOICE",
+      "options": [
+        {
+          "id": "keep",
+          "label": "Yes, keep alias/example-staging-signing"
+        },
+        {
+          "id": "none",
+          "label": "Do not record the alias"
+        }
+      ],
+      "defaultOptionIds": [
+        "keep"
+      ]
+    }
+  ]
+}

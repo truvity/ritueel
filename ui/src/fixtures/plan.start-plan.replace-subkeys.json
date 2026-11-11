@@ -1,0 +1,88 @@
+{
+  "plan": {
+    "id": "2026-11-11-replace-subkeys",
+    "intention": "INTENTION_REPLACE_SUBKEYS",
+    "title": "Retire two superseded signing subkeys",
+    "summary": "Revokes the signing subkeys of 2022 and 2023 with the reason superseded, and rebuilds your public certificate. Nothing happens until you run it on the ceremony machine.",
+    "builtAt": "2026-11-11T09:00:00Z",
+    "ledgerHeadSha256": "600c0123456789abcdef0123456789abcdef0123456789abcdef0123456789ab",
+    "digest": "c41e08b50123456789abcdef0123456789abcdef0123456789abcdefdeadbeef",
+    "steps": [
+      {
+        "ordinal": 1,
+        "title": "Check the plan",
+        "detail": "ritueel compares the plan with the folder and asks you to type the first eight characters of the digest: c41e08b5.",
+        "whatChanges": "Nothing changes",
+        "requirements": [
+          "REQUIREMENT_CONFIRM_DIGEST_AT_TERMINAL"
+        ],
+        "learnPath": "/learn/the-plan-and-its-digest/"
+      },
+      {
+        "ordinal": 2,
+        "title": "Open the key file",
+        "detail": "A passkey on root card one unwraps the key that opens the encrypted key file of your primary. The recovery key is not needed.",
+        "whatChanges": "Nothing changes",
+        "requirements": [
+          "REQUIREMENT_CARD_PRESENT",
+          "REQUIREMENT_PIN_AT_TERMINAL",
+          "REQUIREMENT_TOUCH",
+          "REQUIREMENT_KEY_FILE_UNLOCK"
+        ],
+        "cardSerials": [
+          "00000001"
+        ],
+        "learnPath": "/learn/opening-a-key-file/"
+      },
+      {
+        "ordinal": 3,
+        "title": "Revoke the two subkeys",
+        "detail": "The primary revokes the signing subkey of 2022 and the signing subkey of 2023 with the reason superseded, dated on the day of the switch. Signatures made before that day keep their standing in strict verifiers.",
+        "whatChanges": "Two subkeys end",
+        "learnPath": "/learn/revoking-a-subkey/"
+      },
+      {
+        "ordinal": 4,
+        "title": "Rebuild the certificate",
+        "detail": "Writes your public certificate with the two revocations. Publishing it to a key server is left to you.",
+        "whatChanges": "A new public certificate in the folder",
+        "learnPath": "/learn/publishing-a-key/"
+      },
+      {
+        "ordinal": 5,
+        "title": "Write the record",
+        "detail": "Writes the record of this ceremony and its transcript.",
+        "whatChanges": "One new record in the ledger",
+        "learnPath": "/learn/the-ledger/"
+      }
+    ],
+    "folderChanges": [
+      {
+        "path": "records/2026-11-11-replace-subkeys.json",
+        "action": "FOLDER_CHANGE_ACTION_CREATE",
+        "description": "The record of this ceremony."
+      },
+      {
+        "path": "plans/2026-11-11-replace-subkeys.json",
+        "action": "FOLDER_CHANGE_ACTION_CREATE",
+        "description": "The plan as it was confirmed."
+      },
+      {
+        "path": "transcripts/2026-11-11-replace-subkeys.txt",
+        "action": "FOLDER_CHANGE_ACTION_CREATE",
+        "description": "What the terminal showed, without any PIN or passphrase."
+      },
+      {
+        "path": "roots/personal/openpgp.pgp",
+        "action": "FOLDER_CHANGE_ACTION_REPLACE",
+        "description": "The public certificate with two subkey revocations; the old one stays under products/."
+      }
+    ],
+    "equivalentCommand": "ritueel personal subkey revoke --reason superseded 1B220123456789ABCDEF0123456789ABCDEF0123 1B320123456789ABCDEF0123456789ABCDEF0123 --plan-only",
+    "runCommand": "ritueel run ./ritueel/pending/2026-11-11-replace-subkeys.plan --confirm c41e08b50123456789abcdef0123456789abcdef0123456789abcdefdeadbeef",
+    "savePath": "pending/2026-11-11-replace-subkeys.plan",
+    "cardSerials": [
+      "00000001"
+    ]
+  }
+}

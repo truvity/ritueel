@@ -1,0 +1,42 @@
+{
+  "name": "ritueel-local-page",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "The local page of ritueel. Built in demo mode it is the demo on the site: an in-memory ConnectRPC transport answers from fixtures.",
+  "scripts": {
+    "dev": "vite",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "build": "tsc --noEmit && vite build",
+    "build:real": "tsc --noEmit && RITUEEL_MODE=real BASE=./ OUT_DIR=dist-real vite build",
+    "check:dist": "node scripts/check-dist.mjs",
+    "check": "npm run typecheck && npm test && npm run build && npm run build:real && npm run check:dist",
+    "serve": "node scripts/serve.mjs",
+    "e2e": "node scripts/e2e.mjs",
+    "shots": "node scripts/shots.mjs",
+    "lint": "npm run typecheck && vitest run src/safety.test.ts"
+  },
+  "dependencies": {
+    "@bufbuild/protobuf": "2.16.0",
+    "@connectrpc/connect": "2.3.0",
+    "@connectrpc/connect-web": "2.3.0",
+    "@emotion/react": "11.14.0",
+    "@emotion/styled": "11.14.1",
+    "@mui/material": "9.5.0",
+    "react": "19.3.1",
+    "react-dom": "19.3.1"
+  },
+  "devDependencies": {
+    "@bufbuild/protoc-gen-es": "2.16.0",
+    "@tailwindcss/vite": "4.3.5",
+    "@types/node": "24.19.2",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "@vitejs/plugin-react": "6.3.0",
+    "tailwindcss": "4.3.5",
+    "typescript": "7.0.2",
+    "vite": "8.3.7",
+    "vitest": "5.1.0"
+  }
+}

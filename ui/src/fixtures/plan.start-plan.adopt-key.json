@@ -1,0 +1,93 @@
+{
+  "plan": {
+    "id": "2026-11-11-adopt-cloud-key",
+    "intention": "INTENTION_ADOPT_KEY",
+    "title": "Adopt the cloud key alias/example-staging-signing",
+    "summary": "Reads the public key of an existing cloud key, checks its policy, fixes and records its OpenPGP creation time, and writes its certificate. The key itself is not created or changed.",
+    "builtAt": "2026-11-11T09:00:00Z",
+    "ledgerHeadSha256": "600c0123456789abcdef0123456789abcdef0123456789abcdef0123456789ab",
+    "digest": "a92d5e600123456789abcdef0123456789abcdef0123456789abcdefdeadbeef",
+    "steps": [
+      {
+        "ordinal": 1,
+        "title": "Check the plan",
+        "detail": "ritueel compares the plan with the folder and asks you to type the first eight characters of the digest: a92d5e60.",
+        "whatChanges": "Nothing changes",
+        "requirements": [
+          "REQUIREMENT_CONFIRM_DIGEST_AT_TERMINAL"
+        ],
+        "learnPath": "/learn/the-plan-and-its-digest/"
+      },
+      {
+        "ordinal": 2,
+        "title": "Read the key",
+        "detail": "Asks the cloud provider for the public key and the policy of the key, through the read-only role named in the configuration.",
+        "whatChanges": "Nothing changes",
+        "learnPath": "/learn/adopting-a-cloud-key/"
+      },
+      {
+        "ordinal": 3,
+        "title": "Check the policy",
+        "detail": "Checks the policy against the rules: digests only, no new replicas and no move of the primary Region except for the break-glass principal. If a rule fails, the plan stops here and says which.",
+        "whatChanges": "Nothing changes",
+        "learnPath": "/learn/adopting-a-cloud-key/"
+      },
+      {
+        "ordinal": 4,
+        "title": "Fix the creation time",
+        "detail": "The key has no OpenPGP creation time of its own, so ritueel fixes one and records it. It cannot change later without changing the fingerprint.",
+        "whatChanges": "A creation time in the record",
+        "learnPath": "/learn/adopting-a-cloud-key/"
+      },
+      {
+        "ordinal": 5,
+        "title": "Write the certificate",
+        "detail": "The key signs its own certificate, digest only, through the provider. The root is added to the next root list.",
+        "whatChanges": "A new root in the folder",
+        "learnPath": "/learn/trust-files/"
+      },
+      {
+        "ordinal": 6,
+        "title": "Write the record",
+        "detail": "Writes the record of this ceremony and its transcript.",
+        "whatChanges": "One new record in the ledger",
+        "learnPath": "/learn/the-ledger/"
+      }
+    ],
+    "folderChanges": [
+      {
+        "path": "records/2026-11-11-adopt-cloud-key.json",
+        "action": "FOLDER_CHANGE_ACTION_CREATE",
+        "description": "The record of this ceremony."
+      },
+      {
+        "path": "plans/2026-11-11-adopt-cloud-key.json",
+        "action": "FOLDER_CHANGE_ACTION_CREATE",
+        "description": "The plan as it was confirmed."
+      },
+      {
+        "path": "transcripts/2026-11-11-adopt-cloud-key.txt",
+        "action": "FOLDER_CHANGE_ACTION_CREATE",
+        "description": "What the terminal showed."
+      },
+      {
+        "path": "roots/example-staging/root.json",
+        "action": "FOLDER_CHANGE_ACTION_CREATE",
+        "description": "The facts of the new root."
+      },
+      {
+        "path": "roots/example-staging/attestation/key-description.json",
+        "action": "FOLDER_CHANGE_ACTION_CREATE",
+        "description": "The key and its policy, as read."
+      },
+      {
+        "path": "products/9/",
+        "action": "FOLDER_CHANGE_ACTION_CREATE",
+        "description": "A root list that includes the new root."
+      }
+    ],
+    "equivalentCommand": "ritueel adopt --store aws-kms --key alias/example-staging-signing --plan-only",
+    "runCommand": "ritueel run ./ritueel/pending/2026-11-11-adopt-cloud-key.plan --confirm a92d5e600123456789abcdef0123456789abcdef0123456789abcdefdeadbeef",
+    "savePath": "pending/2026-11-11-adopt-cloud-key.plan"
+  }
+}

@@ -1,0 +1,171 @@
+{
+  "findings": [
+    {
+      "id": "replaced-signing-subkeys-valid",
+      "code": "replaced-signing-subkeys-valid",
+      "severity": "SEVERITY_CRITICAL",
+      "title": "Two signing subkeys are still valid although newer ones replaced them",
+      "reason": "Anyone who holds the card that made them can still sign as you until March or April 2027, and nobody would see the difference. They sit on card 00000102, which is not in your inventory.",
+      "subject": {
+        "kind": "SUBJECT_KIND_SUBKEY",
+        "identifier": "1B220123456789ABCDEF0123456789ABCDEF0123",
+        "label": "Signing subkey of 2022"
+      },
+      "evidence": [
+        "1B220123456789ABCDEF0123456789ABCDEF0123: signing subkey of 2022, valid until 2027-03-14, replaced by the 2025 set",
+        "1B320123456789ABCDEF0123456789ABCDEF0123: signing subkey of 2023, valid until 2027-04-02, replaced by the 2025 set",
+        "Neither has a revocation. Both are on card 00000102."
+      ],
+      "fixCommand": "ritueel personal subkey revoke --reason superseded 1B220123456789ABCDEF0123456789ABCDEF0123 1B320123456789ABCDEF0123456789ABCDEF0123 --plan-only",
+      "fixIntention": "INTENTION_REPLACE_SUBKEYS",
+      "learnPath": "/learn/revoking-a-subkey/",
+      "visibleFromPublicKey": true
+    },
+    {
+      "id": "primary-no-expiry",
+      "code": "no-expiry",
+      "severity": "SEVERITY_ALERT",
+      "title": "The primary key has no expiry, and adoption should have set one",
+      "reason": "ritueel gives an adopted key an expiry at adoption. This one arrived without, and the adoption did not set one: that is a gap. A key without an expiry stays valid for ever if you lose track of it, while one with an expiry that you extend is a safety net: forgotten keys die by themselves.",
+      "subject": {
+        "kind": "SUBJECT_KIND_ROOT",
+        "identifier": "10000123456789ABCDEF0123456789ABCDEF0123",
+        "label": "Personal OpenPGP key"
+      },
+      "evidence": [
+        "RSA-4096 primary, created 2012-06-19, no expiry set",
+        "Adopted on 2026-11-03; the adoption did not set an expiry"
+      ],
+      "fixCommand": "ritueel personal primary extend --expires-in 3y --plan-only",
+      "learnPath": "/learn/expiry/",
+      "visibleFromPublicKey": true
+    },
+    {
+      "id": "subkeys-on-unknown-cards",
+      "code": "cards-not-in-inventory",
+      "severity": "SEVERITY_ALERT",
+      "title": "Subkeys sit on 2 cards that are not in your inventory",
+      "reason": "You cannot revoke or replace what you cannot find. If one of these cards is lost, you will not know which keys it took with it.",
+      "subject": {
+        "kind": "SUBJECT_KIND_CARD",
+        "identifier": "00000102",
+        "label": "Card 00000102"
+      },
+      "evidence": [
+        "Card 00000101: 4 subkey sets, 2016 to 2019",
+        "Card 00000102: 4 subkey sets, 2020 to 2023, 2 signing subkeys still valid"
+      ],
+      "fixCommand": "ritueel cards adopt 00000102 --plan-only",
+      "fixIntention": "INTENTION_ADD_CARD",
+      "learnPath": "/learn/your-cards/",
+      "visibleFromPublicKey": true
+    },
+    {
+      "id": "misspelt-user-id",
+      "code": "misspelt-user-id",
+      "severity": "SEVERITY_NOTICE",
+      "title": "One user ID looks like a misspelling of another",
+      "reason": "People who look you up may pick the wrong one, and a name that is nearly yours is also how a look-alike key is made. Revoke the one you did not mean.",
+      "subject": {
+        "kind": "SUBJECT_KIND_USER_ID",
+        "identifier": "10000123456789ABCDEF0123456789ABCDEF0123",
+        "label": "Exmaple Holder"
+      },
+      "evidence": [
+        "\"Exmaple Holder <holder@example.com>\" differs from \"Example Holder <holder@example.com>\" by two letters swapped"
+      ],
+      "fixCommand": "ritueel personal userid revoke \"Exmaple Holder <holder@example.com>\" --plan-only",
+      "learnPath": "/learn/user-ids/",
+      "visibleFromPublicKey": true
+    },
+    {
+      "id": "daily-keychain-touch-cached",
+      "code": "touch-rule-changed",
+      "severity": "SEVERITY_NOTICE",
+      "title": "The signing key on \"Daily, keychain\" now asks for a touch only once in a while",
+      "reason": "The last reading differs from the one before: the touch rule was always and is now cached. A cached touch lets a program on your computer sign several times after one touch.",
+      "subject": {
+        "kind": "SUBJECT_KIND_CARD",
+        "identifier": "00000004",
+        "label": "Daily, keychain"
+      },
+      "evidence": [
+        "Slot sig: touch rule cached (was always) at the reading of 2026-10-28"
+      ],
+      "fixCommand": "ritueel cards check 00000004",
+      "learnPath": "/learn/touch/"
+    },
+    {
+      "id": "no-restore-check",
+      "code": "no-restore-check",
+      "severity": "SEVERITY_NOTICE",
+      "title": "No restore check has ever been recorded",
+      "reason": "A backup you have never restored is a hope, not a backup. The restore check runs on a clean machine and signs nothing.",
+      "subject": {
+        "kind": "SUBJECT_KIND_FOLDER",
+        "identifier": "~/ritueel",
+        "label": "Your folder"
+      },
+      "evidence": [
+        "12 records, none of them a restore check"
+      ],
+      "fixCommand": "ritueel drill restore",
+      "learnPath": "/learn/drills/"
+    },
+    {
+      "id": "adopted-rsa-primary",
+      "code": "adopted-stage-one",
+      "severity": "SEVERITY_INFO",
+      "title": "Your primary is RSA-4096, adopted as it is (stage one)",
+      "reason": "ritueel accepts an old key once, with its history. Stage two uses card-born keys. Replace it within three years, or move to stage two with two card-born primaries.",
+      "subject": {
+        "kind": "SUBJECT_KIND_ROOT",
+        "identifier": "10000123456789ABCDEF0123456789ABCDEF0123",
+        "label": "Personal OpenPGP key"
+      },
+      "evidence": [
+        "Adopted on 2026-11-03",
+        "Row 2 of both root cards is reserved for stage two"
+      ],
+      "fixCommand": "ritueel personal primary add --card 00000001 --plan-only",
+      "learnPath": "/learn/stage-two/",
+      "visibleFromPublicKey": true
+    },
+    {
+      "id": "cloud-key-waiting",
+      "code": "cloud-key-not-adopted",
+      "severity": "SEVERITY_INFO",
+      "title": "A cloud key is waiting to be adopted",
+      "reason": "ritueel found a key with this alias in the configuration of the folder that no record mentions. Adopting it reads its public key and checks its policy; it changes nothing in the cloud.",
+      "subject": {
+        "kind": "SUBJECT_KIND_CLOUD_KEY",
+        "identifier": "alias/example-staging-signing",
+        "label": "alias/example-staging-signing"
+      },
+      "evidence": [
+        "Region eu-west-1, replica in eu-central-1",
+        "Not in the ledger"
+      ],
+      "fixCommand": "ritueel adopt --store aws-kms --key alias/example-staging-signing --plan-only",
+      "fixIntention": "INTENTION_ADOPT_KEY",
+      "learnPath": "/learn/adopting-a-cloud-key/"
+    },
+    {
+      "id": "rehearsal-card-old-firmware",
+      "code": "firmware-below-floor",
+      "severity": "SEVERITY_INFO",
+      "title": "The rehearsal card cannot become a root card",
+      "reason": "A card that holds roots needs firmware 5.7.4 or later, so that one half-born key can be removed without resetting the card. The rehearsal card runs 5.2.6. That is fine for practice.",
+      "subject": {
+        "kind": "SUBJECT_KIND_CARD",
+        "identifier": "00000006",
+        "label": "Rehearsal"
+      },
+      "evidence": [
+        "Firmware 5.2.6, floor for a root card 5.7.4"
+      ],
+      "fixCommand": "ritueel cards check 00000006",
+      "learnPath": "/learn/your-cards/"
+    }
+  ]
+}

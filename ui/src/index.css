@@ -1,0 +1,70 @@
+@layer theme, base, mui, components, utilities;
+@import 'tailwindcss';
+
+/*
+ * The design lives in theme.ts. MUI turns it into --mui-* variables and this
+ * block hands them to Tailwind as tokens (inline: the value stays a var()).
+ */
+@theme inline {
+  --color-bg: var(--mui-palette-background-default);
+  --color-panel: var(--mui-palette-background-paper);
+  --color-sunk: var(--mui-palette-sunk);
+  --color-ink: var(--mui-palette-text-primary);
+  --color-dim: var(--mui-palette-text-secondary);
+  --color-line: var(--mui-palette-divider);
+  --color-rule: var(--mui-palette-rule);
+  --color-accent: var(--mui-palette-primary-main);
+  --color-accent-ink: var(--mui-palette-primary-contrastText);
+  --color-critical: var(--mui-palette-severity-critical);
+  --color-alert: var(--mui-palette-severity-alert);
+  --color-notice: var(--mui-palette-severity-notice);
+  --color-info: var(--mui-palette-severity-info);
+  --color-ok: var(--mui-palette-severity-ok);
+  --font-serif: var(--ritueel-serif);
+  --font-mono: var(--ritueel-mono);
+}
+
+:root {
+  /*
+   * No font is fetched or shipped. Each stack names the common faces of the
+   * big systems, then falls back to the generic family, so the page is
+   * readable everywhere and looks closest to the design where one of the
+   * first names is installed.
+   */
+  --ritueel-serif: 'Iowan Old Style', 'Palatino Linotype', Palatino, 'Book Antiqua', P052, Charter, 'Bitstream Charter', 'Sitka Text', Cambria, Georgia,
+    'Noto Serif', 'DejaVu Serif', serif;
+  --ritueel-mono: ui-monospace, 'SF Mono', 'Cascadia Mono', 'JetBrains Mono', 'DejaVu Sans Mono', Menlo, Consolas, 'Liberation Mono', monospace;
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
+/*
+ * One focus ring for everything that can be focused. It is not inside a
+ * layer, so it beats MUI's own "outline: 0" on buttons (that sits in the mui
+ * layer) and needs no !important.
+ */
+:focus-visible {
+  outline: 3px solid var(--mui-palette-primary-main);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition: none !important;
+    animation: none !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Printing a plan or a key page: no navigation, no demo controls. */
+@media print {
+  [data-print='hide'] {
+    display: none !important;
+  }
+}
