@@ -1,7 +1,8 @@
 # ritueel, the local page (and its demo)
 
 Status: the page and its demo exist; the program that serves the page is not built
-(ritueel is in its design phase). See [the local page](https://ritueel.id/tools/local-page/)
+(ritueel is in its design phase). See [the demo](https://ritueel.id/demo/) and
+[the design of the process and the page](https://ritueel.id/design/#the-process-and-the-page)
 on the site, and `proto/README.md` for the API.
 
 Before you change the interface, read the Material UI guidance for agents in
@@ -17,7 +18,7 @@ from made-up fixtures, refusing to act.
 
 The page shows **one bundle** at a time. A bundle is the directory with a fixed
 structure that holds everything ritueel knows about one trust domain (for example
-`personal` or `acme`): its own ledger, trust sequence and roots, and, for a company, its
+`personal` or `acme`): its own history, trust sequence and roots, and, for a company, its
 own root list. It is named by its directory. A root is written with the bundle's name
 across bundles, `bundle/label`, for example `acme/A`; inside a bundle it is `A`. The
 trust file is always "the CA bundle", and its command is `ritueel ca-bundle build`;
@@ -36,12 +37,12 @@ workstation; a test root may run on your workstation (wording only, no flag).
 
 | Route | Screen |
 |---|---|
-| `#/start` | The verdict, what is wrong, what is due, the ledger seal, getting started |
+| `#/start` | The verdict, what is wrong, what is due, the history seal, getting started |
 | `#/findings` | Every finding with its reason, evidence, command and one next step; filter by level |
 | `#/roots` | The roots of the bundle by store (encrypted file, root cards, cloud KMS) and its delegated keys |
 | `#/key/<root label>` | One root of the bundle in full, for example `acme/A`: its certificate, keys, card and delegated keys. For a root that has subkeys, such as `personal/A` and `acme/A`, it adds the subkeys by year and by card or cloud key, and, from three sets on, a matrix and a validity chart |
 | `#/cards` and `#/cards/<serial>` | The inventory; one card opened with every slot (a slot opens its details) |
-| `#/history` and `#/history/<id>` | The ledger; one ceremony opened with its steps and records |
+| `#/history` and `#/history/<id>` | The history; one ceremony opened with its steps and records |
 | `#/trust` | The trust files and their checks |
 | `#/plan` and `#/plan/<goal>` | The wizard: goal, choices, plan with its digest and commands, save |
 
@@ -103,7 +104,7 @@ no library (they drive headless Chrome over the DevTools protocol).
   `--dir` of a command, the path of a saved plan), the transport puts the open
   bundle's place in.
 - The three example bundles are trust domains of their own, each with its own
-  ledger, roots, cards, findings, trust files and goals. `personal` is one holder's
+  history, roots, cards, findings, trust files and goals. `personal` is one holder's
   OpenPGP key in a key file, with its subkeys by year and by card, and six cards
   (two root cards, three day-to-day cards and a rehearsal card); its trust files are its
   public certificate, as a personal bundle has no root list. `acme` is a company with
@@ -117,7 +118,7 @@ no library (they drive headless Chrome over the DevTools protocol).
   roots as `bundle/label`. Switching keeps the screen you are on. Only a detail view
   falls back, and only as far as needed (`routeForBundle` in `src/lib/route.ts`, fed by
   what the transport holds for the new bundle): a card to Cards unless the new bundle
-  has that serial, a ledger record to History unless it has that id, a root's key to
+  has that serial, a history record to History unless it has that id, a root's key to
   Roots unless it has a root with that label, and the wizard of a goal to the goals
   unless the new bundle offers the goal (a goal that applies to it). So no route
   points at a card, a root, a record or a goal the new bundle lacks. A fallback
@@ -127,11 +128,11 @@ no library (they drive headless Chrome over the DevTools protocol).
   bundle as well as the goal, so after a switch it asks its choices again.
 - The one call that would act, `SavePlan`, answers with `written: false`, a notice
   that this is a demo and nothing was written, and the file it would have written.
-  The demo shows that file at `ledger/<ceremony>/plan.json` inside the bundle. That
-  path is the demo's proposal: the records say only that the process writes the plan
-  inside the bundle, and the [bundle reference](https://ritueel.id/reference/bundle/#the-layout)
-  marks the file names as proposed. The file is canonical JSON and its SHA-256 is the
-  digest ([the ceremony record](https://ritueel.id/reference/ceremony-record/)).
+  The demo shows that file at `history/<ceremony>/plan.json` inside the bundle, the
+  place record 0006 (rule 7) decides; the names of the other members of that folder
+  are proposed, and the [bundle reference](../docs/reference/bundle.md)
+  marks them so. The file is canonical JSON and its SHA-256 is the
+  digest ([the ceremony record](../docs/reference/ceremony-record.md)).
   Nothing is written anywhere. The wizard builds a plan in memory (`StartPlan`: questions,
   then the plan with its steps, digest and commands). In the demo the plan is the
   same whatever is chosen. The plan says where it runs (`Plan.run_place`): on the
@@ -139,7 +140,7 @@ no library (they drive headless Chrome over the DevTools protocol).
   workstation for a cloud root (with no hardware-key sign-in: ritueel asks nothing of
   how you signed in). The USB-stick step shows only on the offline system. A test
   root may run on the workstation; that is wording only, as there is no flag for it.
-  The commands follow [the command reference](https://ritueel.id/reference/cli/): the
+  The commands follow [the command reference](../docs/reference/cli.md): the
   run command is `ritueel --dir BUNDLE run PLAN --confirm DIGEST`, and a plan of an
   empty bundle starts with `init`.
 - The state switch makes the same transport answer as an empty bundle, with an
@@ -235,8 +236,7 @@ No router, no state library, no font package, no ESLint, no screenshot library.
 
 ## What the real program replaces
 
-Only the transport. The process is described by [ADR 0011](https://ritueel.id/decisions/0011-the-wizards-one-engine-three-faces-and-a-web-page-that-cannot-confirm-anything/)
-and [the wizard reference](https://ritueel.id/reference/wizard/#the-ritueel-process): one
+Only the transport. The process is described by [record 0010](../docs/decisions/0010-the-engine-the-process-and-the-page.md): one
 long-running background process, the same program as the command line, started on demand
 by the first command that needs it, and not a system service. The command line reaches
 it through a Unix socket that only the same user can open. A browser cannot open a Unix
@@ -247,8 +247,8 @@ digest arrives over the socket, never from the page. Same API, not the same trus
 loopback listener lets a request in only with the one-time token of the session, which
 becomes an `HttpOnly`, `SameSite=Strict` cookie, checks the `Host` header exactly and,
 for a `POST`, `Sec-Fetch-Site` or `Origin`, and ends after 15 minutes without a request
-([the profile](https://ritueel.id/reference/wizard/#the-web-page-the-security-profile),
-rules 1 to 4, 7 and 9). Other programs of the same user can reach that port while the page
+([the profile](../docs/decisions/0010-the-engine-the-process-and-the-page.md),
+rules 6 to 12). Other programs of the same user can reach that port while the page
 is in use, so it is trusted no more than any other web request. The records mark the
 details of how the process ends and where its socket lives as proposed; this page does
 not depend on them. The process serves one bundle.
@@ -261,7 +261,7 @@ in-memory transport, the demo bar, the state switch and the bundle switch. The
 screens, hooks and generated code do not change. What the real program must add:
 `SavePlan` rebuilds the plan, refuses a digest that is not the rebuilt plan's, and
 writes the plan as one inert file, create-only, inside the bundle (the demo shows
-`ledger/<ceremony>/plan.json`, which is a proposal); the step list of a
+`history/<ceremony>/plan.json`, the place record 0006 decides); the step list of a
 ceremony (see below); and the shell quoting of every name inside a command it sends
 (`fix_command`, `equivalent_command`, `run_command`): the page shows a command as
 it is given and copies it only when it is plain, one line and short, but it cannot
@@ -272,24 +272,24 @@ tell whether a user ID inside it is quoted.
 - The demo's ceremonies have no plan file. The ceremony screen shows the usual
   steps of that kind of ceremony from a small catalogue in `src/lib/steps.ts`, and
   says so. The real program should send the steps it reads from the plan in the
-  ledger.
+  history.
 - The demo's wizard returns the same plan whatever is chosen (the fixtures have one
   plan per goal).
 - The empty state ("Page state") answers the same for every example bundle, and its
   adoption plan is the company, cloud-key case: a root on the workstation and a first
   root list. A personal bundle has no root list and adopts an existing OpenPGP key; the
   demo does not show that adoption.
-- The `card-check` records in the acme ledger and the six-monthly card check among the
+- The `card-check` records in the acme history and the six-monthly card check among the
   due items are the demo's own idea. The records say the check is read-only and write
-  `cards.yaml`; they do not say it writes a ledger record.
+  `cards.yaml`; they do not say it writes a history record.
 - `PLAN` in the run command is shown as a path relative to the bundle
-  (`ritueel --dir ~/ritueel/acme run ledger/<ceremony>/plan.json ...`). The command
+  (`ritueel --dir ~/ritueel/acme run history/<ceremony>/plan.json ...`). The command
   reference does not say what `PLAN` is relative to, and on the offline system the
   bundle sits at another path, so the `--dir` value is only the path on this computer.
-  The preview of the bundle changes lists the ledger files and the products, not each
+  The preview of the bundle changes lists the history files and the trust files, not each
   root certificate that a ceremony re-issues.
 - The made-up data shows no server card, no test root and no pair of root cards shared by
-  two bundles (ADR 0016 allows it). The kind exists in the contract and the Cards screen
+  two bundles (record 0003, rules 5 to 7, allows it). The kind exists in the contract and the Cards screen
   has a place for it; no example draws it.
 - The times of day in the made-up dates are approximate: the days follow the pages, the
   clock does not always follow the ceremony time. The page shows days only.
