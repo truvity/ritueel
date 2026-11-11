@@ -1,0 +1,33 @@
+{
+  "trustSequence": 1,
+  "files": [
+    {
+      "name": "root-list.json",
+      "kind": "TRUST_FILE_KIND_ROOT_LIST",
+      "path": "products/1/root-list.json",
+      "trustSequence": 1,
+      "builtAt": "2026-11-03T14:30:00Z",
+      "validUntil": "2027-12-03T00:00:00Z",
+      "checkResult": "TRUST_CHECK_RESULT_PASSED",
+      "checkDetail": "Signed by personal/A. It is the first list, so there is none to hold it against.",
+      "sha256": "71010123456789abcdef0123456789abcdef0123456789abcdef0123456789ab",
+      "sizeBytes": "1126",
+      "verifyCommand": "ritueel root-list verify products/1/root-list.json",
+      "rebuildCommand": "ritueel due --plan-only"
+    },
+    {
+      "name": "personal-keyring.gpg",
+      "kind": "TRUST_FILE_KIND_KEYRING",
+      "path": "products/1/keyring/personal-keyring.gpg",
+      "trustSequence": 1,
+      "builtAt": "2026-11-03T14:30:00Z",
+      "validUntil": "2027-12-03T00:00:00Z",
+      "checkResult": "TRUST_CHECK_RESULT_PASSED_WITH_WARNING",
+      "checkDetail": "Holds the OpenPGP primary of personal/A. Warning: the primary has no expiry.",
+      "sha256": "71020123456789abcdef0123456789abcdef0123456789abcdef0123456789ab",
+      "sizeBytes": "9874",
+      "verifyCommand": "ritueel keyring verify products/1/keyring/personal-keyring.gpg --root-list products/1/root-list.json",
+      "rebuildCommand": "ritueel keyring build --name personal"
+    }
+  ]
+}

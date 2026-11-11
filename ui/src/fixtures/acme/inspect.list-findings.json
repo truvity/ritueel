@@ -1,0 +1,21 @@
+{
+  "findings": [
+    {
+      "id": "no-restore-check",
+      "code": "no-restore-check",
+      "severity": "SEVERITY_NOTICE",
+      "title": "No restore check has ever been recorded",
+      "reason": "A backup you have never restored is a hope, not a backup. The restore check runs on a clean machine and signs nothing.",
+      "subject": {
+        "kind": "SUBJECT_KIND_BUNDLE",
+        "identifier": "~/ritueel/acme",
+        "label": "Your bundle"
+      },
+      "evidence": [
+        "No restore report has ever been made; the ledger holds 10 records."
+      ],
+      "fixCommand": "ritueel drill restore",
+      "learnPath": "/guides/run-a-drill/"
+    }
+  ]
+}

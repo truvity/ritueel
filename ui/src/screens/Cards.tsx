@@ -10,8 +10,8 @@ import {
   type PivRow,
   type Slot,
 } from '../gen/ritueel/local/v1alpha1/inspect_service_pb';
-import { combine, useCards, useFindings, useRoots, useSummary } from '../api/hooks';
-import { agoDays, daysBetween, plural, ymd } from '../lib/format';
+import { combine, useBundleName, useCards, useFindings, useRoots, useSummary } from '../api/hooks';
+import { agoDays, daysBetween, plural, rootRef, ymd } from '../lib/format';
 import { href } from '../lib/route';
 import { isSerial, safeString } from '../lib/safe';
 import { CARD_KIND_WORD, CARD_STATE_WORD, PIN_WORD, SLOT_STATE_WORD, SLOT_USE_TAG, TOUCH_WORD } from '../lib/words';
@@ -46,6 +46,7 @@ function slotLabel(slot: Slot, tag: string, group: string): string {
 }
 
 function SlotInfo({ slot, group }: { slot: Slot; group: string }) {
+  const bundle = useBundleName();
   return (
     <div className="max-w-[24rem] min-w-[16rem] space-y-2 p-4">
       <p className="font-mono text-xs font-semibold tracking-wider text-dim uppercase">
@@ -61,7 +62,7 @@ function SlotInfo({ slot, group }: { slot: Slot; group: string }) {
           <>
             <dt className="text-dim">Root</dt>
             <dd>
-              <T cap={40}>{slot.rootLabel}</T>
+              <T cap={60}>{rootRef(bundle, slot.rootLabel)}</T>
             </dd>
           </>
         ) : null}
@@ -512,7 +513,7 @@ function Inventory() {
         isEmpty={(d) => d.cards.length === 0}
         empty={
           <Empty title="No cards in the inventory yet.">
-            <p>ritueel learns about a card when you add it. Until then it cannot tell you what a card holds, and it cannot plan a ceremony that needs one.</p>
+            <p>ritueel learns about a card when you add it. Until then it cannot tell you what a card holds, and it cannot plan a ceremony that needs one. A bundle whose roots are all in the cloud needs no card.</p>
             <p>
               <a className={LINK} href={href.plan('add-card')}>
                 Make a plan to add a card
@@ -540,7 +541,7 @@ function Inventory() {
               </div>
               <Sec title="How to read a card">
                 <Explain term="A slot">
-                  is one place on a card that can hold one key. A card has six rows of four PIV slots: row 1 is the card&apos;s own jobs, and each row below belongs to one root
+                  is one place on a card that can hold one key. A card has six rows of four PIV slots: row 1 is the card&apos;s own jobs, and each row below belongs to one root of this bundle
                   (X.509 root, OpenPGP primary, SSH CA, one empty). The OpenPGP keys and the passkeys sit beside the grid.
                 </Explain>
                 <Legend />

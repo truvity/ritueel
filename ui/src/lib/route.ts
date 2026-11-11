@@ -1,7 +1,7 @@
 import { useSyncExternalStore } from 'react';
 
 // Hash routes, because a static host has no fallback for deep links.
-//   #/start  #/findings  #/roots  #/key/<root label>  #/cards[/<serial>]
+//   #/start  #/findings  #/roots  #/key/<root label: A, B ...>  #/cards[/<serial>]
 //   #/history[/<record id>]  #/trust  #/plan[/<goal>]
 // An empty hash is Start. Any other hash that does not name a screen is
 // "not found", and says so: it is never shown as another screen.
@@ -38,7 +38,7 @@ export function parseHash(hash: string): Route {
     case 'trust':
       return arg === undefined ? { name: 'trust' } : { name: 'notfound', hash };
     case 'key':
-      return { name: 'key', root: arg ?? 'personal' };
+      return { name: 'key', root: arg ?? 'A' };
     case 'cards':
       return { name: 'cards', serial: arg };
     case 'history':
@@ -54,7 +54,7 @@ export const href = {
   start: () => '#/start',
   findings: () => '#/findings',
   roots: () => '#/roots',
-  key: (root = 'personal') => `#/key/${encodeURIComponent(root)}`,
+  key: (root = 'A') => `#/key/${encodeURIComponent(root)}`,
   cards: (serial?: string) => (serial ? `#/cards/${encodeURIComponent(serial)}` : '#/cards'),
   history: (id?: string) => (id ? `#/history/${encodeURIComponent(id)}` : '#/history'),
   trust: () => '#/trust',

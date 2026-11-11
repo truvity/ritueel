@@ -1,0 +1,33 @@
+{
+  "trustSequence": 1,
+  "files": [
+    {
+      "name": "root-list.json",
+      "kind": "TRUST_FILE_KIND_ROOT_LIST",
+      "path": "products/1/root-list.json",
+      "trustSequence": 1,
+      "builtAt": "2026-09-15T13:40:00Z",
+      "validUntil": "2027-10-15T00:00:00Z",
+      "checkResult": "TRUST_CHECK_RESULT_PASSED",
+      "checkDetail": "Signed by globex/A. It is the first list, so there is none to hold it against.",
+      "sha256": "72010123456789abcdef0123456789abcdef0123456789abcdef0123456789ab",
+      "sizeBytes": "1203",
+      "verifyCommand": "ritueel root-list verify products/1/root-list.json",
+      "rebuildCommand": "ritueel due --plan-only"
+    },
+    {
+      "name": "ca-bundle.pem",
+      "kind": "TRUST_FILE_KIND_CA_BUNDLE",
+      "path": "products/1/ca-bundle.pem",
+      "trustSequence": 1,
+      "builtAt": "2026-09-15T13:40:00Z",
+      "validUntil": "2029-09-15T00:00:00Z",
+      "checkResult": "TRUST_CHECK_RESULT_PASSED",
+      "checkDetail": "One X.509 root, globex/A, and it is in the root list.",
+      "sha256": "72020123456789abcdef0123456789abcdef0123456789abcdef0123456789ab",
+      "sizeBytes": "614",
+      "verifyCommand": "ritueel root-list verify products/1/root-list.json --bundle products/1/ca-bundle.pem",
+      "rebuildCommand": "ritueel bundle build --out products/1/ca-bundle.pem"
+    }
+  ]
+}

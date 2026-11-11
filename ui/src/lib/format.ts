@@ -36,6 +36,11 @@ export function agoDays(n: number | undefined): string {
   return n === 1 ? '1 day ago' : `${n} days ago`;
 }
 
+/** A root as the holder writes it: the name of its bundle, a slash, its label (acme/A). Just the label until the bundle is known. */
+export function rootRef(bundle: string | undefined, label: string): string {
+  return bundle ? `${bundle}/${label}` : label;
+}
+
 export function plural(n: number, one: string, many = one + 's'): string {
   return `${n} ${n === 1 ? one : many}`;
 }

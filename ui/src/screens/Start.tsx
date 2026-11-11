@@ -2,7 +2,7 @@ import Button from '@mui/material/Button';
 import { ChainState, Intention, Severity } from '../gen/ritueel/local/v1alpha1/common_pb';
 import type { DueItem, GetSummaryResponse, SetupStep } from '../gen/ritueel/local/v1alpha1/inspect_service_pb';
 import { plans } from '../api/client';
-import { useCall, useFindings, useGoalMap, useSummary } from '../api/hooks';
+import { useCall, useFindings, useGoalMap, useRoots, useSummary } from '../api/hooks';
 import { daysBetween, inDays, plural, ymd } from '../lib/format';
 import { planHref } from '../lib/finding';
 import { safeString } from '../lib/safe';
@@ -281,6 +281,8 @@ function WhatIsWrong({ total }: { total: number }) {
   const findings = useFindings(Severity.ALERT);
   const all = useFindings();
   const goals = useGoalMap();
+  const roots = useRoots();
+  const rootList = roots.state === 'ready' ? roots.data.roots : undefined;
   return (
     <Sec
       id="wrong"
@@ -299,7 +301,7 @@ function WhatIsWrong({ total }: { total: number }) {
                 .sort((a, b) => b.severity - a.severity)
                 .map((f) => (
                   <li key={f.id}>
-                    <FindingCard f={f} goals={goals} showEvidence={false} />
+                    <FindingCard f={f} goals={goals} roots={rootList} showEvidence={false} />
                   </li>
                 ))}
             </ul>

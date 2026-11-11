@@ -1,0 +1,31 @@
+{
+  "ledger": {
+    "recordCount": 1,
+    "chainState": "CHAIN_STATE_VERIFIED",
+    "headRecordSha256": "600c0123456789abcdef0123456789abcdef0123456789abcdef0123456789ab",
+    "lastRecordId": "20261103T142000Z-init",
+    "lastRecordTitle": "Adopted the holder's OpenPGP key, stage one",
+    "lastRecordAt": "2026-11-03T14:20:00Z",
+    "checkedAt": "2026-11-11T09:00:00Z",
+    "message": "The only record checks out. It is 8 days old."
+  },
+  "ceremonies": [
+    {
+      "id": "20261103T142000Z-init",
+      "kind": "CEREMONY_KIND_ADOPT_KEY",
+      "title": "Adopted the holder's OpenPGP key, stage one",
+      "summary": "The existing primary was adopted as it is, with its history of subkeys: RSA-4096, no expiry. It now lives in an encrypted key file that a passkey on each root card opens. The adoption did not set the expiry that an adopted key should get: a later plan does it.",
+      "completedAt": "2026-11-03T14:20:00Z",
+      "outcome": "CEREMONY_OUTCOME_DONE",
+      "recordSha256": "600c0123456789abcdef0123456789abcdef0123456789abcdef0123456789ab",
+      "planDigest": "4b310bab0123456789abcdef0123456789abcdef0123456789abcdefdeadbeef",
+      "subjectLabels": [
+        "A"
+      ],
+      "cardSerials": [
+        "00000001"
+      ],
+      "guidePath": "/guides/personal-openpgp/#if-you-already-have-a-primary"
+    }
+  ]
+}

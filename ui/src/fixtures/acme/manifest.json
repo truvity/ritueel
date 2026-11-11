@@ -60,37 +60,17 @@
       "service": "ritueel.local.v1alpha1.PlanService",
       "method": "StartPlan",
       "when": {
-        "intention": "INTENTION_RETIRE_SUBKEYS",
-        "answers": "none"
+        "intention": "INTENTION_RETIRE_SUBKEYS"
       },
-      "file": "plan.start-plan.retire-subkeys.questions.json"
+      "file": "common/plan.start-plan.not-now.json"
     },
     {
       "service": "ritueel.local.v1alpha1.PlanService",
       "method": "StartPlan",
       "when": {
-        "intention": "INTENTION_RETIRE_SUBKEYS",
-        "answers": "any"
+        "intention": "INTENTION_ADOPT_KEY"
       },
-      "file": "plan.start-plan.retire-subkeys.json"
-    },
-    {
-      "service": "ritueel.local.v1alpha1.PlanService",
-      "method": "StartPlan",
-      "when": {
-        "intention": "INTENTION_ADOPT_KEY",
-        "answers": "none"
-      },
-      "file": "plan.start-plan.adopt-key.questions.json"
-    },
-    {
-      "service": "ritueel.local.v1alpha1.PlanService",
-      "method": "StartPlan",
-      "when": {
-        "intention": "INTENTION_ADOPT_KEY",
-        "answers": "any"
-      },
-      "file": "plan.start-plan.adopt-key.json"
+      "file": "common/plan.start-plan.not-now.json"
     },
     {
       "service": "ritueel.local.v1alpha1.PlanService",
@@ -98,7 +78,7 @@
       "when": {
         "intention": "INTENTION_ADD_CARD"
       },
-      "file": "plan.start-plan.refused.json"
+      "file": "common/plan.start-plan.refused.json"
     },
     {
       "service": "ritueel.local.v1alpha1.PlanService",
@@ -106,31 +86,15 @@
       "when": {
         "intention": "INTENTION_REPLACE_CARD"
       },
-      "file": "plan.start-plan.refused.json"
+      "file": "common/plan.start-plan.refused.json"
     },
     {
       "service": "ritueel.local.v1alpha1.PlanService",
       "method": "SavePlan",
       "when": {
-        "planId": "2026-11-11-renew-due"
+        "planId": "20261111T090000Z-due"
       },
       "file": "plan.save-plan.renew-due.json"
-    },
-    {
-      "service": "ritueel.local.v1alpha1.PlanService",
-      "method": "SavePlan",
-      "when": {
-        "planId": "2026-11-11-retire-subkeys"
-      },
-      "file": "plan.save-plan.retire-subkeys.json"
-    },
-    {
-      "service": "ritueel.local.v1alpha1.PlanService",
-      "method": "SavePlan",
-      "when": {
-        "planId": "2026-11-11-adopt-cloud-key"
-      },
-      "file": "plan.save-plan.adopt-key.json"
     }
   ]
 }

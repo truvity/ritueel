@@ -1,5 +1,7 @@
 import { Intention, SubjectKind, type Subject } from '../gen/ritueel/local/v1alpha1/common_pb';
+import type { Root } from '../gen/ritueel/local/v1alpha1/inspect_service_pb';
 import { href, siteUrl } from './route';
+import { rootOf } from './touch';
 
 export const INTENTION_SLUG: Partial<Record<Intention, string>> = {
   [Intention.RENEW_DUE]: 'renew-due',
@@ -19,14 +21,14 @@ export function planHref(i: Intention): string {
 }
 
 /** Where a subject can be looked at on the page, if anywhere. */
-export function subjectHref(s: Subject | undefined, personalLabel = 'personal'): { href: string; label: string } | undefined {
+export function subjectHref(s: Subject | undefined, roots?: Root[]): { href: string; label: string } | undefined {
   switch (s?.kind) {
     case SubjectKind.ROOT:
     case SubjectKind.SUBKEY:
     case SubjectKind.USER_ID:
-      return { href: href.key(personalLabel), label: 'Open the key' };
     case SubjectKind.DELEGATED_KEY:
-      return { href: href.key('acme'), label: 'Open the key' };
+      // The root is found by the full fingerprint of the subject; without the roots the first root of the bundle opens.
+      return { href: href.key(rootOf(roots, s.identifier)?.label), label: 'Open the key' };
     case SubjectKind.CARD:
       return { href: href.cards(s.identifier), label: 'Open the card' };
     case SubjectKind.TRUST_FILE:

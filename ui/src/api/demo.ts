@@ -1,6 +1,9 @@
 // Demo mode: an in-memory ConnectRPC transport. The handlers answer from the
 // fixture files of the contract (the same messages the real service sends).
-// There is no server and no network. Every handler is a read, except the one
+// There is no server and no network. The transport answers for one bundle at a
+// time, chosen by the switch in the demo bar (api/demoState.ts): the real
+// process serves the one bundle it was started on, and its name comes from
+// GetSummary in the same way. Every handler is a read, except the one
 // write of the contract, SavePlan: it answers from its fixture, which says
 // written=false and that this is a demo, and nothing is written anywhere.
 //
@@ -30,13 +33,17 @@ import {
   type SavePlanRequest,
   type StartPlanRequest,
 } from '../gen/ritueel/local/v1alpha1/plan_service_pb';
-import { getViewState, whenViewStateChanges } from './demoState';
+import { getBundle, getViewState, whenViewStateChanges } from './demoState';
 
-const files = import.meta.glob('../fixtures/*.json', { eager: true, import: 'default' }) as Record<string, JsonValue>;
+// One directory of fixtures for each example bundle (personal, acme, globex), each
+// with the same call-named files, and common/ for the answers all of them share.
+const files = import.meta.glob('../fixtures/*/*.json', { eager: true, import: 'default' }) as Record<string, JsonValue>;
 
+/** A fixture of the current bundle, or of common/ when the name says so. */
 function load(name: string): JsonValue {
-  const hit = files[`../fixtures/${name}`];
-  if (hit === undefined) throw new ConnectError(`demo: fixture ${name} is missing`, Code.Internal);
+  const path = name.startsWith('common/') ? name : `${getBundle()}/${name}`;
+  const hit = files[`../fixtures/${path}`];
+  if (hit === undefined) throw new ConnectError(`demo: fixture ${path} is missing`, Code.Internal);
   return hit;
 }
 
@@ -51,7 +58,10 @@ interface ManifestEntry {
   file: string;
 }
 
-const manifest = (load('manifest.json') as unknown as { responses: ManifestEntry[] }).responses;
+/** The manifest of the current bundle, read at the time of the call: the bundle can change between calls. */
+function manifest(): ManifestEntry[] {
+  return (load('manifest.json') as unknown as { responses: ManifestEntry[] }).responses;
+}
 
 const INTENTION_NAMES: Record<number, string> = {
   [Intention.RENEW_DUE]: 'INTENTION_RENEW_DUE',
@@ -62,7 +72,7 @@ const INTENTION_NAMES: Record<number, string> = {
 };
 
 function pick(method: string, test: (when: NonNullable<ManifestEntry['when']>) => boolean): string {
-  const hit = manifest.find((e) => e.method === method && e.when && test(e.when));
+  const hit = manifest().find((e) => e.method === method && e.when && test(e.when));
   if (!hit) {
     // A call that matches no entry fails loudly, as the contract asks.
     throw new ConnectError(`The demo has no recorded answer for this ${method} request.`, Code.Unimplemented);
@@ -70,8 +80,11 @@ function pick(method: string, test: (when: NonNullable<ManifestEntry['when']>) =
   return hit.file;
 }
 
-export const FAILED_MESSAGE =
-  'ritueel could not read the bundle at ~/ritueel. The reason, made up for this demo: the ledger file could not be opened.';
+/** The made-up reason a failed read gives, built from the path of the current bundle. */
+export function failedMessage(): string {
+  const path = parse(GetSummaryResponseSchema, 'inspect.get-summary.json').bundle?.path ?? '~/ritueel';
+  return `ritueel could not read the bundle at ${path}. The reason, made up for this demo: the ledger file could not be opened.`;
+}
 
 /**
  * The four states of a read. The failed and waiting answers are the same for
@@ -79,7 +92,7 @@ export const FAILED_MESSAGE =
  */
 async function gate<T>(loaded: () => T | Promise<T>, empty: () => T): Promise<T> {
   const state = getViewState();
-  if (state === 'failed') throw new ConnectError(FAILED_MESSAGE, Code.Unavailable);
+  if (state === 'failed') throw new ConnectError(failedMessage(), Code.Unavailable);
   if (state === 'waiting') {
     await whenViewStateChanges();
     throw new ConnectError('The wait ended because the demo state changed.', Code.Canceled);

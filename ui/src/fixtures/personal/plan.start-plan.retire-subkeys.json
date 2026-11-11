@@ -1,9 +1,9 @@
 {
   "plan": {
-    "id": "2026-11-11-retire-subkeys",
+    "id": "20261111T090000Z-personal-subkey-revoke",
     "intention": "INTENTION_RETIRE_SUBKEYS",
     "title": "Retire two superseded signing subkeys",
-    "summary": "Revokes the signing subkeys of 2022 and 2023 with the reason superseded, and rebuilds your public certificate. Nothing happens until you run it on the ceremony machine.",
+    "summary": "Revokes the signing subkeys of 2022 and 2023 with the reason superseded, and rebuilds your public certificate. Nothing happens until you run it on the offline system.",
     "builtAt": "2026-11-11T09:00:00Z",
     "ledgerHeadSha256": "600c0123456789abcdef0123456789abcdef0123456789abcdef0123456789ab",
     "digest": "c41e08b50123456789abcdef0123456789abcdef0123456789abcdefdeadbeef",
@@ -77,14 +77,19 @@
         "description": "Written just before the first signature."
       },
       {
-        "path": "roots/personal/openpgp.pgp",
+        "path": "roots/A/openpgp.pgp",
         "action": "BUNDLE_CHANGE_ACTION_REPLACE",
         "description": "The public certificate with two subkey revocations; the old one stays under products/."
+      },
+      {
+        "path": "products/2/",
+        "action": "BUNDLE_CHANGE_ACTION_CREATE",
+        "description": "The keyring of trust sequence 2, with the two revocations."
       }
     ],
     "equivalentCommand": "ritueel personal subkey revoke --reason superseded 1B220123456789ABCDEF0123456789ABCDEF0123 1B320123456789ABCDEF0123456789ABCDEF0123 --plan-only",
-    "runCommand": "ritueel run ./ritueel/pending/2026-11-11-retire-subkeys.plan --confirm c41e08b50123456789abcdef0123456789abcdef0123456789abcdefdeadbeef",
-    "savePath": "pending/2026-11-11-retire-subkeys.plan",
+    "runCommand": "ritueel run ledger/20261111T090000Z-personal-subkey-revoke/plan.json --confirm c41e08b50123456789abcdef0123456789abcdef0123456789abcdefdeadbeef",
+    "savePath": "ledger/20261111T090000Z-personal-subkey-revoke/plan.json",
     "cardSerials": [
       "00000001"
     ]

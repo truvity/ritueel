@@ -112,12 +112,16 @@ check('Copy answers on screen, and in the demo says nothing ran', /Copied\.|Coul
 
 // ---- findings filter (min_severity goes through the transport) -----------------------------
 await go('#/findings');
-check('Findings lists all nine', /9 findings, worst first/.test(await text()));
+check('Findings lists all seven of the personal bundle', /7 findings, worst first/.test(await text()));
 await clickText(evalJs, 'Critical only');
 await sleep(400);
 check('Critical only lists one', /1 finding, worst first/.test(await text()));
 
 // ---- the wizard ---------------------------------------------------------------------------
+// the demo bar picks the bundle; the page goes back to Start, and the wizard of a company bundle has the renewals
+await clickText(evalJs, 'acme');
+await sleep(500);
+check('the bundle switch changes the bundle and sends the page back to Start', /ritueel\/acme/.test(await text()) && (await evalJs('location.hash')) === '#/start');
 await go('#/plan');
 check('the goals show two goals greyed with their reason', (await text()).includes('Not now.') && /card connected to this computer/.test(await text()));
 await go('#/plan/renew-due');
@@ -138,6 +142,8 @@ check('Save the plan says nothing was written and what would be', /Nothing was w
 check('the saved view shows what to copy and bring, and the run command', /Copy to the offline system/.test(saved) && /USB stick/.test(saved) && /Bring with you/.test(saved) && /--confirm/.test(saved));
 await go('#/plan/add-card');
 check('a goal that cannot be planned is refused with its reason', /cannot be planned now/.test(await text()));
+await clickText(evalJs, 'personal');
+await sleep(500);
 
 // ---- the four states ------------------------------------------------------------------------
 await go('#/findings');
@@ -154,8 +160,8 @@ await sleep(600);
 check('Waiting: says it is reading, and shows neither empty nor failed', /Reading the findings/.test(await text()) && !/Could not read/.test(await text()) && !/Nothing to check yet/.test(await text()));
 await clickText(evalJs, 'Loaded');
 await sleep(500);
-check('Loaded again: the findings are back', /9 findings, worst first/.test(await text()));
-for (const hash of ['#/start', '#/roots', '#/key/personal', '#/cards', '#/history', '#/trust', '#/plan']) {
+check('Loaded again: the findings are back', /7 findings, worst first/.test(await text()));
+for (const hash of ['#/start', '#/roots', '#/key/A', '#/cards', '#/history', '#/trust', '#/plan']) {
   await go(hash);
   await clickText(evalJs, 'Failed read');
   await sleep(500);
@@ -170,7 +176,7 @@ for (const hash of ['#/start', '#/roots', '#/key/personal', '#/cards', '#/histor
 // ---- the phone: bottom bar and the More menu ---------------------------------------------------------
 await send('Emulation.setDeviceMetricsOverride', { width: 390, height: 844, deviceScaleFactor: 2, mobile: true });
 await go('#/start');
-check('the phone has a bottom bar with the findings count', await evalJs(`!!document.querySelector('nav[aria-label=Screens].fixed') && /9/.test(document.querySelector('nav[aria-label=Screens].fixed').textContent)`));
+check('the phone has a bottom bar with the findings count', await evalJs(`!!document.querySelector('nav[aria-label=Screens].fixed') && /7/.test(document.querySelector('nav[aria-label=Screens].fixed').textContent)`));
 await clickText(evalJs, 'More');
 await sleep(400);
 const menu = await evalJs(`[...document.querySelectorAll('[role=menuitem]')].map((e) => e.textContent.trim()).join('|')`);

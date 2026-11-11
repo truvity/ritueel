@@ -30,7 +30,7 @@
       "subject": {
         "kind": "SUBJECT_KIND_ROOT",
         "identifier": "10000123456789ABCDEF0123456789ABCDEF0123",
-        "label": "Personal OpenPGP key"
+        "label": "personal/A"
       },
       "evidence": [
         "RSA-4096 primary, created 2012-06-19, no expiry set",
@@ -95,23 +95,6 @@
       "learnPath": "/learn/how-a-yubikey-holds-keys/#one-piv-slot-up-close"
     },
     {
-      "id": "no-restore-check",
-      "code": "no-restore-check",
-      "severity": "SEVERITY_NOTICE",
-      "title": "No restore check has ever been recorded",
-      "reason": "A backup you have never restored is a hope, not a backup. The restore check runs on a clean machine and signs nothing.",
-      "subject": {
-        "kind": "SUBJECT_KIND_BUNDLE",
-        "identifier": "~/ritueel",
-        "label": "Your bundle"
-      },
-      "evidence": [
-        "No restore report has ever been made; the ledger holds 12 records."
-      ],
-      "fixCommand": "ritueel drill restore",
-      "learnPath": "/guides/run-a-drill/"
-    },
-    {
       "id": "adopted-rsa-primary",
       "code": "adopted-stage-one",
       "severity": "SEVERITY_INFO",
@@ -120,7 +103,7 @@
       "subject": {
         "kind": "SUBJECT_KIND_ROOT",
         "identifier": "10000123456789ABCDEF0123456789ABCDEF0123",
-        "label": "Personal OpenPGP key"
+        "label": "personal/A"
       },
       "evidence": [
         "Adopted on 2026-11-03",
@@ -129,25 +112,6 @@
       "fixCommand": "ritueel personal primary add --card 00000001 --plan-only",
       "learnPath": "/guides/personal-openpgp/#if-you-already-have-a-primary",
       "visibleFromPublicKey": true
-    },
-    {
-      "id": "cloud-key-waiting",
-      "code": "cloud-key-not-adopted",
-      "severity": "SEVERITY_INFO",
-      "title": "A cloud key is waiting to be adopted",
-      "reason": "ritueel found a key with this alias in the configuration of the bundle that no record mentions. Adopting it reads its public key and checks its policy; it changes nothing in the cloud.",
-      "subject": {
-        "kind": "SUBJECT_KIND_CLOUD_KEY",
-        "identifier": "alias/example-staging-signing",
-        "label": "alias/example-staging-signing"
-      },
-      "evidence": [
-        "Region eu-west-1, replica in eu-central-1",
-        "Not in the ledger"
-      ],
-      "fixCommand": "ritueel root add --store aws-kms --key alias/example-staging-signing --plan-only",
-      "fixIntention": "INTENTION_ADOPT_KEY",
-      "learnPath": "/reference/kms-root/#adopting-an-existing-key"
     },
     {
       "id": "rehearsal-card-old-firmware",

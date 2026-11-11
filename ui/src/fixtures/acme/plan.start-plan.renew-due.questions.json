@@ -31,12 +31,12 @@
     {
       "id": "trust-files",
       "prompt": "Build the trust files in the same ceremony?",
-      "help": "The renewals change what the root list and the keyring must say. Without this the trust files stay at sequence 8 until the next ceremony.",
+      "help": "The renewals change what the root list and the keyring must say. Without this the trust files stay at sequence 7 until the next ceremony.",
       "kind": "QUESTION_KIND_SINGLE_CHOICE",
       "options": [
         {
           "id": "yes",
-          "label": "Yes, build trust sequence 9 and check it"
+          "label": "Yes, build trust sequence 8 and check it"
         },
         {
           "id": "no",
