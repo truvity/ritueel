@@ -7,6 +7,10 @@ import { useSyncExternalStore } from 'react';
 //   waiting  the program has not answered yet
 // In the real program this stays "loaded" for ever and nothing changes it.
 //
+// The bar at the top names the two switches "Page state" (this one) and
+// "Example bundle" (the next). Waiting never ends by itself, on purpose: it is
+// the screen the switch exists to show, and the page says so.
+//
 // A second switch chooses which example bundle the demo answers for. The real
 // process serves one bundle, the one it was started on, so there is no such
 // switch there and no call for it in the contract.
@@ -17,7 +21,7 @@ export const VIEW_STATES: { value: ViewState; label: string; hint: string }[] = 
   { value: 'loaded', label: 'Loaded', hint: 'The bundle answers.' },
   { value: 'empty', label: 'Empty', hint: 'A new bundle that holds nothing yet.' },
   { value: 'failed', label: 'Failed read', hint: 'ritueel could not read the bundle.' },
-  { value: 'waiting', label: 'Waiting', hint: 'ritueel has not answered yet.' },
+  { value: 'waiting', label: 'Waiting', hint: 'ritueel has not answered yet. It stays so until you choose another page state.' },
 ];
 
 export type DemoBundle = 'personal' | 'acme' | 'globex';

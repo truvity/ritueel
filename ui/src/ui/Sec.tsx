@@ -2,6 +2,8 @@ import { useEffect, useState, type ReactNode } from 'react';
 import Button from '@mui/material/Button';
 import Skeleton from '@mui/material/Skeleton';
 import Typography from '@mui/material/Typography';
+import { isDemo } from '../api/client';
+import { useViewState } from '../api/demoState';
 import type { Loaded } from '../api/hooks';
 import { Glyph } from './Glyph';
 import { T } from './T';
@@ -42,6 +44,16 @@ function useAfter(ms: number): boolean {
   return late;
 }
 
+/** Demo only (its own component, so the real build drops it with the state switch): in the Waiting page state ritueel never answers, on purpose, and the screen says so. */
+function WaitingOnPurpose() {
+  if (useViewState() !== 'waiting') return null;
+  return (
+    <p className="border-l-4 border-accent bg-sunk px-3 py-2 text-sm">
+      Demo: in this state ritueel never answers, on purpose, so you can see this screen. Choose another page state to end the wait.
+    </p>
+  );
+}
+
 /** Waiting: ritueel has not answered yet. Nothing is shown as empty and nothing as failed. */
 export function Waiting({ what }: { what: string }) {
   const late = useAfter(3500);
@@ -50,6 +62,7 @@ export function Waiting({ what }: { what: string }) {
       <p className="text-dim">Reading {what} ...</p>
       <Skeleton variant="rectangular" height={64} sx={{ borderRadius: '2px' }} />
       <Skeleton variant="rectangular" height={64} sx={{ borderRadius: '2px' }} />
+      {isDemo ? <WaitingOnPurpose /> : null}
       {late ? <p className="text-sm text-dim">Still waiting for ritueel. It has not answered yet. This page shows nothing as empty or as failed until it does.</p> : null}
     </div>
   );

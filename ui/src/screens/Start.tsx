@@ -8,11 +8,13 @@ import { planHref } from '../lib/finding';
 import { safeString } from '../lib/safe';
 import { href } from '../lib/route';
 import { onPlace } from '../lib/words';
+import { isDemo } from '../api/client';
 import { Cmd } from '../ui/Cmd';
 import { FindingCard } from '../ui/FindingCard';
+import { DemoLede, StartHere } from '../ui/FirstVisit';
 import { Fp } from '../ui/Fp';
 import { Glyph, SEV_EDGE, SEV_ORDER, SEV_TEXT, SEV_WORD, Sev, sevKey, type SevKey } from '../ui/Glyph';
-import { Page } from '../ui/Page';
+import { LearnLink, Page } from '../ui/Page';
 import { Empty, Load, Sec } from '../ui/Sec';
 import { T } from '../ui/T';
 
@@ -336,7 +338,9 @@ function Words() {
   ];
   return (
     <details className="border border-line bg-panel">
-      <summary className="flex min-h-11 cursor-pointer items-center px-4 text-[0.9375rem] font-semibold text-accent">Words on this page</summary>
+      <summary className="flex min-h-11 cursor-pointer items-center px-4 text-[0.9375rem] font-semibold text-accent">
+        Words on this page: root, bundle, ceremony, ledger and more
+      </summary>
       <dl className="grid gap-x-6 gap-y-2 border-t border-line p-4 text-[0.9375rem] sm:grid-cols-[10rem_minmax(0,1fr)]">
         {words.map(([w, d]) => (
           <div key={w} className="contents">
@@ -345,6 +349,9 @@ function Words() {
           </div>
         ))}
       </dl>
+      <p className="border-t border-line px-4 text-[0.9375rem]">
+        <LearnLink path="/glossary/">All the words</LearnLink>
+      </p>
     </details>
   );
 }
@@ -422,12 +429,17 @@ export function Start() {
       kicker="Start"
       title="What needs you"
       lede={
-        <p>
-          This is the bundle where ritueel keeps the records of one trust domain. This page reads it and shows it. To change something, you make a plan here and run it in
-          a terminal, on the offline system or your workstation, as the plan says.
-        </p>
+        isDemo ? (
+          <DemoLede />
+        ) : (
+          <p>
+            This is the bundle where ritueel keeps the records of one trust domain. This page reads it and shows it. To change something, you make a plan here and run it in
+            a terminal, on the offline system or your workstation, as the plan says.
+          </p>
+        )
       }
     >
+      {isDemo ? <StartHere /> : null}
       <Load res={summary} what="the bundle">
         {(s) => <Body s={s} />}
       </Load>
