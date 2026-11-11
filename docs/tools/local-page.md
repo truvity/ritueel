@@ -13,10 +13,10 @@ The local page is the third face of the program, beside the command line and the
 
 ## The demo
 
-[Open the demo](/demo/). It is the real page, built in a demo mode, shown with made-up data: one holder with three example bundles. A bundle is the directory of one trust domain, with its own ledger, roots and cards, and a root is written `acme/A`. The example bundles are:
+[Open the demo](/demo/). It is the real page, built in a demo mode, shown with made-up data: one holder with three example bundles. A [bundle](/reference/bundle/) is the directory with a fixed structure that holds everything ritueel knows about one trust domain, with its own ledger, roots and cards. Across bundles a root is written with the bundle's name, `acme/A`. The example bundles are:
 
-- `personal`: the holder's own OpenPGP key in a key file, with its subkeys by year and by card.
-- `acme`: a company root pair, `acme/A` and `acme/B`, on two root cards, with delegated keys, trust files and ten ceremonies over three years.
+- `personal`: the holder's own OpenPGP key in a key file, with its subkeys by year and by card, two root cards, three day-to-day cards and a rehearsal card. Its one trust file is the public certificate.
+- `acme`: a company root pair, `acme/A` and `acme/B`, on two root cards, with delegated keys, the trust files (a CRL for each root) and ten ceremonies over three years.
 - `globex`: another company's cloud root, which needs no card.
 
 Every name, fingerprint and serial in it is invented and looks it.
@@ -25,8 +25,9 @@ Every name, fingerprint and serial in it is invented and looks it.
 - **It says it is a demo,** on every screen, with a link back here.
 - **You can try a bundle.** A switch in the bar, "Try a bundle", changes which example bundle the page shows. It exists only in the demo: the program serves the one bundle it was started on.
 - **You can try the states.** A second switch makes the page answer as an empty bundle, a failed read, or no answer yet, so you see how each screen speaks in each case.
-- **The wizard is one sequence:** goal, choices, plan with its digest and the exact command, then save. The plan says where it runs: on the offline system for a root on cards or in a key file, on your workstation for a cloud root. The USB-stick step shows only where it is needed. In the demo the plan is the same whatever you choose.
-- **Its commands follow the [command reference](/reference/cli/)** where a command exists there; a few are proposals that the reference does not have yet.
+- **The wizard is one sequence:** goal, choices, plan with its digest and the exact command, then save. The plan says where it runs: on the offline system for a root on cards or a real software root in a key file, on your workstation for a cloud root. The USB-stick step shows only where it is needed. In the demo the plan is the same whatever you choose.
+- **Its commands follow the [command reference](/reference/cli/)** where a command exists there, with `--dir` naming the bundle in a command that runs a plan; a few are proposals that the reference does not have yet (the personal key's `primary`, `userid` and `subkey revoke` commands, and the flag that names a cloud key to adopt).
+- **Where the saved plan goes is a proposal.** The decision records say only that the process writes the plan inside your bundle. The demo shows it at `ledger/<ceremony>/plan.json`, the place [the bundle reference](/reference/bundle/#the-layout) proposes, and that path is not settled.
 
 ## What is the same in the program and what is not
 
@@ -34,8 +35,8 @@ Every name, fingerprint and serial in it is invented and looks it.
 |---|---|---|
 | The screens, the words, the states | The real ones | The same build |
 | Which bundle | Three example bundles and a switch | The one bundle the process was started on |
-| Where the answers come from | Fixtures in the page's build, through an in-memory transport | The ritueel process: one long-running background process, started on demand, on a Unix socket for the command line and on the loopback address for the browser while the page is in use. The loopback listener is guarded as the [wizard's rules](/reference/wizard/) say (127.0.0.1 only, exact Host, Origin and Sec-Fetch-Site on every request, no permissive CORS), and is trusted no more than any other web request |
-| Saving a plan | Shows the file it would write, `ledger/<ceremony>/plan.json` | Writes one inert file inside your bundle |
+| Where the answers come from | Fixtures in the page's build, through an in-memory transport | The ritueel process: one long-running background process, started on demand, on a Unix socket for the command line and on the loopback address for the browser while the page is in use. The loopback listener is guarded as [the wizard's profile](/reference/wizard/#the-web-page-the-security-profile) says (127.0.0.1 on a random port, a one-time session token, an exact Host check and, for a POST, a cross-origin check), and is trusted no more than any other web request |
+| Saving a plan | Shows the file it would write, at the proposed `ledger/<ceremony>/plan.json`, and says that nothing was written | The process rebuilds the plan, and writes one inert file inside your bundle (the path is proposed, see above) |
 | Steps of a ceremony in History | The usual steps of that kind of ceremony | The steps in the plan.json of the ceremony's sub-folder of the ledger |
 
 ## How it is built

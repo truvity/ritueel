@@ -15,16 +15,22 @@ what, and to build a plan for the next ceremony. Built in **demo mode** it is th
 demo that is served under `/demo/` on the site: the real interface, answering
 from made-up fixtures, refusing to act.
 
-The page shows **one bundle** at a time. A bundle is the directory of one trust
-domain (for example `personal` or `acme`), with its own ledger, root list and roots.
-A root is written `bundle/label`, for example `acme/A`. The real process serves the
-one bundle it was started on. The demo has three example bundles and a switch to
-choose between them (see "How the demo mode works").
+The page shows **one bundle** at a time. A bundle is the directory with a fixed
+structure that holds everything ritueel knows about one trust domain (for example
+`personal` or `acme`): its own ledger, trust sequence and roots, and, for a company, its
+own root list. It is named by its directory. A root is written with the bundle's name
+across bundles, `bundle/label`, for example `acme/A`; inside a bundle it is `A`. The
+trust file is always "the CA bundle", and its command is `ritueel ca-bundle build`;
+this README calls the built JavaScript "the build" and never a bundle. The real
+process serves the one bundle it was started on. The demo has three example bundles
+and a switch to choose between them (see "How the demo mode works").
 
 The page is a view. It never confirms a ceremony and never asks for or receives a
 PIN, a passphrase or any secret. Every screen that names an action shows the
 command that does it, and no screen performs one. Confirmation happens in the
-terminal, on the offline system or on your workstation.
+terminal, on the offline system or on your workstation. The offline system is for a
+root on cards or a real software root in a key file; a cloud root is used from your
+workstation; a test root may run on either.
 
 ## Screens
 
@@ -68,7 +74,7 @@ node scripts/serve.mjs 8765    # serves dist/ under /demo/ on 127.0.0.1:8765, pr
 npm run e2e -- http://127.0.0.1:8765/demo/       # browser test: keyboard, focus, popover, theme, wizard, states
 npm run shots -- http://127.0.0.1:8765/demo/     # screenshots of every screen into shots/
 npm run build:real     # the real build -> dist-real/ (real transport, no fixtures)
-npm run check:dist     # greps both bundles: no remote host, demo only in the demo
+npm run check:dist     # greps both builds: no remote host, demo only in the demo
 npm run check          # typecheck, test, both builds, check:dist
 ```
 
@@ -86,19 +92,23 @@ no library (they drive headless Chrome over the DevTools protocol).
   build-time constant: in the demo build the transport is `createRouterTransport`
   from `src/api/demo.ts`, in a chunk of its own with the fixtures; in the real
   build it is `createConnectTransport` from `@connectrpc/connect-web` and the
-  fixtures are not in the bundle (`npm run check:dist` checks this).
+  fixtures are not in the build (`npm run check:dist` checks this).
 - The demo handlers answer from `src/fixtures/<bundle>/*.json`, one directory for
   each example bundle (the same messages as the real service, parsed with the
   generated schema, so a wrong field is an error). Each directory has its own
   `manifest.json`, which chooses the file for a call. `src/fixtures/common/` holds
   the refusals the bundles share; a manifest names them as `common/...`.
   `ListFindings` applies `min_severity` in the transport. A call with no recorded
-  answer fails loudly.
+  answer fails loudly. Where an answer in `common/` names the bundle's place (the
+  `--dir` of a command, the path of a saved plan), the transport puts the open
+  bundle's place in.
 - The three example bundles are trust domains of their own, each with its own
   ledger, roots, cards, findings, trust files and goals. `personal` is one holder's
-  OpenPGP key in a key file, with its subkeys by year and by card, and six cards.
-  `acme` is a company with roots `acme/A` and `acme/B` on a pair of root cards,
-  delegated keys and six trust files. `globex` is another company's cloud root
+  OpenPGP key in a key file, with its subkeys by year and by card, and six cards
+  (two root cards, three day-to-day cards and a rehearsal card); its trust files are its
+  public certificate, as a personal bundle has no root list. `acme` is a company with
+  roots `acme/A` and `acme/B` on a pair of root cards, delegated keys and seven trust
+  files (a CRL for each root). `globex` is another company's cloud root
   `globex/A`, with no card.
 - The bundle switch (`src/api/demoState.ts`, "Try a bundle", beside "Try the
   states") is demo chrome only. It is not in the contract and not in the real
@@ -107,15 +117,22 @@ no library (they drive headless Chrome over the DevTools protocol).
   roots as `bundle/label`. Switching also returns the page to `#/start`, so no route
   points at a card or a root the new bundle lacks.
 - The one call that would act, `SavePlan`, answers with `written: false`, a notice
-  that this is a demo and nothing was written, and the file it would have written:
-  `ledger/<ceremony>/plan.json` inside the bundle, where the engine writes any
-  plan. The file is canonical JSON and its SHA-256 is the digest
-  ([the ceremony record](https://ritueel.id/reference/ceremony-record/)). Nothing is
-  written anywhere. The wizard builds a plan in memory (`StartPlan`: questions,
+  that this is a demo and nothing was written, and the file it would have written.
+  The demo shows that file at `ledger/<ceremony>/plan.json` inside the bundle. That
+  path is the demo's proposal: the records say only that the process writes the plan
+  inside the bundle, and the [bundle reference](https://ritueel.id/reference/bundle/#the-layout)
+  marks the file names as proposed. The file is canonical JSON and its SHA-256 is the
+  digest ([the ceremony record](https://ritueel.id/reference/ceremony-record/)).
+  Nothing is written anywhere. The wizard builds a plan in memory (`StartPlan`: questions,
   then the plan with its steps, digest and commands). In the demo the plan is the
   same whatever is chosen. The plan says where it runs (`Plan.run_place`): on the
-  offline system for a root on cards or in a key file, on your workstation for a
-  cloud root. The USB-stick step shows only on the offline system.
+  offline system for a root on cards or a real software root in a key file, on your
+  workstation for a cloud root (with no hardware-key sign-in: ritueel asks nothing of
+  how you signed in). The USB-stick step shows only on the offline system. A test
+  root may run on the workstation; that is wording only, as there is no flag for it.
+  The commands follow [the command reference](https://ritueel.id/reference/cli/): the
+  run command is `ritueel --dir BUNDLE run PLAN --confirm DIGEST`, and a plan of an
+  empty bundle starts with `init`.
 - The state switch makes the same transport answer as an empty bundle, with an
   error, or not at all until the state changes.
 - Routes are hash routes, so a static host needs no fallback.
@@ -138,7 +155,7 @@ no library (they drive headless Chrome over the DevTools protocol).
   icon through `%BASE_URL%`, so they follow the base path (`/demo/`, or `./` in the
   real build). `/demo` without the slash is redirected to `/demo/` by the site's
   static host.
-- **Licences travel with the code.** The minified bundle carries no notices, so
+- **Licences travel with the code.** The minified build carries no notices, so
   Vite writes the licence of every bundled package into `THIRD-PARTY-LICENSES.md`
   next to `index.html` (`build.license` in `vite.config.ts`), and the footer links
   to it.
@@ -148,7 +165,7 @@ no library (they drive headless Chrome over the DevTools protocol).
 | Rule | Enforced by |
 |---|---|
 | No `dangerouslySetInnerHTML`, `innerHTML`, `insertAdjacentHTML`, `outerHTML`, `document.write`, `eval`, `new Function`, string timers, computed access to those names | `src/safety.test.ts` (scans every source file, comments stripped) |
-| No `fetch`, `XMLHttpRequest`, `sendBeacon`, `WebSocket`, `EventSource`, remote URL, remote `@import`, hand-made `<script>`/`<link>` | `src/safety.test.ts`; the CSP; `scripts/check-dist.mjs` on the built bundles |
+| No `fetch`, `XMLHttpRequest`, `sendBeacon`, `WebSocket`, `EventSource`, remote URL, remote `@import`, hand-made `<script>`/`<link>` | `src/safety.test.ts`; the CSP; `scripts/check-dist.mjs` on the built files |
 | Text from the data shows non-ASCII, bidirectional, zero-width and control characters as `U+XXXX`, and is capped. This holds for every string of the data, identifiers too, and for the attributes (`aria-label`, `title`, `id`, `value`, `href`) | `src/lib/safe.ts`, `src/ui/T.tsx`; `src/text.test.tsx`; `src/hostile.test.tsx` renders every screen with every string of the world ending in a bidirectional override, a joiner and a control character, and fails if one reaches the markup raw, in text or in an attribute |
 | The Copy button writes exactly what the screen shows: a command with a newline, a bidirectional or other escaped character, or more than 500 characters is not copied (the button is off and says why) | `copyable` in `src/lib/safe.ts`; tests in `src/text.test.tsx`; e2e reads the clipboard |
 | A guide link is a plain site path; a card serial is put into a command only when it is digits | `learnPathOk` in `src/lib/finding.ts`, `isSerial` in `src/lib/safe.ts` |
@@ -181,7 +198,7 @@ utilities do layout and win over MUI without `!important`. One unlayered
 
 ## Dependencies
 
-Runtime (these are in the bundle):
+Runtime (these are in the build):
 
 | Package | Version | Licence |
 |---|---|---|
@@ -209,20 +226,33 @@ No router, no state library, no font package, no ESLint, no screenshot library.
 
 ## What the real program replaces
 
-Only the transport. The process is the owner's decision of 2026-11-11: one
-long-running background process, started on demand, bound to a Unix socket. The
-command line uses the socket. A browser cannot open a Unix socket, so the page
-reaches the same process over the loopback address while the page is in use. Both
-get the same calls and the same answers, and the process serves one bundle. Same calls, not the same trust: the loopback listener binds 127.0.0.1 only, checks the Host header exactly and Origin or Sec-Fetch-Site on every request, and sets no permissive CORS header ([reference/wizard](https://ritueel.id/reference/wizard/), rules 1 and 4). It has the same calls as the socket, but any program or web page on the computer can send it a request, so it is trusted no more than any other web request.
+Only the transport. The process is described by [ADR 0011](https://ritueel.id/decisions/0011-the-wizards-one-engine-three-faces-and-a-web-page-that-cannot-confirm-anything/)
+and [the wizard reference](https://ritueel.id/reference/wizard/#the-ritueel-process): one
+long-running background process, the same program as the command line, started on demand
+by the first command that needs it, and not a system service. The command line reaches
+it through a Unix socket that only the same user can open. A browser cannot open a Unix
+socket, so for the page the same process also listens on `127.0.0.1`, on a random port,
+only while the page is in use, and registers there only `InspectService` and
+`PlanService` (the reads and `SavePlan`). A ceremony is confirmed in the terminal: the
+digest arrives over the socket, never from the page. Same API, not the same trust. The
+loopback listener lets a request in only with the one-time token of the session, which
+becomes an `HttpOnly`, `SameSite=Strict` cookie, checks the `Host` header exactly and,
+for a `POST`, `Sec-Fetch-Site` or `Origin`, and ends after 15 minutes without a request
+([the profile](https://ritueel.id/reference/wizard/#the-web-page-the-security-profile),
+rules 1 to 4 and 9). Other programs of the same user can reach that port while the page
+is in use, so it is trusted no more than any other web request. The records mark the
+details of how the process ends and where its socket lives as proposed; this page does
+not depend on them. The process serves one bundle.
 
-In the real program the same page bundle (`npm run build:real`, `BASE=./`) is
+In the real program the same built page (`npm run build:real`, `BASE=./`) is
 embedded in the binary and served by that process; `src/api/client.ts` then builds
 `createConnectTransport({ baseUrl: '/' })` and the process serves `InspectService`
 and `PlanService` with connect-go. Gone from the real build: the fixtures, the
 in-memory transport, the demo bar, the state switch and the bundle switch. The
 screens, hooks and generated code do not change. What the real program must add:
-`SavePlan` actually writes `ledger/<ceremony>/plan.json` into the bundle, one inert
-file, create-only, in the form the engine uses for any plan; the step list of a
+`SavePlan` rebuilds the plan, refuses a digest that is not the rebuilt plan's, and
+writes the plan as one inert file, create-only, inside the bundle (the demo shows
+`ledger/<ceremony>/plan.json`, which is a proposal); the step list of a
 ceremony (see below); and the shell quoting of every name inside a command it sends
 (`fix_command`, `equivalent_command`, `run_command`): the page shows a command as
 it is given and copies it only when it is plain, one line and short, but it cannot
