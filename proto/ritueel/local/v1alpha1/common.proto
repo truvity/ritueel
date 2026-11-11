@@ -47,6 +47,25 @@ enum Store {
   STORE_CLOUD_KMS = 3;
 }
 
+// Where a ceremony runs, or ran (record 0005, rules 17 to 21). Every record
+// says where its ceremony ran (rule 2), and a plan says where it will run.
+enum RunPlace {
+  // Not said; the page then writes "the terminal where you run it".
+  RUN_PLACE_UNSPECIFIED = 0;
+  // Vanilla AirgapOS, started from the ceremony USB stick, which has one
+  // extra partition. Required for a key that can be copied (a key file); any
+  // root may use it. The bundle goes there inside the stick's extra partition.
+  RUN_PLACE_OFFLINE_SYSTEM = 1;
+  // The holder's own computer. Allowed for a key that cannot be copied (a
+  // root on cards, a cloud root) under four conditions: a touch for every
+  // signature, the number of signatures stated in the plan, no retry of a
+  // failed touch, and the result checked against the plan on a second device
+  // before it is handed over or published. A test root may also run here.
+  // How the touch reads for a cloud key is only proposed (record 0005, issue
+  // 30). No stick is needed.
+  RUN_PLACE_WORKSTATION = 2;
+}
+
 // What a finding, a due item or a plan is about.
 enum SubjectKind {
   SUBJECT_KIND_UNSPECIFIED = 0;

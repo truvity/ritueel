@@ -2,8 +2,9 @@
 //
 // The wizard helps the holder build a plan, ends with a preview of it and
 // the exact command to run, and can save the plan file so that the holder
-// can run it where the plan says: on the offline system (a root on cards or
-// in a key file) or on the workstation (a cloud root). It never confirms:
+// can run it where the plan says: in the offline system (a key file, which can
+// be copied) or on the workstation (a root on cards or in the cloud, which
+// cannot; record 0005, rules 17 and 18). It never confirms:
 // the holder confirms in the terminal, with `ritueel run PLAN --confirm
 // DIGEST`.
 //
@@ -179,20 +180,18 @@ message Plan {
   // a stick is needed. The page cannot tell a root in a key file from a cloud
   // root by the data it has (neither has a card serial), so the plan says.
   RunPlace run_place = 14;
-}
-
-// Where a plan is run.
-enum RunPlace {
-  // Not said; the page then writes "the terminal where you run it".
-  RUN_PLACE_UNSPECIFIED = 0;
-  // A computer booted from a read-only stick: a root on cards, or a real
-  // software root in a key file, is used there. The bundle goes there on a
-  // USB stick.
-  RUN_PLACE_OFFLINE_SYSTEM = 1;
-  // The computer the holder works on: a cloud root is used from here, in a
-  // session of its ceremony role; ritueel asks nothing of how the holder
-  // signed in. No stick is needed. A test root may also run here.
-  RUN_PLACE_WORKSTATION = 2;
+  // The signatures the ceremony makes, as the plan states them (record 0005,
+  // rule 4 and rule 18, condition 2). The total of the steps' counts.
+  int32 signature_count = 15;
+  // The touches the plan asks of the holder: one for every signature made by
+  // a card, plus a passkey touch that opens a key file. 0 for a cloud key,
+  // whose touch condition is only proposed (record 0005, issue 30).
+  int32 touch_count = 16;
+  // The store of the root that signs. The page cannot tell a key file, a card
+  // or a cloud key from the other fields, so the plan says.
+  Store signing_store = 17;
+  // True when the plan was made with --test-root: marked TEST ONLY.
+  bool test_root = 18;
 }
 
 // What a step needs from the holder where the plan is run. These are
@@ -218,6 +217,8 @@ message PlanStep {
   repeated string card_serials = 6;
   // The guide on the site for this step.
   string learn_path = 7;
+  // The signatures made in this step; the plan's total is their sum.
+  int32 signature_count = 8;
 }
 
 enum BundleChangeAction {
@@ -262,9 +263,10 @@ message SavePlanResponse {
   string notice = 7;
   // The exact command to run, with --dir naming the bundle.
   string run_command = 8;
-  // What to copy to the stick (empty when the plan runs on the workstation and
-  // needs no stick), what to bring, and what happens when the stick comes
-  // back.
+  // What goes on the ceremony stick (empty when the plan runs on the
+  // workstation, which needs no stick; the stick step is shown only for the
+  // offline system, record 0005, rule 21), what to bring, and what happens
+  // when the stick comes back.
   repeated string copy_to_stick = 9;
   repeated string bring = 10;
   string when_back = 11;

@@ -483,6 +483,9 @@ message Ceremony {
   int32 trust_sequence = 13;
   // The guide on the site that the record names.
   string guide_path = 14;
+  // Where the ceremony ran. Record 0005, rule 2: every record says where it
+  // ran, on the workstation or in the offline system.
+  RunPlace run_place = 15;
 }
 
 // ------------------------------------------------------------------ cards
@@ -497,7 +500,8 @@ message ListCardsResponse {
 
 enum CardKind {
   CARD_KIND_UNSPECIFIED = 0;
-  // A root card: it holds roots, and only goes into the offline system.
+  // A root card: it holds roots by row; used on the workstation or in the
+  // offline system by the rules of the ceremony record (0005 rules 17 and 18).
   CARD_KIND_ROOT = 1;
   // A day-to-day card: signing and authentication subkeys, passkeys.
   CARD_KIND_DAY_TO_DAY = 2;
@@ -615,6 +619,10 @@ enum SlotUse {
   SLOT_USE_PASSKEY_UNLOCK = 10;
   // A key made on a rehearsal card to practise.
   SLOT_USE_REHEARSAL = 11;
+  // A slot of a row that belongs to another bundle of the holder, declared in
+  // this card's file; no key hash is shown. PROPOSED in record 0003 (Not yet
+  // proven or only proposed, issue 11).
+  SLOT_USE_OTHER_BUNDLE = 12;
 }
 
 enum PinRule {

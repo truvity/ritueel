@@ -10,7 +10,8 @@ import {
   ListRootsResponseSchema,
   ListTrustFilesResponseSchema,
 } from './gen/ritueel/local/v1alpha1/inspect_service_pb';
-import { ListIntentionsResponseSchema, RunPlace, SavePlanResponseSchema, StartPlanResponseSchema } from './gen/ritueel/local/v1alpha1/plan_service_pb';
+import { RunPlace } from './gen/ritueel/local/v1alpha1/common_pb';
+import { ListIntentionsResponseSchema, SavePlanResponseSchema, StartPlanResponseSchema } from './gen/ritueel/local/v1alpha1/plan_service_pb';
 
 // Every string that comes from the bundle is data. This test gives each screen a
 // world (one for each example bundle: personal, acme and globex, so acme/B, the cloud
