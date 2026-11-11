@@ -13,9 +13,11 @@
 //    <the file on GitHub> 302`, so an old address goes to its file in one step and not through
 //    a chain. When the page is published again, the next run turns the line back to a 301.
 //    A line whose target is not a page of docs/ (a record index, the status page) is kept.
-// 2. The generated block between the markers: one `302` for the old address of every file of
-//    docs/ that is not published and has no hand line, to the same file on GitHub, once with the
-//    closing slash and once without. The 302 is deliberate: the page may come back.
+// 2. The generated block between the markers: first, for each hand line whose source ends in a
+//    slash, the same rule for the source without the slash (unless a hand line has it); then one
+//    `302` for the old address of every file of docs/ that is not published and has no hand line,
+//    to the same file on GitHub, once with the closing slash and once without. The 302 is
+//    deliberate: the page may come back.
 //
 // Cloudflare Workers static assets (https://developers.cloudflare.com/workers/static-assets/redirects/):
 // 2000 static rules, 1000 characters a line, the first match wins, and a redirect is followed
@@ -100,6 +102,16 @@ export function buildRedirects(root, current) {
     return out;
   });
 
+  // A hand line is written with the closing slash; Workers static assets match a rule on the exact
+  // path and add the slash only to a path that has an asset, so the old address without the slash
+  // would answer 404. The block repeats each rule for that form, so the hand lines stay as they are.
+  const handNoSlash = hand.flatMap((rule) => {
+    const [from, to, code] = rule.split(' ');
+    return from.length > 1 && from.endsWith('/') && !handFrom.has(from.slice(0, -1))
+      ? [`${from.slice(0, -1)} ${to} ${code}`]
+      : [];
+  });
+
   const generated = unpublishedFiles(root)
     .map((file) => ({ from: addressOf(file), file }))
     .filter(({ from }) => !handFrom.has(from))
@@ -112,7 +124,7 @@ export function buildRedirects(root, current) {
       ),
     );
 
-  const all = [...hand, ...generated];
+  const all = [...hand, ...handNoSlash, ...generated];
   const live = new Set([
     ...OTHER_ADDRESSES,
     ...docsFiles(root).filter((f) => isPublished(f, root)).map(addressOf),
@@ -127,7 +139,7 @@ export function buildRedirects(root, current) {
   }
   if (all.length > MAX_RULES) throw new Error(`_redirects: ${all.length} rules (the limit is ${MAX_RULES})`);
 
-  return [...kept, '', BEGIN, ...generated, END, ''].join('\n');
+  return [...kept, '', BEGIN, ...handNoSlash, ...generated, END, ''].join('\n');
 }
 
 function main() {
