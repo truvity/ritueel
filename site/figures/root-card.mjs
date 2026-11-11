@@ -7,10 +7,10 @@ import { COLUMNS, PIV_ROWS, ROOT_CARD_NOTES, ROOT_CARD_PASSKEY, ROOT_CARD_ROWS }
 
 const LABEL =
   'A root card drawn as 24 PIV key slots in six rows of four, with the key kind written in each held slot. ' +
-  'Row 1, the card’s own jobs, holds no root: three slots are empty, and 9d is a spare key made only if the passkey way cannot be used. ' +
+  'Row 1, the card’s own jobs, holds no root: all four slots are drawn empty, 9d is tagged spare key (a key made there only if the passkey way cannot be used) and 9e never used. ' +
   'Rows 2 to 6 hold one root each with the same kind of key in the same column: X.509 root key, OpenPGP primary, SSH CA key, empty. ' +
-  'Row 2 is the example bundle acme, root A, whose partner root B sits in the same row of the second card; row 3 is personal, with an OpenPGP primary only; row 4 is initech, without an SSH CA key. ' +
-  'Row 5 is room for a bundle. Row 6 is kept free, hatched, for a replacement root. A pill under the card says a passkey on the card opens key files, decided and not yet proven.';
+  'Row 2 is the example bundle acme, root A, whose partner root B sits in the same row of the second card; row 3 is bundle personal, with an OpenPGP primary only; row 4 is bundle initech, without an SSH CA key. ' +
+  'Row 5 is room for a new bundle, dashed like any empty slot. Row 6 is kept free for a replacement root, dotted and hatched. A pill under the card says a passkey on the card opens key files, decided and not yet proven.';
 
 const dot = (cx, cy, n) => circle(cx, cy, 10, 'fill-ink') + `<text class="t t-s t-b t-num t-mid" x="${cx}" y="${cy + 4.5}">${n}</text>`;
 const typeOf = (row, c) => (row.types ? row.types[c] : null) ?? '';
@@ -56,16 +56,16 @@ function pill(x, y, w, lines) {
 function wide() {
   const W = 760;
   const H = 520;
-  const x0 = 146, w = 84, g = 6;
+  const x0 = 176, w = 78, g = 6;
   const rowY = (r) => (r === 0 ? 56 : 154 + (r - 1) * 54);
   let s = rect(2, 2, W - 4, H - 4, 'p-frame', 10) + text(22, 28, 'The root card', 't t-b');
-  s += rect(14, 44, 494, 392, 'paper-t', 16);
+  s += rect(14, 44, 502, 392, 'paper-t', 16);
   COLUMNS.forEach((c, i) => {
     const cx = x0 + i * (w + g) + w / 2;
     s += text(cx, 132, c.type, 't t-s t-b', 'm') + text(cx, 146, c.sub, 't t-s t-dim', 'm');
   });
-  s += line(24, 112, 498, 112, 'ln ln-thin ln-dim');
-  s += text(34, 138, 'rows 2 to 6', 't t-s t-dim t-long');
+  s += line(24, 112, 506, 112, 'ln ln-thin ln-dim');
+  s += text(34, 138, 'rows 2 to 6:', 't t-s t-dim t-long') + text(34, 152, 'same kind per column', 't t-s t-dim t-long');
   ROOT_CARD_ROWS.forEach((row, r) => {
     const y = rowY(r);
     const a = row.accent;
@@ -114,9 +114,10 @@ function narrow() {
       body.push(
         line(16, y + 6, 344, y + 6, 'ln ln-thin ln-dim') +
           text(16, y + 24, 'Rows 2 to 5: four bundles on a pair of cards.', 't t-s t-b t-long') +
-          text(16, y + 40, 'One root each; fewer kinds leave cells empty.', 't t-s t-long'),
+          text(16, y + 40, 'Root A here; root B in the same row of card two.', 't t-s t-long') +
+          text(16, y + 56, 'Fewer kinds of key leave cells empty.', 't t-s t-long'),
       );
-      y += 50;
+      y += 66;
     }
     let g1 = dot(26, y + 6, row.n) + text(42, y + 10, row.label, 't t-s t-row' + (a ? ' t-acc' : '')) + sub(42 + row.label.length * 7 + 8, y + 10, row.sub);
     row.states.forEach((st, c) => {
@@ -147,7 +148,7 @@ export default {
   kind: 'layout',
   label: 'The root card as 24 key slots in six rows of four',
   caption:
-    'Six rows of four PIV slots. Row 1 is the card’s own jobs; each other row holds one root of one bundle, the same key kind in each column. The plan takes the lowest empty row, so which row stays free is not fixed.',
+    'Six rows of four PIV slots. Row 1 is the card’s own jobs; each other row holds one root of one bundle, the same key kind in each column.',
   wide: wide(),
   narrow: narrow(),
 };

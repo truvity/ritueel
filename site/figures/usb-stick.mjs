@@ -11,9 +11,9 @@ import { svgBox } from './svg.mjs';
 import { lock } from './parts.mjs';
 
 const LABEL =
-  'A USB stick drawn as a box with a connector and a hole, in two parts: a part for AirgapOS, vanilla and unchanged, and one extra partition marked Proposed. ' +
+  'A USB stick drawn as a box with a connector, in two parts: a part for AirgapOS, vanilla and unchanged, and one extra partition marked Proposed. ' +
   'The partition shows a tree of three directories: ritueel with one directory per version and per system, bundles with acme and personal, and keys with one encrypted key file beside the bundles. ' +
-  'In the accent colour, an arrow runs from a plan inside acme to the ritueel binary of the version that made it. ' +
+  'In the accent colour, an arrow runs from a plan inside acme to the ritueel binary of the version that made it. Dashed leader lines join the three notes at the right to the three directories. ' +
   'A dotted badge with a question mark says that booting AirgapOS from such a stick is still to be proven on hardware.';
 
 // The tree, top to bottom. d is the depth, k the kind of entry, g the group a head row opens.
@@ -150,7 +150,6 @@ function wide() {
   s += rect(48, py, 100, bodyH - 20, 'paper-t', 8);
   s += text(98, py + 34, 'AirgapOS', 't t-b', 'm') + text(98, py + 54, 'vanilla,', 't t-s', 'm') + text(98, py + 70, 'unchanged', 't t-s', 'm');
   s += rect(px, py, pw, bodyH - 20, 'paper-t', 8) + head(px, py, pw);
-  s += circle(506, bodyY + bodyH / 2, 4.5, 'paper');
   s += tree(placed.out, 'wide');
   s += planArrow(placed.out, 'wide', px + pw - 28);
   s += note(px + 14, placed.end + 22);
@@ -162,6 +161,9 @@ function wide() {
     if (g) gs[g.r.g].bottom = p.y + R;
   });
   for (const [g, b] of Object.entries(gs)) {
+    // a leader from the end of the directory's name to the rule of its note
+    const head = placed.out.find((p) => p.r.g === g);
+    s += line(head.x + head.r.n.length * 7.6 + 8, head.y + 9, 534, head.y + 9, 'ln ln-thin ln-dim ln-dash');
     s += line(534, b.top + 3, 534, b.bottom - 4, 'ln');
     NOTES[g].wide.forEach((l, i) => {
       s += text(546, b.top + 15 + i * 16, l, 't t-s t-long');
