@@ -79,13 +79,14 @@ async function shoot(name, hash, steps, state, scheme, wname, w, h, dpr) {
   report.push({ file, overflowX: m.sw > m.cw, sw: m.sw, cw: m.cw, height: m.h, applied: m.scheme });
 }
 
-const only = process.argv[4] ? new RegExp(process.argv[4]) : null;
+// An optional part of a screen's name: only the screens whose name holds it are taken.
+const only = process.argv[4] ? String(process.argv[4]) : null;
 for (const scheme of ['light', 'dark']) {
   for (const [wname, w, h, dpr] of sizes) {
-    for (const [name, hash, steps] of screens) if (!only || only.test(name)) await shoot(name, hash, steps, undefined, scheme, wname, w, h, dpr);
+    for (const [name, hash, steps] of screens) if (!only || name.includes(only)) await shoot(name, hash, steps, undefined, scheme, wname, w, h, dpr);
     // the states: light only at both widths, and dark at 390 for the failed read
     for (const [name, hash, st] of states) {
-      if (only && !only.test(name)) continue;
+      if (only && !name.includes(only)) continue;
       if (scheme === 'dark' && !(wname === '390' && st === 'Failed read')) continue;
       await shoot(name, hash, undefined, st, scheme, wname, w, h, dpr);
     }

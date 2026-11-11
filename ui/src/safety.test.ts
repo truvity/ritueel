@@ -21,7 +21,9 @@ function walk(dir: string, out: string[] = []): string[] {
 
 const strip = (s: string) => s.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/.*$/gm, '$1');
 const files = walk(SRC);
-const code = files.filter((f) => /\.tsx?$/.test(f)).map((f) => [f, strip(readFileSync(f, 'utf8'))] as const);
+// The one address that is not a request: the XML namespace an SVG element names.
+const SVG_NAMESPACE = 'http://www.w3.org/2000/svg';
+const code = files.filter((f) => /\.tsx?$/.test(f)).map((f) => [f, strip(readFileSync(f, 'utf8')).split(SVG_NAMESPACE).join('')] as const);
 
 const BANNED: [string, RegExp][] = [
   ['dangerouslySetInnerHTML', /dangerouslySetInnerHTML/],
@@ -35,7 +37,7 @@ const BANNED: [string, RegExp][] = [
   ['Function(...)', /(^|[^.\w])Function\s*\(/],
   ['.constructor(...) to build code', /\.constructor\s*\(\s*['"`]/],
   ['setTimeout or setInterval with a string', /set(Timeout|Interval)\s*\(\s*['"`]/],
-  ['a remote URL', /https?:\/\/(?!www\.w3\.org\/2000\/svg)[a-z0-9]/i],
+  ['a remote URL', /https?:\/\/[a-z0-9]/i],
   ['a protocol-relative URL', /['"`]\/\/[a-z0-9][a-z0-9.-]+\.[a-z]/i],
   ['XMLHttpRequest', /\bXMLHttpRequest\b/],
   ['sendBeacon', /\bsendBeacon\b/],
