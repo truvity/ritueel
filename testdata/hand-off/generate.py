@@ -22,7 +22,7 @@ script is the record of how they were made.
 The test trust set has two roots, A and B, as on two root cards: each has an X.509 root
 and an OpenPGP primary, and both are active on the signed root list. A third root, Z, is
 on no list; it makes the "untrusted issuer" and "unknown primary" cases. The roots follow the
-root profile of docs/reference/directory.md, and the root lists and CA bundles that name them
+root profile of docs/reference/bundle.md, and the root lists and CA bundles that name them
 follow docs/reference/root-list.md, the SSH CA key lists docs/reference/ssh-ca-key-list.md and the
 CRLs docs/reference/crl.md. All four sets are made in one run because the lists and the CRLs are
 signed by the same throw-away root keys that issue the hand-off answers.
