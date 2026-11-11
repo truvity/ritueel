@@ -368,7 +368,7 @@ function CardPage({ serial }: { serial: string }) {
             const sets = roots.state === 'ready' ? roots.data.roots.flatMap((r) => (r.certificate?.subkeySets ?? []).filter((x) => x.cardSerial === serial)) : [];
             const fix = findings.state === 'ready' ? findings.data.findings.find((f) => f.subject?.identifier === serial)?.fixCommand : undefined;
             // The page builds a command only for a serial that is digits: a serial from the address bar is data too.
-            const cmd = fix || (isSerial(serial) ? `ritueel cards adopt ${serial} --plan-only` : undefined);
+            const cmd = fix || (isSerial(serial) ? `ritueel card adopt --card ${serial} --plan-only` : undefined);
             return (
               <Empty title={`Card ${safeString(serial, 40)} is not in your inventory.`} command={sets.length > 0 && cmd ? { text: cmd, label: 'Add the card to the inventory' } : undefined}>
                 <p>
@@ -485,7 +485,7 @@ function Unlisted() {
                       </a>
                     </p>
                     <div className="mt-3 max-w-[40rem]">
-                      {fix || isSerial(sn) ? <Cmd label={`Add card ${safeString(sn, 20)} to the inventory`}>{fix || `ritueel cards adopt ${sn} --plan-only`}</Cmd> : null}
+                      {fix || isSerial(sn) ? <Cmd label={`Add card ${safeString(sn, 20)} to the inventory`}>{fix || `ritueel card adopt --card ${sn} --plan-only`}</Cmd> : null}
                     </div>
                   </li>
                 );

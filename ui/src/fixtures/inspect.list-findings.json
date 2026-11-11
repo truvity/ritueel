@@ -55,7 +55,7 @@
         "Card 00000101: 4 subkey sets, 2016 to 2019",
         "Card 00000102: 4 subkey sets, 2020 to 2023, 2 signing subkeys still valid"
       ],
-      "fixCommand": "ritueel cards adopt 00000102 --plan-only",
+      "fixCommand": "ritueel card adopt --card 00000102 --plan-only",
       "fixIntention": "INTENTION_ADD_CARD",
       "learnPath": "/reference/cards/",
       "visibleFromPublicKey": true
@@ -91,7 +91,7 @@
       "evidence": [
         "Slot sig: touch rule cached (was always) at the reading of 2026-10-28"
       ],
-      "fixCommand": "ritueel cards check 00000004",
+      "fixCommand": "ritueel card check --card 00000004",
       "learnPath": "/learn/how-a-yubikey-holds-keys/#one-piv-slot-up-close"
     },
     {
@@ -145,7 +145,7 @@
         "Region eu-west-1, replica in eu-central-1",
         "Not in the ledger"
       ],
-      "fixCommand": "ritueel adopt --store aws-kms --key alias/example-staging-signing --plan-only",
+      "fixCommand": "ritueel root add --store aws-kms --key alias/example-staging-signing --plan-only",
       "fixIntention": "INTENTION_ADOPT_KEY",
       "learnPath": "/reference/kms-root/#adopting-an-existing-key"
     },
@@ -163,7 +163,7 @@
       "evidence": [
         "Firmware 5.2.6, floor for a root card 5.7.4"
       ],
-      "fixCommand": "ritueel cards check 00000006",
+      "fixCommand": "ritueel card check --card 00000006",
       "learnPath": "/reference/cards/#what-is-checked-on-a-card"
     }
   ]

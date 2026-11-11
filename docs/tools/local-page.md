@@ -19,6 +19,7 @@ The local page is the third face of the program, beside the command line and the
 - **It says it is a demo,** on every screen, with a link back here.
 - **You can try the states.** A switch in the bar makes the page answer as an empty folder, a failed read, or no answer yet, so you see how each screen speaks in each case.
 - **The wizard is one sequence:** goal, choices, plan with its digest and the exact command, then save. In the demo the plan is the same whatever you choose.
+- **Its commands follow the [command reference](/reference/cli/)** where a command exists there; a few are proposals that the reference does not have yet.
 
 ## What is the same in the program and what is not
 
