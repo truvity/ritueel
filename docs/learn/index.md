@@ -23,7 +23,7 @@ ritueel teaches first, and for now the teaching is the product: these pages expl
 | [How a KMS key works](/learn/how-a-kms-key-works/) | What an AWS KMS signing key is made of, what limits it, how a signature happens, and how it compares with a card slot. |
 | [Choosing where a root lives](/learn/choosing-where-a-root-lives/) | Two questions that pick a key file, a pair of root cards or a cloud key, two that follow up, how a key file opens, and what each costs a year. |
 | [Which keys to buy](/learn/which-keys-to-buy/) | The hardware worth buying to learn and test, what each can and cannot do, and prices with their dates. |
-| [The ledger](/learn/the-ledger/) | The write-once record of what you did, and how to keep, back up and restore the directory that holds it. |
+| [The ledger](/learn/the-ledger/) | The write-once record of what you did, and how to keep, back up and restore the bundle that holds it. |
 | [The life of a root](/learn/life-of-a-root/) | Create, sign, record, back up, re-sign, rotate, revoke, recover: the whole story in order. |
 | [Re-sign](/learn/re-sign/), [rotate](/learn/rotate/), [revoke](/learn/revoke/), [recover](/learn/recover/) | One page for each ritual: why, when, and what can go wrong. |
 | [Moving from one root to another](/learn/transitions/) | How a new root takes over from an old one without breaking anyone, and what outsiders install. |

@@ -44,7 +44,7 @@ A ceremony without a record is a ceremony you cannot audit. The [ledger](/learn/
 
 After the first ceremony, and after every change:
 
-- push the directory, with its [ledger](/learn/the-ledger/), to its remotes and write the last digest apart;
+- push the bundle, with its [ledger](/learn/the-ledger/), to its remotes and write the last digest apart;
 - put the revocation certificates in their two places;
 - check that the second card exists, in a second place;
 - make sure the PINs are in the password manager.

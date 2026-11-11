@@ -61,4 +61,4 @@ Short-lived leaf certificates make most revocation unnecessary: a leaf that live
 
 ## Where ritueel fits
 
-ritueel is for the first row of the table: the root, the ceremonies that give each intermediate its certificate, and the bundle and lists that carry the root to the clients. The system that holds an intermediate and issues the leaves is a different product, which meets ritueel through the [hand-off contract](/reference/hand-off-contract/).
+ritueel is for the first row of the table: the root, the ceremonies that give each intermediate its certificate, and the CA bundle and lists that carry the root to the clients. The system that holds an intermediate and issues the leaves is a different product, which meets ritueel through the [hand-off contract](/reference/hand-off-contract/).
