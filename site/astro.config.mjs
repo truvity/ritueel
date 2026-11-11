@@ -1,6 +1,24 @@
 import { defineConfig } from 'astro/config';
 import starlight from '@astrojs/starlight';
 import starlightLinksValidator from 'starlight-links-validator';
+import { docsLinksMdastPlugin } from './lib/docs-links.mjs';
+
+// A link from a published page to a page of docs/ that is not published becomes a link to that
+// file on GitHub (site/lib/docs-links.mjs). Astro 7 renders Markdown with Satteri, so the rule is
+// an mdast plugin of the Markdown processor. The integration is listed before starlight(), so
+// that the rewrite is done before the link validator reads the links.
+const docsLinks = {
+  name: 'ritueel-docs-links',
+  hooks: {
+    'astro:config:setup': ({ config }) => {
+      const processor = config.markdown?.processor;
+      if (!processor || processor.name !== 'satteri' || !Array.isArray(processor.options?.mdastPlugins)) {
+        throw new Error('ritueel-docs-links: the Markdown processor is not satteri; see site/lib/docs-links.mjs');
+      }
+      processor.options.mdastPlugins.push(({ fileURL }) => docsLinksMdastPlugin(fileURL));
+    },
+  },
+};
 
 // https://ritueel.id. The custom domain and its DNS are managed outside this repository; the
 // site is static and is served from the root by a Cloudflare Worker with static assets
@@ -14,6 +32,7 @@ export default defineConfig({
   // file of this site that `script-src 'self'` covers, so nothing is inlined.
   vite: { build: { assetsInlineLimit: 0 } },
   integrations: [
+    docsLinks,
     starlight({
       title: 'ritueel',
       description:
@@ -40,25 +59,46 @@ export default defineConfig({
       },
       customCss: ['./src/styles/layout.css', './src/styles/home.css'],
       routeMiddleware: './src/route-middleware.ts',
+      // The menu is five entries: only the target (docs/contributing/pages.md, "What is published").
+      // The pages are those of site/published.txt; a slug that is not on the list fails the build.
+      // The hand-off contract is not in the menu; the decisions index links it.
       sidebar: [
-        // Learn comes first: the site teaches, and the tools simplify the rituals.
-        { label: 'Learn', items: [{ autogenerate: { directory: 'learn' } }] },
-        { label: 'Guides', items: [{ autogenerate: { directory: 'guides' } }] },
-        { label: 'Tools', items: [{ autogenerate: { directory: 'tools' } }] },
-        { label: 'Reference', items: [{ autogenerate: { directory: 'reference' } }] },
-        { label: 'Decisions', link: '/decisions/' },
-        { label: 'Principles', slug: 'principles' },
-        { label: 'Research', items: [{ autogenerate: { directory: 'research' } }] },
-        { label: 'Roadmap', slug: 'roadmap' },
-        // Built from the repository and the issues (src/pages/status.astro).
-        { label: 'Project status', link: '/status/' },
         {
-          label: 'Contributing',
-          items: [{ label: 'Overview', slug: 'contributing' }, { autogenerate: { directory: 'contributing' } }],
+          label: 'Learn',
+          items: [
+            { slug: 'learn', label: 'Overview' },
+            { slug: 'learn/what-is-a-root' },
+            { slug: 'learn/why-the-root-stays-offline' },
+            { slug: 'learn/how-a-yubikey-holds-keys' },
+            { slug: 'learn/how-passkeys-work' },
+            { slug: 'learn/how-a-kms-key-works' },
+            { slug: 'learn/choosing-where-a-root-lives' },
+            {
+              label: 'Going further',
+              collapsed: false,
+              items: [
+                { slug: 'learn/life-of-a-root' },
+                { slug: 'learn/revoke' },
+                { slug: 'learn/custody-chain' },
+                { slug: 'learn/chain-openpgp' },
+              ],
+            },
+          ],
         },
+        // The demo of the local page is a build product (public/demo), not a page of the docs.
+        { label: 'Demo', link: '/demo/' },
+        { label: 'Glossary', slug: 'glossary' },
+        {
+          label: 'Where it stands',
+          // The status page is built from the repository and the issues (src/pages/status.astro).
+          items: [{ label: 'Status', link: '/status/' }, { slug: 'roadmap' }],
+        },
+        { label: 'Decisions', link: '/decisions/' },
       ],
       plugins: [
-        // Fails the build on a broken internal link or anchor. The decision pages and the status
+        // Fails the build on a broken internal link or anchor of a published page; a link to a page
+        // that is not published is a link to its file on GitHub before the validator reads it
+        // (docsLinks above). The decision pages and the status
         // page are generated in src/pages (custom pages the validator cannot see); the demo of the local
         // page (/demo/) is built by `just ui-demo` into public/demo, so no page of the site is its source;
         // site/scripts/check-anchors.mjs checks the links of the decision pages in the built site
