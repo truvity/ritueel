@@ -69,7 +69,7 @@
       "sha256": "72050123456789abcdef0123456789abcdef0123456789abcdef0123456789ab",
       "sizeBytes": "1290",
       "verifyCommand": "ritueel keyring verify trust/1/keyring/globex-keyring.gpg --root-list trust/1/root-list.json",
-      "rebuildCommand": "ritueel keyring build --name globex"
+      "rebuildCommand": "ritueel keyring build"
     }
   ]
 }
