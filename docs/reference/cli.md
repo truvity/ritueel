@@ -5,34 +5,34 @@ sidebar:
   order: 2
 ---
 
-*Not built yet. This is the command set decided in [ADR 0004](/decisions/0004-ceremonies-plan-confirm-reserve-sign-verify-record/); the code is [issue #10](https://github.com/truvity/ritueel/issues/10) and [issue #30](https://github.com/truvity/ritueel/issues/30). The commands of M2, with their arguments and files, are in [The first version's commands](/reference/cli/#the-first-versions-commands).*
+*Not built yet. This is the command set decided in [record 0005](../decisions/0005-a-ceremony-and-where-it-runs.md); the code is [issue #10](https://github.com/truvity/ritueel/issues/10) and [issue #30](https://github.com/truvity/ritueel/issues/30). The commands of M2, with their arguments and files, are in [The first version's commands](/reference/cli/#the-first-versions-commands).*
 
 ## Commands
 
 | Command | Does | Needs a person |
 |---|---|---|
-| `ritueel init` | Creates the bundle, the roots (`--roots N`, default 2, both cards present) with their attestations, their revocation signatures (one for each of two reasons) and their removal authorisations, and the first trust products. | Yes |
-| `ritueel due [--allow-missing NAME]` | Writes the plans for what is due: each renewal is a separate action in a plan, with the root of the year, and the plan includes the advisory review. It stops when the request of a registered intermediate is missing, unless `--allow-missing NAME` is given and recorded. It signs nothing. There is no `yearly` command ([ADR 0004](/decisions/0004-ceremonies-plan-confirm-reserve-sign-verify-record/#six-steps-every-ceremony)). | No |
+| `ritueel init` | Creates the bundle, the roots (`--roots N`, default 2, both cards present) with their attestations, their revocation signatures (one for each of two reasons) and their removal authorisations, and the first trust files. | Yes |
+| `ritueel due [--allow-missing NAME]` | Writes the plans for what is due: each renewal is a separate action in a plan, with the root of the year, and the plan includes the advisory review. It stops when the request of a registered intermediate is missing, unless `--allow-missing NAME` is given and recorded. It signs nothing. There is no `yearly` command ([record 0005](../decisions/0005-a-ceremony-and-where-it-runs.md)). | No |
 | `ritueel run PLAN --confirm DIGEST` | Executes a saved plan after checking that it still matches the bundle, then the steps of the ceremony from reserve to record. It replaces a `--plan FILE` flag: there is one way to execute a plan. | Yes |
 | `ritueel intermediate add NAME --request STEM` | Registers an intermediate and certifies its first request. | Yes |
 | `ritueel intermediate replace NAME` | The event path: certifies a new key for a registered intermediate. `--revoke` also revokes the old one, with a reason. | Yes |
 | `ritueel intermediate revoke NAME` | Revokes the certificate and subkey binding of an intermediate, or withdraws its SSH CA key, with a reason (`--reason compromise`, `superseded` or `cessation`), without a replacement. It lists the intermediate's unexpired certificates on the [CRL](/reference/crl/) of each root that issued them, so it needs those roots' cards. | Yes |
 | `ritueel root add --store S [--replaces LABEL --overlap-until DATE \| --target N]` | Creates a new root in a store and has an existing root vouch for it; every active root and the new one sign the next root list. With `--replaces`, this starts an overlap that ends on the day given ([root transitions](/reference/transitions/#the-commands)). | Yes |
-| `ritueel root retire LABEL` | Ends an overlap: removes the root from the next trust products, after the checks of [root transitions](/reference/transitions/#root-retire). Every active root signs. | Yes |
-| `ritueel root revoke LABEL --reason REASON --revocation FILE [--removal FILE]` | Revokes a lost, stolen or compromised root with its stored revocation signature, and builds the trust products without it; the other roots sign, and the root's stored removal authorisation stands in for its signature. | Yes |
+| `ritueel root retire LABEL` | Ends an overlap: removes the root from the next trust files, after the checks of [root transitions](/reference/transitions/#root-retire). Every active root signs. | Yes |
+| `ritueel root revoke LABEL --reason REASON --revocation FILE [--removal FILE]` | Revokes a lost, stolen or compromised root with its stored revocation signature, and builds the trust files without it; the other roots sign, and the root's stored removal authorisation stands in for its signature. | Yes |
 | `ritueel revocation make`, `revocation check` | Make one more revocation signature, or the removal authorisation again, while the root's key exists, and check a stored one without printing it ([revocation material](/reference/revocation-material/#making-one-later-and-checking-one)). | `make` only |
 | `ritueel drill restore` | The restore check on a clean machine: the records, the roots against their holders, the revocation signatures. It signs nothing ([drills](/reference/drill/#the-restore-check)). | No |
 | `ritueel status` | Lists roots, intermediates, the root list and unresolved attempts, with what expires when. | No |
-| `ritueel renew` | Later (M7). A cloud root only: renews, as the renewal role and under the declared renewal policy, what the bundle already holds, over the same keys, with the next trust sequence. Non-interactive, for the operator's scheduler; it never prompts, and refuses a card or software root with `not-in-policy`, an early run with `too-early`, and anything new with `key-not-in-ledger`. Exit codes 0, 1, 2, 3, 4 ([renewal under a policy](/reference/kms-root/#renewal-under-a-policy)). | No |
+| `ritueel renew` | Later (M7). A cloud root only: renews, as the renewal role and under the declared renewal policy, what the bundle already holds, over the same keys, with the next trust sequence. Non-interactive, for the operator's scheduler; it never prompts, and refuses a card or software root with `not-in-policy`, an early run with `too-early`, and anything new with `key-not-in-history`. Exit codes 0, 1, 2, 3, 4 ([renewal under a policy](/reference/kms-root/#renewal-under-a-policy)). | No |
 | `ritueel handoff check STEM` | Runs every check of the [hand-off contract](/reference/hand-off-contract/) on the request `STEM`, and signs nothing. | No |
 | `ritueel ca-bundle build`, `ritueel keyring build` | Build the CA bundle and the [keyring package](/reference/keyring-package/) from the bundle. The same roots in the bundle give the same bytes. | No |
-| `ritueel root-list verify`, `ssh-ca-keys verify`, `crl verify`, `keyring verify` | The host's and the relying party's side of each trust product: run its checks on a file, signing and writing nothing. | No |
+| `ritueel root-list verify`, `ssh-ca-keys verify`, `crl verify`, `keyring verify` | The host's and the relying party's side of each trust file: run its checks on a file, signing and writing nothing. | No |
 | `ritueel ssh-ca break-glass ROOT` | Makes the break-glass SSH CA of a root that was made before ritueel made one at `init` and `root add`, and lists it. | Yes |
 | `ritueel records list`, `records verify`, `records close` | Read the ceremony records, check their hash chain, and close an unresolved attempt. | `close` only |
 | `ritueel personal subkey add NAME --card SERIAL` | In a personal bundle: the card makes the daily subkey and its back-signature, and the person's primary binds it ([personal OpenPGP](/reference/personal-openpgp/#the-commands)). `init --kind personal` makes the bundle. | Yes |
-| `ritueel card adopt` | Adopts a card: replaces the management key and the PUK with random ones, seals them in the bundle, and registers the card in the inventory. The holder has set the PIN ([root cards](/reference/cards/), [ADR 0015](/decisions/0015-key-files-open-with-a-passkey-on-each-root-card-and-card-secrets-are-sealed-in-the-bundle/#card-secrets)). Proposed. For a card that another bundle of the holder adopted: `--secrets-from BUNDLE` opens that bundle's sealed file read-only and seals the secrets again for this bundle ([a pair shared by bundles](/reference/cards/#a-pair-shared-by-bundles)). | Yes |
+| `ritueel card adopt` | Adopts a card: replaces the management key and the PUK with random ones, seals them in the bundle, and registers the card in the inventory. The holder has set the PIN ([root cards](/reference/cards/), [record 0003](../decisions/0003-root-cards.md)). Proposed. For a card that another bundle of the holder adopted: `--secrets-from BUNDLE` opens that bundle's sealed file read-only and seals the secrets again for this bundle ([a pair shared by bundles](/reference/cards/#a-pair-shared-by-bundles)). | Yes |
 | `ritueel card check` | The read-only check of a card against the built-in layout. It writes `cards.yaml` and `cards/NAME.yaml` and changes nothing on the card ([root cards](/reference/cards/#what-is-checked-on-a-card)). | No |
-| `ritueel wizard [--web]` | The guided mode, which asks line by line in the terminal; with `--web`, also a read-only page served on localhost. The page cannot confirm anything; it ends with a preview and the command to run, and can save the plan file ([the wizard](/reference/wizard/)). The page calls the same API as the commands; the process writes the saved plan where `--plan-only` writes it. The loopback listener exists only while `--web` runs. | Yes |
+| `ritueel wizard [--web]` | The guided mode, which asks line by line in the terminal; with `--web`, also a read-only page served on localhost. The page cannot confirm anything; it ends with a preview and the command to run, and can save the plan file ([the wizard](/reference/wizard/)). The page calls the same API as the commands, served by the same ritueel process on one fixed loopback port; `--web` prints its address ([the process](/reference/wizard/#the-ritueel-process)). The process writes the saved plan where `--plan-only` writes it. | Yes |
 | `ritueel stop` | Proposed. Ends the ritueel process of this bundle, if one runs, and exits 0 also when none runs. The process otherwise ends by itself after an idle time ([the process](/reference/wizard/#the-ritueel-process)). | No |
 
 The verbs of a transition map onto the commands: *create* and *vouch* are `root add`, *overlap* is a state and not a command, *supersede* is `root retire`, and *revoke* is `root revoke`.
@@ -42,7 +42,7 @@ The verbs of a transition map onto the commands: *create* and *vouch* are `root 
 | Flag | Meaning |
 |---|---|
 | `--dir DIR` | The bundle. The default is the current directory when it holds `ritueel.yaml`. |
-| `--plan-only` | Write the plan (`ledger/<ceremony>/plan.json`) and stop. |
+| `--plan-only` | Write the plan (`history/<ceremony>/plan.json`) and stop. |
 | `--confirm DIGEST` | Confirm a plan from a script; the digest must be the plan's. With `run PLAN`, it is how a saved plan is executed. |
 | `--root ROOT` | Sign with this root instead of the root of the year; the reason is recorded. |
 | `--allow-missing NAME` | `due` only: plan without a request for this intermediate, and record it. |
@@ -52,7 +52,7 @@ The verbs of a transition map onto the commands: *create* and *vouch* are `root 
 | `--backend file\|onepassword\|keyring` | Software roots: the backend ([the software store](/reference/software-store/)). `--op-vault NAME` names the vault for `onepassword`. `init --kind personal` makes a personal bundle. |
 | `--passphrase-fd N` | Software roots whose key file is opened by a passphrase (a test root, a script, a holder without cards): read the passphrase from this file descriptor. |
 | `--key-dir DIR` | Software roots: the directory of the [key files](/reference/bundle/#the-software-roots-key-files). Refused when it is inside `--dir`. |
-| `--test-root` | A test root: marked `TEST ONLY` everywhere, and products refuse to mix test and real roots. With a software store it has no passphrase; its key may also live on a rehearsal card. It may run its ceremonies on the workstation or on a rehearsal card; the program checks nothing about where it runs, and there is no flag for that. |
+| `--test-root` | A test root: marked `TEST ONLY` everywhere, and the trust-file builders refuse to mix test and real roots. With a software store it has no passphrase; its key may also live on a rehearsal card. It may run its ceremonies on the workstation or on a rehearsal card; the program checks nothing about where it runs, and there is no flag for that. |
 | `--output json` | Every command, ceremony or not: print one JSON object on standard output ([below](/reference/cli/#machine-readable-output)). The default is `--output text`. |
 
 Proposed. The text output writes a root across bundles as `acme/A`. `--root` takes the label inside the `--dir` bundle. The JSON output is unchanged.
@@ -73,34 +73,34 @@ A PIN is never a flag or an environment variable; the holder types it at the ter
 
 ## The first version's commands
 
-M2 builds these, with the software store and the cloud store ([issue #8](https://github.com/truvity/ritueel/issues/8), [issue #9](https://github.com/truvity/ritueel/issues/9), [issue #10](https://github.com/truvity/ritueel/issues/10)). The paths are those of [the bundle](/reference/bundle/#the-layout). A ceremony writes its [plan, attempt, record and transcript](/reference/ceremony-record/), and the trust products of its new trust sequence under `products/<sequence>/`.
+M2 builds these, with the software store and the cloud store ([issue #8](https://github.com/truvity/ritueel/issues/8), [issue #9](https://github.com/truvity/ritueel/issues/9), [issue #10](https://github.com/truvity/ritueel/issues/10)). The paths are those of [the bundle](/reference/bundle/#the-layout). A ceremony writes its [plan, attempt, record and transcript](/reference/ceremony-record/), and the trust files of its new trust sequence under `trust/<number>/`.
 
 | Command | Reads | Writes | Exit codes |
 |---|---|---|---|
 | `ritueel version` | Nothing. | The version and the commit it was built from. | 0 |
-| `ritueel stop [--dir DIR]` | The socket of the bundle. | Nothing; it asks the process to end. | 0, 1, 2 |
-| `ritueel init --store software [--roots N] [--test-root] --key-dir DIR` | `ritueel.yaml`, which the operator writes first. | `roots/<label>/` for each root (`A`, then `B`), the key files in `DIR`, and the first trust products (`products/1/`). | 0, 1, 2, 3, 5 |
-| `ritueel intermediate add NAME --request STEM` | The entry `NAME` of `ritueel.yaml`, and the request `requests/STEM.*`. | The answer `answers/STEM.*`, and the trust products. | 0, 1, 2, 3, 5 |
-| `ritueel handoff check STEM [--intermediate NAME]` | The request `requests/STEM.*`, `ritueel.yaml`. | Nothing. | 0, 1, 2, 3 |
+| `ritueel stop [--dir DIR]` | The ritueel process of the bundle, if one runs. | Nothing; it asks the process to end. | 0, 1, 2 |
+| `ritueel init --store software [--roots N] [--test-root] --key-dir DIR` | `ritueel.yaml`, which the operator writes first. | `roots/<label>/` for each root (`A`, then `B`), the key files in `DIR`, and the first trust files (`trust/1/`). | 0, 1, 2, 3, 5 |
+| `ritueel intermediate add NAME --request STEM` | The entry `NAME` of `ritueel.yaml`, and the request in `requests/STEM/`. | The answer beside the request in `requests/STEM/`, and the trust files. | 0, 1, 2, 3, 5 |
+| `ritueel handoff check STEM [--intermediate NAME]` | The request in `requests/STEM/`, `ritueel.yaml`. | Nothing. | 0, 1, 2, 3 |
 | `ritueel status` | The bundle. | Nothing. | 0, 1, 2, 10, 11, 12 |
-| `ritueel records list` | `ledger/`. | Nothing. | 0, 1, 2 |
+| `ritueel records list` | `history/`. | Nothing. | 0, 1, 2 |
 | `ritueel records verify` | The bundle. | Nothing. | 0, 1, 2, 3 |
-| `ritueel records close CEREMONY --reason TEXT` | `ledger/CEREMONY/attempt.json`. | A closing record and its transcript. | 0, 1, 2, 3, 5 |
+| `ritueel records close CEREMONY --reason TEXT` | `history/CEREMONY/attempt.json`. | A closing record and its transcript. | 0, 1, 2, 3, 5 |
 | `ritueel ca-bundle build [--out FILE]` | The roots and the newest root list. | The CA bundle, to `FILE` or standard output. | 0, 1, 2, 3 |
 | `ritueel root-list verify FILE (--held FILE \| --pin SHA256...) [--ca-bundle FILE]` | A root list, the list the host holds or its initial pins, and a CA bundle. | Nothing. | 0, 1, 2, 3 |
 
-- **`init`** makes `--roots N` roots, 2 by default, 1 allowed for a software root. It refuses a bundle that already has a root, and a key directory that already has key files. The key files are opened as [ADR 0015](/decisions/0015-key-files-open-with-a-passkey-on-each-root-card-and-card-secrets-are-sealed-in-the-bundle/) says; a passphrase, where one is used, is asked once for each root, or read from `--passphrase-fd`; `--test-root` asks none. It prints the accepted limit, and the record says so.
-- **`intermediate add`** refuses a `NAME` that `ritueel.yaml` does not declare, or that an earlier record registered, and a request whose type is not the entry's `type` or whose stem already has an answer. It runs the contract's checks 1 to 9, then the six steps; the person's confirmation is check 10, and a person may [decline](/reference/ceremony-record/#declining) the request instead (`--decline REASON` with `run PLAN` from a script), which writes the answer with the code `declined` and a record (exit code 3). A plan that no longer matches the bundle is refused with `plan-stale` (exit code 3). A request refused by a check gets `answers/STEM.result.json` with `outcome` `refused` and its code, and nothing else is written: no plan, no attempt, no record (exit code 3).
+- **`init`** makes `--roots N` roots, 2 by default, 1 allowed for a software root. It refuses a bundle that already has a root, and a key directory that already has key files. The key files are opened as [record 0002](../decisions/0002-where-a-key-lives.md) says; a passphrase, where one is used, is asked once for each root, or read from `--passphrase-fd`; `--test-root` asks none. It prints the accepted limit, and the record says so.
+- **`intermediate add`** refuses a `NAME` that `ritueel.yaml` does not declare, or that an earlier record registered, and a request whose type is not the entry's `type` or whose request folder already has an answer. It runs the contract's checks 1 to 9, then the six steps; the person's confirmation is check 10, and a person may [decline](/reference/ceremony-record/#declining) the request instead (`--decline REASON` with `run PLAN` from a script), which writes the answer with the code `declined` and a record (exit code 3). A plan that no longer matches the bundle is refused with `plan-stale` (exit code 3). A request refused by a check gets `answers/STEM.result.json` with `outcome` `refused` and its code, and nothing else is written: no plan, no attempt, no record (exit code 3).
 - **`handoff check`** runs checks 1 to 9 of the [hand-off contract](/reference/hand-off-contract/#what-the-certifier-checks) and signs nothing. Without `--intermediate`, the rules that belong to one intermediate (name constraints, KMS read roles) are reported as not run, never as passed. It exits 0 when every check that ran passed, and 3 with the code when one refused.
 - **`status`** exits with the highest finding ([Exit codes](/reference/cli/#exit-codes)). An unresolved attempt is critical (12).
 - **`records verify`** checks the [hash chain](/reference/ceremony-record/#the-hash-chain); a break is exit code 3.
 - **`records close`** shows the attempt and asks the person to type the first eight characters of its plan digest, or takes `--confirm DIGEST`. Its record says that signatures may exist from that plan.
-- **`ca-bundle build`** gives the bytes of `products/<sequence>/ca-bundle.pem` for the newest sequence, and refuses to mix test and real roots.
+- **`ca-bundle build`** gives the bytes of `trust/<number>/ca-bundle.pem` for the newest sequence, and refuses to mix test and real roots.
 - **`root-list verify`** is the host's side: it runs [the host's checks](/reference/root-list/#how-a-host-reads-it) on `FILE` (a `root-list.json`, with its `.jws` beside it) against `--held FILE`, the list the host holds, or `--pin`, its initial pins. `--ca-bundle FILE` also checks a CA bundle against the list. It exits 0 when the list is accepted and 3 with the code when it is refused; a held list that has expired is a warning in the output. It needs no bundle.
 
-`due` and `run` come with M2, `card adopt` with M6 and `card check` with M2 (the names of these two commands and of `stop` are proposed, awaiting the maintainer). `intermediate replace` and `revoke` and the `root` commands come with M4, `keyring build` with M5, and `renew` and the guided mode come after the first signed release; the read-only page of `wizard --web` comes with M2. The commands of the trust products that come later are below.
+`due` and `run` come with M2, `card adopt` with M6 and `card check` with M2 (the names of these two commands and of `stop` are proposed, awaiting the maintainer). `intermediate replace` and `revoke` and the `root` commands come with M4, `keyring build` with M5, and `renew` and the guided mode come after the first signed release; the read-only page of `wizard --web` comes with M2. The commands of the trust files that come later are below.
 
-## Commands for the trust products that come later
+## Commands for the trust files that come later
 
 These are the arguments of the commands that build and check the CRLs (M4, [issue #30](https://github.com/truvity/ritueel/issues/30)), the SSH CA key list (M4, [issue #55](https://github.com/truvity/ritueel/issues/55)) and the keyring package (M5, [issue #15](https://github.com/truvity/ritueel/issues/15)). The formats are on [the CRL page](/reference/crl/), [the SSH CA key list page](/reference/ssh-ca-key-list/) and [the keyring package page](/reference/keyring-package/).
 
@@ -108,20 +108,20 @@ These are the arguments of the commands that build and check the CRLs (M4, [issu
 |---|---|---|---|
 | `ritueel crl verify FILE --ca-bundle FILE [--held FILE] [--cert FILE]` | A CRL, the CA bundle of the roots the party trusts, the CRL it holds and a certificate. | Nothing. | 0, 1, 2, 3 |
 | `ritueel ssh-ca-keys verify FILE (--held FILE \| --root-list FILE) [--user-keys FILE]` | An SSH CA key list, the list the host holds or the root list it holds (with its `.jws`), and the file for sshd. | Nothing. | 0, 1, 2, 3 |
-| `ritueel keyring build --name NAME [--out DIR]` | The roots and the bindings in the bundle, and the newest root list. | The packages and plain files, to `products/<sequence>/keyring/` or `DIR`. | 0, 1, 2, 3 |
+| `ritueel keyring build --name NAME [--out DIR]` | The roots and the bindings in the bundle, and the newest root list. | The packages and plain files, to `trust/<number>/keyring/` or `DIR`. | 0, 1, 2, 3 |
 | `ritueel keyring verify FILE... --root-list FILE [--dir DIR]` | Packages or plain files, the root list, and the bundle. | Nothing. | 0, 1, 2, 3 |
-| `ritueel ssh-ca break-glass ROOT` | The root's entry in the bundle. | A break-glass SSH CA in the root's store, its public key `roots/<label>/ssh-break-glass.pub`, and the next trust products. | 0, 1, 2, 3, 4, 5 |
+| `ritueel ssh-ca break-glass ROOT` | The root's entry in the bundle. | A break-glass SSH CA in the root's store, its public key `roots/<label>/ssh-break-glass.pub`, and the next trust files. | 0, 1, 2, 3, 4, 5 |
 
 - **`crl verify`** exits 0 when the CRL is accepted and 3 with the code when it is refused; a held CRL that has expired is a warning in the output. With `--cert`, a certificate the CRL lists exits 3 with the code `revoked`. It needs no bundle.
 - **`ssh-ca-keys verify`** exits 0 when the list is accepted and 3 with the code, including `user-keys-mismatch` for the file for sshd; it needs no bundle.
-- **`keyring build`** refuses to mix test and real roots, as `ca-bundle build` does, and verifies its output before it writes it. A ceremony writes the keyring with its other trust products once the builder exists.
+- **`keyring build`** refuses to mix test and real roots, as `ca-bundle build` does, and verifies its output before it writes it. A ceremony writes the keyring with its other trust files once the builder exists.
 - **`keyring verify`** exits 0 when every check passes and 3 with the code. Without `--dir` it cannot check what a revocation dropped.
 - **`ssh-ca break-glass`** is a ceremony: it has the plan, the confirmation and the record of every other, and needs the card of `ROOT`.
 
-The codes of the new objects are in the output as `reasons`, like the others; `trust_sequence` and `artifacts` are written by the commands that write trust products.
+The codes of the new objects are in the output as `reasons`, like the others; `trust_sequence` and `artifacts` are written by the commands that write trust files.
 
 :::note[Proposed]
-`init` reads a `ritueel.yaml` the operator wrote rather than taking the name, the release address and the policy as flags, so that ritueel never rewrites that file. `--key-dir`, `handoff check --intermediate`, `records close --reason`, `ca-bundle build --out`, `--decline` and the arguments of `root-list verify` are the arguments this page adds to the commands of ADR 0004.
+`init` reads a `ritueel.yaml` the operator wrote rather than taking the name, the release address and the policy as flags, so that ritueel never rewrites that file. `--key-dir`, `handoff check --intermediate`, `records close --reason`, `ca-bundle build --out`, `--decline` and the arguments of `root-list verify` are the arguments this page adds to the commands of record 0005.
 :::
 
 ### A script's ceremony
@@ -159,7 +159,7 @@ And these where they apply:
 | `plan` | ceremonies | `{ "path", "sha256", "prefix" }`: the plan file, its digest, and the eight characters a person types. With `--plan-only`, this is the result. |
 | `record` | ceremonies, `records close` | `{ "path", "sha256" }`. |
 | `artifacts` | ceremonies, `ca-bundle build` | A list of `{ "path", "sha256" }`, as in the record. |
-| `trust_sequence` | ceremonies | The trust sequence of the trust products written. |
+| `trust_sequence` | ceremonies | The trust sequence of the trust files written. |
 | `roots` | `init`, `status` | A list of `{ "label", "store", "test", "x509_spki_sha256", "openpgp_fingerprint", "not_after" }`. |
 | `answer` | `intermediate add` | `{ "stem", "outcome", "reasons", "artifacts" }`, as in `result.json`. |
 | `checks` | `handoff check` | A list of `{ "n", "result" }` for checks 1 to 9, where `result` is `passed`, `failed` or `not-run`. |

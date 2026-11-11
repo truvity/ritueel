@@ -5,7 +5,7 @@ sidebar:
   order: 12.5
 ---
 
-*Every fact on this page carries the date it was read, 2026-11-01 unless it says otherwise. Prices and firmware change; check the shop and the release notes before you buy. A device is called supported only after ritueel has been proven on it ([ADR 0003](/decisions/0003-key-stores-and-the-card-layer/)). Nothing here is built yet.*
+*Every fact on this page carries the date it was read, 2026-11-01 unless it says otherwise. Prices and firmware change; check the shop and the release notes before you buy. A device is called supported only after ritueel has been proven on it ([record 0002](../decisions/0002-where-a-key-lives.md)). Nothing here is built yet.*
 
 You do not need hardware to learn the model: a drill runs on software test keys. You need hardware to practise the card parts of a ceremony, and to test a store before it is called supported. This page says what to buy for that, and what to leave on the shelf. Buy test devices only; never put a real root on a device you bought to experiment with.
 
@@ -13,7 +13,7 @@ You do not need hardware to learn the model: a drill runs on software test keys.
 
 | Buy | Why | Price (date) |
 |---|---|---|
-| **A YubiKey 5 series, firmware 5.7.4 or later for a root card: three of them** | The reference device. Two for the root cards, one for the daily card. It is the one ritueel supports first. 5.7.4 is ritueel's own floor for a root card, to be tried in M1 ([ADR 0016](/decisions/0016-several-bundles-share-one-pair-of-root-cards-and-the-bundle-keeps-a-card-inventory/#rules-for-a-shared-card)). | About 75 to 80 EUR each. Not re-checked on the live store; confirm before you buy. |
+| **A YubiKey 5 series, firmware 5.7.4 or later for a root card: three of them** | The reference device. Two for the root cards, one for the daily card. It is the one ritueel supports first. 5.7.4 is ritueel's own floor for a root card, to be tried in M1 ([record 0003](../decisions/0003-root-cards.md)). | About 75 to 80 EUR each. Not re-checked on the live store; confirm before you buy. |
 | **One Nitrokey 3 NFC (3A NFC with USB-A or 3C NFC with USB-C; pick the one that matches your port)** | The second device to test: open firmware, an OpenPGP card with P-384 and touch confirmation, and a PIV applet with P-384. Read the gaps below first. | 3C NFC 65 EUR and 3A NFC 60 EUR on the maker's shop (2026-11-01). |
 | **A Nitrokey HSM 2, later, only if a PKCS#11 backend is planned** | The one device here built for key backup and a CA workflow through PKCS#11. | 109 EUR on the maker's shop (2026-11-01). |
 
@@ -37,7 +37,7 @@ Sources, read 2026-11-01: [YubiKey technical manual, PIV](https://docs.yubico.co
 
 ## The evidence gap, in plain words
 
-A Nitrokey 3 cannot attest a key. A ceremony on a YubiKey checks a certificate that says "this key was made inside this token, with this policy", signed under the maker's published root. A Nitrokey 3 offers no such certificate, so a ceremony using it has no hardware evidence, and ritueel's ledger can only record "attestation unavailable". That is a real difference in what you can prove, not a detail. Its PIV applet is also young: the firmware notes since 1.8.0 do not call it beta, but fixes to the touch flag and a PIN retry counter were still unreleased on its main branch (read 2026-11-01), and its serial number and version are made up to look like a YubiKey's.
+A Nitrokey 3 cannot attest a key. A ceremony on a YubiKey checks a certificate that says "this key was made inside this token, with this policy", signed under the maker's published root. A Nitrokey 3 offers no such certificate, so a ceremony using it has no hardware evidence, and ritueel's history can only record "attestation unavailable". That is a real difference in what you can prove, not a detail. Its PIV applet is also young: the firmware notes since 1.8.0 do not call it beta, but fixes to the touch flag and a PIN retry counter were still unreleased on its main branch (read 2026-11-01), and its serial number and version are made up to look like a YubiKey's.
 
 So the Nitrokey 3 is a good second device to **test** and to **support with the gap stated**, and a poor first choice for a root where attestation is the evidence.
 
@@ -50,7 +50,7 @@ So the Nitrokey 3 is a good second device to **test** and to **support with the 
 | Token2 PIN+ | FIDO2 only, as far as the sources show. |
 | Nitrokey Passkey | FIDO2 only. |
 | Nitrokey Pro 2, Start, Storage 2 | Older devices with an OpenPGP card and no PIV. |
-| YubiHSM 2 | Not a smartcard, with its own protocol, and the FIPS model costs about 935 to 1150 EUR at retailers. [ADR 0002](/decisions/0002-key-custody-every-key-is-born-in-its-store-two-root-cards-or-one-kms-root-and-a-replica/) takes no HSM for keys used once a year. |
+| YubiHSM 2 | Not a smartcard, with its own protocol, and the FIPS model costs about 935 to 1150 EUR at retailers. [record 0002](../decisions/0002-where-a-key-lives.md) takes no HSM for keys used once a year. |
 
 ## Cloud keys: nothing to buy, a lot to read
 

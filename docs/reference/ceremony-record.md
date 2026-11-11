@@ -7,14 +7,14 @@ sidebar:
 
 *Not built yet. This is version 1 of the files that the six steps of [record 0005](../decisions/0005-a-ceremony-and-where-it-runs.md) write. The code is [issue #9](https://github.com/truvity/ritueel/issues/9), in M2; it follows this page.*
 
-Every ceremony writes four kinds of file into its own sub-folder of the history, `ledger/<ceremony>/`, in [the bundle](/reference/bundle/#the-layout): a **plan** before anything is signed, an **attempt** just before the first signature, then a **record** and a **transcript** when it ends. The history is the write-once part of the bundle. These files hold public material only: never a private key, a PIN, a passphrase or a revocation signature.
+Every ceremony writes four kinds of file into its own sub-folder of the history, `history/<ceremony>/`, in [the bundle](/reference/bundle/#the-layout): a **plan** before anything is signed, an **attempt** just before the first signature, then a **record** and a **transcript** when it ends. The history is the write-once part of the bundle. These files hold public material only: never a private key, a PIN, a passphrase or a revocation signature.
 
 | File | Written at | Holds |
 |---|---|---|
-| `ledger/<ceremony>/plan.json` | Step 1, plan | Every byte that will be signed, fixed in advance. |
-| `ledger/<ceremony>/attempt.json` | Step 3, reserve | That signatures may exist from this plan. |
-| `ledger/<ceremony>/record.json` | Step 6, record | What was checked, signed and written. |
-| `ledger/<ceremony>/transcript.txt` | Step 6, record | What ritueel printed. |
+| `history/<ceremony>/plan.json` | Step 1, plan | Every byte that will be signed, fixed in advance. |
+| `history/<ceremony>/attempt.json` | Step 3, reserve | That signatures may exist from this plan. |
+| `history/<ceremony>/record.json` | Step 6, record | What was checked, signed and written. |
+| `history/<ceremony>/transcript.txt` | Step 6, record | What ritueel printed. |
 
 `<ceremony>` is the name of the sub-folder, which is the ceremony's name: its time as `YYYYMMDDThhmmssZ` in UTC, a hyphen, and the command with its words joined by hyphens, for example `20261115T120000Z-intermediate-add`. The time is the plan's `ceremony_time`, or for a closing record of `records close`, which has no plan, the time it is written.
 
@@ -43,8 +43,8 @@ A **key fingerprint** in these files is the SHA-256 of the DER `SubjectPublicKey
 | `signatures` | The ordered list of every signature the ceremony makes, below. |
 | `births` | Only in a ceremony that makes keys: the keys to be born, below. |
 | `touches` | The number of touches the holder will give: one for each signature by a card, 0 for a software root. |
-| `base_sequence` | The trust sequence of the newest trust products when the plan was made, the state it was made against. |
-| `trust_sequence` | The trust sequence of the trust products the ceremony writes: `base_sequence` plus one. |
+| `base_sequence` | The trust sequence of the newest trust files when the plan was made, the state it was made against. |
+| `trust_sequence` | The trust sequence of the trust files the ceremony writes: `base_sequence` plus one. |
 
 :::note[Proposed]
 The member `ritueel` holds the version of the program that made the plan, its system and architecture as `os_arch`, and the SHA-256 of that copy. The run uses that version, and ritueel refuses to run the plan with another one. This is what lets the offline system keep several versions on the [USB stick](/reference/bundle/#on-the-stick). It is a proposal, awaiting the maintainer's word.
@@ -96,7 +96,7 @@ ritueel creates the file only if it does not exist (exclusive create), writes it
 
 ### The birth journal
 
-A ceremony that makes keys also creates `ledger/<ceremony>/births.jsonl`, with the attempt and before the first birth. After each key exists, and before the next birth begins, ritueel appends one line and syncs the file: `{ "at", "label", "purpose", "store", "place", "public_key_sha256" }`, where `place` is as in the plan with the key's ARN for KMS. The journal holds no secret. If the run stops, `records close` prints it, so that the holder can delete the slot of the half-born key (that deleting one slot works on firmware 5.7.4 is tried on a rehearsal card in M1; a card that holds roots is never reset: [record 0003](../decisions/0003-root-cards.md)) or the operator can schedule the key for deletion; ritueel does neither ([record 0005](../decisions/0005-a-ceremony-and-where-it-runs.md)). An attempt is resolved by a record, as before; the journal is not a second record.
+A ceremony that makes keys also creates `history/<ceremony>/births.jsonl`, with the attempt and before the first birth. After each key exists, and before the next birth begins, ritueel appends one line and syncs the file: `{ "at", "label", "purpose", "store", "place", "public_key_sha256" }`, where `place` is as in the plan with the key's ARN for KMS. The journal holds no secret. If the run stops, `records close` prints it, so that the holder can delete the slot of the half-born key (that deleting one slot works on firmware 5.7.4 is tried on a rehearsal card in M1; a card that holds roots is never reset: [record 0003](../decisions/0003-root-cards.md)) or the operator can schedule the key for deletion; ritueel does neither ([record 0005](../decisions/0005-a-ceremony-and-where-it-runs.md)). An attempt is resolved by a record, as before; the journal is not a second record.
 
 ## The record
 
@@ -111,11 +111,12 @@ A ceremony that makes keys also creates `ledger/<ceremony>/births.jsonl`, with t
 | `root`, `root_reason` | As in the plan. Absent in a closing record. |
 | `slot_map_version` | For a root on a card: the version of the slot map ([record 0003](../decisions/0003-root-cards.md)). Absent for a software root. |
 | `confirmation` | `{ "by", "at" }`: `typed` or `flag`, and when; `policy` for a run of `renew`, which no person confirms ([renewal under a policy](/reference/kms-root/#renewal-under-a-policy)). |
+| `ran_on` | Proposed. Where the ceremony ran: `workstation` or `offline-system`. Every record says it ([record 0005](../decisions/0005-a-ceremony-and-where-it-runs.md)); the name and the two values are proposed. Whether a second-device check was declared, and what was compared, is open ([record 0005](../decisions/0005-a-ceremony-and-where-it-runs.md)). |
 | `renewal` | `renew` only: `{ "policy_sha256", "role_session" }`, the SHA-256 of the canonical JSON of the `renewal` block that was applied, and the renewal role's session (the assumed-role ARN and session name, never a credential). |
 | `limit_shown` | `init` only: true, because `init` prints the [accepted limit](../decisions/0005-a-ceremony-and-where-it-runs.md). |
 | `requests` | One for each request, below. |
 | `signatures` | The plan's list, each with `signature_sha256`: the SHA-256 of the signature made. |
-| `artifacts` | A list of `{ "path", "sha256" }`: every file the ceremony wrote other than the plan, the attempt, the record and the transcript, in path order. The trust products are among them. |
+| `artifacts` | A list of `{ "path", "sha256" }`: every file the ceremony wrote other than the plan, the attempt, the record and the transcript, in path order. The trust files are among them. |
 | `trust_sequence` | As in the plan. |
 | `transcript_sha256` | The SHA-256 of the transcript. |
 | `advisory_review` | The renewal plan only: `{ "at", "note" }`, the holder's answer that they reviewed the advisories for the cards, services and algorithms in use, and a short note of what they read. ritueel asks and records; it does not judge the answer ([record 0007](../decisions/0007-changing-and-losing-a-root.md)). |
@@ -135,17 +136,17 @@ Each member of `requests` holds what the [hand-off contract records](/reference/
 Records form one chain. The first record of a bundle has no `prev_record_sha256`; every other names the record before it, so each sub-folder of the history names the one before it. `records verify` walks the chain from the first record and fails when:
 
 - a record's `prev_record_sha256` is not the digest of a record, or two records name the same one;
-- a `record.json` in a sub-folder of `ledger/` is not on the chain;
+- a `record.json` in a sub-folder of `history/` is not on the chain;
 - a record is not in canonical form, or its version is unknown;
 - a transcript's digest is not the record's `transcript_sha256`;
-- a trust product in `products/` is not an artifact of a record, which shows that the newest record was removed;
-- the `last_record_sha256` of a root list in `products/` is not on the chain.
+- a trust file in `trust/` is not an artifact of a record, which shows that the newest record was removed;
+- the `last_record_sha256` of a root list in `trust/` is not on the chain.
 
 The records are not signed by a root. The digest of the newest record goes into the next signed root list ([the root list](/reference/root-list/#the-list)), which anchors the chain up to that ceremony without another use of the root.
 
 ## The transcript
 
-`ledger/<ceremony>/transcript.txt` is UTF-8 text with LF line endings: every line ritueel printed during the ceremony, on either stream, in order, without terminal control sequences. ritueel writes it itself; it is never a capture of the terminal, so it holds nothing the holder typed. It ends with the last line printed before the record is written; its SHA-256 is in the record.
+`history/<ceremony>/transcript.txt` is UTF-8 text with LF line endings: every line ritueel printed during the ceremony, on either stream, in order, without terminal control sequences. ritueel writes it itself; it is never a capture of the terminal, so it holds nothing the holder typed. It ends with the last line printed before the record is written; its SHA-256 is in the record.
 
 ## Versions and compatibility
 

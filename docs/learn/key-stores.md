@@ -5,11 +5,11 @@ sidebar:
   order: 12
 ---
 
-*Design phase: this page teaches the trade-offs. None of the stores is built yet; a store is called supported only after it is proven on real hardware or a real account ([ADR 0003](/decisions/0003-key-stores-and-the-card-layer/)). The first version targets software, PIV, the OpenPGP card and AWS KMS. The measurements behind the card choices are in [Card libraries and tooling](/research/card-libraries-and-tooling-2026-11-01/).*
+*Design phase: this page teaches the trade-offs. None of the stores is built yet; a store is called supported only after it is proven on real hardware or a real account ([record 0002](../decisions/0002-where-a-key-lives.md)). The first version targets software, PIV, the OpenPGP card and AWS KMS. The measurements behind the card choices are in [Card libraries and tooling](/research/card-libraries-and-tooling-2026-11-01/).*
 
 A key has to live somewhere. The places differ in one question above all: **can the key be copied?** A key that cannot be copied can only be lost. A key that can be copied can also be stolen without anyone noticing.
 
-One rule holds for every store ([principle 1](/principles/)): **a key is born in its store and never leaves it.** ritueel does not import a key, with one stated exception, an adopted primary for a person's own OpenPGP key ([ADR 0017](/decisions/0017-a-persons-openpgp-key-in-two-stages-an-adopted-primary-first-then-card-born-primaries/)), and it never offers to export a key from a card or a cloud key service "for backup". For software stores the rule means the key is generated in memory and written directly into the store, never to a file on disk.
+One rule holds for every store ([principle 1](/principles/)): **a key is born in its store and never leaves it.** ritueel does not import a key, with one stated exception, an adopted primary for a person's own OpenPGP key ([record 0008](../decisions/0008-a-persons-own-key.md)), and it never offers to export a key from a card or a cloud key service "for backup". For software stores the rule means the key is generated in memory and written directly into the store, never to a file on disk.
 
 ## Which path is yours
 
@@ -35,13 +35,13 @@ To walk the questions in order, read [Choosing where a root lives](/learn/choosi
 | **What "present" means** | The passphrase. | Unlocking the vault. | The user session. | Possession, PIN and a touch. | Possession and PIN, and a touch if set. | Cloud permissions, plus what you add: a role, and the controls around it. |
 | **Proof of where it lives** ([what that means](/learn/what-a-store-can-prove/)) | None. | None. | None. | An attestation certificate from the token. | An attestation from the card. | The key's description and policy, read from the service. |
 | **Cost** | Free. | A subscription you probably have. | Free. | A token, bought twice. | A card, bought twice. | Per key and per use; an account to secure. |
-| **Good for** | Drills, tests, development; a person's own primary, kept offline. | The keys of test roots, intermediates and subkeys; a drill that survives a lost laptop. Not a root, not a master key. | Trying ritueel out. Not for a key others rely on. | The root keys; a service's intermediate. | A person's daily subkeys. | A company root; a service's intermediate. |
+| **Good for** | Drills, tests, development; a person's own primary, kept offline. | The keys of test roots, intermediates and subkeys; a drill that survives a lost laptop. Not a root, not a primary key. | Trying ritueel out. Not for a key others rely on. | The root keys; a service's intermediate. | A person's daily subkeys. | A company root; a service's intermediate. |
 
 ## The software stores in detail
 
 **The encrypted file** is the simplest and the weakest. It is right for a drill, a test root and a development setup, and for a test harness that needs a root on day one. A backup of it is another copy, which is exactly the danger. A software root never anchors a signed release. It is also where a person keeps their own OpenPGP primary, offline, with copies on two media ([personal OpenPGP](/reference/personal-openpgp/)). Its key file is opened by a passkey on each root card (decided, not yet proven on a card: milestone M1), by a recovery key, or by a passphrase for a holder without cards ([the software store](/reference/software-store/#opening-a-key-file)).
 
-**1Password is a persistent home for the software keys of test roots, intermediates and subkeys.** The key goes straight from memory into a vault item through the `op` command line, so it is never a file on disk. The vault syncs between your devices, which gives you what a single file cannot: a lost laptop does not lose the key. That is redundancy against loss, and as ever it does not protect against compromise: whoever unlocks the vault has the key, and removing a member of a shared vault does not change its keys. So it is never the home of a production root or of your master key. Use a vault only you can open, with a strong account password and Secret Key. ritueel never sees your account password ([the facts](/research/software-key-backends-2026-11-01/), read 2026-11-01).
+**1Password is a persistent home for the software keys of test roots, intermediates and subkeys.** The key goes straight from memory into a vault item through the `op` command line, so it is never a file on disk. The vault syncs between your devices, which gives you what a single file cannot: a lost laptop does not lose the key. That is redundancy against loss, and as ever it does not protect against compromise: whoever unlocks the vault has the key, and removing a member of a shared vault does not change its keys. So it is never the home of a production root or of your primary key. Use a vault only you can open, with a strong account password and Secret Key. ritueel never sees your account password ([the facts](/research/software-key-backends-2026-11-01/), read 2026-11-01).
 
 **The operating system's keyring can be insecure, and ritueel says so every time.** It is offered through [github.com/zalando/go-keyring](https://github.com/zalando/go-keyring) because it is already there and needs no account. But on many systems, once you are logged in and the keyring is unlocked, any program running as you can ask it for the key, and there is no copy: a dead disk is a dead key. Choose it to try ritueel out, or for a key whose loss you can survive. Do not choose it for a root other people trust. ritueel refuses to fall back to a file when no keyring is available, and puts the warning in the ceremony record.
 
@@ -49,17 +49,17 @@ To walk the questions in order, read [Choosing where a root lives](/learn/choosi
 
 **A PIV card makes the key physical.** The key is generated on the token, so it never exists in your computer's memory, and a thief needs the token, its PIN and a touch. The token can *attest* the key: it hands out a certificate, signed under the maker's published root, saying that a key in a given slot was made inside this token, with this firmware and this PIN and touch policy. A key that was imported cannot be attested. While a token is unlocked, other programs on the same computer can use it, so the computer is part of the trust boundary during a ceremony. A token has no backup, which is why there are two root cards.
 
-**An OpenPGP card holds a person's daily key.** A signing or authentication subkey is born on the card's OpenPGP applet, so `gpg` uses it directly, and an offline master key binds it. An encryption subkey is the exception: it is made in software and loaded onto each day-to-day card, with a wrapped backup, so a lost card does not lose the mail it decrypted ([ADR 0017](/decisions/0017-a-persons-openpgp-key-in-two-stages-an-adopted-primary-first-then-card-born-primaries/#day-to-day-cards)). The PIV and OpenPGP applets of one card are independent, but a program that holds the card keeps the others out, so a root card holds only roots and the daily card is another card.
+**An OpenPGP card holds a person's daily key.** A signing or authentication subkey is born on the card's OpenPGP applet, so `gpg` uses it directly, and an offline primary key binds it. An encryption subkey is the exception: it is made in software and loaded onto each day-to-day card, with a wrapped backup, so a lost card does not lose the mail it decrypted ([record 0008](../decisions/0008-a-persons-own-key.md)). The PIV and OpenPGP applets of one card are independent, but a program that holds the card keeps the others out, so a root card holds only roots and the daily card is another card.
 
 **AWS KMS makes the key a permission.** The key is as safe as the account's access control, and every use is in the audit trail. There is no card to lose, but an account to lose, and a deletion that can be undone only during a waiting period. A root that is "present" because a role was assumed is weaker than a touch unless the role is hard to assume. ritueel has the person confirm the plan and reads the key's policy, but it asks nothing of how the role is assumed, so the role's reach is the account's access control; making the role hard to assume is the operator's job. It reads the key's description, policy and public key from the service, never from a claim.
 
 The two hardware and cloud stores are opened up in [How a YubiKey holds keys](/learn/how-a-yubikey-holds-keys/) and [How a KMS key works](/learn/how-a-kms-key-works/).
 
-A company root in KMS is **one root and a multi-Region replica, in one dedicated root account** ([ADR 0002](/decisions/0002-key-custody-every-key-is-born-in-its-store-two-root-cards-or-one-kms-root-and-a-replica/)). A company that wants a root that does not depend on one provider adds a card root.
+A company root in KMS is **one root and a multi-Region replica, in one dedicated root account** ([record 0004](../decisions/0004-the-cloud-root.md)). A company that wants a root that does not depend on one provider adds a card root.
 
 ## Planned stores
 
-These are not supported and not scheduled. Each arrives with its first real installation, a real account or a real device, because a store that is only imagined cannot be tested ([principle 8](/principles/)). The tests a store must pass first are in [ADR 0003](/decisions/0003-key-stores-and-the-card-layer/#planned-stores).
+These are not supported and not scheduled. Each arrives with its first real installation, a real account or a real device, because a store that is only imagined cannot be tested ([principle 8](/principles/)). The tests a store must pass first are in [record 0002](../decisions/0002-where-a-key-lives.md).
 
 | Store | Why it is interesting | What has to be measured first |
 |---|---|---|
@@ -77,7 +77,7 @@ These are not supported and not scheduled. Each arrives with its first real inst
 | You are learning, or testing a pipeline | A software store, on a throw-away root, with a drill. |
 | You want a drill to survive a lost laptop | 1Password, on a root that is still only a drill. |
 | One person or a small team holds the roots, and no cloud is involved | Two independent root cards, in two places ([which path is yours](#which-path-is-yours)). |
-| A person wants a daily OpenPGP key | A subkey born on an OpenPGP card, bound by a master key kept offline. |
+| A person wants a daily OpenPGP key | A subkey born on an OpenPGP card, bound by a primary key kept offline. |
 | An organisation already runs on AWS and wants audited, policy-gated roots | One KMS root with a multi-Region replica, in a dedicated root account, with a ceremony role and the controls around it. |
 | You want the strongest story | Roots on different kinds of store: for example a card root and a KMS root. A failure of one kind does not take out the other. |
 

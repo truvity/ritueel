@@ -21,10 +21,10 @@ ritueel is in the design phase and has no release. The program is planned, and s
 
 ## One engine, three faces
 
-The command line, the guided mode and the local page are three faces of the **same** ceremony engine: plan, confirm, reserve, sign, verify, record ([ADR 0004](/decisions/0004-ceremonies-plan-confirm-reserve-sign-verify-record/)). The guided mode fills in flags and the page shows the plan; neither implements a ceremony of its own, and the page never confirms one. The command line and the page also call the same API of one ritueel process. What the command line refuses, they refuse.
+The command line, the guided mode and the local page are three faces of the **same** ceremony engine: plan, confirm, reserve, sign, verify, record ([record 0005](../decisions/0005-a-ceremony-and-where-it-runs.md)). The guided mode fills in flags and the page shows the plan; neither implements a ceremony of its own, and the page never confirms one. The command line and the page also call the same API of one ritueel process. What the command line refuses, they refuse.
 
 ## What the tools never do
 
-- Hold a private key outside the store that made it (a person's own key has one stated exception: [ADR 0017](/decisions/0017-a-persons-openpgp-key-in-two-stages-an-adopted-primary-first-then-card-born-primaries/)), or keep a PIN or a passphrase that a person types.
+- Hold a private key outside the store that made it (a person's own key has one stated exception: [record 0008](../decisions/0008-a-persons-own-key.md)), or keep a PIN or a passphrase that a person types.
 - Confirm an irreversible step for you.
 - Sign online, or issue the certificates of servers and people. That belongs to a system that holds intermediates.

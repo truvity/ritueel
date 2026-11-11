@@ -13,10 +13,10 @@ sidebar:
 |---|---|
 | X.509 intermediate | A new certificate over the same public key and the same subject, with a new validity. |
 | X.509 root | The root certificate is issued again over the same key and subject, extended by about three years. |
-| OpenPGP subkey | A new binding signature from the master key, with a later expiry. |
-| OpenPGP master key | A new self-signature that moves its expiry. |
+| OpenPGP subkey | A new binding signature from the primary key, with a later expiry. |
+| OpenPGP primary key | A new self-signature that moves its expiry. |
 
-With GnuPG, `gpg --quick-set-expire <fingerprint> <expiry> [subkeys]` moves the expiry; it needs the master secret key, which is why it is a ceremony.
+With GnuPG, `gpg --quick-set-expire <fingerprint> <expiry> [subkeys]` moves the expiry; it needs the primary secret key, which is why it is a ceremony.
 
 Nothing that holds the key has to change. The intermediate keeps its private key where it lives; only a new certificate arrives. Anyone who pinned the public key still has the right pin.
 
@@ -50,7 +50,7 @@ A renewal changes nothing about who is trusted, which is why it can be automated
 | Re-sign the root list, the SSH CA key list or a CRL with the same content, and rebuild the CA bundle | Ceremony | Unattended, as above | The same: a new validity and the next trust sequence. |
 | Extend the root's own certificate and primary over the same keys | Ceremony | Unattended, as above | The same. |
 | Revoke an intermediate or a subkey | Ceremony | Ceremony | A revocation is a decision. |
-| Issue a leaf certificate, or an SSH user or host certificate | Never | Never | ritueel holds no online key ([ADR 0001](/decisions/0001-scope-roots-and-transitions-systems-like-sluis-hold-intermediates/)). |
+| Issue a leaf certificate, or an SSH user or host certificate | Never | Never | ritueel holds no online key ([record 0001](../decisions/0001-what-ritueel-is.md)). |
 
 A cloud root's renewal runs under a second role that can sign only what the bundle already holds, so it can extend trust but never create it ([The cloud root](/reference/kms-root/#renewal-under-a-policy)). A card root cannot be left to a machine: its PIN and touch are the protection, so its holder comes once a year, and the long warning is what keeps that from being forgotten.
 

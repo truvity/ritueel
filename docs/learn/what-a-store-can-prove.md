@@ -5,7 +5,7 @@ sidebar:
   order: 12.2
 ---
 
-*Design phase: this page teaches the model. The checks it describes are planned: the cloud store's for M2 ([issue #12](https://github.com/truvity/ritueel/issues/12)) and the card checks that gate a ceremony for M6 (the read-only check and the inventory come with M2; [issue #11](https://github.com/truvity/ritueel/issues/11)); the rule they follow is in [ADR 0003](/decisions/0003-key-stores-and-the-card-layer/#what-a-store-can-prove-decides-what-it-may-hold).*
+*Design phase: this page teaches the model. The checks it describes are planned: the cloud store's for M2 ([issue #12](https://github.com/truvity/ritueel/issues/12)) and the card checks that gate a ceremony for M6 (the read-only check and the inventory come with M2; [issue #11](https://github.com/truvity/ritueel/issues/11)); the rule they follow is in [record 0002](../decisions/0002-where-a-key-lives.md).*
 
 Someone tells you a root key is "safe on a hardware token", or "in the cloud, locked down". How would you know? A claim is not evidence, and a root is the one key where being wrong is expensive. This page is about what each kind of store can show, so you can tell a claim from a proof.
 

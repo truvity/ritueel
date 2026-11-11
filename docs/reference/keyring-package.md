@@ -5,14 +5,14 @@ sidebar:
   order: 3
 ---
 
-*Not built yet. The package is decided in [ADR 0006](/decisions/0006-release-keys-and-the-keyring-package/#the-keyring-package); the builder is [issue #15](https://github.com/truvity/ritueel/issues/15), in M5. This page is the specification the builder follows: what is in the package, how it is built and checked, and which installers it is tested on. What it says was measured carries a date.*
+*Not built yet. The package is decided in [record 0009](../decisions/0009-release-keys-and-the-keyring.md); the builder is [issue #15](https://github.com/truvity/ritueel/issues/15), in M5. This page is the specification the builder follows: what is in the package, how it is built and checked, and which installers it is tested on. What it says was measured carries a date.*
 
-The keyring package carries the public certificates of every active primary to apt, rpm and `gpg` users, so that a signature by any subkey a primary bound verifies. ritueel builds it. It does not sign or publish it: the user's repository signs it with its current subkey ([ADR 0006](/decisions/0006-release-keys-and-the-keyring-package/#the-keyring-package)).
+The keyring package carries the public certificates of every active primary to apt, rpm and `gpg` users, so that a signature by any subkey a primary bound verifies. ritueel builds it. It does not sign or publish it: the user's repository signs it with its current subkey ([record 0009](../decisions/0009-release-keys-and-the-keyring.md)).
 
 ## Name and version
 
 - **Name.** `<name>-keyring`, where `<name>` is given to `ritueel keyring build --name`: lower-case letters, digits and hyphens, 1 to 63 characters, starting with a letter or a digit. The same name for the `.deb` and the `.rpm`, and for every version, so an upgrade replaces the old keyring.
-- **Version.** `<year>.<sequence>`: the year of the ceremony, then the [trust sequence](/decisions/0005-trust-products-the-root-list-the-ca-bundle-the-ssh-ca-key-list-and-the-trust-sequence/#one-counter-the-trust-sequence). A package manager compares the year first, then the sequence as a number, so a newer package always compares newer (`2026.10` after `2026.9`).
+- **Version.** `<year>.<sequence>`: the year of the ceremony, then the [trust sequence](../decisions/0006-bundle-history-and-trust-files.md). A package manager compares the year first, then the sequence as a number, so a newer package always compares newer (`2026.10` after `2026.9`).
 - **Fields.** Architecture-independent, no dependencies, no scripts. The maintainer is the release identity of `ritueel.yaml` (`<name> Release <release_address>`), never a person.
 
 ## Files
@@ -27,9 +27,9 @@ The package puts these files on the system. The same files are written beside th
 | `<name>-keyring.fingerprints` | plain | One line for each primary: fingerprint, role, creation and expiry. |
 | `SHA256SUMS` | plain | Digests of the files above and of the two packages. |
 
-The builder writes them under `products/<sequence>/keyring/`: the two packages, `<name>-keyring_<version>_all.deb` and `<name>-keyring-<version>-1.noarch.rpm`, and the plain files beside them. A `.deb` holds only the first two files, and a `.rpm` the first three. The key files of a package do not replace a user's own keyring: apt reads `Signed-By`, and rpm imports only when told to.
+The builder writes them under `trust/<number>/keyring/`: the two packages, `<name>-keyring_<version>_all.deb` and `<name>-keyring-<version>-1.noarch.rpm`, and the plain files beside them. A `.deb` holds only the first two files, and a `.rpm` the first three. The key files of a package do not replace a user's own keyring: apt reads `Signed-By`, and rpm imports only when told to.
 
-Beside the packages, not in them, in `products/<sequence>/revocations/`: the revocation signature of every primary or subkey that was revoked hard and dropped from this version, armoured, one file for each, named by the fingerprint it revokes. The holder gives a primary's stored revocation signature to `root revoke`, which checks its digest against `revocation_sha256` of the root ([the bundle](/reference/bundle/#rootjson)) before it publishes it; a subkey's revocation is made at the ceremony.
+Beside the packages, not in them, in `trust/<number>/revocations/`: the revocation signature of every primary or subkey that was revoked hard and dropped from this version, armoured, one file for each, named by the fingerprint it revokes. The holder gives a primary's stored revocation signature to `root revoke`, which checks its digest against `revocation_sha256` of the root ([the bundle](/reference/bundle/#rootjson)) before it publishes it; a subkey's revocation is made at the ceremony.
 
 ## What the certificates hold
 
@@ -39,7 +39,7 @@ For each active primary, in the order of the root list, one complete public cert
 2. The user ID packet (the release identity) with every certification ritueel made on it, in creation order. The yearly extension adds one each time; a verifier takes the newest as of the time it checks.
 3. For every subkey the primary ever bound, in the order of the subkey's creation time and then its fingerprint: the subkey packet, every binding signature ritueel made for it (each with its embedded back-signature), in creation order, then its subkey revocation if it was retired softly.
 
-Left out: an encryption subkey, a third-party certification, a notation, and anything revoked hard, which means a whole certificate of a revoked primary and the whole subkey of one revoked as compromised ([ADR 0006](/decisions/0006-release-keys-and-the-keyring-package/#revocation)). The binding signatures are kept even when newer ones exist, so that a signature made before a renewal verifies at its own time. The certificates are read from the bundle: the primary's `openpgp.pgp` and the bindings in `answers/`.
+Left out: an encryption subkey, a third-party certification, a notation, and anything revoked hard, which means a whole certificate of a revoked primary and the whole subkey of one revoked as compromised ([record 0009](../decisions/0009-release-keys-and-the-keyring.md)). The binding signatures are kept even when newer ones exist, so that a signature made before a renewal verifies at its own time. The certificates are read from the bundle: the primary's `openpgp.pgp` and the bindings in `answers/`.
 
 The binary form is the packets, concatenated; the armoured form is a single block of the same bytes (RFC 9580, section 6) with the header `-----BEGIN PGP PUBLIC KEY BLOCK-----`, no `Version` or `Comment` header, Base64 in lines of 64 characters and the CRC-24 line, because every reader of armour reads it.
 
@@ -73,13 +73,13 @@ ritueel does not sign the package. A pipeline signs the `.deb` and the `.rpm`, o
 | 6 | No encryption subkey, no third-party certification, and nothing that is revoked hard. With `--dir`, every subkey the bundle's answers bound and the records did not revoke hard is present. | `contents-mismatch` |
 | 7 | The `.gpg` and the `.asc` hold the same packets, and the digests in `SHA256SUMS` are those of the files. | `malformed` |
 
-Without `--dir`, check 6 can only look at what is inside. It exits 0 when every check passes and 3 with the code when one fails; it writes nothing ([Commands](/reference/cli/#commands-for-the-trust-products-that-come-later)). These codes belong to the checker and are not sent anywhere.
+Without `--dir`, check 6 can only look at what is inside. It exits 0 when every check passes and 3 with the code when one fails; it writes nothing ([Commands](/reference/cli/#commands-for-the-trust-files-that-come-later)). These codes belong to the checker and are not sent anywhere.
 
 ## The installer matrix, and what older rpm means
 
 The package is also tested by installing it, on the installers people have, and by verifying a real signature with what it installed. CI does this for the current `dpkg`, `apt` and `rpm` in a scratch root, with no container ([issue #15](https://github.com/truvity/ritueel/issues/15)): install the package, verify a signature by a subkey the keyring lists with `gpgv` and `sqv`, upgrade to a package that drops a key and see the key gone, and see a signature by the dropped key refused. The older releases cannot be a CI job, because they are old operating systems; they are a dated measurement, repeated before a release that changes the package.
 
-**Older rpm.** The keyring is OpenPGP version 4 ECDSA P-384 with SHA-384 ([ADR 0006](/decisions/0006-release-keys-and-the-keyring-package/#the-keys)), and ritueel does not change the algorithm to reach an old installer. So *support* for an rpm release is a floor that is measured and not a promise: ritueel supports every rpm release that
+**Older rpm.** The keyring is OpenPGP version 4 ECDSA P-384 with SHA-384 ([record 0009](../decisions/0009-release-keys-and-the-keyring.md)), and ritueel does not change the algorithm to reach an old installer. So *support* for an rpm release is a floor that is measured and not a promise: ritueel supports every rpm release that
 
 1. imports each per-primary armoured key file (`rpm --import`, and `gpgkey=` in a repository file), and
 2. verifies a package signed by an ECDSA P-384 version 4 subkey the imported certificate binds (`rpmkeys --checksig`), and

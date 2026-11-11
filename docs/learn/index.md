@@ -22,7 +22,7 @@ Pages 1 and 2 are short; pages 3 to 6 are longer reference reading. A decision r
 - [The life of a root](/learn/life-of-a-root/): create, sign, record, back up, re-sign, rotate, revoke, recover, in order.
 - [Revoke](/learn/revoke/): lost or exposed a key? Make the certificate before you need it, and know what it reaches.
 - [The custody chain](/learn/custody-chain/): who or what holds each key from the root to the leaf.
-- [OpenPGP: one identity, many keys](/learn/chain-openpgp/): the master key, its subkeys, and how a verifier learns your fingerprint.
+- [OpenPGP: one identity, many keys](/learn/chain-openpgp/): the primary key, its subkeys, and how a verifier learns your fingerprint.
 
 The words these pages use are fixed in the [glossary](/glossary/).
 

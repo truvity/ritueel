@@ -11,7 +11,7 @@ sidebar:
 
 A revocation made after a key is lost cannot be made at all, and one made in a hurry is made on the worst day of the year. So the material is prepared when the key is born:
 
-- **OpenPGP: a revocation certificate** for the master key, made at creation and stored apart from the card, in at least two places. With it the master key can be revoked even if its card and PIN are gone.
+- **OpenPGP: a revocation certificate** for the primary key, made at creation and stored apart from the card, in at least two places. With it the primary key can be revoked even if its card and PIN are gone.
 - **X.509: the means to publish a list that leaves the key out.** An intermediate is revoked by a *certificate revocation list* (CRL) signed by the root that issued it. A root is revoked by a root list without it, signed by the surviving roots with the revoked root's removal authorisation attached, and a CA bundle without it.
 
 ## Reasons matter
@@ -50,10 +50,10 @@ So for apt users **the effective revocation is a new keyring package without the
 
 1. **Decide.** What is revoked, and for what reason.
 2. **Revoke at the source.** The revocation certificate, or the CRL, or the root list without the key.
-3. **Publish new trust products without the key:** the CA bundle, the keyring package.
+3. **Publish new trust files without the key:** the CA bundle, the keyring package.
 4. **Replace what chained only to it.** See [recover](/learn/recover/).
 5. **Record it,** with what outsiders now see.
 
 ## In ritueel
 
-`root revoke` and `intermediate revoke` carry out the X.509 side. `init` makes the OpenPGP revocation certificates for every master key, one for each of two reasons (compromised and superseded), writes them to a place you name outside the bundle, and keeps only a digest of each. `ritueel revocation check` tells you, without printing anything, that a stored file is the right one. All of it is planned ([the formats](/reference/revocation-material/)). The steps and a drill are in the [guide](/guides/revoke-a-key/).
+`root revoke` and `intermediate revoke` carry out the X.509 side. `init` makes the OpenPGP revocation certificates for every primary key, one for each of two reasons (compromised and superseded), writes them to a place you name outside the bundle, and keeps only a digest of each. `ritueel revocation check` tells you, without printing anything, that a stored file is the right one. All of it is planned ([the formats](/reference/revocation-material/)). The steps and a drill are in the [guide](/guides/revoke-a-key/).

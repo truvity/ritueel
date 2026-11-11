@@ -5,7 +5,7 @@ sidebar:
   order: 21
 ---
 
-*Design phase: this page teaches the model of [ADR 0006](/decisions/0006-release-keys-and-the-keyring-package/). No release is signed until the card roots exist and the adoption drill has run. The measurements are in [the verifier matrix](/research/openpgp-verifier-matrix-2026-11/).*
+*Design phase: this page teaches the model of [record 0009](../decisions/0009-release-keys-and-the-keyring.md). No release is signed until the card roots exist and the adoption drill has run. The measurements are in [the verifier matrix](/research/openpgp-verifier-matrix-2026-11/).*
 
 OpenPGP has no certificate chains. It has a primary key, subkeys that the primary binds, and certifications. A release is signed by a subkey that a primary has bound, and users verify with a keyring that holds the primaries.
 
@@ -49,7 +49,7 @@ Release keys are OpenPGP **version 4**, ECDSA P-384, SHA-384, and **version 6** 
 Checked on 2026-10-29.
 
 - **Debian** signs a stable release's `Release` file with two keys, the archive key of the time and a per-release key, and the keyring package ships every active key. See the [archive keyring package](https://packages.debian.org/sid/debian-archive-keyring) and the [SecureApt history](https://wiki.debian.org/SecureApt).
-- **Arch Linux** has five master keys, and a packager key is valid when at least three of them have signed it. See the [master keys](https://archlinux.org/master-keys/).
+- **Arch Linux** has five "master keys" (primary keys), and a packager key is valid when at least three of them have signed it. See the [master keys](https://archlinux.org/master-keys/).
 - **Key transitions** keep the old and the new key valid together for a while, and the old key signs the new one. See the [Apache guide](https://infra.apache.org/key-transition.html) and the [Riseup template](https://help.riseup.net/en/security/message-security/openpgp/key-transition).
 
 ## Personal OpenPGP

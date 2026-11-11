@@ -5,14 +5,14 @@ sidebar:
   order: 6
 ---
 
-*Design phase: not built yet. The restore drill is planned as its own command. Read [The ledger](/learn/the-ledger/) first for what is kept, where, and why.*
+*Design phase: not built yet. The restore drill is planned as its own command. Read [The history](/learn/the-history/) first for what is kept, where, and why.*
 
 ## What you start with
 
-- The bundle in its repository, with two remotes. Its ledger is the write-once part.
+- The bundle in its repository, with two remotes. Its history is the write-once part.
 - The revocation certificates in their two places.
 - The PINs you type in the password manager.
-- The recovery key, apart from the cards and apart from its passphrase. The sealed secrets of the cards are in the bundle; the PUK and the management key are not kept by hand ([ADR 0015](/decisions/0015-key-files-open-with-a-passkey-on-each-root-card-and-card-secrets-are-sealed-in-the-bundle/#card-secrets)).
+- The recovery key, apart from the cards and apart from its passphrase. The sealed secrets of the cards are in the bundle; the PUK and the management key are not kept by hand ([record 0003](../decisions/0003-root-cards.md)).
 - A clean machine, or a freshly made user account.
 
 ## Back up

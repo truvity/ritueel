@@ -5,7 +5,7 @@ sidebar:
   order: 16
 ---
 
-*Not built yet. The encrypted file is built with M2 ([issue #8](https://github.com/truvity/ritueel/issues/8)); 1Password ([issue #59](https://github.com/truvity/ritueel/issues/59)) and the OS keyring ([issue #60](https://github.com/truvity/ritueel/issues/60)) are M7. The reasons are in [ADR 0003](/decisions/0003-key-stores-and-the-card-layer/#the-software-store) and [ADR 0007](/decisions/0007-ritueel-teaches-and-its-tools-simplify-the-ceremonies/#software-keys-three-backends-all-born-in-the-store); the facts behind the choices are in [the research](/research/software-key-backends-2026-11-01/).*
+*Not built yet. The encrypted file is built with M2 ([issue #8](https://github.com/truvity/ritueel/issues/8)); 1Password ([issue #59](https://github.com/truvity/ritueel/issues/59)) and the OS keyring ([issue #60](https://github.com/truvity/ritueel/issues/60)) are M7. The reasons are in [record 0002](../decisions/0002-where-a-key-lives.md) and [record 0001](../decisions/0001-what-ritueel-is.md); the facts behind the choices are in [the research](/research/software-key-backends-2026-11-01/).*
 
 A software key has no evidence of where it lives and can be copied ([what a store can prove](/learn/what-a-store-can-prove/)). The backend decides where the bytes sit between ceremonies. In every backend the key is generated in memory and written straight into its backend, never to a file on disk.
 
@@ -13,8 +13,8 @@ A software key has no evidence of where it lives and can be copied ([what a stor
 
 | Backend | May hold | Never holds | Platforms |
 |---|---|---|---|
-| `file`: an age-encrypted key file, opened by a passkey on each root card, a recovery key or a passphrase ([ADR 0015](/decisions/0015-key-files-open-with-a-passkey-on-each-root-card-and-card-secrets-are-sealed-in-the-bundle/)) | Test roots, drills, development; a person's own primary, new or adopted ([ADR 0012](/decisions/0012-personal-openpgp-the-primary-offline-in-a-file-the-daily-subkey-on-a-card/), [ADR 0017](/decisions/0017-a-persons-openpgp-key-in-two-stages-an-adopted-primary-first-then-card-born-primaries/)). | A root that others rely on. | Linux, macOS |
-| `onepassword`: 1Password, through `op` | The keys of test roots, intermediates and subkeys. | A production root, or a person's master key. | Linux, macOS |
+| `file`: an age-encrypted key file, opened by a passkey on each root card, a recovery key or a passphrase ([record 0002](../decisions/0002-where-a-key-lives.md)) | Test roots, drills, development; a person's own primary, new or adopted ([record 0008](../decisions/0008-a-persons-own-key.md)). | A root that others rely on. | Linux, macOS |
+| `onepassword`: 1Password, through `op` | The keys of test roots, intermediates and subkeys. | A production root, or a person's primary key. | Linux, macOS |
 | `keyring`: the OS keyring | A throwaway test key. | Anything else, and any passphrase. | Linux, macOS |
 
 It is chosen when a root is made: `ritueel init --store software --backend file|onepassword|keyring`. A root is never moved between backends; a move is a transition ([root transitions](/reference/transitions/)). The backend and the reference to the key are in the root's `root.json`:
@@ -28,15 +28,15 @@ Windows has no consumer, so no backend is built for it; the release builds are f
 
 ## Opening a key file
 
-Decided, not yet proven: the passkey proof is M1 ([ADR 0015](/decisions/0015-key-files-open-with-a-passkey-on-each-root-card-and-card-secrets-are-sealed-in-the-bundle/#decided-not-yet-proven)). Until it passes, the format of the wrapped key is not written, and this page does not invent one. The file layout is in [the bundle](/reference/bundle/#the-software-roots-key-files).
+Decided, not yet proven: the passkey proof is M1 ([record 0002](../decisions/0002-where-a-key-lives.md)). Until it passes, the format of the wrapped key is not written, and this page does not invent one. The file layout is in [the bundle](/reference/bundle/#the-software-roots-key-files).
 
 | | Way | Detail |
 |---|---|---|
 | Default | A passkey on each root card | The key file is an age file encrypted to the public half of an age key (the unlock key) and to a recovery recipient. A passkey on each root card (CTAP2 hmac-secret; the kind that stores nothing on the card; user verification required) unwraps the private half of the unlock key. Any one root card of the pair is enough. Encrypting needs no card, and no PIV slot is used. |
 | Always kept | A recovery key | An age identity in a passphrase-protected file, kept apart from the cards. Its file and its passphrase never sit in the same place. |
 | Supported | A passphrase alone | For a holder without cards. A passphrase file holds only that recipient, because the age v1 specification says "An scrypt stanza, if present, MUST be the only stanza in the header" (read 2026-11-11, [age v1](https://age-encryption.org/v1)). |
-| Fallback | A key-agreement key in PIV slot 9d of each root card | Made only if passkey unlocking cannot be used. It is in row 1 of the card ([ADR 0016](/decisions/0016-several-bundles-share-one-pair-of-root-cards-and-the-bundle-keeps-a-card-inventory/#the-rows)). |
-| Not supported | A synced passkey; unlocking inside the local page; a day-to-day card unlocking a root-level key file | The reasons are the roads not taken of ADR 0015. |
+| Fallback | A key-agreement key in PIV slot 9d of each root card | Made only if passkey unlocking cannot be used. It is in row 1 of the card ([record 0003](../decisions/0003-root-cards.md)). |
+| Not supported | A synced passkey; unlocking inside the local page; a day-to-day card unlocking a root-level key file | The reasons are the roads not taken of record 0002. |
 
 ## Revocation signatures
 
@@ -63,9 +63,9 @@ Through `github.com/zalando/go-keyring`. The entries are under the service `ritu
 - **Size.** The limits of the platforms are in the research (about 3000 bytes on macOS in all, 2560 on Windows); an armoured OpenPGP secret key of about 1 KB and a P-384 PKCS#8 key fit. A write the platform refuses is reported as it is; the limits on each supported platform are measured and dated in a research page before the backend is called supported ([issue #60](https://github.com/truvity/ritueel/issues/60)).
 - **The warning.** Printed when the root is created and carried in every record (`warnings` has `keyring-insecure`). The words are fixed, and a test compares them:
 
-> WARNING: the OS keyring is not a safe home for a root or master key. Programs running as your user can usually read it once it is unlocked, it may be synced or backed up, and it cannot be made non-exportable. Use it only for a throwaway test key. Keep real root keys offline, on a hardware token or in a cloud key service.
+> WARNING: the OS keyring is not a safe home for a root or primary key. Programs running as your user can usually read it once it is unlocked, it may be synced or backed up, and it cannot be made non-exportable. Use it only for a throwaway test key. Keep real root keys offline, on a hardware token or in a cloud key service.
 
-ritueel stores no passphrase in the keyring, because it keeps no passphrase anywhere ([ADR 0001](/decisions/0001-scope-roots-and-transitions-systems-like-sluis-hold-intermediates/)).
+ritueel stores no passphrase in the keyring, because it keeps no passphrase anywhere ([record 0002](../decisions/0002-where-a-key-lives.md)).
 
 ## The record
 

@@ -1,11 +1,11 @@
 ---
 title: Root transitions, version 1
-description: The states of a root, root add, retire and revoke with their checks, the cross-certificate and the OpenPGP vouch, and what each state does to trust products.
+description: The states of a root, root add, retire and revoke with their checks, the cross-certificate and the OpenPGP vouch, and what each state does to trust files.
 sidebar:
   order: 11
 ---
 
-*Not built yet. This is the page that [ADR 0009](/decisions/0009-root-transitions-vouch-overlap-retire-and-revoke/) leaves for the rules and profiles; the code is [issue #13](https://github.com/truvity/ritueel/issues/13), in M4. The ideas are taught in [Moving from one root to another](/learn/transitions/).*
+*Not built yet. This is the page that [record 0007](../decisions/0007-changing-and-losing-a-root.md) leaves for the rules and profiles; the code is [issue #13](https://github.com/truvity/ritueel/issues/13), in M4. The ideas are taught in [Moving from one root to another](/learn/transitions/).*
 
 A transition moves trust from one root to another without breaking a client that has not learned of the change. It never moves a key: the new root is born in its store, and an active root vouches for it ([principle 1](/principles/)).
 
@@ -14,7 +14,7 @@ A transition moves trust from one root to another without breaking a client that
 | State | Meaning | Set by |
 |---|---|---|
 | `active` | On the root list. It signs, its certificate is in the CA bundle, its primary is in the keyring package, it signs its CRL, and its break-glass key is on the SSH CA key list. | `init`, `root add` |
-| `retired` | Ended in good order. It is in none of those products. What it certified is still certified by another active root. | `root retire` |
+| `retired` | Ended in good order. It is in none of those trust files. What it certified is still certified by another active root. | `root retire` |
 | `revoked` | Ended by loss, theft or compromise. As retired, and its revocation signature is published beside the keyring. | `root revoke` |
 
 There is no state for the overlap. **An overlap is the time in which a root and the root that replaces it are both `active`.** The new root's `root.json` says so ([below](/reference/transitions/#in-rootjson)).
@@ -35,9 +35,9 @@ The number of active roots the holder intends to have is the **target**: `init` 
 
 | Command | Needs | Writes |
 |---|---|---|
-| `ritueel root add --store S [--card SERIAL] [--replaces LABEL --overlap-until DATE \| --target N] [--root LABEL]` | The card, or the KMS roles, of the new root, and the card or role of every active root. A root that cannot come is revoked first. | The new root; its vouches; the next trust products. |
-| `ritueel root retire LABEL [--now REASON] [--target N]` | The card or role of every active root, `LABEL` included. | A record, and the next trust products without `LABEL`. |
-| `ritueel root revoke LABEL --reason REASON --revocation FILE [--removal FILE] [--target N]` | The card or role of every other active root, the stored revocation signature, and `LABEL`'s stored removal authorisation unless `LABEL` signs. | A record, the next trust products without `LABEL`, and the signature beside the keyring. |
+| `ritueel root add --store S [--card SERIAL] [--replaces LABEL --overlap-until DATE \| --target N] [--root LABEL]` | The card, or the KMS roles, of the new root, and the card or role of every active root. A root that cannot come is revoked first. | The new root; its vouches; the next trust files. |
+| `ritueel root retire LABEL [--now REASON] [--target N]` | The card or role of every active root, `LABEL` included. | A record, and the next trust files without `LABEL`. |
+| `ritueel root revoke LABEL --reason REASON --revocation FILE [--removal FILE] [--target N]` | The card or role of every other active root, the stored revocation signature, and `LABEL`'s stored removal authorisation unless `LABEL` signs. | A record, the next trust files without `LABEL`, and the signature beside the keyring. |
 
 Changing the root set requires every current root, or a root's stored removal authorisation ([the root list](/reference/root-list/#who-signs)). Each root signs the new root list in the same ceremony, with a touch on a card, and the plan counts them. With two cards, `root add` and `root retire` are two-card ceremonies; the yearly ceremony stays a one-card ceremony, because its list has the same roots.
 
@@ -47,7 +47,7 @@ Changing the root set requires every current root, or a root's stored removal au
 
 Refused with `root-absent` unless every active root can sign the next root list.
 
-1. The plan names the births ([ADR 0008](/decisions/0008-the-operator-prepares-the-holder-and-ritueel-creates-attests-and-verifies-the-root/#births-and-what-a-crash-leaves)): the new root's X.509 root key, OpenPGP primary and break-glass SSH CA key, with their revocation signatures and the removal authorisation ([Revocation material](/reference/revocation-material/)).
+1. The plan names the births ([record 0005](../decisions/0005-a-ceremony-and-where-it-runs.md)): the new root's X.509 root key, OpenPGP primary and break-glass SSH CA key, with their revocation signatures and the removal authorisation ([Revocation material](/reference/revocation-material/)).
 2. The new root's own certificate, self-signature and CRL are signed by the new keys.
 3. The vouching root signs the cross-certificate and the OpenPGP certification below, with a touch each, and the new fingerprints have been shown before the touch.
 4. Every active root and the new root sign the next root list, which holds them all; the vouching root signs the next CRL; the CA bundle, the SSH CA key list and the keyring are built with the new root.
@@ -77,11 +77,11 @@ It never waits for anything but the stored revocation material, because it is th
 | The file's digest equals the digest the bundle holds for this root and reason, and its signature verifies over the root's primary. | `revocation-mismatch`, `revocation-invalid` |
 | Unless the root signs the new list itself, `--removal FILE` is its removal authorisation, with the digest the bundle holds and a signature that verifies over its pin ([revocation material](/reference/revocation-material/#the-removal-authorisation)). | `revocation-mismatch`, `revocation-invalid` |
 
-It then writes a root list without the root, signed by the other roots and carrying its removal authorisation, a CA bundle, a keyring and an SSH CA key list without it, copies the revocation signature to `products/<sequence>/revocations/` (armoured, named by the fingerprint, as the [keyring page](/reference/keyring-package/#files) says), and stops writing the root's CRL. What the root alone had certified is **not** re-certified here: `status` reports each such intermediate as critical until a yearly ceremony does it, over the same keys ([A lost root card](/guides/lost-root-card/)).
+It then writes a root list without the root, signed by the other roots and carrying its removal authorisation, a CA bundle, a keyring and an SSH CA key list without it, copies the revocation signature to `trust/<number>/revocations/` (armoured, named by the fingerprint, as the [keyring page](/reference/keyring-package/#files) says), and stops writing the root's CRL. What the root alone had certified is **not** re-certified here: `status` reports each such intermediate as critical until a yearly ceremony does it, over the same keys ([A lost root card](/guides/lost-root-card/)).
 
 ## The vouch
 
-Both vouches are signed by the vouching root, at the ceremony of `root add`, and are published in `products/<sequence>/vouches/`. They are not trust anchors and are in no CA bundle.
+Both vouches are signed by the vouching root, at the ceremony of `root add`, and are published in `trust/<number>/vouches/`. They are not trust anchors and are in no CA bundle.
 
 ### The X.509 cross-certificate
 
@@ -108,11 +108,11 @@ A client that trusts only the old root can build a path from an intermediate tha
 
 `vouches/openpgp-<new>-by-<signer>.pgp`, binary: the new primary's public key packet, its user ID, and one certification (RFC 9580, section 5.2.1.4, type `0x10`) made by the vouching primary over them. Its hashed area holds the signature creation time (the ceremony time), a signature expiration time of 13 calendar months, and the issuer fingerprint; its unhashed area holds the issuer key ID ([the packet rule](/reference/hand-off-contract/#issuer-key-id)). The hash is SHA-384.
 
-It is **not in the keyring package**: that package holds only the primaries' own packets ([ADR 0006](/decisions/0006-release-keys-and-the-keyring-package/#the-keyring-package), [the keyring page](/reference/keyring-package/#what-the-certificates-hold)). Users of `gpg` or `sq` who trust the old primary can import this file and follow the vouch; users of `gpgv` and apt never read it, and learn of the new root from the new package, signed by an old key.
+It is **not in the keyring package**: that package holds only the primaries' own packets ([record 0009](../decisions/0009-release-keys-and-the-keyring.md), [the keyring page](/reference/keyring-package/#what-the-certificates-hold)). Users of `gpg` or `sq` who trust the old primary can import this file and follow the vouch; users of `gpgv` and apt never read it, and learn of the new root from the new package, signed by an old key.
 
-## What each state does to the trust products
+## What each state does to the trust files
 
-| Product | `active` | `retired` | `revoked` |
+| Trust file | `active` | `retired` | `revoked` |
 |---|---|---|---|
 | Root list | Listed. | Not listed. | Not listed. |
 | CA bundle | The certificate. | Not in it. | Not in it. |
@@ -135,11 +135,11 @@ Written at `root add`, and not changed except the last three ([the bundle](/refe
 
 ## The root of the year after a transition
 
-The root that signs a yearly ceremony is the **active root whose last signing record is the oldest**. A root that has never signed counts as the oldest, and a tie goes to the lowest label. With two cards this is the alternation of [ADR 0004](/decisions/0004-ceremonies-plan-confirm-reserve-sign-verify-record/#who-signs-and-when); after a replacement, the new root signs next, which also gives it a CRL signed by its own key soon after it is born.
+The root that signs a yearly ceremony is the **active root whose last signing record is the oldest**. A root that has never signed counts as the oldest, and a tie goes to the lowest label. With two cards this is the alternation of [record 0007](../decisions/0007-changing-and-losing-a-root.md); after a replacement, the new root signs next, which also gives it a CRL signed by its own key soon after it is born.
 
 ## The five transitions
 
-Software to a PIV card, software to AWS KMS, a PIV card to AWS KMS, AWS KMS to a PIV card, and a card or a KMS key replaced by one of the same kind are one command, `root add --store S`, with the new store's own checks ([cards](/reference/cards/#what-is-checked-on-a-card), [the cloud root](/reference/kms-root/#the-checks)). A store that gives no evidence cannot be the new root's store unless it is the `software` store of a test root ([ADR 0003](/decisions/0003-key-stores-and-the-card-layer/#what-a-store-can-prove-decides-what-it-may-hold)). The [guides](/guides/) walk through each one.
+Software to a PIV card, software to AWS KMS, a PIV card to AWS KMS, AWS KMS to a PIV card, and a card or a KMS key replaced by one of the same kind are one command, `root add --store S`, with the new store's own checks ([cards](/reference/cards/#what-is-checked-on-a-card), [the cloud root](/reference/kms-root/#the-checks)). A store that gives no evidence cannot be the new root's store unless it is the `software` store of a test root ([record 0003](../decisions/0003-root-cards.md)). The [guides](/guides/) walk through each one.
 
 ## Test vectors
 

@@ -17,8 +17,8 @@ A guide walks through one procedure step by step, with the result of each step a
 | [Rotate a key](/guides/rotate-a-key/) | On an event, such as an advisory that affects the key; a key in software also after at most three years. | [Rotate](/learn/rotate/) |
 | [Revoke a key](/guides/revoke-a-key/) | A key is compromised, or retired for good. | [Revoke](/learn/revoke/) |
 | [A lost root card](/guides/lost-root-card/) | A root card is lost, stolen or compromised. This is the recovery guide. | [Recover](/learn/recover/) |
-| [Back up and restore](/guides/back-up-and-restore/) | After every change, and as a drill once a year. | [The ledger](/learn/the-ledger/) |
-| [Run a drill](/guides/run-a-drill/) | Once a year and before the real thing: a walk-through on test keys and the restore check. | [The ledger](/learn/the-ledger/) |
+| [Back up and restore](/guides/back-up-and-restore/) | After every change, and as a drill once a year. | [The history](/learn/the-history/) |
+| [Run a drill](/guides/run-a-drill/) | Once a year and before the real thing: a walk-through on test keys and the restore check. | [The history](/learn/the-history/) |
 
 ## Using OpenPGP in practice
 
@@ -26,7 +26,7 @@ Your daily subkeys, put to work. Each of these uses the tools you have today; cr
 
 | Guide | When | Learn first |
 |---|---|---|
-| [Your own OpenPGP key](/guides/personal-openpgp/) | You want a master key offline and daily subkeys on a card. | [OpenPGP custody chain](/learn/chain-openpgp/) |
+| [Your own OpenPGP key](/guides/personal-openpgp/) | You want a primary key offline and daily subkeys on a card. | [OpenPGP custody chain](/learn/chain-openpgp/) |
 | [An authentication subkey for SSH](/guides/openpgp-ssh-authentication/) | You want to log in to servers with a key on a card. | [OpenPGP custody chain](/learn/chain-openpgp/) |
 | [Sign git commits and tags](/guides/openpgp-sign-git/) | You want commits and tags shown as verified. | [OpenPGP custody chain](/learn/chain-openpgp/) |
 | [Sign software and releases](/guides/openpgp-sign-releases/) | You publish downloads that users should be able to verify. | [OpenPGP release keys](/learn/openpgp-release-keys/) |

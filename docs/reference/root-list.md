@@ -5,9 +5,9 @@ sidebar:
   order: 4
 ---
 
-*Not built yet. This is version 1 of the format that [ADR 0005](/decisions/0005-trust-products-the-root-list-the-ca-bundle-the-ssh-ca-key-list-and-the-trust-sequence/) leaves to a reference page; the code is [issue #14](https://github.com/truvity/ritueel/issues/14), in M2, and its [test vectors](/reference/root-list/#test-vectors) match this page. The SSH CA key list follows the same shape in M7 ([its page](/reference/ssh-ca-key-list/)), and the CRLs of the roots are on [their page](/reference/crl/).*
+*Not built yet. This is version 1 of the format that [record 0006](../decisions/0006-bundle-history-and-trust-files.md) leaves to a reference page; the code is [issue #14](https://github.com/truvity/ritueel/issues/14), in M2, and its [test vectors](/reference/root-list/#test-vectors) match this page. The SSH CA key list follows the same shape in M7 ([its page](/reference/ssh-ca-key-list/)), and the CRLs of the roots are on [their page](/reference/crl/).*
 
-A system that updates its own trust, such as a system that holds intermediates, needs to know which roots are active today. The **signed root list** tells it: the active roots, pinned by their public keys, with the [trust sequence](/decisions/0005-trust-products-the-root-list-the-ca-bundle-the-ssh-ca-key-list-and-the-trust-sequence/#one-counter-the-trust-sequence), signed by one active root when the roots stay the same, and by every current root when they change ([who signs](/reference/root-list/#who-signs)). The **CA bundle** carries the same roots' certificates, for a TLS client and for chain building. A requester of the [hand-off contract](/reference/hand-off-contract/) reads the root list to fill `primaries` and to check an answer's issuer and `trust_sequence`.
+A system that updates its own trust, such as a system that holds intermediates, needs to know which roots are active today. The **signed root list** tells it: the active roots, pinned by their public keys, with the [trust sequence](../decisions/0006-bundle-history-and-trust-files.md), signed by one active root when the roots stay the same, and by every current root when they change ([who signs](/reference/root-list/#who-signs)). The **CA bundle** carries the same roots' certificates, for a TLS client and for chain building. A requester of the [hand-off contract](/reference/hand-off-contract/) reads the root list to fill `primaries` and to check an answer's issuer and `trust_sequence`.
 
 ## Files
 
@@ -17,7 +17,7 @@ A system that updates its own trust, such as a system that holds intermediates, 
 | `root-list.jws` | Its signatures: a detached JSON Web Signature over the bytes of `root-list.json`, with one signature for each root that signs it. |
 | `ca-bundle.pem` | The certificates of the roots on the list, in its order, with the trust sequence in the first line. |
 
-ritueel writes the three files together, under `products/<sequence>/` in [the bundle](/reference/bundle/#the-layout). Publishing them is the operator's pipeline; the names a host fetches them under are the operator's choice.
+ritueel writes the three files together, under `trust/<number>/` in [the bundle](/reference/bundle/#the-layout). Publishing them is the operator's pipeline; the names a host fetches them under are the operator's choice.
 
 ## Versioning
 
@@ -33,7 +33,7 @@ ritueel writes the three files together, under `products/<sequence>/` in [the bu
 | Member | Required | Meaning |
 |---|---|---|
 | `version` | yes | `1`. |
-| `sequence` | yes | The trust sequence of this set of trust products: an integer of at least 1 that grows by one whenever any trust product changes. |
+| `sequence` | yes | The trust sequence of this set of trust files: an integer of at least 1 that grows by one whenever any trust file changes. |
 | `signed_at` | yes | When the list was signed: the time of the ceremony. |
 | `expires_at` | yes | 13 calendar months after `signed_at`: the same day and time of the month, or the last day of the month if it has none, as for an intermediate. |
 | `roots` | yes | The active roots, one or more, in a fixed order: the order in which a hand-off request lists `primaries`. Each is an object below. |
@@ -48,7 +48,7 @@ Each member of `roots`:
 | `x509_spki_sha256` | yes | The SHA-256 of the DER `SubjectPublicKeyInfo` of the root's X.509 key: the pin. It is the `issuer` member of a hand-off answer for X.509. |
 | `openpgp_fingerprint` | yes | The fingerprint of the root's OpenPGP primary, 40 hexadecimal digits (version 4). It is a member of `primaries` in a hand-off request. |
 
-The list pins keys, never certificates: a root certificate re-issued over the same key keeps its pin ([ADR 0005](/decisions/0005-trust-products-the-root-list-the-ca-bundle-the-ssh-ca-key-list-and-the-trust-sequence/#the-signed-root-list)). A list never mixes test roots and real roots.
+The list pins keys, never certificates: a root certificate re-issued over the same key keeps its pin ([record 0006](../decisions/0006-bundle-history-and-trust-files.md)). A list never mixes test roots and real roots.
 
 An example, wrapped here for reading; the file is one line:
 
@@ -74,9 +74,9 @@ Each protected header has exactly these members:
 
 ### Who signs
 
-Each root signs with its X.509 root key: in the PIV slot that [ADR 0003](/decisions/0003-key-stores-and-the-card-layer/#the-piv-store-and-the-root-cards) gives it on a card, through the cloud key service, or from the root's file in software mode.
+Each root signs with its X.509 root key: in the PIV slot that [record 0003](../decisions/0003-root-cards.md) gives it on a card, through the cloud key service, or from the root's file in software mode.
 
-- **A list with the same roots as the list it replaces** carries one signature, by any active root: the root used at that ceremony. This is every yearly ceremony and every ceremony that changes only another trust product.
+- **A list with the same roots as the list it replaces** carries one signature, by any active root: the root used at that ceremony. This is every yearly ceremony and every ceremony that changes only another trust file.
 - **A list that changes the root set** carries, for every active root of the list it replaces, either that root's signature or its stored removal authorisation in `removals`; and every root it adds signs it. Changing the root set therefore requires every current root, or a root's stored removal authorisation.
 
 Two lists have the same roots when they hold the same entries of `roots` (label, pin and fingerprint), in any order.
@@ -89,7 +89,7 @@ It is a JWS in **compact serialisation with the payload attached**: `<header>.<p
 
 ### When
 
-A ceremony that changes any trust product writes a new list with the next sequence, signed in the same ceremony. The yearly ceremony and every transition always do, so the list is re-signed at least once a year ([ADR 0005](/decisions/0005-trust-products-the-root-list-the-ca-bundle-the-ssh-ca-key-list-and-the-trust-sequence/#the-signed-root-list)); so does any other ceremony that signs with a root, because each use re-issues that root's certificate and so changes the CA bundle ([ADR 0002](/decisions/0002-key-custody-every-key-is-born-in-its-store-two-root-cards-or-one-kms-root-and-a-replica/#validity-renewal-and-replacement)). The list's bytes are fixed in the ceremony's plan, so each signature is one of the plan's signatures and its touch is counted. `status` warns 60, 30 and 14 days before the newest list expires ([commands](/reference/cli/#exit-codes)).
+A ceremony that changes any trust file writes a new list with the next sequence, signed in the same ceremony. The yearly ceremony and every transition always do, so the list is re-signed at least once a year ([record 0006](../decisions/0006-bundle-history-and-trust-files.md)); so does any other ceremony that signs with a root, because each use re-issues that root's certificate and so changes the CA bundle ([record 0002](../decisions/0002-where-a-key-lives.md)). The list's bytes are fixed in the ceremony's plan, so each signature is one of the plan's signatures and its touch is counted. `status` warns 60, 30 and 14 days before the newest list expires ([commands](/reference/cli/#exit-codes)).
 
 **Adding, retiring and revoking a root** are the ceremonies that change the root set ([root transitions](/reference/transitions/#the-commands)). A revoked or lost root is left out of the new list, with its removal authorisation attached when it cannot sign, and with a CA bundle and a keyring without it beside it, and its break-glass SSH CA key off the SSH CA key list. The root stops publishing its [CRL](/reference/crl/).
 
@@ -113,9 +113,9 @@ A host holds one list: the last good one. Before its first list it holds **initi
 
 The host verifies the bytes it received and does not re-serialise them. When every check passes, the new list replaces the one it holds, and its roots are the host's pins from then on. Receiving the current list again is not an error: a list at the same sequence passes when its `root-list.json` is byte-identical to the held one, whichever active root signed it, and is refused with `sequence-conflict` when its content differs, because one sequence names one set of roots. A signer need not be on the new list: a root that retires signs the list that removes it, because checks 2, 8 and 10 read the list the host held.
 
-**A host that missed a list** compares the next one it receives with the list it holds, not with the one before it. A change of the root set it has not seen may then be refused (`unknown-signer` or `insufficient-signers`); it takes the lists in between, in order, from where the operator publishes them. ritueel keeps every list under `products/<sequence>/`, so the operator can publish them all.
+**A host that missed a list** compares the next one it receives with the list it holds, not with the one before it. A change of the root set it has not seen may then be refused (`unknown-signer` or `insufficient-signers`); it takes the lists in between, in order, from where the operator publishes them. ritueel keeps every list under `trust/<number>/`, so the operator can publish them all.
 
-**When the list a host holds expires** and no newer one has arrived, it keeps the list, goes on trusting its roots, and raises a warning. It does not drop its roots ([ADR 0005](/decisions/0005-trust-products-the-root-list-the-ca-bundle-the-ssh-ca-key-list-and-the-trust-sequence/#the-signed-root-list)).
+**When the list a host holds expires** and no newer one has arrived, it keeps the list, goes on trusting its roots, and raises a warning. It does not drop its roots ([record 0006](../decisions/0006-bundle-history-and-trust-files.md)).
 
 These codes belong to the host and are not sent anywhere. The vectors fix the outcome and the code, not the wording of a message.
 
@@ -155,7 +155,7 @@ CI checks that the manifest names every file of the set, that the pins match the
 | Choice | Chosen | Other options | Why |
 |---|---|---|---|
 | Signature | A detached JWS, ES384, by the roots' X.509 keys. | CMS (RFC 5652); an OpenPGP signature by the primary; minisign or an SSH signature. | The readers already parse JSON and JOSE, every language has a JWS library, and a card or a KMS key makes the raw `r` and `s` that ES384 carries. CMS needs an ASN.1 stack for a JSON file; an OpenPGP signature would need the primary, a second touch, for a list whose audience is the X.509 key's. |
-| Who signs a change of the root set | Every current root, or its stored removal authorisation; and every added root. | Any one active root, as for a list with the same roots; every current root, with no stored authorisation; a separate key for changes of the set. | The roots decide together who is trusted, while a renewal stays a one-root ceremony. Without the stored authorisation a lost root could never leave the set by a signature, and every host would need its pins replaced by hand. A separate key costs a slot and a touch for the same audience. ([ADR 0005](/decisions/0005-trust-products-the-root-list-the-ca-bundle-the-ssh-ca-key-list-and-the-trust-sequence/#the-signed-root-list)) |
+| Who signs a change of the root set | Every current root, or its stored removal authorisation; and every added root. | Any one active root, as for a list with the same roots; every current root, with no stored authorisation; a separate key for changes of the set. | The roots decide together who is trusted, while a renewal stays a one-root ceremony. Without the stored authorisation a lost root could never leave the set by a signature, and every host would need its pins replaced by hand. A separate key costs a slot and a touch for the same audience. ([record 0006](../decisions/0006-bundle-history-and-trust-files.md)) |
 | Serialisation | The general JSON serialisation, one signature for each signer, also when there is one. | Compact for one signer and JSON for several; one compact JWS file for each signer. | One format for every list, which a JWS library reads as it is. Two formats would be two code paths, and loose signature files could be separated from their list. |
 | The removal authorisation | A compact JWS over the root's own pin, made at its birth, attached to the list that removes it. | A signature over a future list; a revocation of the root's certificate. | A future list's bytes cannot be known at birth. A certificate revocation would need a CRL that hosts of the root list do not read. |
 | Where the verifier finds the key | The signing root's certificate in `x5c`; the host trusts only its key, and only when its hash is a pin. | Only `kid`, with the key taken from the CA bundle; a `jwk` header. | The list verifies alone, and comparing the SHA-256 of a DER key with a pin is the same operation as for the hand-off's `issuer`. A `jwk` would need a conversion to compute the same hash. |

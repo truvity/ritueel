@@ -5,7 +5,7 @@ sidebar:
   order: 10
 ---
 
-*Not built yet. This is the page that [ADR 0008](/decisions/0008-the-operator-prepares-the-holder-and-ritueel-creates-attests-and-verifies-the-root/#the-cloud-root) leaves for the details of the `aws-kms` store; the code is [issue #12](https://github.com/truvity/ritueel/issues/12), in M2. The custody model is in [ADR 0002](/decisions/0002-key-custody-every-key-is-born-in-its-store-two-root-cards-or-one-kms-root-and-a-replica/): one dedicated root account, one root, a multi-Region replica that is never counted as a second root.*
+*Not built yet. This is the page that [record 0004](../decisions/0004-the-cloud-root.md) leaves for the details of the `aws-kms` store; the code is [issue #12](https://github.com/truvity/ritueel/issues/12), in M2. The custody model is in that record: one dedicated root account, one root, a multi-Region replica that is never counted as a second root.*
 
 A KMS key has no attestation. The evidence that it is the root it should be is the key itself, its policy and its audit trail, read from the service every time ([principle 4](/principles/)). This page says what ritueel creates or adopts, what it reads, and what makes it refuse.
 
@@ -17,13 +17,13 @@ Before `init`, with the operator's own infrastructure tools ([Prepare the cloud 
 |---|---|
 | The root account | A dedicated AWS account that holds nothing else. |
 | The admin role | Creates the keys and reads them. It replicates only before the policy that refuses replicas is in force, or through the break-glass principal. It can never `kms:Sign`. |
-| The ceremony role | The principal that may `kms:Sign` with a root key at a ceremony, and the only one that may sign anything new. ritueel asks for no particular sign-in to assume it ([ADR 0013](/decisions/0013-the-kms-ceremony-role-is-the-only-signer-and-ritueel-asks-nothing-of-its-sign-in/)); how it is assumed is the operator's. |
+| The ceremony role | The principal that may `kms:Sign` with a root key at a ceremony, and the only one that may sign anything new. ritueel asks for no particular sign-in to assume it ([record 0004](../decisions/0004-the-cloud-root.md)); how it is assumed is the operator's. |
 | The renewal role | Optional, with a [renewal policy](/reference/kms-root/#renewal-under-a-policy). The second and last principal that may `kms:Sign`: sign-only, assumable only by the operator's scheduler. ritueel lets it sign only what the bundle already holds. |
-| The break-glass principal | The one principal that may still replicate a key or move its primary Region, for example after the loss of a Region. It is created like the admin role and is never named after a person. Using it is a manual, logged act ([ADR 0018](/decisions/0018-a-cloud-root-may-be-an-existing-key-that-ritueel-adopts/#the-reference-key-policy)). It can never `kms:Sign`. |
+| The break-glass principal | The one principal that may still replicate a key or move its primary Region, for example after the loss of a Region. It is created like the admin role and is never named after a person. Using it is a manual, logged act ([record 0004](../decisions/0004-the-cloud-root.md)). It can never `kms:Sign`. |
 | The keys | Optional. An existing key that ritueel [adopts](/reference/kms-root/#adopting-an-existing-key), with its alias and policy owned by the operator's own infrastructure code. Without one, ritueel creates the keys. |
 | Controls around them | Optional and the operator's: an alarm on every `Sign`, retention of the audit trail. The guide teaches them; ritueel does not create or check them. |
 
-One person may be able to assume the admin and the ceremony role ([ADR 0002](/decisions/0002-key-custody-every-key-is-born-in-its-store-two-root-cards-or-one-kms-root-and-a-replica/#the-accepted-limit)). The roles separate the acts (creating, signing) so that each is a decision and leaves its own trail.
+One person may be able to assume the admin and the ceremony role ([record 0004](../decisions/0004-the-cloud-root.md)). The roles separate the acts (creating, signing) so that each is a decision and leaves its own trail.
 
 ## `ritueel.yaml`
 
@@ -45,7 +45,7 @@ aws_kms:
 | `admin_role`, `ceremony_role` | The two roles, by ARN, in `account`. |
 | `renewal` | Optional: the [renewal policy](/reference/kms-root/#renewal-under-a-policy). Absent, no principal but the ceremony role may sign. |
 
-Credentials come from the caller's standard chain ([ADR 0004](/decisions/0004-ceremonies-plan-confirm-reserve-sign-verify-record/#kms-roots-and-wizards)). ritueel assumes the admin role to create and read, and the ceremony role to sign. ritueel does not sign the person in and holds no credential: the chain hands it a session of the ceremony role, and ritueel checks only that the session is the ceremony role's (check 9). The `aws_kms` block is added to the schema of [the bundle](/reference/bundle/#ritueelyaml) with the store; it is additive, so `version` stays `1`.
+Credentials come from the caller's standard chain ([record 0004](../decisions/0004-the-cloud-root.md)). ritueel assumes the admin role to create and read, and the ceremony role to sign. ritueel does not sign the person in and holds no credential: the chain hands it a session of the ceremony role, and ritueel checks only that the session is the ceremony role's (check 9). The `aws_kms` block is added to the schema of [the bundle](/reference/bundle/#ritueelyaml) with the store; it is additive, so `version` stays `1`.
 
 ## What ritueel creates
 
@@ -53,11 +53,11 @@ At `init` and at `root add --store aws-kms`, for each of the three keys of a roo
 
 | Property | Value |
 |---|---|
-| Key spec, usage | `ECC_NIST_P384`, `SIGN_VERIFY`. Only SHA-384 digests are signed ([ADR 0003](/decisions/0003-key-stores-and-the-card-layer/#rules-for-every-store)). |
+| Key spec, usage | `ECC_NIST_P384`, `SIGN_VERIFY`. Only SHA-384 digests are signed ([record 0004](../decisions/0004-the-cloud-root.md)). |
 | Origin | `AWS_KMS`: the key is born in the service. Imported key material is refused. |
 | Multi-Region | A primary in `region`, and a replica in `replica_region`, made with `ReplicateKey`. |
 | Key policy | The one below, rendered from `ritueel.yaml`, on the primary and, separately, on the replica: AWS does not share a key policy between the keys of a multi-Region set. |
-| Tags | `ritueel:root` (the label), `ritueel:purpose` (`x509-root`, `openpgp-primary` or `ssh-break-glass`), and `ritueel:openpgp-created`, the OpenPGP creation time of the key as `YYYY-MM-DDThh:mm:ssZ` ([ADR 0003](/decisions/0003-key-stores-and-the-card-layer/#rules-for-every-store)). |
+| Tags | `ritueel:root` (the label), `ritueel:purpose` (`x509-root`, `openpgp-primary` or `ssh-break-glass`), and `ritueel:openpgp-created`, the OpenPGP creation time of the key as `YYYY-MM-DDThh:mm:ssZ` ([record 0006](../decisions/0006-bundle-history-and-trust-files.md)). |
 | Alias | None on a key ritueel creates. An adopted key may carry one. An alias is a pointer that anyone with the right permission can move; the ARN is the identity. |
 | Deletion | ritueel never schedules the deletion of a key. |
 
@@ -67,7 +67,7 @@ At `init` and at `root add --store aws-kms`, for each of the three keys of a roo
 Four details on this page go beyond what the maintainer decided, and await the maintainer's word: that the identity of an adopted key is its ARN and not its alias; that ritueel never edits the policy of an adopted key; that the break-glass principal can never `kms:Sign`; and the check `kms-policy-replica` (3b) with its reason code.
 :::
 
-A cloud root may be a key that already exists in the service ([ADR 0018](/decisions/0018-a-cloud-root-may-be-an-existing-key-that-ritueel-adopts/#adopting-a-key)). The operator's own infrastructure code may own the key, its alias and its policy. ritueel then does not create the key. At `init` and `root add` it:
+A cloud root may be a key that already exists in the service ([record 0004](../decisions/0004-the-cloud-root.md)). The operator's own infrastructure code may own the key, its alias and its policy. ritueel then does not create the key. At `init` and `root add` it:
 
 1. reads the public key from the service;
 2. reads the key policy and runs [the checks](/reference/kms-root/#the-checks) on it, the same checks as for a key it created;
@@ -90,7 +90,7 @@ The reference key policy: the same text for every key, with the role ARNs and th
 | Deny replicas | every principal except the break-glass principal | `ReplicateKey`, `UpdatePrimaryRegion` | none |
 | Deny grants | every principal | `CreateGrant`, `RetireGrant`, `RevokeGrant` | none |
 
-`PutKeyPolicy` stays with the admin role because AWS refuses a policy that would lock out its own caller. The policy refuses new replicas and moving the primary Region to everyone but the break-glass principal, so that an administrator cannot copy the key to a Region where no one watches; it allows digests only (the Sign row). The replicas are made before the refusal applies, or by the break-glass principal; the sequence for the keys that ritueel creates is written here when the store is built ([ADR 0018](/decisions/0018-a-cloud-root-may-be-an-existing-key-that-ritueel-adopts/#the-reference-key-policy)). No statement names the account root, and none allows `Sign` to the admin role or the break-glass principal. The break-glass SSH CA key has no Renew statement: nothing it signs is ever renewed. The `kms:` condition keys are those of the KMS documentation (read 2026-11-02, [AWS KMS condition keys](https://docs.aws.amazon.com/kms/latest/developerguide/conditions-kms.html)). The digest of the policy text, as the service returns it, is `policy_sha256` in the record.
+`PutKeyPolicy` stays with the admin role because AWS refuses a policy that would lock out its own caller. The policy refuses new replicas and moving the primary Region to everyone but the break-glass principal, so that an administrator cannot copy the key to a Region where no one watches; it allows digests only (the Sign row). The replicas are made before the refusal applies, or by the break-glass principal; the sequence for the keys that ritueel creates is written here when the store is built ([record 0004](../decisions/0004-the-cloud-root.md)). No statement names the account root, and none allows `Sign` to the admin role or the break-glass principal. The break-glass SSH CA key has no Renew statement: nothing it signs is ever renewed. The `kms:` condition keys are those of the KMS documentation (read 2026-11-02, [AWS KMS condition keys](https://docs.aws.amazon.com/kms/latest/developerguide/conditions-kms.html)). The digest of the policy text, as the service returns it, is `policy_sha256` in the record.
 
 ## The checks
 
@@ -112,7 +112,7 @@ Made at `init` after the keys exist, and again, reading from the service, at eve
 
 ## Renewal under a policy
 
-*Designed, built later (M7): [ADR 0008](/decisions/0008-the-operator-prepares-the-holder-and-ritueel-creates-attests-and-verifies-the-root/#the-cloud-root) moves it after the first release candidate.* A cloud root can renew what it already certified without a person. A card root cannot: its PIN and touch are physical, so it has the [yearly ceremony](/guides/re-sign-yearly/) and the reminders of `status`. Which acts may run unattended, and why, is taught in [Re-sign](/learn/re-sign/#what-may-run-unattended).
+*Designed, built later (M7): [record 0001](../decisions/0001-what-ritueel-is.md) moves it after the first release candidate.* A cloud root can renew what it already certified without a person. A card root cannot: its PIN and touch are physical, so it has the [yearly ceremony](/guides/re-sign-yearly/) and the reminders of `status`. Which acts may run unattended, and why, is taught in [Re-sign](/learn/re-sign/#what-may-run-unattended).
 
 **The rule.** `ritueel renew` signs only what the bundle already holds: the same keys, the same subjects, the same constraints and key flags, the same profile, and the same content of the root list, the CA bundle, the SSH CA key list, the CRLs and the root's own certificate and primary, each with a new validity from the time of the run and the next trust sequence. If any byte it would sign names a key, a name, a root or a constraint the bundle does not already hold, it refuses. It can extend trust; it never creates it, and it never revokes.
 
@@ -130,7 +130,7 @@ aws_kms:
 | Member | Meaning |
 |---|---|
 | `role` | The renewal role, by ARN, in `account`. It is the operator's to create, and is assumable only by the operator's scheduler identity ([Prepare the cloud root](/guides/prepare-the-cloud-root/)). |
-| `intermediates` | The names of the `intermediates` entries that `renew` may re-sign. An empty list renews the trust products and the root only. |
+| `intermediates` | The names of the `intermediates` entries that `renew` may re-sign. An empty list renews the trust files and the root only. |
 | `within_days` | The earliest renewal: `renew` runs only when an item it may renew expires within this many days. 14 to 90. |
 
 The validity of everything `renew` signs is the profile's (13 calendar months for an intermediate and a list, 25 for a CRL, 36 for the root), never more. The block is additive, so `version` stays `1`.
@@ -152,7 +152,7 @@ Exit code 3 for each, except `kms-session` (4). They follow the KMS checks above
 |---|---|---|
 | 10 | Every active root of the bundle is in `aws-kms`, and `renewal` is declared. A card or software root is refused with a message that names the yearly ceremony. | `not-in-policy` |
 | 11 | Every intermediate to renew is named in `intermediates`, and is neither revoked nor replaced. | `not-in-policy` |
-| 12 | Every key, subject, constraint, key flag, `use`, root and list entry in the plan is one the bundle already holds for that item, and every CRL entry of the last CRL that has not expired is kept. | `key-not-in-ledger` |
+| 12 | Every key, subject, constraint, key flag, `use`, root and list entry in the plan is one the bundle already holds for that item, and every CRL entry of the last CRL that has not expired is kept. | `key-not-in-history` |
 | 13 | The item that expires first among those to renew expires within `within_days`. An earlier run is refused, so a schedule that runs too often cannot move the trust sequence every day. | `too-early` |
 | 14 | The session is the renewal role (check 9). | `kms-session` |
 
@@ -176,7 +176,7 @@ A ceremony that signs writes a new `result.json` into its record, not over the o
 
 ## Failure
 
-- **A key made and not recorded.** The birth journal ([ADR 0008](/decisions/0008-the-operator-prepares-the-holder-and-ritueel-creates-attests-and-verifies-the-root/#births-and-what-a-crash-leaves)) lists every ARN as it is created. `records close` prints them, and ritueel asks the operator to schedule their deletion with the admin role. It does not delete them.
+- **A key made and not recorded.** The birth journal ([record 0005](../decisions/0005-a-ceremony-and-where-it-runs.md)) lists every ARN as it is created. `records close` prints them, and ritueel asks the operator to schedule their deletion with the admin role. It does not delete them.
 - **A replica that failed.** The root is not complete: `init` stops before it signs anything, and a re-run with the same plan finds the primary and replicates it, before the policy that refuses replicas is in force or through the break-glass principal.
 - **A deleted or disabled key** shows as check 1 at the next ceremony or drill. For a root, that is the loss of a root: `root revoke` and `root add`.
 

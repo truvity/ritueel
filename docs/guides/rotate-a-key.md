@@ -26,8 +26,8 @@ sidebar:
 A root rotation is a transition. It is planned, because a root has an expiry for this reason.
 
 1. `ritueel root add`: make the new root in its store, and have an existing root vouch for it. Result: an overlap starts.
-2. Publish the trust products with both roots. Wait until your slowest client has had time to learn the new one.
-3. `ritueel root retire ROOT`: remove the old root from the next trust products. Result: only the new root is shipped.
+2. Publish the trust files with both roots. Wait until your slowest client has had time to learn the new one.
+3. `ritueel root retire ROOT`: remove the old root from the next trust files. Result: only the new root is shipped.
 
 ## How you know it worked
 

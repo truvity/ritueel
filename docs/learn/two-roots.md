@@ -5,9 +5,9 @@ sidebar:
   order: 20
 ---
 
-*Design phase: this page teaches the model of [ADR 0002](/decisions/0002-key-custody-every-key-is-born-in-its-store-two-root-cards-or-one-kms-root-and-a-replica/). Checks of other projects were made on 2026-10-29; check again before you rely on one.*
+*Design phase: this page teaches the model of [record 0003](../decisions/0003-root-cards.md). Checks of other projects were made on 2026-10-29; check again before you rely on one.*
 
-Two roots are redundancy, not control. One holder operates both cards, which are stored in two separate locations, and the cards alternate by year. This page shows that the practice is ordinary, and what to expect from clients. It is about cards, which cannot be copied, and one pair of cards may serve more than one bundle of one holder, each root in its own row ([ADR 0016](/decisions/0016-several-bundles-share-one-pair-of-root-cards-and-the-bundle-keeps-a-card-inventory/#the-rows)); a cloud root is one key and a replica ([ADR 0002](/decisions/0002-key-custody-every-key-is-born-in-its-store-two-root-cards-or-one-kms-root-and-a-replica/)).
+Two roots are redundancy, not control. One holder operates both cards, which are stored in two separate locations, and the cards alternate by year. This page shows that the practice is ordinary, and what to expect from clients. It is about cards, which cannot be copied, and one pair of cards may serve more than one bundle of one holder, each root in its own row ([record 0003](../decisions/0003-root-cards.md)); a cloud root is one key and a replica ([record 0004](../decisions/0004-the-cloud-root.md)).
 
 ## What others do
 
@@ -42,6 +42,6 @@ The effects below appear during an overlap and whenever a cross-certificate exis
 
 ## The limit you accept
 
-Whoever holds one root card and its PIN can sign things that outsiders trust, until that root is revoked and the update reaches them ([the accepted limit](/decisions/0002-key-custody-every-key-is-born-in-its-store-two-root-cards-or-one-kms-root-and-a-replica/#the-accepted-limit)). Standard tools cannot require two roots to agree. Do not describe the second card as a spare, and do not describe the custody as two-person control.
+Whoever holds one root card and its PIN can sign things that outsiders trust, until that root is revoked and the update reaches them ([the accepted limit](../decisions/0002-where-a-key-lives.md)). Standard tools cannot require two roots to agree. Do not describe the second card as a spare, and do not describe the custody as two-person control.
 
 ritueel's own signed root list is the one place where the roots do agree. Renewing the list with the same roots needs one root, as every yearly ceremony does. Changing the root set requires every current root, or a root's stored removal authorisation: each root signs consent to its own removal when it is born, and that file is kept with its revocation signature, so a lost card can still leave the set ([the root list](/reference/root-list/#who-signs)).

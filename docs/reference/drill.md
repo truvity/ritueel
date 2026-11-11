@@ -5,7 +5,7 @@ sidebar:
   order: 13
 ---
 
-*Not built yet. This is the page that [ADR 0010](/decisions/0010-readiness-is-made-at-birth-and-proved-by-a-drill/#drills) leaves for the command, the report and the scripts; the code is [issue #68](https://github.com/truvity/ritueel/issues/68) for the restore check, in M4, and [issue #20](https://github.com/truvity/ritueel/issues/20) for the scripts: the adoption drill ([issue #48](https://github.com/truvity/ritueel/issues/48)) is part of M4, the lost-card drill of M6, and the others come in M7. The ideas are taught in [The ledger](/learn/the-ledger/) and the guides [Back up and restore](/guides/back-up-and-restore/) and [Run a drill](/guides/run-a-drill/).*
+*Not built yet. This is the page that [record 0007](../decisions/0007-changing-and-losing-a-root.md) leaves for the command, the report and the scripts; the code is [issue #68](https://github.com/truvity/ritueel/issues/68) for the restore check, in M4, and [issue #20](https://github.com/truvity/ritueel/issues/20) for the scripts: the adoption drill ([issue #48](https://github.com/truvity/ritueel/issues/48)) is part of M4, the lost-card drill of M6, and the others come in M7. The ideas are taught in [The history](/learn/the-history/) and the guides [Back up and restore](/guides/back-up-and-restore/) and [Run a drill](/guides/run-a-drill/).*
 
 A restore you have never practised is a hope. A drill is a practice run with a known start and a known end, on test keys, so that the first real run is not the first run. There are two kinds: a **check** that reads the real state and signs nothing, and a **walk-through** that runs ceremonies on test roots.
 
@@ -20,18 +20,18 @@ Run it on a clean machine with the bundle cloned. It signs nothing, writes only 
 | # | Check | Passes when | Cannot run when |
 |---|---|---|---|
 | 1 | The records | `records verify` passes: the hash chain is whole. | never |
-| 2 | The last digest | The newest record's digest equals `--expect-last`, the note the holder kept apart ([The ledger](/learn/the-ledger/)). | `--expect-last` is not given |
+| 2 | The last digest | The newest record's digest equals `--expect-last`, the note the holder kept apart ([The history](/learn/the-history/)). | `--expect-last` is not given |
 | 3 | The signed commits | Every commit of the bundle verifies against `--allowed-signers` (the holder's own signers file; `git verify-commit` does the check). | `--allowed-signers` is not given |
 | 4 | The roots and what expires | `status` lists the roots, the root list, the CRLs and the SSH CA key list, with nothing critical and no unresolved attempt. | never |
 | 5 | Each root against its holder | For a card: the serial is the inventory's, the keys have the recorded fingerprints, and the attestation chain verifies again. For a KMS root: [the checks](/reference/kms-root/#the-checks) read the key, its policy and its replica from the service. | the card is not connected; the credentials are not available; the root is in software |
 | 6 | The revocation signatures | For every root and every reason in the bundle, and for every root's removal authorisation, a file in `--revocation-dir` passes `revocation check` and has the bundle's digest. A missing file fails; it is not skipped. | `--revocation-dir` is not given |
-| 7 | The trust products | The newest root list verifies, is not expired, and names exactly the active roots; the CA bundle, the CRLs and the SSH CA key list agree with it. | never |
+| 7 | The trust files | The newest root list verifies, is not expired, and names exactly the active roots; the CA bundle, the CRLs and the SSH CA key list agree with it. | never |
 
 A check that cannot run is reported `not-run`, never `passed` ([principle 4](/principles/)). **The drill exits 0 only when every check ran and passed.** It exits 3 if one failed or did not run; `--accept-not-run CHECK` (by number) lets one pass that the holder knows cannot run on this machine, as in CI with software roots, and the report says it was accepted.
 
 ### The report
 
-`drills/<time>-restore.json`, one canonical JSON object ([the common rules](/reference/ceremony-record/#common-rules)); `<time>` is `YYYYMMDDThhmmssZ`. It is not part of the hash chain and not a ceremony record: a drill signs nothing. The holder commits it to the ledger.
+`drills/<time>-restore.json`, one canonical JSON object ([the common rules](/reference/ceremony-record/#common-rules)); `<time>` is `YYYYMMDDThhmmssZ`. It is not part of the hash chain and not a ceremony record: a drill signs nothing. The holder commits it to the history.
 
 | Member | Meaning |
 |---|---|
@@ -61,7 +61,7 @@ The drills, in the order they are built: the lost-card drill (two roots and an i
 
 ## When it is due
 
-Once a year, with the yearly ceremony, and after any change to where the bundle or the revocation signatures live. `status` raises a notice (exit code 10, kind `drill`) when the newest restore report is older than 13 months, or when there is none and a yearly ceremony has been recorded. The yearly rhythm is ritueel's own policy, chosen to match the yearly ceremony. The card check and the proof of life that run every six months ([ADR 0016](/decisions/0016-several-bundles-share-one-pair-of-root-cards-and-the-bundle-keeps-a-card-inventory/#where-a-root-card-is-used)) are not drills, and the restore check stays yearly.
+Once a year, with the yearly ceremony, and after any change to where the bundle or the revocation signatures live. `status` raises a notice (exit code 10, kind `drill`) when the newest restore report is older than 13 months, or when there is none and a yearly ceremony has been recorded. The yearly rhythm is ritueel's own policy, chosen to match the yearly ceremony. The card check and the proof of life that run every six months ([record 0003](../decisions/0003-root-cards.md)) are not drills, and the restore check stays yearly.
 
 ## Follow-ups
 
