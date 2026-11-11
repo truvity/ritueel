@@ -20,3 +20,201 @@
   font-weight: 600;
   letter-spacing: -0.005em;
 }
+
+/* The home page uses the width of the window. Only this page: Starlight marks it with data-has-hero.
+   A column of 72rem, centred; under 50rem everything is one column.
+     row 1  the title, the buttons and the menu links | the two answers (what ritueel is, what it is not)
+     row 2  "The whole chain": the picture across the column, drawn at about its natural size
+     row 3  "The ideas" | "What exists today" | "Is it for you?"
+   The columns come from classes on plain wrappers in docs/index.mdx (home-intro, home-chain, home-cols).
+   Running text keeps a line of about 70 characters in its column. */
+:root[data-has-hero] {
+  --sl-content-width: 72rem;
+  --rt-gap: clamp(1.5rem, 3.5vw, 3rem);
+}
+
+/* The home page is not a long document: a tighter line than the 1.75 of the docs. */
+:root[data-has-hero] .sl-markdown-content {
+  line-height: 1.6;
+}
+:root[data-has-hero] .sl-markdown-content :is(.home-intro, .home-cols section) > p,
+:root[data-has-hero] .sl-markdown-content .home-chain > p,
+:root[data-has-hero] .sl-markdown-content .home-cols li {
+  max-width: 31em;
+}
+:root[data-has-hero] .sl-markdown-content .home-cols {
+  line-height: 1.45;
+}
+:root[data-has-hero] .sl-markdown-content :is(.home-intro, .home-chain, .home-cols, .home-cols section) > :is(p, ul, div, section) {
+  margin-top: 0;
+}
+:root[data-has-hero] .sl-markdown-content :is(.home-intro > p, .home-cols p, .home-cols ul, .home-chain > p) + :is(p, ul) {
+  margin-top: 0.9rem;
+}
+:root[data-has-hero] .sl-markdown-content .home-cols ul {
+  padding-inline-start: 1.2rem;
+}
+:root[data-has-hero] .sl-markdown-content .home-cols li {
+  margin-top: 0.35rem;
+}
+/* One column (a phone): the blocks follow each other with space between them. */
+:root[data-has-hero] .sl-markdown-content :is(.home-chain, .home-cols) {
+  margin-top: 2rem;
+}
+:root[data-has-hero] .sl-markdown-content .home-cols {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1.8rem;
+}
+:root[data-has-hero] .sl-markdown-content .home-chain > p {
+  margin: 0 0 0.8rem;
+}
+/* The blocks of the page have headings of one size, a step under the docs' h2. */
+:root[data-has-hero] .sl-markdown-content :is(.home-chain, .home-cols section) > .sl-heading-wrapper.level-h2 {
+  font-size: var(--sl-text-2xl);
+}
+/* A heading starts its block: the docs' space above it is not needed inside a column. */
+:root[data-has-hero] .sl-markdown-content :is(.home-chain, .home-cols section) > .sl-heading-wrapper {
+  margin: 0 0 0.8rem;
+}
+:root[data-has-hero] .sl-markdown-content .home-chain .fig {
+  margin: 0;
+}
+:root[data-has-hero] .sl-markdown-content .home-chain .fig figcaption {
+  margin-top: 0.8rem;
+  max-width: 32em;
+}
+:root[data-has-hero] .sl-markdown-content .home-chain > p {
+  margin-top: 0.5rem;
+}
+/* The picture has three drawings: the wide one (760 units) for a column of 760 to 1100 px, one made
+   for the wide page (1100 units, the same panels) from 1100 px, and the tall one (320 units) for a
+   phone. Each is shown at 1:1 or more and never above 1.15 times, so the labels stay 12 px or more.
+   The two wide drawings are both .fig-wide; their viewBox tells them apart. */
+.fig-layout[data-figure='whole-chain'] .fig-wide[viewBox^='0 0 1100 '] {
+  display: none;
+}
+.fig-layout[data-figure='whole-chain'] .fig-wide[viewBox^='0 0 760 '] {
+  max-width: 54.5rem;
+}
+.fig-layout[data-figure='whole-chain'] .fig-narrow {
+  max-width: 23rem;
+}
+/* Figures.css switches to the tall drawing at 48rem; this picture keeps the wide one down to 47.5rem. */
+@container (min-width: 47.5rem) {
+  .fig-layout[data-figure='whole-chain'] .fig-wide[viewBox^='0 0 760 '] {
+    display: block;
+  }
+  .fig-layout[data-figure='whole-chain'] .fig-narrow {
+    display: none;
+  }
+}
+@container (min-width: 68.75rem) {
+  .fig-layout[data-figure='whole-chain'] .fig-wide[viewBox^='0 0 760 '] {
+    display: none;
+  }
+  .fig-layout[data-figure='whole-chain'] .fig-wide[viewBox^='0 0 1100 '] {
+    display: block;
+  }
+}
+
+@media (min-width: 50rem) {
+  :root[data-has-hero] .sl-container {
+    display: grid;
+    grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+    grid-template-rows: auto auto 1fr;
+    column-gap: var(--rt-gap);
+    align-items: start;
+  }
+  :root[data-has-hero] .sl-container > * {
+    margin-top: 0;
+  }
+  :root[data-has-hero] .sl-container > .sl-markdown-content {
+    display: contents;
+  }
+  :root[data-has-hero] .sl-container > .home-hero {
+    grid-column: 1;
+    grid-row: 1;
+    max-width: none;
+  }
+  :root[data-has-hero] .sl-container .actions {
+    grid-column: 1;
+    grid-row: 2;
+    margin: 1.4rem 0 0;
+  }
+  :root[data-has-hero] .sl-container .destinations {
+    grid-column: 1;
+    grid-row: 3;
+    margin: 0.9rem 0 0;
+  }
+  :root[data-has-hero] .sl-container .home-intro {
+    grid-column: 2;
+    grid-row: 1 / span 3;
+    margin: 0.4rem 0 0;
+    font-size: var(--sl-text-lg);
+    line-height: 1.55;
+  }
+  :root[data-has-hero] .sl-container .home-intro > p {
+    max-width: 33em;
+  }
+  :root[data-has-hero] .sl-container :is(.home-chain, .home-cols) {
+    grid-column: 1 / -1;
+    margin-top: 1.5rem;
+  }
+}
+
+/* The heading of the picture and the one sentence before it share a line. */
+@media (min-width: 50rem) {
+  :root[data-has-hero] .sl-markdown-content .home-chain {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    column-gap: 1.5rem;
+    align-items: baseline;
+  }
+  :root[data-has-hero] .sl-markdown-content .home-chain > .sl-heading-wrapper {
+    margin: 0 0 0.8rem;
+  }
+  :root[data-has-hero] .sl-markdown-content .home-chain > p {
+    margin: 0 0 0.8rem;
+  }
+  :root[data-has-hero] .sl-markdown-content .home-chain > .fig {
+    grid-column: 1 / -1;
+  }
+}
+
+/* The docs' footer ("Edit page") sits closer to the end of this short page. */
+:root[data-has-hero] .sl-container > footer {
+  margin-top: 0;
+  gap: 0;
+}
+:root[data-has-hero] .sl-container > footer .meta {
+  margin-top: 1.25rem;
+}
+:root[data-has-hero] .sl-container > footer .pagination-links:empty {
+  display: none;
+}
+
+/* Three columns where they fit (66rem); two from 50rem. */
+@media (min-width: 50rem) {
+  :root[data-has-hero] .sl-markdown-content .home-cols {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    column-gap: var(--rt-gap);
+    row-gap: 1.6rem;
+    align-items: start;
+  }
+  /* the first two stacked in the left column, the long one beside them */
+  :root[data-has-hero] .sl-markdown-content .home-cols > section:nth-child(3) {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+  }
+}
+@media (min-width: 66rem) {
+  :root[data-has-hero] .sl-markdown-content .home-cols {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr) minmax(0, 1.6fr);
+  }
+  :root[data-has-hero] .sl-markdown-content .home-cols > section:nth-child(3) {
+    grid-column: auto;
+    grid-row: auto;
+  }
+}
