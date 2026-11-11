@@ -63,7 +63,7 @@ This is not an exchange of the contract: the primary is not on a root list of ri
 
 | Member | Meaning |
 |---|---|
-| `bundle` | The proof bundle version, the number `1`. |
+| `bundle` | The proof bundle version, the number `1`. This is the member name of the format shared with sluis, not the directory. |
 | `subkey_sha256` | SHA-256 of the bytes of `<stem>.subkey.pgp`, 64 hexadecimal digits, so that the proof cannot be moved to another file. |
 | `primary` | The version 4 fingerprint of the person's primary, 40 hexadecimal digits, as `sluis key bind --primary` gives it. |
 | `key` | The key identity of the signing subkey, 64 hexadecimal digits ([below](/reference/staff-openpgp/#the-key-identity)). |

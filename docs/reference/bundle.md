@@ -11,16 +11,18 @@ ritueel keeps everything it knows about one trust domain in one **bundle**, a di
 
 ## One bundle, one trust domain
 
-A bundle has its own ledger, trust sequence, root list and roots. A holder with a personal key and a company keeps two bundles, for example `personal/` and `acme/`, each with its own unlock key and recovery key ([ADR 0004](/decisions/0004-ceremonies-plan-confirm-reserve-sign-verify-record/#the-bundle-and-the-records)). Inside a bundle the roots are `A` and `B`, then the next letter; across bundles a root is written with the bundle's name, `acme/A`. Two bundles may share a pair of root cards ([the cards page](/reference/cards/#the-inventory-cardsyaml-and-cardsnameyaml), [ADR 0016](/decisions/0016-several-bundles-share-one-pair-of-root-cards-and-the-bundle-keeps-a-card-inventory/)).
+A bundle has its own ledger, trust sequence and roots, and a company bundle its own root list (a personal bundle has none). A holder with a personal key and a company keeps two bundles, for example `personal/` and `acme/` ([ADR 0004](/decisions/0004-ceremonies-plan-confirm-reserve-sign-verify-record/#the-bundle-and-the-records)). Inside a bundle the roots are `A` and `B`, then the next letter; across bundles a root is written with the bundle's name, `acme/A`. Two bundles may share a pair of root cards ([the cards page](/reference/cards/#the-inventory-cardsyaml-and-cardsnameyaml), [ADR 0016](/decisions/0016-several-bundles-share-one-pair-of-root-cards-and-the-bundle-keeps-a-card-inventory/)).
+
+A bundle is named by its directory.
 
 :::note[Proposed]
-The bundle's name is the name of its directory, and no file stores it. `name` in `ritueel.yaml` is the name in the roots' subjects, `CN=Example Root A`, and is not the bundle's name: the bundle `acme` may have `name: Acme Corp`. Only the notation `acme/A` is the maintainer's; the name rule awaits his word.
+No file stores the bundle's name. `name` in `ritueel.yaml` is the name in the roots' subjects, `CN=Example Root A`, and is not the bundle's name: the bundle `acme` may have `name: Acme Corp`. Two bundles may then issue the same subject, and whether `name` must differ between bundles is open. Each bundle would have its own unlock key and recovery key, which open its key files as [ADR 0015](/decisions/0015-key-files-open-with-a-passkey-on-each-root-card-and-card-secrets-are-sealed-in-the-bundle/#the-key-file) says; with the passkey way a card shared by two bundles would then hold one credential for each, and with the slot 9d fallback the one 9d key of the card would be shared by them.
 :::
 
 ## The layout
 
 :::note[Proposed]
-The maintainer decided that the ledger is a plain write-once folder with one sub-folder for each ceremony, each naming the one before, and that the bundle holds an inventory of cards and the sealed secrets of cards. The file names inside them (`plan.json`, `attempt.json`, `record.json`, `transcript.txt`, `births.jsonl`, `cards.yaml`, `cards/NAME.sealed.age`) and the `adopted` member of `root.json` are the proposed shape, awaiting his word, and are fixed with the code.
+The maintainer decided that the ledger is a plain write-once folder with one sub-folder for each ceremony, each naming the one before, and that the bundle holds an inventory of cards and the sealed secrets of cards. The file names inside them (`plan.json`, `attempt.json`, `record.json`, `transcript.txt`, `births.jsonl`, `cards.yaml`, `cards/NAME.sealed.age`) and the `adopted` member of `root.json` are the proposed shape, awaiting the maintainer's word, and are fixed with the code.
 :::
 
 | Path | Written by | Holds |

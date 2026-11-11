@@ -7,7 +7,7 @@ sidebar:
 
 *Design phase: the layout described here is what the first version will write ([the bundle](/reference/bundle/)). The advice is ritueel's opinion; the reasons are in [ADR 0007](/decisions/0007-ritueel-teaches-and-its-tools-simplify-the-ceremonies/).*
 
-Every ceremony changes what outsiders can trust, and in a year nobody remembers what was done. ritueel keeps the written memory in one **bundle**, a folder of plain files with a fixed structure, that says which roots exist, where each lives, what was signed, and when. Its write-once part is the **ledger**: one sub-folder for each ceremony, holding its plan, record and transcript, each naming the one before it ([ceremony files](/reference/ceremony-record/)). Nothing needs git. This page is about how to keep the bundle, because the ledger alone is not enough.
+Every ceremony changes what outsiders can trust, and in a year nobody remembers what was done. ritueel keeps the written memory in one **bundle**, a directory of plain files with a fixed structure, that says which roots exist, where each lives, what was signed, and when. Its write-once part is the **ledger**: one sub-folder for each ceremony, holding its plan, record and transcript, each naming the one before it ([ceremony files](/reference/ceremony-record/)). Nothing needs git. This page is about how to keep the bundle, because the ledger alone is not enough.
 
 One bundle is one trust domain: the roots, the ledger and the cards of one organisation or one person. A person who also runs a company keeps two bundles, in two repositories, and backs up and restores each of them on its own.
 

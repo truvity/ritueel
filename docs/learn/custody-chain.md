@@ -47,7 +47,7 @@ Four questions for every link, written down before you need them:
 
 ## How ritueel records it
 
-ritueel keeps the chain in the bundle, a folder of plain files with a fixed structure that holds public material and, sealed, the secrets of cards. Its write-once part is the [ledger](/learn/the-ledger/):
+ritueel keeps the chain in the bundle, a directory of plain files with a fixed structure that holds public material and, sealed, the secrets of cards. Its write-once part is the [ledger](/learn/the-ledger/):
 
 - **The links it makes or signs.** For each root: its certificate or public key, where it lives, and the evidence of where it was born (the attestation of a card, or the description and policy of a cloud key). For each intermediate it certifies: the request it received, the proof that came with it, and the certificate or binding it returned.
 - **The ceremonies that made each link.** One record per ceremony, chained by hash to the one before it, saying what was signed, with which key, in which store, and what outsiders see as a result.

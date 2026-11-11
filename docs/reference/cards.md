@@ -172,7 +172,7 @@ One canonical JSON object ([the common rules](/reference/ceremony-record/#common
 | `store` | `piv`. |
 | `serial`, `firmware`, `form_factor` | As read from the chain, not from the card's own claim. |
 | `keys` | A list, one for each key: `{ "purpose", "row", "slot", "public_key_sha256", "pin_policy", "touch_policy" }`. `purpose` is `x509-root`, `openpgp-primary` or `ssh-break-glass`; `public_key_sha256` is the SHA-256 of the DER `SubjectPublicKeyInfo`; the policies are `never`, `once`, `always` and `cached` as the slot certificate states them. |
-| `bundle` | `{ "version", "sha256" }`: the attestation bundle that verified the chain. |
+| `attestation_bundle` | `{ "version", "sha256" }`: the attestation bundle that verified the chain. |
 | `extra_intermediates` | True when a file given by `--extra-intermediates` supplied an intermediate that the attestation bundle lacked. |
 | `checked_at` | The ceremony time. |
 

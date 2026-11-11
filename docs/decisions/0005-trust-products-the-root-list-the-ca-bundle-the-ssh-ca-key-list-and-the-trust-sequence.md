@@ -48,7 +48,7 @@ An intermediate certificate is revoked by a certificate revocation list, the sta
 
 ### The CA bundle
 
-The root certificates of the active roots in one PEM file, with the trust sequence in a comment line. It is deterministic: the same bundle gives the same bytes.
+The root certificates of the active roots in one PEM file, with the trust sequence in a comment line. It is deterministic: the same roots in the same order give the same bytes.
 
 ### The format
 

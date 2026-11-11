@@ -25,7 +25,7 @@ sidebar:
 | `ritueel status` | Lists roots, intermediates, the root list and unresolved attempts, with what expires when. | No |
 | `ritueel renew` | Later (M7). A cloud root only: renews, as the renewal role and under the declared renewal policy, what the bundle already holds, over the same keys, with the next trust sequence. Non-interactive, for the operator's scheduler; it never prompts, and refuses a card or software root with `not-in-policy`, an early run with `too-early`, and anything new with `key-not-in-ledger`. Exit codes 0, 1, 2, 3, 4 ([renewal under a policy](/reference/kms-root/#renewal-under-a-policy)). | No |
 | `ritueel handoff check STEM` | Runs every check of the [hand-off contract](/reference/hand-off-contract/) on the request `STEM`, and signs nothing. | No |
-| `ritueel ca-bundle build`, `ritueel keyring build` | Build the CA bundle and the [keyring package](/reference/keyring-package/) from the bundle. Same bundle, same bytes. | No |
+| `ritueel ca-bundle build`, `ritueel keyring build` | Build the CA bundle and the [keyring package](/reference/keyring-package/) from the bundle. The same roots in the bundle give the same bytes. | No |
 | `ritueel root-list verify`, `ssh-ca-keys verify`, `crl verify`, `keyring verify` | The host's and the relying party's side of each trust product: run its checks on a file, signing and writing nothing. | No |
 | `ritueel ssh-ca break-glass ROOT` | Makes the break-glass SSH CA of a root that was made before ritueel made one at `init` and `root add`, and lists it. | Yes |
 | `ritueel records list`, `records verify`, `records close` | Read the ceremony records, check their hash chain, and close an unresolved attempt. | `close` only |
