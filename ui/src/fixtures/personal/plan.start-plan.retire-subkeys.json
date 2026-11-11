@@ -3,7 +3,7 @@
     "id": "20261111T090000Z-personal-subkey-revoke",
     "intention": "INTENTION_RETIRE_SUBKEYS",
     "title": "Retire two superseded signing subkeys",
-    "summary": "Revokes the signing subkeys of 2022 and 2023 with the reason superseded, and rebuilds your public certificate. Nothing happens until you run it on the offline system.",
+    "summary": "Revokes the signing subkeys of 2022 and 2023 with the reason superseded, and rebuilds your public certificate. Nothing happens until you run it in the offline system.",
     "builtAt": "2026-11-11T09:00:00Z",
     "historyHeadSha256": "600c0123456789abcdef0123456789abcdef0123456789abcdef0123456789ab",
     "digest": "c41e08b50123456789abcdef0123456789abcdef0123456789abcdefdeadbeef",
@@ -39,7 +39,8 @@
         "title": "Revoke the two subkeys",
         "detail": "The primary revokes the signing subkey of 2022 and the signing subkey of 2023 with the reason superseded, dated on the day of the switch. Signatures made before that day keep their standing in sqv and gpgv; git verify-tag no longer verifies them.",
         "whatChanges": "Two subkeys end",
-        "learnPath": "/learn/revoke/"
+        "learnPath": "/learn/revoke/",
+        "signatureCount": 2
       },
       {
         "ordinal": 4,
@@ -93,6 +94,9 @@
     "cardSerials": [
       "00000001"
     ],
-    "runPlace": "RUN_PLACE_OFFLINE_SYSTEM"
+    "runPlace": "RUN_PLACE_OFFLINE_SYSTEM",
+    "signingStore": "STORE_SOFTWARE_FILE",
+    "signatureCount": 2,
+    "touchCount": 1
   }
 }

@@ -2,8 +2,8 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { Code, ConnectError, createClient } from '@connectrpc/connect';
-import { Intention, RunPlace, Severity } from './gen/ritueel/local/v1alpha1/common_pb';
-import { CardKind, InspectService } from './gen/ritueel/local/v1alpha1/inspect_service_pb';
+import { Intention, RunPlace, Severity, Store } from './gen/ritueel/local/v1alpha1/common_pb';
+import { CardKind, InspectService, SlotUse } from './gen/ritueel/local/v1alpha1/inspect_service_pb';
 import { PlanService } from './gen/ritueel/local/v1alpha1/plan_service_pb';
 import { createDemoTransport } from './api/demo';
 import { CARD_KIND_WORD } from './lib/words';
@@ -52,8 +52,8 @@ describe('every call of the contract answers', () => {
 
 // What each example bundle holds. One bundle is one trust domain, with its own history, roots and cards.
 const WORLD: Record<DemoBundle, { name: string; path: string; due: number; records: number; findings: number; alert: number; roots: number; delegated: number; cards: number; ceremonies: number; trustFiles: number }> = {
-  personal: { name: 'personal', path: '~/ritueel/personal', due: 0, records: 1, findings: 7, alert: 3, roots: 1, delegated: 0, cards: 6, ceremonies: 1, trustFiles: 2 },
-  acme: { name: 'acme', path: '~/ritueel/acme', due: 3, records: 10, findings: 1, alert: 0, roots: 2, delegated: 2, cards: 2, ceremonies: 10, trustFiles: 7 },
+  personal: { name: 'personal', path: '~/ritueel/personal', due: 0, records: 1, findings: 8, alert: 3, roots: 1, delegated: 0, cards: 6, ceremonies: 1, trustFiles: 2 },
+  acme: { name: 'acme', path: '~/ritueel/acme', due: 3, records: 10, findings: 1, alert: 0, roots: 2, delegated: 2, cards: 2, ceremonies: 10, trustFiles: 6 },
   globex: { name: 'globex', path: '~/ritueel/globex', due: 0, records: 1, findings: 1, alert: 0, roots: 1, delegated: 0, cards: 0, ceremonies: 1, trustFiles: 2 },
 };
 
@@ -193,7 +193,7 @@ describe('the fixtures tell the made-up world, one bundle at a time', () => {
 // The plan each bundle can save: its id is the ceremony name, so it is unique inside the bundle,
 // which is where a plan is saved. runPlace says where the plan runs.
 const SAVED: Record<DemoBundle, { id: string; place: RunPlace; stick: boolean }> = {
-  acme: { id: '20261111T090000Z-due', place: RunPlace.OFFLINE_SYSTEM, stick: true },
+  acme: { id: '20261111T090000Z-due', place: RunPlace.WORKSTATION, stick: false },
   personal: { id: '20261111T090000Z-personal-subkey-revoke', place: RunPlace.OFFLINE_SYSTEM, stick: true },
   globex: { id: '20261111T090000Z-root-add', place: RunPlace.WORKSTATION, stick: false },
 };
@@ -208,12 +208,12 @@ describe('a call that would act answers that this is a demo', () => {
     expect(p.plan?.runCommand).toContain(' run history/');
     expect(p.plan?.runCommand).toContain('/plan.json --confirm ');
     expect(p.plan?.savePath).toMatch(/^history\/[0-9]{8}T[0-9]{6}Z-[a-z0-9-]+\/plan\.json$/);
-    expect(p.plan?.runPlace).toBe(RunPlace.OFFLINE_SYSTEM);
+    expect(p.plan?.runPlace).toBe(RunPlace.WORKSTATION);
   });
-  it('every plan says where it runs: the offline system for cards and key files, the workstation for a cloud root', async () => {
+  it('every plan says where it runs: the offline system for a key file, the workstation for a root on cards or in the cloud', async () => {
     for (const [b, goal, place] of [
       ['personal', Intention.RETIRE_SUBKEYS, RunPlace.OFFLINE_SYSTEM],
-      ['acme', Intention.RENEW_DUE, RunPlace.OFFLINE_SYSTEM],
+      ['acme', Intention.RENEW_DUE, RunPlace.WORKSTATION],
       ['globex', Intention.ADOPT_KEY, RunPlace.WORKSTATION],
     ] as const) {
       setBundle(b);
@@ -575,6 +575,100 @@ describe('the commands in the made-up answers follow docs/reference/cli.md', () 
     setBundle('personal');
     const files = (await inspect.listTrustFiles({})).files;
     expect(files.map((x) => x.path.split('.').pop()).sort()).toEqual(['asc', 'pgp']);
+  });
+});
+
+describe('where a ceremony runs, and how many signatures a plan makes (record 0005)', () => {
+  const HERE = new URL('./', import.meta.url).pathname;
+  const readJson = (f: string) => JSON.parse(readFileSync(join(HERE, 'fixtures', f), 'utf8'));
+  type PlanJson = { id: string; runPlace: string; signingStore?: string; testRoot?: boolean; signatureCount?: number; touchCount?: number; steps: { ordinal: number; signatureCount?: number; requirements?: string[] }[] };
+  const planFiles = ['personal', 'acme', 'globex', 'common']
+    .flatMap((b) => readdirSync(join(HERE, 'fixtures', b)).filter((n) => /^plan\.start-plan\.[a-z-]+\.json$/.test(n) && !/not-now|refused|questions/.test(n)).map((n) => `${b}/${n}`));
+  const plansOf = planFiles.map((f) => ({ f, plan: readJson(f).plan as PlanJson }));
+
+  it('has plans to check (an empty walk proves nothing)', () => {
+    expect(plansOf.map((x) => x.f).sort()).toEqual(['acme/plan.start-plan.renew-due.json', 'common/plan.start-plan.adopt-key.json', 'globex/plan.start-plan.adopt-key.json', 'personal/plan.start-plan.retire-subkeys.json']);
+  });
+  it('the signatures of a plan are the sum of its steps, and the touches follow the store', () => {
+    for (const { f, plan } of plansOf) {
+      const sum = plan.steps.reduce((n, st) => n + (st.signatureCount ?? 0), 0);
+      expect(plan.signatureCount, f).toBe(sum);
+      expect(sum, f).toBeGreaterThan(0);
+      if (plan.signingStore === 'STORE_ROOT_CARDS') expect(plan.touchCount, f).toBe(plan.signatureCount);
+      if (plan.signingStore === 'STORE_CLOUD_KMS') expect(plan.touchCount ?? 0, f).toBe(0);
+      if (plan.signingStore === 'STORE_SOFTWARE_FILE') expect(plan.touchCount, f).toBe(1);
+    }
+  });
+  it('the plan of acme asks for a touch in every step that signs, and for none in a step that does not', () => {
+    const plan = readJson('acme/plan.start-plan.renew-due.json').plan as PlanJson;
+    for (const st of plan.steps) expect(st.requirements?.includes('REQUIREMENT_TOUCH') ?? false, `step ${st.ordinal}`).toBe((st.signatureCount ?? 0) > 0);
+  });
+  it('a key file is used in the offline system, a root on cards or in the cloud on the workstation', () => {
+    for (const { f, plan } of plansOf) {
+      const want = plan.signingStore === 'STORE_SOFTWARE_FILE' && !plan.testRoot ? 'RUN_PLACE_OFFLINE_SYSTEM' : 'RUN_PLACE_WORKSTATION';
+      expect(plan.runPlace, f).toBe(want);
+      expect(['STORE_SOFTWARE_FILE', 'STORE_ROOT_CARDS', 'STORE_CLOUD_KMS'], f).toContain(plan.signingStore);
+    }
+  });
+  it('the plan as the transport answers it carries the same numbers', async () => {
+    setBundle('acme');
+    const q = await plans.startPlan({ intention: Intention.RENEW_DUE });
+    const p = await plans.startPlan({ intention: Intention.RENEW_DUE, answers: q.questions.map((x) => ({ questionId: x.id, optionIds: x.defaultOptionIds })) });
+    expect(p.plan?.signingStore).toBe(Store.ROOT_CARDS);
+    expect(p.plan?.signatureCount).toBe(7);
+    expect(p.plan?.touchCount).toBe(7);
+    expect(p.plan?.cardSerials).toEqual(['00000012']);
+  });
+  it('every ceremony says where it ran, and acme shows both places', async () => {
+    const seen = new Map<DemoBundle, Set<RunPlace>>();
+    for (const b of BUNDLES) {
+      setBundle(b);
+      const list = (await inspect.listCeremonies({})).ceremonies;
+      for (const c of list) {
+        expect(c.runPlace, `${b} ${c.id}`).not.toBe(RunPlace.UNSPECIFIED);
+        seen.set(b, (seen.get(b) ?? new Set()).add(c.runPlace));
+      }
+    }
+    expect([...(seen.get('acme') ?? [])].sort()).toEqual([RunPlace.OFFLINE_SYSTEM, RunPlace.WORKSTATION]);
+    // The first record of acme made the roots in the offline system; the later ones ran on the workstation.
+    setBundle('acme');
+    const acme = (await inspect.listCeremonies({})).ceremonies;
+    expect(acme.filter((c) => c.runPlace === RunPlace.OFFLINE_SYSTEM).map((c) => c.id)).toEqual(['20231202T142000Z-init']);
+  });
+  it('no trust file ends .rpm or .deb (the release pipeline builds the package), and every path is in a numbered set', async () => {
+    for (const b of BUNDLES) {
+      setBundle(b);
+      for (const f of (await inspect.listTrustFiles({})).files) {
+        expect(f.path, `${b} ${f.name}`).not.toMatch(/\.(rpm|deb)$/);
+        expect(f.path, `${b} ${f.name}`).toMatch(/^trust\/[0-9]+\//);
+      }
+    }
+  });
+  it('the personal root cards share their pair: row 3 is declared as another bundle, row 4 of card two is occupied by nobody', async () => {
+    setBundle('personal');
+    const cards = (await inspect.listCards({})).cards.filter((c) => c.kind === CardKind.ROOT);
+    expect(cards.map((c) => c.serial)).toEqual(['00000001', '00000002']);
+    for (const c of cards) {
+      const row3 = c.piv?.rows.find((r) => r.number === 3);
+      expect(row3?.slots.length, c.serial).toBe(4);
+      for (const sl of row3?.slots ?? []) {
+        expect([SlotUse.OTHER_BUNDLE, SlotUse.UNSPECIFIED], `${c.serial} ${sl.id}`).toContain(sl.use);
+        expect(sl.publicKeySha256, `${c.serial} ${sl.id}`).toBe('');
+        if (sl.use === SlotUse.OTHER_BUNDLE) expect(sl.rootLabel, `${c.serial} ${sl.id}`).toBe('');
+      }
+      expect(row3?.slots.some((sl) => sl.use === SlotUse.OTHER_BUNDLE), c.serial).toBe(true);
+    }
+    const row4 = cards[1].piv?.rows.find((r) => r.number === 4);
+    expect(row4?.slots.some((sl) => sl.use === SlotUse.UNSPECIFIED && sl.state !== 0 && sl.purpose.includes('no bundle declares')), 'row 4 of 00000002').toBe(true);
+    expect(cards[0].piv?.rows.find((r) => r.number === 4)?.slots.every((sl) => sl.purpose === ''), 'row 4 of 00000001').toBe(true);
+  });
+  it('the finding undeclared-row exists in the personal bundle only', async () => {
+    const where: DemoBundle[] = [];
+    for (const b of BUNDLES) {
+      setBundle(b);
+      if ((await inspect.listFindings({})).findings.some((f) => f.id === 'undeclared-row')) where.push(b);
+    }
+    expect(where).toEqual(['personal']);
   });
 });
 

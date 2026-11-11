@@ -12,7 +12,7 @@
       "lastSeenAt": "2026-06-02T14:20:00Z",
       "lastCheckedAt": "2026-06-02T14:20:00Z",
       "oneTimeCodesOff": true,
-      "roleSummary": "Root card. Holds the root acme/A in row 2. Its partner root, acme/B, is on root card B. Only goes into the offline system.",
+      "roleSummary": "Root card. Holds the root acme/A in row 2. Its partner root, acme/B, is on root card B. Used on the workstation, with a touch for every signature, or in the offline system.",
       "rootLabels": [
         "A"
       ],
@@ -228,7 +228,7 @@
       "lastSeenAt": "2026-06-02T14:20:00Z",
       "lastCheckedAt": "2026-06-02T14:20:00Z",
       "oneTimeCodesOff": true,
-      "roleSummary": "Root card. Holds the root acme/B in row 2. Its partner root, acme/A, is on root card A. Only goes into the offline system.",
+      "roleSummary": "Root card. Holds the root acme/B in row 2. Its partner root, acme/A, is on root card A. Used on the workstation, with a touch for every signature, or in the offline system.",
       "rootLabels": [
         "B"
       ],
