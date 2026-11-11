@@ -73,7 +73,7 @@ function StateSwitch() {
   return (
     <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
       <span id="state-switch-label" className="text-sm font-semibold">
-        Try the states
+        Page state
       </span>
       <ToggleButtonGroup
         exclusive
@@ -99,7 +99,7 @@ function BundleSwitch() {
   return (
     <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
       <span id="bundle-switch-label" className="text-sm font-semibold">
-        Try a bundle
+        Example bundle
       </span>
       <ToggleButtonGroup
         exclusive

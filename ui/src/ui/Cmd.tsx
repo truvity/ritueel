@@ -25,7 +25,7 @@ export function Cmd({ children, label = 'Run this in a terminal' }: { children: 
       await navigator.clipboard.writeText(children);
       setDone(true);
       window.setTimeout(() => setDone(false), 1600);
-      toast(isDemo ? 'Copied. This is a demo: the command is an example, and nothing ran.' : 'Copied.');
+      toast(isDemo ? 'Copied. This is a demo: the ritueel command line is not built yet, so this command is an example.' : 'Copied.');
     } catch {
       setDone(false);
       toast('Could not copy. Select the command and copy it by hand.');
@@ -52,6 +52,11 @@ export function Cmd({ children, label = 'Run this in a terminal' }: { children: 
           {done ? 'Copied' : 'Copy'}
         </Button>
       </div>
+      {isDemo ? (
+        <p className="mt-1 text-sm text-dim" role="note">
+          Example only. The ritueel command line is not built yet.
+        </p>
+      ) : null}
       {canCopy ? null : (
         <p className="mt-1 text-sm text-dim" role="note">
           This command holds characters, or is longer than {COMMAND_CAP} characters, so the page will not copy it. Read it in the terminal.
