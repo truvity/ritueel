@@ -16,7 +16,7 @@
         "requirements": [
           "REQUIREMENT_CONFIRM_DIGEST_AT_TERMINAL"
         ],
-        "learnPath": "/learn/the-plan-and-its-digest/"
+        "learnPath": "/learn/ceremonies/"
       },
       {
         "ordinal": 2,
@@ -32,21 +32,20 @@
         "cardSerials": [
           "00000001"
         ],
-        "learnPath": "/learn/opening-a-key-file/"
+        "learnPath": "/reference/software-store/#opening-a-key-file"
       },
       {
         "ordinal": 3,
         "title": "Revoke the two subkeys",
         "detail": "The primary revokes the signing subkey of 2022 and the signing subkey of 2023 with the reason superseded, dated on the day of the switch. Signatures made before that day keep their standing in strict verifiers.",
         "whatChanges": "Two subkeys end",
-        "learnPath": "/learn/revoking-a-subkey/"
+        "learnPath": "/learn/revoke/"
       },
       {
         "ordinal": 4,
         "title": "Rebuild the certificate",
         "detail": "Writes your public certificate with the two revocations. Publishing it to a key server is left to you.",
-        "whatChanges": "A new public certificate in the folder",
-        "learnPath": "/learn/publishing-a-key/"
+        "whatChanges": "A new public certificate in the folder"
       },
       {
         "ordinal": 5,

@@ -460,7 +460,7 @@ export type Finding = Message<"ritueel.local.v1alpha1.Finding"> & {
 
   /**
    * A path on the ritueel site that teaches the point, for example
-   * "/learn/revoking-a-subkey/". The page links to it.
+   * "/learn/revoke/". The page links to it.
    *
    * @generated from field: string learn_path = 10;
    */

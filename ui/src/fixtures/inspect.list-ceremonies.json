@@ -27,7 +27,7 @@
       "cardSerials": [
         "00000001"
       ],
-      "guidePath": "/learn/adopting-your-openpgp-key/"
+      "guidePath": "/guides/personal-openpgp/#if-you-already-have-a-primary"
     },
     {
       "id": "2026-09-15-adopt-globex-cloud-root",
@@ -44,7 +44,7 @@
         "globex-cloud"
       ],
       "trustSequence": 8,
-      "guidePath": "/learn/adopting-a-cloud-key/"
+      "guidePath": "/reference/kms-root/#adopting-an-existing-key"
     },
     {
       "id": "2026-06-02-card-check",
@@ -64,7 +64,7 @@
         "00000001",
         "00000002"
       ],
-      "guidePath": "/learn/checking-your-cards/"
+      "guidePath": "/reference/cards/#every-six-months"
     },
     {
       "id": "2026-01-27-renew-acme-release",
@@ -85,7 +85,7 @@
         "00000001"
       ],
       "trustSequence": 7,
-      "guidePath": "/learn/renewing-a-delegated-key/"
+      "guidePath": "/guides/re-sign-yearly/"
     },
     {
       "id": "2025-12-02-renew-acme-ca",
@@ -106,7 +106,7 @@
         "00000001"
       ],
       "trustSequence": 6,
-      "guidePath": "/learn/renewing-a-delegated-key/"
+      "guidePath": "/guides/re-sign-yearly/"
     },
     {
       "id": "2025-06-09-card-check",
@@ -126,7 +126,7 @@
         "00000001",
         "00000002"
       ],
-      "guidePath": "/learn/checking-your-cards/"
+      "guidePath": "/reference/cards/#every-six-months"
     },
     {
       "id": "2025-01-28-renew-acme-release",
@@ -147,7 +147,7 @@
         "00000001"
       ],
       "trustSequence": 5,
-      "guidePath": "/learn/renewing-a-delegated-key/"
+      "guidePath": "/guides/re-sign-yearly/"
     },
     {
       "id": "2024-12-03-renew-acme-ca",
@@ -168,7 +168,7 @@
         "00000001"
       ],
       "trustSequence": 4,
-      "guidePath": "/learn/renewing-a-delegated-key/"
+      "guidePath": "/guides/re-sign-yearly/"
     },
     {
       "id": "2024-06-10-card-check",
@@ -188,7 +188,7 @@
         "00000001",
         "00000002"
       ],
-      "guidePath": "/learn/checking-your-cards/"
+      "guidePath": "/reference/cards/#every-six-months"
     },
     {
       "id": "2024-01-20-add-acme-release",
@@ -209,7 +209,7 @@
         "00000001"
       ],
       "trustSequence": 3,
-      "guidePath": "/learn/release-keys/"
+      "guidePath": "/learn/openpgp-release-keys/"
     },
     {
       "id": "2023-12-09-add-acme-ca",
@@ -230,7 +230,7 @@
         "00000001"
       ],
       "trustSequence": 2,
-      "guidePath": "/learn/the-hand-off/"
+      "guidePath": "/reference/hand-off-contract/"
     },
     {
       "id": "2023-12-02-init-acme",
@@ -249,7 +249,7 @@
         "00000002"
       ],
       "trustSequence": 1,
-      "guidePath": "/learn/choosing-where-a-root-lives/"
+      "guidePath": "/learn/key-stores/#which-path-is-yours"
     }
   ]
 }
