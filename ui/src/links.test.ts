@@ -184,7 +184,7 @@ describe('the demo links only to pages the site has', () => {
       expect(d.runCommand.slice(prefix.length), name).toMatch(/^[0-9a-f]{64}$/);
     }
     // No plan is written in a pending area any more.
-    expect(localPaths.filter((f) => /pending|\.plan$/.test(f.value)).map((f) => `${f.file} ${f.at}: ${f.value}`)).toEqual([]);
+    expect(localPaths.filter((f) => /pending/.test(f.value) || f.value.endsWith('.plan')).map((f) => `${f.file} ${f.at}: ${f.value}`)).toEqual([]);
   });
 
   it('finds the site pages and their headings', () => {
