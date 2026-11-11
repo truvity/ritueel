@@ -9,9 +9,10 @@ sidebar:
 ---
 
 import Figure from '../../site/src/components/Figure.astro';
-import Proposed from '../../site/src/components/Proposed.astro';
 
 ritueel guides each use of a root key (the top key of your certificates, or your OpenPGP primary key) and keeps a record of it. A root is the key that others trust without further proof. A ceremony is the planned, recorded occasion on which a root is used. Below: the five ideas, then two real jobs drawn as comics. Jump to [sign an intermediate](#sign-an-intermediate) or [bind the subkeys](#bind-the-subkeys-of-your-card).
+
+A plan is the sheet that fixes what will be signed; its digest is a short fingerprint of it. The offline system is a computer started from a USB stick, with no network. A key file is an encrypted file that holds a software key.
 
 ritueel is in its design phase: the program does not exist yet. These pictures show how it is designed to work.
 
@@ -20,7 +21,7 @@ ritueel is in its design phase: the program does not exist yet. These pictures s
 <Figure name="ideas">
 
 1. [One set of ceremonies](/how-it-works/#every-ceremony-has-six-steps) for a key file, root cards or a cloud key service: the steps are the same, the guarantees are not.
-2. [Prefer a key that cannot be copied](/how-it-works/cards/): born on a card or in a cloud key service, not in a file. It may be used on your own workstation, under four conditions; a key in a file is used only in the offline system.
+2. [Prefer a key that cannot be copied](/how-it-works/cards/): born on a card or in a cloud key service, not in a file. It may be used on your own workstation, under conditions that depend on the kind of key; a key in a file is used only in the offline system.
 3. [One bundle](/how-it-works/bundle-and-stick/) is one trust domain: its roots, its history, its trust files and what is known about the cards. A company and a person keep two bundles.
 4. [Requests in, answers out](/how-it-works/#sign-an-intermediate): other systems use files, and a plan or a request made in one place can travel by any channel and run in another.
 5. [A defined workflow](/how-it-works/#every-ceremony-has-six-steps): ritueel says what is due, and every ceremony has the same six steps.
@@ -31,17 +32,24 @@ ritueel is in its design phase: the program does not exist yet. These pictures s
 
 Every use of a root is a ceremony. Only step 4 uses the root.
 
-<Figure name="ceremony" />
+<Figure name="ceremony">
+  The six steps of every ceremony: plan, confirm, reserve, sign, verify, record.
+</Figure>
 
 ## Sign an intermediate
 
-A requester, such as sluis (a system that issues certificates for its servers), needs a certificate for its intermediate key. A root that cannot be copied, on a card or in a cloud key service, may sign on your workstation under four conditions: a touch for every signature, the number of signatures stated in the plan, no retry of a failed touch, and a check against the plan on a second device ([record 0005](../decisions/0005-a-ceremony-and-where-it-runs.md)). A key in a file is used only in the offline system, which stays available for any root ([the stick](/how-it-works/bundle-and-stick/)).
+A requester is a system that asks for a certificate, such as sluis (a system that issues certificates every day and holds intermediate keys). It needs a certificate for its intermediate key. A root that cannot be copied, on cards or in a cloud key service, may sign on your workstation ([record 0005](../decisions/0005-a-ceremony-and-where-it-runs.md)). The conditions:
 
-<Figure name="sign-intermediate" />
+- A touch for every signature. This is for a root on cards. A cloud key has no touch: for a cloud root the typed digest and the role session stand, and its audit trail records every signature.
+- The number of signatures stated in the plan.
+- No retry of a failed touch.
+- A check against the plan on a second device.
 
-<Proposed>
-  A cloud key has no touch, so the first condition is for cards. For a cloud root the typed digest and the role session stand, and the other three conditions hold. The maintainer is to confirm this reading ([record 0005](../decisions/0005-a-ceremony-and-where-it-runs.md)).
-</Proposed>
+The last three hold for both kinds. A key in a file is used only in the offline system, which stays available for any root ([the stick](/how-it-works/bundle-and-stick/)).
+
+<Figure name="sign-intermediate">
+  Signing the intermediate of a requester with a root card, on your workstation.
+</Figure>
 
 ## Bind the subkeys of your card
 
