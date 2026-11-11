@@ -16,35 +16,35 @@
         "requirements": [
           "REQUIREMENT_CONFIRM_DIGEST_AT_TERMINAL"
         ],
-        "learnPath": "/learn/the-plan-and-its-digest/"
+        "learnPath": "/learn/ceremonies/"
       },
       {
         "ordinal": 2,
         "title": "Read the key",
         "detail": "Asks the cloud provider for the public key and the policy of the key, through the read-only role named in the configuration.",
         "whatChanges": "Nothing changes",
-        "learnPath": "/learn/adopting-a-cloud-key/"
+        "learnPath": "/reference/kms-root/#adopting-an-existing-key"
       },
       {
         "ordinal": 3,
         "title": "Check the policy",
         "detail": "Checks the policy against the rules: digests only, no new replicas and no move of the primary Region except for the break-glass principal. If a rule fails, the plan stops here and says which.",
         "whatChanges": "Nothing changes",
-        "learnPath": "/learn/adopting-a-cloud-key/"
+        "learnPath": "/reference/kms-root/#adopting-an-existing-key"
       },
       {
         "ordinal": 4,
         "title": "Fix the creation time",
         "detail": "The key has no OpenPGP creation time of its own, so ritueel fixes one and records it. It cannot change later without changing the fingerprint.",
         "whatChanges": "A creation time in the record",
-        "learnPath": "/learn/adopting-a-cloud-key/"
+        "learnPath": "/reference/kms-root/#adopting-an-existing-key"
       },
       {
         "ordinal": 5,
         "title": "Write the certificate",
         "detail": "The key signs its own certificate, digest only, through the provider. The root is added to the next root list.",
         "whatChanges": "A new root in the folder",
-        "learnPath": "/learn/trust-files/"
+        "learnPath": "/reference/root-list/"
       },
       {
         "ordinal": 6,

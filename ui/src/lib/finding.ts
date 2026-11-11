@@ -36,7 +36,7 @@ export function subjectHref(s: Subject | undefined, personalLabel = 'personal'):
   }
 }
 
-/** A guide on the site. The program gives a path such as /learn/expiry/; the link goes to the site. */
+/** A guide on the site. The program gives a path such as /learn/revoke/; the link goes to the site. */
 export function learnUrl(path: string): string {
   return siteUrl(learnPathOk(path) ? path : '');
 }

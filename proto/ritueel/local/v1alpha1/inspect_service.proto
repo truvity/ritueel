@@ -181,7 +181,7 @@ message Finding {
   // The wizard goal that plans the fix; unspecified if there is none.
   Intention fix_intention = 9;
   // A path on the ritueel site that teaches the point, for example
-  // "/learn/revoking-a-subkey/". The page links to it.
+  // "/learn/revoke/". The page links to it.
   string learn_path = 10;
   // True when the page could tell this from a public key alone.
   bool visible_from_public_key = 11;

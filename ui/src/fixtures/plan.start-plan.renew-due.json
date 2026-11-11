@@ -16,7 +16,7 @@
         "requirements": [
           "REQUIREMENT_CONFIRM_DIGEST_AT_TERMINAL"
         ],
-        "learnPath": "/learn/the-plan-and-its-digest/"
+        "learnPath": "/learn/ceremonies/"
       },
       {
         "ordinal": 2,
@@ -30,7 +30,7 @@
           "00000001",
           "00000002"
         ],
-        "learnPath": "/learn/checking-your-cards/"
+        "learnPath": "/reference/cards/#what-is-checked-on-a-card"
       },
       {
         "ordinal": 3,
@@ -46,7 +46,7 @@
           "00000001",
           "00000002"
         ],
-        "learnPath": "/learn/checking-your-cards/"
+        "learnPath": "/reference/cards/#every-six-months"
       },
       {
         "ordinal": 4,
@@ -61,7 +61,7 @@
         "cardSerials": [
           "00000001"
         ],
-        "learnPath": "/learn/renewing-a-delegated-key/"
+        "learnPath": "/guides/re-sign-yearly/"
       },
       {
         "ordinal": 5,
@@ -76,7 +76,7 @@
         "cardSerials": [
           "00000001"
         ],
-        "learnPath": "/learn/renewing-a-delegated-key/"
+        "learnPath": "/guides/re-sign-yearly/"
       },
       {
         "ordinal": 6,
@@ -92,7 +92,7 @@
           "00000001",
           "00000002"
         ],
-        "learnPath": "/learn/trust-files/"
+        "learnPath": "/reference/root-list/"
       },
       {
         "ordinal": 7,
