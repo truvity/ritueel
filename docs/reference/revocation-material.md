@@ -24,7 +24,7 @@ For each primary key, one **key revocation signature** (RFC 9580, section 5.2.1.
 
 Each signature is version 4, SHA-384, over the primary's public key packet alone. Its hashed area holds the signature creation time (the ceremony time), the reason for revocation (the code and the word of the table), and the issuer fingerprint; its unhashed area holds the issuer key ID ([the packet rule](/reference/hand-off-contract/#issuer-key-id)). It is signed through the store that holds the primary, so a card key takes a touch: one for each reason, counted in the plan.
 
-There is no designated revoker: RFC 9580 deprecates the mechanism ([record 0007](../decisions/0007-changing-and-losing-a-root.md)).
+There is no designated revoker ([record 0007](../decisions/0007-changing-and-losing-a-root.md), rule 20). RFC 9580 deprecates the mechanism.
 
 ## Where it is written
 

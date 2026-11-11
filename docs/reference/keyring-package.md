@@ -1,17 +1,21 @@
 ---
 title: Keyring package
-description: The name, version, files, build and verify steps of the keyring package that ritueel builds as .deb, .rpm and plain files, and what older rpm support means.
+description: The keyring file that ritueel makes, and the proposed name, version, files, build and verify steps of the keyring package that the release pipeline builds from it as .deb, .rpm and plain files, and what older rpm support means.
 sidebar:
   order: 3
 ---
 
-*Not built yet. The package is decided in [record 0009](../decisions/0009-release-keys-and-the-keyring.md); the builder is [issue #15](https://github.com/truvity/ritueel/issues/15), in M5. This page is the specification the builder follows: what is in the package, how it is built and checked, and which installers it is tested on. What it says was measured carries a date.*
+*Not built yet. The keyring file and the package are decided in [record 0009](../decisions/0009-release-keys-and-the-keyring.md); the code is [issue #15](https://github.com/truvity/ritueel/issues/15), in M5. This page is the specification of the package and of the file it is built from: what is in them, how the package is built and checked, and which installers it is tested on. What it says was measured carries a date.*
 
-The keyring package carries the public certificates of every active primary to apt, rpm and `gpg` users, so that a signature by any subkey a primary bound verifies. ritueel builds it. It does not sign or publish it: the user's repository signs it with its current subkey ([record 0009](../decisions/0009-release-keys-and-the-keyring.md)).
+The keyring package carries the public certificates of every active primary to apt, rpm and `gpg` users, so that a signature by any subkey a primary bound verifies. ritueel makes the keyring file, which holds those certificates. The release pipeline builds the package from the file (`.deb`, `.rpm` and plain files) and publishes it. ritueel does not build, sign or publish the package: the user's repository signs it with its current subkey ([record 0009](../decisions/0009-release-keys-and-the-keyring.md), rules 20 to 22).
+
+:::note[Proposed]
+The records fix the content of the keyring file and the name and version of the package. They do not fix the file set of the package, the build steps, the byte-identical rule, `ritueel keyring verify` or the installer matrix below, which are the proposed specification for the pipeline's builder and its checks, awaiting the maintainer. Below, "the builder" is the pipeline's builder.
+:::
 
 ## Name and version
 
-- **Name.** `<name>-keyring`, where `<name>` is given to `ritueel keyring build --name`: lower-case letters, digits and hyphens, 1 to 63 characters, starting with a letter or a digit. The same name for the `.deb` and the `.rpm`, and for every version, so an upgrade replaces the old keyring.
+- **Name.** `<name>-keyring`, where `<name>` is the name the pipeline gives: lower-case letters, digits and hyphens, 1 to 63 characters, starting with a letter or a digit. The same name for the `.deb` and the `.rpm`, and for every version, so an upgrade replaces the old keyring.
 - **Version.** `<year>.<sequence>`: the year of the ceremony, then the [trust sequence](../decisions/0006-bundle-history-and-trust-files.md). A package manager compares the year first, then the sequence as a number, so a newer package always compares newer (`2026.10` after `2026.9`).
 - **Fields.** Architecture-independent, no dependencies, no scripts. The maintainer is the release identity of `ritueel.yaml` (`<name> Release <release_address>`), never a person.
 
@@ -27,9 +31,9 @@ The package puts these files on the system. The same files are written beside th
 | `<name>-keyring.fingerprints` | plain | One line for each primary: fingerprint, role, creation and expiry. |
 | `SHA256SUMS` | plain | Digests of the files above and of the two packages. |
 
-The builder writes them under `trust/<number>/keyring/`: the two packages, `<name>-keyring_<version>_all.deb` and `<name>-keyring-<version>-1.noarch.rpm`, and the plain files beside them. A `.deb` holds only the first two files, and a `.rpm` the first three. The key files of a package do not replace a user's own keyring: apt reads `Signed-By`, and rpm imports only when told to.
+ritueel writes the keyring file under `trust/<number>/keyring/`. The pipeline's builder makes from it the two packages, `<name>-keyring_<version>_all.deb` and `<name>-keyring-<version>-1.noarch.rpm`, and the plain files beside them. A `.deb` holds only the first two files, and a `.rpm` the first three. The key files of a package do not replace a user's own keyring: apt reads `Signed-By`, and rpm imports only when told to.
 
-Beside the packages, not in them, in `trust/<number>/revocations/`: the revocation signature of every primary or subkey that was revoked hard and dropped from this version, armoured, one file for each, named by the fingerprint it revokes. The holder gives a primary's stored revocation signature to `root revoke`, which checks its digest against `revocation_sha256` of the root ([the bundle](/reference/bundle/#rootjson)) before it publishes it; a subkey's revocation is made at the ceremony.
+Beside the packages, not in them, in `trust/<number>/revocations/`: the revocation signature of every primary or subkey that was revoked hard and dropped from this version, armoured, one file for each, named by the fingerprint it revokes. The holder gives a primary's stored revocation signature to `root revoke`, which checks its digest against the entry of `revocations` for that reason in the root's `root.json` ([the bundle](/reference/bundle/#rootjson)) before it publishes it; a subkey's revocation is made at the ceremony.
 
 ## What the certificates hold
 
@@ -39,25 +43,25 @@ For each active primary, in the order of the root list, one complete public cert
 2. The user ID packet (the release identity) with every certification ritueel made on it, in creation order. The yearly extension adds one each time; a verifier takes the newest as of the time it checks.
 3. For every subkey the primary ever bound, in the order of the subkey's creation time and then its fingerprint: the subkey packet, every binding signature ritueel made for it (each with its embedded back-signature), in creation order, then its subkey revocation if it was retired softly.
 
-Left out: an encryption subkey, a third-party certification, a notation, and anything revoked hard, which means a whole certificate of a revoked primary and the whole subkey of one revoked as compromised ([record 0009](../decisions/0009-release-keys-and-the-keyring.md)). The binding signatures are kept even when newer ones exist, so that a signature made before a renewal verifies at its own time. The certificates are read from the bundle: the primary's `openpgp.pgp` and the bindings in `answers/`.
+Left out: an encryption subkey, a third-party certification, a notation, and anything revoked hard, which means a whole certificate of a revoked primary and the whole subkey of one revoked as compromised ([record 0009](../decisions/0009-release-keys-and-the-keyring.md)). The binding signatures are kept even when newer ones exist, so that a signature made before a renewal verifies at its own time. The certificates are read from the bundle: the primary's `openpgp.pgp` and the bindings in the answers beside the requests, in `requests/<name>/` ([record 0006](../decisions/0006-bundle-history-and-trust-files.md)).
 
 The binary form is the packets, concatenated; the armoured form is a single block of the same bytes (RFC 9580, section 6) with the header `-----BEGIN PGP PUBLIC KEY BLOCK-----`, no `Version` or `Comment` header, Base64 in lines of 64 characters and the CRC-24 line, because every reader of armour reads it.
 
 ## Build
 
-The build needs neither `dpkg-deb` nor `rpmbuild`, and the same bundle gives the same bytes. In order:
+Proposed: the build needs neither `dpkg-deb` nor `rpmbuild`, and the same bundle gives the same bytes. In order:
 
 1. **Read** the newest root list of the bundle ([the root list](/reference/root-list/)) and the certificates it names. The list's `sequence` and the year of its `signed_at` give the version. A test root and a real root are never mixed, as for the CA bundle.
 2. **Assemble** the certificates as above, drop what is revoked hard, and write the binary and armoured forms and one armoured file for each primary.
 3. **Write the `.deb`**: an `ar` archive of three members in this order, `debian-binary` (`2.0`), `control.tar` and `data.tar`, then the `.rpm`: the lead, the header with the tags a noarch package of files needs, and a `cpio` payload (`newc` format).
 4. **Fix every variable field**: the build time and every file's modification time is the ceremony time (`SOURCE_DATE_EPOCH`), entries are sorted, owner and group are root (numeric 0), files have mode 0644 and directories 0755, there are no extended attributes, and the `.rpm` has no build host or signature.
-5. **Verify** the result ([below](/reference/keyring-package/#verify)) and only then write it out. ritueel never writes a package it has not read back.
+5. **Verify** the result ([below](/reference/keyring-package/#verify)) and only then write it out. The builder never writes a package it has not read back.
 
 **Compression.** The tar and cpio members are not compressed. They are a few kilobytes of keys, and a compressor's output changes with its version, which would break the rule that the same bundle gives the same bytes across toolchains. `dpkg-deb` 1.23.7 reads an uncompressed `control.tar` and `data.tar` (checked 2026-11-01). Whether the oldest rpm in the matrix reads an uncompressed payload is part of the matrix below; if one refuses it, the payload is gzip from one pinned implementation, and the goldens move with the pin.
 
 **The writer.** An archive writer is chosen for `ar`, `tar`, `cpio` and the rpm header: a library such as nfpm, or code of our own. The criteria are the ones above and in [issue #15](https://github.com/truvity/ritueel/issues/15): no external tool, byte-identical output on a second run, and a reader of its own that the verify step uses, so that nothing is checked by the code that wrote it.
 
-ritueel does not sign the package. A pipeline signs the `.deb` and the `.rpm`, or the `Release` file of its repository, with the current subkey. The pipeline's own steps are a page of the guide, not a feature of ritueel.
+ritueel does not sign the package. The user's repository signs the `.deb` and the `.rpm`, or the `Release` file of its repository, with the current subkey. The pipeline's own steps are a page of the guide, not a feature of ritueel.
 
 ## Verify
 
