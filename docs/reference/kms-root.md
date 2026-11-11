@@ -64,7 +64,7 @@ At `init` and at `root add --store aws-kms`, for each of the three keys of a roo
 ## Adopting an existing key
 
 :::note[Proposed]
-Four details on this page go beyond what the maintainer decided on 2026-11-10 and 11, and await his word: that the identity of an adopted key is its ARN and not its alias; that ritueel never edits the policy of an adopted key; that the break-glass principal can never `kms:Sign`; and the check `kms-policy-replica` (3b) with its reason code.
+Four details on this page go beyond what the maintainer decided, and await his word: that the identity of an adopted key is its ARN and not its alias; that ritueel never edits the policy of an adopted key; that the break-glass principal can never `kms:Sign`; and the check `kms-policy-replica` (3b) with its reason code.
 :::
 
 A cloud root may be a key that already exists in the service ([ADR 0018](/decisions/0018-a-cloud-root-may-be-an-existing-key-that-ritueel-adopts/#adopting-a-key)). The operator's own infrastructure code may own the key, its alias and its policy. ritueel then does not create the key. At `init` and `root add` it:
@@ -94,7 +94,7 @@ The reference key policy: the same text for every key, with the role ARNs and th
 
 ## A later option: a hardware-key sign-in
 
-**Not required, not built and not checked by ritueel.** The maintainer dropped it on 2026-11-10 and 2026-11-11 and it may come back ([ADR 0013](/decisions/0013-the-kms-ceremony-role-trusts-a-hardware-sign-in-session-tag/)). This section keeps what was learned, so that it need not be found again. If it returns, the decision is rewritten and this section becomes the detail.
+**Not required, not built and not checked by ritueel.** The maintainer dropped it for now and it may come back ([ADR 0013](/decisions/0013-the-kms-ceremony-role-trusts-a-hardware-sign-in-session-tag/)). This section keeps what was learned, so that it need not be found again. If it returns, the decision is rewritten and this section becomes the detail.
 
 A KMS root has no card, so a gate on the ceremony role is the only way to ask for a person with a hardware key. AWS does not set `aws:MultiFactorAuthPresent` for a federated sign-in (read 2026-11-06, [IAM condition keys](https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_condition-keys.html)). The way AWS documents is a session tag that the identity provider sets from the sign-in (read 2026-11-06, [session tags](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_session-tags.html)):
 

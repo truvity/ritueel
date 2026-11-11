@@ -12,14 +12,14 @@ A ceremony happens about once a year, so nobody is practised, and the day you ne
 ## What you start with
 
 - The ritueel repository, or the drill scripts from it, and a scratch directory.
-- For a walk-through on cards: two test cards, prepared as in [Prepare a root card](/guides/prepare-a-root-card/), whose serials you put in the environment. Never a card that holds or will hold a real root.
+- For a walk-through on cards: two rehearsal cards, prepared as in [Prepare a root card](/guides/prepare-a-root-card/), whose serials you put in the environment. Never a card that holds or will hold a real root.
 - For the restore check: a clean machine, the directory cloned, your revocation files in reach, the last record's digest from where you kept it, and your signers file.
 
 ## Steps: a walk-through
 
 1. **Pick the drill.** The list is in [the reference](/reference/drill/#walk-throughs): start with the lost-card drill.
 2. **Set up.** `drills/lost-card/setup.sh` makes a scratch directory with two test roots and one intermediate. Result: the start state, and nothing real.
-3. **Run it.** `drills/lost-card/run.sh` runs the steps of [A lost root card](/guides/lost-root-card/). On test cards, add `--cards` and give the serials; it pauses at every PIN and every touch. Result: a card is out of use, a replacement root is added, and the intermediate is certified again.
+3. **Run it.** `drills/lost-card/run.sh` runs the steps of [A lost root card](/guides/lost-root-card/). On rehearsal cards, add `--cards` and give the serials; it pauses at every PIN and every touch. Result: a card is out of use, a replacement root is added, and the intermediate is certified again.
 4. **Check it.** `drills/lost-card/check.sh` checks the end state against the checks of the guide, and writes a report with how long each ceremony took, from the records. Result: pass or fail, and a time from loss to refusal.
 
 ## Steps: the restore check
@@ -30,7 +30,7 @@ A ceremony happens about once a year, so nobody is practised, and the day you ne
 
 ## How you know it worked
 
-- The walk-through ends with `check.sh` passing, in CI and once on test cards.
+- The walk-through ends with `check.sh` passing, in CI and once on rehearsal cards.
 - The restore check exits 0, with no step left `not-run` that you did not accept.
 - The report says how long each step took. Write the total next to the date: that is what a real loss costs.
 
@@ -42,4 +42,4 @@ A ceremony happens about once a year, so nobody is practised, and the day you ne
 
 ## Drill
 
-Run the lost-card walk-through twice: once in CI-style on test roots, and once on test cards. Then run the restore check on a copy of your directory with one revocation file deleted, and read how it fails.
+Run the lost-card walk-through twice: once in CI-style on test roots, and once on rehearsal cards. Then run the restore check on a copy of your directory with one revocation file deleted, and read how it fails.

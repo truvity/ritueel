@@ -1,6 +1,6 @@
 # 0016 — Several roots share one pair of root cards, and the directory keeps a card inventory
 
-**Status:** Accepted
+**Status:** Proposed
 **Date:** 2026-11-11
 
 ## Context
@@ -8,6 +8,8 @@
 [0003](/decisions/0003-key-stores-and-the-card-layer/#the-piv-store-and-the-root-cards) makes a root card "used for nothing else", and [the card reference](/reference/cards/) says one card holds one role. Slot map version 1 puts the X.509 root in slot 9c and the other keys in retired slots "fixed when the slot map is built". A holder with more than one root, for example a company root and a personal root that has only an OpenPGP primary, each with its break-glass SSH CA key, would need a pair of cards for each root.
 
 A PIV application has 24 key slots (9a, 9c, 9d, 9e and the retired slots 82 to 95). That is enough for several roots on one pair if every place is fixed. [0002](/decisions/0002-key-custody-every-key-is-born-in-its-store-two-root-cards-or-one-kms-root-and-a-replica/#keys) keeps its rule: the second card is redundancy, and the two cards are independent and never copies. The proposal is the design round of 2026-11-10 and 11, tracked in the issues under Follow-ups.
+
+The maintainer has decided the four kinds of card and the split of where a plan runs. Four readings of that answer are not confirmed, and the record stays `Proposed` until the maintainer confirms them or says otherwise (the open parts below, tracked in [issue #11](https://github.com/truvity/ritueel/issues/11) until a dedicated issue is opened): the name `hsm` of the third kind; that ritueel only reads an HSM card; that a rehearsal card may be reset; and that the relaxed mode for tests is `--test-root` alone, with no flag.
 
 ## Decision
 
@@ -37,7 +39,8 @@ A PIV application has 24 key slots (9a, 9c, 9d, 9e and the retired slots 82 to 9
   - `day-to-day`: a person's signing and authentication subkeys and passkeys; adopted.
   - `hsm`: a card that stays plugged into a server of a requester system and signs for its services, like a do-it-yourself cloud HSM. ritueel lists it in the inventory and only ever reads it. Its slots follow the requester's own layout, so the built-in layout check does not apply; ritueel adopts nothing on it, changes no secret and seals none.
   - `rehearsal`: practice and tests. It never holds a real key and may be reset; the M1 proofs and the drills use it.
-- **Proposed name `hsm`, awaiting the maintainer.** He asked for a name other than "board" for the third kind; this one is not yet confirmed. If he disagrees, the status of this record becomes Proposed.
+- **Open part: the name `hsm`.** The maintainer asked for a name other than "board" for the third kind, which is something like a do-it-yourself cloud HSM; `hsm` is proposed and not confirmed. The kind is decided, only its name is open.
+- **Open part: the rules of the two new kinds.** That ritueel only reads an HSM card (no adoption, no secret, no layout check), and that a rehearsal card never holds a real key and may be reset, are readings of "four kinds", not the maintainer's words.
 
 ### Where a root card is used
 
@@ -53,7 +56,7 @@ A PIV application has 24 key slots (9a, 9c, 9d, 9e and the retired slots 82 to 9
 | Cloud root | Your workstation, with no stick. |
 | Test root | See the next bullet. |
 
-- **A test root (`--test-root`) may run its ceremonies on the workstation, so that tests stay fast.** Its key is a file with no passphrase, and its certificate name, records and products say `TEST ONLY` and refuse to mix with real roots. A real root never becomes a test root: `test` is written when the root is born and never changes. ritueel checks nothing about the machine it runs on, for any root; the offline system is the holder's rule, taught and not enforced. There is no switch or flag for this.
+- **A test root (`--test-root`) may run its ceremonies on the workstation, so that tests stay fast.** Its key is a file with no passphrase, and its certificate name, records and products say `TEST ONLY` and refuse to mix with real roots. A real root never becomes a test root: `test` is written when the root is born and never changes. ritueel checks nothing about the machine it runs on, for any root; the offline system is the holder's rule, taught and not enforced. Open part: the maintainer asked for a relaxed mode for testing, and this reading makes it `--test-root` with no separate flag; a real flag is the other reading.
 
 ## Consequences
 
@@ -75,7 +78,7 @@ A PIV application has 24 key slots (9a, 9c, 9d, 9e and the retired slots 82 to 9
 - **Leaving the OTP application on.** Nothing to switch off, but the card then answers to a second kind of secret that nobody tracks.
 - **Two kinds only (root, day-to-day).** Fewer words, but a server's card and a practice card would have no honest place and would be forced into "day-to-day".
 - **ritueel manages the HSM card like a root card.** One rule for all, but its slots belong to the requester, and a ritueel layout check or adoption would break the service.
-- **A flag that turns the offline rule off.** Faster tests, but the program checks nothing about the machine, so a flag would only relax a rule that nothing enforces; `--test-root` already marks everything `TEST ONLY`.
+- **A flag that turns the offline rule off.** Faster tests, but the program checks nothing about the machine, so a flag would only relax a rule that nothing enforces, and `--test-root` already marks everything `TEST ONLY`; this is the reading the maintainer may overrule.
 - **A card check only at the yearly ceremony.** One rhythm, but a dead card would show only at the next ceremony, up to a year later.
 
 ## Follow-ups

@@ -30,7 +30,7 @@ sidebar:
 2. **Verify the chain.** `ritueel records verify`, then compare the last digest with the note. Result: the history is whole.
 3. **List the state.** `ritueel status`. Result: the roots, the intermediates and what expires when.
 4. **Compare with the keys.** For each root, read the serial and fingerprint from the card or the cloud key and compare with the directory. Result: the directory describes the keys you hold.
-5. **Walk through a loss.** Take one test card out of use and follow [A lost root card](/guides/lost-root-card/) with the stored revocation certificate.
+5. **Walk through a loss.** Take one rehearsal card out of use and follow [A lost root card](/guides/lost-root-card/) with the stored revocation certificate.
 
 ## How you know it worked
 

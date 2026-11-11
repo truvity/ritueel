@@ -51,11 +51,11 @@ Every record has these parts, in this order:
 | [0008](0008-the-operator-prepares-the-holder-and-ritueel-creates-attests-and-verifies-the-root.md) | The operator prepares the holder; ritueel creates, attests and verifies the root | Accepted |
 | [0009](0009-root-transitions-vouch-overlap-retire-and-revoke.md) | Root transitions: vouch, overlap, retire and revoke | Accepted |
 | [0010](0010-readiness-is-made-at-birth-and-proved-by-a-drill.md) | Readiness is made at birth and proved by a drill | Accepted |
-| [0011](0011-the-wizards-one-engine-three-faces-and-a-web-page-that-cannot-confirm-anything.md) | The wizards: one engine, three faces, and a web page that cannot confirm anything | Accepted |
+| [0011](0011-the-wizards-one-engine-three-faces-and-a-web-page-that-cannot-confirm-anything.md) | The wizards: one engine, three faces, and a web page that cannot confirm anything | Proposed |
 | [0012](0012-personal-openpgp-the-primary-offline-in-a-file-the-daily-subkey-on-a-card.md) | Personal OpenPGP: the primary offline in a file, the daily subkey on a card | Accepted |
 | [0013](0013-the-kms-ceremony-role-trusts-a-hardware-sign-in-session-tag.md) | The KMS ceremony role needs no hardware-key sign-in for now | Accepted |
 | [0014](0014-staff-openpgp-primaries-sealed-in-sluis-subkeys-born-on-cards-ritueel-makes-the-card-ready-and-runs-the-delegation.md) | Staff OpenPGP: primaries sealed in sluis, subkeys born on cards; ritueel makes the card ready and runs the delegation | Accepted |
 | [0015](0015-key-files-open-with-a-passkey-on-each-root-card-and-card-secrets-are-sealed-in-the-directory.md) | Key files open with a passkey on each root card, and card secrets are sealed in the directory | Accepted |
-| [0016](0016-several-roots-share-one-pair-of-root-cards-and-the-directory-keeps-a-card-inventory.md) | Several roots share one pair of root cards, and the directory keeps a card inventory | Accepted |
+| [0016](0016-several-roots-share-one-pair-of-root-cards-and-the-directory-keeps-a-card-inventory.md) | Several roots share one pair of root cards, and the directory keeps a card inventory | Proposed |
 | [0017](0017-a-persons-openpgp-key-in-two-stages-an-adopted-primary-first-then-card-born-primaries.md) | A person's OpenPGP key in two stages: an adopted primary first, then card-born primaries | Accepted |
 | [0018](0018-a-cloud-root-may-be-an-existing-key-that-ritueel-adopts.md) | A cloud root may be an existing key that ritueel adopts | Accepted |

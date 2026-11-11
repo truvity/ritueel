@@ -45,4 +45,4 @@ A person still meets the root for everything that is not a renewal: a new key, a
 
 ## Drill
 
-Run the same steps on a software test root in a scratch directory (`--test-root`), then once on test cards. A drill starts with two roots and one intermediate and ends when `status` is clean. The record shows how long each step took.
+Run the same steps on a software test root in a scratch directory (`--test-root`), then once on rehearsal cards. A drill starts with two roots and one intermediate and ends when `status` is clean. The record shows how long each step took.

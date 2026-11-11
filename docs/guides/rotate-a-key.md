@@ -37,4 +37,4 @@ A root rotation is a transition. It is planned, because a root has an expiry for
 
 ## Drill
 
-Rotate a software test intermediate in CI, then a test root, then a root on test cards. The drill ends when a client with only the old bundle fails after the overlap, as it should.
+Rotate a software test intermediate in CI, then a test root, then a root on rehearsal cards. The drill ends when a client with only the old bundle fails after the overlap, as it should.
