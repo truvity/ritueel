@@ -644,7 +644,9 @@ export type SavePlanResponse = Message<"ritueel.local.v1alpha1.SavePlanResponse"
    * What goes on the ceremony stick (empty when the plan runs on the
    * workstation, which needs no stick; the stick step is shown only for the
    * offline system, record 0005, rule 21), what to bring, and what happens
-   * when the stick comes back.
+   * when the stick comes back. These are instructions to the person: this
+   * call never writes to the stick; the command line does (record 0005,
+   * rule 22).
    *
    * @generated from field: repeated string copy_to_stick = 9;
    */
@@ -813,7 +815,9 @@ export const PlanService: GenService<{
    * SHA-256 is the digest. This is the one call of the package that writes.
    * It rebuilds the plan, refuses a digest that is not the rebuilt plan's,
    * writes one inert file, create-only, and answers with the path and the
-   * digest. The demo writes nothing and says so (see
+   * digest. It writes nothing else: refreshing the ceremony stick is done by
+   * the command line when it prepares a plan (record 0005, rule 22), never by
+   * this call. The demo writes nothing and says so (see
    * SavePlanResponse.written).
    *
    * @generated from rpc ritueel.local.v1alpha1.PlanService.SavePlan
