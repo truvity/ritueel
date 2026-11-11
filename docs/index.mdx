@@ -1,5 +1,5 @@
 ---
-title: "ritueel: manage the root of your PKI and the master key of OpenPGP"
+title: "ritueel: keep the root of your PKI and the master key of OpenPGP safe"
 description: ritueel teaches how to keep a private CA root or an OpenPGP master key safe for years. It is in its design phase; its tools are still to come.
 template: splash
 hero:
@@ -16,16 +16,20 @@ import Actions from '../site/src/components/home/Actions.astro';
   ]}
 />
 
-ritueel helps one person or a small team keep a private CA root or an OpenPGP master key for years without losing it, leaking it or letting it expire.
+ritueel helps one person or a small team keep a private CA root or an OpenPGP master key for years without losing it, leaking it or letting it expire. A root is the one key that everything else trusts; if it is lost or stolen, everything signed under it is lost or suspect.
+
+The tools are planned: a program that guides you through each use of the root (a ceremony) and keeps a record of it.
 
 ## What exists today
 
-ritueel is in its design phase. There is a design, a set of teaching pages and a [demo](/demo/) with made-up data. There is no program and no release yet. [Where it stands](/status/) says how far each step has got.
+ritueel is in its design phase. There is a [design](/decisions/), a set of teaching pages and a [demo](/demo/) of the program's local page, with made-up data. There is no program and no release yet. [Where it stands](/status/) says how far each step has got.
 
 ## Is it for you?
 
 Yes, if you hold a private CA root or an OpenPGP master key and use it rarely, by hand, with a person present.
 No, if you look for a service that signs for you every day.
+
+Nothing here needs a tool today: the pages teach the practice whichever tool you use.
 
 ## What the site teaches
 
@@ -34,7 +38,7 @@ No, if you look for a service that signs for you every day.
 - [How a KMS key works](/learn/how-a-kms-key-works/): what a cloud signing key is made of, and what limits it.
 - [Choosing where a root lives](/learn/choosing-where-a-root-lives/): a key file, a pair of root cards or a cloud key, and what each costs a year.
 
-The words are fixed in the [glossary](/glossary/). A page on how to verify a release comes with the first release.
+The words are fixed in the [glossary](/glossary/). A first draft of a page on how to verify a release comes with the [release candidate](/roadmap/).
 
 Lost or exposed a key? Read [revoke](/learn/revoke/) first.
 

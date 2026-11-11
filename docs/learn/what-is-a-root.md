@@ -13,7 +13,7 @@ Trust has to start somewhere. When your browser accepts the certificate of a web
 |---|---|---|
 | The root is | A *root CA certificate* and its private key. | The *primary key*, also called the master key, of an identity. |
 | Outsiders trust it because | It is installed in their trust store: the operating system's, the browser's, or a file your company ships. | They hold its public key in a keyring, and they have checked the fingerprint some other way. |
-| What it signs | Certificates of intermediate CAs. | Certifications of identities and the bindings of subkeys. |
+| What it signs | Certificates of intermediate CAs (CAs that the root vouches for and that do the everyday signing). | Certifications of identities and the bindings of subkeys. |
 | Looks like | A file of a few hundred bytes of public data. | A fingerprint of 40 hexadecimal characters. |
 
 In both worlds the root is a **public** thing and a **private** thing. The public part is given to everyone, because everyone needs it to verify. The private part is what this site is about.
@@ -33,4 +33,4 @@ Three facts make a root unlike any other key.
 - **Used by mistake.** A person signs the wrong request, with a wrong lifetime or a wrong name. The signature is real, and cannot be taken back.
 - **Expired unnoticed.** A root with a fixed end date runs out on a bad day.
 
-Most of what the rest of Learn explains is a way to avoid one of these four. Next: [root and intermediate](/learn/root-and-intermediate/).
+Most of what the rest of Learn explains is a way to avoid one of these four. Next: [why the root stays offline](/learn/why-the-root-stays-offline/).

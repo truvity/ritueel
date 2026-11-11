@@ -103,6 +103,8 @@ Other programs already use the extension this way. `systemd-cryptenroll` accepts
 
 **What the passkey does not remove.** A reset ends every passkey on the card, so the key file must also open another way. The record keeps a recovery key for this. If you lose the recovery key and both root cards, the key files cannot be opened. Without its key handle a card cannot rebuild the passkey, so the key handle is as important as the card; where it is kept is fixed by the proof.
 
+Next: [how a KMS key works](/learn/how-a-kms-key-works/).
+
 ## Sources
 
 Read 2026-11-10, except the lines that say 2026-11-11.

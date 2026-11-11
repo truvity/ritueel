@@ -60,4 +60,4 @@ The ledger covers the links down to the intermediates that ritueel certifies. Be
 
 The same four questions apply to every kind of chain, and the answers differ. [Custody chains compared](/learn/custody-chains/) puts public PKI, private PKI, OpenPGP and SSH side by side, with a page for each.
 
-Next: [custody chains compared](/learn/custody-chains/).
+Next: [OpenPGP: one identity, many keys](/learn/chain-openpgp/).
