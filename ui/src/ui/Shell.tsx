@@ -55,21 +55,19 @@ const SCHEME_BUTTON = { minWidth: 0, paddingInline: { xs: '0.5rem', sm: '0.75rem
 function SchemeSwitch() {
   const { mode, setMode } = useColorScheme();
   return (
-    // The group may shrink (min-w-0) and its buttons carry less padding on a phone, so the header of a 360 px window is not wider than the window.
-    <div className="min-w-0 shrink">
-      <ToggleButtonGroup
-        exclusive
-        size="small"
-        value={mode ?? null}
-        onChange={(_e, value: 'system' | 'light' | 'dark' | null) => value && setMode(value)}
-        aria-label="Colour scheme"
-        sx={{ '& .MuiToggleButton-root': SCHEME_BUTTON }}
-      >
-        <ToggleButton value="system">Auto</ToggleButton>
-        <ToggleButton value="light">Light</ToggleButton>
-        <ToggleButton value="dark">Dark</ToggleButton>
-      </ToggleButtonGroup>
-    </div>
+    // The buttons carry less padding on a phone (SCHEME_BUTTON), so the header of a 360 px window is not wider than the window.
+    <ToggleButtonGroup
+      exclusive
+      size="small"
+      value={mode ?? null}
+      onChange={(_e, value: 'system' | 'light' | 'dark' | null) => value && setMode(value)}
+      aria-label="Colour scheme"
+      sx={{ '& .MuiToggleButton-root': SCHEME_BUTTON }}
+    >
+      <ToggleButton value="system">Auto</ToggleButton>
+      <ToggleButton value="light">Light</ToggleButton>
+      <ToggleButton value="dark">Dark</ToggleButton>
+    </ToggleButtonGroup>
   );
 }
 
@@ -244,9 +242,9 @@ export function Shell({ route, children }: { route: Route; children: ReactNode }
           <div className="min-w-0">
             {isDemo ? <DemoBar /> : null}
             <header data-print="hide" className="sticky top-0 z-40 flex min-w-0 items-center justify-between gap-1 border-b-[3px] border-double border-rule bg-bg px-3 py-1 sm:px-4 lg:hidden">
-              <a href={href.start()} className="flex min-h-11 items-center gap-2 text-ink no-underline max-[400px]:min-w-11 max-[400px]:justify-center" aria-label="ritueel local page, start">
+              <a href={href.start()} className="flex min-h-11 items-center gap-2 text-ink no-underline max-[359px]:min-w-11 max-[359px]:justify-center" aria-label="ritueel local page, start">
                 <Mark size={22} />
-                <span className="font-mono text-base font-bold max-[400px]:sr-only">ritueel</span>
+                <span className="font-mono text-base font-bold max-[359px]:sr-only">ritueel</span>
               </a>
               {isDemo ? (
                 <a

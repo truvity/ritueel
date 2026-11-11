@@ -158,7 +158,7 @@ describe('first-visit help is in the demo and not in the real build', () => {
     const text = plain(html);
     expect(text).toMatch(/keep a root \(the key that everything else trusts\)/);
     expect(text).toMatch(/ceremony \(one sitting at a terminal where the root is used\)/);
-    expect(text).toMatch(/history \(the write-once record of every ceremony\)/);
+    expect(text).toMatch(/history \(the record of every ceremony\)/);
   });
   it('StartHere is a path of three links: Roots, Findings, Make a plan, in that order', async () => {
     const { StartHere } = await import('./ui/FirstVisit');
