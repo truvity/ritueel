@@ -18,7 +18,7 @@
 // loopback listener binds 127.0.0.1 on a random port, lets a request in only
 // with the one-time token of the session (then a cookie), checks the Host
 // header exactly and, for a POST, Sec-Fetch-Site or Origin (the wizard's
-// profile, rules 1 to 4 and 7, https://ritueel.id/reference/wizard/). Other
+// profile, rules 1 to 4, 7 and 9, https://ritueel.id/reference/wizard/). Other
 // programs of the same user can reach that port while the page is in use, so
 // it is trusted no more than any other web request.
 //
@@ -321,8 +321,9 @@ export type Plan = Message<"ritueel.local.v1alpha1.Plan"> & {
   /**
    * The plan's name: the name of its ceremony, the time as YYYYMMDDThhmmssZ
    * in UTC, a hyphen, and the command with its words joined by hyphens, for
-   * example "20261111T090000Z-due". It is also the name of its sub-folder of
-   * the ledger, and it is unique inside a bundle.
+   * example "20261111T090000Z-due". It is the name its ceremony would have in
+   * the ledger (the saved path is a proposal, see SavePlan), and it is unique
+   * inside a bundle.
    *
    * @generated from field: string id = 1;
    */

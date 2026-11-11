@@ -15,7 +15,7 @@ The local page is the third face of the program, beside the command line and the
 
 [Open the demo](/demo/). It is the real page, built in a demo mode, shown with made-up data: one holder with three example bundles. A [bundle](/reference/bundle/) is the directory with a fixed structure that holds everything ritueel knows about one trust domain, with its own ledger, roots and cards. Across bundles a root is written with the bundle's name, `acme/A`. The example bundles are:
 
-- `personal`: the holder's own OpenPGP key in a key file, with its subkeys by year and by card, two root cards, three day-to-day cards and a rehearsal card. Its one trust file is the public certificate.
+- `personal`: the holder's own OpenPGP key in a key file, with its subkeys by year and by card, two root cards, three day-to-day cards and a rehearsal card. Its trust file is the public certificate, in two forms.
 - `acme`: a company root pair, `acme/A` and `acme/B`, on two root cards, with delegated keys, the trust files (a CRL for each root) and ten ceremonies over three years.
 - `globex`: another company's cloud root, which needs no card.
 
