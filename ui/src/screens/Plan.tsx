@@ -329,7 +329,7 @@ export function PlanView({ plan }: { plan: PlanMessage }) {
             <p className="mb-1 font-bold">To run it, {onPlace(plan.runPlace)}</p>
             <p className="mb-2 max-w-[70ch] text-sm text-dim">
               You type this in {plan.runPlace === RunPlace.OFFLINE_SYSTEM ? 'the terminal there' : 'a terminal ' + (plan.runPlace === RunPlace.WORKSTATION ? 'on your workstation' : 'where you run it')}, from the
-              directory of the bundle, after you save the plan{plan.runPlace === RunPlace.OFFLINE_SYSTEM ? ' and carry it over' : ''}. The terminal asks for the PIN and the touch. This page never does.
+              bundle, after you save the plan{plan.runPlace === RunPlace.OFFLINE_SYSTEM ? ' and carry it over' : ''}. The terminal asks for the PIN and the touch. This page never does.
             </p>
             <Cmd label={`Run the plan ${onPlace(plan.runPlace)}`}>{plan.runCommand}</Cmd>
           </div>

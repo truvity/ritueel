@@ -81,9 +81,9 @@ export const ORIGIN_WORD: Record<number, string> = {
 
 export const CARD_KIND_WORD: Record<number, string> = {
   [CardKind.ROOT]: 'Root card',
-  [CardKind.DAY_TO_DAY]: 'Day-to-day',
-  [CardKind.REHEARSAL]: 'Rehearsal',
-  [CardKind.SERVER]: 'Server',
+  [CardKind.DAY_TO_DAY]: 'Day-to-day card',
+  [CardKind.REHEARSAL]: 'Rehearsal card',
+  [CardKind.SERVER]: 'Server card',
 };
 
 export const CARD_STATE_WORD: Record<number, string> = {
@@ -184,5 +184,6 @@ export function onPlace(place: RunPlace | undefined): string {
 
 export const BUNDLE_ACTION_WORD: Record<number, string> = {
   [BundleChangeAction.CREATE]: 'create',
-  [BundleChangeAction.REPLACE]: 'replace',
+  // Not "replace": the site's glossary keeps that word for making a new key. This file is rewritten.
+  [BundleChangeAction.REPLACE]: 'rewrite',
 };

@@ -438,15 +438,15 @@ function Subkeys({ r, cards, asOf }: { r: Root; cards: Card[] | undefined; asOf:
   const sets = r.certificate?.subkeySets ?? [];
   const sorted = [...sets].sort((a, b) => b.year - a.year || a.cardSerial.localeCompare(b.cardSerial));
   const total = sets.reduce((n, s) => n + s.subkeys.length, 0);
-  const cardCount = new Set(sets.map((s) => s.cardSerial)).size;
+  const cardCount = new Set(sets.map((s) => s.cardSerial).filter(Boolean)).size;
   const many = sets.length >= 3;
   return (
     <>
-      <Sec title="Subkeys by year and by card" aside={`${plural(sets.length, 'set')} on ${plural(cardCount, 'card')}`}>
+      <Sec title="Subkeys by year and by card" aside={cardCount > 0 ? `${plural(sets.length, 'set')} on ${plural(cardCount, 'card')}` : plural(sets.length, 'set')}>
         <Explain term="A subkey set">
-          is the group of subkeys made together on one card, one to sign and one to authenticate; the encryption subkey is made in software and loaded onto each card. The
-          primary key stays safe, and the subkeys do the daily work. Their binding is renewed each year; a new set is made by ritueel only on an event, such as a lost card. The sets before 2025
-          were made by hand, before the key was adopted.
+          is a group of subkeys made together, on one card or in a cloud key. On a card, one subkey signs and one authenticates; the encryption subkey is made in software and loaded onto each card. The
+          primary key stays safe, and the subkeys do the day-to-day work. Their binding is renewed each year; a new set is made by ritueel only on an event, such as a lost card.
+          {r.adopted ? ' The sets before 2025 were made by hand, before the key was adopted.' : ''}
         </Explain>
         {many ? (
           <>

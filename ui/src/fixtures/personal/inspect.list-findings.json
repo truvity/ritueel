@@ -89,7 +89,7 @@
         "label": "Day-to-day, keychain"
       },
       "evidence": [
-        "Slot sig: touch rule cached (was always) at the reading of 2026-10-28"
+        "Slot sig: touch rule cached (was always) at the reading of 2026-11-04"
       ],
       "fixCommand": "ritueel card check --card 00000004",
       "learnPath": "/learn/how-a-yubikey-holds-keys/#one-piv-slot-up-close"

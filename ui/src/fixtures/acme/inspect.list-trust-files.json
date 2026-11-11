@@ -9,7 +9,7 @@
       "builtAt": "2026-01-27T14:10:00Z",
       "validUntil": "2027-02-27T00:00:00Z",
       "checkResult": "TRUST_CHECK_RESULT_PASSED",
-      "checkDetail": "Signed by acme/A and acme/B. The host's checks pass against the list of sequence 6.",
+      "checkDetail": "Signed by acme/A, the root used at that ceremony. The host's checks pass against the list of sequence 6.",
       "sha256": "70010123456789abcdef0123456789abcdef0123456789abcdef0123456789ab",
       "sizeBytes": "2412",
       "verifyCommand": "ritueel root-list verify products/7/root-list.json --held products/6/root-list.json",

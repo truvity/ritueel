@@ -16,6 +16,7 @@
       "title": "Adopted the holder's OpenPGP key, stage one",
       "summary": "The existing primary was adopted as it is, with its history of subkeys: RSA-4096, no expiry. It now lives in an encrypted key file that a passkey on each root card opens. The adoption did not set the expiry that an adopted key should get: a later plan does it.",
       "completedAt": "2026-11-03T14:20:00Z",
+      "trustSequence": 1,
       "outcome": "CEREMONY_OUTCOME_DONE",
       "recordSha256": "600c0123456789abcdef0123456789abcdef0123456789abcdef0123456789ab",
       "planDigest": "4b310bab0123456789abcdef0123456789abcdef0123456789abcdefdeadbeef",
