@@ -55,7 +55,7 @@ Every record has these parts, in this order:
 
 ## The first eighteen records
 
-The first set of records, 0001 to 0018, was rewritten on 2026-11-11 from a checked list of decisions into the ten records above. The numbers 0001 to 0010 are now used again, which the design phase allows; a number is never reused after the first release. The old files are in git at commit [d0ae12d](https://github.com/truvity/ritueel/tree/d0ae12da2432d5ae95cf95d68fb85ba3dda6cfee/docs/decisions), and their old site addresses redirect to them. Each new record's "Replaces" section says which parts flow into it; where an old number appears in an issue, a pull request or a note, read it in this table.
+The first set of records, 0001 to 0018, was rewritten on 2026-11-11 from a checked list of decisions into the ten records above. The numbers 0001 to 0010 are now used again, which the design phase allows; a number is never reused after the first release. The old files are in git at commit [d0ae12d](https://github.com/truvity/ritueel/tree/d0ae12da2432d5ae95cf95d68fb85ba3dda6cfee/docs/decisions), and their old site addresses redirect to them. Old titles in the table are quoted as they were written; "trust products" and the staff-key design are no longer part of ritueel. Each new record's "Replaces" section says which parts flow into it; where an old number appears in an issue, a pull request or a note, read it in this table.
 
 | Old | Old title | Flows into |
 |-----|-----------|------------|

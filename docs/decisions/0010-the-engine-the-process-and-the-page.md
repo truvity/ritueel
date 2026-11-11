@@ -49,9 +49,8 @@ One engine means the ceremony is tested once and the faces cannot drift apart. T
 - **Every command its own process, no shared API path.** Nothing lives between commands, but the command line and the page would reach one ceremony by two paths.
 - **A service started at login or boot that both faces call.** It is always warm, but must be installed everywhere, outlives the person's presence and could act on roots while nobody is there.
 - **A daemon with the confirmation in it.** Refused: malware could confirm; the confirmation stays in the terminal.
-- **The command line over the loopback address with no token and no proof from the listener.** A port every local process can reach would carry the confirmation; the chosen way adds a full-rights token in a file and the listener's proof.
+- **The command line over the loopback address with no token and no proof from the listener.** Simpler, but a port every local process can reach would carry the confirmation, and another local process could listen on the port first and receive the confirmation or the PIN; the chosen way adds a full-rights token in a file and the listener's proof.
 - **A Unix socket for the command line, and a loopback listener for the page only while the page is used.** A browser cannot open a Unix socket, so the page needs a port anyway and there would be two doors to build and test; the maintainer chose one port against the recommendation.
-- **No proof from the listener.** It is simpler, but another local process could listen on the port first and receive the confirmation or the PIN.
 - **A click to confirm protected by the token.** It is the friendliest, but any process that can read the cookie or the page, an extension included, could confirm.
 - **A confirmation code shown in the page and typed in the terminal.** The thing to compare would come from a page that might be lying; the terminal prints the digest first.
 - **Open the browser for the person.** It is one step fewer, but the token would travel on a command line that other processes read.
@@ -61,7 +60,7 @@ One engine means the ceremony is tested once and the faces cannot drift apart. T
 
 ## Not yet proven or only proposed
 
-- **Not yet proven.** The guided mode, the step catalogue and the test that compares a wizard session with the printed commands ([issue #16](https://github.com/truvity/ritueel/issues/16)).
+- **Not yet proven.** The guided mode, the step catalogue and the test that compares a wizard session with the printed commands ([issue #16](https://github.com/truvity/ritueel/issues/16)). They come after the first signed release.
 - **Not yet proven.** The program side of the local page: the ConnectRPC server, the embedded build, the profile tests, SavePlan, and the process behind the commands ([issue #17](https://github.com/truvity/ritueel/issues/17)).
 - **Proposed.** The port number is 7488; it is not yet checked against the IANA list of assigned ports ([issue #17](https://github.com/truvity/ritueel/issues/17)).
 - **Proposed.** What happens when a process of another version answers, and how a test makes sure a process ends ([issue #17](https://github.com/truvity/ritueel/issues/17)).

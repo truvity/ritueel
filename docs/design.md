@@ -3,7 +3,7 @@ title: The design in brief
 description: What ritueel decides, by area, in short sentences, with what is not yet proven and what is only proposed marked; each part links its record.
 ---
 
-The program is not built. This page is the design as decided on 2026-11-11, and it marks what is not yet proven or only proposed.
+The program is not built. This page is the design as decided on 2026-11-11, and it marks the main points that are not yet proven or only proposed; each record lists all of its own under Not yet proven or only proposed.
 
 ## The five core ideas
 
@@ -61,14 +61,14 @@ Decided in [0003](decisions/0003-root-cards.md).
 ## Opening a key file
 
 - An age file with an unlock key and a recovery key for each bundle.
-- The default unlock is a passkey on each root card. Fallbacks are a key in slot 9d, or a passphrase.
+- The default unlock is a passkey on each root card. If that cannot be used, a key in slot 9d is the fallback. A holder without cards may use a passphrase.
 
 Decided in [0002](decisions/0002-where-a-key-lives.md).
 
 ## Where a root is used
 
 - A copyable key is used only in the offline system.
-- A key that cannot be copied may be used on the workstation, with four conditions: a touch for every signature; the count stated in the plan; no retry of a failed touch; and a check against the plan on a second device.
+- A key that cannot be copied may be used on the workstation, with four conditions (for a cloud key see Proposed or open): a touch for every signature; the count stated in the plan; no retry of a failed touch; and a check against the plan on a second device.
 - Every record says where the ceremony ran.
 - The limit: a card has no screen, so one tricked touch gives one signature that no card logs.
 
@@ -105,7 +105,7 @@ Decided in [0007](decisions/0007-changing-and-losing-a-root.md), [0006](decision
 
 ## Test roots and the yearly rhythm
 
-- A test root is born with `init --test-root` on a rehearsal card, and its records are marked as test.
+- A test root is born with `init --test-root`, as a key file with no passphrase or on a rehearsal card; its records are marked as test.
 - A root is valid about three years; an intermediate about 13 months, renewed by re-signing.
 
 Decided in [0005](decisions/0005-a-ceremony-and-where-it-runs.md) and [0007](decisions/0007-changing-and-losing-a-root.md).
@@ -141,6 +141,6 @@ Decided in [0009](decisions/0009-release-keys-and-the-keyring.md).
 
 ## What comes later
 
-More stores, a second card-born primary for a person, a post-quantum root and a Go library.
+More stores, a person's card-born primaries (stage two), a post-quantum root and a Go library.
 
 Listed in [the roadmap](/roadmap/#after-the-first-version).
