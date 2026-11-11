@@ -7,7 +7,7 @@
 // - code is the lines of every Go file outside site/ and node_modules (the product is Go; the
 //   scripts under tools/ are repository checks and are not counted). Zero Go files is zero
 //   lines, and the line says so;
-// - the milestones are the rows of the table in docs/roadmap.md, which names M1 to M4, what
+// - the milestones are the rows of the table in docs/roadmap.md, which names M0 to M7, what
 //   each delivers and, for the page, the order. GitHub (src/lib-github.ts) adds the issues.
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
