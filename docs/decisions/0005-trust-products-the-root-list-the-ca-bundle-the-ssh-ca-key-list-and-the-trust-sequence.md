@@ -1,7 +1,7 @@
 # 0005 — Trust products: the root list, the CA bundle, the SSH CA key list, CRLs and the trust sequence
 
 **Status:** Accepted
-**Date:** 2026-11-01
+**Date:** 2026-11-11
 
 ## Context
 
@@ -52,7 +52,7 @@ The root certificates of the active roots in one PEM file, with the trust sequen
 
 ### The format
 
-The exact members, the encoding and the signature format of each product are a reference page with test vectors: the root list and the CA bundle in M1 ([root list](/reference/root-list/)), because the first system that holds intermediates reads the root list before anything else exists; the CRLs in M2 ([CRLs](/reference/crl/)), with the command that revokes an intermediate; and the SSH CA key list in M3 ([SSH CA key list](/reference/ssh-ca-key-list/)), with the `ssh-ca-key` request type of [the hand-off contract](/reference/hand-off-contract/#ssh-ca-key). They follow this record and cannot change it.
+The exact members, the encoding and the signature format of each product are a reference page with test vectors: the root list and the CA bundle in M2 ([root list](/reference/root-list/)), because the first system that holds intermediates reads the root list before anything else exists; the CRLs in M4 ([CRLs](/reference/crl/)), with the command that revokes an intermediate; and the SSH CA key list in M4 ([SSH CA key list](/reference/ssh-ca-key-list/)), with the `ssh-ca-key` request type of [the hand-off contract](/reference/hand-off-contract/#ssh-ca-key). They follow this record and cannot change it.
 
 ## Consequences
 
@@ -90,6 +90,6 @@ The exact members, the encoding and the signature format of each product are a r
 
 ## Follow-ups
 
-- Build the root list and the CA bundle to [their reference page](/reference/root-list/), passing its test vectors, in M1 ([#14](https://github.com/truvity/ritueel/issues/14)).
-- Build the CRLs and the entries of `intermediate revoke` to [their reference page](/reference/crl/), passing its test vectors, in M2 ([#30](https://github.com/truvity/ritueel/issues/30)).
-- Build the SSH CA key list, the `ssh-ca-key` request and the break-glass keys to [their reference page](/reference/ssh-ca-key-list/), passing its test vectors, in M3 ([#55](https://github.com/truvity/ritueel/issues/55)).
+- Build the root list and the CA bundle to [their reference page](/reference/root-list/), passing its test vectors, in M2 ([#14](https://github.com/truvity/ritueel/issues/14)).
+- Build the CRLs and the entries of `intermediate revoke` to [their reference page](/reference/crl/), passing its test vectors, in M4 ([#30](https://github.com/truvity/ritueel/issues/30)).
+- Build the SSH CA key list, the `ssh-ca-key` request and the break-glass keys to [their reference page](/reference/ssh-ca-key-list/), passing its test vectors, in M4 ([#55](https://github.com/truvity/ritueel/issues/55)).

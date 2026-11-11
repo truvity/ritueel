@@ -1,14 +1,14 @@
 # 0004 — Ceremonies: plan, confirm, reserve, sign, verify, record
 
 **Status:** Accepted
-**Date:** 2026-11-06
+**Date:** 2026-11-11
 
 ## Context
 
 [0002](/decisions/0002-key-custody-every-key-is-born-in-its-store-two-root-cards-or-one-kms-root-and-a-replica/) fixes who holds the roots; this record fixes how a person uses them. The proposal was [issue #27](https://github.com/truvity/ritueel/issues/27). Four facts shape it.
 
 - **A root is used rarely, with a person present.** A mistake costs a year or a trust update, so the tool has to show what it will sign in a form the person can compare, and must not be confirmable by habit.
-- **The workstation is ordinary.** It cannot copy a key that never leaves its store, but it can lie about what is being signed.
+- **The machine is not trusted.** A card root is used only in the offline system ([0016](/decisions/0016-several-roots-share-one-pair-of-root-cards-and-the-directory-keeps-a-card-inventory/#where-a-root-card-is-used)) and a cloud root from the holder's workstation; neither machine can copy a key that never leaves its store, but either can lie about what is being signed.
 - **A card forgives little.** Three wrong PINs block it. A missed touch comes back about 15 seconds later as a generic security status, not as a touch timeout (measured 2026-10-31, YubiKey 5, firmware 5.8.0).
 - **The first consumer has no hardware.** It and its test harness need a software root that a script can drive, through the same commands.
 
@@ -23,11 +23,11 @@
 5. **Verify.** Check every artifact against its request and the plan, with code that did not sign it, before it is written out.
 6. **Record.** Write the ceremony record and the transcript, then the trust products.
 
-A command runs all six; `--plan-only` stops after the plan, and `--plan FILE` resumes from one after checking it still matches the directory. So a ceremony is one command, or two or three when someone reviews the plan first. The commands, flags and exit codes are in [the command reference](/reference/cli/).
+A command runs all six; `--plan-only` stops after the plan, and `ritueel run PLAN --confirm DIGEST` executes a saved plan after checking it still matches the directory. `ritueel due` writes the plans for what is due. There is no `yearly` command: each renewal is a separate action in a plan. So a ceremony is one command, or two or three when someone reviews the plan first. The commands, flags and exit codes are in [the command reference](/reference/cli/).
 
 ### Refused before anything is written
 
-A card whose serial is not registered or is the wrong one for the role; a fingerprint that differs from the plan or from the one the requester printed; a key that cannot be attested where the policy asks for attestation; a slot collision or a purpose with no slot; a card with fewer than three PIN tries left; a default PIN, PUK or management key at `init`; a request that fails a check of the [hand-off contract](/reference/hand-off-contract/). ritueel never retries a PIN, and reads one only from the terminal, without echo.
+A card whose serial is not registered or is the wrong one for the role; a fingerprint that differs from the plan or from the one the requester printed; a key that cannot be attested where the policy asks for attestation; a slot collision or a purpose with no slot; a card with fewer than three PIN tries left; a card that is not adopted, or that still has a default PIN, at `init` (the holder sets the PIN, and adoption replaces the PUK and the management key: [0015](/decisions/0015-key-files-open-with-a-passkey-on-each-root-card-and-card-secrets-are-sealed-in-the-directory/#card-secrets)); a request that fails a check of the [hand-off contract](/reference/hand-off-contract/). ritueel never retries a PIN, and reads one only from the terminal, without echo.
 
 ### The roots at `init`
 
@@ -35,16 +35,16 @@ A card whose serial is not registered or is the wrong one for the role; a finger
 
 ### The directory and the records
 
-- **One directory of plain files, public material only:** configuration, the registry of known cards, the roots' certificates and public keys with their attestations, digests of the revocation signatures, plans, records, transcripts and trust products. Never a private key, a PIN, a passphrase or a revocation signature itself. The holder keeps it in version control and backs it up.
-- **A record is a JSON file per ceremony,** with the time in UTC, the command, the plan digest, the keys and stores, the evidence checked, the policy applied, the artifacts with digests, the slot map version and the confirmation. No secret.
-- **Records form a hash chain** that `records verify` checks; they are not signed by a root. The digest of the last record goes into the next signed root list, which anchors the chain without another use of the root.
+- **One directory of plain files:** configuration, the inventory of cards ([0016](/decisions/0016-several-roots-share-one-pair-of-root-cards-and-the-directory-keeps-a-card-inventory/#the-inventory)), the roots' certificates and public keys with their attestations, digests of the revocation signatures, the trust products, the secrets of cards sealed to the holder's recipients ([0015](/decisions/0015-key-files-open-with-a-passkey-on-each-root-card-and-card-secrets-are-sealed-in-the-directory/#card-secrets)) and the wrapped backup of a person's encryption subkey ([0017](/decisions/0017-a-persons-openpgp-key-in-two-stages-an-adopted-primary-first-then-card-born-primaries/#day-to-day-cards)); everything else is public material. Never a private key in clear, a PIN the holder types, a passphrase or a revocation signature itself. The **ledger** is the write-once part of it: one sub-folder per ceremony, holding its plan, attempt, record, transcript and birth journal, each sub-folder naming the one before. ritueel needs no git; the holder is still advised to keep the directory in version control and to back it up ([0007](/decisions/0007-ritueel-teaches-and-its-tools-simplify-the-ceremonies/#an-opinionated-directory)). A sealed single-file form of the ledger is later.
+- **A record is a JSON file in the ceremony's sub-folder of the ledger,** with the time in UTC, the command, the plan digest, the keys and stores, the evidence checked, the policy applied, the artifacts with digests, the slot map version and the confirmation. No secret.
+- **Records form a hash chain** that `records verify` checks, each sub-folder naming the one before it; they are not signed by a root. The digest of the last record goes into the next signed root list, which anchors the chain without another use of the root.
 - **The transcript is what ritueel printed,** written by ritueel, never a capture of the terminal.
 
 ### Who signs, and when
 
 - **The root of the year** signs: by default the root that did not sign the previous yearly ceremony, found in the records. `--root` overrides it, with a reason recorded.
 - **The yearly ceremony is in month 12** of the intermediates' 13 months. `status` warns about an intermediate at 60, 30 and 14 days, and about a root at 6 months, 3 months and 30 days, with exit codes 10, 11 and 12 for notice, alert and critical. A healthy root always has about a year left, so a root warning means a missed extension, with time left to act.
-- **`yearly` needs one request for every registered intermediate** and stops when one is missing, unless `--allow-missing NAME` is given and recorded.
+- **The plan for the yearly renewals needs one request for every registered intermediate** and stops when one is missing, unless `--allow-missing NAME` is given to `due` and recorded.
 - **Each ceremony that uses a card extends that card's root,** as one more planned, recorded signature.
 
 ### A missed touch
@@ -53,11 +53,11 @@ When the PIN was accepted in the same session and the card refused after 10 seco
 
 ### Software roots and tests
 
-Software mode runs the same commands and steps. Its root is a passphrase-protected file, and `init`, every confirmation and every record say that a software root can be copied. A script uses `--passphrase-fd N` and `--confirm DIGEST`. `--test-root` makes a root without a passphrase, marked `TEST ONLY` in its certificate name and in every record, and `bundle build` and `keyring build` refuse to put a test root and a real root in one product. A software root serves tests, drills, development and the first consumer's harness; it never anchors a signed release ([0006](/decisions/0006-release-keys-and-the-keyring-package/)). A test that needs hardware is tagged, skipped by default, and selects its card by serial.
+Software mode runs the same commands and steps. Its root is a key file opened as [0015](/decisions/0015-key-files-open-with-a-passkey-on-each-root-card-and-card-secrets-are-sealed-in-the-directory/#the-key-file) says, and `init`, every confirmation and every record say that a software root can be copied. A test root or a script uses a passphrase through `--passphrase-fd N`, and `--confirm DIGEST`. `--test-root` makes a root without a passphrase, marked `TEST ONLY` in its certificate name and in every record, and `bundle build` and `keyring build` refuse to put a test root and a real root in one product. A software root serves tests, drills, development and the first consumer's harness; it never anchors a signed release ([0006](/decisions/0006-release-keys-and-the-keyring-package/)). A test that needs hardware is tagged, skipped by default, and selects its card by serial.
 
 ### KMS roots and wizards
 
-A KMS root follows the same steps; the confirmation is the typed digest plus the ceremony role, which needs a recent sign-in with a hardware key ([0013](/decisions/0013-the-kms-ceremony-role-trusts-a-hardware-sign-in-session-tag/)), through the caller's standard credential chain. The record holds the key ARN, the digest of the key policy and the role session. The wizards ([#16](https://github.com/truvity/ritueel/issues/16), [#17](https://github.com/truvity/ritueel/issues/17)) only fill in flags and show the plan; the web wizard listens on `127.0.0.1`, on a random port, with a per-session token.
+A KMS root follows the same steps; the confirmation is the typed digest plus the ceremony role, which needs a recent sign-in with a hardware key ([0013](/decisions/0013-the-kms-ceremony-role-trusts-a-hardware-sign-in-session-tag/)), through the caller's standard credential chain. The record holds the key ARN, the digest of the key policy and the role session. The guided mode ([#16](https://github.com/truvity/ritueel/issues/16)) only fills in flags and shows the plan, and the local page ([#17](https://github.com/truvity/ritueel/issues/17)) is a read-only view ([0011](/decisions/0011-the-wizards-one-engine-three-faces-and-a-web-page-that-cannot-confirm-anything/)); the page listens on `127.0.0.1`, on a random port, with a per-session token.
 
 ## Consequences
 
@@ -65,7 +65,7 @@ A KMS root follows the same steps; the confirmation is the typed digest plus the
 - A crash after the first signature leaves a trace; closing it is a step a person must take.
 - Plan and record are code that exists only for the ceremony, in return for one shape to test, teach and check.
 - Typing a digest prefix costs a few seconds a year; the touches grow with the number of intermediates, and the plan prints the count.
-- Losing the directory loses the registry, the attestations and the creation times; the published trust products still hold the public keys.
+- Losing the directory loses the card inventory, the attestations and the creation times; the published trust products still hold the public keys.
 
 ## Roads not taken
 

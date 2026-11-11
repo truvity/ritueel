@@ -1,7 +1,7 @@
 # 0007 — ritueel teaches, and its tools simplify the ceremonies
 
 **Status:** Accepted
-**Date:** 2026-11-02
+**Date:** 2026-11-11
 
 ## Context
 
@@ -17,11 +17,13 @@ The steps are mostly manual ceremonies, which is why there is a command line. Tw
 
 **ritueel.id teaches first.** It explains the general logic of handling root keys and intermediates securely: what a root is, why it stays offline, what a ceremony is, the custody chain, the key stores compared, and the life of a root. The tools exist to simplify the rituals. The site is organised in that order: Learn, Guides, Tools, Reference, Decisions, Principles.
 
-### Two faces of one engine
+### Three faces of one engine
 
-ritueel has two faces: the **command line** and a **wizard**, in the terminal and as a page served on localhost. Both are the same ceremony engine of [0004](/decisions/0004-ceremonies-plan-confirm-reserve-sign-verify-record/): plan, confirm, reserve, sign, verify, record. The wizard fills in flags and shows the plan; it is not a second implementation (principle 6: a written contract, not parallel code). It looks good, and it keeps the user in charge: nothing happens without the user's confirmation, and the PIN and the touch stay on the card.
+ritueel has three faces: the **command line**, a **guided mode** that asks line by line, and a **local page** served by the same binary on localhost, read-only ([0011](/decisions/0011-the-wizards-one-engine-three-faces-and-a-web-page-that-cannot-confirm-anything/)). Nothing is a background service and nothing is full-screen. All three are the same ceremony engine of [0004](/decisions/0004-ceremonies-plan-confirm-reserve-sign-verify-record/): plan, confirm, reserve, sign, verify, record. The guided mode and the page fill in flags and show the plan; neither is a second implementation (principle 6: a written contract, not parallel code). Both look good and keep the user in charge: nothing happens without the user's confirmation, and the PIN and the touch stay on the card.
 
 ### The wizard's security rules
+
+These are the rules of the local page.
 
 1. It binds to **127.0.0.1 only** and refuses any other address.
 2. It listens on a **random port**.
@@ -38,7 +40,7 @@ A software key is generated in memory and written **directly into its store, nev
 
 | Backend | Role | Said plainly |
 |---|---|---|
-| Encrypted file | The default for drills and tests. | A copy by nature. A backup is another copy. |
+| Encrypted file | The default for drills and tests; opened as [0015](/decisions/0015-key-files-open-with-a-passkey-on-each-root-card-and-card-secrets-are-sealed-in-the-directory/) says. | A copy by nature. A backup is another copy. |
 | 1Password, through its `op` command line | A persistent home for the software keys of **test roots, intermediates and subkeys**; never a production root or a person's master key. | Its sync gives redundancy against loss, not against compromise (principle 2). Whoever unlocks the vault has the key. |
 | OS keyring, through `github.com/zalando/go-keyring` | Offered, with a warning in the creation output, in every record and on the site. | It can be insecure: programs of the same user can read it, and it has no copy. ritueel refuses to fall back to a file when no keyring exists. |
 
@@ -48,20 +50,20 @@ ritueel **never exports a key from a card or a cloud key** for backup. For cards
 
 The site compares the stores with what each protects against and what each costs: software and its backends, YubiKey (PIV and OpenPGP card) and AWS KMS today. **Google Cloud KMS, Azure Key Vault and other hardware such as Nitrokey are planned.** Each arrives with its first real installation, on a real account or a real device (principle 8), and not before. The site recommends which devices to buy for testing, with the date of each claim.
 
-### An opinionated ledger
+### An opinionated directory
 
-The directory and the ceremony records of [0004](/decisions/0004-ceremonies-plan-confirm-reserve-sign-verify-record/) are the **ledger**. ritueel advises, and the guides say so plainly:
+The **directory** of [0004](/decisions/0004-ceremonies-plan-confirm-reserve-sign-verify-record/) is what the holder keeps; its write-once part, the **ledger**, holds the ceremony records. ritueel advises, and the guides say so plainly:
 
-- It lives **in a git repository of its own,** with signed commits and review before a change lands.
+- It lives **in a git repository of its own,** with signed commits and review before a change lands, if the holder uses git; ritueel itself needs no git ([0004](/decisions/0004-ceremonies-plan-confirm-reserve-sign-verify-record/)).
 - It is **backed up** to a second remote on another provider, and the digest of the last record is kept apart from the repository.
-- It holds public material only. **Revocation certificates, PINs and passphrases are not in it.** The revocation certificates are kept apart from the cards, in at least two places.
+- It holds public material, the sealed secrets of cards ([0015](/decisions/0015-key-files-open-with-a-passkey-on-each-root-card-and-card-secrets-are-sealed-in-the-directory/#card-secrets)) and the wrapped backup of a person's encryption subkey ([0017](/decisions/0017-a-persons-openpgp-key-in-two-stages-an-adopted-primary-first-then-card-born-primaries/#day-to-day-cards)). **Revocation certificates, the PINs a person types and passphrases are not in it.** The revocation certificates are kept apart from the cards, in at least two places.
 - It is part of every key's identity, because it holds the OpenPGP creation times ([0003](/decisions/0003-key-stores-and-the-card-layer/)). Losing it is a loss; the backup is practised.
 
 ### The procedures ritueel will cover
 
 Each procedure gets a page under Learn that says why and when, a guide that gives the steps, and a drill on test keys:
 
-- **Backup and restore drills:** rebuild the state on a clean machine from the ledger and the password manager, and compare it with the cards.
+- **Backup and restore drills:** rebuild the state on a clean machine from the directory and the password manager, and compare it with the cards.
 - **Revocation,** including **OpenPGP revocation certificates generated in advance** and kept apart, and CRLs and root lists for X.509.
 - **Re-sign versus rotate** (principle 3): re-sign yearly, the same key with a new validity; rotate to a new key on an event, and a key in software also after at most three years.
 - **Card loss and replacement.**
@@ -70,9 +72,9 @@ Each procedure gets a page under Learn that says why and when, a guide that give
 
 - The site is rebuilt around Learn. The old concepts pages are reorganised into Learn, Tools and Principles, and every old address redirects.
 - The tools are held to a stricter bar: a feature that makes a ceremony faster but takes the decision from the person is refused.
-- The wizard is a security-critical component of its own: a local web server that acts on root keys. It needs its own tests and a security note in every pull request, but no second ceremony code.
+- The local page is a security-critical component of its own: a read-only local web server in the same binary ([0011](/decisions/0011-the-wizards-one-engine-three-faces-and-a-web-page-that-cannot-confirm-anything/)). It needs its own tests and a security note in every pull request, but no second ceremony code.
 - Two more software backends mean two more integrations to keep, and a platform matrix for the keyring.
-- Pages must say what is built. The wizard, the 1Password backend and the keyring backend are planned until their issues are done.
+- Pages must say what is built. The guided mode, the local page, the 1Password backend and the keyring backend are planned until their issues are done.
 - Planned stores, and the hardware to buy for testing them, are written down before they exist. Each page dates its claims.
 
 ## Roads not taken
@@ -91,7 +93,7 @@ Each procedure gets a page under Learn that says why and when, a guide that give
 
 ## Follow-ups
 
-- The localhost wizard and the terminal wizard ([#17](https://github.com/truvity/ritueel/issues/17), [#16](https://github.com/truvity/ritueel/issues/16)).
+- The local page and the guided mode ([#17](https://github.com/truvity/ritueel/issues/17), [#16](https://github.com/truvity/ritueel/issues/16)).
 - The 1Password store ([#59](https://github.com/truvity/ritueel/issues/59)).
 - The OS-keyring store ([#60](https://github.com/truvity/ritueel/issues/60)).
 - The drills, including the restore drill ([#20](https://github.com/truvity/ritueel/issues/20)).

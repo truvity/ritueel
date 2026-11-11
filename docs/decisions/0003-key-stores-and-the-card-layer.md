@@ -1,7 +1,7 @@
 # 0003 — Key stores and the card layer
 
 **Status:** Accepted; amended by 0007
-**Date:** 2026-11-02
+**Date:** 2026-11-11
 
 ## Context
 
@@ -17,22 +17,23 @@ The card layer was the subject of a spike ([issue #26](https://github.com/truvit
 |---|---|---|---|
 | `software` | An encrypted file, 1Password or the OS keyring ([below](/decisions/0003-key-stores-and-the-card-layer/#the-software-store)) | Test, drill and development roots; a person's own primary | None; every record says the key can be copied |
 | `piv` | piv-go | Root keys on a root card; an intermediate in a card slot | The slot's attestation certificate and the card's certificate |
-| `openpgp-card` | A vendored, patched fork of go-openpgp-card | A person's daily signing subkey | The card's attestation of the key, by its own command |
+| `openpgp-card` | A vendored, patched fork of go-openpgp-card | A person's day-to-day subkeys: signing, authentication, and an encryption subkey loaded from software ([0017](/decisions/0017-a-persons-openpgp-key-in-two-stages-an-adopted-primary-first-then-card-born-primaries/)) | The card's attestation of the key, by its own command |
 | `aws-kms` | The AWS SDK | A company root; an intermediate in a KMS key | The key's description, its policy and the audit trail, read from the service |
 
 The six steps, the plan, the checks and the records are the same for every store ([0004](/decisions/0004-ceremonies-plan-confirm-reserve-sign-verify-record/)). A store is called supported only after it is proven on real hardware or a real account.
 
 ### The `piv` store and the root cards
 
-- **Both root keys live in PIV slots, through piv-go,** and ritueel builds the OpenPGP packets itself; the card signs digests. One applet, one library, one binary, no `gpg` at run time, and attestation works the same for both keys.
-- **Dedicated root cards.** A root card is used for nothing else. piv-go and `scdaemon` each open a card exclusively, so a card shared with daily `gpg` would block one or the other during a ceremony.
-- **Slot map, version 1.** A table built into ritueel, versioned and written into every record. It gives each purpose one place, refuses a collision, and refuses a purpose with no place. Every slot has PIN policy always and touch policy always.
+- **The root keys live in PIV slots, through piv-go,** and ritueel builds the OpenPGP packets itself; the card signs digests. One applet, one library, one binary, no `gpg` at run time, and attestation works the same for every key.
+- **Dedicated root cards.** A root card holds the roots of one holder, each in its own row ([0016](/decisions/0016-several-roots-share-one-pair-of-root-cards-and-the-directory-keeps-a-card-inventory/)), and is never also a day-to-day card or a board card. piv-go and `scdaemon` each open a card exclusively, so a card shared with daily `gpg` would block one or the other during a ceremony.
+- **Slot map, version 1.** A table built into ritueel, versioned and written into every record. The 24 PIV key slots are taken four at a time, in the order 9a, 9c, 9d, 9e and then 82 to 95, as six rows: row 1 is the card's own jobs and each other row is one root ([0016](/decisions/0016-several-roots-share-one-pair-of-root-cards-and-the-directory-keeps-a-card-inventory/#the-rows)). It gives each purpose one place, refuses a collision, and refuses a purpose with no place. Every root key has PIN policy always and touch policy always.
 
-  | Purpose | Place |
+  | Column | Key |
   |---|---|
-  | X.509 root key; it also signs the root list and the SSH CA key list | PIV slot 9c |
-  | OpenPGP primary | A retired PIV slot (82 to 95), fixed when the slot map is built, and recorded |
-  | Break-glass SSH CA | A retired PIV slot, fixed and recorded the same way |
+  | 1 | X.509 root key; it also signs the root list and the SSH CA key list |
+  | 2 | OpenPGP primary |
+  | 3 | Break-glass SSH CA |
+  | 4 | Left empty |
 
   The root list and the SSH CA key list are signed by the X.509 root key because their audience, lifetime, revocation and callers are those of the root: the key whose public key hosts pin is the one that tells them which roots to pin. A cloud setup applies the same rule: the break-glass SSH CA is a key of its own in the root account.
 - **Attestation of a `piv` key** is verified against the maker's current root and its full intermediate bundle, which ritueel ships in the repository with a documented refresh step and a test that fails when a card's chain does not verify. piv-go's built-in list is not used. A card whose intermediate is missing is refused until the bundle is refreshed.
@@ -47,7 +48,7 @@ The six steps, the plan, the checks and the records are the same for every store
 
 The `software` store has three backends, chosen when the root is made ([0007](/decisions/0007-ritueel-teaches-and-its-tools-simplify-the-ceremonies/)). The key is generated in memory and written directly into the backend, never to a file on disk. The formats and the limits of each backend are in [the software store](/reference/software-store/).
 
-- **An encrypted file,** protected by a passphrase: the default for drills and tests, and the home of a person's own primary, which stays offline ([0012](/decisions/0012-personal-openpgp-the-primary-offline-in-a-file-the-daily-subkey-on-a-card/)).
+- **An encrypted key file,** opened as [0015](/decisions/0015-key-files-open-with-a-passkey-on-each-root-card-and-card-secrets-are-sealed-in-the-directory/) says (a passkey on each root card by default, decided and not yet proven on a card: milestone M1; a recovery key that always exists, a passphrase for a holder without cards): the home of drills and tests and of a person's own primary, which stays offline ([0012](/decisions/0012-personal-openpgp-the-primary-offline-in-a-file-the-daily-subkey-on-a-card/), [0017](/decisions/0017-a-persons-openpgp-key-in-two-stages-an-adopted-primary-first-then-card-born-primaries/)).
 - **1Password,** a persistent home for the software keys of test roots, intermediates and subkeys, reached through its `op` command line. Its sync is redundancy against loss, not against compromise: whoever unlocks the vault has the key. It is never the home of a production root or of a person's master key.
 - **The OS keyring,** through `github.com/zalando/go-keyring`, with a warning in the creation output and in every record that it can be insecure and has no copy. ritueel refuses to fall back to a file when no keyring exists.
 
@@ -78,7 +79,7 @@ Whether a new token joins `piv` or `openpgp-card` or stands alone is decided aft
 ### Rules for every store
 
 - **SHA-384 on every backend.** A KMS P-384 key signs only 48-byte SHA-384 digests, and one hash makes a card, a KMS key and a file behave alike.
-- **ritueel stores the OpenPGP creation time of every key it makes or binds.** The creation time fixes the fingerprint and is on no card; for a KMS key it is kept as a key tag and in every published certificate.
+- **ritueel stores the OpenPGP creation time of every key it makes or binds.** The creation time fixes the fingerprint and is on no card; for a KMS key it is kept as a key tag and in every published certificate, or, for an adopted key, only in the directory and the certificate ([0018](/decisions/0018-a-cloud-root-may-be-an-existing-key-that-ritueel-adopts/)).
 - **A KMS key is read by ritueel, never taken from a claim.** A key in another account is read through a read-only role in that account, which its owner creates, because `GetKeyPolicy` does not work across accounts ([the hand-off contract](/reference/hand-off-contract/#aws-kms)).
 - **The OpenPGP packets are built with ProtonMail/go-crypto,** with a small bypass that plugs a card or KMS signer into its signing path. The version is pinned, and a test builds a certificate with a software signer and runs `gpgv`, `sqv` and a tampered control through it.
 

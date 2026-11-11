@@ -1,7 +1,7 @@
 # 0002 — Key custody: every key is born in its store; two root cards, or one KMS root and a replica
 
 **Status:** Accepted
-**Date:** 2026-11-02
+**Date:** 2026-11-11
 
 ## Context
 
@@ -16,18 +16,18 @@ The goal is a key-service experience without trusting software with a key: every
 
 ### Keys
 
-- **Every key is born in the store that holds it and never leaves.** Nothing is imported. No root exists in software at any moment; the `software` store serves tests, drills, development and a person's own primary ([0003](/decisions/0003-key-stores-and-the-card-layer/)).
+- **Every key is born in the store that holds it and never leaves.** Nothing is imported, with one stated exception, for a person's own key: an existing primary adopted as a software key ([0017](/decisions/0017-a-persons-openpgp-key-in-two-stages-an-adopted-primary-first-then-card-born-primaries/)). A cloud key that already exists and that ritueel adopts was still born in the service, so it is not an import ([0018](/decisions/0018-a-cloud-root-may-be-an-existing-key-that-ritueel-adopts/)). No root exists in software at any moment; the `software` store serves tests, drills, development and a person's own primary ([0003](/decisions/0003-key-stores-and-the-card-layer/)).
 - **Redundancy protects against loss, not against compromise.** So the number of root keys follows the store.
-- **On cards: two independent root cards, A and B.** Each card generates its own keys and the two are never copies. Each holds an X.509 root key and an OpenPGP primary key, in PIV slots with PIN always and touch always (the slot map is in [0003](/decisions/0003-key-stores-and-the-card-layer/)). One holder operates both, kept in two places. The two roots are redundancy, not two-person control.
-- **On a cloud key service: one dedicated root account and one root.** The account holds nothing else. It holds one X.509 root key and one OpenPGP primary, each a multi-Region key with a replica in a second Region. A replica covers a lost Region or a lost primary copy; it is the same key and is never counted as a second root. A company that wants a root that does not depend on one provider adds a card root.
+- **On cards: two independent root cards, A and B.** Each card generates its own keys and the two are never copies. Each card holds its own roots: for each root an X.509 root key, an OpenPGP primary and a break-glass SSH CA key (fewer for a root with fewer kinds of key), in the rows of PIV slots that [0016](/decisions/0016-several-roots-share-one-pair-of-root-cards-and-the-directory-keeps-a-card-inventory/) fixes, with PIN always and touch always (the slot map is in [0003](/decisions/0003-key-stores-and-the-card-layer/)). One pair of cards may hold several roots of one holder. One holder operates both, kept in two places. The two roots are redundancy, not two-person control.
+- **On a cloud key service: one dedicated root account and one root.** The account holds nothing else. It holds one X.509 root key and one OpenPGP primary, each a multi-Region key with a replica in a second Region. A replica covers a lost Region or a lost primary copy; it is the same key and is never counted as a second root. A company that wants a root that does not depend on one provider adds a card root. ritueel creates these keys, or adopts keys that already exist in the service ([0018](/decisions/0018-a-cloud-root-may-be-an-existing-key-that-ritueel-adopts/)).
 - **A compromise is answered by revocation and a transition,** in either setup, never by a second copy.
 - **No hardware security module.** A YubiHSM adds cost and no material gain for keys used once a year from a drawer.
 
 ### The yearly ceremony
 
-- **The cards alternate by year:** A one year, B the next. A cloud root has nothing to alternate with and signs every year: at a ceremony, or unattended under a declared renewal policy that can extend trust and never create it ([0008](/decisions/0008-the-operator-prepares-the-holder-and-ritueel-creates-attests-and-verifies-the-root/#renewal-of-a-cloud-root-under-a-policy)). A card root cannot be renewed unattended; `status` reminds its holder.
-- **It runs on the holder's ordinary workstation,** with no live CD and no air gap. The workstation is untrusted: the key never leaves its store, and every byte the root will sign is fixed, shown and confirmed before the store signs it. The ceremony checks are in [0004](/decisions/0004-ceremonies-plan-confirm-reserve-sign-verify-record/).
-- **PINs and admin PINs** live in the holder's password manager, one entry per card.
+- **The cards alternate by year:** A one year, B the next. A cloud root has nothing to alternate with and signs every year at a ceremony. Renewing it without a person, under a declared renewal policy that can extend trust and never create it, is later (M7; [0008](/decisions/0008-the-operator-prepares-the-holder-and-ritueel-creates-attests-and-verifies-the-root/#renewal-of-a-cloud-root-under-a-policy)). A card root cannot be renewed unattended; `status` reminds its holder.
+- **A card root is used only in a machine booted from a read-only system made for the purpose (the offline system),** never in the everyday system ([0016](/decisions/0016-several-roots-share-one-pair-of-root-cards-and-the-directory-keeps-a-card-inventory/#where-a-root-card-is-used)). The plan can be made anywhere, because it holds public information only. A cloud root is signed from the holder's workstation through the ceremony role. In both cases the machine is not trusted: the key never leaves its store, and every byte the root will sign is fixed, shown and confirmed before the store signs it. The ceremony checks are in [0004](/decisions/0004-ceremonies-plan-confirm-reserve-sign-verify-record/).
+- **The PINs the holder types** live in the holder's password manager, one entry per card. The secrets that ritueel makes for a card (the management key, the PUK and, on a day-to-day card, the Admin PIN) are sealed in the directory ([0015](/decisions/0015-key-files-open-with-a-passkey-on-each-root-card-and-card-secrets-are-sealed-in-the-directory/#card-secrets)).
 
 ### Validity, renewal and replacement
 
@@ -45,7 +45,7 @@ The goal is a key-service experience without trusting software with a key: every
 
 ### The accepted limit
 
-Whoever holds one root card and its PIN, or the role that uses a cloud root, can sign things outsiders trust until that root is revoked and the update reaches them. Standard tools cannot require m-of-n. A stolen card without its PIN locks after three tries. Whoever holds a cloud root's renewal role can only keep alive what the ledger already holds, past the day it should have lapsed, until a ceremony revokes it.
+Whoever holds one root card and its PIN, or the role that uses a cloud root, can sign things outsiders trust until that root is revoked and the update reaches them. Standard tools cannot require m-of-n. A stolen card without its PIN locks after three tries. Whoever will hold a cloud root's renewal role (later, M7) can only keep alive what the directory already holds, past the day it should have lapsed, until a ceremony revokes it.
 
 ## Consequences
 
@@ -61,7 +61,8 @@ Whoever holds one root card and its PIN, or the role that uses a cloud root, can
 ## Roads not taken
 
 - **Two holders, or a remote second holder.** A second pair of eyes, but either card alone signs, so the separation is procedural and every ceremony waits on a person.
-- **A live-CD or air-gapped ceremony.** An isolated machine, but the key never leaves the card, so it gains nothing for the friction.
+- **An air-gapped machine kept for the purpose.** An isolated machine, but the key never leaves the card, so it gains little for the friction; the read-only offline system of [0016](/decisions/0016-several-roots-share-one-pair-of-root-cards-and-the-directory-keeps-a-card-inventory/) is the middle course.
+- **The everyday workstation for a card root.** Nothing to boot, but the card is exposed to everything that machine runs for the whole sitting; the read-only offline system costs one boot ([0016](/decisions/0016-several-roots-share-one-pair-of-root-cards-and-the-directory-keeps-a-card-inventory/)).
 - **One root on one card, with a spare.** One anchor, but the spare is either a copy of the key or nothing a verifier trusts.
 - **One key generated off the card and imported into both.** One anchor and two cards, but the key existed in software and no card can attest where it was born.
 - **A software key wrapped by both cards, or split 2-of-2.** Any algorithm, but the key is in memory at every signing, and a split stops all signing when either card is lost.
@@ -79,5 +80,5 @@ Whoever holds one root card and its PIN, or the role that uses a cloud root, can
 
 ## Follow-ups
 
-- Adopt the roots on the two cards and run the adoption drill, the gate before the first signed release ([#48](https://github.com/truvity/ritueel/issues/48)).
-- Ask for the advisory review in `ritueel yearly` and keep it in the record ([#30](https://github.com/truvity/ritueel/issues/30)).
+- Adopt the project's root and run the adoption drill, the gate before the first signed release; card roots follow the first release ([#48](https://github.com/truvity/ritueel/issues/48)).
+- Ask for the advisory review in the plan that `ritueel due` makes and keep it in the record ([#30](https://github.com/truvity/ritueel/issues/30)).
