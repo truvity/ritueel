@@ -8,7 +8,7 @@ import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { figures } from '../figures/index.mjs';
 import { renderFigure } from '../figures/markup.mjs';
-import { PIV_ROWS, ROOT_CARD_ROWS, rootCardCells } from '../figures/slots.mjs';
+import { PIV_ROWS, ROOT_CARD_ROWS, rootCardCells, serverCardCells } from '../figures/slots.mjs';
 import { docsFiles, repoRoot } from '../lib/published.mjs';
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -171,13 +171,37 @@ test('the root card shows the 24 slots of the table, once each, and the rows of 
   assert.equal(new Set(ids).size, 24);
   assert.deepEqual(textsOf(fig.wide).filter((t) => t.cls.includes('t-id')).map((t) => t.text).sort(), [...ids].sort());
   assert.deepEqual(textsOf(fig.wide).filter((t) => t.cls.includes('t-row')).map((t) => t.text), ROOT_CARD_ROWS.map((r) => r.label));
-  // the same kind of key in the same column in the rows that hold a bundle's root; a spare in row 1 only
+  // the same kind of key in the same column in the rows that hold a bundle's root; a row with fewer
+  // kinds leaves cells empty; row 1 holds no key at all
   const cells = rootCardCells();
+  const kinds = ['X.509', 'OpenPGP', 'SSH CA', null];
   for (const row of ROOT_CARD_ROWS.filter((r) => r.kind === 'bundle')) {
-    assert.deepEqual(cells.filter((c) => c.row === row.n).map((c) => c.state === 'empty' ? 'empty' : c.type), ['X.509', 'OpenPGP', 'SSH CA', 'empty']);
+    for (const c of cells.filter((c) => c.row === row.n)) {
+      assert.equal(c.type, c.state === 'empty' ? null : kinds[c.col], `${row.label}: ${c.id} holds the kind of its column`);
+    }
   }
+  assert.ok(cells.filter((c) => c.row === 1).every((c) => c.state === 'empty'), 'row 1 holds no root');
   assert.equal(ROOT_CARD_ROWS.filter((r) => r.kind === 'free').length, 1, 'one row is kept free');
   assert.equal(ROOT_CARD_ROWS.filter((r) => r.kind === 'bundle' || r.kind === 'room').length, 4, 'four bundles on a pair of cards');
+});
+
+test('the server card shows the 24 slots once each in both drawings, ten held, and the accent on x509-intermediate only', () => {
+  const fig = figures['server-card'];
+  assert.ok(fig, 'the server card figure is registered');
+  const cells = serverCardCells();
+  assert.deepEqual(cells.map((c) => c.id), PIV_ROWS.flat());
+  assert.equal(cells.filter((c) => c.state !== 'empty').length, 10);
+  assert.deepEqual(cells.filter((c) => c.state === 'acme').map((c) => c.use), ['x509-intermediate']);
+  for (const svg of [fig.wide, fig.narrow]) {
+    assert.deepEqual(textsOf(svg).filter((t) => t.cls.includes('t-id')).map((t) => t.text).sort(), [...PIV_ROWS.flat()].sort());
+  }
+});
+
+test('the day-to-day card holds three OpenPGP keys and an empty PIV application', () => {
+  const fig = figures['day-to-day-card'];
+  assert.ok(fig, 'the day-to-day card figure is registered');
+  const all = textsOf(fig.svg).map((t) => t.text);
+  for (const w of ['signing', 'decryption', 'authentication', 'passkey', 'stays empty']) assert.ok(all.includes(w), `the word "${w}" is drawn`);
 });
 
 test('every <Figure name> of docs/**/*.mdx is registered, and every registered figure is placed on a page', () => {
