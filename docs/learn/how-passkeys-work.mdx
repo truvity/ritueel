@@ -3,7 +3,9 @@ title: How passkeys work
 description: What a passkey is, how a sign-in goes, what the PIN and the touch protect, and how a passkey on a card can open a key file.
 ---
 
-*Design phase: ritueel is in design and has no release ([roadmap](/roadmap/)); nothing on this page is built. The facts were read on 2026-11-10 and again on 2026-11-11 in Yubico's documentation, in the FIDO and WebAuthn standards and in tool source, and nothing was measured on a card. Firmware numbers matter: a YubiKey 5 with older firmware does less.*
+import Figure from '../../site/src/components/Figure.astro';
+
+*Design phase: ritueel is in design and has no release ([roadmap](/roadmap/)); nothing on this page is built, and the pictures show the design and what the standards document, not a program. The facts were read on 2026-11-10 and again on 2026-11-11 in Yubico's documentation, in the FIDO and WebAuthn standards and in tool source, and nothing was measured on a card. Firmware numbers matter: a YubiKey 5 with older firmware does less.*
 
 This page is the FIDO2 side of a YubiKey 5. Read [How a YubiKey holds keys](/learn/how-a-yubikey-holds-keys/) first: it shows what the card holds and how PIV and OpenPGP work. This page teaches what a passkey is, how a sign-in goes, what the PIN and the touch protect, and how a passkey on a card can open a key file. To see where passkeys sit among the places a root can live, read [choosing where a root lives](/learn/choosing-where-a-root-lives/).
 
@@ -20,6 +22,10 @@ There are two kinds, and the difference matters for a loss:
 | How many | At most 100 (firmware 5.7.4 and later; 25 before; Yubico firmware 5.7 page) | No limit |
 | Who keeps the key handle | Nobody; the card finds the passkey by site name | The program or site that asked for it, and it must hand the key handle back each time |
 | After a FIDO reset | Erased | Stops working |
+
+<Figure name="two-kinds-of-passkey">
+  Two kinds of passkey. Kept on the card, the card holds the whole record (100 at most from firmware 5.7.4). Not kept, the card holds one small secret and rebuilds the key from the key handle that someone else keeps. Yubico and OpenSSH, read 2026-11-11 (see Sources).
+</Figure>
 
 A passkey not kept on the card is rebuilt from a **key handle** (the standards call it the credential id), a blob that the card gave out when the passkey was made. A passkey kept on the card can be deleted one by one, with the PIN, from firmware 5.2.1. A new card has no FIDO2 PIN (Yubico FIDO page).
 
@@ -46,9 +52,9 @@ Two accounts at the same site are two passkeys with the same site name and diffe
 
 ### Kept on the card, or rebuilt from a key handle
 
-**Kept on the card.** The card holds the whole record. A site can ask the card, "do you have a passkey for `example.com`?" without knowing who is signing in. That is how a sign-in with no user name works (Yubico FIDO page).
+**Kept on the card.** A site can ask the card, "do you have a passkey for `example.com`?" without knowing who is signing in. That is how a sign-in with no user name works (Yubico FIDO page).
 
-**Not kept on the card.** The card holds nothing for it. The passkey is rebuilt from the **key handle** that the site or the program keeps and hands back at each use. OpenSSH's notes explain how this works for U2F hardware: the card keeps one small secret of its own, and from that secret and the key handle it works out the private key each time it is asked. So it needs almost no storage and can serve any number of passkeys, and the handle must be supplied for every use (OpenSSH, PROTOCOL.u2f, read 2026-11-11).
+**Not kept on the card.** OpenSSH's notes explain how this works for U2F hardware: from its one small secret and the key handle, the card works out the private key each time it is asked. So it needs almost no storage and can serve any number of passkeys, and the handle must be supplied for every use (OpenSSH, PROTOCOL.u2f, read 2026-11-11).
 
 Two results follow.
 
@@ -74,14 +80,16 @@ What each protects, in a loss:
 
 ### How a sign-in works
 
-ritueel signs in to no site. This list shows what the card does, so the next section can leave the site out.
+ritueel signs in to no site. The picture shows what the card does, so the next section can leave the site out.
 
-1. **The site** sends a fresh random challenge. For a passkey not kept on the card, it also sends the key handle.
-2. **The browser** checks the site name against the page's address, hashes the challenge together with that address, and hands the card the site name and the hash. *Result: the card never sees the address, only the site name.*
-3. **You: the PIN,** if the site requires it. *Result: the card knows the person is verified.*
-4. **You: the touch.** *Result: the card knows someone is present.*
-5. **The card** finds the passkey, by site name or by the key handle, and signs with that passkey's private key. *Result: a signature leaves the card, and the private key does not.*
-6. **The site** checks the challenge, the address, the hash of its own name, the two flags it needs, and the signature against the public key it saved. *Result: you are signed in. What crossed the network is useless later, because the next challenge is different. A fake site at another address would get a signature that the real site refuses.*
+<Figure name="sign-in">
+  A sign-in with a passkey, in six steps. WebAuthn Level 3 and Yubico, read 2026-11-11 (see Sources).
+</Figure>
+
+Two things follow.
+
+- **What crossed the network is useless later,** because the next challenge is different.
+- **A fake site at another address** would get a signature that the real site refuses.
 
 ### A passkey that opens a key file
 
@@ -89,11 +97,11 @@ This is the use that ritueel's design rests on ([ADR 0015](/decisions/0015-key-f
 
 ritueel locks key files with age, a small file-encryption format. A file can be locked to several recipients, each of which can open it alone. The key file has two: an **unlock key** and a recovery key. The private half of the unlock key is wrapped, and a passkey on each root card unwraps it. Any one root card of the pair is enough. The secret is not used on the file itself. It unwraps a second key, the unlock key, so that locking a new file needs no card.
 
-1. **The program** reads the key file.
-2. **The program** asks the card for the secret of its passkey, for a given input. The passkey is of the second kind, so a key handle has to be given to the card; where it is kept is not decided. *Result: the card waits for the PIN.*
-3. **You: the PIN.** The record requires user verification. *Result: the card will answer.*
-4. **You: the touch.** *Result: the card returns the secret, the same one each time for the same passkey and input.*
-5. **The program** uses the secret to unwrap the private half of the unlock key, and opens the file with it. *Result: the key is in memory. The record says the unlock key's private half is in memory at each unlock.*
+<Figure name="passkey-opens-key-file">
+  A passkey on a root card opens a key file. There is no site and no signature. ADR 0015; decided, not yet proven.
+</Figure>
+
+The passkey is of the second kind, so a key handle has to be given to the card; where it is kept is not decided. The record says the unlock key's private half is in memory at each unlock.
 
 Writing a new key file needs no card, because the public half of the unlock key is a recipient. Browsers can do the same with the same standard, which they call PRF. ritueel does not unlock in its browser page, which runs on your own machine, because the browser would hand the secret to the page's script.
 
