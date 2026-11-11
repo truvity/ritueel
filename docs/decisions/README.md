@@ -52,10 +52,11 @@ Every record has these parts, in this order:
 | [0008](0008-a-persons-own-key.md) | A person uses OpenPGP as their own key, an adopted primary first and card-born primaries later | Accepted |
 | [0009](0009-release-keys-and-the-keyring.md) | Release keys are the root primaries; the keyring is a file that ritueel makes and a pipeline packages | Accepted |
 | [0010](0010-the-engine-the-process-and-the-page.md) | One engine with three faces, one process on one fixed port, and a page that cannot confirm anything | Accepted |
+| [0011](0011-publishing-and-what-to-do-after-a-ceremony.md) | ritueel changes only your bundle; it sends out one public key and prints what to do after a ceremony | Accepted |
 
 ## The first eighteen records
 
-The first set of records, 0001 to 0018, was rewritten on 2026-11-11 from a checked list of decisions into the ten records above. The numbers 0001 to 0010 are now used again, which the design phase allows; a number is never reused after the first release. The old files are in git at commit [d0ae12d](https://github.com/truvity/ritueel/tree/d0ae12da2432d5ae95cf95d68fb85ba3dda6cfee/docs/decisions), and their old site addresses redirect to them. Old titles in the table are quoted as they were written; "trust products" and the staff-key design are no longer part of ritueel. Each new record's "Replaces" section says which parts flow into it; where an old number appears in an issue, a pull request or a note, read it in this table.
+The first set of records, 0001 to 0018, was rewritten on 2026-11-11 from a checked list of decisions into the ten records above. Record 0011 was added later, on 2026-11-11, for a new subject; it replaces none of the old ones, so the old 0011 in the table below (the wizards, now in 0010) is not the new 0011: read an old number in the table, a new one in the index. The numbers 0001 to 0010 are now used again, which the design phase allows; a number is never reused after the first release. The old files are in git at commit [d0ae12d](https://github.com/truvity/ritueel/tree/d0ae12da2432d5ae95cf95d68fb85ba3dda6cfee/docs/decisions), and their old site addresses redirect to them. Old titles in the table are quoted as they were written; "trust products" and the staff-key design are no longer part of ritueel. Each new record's "Replaces" section says which parts flow into it; where an old number appears in an issue, a pull request or a note, read it in this table.
 
 | Old | Old title | Flows into |
 |-----|-----------|------------|
@@ -88,3 +89,4 @@ The first set of records, 0001 to 0018, was rewritten on 2026-11-11 from a check
 [0008]: 0008-a-persons-own-key.md
 [0009]: 0009-release-keys-and-the-keyring.md
 [0010]: 0010-the-engine-the-process-and-the-page.md
+[0011]: 0011-publishing-and-what-to-do-after-a-ceremony.md
