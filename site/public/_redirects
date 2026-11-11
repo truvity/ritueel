@@ -4,7 +4,8 @@
 # The site publishes the pages of site/published.txt and nothing else of docs/. A line below whose
 # target is a page of docs/ is kept up to date by site/scripts/gen-redirects.mjs: a 301 to the
 # page while it is published, a 302 to its file on GitHub while it is not (a page may come back).
-# The block at the end is generated, one 302 for the old address of every unpublished page.
+# The block at the end is generated: one 302 for the old address of every unpublished page, and the
+# no-slash form of every hand line (a hand line is written with the closing slash only).
 # After a change to the list or to a line here, run `just site-redirects`.
 #
 # Decision records renumbered or merged on 2026-11-01, during the design phase
