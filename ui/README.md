@@ -1,7 +1,8 @@
 # ritueel, the local page (and its demo)
 
 Status: the page and its demo exist; the program that serves the page is not built
-(ritueel is in its design phase). See [the demo](https://ritueel.id/demo/) and
+(ritueel is in its design phase), the contract is `v1alpha1` and may change in any
+pre-release (no breaking-change check runs). See [the demo](https://ritueel.id/demo/) and
 [the design of the process and the page](https://ritueel.id/design/#the-process-and-the-page)
 on the site, and `proto/README.md` for the API.
 
@@ -248,22 +249,33 @@ No router, no state library, no font package, no ESLint, no screenshot library.
 
 ## What the real program replaces
 
-Only the transport. The process is described by [record 0010](../docs/decisions/0010-the-engine-the-process-and-the-page.md): one
-long-running background process, the same program as the command line, started on demand
-by the first command that needs it, and not a system service. The command line reaches
-it through a Unix socket that only the same user can open. A browser cannot open a Unix
-socket, so for the page the same process also listens on `127.0.0.1`, on a random port,
-only while the page is in use, and registers there only `InspectService` and
-`PlanService` (the reads and `SavePlan`). A ceremony is confirmed in the terminal: the
-digest arrives over the socket, never from the page. Same API, not the same trust. The
-loopback listener lets a request in only with the one-time token of the session, which
-becomes an `HttpOnly`, `SameSite=Strict` cookie, checks the `Host` header exactly and,
-for a `POST`, `Sec-Fetch-Site` or `Origin`, and ends after 15 minutes without a request
-([the profile](../docs/decisions/0010-the-engine-the-process-and-the-page.md),
-rules 6 to 12). Other programs of the same user can reach that port while the page
-is in use, so it is trusted no more than any other web request. The records mark the
-details of how the process ends and where its socket lives as proposed; this page does
-not depend on them. The process serves one bundle.
+Only the transport. The process is described by [record 0010](../docs/decisions/0010-the-engine-the-process-and-the-page.md),
+rules 6 to 12, in plain words:
+
+- There is one ritueel process, the same program as the command line. The first command
+  that needs it starts it in the background, and the command line then talks to it. It is
+  not a service: it is not installed, never started at login or boot, and never outlives
+  logout or reboot. There is no second door for the command line and no separate step that
+  the user must run to serve the page.
+- It serves the command line and the page on one fixed loopback port (`127.0.0.1` only).
+  The number 7488 is proposed and not yet checked against the IANA list of assigned
+  ports; what happens when a process of another version answers is also proposed.
+- There are two kinds of token. A full-rights token, read from a file only the user can
+  read, is for the command line. A page-rights token is for the browser: it is used once,
+  becomes an `HttpOnly`, `SameSite=Strict` cookie, and can call only the reads and
+  `SavePlan` (`InspectService` and `PlanService`). No call that confirms, signs, creates a
+  key or runs a ceremony is open to it. A ceremony is confirmed in the terminal.
+- Every request is checked for its `Host` and, separately, its `Origin`. Before the
+  command line sends a confirmation or a PIN, the listener proves that it knows the secret
+  in the token file.
+- There is one exclusive lock per bundle, and the process serves one bundle. It keeps no
+  ceremony state and no PIN.
+- It ends after 15 minutes without a call (never in the middle of a running ceremony),
+  at once on a stop command, and at logout or reboot.
+
+Other programs of the same user can reach the port while the process runs, so the page
+is trusted no more than any other web request. This page does not depend on the
+proposed details.
 
 In the real program the same built page (`npm run build:real`, `BASE=./`) is
 embedded in the binary and served by that process; `src/api/client.ts` then builds
@@ -303,6 +315,12 @@ tell whether a user ID inside it is quoted.
 - The personal example shares its pair of root cards with another bundle (a declared row
   and one undeclared row); no server card and no test root are drawn. The kind exists in
   the contract and the Cards screen has a place for it; no example draws it.
+- Still proposed in the records, and so shown as proposed: the member names inside
+  `history/<ceremony>/`, `trust/<number>/` and `requests/<name>/` (record 0006 decides
+  only the folders and `history/<ceremony>/plan.json`); how the touch condition reads for
+  a cloud key (record 0005); and the name and the severity of the finding for an occupied
+  row that nobody declared (record 0003).
+- The page lists no requests: no record asks for a screen of `requests/<name>/`.
 - The times of day in the made-up dates are approximate: the days follow the pages, the
   clock does not always follow the ceremony time. The page shows days only.
 - Fonts depend on what is installed (see Design).
