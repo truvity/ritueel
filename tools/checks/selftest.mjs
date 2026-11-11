@@ -66,13 +66,14 @@ const readme = readFileSync(join(repo, 'docs/decisions/README.md'), 'utf8')
   .replace(/(## Index\n)[\s\S]*$/, '$1\n| ADR | Decision | Status |\n|-----|----------|--------|\n');
 const row = (n, slug, status) => `| [${n}](${n}-${slug}.md) | A decision | ${status} |\n`;
 const GOOD = ['- **Another way.** It would be simpler, and it lost because it breaks the example.'];
-const FOLLOW = ['- Test it at a card ([#11](https://github.com/truvity/ritueel/issues/11)).'];
-const record = ({ num = '0001', status = 'Accepted', date = '2026-10-31', drop = '', roads = GOOD, follow = FOLLOW, extra = [], decision = ['Text.'] } = {}) =>
+const FOLLOW = ['- **Not yet proven.** Test it at a card ([#11](https://github.com/truvity/ritueel/issues/11)).'];
+const record = ({ num = '0001', status = 'Accepted', date = '2026-10-31', drop = '', roads = GOOD, follow = FOLLOW, extra = [], decision = ['1. We use the example.'], replaces = ['Nothing; new in the rewrite.'], why = ['Text.'] } = {}) =>
   [
     `# ${num} — We use the example`, '', `**Status:** ${status}`, `**Date:** ${date}`, '', ...extra,
-    ...['Context', 'Decision', 'Consequences'].filter((s) => s !== drop).flatMap((s) => [`## ${s}`, '', ...(s === 'Decision' ? decision : ['Text.']), '']),
+    ...['Decision', 'Why', 'What it costs'].filter((s) => s !== drop).flatMap((s) => [`## ${s}`, '', ...(s === 'Decision' ? decision : s === 'Why' ? why : ['Text.']), '']),
     '## Roads not taken', '', ...roads, '',
-    ...(drop === 'Follow-ups' ? [] : ['## Follow-ups', '', ...follow, '']),
+    ...(drop === 'Not yet proven or only proposed' ? [] : ['## Not yet proven or only proposed', '', ...follow, '']),
+    ...(drop === 'Replaces' ? [] : ['## Replaces', '', ...replaces, '']),
   ].join('\n');
 const adr = (extra = {}, idx = row('0001', 'we-use-the-example', 'Accepted')) => ({
   'docs/decisions/0000-template.md': template,
@@ -82,19 +83,32 @@ const adr = (extra = {}, idx = row('0001', 'we-use-the-example', 'Accepted')) =>
 });
 const one = (opts) => ({ 'docs/decisions/0001-we-use-the-example.md': record(opts) });
 expect('a good record', 'decisions', adr(), 'pass', { has: ['1 records'] });
-expect('no follow-ups, said as None.', 'decisions', adr(one({ follow: ['None.'] })), 'pass');
+expect('nothing unproven, said as None.', 'decisions', adr(one({ follow: ['None.'] })), 'pass');
 expect('a road with a colon after the name', 'decisions', adr(one({ roads: ['- **Another way**: simpler, and it lost because it breaks the example.'] })), 'pass');
 expect('a road with no reason', 'decisions', adr(one({ roads: ['- **Another way.**'] })), 'fail', { has: ['a road not taken is one line'] });
 expect('a road in the old three-bullet form', 'decisions', adr(one({ roads: ['### Another way', '', '- Pros: one.', '- Cons: two.', '- Why not: three.'] })), 'fail', { has: ['a road not taken is one line'] });
 expect('no road at all', 'decisions', adr(one({ roads: [] })), 'fail', { has: ['lists no option'] });
-expect('a follow-up without its issue', 'decisions', adr(one({ follow: ['- Test it at a card.'] })), 'fail', { has: ['links its issue'] });
-expect('an empty follow-ups section', 'decisions', adr(one({ follow: [] })), 'fail', { has: ['"## Follow-ups" is empty'] });
-expect('no follow-ups section', 'decisions', adr(one({ drop: 'Follow-ups' })), 'fail', { has: ['## Follow-ups'] });
-expect('an Accepted record with an open part', 'decisions', adr(one({ decision: ['Text.', '', '### Open', '', '- A question.'] })), 'fail', { has: ['no open part'] });
-expect('a Proposed record with an open part', 'decisions', adr(one({ status: 'Proposed', decision: ['Text.', '', '### Open', '', '- A question.'] }), row('0001', 'we-use-the-example', 'Proposed')), 'pass');
+expect('an unproven line without its issue', 'decisions', adr(one({ follow: ['- **Not yet proven.** Test it at a card.'] })), 'fail', { has: ['links its issue'] });
+expect('an unproven line without its label', 'decisions', adr(one({ follow: ['- Test it at a card ([#11](https://github.com/truvity/ritueel/issues/11)).'] })), 'fail', { has: ['**Not yet proven.**'] });
+expect('a proposed line', 'decisions', adr(one({ follow: ['- **Proposed.** The port is open ([#17](https://github.com/truvity/ritueel/issues/17)).'] })), 'pass');
+expect('an empty unproven section', 'decisions', adr(one({ follow: [] })), 'fail', { has: ['"## Not yet proven or only proposed" is empty'] });
+expect('no unproven section', 'decisions', adr(one({ drop: 'Not yet proven or only proposed' })), 'fail', { has: ['## Not yet proven or only proposed'] });
+expect('no Replaces section', 'decisions', adr(one({ drop: 'Replaces' })), 'fail', { has: ['## Replaces'] });
+expect('an empty Replaces section', 'decisions', adr(one({ replaces: [] })), 'fail', { has: ['"## Replaces" is empty'] });
+expect('a Decision that is not numbered', 'decisions', adr(one({ decision: ['We use the example.'] })), 'fail', { has: ['numbered list'] });
+expect('a Decision numbered out of order', 'decisions', adr(one({ decision: ['1. One.', '3. Three.'] })), 'fail', { has: ['where 2 is expected'] });
+expect('a Decision with a wrapped line', 'decisions', adr(one({ decision: ['1. One', '   and more.', '2. Two.'] })), 'pass');
+expect('a Decision with a table', 'decisions', adr(one({ decision: ['1. One.', '', '| a | b |', '|---|---|', '| 1 | 2 |'] })), 'fail', { has: ['no heading or table'] });
+expect('a Decision with a sub-heading', 'decisions', adr(one({ decision: ['1. One.', '', '### Slots', '', '2. Two.'] })), 'fail', { has: ['no heading or table'] });
+expect('a Decision with a code block', 'decisions', adr(one({ decision: ['1. One.', '', '```', 'x', '```'] })), 'fail', { has: ['no code block'] });
+const long = (n) => Array.from({ length: n }, () => 'word').join(' ');
+expect('an over-long record is a warning', 'decisions', adr(one({ why: [long(1200)] })), 'pass', { has: ['warning', 'limit 1100'] });
+expect('an over-long record in strict mode', 'decisions', adr(one({ why: [long(1200)] })), 'fail', { env: { RECORD_SIZE_STRICT: '1' }, has: ['limit 1100'] });
+expect('an Accepted record with an open part', 'decisions', adr(one({ decision: ['1. Text.', '', '### Open', '', '- A question.'] })), 'fail', { has: ['no open part'] });
+expect('a Proposed record', 'decisions', adr(one({ status: 'Proposed' }), row('0001', 'we-use-the-example', 'Proposed')), 'pass');
 expect('a line of the template comment left in', 'decisions', adr(one({ extra: [template.split('\n').find((l) => /^Keep the text public/.test(l)), ''] })), 'fail', { has: ["template's instructions comment"] });
 expect('no records', 'decisions', { ...adr({}, ''), 'docs/decisions/0001-we-use-the-example.md': undefined }, 'fail', { has: ['empty sweep'] });
-expect('a missing section', 'decisions', adr(one({ drop: 'Consequences' })), 'fail', { has: ['## Consequences'] });
+expect('a missing section', 'decisions', adr(one({ drop: 'What it costs' })), 'fail', { has: ['## What it costs'] });
 expect('an unknown status', 'decisions', adr(one({ status: 'Maybe' })), 'fail', { has: ['not one of'] });
 expect('superseded by a missing record', 'decisions', adr(one({ status: 'Superseded by 0099' }), row('0001', 'we-use-the-example', 'Superseded by 0099')), 'fail', { has: ['0099'] });
 expect('a date that is no day', 'decisions', adr(one({ date: '2026-02-30' })), 'fail', { has: ['YYYY-MM-DD'] });
