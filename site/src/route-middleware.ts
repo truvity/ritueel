@@ -10,6 +10,9 @@
 // link set in a page's own `editUrl` (the generated decision pages) is left alone; the
 // other generated pages have none. site/scripts/check-edit-links.mjs checks the result in
 // the built site.
+//
+// And it marks the "Decisions" menu entry as the current one on a decision record page
+// (/decisions/<id>/), which is not the entry's own address.
 import { defineRouteMiddleware } from '@astrojs/starlight/route-data';
 
 type TocItem = { children?: TocItem[] };
@@ -24,12 +27,19 @@ const countHeadings = (items: TocItem[]): number =>
 const CONTENT_DIR = 'src/content/docs/';
 const REPO_DIR = 'docs/';
 
+// The address of the decisions index, the menu entry that a record page belongs to.
+const DECISIONS = '/decisions/';
+
 export const onRequest = defineRouteMiddleware((context) => {
   const route = context.locals.starlightRoute;
   const { filePath } = route.entry;
   if (route.editUrl && typeof route.entry.data.editUrl !== 'string' && filePath.startsWith(CONTENT_DIR)) {
     const base = route.editUrl.href.slice(0, route.editUrl.href.length - filePath.length);
     route.editUrl = new URL(base + REPO_DIR + filePath.slice(CONTENT_DIR.length));
+  }
+  if (context.url.pathname.startsWith(DECISIONS) && context.url.pathname !== DECISIONS) {
+    const entry = route.sidebar.find((e) => e.type === 'link' && e.href === DECISIONS);
+    if (entry && entry.type === 'link') entry.isCurrent = true;
   }
   if (route.toc && countHeadings(route.toc.items.slice(1)) < 2) {
     route.toc = undefined;

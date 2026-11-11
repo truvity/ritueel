@@ -22,7 +22,7 @@ const records = (await listDecisions()).map(decisionFacts);
   </p>
   <p>
     A record links to the specifications and the research it was written with. This site does not publish those pages; such a
-    link opens the file in the repository on GitHub. The one specification published here is the
+    link opens the file in the repository on GitHub. The one specification published here is the{' '}
     <a href="/reference/hand-off-contract/">hand-off contract</a>, because another project reads it at that address.
   </p>
   {
@@ -48,7 +48,7 @@ const records = (await listDecisions()).map(decisionFacts);
                 <a href={`/decisions/${r.id}/`}>{r.title}</a>
               </td>
               <td>{r.status}</td>
-              <td>{r.date ?? '—'}</td>
+              <td class="date">{r.date ?? '—'}</td>
             </tr>
           ))}
         </tbody>
@@ -56,3 +56,10 @@ const records = (await listDecisions()).map(decisionFacts);
     )
   }
 </StarlightPage>
+
+<style>
+  /* A date such as 2026-11-11 stays on one line; the hyphens would let it break. */
+  td.date {
+    white-space: nowrap;
+  }
+</style>
