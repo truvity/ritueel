@@ -2,9 +2,9 @@
 
 Status: a design, version `v1alpha1`. Nothing serves it yet: the program is not built, and the page's demo answers the same calls from fixtures (`ui/src/fixtures/`) through an in-memory transport. It may change in any pre-release.
 
-The API between ritueel's local page (`ui/`) and the ritueel process, written in Protobuf (package `ritueel.local.v1alpha1`). The program will serve it with ConnectRPC; the page calls it with `@connectrpc/connect`. See [the local page](https://ritueel.id/tools/local-page/).
+The API between ritueel's local page (`ui/`) and the ritueel process, written in Protobuf (package `ritueel.local.v1alpha1`). The program will serve it with ConnectRPC; the page calls it with `@connectrpc/connect`. See [the demo](https://ritueel.id/demo/) and [the design of the process and the page](https://ritueel.id/design/#the-process-and-the-page).
 
-The process is one long-running background process, started on demand, that serves one bundle (the directory with a fixed structure that holds everything ritueel knows about one trust domain). It is the one described by [ADR 0011](https://ritueel.id/decisions/0011-the-wizards-one-engine-three-faces-and-a-web-page-that-cannot-confirm-anything/) and [the wizard reference](https://ritueel.id/reference/wizard/#the-ritueel-process). It serves this API on a Unix socket for the command line, and the page's part of it, the reads and `SavePlan`, on the loopback address for the browser while the page is in use, because a browser cannot open a Unix socket. A call that confirms or runs a ceremony is never registered on the loopback door: the digest typed in the terminal arrives over the socket. Same API, not the same trust: the loopback listener binds 127.0.0.1 on a random port, lets a request in only with the one-time token of the session (then a cookie), checks the Host header exactly, for a POST checks Sec-Fetch-Site or Origin, and ends after 15 minutes without a request ([reference/wizard](https://ritueel.id/reference/wizard/#the-web-page-the-security-profile), rules 1 to 4, 7 and 9). Other programs of the same user can reach that port while the page is in use, so it is trusted no more than any other web request.
+The process is one long-running background process, started on demand, that serves one bundle (the directory with a fixed structure that holds everything ritueel knows about one trust domain). It is the one described by [record 0010](../docs/decisions/0010-the-engine-the-process-and-the-page.md). It serves this API on a Unix socket for the command line, and the page's part of it, the reads and `SavePlan`, on the loopback address for the browser while the page is in use, because a browser cannot open a Unix socket. A call that confirms or runs a ceremony is never registered on the loopback door: the digest typed in the terminal arrives over the socket. Same API, not the same trust: the loopback listener binds 127.0.0.1 on a random port, lets a request in only with the one-time token of the session (then a cookie), checks the Host header exactly, for a POST checks Sec-Fetch-Site or Origin, and ends after 15 minutes without a request ([record 0010](../docs/decisions/0010-the-engine-the-process-and-the-page.md), rules 6 to 12). Other programs of the same user can reach that port while the page is in use, so it is trusted no more than any other web request.
 
 **No call takes or returns a secret, a PIN or a passphrase.** There is no field for one, and none will be added. The page is a view: it never confirms a ceremony. `ritueel --dir BUNDLE run PLAN --confirm DIGEST` happens in the terminal, on the offline system or on your workstation. The only value that goes from the page to the process, other than choices from a fixed list, is the digest of a plan, which is public.
 
@@ -12,7 +12,7 @@ The process is one long-running background process, started on demand, that serv
 
 | Path | What |
 |---|---|
-| `ritueel/local/v1alpha1/common.proto` | Shared words: `Severity`, `Store`, `Intention`, `Subject`, `LedgerStatus`. |
+| `ritueel/local/v1alpha1/common.proto` | Shared words: `Severity`, `Store`, `Intention`, `Subject`, `HistoryStatus`. |
 | `ritueel/local/v1alpha1/inspect_service.proto` | `InspectService`: six read calls. |
 | `ritueel/local/v1alpha1/plan_service.proto` | `PlanService`: the wizard, three calls. |
 | `../buf.yaml`, `../buf.gen.yaml` | The buf module (lint `STANDARD`) and the TypeScript generator, at the repository root. |
@@ -28,10 +28,10 @@ The Go side comes with the program: `protoc-gen-go` and `protoc-gen-connect-go` 
 
 | Service | Call | Request | Response | Writes? |
 |---|---|---|---|---|
-| `InspectService` | `GetSummary` | `GetSummaryRequest` | `GetSummaryResponse` (bundle, as_of, ledger, due items, finding counts, counts, pending plans, setup steps) | no |
+| `InspectService` | `GetSummary` | `GetSummaryRequest` | `GetSummaryResponse` (bundle, as_of, history, due items, finding counts, counts, pending plans, setup steps) | no |
 | | `ListFindings` | `ListFindingsRequest` (min severity) | `ListFindingsResponse` (`Finding`: reason, severity, subject, evidence, fix command, fix intention, learn path) | no |
 | | `ListRoots` | `ListRootsRequest` | `ListRootsResponse` (`Root`: label A or B, keys and card, `OpenPgpCertificate` with primary, user IDs, `SubkeySet` by year and card, `Subkey`; `CloudKey`; `DelegatedKey`) | no |
-| | `ListCeremonies` | `ListCeremoniesRequest` | `ListCeremoniesResponse` (`LedgerStatus` and `Ceremony`, newest first) | no |
+| | `ListCeremonies` | `ListCeremoniesRequest` | `ListCeremoniesResponse` (`HistoryStatus` and `Ceremony`, newest first) | no |
 | | `ListCards` | `ListCardsRequest` | `ListCardsResponse` (`Card`: `PivApplication` in six `PivRow`s of four `Slot`s, `OpenPgpApplication`, `Fido2Application`) | no |
 | | `ListTrustFiles` | `ListTrustFilesRequest` | `ListTrustFilesResponse` (`TrustFile` with its check) | no |
 | `PlanService` | `ListIntentions` | `ListIntentionsRequest` | `ListIntentionsResponse` (`IntentionOption`: applicable or greyed with a reason, recommended) | no |
@@ -51,15 +51,15 @@ Enums, all with an `_UNSPECIFIED = 0` first value and the enum name as prefix:
 
 | Screen | Calls |
 |---|---|
-| **Start** (getting started, what is due) | `GetSummary` (due items, finding counts, ledger banner, setup steps, pending plans). `ListIntentions` for the "Make a plan" button. |
+| **Start** (getting started, what is due) | `GetSummary` (due items, finding counts, history banner, setup steps, pending plans). `ListIntentions` for the "Make a plan" button. |
 | **Findings** | `ListFindings`. Each finding's `fix_intention` opens the wizard through `StartPlan`; its `fix_command` and `learn_path` are shown as given. |
 | **Key view** (a certificate by year and by card; a root and its delegated keys) | `ListRoots`. Card names come from `ListCards` (join on serial); findings about a key come from `ListFindings` (join on `subject.identifier`). |
-| **History** (the ledger) | `ListCeremonies` (the banner is its `ledger`). |
+| **History** (one record per ceremony) | `ListCeremonies` (the banner is its `history`). |
 | **Cards** (inventory and the use of every slot) | `ListCards`. |
 | **Trust files** | `ListTrustFiles`. |
 | **Wizard: goals** | `ListIntentions`. |
 | **Wizard: questions and preview** | `StartPlan` twice: first without answers (questions), then with them (the plan: steps, bundle changes, digest, equivalent command, run command). |
-| **Wizard: save and hand-over** | `SavePlan` (path inside the bundle, digest, what to copy and bring, what the plan file holds). In the demo `written` is false and `notice` says so, and the path is the demo's proposal, `ledger/<ceremony>/plan.json`. |
+| **Wizard: save and hand-over** | `SavePlan` (path inside the bundle, digest, what to copy and bring, what the plan file holds). In the demo `written` is false and `notice` says so, and the path is `history/<ceremony>/plan.json` (record 0006, rule 7). |
 
 ## Things a designer must know
 
@@ -111,9 +111,9 @@ Enums, all with an `_UNSPECIFIED = 0` first value and the enum name as prefix:
    in the demo answers `written: false` with a notice and a file preview: show
    the preview as "what saving would write". The real call rebuilds the plan, refuses a
    digest that is not the rebuilt plan's, and writes canonical JSON (RFC 8785); its
-   SHA-256 is the digest. Where the file goes is the demo's proposal,
-   `ledger/<ceremony>/plan.json`: the records say only that the process writes the plan
-   inside the bundle.
+   SHA-256 is the digest. The file goes to
+   `history/<ceremony>/plan.json` inside the bundle (record 0006, rule 7); the names of
+   the other members of that folder are proposed.
 10. **`int64` is a string in JSON** (`size_bytes`), and `Timestamp` is an
     RFC 3339 string; the generated types turn them into `bigint` and `Timestamp`.
 11. **What each example bundle finds.** `globex` has one finding, a cloud key
@@ -125,7 +125,7 @@ Enums, all with an `_UNSPECIFIED = 0` first value and the enum name as prefix:
     the open bundle's place into its commands. A personal bundle has no root list: its
     one trust file is the person's public certificate (`TRUST_FILE_KIND_OPENPGP_CERTIFICATE`).
     `PendingPlan` (`GetSummaryResponse.pending_plans`) lists plans saved as
-    the proposed `ledger/<ceremony>/plan.json` and not yet run; no example bundle has one and no
+    `history/<ceremony>/plan.json` and not yet run; no example bundle has one and no
     screen shows the list yet.
 12. **A root is written `bundle/label`.** `Root.label` is `A`, `B` and so on, as in
     the bundle's `root.json`; the bundle is named by its directory, and the name

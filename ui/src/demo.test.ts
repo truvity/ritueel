@@ -466,6 +466,25 @@ describe('the words of the maintainer stay', () => {
     }
     expect(hits).toEqual([]);
   });
+  // The words the ten records replaced (0006 rule 5, 0001, 0008, glossary): the history, not the
+  // ledger; trust files in trust/<number>/, not products; requests/<name>/, not answers/; and no
+  // staff key, certifier, card helper, board card or yearly command (0008, 0003, 0005).
+  const OLD_WORDS_OF_THE_RECORDS = /ledger|trust products?|\bproducts\b|\banswers\/|staff|certifier|card helper|board card|yearly (command|intention)/i;
+  it('no fixture, screen, contract or README uses a word the ten records replaced', () => {
+    const PROTO = '../../proto/ritueel/local/v1alpha1/';
+    const sources = [
+      ...[...files('fixtures', /\.json$/), ...files('screens', /\.tsx$/), ...files('lib', /\.ts$/), ...files('ui', /\.tsx$/)].map((f) => join(HERE, f)),
+      ...['common.proto', 'inspect_service.proto', 'plan_service.proto'].map((n) => join(HERE, PROTO, n)),
+      join(HERE, '../README.md'),
+      join(HERE, '../../proto/README.md'),
+    ];
+    const hits: string[] = [];
+    for (const f of sources) {
+      const m = OLD_WORDS_OF_THE_RECORDS.exec(readFileSync(f, 'utf8'));
+      if (m) hits.push(`${f}: ${m[0]}`);
+    }
+    expect(hits).toEqual([]);
+  });
 });
 
 describe('every kind of card has a word', () => {
