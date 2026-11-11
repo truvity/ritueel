@@ -38,4 +38,4 @@ For a root that is lost, stolen or compromised, use [A lost root card](/guides/l
 
 ## Drill
 
-Revoke a software test key and check each verifier in the table above. Then do it once with a rehearsal card whose revocation certificate is in its stored place. The record says how long it took from decision to refusal.
+Revoke a software test key and check each verifier in "How you know it worked". Then do it once with a rehearsal card whose revocation certificate is in its stored place. The record says how long it took from decision to refusal.

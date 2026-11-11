@@ -39,7 +39,7 @@ There are two paths. **Card roots and software roots** take the steps below once
 
 1. **Declare the policy** in `ritueel.yaml` under `aws_kms.renewal`: the renewal role, the intermediates it may renew, and how many days before expiry it may run. Result: the next ceremony renders a key policy with the Renew statement, which you confirm in its plan.
 2. **Have the operator make the renewal role and the schedule** ([Prepare the cloud root](/guides/prepare-the-cloud-root/)). The scheduler runs `ritueel status --output json` and calls `ritueel renew` when a finding falls within the policy's days. Result: a run that is too early is refused with `too-early`, and one that is due writes a record whose confirmation is `policy`.
-3. **Publish and hand back** as in steps 5 and 6 above, from the operator's pipeline. Result: each system that holds an intermediate installs its new certificate or binding.
+3. **Publish and hand back** as in steps 6 and 7 above, from the operator's pipeline. Result: each system that holds an intermediate installs its new certificate or binding.
 4. **Read the alerts.** A failed run is an alert from the scheduler, and `status` keeps warning at 60, 30 and 14 days. Result: a broken schedule is noticed a month before anything expires.
 
 A person still meets the root for everything that is not a renewal: a new key, a change of the root set, a revocation, and the yearly [restore drill](/guides/run-a-drill/).

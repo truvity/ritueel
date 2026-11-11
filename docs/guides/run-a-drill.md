@@ -37,7 +37,7 @@ A ceremony happens about once a year, so nobody is practised, and the day you ne
 ## When something goes wrong
 
 - **A revocation file is missing or its digest differs.** Find the right copy now. This is the failure the drill exists to find; it costs nothing today and everything on the day.
-- **The signers file does not verify the history.** Someone committed with a key you do not list, or you listed the wrong one. Find out which before you trust the bundle.
+- **The signers file does not verify the commits.** Someone committed with a key you do not list, or you listed the wrong one. Find out which before you trust the bundle.
 - **A card is not connected.** Check 5 cannot run for it. Fetch the card from its place: that also tells you whether you can.
 
 ## Drill
