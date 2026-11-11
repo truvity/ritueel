@@ -9,11 +9,11 @@ The pages on this site teach first: the logic of handling roots and intermediate
 
 ## What is published
 
-What ritueel.id publishes is the list in `site/published.txt`, and nothing else. A new page is added to the list only if a reader of the target needs it: the path of six, the going-further pages, the glossary, where it stands, the decisions. Everything else is written under `docs/` at its usual path and read on GitHub: it is working material of the design. Do not add a page to the list to make a link work; link it as usual, and the build turns a link to an unpublished page into a link to the file on GitHub.
+What ritueel.id publishes is the list in `site/published.txt`, and nothing else. A new page is added to the list only if a reader of the target needs it: the path of six, the going-further pages, the three pictures pages of How it works, the glossary, where it stands, the decisions. Everything else is written under `docs/` at its usual path and read on GitHub: it is working material of the design. Do not add a page to the list to make a link work; link it as usual, and the build turns a link to an unpublished page into a link to the file on GitHub.
 
-Today the site publishes the Learn index and its ten pages, the demo (`/demo/`, a build product of `ui/`), the glossary, the roadmap, the status page (`/status/`), the decision records as an archive, the hand-off contract and the 404 page. Guides, Tools, Reference (apart from the hand-off contract), Principles, Research and Contributing are not on the site.
+Today the site publishes the Learn index and its ten pages, the three How it works pages (the overview, the three cards, the bundle and the USB stick), the demo (`/demo/`, a build product of `ui/`), the glossary, the roadmap, the status page (`/status/`), the decision records as an archive, the hand-off contract and the 404 page. Guides, Tools, Reference (apart from the hand-off contract), Principles, Research and Contributing are not on the site.
 
-The menu has five entries, Learn, Demo, Glossary, Where it stands and Decisions, written in `site/astro.config.mjs`. A page is added to the menu there, and its slug must also be a line of `site/published.txt`. The hand-off contract is not in the menu; the decisions index links it.
+The menu has six entries, Learn, How it works, Demo, Glossary, Where it stands and Decisions, written in `site/astro.config.mjs`. A page is added to the menu there, and its slug must also be a line of `site/published.txt`. The hand-off contract is not in the menu; the decisions index links it.
 
 ## Where a page lives
 
@@ -22,6 +22,7 @@ Docs live in `docs/`, next to the thing they describe. When the thing changes, i
 | Kind | Where | For | Published? |
 |---|---|---|---|
 | Learn | `docs/learn/` | The teaching: what a root is, why it stays offline, the custody chain, the key stores compared, the life of a root. Written before any tool exists, and kept true after. It comes first on the site. | The Learn index and ten pages of the list |
+| How it works | `docs/how-it-works/` | ritueel in pictures: the five ideas, the ceremony, the three cards, the bundle and the USB stick. Few words, each picture with its caption. The program is not built, so each page says once that the pictures show the design. | Yes: the overview and two pages |
 | Guides | `docs/guides/` | One guide per ritual, ceremony or transition, step by step, with its drill on test keys. A guide says how; the matching Learn page says why and when. | No |
 | Tools | `docs/tools/` | What the command line and the wizard do, and whether each is built. | No |
 | Principles | `docs/principles.md` | The rules the design follows, each linked to the record that decides it. | No |
@@ -37,15 +38,29 @@ Say it in the first paragraph of a page about a tool or a store: "Planned", "Not
 
 ## Page format
 
-Pages are Markdown (`.md`). A page is MDX (`.mdx`) only when it places components, which today is the home page (`docs/index.mdx`) alone. The reasons: `.md` renders readably on GitHub and in other tools, reviews stay text-only, and a broken component in `.mdx` breaks the whole build. Starlight's Markdown already has asides, code blocks, tables and links, so a page that wants any of those stays `.md`. `just check-mdx-pages` fails an `.mdx` file that imports no component or places none ("use .md: MDX only for pages that place components").
+Pages are Markdown (`.md`). A page is MDX (`.mdx`) only when it places components. Today those are the home page (`docs/index.mdx`), the three pages of `docs/how-it-works/`, and the two Learn pages that carry figures, `how-a-yubikey-holds-keys.mdx` and `how-passkeys-work.mdx`. A page that places `<Figure>` or `<Proposed>` is `.mdx`; a page with only asides stays `.md`. The reasons: `.md` renders readably on GitHub and in other tools, reviews stay text-only, and a broken component in `.mdx` breaks the whole build. Starlight's Markdown already has asides, code blocks, tables and links, so a page that wants only those stays `.md`. `just check-mdx-pages` fails an `.mdx` file that imports no component or places none ("use .md: MDX only for pages that place components").
 
 The "Edit page" link of each page opens the file in `docs/` (`docs/<page>.md`, or `.mdx`). `site/src/route-middleware.ts` builds it, because Starlight alone would use the path of the symlink under `site/src/content/docs/`; the generated decision pages set their own source file. `check-built.sh` fails when a link does not point at a file in the repository.
 
-## Asides and diagrams
+## Asides
 
-How settled a point is shows in how it is written. Plain prose is agreed. `:::note[Proposed]` is the design as proposed, awaiting the maintainer. `:::caution[Open]` is undecided and links to the decision issue.
+How settled a point is shows in how it is written. Plain prose is agreed. `:::note[Proposed]` is the design as proposed, awaiting the maintainer. `:::caution[Open]` is undecided and links to the decision issue. A decision that is made and not yet proven on hardware is plain prose that says so: "decided, not yet proven", with the record that decides it.
 
-Use a table or a short numbered list rather than a diagram. A Mermaid diagram (a ```` ```mermaid ```` fence) may arrive with the site; one that needs scrolling to be read is too big.
+In an `.mdx` page write `<Proposed>…</Proposed>` instead of the directive. It is the same note, titled "Proposed", and it comes from `site/src/components/Proposed.astro`: a page under `docs/` has no `node_modules` to resolve a bare import from, so an `.mdx` page imports site components by a relative path (`import Proposed from '../../site/src/components/Proposed.astro'`).
+
+## Figures
+
+A figure is a drawing on the page. Draw when a picture says it better than a table or a short numbered list: what moves between whom and in which order, where things sit on a card or a stick. A table is still the way to compare options, versions or numbers. One figure makes one claim. A page that is only a picture of text it already has does not get a figure.
+
+**Where they live.** A figure is a Node module in `site/figures/<name>.mjs`, registered in `site/figures/index.mjs`, and a page places it with `<Figure name="…">caption</Figure>` after `import Figure from '../../site/src/components/Figure.astro'`. The drawing is inline SVG, built from the helpers of `site/figures/draw.mjs`; the slots of the cards come from the one table in `site/figures/slots.mjs`, so the wide and the tall drawing of a card cannot differ. Not a raw `<svg>` in a `.md` page (GitHub strips it), not an image file (it cannot follow the light and the dark theme), not Mermaid (it needs a script, and the policy lists scripts by hash). The styles are `site/src/styles/figures.css`, which ships only on a page that places a figure.
+
+**The look.** Ink is `currentColor`; every other colour is a Starlight variable, so both themes work with no second copy. One accent marks the one thing the figure is about, with a heavier outline as a second cue. A held slot is a solid outline with a key, an empty slot is dashed, a row kept free is dotted and hatched.
+
+**Words and sizes.** A label in a drawing is at most three words and at least 12 px at the drawn scale; a sentence belongs in the caption. Every arrow has a label that says what it does ("copies", "signs"). The caption is one or two sentences in the page, and states what the figure shows. The `aria-label` says what is drawn and does not repeat the caption. A strip is six panels, each 280 by 224 units, each with a title of one or two words and a caption of at most 18 words. A layout has a wide drawing (760 units) and a tall one (360 units) for a phone; CSS shows one by the width of its column. Use the fixed words of the glossary, and none of the words the design dropped ("staff", "board card", "ceremony machine", "test card", "folder" for a bundle). Draw no real name, serial, address or secret: examples are `acme`, `globex`, `example.com` and `00000001`.
+
+**What a figure says about the design.** The program is not built, and each page that carries figures says so once, near the top. A name or a layout that is only proposed is marked with a note titled "Proposed" next to the figure, and the figure carries the same word where it prints the name; where a name is still being changed, the figure prints none. A fact from outside, such as another project's slot plan, carries its source and the day it was read in the caption.
+
+**Checks.** `site/test/figures.test.mjs` runs in `just site-lint` and checks every figure: the size and the number of panels, the label on each drawing, the classes against `figures.css`, no font under 12 px, the label length, a label on every arrow, one accent object, the banned words, and that every `<Figure name>` in `docs/` is registered and every registered figure is placed. `site/scripts/check-built.sh` checks the built pages: a figure page holds its `<figure>` and drawings with `role="img"`. Neither one sees what is drawn. Look at it: `node site/figures/preview.mjs <dir>` writes one standalone page per figure and theme, to open in headless Chrome. Check at 1280 px and at 390 px, in the light and the dark theme, that nothing overlaps or is cut off and that the page does not scroll sideways.
 
 ## Links
 
@@ -55,7 +70,7 @@ Write this site path form for every page, published or not. The build rewrites a
 
 ## Home pages
 
-A home page says what the project is, what exists today, who it is for and where to start, in about 200 words with about ten links in the text, besides a row of the menu entries, which the home page carries because it has no sidebar. It gives an honest status (designed, built or planned) and promises no tool that is not built. Prose that starts from the reader's pain belongs in the Learn pages, not on the home page.
+A home page says what the project is, what exists today, who it is for and where to start, in about 400 words at most, with about ten links in the text, besides a row of the menu entries, which the home page carries because it has no sidebar. It gives an honest status (designed, built or planned) and promises no tool that is not built. It may carry a short block of the project's main ideas, one sentence each, that links to How it works. Prose that starts from the reader's pain belongs in the Learn pages, not on the home page.
 
 ## Plain and short
 
