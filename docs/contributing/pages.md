@@ -11,7 +11,9 @@ The pages on this site teach first: the logic of handling roots and intermediate
 
 What ritueel.id publishes is the list in `site/published.txt`, and nothing else. A new page is added to the list only if a reader of the target needs it: the path of six, the going-further pages, the glossary, where it stands, the decisions. Everything else is written under `docs/` at its usual path and read on GitHub: it is working material of the design. Do not add a page to the list to make a link work; link it as usual, and the build turns a link to an unpublished page into a link to the file on GitHub.
 
-Today the site publishes the ten Learn pages of the list, the glossary, the roadmap, the decision records and the hand-off contract. Guides, Tools, Reference (apart from the hand-off contract), Principles, Research and Contributing are not on the site.
+Today the site publishes the Learn index and its ten pages, the demo (`/demo/`, a build product of `ui/`), the glossary, the roadmap, the status page (`/status/`), the decision records as an archive, the hand-off contract and the 404 page. Guides, Tools, Reference (apart from the hand-off contract), Principles, Research and Contributing are not on the site.
+
+The menu has five entries, Learn, Demo, Glossary, Where it stands and Decisions, written in `site/astro.config.mjs`. A page is added to the menu there, and its slug must also be a line of `site/published.txt`. The hand-off contract is not in the menu; the decisions index links it.
 
 ## Where a page lives
 
@@ -19,7 +21,7 @@ Docs live in `docs/`, next to the thing they describe. When the thing changes, i
 
 | Kind | Where | For | Published? |
 |---|---|---|---|
-| Learn | `docs/learn/` | The teaching: what a root is, why it stays offline, the custody chain, the key stores compared, the life of a root. Written before any tool exists, and kept true after. It comes first on the site. | The ten pages of the list |
+| Learn | `docs/learn/` | The teaching: what a root is, why it stays offline, the custody chain, the key stores compared, the life of a root. Written before any tool exists, and kept true after. It comes first on the site. | The Learn index and ten pages of the list |
 | Guides | `docs/guides/` | One guide per ritual, ceremony or transition, step by step, with its drill on test keys. A guide says how; the matching Learn page says why and when. | No |
 | Tools | `docs/tools/` | What the command line and the wizard do, and whether each is built. | No |
 | Principles | `docs/principles.md` | The rules the design follows, each linked to the record that decides it. | No |
@@ -103,7 +105,7 @@ The `site-change` skill is the checklist for a change to `site/`, `site/public/`
 - **The Worker runs first for `/api/*` only.** Every other request is a static asset and never invokes the Worker, which keeps the site off the Free plan's daily Worker request limit. Never widen `assets.run_worker_first` in `site/wrangler.jsonc`, and never turn on Workers Cache. The page script of the live status stays a file of this site (`vite.build.assetsInlineLimit` is 0), so the Content-Security-Policy needs no new entry.
 - **No remote assets:** no font, script, image, style or embed from another host. Use inline SVG, or a CC0 icon (for example from simple-icons) inlined and used only to name the product it stands for, or an asset in the repository.
 - **Edit links point at the real file.** `site/src/route-middleware.ts` rewrites Starlight's "Edit page" URL from `site/src/content/docs/<id>.md` to `docs/<id>.md`, and `site/scripts/check-edit-links.mjs` (run by `check-built.sh`) fails when a link in the built site is not a file in the checkout or not the source of its page. Do not point `editLink.baseUrl` back at `docs/`.
-- **A moved or renamed page** gets a `301` line in the hand-written part of `site/public/_redirects` in the same pull request, and every link to it is updated. A page that is not published is redirected (`302`) to its file on GitHub by the generated block of the same file: run `just site-redirects` and commit the result. `just site-lint` fails when the block is out of date.
+- **A moved or renamed page** gets a `301` line in the hand-written part of `site/public/_redirects` in the same pull request, and every link to it is updated. A page that is not published is redirected (`302`) to its file on GitHub by the generated block of the same file: run `just site-redirects` and commit the result. `just site-lint` fails when the block is out of date. The block holds each address with and without its closing slash; a hand line covers the address it names only.
 - **Link checking is bounded.** `lychee` runs with a timeout, bounded retries, a limit on redirects and a wall-clock `timeout` around the whole run, and with `-v` so a stall names its URL. A host that loops on redirects, such as `www.rfc-editor.org`, is excluded in `lychee.toml`. A job that runs past its usual time is a finding: cancel one run, read its log, fix the bound, then rerun.
 - **A strict build fails on one warning.** A slow external fetch is such a warning. Retry that one failure; keep strict mode for everything else.
 - **Rerunning an old run uses its old merge commit** and so its old configuration. After a fix lands on `main`, a stuck pull request needs a fresh push or a rebuilt branch ([Branches and pull requests](/contributing/workflow/#rebuild-instead-of-rewriting)).
