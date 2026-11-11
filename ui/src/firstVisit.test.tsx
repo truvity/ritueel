@@ -175,8 +175,10 @@ describe('first-visit help is in the demo and not in the real build', () => {
     expect(text).toContain('The bar above has two demo switches. Example bundle changes the made-up keys');
     expect(text).toContain('a bundle is the directory that holds everything ritueel knows about one set of keys');
     expect(text).toContain('the ritueel command line is not built yet');
-    // the switches are explained before the path, not after it
-    expect(text.indexOf('Example bundle changes')).toBeLessThan(text.indexOf('Try these three, in order:'));
+    // the path comes first and the switches are explained after it, so that on a phone the three links lie above the bottom bar
+    expect(text.indexOf('Try these three, in order:')).toBeLessThan(text.indexOf('Everything on this page is made up.'));
+    expect(text.indexOf('Make a plan')).toBeLessThan(text.indexOf('Example bundle changes'));
+    expect(text.indexOf('Example bundle changes')).toBeLessThan(text.indexOf('Read what a root is'));
     expect(text).toContain('Page state shows each screen');
     expect(text).toContain('Read what a root is');
     expect(text).toContain('All the words');
@@ -189,6 +191,15 @@ describe('first-visit help is in the demo and not in the real build', () => {
     expect(shell).toContain('Example bundle');
     expect(shell).not.toContain('Try the states');
     expect(shell).not.toContain('Try a bundle');
+  });
+  it('the demo bar keeps its sentence that the data is made up, and keeps the way back to the site on every width', () => {
+    const shell = source('ui/Shell.tsx');
+    expect(shell).toContain('The data is made up, and ritueel is still in design. Nothing here acts.');
+    // Below lg the bar's own "Back to ritueel.id" link is hidden (it costs a 44 px line on a phone); the DEMO mark in the header
+    // and the footer link remain, so a phone still has two ways back.
+    expect(shell).toMatch(/className="hidden items-center [^"]*lg:inline-flex" href=\{siteUrl\(\)\}>\s*Back to ritueel\.id/);
+    expect(shell).toContain('aria-label="This is a demo. Back to ritueel.id"');
+    expect(shell.match(/Back to ritueel\.id/g)!.length).toBeGreaterThanOrEqual(3);
   });
   it('a command in the demo says the command line is not built; the real build does not', async () => {
     const { Cmd } = await import('./ui/Cmd');
