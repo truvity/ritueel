@@ -70,7 +70,7 @@ Write this site path form for every page, published or not. The build rewrites a
 
 ## Home pages
 
-A home page says what the project is, what exists today, who it is for and where to start, in about 400 words at most, with about ten links in the text, besides a row of the menu entries, which the home page carries because it has no sidebar. It gives an honest status (designed, built or planned) and promises no tool that is not built. It may carry one figure of the whole chain, because the first outside reader asked to see the chain as one picture; its caption says the figure shows the design, not a program. It may carry a short block of the project's main ideas, one sentence each, that links to How it works. Under "Is it for you?" it may list a few situations the reader recognises, one line each, and say what they end in. Longer prose that starts from the reader's pain belongs in the Learn pages, not on the home page.
+A home page says what the project is, what exists today, who it is for and where to start, in about 400 words at most, with about ten links in the text, besides a row of the menu entries, which the home page carries because it has no sidebar. It gives an honest status (designed, built or planned) and promises no tool that is not built. It may carry one figure of the whole chain; its caption says the figure shows the design, not a program. It may carry a short block of the project's main ideas, one sentence each, that links to How it works. Under "Is it for you?" it may list a few situations the reader recognises, one line each, and say what they end in. Longer prose that starts from the reader's pain belongs in the Learn pages, not on the home page.
 
 ## Plain and short
 
