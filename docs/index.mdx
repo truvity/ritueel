@@ -8,6 +8,7 @@ hero:
 ---
 
 import Actions from '../site/src/components/home/Actions.astro';
+import Destinations from '../site/src/components/home/Destinations.astro';
 
 <Actions
   actions={[
@@ -16,9 +17,19 @@ import Actions from '../site/src/components/home/Actions.astro';
   ]}
 />
 
-ritueel helps one person or a small team keep a private CA root or an OpenPGP master key for years without losing it, leaking it or letting it expire. A root is the one key that everything else trusts; if it is lost or stolen, everything signed under it is lost or suspect.
+<Destinations
+  links={[
+    { text: 'Learn', href: '/learn/' },
+    { text: 'Demo', href: '/demo/' },
+    { text: 'Glossary', href: '/glossary/' },
+    { text: 'Where it stands', href: '/status/' },
+    { text: 'Decisions', href: '/decisions/' },
+  ]}
+/>
 
-The tools are planned: a program that guides you through each use of the root (a ceremony) and keeps a record of it.
+ritueel helps one person or a small team keep a private CA root (the top key of a PKI, a system of certificates) or an OpenPGP master key for years without losing it, leaking it or letting it expire. A root is the one key that everything else trusts; if it is lost or stolen, everything signed under it is lost or suspect.
+
+The tools are planned: a program that guides you through each use of the root (a [ceremony](/glossary/)) and keeps a record of it.
 
 ## What exists today
 
