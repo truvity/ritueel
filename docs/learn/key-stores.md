@@ -15,7 +15,7 @@ One rule holds for every store ([principle 1](/principles/)): **a key is born in
 
 Two paths lead to a root that others rely on. Pick the first unless you cannot.
 
-- **The cloud root** is the recommended path for a team with a cloud account. It is one key that the service keeps, with a replica that the service keeps in a second Region, an audit trail of every use, and no cards to alternate. You pay in an account to secure, a provider to trust, and a key that cannot attest where it was made: you read its policy from the service instead ([what a store can prove](/learn/what-a-store-can-prove/)). The first guide is [Prepare the cloud root](/guides/prepare-the-cloud-root/).
+- **The cloud root** is the recommended path for a team with a cloud account. It is one dedicated account with three keys, each with a replica that the service keeps in a second Region, an audit trail of every use, and no cards to alternate. You pay in an account to secure, a provider to trust, and a key that cannot attest where it was made: you read its policy from the service instead ([what a store can prove](/learn/what-a-store-can-prove/)). The first guide is [Prepare the cloud root](/guides/prepare-the-cloud-root/).
 - **Two cards** is the path for a person or a lab with no cloud account, and it is the more demanding one: two independent roots on two cards, each made on its card, kept in two places, alternating by year ([Two roots in practice](/learn/two-roots/)).
 
 To walk the questions in order, read [Choosing where a root lives](/learn/choosing-where-a-root-lives/).
@@ -55,11 +55,11 @@ To walk the questions in order, read [Choosing where a root lives](/learn/choosi
 
 The two hardware and cloud stores are opened up in [How a YubiKey holds keys](/learn/how-a-yubikey-holds-keys/) and [How a KMS key works](/learn/how-a-kms-key-works/).
 
-A company root in KMS is **one root and a multi-Region replica, in one dedicated root account** ([record 0004](../decisions/0004-the-cloud-root.md)). A company that wants a root that does not depend on one provider adds a card root.
+A company root in KMS is **three keys, each with a multi-Region replica, in one dedicated root account** ([record 0004](../decisions/0004-the-cloud-root.md)). A company that wants a root that does not depend on one provider adds a card root.
 
 ## Planned stores
 
-These are not supported and not scheduled. Each arrives with its first real installation, a real account or a real device, because a store that is only imagined cannot be tested ([principle 8](/principles/)). The tests a store must pass first are in [record 0002](../decisions/0002-where-a-key-lives.md).
+These are not supported and not scheduled. Each arrives with its first real installation, a real account or a real device, because a store that is only imagined cannot be tested ([principle 8](/principles/)). A store is called supported only after it is proven on real hardware or a real account ([record 0002](../decisions/0002-where-a-key-lives.md), rule 1). The list of tests a store passes first is in [the earlier record](https://github.com/truvity/ritueel/blob/d0ae12da2432d5ae95cf95d68fb85ba3dda6cfee/docs/decisions/0003-key-stores-and-the-card-layer.md#planned-stores).
 
 | Store | Why it is interesting | What has to be measured first |
 |---|---|---|

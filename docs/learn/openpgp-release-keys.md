@@ -5,7 +5,7 @@ sidebar:
   order: 21
 ---
 
-*Design phase: this page teaches the model of [record 0009](../decisions/0009-release-keys-and-the-keyring.md). No release is signed until the card roots exist and the adoption drill has run. The measurements are in [the verifier matrix](/research/openpgp-verifier-matrix-2026-11/).*
+*Design phase: this page teaches the model of [record 0009](../decisions/0009-release-keys-and-the-keyring.md). No release is signed until the project's root is adopted and attested or read, and the adoption drill has run. Card roots are added after the first release. The measurements are in [the verifier matrix](/research/openpgp-verifier-matrix-2026-11/).*
 
 OpenPGP has no certificate chains. It has a primary key, subkeys that the primary binds, and certifications. A release is signed by a subkey that a primary has bound, and users verify with a keyring that holds the primaries.
 

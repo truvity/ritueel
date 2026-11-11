@@ -7,7 +7,7 @@ sidebar:
 
 *Design phase: this page teaches the model of [record 0003](../decisions/0003-root-cards.md). Checks of other projects were made on 2026-10-29; check again before you rely on one.*
 
-Two roots are redundancy, not control. One holder operates both cards, which are stored in two separate locations, and the cards alternate by year. This page shows that the practice is ordinary, and what to expect from clients. It is about cards, which cannot be copied, and one pair of cards may serve more than one bundle of one holder, each root in its own row ([record 0003](../decisions/0003-root-cards.md)); a cloud root is one key and a replica ([record 0004](../decisions/0004-the-cloud-root.md)).
+Two roots are redundancy, not control. One holder operates both cards, which are stored in two separate locations, and the cards alternate by year. This page shows that the practice is ordinary, and what to expect from clients. It is about cards, which cannot be copied, and one pair of cards may serve more than one bundle of one holder, each root in its own row ([record 0003](../decisions/0003-root-cards.md)); a cloud root is one dedicated account with three keys, each with a replica ([record 0004](../decisions/0004-the-cloud-root.md)).
 
 ## What others do
 

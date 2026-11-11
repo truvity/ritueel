@@ -10,7 +10,7 @@ sidebar:
 | | [Public PKI](/learn/chain-public-pki/) | [Private PKI](/learn/chain-private-pki/) | [OpenPGP](/learn/chain-openpgp/) | [SSH](/learn/chain-ssh/) |
 |---|---|---|---|---|
 | **Root** | A public CA's root, in browser and system trust stores. | Your own root. | A primary key that only certifies. | An SSH CA key. |
-| **Held by** | The CA, in audited hardware. | You: cards, a cloud key. | You: offline, in a store only a ceremony reaches. | You, or a system you run. |
+| **Held by** | The CA, in audited hardware. | You: cards, a cloud key. | You: in a store only a ceremony reaches (a root card or the cloud root; a person's own primary in an encrypted file kept offline). | You, or a system you run. |
 | **Middle** | The CA's intermediates, online at the CA. | Per-environment intermediates, with name constraints. | Subkeys for signing, encryption and authentication, on a card. | Usually none, or one CA per environment. |
 | **End** | TLS certificates for your sites. | Certificates for workloads and hosts. | Signatures, encrypted messages, logins. | User and host certificates. |
 | **How a verifier gets the root** | It ships with the operating system or browser. | You distribute it to every trust store. | A fingerprint over a channel it trusts, a keyring package, or a key directory. | The host is configured with the CA's public key. |

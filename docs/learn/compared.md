@@ -33,7 +33,7 @@ ritueel adds three things. None of the options above, as read on 2026-11-02, doe
 2. **Roots born in their store, with attestation, a history and a trust sequence.** A root is made inside its card or its cloud key and never leaves, a token's attestation proves it ([What a store can prove](/learn/what-a-store-can-prove/)), every ceremony is written to a hash-chained record ([The history](/learn/the-history/)), and a signed list of roots carries a sequence number that a host can check ([record 0006](../decisions/0006-bundle-history-and-trust-files.md)). This is designed, not built.
 3. **A written hand-off with test vectors** between a root custodian and a system that holds intermediates ([the contract](/reference/hand-off-contract/#test-vectors)). The contract and its vectors exist; no tool implements either end yet.
 
-ritueel does not offer **M-of-N control**: any one active root signs alone, and [the accepted limit](../decisions/0002-where-a-key-lives.md) says so. It does not offer **Ed25519 roots**, because a PIV slot cannot sign with them ([record 0002](../decisions/0002-where-a-key-lives.md)). And it is **not the daily tool**: you will keep using `gpg` and `step` for daily work, and ritueel is the occasional ceremony, a single command-line program that is planned ([the roadmap](/roadmap/)).
+ritueel does not offer **M-of-N control**: any one active root signs alone, and [the accepted limit](../decisions/0002-where-a-key-lives.md) says so. It does not offer **Ed25519 roots**, because a PIV slot cannot sign with them ([record 0009](../decisions/0009-release-keys-and-the-keyring.md), Roads not taken). And it is **not the daily tool**: you will keep using `gpg` and `step` for daily work, and ritueel is the occasional ceremony, a single command-line program that is planned ([the roadmap](/roadmap/)).
 
 ## offline-pki
 
@@ -73,7 +73,7 @@ ritueel does not offer **M-of-N control**: any one active root signs alone, and 
 
 **Better when** you need a hardware module, an on-device audit log or the backup split, and the price is acceptable.
 
-**What ritueel adds:** a root on a card, whose price is on [Which keys to buy](/learn/which-keys-to-buy/), with a card's attestation, and the teaching. **What it lacks:** a hardware module, an on-device log and the backup split. ritueel's [two cards are redundancy, not control](../decisions/0002-where-a-key-lives.md).
+**What ritueel adds:** a root on a card, whose price is on [Which keys to buy](/learn/which-keys-to-buy/), with a card's attestation, and the teaching. **What it lacks:** a hardware module, an on-device log and the backup split. ritueel's [two cards are redundancy, not control](../decisions/0003-root-cards.md).
 
 ## Sequoia `sq`
 
