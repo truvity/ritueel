@@ -7,7 +7,7 @@ sidebar:
 
 ## Question
 
-Which code should ritueel use to drive the cards: for the root keys, and for a person's daily OpenPGP key? The spike is [issue #26](https://github.com/truvity/ritueel/issues/26); the decision is [ADR 0003](/decisions/0003-key-stores-and-the-card-layer/).
+Which code should ritueel use to drive the cards: for the root keys, and for a person's daily OpenPGP key? The spike is [issue #26](https://github.com/truvity/ritueel/issues/26); the decision is [record 0003](../decisions/0003-root-cards.md) (earlier ADR 0003).
 
 ## When
 
@@ -59,7 +59,7 @@ Findings that are not numbers:
 
 ## Open questions
 
-None for the decision. The touch-policy test is a follow-up of ADR 0003 ([issue #11](https://github.com/truvity/ritueel/issues/11)), and so is the encoding of the OpenPGP-applet attestation extensions ([issue #18](https://github.com/truvity/ritueel/issues/18)).
+None for the decision. The touch-policy test is a follow-up of record 0003 (earlier ADR 0003) ([issue #11](https://github.com/truvity/ritueel/issues/11)), and so is the encoding of the OpenPGP-applet attestation extensions ([issue #18](https://github.com/truvity/ritueel/issues/18)).
 
 ## Changes made
 

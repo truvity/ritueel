@@ -22,7 +22,7 @@ A subkey that is replaced has to end. What do the verifiers that people have do 
 - After expiry, `sqv` and `gpgv` accept signatures made before it.
 - `git verify-tag` fails for a revoked key and for an expired key alike.
 
-So a replaced subkey is retired by a "superseded" revocation dated on the day of the switch, or by expiry; "compromised" is for compromise only. [ADR 0017](/decisions/0017-a-persons-openpgp-key-in-two-stages-an-adopted-primary-first-then-card-born-primaries/#retiring-a-subkey) decides that.
+So a replaced subkey is retired by a "superseded" revocation dated on the day of the switch, or by expiry; "compromised" is for compromise only. [record 0008](../decisions/0008-a-persons-own-key.md) (earlier ADR 0017) decides that.
 
 ## Method
 
@@ -64,7 +64,7 @@ Consistent with the [verifier matrix](/research/openpgp-verifier-matrix-2026-11/
 
 ## Open questions
 
-None for the decision. The gaps in the table (`gpgv` after "compromised", both verifiers after expiry for later signatures, `sqv` 1.5.0) are for a later run and do not change what [ADR 0017](/decisions/0017-a-persons-openpgp-key-in-two-stages-an-adopted-primary-first-then-card-born-primaries/#retiring-a-subkey) decides.
+None for the decision. The gaps in the table (`gpgv` after "compromised", both verifiers after expiry for later signatures, `sqv` 1.5.0) are for a later run and do not change what [record 0008](../decisions/0008-a-persons-own-key.md) (earlier ADR 0017) decides.
 
 ## Changes made
 
