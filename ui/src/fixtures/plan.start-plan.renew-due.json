@@ -1,0 +1,155 @@
+{
+  "plan": {
+    "id": "2026-11-11-renew-due",
+    "intention": "INTENTION_RENEW_DUE",
+    "title": "Renew what is due",
+    "summary": "Checks both root cards, renews acme-ca and acme-release, and builds the next trust files. Nothing happens until you run it on the ceremony machine.",
+    "builtAt": "2026-11-11T09:00:00Z",
+    "ledgerHeadSha256": "600c0123456789abcdef0123456789abcdef0123456789abcdef0123456789ab",
+    "digest": "7f3a9c1e0123456789abcdef0123456789abcdef0123456789abcdefdeadbeef",
+    "steps": [
+      {
+        "ordinal": 1,
+        "title": "Check the plan",
+        "detail": "ritueel compares the plan with the folder and with the ledger, and asks you to type the first eight characters of the digest: 7f3a9c1e.",
+        "whatChanges": "Nothing changes",
+        "requirements": [
+          "REQUIREMENT_CONFIRM_DIGEST_AT_TERMINAL"
+        ],
+        "learnPath": "/learn/the-plan-and-its-digest/"
+      },
+      {
+        "ordinal": 2,
+        "title": "Read both root cards",
+        "detail": "Reads every slot of root card one and root card two and compares them with the built-in layout. Nothing is written to the cards.",
+        "whatChanges": "Nothing changes",
+        "requirements": [
+          "REQUIREMENT_CARD_PRESENT"
+        ],
+        "cardSerials": [
+          "00000001",
+          "00000002"
+        ],
+        "learnPath": "/learn/checking-your-cards/"
+      },
+      {
+        "ordinal": 3,
+        "title": "Prove the root cards are alive",
+        "detail": "Each root card signs a test digest with the key of row 3.",
+        "whatChanges": "Nothing changes outside the record",
+        "requirements": [
+          "REQUIREMENT_CARD_PRESENT",
+          "REQUIREMENT_PIN_AT_TERMINAL",
+          "REQUIREMENT_TOUCH"
+        ],
+        "cardSerials": [
+          "00000001",
+          "00000002"
+        ],
+        "learnPath": "/learn/checking-your-cards/"
+      },
+      {
+        "ordinal": 4,
+        "title": "Renew acme-ca",
+        "detail": "Certifies the key of the requester acme-gateway again under acme root, side A, for 13 months from the day of the ceremony. The old certificate stays valid until it ends.",
+        "whatChanges": "A new certificate for acme-ca",
+        "requirements": [
+          "REQUIREMENT_CARD_PRESENT",
+          "REQUIREMENT_PIN_AT_TERMINAL",
+          "REQUIREMENT_TOUCH"
+        ],
+        "cardSerials": [
+          "00000001"
+        ],
+        "learnPath": "/learn/renewing-a-delegated-key/"
+      },
+      {
+        "ordinal": 5,
+        "title": "Renew acme-release",
+        "detail": "Binds the release subkey again under the OpenPGP primary of acme, side A, for 13 months. The subkey is read through the read-only role named in the configuration.",
+        "whatChanges": "A new binding for the release subkey",
+        "requirements": [
+          "REQUIREMENT_CARD_PRESENT",
+          "REQUIREMENT_PIN_AT_TERMINAL",
+          "REQUIREMENT_TOUCH"
+        ],
+        "cardSerials": [
+          "00000001"
+        ],
+        "learnPath": "/learn/renewing-a-delegated-key/"
+      },
+      {
+        "ordinal": 6,
+        "title": "Build the trust files",
+        "detail": "Builds the root list, the CA bundle, the CRL, the SSH CA key list and the keyring as trust sequence 9. Every active root signs the root list.",
+        "whatChanges": "Trust sequence 9 appears beside sequence 8",
+        "requirements": [
+          "REQUIREMENT_CARD_PRESENT",
+          "REQUIREMENT_PIN_AT_TERMINAL",
+          "REQUIREMENT_TOUCH"
+        ],
+        "cardSerials": [
+          "00000001",
+          "00000002"
+        ],
+        "learnPath": "/learn/trust-files/"
+      },
+      {
+        "ordinal": 7,
+        "title": "Write the record",
+        "detail": "Writes the record of this ceremony, which names the one before it, and its transcript.",
+        "whatChanges": "One new record in the ledger",
+        "learnPath": "/learn/the-ledger/"
+      }
+    ],
+    "folderChanges": [
+      {
+        "path": "records/2026-11-11-renew-due.json",
+        "action": "FOLDER_CHANGE_ACTION_CREATE",
+        "description": "The record of this ceremony; it names 2026-11-03-adopt-personal-key as the one before."
+      },
+      {
+        "path": "plans/2026-11-11-renew-due.json",
+        "action": "FOLDER_CHANGE_ACTION_CREATE",
+        "description": "The plan as it was confirmed."
+      },
+      {
+        "path": "transcripts/2026-11-11-renew-due.txt",
+        "action": "FOLDER_CHANGE_ACTION_CREATE",
+        "description": "What the terminal showed, without any PIN."
+      },
+      {
+        "path": "answers/acme-ca.cert.pem",
+        "action": "FOLDER_CHANGE_ACTION_REPLACE",
+        "description": "The new certificate of acme-ca; the old one stays under products/."
+      },
+      {
+        "path": "roots/acme/openpgp.pgp",
+        "action": "FOLDER_CHANGE_ACTION_REPLACE",
+        "description": "The primary's certificate with the new binding of acme-release."
+      },
+      {
+        "path": "products/9/",
+        "action": "FOLDER_CHANGE_ACTION_CREATE",
+        "description": "Root list, CA bundle, CRL, SSH CA key list and keyring of trust sequence 9."
+      },
+      {
+        "path": "cards/00000001.yaml",
+        "action": "FOLDER_CHANGE_ACTION_REPLACE",
+        "description": "The slot file of root card one, with the new reading."
+      },
+      {
+        "path": "cards/00000002.yaml",
+        "action": "FOLDER_CHANGE_ACTION_REPLACE",
+        "description": "The slot file of root card two, with the new reading."
+      }
+    ],
+    "equivalentCommand": "ritueel due --plan-only",
+    "runCommand": "ritueel run ./ritueel/pending/2026-11-11-renew-due.plan --confirm 7f3a9c1e0123456789abcdef0123456789abcdef0123456789abcdefdeadbeef",
+    "savePath": "pending/2026-11-11-renew-due.plan",
+    "cardSerials": [
+      "00000001",
+      "00000002"
+    ]
+  }
+}

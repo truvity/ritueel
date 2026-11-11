@@ -1,0 +1,1319 @@
+{
+  "cards": [
+    {
+      "serial": "00000001",
+      "name": "Root card one",
+      "kind": "CARD_KIND_ROOT",
+      "model": "YubiKey 5C NFC",
+      "firmware": "5.8.0",
+      "state": "CARD_STATE_ACTIVE",
+      "kept": "in the safe, place one",
+      "layoutVersion": 1,
+      "lastSeenAt": "2026-06-02T10:40:00Z",
+      "lastCheckedAt": "2026-06-02T10:40:00Z",
+      "oneTimeCodesOff": true,
+      "roleSummary": "Root card, side A. Holds the acme root (row 3) and has row 2 reserved for the personal key's stage two. Only goes into the offline machine.",
+      "rootLabels": [
+        "acme",
+        "personal"
+      ],
+      "piv": {
+        "use": "APPLICATION_USE_IN_USE",
+        "rows": [
+          {
+            "number": 1,
+            "label": "card",
+            "slots": [
+              {
+                "id": "9a",
+                "state": "SLOT_STATE_EMPTY"
+              },
+              {
+                "id": "9c",
+                "state": "SLOT_STATE_EMPTY"
+              },
+              {
+                "id": "9d",
+                "state": "SLOT_STATE_RESERVED",
+                "use": "SLOT_USE_UNLOCK_KEY",
+                "purpose": "Spare unlock key (made only if passkey unlocking cannot be used)"
+              },
+              {
+                "id": "9e",
+                "state": "SLOT_STATE_EMPTY"
+              }
+            ]
+          },
+          {
+            "number": 2,
+            "label": "personal",
+            "rootLabel": "personal",
+            "slots": [
+              {
+                "id": "82",
+                "state": "SLOT_STATE_EMPTY"
+              },
+              {
+                "id": "83",
+                "state": "SLOT_STATE_RESERVED",
+                "use": "SLOT_USE_OPENPGP_PRIMARY",
+                "purpose": "OpenPGP primary of the personal key, side A (stage two, not born yet)",
+                "rootLabel": "personal"
+              },
+              {
+                "id": "84",
+                "state": "SLOT_STATE_EMPTY"
+              },
+              {
+                "id": "85",
+                "state": "SLOT_STATE_EMPTY"
+              }
+            ]
+          },
+          {
+            "number": 3,
+            "label": "acme",
+            "rootLabel": "acme",
+            "slots": [
+              {
+                "id": "86",
+                "state": "SLOT_STATE_USED",
+                "use": "SLOT_USE_X509_ROOT",
+                "purpose": "X.509 root of acme, side A",
+                "rootLabel": "acme",
+                "algorithm": "ecdsa-p384",
+                "pinRule": "PIN_RULE_ALWAYS",
+                "touchRule": "TOUCH_RULE_ALWAYS",
+                "publicKeySha256": "50110123456789abcdef0123456789abcdef0123456789abcdef0123456789ab",
+                "bornAt": "2023-12-02T00:00:00Z",
+                "attested": true
+              },
+              {
+                "id": "87",
+                "state": "SLOT_STATE_USED",
+                "use": "SLOT_USE_OPENPGP_PRIMARY",
+                "purpose": "OpenPGP primary of acme, side A",
+                "rootLabel": "acme",
+                "algorithm": "ecdsa-p384",
+                "pinRule": "PIN_RULE_ALWAYS",
+                "touchRule": "TOUCH_RULE_ALWAYS",
+                "publicKeySha256": "50120123456789abcdef0123456789abcdef0123456789abcdef0123456789ab",
+                "bornAt": "2023-12-02T00:00:00Z",
+                "attested": true
+              },
+              {
+                "id": "88",
+                "state": "SLOT_STATE_USED",
+                "use": "SLOT_USE_SSH_CA",
+                "purpose": "Break-glass SSH CA key of acme, side A",
+                "rootLabel": "acme",
+                "algorithm": "ecdsa-p384",
+                "pinRule": "PIN_RULE_ALWAYS",
+                "touchRule": "TOUCH_RULE_ALWAYS",
+                "publicKeySha256": "50130123456789abcdef0123456789abcdef0123456789abcdef0123456789ab",
+                "bornAt": "2023-12-02T00:00:00Z",
+                "attested": true
+              },
+              {
+                "id": "89",
+                "state": "SLOT_STATE_EMPTY"
+              }
+            ]
+          },
+          {
+            "number": 4,
+            "label": "free",
+            "slots": [
+              {
+                "id": "8a",
+                "state": "SLOT_STATE_SPARE"
+              },
+              {
+                "id": "8b",
+                "state": "SLOT_STATE_SPARE"
+              },
+              {
+                "id": "8c",
+                "state": "SLOT_STATE_SPARE"
+              },
+              {
+                "id": "8d",
+                "state": "SLOT_STATE_SPARE"
+              }
+            ]
+          },
+          {
+            "number": 5,
+            "label": "free",
+            "slots": [
+              {
+                "id": "8e",
+                "state": "SLOT_STATE_SPARE"
+              },
+              {
+                "id": "8f",
+                "state": "SLOT_STATE_SPARE"
+              },
+              {
+                "id": "90",
+                "state": "SLOT_STATE_SPARE"
+              },
+              {
+                "id": "91",
+                "state": "SLOT_STATE_SPARE"
+              }
+            ]
+          },
+          {
+            "number": 6,
+            "label": "free",
+            "slots": [
+              {
+                "id": "92",
+                "state": "SLOT_STATE_SPARE"
+              },
+              {
+                "id": "93",
+                "state": "SLOT_STATE_SPARE"
+              },
+              {
+                "id": "94",
+                "state": "SLOT_STATE_SPARE"
+              },
+              {
+                "id": "95",
+                "state": "SLOT_STATE_SPARE"
+              }
+            ]
+          }
+        ]
+      },
+      "openpgp": {
+        "use": "APPLICATION_USE_UNUSED",
+        "slots": [
+          {
+            "id": "sig",
+            "state": "SLOT_STATE_EMPTY"
+          },
+          {
+            "id": "dec",
+            "state": "SLOT_STATE_EMPTY"
+          },
+          {
+            "id": "aut",
+            "state": "SLOT_STATE_EMPTY"
+          }
+        ]
+      },
+      "fido2": {
+        "use": "APPLICATION_USE_IN_USE",
+        "passkeys": [
+          {
+            "id": "1",
+            "state": "SLOT_STATE_USED",
+            "use": "SLOT_USE_PASSKEY_UNLOCK",
+            "purpose": "Passkey that opens the key files (PIN and touch)",
+            "algorithm": "hmac-secret",
+            "pinRule": "PIN_RULE_ALWAYS",
+            "touchRule": "TOUCH_RULE_ALWAYS",
+            "bornAt": "2026-10-20T00:00:00Z"
+          }
+        ]
+      }
+    },
+    {
+      "serial": "00000002",
+      "name": "Root card two",
+      "kind": "CARD_KIND_ROOT",
+      "model": "YubiKey 5C NFC",
+      "firmware": "5.8.0",
+      "state": "CARD_STATE_ACTIVE",
+      "kept": "in the safe, place two",
+      "layoutVersion": 1,
+      "lastSeenAt": "2026-06-02T10:40:00Z",
+      "lastCheckedAt": "2026-06-02T10:40:00Z",
+      "oneTimeCodesOff": true,
+      "roleSummary": "Root card, side B. Holds the acme root (row 3) and has row 2 reserved for the personal key's stage two. Only goes into the offline machine.",
+      "rootLabels": [
+        "acme",
+        "personal"
+      ],
+      "piv": {
+        "use": "APPLICATION_USE_IN_USE",
+        "rows": [
+          {
+            "number": 1,
+            "label": "card",
+            "slots": [
+              {
+                "id": "9a",
+                "state": "SLOT_STATE_EMPTY"
+              },
+              {
+                "id": "9c",
+                "state": "SLOT_STATE_EMPTY"
+              },
+              {
+                "id": "9d",
+                "state": "SLOT_STATE_RESERVED",
+                "use": "SLOT_USE_UNLOCK_KEY",
+                "purpose": "Spare unlock key (made only if passkey unlocking cannot be used)"
+              },
+              {
+                "id": "9e",
+                "state": "SLOT_STATE_EMPTY"
+              }
+            ]
+          },
+          {
+            "number": 2,
+            "label": "personal",
+            "rootLabel": "personal",
+            "slots": [
+              {
+                "id": "82",
+                "state": "SLOT_STATE_EMPTY"
+              },
+              {
+                "id": "83",
+                "state": "SLOT_STATE_RESERVED",
+                "use": "SLOT_USE_OPENPGP_PRIMARY",
+                "purpose": "OpenPGP primary of the personal key, side B (stage two, not born yet)",
+                "rootLabel": "personal"
+              },
+              {
+                "id": "84",
+                "state": "SLOT_STATE_EMPTY"
+              },
+              {
+                "id": "85",
+                "state": "SLOT_STATE_EMPTY"
+              }
+            ]
+          },
+          {
+            "number": 3,
+            "label": "acme",
+            "rootLabel": "acme",
+            "slots": [
+              {
+                "id": "86",
+                "state": "SLOT_STATE_USED",
+                "use": "SLOT_USE_X509_ROOT",
+                "purpose": "X.509 root of acme, side B",
+                "rootLabel": "acme",
+                "algorithm": "ecdsa-p384",
+                "pinRule": "PIN_RULE_ALWAYS",
+                "touchRule": "TOUCH_RULE_ALWAYS",
+                "publicKeySha256": "50210123456789abcdef0123456789abcdef0123456789abcdef0123456789ab",
+                "bornAt": "2023-12-02T00:00:00Z",
+                "attested": true
+              },
+              {
+                "id": "87",
+                "state": "SLOT_STATE_USED",
+                "use": "SLOT_USE_OPENPGP_PRIMARY",
+                "purpose": "OpenPGP primary of acme, side B",
+                "rootLabel": "acme",
+                "algorithm": "ecdsa-p384",
+                "pinRule": "PIN_RULE_ALWAYS",
+                "touchRule": "TOUCH_RULE_ALWAYS",
+                "publicKeySha256": "50220123456789abcdef0123456789abcdef0123456789abcdef0123456789ab",
+                "bornAt": "2023-12-02T00:00:00Z",
+                "attested": true
+              },
+              {
+                "id": "88",
+                "state": "SLOT_STATE_USED",
+                "use": "SLOT_USE_SSH_CA",
+                "purpose": "Break-glass SSH CA key of acme, side B",
+                "rootLabel": "acme",
+                "algorithm": "ecdsa-p384",
+                "pinRule": "PIN_RULE_ALWAYS",
+                "touchRule": "TOUCH_RULE_ALWAYS",
+                "publicKeySha256": "50230123456789abcdef0123456789abcdef0123456789abcdef0123456789ab",
+                "bornAt": "2023-12-02T00:00:00Z",
+                "attested": true
+              },
+              {
+                "id": "89",
+                "state": "SLOT_STATE_EMPTY"
+              }
+            ]
+          },
+          {
+            "number": 4,
+            "label": "free",
+            "slots": [
+              {
+                "id": "8a",
+                "state": "SLOT_STATE_SPARE"
+              },
+              {
+                "id": "8b",
+                "state": "SLOT_STATE_SPARE"
+              },
+              {
+                "id": "8c",
+                "state": "SLOT_STATE_SPARE"
+              },
+              {
+                "id": "8d",
+                "state": "SLOT_STATE_SPARE"
+              }
+            ]
+          },
+          {
+            "number": 5,
+            "label": "free",
+            "slots": [
+              {
+                "id": "8e",
+                "state": "SLOT_STATE_SPARE"
+              },
+              {
+                "id": "8f",
+                "state": "SLOT_STATE_SPARE"
+              },
+              {
+                "id": "90",
+                "state": "SLOT_STATE_SPARE"
+              },
+              {
+                "id": "91",
+                "state": "SLOT_STATE_SPARE"
+              }
+            ]
+          },
+          {
+            "number": 6,
+            "label": "free",
+            "slots": [
+              {
+                "id": "92",
+                "state": "SLOT_STATE_SPARE"
+              },
+              {
+                "id": "93",
+                "state": "SLOT_STATE_SPARE"
+              },
+              {
+                "id": "94",
+                "state": "SLOT_STATE_SPARE"
+              },
+              {
+                "id": "95",
+                "state": "SLOT_STATE_SPARE"
+              }
+            ]
+          }
+        ]
+      },
+      "openpgp": {
+        "use": "APPLICATION_USE_UNUSED",
+        "slots": [
+          {
+            "id": "sig",
+            "state": "SLOT_STATE_EMPTY"
+          },
+          {
+            "id": "dec",
+            "state": "SLOT_STATE_EMPTY"
+          },
+          {
+            "id": "aut",
+            "state": "SLOT_STATE_EMPTY"
+          }
+        ]
+      },
+      "fido2": {
+        "use": "APPLICATION_USE_IN_USE",
+        "passkeys": [
+          {
+            "id": "1",
+            "state": "SLOT_STATE_USED",
+            "use": "SLOT_USE_PASSKEY_UNLOCK",
+            "purpose": "Passkey that opens the key files (PIN and touch)",
+            "algorithm": "hmac-secret",
+            "pinRule": "PIN_RULE_ALWAYS",
+            "touchRule": "TOUCH_RULE_ALWAYS",
+            "bornAt": "2026-10-20T00:00:00Z"
+          }
+        ]
+      }
+    },
+    {
+      "serial": "00000003",
+      "name": "Daily, desk",
+      "kind": "CARD_KIND_DAILY",
+      "model": "YubiKey 5C NFC",
+      "firmware": "5.8.0",
+      "state": "CARD_STATE_ACTIVE",
+      "kept": "in the desktop computer",
+      "layoutVersion": 1,
+      "lastSeenAt": "2026-10-28T18:05:00Z",
+      "lastCheckedAt": "2026-10-28T18:05:00Z",
+      "oneTimeCodesOff": true,
+      "roleSummary": "Day-to-day card. A signing and an authentication subkey born on this card, and the encryption subkey (one key, made in software) loaded onto it, in the OpenPGP application, and passkeys. The encryption subkey is on all three day-to-day cards and is listed once, with the set of card 00000003. Its PIV slots stay empty.",
+      "piv": {
+        "use": "APPLICATION_USE_UNUSED",
+        "rows": [
+          {
+            "number": 1,
+            "label": "card",
+            "slots": [
+              {
+                "id": "9a",
+                "state": "SLOT_STATE_EMPTY"
+              },
+              {
+                "id": "9c",
+                "state": "SLOT_STATE_EMPTY"
+              },
+              {
+                "id": "9d",
+                "state": "SLOT_STATE_EMPTY"
+              },
+              {
+                "id": "9e",
+                "state": "SLOT_STATE_EMPTY"
+              }
+            ]
+          },
+          {
+            "number": 2,
+            "label": "free",
+            "slots": [
+              {
+                "id": "82",
+                "state": "SLOT_STATE_EMPTY"
+              },
+              {
+                "id": "83",
+                "state": "SLOT_STATE_EMPTY"
+              },
+              {
+                "id": "84",
+                "state": "SLOT_STATE_EMPTY"
+              },
+              {
+                "id": "85",
+                "state": "SLOT_STATE_EMPTY"
+              }
+            ]
+          },
+          {
+            "number": 3,
+            "label": "free",
+            "slots": [
+              {
+                "id": "86",
+                "state": "SLOT_STATE_EMPTY"
+              },
+              {
+                "id": "87",
+                "state": "SLOT_STATE_EMPTY"
+              },
+              {
+                "id": "88",
+                "state": "SLOT_STATE_EMPTY"
+              },
+              {
+                "id": "89",
+                "state": "SLOT_STATE_EMPTY"
+              }
+            ]
+          },
+          {
+            "number": 4,
+            "label": "free",
+            "slots": [
+              {
+                "id": "8a",
+                "state": "SLOT_STATE_EMPTY"
+              },
+              {
+                "id": "8b",
+                "state": "SLOT_STATE_EMPTY"
+              },
+              {
+                "id": "8c",
+                "state": "SLOT_STATE_EMPTY"
+              },
+              {
+                "id": "8d",
+                "state": "SLOT_STATE_EMPTY"
+              }
+            ]
+          },
+          {
+            "number": 5,
+            "label": "free",
+            "slots": [
+              {
+                "id": "8e",
+                "state": "SLOT_STATE_EMPTY"
+              },
+              {
+                "id": "8f",
+                "state": "SLOT_STATE_EMPTY"
+              },
+              {
+                "id": "90",
+                "state": "SLOT_STATE_EMPTY"
+              },
+              {
+                "id": "91",
+                "state": "SLOT_STATE_EMPTY"
+              }
+            ]
+          },
+          {
+            "number": 6,
+            "label": "free",
+            "slots": [
+              {
+                "id": "92",
+                "state": "SLOT_STATE_EMPTY"
+              },
+              {
+                "id": "93",
+                "state": "SLOT_STATE_EMPTY"
+              },
+              {
+                "id": "94",
+                "state": "SLOT_STATE_EMPTY"
+              },
+              {
+                "id": "95",
+                "state": "SLOT_STATE_EMPTY"
+              }
+            ]
+          }
+        ]
+      },
+      "openpgp": {
+        "use": "APPLICATION_USE_IN_USE",
+        "slots": [
+          {
+            "id": "sig",
+            "state": "SLOT_STATE_USED",
+            "use": "SLOT_USE_OPENPGP_SIGN",
+            "purpose": "Signing subkey of the personal key (2025 set)",
+            "rootLabel": "personal",
+            "algorithm": "ed25519",
+            "pinRule": "PIN_RULE_ONCE",
+            "touchRule": "TOUCH_RULE_ALWAYS",
+            "publicKeySha256": "50310123456789abcdef0123456789abcdef0123456789abcdef0123456789ab",
+            "bornAt": "2025-03-18T00:00:00Z"
+          },
+          {
+            "id": "dec",
+            "state": "SLOT_STATE_USED",
+            "use": "SLOT_USE_OPENPGP_DECRYPT",
+            "purpose": "Encryption subkey of the personal key, made in software and loaded onto this card",
+            "rootLabel": "personal",
+            "algorithm": "cv25519",
+            "pinRule": "PIN_RULE_ONCE",
+            "touchRule": "TOUCH_RULE_NEVER",
+            "publicKeySha256": "50390123456789abcdef0123456789abcdef0123456789abcdef0123456789ab",
+            "bornAt": "2025-03-18T00:00:00Z"
+          },
+          {
+            "id": "aut",
+            "state": "SLOT_STATE_USED",
+            "use": "SLOT_USE_OPENPGP_AUTHENTICATE",
+            "purpose": "Authentication subkey of the personal key, for SSH (2025 set)",
+            "rootLabel": "personal",
+            "algorithm": "ed25519",
+            "pinRule": "PIN_RULE_ONCE",
+            "touchRule": "TOUCH_RULE_ALWAYS",
+            "publicKeySha256": "50320123456789abcdef0123456789abcdef0123456789abcdef0123456789ab",
+            "bornAt": "2025-03-18T00:00:00Z"
+          }
+        ]
+      },
+      "fido2": {
+        "use": "APPLICATION_USE_IN_USE",
+        "passkeys": [
+          {
+            "id": "1",
+            "state": "SLOT_STATE_USED",
+            "use": "SLOT_USE_PASSKEY_SIGN_IN",
+            "purpose": "Passkey for signing in to a code host",
+            "algorithm": "es256",
+            "pinRule": "PIN_RULE_ALWAYS",
+            "touchRule": "TOUCH_RULE_ALWAYS",
+            "bornAt": "2025-03-21T00:00:00Z"
+          },
+          {
+            "id": "2",
+            "state": "SLOT_STATE_USED",
+            "use": "SLOT_USE_PASSKEY_SSH",
+            "purpose": "Passkey for SSH to production",
+            "algorithm": "es256",
+            "pinRule": "PIN_RULE_ALWAYS",
+            "touchRule": "TOUCH_RULE_ALWAYS",
+            "bornAt": "2025-03-22T00:00:00Z"
+          },
+          {
+            "id": "3",
+            "state": "SLOT_STATE_EMPTY"
+          }
+        ]
+      }
+    },
+    {
+      "serial": "00000004",
+      "name": "Daily, keychain",
+      "kind": "CARD_KIND_DAILY",
+      "model": "YubiKey 5C NFC",
+      "firmware": "5.8.0",
+      "state": "CARD_STATE_ACTIVE",
+      "kept": "on the keychain",
+      "layoutVersion": 1,
+      "lastSeenAt": "2026-10-28T18:05:00Z",
+      "lastCheckedAt": "2026-10-28T18:05:00Z",
+      "oneTimeCodesOff": true,
+      "roleSummary": "Day-to-day card. A signing and an authentication subkey born on this card, and the encryption subkey (one key, made in software) loaded onto it, in the OpenPGP application, and passkeys. The encryption subkey is on all three day-to-day cards and is listed once, with the set of card 00000003. Its PIV slots stay empty.",
+      "piv": {
+        "use": "APPLICATION_USE_UNUSED",
+        "rows": [
+          {
+            "number": 1,
+            "label": "card",
+            "slots": [
+              {
+                "id": "9a",
+                "state": "SLOT_STATE_EMPTY"
+              },
+              {
+                "id": "9c",
+                "state": "SLOT_STATE_EMPTY"
+              },
+              {
+                "id": "9d",
+                "state": "SLOT_STATE_EMPTY"
+              },
+              {
+                "id": "9e",
+                "state": "SLOT_STATE_EMPTY"
+              }
+            ]
+          },
+          {
+            "number": 2,
+            "label": "free",
+            "slots": [
+              {
+                "id": "82",
+                "state": "SLOT_STATE_EMPTY"
+              },
+              {
+                "id": "83",
+                "state": "SLOT_STATE_EMPTY"
+              },
+              {
+                "id": "84",
+                "state": "SLOT_STATE_EMPTY"
+              },
+              {
+                "id": "85",
+                "state": "SLOT_STATE_EMPTY"
+              }
+            ]
+          },
+          {
+            "number": 3,
+            "label": "free",
+            "slots": [
+              {
+                "id": "86",
+                "state": "SLOT_STATE_EMPTY"
+              },
+              {
+                "id": "87",
+                "state": "SLOT_STATE_EMPTY"
+              },
+              {
+                "id": "88",
+                "state": "SLOT_STATE_EMPTY"
+              },
+              {
+                "id": "89",
+                "state": "SLOT_STATE_EMPTY"
+              }
+            ]
+          },
+          {
+            "number": 4,
+            "label": "free",
+            "slots": [
+              {
+                "id": "8a",
+                "state": "SLOT_STATE_EMPTY"
+              },
+              {
+                "id": "8b",
+                "state": "SLOT_STATE_EMPTY"
+              },
+              {
+                "id": "8c",
+                "state": "SLOT_STATE_EMPTY"
+              },
+              {
+                "id": "8d",
+                "state": "SLOT_STATE_EMPTY"
+              }
+            ]
+          },
+          {
+            "number": 5,
+            "label": "free",
+            "slots": [
+              {
+                "id": "8e",
+                "state": "SLOT_STATE_EMPTY"
+              },
+              {
+                "id": "8f",
+                "state": "SLOT_STATE_EMPTY"
+              },
+              {
+                "id": "90",
+                "state": "SLOT_STATE_EMPTY"
+              },
+              {
+                "id": "91",
+                "state": "SLOT_STATE_EMPTY"
+              }
+            ]
+          },
+          {
+            "number": 6,
+            "label": "free",
+            "slots": [
+              {
+                "id": "92",
+                "state": "SLOT_STATE_EMPTY"
+              },
+              {
+                "id": "93",
+                "state": "SLOT_STATE_EMPTY"
+              },
+              {
+                "id": "94",
+                "state": "SLOT_STATE_EMPTY"
+              },
+              {
+                "id": "95",
+                "state": "SLOT_STATE_EMPTY"
+              }
+            ]
+          }
+        ]
+      },
+      "openpgp": {
+        "use": "APPLICATION_USE_IN_USE",
+        "slots": [
+          {
+            "id": "sig",
+            "state": "SLOT_STATE_USED",
+            "use": "SLOT_USE_OPENPGP_SIGN",
+            "purpose": "Signing subkey of the personal key (2025 set)",
+            "rootLabel": "personal",
+            "algorithm": "ed25519",
+            "pinRule": "PIN_RULE_ONCE",
+            "touchRule": "TOUCH_RULE_CACHED",
+            "publicKeySha256": "50410123456789abcdef0123456789abcdef0123456789abcdef0123456789ab",
+            "bornAt": "2025-03-19T00:00:00Z"
+          },
+          {
+            "id": "dec",
+            "state": "SLOT_STATE_USED",
+            "use": "SLOT_USE_OPENPGP_DECRYPT",
+            "purpose": "Encryption subkey of the personal key, made in software and loaded onto this card",
+            "rootLabel": "personal",
+            "algorithm": "cv25519",
+            "pinRule": "PIN_RULE_ONCE",
+            "touchRule": "TOUCH_RULE_NEVER",
+            "publicKeySha256": "50490123456789abcdef0123456789abcdef0123456789abcdef0123456789ab",
+            "bornAt": "2025-03-18T00:00:00Z"
+          },
+          {
+            "id": "aut",
+            "state": "SLOT_STATE_USED",
+            "use": "SLOT_USE_OPENPGP_AUTHENTICATE",
+            "purpose": "Authentication subkey of the personal key, for SSH (2025 set)",
+            "rootLabel": "personal",
+            "algorithm": "ed25519",
+            "pinRule": "PIN_RULE_ONCE",
+            "touchRule": "TOUCH_RULE_ALWAYS",
+            "publicKeySha256": "50420123456789abcdef0123456789abcdef0123456789abcdef0123456789ab",
+            "bornAt": "2025-03-19T00:00:00Z"
+          }
+        ]
+      },
+      "fido2": {
+        "use": "APPLICATION_USE_IN_USE",
+        "passkeys": [
+          {
+            "id": "1",
+            "state": "SLOT_STATE_USED",
+            "use": "SLOT_USE_PASSKEY_SIGN_IN",
+            "purpose": "Passkey for signing in to a code host",
+            "algorithm": "es256",
+            "pinRule": "PIN_RULE_ALWAYS",
+            "touchRule": "TOUCH_RULE_ALWAYS",
+            "bornAt": "2025-03-21T00:00:00Z"
+          },
+          {
+            "id": "2",
+            "state": "SLOT_STATE_USED",
+            "use": "SLOT_USE_PASSKEY_SSH",
+            "purpose": "Passkey for SSH to production",
+            "algorithm": "es256",
+            "pinRule": "PIN_RULE_ALWAYS",
+            "touchRule": "TOUCH_RULE_ALWAYS",
+            "bornAt": "2025-03-22T00:00:00Z"
+          },
+          {
+            "id": "3",
+            "state": "SLOT_STATE_EMPTY"
+          }
+        ]
+      },
+      "changesSinceLastReading": [
+        "The signing key now asks for a touch only once in a while (cached). It was: every time."
+      ]
+    },
+    {
+      "serial": "00000005",
+      "name": "Daily, laptop",
+      "kind": "CARD_KIND_DAILY",
+      "model": "YubiKey 5 Nano",
+      "firmware": "5.8.0",
+      "state": "CARD_STATE_ACTIVE",
+      "kept": "in the laptop",
+      "layoutVersion": 1,
+      "lastSeenAt": "2026-10-28T18:05:00Z",
+      "lastCheckedAt": "2026-10-28T18:05:00Z",
+      "oneTimeCodesOff": true,
+      "roleSummary": "Day-to-day card. A signing and an authentication subkey born on this card, and the encryption subkey (one key, made in software) loaded onto it, in the OpenPGP application, and passkeys. The encryption subkey is on all three day-to-day cards and is listed once, with the set of card 00000003. Its PIV slots stay empty.",
+      "piv": {
+        "use": "APPLICATION_USE_UNUSED",
+        "rows": [
+          {
+            "number": 1,
+            "label": "card",
+            "slots": [
+              {
+                "id": "9a",
+                "state": "SLOT_STATE_EMPTY"
+              },
+              {
+                "id": "9c",
+                "state": "SLOT_STATE_EMPTY"
+              },
+              {
+                "id": "9d",
+                "state": "SLOT_STATE_EMPTY"
+              },
+              {
+                "id": "9e",
+                "state": "SLOT_STATE_EMPTY"
+              }
+            ]
+          },
+          {
+            "number": 2,
+            "label": "free",
+            "slots": [
+              {
+                "id": "82",
+                "state": "SLOT_STATE_EMPTY"
+              },
+              {
+                "id": "83",
+                "state": "SLOT_STATE_EMPTY"
+              },
+              {
+                "id": "84",
+                "state": "SLOT_STATE_EMPTY"
+              },
+              {
+                "id": "85",
+                "state": "SLOT_STATE_EMPTY"
+              }
+            ]
+          },
+          {
+            "number": 3,
+            "label": "free",
+            "slots": [
+              {
+                "id": "86",
+                "state": "SLOT_STATE_EMPTY"
+              },
+              {
+                "id": "87",
+                "state": "SLOT_STATE_EMPTY"
+              },
+              {
+                "id": "88",
+                "state": "SLOT_STATE_EMPTY"
+              },
+              {
+                "id": "89",
+                "state": "SLOT_STATE_EMPTY"
+              }
+            ]
+          },
+          {
+            "number": 4,
+            "label": "free",
+            "slots": [
+              {
+                "id": "8a",
+                "state": "SLOT_STATE_EMPTY"
+              },
+              {
+                "id": "8b",
+                "state": "SLOT_STATE_EMPTY"
+              },
+              {
+                "id": "8c",
+                "state": "SLOT_STATE_EMPTY"
+              },
+              {
+                "id": "8d",
+                "state": "SLOT_STATE_EMPTY"
+              }
+            ]
+          },
+          {
+            "number": 5,
+            "label": "free",
+            "slots": [
+              {
+                "id": "8e",
+                "state": "SLOT_STATE_EMPTY"
+              },
+              {
+                "id": "8f",
+                "state": "SLOT_STATE_EMPTY"
+              },
+              {
+                "id": "90",
+                "state": "SLOT_STATE_EMPTY"
+              },
+              {
+                "id": "91",
+                "state": "SLOT_STATE_EMPTY"
+              }
+            ]
+          },
+          {
+            "number": 6,
+            "label": "free",
+            "slots": [
+              {
+                "id": "92",
+                "state": "SLOT_STATE_EMPTY"
+              },
+              {
+                "id": "93",
+                "state": "SLOT_STATE_EMPTY"
+              },
+              {
+                "id": "94",
+                "state": "SLOT_STATE_EMPTY"
+              },
+              {
+                "id": "95",
+                "state": "SLOT_STATE_EMPTY"
+              }
+            ]
+          }
+        ]
+      },
+      "openpgp": {
+        "use": "APPLICATION_USE_IN_USE",
+        "slots": [
+          {
+            "id": "sig",
+            "state": "SLOT_STATE_USED",
+            "use": "SLOT_USE_OPENPGP_SIGN",
+            "purpose": "Signing subkey of the personal key (2025 set)",
+            "rootLabel": "personal",
+            "algorithm": "ed25519",
+            "pinRule": "PIN_RULE_ONCE",
+            "touchRule": "TOUCH_RULE_ALWAYS",
+            "publicKeySha256": "50510123456789abcdef0123456789abcdef0123456789abcdef0123456789ab",
+            "bornAt": "2025-03-20T00:00:00Z"
+          },
+          {
+            "id": "dec",
+            "state": "SLOT_STATE_USED",
+            "use": "SLOT_USE_OPENPGP_DECRYPT",
+            "purpose": "Encryption subkey of the personal key, made in software and loaded onto this card",
+            "rootLabel": "personal",
+            "algorithm": "cv25519",
+            "pinRule": "PIN_RULE_ONCE",
+            "touchRule": "TOUCH_RULE_NEVER",
+            "publicKeySha256": "50590123456789abcdef0123456789abcdef0123456789abcdef0123456789ab",
+            "bornAt": "2025-03-18T00:00:00Z"
+          },
+          {
+            "id": "aut",
+            "state": "SLOT_STATE_USED",
+            "use": "SLOT_USE_OPENPGP_AUTHENTICATE",
+            "purpose": "Authentication subkey of the personal key, for SSH (2025 set)",
+            "rootLabel": "personal",
+            "algorithm": "ed25519",
+            "pinRule": "PIN_RULE_ONCE",
+            "touchRule": "TOUCH_RULE_ALWAYS",
+            "publicKeySha256": "50520123456789abcdef0123456789abcdef0123456789abcdef0123456789ab",
+            "bornAt": "2025-03-20T00:00:00Z"
+          }
+        ]
+      },
+      "fido2": {
+        "use": "APPLICATION_USE_IN_USE",
+        "passkeys": [
+          {
+            "id": "1",
+            "state": "SLOT_STATE_USED",
+            "use": "SLOT_USE_PASSKEY_SIGN_IN",
+            "purpose": "Passkey for signing in to a code host",
+            "algorithm": "es256",
+            "pinRule": "PIN_RULE_ALWAYS",
+            "touchRule": "TOUCH_RULE_ALWAYS",
+            "bornAt": "2025-03-21T00:00:00Z"
+          },
+          {
+            "id": "2",
+            "state": "SLOT_STATE_EMPTY"
+          },
+          {
+            "id": "3",
+            "state": "SLOT_STATE_EMPTY"
+          }
+        ]
+      }
+    },
+    {
+      "serial": "00000006",
+      "name": "Rehearsal",
+      "kind": "CARD_KIND_REHEARSAL",
+      "model": "YubiKey 5 NFC",
+      "firmware": "5.2.6",
+      "state": "CARD_STATE_ACTIVE",
+      "kept": "in the drawer",
+      "layoutVersion": 1,
+      "lastSeenAt": "2026-11-05T16:30:00Z",
+      "lastCheckedAt": "2026-11-05T16:30:00Z",
+      "oneTimeCodesOff": true,
+      "roleSummary": "Rehearsal card. For practising a ceremony and for proving passkey unlocking. It holds nothing that matters and its firmware is below the floor for a root card.",
+      "piv": {
+        "use": "APPLICATION_USE_IN_USE",
+        "rows": [
+          {
+            "number": 1,
+            "label": "card",
+            "slots": [
+              {
+                "id": "9a",
+                "state": "SLOT_STATE_EMPTY"
+              },
+              {
+                "id": "9c",
+                "state": "SLOT_STATE_EMPTY"
+              },
+              {
+                "id": "9d",
+                "state": "SLOT_STATE_EMPTY"
+              },
+              {
+                "id": "9e",
+                "state": "SLOT_STATE_EMPTY"
+              }
+            ]
+          },
+          {
+            "number": 2,
+            "label": "practice",
+            "rootLabel": "practice",
+            "slots": [
+              {
+                "id": "82",
+                "state": "SLOT_STATE_EMPTY"
+              },
+              {
+                "id": "83",
+                "state": "SLOT_STATE_USED",
+                "use": "SLOT_USE_REHEARSAL",
+                "purpose": "Practice key, row of a practice root",
+                "rootLabel": "practice",
+                "algorithm": "ecdsa-p384",
+                "pinRule": "PIN_RULE_ALWAYS",
+                "touchRule": "TOUCH_RULE_ALWAYS",
+                "publicKeySha256": "50610123456789abcdef0123456789abcdef0123456789abcdef0123456789ab",
+                "bornAt": "2026-11-05T00:00:00Z"
+              },
+              {
+                "id": "84",
+                "state": "SLOT_STATE_EMPTY"
+              },
+              {
+                "id": "85",
+                "state": "SLOT_STATE_EMPTY"
+              }
+            ]
+          },
+          {
+            "number": 3,
+            "label": "practice",
+            "rootLabel": "practice",
+            "slots": [
+              {
+                "id": "86",
+                "state": "SLOT_STATE_USED",
+                "use": "SLOT_USE_REHEARSAL",
+                "purpose": "Practice X.509 root",
+                "rootLabel": "practice",
+                "algorithm": "ecdsa-p384",
+                "pinRule": "PIN_RULE_ALWAYS",
+                "touchRule": "TOUCH_RULE_ALWAYS",
+                "publicKeySha256": "50620123456789abcdef0123456789abcdef0123456789abcdef0123456789ab",
+                "bornAt": "2026-11-05T00:00:00Z"
+              },
+              {
+                "id": "87",
+                "state": "SLOT_STATE_USED",
+                "use": "SLOT_USE_REHEARSAL",
+                "purpose": "Practice OpenPGP primary",
+                "rootLabel": "practice",
+                "algorithm": "ecdsa-p384",
+                "pinRule": "PIN_RULE_ALWAYS",
+                "touchRule": "TOUCH_RULE_ALWAYS",
+                "publicKeySha256": "50630123456789abcdef0123456789abcdef0123456789abcdef0123456789ab",
+                "bornAt": "2026-11-05T00:00:00Z"
+              },
+              {
+                "id": "88",
+                "state": "SLOT_STATE_EMPTY"
+              },
+              {
+                "id": "89",
+                "state": "SLOT_STATE_EMPTY"
+              }
+            ]
+          },
+          {
+            "number": 4,
+            "label": "free",
+            "slots": [
+              {
+                "id": "8a",
+                "state": "SLOT_STATE_SPARE"
+              },
+              {
+                "id": "8b",
+                "state": "SLOT_STATE_SPARE"
+              },
+              {
+                "id": "8c",
+                "state": "SLOT_STATE_SPARE"
+              },
+              {
+                "id": "8d",
+                "state": "SLOT_STATE_SPARE"
+              }
+            ]
+          },
+          {
+            "number": 5,
+            "label": "free",
+            "slots": [
+              {
+                "id": "8e",
+                "state": "SLOT_STATE_SPARE"
+              },
+              {
+                "id": "8f",
+                "state": "SLOT_STATE_SPARE"
+              },
+              {
+                "id": "90",
+                "state": "SLOT_STATE_SPARE"
+              },
+              {
+                "id": "91",
+                "state": "SLOT_STATE_SPARE"
+              }
+            ]
+          },
+          {
+            "number": 6,
+            "label": "free",
+            "slots": [
+              {
+                "id": "92",
+                "state": "SLOT_STATE_SPARE"
+              },
+              {
+                "id": "93",
+                "state": "SLOT_STATE_SPARE"
+              },
+              {
+                "id": "94",
+                "state": "SLOT_STATE_SPARE"
+              },
+              {
+                "id": "95",
+                "state": "SLOT_STATE_SPARE"
+              }
+            ]
+          }
+        ]
+      },
+      "openpgp": {
+        "use": "APPLICATION_USE_UNUSED",
+        "slots": [
+          {
+            "id": "sig",
+            "state": "SLOT_STATE_EMPTY"
+          },
+          {
+            "id": "dec",
+            "state": "SLOT_STATE_EMPTY"
+          },
+          {
+            "id": "aut",
+            "state": "SLOT_STATE_EMPTY"
+          }
+        ]
+      },
+      "fido2": {
+        "use": "APPLICATION_USE_IN_USE",
+        "passkeys": [
+          {
+            "id": "1",
+            "state": "SLOT_STATE_USED",
+            "use": "SLOT_USE_PASSKEY_UNLOCK",
+            "purpose": "Test passkey: unlocking a key file with PIN and touch",
+            "algorithm": "hmac-secret",
+            "pinRule": "PIN_RULE_ALWAYS",
+            "touchRule": "TOUCH_RULE_ALWAYS",
+            "bornAt": "2026-11-05T00:00:00Z"
+          }
+        ]
+      },
+      "changesSinceLastReading": [
+        "Slots 83, 86 and 87 hold new practice keys, born on 2026-11-05. The card was reset on that day first."
+      ]
+    }
+  ],
+  "inventoryWrittenAt": "2026-11-05T16:31:00Z"
+}
