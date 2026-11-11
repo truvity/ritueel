@@ -47,9 +47,9 @@ A slot is a numbered place for one private key. Four things belong to it.
   A slot holds one private key, an optional certificate, and two rules fixed at birth. Yubico, read 2026-11-10 (see Sources).
 </Figure>
 
-- **The private key** is generated on the card or imported. A key born on a card has no copy.
+- **The private key** is generated on the card or imported, and can never be read out. A key born on a card has no copy.
 - **Certificates:** all of them share about 50,000 bytes.
-- **The PIN rule:** "once" means once per session: until the card is unplugged or another application is used. "Always" means the PIN is asked right before every use. A "cached" touch counts for 15 seconds.
+- **The PIN rule and the touch rule** are chosen when the key is made or loaded and can never be changed after. "Once" means once per session: until the card is unplugged or another application is used. "Always" means the PIN is asked right before every use. "Cached" touch means a touch counts for 15 seconds.
 - **The kind of key:** it says what it can do: sign, or agree on a shared secret, which is how decryption works. P-256, P-384 and RSA-2048 are on every YubiKey 5. RSA-3072, RSA-4096, Ed25519 and X25519 need firmware 5.7.4 in Yubico's tech manual (ykman checks 5.7.0).
 
 | Slot | Standard name | Asks for the PIN by default | Note |

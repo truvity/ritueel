@@ -46,6 +46,10 @@ The maintainer decided that the ledger is a plain write-once folder with one sub
 - ritueel refuses a request whose stem already has an answer.
 - The bundle is found by `--dir DIR`, or is the current directory when it holds `ritueel.yaml` ([Commands](/reference/cli/#flags-every-ceremony-shares)).
 
+:::note[Proposed]
+Requests and their answers are to live together in `requests/`, ritueel writing each answer beside its request, so that answered and waiting requests are seen in one place. The `answers/` row and the first bullet above are then rewritten. The directories `ledger/` and `products/` are also to be renamed. The pictures on [the bundle and the USB stick](/how-it-works/bundle-and-stick/) follow this reading and print no name for those two parts.
+:::
+
 ## On the stick
 
 A root on cards or in a key file runs on the offline system, which boots from a USB stick ([ADR 0016](/decisions/0016-several-bundles-share-one-pair-of-root-cards-and-the-bundle-keeps-a-card-inventory/#where-a-plan-runs)). The stick carries one extra partition, and ritueel defines its layout. The picture is on [the bundle and the USB stick](/how-it-works/bundle-and-stick/#the-usb-stick).
