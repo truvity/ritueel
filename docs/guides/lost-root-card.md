@@ -28,4 +28,4 @@ Until the revocation reaches outsiders, whoever holds the card **and** its PIN c
 
 ## What the drill checks
 
-The drill runs on software roots in CI, then on test cards; it is part of [adopting the roots](/guides/root-adoption/). It starts with two roots and one intermediate, takes a card out of use, and ends when the steps above have run and the checks pass. It records how long each step took, so the real time from loss to refusal is known.
+The drill runs on software roots in CI, then on rehearsal cards; it is part of [adopting the roots](/guides/root-adoption/). It starts with two roots and one intermediate, takes a card out of use, and ends when the steps above have run and the checks pass. It records how long each step took, so the real time from loss to refusal is known.

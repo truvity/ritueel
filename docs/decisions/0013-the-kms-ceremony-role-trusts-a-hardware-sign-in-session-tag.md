@@ -9,7 +9,7 @@
 
 The earlier design of this record (2026-11-06) gated the role on a session tag that a federated identity provider sets after a sign-in with a hardware key, because AWS does not set `aws:MultiFactorAuthPresent` for a federated sign-in. It asked a lot of the operator: a provider with three obligations, a trust policy that names only that provider, no role chaining, and a dry-run pre-check. The facts it rested on are kept, with their dates, in [the KMS reference](/reference/kms-root/#a-later-option-a-hardware-key-sign-in).
 
-The maintainer decided on 2026-11-10 and 2026-11-11: "just AWS KMS Key without additional protection", "just drop it for now", and, about an organisation-policy lock on the keys, "Drop it". The requirement goes for now; it may come back later.
+The maintainer decided to drop the hardware-key requirement for now, and with it an organisation-policy lock on the keys. It may come back later.
 
 ## Decision
 
@@ -33,7 +33,7 @@ The maintainer decided on 2026-11-10 and 2026-11-11: "just AWS KMS Key without a
 ## Roads not taken
 
 - **Keep the hardware-key session tag (the earlier design).** The only proof that a person with a hardware key is present, but it needs an identity provider that meets three obligations; the maintainer dropped it for now.
-- **Drop the condition.** The simplest. The earlier text weighed it on 2026-11-06 and refused it as too weak for the root of a trust chain; the maintainer took it on 2026-11-10 and 2026-11-11.
+- **Drop the condition.** The simplest. The earlier text weighed it on 2026-11-06 and refused it as too weak for the root of a trust chain; the maintainer chose it for now.
 - **A dedicated IAM user with a hardware MFA device.** `aws:MultiFactorAuthPresent` would work unchanged, but it adds a long-lived principal with an access key and a second device to keep.
 - **IAM Identity Center as the provider.** People already sign in there, but its permission sets and attribute mapping stop it from carrying the tag (read 2026-11-06).
 - **`aws:MultiFactorAuthPresent` with `BoolIfExists`.** It would pass federated sessions, but only because the key is absent, so it would also pass a session with no second factor.

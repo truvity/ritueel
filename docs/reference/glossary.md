@@ -21,4 +21,4 @@ Eleven words carry the design. The pages and the records use each in the sense b
 | **replace** | Make a new key on an event, and let the old one end: an advisory, an algorithm that is deprecated, a lost card, a suspected compromise, a change of store, or the three-year limit on a key that can be copied. | `replace`, `rotate` | [0002](/decisions/0002-key-custody-every-key-is-born-in-its-store-two-root-cards-or-one-kms-root-and-a-replica/#validity-renewal-and-replacement), [Rotate](/learn/rotate/) |
 | **trust files** | The files that outsiders read to decide whom to trust: the root list, the CA bundle, the CRLs and the SSH CA key list. The keyring package carries the OpenPGP side. | `trust products` | [0005](/decisions/0005-trust-products-the-root-list-the-ca-bundle-the-ssh-ca-key-list-and-the-trust-sequence/) |
 
-The words `directory`, `card`, `row` and `inventory` are defined on their own pages: [the directory](/reference/directory/) and [root cards](/reference/cards/).
+The words `directory`, `card`, `row` and `inventory` are defined on their own pages: [the directory](/reference/directory/) and [cards](/reference/cards/).

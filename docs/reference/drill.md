@@ -50,14 +50,14 @@ A walk-through is a guide that can also be run as a script. It lives in the ritu
 | File | Does |
 |---|---|
 | `setup.sh` | Makes the starting state on test keys: a scratch directory, `ritueel.yaml`, test roots, and the intermediates the drill needs. |
-| `run.sh` | Runs the steps of the guide. With `--cards` it pauses at each prompt and each touch, on test cards named in the environment by serial. |
+| `run.sh` | Runs the steps of the guide. With `--cards` it pauses at each prompt and each touch, on rehearsal cards named in the environment by serial. |
 | `check.sh` | Checks the end state, and writes `drills/<time>-<name>.json` with the duration of every ceremony, taken from the `started_at` and `finished_at` of the records. |
 
 The drills, in the order they are built: the lost-card drill (two roots and an intermediate, a card out of use, `root revoke`, `root add`, a yearly re-certification), a routine yearly renewal, an expiring root with an overlap, a stale root list, the adoption drill ([issue #48](https://github.com/truvity/ritueel/issues/48)), and one for each transition guide ([issue #19](https://github.com/truvity/ritueel/issues/19)).
 
 - **CI runs every drill with test roots** (`--test-root`) and fails when a drill's check fails. The restore check runs there with `--accept-not-run 5` and `--accept-not-run 3`, because a software root has no holder to compare and the CI directory has no signer.
 - **A drill never needs a real key or a real account.** The scripts use test roots, or rehearsal cards (the `rehearsal` kind) chosen by serial from the environment; a card whose inventory entry is not in the drill's own directory is refused.
-- **A drill on test cards runs once**, by the holder, and its report says how long each step took.
+- **A drill on rehearsal cards runs once**, by the holder, and its report says how long each step took.
 
 ## When it is due
 

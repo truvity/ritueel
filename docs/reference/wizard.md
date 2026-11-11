@@ -1,6 +1,6 @@
 ---
 title: The wizard
-description: What the guided mode and the read-only local page drive, how they stay one engine and one API with the commands, and the security profile of the page and its tests.
+description: What the guided mode and the read-only local page drive, how they share one engine and one API with the commands, and the security profile of the page.
 sidebar:
   order: 14
 ---

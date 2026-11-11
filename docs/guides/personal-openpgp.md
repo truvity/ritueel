@@ -1,6 +1,6 @@
 ---
 title: Your own OpenPGP key
-description: Make your own OpenPGP primary offline and a daily signing subkey on a card, bind one to the other, and keep both alive, with a drill on a test card first.
+description: Make your own OpenPGP primary offline and a daily signing subkey on a card, bind one to the other, and keep both alive, with a drill on a rehearsal card first.
 sidebar:
   order: 9
 ---
@@ -52,4 +52,4 @@ The renewal plan (`ritueel due`, then `ritueel run PLAN --confirm DIGEST`) binds
 
 ## Drill
 
-Make a throw-away master key with `--test-root`, bind a subkey on a test card, import the certificate into a scratch `gpg` home, sign and verify a file, then revoke the subkey with the reason "compromised" and see the signature fail to verify with `sqv` (a "superseded" revocation fails only the signatures dated after it). Nothing real is touched.
+Make a throw-away master key with `--test-root`, bind a subkey on a rehearsal card, import the certificate into a scratch `gpg` home, sign and verify a file, then revoke the subkey with the reason "compromised" and see the signature fail to verify with `sqv` (a "superseded" revocation fails only the signatures dated after it). Nothing real is touched.

@@ -92,6 +92,6 @@ A subkey that is replaced is retired by a revocation with the reason "superseded
 
 ## Follow-ups
 
-- `init --kind personal`, `personal subkey add`, the adoption of a primary, the day-to-day subkeys and the encryption subkey with its wrapped backup, the output and the tests on a test card ([issue #18](https://github.com/truvity/ritueel/issues/18)).
+- `init --kind personal`, `personal subkey add`, the adoption of a primary, the day-to-day subkeys and the encryption subkey with its wrapped backup, the output and the tests on a rehearsal card ([issue #18](https://github.com/truvity/ritueel/issues/18)).
 - Stage two on the root cards, after the card proofs ([issue #11](https://github.com/truvity/ritueel/issues/11)).
 - The schema of `ritueel.yaml` for `kind` and `person`, and the vectors of the `openpgp-card` proof ([issue #18](https://github.com/truvity/ritueel/issues/18)).

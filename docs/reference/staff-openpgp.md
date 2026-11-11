@@ -215,7 +215,7 @@ The contract gains the type with its checks and test vectors in a follow-up; unt
 ## Follow-ups
 
 - The helper, the bundle version 1 and its vectors, shared with sluis ([issue #103](https://github.com/truvity/ritueel/issues/103)).
-- The conformance test above, on a real test card ([issue #103](https://github.com/truvity/ritueel/issues/103)).
+- The conformance test above, on a real rehearsal card ([issue #103](https://github.com/truvity/ritueel/issues/103)).
 - The type `openpgp-certifier` in the contract, its vectors, and the delegation ceremony ([issue #103](https://github.com/truvity/ritueel/issues/103)).
 - Which verifiers evaluate the trust signature and the expression above ([issue #103](https://github.com/truvity/ritueel/issues/103)).
 - The attestation extensions of the OpenPGP applet ([issue #18](https://github.com/truvity/ritueel/issues/18)).

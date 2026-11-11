@@ -47,4 +47,4 @@ A new device or service is judged the same way before it joins: what does it pro
 
 ## Drill
 
-On two test cards, make a key on one and import a key into a slot of the other with the maker's tool. Ask each for its attestation certificate. Result: the first answers, the second refuses. Then run the same ceremony with ritueel on each (when `init` exists) and read the refusal.
+On two rehearsal cards, make a key on one and import a key into a slot of the other with the maker's tool. Ask each for its attestation certificate. Result: the first answers, the second refuses. Then run the same ceremony with ritueel on each (when `init` exists) and read the refusal.
