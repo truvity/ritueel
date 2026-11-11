@@ -1,11 +1,11 @@
 ---
 title: Glossary
-description: The twelve words ritueel's pages and records use in one fixed sense each, with the word a page uses when it differs and the record that decides it.
+description: The words ritueel's pages and records use in one fixed sense each, with the word a page uses when it differs and the record that decides it.
 sidebar:
   order: 17
 ---
 
-Twelve words carry the design. The pages and the records use each in the sense below and in no other. Where a page keeps an older or narrower word, the third column says so: the glossary does not rename a page's word. It defines words from the records; it decides nothing new.
+These words carry the design. The pages and the records use each in the sense below and in no other. Where a page keeps an older or narrower word, the third column says so: the glossary does not rename a page's word. It defines words from the records; it decides nothing new.
 
 | Word | Meaning | The page word | Decided in |
 |---|---|---|---|
