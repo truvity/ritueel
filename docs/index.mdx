@@ -9,6 +9,7 @@ hero:
 
 import Actions from '../site/src/components/home/Actions.astro';
 import Destinations from '../site/src/components/home/Destinations.astro';
+import Figure from '../site/src/components/Figure.astro';
 
 <Actions
   actions={[
@@ -28,24 +29,32 @@ import Destinations from '../site/src/components/home/Destinations.astro';
   ]}
 />
 
-ritueel helps one person or a small team keep a private CA root (the top key of a PKI, a system of certificates) or an OpenPGP primary key for years without losing it, leaking it or letting it expire. The tools are planned: a program that guides you through each use of the root (a [ceremony](/glossary/)) and keeps a record of it.
+ritueel helps one person or a small team keep a private CA root (the top key of a PKI, a system of certificates) or an OpenPGP primary key for years without losing it, leaking it or letting it expire.
 
-## The ideas
+ritueel does not replace your certificate system, your secret store or your cloud key service. It covers what each of them leaves open: the root above them.
 
-- [One set of ceremonies](/how-it-works/#every-ceremony-has-six-steps) over three kinds of store: a key file, a pair of root cards or a cloud key service.
-- [Prefer a key that cannot be copied](/how-it-works/cards/): a root born on a card or in a cloud key service, over a key in a file.
-- [One bundle](/how-it-works/bundle-and-stick/) is one trust domain: its roots, its history, its trust files and what is known about the cards.
-- [Requests in, answers out](/how-it-works/#sign-an-intermediate): other systems connect through files, and a plan or a request made in one place can travel by any channel and run in another.
-- [A defined, automated workflow](/how-it-works/#every-ceremony-has-six-steps): ritueel says what is due, and every ceremony is plan, confirm, reserve, sign, verify, record.
+## The whole chain
 
-[See all five drawn.](/how-it-works/#five-ideas)
+<Figure name="whole-chain">
+  The design, not a program: a key in a file can be copied without a trace, so it is replaced on a calendar. A key on a card or in a cloud key service cannot be copied out, so there is no calendar: you keep the same key and renew it once a year.
+</Figure>
+
+Each use of the root is a [ceremony](/glossary/). [How it works](/how-it-works/#five-ideas) draws the five ideas behind the design.
 
 ## What exists today
 
-ritueel is in its design phase. There is a design, stated in brief on the [design page](/design/), a set of teaching pages, pictures of [how it works](/how-it-works/) and a [demo](/demo/) of the program's local page, with made-up data. There is no program and no release yet. [Where it stands](/status/) says how far each step has got.
+This way of working is in use today, done by hand. The program that guides it is not built yet: ritueel is in its design phase. What exists is the [design page](/design/), the teaching pages, pictures of [how it works](/how-it-works/) and a [demo](/demo/) of the program's local page, with made-up data. [Where it stands](/status/) says how far each step has got.
 
 ## Is it for you?
 
-Yes, if you hold a private CA root or an OpenPGP primary key and use it rarely, by hand, with a person present. No, if you look for a service that signs for you every day. Nothing here needs a tool today: the [Learn](/learn/) pages teach the practice whichever tool you use. Lost or exposed a key? Read [revoke](/learn/revoke/) first.
+It is for you if you recognise one of these:
 
-The words are fixed in the [glossary](/glossary/). The records behind the design, the specifications, guides and research are working material in the [repository](https://github.com/truvity/ritueel/tree/main/docs), not on this site.
+- Your CA root or OpenPGP primary key is a file: on a laptop, on a server or in a password manager.
+- You renew certificates or subkeys about once a year, and each time you must find out again how you did it.
+- A certificate or a key expired, and you learned it when something stopped working.
+- You could not say today what your root has signed.
+- If the root were lost tomorrow, you would have no tested way back.
+
+Each of these can end in lost days or in a security incident. It is not for you if you look for a service that signs every day. Lost or exposed a key? Read [revoke](/learn/revoke/) first.
+
+The words are fixed in the [glossary](/glossary/). The records behind the design are in the [repository](https://github.com/truvity/ritueel/tree/main/docs).
