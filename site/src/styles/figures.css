@@ -72,6 +72,10 @@
 .fig-single svg {
   max-width: 40rem;
 }
+/* A drawing made tall for a phone (360 units wide) stays at about 1:1 on a wide screen. */
+.fig-single svg.fig-small {
+  max-width: 26rem;
+}
 
 /* Ink and paper. A panel is slightly tinted (the nav background); things on it are paper. */
 .fig .p-frame { fill: var(--sl-color-bg-nav); stroke: currentColor; stroke-width: 2.5; }
@@ -123,6 +127,8 @@
 .fig .t-end { text-anchor: end; }
 .fig .t-num { fill: var(--sl-color-bg); }
 .fig .t-id { letter-spacing: 0; }
+/* A slot id in grey 3 on the dark panel is 4.47:1 (computed from props.css); grey 2 clears 4.5:1 in both themes. */
+.fig .t-id.t-dim { fill: var(--sl-color-gray-2); }
 .fig .t-row { font-weight: 700; }
 .fig .t-long { font-size: 12px; }
 .fig .halo { fill: var(--sl-color-bg-nav); stroke: var(--sl-color-bg-nav); stroke-width: 5; stroke-linejoin: round; }

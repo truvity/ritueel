@@ -5,7 +5,9 @@ import ceremony from './ceremony.mjs';
 import bindSubkeys from './bind-subkeys.mjs';
 import ideas from './ideas.mjs';
 import rootCard from './root-card.mjs';
+import dayToDayCard from './day-to-day-card.mjs';
+import serverCard from './server-card.mjs';
 
-const list = [signIntermediate, rootCard, ceremony, bindSubkeys, ideas];
+const list = [signIntermediate, rootCard, dayToDayCard, serverCard, ceremony, bindSubkeys, ideas];
 
 export const figures = Object.fromEntries(list.map((fig) => [fig.id, fig]));
