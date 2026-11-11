@@ -15,14 +15,14 @@ The program does not exist yet; the pictures show how ritueel is designed to wor
 A bundle holds everything ritueel knows about one trust domain: plain files, and never a private key in clear ([the layout](/reference/bundle/#the-layout)). You write two places; ritueel writes the rest.
 
 <Figure name="bundle-folder">
-  A bundle is one directory of plain files for one trust domain. Its history of ceremonies, the [glossary](/glossary/)’s “ledger”, is never changed afterwards.
+  A bundle is one directory of plain files for one trust domain. Its history of ceremonies (see the [glossary](/glossary/)) is never changed afterwards.
 </Figure>
 
 Two parts of the bundle are drawn without a directory name because their names are being changed.
 
 ## The USB stick
 
-A root on cards or in a key file runs on the offline system, and the plan is carried there on a stick ([record 0016](/decisions/0016-several-bundles-share-one-pair-of-root-cards-and-the-bundle-keeps-a-card-inventory/#where-a-plan-runs)). A cloud root needs no stick: it runs on your workstation.
+A root on cards or in a key file runs on the offline system, and the plan is carried there on a stick ([record 0005](../decisions/0005-a-ceremony-and-where-it-runs.md)). A cloud root needs no stick: it runs on your workstation.
 
 The stick holds vanilla AirgapOS and one extra partition for ritueel: several versions of ritueel, several bundles and the encrypted key files. When you prepare a plan online, ritueel refreshes its copy on the stick and the plan records its digest, so the run uses the version that made the plan.
 

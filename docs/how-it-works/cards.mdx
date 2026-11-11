@@ -11,17 +11,17 @@ ritueel is in its design phase: the program does not exist, and the pictures sho
 
 ## Root card
 
-A root card holds roots and nothing else, and goes only into the offline system ([record 0016](/decisions/0016-several-bundles-share-one-pair-of-root-cards-and-the-bundle-keeps-a-card-inventory/#where-a-root-card-is-used)). The partner root of the same bundle sits in the same row of the second card; the bundle names here are made up.
+A root card holds roots and nothing else, and goes only into the offline system ([record 0003](../decisions/0003-root-cards.md)). The partner root of the same bundle sits in the same row of the second card; the bundle names here are made up.
 
 <Figure name="root-card">
   Six rows of four PIV slots. Row 1 is the card’s own jobs; each other row holds one root of one bundle, the same key kind in each column.
 </Figure>
 
-A key file opens with a passkey on each root card, with a recovery key kept apart. This is decided and not yet proven on hardware; if the proof fails, the spare key in 9d is the way ([record 0015](/decisions/0015-key-files-open-with-a-passkey-on-each-root-card-and-card-secrets-are-sealed-in-the-bundle/#decided-not-yet-proven)).
+A key file opens with a passkey on each root card, with a recovery key kept apart. This is decided and not yet proven on hardware; if the proof fails, the spare key in 9d is the way ([record 0002](../decisions/0002-where-a-key-lives.md)).
 
 ## Day-to-day card
 
-A day-to-day card carries a person’s own subkeys and passkeys. Signing and authentication keys are born on each card; the decryption key is made in software, so a lost card does not lose the mail it decrypted ([record 0017](/decisions/0017-a-persons-openpgp-key-in-two-stages-an-adopted-primary-first-then-card-born-primaries/#day-to-day-cards)).
+A day-to-day card carries a person’s own subkeys and passkeys. Signing and authentication keys are born on each card; the decryption key is made in software, so a lost card does not lose the mail it decrypted ([record 0008](../decisions/0008-a-persons-own-key.md)).
 
 <Figure name="day-to-day-card">
   One day-to-day card holds one set of OpenPGP subkeys and your passkeys, and nothing in PIV. A second card gets its own set.
@@ -29,7 +29,7 @@ A day-to-day card carries a person’s own subkeys and passkeys. Signing and aut
 
 ## Server card
 
-A server card stays plugged into a server of a requester system, such as [sluis](https://github.com/truvity/sluis), and signs for its services. ritueel lists it and only ever reads it ([record 0016](/decisions/0016-several-bundles-share-one-pair-of-root-cards-and-the-bundle-keeps-a-card-inventory/#the-inventory)).
+A server card stays plugged into a server of a requester system, such as [sluis](https://github.com/truvity/sluis), and signs for its services. ritueel lists it and only ever reads it ([record 0003](../decisions/0003-root-cards.md)).
 
 <Figure name="server-card">
   The slots follow the requester’s own plan, here sluis’s; another requester’s plan will differ. The root signs the intermediate key in 9c; the rest are the requester’s own keys. Source: [sluis key registry](https://sluis.id/reference/keys/#board-slot-plan), its own heading “Board slot plan”, read 2026-11-11; same text in truvity/sluis, branch main, docs/reference/keys.md, commit bc1b3729b840c8d4ea0309db4b420d0182c83ad9.
