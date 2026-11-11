@@ -23,7 +23,7 @@ It sits in the middle of [the custody chain](/learn/custody-chain/): the questio
 
 A key that was *imported* into a token can be copied before it went in. A key *generated* on the token cannot, because it never existed outside. The token signs a statement about the second kind only: an imported key has no attestation, which is how you tell them apart. That is why ritueel never imports a key ([principle 1](/principles/)) and why a root whose key cannot be attested is refused.
 
-The chain is checked against the maker's root, which ritueel carries and refreshes ([the bundle](/reference/cards/#the-attestation-bundle)), and never against a certificate the token or the requester hands over by itself: a root inside the evidence is not trusted ([principle 4](/principles/)). If the chain cannot be checked, ritueel reports that the check did not run. It never reports it as passed.
+The chain is checked against the maker's root, which ritueel carries and refreshes ([the attestation bundle](/reference/cards/#the-attestation-bundle)), and never against a certificate the token or the requester hands over by itself: a root inside the evidence is not trusted ([principle 4](/principles/)). If the chain cannot be checked, ritueel reports that the check did not run. It never reports it as passed.
 
 ## What the cloud gives instead
 

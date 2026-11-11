@@ -47,12 +47,12 @@ Four questions for every link, written down before you need them:
 
 ## How ritueel records it
 
-ritueel keeps the chain in the directory, a folder of plain files that holds public material and, sealed, the secrets of cards. Its write-once part is the [ledger](/learn/the-ledger/):
+ritueel keeps the chain in the bundle, a folder of plain files with a fixed structure that holds public material and, sealed, the secrets of cards. Its write-once part is the [ledger](/learn/the-ledger/):
 
 - **The links it makes or signs.** For each root: its certificate or public key, where it lives, and the evidence of where it was born (the attestation of a card, or the description and policy of a cloud key). For each intermediate it certifies: the request it received, the proof that came with it, and the certificate or binding it returned.
 - **The ceremonies that made each link.** One record per ceremony, chained by hash to the one before it, saying what was signed, with which key, in which store, and what outsiders see as a result.
 - **When each link runs out.** Expiry dates of roots and certificates, with a warning well before they come.
-- **What it does not hold.** Private keys, PINs, passphrases and the revocation certificates themselves are never in the directory in clear. The directory holds only a digest of each revocation certificate, so you can tell later that the right one is the one you kept.
+- **What it does not hold.** Private keys, PINs, passphrases and the revocation certificates themselves are never in the bundle in clear. The bundle holds only a digest of each revocation certificate, so you can tell later that the right one is the one you kept.
 
 The ledger covers the links down to the intermediates that ritueel certifies. Below that, the system that holds the intermediate keeps its own record of the leaves it issues. The two meet at the [hand-off contract](/reference/hand-off-contract/).
 

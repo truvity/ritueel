@@ -17,13 +17,13 @@ A transition has four verbs, and a fifth for emergencies.
 |---|---|
 | **Create** | Make the new root in its key store. Record where it lives and attest it if the store can. |
 | **Vouch** | Let the old root vouch for the new one. For X.509 the old root issues a *cross-certificate* for the new root's key. For OpenPGP the old primary *certifies* the new primary. Now a client that trusts only the old root can still validate things signed under the new one. |
-| **Overlap** | Run both. New intermediates are issued under the new root, while the old root stays trusted. Outsiders receive a bundle or keyring that holds both. |
-| **Supersede** | Once every client has had time to learn the new root, publish a bundle or keyring without the old one. The old root is retired: no new intermediates, and it is removed from what you ship. |
+| **Overlap** | Run both. New intermediates are issued under the new root, while the old root stays trusted. Outsiders receive a CA bundle or keyring that holds both. |
+| **Supersede** | Once every client has had time to learn the new root, publish a CA bundle or keyring without the old one. The old root is retired: no new intermediates, and it is removed from what you ship. |
 | **Revoke** | The emergency exit. The old root is declared untrustworthy now. For OpenPGP this is a *revocation signature*, plus a keyring without the old key, because some verifiers ignore the signature; for X.509, a signed root list without the old root, signed by the surviving roots and carrying the old root's removal authorisation, made when it was born. |
 
 A transition, as it looks to an outsider:
 
-| Step | The roots you ship | A client that trusts only the old root | A client that has the new bundle |
+| Step | The roots you ship | A client that trusts only the old root | A client that has the new CA bundle |
 |---|---|---|---|
 | Before | old | works | not applicable |
 | Create, vouch | old | works; new things are vouched for by the old root | not applicable |
