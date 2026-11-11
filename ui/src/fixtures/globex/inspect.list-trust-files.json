@@ -36,7 +36,7 @@
       "trustSequence": 1,
       "builtAt": "2026-09-15T13:40:00Z",
       "checkResult": "TRUST_CHECK_RESULT_PASSED",
-      "validUntil": "2027-10-15T00:00:00Z",
+      "validUntil": "2028-10-15T00:00:00Z",
       "checkDetail": "No certificate issued by globex/A is revoked. Signed by globex/A when the set was made; the list is empty.",
       "sha256": "72030123456789abcdef0123456789abcdef0123456789abcdef0123456789ab",
       "sizeBytes": "598",

@@ -43,7 +43,7 @@ describe('every call of the contract answers', () => {
   it('the services list every method this test knows (a new call must get a test)', () => {
     expect(InspectService.methods.map((m) => m.name).sort()).toEqual(['GetSummary', 'ListCards', 'ListCeremonies', 'ListFindings', 'ListRoots', 'ListTrustFiles']);
     expect(PlanService.methods.map((m) => m.name).sort()).toEqual(['ListIntentions', 'SavePlan', 'StartPlan']);
-    // The process serves the one bundle it was started on: no call lists or selects a bundle.
+    // In this contract no call lists or selects a bundle (which bundle the process serves is not decided by the records, record 0010).
     // The switch of the demo is chrome around the transport, never part of the contract.
     const all = [...InspectService.methods, ...PlanService.methods].map((m) => m.name);
     expect(all.filter((n) => /bundle/i.test(n))).toEqual([]);
@@ -701,6 +701,12 @@ describe('the dates of the acme bundle follow the pages', () => {
     const until = (n: string) => files.find((f) => f.name === n)!.validUntil!.slice(0, 10);
     expect(until('crl-A.pem')).toBe(plusMonths(lastSigned('00000011'), 25));
     expect(until('crl-B.pem')).toBe(plusMonths(lastSigned('00000012'), 25));
+  });
+  it('the CRL of the globex bundle stays current 25 months from the day it was made (record 0006, rule 26)', () => {
+    const files = JSON.parse(readFileSync(join(HERE, 'fixtures/globex', 'inspect.list-trust-files.json'), 'utf8')).files as { name: string; kind: string; builtAt: string; validUntil?: string }[];
+    const crls = files.filter((f) => f.kind === 'TRUST_FILE_KIND_CRL');
+    expect(crls.length).toBeGreaterThan(0);
+    for (const f of crls) expect(f.validUntil!.slice(0, 10), f.name).toBe(plusMonths(f.builtAt.slice(0, 10), 25));
   });
 });
 

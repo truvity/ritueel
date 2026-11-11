@@ -219,6 +219,12 @@ describe('hostile text never reaches the markup raw', () => {
     expect(b).toContain('second device');
     expect(b).toContain('ritueel asks nothing of how you signed in.');
     expect(b).not.toContain('A touch for every signature');
+    // A cloud key has no touch to fail, and the second-device check cannot stop an extra signature (record 0005, "What it costs").
+    expect(b).toContain('No retry of a failed step: a failure ends the ceremony.');
+    expect(b).not.toContain('If a touch fails');
+    expect(b).toContain('it cannot prevent an extra signature');
+    expect(b).not.toContain('These conditions bound it');
+    expect(a).toContain('These conditions bound it');
     const c = flat(<WhereItRuns plan={C} />);
     expect(c).toContain('Where it runs: in the offline system');
     expect(c).toContain('vanilla AirgapOS');
@@ -242,7 +248,7 @@ describe('hostile text never reaches the markup raw', () => {
     for (const p of [A, B, C, D, E, F]) expect(html(p)).not.toMatch(/<(input|textarea|select|button)\b/i);
   });
 
-  it('the record of a workstation ceremony states no touch: the record does not say the root is on cards', async () => {
+  it('the record of a workstation ceremony states the touch for cards only, and says a cloud key has none', async () => {
     loadWorld('globex', 'adopt-key');
     const { History } = await import('./screens/History');
     // The world is marked, so the id carries the marker too: read it from the data.
@@ -250,9 +256,11 @@ describe('hostile text never reaches the markup raw', () => {
     const text = renderToStaticMarkup(<History id={id} />).split(/<[^>]*>/).join('');
     const at = text.indexOf('Where it ran');
     expect(at).toBeGreaterThan(-1);
-    const sentence = text.slice(at, at + 220);
-    expect(sentence).toContain('The conditions of record 0005 applied');
-    expect(sentence).not.toMatch(/touch/i);
+    const sentence = text.slice(at, at + 520);
+    expect(sentence).toContain('four conditions of record 0005, rule 18');
+    expect(sentence).toContain('on cards a touch for every signature (a cloud key has no touch)');
+    expect(sentence).toContain('does not yet show whether each condition was met');
+    expect(sentence).not.toContain('applied');
   });
 
   it('the marked name of the bundle reaches a root written bundle/label as an escape, never raw', async () => {

@@ -1,8 +1,8 @@
 // Demo mode: an in-memory ConnectRPC transport. The handlers answer from the
 // fixture files of the contract (the same messages the real service sends).
 // There is no server and no network. The transport answers for one bundle at a
-// time, chosen by the switch in the demo bar (api/demoState.ts): the real
-// process serves the one bundle it was started on, and its name comes from
+// time, chosen by the switch in the demo bar (api/demoState.ts): the contract
+// has no call that names a bundle, and the name of the bundle comes from
 // GetSummary in the same way. Every handler is a read, except the one
 // write of the contract, SavePlan: it answers from its fixture, which says
 // written=false and that this is a demo, and nothing is written anywhere.

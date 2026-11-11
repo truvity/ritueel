@@ -9,7 +9,7 @@
         {
           "id": "card-check-root-cards",
           "label": "Check the root cards (due 2026-12-02)",
-          "description": "Both cards are read and each proves it is alive."
+          "description": "Read root card B, the root of the year, and check it."
         },
         {
           "id": "renew-acme-ca",

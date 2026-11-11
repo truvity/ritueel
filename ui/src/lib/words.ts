@@ -31,7 +31,7 @@ export const STORE_WORD: Record<number, string> = {
 };
 
 export const STORE_SENTENCE: Record<number, string> = {
-  [Store.SOFTWARE_FILE]: 'The key is an encrypted file kept beside the bundle (on the extra partition of the stick), never inside it. A passkey on each root card opens it, and a recovery key is kept apart. It can be copied, so you use it only in the offline system.',
+  [Store.SOFTWARE_FILE]: 'The key is an encrypted file kept beside the bundle (on the extra partition of the stick), never inside it. A passkey on any one of your root cards opens it (a passphrase is the other way), and a recovery key is kept apart. It can be copied, so you use it only in the offline system (a test root is the exception).',
   [Store.ROOT_CARDS]: 'The root has its own key, born on one root card and never leaving it. Its partner root is on the other card. It cannot be copied. You may use it on your workstation with a touch for every signature, the count in the plan, no retry and a check on a second device, or in the offline system.',
   [Store.CLOUD_KMS]: 'The key lives in a cloud key service and never leaves it. If ritueel adopted it, it read the public key and the policy and did not change the key. It cannot be copied. You may use it from your workstation in a session of its ceremony role; the count, no retry and the second-device check apply. A cloud key has no touch: the typed digest and the role session stand, and its audit trail records every signature.',
 };

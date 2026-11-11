@@ -120,8 +120,8 @@ export const GetSummaryResponseSchema: GenMessage<GetSummaryResponse> = /*@__PUR
 
 /**
  * The directory with a fixed structure that holds everything ritueel knows
- * about one trust domain: its history, roots, cards and trust files. The
- * process serves one bundle.
+ * about one trust domain: its history, roots, cards and trust files. No call
+ * names a bundle; which bundle the process serves is not decided by the records.
  *
  * @generated from message ritueel.local.v1alpha1.Bundle
  */
