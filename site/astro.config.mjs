@@ -93,7 +93,7 @@ export default defineConfig({
           // The status page is built from the repository and the issues (src/pages/status.astro).
           items: [{ label: 'Status', link: '/status/' }, { slug: 'roadmap' }],
         },
-        { label: 'Decisions (archive)', link: '/decisions/' },
+        { label: 'Decisions', link: '/decisions/' },
       ],
       plugins: [
         // Fails the build on a broken internal link or anchor of a published page; a link to a page
