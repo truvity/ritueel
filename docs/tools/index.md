@@ -1,6 +1,6 @@
 ---
 title: Tools
-description: "The ritueel tools that simplify the ceremonies: a command line, a guided mode and a read-only page on localhost. All are planned, and all drive one engine."
+description: "The ritueel tools: a command line, a guided mode and a read-only page on localhost. All are planned; a demo of the page exists. All drive one engine."
 sidebar:
   label: Overview
   order: 0
@@ -9,14 +9,14 @@ sidebar:
 The tools exist to simplify the rituals you learn about in [Learn](/learn/). They are not a reason to skip learning: a tool that signs the wrong thing signs it quickly.
 
 :::caution[Not built yet]
-ritueel is in the design phase and has no release. Every tool on this page is planned. The [roadmap](/roadmap/) has the order; each page says what is built.
+ritueel is in the design phase and has no release. Every tool on this page is planned; only a demo of the local page exists, as a design to look at and click through. The [roadmap](/roadmap/) has the order; each page says what is built.
 :::
 
 | Tool | What it is | Status |
 |---|---|---|
 | [The command line](/tools/cli/) | One to three commands for each ceremony, with a plan, a confirmation, a record and the checks before every touch. | Planned (M2 to M7) |
 | [The wizard](/tools/wizard/) | A guided mode in the terminal, and a read-only page served on your own computer only. | Planned (page M2, guided mode after the first signed release) |
-| [The local page](/tools/local-page/) | The browser view of your own folder, served on your computer. A [demo](/demo/) shows the real page over made-up data. | The page and its demo exist; the program that serves it is planned |
+| [The local page](/tools/local-page/) | The browser view of your own folder, served on your computer and read-only. A [demo](/demo/) shows the real page over made-up data. | Partly built: the page and its demo exist; the program that serves the page is planned (M2) |
 | [Command reference](/reference/cli/) | The commands, flags, files and exit codes. | Specified |
 
 ## One engine, three faces
