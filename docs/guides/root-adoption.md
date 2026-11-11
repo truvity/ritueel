@@ -12,7 +12,7 @@ Adoption makes the real roots: on two dedicated root cards, or in one cloud root
 ## What you start with
 
 - Two root cards that hold only roots, each prepared as in [Prepare a root card](/guides/prepare-a-root-card/): its PIN set, and the card adopted by ritueel, which replaces the PUK and the management key and seals them in the directory. The PINs are in your password manager, one entry per card.
-- A machine booted from the read-only offline system, with ritueel ([ADR 0016](/decisions/0016-several-roots-share-one-pair-of-root-cards-and-the-directory-keeps-a-card-inventory/#where-a-root-card-is-used)); the plan can be made anywhere and saved. For a cloud root, a workstation is enough, and a test root may use the workstation or a rehearsal card. An empty directory, advised to be kept in version control.
+- A machine booted from the read-only offline system, with ritueel ([ADR 0016](/decisions/0016-several-roots-share-one-pair-of-root-cards-and-the-directory-keeps-a-card-inventory/#where-a-plan-runs)); the plan can be made anywhere and saved. For a cloud root, a workstation is enough, and a test root may use the workstation or a rehearsal card. An empty directory, advised to be kept in version control.
 - Two places to keep the cards apart, and a third for the revocation signatures.
 
 ## Steps

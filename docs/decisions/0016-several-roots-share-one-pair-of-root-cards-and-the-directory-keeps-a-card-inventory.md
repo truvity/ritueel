@@ -9,7 +9,7 @@
 
 A PIV application has 24 key slots (9a, 9c, 9d, 9e and the retired slots 82 to 95). That is enough for several roots on one pair if every place is fixed. [0002](/decisions/0002-key-custody-every-key-is-born-in-its-store-two-root-cards-or-one-kms-root-and-a-replica/#keys) keeps its rule: the second card is redundancy, and the two cards are independent and never copies. The proposal is the design round of 2026-11-10 and 11, tracked in the issues under Follow-ups.
 
-The maintainer decided on 2026-11-11 the four kinds of card, where a plan runs, and the relaxed mode for tests. The third kind is the server card (`server`): he asked for a name other than "board" for a card that is "something like DIY cloud HSM", and chose `server`. The offline system also binds a real software root. The relaxed mode is wording only: a test root may run on the workstation and on a rehearsal card, with no flag.
+The four kinds of card, where a plan runs and the relaxed mode for tests are decided here. The third kind is called `server`, because `board` was not wanted and `hsm` names a product class that [0002](/decisions/0002-key-custody-every-key-is-born-in-its-store-two-root-cards-or-one-kms-root-and-a-replica/) rejects. The offline system also binds a real software root. The relaxed mode is wording only: a test root may run on the workstation and on a rehearsal card, with no flag.
 
 ## Decision
 
@@ -27,7 +27,7 @@ The maintainer decided on 2026-11-11 the four kinds of card, where a plan runs, 
 - **Every key is made with its PIN rule and its touch rule stated.** For root keys both are always.
 - **A used root slot carries a placeholder certificate,** so that tools which look for empty slots skip it.
 - **A read-only check compares the whole card with the built-in layout** and reports anything else.
-- **A card that holds roots is never reset.** A half-born key is removed by deleting that one slot. The firmware floor for a root card is 5.7.4. That is ritueel's rule; that deleting one slot works there is tried on a rehearsal card in M1. Yubico documents a delete-key action for YubiKey 5.7 or higher (read 2026-11-11, [yubico-piv-tool, delete-key](https://developers.yubico.com/yubico-piv-tool/Actions/key_delete.html)).
+- **A card that holds real roots is never reset.** A half-born key is removed by deleting that one slot. The firmware floor for a root card is 5.7.4. That is ritueel's rule; that deleting one slot works there is tried on a rehearsal card in M1. Yubico documents a delete-key action for YubiKey 5.7 or higher (read 2026-11-11, [yubico-piv-tool, delete-key](https://developers.yubico.com/yubico-piv-tool/Actions/key_delete.html)).
 - **A root card is never also a server card or a day-to-day card, and never a rehearsal card.**
 
 ### The inventory
@@ -37,7 +37,7 @@ The maintainer decided on 2026-11-11 the four kinds of card, where a plan runs, 
 - **A card has one of four kinds,** and never changes it:
   - `root`: holds roots by row; adopted; used in the offline system only.
   - `day-to-day`: a person's signing and authentication subkeys and passkeys; adopted.
-  - `server`: a card that stays plugged into a server of a requester system and signs for its services. It works like a small do-it-yourself HSM, but it is an ordinary card, not a hardware security module product ([0002](/decisions/0002-key-custody-every-key-is-born-in-its-store-two-root-cards-or-one-kms-root-and-a-replica/)). ritueel lists it in the inventory and only ever reads it. Its slots follow the requester's own layout, so the built-in layout check does not apply; ritueel adopts nothing on it, changes no secret and seals none.
+  - `server`: a card that stays plugged into a server of a requester system and signs for its services. It is an ordinary card, not a hardware security module product ([0002](/decisions/0002-key-custody-every-key-is-born-in-its-store-two-root-cards-or-one-kms-root-and-a-replica/)). ritueel lists it in the inventory and only ever reads it. Its slots follow the requester's own layout, so the built-in layout check does not apply; ritueel adopts nothing on it, changes no secret and seals none.
   - `rehearsal`: practice and tests. It never holds a real key and may be reset; the M1 proofs and the drills use it. It serves only a test root.
 
 ### Where a root card is used
@@ -50,7 +50,7 @@ The maintainer decided on 2026-11-11 the four kinds of card, where a plan runs, 
 
 | Root | Where its ceremonies run |
 |---|---|
-| Card root, and real software root (a key file) | The offline system. The plan can be made anywhere and carried over as a saved plan file, so the USB-stick step is shown only here. |
+| Card root, and real software root (a key file, for example a person's own primary) | The offline system. The plan can be made anywhere and carried over as a saved plan file, so the USB-stick step is shown only here. |
 | Cloud root | Your workstation, with no stick. |
 | Test root | See the next bullet. |
 
@@ -76,8 +76,8 @@ The maintainer decided on 2026-11-11 the four kinds of card, where a plan runs, 
 - **Leaving the OTP application on.** Nothing to switch off, but the card then answers to a second kind of secret that nobody tracks.
 - **Two kinds only (root, day-to-day).** Fewer words, but a server's card and a practice card would have no honest place and would be forced into "day-to-day".
 - **ritueel manages the server card like a root card.** One rule for all, but its slots belong to the requester, and a ritueel layout check or adoption would break the service.
-- **A flag that turns the offline rule off.** Faster tests, but the program checks nothing about the machine, so a flag would only relax a rule that nothing enforces, and `--test-root` already marks everything `TEST ONLY`; the maintainer chose wording only, with no flag (2026-11-11).
-- **Call the third kind `board` or `hsm`.** `board` was the first name and the maintainer asked for another; `hsm` names a product class that [0002](/decisions/0002-key-custody-every-key-is-born-in-its-store-two-root-cards-or-one-kms-root-and-a-replica/) rejects for the roots, and a server card is an ordinary card; he chose `server`.
+- **A flag that turns the offline rule off.** Faster tests, but the program checks nothing about the machine, so a flag would only relax a rule that nothing enforces, and `--test-root` already marks everything `TEST ONLY`; the maintainer chose wording only, with no flag.
+- **Call the third kind `board` or `hsm`.** `board` was the first name and was not wanted; `hsm` names a product class that [0002](/decisions/0002-key-custody-every-key-is-born-in-its-store-two-root-cards-or-one-kms-root-and-a-replica/) rejects for the roots, and a server card is an ordinary card; `server` was chosen.
 - **Let a test root live only in a file.** Simplest, but the card proofs and the drills need a real card under a test root, and the rehearsal kind exists for that; a rehearsal card serves only a test root, so a real root cannot be born on it.
 - **A card check only at the yearly ceremony.** One rhythm, but a dead card would show only at the next ceremony, up to a year later.
 

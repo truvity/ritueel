@@ -1,6 +1,6 @@
 ---
 title: Tools
-description: "The ritueel tools: a command line, a guided mode and a read-only page on localhost. The program is planned; the page exists as code and a demo. All drive one engine."
+description: "The ritueel tools: a command line, a guided mode and a read-only page on localhost. The program is planned; the page exists as code. All drive one engine."
 sidebar:
   label: Overview
   order: 0

@@ -30,7 +30,7 @@ These are the rules of the local page.
 3. It prints a **one-time token** in its address; a request without it is refused.
 4. It checks the **Host and Origin** headers of every request, against DNS rebinding and cross-site requests.
 5. It loads **no remote assets**.
-6. It sends a **strict Content-Security-Policy**: its own files only.
+6. It sends a **strict Content-Security-Policy**: scripts, images and connections from its own files only; styles from its own files and inline.
 7. **Every irreversible step is confirmed in the terminal or by touch,** never by a click alone. The page never receives a PIN, a passphrase or a key.
 8. It sends no telemetry and makes no network call that a ceremony does not need.
 

@@ -36,6 +36,6 @@ Offline also does not protect against loss. A key on one card in one drawer is s
 
 ## Offline for software keys
 
-A software key, a file or an entry in a password manager, can be copied by whatever can read it. It is "offline" only to the extent that the machine it sits on is. That is why ritueel treats a software root as fit for drills, tests and a person's own key, and not for a root others rely on. ritueel's rule is to run a real software root in the offline system too. [Where a key lives](/learn/key-stores/) compares the options.
+A software key, a file or an entry in a password manager, can be copied by whatever can read it. It is "offline" only to the extent that the machine it sits on is. That is why ritueel treats a software root as fit for drills, tests and a person's own key, and not for a root others rely on. ritueel teaches running a real software root in the offline system too; the program does not check where it runs ([ADR 0016](/decisions/0016-several-roots-share-one-pair-of-root-cards-and-the-directory-keeps-a-card-inventory/#where-a-plan-runs)). [Where a key lives](/learn/key-stores/) compares the options.
 
 Next: [what a ceremony is](/learn/ceremonies/).

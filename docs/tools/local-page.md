@@ -9,7 +9,7 @@ sidebar:
 The page itself and its [demo](/demo/) exist, as a design to look at and click through. **Planned, not built:** the program that serves the page from your own computer, and every call it makes. It comes with milestone M2 of the [roadmap](/roadmap/). Nothing on the demo reads a real folder or a real card. ritueel is in its design phase.
 :::
 
-The local page is the third face of the program, beside the command line and the guided mode in the terminal ([The wizard](/tools/wizard/)). It is served by the one ritueel process on your own computer, to your own browser, only while you use it, and it is a **view**: it shows your keys, what is due and what is wrong, which card holds what, and it helps you build a plan for the next ceremony. It never confirms anything, and it never asks for or receives a PIN, a passphrase or any secret. You confirm in the terminal, on the ceremony machine.
+The local page is the third face of the program, beside the command line and the guided mode in the terminal ([The wizard](/tools/wizard/)). It is served by the one ritueel process on your own computer, to your own browser, only while you use it, and it is a **view**: it shows your keys, what is due and what is wrong, which card holds what, and it helps you build a plan for the next ceremony. It never confirms anything, and it never asks for or receives a PIN, a passphrase or any secret. You confirm in the terminal where the ceremony runs.
 
 ## The demo
 

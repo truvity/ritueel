@@ -123,7 +123,7 @@ The format is version 1 and is fixed with the card proofs (M1), when the read-on
 Checks 5 to 10 apply to adopted cards (root, day-to-day), and checks 8 to 10 to root cards. For a `server` card the read-only check lists what it finds (serial, model, firmware, applications, slots as found) and fails nothing about its layout. For a `rehearsal` card, check 3 refuses it for any ceremony that needs another kind (`card-wrong-role`), so a real root can never be born on it. A test root is the one root a rehearsal card serves.
 
 :::note[Proposed]
-How a test root is born on a rehearsal card (`init --test-root` with a card) is proposed and fixed with the card proofs (M1). No flag is added for it.
+How a test root is born on a rehearsal card (`init --test-root` with a card) is proposed and fixed with the card proofs (M1), and so is which of the checks above run for a test root on a rehearsal card. No flag is added for it.
 :::
 
 Before anything is written, in this order. A check that cannot run is `not-run` and the ceremony stops: it is never reported as passed ([principle 4](/principles/)). The code is the reason code of the command's JSON `reasons`.
