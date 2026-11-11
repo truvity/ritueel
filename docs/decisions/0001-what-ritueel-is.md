@@ -34,13 +34,13 @@
 27. On 2026-11-11 the site was cut to the target. No new teaching page is written for now; three wait (user IDs, checking your cards, renewing a delegated key).
 28. The glossary fixes twelve words: root, delegated key, holder (page word: operator), requester (sluis is one; ritueel is the certifier), store, ceremony, bundle, history, record, renew, replace and trust files. A root is the key others trust without further proof (an X.509 root CA key or an OpenPGP primary); a delegated key is an intermediate certificate key, an OpenPGP subkey or an SSH CA key. A ceremony has six steps, confirmed by a person; "yearly ceremony" is a practice, not a command. To renew is to extend the same key; to replace is to make a new key on an event, including the three-year limit on a copyable key.
 29. "Bundle" always means the directory that holds everything ritueel knows about one trust domain; the trust file is "the CA bundle" in full; across bundles it is "acme/A". Trust files live in trust/<number>/, and the older page word "trust products" goes. Card, row and inventory are defined on the bundle and cards pages.
-30. The milestones are: Learn (now); M0 Records; M1 Proofs on a rehearsal card; M2 Release candidate; M3 A person's key, stage one; M4 A company's cloud root; M5 First signed release; M6 A company's card roots, then a person's card-born primaries; M7 Afterwards. Dates are not promised, the order is. A change to the plan is a pull request to the roadmap page. Milestones are GitHub milestones with area and type labels.
+30. The milestones are: Learn (now); M0 Records; M1 Proofs on a rehearsal card; M2 Release candidate; M3 A person's key, stage one; M4 A company's cloud root; M5 First signed release; M6 A company's card roots, then a person's card-born primaries; M7 Afterwards. Dates are not promised, the order is; what each milestone delivers is on the roadmap page. A change to the plan is a pull request to the roadmap page. Milestones are GitHub milestones with area and type labels.
 31. M0 (the written design) is the small clean set of records, the page that states the design in brief, the reference pages, the glossary and the teaching pages saying the same thing. M1 comes first of the builds: the passkey proof, the card proofs and the stick test, before the stores.
-32. The decision records are rewritten from a clean state as a small set, written only from the checked list of decisions; the old eighteen stay in the repository. All design decisions of 2026-11-11 are applied to records, reference pages, teaching pages, the page and its demo.
+32. The decision records are rewritten from a clean state as a small set, written only from the checked list of decisions; the old eighteen stay in the repository.
 
 ## Why
 
-Root custody is rare and costly to get wrong; daily issuing is busy, so the two are kept apart. A reader who does not know why the root stays offline makes the expensive mistake faster, so teaching comes first. The 77-feature analysis proposed 22 core, 16 rules, 19 later, 8 merged and 12 dropped; these counts are a proposal, not accepted as such.
+Root custody is rare and costly to get wrong; daily issuing is busy, so the two are kept apart. A reader who does not know why a root is kept apart and guarded makes the expensive mistake faster, so teaching comes first. The 77-feature analysis proposed 22 core, 16 rules, 19 later, 8 merged and 12 dropped; these counts are a proposal, not accepted as such.
 
 ## What it costs
 
@@ -57,7 +57,7 @@ Root custody is rare and costly to get wrong; daily issuing is busy, so the two 
 - **No floor, the full contract or nothing.** One trust mode everywhere, but ritueel's formats would be required of every CA and a system with intermediates could not be tested without ritueel.
 - **ritueel also sets the PIN.** One tool from box to root, but the holder must type the PIN and ritueel would have to hold it.
 - **ritueel creates the account and the roles.** One command for a cloud root, but it needs account-creating rights, differs for every organisation and becomes an infrastructure tool.
-- **Tools first, teaching as an appendix.** Faster to build, but a reader who does not know why the root stays offline makes the expensive mistake faster.
+- **Tools first, teaching as an appendix.** Faster to build, but a reader who does not know why a root is kept apart and guarded makes the expensive mistake faster.
 - **Staff keys for a company: a delegation to an online certifier, a card helper and a staff proof bundle.** It would cover staff, but the maintainer dropped it; what the requester system automates later is its own work.
 - **Publish every page and put the working material behind a Design entry.** Nothing lost, but the overload stays and 32 not-built-yet pages keep contradicting the target.
 - **Hold back only the unbuilt pages.** A smaller cut, but 53 pages remain to drift apart.

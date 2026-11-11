@@ -41,6 +41,7 @@ A card or KMS key cannot be copied, so a calendar would force a new anchor on ev
 ## What it costs
 
 - The bundle is no longer public material only: sealed files rest on the unlock key and the recovery key, and the unlock key's private half is in memory at each unlock.
+- Test roots and scripts are unchanged.
 - A lost recovery key together with both root cards means the key files cannot be opened. The guides say where the recovery file and passphrase go.
 
 ## Roads not taken

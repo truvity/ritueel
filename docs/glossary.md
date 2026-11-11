@@ -9,8 +9,8 @@ These words carry the design. The pages and the records use each in the sense be
 
 | Word | Meaning | The page word | Decided in |
 |---|---|---|---|
-| **root** | The key that others trust without further proof: an X.509 root CA key, or an OpenPGP primary key. It is born in its store and used rarely. | `root`, `primary` for OpenPGP | [0002](decisions/0002-where-a-key-lives.md), [What is a root?](/learn/what-is-a-root/) |
-| **delegated key** | A key that a root certifies or binds: the key of an intermediate certificate, an OpenPGP subkey, an SSH CA key. The root signs for it; the system that holds it keeps its private half. | `intermediate` for the X.509 case; the hand-off contract keeps this word | [0001](decisions/0001-what-ritueel-is.md), [hand-off contract](/reference/hand-off-contract/) |
+| **root** | The key that others trust without further proof: an X.509 root CA key, or an OpenPGP primary key. It is born in its store. | `root`, `primary` for OpenPGP | [0002](decisions/0002-where-a-key-lives.md), [What is a root?](/learn/what-is-a-root/) |
+| **delegated key** | A key that a root certifies or binds: the key of an intermediate certificate, an OpenPGP subkey, an SSH CA key. | `intermediate` for the X.509 case; the hand-off contract keeps this word | [0001](decisions/0001-what-ritueel-is.md), [hand-off contract](/reference/hand-off-contract/) |
 | **holder** | The person, or the small team, who keeps a root and runs its ceremonies. | `holder`, `operator` for the one who prepares a card or an account | [0001](decisions/0001-what-ritueel-is.md) |
 | **requester** | The system that holds delegated keys and asks a root for a certificate or a binding through the hand-off contract. [sluis](https://sluis.id) is one. | `requester`, with ritueel the `certifier` | [hand-off contract](/reference/hand-off-contract/) |
 | **store** | Where a key is born and kept: a software key file, a PIV card, an OpenPGP card, or a cloud key service. | `store`, `key store` | [0002](decisions/0002-where-a-key-lives.md), [Where a key lives](/learn/key-stores/) |

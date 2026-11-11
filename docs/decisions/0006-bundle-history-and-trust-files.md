@@ -10,7 +10,7 @@
 3. Across bundles a root is written with the bundle's name (`acme/A`); inside a bundle it is `A`. A bundle is named by its directory; the flag stays `--dir`.
 4. The word "bundle" always means the directory. The trust file is always "the CA bundle", and its command is `ca-bundle build`. On the site, in the pages and in contract names, "directory" or "folder" in that sense becomes "bundle".
 5. The history is the write-once part of the bundle: the folder `history/`, with one sub-folder per ceremony holding the plan, attempt, record, transcript and birth journal, each naming the one before it. ritueel needs no git. A sealed single-file form for backups that reveals nothing comes later.
-6. A record is a JSON file in the ceremony's sub-folder; it holds no secret. Records form a hash chain checked by `records verify`. A root does not sign them. The digest of the last record goes into the next signed root list, which anchors the chain without another use of the root.
+6. A record is a JSON file in the ceremony's sub-folder of `history/`, with the time in UTC, the command, the plan digest, the keys and stores, the evidence checked, the policy applied, the artifacts with their digests, the slot map version and the confirmation; it holds no secret. Records form a hash chain checked by `records verify`. A root does not sign them. The digest of the last record goes into the next signed root list, which anchors the chain without another use of the root.
 7. The transcript is what ritueel printed, written by ritueel, never a capture of the terminal. A saved plan is written by the running process inside the bundle at `history/<ceremony>/plan.json` (with `--plan-only`), not in a pending area and not as a loose file.
 8. ritueel stores the OpenPGP creation time of every key it makes or binds: for a KMS key as a key tag and in every published certificate, for an adopted key only in the bundle and the certificate.
 9. Advice to the holder, not enforced: keep the bundle in a git repository of its own, with signed commits and review before a change lands; back it up to a second remote on another provider; keep the digest of the last record apart from the repository. The bundle is part of every key's identity, as it holds the OpenPGP creation times. Losing it is a loss, and the backup is practised.
@@ -52,7 +52,7 @@ A holder must prove what was done, and outsiders must check the roots. One bundl
 - **Keep the word "directory".** No rename, but key, revocation and working directories are directories too.
 - **Another word (dossier, vault, book, home, realm).** No clash with the CA bundle, but the maintainer chose "bundle" and accepted the cost.
 - **A hosted history.** Nothing to back up, but a service every ceremony trusts, and ritueel has none.
-- **The name "ledger" for the history.** Unclear to the maintainer; `history/` is clear.
+- **The older name for the history.** Unclear to the maintainer; `history/` is clear.
 - **Sign each record with the root.** A third party could check a record, but it is a third use of the root and one more touch.
 - **Capture the terminal as the transcript.** Complete and free, but it can hold what was typed.
 - **The word "products" and a folder of that name.** Unclear to the maintainer.
