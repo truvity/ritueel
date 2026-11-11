@@ -26,8 +26,8 @@
 - **A drill is a practice on test keys with a known start and end,** in two kinds: a **restore check**, `ritueel drill restore`, that reads the real directory and its holders, signs nothing and reports each check as passed, failed or not run; and **walk-throughs**, scripts beside the guides that run ceremonies on test roots and time them.
 - **The restore check exits 0 only when every check ran and passed.** A check that cannot run on this machine is accepted by name, in the report, or the drill is incomplete (principle 4).
 - **Signed commits are checked against the holder's own signers file** and never against a key in the directory: a directory that vouches for its own history proves nothing. Without the file the check is not run.
-- **The walk-throughs call only public commands,** so the guide, the script and CI cannot drift apart: CI runs every one on test roots, and the holder runs the lost-card walk-through once on test cards.
-- **A drill never needs a real key or account.** The scripts refuse a card that is not named as a test card, and use `--test-root` otherwise.
+- **The walk-throughs call only public commands,** so the guide, the script and CI cannot drift apart: CI runs every one on test roots, and the holder runs the lost-card walk-through once on rehearsal cards.
+- **A drill never needs a real key or account.** The scripts refuse a card that is not registered as a rehearsal card, and use `--test-root` otherwise.
 - **A drill is due once a year,** with the yearly ceremony. `status` raises a notice when the newest report is older than 13 months. The rhythm is ritueel's policy; ritueel teaches it and does not enforce it.
 - **Cards are checked every six months,** as [0016](/decisions/0016-several-roots-share-one-pair-of-root-cards-and-the-directory-keeps-a-card-inventory/#where-a-root-card-is-used) says; the restore drill stays yearly.
 

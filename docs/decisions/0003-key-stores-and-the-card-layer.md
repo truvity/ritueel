@@ -25,7 +25,7 @@ The six steps, the plan, the checks and the records are the same for every store
 ### The `piv` store and the root cards
 
 - **The root keys live in PIV slots, through piv-go,** and ritueel builds the OpenPGP packets itself; the card signs digests. One applet, one library, one binary, no `gpg` at run time, and attestation works the same for every key.
-- **Dedicated root cards.** A root card holds the roots of one holder, each in its own row ([0016](/decisions/0016-several-roots-share-one-pair-of-root-cards-and-the-directory-keeps-a-card-inventory/)), and is never also a day-to-day card or a board card. piv-go and `scdaemon` each open a card exclusively, so a card shared with daily `gpg` would block one or the other during a ceremony.
+- **Dedicated root cards.** A root card holds the roots of one holder, each in its own row ([0016](/decisions/0016-several-roots-share-one-pair-of-root-cards-and-the-directory-keeps-a-card-inventory/)), and is never also a day-to-day card, a server card or a rehearsal card. piv-go and `scdaemon` each open a card exclusively, so a card shared with daily `gpg` would block one or the other during a ceremony.
 - **Slot map, version 1.** A table built into ritueel, versioned and written into every record. The 24 PIV key slots are taken four at a time, in the order 9a, 9c, 9d, 9e and then 82 to 95, as six rows: row 1 is the card's own jobs and each other row is one root ([0016](/decisions/0016-several-roots-share-one-pair-of-root-cards-and-the-directory-keeps-a-card-inventory/#the-rows)). It gives each purpose one place, refuses a collision, and refuses a purpose with no place. Every root key has PIN policy always and touch policy always.
 
   | Column | Key |
