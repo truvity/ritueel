@@ -80,7 +80,7 @@ The **plan digest** is the SHA-256 of the bytes of the plan file, shown as 64 lo
 
 ### Declining
 
-A person who has read the plan may **decline** a request instead of confirming: by typing `decline` at the confirmation prompt, then a reason, or with `--decline REASON` and `run PLAN` from a script. Declining is a deliberate act and is recorded: ritueel writes the answer `answers/<stem>.result.json` with `outcome` `refused` and the code `declined` ([the contract's check 10](/reference/hand-off-contract/#what-the-certifier-checks)), and a record with `outcome` `declined` that holds the reason. No attempt is written and nothing is signed; the exit code is 3. A wrong or missing confirmation is not a decline: it writes nothing and exits 5.
+A person who has read the plan may **decline** a request instead of confirming: by typing `decline` at the confirmation prompt, then a reason, or with `--decline REASON` and `run PLAN` from a script. Declining is a deliberate act and is recorded: ritueel writes the answer `<stem>.result.json` beside the request in `requests/<stem>/` with `outcome` `refused` and the code `declined` ([the contract's check 10](/reference/hand-off-contract/#what-the-certifier-checks)), and a record with `outcome` `declined` that holds the reason. No attempt is written and nothing is signed; the exit code is 3. A wrong or missing confirmation is not a decline: it writes nothing and exits 5.
 
 ## The attempt
 

@@ -33,7 +33,7 @@ A server card works like a small do-it-yourself HSM, but it is an ordinary card,
 | `roots/<label>/attestation/card.pem` | ritueel | The token's own certificate (slot `f9`), which signed the slot certificates. |
 | `roots/<label>/attestation/result.json` | ritueel | What ritueel read and checked, as below. |
 
-The sealed file is not public material: it is safe only because the recipients' keys are. The other files are public material, and ritueel writes the inventory from the read-only check below; nobody edits it by hand. The attestation files are written at `init` and `root add`, once, and never changed: a key is born once and never replaced in place ([record 0002](../decisions/0002-where-a-key-lives.md)).
+The sealed file is not public material: it is safe only because the recipients' keys are. The other files are public material, and ritueel writes the inventory from the read-only check below; nobody edits it by hand. The attestation files are written at `init` and `root add`, once, and never changed: a replacement root is born beside the old one, in the row kept free for it, and has its own files ([record 0003](../decisions/0003-root-cards.md)).
 
 ## The inventory, `cards.yaml` and `cards/NAME.yaml`
 
@@ -122,15 +122,15 @@ The format is version 1 and is fixed with the card proofs (M1), when the read-on
 
 A bundle that shares a pair of root cards with another keeps its own card list and its own sealed copy of the card secrets ([record 0003](../decisions/0003-root-cards.md)). As plain consequences: the card has one PIN, one PUK and one management key for all the bundles on it; a sealed copy that falls out of step with the card shows as check 7, `management-key-unsealed`; and a lost card is one transition in each bundle on it.
 
+A second bundle cannot adopt the cards again. It gets its sealed copy by a request to the first bundle, which wraps the secrets for it; they never travel in the clear. Request and answer travel as in [record 0005](../decisions/0005-a-ceremony-and-where-it-runs.md), rule 26. The record names the card's serial and never the other bundle ([record 0003](../decisions/0003-root-cards.md)). The six-monthly check and the proof of life run in each bundle and cover its own rows ([record 0007](../decisions/0007-changing-and-losing-a-root.md)).
+
 :::note[Proposed]
-How a second bundle uses a card that another bundle adopted is proposed, awaiting the maintainer's word, and is fixed with the card proofs (M1):
+How a second bundle lists a card that another bundle adopted is proposed, awaiting the maintainer's word, and is fixed with the card proofs (M1):
 
 1. Each bundle's `cards.yaml` lists the card for its own rows. The same serial may be in several bundles. `roots` may be empty: a bundle that uses the card only for the passkey lists it with `applications: [fido2]`.
 2. In `cards/NAME.yaml` a slot of another bundle's row is listed as `use: other-bundle` with its `row` and no key hash, because a hash would go stale when the other bundle replaces a root.
 3. Check 9 compares this bundle's own rows exactly and the rest against the built-in layout. A row the layout allows that holds another bundle's key is reported as information; a key outside the layout still fails with `card-layout`.
 4. The plan takes the lowest row that is empty on the card, as the check reads it.
-5. `ritueel card adopt --secrets-from BUNDLE` is for a second bundle that takes a card another bundle adopted. It opens that bundle's sealed file read-only, checks that the secret opens the card (check 7), seals its own copy to its own recipients, and registers the card. The record names the card's serial and never the other bundle.
-6. The six-monthly check and the proof of life run in each bundle and cover its own rows.
 :::
 
 ## What is checked on a card
@@ -199,7 +199,7 @@ A test with no hardware verifies a recorded chain for every firmware family the 
 
 ## Other makers
 
-A maker joins the attestation bundle when a store for it is admitted ([record 0003](../decisions/0003-root-cards.md)). A token that offers no attestation has no attestation bundle and cannot hold a root.
+A maker joins the attestation bundle ([record 0003](../decisions/0003-root-cards.md)) when a store for it is admitted, and a store is supported only after it is proven ([record 0002](../decisions/0002-where-a-key-lives.md)). A token that offers no attestation has no attestation bundle and cannot hold a root ([record 0002](../decisions/0002-where-a-key-lives.md)).
 
 ## Follow-ups
 

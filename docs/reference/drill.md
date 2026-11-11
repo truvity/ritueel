@@ -31,7 +31,7 @@ A check that cannot run is reported `not-run`, never `passed` ([principle 4](/pr
 
 ### The report
 
-`drills/<time>-restore.json`, one canonical JSON object ([the common rules](/reference/ceremony-record/#common-rules)); `<time>` is `YYYYMMDDThhmmssZ`. It is not part of the hash chain and not a ceremony record: a drill signs nothing. The holder commits it to the history.
+`drills/<time>-restore.json`, one canonical JSON object ([the common rules](/reference/ceremony-record/#common-rules)); `<time>` is `YYYYMMDDThhmmssZ`. It is not part of the hash chain and not a ceremony record: a drill signs nothing. The holder commits it in their own repository; it is not part of the history.
 
 | Member | Meaning |
 |---|---|
@@ -61,7 +61,7 @@ The drills, in the order they are built: the lost-card drill (two roots and an i
 
 ## When it is due
 
-Once a year, with the yearly ceremony, and after any change to where the bundle or the revocation signatures live. `status` raises a notice (exit code 10, kind `drill`) when the newest restore report is older than 13 months, or when there is none and a yearly ceremony has been recorded. The yearly rhythm is ritueel's own policy, chosen to match the yearly ceremony. The card check and the proof of life that run every six months ([record 0003](../decisions/0003-root-cards.md)) are not drills, and the restore check stays yearly.
+Once a year, with the yearly ceremony, and after any change to where the bundle or the revocation signatures live. `status` raises a notice (exit code 10, kind `drill`) when the newest restore report is older than 13 months, or when there is none and a yearly ceremony has been recorded. The yearly rhythm is ritueel's own policy, chosen to match the yearly ceremony. The card check and the proof of life that run every six months ([record 0007](../decisions/0007-changing-and-losing-a-root.md)) are not drills, and the restore check stays yearly.
 
 ## Follow-ups
 
