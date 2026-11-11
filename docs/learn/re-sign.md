@@ -44,7 +44,7 @@ A renewal changes nothing about who is trusted, which is why it can be automated
 
 | Act | Card roots | Cloud root | Why |
 |---|---|---|---|
-| Make a root; add, retire or revoke one | Ceremony | Ceremony: the ceremony role, a sign-in with a hardware key and the typed plan digest | It changes who is trusted ([root transitions](/reference/transitions/)). |
+| Make a root; add, retire or revoke one | Ceremony | Ceremony: the ceremony role and the typed plan digest | It changes who is trusted ([root transitions](/reference/transitions/)). |
 | Certify a new intermediate key, bind a new subkey, list a new SSH CA key | Ceremony | Ceremony | A person compares the fingerprint and the evidence of a key nobody has seen before. |
 | Re-sign the same intermediate key or subkey binding, within its profile, before it expires | Ceremony: the PIN and the touch are physical. `status` reminds at 60, 30 and 14 days. | Unattended, under the declared renewal policy, run by the operator's scheduler | Every byte is fixed by the directory and the clock. |
 | Re-sign the root list, the SSH CA key list or a CRL with the same content, and rebuild the CA bundle | Ceremony | Unattended, as above | The same: a new validity and the next trust sequence. |

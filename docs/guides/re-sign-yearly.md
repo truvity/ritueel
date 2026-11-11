@@ -7,7 +7,7 @@ sidebar:
 
 *Design phase: not built yet. This page is the plan that `ritueel due` and `ritueel run` will follow (M2, [issue #30](https://github.com/truvity/ritueel/issues/30)); there is no `yearly` command. `ritueel renew` for a cloud root comes later (M7). To learn why you re-sign and why yearly, and which acts may run unattended, read [Re-sign](/learn/re-sign/) first.*
 
-There are two paths. **Card roots** take the steps below once a year, with the card of the year, in a machine booted from the read-only offline system; nothing renews them without you. **A cloud root** can take the same steps, or let the operator's scheduler run `ritueel renew` under a declared renewal policy ([below](/guides/re-sign-yearly/#a-cloud-root-under-a-renewal-policy)).
+There are two paths. **Card roots and real software roots** take the steps below once a year, with the card or the key file of the year, in a machine booted from the read-only offline system; nothing renews them without you. **A cloud root** can take the same steps, or let the operator's scheduler run `ritueel renew` under a declared renewal policy ([below](/guides/re-sign-yearly/#a-cloud-root-under-a-renewal-policy)).
 
 ## What you start with
 
