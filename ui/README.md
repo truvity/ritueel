@@ -23,8 +23,9 @@ structure that holds everything ritueel knows about one trust domain (for exampl
 own root list. It is named by its directory. A root is written with the bundle's name
 across bundles, `bundle/label`, for example `acme/A`; inside a bundle it is `A`. The
 trust file is always "the CA bundle", and its command is `ritueel ca-bundle build`;
-this README calls the built JavaScript "the build" and never a bundle. The real
-process serves the one bundle it was started on. The demo has three example bundles
+this README calls the built JavaScript "the build" and never a bundle. In this
+contract no call names a bundle; which bundle the process serves is not decided by the
+records (record 0010, rules 8 and 9). The demo has three example bundles
 and a switch to choose between them (see "How the demo mode works").
 
 The page is a view. It never confirms a ceremony and never asks for or receives a
@@ -270,7 +271,7 @@ rules 6 to 12, in plain words:
 - Every request is checked for its `Host` and, separately, its `Origin`. Before the
   command line sends a confirmation or a PIN, the listener proves that it knows the secret
   in the token file.
-- There is one exclusive lock per bundle, and the process serves one bundle. It keeps no
+- There is one exclusive lock per bundle (record 0010, rule 8). It keeps no
   ceremony state and no PIN.
 - It ends after 15 minutes without a call (never in the middle of a running ceremony),
   at once on a stop command, and at logout or reboot.
@@ -319,8 +320,9 @@ tell whether a user ID inside it is quoted.
   the contract and the Cards screen has a place for it; no example draws it.
 - Still proposed in the records, and so shown as proposed: the member names inside
   `history/<ceremony>/`, `trust/<number>/` and `requests/<name>/` (record 0006 decides
-  only the folders and `history/<ceremony>/plan.json`); how the touch condition reads for
-  a cloud key (record 0005); and the name and the severity of the finding for an occupied
+  only the folders and `history/<ceremony>/plan.json`); which of the four conditions of
+  record 0005 the program enforces, and whether the record carries a second-device field
+  (record 0005, issue 30); and the name and the severity of the finding for an occupied
   row that nobody declared (record 0003).
 - The page lists no requests: no record asks for a screen of `requests/<name>/`.
 - The times of day in the made-up dates are approximate: the days follow the pages, the

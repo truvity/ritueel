@@ -41,10 +41,10 @@
       {
         "ordinal": 5,
         "title": "Write the certificate",
-        "detail": "The key signs its own certificate, digest only, as the ceremony role, in the session you already have. The new root signs the first root list.",
+        "detail": "The key signs, digest only, as the ceremony role, in the session you already have: its X.509 root certificate and its OpenPGP self-signature (two), the two revocation signatures and the removal authorisation made at birth (three), and, as the new root, the first root list, the SSH CA key list and its own CRL (three). Eight signatures; a cloud key has no touch.",
         "whatChanges": "The first root of the bundle, A",
         "learnPath": "/design/#a-companys-roots-and-a-cloud-root",
-        "signatureCount": 3
+        "signatureCount": 8
       },
       {
         "ordinal": 6,
@@ -107,6 +107,6 @@
     "runPlace": "RUN_PLACE_WORKSTATION",
     "signingStore": "STORE_CLOUD_KMS",
     "touchCount": 0,
-    "signatureCount": 3
+    "signatureCount": 8
   }
 }

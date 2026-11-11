@@ -12,9 +12,10 @@ import { hrefOf, parseHash, routeForBundle, type BundleContents } from '../lib/r
 // "Example bundle" (the next). Waiting never ends by itself, on purpose: it is
 // the screen the switch exists to show, and the page says so.
 //
-// A second switch chooses which example bundle the demo answers for. The real
-// process serves one bundle, the one it was started on, so there is no such
-// switch there and no call for it in the contract.
+// A second switch chooses which example bundle the demo answers for. The
+// contract has no call that names or selects a bundle (which bundle the process
+// serves is not decided by the records, record 0010), so there is no such switch
+// there and no call for it.
 
 export type ViewState = 'loaded' | 'empty' | 'failed' | 'waiting';
 

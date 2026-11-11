@@ -12,6 +12,9 @@ import { Empty, Explain, Load, Sec } from '../ui/Sec';
 import { T } from '../ui/T';
 import type { HistoryStatus } from '../gen/ritueel/local/v1alpha1/common_pb';
 
+/** Kinds that read and compare but sign nothing (record 0007, rule 25): the conditions for a signature do not apply to them. */
+const SIGNS_NOTHING: ReadonlySet<CeremonyKind> = new Set([CeremonyKind.CARD_CHECK, CeremonyKind.RESTORE_DRILL]);
+
 const LINK = 'font-semibold text-accent underline underline-offset-4';
 
 function Seal({ l }: { l: HistoryStatus | undefined }) {
@@ -182,7 +185,11 @@ function Detail({ id }: { id: string }) {
                         <dt className="text-sm text-dim">Where it ran</dt>
                         <dd>
                           <span className="font-bold">{RAN_PLACE_VALUE[c.runPlace]}</span>
-                          {c.runPlace === RunPlace.WORKSTATION ? <span className="block text-sm text-dim">A key that cannot be copied, or a test root. The conditions of record 0005 applied: the count stated in the plan, no retry, a check on a second device.</span> : null}
+                          {c.runPlace === RunPlace.WORKSTATION && !SIGNS_NOTHING.has(c.kind) ? (
+                            <span className="block text-sm text-dim">
+                              A key that cannot be copied runs here under the four conditions of record 0005, rule 18: on cards a touch for every signature (a cloud key has no touch), the count stated in the plan, no retry, and a check on a second device. A test root may also run here (rule 28). The record does not yet show whether each condition was met (record 0005, issue 30).
+                            </span>
+                          ) : null}
                         </dd>
                       </div>
                     ) : null}

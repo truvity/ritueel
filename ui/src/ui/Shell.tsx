@@ -97,7 +97,7 @@ function StateSwitch() {
   );
 }
 
-/** Demo mode only. Chooses which example bundle the demo answers for; the real process serves one bundle and has no such switch. */
+/** Demo mode only. Chooses which example bundle the demo answers for; the contract has no call that names or selects a bundle, so the real page has no such switch. */
 function BundleSwitch() {
   const bundle = useBundle();
   return (

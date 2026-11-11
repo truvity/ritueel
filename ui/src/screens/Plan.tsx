@@ -304,12 +304,12 @@ export function WhereItRuns({ plan }: { plan: PlanMessage }) {
             </li>
           )}
           <li>The number of signatures is fixed in this plan: {plan.signatureCount}.</li>
-          <li>No retry. If a touch fails, the ceremony ends.</li>
+          <li>{cloud ? 'No retry of a failed step: a failure ends the ceremony.' : 'No retry. If a touch fails, the ceremony ends.'}</li>
           <li>Check the result against this plan on a second device before you hand it over or publish it.</li>
         </ol>
         <p className="mt-3 text-sm text-dim">
           {cloud
-            ? 'The limit: a compromised workstation could ask for one more signature. A cloud key does better than a card, because its audit trail records every signature. These conditions bound it. The offline system stays open to you if you want a clean machine. '
+            ? 'The limit: a compromised workstation could ask for one more signature. A cloud key does better than a card, because its audit trail records every signature. The check on a second device shows afterwards what was signed; it cannot prevent an extra signature. The offline system stays open to you if you want a clean machine. '
             : 'The limit: the card has no screen and signs what it is sent. A compromised workstation could ask for one more touch and get one more signature that no card logs. These conditions bound it. The offline system stays open to you if you want a clean machine. '}
           <LearnLink path="/learn/where-a-root-is-used/">Read why</LearnLink>
         </p>
@@ -566,7 +566,7 @@ function Lines({ text }: { text: string }) {
 
 /** What the page says about the stick. It follows where the plan says it runs, never a guess from the list of files. */
 function stickSentence(place: RunPlace | undefined, stick: boolean): string {
-  if (place === RunPlace.WORKSTATION) return 'This plan runs on your workstation, the computer this page is open on. No stick is needed.';
+  if (place === RunPlace.WORKSTATION) return 'This plan runs on your workstation. No stick is needed.';
   if (place === RunPlace.OFFLINE_SYSTEM) {
     return stick
       ? "The offline system is vanilla AirgapOS, started from the ceremony USB stick. The stick's extra partition carries ritueel, your bundle with the plan inside it, and the key files beside the bundle."

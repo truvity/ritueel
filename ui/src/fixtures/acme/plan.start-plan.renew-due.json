@@ -34,7 +34,7 @@
       {
         "ordinal": 3,
         "title": "Extend acme/B",
-        "detail": "A new X.509 root certificate over the same key and a new OpenPGP self-signature, so the root stays valid about three years from today. This is one more planned, recorded signature of every card ceremony.",
+        "detail": "A new X.509 root certificate over the same key and a new OpenPGP self-signature, so the root stays valid about three years from today. This is two more planned, recorded signatures of every card ceremony: the OpenPGP self-signature and the X.509 root certificate.",
         "whatChanges": "acme/B stays valid for about three years from today",
         "requirements": [
           "REQUIREMENT_CARD_PRESENT",
