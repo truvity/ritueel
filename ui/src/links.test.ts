@@ -222,14 +222,13 @@ describe('the demo links only to pages the site has', () => {
     expect(pageFile('/learn//ceremonies/')).toBeUndefined();
     expect(pageFile('/learn/../index/')).toBeUndefined();
     expect(pageFile('/x/../../README/')).toBeUndefined();
-    const yubikey = pageFile('/learn/how-a-yubikey-holds-keys/');
-    expect(yubikey).toBeDefined();
-    const ids = headingIds(yubikey as string);
-    expect(ids.has('one-piv-slot-up-close')).toBe(true);
-    expect(ids.has('no-such-heading')).toBe(false);
-    const life = headingIds(pageFile('/learn/life-of-a-root/') as string);
-    expect(life.has('re-sign')).toBe(true);
-    expect(life.has('record')).toBe(true);
+    expect(pageFile('/learn/how-a-yubikey-holds-keys/')).toBeDefined();
+    expect(pageFile('/glossary/')).toBeDefined();
+    // The headings of the design page that the page links to, as the site gives them ids.
+    const design = headingIds(pageFile('/design/') as string);
+    expect(design.has('where-a-root-is-used')).toBe(true);
+    expect(design.has('cards')).toBe(true);
+    expect(design.has('no-such-heading')).toBe(false);
   });
 
   it('every listed page is a file', () => {
@@ -263,6 +262,40 @@ describe('the demo links only to pages the site has', () => {
       const file = pageFile(path);
       if (!file || anchor === undefined) continue;
       if (!headingIds(file).has(anchor)) bad.push(`${l.file} ${l.at}: ${l.value} (no heading "${anchor}")`);
+    }
+    expect(bad).toEqual([]);
+  });
+});
+
+// A link written in the source of the page, not in a fixture: LearnLink path="..." and a learnPath string.
+// The fixtures are walked above; these were not, so a typo here reached the site as a dead end.
+describe('the static links of the source are published pages', () => {
+  const SRC = new URL('./', import.meta.url).pathname;
+  const files = ['ui', 'screens'].flatMap((dir) => readdirSync(join(SRC, dir)).filter((n) => n.endsWith('.tsx')).map((n) => `${dir}/${n}`));
+  const found: Found[] = [];
+  for (const f of files) {
+    const text = readFileSync(join(SRC, f), 'utf8');
+    for (const m of text.matchAll(/LearnLink\s+path="([^"]+)"/g)) found.push({ file: f, at: 'LearnLink', field: 'path', value: m[1] });
+    for (const m of text.matchAll(/learnPath\s*[:=]\s*['"]([^'"]+)['"]/g)) found.push({ file: f, at: 'learnPath', field: 'learnPath', value: m[1] });
+  }
+
+  it('finds the links (an empty sweep proves nothing)', () => {
+    expect(files.length).toBeGreaterThan(10);
+    const values = new Set(found.map((l) => l.value));
+    for (const v of ['/glossary/', '/learn/what-is-a-root/', '/design/#where-a-root-is-used']) expect(values.has(v), v).toBe(true);
+  });
+
+  it('every one is a path of the site, a published page, and an anchor that is a heading of it', () => {
+    const bad: string[] = [];
+    for (const l of found) {
+      const [path, anchor] = l.value.split('#');
+      if (!/^(?:\/[a-z0-9]+(?:[_.-]+[a-z0-9]+)*)+\/(?:#[a-z0-9_-]+)?$/.test(l.value)) bad.push(`${l.file}: ${l.value} is not a path of the site`);
+      const file = pageFile(path);
+      if (!file) {
+        bad.push(`${l.file}: ${l.value} is not a published page`);
+        continue;
+      }
+      if (anchor !== undefined && !headingIds(file).has(anchor)) bad.push(`${l.file}: ${l.value} (no heading "${anchor}")`);
     }
     expect(bad).toEqual([]);
   });
