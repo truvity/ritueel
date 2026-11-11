@@ -1,5 +1,5 @@
 {
-  "ledger": {
+  "history": {
     "recordCount": 1,
     "chainState": "CHAIN_STATE_VERIFIED",
     "headRecordSha256": "600b0123456789abcdef0123456789abcdef0123456789abcdef0123456789ab",
@@ -23,7 +23,7 @@
         "A"
       ],
       "trustSequence": 1,
-      "guidePath": "/learn/choosing-where-a-root-lives/#3-if-it-is-a-cloud-key-does-the-key-already-exist"
+      "guidePath": "/learn/choosing-where-a-root-lives/"
     }
   ]
 }

@@ -151,14 +151,14 @@ describe('first-visit help is in the demo and not in the real build', () => {
       expect(source(f), f).not.toMatch(/FirstVisit/);
     }
   });
-  it('DemoLede names root, ceremony and ledger, each with its gloss, in one paragraph', async () => {
+  it('DemoLede names root, ceremony and history, each with its gloss, in one paragraph', async () => {
     const { DemoLede } = await import('./ui/FirstVisit');
     const html = renderToStaticMarkup(<DemoLede />);
     expect(html.match(/<p\b/g)).toHaveLength(1);
     const text = plain(html);
     expect(text).toMatch(/keep a root \(the key that everything else trusts\)/);
     expect(text).toMatch(/ceremony \(one sitting at a terminal where the root is used\)/);
-    expect(text).toMatch(/ledger \(the book of records\)/);
+    expect(text).toMatch(/history \(the write-once record of every ceremony\)/);
   });
   it('StartHere is a path of three links: Roots, Findings, Make a plan, in that order', async () => {
     const { StartHere } = await import('./ui/FirstVisit');
@@ -214,12 +214,12 @@ describe('first-visit help is in the demo and not in the real build', () => {
     const data = fromJson(GetSummaryResponseSchema, JSON.parse(source('fixtures/personal/inspect.get-summary.json')));
     h.summary = { state: 'ready', data };
     const demo = plain(renderToStaticMarkup(<Start />));
-    expect(demo).toContain('Words on this page: root, bundle, ceremony, ledger and more');
+    expect(demo).toContain('Words on this page: root, bundle, ceremony, history and more');
     expect(demo).toContain('All the words');
     h.demo = false;
     const real = plain(renderToStaticMarkup(<Start />));
     expect(real).toContain('Words on this page');
-    expect(real).not.toContain('ceremony, ledger and more');
+    expect(real).not.toContain('ceremony, history and more');
     expect(real).not.toContain('All the words');
   });
   it('everything new is at least 14 px: no text-xs or text-[0.75rem] in the new component', () => {

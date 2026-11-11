@@ -13,7 +13,7 @@ export function DemoLede() {
   return (
     <p>
       ritueel helps you keep a root (the key that everything else trusts) safe: it shows what is due, builds a plan for each ceremony (one sitting at a terminal where the
-      root is used), and keeps a ledger (the book of records).
+      root is used), and keeps a history (the write-once record of every ceremony).
     </p>
   );
 }

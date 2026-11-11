@@ -184,23 +184,23 @@ describe('the demo links only to pages the site has', () => {
     expect(bad.map((f) => `${f.file} ${f.at}: ${f.value}`)).toEqual([]);
   });
 
-  it('saves a plan as ledger/<ceremony>/plan.json, the file the engine writes (ceremony-record.md)', () => {
+  it('saves a plan as history/<ceremony>/plan.json (record 0006 rule 7)', () => {
     // Every savePath of a plan and every path of a saved plan names the ceremony twice: the
     // directory and the plan's id. The ceremony is the time in UTC, a hyphen and the command.
     const CEREMONY = '[0-9]{8}T[0-9]{6}Z-[a-z0-9]+(?:-[a-z0-9]+)*';
     const saved = localPaths.filter((f) => f.field === 'savePath' || (f.file.includes('plan.save-plan.') && f.field === 'path'));
     expect(saved.length).toBeGreaterThanOrEqual(6);
     expect(new Set(saved.map((f) => f.field))).toEqual(new Set(['savePath', 'path']));
-    const re = new RegExp(`^ledger/(${CEREMONY})/plan\\.json$`);
+    const re = new RegExp(`^history/(${CEREMONY})/plan\\.json$`);
     expect(saved.filter((f) => !re.test(f.value)).map((f) => `${f.file} ${f.at}: ${f.value}`)).toEqual([]);
     // The run command and the bundle path of a saved plan agree with it.
     for (const name of FIXTURE_FILES.filter((n) => n.includes('plan.save-plan.'))) {
       const d = JSON.parse(readFileSync(join(FIXTURES, name), 'utf8')) as { planId: string; path: string; bundlePath: string; runCommand: string };
       // common/ is shared by every bundle: the demo puts the path of the open bundle in its place.
       const bundle = name.startsWith('common/') ? 'example' : name.split('/')[0];
-      expect(d.path, name).toBe(`ledger/${d.planId}/plan.json`);
+      expect(d.path, name).toBe(`history/${d.planId}/plan.json`);
       expect(d.bundlePath, name).toBe(`~/ritueel/${bundle}`);
-      const prefix = `ritueel --dir ~/ritueel/${bundle} run ledger/${d.planId}/plan.json --confirm `;
+      const prefix = `ritueel --dir ~/ritueel/${bundle} run history/${d.planId}/plan.json --confirm `;
       expect(d.runCommand.startsWith(prefix), name).toBe(true);
       expect(d.runCommand.slice(prefix.length), name).toMatch(/^[0-9a-f]{64}$/);
     }

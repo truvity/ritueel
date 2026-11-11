@@ -9,12 +9,12 @@
 // fingerprints, algorithms, dates, the use of a slot.
 //
 // Everything the page shows is about one bundle: the directory of one trust
-// domain (for example personal or acme), with its ledger, its roots, its
+// domain (for example personal or acme), with its history, its roots, its
 // cards and its trust files. The trust file keeps its full name, "CA
 // bundle"; the bare word "bundle" means only the directory.
 //
 // The words are the glossary's: bundle, root, delegated key, holder,
-// requester, store, ceremony, ledger, record, renew, replace, trust files.
+// requester, store, ceremony, history, record, renew, replace, trust files.
 // Replace means making a new key; a goal that only revokes subkeys that a
 // newer one already replaced is called retire.
 
@@ -32,7 +32,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file ritueel/local/v1alpha1/common.proto.
  */
 export const file_ritueel_local_v1alpha1_common: GenFile = /*@__PURE__*/
-  fileDesc("CiNyaXR1ZWVsL2xvY2FsL3YxYWxwaGExL2NvbW1vbi5wcm90bxIWcml0dWVlbC5sb2NhbC52MWFscGhhMSJfCgdTdWJqZWN0EjEKBGtpbmQYASABKA4yIy5yaXR1ZWVsLmxvY2FsLnYxYWxwaGExLlN1YmplY3RLaW5kEhIKCmlkZW50aWZpZXIYAiABKAkSDQoFbGFiZWwYAyABKAkioQIKDExlZGdlclN0YXR1cxIUCgxyZWNvcmRfY291bnQYASABKAUSNwoLY2hhaW5fc3RhdGUYAiABKA4yIi5yaXR1ZWVsLmxvY2FsLnYxYWxwaGExLkNoYWluU3RhdGUSGgoSaGVhZF9yZWNvcmRfc2hhMjU2GAMgASgJEhYKDmxhc3RfcmVjb3JkX2lkGAQgASgJEhkKEWxhc3RfcmVjb3JkX3RpdGxlGAUgASgJEjIKDmxhc3RfcmVjb3JkX2F0GAYgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIuCgpjaGVja2VkX2F0GAcgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIPCgdtZXNzYWdlGAggASgJKncKCFNldmVyaXR5EhgKFFNFVkVSSVRZX1VOU1BFQ0lGSUVEEAASEQoNU0VWRVJJVFlfSU5GTxABEhMKD1NFVkVSSVRZX05PVElDRRACEhIKDlNFVkVSSVRZX0FMRVJUEAMSFQoRU0VWRVJJVFlfQ1JJVElDQUwQBCpiCgVTdG9yZRIVChFTVE9SRV9VTlNQRUNJRklFRBAAEhcKE1NUT1JFX1NPRlRXQVJFX0ZJTEUQARIUChBTVE9SRV9ST09UX0NBUkRTEAISEwoPU1RPUkVfQ0xPVURfS01TEAMq/gEKC1N1YmplY3RLaW5kEhwKGFNVQkpFQ1RfS0lORF9VTlNQRUNJRklFRBAAEhcKE1NVQkpFQ1RfS0lORF9CVU5ETEUQARIVChFTVUJKRUNUX0tJTkRfUk9PVBACEh4KGlNVQkpFQ1RfS0lORF9ERUxFR0FURURfS0VZEAMSFwoTU1VCSkVDVF9LSU5EX1NVQktFWRAEEhgKFFNVQkpFQ1RfS0lORF9VU0VSX0lEEAUSFQoRU1VCSkVDVF9LSU5EX0NBUkQQBhIaChZTVUJKRUNUX0tJTkRfQ0xPVURfS0VZEAcSGwoXU1VCSkVDVF9LSU5EX1RSVVNUX0ZJTEUQCCqqAQoJSW50ZW50aW9uEhkKFUlOVEVOVElPTl9VTlNQRUNJRklFRBAAEhcKE0lOVEVOVElPTl9SRU5FV19EVUUQARIXChNJTlRFTlRJT05fQURPUFRfS0VZEAISHAoYSU5URU5USU9OX1JFVElSRV9TVUJLRVlTEAMSFgoSSU5URU5USU9OX0FERF9DQVJEEAQSGgoWSU5URU5USU9OX1JFUExBQ0VfQ0FSRBAFKngKCkNoYWluU3RhdGUSGwoXQ0hBSU5fU1RBVEVfVU5TUEVDSUZJRUQQABIbChdDSEFJTl9TVEFURV9OT1RfQ0hFQ0tFRBABEhgKFENIQUlOX1NUQVRFX1ZFUklGSUVEEAISFgoSQ0hBSU5fU1RBVEVfQlJPS0VOEANiBnByb3RvMw", [file_google_protobuf_timestamp]);
+  fileDesc("CiNyaXR1ZWVsL2xvY2FsL3YxYWxwaGExL2NvbW1vbi5wcm90bxIWcml0dWVlbC5sb2NhbC52MWFscGhhMSJfCgdTdWJqZWN0EjEKBGtpbmQYASABKA4yIy5yaXR1ZWVsLmxvY2FsLnYxYWxwaGExLlN1YmplY3RLaW5kEhIKCmlkZW50aWZpZXIYAiABKAkSDQoFbGFiZWwYAyABKAkiogIKDUhpc3RvcnlTdGF0dXMSFAoMcmVjb3JkX2NvdW50GAEgASgFEjcKC2NoYWluX3N0YXRlGAIgASgOMiIucml0dWVlbC5sb2NhbC52MWFscGhhMS5DaGFpblN0YXRlEhoKEmhlYWRfcmVjb3JkX3NoYTI1NhgDIAEoCRIWCg5sYXN0X3JlY29yZF9pZBgEIAEoCRIZChFsYXN0X3JlY29yZF90aXRsZRgFIAEoCRIyCg5sYXN0X3JlY29yZF9hdBgGIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASLgoKY2hlY2tlZF9hdBgHIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASDwoHbWVzc2FnZRgIIAEoCSp3CghTZXZlcml0eRIYChRTRVZFUklUWV9VTlNQRUNJRklFRBAAEhEKDVNFVkVSSVRZX0lORk8QARITCg9TRVZFUklUWV9OT1RJQ0UQAhISCg5TRVZFUklUWV9BTEVSVBADEhUKEVNFVkVSSVRZX0NSSVRJQ0FMEAQqYgoFU3RvcmUSFQoRU1RPUkVfVU5TUEVDSUZJRUQQABIXChNTVE9SRV9TT0ZUV0FSRV9GSUxFEAESFAoQU1RPUkVfUk9PVF9DQVJEUxACEhMKD1NUT1JFX0NMT1VEX0tNUxADKv4BCgtTdWJqZWN0S2luZBIcChhTVUJKRUNUX0tJTkRfVU5TUEVDSUZJRUQQABIXChNTVUJKRUNUX0tJTkRfQlVORExFEAESFQoRU1VCSkVDVF9LSU5EX1JPT1QQAhIeChpTVUJKRUNUX0tJTkRfREVMRUdBVEVEX0tFWRADEhcKE1NVQkpFQ1RfS0lORF9TVUJLRVkQBBIYChRTVUJKRUNUX0tJTkRfVVNFUl9JRBAFEhUKEVNVQkpFQ1RfS0lORF9DQVJEEAYSGgoWU1VCSkVDVF9LSU5EX0NMT1VEX0tFWRAHEhsKF1NVQkpFQ1RfS0lORF9UUlVTVF9GSUxFEAgqqgEKCUludGVudGlvbhIZChVJTlRFTlRJT05fVU5TUEVDSUZJRUQQABIXChNJTlRFTlRJT05fUkVORVdfRFVFEAESFwoTSU5URU5USU9OX0FET1BUX0tFWRACEhwKGElOVEVOVElPTl9SRVRJUkVfU1VCS0VZUxADEhYKEklOVEVOVElPTl9BRERfQ0FSRBAEEhoKFklOVEVOVElPTl9SRVBMQUNFX0NBUkQQBSp4CgpDaGFpblN0YXRlEhsKF0NIQUlOX1NUQVRFX1VOU1BFQ0lGSUVEEAASGwoXQ0hBSU5fU1RBVEVfTk9UX0NIRUNLRUQQARIYChRDSEFJTl9TVEFURV9WRVJJRklFRBACEhYKEkNIQUlOX1NUQVRFX0JST0tFThADYgZwcm90bzM", [file_google_protobuf_timestamp]);
 
 /**
  * The thing a line of text is about, so the page can link to it.
@@ -73,12 +73,13 @@ export const SubjectSchema: GenMessage<Subject> = /*@__PURE__*/
   messageDesc(file_ritueel_local_v1alpha1_common, 0);
 
 /**
- * The state of the ledger: the bundle's write-once history of ceremonies,
- * one record for each. record_count counts records, not saved plans.
+ * The state of the history: the write-once part of the bundle, the folder
+ * history/, with one sub-folder and one record for each ceremony.
+ * record_count counts records, not saved plans.
  *
- * @generated from message ritueel.local.v1alpha1.LedgerStatus
+ * @generated from message ritueel.local.v1alpha1.HistoryStatus
  */
-export type LedgerStatus = Message<"ritueel.local.v1alpha1.LedgerStatus"> & {
+export type HistoryStatus = Message<"ritueel.local.v1alpha1.HistoryStatus"> & {
   /**
    * @generated from field: int32 record_count = 1;
    */
@@ -130,10 +131,10 @@ export type LedgerStatus = Message<"ritueel.local.v1alpha1.LedgerStatus"> & {
 };
 
 /**
- * Describes the message ritueel.local.v1alpha1.LedgerStatus.
- * Use `create(LedgerStatusSchema)` to create a new message.
+ * Describes the message ritueel.local.v1alpha1.HistoryStatus.
+ * Use `create(HistoryStatusSchema)` to create a new message.
  */
-export const LedgerStatusSchema: GenMessage<LedgerStatus> = /*@__PURE__*/
+export const HistoryStatusSchema: GenMessage<HistoryStatus> = /*@__PURE__*/
   messageDesc(file_ritueel_local_v1alpha1_common, 1);
 
 /**
@@ -332,7 +333,7 @@ export const IntentionSchema: GenEnum<Intention> = /*@__PURE__*/
   enumDesc(file_ritueel_local_v1alpha1_common, 3);
 
 /**
- * Whether the hash chain of the ledger checks out.
+ * Whether the hash chain of the history checks out.
  *
  * @generated from enum ritueel.local.v1alpha1.ChainState
  */

@@ -4,7 +4,7 @@
     {
       "name": "root-list.json",
       "kind": "TRUST_FILE_KIND_ROOT_LIST",
-      "path": "products/7/root-list.json",
+      "path": "trust/7/root-list.json",
       "trustSequence": 7,
       "builtAt": "2026-01-27T14:10:00Z",
       "validUntil": "2027-02-27T00:00:00Z",
@@ -12,13 +12,13 @@
       "checkDetail": "Signed by acme/A, the root used at that ceremony. The host's checks pass against the list of sequence 6.",
       "sha256": "70010123456789abcdef0123456789abcdef0123456789abcdef0123456789ab",
       "sizeBytes": "2412",
-      "verifyCommand": "ritueel root-list verify products/7/root-list.json --held products/6/root-list.json",
+      "verifyCommand": "ritueel root-list verify trust/7/root-list.json --held trust/6/root-list.json",
       "rebuildCommand": "ritueel due"
     },
     {
       "name": "ca-bundle.pem",
       "kind": "TRUST_FILE_KIND_CA_BUNDLE",
-      "path": "products/7/ca-bundle.pem",
+      "path": "trust/7/ca-bundle.pem",
       "trustSequence": 7,
       "builtAt": "2026-01-27T14:10:00Z",
       "validUntil": "2028-01-28T00:00:00Z",
@@ -26,13 +26,13 @@
       "checkDetail": "Two X.509 roots, acme/A and acme/B, and each is in the root list.",
       "sha256": "70020123456789abcdef0123456789abcdef0123456789abcdef0123456789ab",
       "sizeBytes": "1840",
-      "verifyCommand": "ritueel root-list verify products/7/root-list.json --held products/6/root-list.json --ca-bundle products/7/ca-bundle.pem",
-      "rebuildCommand": "ritueel ca-bundle build --out products/7/ca-bundle.pem"
+      "verifyCommand": "ritueel root-list verify trust/7/root-list.json --held trust/6/root-list.json --ca-bundle trust/7/ca-bundle.pem",
+      "rebuildCommand": "ritueel ca-bundle build --out trust/7/ca-bundle.pem"
     },
     {
       "name": "crl-A.pem",
       "kind": "TRUST_FILE_KIND_CRL",
-      "path": "products/7/crl-A.pem",
+      "path": "trust/7/crl-A.pem",
       "trustSequence": 7,
       "builtAt": "2026-01-27T14:10:00Z",
       "validUntil": "2028-02-27T00:00:00Z",
@@ -40,13 +40,13 @@
       "checkDetail": "No certificate issued by acme/A is revoked. Signed by acme/A at this ceremony; it stays current for 25 months.",
       "sha256": "70030123456789abcdef0123456789abcdef0123456789abcdef0123456789ab",
       "sizeBytes": "612",
-      "verifyCommand": "ritueel crl verify products/7/crl-A.pem --ca-bundle products/7/ca-bundle.pem",
+      "verifyCommand": "ritueel crl verify trust/7/crl-A.pem --ca-bundle trust/7/ca-bundle.pem",
       "rebuildCommand": "ritueel due"
     },
     {
       "name": "crl-B.pem",
       "kind": "TRUST_FILE_KIND_CRL",
-      "path": "products/7/crl-B.pem",
+      "path": "trust/7/crl-B.pem",
       "trustSequence": 7,
       "builtAt": "2026-01-27T14:10:00Z",
       "validUntil": "2027-02-28T00:00:00Z",
@@ -54,13 +54,13 @@
       "checkDetail": "No certificate issued by acme/B is revoked. Signed by acme/B at sequence 5 (2025-01-28) and copied unchanged, as this ceremony signed with acme/A only.",
       "sha256": "70031123456789abcdef0123456789abcdef0123456789abcdef0123456789ab",
       "sizeBytes": "612",
-      "verifyCommand": "ritueel crl verify products/7/crl-B.pem --ca-bundle products/7/ca-bundle.pem",
+      "verifyCommand": "ritueel crl verify trust/7/crl-B.pem --ca-bundle trust/7/ca-bundle.pem",
       "rebuildCommand": "ritueel due"
     },
     {
       "name": "ssh-ca-keys.json",
       "kind": "TRUST_FILE_KIND_SSH_CA_KEYS",
-      "path": "products/7/ssh-ca-keys.json",
+      "path": "trust/7/ssh-ca-keys.json",
       "trustSequence": 7,
       "builtAt": "2026-01-27T14:10:00Z",
       "validUntil": "2027-02-27T00:00:00Z",
@@ -68,13 +68,13 @@
       "checkDetail": "One break-glass SSH CA key for each of acme/A and acme/B. The file for sshd matches.",
       "sha256": "70040123456789abcdef0123456789abcdef0123456789abcdef0123456789ab",
       "sizeBytes": "988",
-      "verifyCommand": "ritueel ssh-ca-keys verify products/7/ssh-ca-keys.json --held products/6/ssh-ca-keys.json",
+      "verifyCommand": "ritueel ssh-ca-keys verify trust/7/ssh-ca-keys.json --held trust/6/ssh-ca-keys.json",
       "rebuildCommand": "ritueel due"
     },
     {
       "name": "acme-keyring.gpg",
       "kind": "TRUST_FILE_KIND_KEYRING",
-      "path": "products/7/keyring/acme-keyring.gpg",
+      "path": "trust/7/keyring/acme-keyring.gpg",
       "trustSequence": 7,
       "builtAt": "2026-01-27T14:10:00Z",
       "validUntil": "2027-02-27T00:00:00Z",
@@ -82,20 +82,20 @@
       "checkDetail": "Holds the OpenPGP primaries of acme/A and acme/B and the release subkey acme-release, which is valid until 2027-02-27.",
       "sha256": "70050123456789abcdef0123456789abcdef0123456789abcdef0123456789ab",
       "sizeBytes": "4310",
-      "verifyCommand": "ritueel keyring verify products/7/keyring/acme-keyring.gpg --root-list products/7/root-list.json",
+      "verifyCommand": "ritueel keyring verify trust/7/keyring/acme-keyring.gpg --root-list trust/7/root-list.json",
       "rebuildCommand": "ritueel keyring build"
     },
     {
       "name": "acme-keyring-2026.7-1.noarch.rpm",
       "kind": "TRUST_FILE_KIND_KEYRING",
-      "path": "products/7/keyring/acme-keyring-2026.7-1.noarch.rpm",
+      "path": "trust/7/keyring/acme-keyring-2026.7-1.noarch.rpm",
       "trustSequence": 7,
       "builtAt": "2026-01-27T14:10:00Z",
       "checkResult": "TRUST_CHECK_RESULT_NOT_RUN",
       "checkDetail": "Not built: the bundle's configuration names no licence for the package, and ritueel does not choose one for you.",
       "sha256": "70060123456789abcdef0123456789abcdef0123456789abcdef0123456789ab",
       "sizeBytes": "0",
-      "verifyCommand": "ritueel keyring verify products/7/keyring/acme-keyring-2026.7-1.noarch.rpm --root-list products/7/root-list.json",
+      "verifyCommand": "ritueel keyring verify trust/7/keyring/acme-keyring-2026.7-1.noarch.rpm --root-list trust/7/root-list.json",
       "rebuildCommand": "ritueel keyring build"
     }
   ]

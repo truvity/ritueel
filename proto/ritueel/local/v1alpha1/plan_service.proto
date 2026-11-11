@@ -53,10 +53,9 @@ service PlanService {
     option idempotency_level = NO_SIDE_EFFECTS;
   }
 
-  // Save the plan inside the bundle. The records say only that the process
-  // writes the plan there; the demo shows the path the bundle reference
-  // proposes, ledger/<ceremony>/plan.json, which is a proposal and not yet
-  // fixed. The file is canonical JSON (RFC 8785, no trailing newline) and its
+  // Save the plan inside the bundle, at history/<ceremony>/plan.json (record
+  // 0006, rule 7). The names of the other members of the folder are
+  // proposed. The file is canonical JSON (RFC 8785, no trailing newline) and its
   // SHA-256 is the digest. This is the one call of the package that writes.
   // It rebuilds the plan, refuses a digest that is not the rebuilt plan's,
   // writes one inert file, create-only, and answers with the path and the
@@ -147,17 +146,17 @@ message Plan {
   // The plan's name: the name of its ceremony, the time as YYYYMMDDThhmmssZ
   // in UTC, a hyphen, and the command with its words joined by hyphens, for
   // example "20261111T090000Z-due". It is the name its ceremony would have in
-  // the ledger (the saved path is a proposal, see SavePlan), and it is unique
-  // inside a bundle.
+  // the history (the saved path is history/<ceremony>/plan.json, see
+  // SavePlan), and it is unique inside a bundle.
   string id = 1;
   Intention intention = 2;
   string title = 3;
   // One or two plain sentences.
   string summary = 4;
   google.protobuf.Timestamp built_at = 5;
-  // The hash of the newest record of the ledger the plan was built on. If
-  // the ledger moves, the plan is stale and `run` refuses it.
-  string ledger_head_sha256 = 6;
+  // The hash of the newest record of the history the plan was built on. If
+  // the history moves, the plan is stale and `run` refuses it.
+  string history_head_sha256 = 6;
   // The digest of the plan, in full: 64 hexadecimal characters. The holder
   // compares its first eight characters in the terminal.
   string digest = 7;
@@ -171,8 +170,8 @@ message Plan {
   // digest: ritueel --dir <bundle> run <plan file> --confirm <64 hex>. The
   // plan file is the one SavePlan writes.
   string run_command = 11;
-  // Where SavePlan will put the file, relative to the bundle. The demo shows
-  // the proposed ledger/<ceremony>/plan.json.
+  // Where SavePlan will put the file, relative to the bundle:
+  // history/<ceremony>/plan.json.
   string save_path = 12;
   // The serials of the cards the ceremony needs.
   repeated string card_serials = 13;
@@ -224,7 +223,8 @@ message PlanStep {
 enum BundleChangeAction {
   BUNDLE_CHANGE_ACTION_UNSPECIFIED = 0;
   BUNDLE_CHANGE_ACTION_CREATE = 1;
-  // A file that a ceremony rewrites keeps its history under products/.
+  // The earlier version of a trust file stays in its own numbered set under
+  // trust/.
   BUNDLE_CHANGE_ACTION_REPLACE = 2;
 }
 
@@ -249,8 +249,8 @@ message SavePlanResponse {
   string plan_id = 1;
   // The bundle, as the holder knows it, for example "~/ritueel/acme".
   string bundle_path = 2;
-  // Where the file is (or would be), relative to the bundle. The demo shows
-  // the proposed ledger/<ceremony>/plan.json.
+  // Where the file is (or would be), relative to the bundle:
+  // history/<ceremony>/plan.json.
   string path = 3;
   // The SHA-256 of the file, which is the digest of the plan.
   string digest = 4;

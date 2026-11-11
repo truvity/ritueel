@@ -12,7 +12,7 @@
         "label": "Your bundle"
       },
       "evidence": [
-        "No restore report has ever been made; the ledger holds 10 records."
+        "No restore report has ever been made; the history holds 10 records."
       ],
       "fixCommand": "ritueel drill restore",
       "learnPath": "/design/#more-that-is-decided"

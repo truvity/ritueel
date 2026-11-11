@@ -19,7 +19,7 @@ import "ritueel/local/v1alpha1/common.proto";
 
 service InspectService {
   // The start screen: the bundle, what is due, how many findings of each
-  // severity, the state of the ledger, and what is left to set up.
+  // severity, the state of the history, and what is left to set up.
   rpc GetSummary(GetSummaryRequest) returns (GetSummaryResponse) {
     option idempotency_level = NO_SIDE_EFFECTS;
   }
@@ -36,7 +36,7 @@ service InspectService {
     option idempotency_level = NO_SIDE_EFFECTS;
   }
 
-  // The ledger: one record for each ceremony, newest first, and whether
+  // The history: one record for each ceremony, newest first, and whether
   // the chain of hashes checks out.
   rpc ListCeremonies(ListCeremoniesRequest) returns (ListCeremoniesResponse) {
     option idempotency_level = NO_SIDE_EFFECTS;
@@ -48,8 +48,9 @@ service InspectService {
     option idempotency_level = NO_SIDE_EFFECTS;
   }
 
-  // The trust files the bundle can produce, with a check of each.
-  // Publishing them is left to the holder.
+  // The trust files the bundle can produce, with a check of each: the
+  // newest numbered set, trust/<number>/. Publishing them is left to the
+  // holder.
   rpc ListTrustFiles(ListTrustFilesRequest) returns (ListTrustFilesResponse) {
     option idempotency_level = NO_SIDE_EFFECTS;
   }
@@ -68,7 +69,7 @@ message GetSummaryResponse {
   bool demo = 3;
   // The version of the program that answers, for example "0.0.0-demo".
   string program_version = 4;
-  LedgerStatus ledger = 5;
+  HistoryStatus history = 5;
   // What is due, soonest first.
   repeated DueItem due = 6;
   // How many findings there are of each severity.
@@ -81,7 +82,7 @@ message GetSummaryResponse {
 }
 
 // The directory with a fixed structure that holds everything ritueel knows
-// about one trust domain: its ledger, roots, cards and trust files. The
+// about one trust domain: its history, roots, cards and trust files. The
 // process serves one bundle.
 message Bundle {
   // Where the bundle is, as the holder knows it, for example
@@ -144,11 +145,11 @@ message Counts {
 message PendingPlan {
   // The plan's name: the name of its ceremony.
   string plan_id = 1;
-  // Path inside the bundle. The records say only that the process writes the
-  // plan inside the bundle; the bundle reference proposes
-  // ledger/<ceremony>/plan.json, for example
-  // "ledger/20261111T090000Z-due/plan.json", and that path is a proposal, not
-  // yet fixed. record_count counts records only.
+  // Path inside the bundle: history/<ceremony>/plan.json, for example
+  // "history/20261111T090000Z-due/plan.json". Record 0006 (rule 7) decides
+  // that the running process writes a saved plan there. The names of the
+  // other members of the folder are proposed. record_count counts records
+  // only.
   string path = 2;
   Intention intention = 3;
   string title = 4;
@@ -427,7 +428,7 @@ message Subkey {
 message ListCeremoniesRequest {}
 
 message ListCeremoniesResponse {
-  LedgerStatus ledger = 1;
+  HistoryStatus history = 1;
   // Newest first. One record for each ceremony.
   repeated Ceremony ceremonies = 2;
 }
@@ -457,10 +458,10 @@ enum CeremonyOutcome {
   CEREMONY_OUTCOME_UNRESOLVED = 4;
 }
 
-// One record of the ledger.
+// One record of the history.
 message Ceremony {
   // The record's name, which is also the name of its sub-folder of the
-  // ledger: the ceremony's time in UTC, a hyphen and the command with its
+  // history: the ceremony's time in UTC, a hyphen and the command with its
   // words joined by hyphens, for example "20260127T142000Z-due".
   string id = 1;
   CeremonyKind kind = 2;
@@ -670,7 +671,7 @@ enum TrustFileKind {
   TRUST_FILE_KIND_SSH_CA_KEYS = 4;
   TRUST_FILE_KIND_KEYRING = 5;
   // A person's public OpenPGP certificate, the one trust file of a personal
-  // bundle: products/<sequence>/<fingerprint>.pgp or .asc.
+  // bundle: trust/<number>/<fingerprint>.pgp or .asc.
   TRUST_FILE_KIND_OPENPGP_CERTIFICATE = 6;
 }
 

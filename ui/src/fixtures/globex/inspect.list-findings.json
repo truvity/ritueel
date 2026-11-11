@@ -13,12 +13,12 @@
       },
       "evidence": [
         "Region eu-west-1, replica in eu-central-1",
-        "Not in the ledger",
+        "Not in the history",
         "Once adopted it becomes a second root, globex/B"
       ],
       "fixCommand": "ritueel root add --store aws-kms --key alias/globex-staging-signing --plan-only",
       "fixIntention": "INTENTION_ADOPT_KEY",
-      "learnPath": "/learn/choosing-where-a-root-lives/#3-if-it-is-a-cloud-key-does-the-key-already-exist"
+      "learnPath": "/learn/choosing-where-a-root-lives/"
     }
   ]
 }

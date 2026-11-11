@@ -4,17 +4,17 @@ import { CeremonyKind } from '../gen/ritueel/local/v1alpha1/inspect_service_pb';
 // The contract's Ceremony message carries the digest of the plan it ran but
 // not its steps; the demo has no plan files, so the page shows the usual steps
 // by kind and says so (the real program would read them from plan.json in the
-// ledger).
+// history).
 
 export interface UsualStep {
   title: string;
   detail: string;
 }
 
-const CHECK: UsualStep = { title: 'Check the plan', detail: 'ritueel compares the plan with the bundle and the ledger, and you confirm its digest at the terminal.' };
+const CHECK: UsualStep = { title: 'Check the plan', detail: 'ritueel compares the plan with the bundle and the history, and you confirm its digest at the terminal.' };
 const CARDS: UsualStep = { title: 'Read the cards', detail: 'Every slot of each card in the plan is read and compared with the layout. Nothing is written to a card in this step.' };
 const TRUST: UsualStep = { title: 'Build the trust files', detail: 'The root list, the CA bundle, a revocation list for each root, the SSH CA keys and the keyring are built as the next trust sequence.' };
-const RECORD: UsualStep = { title: 'Write the record', detail: 'The record of this ceremony is written. It names the record before it, so the ledger stays a chain.' };
+const RECORD: UsualStep = { title: 'Write the record', detail: 'The record of this ceremony is written. It names the record before it, so the history stays a chain.' };
 
 export const USUAL_STEPS: Partial<Record<CeremonyKind, UsualStep[]>> = {
   [CeremonyKind.INIT]: [
@@ -51,6 +51,6 @@ export const USUAL_STEPS: Partial<Record<CeremonyKind, UsualStep[]>> = {
     { title: 'Clone the bundle on a clean machine', detail: 'The check runs on a copy of the bundle, so nothing in your own bundle is touched.' },
     { title: 'Verify the records, the last digest and the signed commits', detail: 'Every record is checked against the one before it, the newest digest against the one you kept apart, and the commits against their signatures.' },
     { title: 'Compare the roots with their holders and check the revocation signatures', detail: 'Each root is compared with the keys its holder has, and every revocation is checked for a valid signature.' },
-    { title: 'Write the report', detail: 'The report is written for you to read. No record is written to the ledger.' },
+    { title: 'Write the report', detail: 'The report is written for you to read. No record is written to the history.' },
   ],
 };

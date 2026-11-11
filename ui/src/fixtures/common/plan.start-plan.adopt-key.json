@@ -22,21 +22,21 @@
         "title": "Read the key",
         "detail": "Asks the cloud provider for the public key and the policy of the key, with the admin role named in the configuration.",
         "whatChanges": "Nothing changes",
-        "learnPath": "/learn/choosing-where-a-root-lives/#3-if-it-is-a-cloud-key-does-the-key-already-exist"
+        "learnPath": "/learn/choosing-where-a-root-lives/"
       },
       {
         "ordinal": 3,
         "title": "Check the policy",
         "detail": "Checks the policy against the rules: digests only, no new replicas and no move of the primary Region except for the break-glass principal. If a rule fails, the plan stops here and says which.",
         "whatChanges": "Nothing changes",
-        "learnPath": "/learn/choosing-where-a-root-lives/#3-if-it-is-a-cloud-key-does-the-key-already-exist"
+        "learnPath": "/learn/choosing-where-a-root-lives/"
       },
       {
         "ordinal": 4,
         "title": "Fix the creation time",
         "detail": "The key has no OpenPGP creation time of its own, so ritueel fixes one and records it. It cannot change later without changing the fingerprint.",
         "whatChanges": "A creation time in the record",
-        "learnPath": "/learn/choosing-where-a-root-lives/#3-if-it-is-a-cloud-key-does-the-key-already-exist"
+        "learnPath": "/learn/choosing-where-a-root-lives/"
       },
       {
         "ordinal": 5,
@@ -49,28 +49,28 @@
         "ordinal": 6,
         "title": "Write the record",
         "detail": "Writes the record of this ceremony and its transcript.",
-        "whatChanges": "One new record in the ledger",
-        "learnPath": "/learn/life-of-a-root/#record"
+        "whatChanges": "One new record in the history",
+        "learnPath": "/learn/life-of-a-root/"
       }
     ],
     "bundleChanges": [
       {
-        "path": "ledger/20261111T090000Z-init/record.json",
+        "path": "history/20261111T090000Z-init/record.json",
         "action": "BUNDLE_CHANGE_ACTION_CREATE",
         "description": "The record of this ceremony."
       },
       {
-        "path": "ledger/20261111T090000Z-init/plan.json",
+        "path": "history/20261111T090000Z-init/plan.json",
         "action": "BUNDLE_CHANGE_ACTION_CREATE",
         "description": "The plan as it was confirmed. Already there if you saved it from this page; otherwise the ceremony writes it."
       },
       {
-        "path": "ledger/20261111T090000Z-init/transcript.txt",
+        "path": "history/20261111T090000Z-init/transcript.txt",
         "action": "BUNDLE_CHANGE_ACTION_CREATE",
         "description": "What the terminal showed."
       },
       {
-        "path": "ledger/20261111T090000Z-init/attempt.json",
+        "path": "history/20261111T090000Z-init/attempt.json",
         "action": "BUNDLE_CHANGE_ACTION_CREATE",
         "description": "Written just before the first signature."
       },
@@ -95,14 +95,14 @@
         "description": "The checks that ran."
       },
       {
-        "path": "products/1/",
+        "path": "trust/1/",
         "action": "BUNDLE_CHANGE_ACTION_CREATE",
         "description": "The first root list, with the new root."
       }
     ],
     "equivalentCommand": "ritueel --dir ~/ritueel/example init --store aws-kms --key alias/example-staging-signing --plan-only",
-    "runCommand": "ritueel --dir ~/ritueel/example run ledger/20261111T090000Z-init/plan.json --confirm a92d5e600123456789abcdef0123456789abcdef0123456789abcdefdeadbeef",
-    "savePath": "ledger/20261111T090000Z-init/plan.json",
+    "runCommand": "ritueel --dir ~/ritueel/example run history/20261111T090000Z-init/plan.json --confirm a92d5e600123456789abcdef0123456789abcdef0123456789abcdefdeadbeef",
+    "savePath": "history/20261111T090000Z-init/plan.json",
     "runPlace": "RUN_PLACE_WORKSTATION"
   }
 }

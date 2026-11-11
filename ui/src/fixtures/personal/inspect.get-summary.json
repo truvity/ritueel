@@ -9,7 +9,7 @@
   "asOf": "2026-11-11T09:00:00Z",
   "demo": true,
   "programVersion": "0.0.0-demo",
-  "ledger": {
+  "history": {
     "recordCount": 1,
     "chainState": "CHAIN_STATE_VERIFIED",
     "headRecordSha256": "600c0123456789abcdef0123456789abcdef0123456789abcdef0123456789ab",
@@ -48,7 +48,7 @@
     {
       "id": "bundle",
       "title": "Open your ritueel bundle",
-      "detail": "The bundle holds plain files, the ledger and your plans.",
+      "detail": "The bundle holds plain files, the history and your plans.",
       "done": true
     },
     {

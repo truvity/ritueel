@@ -23,7 +23,7 @@ function countOf(s: GetSummaryResponse, sev: Severity): number {
 }
 
 function isEmptyBundle(s: GetSummaryResponse): boolean {
-  return (s.counts?.roots ?? 0) === 0 && (s.ledger?.recordCount ?? 0) === 0 && s.due.length === 0;
+  return (s.counts?.roots ?? 0) === 0 && (s.history?.recordCount ?? 0) === 0 && s.due.length === 0;
 }
 
 // ---- the verdict: the state of the keys in one sentence --------------------
@@ -182,14 +182,14 @@ function RenewAll({ count }: { count: number }) {
   );
 }
 
-// ---- the ledger seal, getting started, what the bundle holds ---------------
+// ---- the history seal, getting started, what the bundle holds ---------------
 
 function Seal({ s }: { s: GetSummaryResponse }) {
-  const l = s.ledger;
+  const l = s.history;
   const ok = l?.chainState === ChainState.VERIFIED;
   const none = (l?.recordCount ?? 0) === 0;
   return (
-    <a href={href.history()} className="block border-2 border-rule bg-panel p-4 text-ink no-underline hover:bg-sunk" aria-label="The ledger, open History">
+    <a href={href.history()} className="block border-2 border-rule bg-panel p-4 text-ink no-underline hover:bg-sunk" aria-label="The history, open History">
       <div className="flex items-center gap-3">
         <Glyph level={none ? 'info' : ok ? 'ok' : 'critical'} size={26} />
         <div className="leading-tight">
@@ -329,17 +329,17 @@ function Words() {
     ['Root', 'The key that everything else is trusted from. It stays safe, and it is used rarely.'],
     ['Subkey', 'A key the primary key hands the day-to-day work to: signing, logging in, encrypting. Its binding is renewed each year, and it is replaced only on an event, so the primary key can stay put.'],
     ['Delegated key', 'A key a root has handed a job to, for a requester (a system that asks for it). It works for a while and must be renewed.'],
-    ['Bundle', 'The directory with a fixed structure that holds everything ritueel knows about one trust domain, for example personal or acme: its ledger, roots, cards and trust files. Across bundles a root is written with the bundle\'s name, for example acme/A.'],
+    ['Bundle', 'The directory with a fixed structure that holds everything ritueel knows about one trust domain, for example personal or acme: its history, roots, cards and trust files. Across bundles a root is written with the bundle\'s name, for example acme/A.'],
     ['Ceremony', 'One sitting at a terminal, where a plan is run and something about your keys changes.'],
     ['Offline system', 'A computer booted from a read-only stick, where a root on cards or a real software root (a key file) is used.'],
     ['Your workstation', 'The computer you work on. A cloud root is used from here, and no USB stick is needed. A test root may run here too.'],
-    ['Ledger', 'The book of records. Each ceremony writes one record, and each names the one before it by digest, which is the chain.'],
-    ['Trust files', 'The files your machines and users read to trust your roots: root list, CA bundle, revocation lists. A personal bundle has only your public certificate. ritueel builds them; you publish them.'],
+    ['History', 'The write-once part of the bundle, history/, with one sub-folder for each ceremony. Each record names the one before it by digest, which is the chain.'],
+    ['Trust files', 'The files your machines and users read to trust your roots, in numbered sets, trust/<number>/: root list, CA bundle, revocation lists, SSH CA key list and the public OpenPGP keyring. A personal bundle has only your public certificate. ritueel builds them; you publish them.'],
   ];
   return (
     <details className="border border-line bg-panel">
       <summary className="flex min-h-11 cursor-pointer items-center px-4 text-[0.9375rem] font-semibold text-accent">
-        {isDemo ? 'Words on this page: root, bundle, ceremony, ledger and more' : 'Words on this page'}
+        {isDemo ? 'Words on this page: root, bundle, ceremony, history and more' : 'Words on this page'}
       </summary>
       <dl className="grid gap-x-6 gap-y-2 border-t border-line p-4 text-[0.9375rem] sm:grid-cols-[10rem_minmax(0,1fr)]">
         {words.map(([w, d]) => (
@@ -378,7 +378,7 @@ function Body({ s }: { s: GetSummaryResponse }) {
         <div className="grid gap-9 xl:grid-cols-2">
           <Steps steps={s.setupSteps} />
           <div className="space-y-9">
-            <Sec title="The ledger">
+            <Sec title="The history">
               <Seal s={s} />
             </Sec>
             <Holds s={s} />
@@ -413,7 +413,7 @@ function Body({ s }: { s: GetSummaryResponse }) {
           </Sec>
         </div>
         <div className="min-w-0 space-y-9">
-          <Sec title="The ledger">
+          <Sec title="The history">
             <Seal s={s} />
           </Sec>
           <Steps steps={s.setupSteps} />
