@@ -5,11 +5,24 @@ import { join, resolve } from 'node:path';
 // The demo is public on the site it links to. A link to a page the site does not have is a
 // dead end for the reader, and the page cannot tell: it only checks that a path is plain
 // (learnPathOk). This test reads every made-up answer in fixtures/ and fails unless each
-// site path in it is a page of the site (docs/, the repository's documentation, is the
-// site's source) and each #anchor is a heading of that page.
+// site path in it is a PUBLISHED page of the site and each #anchor is a heading of that page.
+// docs/ is the site's source, but the site publishes only the pages listed in
+// site/published.txt, and the decision records as an archive; the rest of docs/ stays in the
+// repository as working material and has no page. A link to such a page is a dead end too.
 
 const FIXTURES = new URL('./fixtures/', import.meta.url).pathname;
 const DOCS = new URL('../../docs/', import.meta.url).pathname;
+const PUBLISHED_LIST = new URL('../../site/published.txt', import.meta.url).pathname;
+
+// The allowlist of the site, read as a plain file (no import across packages): one path
+// relative to docs/ for each line, `#` starts a comment. The decision records are not in it:
+// the site publishes all of them as an archive (PUBLISHED_RECORD).
+const PUBLISHED: string[] = readFileSync(PUBLISHED_LIST, 'utf8')
+  .split('\n')
+  .map((line) => line.trim())
+  .filter((line) => line !== '' && !line.startsWith('#'));
+const PUBLISHED_SET = new Set(PUBLISHED);
+const PUBLISHED_RECORD = /^decisions\/\d{4}-.+\.md$/;
 
 // The fields the page turns into a link to the site (LearnLink in ui/Page.tsx):
 // Finding.learn_path and PlanStep.learn_path through FindingCard and Plan, and
@@ -73,7 +86,7 @@ for (const name of FIXTURE_FILES) {
 }
 const { links, unknownFields, localPaths, slashed } = sweep;
 
-/** The file that is the page at a site path such as /a/b/, or undefined. */
+/** The file that is the PUBLISHED page at a site path such as /a/b/, or undefined (a file of docs/ that the site does not publish has no page). */
 function pageFile(path: string): string | undefined {
   const rel = path.replace(/^\/|\/$/g, '');
   // The site serves /a/b/, never /a/b/index/; and it has no empty, "." or ".." segment.
@@ -81,7 +94,10 @@ function pageFile(path: string): string | undefined {
   if (/(^|\/)index$/.test(rel)) return undefined;
   const candidates = rel === '' ? ['index.md', 'index.mdx'] : [`${rel}.md`, `${rel}.mdx`, `${rel}/index.md`, `${rel}/index.mdx`];
   const root = resolve(DOCS);
-  const file = candidates.map((c) => resolve(DOCS, c)).find((c) => c.startsWith(root + '/') && existsSync(c));
+  const file = candidates
+    .filter((c) => PUBLISHED_SET.has(c) || (PUBLISHED_RECORD.test(c) && !c.startsWith('decisions/0000-')))
+    .map((c) => resolve(DOCS, c))
+    .find((c) => c.startsWith(root + '/') && existsSync(c));
   // A draft page is not published.
   if (file && /^---\n[\s\S]*?\ndraft:\s*true\s*\n[\s\S]*?\n---/.test(readFileSync(file, 'utf8'))) return undefined;
   return file;
@@ -128,6 +144,13 @@ function headingIds(file: string): Set<string> {
     ids.add(n === 0 ? base : `${base}-${n}`);
   });
   return ids;
+}
+
+/** A link to a file of docs/ that exists but that the site does not publish. */
+function isRepositoryOnly(value: string): boolean {
+  const rel = value.split('#')[0].replace(/^\/|\/$/g, '');
+  if (pageFile(value.split('#')[0])) return false;
+  return [`${rel}.md`, `${rel}.mdx`, `${rel}/index.md`, `${rel}/index.mdx`].some((c) => existsSync(join(DOCS, c)));
 }
 
 describe('the demo links only to pages the site has', () => {
@@ -190,19 +213,33 @@ describe('the demo links only to pages the site has', () => {
   it('finds the site pages and their headings', () => {
     expect(pageFile('/')).toBeDefined();
     expect(pageFile('/learn/')).toBeDefined();
-    expect(pageFile('/reference/cli/')).toBeDefined();
+    // A page of the repository that the site does not publish is no page of the site.
+    expect(pageFile('/reference/cli/'), 'is a page of the repository, not of the site').toBeUndefined();
+    expect(pageFile('/reference/cards/'), 'is a page of the repository, not of the site').toBeUndefined();
+    expect(pageFile('/reference/hand-off-contract/')).toBeDefined();
+    expect(pageFile('/decisions/0018-a-cloud-root-may-be-an-existing-key-that-ritueel-adopts/')).toBeDefined();
     expect(pageFile('/learn/no-such-page/')).toBeUndefined();
     // The site serves /learn/, not /learn/index/, and no path that climbs out of docs/.
     expect(pageFile('/learn/index/')).toBeUndefined();
     expect(pageFile('/learn//ceremonies/')).toBeUndefined();
     expect(pageFile('/learn/../index/')).toBeUndefined();
     expect(pageFile('/x/../../README/')).toBeUndefined();
-    const cards = pageFile('/reference/cards/');
-    expect(cards).toBeDefined();
-    const ids = headingIds(cards as string);
-    expect(ids.has('every-six-months')).toBe(true);
-    expect(ids.has('resultjson')).toBe(true);
+    const yubikey = pageFile('/learn/how-a-yubikey-holds-keys/');
+    expect(yubikey).toBeDefined();
+    const ids = headingIds(yubikey as string);
+    expect(ids.has('one-piv-slot-up-close')).toBe(true);
     expect(ids.has('no-such-heading')).toBe(false);
+    const life = headingIds(pageFile('/learn/life-of-a-root/') as string);
+    expect(life.has('re-sign')).toBe(true);
+    expect(life.has('record')).toBe(true);
+  });
+
+  it('every listed page is a file', () => {
+    // A line of site/published.txt that names no file would publish nothing; an empty list proves nothing.
+    expect(PUBLISHED.length).toBeGreaterThan(10);
+    expect(new Set(PUBLISHED).size).toBe(PUBLISHED.length);
+    const missing = PUBLISHED.filter((p) => !existsSync(join(DOCS, p)));
+    expect(missing).toEqual([]);
   });
 
   it('every link is a path of the site, with the trailing slash the site uses', () => {
@@ -212,8 +249,13 @@ describe('the demo links only to pages the site has', () => {
   });
 
   it('every link has a page in docs/', () => {
-    const bad = links.filter((l) => !pageFile(l.value.split('#')[0]));
+    const bad = links.filter((l) => !pageFile(l.value.split('#')[0]) && !isRepositoryOnly(l.value));
     expect(bad.map((l) => `${l.file} ${l.at}: ${l.value} has no page in docs/`)).toEqual([]);
+  });
+
+  it('every link is a published page', () => {
+    const bad = links.filter((l) => isRepositoryOnly(l.value));
+    expect(bad.map((l) => `${l.file} ${l.at}: ${l.value} is not published: add it to site/published.txt or link a published page`)).toEqual([]);
   });
 
   it('every #anchor is a heading of its page', () => {

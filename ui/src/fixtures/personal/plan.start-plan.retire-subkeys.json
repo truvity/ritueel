@@ -16,7 +16,7 @@
         "requirements": [
           "REQUIREMENT_CONFIRM_DIGEST_AT_TERMINAL"
         ],
-        "learnPath": "/learn/ceremonies/"
+        "learnPath": "/learn/life-of-a-root/"
       },
       {
         "ordinal": 2,
@@ -32,7 +32,7 @@
         "cardSerials": [
           "00000001"
         ],
-        "learnPath": "/reference/software-store/#opening-a-key-file"
+        "learnPath": "/learn/how-passkeys-work/#a-passkey-that-opens-a-key-file"
       },
       {
         "ordinal": 3,
@@ -52,7 +52,7 @@
         "title": "Write the record",
         "detail": "Writes the record of this ceremony and its transcript.",
         "whatChanges": "One new record in the ledger",
-        "learnPath": "/learn/the-ledger/"
+        "learnPath": "/learn/life-of-a-root/#record"
       }
     ],
     "bundleChanges": [

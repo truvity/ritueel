@@ -23,7 +23,7 @@
         "A"
       ],
       "trustSequence": 1,
-      "guidePath": "/reference/kms-root/#adopting-an-existing-key"
+      "guidePath": "/learn/choosing-where-a-root-lives/#3-if-it-is-a-cloud-key-does-the-key-already-exist"
     }
   ]
 }

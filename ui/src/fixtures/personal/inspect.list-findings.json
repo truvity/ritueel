@@ -39,7 +39,7 @@
         "The fix command is a proposal: the command reference does not have it yet."
       ],
       "fixCommand": "ritueel personal primary extend --expires-in 3y --plan-only",
-      "learnPath": "/guides/personal-openpgp/#if-you-already-have-a-primary",
+      "learnPath": "/decisions/0017-a-persons-openpgp-key-in-two-stages-an-adopted-primary-first-then-card-born-primaries/",
       "visibleFromPublicKey": true
     },
     {
@@ -59,7 +59,7 @@
       ],
       "fixCommand": "ritueel card adopt --card 00000102 --plan-only",
       "fixIntention": "INTENTION_ADD_CARD",
-      "learnPath": "/reference/cards/",
+      "learnPath": "/learn/how-a-yubikey-holds-keys/",
       "visibleFromPublicKey": true
     },
     {
@@ -114,7 +114,7 @@
         "The fix command is a proposal: the command reference does not have it yet."
       ],
       "fixCommand": "ritueel personal primary add --card 00000001 --plan-only",
-      "learnPath": "/guides/personal-openpgp/#if-you-already-have-a-primary",
+      "learnPath": "/decisions/0017-a-persons-openpgp-key-in-two-stages-an-adopted-primary-first-then-card-born-primaries/",
       "visibleFromPublicKey": true
     },
     {
@@ -132,7 +132,7 @@
         "Firmware 5.2.6, floor for a root card 5.7.4"
       ],
       "fixCommand": "ritueel card check --card 00000006",
-      "learnPath": "/reference/cards/#what-is-checked-on-a-card"
+      "learnPath": "/learn/how-a-yubikey-holds-keys/#one-piv-slot-up-close"
     }
   ]
 }

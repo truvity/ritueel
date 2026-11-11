@@ -16,42 +16,42 @@
         "requirements": [
           "REQUIREMENT_CONFIRM_DIGEST_AT_TERMINAL"
         ],
-        "learnPath": "/learn/ceremonies/"
+        "learnPath": "/learn/life-of-a-root/"
       },
       {
         "ordinal": 2,
         "title": "Read the key",
         "detail": "Asks the cloud provider for the public key and the policy of the key, with the admin role named in the configuration.",
         "whatChanges": "Nothing changes",
-        "learnPath": "/reference/kms-root/#adopting-an-existing-key"
+        "learnPath": "/learn/choosing-where-a-root-lives/#3-if-it-is-a-cloud-key-does-the-key-already-exist"
       },
       {
         "ordinal": 3,
         "title": "Check the policy",
         "detail": "Checks the policy against the rules: digests only, no new replicas and no move of the primary Region except for the break-glass principal. If a rule fails, the plan stops here and says which.",
         "whatChanges": "Nothing changes",
-        "learnPath": "/reference/kms-root/#adopting-an-existing-key"
+        "learnPath": "/learn/choosing-where-a-root-lives/#3-if-it-is-a-cloud-key-does-the-key-already-exist"
       },
       {
         "ordinal": 4,
         "title": "Fix the creation time",
         "detail": "The key has no OpenPGP creation time of its own, so ritueel fixes one and records it. It cannot change later without changing the fingerprint.",
         "whatChanges": "A creation time in the record",
-        "learnPath": "/reference/kms-root/#adopting-an-existing-key"
+        "learnPath": "/learn/choosing-where-a-root-lives/#3-if-it-is-a-cloud-key-does-the-key-already-exist"
       },
       {
         "ordinal": 5,
         "title": "Write the certificate",
         "detail": "The key signs its own certificate, digest only, as the ceremony role, in the session you already have. Every current root and the new root sign the next root list.",
         "whatChanges": "A new root, globex/B, in the bundle",
-        "learnPath": "/reference/root-list/"
+        "learnPath": "/decisions/0005-trust-products-the-root-list-the-ca-bundle-the-ssh-ca-key-list-and-the-trust-sequence/"
       },
       {
         "ordinal": 6,
         "title": "Write the record",
         "detail": "Writes the record of this ceremony and its transcript.",
         "whatChanges": "One new record in the ledger",
-        "learnPath": "/learn/the-ledger/"
+        "learnPath": "/learn/life-of-a-root/#record"
       }
     ],
     "bundleChanges": [
