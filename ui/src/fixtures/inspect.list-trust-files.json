@@ -1,0 +1,88 @@
+{
+  "trustSequence": 8,
+  "files": [
+    {
+      "name": "root-list.json",
+      "kind": "TRUST_FILE_KIND_ROOT_LIST",
+      "path": "products/8/root-list.json",
+      "trustSequence": 8,
+      "builtAt": "2026-09-15T13:40:00Z",
+      "validUntil": "2027-10-15T00:00:00Z",
+      "checkResult": "TRUST_CHECK_RESULT_PASSED",
+      "checkDetail": "Signed by acme side A, acme side B and globex-cloud. The host's checks pass against the list of sequence 7.",
+      "sha256": "70010123456789abcdef0123456789abcdef0123456789abcdef0123456789ab",
+      "sizeBytes": "2412",
+      "verifyCommand": "ritueel root-list verify products/8/root-list.json --held products/7/root-list.json",
+      "rebuildCommand": "ritueel due --plan-only"
+    },
+    {
+      "name": "ca-bundle.pem",
+      "kind": "TRUST_FILE_KIND_CA_BUNDLE",
+      "path": "products/8/ca-bundle.pem",
+      "trustSequence": 8,
+      "builtAt": "2026-09-15T13:40:00Z",
+      "validUntil": "2028-12-02T00:00:00Z",
+      "checkResult": "TRUST_CHECK_RESULT_PASSED",
+      "checkDetail": "Three X.509 roots, and each is in the root list.",
+      "sha256": "70020123456789abcdef0123456789abcdef0123456789abcdef0123456789ab",
+      "sizeBytes": "1840",
+      "verifyCommand": "ritueel root-list verify products/8/root-list.json --held products/7/root-list.json --bundle products/8/ca-bundle.pem",
+      "rebuildCommand": "ritueel bundle build --out products/8/ca-bundle.pem"
+    },
+    {
+      "name": "crl-acme.pem",
+      "kind": "TRUST_FILE_KIND_CRL",
+      "path": "products/8/crl-acme.pem",
+      "trustSequence": 8,
+      "builtAt": "2026-09-15T13:40:00Z",
+      "validUntil": "2027-04-30T00:00:00Z",
+      "checkResult": "TRUST_CHECK_RESULT_PASSED",
+      "checkDetail": "No certificate of acme is revoked. Signed by acme side A.",
+      "sha256": "70030123456789abcdef0123456789abcdef0123456789abcdef0123456789ab",
+      "sizeBytes": "612",
+      "verifyCommand": "ritueel crl verify products/8/crl-acme.pem --bundle products/8/ca-bundle.pem",
+      "rebuildCommand": "ritueel due --plan-only"
+    },
+    {
+      "name": "ssh-ca-keys.json",
+      "kind": "TRUST_FILE_KIND_SSH_CA_KEYS",
+      "path": "products/8/ssh-ca-keys.json",
+      "trustSequence": 8,
+      "builtAt": "2026-09-15T13:40:00Z",
+      "validUntil": "2027-10-15T00:00:00Z",
+      "checkResult": "TRUST_CHECK_RESULT_PASSED",
+      "checkDetail": "One break-glass SSH CA key for each side of acme. The file for sshd matches.",
+      "sha256": "70040123456789abcdef0123456789abcdef0123456789abcdef0123456789ab",
+      "sizeBytes": "988",
+      "verifyCommand": "ritueel ssh-ca-keys verify products/8/ssh-ca-keys.json --held products/7/ssh-ca-keys.json",
+      "rebuildCommand": "ritueel due --plan-only"
+    },
+    {
+      "name": "acme-keyring.pgp",
+      "kind": "TRUST_FILE_KIND_KEYRING",
+      "path": "products/8/keyring/acme-keyring.pgp",
+      "trustSequence": 8,
+      "builtAt": "2026-09-15T13:40:00Z",
+      "validUntil": "2027-02-27T00:00:00Z",
+      "checkResult": "TRUST_CHECK_RESULT_PASSED",
+      "checkDetail": "Holds the OpenPGP primaries of acme and the release subkey acme-release, which is valid until 2027-02-27.",
+      "sha256": "70050123456789abcdef0123456789abcdef0123456789abcdef0123456789ab",
+      "sizeBytes": "4310",
+      "verifyCommand": "ritueel keyring verify products/8/keyring/acme-keyring.pgp --root-list products/8/root-list.json",
+      "rebuildCommand": "ritueel keyring build --name acme"
+    },
+    {
+      "name": "acme-keyring.rpm",
+      "kind": "TRUST_FILE_KIND_KEYRING",
+      "path": "products/8/keyring/acme-keyring.rpm",
+      "trustSequence": 8,
+      "builtAt": "2026-09-15T13:40:00Z",
+      "checkResult": "TRUST_CHECK_RESULT_NOT_RUN",
+      "checkDetail": "Not built: the folder's configuration names no licence for the package, and ritueel does not choose one for you.",
+      "sha256": "70060123456789abcdef0123456789abcdef0123456789abcdef0123456789ab",
+      "sizeBytes": "0",
+      "verifyCommand": "ritueel keyring verify products/8/keyring/acme-keyring.rpm --root-list products/8/root-list.json",
+      "rebuildCommand": "ritueel keyring build --name acme"
+    }
+  ]
+}

@@ -1,0 +1,43 @@
+{
+  "options": [
+    {
+      "intention": "INTENTION_RENEW_DUE",
+      "title": "Renew what is due",
+      "sentence": "Plans the renewals and checks that ritueel due lists, in one ceremony.",
+      "typicalTime": "about 45 minutes",
+      "applicable": true,
+      "recommended": true,
+      "recommendedReason": "3 things are due in the next 4 months, the first on 2026-12-02."
+    },
+    {
+      "intention": "INTENTION_REPLACE_SUBKEYS",
+      "title": "Retire superseded subkeys",
+      "sentence": "Revokes subkeys that a newer one replaced, with the reason superseded.",
+      "typicalTime": "about 20 minutes",
+      "applicable": true,
+      "recommended": true,
+      "recommendedReason": "2 signing subkeys are still valid although replaced."
+    },
+    {
+      "intention": "INTENTION_ADOPT_KEY",
+      "title": "Adopt a key I already have",
+      "sentence": "Reads a key that exists, checks it against ritueel's rules and records it with its history.",
+      "typicalTime": "about 30 minutes",
+      "applicable": true
+    },
+    {
+      "intention": "INTENTION_ADD_CARD",
+      "title": "Add a card",
+      "sentence": "Registers a card in the inventory and seals its secrets in the folder.",
+      "typicalTime": "about 15 minutes",
+      "notApplicableReason": "This goal needs a card connected to this computer. The demo has none."
+    },
+    {
+      "intention": "INTENTION_REPLACE_CARD",
+      "title": "Replace a card",
+      "sentence": "Replaces a lost or retired card and the keys it held.",
+      "typicalTime": "about 1 hour",
+      "notApplicableReason": "No card is marked lost or retired. Mark one on the Cards screen first."
+    }
+  ]
+}

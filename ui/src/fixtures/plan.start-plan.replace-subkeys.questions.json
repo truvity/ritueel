@@ -1,0 +1,47 @@
+{
+  "questions": [
+    {
+      "id": "subkeys",
+      "prompt": "Which subkeys do you want to retire?",
+      "help": "Only subkeys that are valid and were replaced are offered.",
+      "kind": "QUESTION_KIND_MULTIPLE_CHOICE",
+      "options": [
+        {
+          "id": "1B220123456789ABCDEF0123456789ABCDEF0123",
+          "label": "Signing subkey of 2022",
+          "description": "On card 00000102. Valid until 2027-03-14."
+        },
+        {
+          "id": "1B320123456789ABCDEF0123456789ABCDEF0123",
+          "label": "Signing subkey of 2023",
+          "description": "On card 00000102. Valid until 2027-04-02."
+        }
+      ],
+      "defaultOptionIds": [
+        "1B220123456789ABCDEF0123456789ABCDEF0123",
+        "1B320123456789ABCDEF0123456789ABCDEF0123"
+      ]
+    },
+    {
+      "id": "reason",
+      "prompt": "Why are they ending?",
+      "help": "The reason decides how old signatures are read.",
+      "kind": "QUESTION_KIND_SINGLE_CHOICE",
+      "options": [
+        {
+          "id": "superseded",
+          "label": "Superseded: a newer subkey replaced them",
+          "description": "Strict verifiers keep signatures dated before the day of the switch. Measured on 2026-11-10 with sqv; gpgv accepts all."
+        },
+        {
+          "id": "compromised",
+          "label": "Compromised: someone else may hold them",
+          "description": "Strict verifiers reject every signature the subkey ever made. Use it only if you must."
+        }
+      ],
+      "defaultOptionIds": [
+        "superseded"
+      ]
+    }
+  ]
+}
