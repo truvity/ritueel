@@ -1,0 +1,138 @@
+import { describe, expect, it } from 'vitest';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
+import { join } from 'node:path';
+
+// The demo is public on the site it links to. A link to a page the site does not have is a
+// dead end for the reader, and the page cannot tell: it only checks that a path is plain
+// (learnPathOk). This test reads every made-up answer in fixtures/ and fails unless each
+// site path in it is a page of the site (docs/, the repository's documentation, is the
+// site's source) and each #anchor is a heading of that page.
+
+const FIXTURES = new URL('./fixtures/', import.meta.url).pathname;
+const DOCS = new URL('../../docs/', import.meta.url).pathname;
+
+// The fields the page turns into a link to the site (LearnLink in ui/Page.tsx):
+// Finding.learn_path and PlanStep.learn_path through FindingCard and Plan, and
+// Ceremony.guide_path through History.
+const SITE_LINK_FIELDS = new Set(['learnPath', 'guidePath']);
+// Fields of a fixture that are a path on the person's own computer, not on the site.
+const LOCAL_PATH_FIELDS = new Set(['savePath', 'folderPath', 'path']);
+
+type Json = string | number | boolean | null | Json[] | { [k: string]: Json };
+
+interface Found {
+  file: string;
+  at: string;
+  field: string;
+  value: string;
+}
+
+function collect(file: string, v: Json, at: string, out: Found[], others: Found[]): void {
+  if (Array.isArray(v)) v.forEach((x, i) => collect(file, x, `${at}[${i}]`, out, others));
+  else if (v && typeof v === 'object') {
+    for (const [k, x] of Object.entries(v)) {
+      if (typeof x === 'string' && SITE_LINK_FIELDS.has(k)) out.push({ file, at: `${at}.${k}`, field: k, value: x });
+      else if (typeof x === 'string' && /(path|url|href|link)$/i.test(k) && !LOCAL_PATH_FIELDS.has(k)) others.push({ file, at: `${at}.${k}`, field: k, value: x });
+      collect(file, x, `${at}.${k}`, out, others);
+    }
+  }
+}
+
+const links: Found[] = [];
+const unknownFields: Found[] = [];
+for (const name of readdirSync(FIXTURES).filter((n) => n.endsWith('.json')).sort()) {
+  collect(name, JSON.parse(readFileSync(join(FIXTURES, name), 'utf8')) as Json, '$', links, unknownFields);
+}
+
+/** The file that is the page at a site path such as /a/b/, or undefined. */
+function pageFile(path: string): string | undefined {
+  const rel = path.replace(/^\/|\/$/g, '');
+  const candidates = rel === '' ? ['index.md', 'index.mdx'] : [`${rel}.md`, `${rel}.mdx`, `${rel}/index.md`, `${rel}/index.mdx`];
+  return candidates.map((c) => join(DOCS, c)).find((c) => existsSync(c));
+}
+
+/** The ids the site gives the headings of a page: GitHub's slugs, as Starlight makes them. */
+function headingIds(file: string): Set<string> {
+  const ids = new Set<string>();
+  const seen = new Map<string, number>();
+  let fence = '';
+  let front = false;
+  const lines = readFileSync(file, 'utf8').split('\n');
+  lines.forEach((line, i) => {
+    if (i === 0 && line.trim() === '---') front = true;
+    else if (front) {
+      if (line.trim() === '---') front = false;
+      return;
+    }
+    const f = /^\s{0,3}(```+|~~~+)/.exec(line);
+    if (f) {
+      if (!fence) fence = f[1][0];
+      else if (f[1][0] === fence) fence = '';
+      return;
+    }
+    if (fence) return;
+    const m = /^ {0,3}(#{1,6})[ \t]+(.*?)(?:[ \t]+#+)?[ \t]*$/.exec(line);
+    if (!m) return;
+    const text = m[2]
+      .replace(/!?\[([^\]]*)\]\([^)]*\)/g, '$1')
+      .replace(/`/g, '')
+      .replace(/\*/g, '')
+      .replace(/(^|\W)_(.+?)_(?=\W|$)/g, '$1$2')
+      .replace(/<[^>]+>/g, '');
+    const base = text
+      .toLowerCase()
+      .replace(/[^\p{L}\p{N}\p{M}_ -]/gu, '')
+      .replace(/ /g, '-');
+    const n = seen.get(base) ?? 0;
+    seen.set(base, n + 1);
+    ids.add(n === 0 ? base : `${base}-${n}`);
+  });
+  return ids;
+}
+
+describe('the demo links only to pages the site has', () => {
+  it('finds the links (an empty sweep proves nothing)', () => {
+    expect(links.length).toBeGreaterThan(20);
+    expect(new Set(links.map((l) => l.field))).toEqual(SITE_LINK_FIELDS);
+    expect(new Set(links.map((l) => l.value)).size).toBeGreaterThan(10);
+  });
+
+  it('knows every field of a fixture that looks like a link', () => {
+    // A new link-like field must be added to SITE_LINK_FIELDS (and so checked) or to LOCAL_PATH_FIELDS.
+    expect(unknownFields.map((f) => `${f.file} ${f.at}`)).toEqual([]);
+  });
+
+  it('finds the site pages and their headings', () => {
+    expect(pageFile('/')).toBeDefined();
+    expect(pageFile('/learn/')).toBeDefined();
+    expect(pageFile('/reference/cli/')).toBeDefined();
+    expect(pageFile('/learn/no-such-page/')).toBeUndefined();
+    const cards = pageFile('/reference/cards/');
+    expect(cards).toBeDefined();
+    const ids = headingIds(cards as string);
+    expect(ids.has('every-six-months')).toBe(true);
+    expect(ids.has('resultjson')).toBe(true);
+    expect(ids.has('no-such-heading')).toBe(false);
+  });
+
+  it('every link is a path of the site, with the trailing slash the site uses', () => {
+    const bad = links.filter((l) => !/^\/[a-z0-9][a-z0-9/_.-]*\/(#[a-z0-9_-]+)?$/.test(l.value));
+    expect(bad.map((l) => `${l.file} ${l.at}: ${l.value}`)).toEqual([]);
+  });
+
+  it('every link has a page in docs/', () => {
+    const bad = links.filter((l) => !pageFile(l.value.split('#')[0]));
+    expect(bad.map((l) => `${l.file} ${l.at}: ${l.value} has no page in docs/`)).toEqual([]);
+  });
+
+  it('every #anchor is a heading of its page', () => {
+    const bad: string[] = [];
+    for (const l of links) {
+      const [path, anchor] = l.value.split('#');
+      const file = pageFile(path);
+      if (!file || anchor === undefined) continue;
+      if (!headingIds(file).has(anchor)) bad.push(`${l.file} ${l.at}: ${l.value} (no heading "${anchor}")`);
+    }
+    expect(bad).toEqual([]);
+  });
+});
