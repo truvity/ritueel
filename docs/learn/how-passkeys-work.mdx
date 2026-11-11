@@ -97,7 +97,7 @@ Two things follow.
 
 This is the use that ritueel's design rests on ([record 0002](../decisions/0002-where-a-key-lives.md)). There is no site and no signature. A program, not a browser, talks to the card over USB, and asks it for the secret of a passkey (see "A secret from a passkey" under Passkeys in brief).
 
-ritueel locks key files with age, a small file-encryption format. A file can be locked to several recipients, each of which can open it alone. The key file has two: an **unlock key** and a recovery key. The private half of the unlock key is wrapped, and a passkey on each root card unwraps it. Any one root card of the pair is enough. The secret is not used on the file itself. It unwraps a second key, the unlock key, so that locking a new file needs no card.
+ritueel locks key files with age, a small file-encryption format. A file can be locked to several recipients, each of which can open it alone. The key file has two: an **unlock key** and a recovery key. The private half of the unlock key is wrapped, and a passkey on each card named as a way to open the file unwraps it. Any one of those cards is enough, and a file may name more than two. The secret is not used on the file itself. It unwraps a second key, the unlock key, so that locking a new file needs no card.
 
 <Figure name="passkey-opens-key-file">
   A passkey on a root card opens a key file. There is no site and no signature. Decided in [record 0002](../decisions/0002-where-a-key-lives.md), not yet proven.

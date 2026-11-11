@@ -44,6 +44,8 @@ A root that expires is a transition that is already scheduled. An expiring root,
 
 `root add` makes the new root and has an active root vouch for it, `root retire` ends the overlap, and `root revoke` is the emergency exit. You say how long the overlap lasts; ritueel refuses to retire a root while something still hangs from it alone, and calls a set that is short of its target an alert. The states, the checks and the files are in [the transitions reference](/reference/transitions/), and the reasons in [record 0007](../decisions/0007-changing-and-losing-a-root.md).
 
+An X.509 root is not renamed: its name is inside the certificate, and every intermediate names it as issuer. A new name is a new root: add it, overlap, then retire the old one. An OpenPGP primary is different: a user ID can be added and retired without a new key ([personal OpenPGP](/reference/personal-openpgp/#changing-a-name-or-address)).
+
 ## What outsiders install
 
 Outsiders need only the tools they already have. Every trust file carries one *trust sequence*, an integer that grows by one whenever any trust file changes, so a client can tell whether it is current ([record 0006](../decisions/0006-bundle-history-and-trust-files.md)).

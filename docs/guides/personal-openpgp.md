@@ -35,7 +35,11 @@ Planned: a signing subkey and an authentication subkey are born on each day-to-d
 
 ## Every year
 
-The renewal plan (`ritueel due`, then `ritueel run PLAN --confirm DIGEST`) binds the subkey again for another 13 months and extends the primary key. `ritueel status` warns at 60, 30 and 14 days before the binding ends, and at 6 months, 3 months and 30 days before the primary key does.
+The renewal plan (`ritueel due`, then `ritueel run PLAN`) binds the subkey again for another 13 months and extends the primary key. `ritueel status` warns at 60, 30 and 14 days before the binding ends, and at 6 months, 3 months and 30 days before the primary key does.
+
+## Change your name or address
+
+Adding a new user ID and retiring the old one is a ceremony, not a new key: the primary certifies the new user ID, and the old one gets a revocation that says it is no longer valid. Your fingerprint and everyone's trust in it stay. Planned for M3; the command (`ritueel personal userid change`) is proposed. In the page you edit and a plan is written; in the terminal one short command runs it, and you type the first eight characters of its digest. A user ID you published cannot be withdrawn; see [After a ceremony](/guides/after-a-ceremony/).
 
 ## How you know it worked
 

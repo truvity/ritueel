@@ -19,6 +19,7 @@ A guide walks through one procedure step by step, with the result of each step a
 | [A lost root card](/guides/lost-root-card/) | A root card is lost, stolen or compromised. This is the recovery guide. | [Recover](/learn/recover/) |
 | [Back up and restore](/guides/back-up-and-restore/) | After every change, and as a drill once a year. | [The history](/learn/the-history/) |
 | [Run a drill](/guides/run-a-drill/) | Once a year and before the real thing: a walk-through on test keys and the restore check. | [The history](/learn/the-history/) |
+| [After a ceremony](/guides/after-a-ceremony/) | After every ceremony: what ritueel prints, and what to do with it. | [What a ceremony is](/learn/ceremonies/) |
 
 ## Using OpenPGP in practice
 

@@ -16,7 +16,7 @@ sidebar:
 ## Revoke an OpenPGP key
 
 1. **Fetch the revocation certificate** for your reason from its stored place, and run `ritueel revocation check FILE`. Result: you hold the right file, and ritueel has printed nothing of it. Use the *compromised* file if the key may be in another's hands, and the *superseded* file if it was safe and has been replaced ([Revoke](/learn/revoke/#reasons-matter)).
-2. **Publish it:** to your key directory or website, and to the places people look for your key.
+2. **Publish it:** to your key directory or website, and to the places people look for your key. To the keyservers you list, `ritueel publish --revocation FILE` (proposed) sends it, to a second kind of server too, after a stricter typed confirmation; it is never sent from a scheduler.
 3. **Publish a keyring package without the key.** `ritueel keyring build`, then your pipeline. Result: apt users, whose `gpgv` ignores revocation signatures, are protected when the package arrives.
 4. **Tell people** which fingerprint to stop trusting, and which to trust.
 
