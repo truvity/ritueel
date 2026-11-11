@@ -149,8 +149,9 @@ no library (they drive headless Chrome over the DevTools protocol).
   offline system. A key that cannot be copied (a root on cards or in the cloud) may be
   used on the workstation, under four conditions: a touch for every signature, the number
   of signatures stated in the plan (`signature_count`, with `touch_count`), no retry of a
-  failed touch, and the result checked against the plan on a second device. How the touch
-  reads for a cloud key is only proposed (record 0005, issue 30), and the page marks it. The
+  failed touch, and the result checked against the plan on a second device. A cloud key has no
+  touch: the typed digest and the role session stand, and its audit trail records every
+  signature (record 0005, rule 18), so the page asks for 0 touches there. The
   stick step (vanilla AirgapOS on the ceremony stick) shows only in the offline system. A
   test root may run on the workstation; that is wording only, as there is no flag for it.
   The commands follow [the command reference](../docs/reference/cli.md): the
@@ -258,8 +259,9 @@ rules 6 to 12, in plain words:
   logout or reboot. There is no second door for the command line and no separate step that
   the user must run to serve the page.
 - It serves the command line and the page on one fixed loopback port (`127.0.0.1` only).
-  The number 7488 is proposed and not yet checked against the IANA list of assigned
-  ports; what happens when a process of another version answers is also proposed.
+  The number is 7488 (record 0010; the IANA registry lists 7479 to 7490 as unassigned,
+  checked on 2026-11-11). What happens when a process of another version answers is still
+  proposed.
 - There are two kinds of token. A full-rights token, read from a file only the user can
   read, is for the command line. A page-rights token is for the browser: it is used once,
   becomes an `HttpOnly`, `SameSite=Strict` cookie, and can call only the reads and

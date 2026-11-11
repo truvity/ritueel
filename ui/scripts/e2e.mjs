@@ -269,7 +269,7 @@ await clickText(evalJs, 'Show me the plan');
 await sleep(500);
 const gplan = await text();
 check('the plan of a cloud root runs on your workstation, not in the offline system', /To run it, on your workstation/.test(gplan) && !/To run it, in the offline system/.test(gplan) && /A92D/i.test(gplan), gplan.slice(0, 200));
-check('the plan of a cloud root marks the touch condition as proposed and asks for 0 touches', /Proposed/.test(gplan) && /0 touches/.test(gplan) && /second device/.test(gplan), gplan.slice(0, 200));
+check('the plan of a cloud root says a cloud key has no touch, asks for 0 touches and marks nothing as proposed', /a cloud key has no touch/i.test(gplan) && !/Proposed/.test(gplan) && /0 touches/.test(gplan) && /second device/.test(gplan), gplan.slice(0, 200));
 await clickText(evalJs, 'Save the plan');
 await sleep(500);
 const gsaved = await text();

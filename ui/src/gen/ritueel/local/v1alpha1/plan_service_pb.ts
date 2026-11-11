@@ -11,7 +11,7 @@
 // Who answers. One ritueel process, the same program as the command line,
 // started by the first command that needs it and not a service, serves the
 // command line and this page on one fixed loopback port (localhost, 127.0.0.1
-// only; the number 7488 is proposed, record 0010). There are two kinds of
+// only; the number is 7488, record 0010). There are two kinds of
 // token: a full-rights token, read from a file only the user can read, for the
 // command line; and a page-rights token, used once, which becomes an
 // HttpOnly, SameSite=Strict cookie and can call only the reads and SavePlan.
@@ -437,7 +437,8 @@ export type Plan = Message<"ritueel.local.v1alpha1.Plan"> & {
   /**
    * The touches the plan asks of the holder: one for every signature made by
    * a card, plus a passkey touch that opens a key file. 0 for a cloud key,
-   * whose touch condition is only proposed (record 0005, issue 30).
+   * which has no touch: the typed digest and the role session stand, and its
+   * audit trail records every signature (record 0005, rule 18).
    *
    * @generated from field: int32 touch_count = 16;
    */

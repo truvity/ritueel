@@ -212,7 +212,9 @@ describe('hostile text never reaches the markup raw', () => {
     expect(a).toContain('second device');
     expect(a).not.toContain('Proposed');
     const b = flat(<WhereItRuns plan={B} />);
-    expect(b).toContain('Proposed');
+    expect(b).not.toContain('Proposed');
+    expect(b).toContain('A cloud key has no touch');
+    expect(b).toContain('audit trail');
     expect(b).toContain('0 touches');
     expect(b).toContain('second device');
     expect(b).toContain('ritueel asks nothing of how you signed in.');
