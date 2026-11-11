@@ -7,7 +7,7 @@ sidebar:
 
 *Not built yet: no ceremony command exists. This page describes what the commands will do ([ADR 0004](/decisions/0004-ceremonies-plan-confirm-reserve-sign-verify-record/)); the commands and their exit codes are in [the command reference](/reference/cli/). To learn what a ceremony is before you meet the tool, read [What a ceremony is](/learn/ceremonies/).*
 
-The command line is the first of three faces of the ceremony engine; the others are the guided mode and the read-only local page ([the wizard](/tools/wizard/)). A ceremony is a scripted, reviewable use of a root. A card root or a real software root is meant to be used only in a machine booted from a read-only system made for the purpose (the offline system), never in the everyday system (ritueel teaches this and does not check it); a cloud root is signed from your workstation; a test root may be used on the workstation or on a rehearsal card ([ADR 0016](/decisions/0016-several-roots-share-one-pair-of-root-cards-and-the-directory-keeps-a-card-inventory/#where-a-plan-runs)). The machine is not trusted: the root keys never leave their store, so a compromised machine cannot copy a key it never holds. It can still try to trick the holder, which is why the checks below exist.
+The command line is the first of three faces of the ceremony engine; the others are the guided mode and the read-only local page ([the wizard](/tools/wizard/)). A ceremony is a scripted, reviewable use of a root. A card root or a real software root is meant to be used only in a machine booted from a read-only system made for the purpose (the offline system), never in the everyday system (ritueel teaches this and does not check it); a cloud root is signed from your workstation; a test root may be used on the workstation or on a rehearsal card ([ADR 0016](/decisions/0016-several-bundles-share-one-pair-of-root-cards-and-the-bundle-keeps-a-card-inventory/#where-a-plan-runs)). The machine is not trusted: the root keys never leave their store, so a compromised machine cannot copy a key it never holds. It can still try to trick the holder, which is why the checks below exist.
 
 ## Six steps
 
@@ -21,7 +21,7 @@ Every ceremony runs the same steps: **plan** every byte that will be signed, **c
 4. **The result.** After signing, verify the certificate or binding against the request and the plan.
 5. **The record.** Write a hash-chained ceremony record that contains no PIN, no key and no secret.
 
-A PIN is entered by the holder at the terminal. The tool never retries a wrong PIN and refuses to run when fewer than three tries are left, because the card blocks after three and then needs the PUK. The PINs the holder types live in the holder's password manager, one entry per card; the PUK and the management key are random and sealed in the directory ([ADR 0015](/decisions/0015-key-files-open-with-a-passkey-on-each-root-card-and-card-secrets-are-sealed-in-the-directory/#card-secrets)).
+A PIN is entered by the holder at the terminal. The tool never retries a wrong PIN and refuses to run when fewer than three tries are left, because the card blocks after three and then needs the PUK. The PINs the holder types live in the holder's password manager, one entry per card; the PUK and the management key are random and sealed in the directory ([ADR 0015](/decisions/0015-key-files-open-with-a-passkey-on-each-root-card-and-card-secrets-are-sealed-in-the-bundle/#card-secrets)).
 
 ## The three ceremonies
 

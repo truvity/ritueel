@@ -133,7 +133,7 @@ Two results follow.
 - **The key handle is useless alone, and the card is useless without it.** The handle is no key. The card cannot find a passkey whose handle it is not given.
 - **The site must know who you are first.** The standard says the site must manage the handle's storage and discovery, and be able to first identify the user in order to find the handle to supply (WebAuthn Level 3, "Server-side Public Key Credential Source").
 
-The passkey that [ADR 0015](/decisions/0015-key-files-open-with-a-passkey-on-each-root-card-and-card-secrets-are-sealed-in-the-directory/) uses is this second kind (the record: "the kind that stores nothing on the card"). The record does not say where the key handle is kept. The format of the wrapped key is fixed by the proof on a rehearsal card, and this page does not say where the key handle lives.
+The passkey that [ADR 0015](/decisions/0015-key-files-open-with-a-passkey-on-each-root-card-and-card-secrets-are-sealed-in-the-bundle/) uses is this second kind (the record: "the kind that stores nothing on the card"). The record does not say where the key handle is kept. The format of the wrapped key is fixed by the proof on a rehearsal card, and this page does not say where the key handle lives.
 
 ### What the PIN and the touch protect
 
@@ -163,7 +163,7 @@ ritueel signs in to no site. This list shows what the card does, so the next sec
 
 ### A passkey that opens a key file
 
-This is the use that ritueel's design rests on ([ADR 0015](/decisions/0015-key-files-open-with-a-passkey-on-each-root-card-and-card-secrets-are-sealed-in-the-directory/)). There is no site and no signature. A program, not a browser, talks to the card over USB, and asks it for the secret of a passkey (see "A secret from a passkey" under Passkeys in brief).
+This is the use that ritueel's design rests on ([ADR 0015](/decisions/0015-key-files-open-with-a-passkey-on-each-root-card-and-card-secrets-are-sealed-in-the-bundle/)). There is no site and no signature. A program, not a browser, talks to the card over USB, and asks it for the secret of a passkey (see "A secret from a passkey" under Passkeys in brief).
 
 ritueel locks key files with age, a small file-encryption format. A file can be locked to several recipients, each of which can open it alone. The key file has two: an **unlock key** and a recovery key. The private half of the unlock key is wrapped, and a passkey on each root card unwraps it. Any one root card of the pair is enough. The secret is not used on the file itself. It unwraps a second key, the unlock key, so that locking a new file needs no card.
 
@@ -177,7 +177,7 @@ Writing a new key file needs no card, because the public half of the unlock key 
 
 Other programs already use the extension this way. `systemd-cryptenroll` accepts FIDO2 tokens "that implement the ‘hmac-secret’ extension" to unlock a disk volume (systemd documentation). The age project's note describes a plug-in that reuses a passkey on a hardware token outside the browser, and a stanza that holds the file key wrapped with a key derived from the PRF output (published 2025-07-14). ritueel's own way (PIN and touch over USB from a static binary) is the part still to be proven.
 
-**Decided, not yet proven.** [ADR 0015](/decisions/0015-key-files-open-with-a-passkey-on-each-root-card-and-card-secrets-are-sealed-in-the-directory/#decided-not-yet-proven) words it so: a passkey secret with PIN and touch over USB from a static binary, and the offline system reaching the card's passkey side, are tried on a rehearsal card before anything is built (milestone M1). If the proof fails, a key-agreement key in PIV slot 9d of each root card opens the file instead, and nothing else in the record changes. The format of the wrapped key is fixed by the proof, so this page does not invent one.
+**Decided, not yet proven.** [ADR 0015](/decisions/0015-key-files-open-with-a-passkey-on-each-root-card-and-card-secrets-are-sealed-in-the-bundle/#decided-not-yet-proven) words it so: a passkey secret with PIN and touch over USB from a static binary, and the offline system reaching the card's passkey side, are tried on a rehearsal card before anything is built (milestone M1). If the proof fails, a key-agreement key in PIV slot 9d of each root card opens the file instead, and nothing else in the record changes. The format of the wrapped key is fixed by the proof, so this page does not invent one.
 
 **What the passkey does not remove.** A reset ends every passkey on the card, so the key file must also open another way. The record keeps a recovery key for this. If you lose the recovery key and both root cards, the key files cannot be opened. Without its key handle a card cannot rebuild the passkey, so the key handle is as important as the card; where it is kept is fixed by the proof.
 
@@ -185,9 +185,9 @@ Other programs already use the extension this way. `systemd-cryptenroll` accepts
 
 | Job | Where | Why there |
 |---|---|---|
-| A root key (X.509 root or OpenPGP primary) | The root's row of the slot map: one slot for the X.509 root, one for the OpenPGP primary; PIN always, touch always | The card can vouch for the key, and the rules hold at every use ([ADR 0003](/decisions/0003-key-stores-and-the-card-layer/), [ADR 0016](/decisions/0016-several-roots-share-one-pair-of-root-cards-and-the-directory-keeps-a-card-inventory/#the-rows)) |
+| A root key (X.509 root or OpenPGP primary) | The root's row of the slot map: one slot for the X.509 root, one for the OpenPGP primary; PIN always, touch always | The card can vouch for the key, and the rules hold at every use ([ADR 0003](/decisions/0003-key-stores-and-the-card-layer/), [ADR 0016](/decisions/0016-several-bundles-share-one-pair-of-root-cards-and-the-bundle-keeps-a-card-inventory/#the-rows)) |
 | Daily git signing and SSH sign-in | The OpenPGP application: a signing subkey and an authentication subkey | `gpg`, `git` and `ssh` use it without extra tools ([ADR 0012](/decisions/0012-personal-openpgp-the-primary-offline-in-a-file-the-daily-subkey-on-a-card/)) |
-| Opening the key file of a software key | A passkey of the kind the card does not keep, on each root card | The holder types a PIN and touches the card, and the file has no passphrase to lose ([ADR 0015](/decisions/0015-key-files-open-with-a-passkey-on-each-root-card-and-card-secrets-are-sealed-in-the-directory/)); decided, not yet proven |
+| Opening the key file of a software key | A passkey of the kind the card does not keep, on each root card | The holder types a PIN and touches the card, and the file has no passphrase to lose ([ADR 0015](/decisions/0015-key-files-open-with-a-passkey-on-each-root-card-and-card-secrets-are-sealed-in-the-bundle/)); decided, not yet proven |
 
 All three are designs, not built tools. For the same question asked of a cloud key, read [how a KMS key works](/learn/how-a-kms-key-works/).
 
