@@ -53,6 +53,12 @@ test('the block holds one 302 for each unpublished page, sorted, and not the rec
   const out = run(base, hand);
   const block = out.slice(out.indexOf(BEGIN)).split('\n');
   assert.deepEqual(block.slice(1, -2), [
+    // the hand lines without their closing slash, in the order of the hand lines
+    '/old-a /learn/a/ 301',
+    '/old-b ' + GH + 'learn/b.md 302',
+    '/old-rec /decisions/0001-x/ 301',
+    '/old-status /status/ 301',
+    '/old-gh ' + GH + 'learn/b.md#top 302',
     '/contributing/ ' + GH + 'contributing.md 302',
     '/contributing ' + GH + 'contributing.md 302',
     '/learn/b/ ' + GH + 'learn/b.md 302',
@@ -71,6 +77,11 @@ test('publishing a page again turns its alias back to a 301 and takes its line o
   assert.ok(out.split('\n').includes('/old-b/ /learn/b/ 301'));
   assert.ok(out.split('\n').includes('/old-gh/ /learn/b/#top 301'));
   assert.ok(!out.includes('/learn/b/ https://'));
+});
+
+test('a hand line with a hand line for its no-slash form is not repeated', () => {
+  const out = run(base, hand + '\n/old-a /learn/a/ 301');
+  assert.equal(out.split('\n').filter((l) => l.startsWith('/old-a ')).length, 1);
 });
 
 test('a second run changes nothing', () => {
