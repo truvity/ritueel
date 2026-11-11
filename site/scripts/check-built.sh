@@ -9,13 +9,30 @@ dist=${1:-site/dist}
 fail=0
 bad() { echo "check-built: $*" >&2; fail=1; }
 
+# The pages of site/published.txt (the ten Learn pages, the glossary, the roadmap, the hand-off contract),
+# the pages made in src/pages, and the demo.
 for f in index.html 404.html sitemap-index.xml robots.txt \
-         learn/index.html learn/what-is-a-root/index.html learn/custody-chain/index.html learn/key-stores/index.html \
-         learn/life-of-a-root/index.html guides/index.html tools/index.html tools/wizard/index.html principles/index.html reference/index.html reference/cli/index.html research/index.html \
-         roadmap/index.html contributing/index.html decisions/index.html status/index.html \
-         demo/index.html demo/scheme.js demo/favicon.svg demo/THIRD-PARTY-LICENSES.md tools/local-page/index.html; do
+         learn/index.html learn/what-is-a-root/index.html learn/why-the-root-stays-offline/index.html \
+         learn/how-a-yubikey-holds-keys/index.html learn/how-passkeys-work/index.html learn/how-a-kms-key-works/index.html \
+         learn/choosing-where-a-root-lives/index.html learn/life-of-a-root/index.html learn/revoke/index.html \
+         learn/custody-chain/index.html learn/chain-openpgp/index.html \
+         glossary/index.html roadmap/index.html reference/hand-off-contract/index.html \
+         decisions/index.html status/index.html \
+         demo/index.html demo/scheme.js demo/favicon.svg demo/THIRD-PARTY-LICENSES.md; do
   [ -s "$dist/$f" ] || bad "missing or empty: $f"
 done
+
+# Nothing else of docs/ is built: a page of an address that gen-redirects.mjs --list names (a file of
+# docs/ that site/published.txt does not list) has no HTML page and no sitemap entry.
+unpublished=$(site/scripts/gen-redirects.mjs --list) || bad "site/scripts/gen-redirects.mjs --list failed"
+[ -n "$unpublished" ] || bad "gen-redirects.mjs --list names no unpublished page, so the check of unpublished pages proves nothing"
+ls "$dist"/sitemap-*.xml >/dev/null 2>&1 || bad "no sitemap file in $dist"
+grep -qF '<loc>https://ritueel.id/learn/</loc>' "$dist"/sitemap-*.xml 2>/dev/null || bad "the sitemap lacks https://ritueel.id/learn/"
+while read -r addr; do
+  [ -n "$addr" ] || continue
+  [ ! -e "$dist${addr%/}/index.html" ] || bad "an unpublished page is built: $addr"
+  if grep -qF "<loc>https://ritueel.id$addr</loc>" "$dist"/sitemap-*.xml 2>/dev/null; then bad "the sitemap lists an unpublished page: $addr"; fi
+done <<< "$unpublished"
 
 # Search: Pagefind's index and its entry point.
 [ -s "$dist/pagefind/pagefind.js" ] || bad "no Pagefind entry point in $dist/pagefind"
@@ -105,27 +122,45 @@ fi
 # link leads to a built page, and every #anchor to an id on it.
 site/scripts/check-anchors.mjs "$dist" || bad "a decision page links a missing page or anchor (above)"
 
-# The redirects file reached the output, and each target is a built page.
+# The redirects file reached the output. A rule that leads to a page of docs/ which is not published
+# is a 302 to that file on GitHub, and the file exists in this checkout; any other rule is a 301 to a
+# built page. A source is never a built page (a redirect is followed even where a page exists) and
+# no source appears twice.
 if [ -s "$dist/_redirects" ]; then
+  seen=$'\n'
+  gh=https://github.com/truvity/ritueel/blob/main/docs/
   while read -r from to code; do
     case "$from" in ''|'#'*) continue ;; esac
-    [ -s "$dist${to%/}/index.html" ] || bad "_redirects: $from points to $to, which is not a built page"
+    case "$seen" in *$'\n'"$from"$'\n'*) bad "_redirects: $from is the source of two rules" ;; esac
+    seen+="$from"$'\n'
+    [ ! -e "$dist${from%/}/index.html" ] || bad "_redirects: $from is a built page, which a redirect would hide"
+    case "$to" in
+      "$gh"*)
+        [ "$code" = 302 ] || bad "_redirects: $from points to a file on GitHub and must be a 302, not a $code"
+        file=${to#"$gh"}; file=${file%%#*}
+        [ -f "docs/$file" ] || bad "_redirects: $from points to docs/$file, which is not a file of this checkout"
+        ;;
+      *)
+        [ "$code" = 301 ] || bad "_redirects: $from points to a built page and must be a 301, not a $code"
+        target=${to%%#*}
+        [ -s "$dist${target%/}/index.html" ] || bad "_redirects: $from points to $to, which is not a built page"
+        ;;
+    esac
   done < "$dist/_redirects"
 else
   bad "no _redirects: site/public/_redirects did not reach the output"
 fi
 
-# The project status page: a card for every milestone row of the roadmap, and the design line
-# the home page shows, word for word (both are counted by site/src/lib-status.ts).
+# The links of the built pages into the repository (the files the pages link on GitHub, the rewritten
+# ones among them): each file exists, and each #anchor of a Markdown file is one of its headings.
+site/scripts/check-github-links.mjs "$dist" || bad "a link into the repository on GitHub names a missing file or heading (above)"
+
+# The project status page: a card for every milestone row of the roadmap.
 if [ -s "$dist/status/index.html" ]; then
   want=$(grep -cE '^\| \*\*M[0-9]+:' docs/roadmap.md || true)
   have=$(grep -o 'data-milestone="M[0-9]*"' "$dist/status/index.html" | sort -u | wc -l)
   { [ "$want" -gt 0 ] && [ "$want" -eq "$have" ]; } || bad "status/index.html has $have milestone cards; docs/roadmap.md has $want milestone rows"
   grep -q 'data-github="\(available\|unavailable\)"' "$dist/status/index.html" || bad "status/index.html does not say whether the issues were read"
-  design() { grep -o 'Design: [0-9]* decision records, [0-9]* reference pages\. Code: [0-9]* lines\.' "$1" | head -1; }
-  home=$(design "$dist/index.html")
-  [ -n "$home" ] || bad "index.html has no design line"
-  [ "$home" = "$(design "$dist/status/index.html")" ] || bad "status/index.html and index.html disagree on the design line"
 fi
 
 # The landing page says what ritueel is and that it is in the design phase.

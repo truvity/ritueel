@@ -19,6 +19,7 @@ exclude = [
   # which does not have this build yet.
   '^https://ritueel\.id/',
   # Pages that exist only once a pull request is merged; the site links to them by their final path.
+  # site/scripts/check-github-links.mjs checks these links (blob and tree) against the checkout.
   '^https://github\.com/truvity/ritueel/(blob|tree|edit)/',
   # www.rfc-editor.org redirects /rfc/rfcNNNN to /info/rfcNNNN/ and that page to itself (301 in
   # a loop) or answers 502, as of 2026-11-01; it kept the link check busy for the whole job. The
