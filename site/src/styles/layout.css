@@ -1,28 +1,40 @@
-/* Page layout: one wide column beside the left sidebar. Starlight's right-hand
-   "On this page" column is replaced by its dropdown at the top of the content
-   (src/components/TwoColumnContent.astro, PageSidebar.astro). */
+/* Page layout: one wide column beside the left sidebar.
+
+   THE WIDE LAYOUT STARTS AT 100rem (1600px). It is the only breakpoint of this file, and every
+   @media (min-width: 100rem) below is that same one (a media query cannot read a variable).
+   Below it a page is as it was: the text column beside the left sidebar, and "On this page" as
+   the dropdown at the top of the content. From it:
+   - "On this page" is a column of 18.75rem fixed at the right of the window (PageSidebar.astro),
+     and the same width is kept free at the right of every documentation page, with a list or
+     without, so the text column does not move sideways between pages.
+   The home page (a splash page, no sidebar) is not a documentation page and keeps its own layout. */
 
 :root {
   /* The content column. Starlight's default is 45rem, which wraps a wide table
-     heavily and wastes the screen beside it. The column is centred in the space
-     right of the sidebar. */
+     heavily and wastes the screen beside it. The column is centred in the space between the
+     left sidebar and, from 100rem, the column of "On this page". */
   --sl-content-width: 72rem;
   /* Reading width for running text; tables, diagrams, code and asides use the
      whole column. */
   --ritueel-prose-width: 75ch;
-  /* Starlight sizes the page header's grid for a right-hand column
-     (--__toc-width, its own variable); there is none now. */
+  /* Starlight sizes the page header's grid for a right-hand column (--__toc-width, its own
+     variable). Below 100rem there is none. */
   --__toc-width: 0rem;
 }
 
-/* Starlight drops the dropdown's height from the layout at 72rem, where it has
-   the right-hand column instead. The dropdown is now there at every width, so
-   the content starts below it and anchors scroll clear of it. */
-:root[data-has-toc] {
-  --sl-mobile-toc-height: 3rem;
-}
-html:root[data-has-toc] {
-  scroll-padding-top: calc(1.5rem + var(--sl-nav-height) + var(--sl-mobile-toc-height));
+/* BELOW 100rem: the dropdown. Starlight drops its height from the layout at 72rem, where it has
+   the right-hand column instead; here the dropdown is there up to 100rem, so the content starts
+   below it and anchors scroll clear of it. */
+@media (max-width: 99.99rem) {
+  :root[data-has-toc] {
+    --sl-mobile-toc-height: 3rem;
+  }
+  html:root[data-has-toc] {
+    scroll-padding-top: calc(1.5rem + var(--sl-nav-height) + var(--sl-mobile-toc-height));
+  }
+  .ritueel-toc-rail {
+    display: none;
+  }
 }
 
 /* Line the dropdown button and its panel up with the content column's left edge
@@ -42,6 +54,36 @@ mobile-starlight-toc .dropdown {
   border-radius: 0 0 0.5rem 0.5rem;
 }
 
+/* FROM 100rem: the column. Starlight's own rules for its right-hand column, at this site's
+   breakpoint. */
+@media (min-width: 100rem) {
+  .ritueel-toc-bar {
+    display: none;
+  }
+  .ritueel-toc-rail {
+    position: fixed;
+    top: 0;
+    inset-inline-end: 0;
+    z-index: 1;
+    width: var(--sl-sidebar-width);
+    height: 100vh;
+    padding: calc(var(--sl-nav-height) + 1rem) var(--sl-sidebar-pad-x) 1rem;
+    border-inline-start: 1px solid var(--sl-color-hairline);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
+  }
+  /* The width of the column is kept free on every page that has the left sidebar. */
+  :root[data-has-sidebar] .ritueel-main {
+    padding-inline-end: var(--sl-sidebar-width);
+  }
+  /* The header's grid was sized for a right-hand column of this width (Starlight's default
+     when --__toc-width is not set), so the search box lines up with the left edge of the content column. */
+  :root[data-has-sidebar] {
+    --__toc-width: initial;
+  }
+}
+
 /* Running text keeps a comfortable measure; everything else is as wide as the column. */
 .sl-markdown-content > :is(p, ul, ol, dl, blockquote):not(.not-content) {
   max-width: var(--ritueel-prose-width);
@@ -53,7 +95,6 @@ mobile-starlight-toc .dropdown {
 .sl-markdown-content > .sl-heading-wrapper {
   max-width: var(--ritueel-prose-width);
 }
-
 /* The wide tables of the docs: use the column, scroll inside the table when it
    is still too wide (Starlight makes a Markdown table a scrolling block). */
 .sl-markdown-content > table {
