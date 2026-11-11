@@ -18,6 +18,8 @@ Two paths lead to a root that others rely on. Pick the first unless you cannot.
 - **The cloud root** is the recommended path for a team with a cloud account. It is one key that the service keeps, with a replica that the service keeps in a second Region, an audit trail of every use, and no cards to alternate. You pay in an account to secure, a provider to trust, and a key that cannot attest where it was made: you read its policy from the service instead ([what a store can prove](/learn/what-a-store-can-prove/)). The first guide is [Prepare the cloud root](/guides/prepare-the-cloud-root/).
 - **Two cards** is the path for a person or a lab with no cloud account, and it is the more demanding one: two independent roots on two cards, each made on its card, kept in two places, alternating by year ([Two roots in practice](/learn/two-roots/)).
 
+To walk the questions in order, read [Choosing where a root lives](/learn/choosing-where-a-root-lives/).
+
 **The trade-off the other tools make, said openly.** Other tools take a copy-once path: the root is made off the card and loaded onto two cards, so one card and a backup are enough ([the comparison](/learn/compared/) names them, with their sources). ritueel does not, because a copied key cannot attest where it was born, and the only verifier of a root's attestation is you. What you gain is a root that provably exists in one place. What you pay is two independent roots and the alternation. If you accept a wrapped copy in a safe, use one of those tools, and read ritueel to understand what you are doing.
 
 ## The stores today
