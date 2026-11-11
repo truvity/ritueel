@@ -59,7 +59,7 @@ check('Start is the first screen and the tab has a title', (await evalJs('docume
 // ---- the first visit: what ritueel is, and a path (1440 px; the phone is checked at the end) -----------
 const lede = await rectOf('helps you keep a root', 'p');
 check('Start says in its first sentence what ritueel is, inside the first screen at 1440x900', lede && lede.top >= 0 && lede.bottom <= lede.height, JSON.stringify(lede));
-check('the lede explains root, ceremony and history where they first appear', /keep a root \(the key that everything else trusts\)/.test((await text()).replace(/\s+/g, ' ')) && /ceremony \(one sitting at a terminal/.test((await text()).replace(/\s+/g, ' ')) && /history \(the write-once record of every ceremony\)/.test((await text()).replace(/\s+/g, ' ')));
+check('the lede explains root, ceremony and history where they first appear', /keep a root \(the key that everything else trusts\)/.test((await text()).replace(/\s+/g, ' ')) && /ceremony \(one sitting at a terminal/.test((await text()).replace(/\s+/g, ' ')) && /history \(the record of every ceremony\)/.test((await text()).replace(/\s+/g, ' ')));
 check('Start says what a bundle is, in the Start-here box next to the switch that names it', /Example bundle changes the made-up keys \(a bundle is the directory that holds everything ritueel knows about one set of keys\)/.test((await text()).replace(/\s+/g, ' ')));
 const startHere = await rectOf('Start here', 'h2');
 check('the Start-here box begins inside the first screen at 1440x900', startHere && startHere.top >= 0 && startHere.top < startHere.height, JSON.stringify(startHere));
@@ -420,6 +420,52 @@ await startHereAboveBar('at 360x740', '360x740');
 const switchRights = JSON.parse(await evalJs(`JSON.stringify(['bundle-switch-label', 'state-switch-label'].map((id) => { const g = document.querySelector('[aria-labelledby="' + id + '"]'); if (!g) return [id, null]; return [id, Math.round(g.getBoundingClientRect().right)]; }))`));
 check('at 360x740 the Example bundle and Page state switches end inside the window', switchRights.every(([, right]) => right !== null && right <= 360), JSON.stringify(switchRights));
 check('at 360x740 the three links of Start here keep their text and order', (await evalJs(`JSON.stringify([...document.querySelectorAll('section[aria-labelledby="start-here-h"] ol a')].map((a) => a.textContent.trim()))`)) === '["Roots","Findings","Make a plan"]');
+
+// ---- no screen scrolls sideways on a phone: 360x740 and 390x844 -------------------------------------
+// The long unbreakable strings (the run command, a digest, a path in a record, a row of the cards) must wrap inside the window. Each screen is
+// measured, not only Start: the document must not be wider than the window and the window must be the size asked for.
+const sidewaysCheck = async (label, width) => {
+  const wide = await evalJs('document.documentElement.scrollWidth + " > " + document.documentElement.clientWidth');
+  check(`${label}: the document is not wider than the window, and the window is ${width} px`, (await evalJs('document.documentElement.scrollWidth <= document.documentElement.clientWidth')) && (await evalJs('window.innerWidth')) === width, wide);
+};
+const sidewaysPass = async (width, height) => {
+  await send('Emulation.setDeviceMetricsOverride', { width, height, deviceScaleFactor: 1, mobile: true });
+  await send('Page.navigate', { url: base });
+  await sleep(1200);
+  const size = `${width}x${height}`;
+  for (const hash of ['#/start', '#/roots', '#/key/A', '#/findings', '#/cards', '#/cards/00000003', '#/history', '#/history/20261103T142000Z-init', '#/trust', '#/plan']) {
+    await go(hash);
+    await sidewaysCheck(`at ${size} ${hash} of personal`, width);
+  }
+  await go('#/plan/retire-subkeys');
+  await sleep(300);
+  await clickText(evalJs, 'Show me the plan');
+  await sleep(500);
+  await sidewaysCheck(`at ${size} the plan of personal`, width);
+  await clickText(evalJs, 'Save the plan');
+  await sleep(500);
+  await sidewaysCheck(`at ${size} the saved plan of personal`, width);
+  await go('#/start');
+  await clickText(evalJs, 'acme');
+  await sleep(500);
+  for (const hash of ['#/roots', '#/cards', '#/history/20260602T142000Z-card-check', '#/trust']) {
+    await go(hash);
+    await sidewaysCheck(`at ${size} ${hash} of acme`, width);
+  }
+  await go('#/plan/renew-due');
+  await sleep(300);
+  await clickText(evalJs, 'Show me the plan');
+  await sleep(500);
+  await sidewaysCheck(`at ${size} the plan of acme`, width);
+  await clickText(evalJs, 'Save the plan');
+  await sleep(500);
+  await sidewaysCheck(`at ${size} the saved plan of acme`, width);
+  await go('#/start');
+  await clickText(evalJs, 'personal');
+  await sleep(500);
+};
+await sidewaysPass(360, 740);
+await sidewaysPass(390, 844);
 
 check('the page logged no error, no exception and no policy violation', problems.length === 0, problems.slice(0, 5).join(' | '));
 

@@ -65,6 +65,9 @@ for (const [name, dir, demo] of [['demo build (dist)', join(root, 'dist'), true]
     expect(!has('createConnectTransport'), 'holds no connect-web transport');
   } else {
     expect(!has('Example Holder') && !has('deadbeef') && !has('0123456789ABCDEF'), 'holds no fixture');
+    // the conditions of the workstation are not demo help: the real build says them too
+    expect(has('Where it runs'), 'says on the plan where the ceremony runs');
+    expect(has('second device'), 'states the second-device condition');
     expect(!has('Try the states') && !has('Page state'), 'holds no state switch');
     expect(!has('Try a bundle') && !has('Example bundle'), 'holds no bundle switch');
     // the help for a first visitor of the demo is the demo's alone
