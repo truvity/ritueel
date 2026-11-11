@@ -35,7 +35,7 @@
       "title": "Replace a card",
       "sentence": "Replaces a lost or retired card and the keys it held.",
       "typicalTime": "about 1 hour",
-      "notApplicableReason": "No card is marked lost or retired."
+      "notApplicableReason": "No card in this bundle is lost or retired."
     }
   ]
 }

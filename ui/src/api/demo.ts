@@ -145,6 +145,8 @@ function emptyIntentions() {
   const reasons: Partial<Record<Intention, string>> = {
     [Intention.RENEW_DUE]: 'Nothing is due, because the bundle holds no keys yet.',
     [Intention.RETIRE_SUBKEYS]: 'There are no subkeys to retire yet.',
+    [Intention.ADD_CARD]: 'No card is registered yet, and the demo has no card to connect.',
+    [Intention.REPLACE_CARD]: 'The bundle holds no card yet.',
   };
   return create(ListIntentionsResponseSchema, {
     options: full.options.map((o) => {
@@ -189,16 +191,23 @@ export function createDemoTransport(): Transport {
           const file = pick('StartPlan', (w) => w.intention === name && (w.answers === undefined || (w.answers === 'any') === hasAnswers));
           return parse(StartPlanResponseSchema, file);
         };
-        // An empty bundle answers the same for every example bundle: the one goal that applies
-        // there, adopting a key, has a plan of its own; the goals that need a key are not now.
+        // An empty bundle answers the same for every example bundle, and never from the loaded
+        // bundle's manifest: the one goal that applies there, adopting a key, has a plan of its
+        // own; the goals that need a key are not now; the goals that need a card are refused.
+        // A goal this switch does not name fails loudly, as the contract asks.
         const buildEmpty = () => {
-          if (req.intention === Intention.ADOPT_KEY) {
-            return parse(StartPlanResponseSchema, hasAnswers ? 'common/plan.start-plan.adopt-key.json' : 'common/plan.start-plan.adopt-key.questions.json');
+          switch (req.intention) {
+            case Intention.ADOPT_KEY:
+              return parse(StartPlanResponseSchema, hasAnswers ? 'common/plan.start-plan.adopt-key.json' : 'common/plan.start-plan.adopt-key.questions.json');
+            case Intention.RENEW_DUE:
+            case Intention.RETIRE_SUBKEYS:
+              return parse(StartPlanResponseSchema, 'common/plan.start-plan.not-now.json');
+            case Intention.ADD_CARD:
+            case Intention.REPLACE_CARD:
+              return parse(StartPlanResponseSchema, 'common/plan.start-plan.refused.json');
+            default:
+              throw new ConnectError('The demo has no recorded answer for this StartPlan request.', Code.Unimplemented);
           }
-          if (req.intention === Intention.RENEW_DUE || req.intention === Intention.RETIRE_SUBKEYS) {
-            return parse(StartPlanResponseSchema, 'common/plan.start-plan.not-now.json');
-          }
-          return build();
         };
         return gate(build, buildEmpty);
       },
@@ -207,7 +216,9 @@ export function createDemoTransport(): Transport {
         const build = () => parse(SavePlanResponseSchema, pick('SavePlan', (w) => w.planId === req.planId));
         const buildEmpty = () => {
           const common = parse(SavePlanResponseSchema, 'common/plan.save-plan.adopt-key.json');
-          return req.planId === common.planId ? common : build();
+          // Only the one plan of the empty bundle has a recorded answer: the loaded bundle's plans are not its own.
+          if (req.planId === common.planId) return common;
+          throw new ConnectError('The demo has no recorded answer for this SavePlan request.', Code.Unimplemented);
         };
         return gate(build, buildEmpty);
       },
