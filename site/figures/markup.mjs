@@ -2,6 +2,9 @@
 // that what the owner looks at is what the site builds.
 import { esc } from './draw.mjs';
 
+/** Text for a double-quoted attribute: `esc` leaves the quote alone, and a quote would end the value. */
+const escAttr = (t) => esc(t).replace(/"/g, '&quot;');
+
 /**
  * <figure> with its drawing(s) and its caption. `captionHtml` is HTML that is already safe (the
  * page's own caption, rendered from the slot), or the module's own plain-text caption, escaped.
@@ -13,7 +16,7 @@ export function renderFigure(fig, captionHtml = esc(fig.caption)) {
   let inner;
   if (fig.kind === 'strip') {
     inner =
-      `<ol class="fig-panels" role="list" aria-label="${esc(fig.label)}">` +
+      `<ol class="fig-panels" role="list" aria-label="${escAttr(fig.label)}">` +
       fig.panels
         .map((p) => `<li>${p.svg}<p class="fig-cap"><strong>${p.n} ${esc(p.title)}.</strong> ${esc(p.caption)}</p></li>`)
         .join('') +
@@ -25,5 +28,5 @@ export function renderFigure(fig, captionHtml = esc(fig.caption)) {
   } else {
     throw new Error(`figure ${fig.id}: unknown kind ${fig.kind}`);
   }
-  return `<figure class="fig fig-${fig.kind} not-content" data-figure="${esc(fig.id)}">${inner}<figcaption>${captionHtml}</figcaption></figure>`;
+  return `<figure class="fig fig-${fig.kind} not-content" data-figure="${escAttr(fig.id)}">${inner}<figcaption>${captionHtml}</figcaption></figure>`;
 }
