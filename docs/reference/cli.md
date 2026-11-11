@@ -32,7 +32,7 @@ sidebar:
 | `ritueel personal subkey add NAME --card SERIAL` | In a personal directory: the card makes the daily subkey and its back-signature, and the person's primary binds it ([personal OpenPGP](/reference/personal-openpgp/#the-commands)). `init --kind personal` makes the directory. | Yes |
 | `ritueel card adopt` | Adopts a card: replaces the management key and the PUK with random ones, seals them in the directory, and registers the card in the inventory. The holder has set the PIN ([root cards](/reference/cards/), [ADR 0015](/decisions/0015-key-files-open-with-a-passkey-on-each-root-card-and-card-secrets-are-sealed-in-the-directory/#card-secrets)). | Yes |
 | `ritueel card check` | The read-only check of a card against the built-in layout. It writes `cards.yaml` and `cards/NAME.yaml` and changes nothing on the card ([root cards](/reference/cards/#what-is-checked-on-a-card)). | No |
-| `ritueel wizard [--web]` | The guided mode, which asks line by line in the terminal; with `--web`, also a read-only page served on localhost. The page cannot confirm anything; it ends with a preview and the command to run, and can save the plan file ([the wizard](/reference/wizard/)). | Yes |
+| `ritueel wizard [--web]` | The guided mode, which asks line by line in the terminal; with `--web`, also a read-only page served on localhost. The page cannot confirm anything; it ends with a preview and the command to run, and can save the plan file ([the wizard](/reference/wizard/)). The page calls the same API as the commands; the process writes the saved plan where `--plan-only` writes it. | Yes |
 
 The verbs of a transition map onto the commands: *create* and *vouch* are `root add`, *overlap* is a state and not a command, *supersede* is `root retire`, and *revoke* is `root revoke`.
 
@@ -41,7 +41,7 @@ The verbs of a transition map onto the commands: *create* and *vouch* are `root 
 | Flag | Meaning |
 |---|---|
 | `--dir DIR` | The directory. The default is the current directory when it holds `ritueel.yaml`. |
-| `--plan-only` | Write the plan and stop. |
+| `--plan-only` | Write the plan (`ledger/<ceremony>/plan.json`) and stop. |
 | `--confirm DIGEST` | Confirm a plan from a script; the digest must be the plan's. With `run PLAN`, it is how a saved plan is executed. |
 | `--root ROOT` | Sign with this root instead of the root of the year; the reason is recorded. |
 | `--allow-missing NAME` | `due` only: plan without a request for this intermediate, and record it. |
@@ -51,7 +51,7 @@ The verbs of a transition map onto the commands: *create* and *vouch* are `root 
 | `--backend file\|onepassword\|keyring` | Software roots: the backend ([the software store](/reference/software-store/)). `--op-vault NAME` names the vault for `onepassword`. `init --kind personal` makes a personal directory. |
 | `--passphrase-fd N` | Software roots whose key file is opened by a passphrase (a test root, a script, a holder without cards): read the passphrase from this file descriptor. |
 | `--key-dir DIR` | Software roots: the directory of the [key files](/reference/directory/#the-software-roots-key-files). Refused when it is inside `--dir`. |
-| `--test-root` | Software roots: no passphrase, marked `TEST ONLY` everywhere. Products refuse to mix test and real roots. |
+| `--test-root` | Software roots: no passphrase, marked `TEST ONLY` everywhere. Products refuse to mix test and real roots. A test root may run its ceremonies on the workstation; the program checks nothing about where it runs. |
 | `--output json` | Every command, ceremony or not: print one JSON object on standard output ([below](/reference/cli/#machine-readable-output)). The default is `--output text`. |
 
 A PIN is never a flag or an environment variable; the holder types it at the terminal.
@@ -64,7 +64,7 @@ A PIN is never a flag or an environment variable; the holder types it at the ter
 | 1 | Failure. |
 | 2 | Usage error. |
 | 3 | Refused by a check or by the policy. |
-| 4 | Refused by the card or its PIN state, or by the key store backend: a locked store, or a KMS session without the hardware-key proof (`kms-session`). |
+| 4 | Refused by the card or its PIN state, or by the key store backend: a locked store, or a KMS session that is not a session of the ceremony role, or has expired (`kms-session`). |
 | 5 | Not confirmed. |
 | 10, 11, 12 | `status` only: notice, alert and critical. Intermediates warn at 60, 30 and 14 days, the root list, the SSH CA key list and each CRL at 60, 30 and 14 days, roots at 6 months, 3 months and 30 days. An unresolved attempt is critical, because it may mean a signature that was made and never recorded. A short root set is an alert, an overdue overlap an alert and a running one a notice ([root transitions](/reference/transitions/#the-target)); a restore drill older than 13 months is a notice ([drills](/reference/drill/#when-it-is-due)). The highest finding wins. |
 
