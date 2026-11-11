@@ -130,7 +130,9 @@ function DemoBar() {
         <p className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-0 text-sm">
           <span className="border border-rule bg-panel px-1.5 font-mono text-xs font-bold tracking-wider">DEMO</span>
           <span>The data is made up, and ritueel is still in design. Nothing here acts.</span>
-          <a className="inline-flex min-h-11 items-center font-semibold text-accent underline underline-offset-4 lg:min-h-0" href={siteUrl()}>
+          {/* Below lg the way back is the DEMO mark in the header under this bar and the link in the footer; dropping the third line here
+              (44 px) keeps the first screen of a phone for the Start-here links. */}
+          <a className="hidden items-center font-semibold text-accent underline underline-offset-4 lg:inline-flex" href={siteUrl()}>
             Back to ritueel.id
           </a>
         </p>

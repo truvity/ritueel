@@ -347,6 +347,18 @@ const plede = await rectOf('helps you keep a root', 'p');
 check('on a phone the first sentence of what ritueel is lies inside the first screen (390x844)', plede && plede.top >= 0 && plede.bottom <= plede.height, JSON.stringify(plede));
 const pstart = await rectOf('Start here', 'h2');
 check('on a phone the Start-here box begins inside the first screen (390x844)', pstart && pstart.top >= 0 && pstart.top < pstart.height, JSON.stringify(pstart));
+// the aim of the phone's first screen: the three links of Start here are fully visible above the fixed bottom bar on first load
+await evalJs('window.scrollTo(0, 0)');
+await sleep(200);
+const phoneLinks = JSON.parse(
+  await evalJs(`JSON.stringify((() => { const bar = document.querySelector('nav[aria-label=Screens].fixed'); const barTop = bar ? bar.getBoundingClientRect().top : innerHeight; return { barTop, height: innerHeight, links: [...document.querySelectorAll('section[aria-labelledby="start-here-h"] ol a')].map((a) => { const r = a.getBoundingClientRect(); return [a.textContent.trim(), Math.round(r.top), Math.round(r.bottom)]; }) }; })())`),
+);
+check(
+  'on a phone the three Start-here links are fully visible above the bottom bar on first load (390x844)',
+  phoneLinks.links.length === 3 && phoneLinks.barTop < phoneLinks.height && phoneLinks.links.every(([, top, bottom]) => top >= 0 && bottom <= phoneLinks.barTop),
+  JSON.stringify(phoneLinks),
+);
+check('on a phone the Start-here box still says the data is made up, and explains the switches, below the links', /Everything on this page is made up\./.test(await text()) && /Example bundle changes the made-up keys/.test((await text()).replace(/\s+/g, ' ')));
 check('on a phone the demo bar keeps its two switches, and the page does not scroll sideways', /Example bundle/.test(await text()) && /Page state/.test(await text()) && (await evalJs('document.documentElement.scrollWidth <= window.innerWidth')));
 
 check('the page logged no error, no exception and no policy violation', problems.length === 0, problems.slice(0, 5).join(' | '));

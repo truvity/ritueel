@@ -25,16 +25,13 @@ export function StartHere() {
     { to: href.findings(), name: 'Findings', what: 'what is wrong, and the next step for each.' },
     { to: href.plan(), name: 'Make a plan', what: 'the steps and an example command. Nothing runs here, and the ritueel command line is not built yet.' },
   ];
+  // The three links come first and the notes about the switches after them: on a phone (390x844) the links must lie above the
+  // fixed bottom bar on the first load, and the notes can be read below them.
   return (
     <section aria-labelledby="start-here-h" className="max-w-[70ch] border-l-4 border-accent bg-sunk px-4 py-3">
       <h2 id="start-here-h" className="text-base font-bold">
         Start here
       </h2>
-      <p className="mt-1 text-[0.9375rem]">Everything on this page is made up.</p>
-      <p className="mt-1 text-[0.9375rem]">
-        The bar above has two demo switches. Example bundle changes the made-up keys (a bundle is the directory that holds everything ritueel knows about one set of
-        keys). Page state shows each screen when the bundle is empty, cannot be read, or has not answered yet.
-      </p>
       <p className="mt-2 text-[0.9375rem]">Try these three, in order:</p>
       <ol className="mt-1 list-decimal pl-6 text-[0.9375rem]">
         {steps.map((s) => (
@@ -46,6 +43,11 @@ export function StartHere() {
           </li>
         ))}
       </ol>
+      <p className="mt-2 text-[0.9375rem]">Everything on this page is made up.</p>
+      <p className="mt-1 text-[0.9375rem]">
+        The bar above has two demo switches. Example bundle changes the made-up keys (a bundle is the directory that holds everything ritueel knows about one set of
+        keys). Page state shows each screen when the bundle is empty, cannot be read, or has not answered yet.
+      </p>
       <p className="mt-1 flex flex-wrap gap-x-6">
         <LearnLink path="/learn/what-is-a-root/">Read what a root is</LearnLink>
         <LearnLink path="/glossary/">All the words</LearnLink>
