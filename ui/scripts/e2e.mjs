@@ -32,6 +32,14 @@ await send('Browser.grantPermissions', { permissions: ['clipboardReadWrite', 'cl
 await send('Page.navigate', { url: base });
 await sleep(1200);
 
+// ---- the demo bar: the bundle switch (demo chrome, not part of the contract) -----------------
+const switchState = () => evalJs(`JSON.stringify([...document.querySelectorAll('button[aria-pressed]')].map((b) => [b.textContent.trim(), b.getAttribute('aria-pressed')]))`).then(JSON.parse);
+const pressed = (all, name) => all.some(([n, on]) => n === name && on === 'true');
+check('the demo bar has a bundle switch next to the state switch', /Try a bundle/.test(await text()) && /Try the states/.test(await text()));
+const sw0 = await switchState();
+check('the switch offers personal, acme and globex, and the demo starts on personal', ['personal', 'acme', 'globex'].every((n) => sw0.some(([x]) => x === n)) && pressed(sw0, 'personal') && !pressed(sw0, 'acme') && !pressed(sw0, 'globex'), JSON.stringify(sw0));
+check('the sidebar names the bundle and where it is', /personal/.test(await text()) && /~\/ritueel\/personal/.test(await text()));
+
 // ---- routes, titles, focus -------------------------------------------------
 check('Start is the first screen and the tab has a title', (await evalJs('document.title')).startsWith('Start - ritueel local page (demo)'));
 await go('#/findings');
@@ -117,13 +125,39 @@ await clickText(evalJs, 'Critical only');
 await sleep(400);
 check('Critical only lists one', /1 finding, worst first/.test(await text()));
 
-// ---- the wizard ---------------------------------------------------------------------------
-// the demo bar picks the bundle; the page goes back to Start, and the wizard of a company bundle has the renewals
+// ---- the wizard, in the personal bundle: a key file, run on the offline system ------------------------
+await go('#/plan');
+const goalsText = await text();
+check('the goals grey four goals with their reason', (goalsText.match(/Not now\./g) ?? []).length === 4 && /card connected to this computer/.test(goalsText), String((goalsText.match(/Not now\./g) ?? []).length));
+await go('#/plan/retire-subkeys');
+await sleep(300);
+check('the wizard of the personal bundle asks about subkeys first', /A few choices/.test(await text()) && /Which subkeys do you want to retire/.test(await text()));
+await clickText(evalJs, 'Show me the plan');
+await sleep(500);
+const pplan = await text();
+check('the plan retires subkeys, runs on the offline system and shows the digest and the plan.json command', /C41E/i.test(pplan) && /To run it, on the offline system/.test(pplan) && /ritueel run ledger\/20261111T090000Z-personal-subkey-revoke\/plan\.json --confirm/.test(pplan), pplan.slice(0, 200));
+check('the plan lists what changes in the bundle', /What changes in the bundle/.test(pplan));
+await clickText(evalJs, 'Save the plan');
+await sleep(500);
+const psaved = await text();
+check('the saved plan of the personal bundle: written nowhere, inside the bundle at ledger/<ceremony>/plan.json', /Nothing was written\./.test(psaved) && /Would be written to\s*~\/ritueel\/personal\/ledger\/20261111T090000Z-personal-subkey-revoke\/plan\.json/.test(psaved));
+check('it is canonical JSON, and no pending area or .plan file is named', /canonical JSON/.test(psaved) && !/pending/i.test(psaved) && !/\.plan\b/.test(psaved));
+
+// ---- the bundle switch: a company with two roots on two cards -----------------------------------------
+// the demo bar picks the bundle; the page goes back to Start, and the bundle of a company has the renewals
 await clickText(evalJs, 'acme');
 await sleep(500);
-check('the bundle switch changes the bundle and sends the page back to Start', /ritueel\/acme/.test(await text()) && (await evalJs('location.hash')) === '#/start');
+check('the bundle switch changes the bundle and sends the page back to Start', /~\/ritueel\/acme/.test(await text()) && (await evalJs('location.hash')) === '#/start');
+check('the switch now shows acme as the chosen bundle', pressed(await switchState(), 'acme') && !pressed(await switchState(), 'personal'));
+check('Start of acme lists three due items', /3 in the next/i.test(await text()) && /Renew acme-ca/.test(await text()));
+await go('#/roots');
+check('Roots of acme writes its two roots as acme/A and acme/B', /acme\/A/.test(await text()) && /acme\/B/.test(await text()) && !/personal\/A/.test(await text()));
+await go('#/key/B');
+check('the key of acme/B says it has certified no delegated key at the moment', /Primary key of\s+acme\/B/.test(await text()) && /certified no delegated key at the moment/.test(await text()));
+await go('#/cards');
+check('Cards of acme lists two root cards, and no personal serial', /2 cards/.test(await text()) && /00000011/.test(await text()) && /00000012/.test(await text()) && !/00000004/.test(await text()));
 await go('#/plan');
-check('the goals show two goals greyed with their reason', (await text()).includes('Not now.') && /card connected to this computer/.test(await text()));
+check('the goals of acme grey four goals, and suggest one: the renewals', ((await text()).match(/Not now\./g) ?? []).length === 4 && ((await text()).match(/Suggested/gi) ?? []).length === 1 && /Nothing waits to be adopted in this bundle/.test(await text()));
 await go('#/plan/renew-due');
 await sleep(300);
 check('the wizard asks choices first', /A few choices/.test(await text()) && /Which due items go into this plan/.test(await text()));
@@ -133,17 +167,43 @@ await sleep(500);
 check('after "Show me the plan" the focus is on the page heading', (await active()).id === 'page-title', JSON.stringify(await active()));
 const plan = await text();
 check('the plan shows its steps, digest and the exact commands', /Steps, in order/.test(plan) && /7F3A/i.test(plan) && /ritueel run/.test(plan) && /deadbeef|DEAD BEEF/i.test(plan.replace(/\s/g, '')));
-check('the plan says the digest is not typed here', /never\s+asks you to type it/i.test(plan.replace(/\n/g, ' ')));
+check('the plan says it runs on the offline system, and the digest is not typed here', /To run it, on the offline system/.test(plan) && /never\s+asks you to type it/i.test(plan.replace(/\n/g, ' ')));
 await clickText(evalJs, 'Save the plan');
 await sleep(500);
 check('after "Save the plan" the focus is on the result', (await active()).id === 'saved-result', JSON.stringify(await active()));
 const saved = await text();
 check('Save the plan says nothing was written and what would be', /Nothing was written\./.test(saved) && /This is a demo/.test(saved) && /Would be written to/.test(saved) && /"ceremony": "20261111T090000Z-due"/.test(saved));
-check('the saved view shows what to copy and bring, and the run command', /Copy to the offline system/.test(saved) && /USB stick/.test(saved) && /Bring with you/.test(saved) && /--confirm/.test(saved));
+check('the plan is saved inside the bundle as ledger/<ceremony>/plan.json', /~\/ritueel\/acme\/ledger\/20261111T090000Z-due\/plan\.json/.test(saved) && /ritueel run ledger\/20261111T090000Z-due\/plan\.json --confirm/.test(saved));
+check('the saved view shows what to copy and bring, the stick, and the run command', /Copy to the offline system/.test(saved) && /USB stick/.test(saved) && /Bring with you/.test(saved) && /--confirm/.test(saved));
 await go('#/plan/add-card');
 check('a goal that cannot be planned is refused with its reason', /cannot be planned now/.test(await text()));
+// a goal that applies in another bundle is refused here, with the reason the goals screen gives
+await go('#/plan/retire-subkeys');
+check('a goal of another bundle is refused here, not planned', /cannot be planned now/.test(await text()) && /does not apply to this bundle/.test(await text()));
+
+// ---- the bundle switch: a company with one cloud root, used from the workstation ---------------------
+await clickText(evalJs, 'globex');
+await sleep(500);
+check('switching to globex goes back to Start and names the bundle', /~\/ritueel\/globex/.test(await text()) && (await evalJs('location.hash')) === '#/start' && pressed(await switchState(), 'globex'));
+await go('#/roots');
+check('Roots of globex writes its one root as globex/A', /globex\/A/.test(await text()) && !/acme\/A/.test(await text()));
+await go('#/cards');
+check('Cards of globex says there is none, and that a cloud root needs no card', /No cards in the inventory yet/.test(await text()) && /needs no card/.test(await text()));
+await go('#/plan/adopt-key');
+await sleep(300);
+check('the wizard of globex asks about the key first', /A few choices/.test(await text()) && /How will you use this key/.test(await text()));
+await clickText(evalJs, 'Show me the plan');
+await sleep(500);
+const gplan = await text();
+check('the plan of a cloud root runs on your workstation, not the offline system', /To run it, on your workstation/.test(gplan) && !/To run it, on the offline system/.test(gplan) && /A92D/i.test(gplan), gplan.slice(0, 200));
+await clickText(evalJs, 'Save the plan');
+await sleep(500);
+const gsaved = await text();
+check('the saved plan of globex needs no USB stick and no copy to the offline system', /No stick is needed/.test(gsaved) && !/USB stick/.test(gsaved) && !/Copy to the offline system/.test(gsaved) && /Bring with you/.test(gsaved));
+check('it is still saved as ledger/<ceremony>/plan.json inside its bundle', /~\/ritueel\/globex\/ledger\/20261111T090000Z-root-add\/plan\.json/.test(gsaved) && /then, on your workstation/i.test(gsaved.replace(/\n/g, ' ')));
 await clickText(evalJs, 'personal');
 await sleep(500);
+check('switching back to personal goes back to Start', /~\/ritueel\/personal/.test(await text()) && (await evalJs('location.hash')) === '#/start' && pressed(await switchState(), 'personal'));
 
 // ---- the four states ------------------------------------------------------------------------
 await go('#/findings');

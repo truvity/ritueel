@@ -1,8 +1,8 @@
 // Checks the two built bundles (npm run build, npm run build:real).
 //  - no remote host except the ones listed (namespace URIs, the error pages
 //    React and MUI name in a message, and the link back to the site),
-//  - the demo build holds the fixtures, the in-memory transport, the state
-//    switch and the bundle switch, and not the real transport,
+//  - the demo build holds the fixtures (the three example bundles), the in-memory
+//    transport, the state switch and the bundle switch, and not the real transport,
 //  - the real build holds none of the demo.
 import { readdirSync, readFileSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
@@ -50,11 +50,15 @@ for (const [name, dir, demo] of [['demo build (dist)', join(root, 'dist'), true]
     expect(has('Example Holder'), 'holds the fixtures');
     expect(has('Try the states'), 'holds the state switch');
     expect(has('Try a bundle'), 'holds the bundle switch');
+    expect(has('globex') && has('personal-keyring') && has('acme-gateway'), 'holds the three example bundles');
+    expect(has('ledger/20261111T090000Z-due/plan.json'), 'holds a plan saved as ledger/<ceremony>/plan.json');
     expect(!has('createConnectTransport'), 'holds no connect-web transport');
   } else {
     expect(!has('Example Holder') && !has('deadbeef') && !has('0123456789ABCDEF'), 'holds no fixture');
     expect(!has('Try the states'), 'holds no state switch');
     expect(!has('Try a bundle'), 'holds no bundle switch');
+    expect(!has('globex') && !has('personal-keyring') && !has('acme-gateway'), 'holds none of the example bundles');
+    expect(!has('20261111T090000Z'), 'holds no made-up ceremony');
     expect(!has('createRouterTransport'), 'holds no in-memory transport');
     expect(has('createConnectTransport'), 'holds the real transport');
   }

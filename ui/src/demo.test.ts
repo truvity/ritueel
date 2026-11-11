@@ -2,15 +2,20 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { Code, ConnectError, createClient } from '@connectrpc/connect';
 import { Intention, Severity } from './gen/ritueel/local/v1alpha1/common_pb';
 import { InspectService } from './gen/ritueel/local/v1alpha1/inspect_service_pb';
-import { PlanService } from './gen/ritueel/local/v1alpha1/plan_service_pb';
+import { PlanService, RunPlace } from './gen/ritueel/local/v1alpha1/plan_service_pb';
 import { createDemoTransport } from './api/demo';
-import { setViewState } from './api/demoState';
+import { DEMO_BUNDLES, getBundle, setBundle, setViewState, type DemoBundle } from './api/demoState';
 
 const t = createDemoTransport();
 const inspect = createClient(InspectService, t);
 const plans = createClient(PlanService, t);
 
-afterEach(() => setViewState('loaded'));
+const BUNDLES: DemoBundle[] = ['personal', 'acme', 'globex'];
+
+afterEach(() => {
+  setViewState('loaded');
+  setBundle('personal');
+});
 
 describe('every call of the contract answers', () => {
   it('InspectService: every method answers with no argument', async () => {
@@ -21,55 +26,236 @@ describe('every call of the contract answers', () => {
   });
   it('PlanService: ListIntentions answers, StartPlan answers for every goal, SavePlan answers for every plan', async () => {
     expect((await plans.listIntentions({})).options).toHaveLength(5);
-    for (const i of [Intention.RENEW_DUE, Intention.ADOPT_KEY, Intention.REPLACE_SUBKEYS, Intention.ADD_CARD, Intention.REPLACE_CARD]) {
-      const r = await plans.startPlan({ intention: i });
-      expect(r.questions.length + (r.plan ? 1 : 0) + (r.refusal ? 1 : 0), `intention ${i}`).toBeGreaterThan(0);
+    for (const b of BUNDLES) {
+      setBundle(b);
+      expect((await plans.listIntentions({})).options, b).toHaveLength(5);
+      for (const i of [Intention.RENEW_DUE, Intention.ADOPT_KEY, Intention.RETIRE_SUBKEYS, Intention.ADD_CARD, Intention.REPLACE_CARD]) {
+        const r = await plans.startPlan({ intention: i });
+        expect(r.questions.length + (r.plan ? 1 : 0) + (r.refusal ? 1 : 0), `${b} intention ${i}`).toBeGreaterThan(0);
+      }
     }
   });
   it('the services list every method this test knows (a new call must get a test)', () => {
     expect(InspectService.methods.map((m) => m.name).sort()).toEqual(['GetSummary', 'ListCards', 'ListCeremonies', 'ListFindings', 'ListRoots', 'ListTrustFiles']);
     expect(PlanService.methods.map((m) => m.name).sort()).toEqual(['ListIntentions', 'SavePlan', 'StartPlan']);
+    // The process serves the one bundle it was started on: no call lists or selects a bundle.
+    // The switch of the demo is chrome around the transport, never part of the contract.
+    const all = [...InspectService.methods, ...PlanService.methods].map((m) => m.name);
+    expect(all.filter((n) => /bundle/i.test(n))).toEqual([]);
   });
 });
 
-describe('the fixtures tell the made-up world', () => {
-  it('summary: three due, 12 records, a demo', async () => {
-    const s = await inspect.getSummary({});
-    expect(s.due).toHaveLength(3);
-    expect(s.ledger?.recordCount).toBe(12);
-    expect(s.demo).toBe(true);
+// What each example bundle holds. One bundle is one trust domain, with its own ledger, roots and cards.
+const WORLD: Record<DemoBundle, { name: string; path: string; due: number; records: number; findings: number; alert: number; roots: number; delegated: number; cards: number; ceremonies: number; trustFiles: number }> = {
+  personal: { name: 'personal', path: '~/ritueel/personal', due: 0, records: 1, findings: 7, alert: 3, roots: 1, delegated: 0, cards: 6, ceremonies: 1, trustFiles: 2 },
+  acme: { name: 'acme', path: '~/ritueel/acme', due: 3, records: 10, findings: 1, alert: 0, roots: 2, delegated: 2, cards: 2, ceremonies: 10, trustFiles: 6 },
+  globex: { name: 'globex', path: '~/ritueel/globex', due: 0, records: 1, findings: 1, alert: 0, roots: 1, delegated: 0, cards: 0, ceremonies: 1, trustFiles: 2 },
+};
+
+describe('the fixtures tell the made-up world, one bundle at a time', () => {
+  it('starts on the personal bundle', () => {
+    expect(getBundle()).toBe('personal');
+    expect(DEMO_BUNDLES.map((b) => b.value)).toEqual(BUNDLES);
   });
-  it('findings: nine, and min_severity is applied by the transport', async () => {
-    expect((await inspect.listFindings({})).findings).toHaveLength(9);
-    expect((await inspect.listFindings({ minSeverity: Severity.ALERT })).findings).toHaveLength(3);
+  for (const b of BUNDLES) {
+    const w = WORLD[b];
+    describe(b, () => {
+      it('summary: its name, path, due list, ledger and counts, a demo', async () => {
+        setBundle(b);
+        const s = await inspect.getSummary({});
+        expect(s.demo).toBe(true);
+        expect(s.bundle?.name).toBe(w.name);
+        expect(s.bundle?.path).toBe(w.path);
+        expect(s.due).toHaveLength(w.due);
+        expect(s.ledger?.recordCount).toBe(w.records);
+        expect(s.counts?.roots).toBe(w.roots);
+        expect(s.counts?.delegatedKeys).toBe(w.delegated);
+        expect(s.counts?.cards).toBe(w.cards);
+        expect(s.counts?.trustFiles).toBe(w.trustFiles);
+      });
+      it('findings: all of them, and min_severity is applied by the transport', async () => {
+        setBundle(b);
+        expect((await inspect.listFindings({})).findings).toHaveLength(w.findings);
+        expect((await inspect.listFindings({ minSeverity: Severity.ALERT })).findings).toHaveLength(w.alert);
+      });
+      it('roots, cards, ceremonies, trust files, and the numbers of the summary agree with them', async () => {
+        setBundle(b);
+        const s = await inspect.getSummary({});
+        const roots = (await inspect.listRoots({})).roots;
+        const cards = (await inspect.listCards({})).cards;
+        expect(roots).toHaveLength(w.roots);
+        expect(cards).toHaveLength(w.cards);
+        expect((await inspect.listCeremonies({})).ceremonies).toHaveLength(w.ceremonies);
+        expect((await inspect.listTrustFiles({})).files).toHaveLength(w.trustFiles);
+        expect(s.counts?.roots).toBe(roots.length);
+        expect(s.counts?.cards).toBe(cards.length);
+        // A root is written <bundle>/<label>: labels are letters, A first, and unique inside the bundle.
+        expect(roots.map((r) => r.label)).toEqual(['A', 'B', 'C'].slice(0, w.roots));
+      });
+      it('the ledger head of the summary is the last record of the ceremonies list', async () => {
+        setBundle(b);
+        const s = await inspect.getSummary({});
+        const c = await inspect.listCeremonies({});
+        expect(c.ledger?.recordCount).toBe(c.ceremonies.length);
+        expect(c.ledger?.lastRecordId).toBe(s.ledger?.lastRecordId);
+        expect(c.ceremonies.map((x) => x.id)).toContain(s.ledger?.lastRecordId);
+        // A record is named like a plan: the time in UTC, a hyphen, the command.
+        for (const x of c.ceremonies) expect(x.id).toMatch(/^[0-9]{8}T[0-9]{6}Z-[a-z0-9]+(-[a-z0-9]+)*$/);
+      });
+    });
+  }
+
+  it('switching the bundle changes every answer, and the contract has no call for it', async () => {
+    const names = [];
+    for (const b of BUNDLES) {
+      setBundle(b);
+      names.push((await inspect.getSummary({})).bundle?.name);
+    }
+    expect(names).toEqual(['personal', 'acme', 'globex']);
+    setBundle('acme');
+    expect((await inspect.listRoots({})).roots).toHaveLength(2);
+    setBundle('globex');
+    expect((await inspect.listRoots({})).roots).toHaveLength(1);
+    expect((await inspect.listCards({})).cards).toHaveLength(0);
   });
-  it('roots, cards, ceremonies, trust files', async () => {
-    expect((await inspect.listRoots({})).roots).toHaveLength(3);
-    expect((await inspect.listCards({})).cards).toHaveLength(6);
-    expect((await inspect.listCeremonies({})).ceremonies).toHaveLength(12);
-    expect((await inspect.listTrustFiles({})).files).toHaveLength(6);
+
+  it('a bundle that has no card says so: a cloud root needs none', async () => {
+    setBundle('globex');
+    const goals = (await plans.listIntentions({})).options;
+    expect(goals.find((g) => g.intention === Intention.ADD_CARD)?.applicable).toBe(false);
+    expect((await inspect.getSummary({})).setupSteps.map((x) => x.id)).not.toContain('cards');
+  });
+
+  it('keeps the cards and roots of the bundles apart: no serial or fingerprint is shared', async () => {
+    const serials = new Map<string, DemoBundle>();
+    for (const b of ['personal', 'acme'] as const) {
+      setBundle(b);
+      for (const c of (await inspect.listCards({})).cards) {
+        expect(serials.get(c.serial), `serial ${c.serial} in ${b}`).toBeUndefined();
+        serials.set(c.serial, b);
+      }
+    }
+  });
+
+  it('goals: each bundle says what applies to it', async () => {
+    const want: Record<DemoBundle, Partial<Record<Intention, { applicable: boolean; recommended?: boolean }>>> = {
+      personal: {
+        [Intention.RENEW_DUE]: { applicable: false },
+        [Intention.RETIRE_SUBKEYS]: { applicable: true, recommended: true },
+        [Intention.ADOPT_KEY]: { applicable: false },
+        [Intention.ADD_CARD]: { applicable: false },
+        [Intention.REPLACE_CARD]: { applicable: false },
+      },
+      acme: {
+        [Intention.RENEW_DUE]: { applicable: true, recommended: true },
+        [Intention.RETIRE_SUBKEYS]: { applicable: false },
+        [Intention.ADOPT_KEY]: { applicable: false },
+        [Intention.ADD_CARD]: { applicable: false },
+        [Intention.REPLACE_CARD]: { applicable: false },
+      },
+      globex: {
+        [Intention.RENEW_DUE]: { applicable: false },
+        [Intention.RETIRE_SUBKEYS]: { applicable: false },
+        [Intention.ADOPT_KEY]: { applicable: true, recommended: true },
+        [Intention.ADD_CARD]: { applicable: false },
+        [Intention.REPLACE_CARD]: { applicable: false },
+      },
+    };
+    for (const b of BUNDLES) {
+      setBundle(b);
+      const goals = (await plans.listIntentions({})).options;
+      for (const [i, e] of Object.entries(want[b])) {
+        const g = goals.find((x) => x.intention === Number(i));
+        expect(g?.applicable, `${b} ${Intention[Number(i)]}`).toBe(e.applicable);
+        expect(g?.recommended, `${b} ${Intention[Number(i)]} recommended`).toBe(e.recommended ?? false);
+        // A goal that does not apply says why.
+        if (!e.applicable) expect(g?.notApplicableReason, `${b} ${Intention[Number(i)]} reason`).not.toBe('');
+      }
+    }
   });
 });
+
+// The plan each bundle can save: its id is the ceremony name, so it is unique inside the bundle,
+// which is where a plan is saved. runPlace says where the plan runs.
+const SAVED: Record<DemoBundle, { id: string; place: RunPlace; stick: boolean }> = {
+  acme: { id: '20261111T090000Z-due', place: RunPlace.OFFLINE_SYSTEM, stick: true },
+  personal: { id: '20261111T090000Z-personal-subkey-revoke', place: RunPlace.OFFLINE_SYSTEM, stick: true },
+  globex: { id: '20261111T090000Z-root-add', place: RunPlace.WORKSTATION, stick: false },
+};
 
 describe('a call that would act answers that this is a demo', () => {
-  it('a plan is built in memory with its digest and command', async () => {
+  it('a plan is built in memory with its digest and command, in the bundle that has such a goal', async () => {
+    setBundle('acme');
     const q = await plans.startPlan({ intention: Intention.RENEW_DUE });
     expect(q.questions.length).toBeGreaterThan(0);
     const p = await plans.startPlan({ intention: Intention.RENEW_DUE, answers: q.questions.map((x) => ({ questionId: x.id, optionIds: x.defaultOptionIds })) });
     expect(p.plan?.digest).toMatch(/deadbeef$/);
-    expect(p.plan?.runCommand).toContain('ritueel run');
+    expect(p.plan?.runCommand).toContain('ritueel run ledger/');
+    expect(p.plan?.runCommand).toContain('/plan.json --confirm ');
+    expect(p.plan?.savePath).toMatch(/^ledger\/[0-9]{8}T[0-9]{6}Z-[a-z0-9-]+\/plan\.json$/);
+    expect(p.plan?.runPlace).toBe(RunPlace.OFFLINE_SYSTEM);
   });
-  it('SavePlan writes nothing and says it is a demo, for every plan', async () => {
-    for (const id of ['2026-11-11-renew-due', '2026-11-11-replace-subkeys', '2026-11-11-adopt-cloud-key']) {
+  it('every plan says where it runs: the offline system for cards and key files, the workstation for a cloud root', async () => {
+    for (const [b, goal, place] of [
+      ['personal', Intention.RETIRE_SUBKEYS, RunPlace.OFFLINE_SYSTEM],
+      ['acme', Intention.RENEW_DUE, RunPlace.OFFLINE_SYSTEM],
+      ['globex', Intention.ADOPT_KEY, RunPlace.WORKSTATION],
+    ] as const) {
+      setBundle(b);
+      const q = await plans.startPlan({ intention: goal });
+      const p = await plans.startPlan({ intention: goal, answers: q.questions.map((x) => ({ questionId: x.id, optionIds: x.defaultOptionIds })) });
+      expect(p.plan?.runPlace, b).toBe(place);
+      // The plan, the saved plan and the id of the bundle agree with each other.
+      expect(p.plan?.id, b).toBe(SAVED[b].id);
+      expect(p.plan?.savePath, b).toBe(`ledger/${SAVED[b].id}/plan.json`);
+    }
+  });
+  it('a goal of one bundle is not applicable in another: the not-now refusal answers', async () => {
+    setBundle('personal');
+    const r = await plans.startPlan({ intention: Intention.RENEW_DUE });
+    expect(r.plan).toBeUndefined();
+    expect(r.questions).toHaveLength(0);
+    expect(r.refusal).toBe('This goal does not apply to this bundle now. The goals screen says why.');
+    setBundle('globex');
+    expect((await plans.startPlan({ intention: Intention.RETIRE_SUBKEYS })).refusal).toMatch(/does not apply to this bundle/);
+    setBundle('acme');
+    expect((await plans.startPlan({ intention: Intention.ADOPT_KEY })).refusal).toMatch(/does not apply to this bundle/);
+  });
+  it('SavePlan writes nothing and says it is a demo, for the plan of every bundle', async () => {
+    for (const b of BUNDLES) {
+      setBundle(b);
+      const { id, place, stick } = SAVED[b];
       const saved = await plans.savePlan({ planId: id, digest: '' });
       expect(saved.written, id).toBe(false);
       expect(saved.notice, id).toMatch(/demo/i);
       expect(saved.notice, id).toMatch(/nothing was written/i);
       expect(saved.planFilePreview.length).toBeGreaterThan(20);
+      // The plan is saved inside the bundle, where the engine writes any plan.
+      expect(saved.bundlePath, id).toBe(`~/ritueel/${b}`);
+      expect(saved.path, id).toBe(`ledger/${id}/plan.json`);
+      expect(saved.runCommand, id).toBe(`ritueel run ledger/${id}/plan.json --confirm ${saved.digest}`);
+      expect(saved.digest, id).toMatch(/^[0-9a-f]{64}$/);
+      expect(saved.planFilePreview, id).toContain(`"ceremony": "${id}"`);
+      // The USB stick is a step only where the plan runs on the offline system.
+      expect(saved.copyToStick.length > 0, `${id} stick (${RunPlace[place]})`).toBe(stick);
+      expect(saved.bring.length, id).toBeGreaterThan(0);
+      expect(saved.whenBack, id).not.toBe('');
     }
   });
-  it('a goal that does not apply is refused with its reason', async () => {
-    expect((await plans.startPlan({ intention: Intention.ADD_CARD })).refusal).toMatch(/demo/i);
+  it('a plan id answers only in the bundle that holds the plan', async () => {
+    for (const b of BUNDLES) {
+      setBundle(b);
+      for (const other of BUNDLES.filter((x) => x !== b)) {
+        await expect(plans.savePlan({ planId: SAVED[other].id, digest: '' }), `${SAVED[other].id} in ${b}`).rejects.toThrow(/no recorded answer/);
+      }
+    }
+  });
+  it('a goal that does not apply because it needs a card is refused with its reason', async () => {
+    for (const b of BUNDLES) {
+      setBundle(b);
+      expect((await plans.startPlan({ intention: Intention.ADD_CARD })).refusal, b).toMatch(/demo/i);
+      expect((await plans.startPlan({ intention: Intention.REPLACE_CARD })).refusal, b).toMatch(/demo/i);
+    }
   });
   it('a call that matches no fixture fails loudly', async () => {
     await expect(plans.savePlan({ planId: 'nope', digest: '' })).rejects.toThrow(/no recorded answer/);
@@ -77,31 +263,41 @@ describe('a call that would act answers that this is a demo', () => {
 });
 
 describe('the four states of a read', () => {
-  it('empty: a folder that holds nothing', async () => {
+  it('empty: a bundle that holds nothing, for every example bundle, with its name kept', async () => {
     setViewState('empty');
-    const s = await inspect.getSummary({});
-    expect(s.counts?.roots).toBe(0);
-    expect(s.due).toHaveLength(0);
-    expect(s.ledger?.recordCount).toBe(0);
-    expect(s.setupSteps.filter((x) => x.done)).toHaveLength(1);
-    expect((await inspect.listFindings({})).findings).toHaveLength(0);
-    expect((await inspect.listRoots({})).roots).toHaveLength(0);
-    expect((await inspect.listCards({})).cards).toHaveLength(0);
-    expect((await inspect.listCeremonies({})).ceremonies).toHaveLength(0);
-    expect((await inspect.listTrustFiles({})).files).toHaveLength(0);
-    const goals = (await plans.listIntentions({})).options;
-    expect(goals.find((g) => g.intention === Intention.ADOPT_KEY)?.recommended).toBe(true);
-    expect(goals.find((g) => g.intention === Intention.RENEW_DUE)?.applicable).toBe(false);
+    for (const b of BUNDLES) {
+      setBundle(b);
+      const s = await inspect.getSummary({});
+      expect(s.bundle?.name, b).toBe(WORLD[b].name);
+      expect(s.counts?.roots, b).toBe(0);
+      expect(s.due, b).toHaveLength(0);
+      expect(s.ledger?.recordCount, b).toBe(0);
+      expect(s.setupSteps.filter((x) => x.done), b).toHaveLength(1);
+      expect(s.setupSteps.find((x) => x.done)?.id, b).toBe('bundle');
+      expect((await inspect.listFindings({})).findings, b).toHaveLength(0);
+      expect((await inspect.listRoots({})).roots, b).toHaveLength(0);
+      expect((await inspect.listCards({})).cards, b).toHaveLength(0);
+      expect((await inspect.listCeremonies({})).ceremonies, b).toHaveLength(0);
+      expect((await inspect.listTrustFiles({})).files, b).toHaveLength(0);
+      const goals = (await plans.listIntentions({})).options;
+      expect(goals.find((g) => g.intention === Intention.ADOPT_KEY)?.recommended, b).toBe(true);
+      expect(goals.find((g) => g.intention === Intention.RENEW_DUE)?.applicable, b).toBe(false);
+      expect(goals.find((g) => g.intention === Intention.RETIRE_SUBKEYS)?.applicable, b).toBe(false);
+    }
   });
-  it('failed: every read fails with an error, never an empty answer', async () => {
+  it('failed: every read fails with an error, never an empty answer, and names the bundle it could not read', async () => {
     setViewState('failed');
-    for (const call of [() => inspect.getSummary({}), () => inspect.listFindings({}), () => inspect.listRoots({}), () => inspect.listCards({}), () => inspect.listCeremonies({}), () => inspect.listTrustFiles({}), () => plans.listIntentions({}), () => plans.savePlan({ planId: '2026-11-11-renew-due', digest: '' })]) {
-      const err = await call().then(
-        () => undefined,
-        (e: unknown) => e,
-      );
-      expect(err).toBeInstanceOf(ConnectError);
-      expect((err as ConnectError).code).toBe(Code.Unavailable);
+    for (const b of BUNDLES) {
+      setBundle(b);
+      for (const call of [() => inspect.getSummary({}), () => inspect.listFindings({}), () => inspect.listRoots({}), () => inspect.listCards({}), () => inspect.listCeremonies({}), () => inspect.listTrustFiles({}), () => plans.listIntentions({}), () => plans.savePlan({ planId: SAVED[b].id, digest: '' })]) {
+        const err = await call().then(
+          () => undefined,
+          (e: unknown) => e,
+        );
+        expect(err).toBeInstanceOf(ConnectError);
+        expect((err as ConnectError).code).toBe(Code.Unavailable);
+        expect((err as ConnectError).message, b).toContain(`could not read the bundle at ${WORLD[b].path}`);
+      }
     }
   });
   it('waiting: no answer until the state changes', async () => {

@@ -1,4 +1,4 @@
-import { beforeAll, describe, expect, it, vi } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import type { ReactElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { fromJson, type DescMessage, type JsonValue, type Message } from '@bufbuild/protobuf';
@@ -12,8 +12,9 @@ import {
 } from './gen/ritueel/local/v1alpha1/inspect_service_pb';
 import { ListIntentionsResponseSchema, SavePlanResponseSchema, StartPlanResponseSchema } from './gen/ritueel/local/v1alpha1/plan_service_pb';
 
-// Every string that comes from the folder is data. This test gives each screen a
-// world in which EVERY string field ends in a bidirectional override, a joiner and
+// Every string that comes from the bundle is data. This test gives each screen a
+// world (one for each example bundle: personal, acme and globex, so acme/B, the cloud
+// root and an empty cards list are drawn too) in which EVERY string field ends in a bidirectional override, a joiner and
 // a BEL (control) character, renders the screen, and fails if any of those
 // characters reaches the markup raw, in a text node or in an attribute such as
 // aria-label or title. A string a screen forgot to pass through T or safeString
@@ -32,6 +33,9 @@ vi.mock('./api/hooks', async (importOriginal) => {
   return {
     ...real,
     useSummary: () => ready(w.d.summary),
+    // The real one reads the summary through its own useCall, which a mock of the module does not reach.
+    // The name of the bundle goes into every root written as <bundle>/<label>, so it must be marked too.
+    useBundleName: () => (w.d.summary.bundle?.name as string | undefined) || undefined,
     useFindings: (min = 0) => ready({ findings: w.d.findings.findings.filter((f: { severity: number }) => f.severity >= min) }),
     useRoots: () => ready(w.d.roots),
     useCards: () => ready(w.d.cards),
@@ -54,23 +58,31 @@ function mark(v: unknown): unknown {
   return v;
 }
 
-const files = import.meta.glob('./fixtures/*.json', { eager: true, import: 'default' }) as Record<string, JsonValue>;
-const parse = <S extends DescMessage>(schema: S, name: string) => mark(fromJson(schema, files[`./fixtures/${name}`])) as Message;
+// The fixtures sit in one directory for each example bundle. Each has the same call-named files, and
+// the plan files are named by goal.
+const files = import.meta.glob('./fixtures/*/*.json', { eager: true, import: 'default' }) as Record<string, JsonValue>;
+const parse = <S extends DescMessage>(schema: S, bundle: string, name: string) => mark(fromJson(schema, files[`./fixtures/${bundle}/${name}`])) as Message;
 
-beforeAll(() => {
-  w.d.summary = parse(GetSummaryResponseSchema, 'inspect.get-summary.json');
-  w.d.findings = parse(ListFindingsResponseSchema, 'inspect.list-findings.json');
-  w.d.roots = parse(ListRootsResponseSchema, 'inspect.list-roots.json');
-  w.d.cards = parse(ListCardsResponseSchema, 'inspect.list-cards.json');
-  w.d.ceremonies = parse(ListCeremoniesResponseSchema, 'inspect.list-ceremonies.json');
-  w.d.trust = parse(ListTrustFilesResponseSchema, 'inspect.list-trust-files.json');
-  w.d.intentions = parse(ListIntentionsResponseSchema, 'plan.list-intentions.json');
-  w.d.questions = parse(StartPlanResponseSchema, 'plan.start-plan.renew-due.questions.json');
-  w.d.plan = parse(StartPlanResponseSchema, 'plan.start-plan.renew-due.json');
-  w.d.saved = parse(SavePlanResponseSchema, 'plan.save-plan.renew-due.json');
-  w.d.command = { state: 'x' };
+const BUNDLES: { bundle: string; goal: string; roots: number; cards: number }[] = [
+  { bundle: 'personal', goal: 'retire-subkeys', roots: 1, cards: 6 },
+  { bundle: 'acme', goal: 'renew-due', roots: 2, cards: 2 },
+  { bundle: 'globex', goal: 'adopt-key', roots: 1, cards: 0 },
+];
+
+/** Mark every string of one bundle's world, so that any screen that forgot T or safeString shows up. */
+function loadWorld(bundle: string, goal: string) {
+  w.d.summary = parse(GetSummaryResponseSchema, bundle, 'inspect.get-summary.json');
+  w.d.findings = parse(ListFindingsResponseSchema, bundle, 'inspect.list-findings.json');
+  w.d.roots = parse(ListRootsResponseSchema, bundle, 'inspect.list-roots.json');
+  w.d.cards = parse(ListCardsResponseSchema, bundle, 'inspect.list-cards.json');
+  w.d.ceremonies = parse(ListCeremoniesResponseSchema, bundle, 'inspect.list-ceremonies.json');
+  w.d.trust = parse(ListTrustFilesResponseSchema, bundle, 'inspect.list-trust-files.json');
+  w.d.intentions = parse(ListIntentionsResponseSchema, bundle, 'plan.list-intentions.json');
+  w.d.questions = parse(StartPlanResponseSchema, bundle, `plan.start-plan.${goal}.questions.json`);
+  w.d.plan = parse(StartPlanResponseSchema, bundle, `plan.start-plan.${goal}.json`);
+  w.d.saved = parse(SavePlanResponseSchema, bundle, `plan.save-plan.${goal}.json`);
   w.d.command = 'ritueel plan' + BAD;
-});
+}
 
 function offending(html: string): string[] {
   const seen = new Set<string>();
@@ -81,7 +93,7 @@ function offending(html: string): string[] {
   return [...seen].slice(0, 12);
 }
 
-async function screens() {
+async function screens(goal: string) {
   const { Start } = await import('./screens/Start');
   const { Findings } = await import('./screens/Findings');
   const { Roots } = await import('./screens/Roots');
@@ -102,10 +114,11 @@ async function screens() {
     ['history', () => <History />],
     ['trust', () => <Trust />],
     ['plan goals', () => <Plan />],
-    ['plan questions', () => <Plan goal="renew-due" />],
+    ['plan questions', () => <Plan goal={goal} />],
     ['plan questions component', () => <Questions questions={w.d.questions.questions} onSubmit={() => {}} />],
     ['plan preview', () => <PlanView plan={w.d.plan.plan} />],
-    ['plan saved', () => <Saved data={w.d.saved} />],
+    ['plan saved', () => <Saved data={w.d.saved} place={w.d.plan.plan.runPlace} />],
+    ['plan saved, place unknown', () => <Saved data={w.d.saved} />],
     ['not found', () => <NotFound hash={'#/x/' + BAD} />],
     ['key route param', () => <Key root={'nope' + BAD} />],
     ['card route param', () => <Cards serial={'nope' + BAD} />],
@@ -121,20 +134,39 @@ describe('hostile text never reaches the markup raw', () => {
   it('the marker is a bidi override, a joiner and a control character', () => {
     expect(RAW.test(BAD)).toBe(true);
   });
-  it('every screen, with every string of the world marked', async () => {
-    const list = await screens();
-    expect(list.length).toBeGreaterThan(20);
-    const failures: string[] = [];
-    let sawEscape = 0;
-    for (const [name, render] of list) {
-      const html = renderToStaticMarkup(render());
-      const bad = offending(html);
-      if (bad.length) for (const b of bad) console.log(`HOSTILE ${name} ${b}`);
-      if (bad.length) failures.push(`${name}:\n   ${bad.join('\n   ')}`);
-      if (html.includes('U+202E')) sawEscape += 1;
+  for (const { bundle, goal, roots, cards } of BUNDLES) {
+    it(`every screen of the ${bundle} bundle, with every string of the world marked`, async () => {
+      loadWorld(bundle, goal);
+      // The world is the bundle it is said to be: the test would prove nothing on an empty one.
+      expect(w.d.roots.roots).toHaveLength(roots);
+      expect(w.d.cards.cards).toHaveLength(cards);
+      const list = await screens(goal);
+      expect(list.length).toBeGreaterThan(14 + roots + cards);
+      const failures: string[] = [];
+      let sawEscape = 0;
+      for (const [name, render] of list) {
+        const html = renderToStaticMarkup(render());
+        const bad = offending(html);
+        if (bad.length) for (const b of bad) console.log(`HOSTILE ${bundle} ${name} ${b}`);
+        if (bad.length) failures.push(`${name}:\n   ${bad.join('\n   ')}`);
+        if (html.includes('U+202E')) sawEscape += 1;
+      }
+      expect(failures).toEqual([]);
+      // the marked world did reach the screens, drawn as escapes
+      expect(sawEscape, `${bundle} screens that show an escape`).toBeGreaterThan(Math.floor(list.length / 2));
+    });
+  }
+
+  it('the marked name of the bundle reaches a root written bundle/label as an escape, never raw', async () => {
+    loadWorld('acme', 'renew-due');
+    const { Roots } = await import('./screens/Roots');
+    const { Key } = await import('./screens/Key');
+    for (const [name, el] of [['roots', <Roots />], ['key', <Key root="A" />]] as [string, ReactElement][]) {
+      const html = renderToStaticMarkup(el);
+      expect(offending(html), name).toEqual([]);
+      // Each escape is a span of its own: read the text. acme/A, with the marker after "acme" and after "A".
+      const text = html.replace(/<style[\s\S]*?<\/style>/g, '').replace(/<[^>]+>/g, '');
+      expect(text, name).toContain('acmeU+202EU+200DU+0007/AU+202EU+200DU+0007');
     }
-    expect(failures).toEqual([]);
-    // the marked world did reach the screens, drawn as escapes
-    expect(sawEscape).toBeGreaterThan(15);
   });
 });
