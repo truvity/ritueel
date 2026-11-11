@@ -77,4 +77,4 @@ Each card makes its own keys, so no copy exists and each key can be attested at 
 
 ## Replaces
 
-Parts of 0002, 0003, 0004, 0008, 0012, 0015 and 0016, read at commit 1634be413c5e7d8d173e421928665ba30971a46e.
+Parts of 0002, 0003, 0004, 0008, 0012, 0015 and 0016, read at commit d0ae12da2432d5ae95cf95d68fb85ba3dda6cfee.

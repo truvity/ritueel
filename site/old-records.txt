@@ -7,7 +7,7 @@
 # The stem is the last part of /decisions/<stem>/. Eighteen stems are the file names; the others
 # are older names of a record, which already redirected to it.
 
-commit 1634be413c5e7d8d173e421928665ba30971a46e
+commit d0ae12da2432d5ae95cf95d68fb85ba3dda6cfee
 0001-scope-roots-and-transitions-systems-like-sluis-hold-intermediates 0001-scope-roots-and-transitions-systems-like-sluis-hold-intermediates.md
 0002-every-key-is-born-in-its-store-two-roots-one-holder-yearly-alternation 0002-key-custody-every-key-is-born-in-its-store-two-root-cards-or-one-kms-root-and-a-replica.md
 0002-key-custody-every-key-is-born-in-its-store-two-root-cards-or-one-kms-root-and-a-replica 0002-key-custody-every-key-is-born-in-its-store-two-root-cards-or-one-kms-root-and-a-replica.md

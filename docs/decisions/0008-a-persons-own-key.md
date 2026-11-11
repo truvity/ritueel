@@ -60,4 +60,4 @@ None.
 
 ## Replaces
 
-0001, 0003, 0004, 0012, 0014 and 0017, read at commit 1634be413c5e7d8d173e421928665ba30971a46e. From 0001, 0003 and 0004 only the lines on a person's OpenPGP key and the openpgp-card store flow here. Of 0014, only the end of the staff key is kept (sentence 1); the rest of it leaves ritueel.
+0001, 0003, 0004, 0012, 0014 and 0017, read at commit d0ae12da2432d5ae95cf95d68fb85ba3dda6cfee. From 0001, 0003 and 0004 only the lines on a person's OpenPGP key and the openpgp-card store flow here. Of 0014, only the end of the staff key is kept (sentence 1); the rest of it leaves ritueel.

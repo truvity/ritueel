@@ -74,4 +74,4 @@ A root signs for everything below it, so the person must see what will be signed
 
 ## Replaces
 
-Old records 0001, 0002, 0003, 0004, 0007, 0008 and 0016, read at commit 1634be413c5e7d8d173e421928665ba30971a46e.
+Old records 0001, 0002, 0003, 0004, 0007, 0008 and 0016, read at commit d0ae12da2432d5ae95cf95d68fb85ba3dda6cfee.
