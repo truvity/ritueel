@@ -9,7 +9,7 @@
 
 A PIV application has 24 key slots (9a, 9c, 9d, 9e and the retired slots 82 to 95). That is enough for several roots on one pair if every place is fixed. [0002](/decisions/0002-key-custody-every-key-is-born-in-its-store-two-root-cards-or-one-kms-root-and-a-replica/#keys) keeps its rule: the second card is redundancy, and the two cards are independent and never copies. The proposal is the design round of 2026-11-10 and 11, tracked in the issues under Follow-ups.
 
-The four kinds of card, where a plan runs and the relaxed mode for tests are decided here. The third kind is called `server`, because `board` was not wanted and `hsm` names a product class that [0002](/decisions/0002-key-custody-every-key-is-born-in-its-store-two-root-cards-or-one-kms-root-and-a-replica/) rejects. The offline system also binds a real software root. The relaxed mode is wording only: a test root may run on the workstation and on a rehearsal card, with no flag.
+The four kinds of card, where a plan runs, the USB stick of the offline system and the relaxed mode for tests are decided here. The third kind is called `server`, because `board` was not wanted and `hsm` names a product class that [0002](/decisions/0002-key-custody-every-key-is-born-in-its-store-two-root-cards-or-one-kms-root-and-a-replica/) rejects. The offline system also binds a real software root. The relaxed mode is wording only: a test root may run on the workstation and on a rehearsal card, with no flag.
 
 ## Decision
 
@@ -44,6 +44,10 @@ The four kinds of card, where a plan runs and the relaxed mode for tests are dec
 ### Where a root card is used
 
 - **A root card goes only into a machine booted from a read-only system made for the purpose (the offline system),** never into the everyday system. The plan holds public information only, so it can be made anywhere and carried over as a saved plan file ([0011](/decisions/0011-the-wizards-one-engine-three-faces-and-a-web-page-that-cannot-confirm-anything/)).
+- **The offline system is vanilla AirgapOS, booted from a USB stick and left unchanged.** ritueel builds no image and forks nothing.
+- **The stick carries one extra partition, and ritueel defines its layout.** It holds the ritueel program for several versions and several system architectures, several bundles, and the encrypted key files beside the bundles, never inside them. AirgapOS's own partitions are not touched. The directory names are proposed in [the stick picture](/how-it-works/bundle-and-stick/#the-usb-stick) and are not decided here.
+- **When a plan is prepared online, ritueel refreshes its copy on the stick, and the plan records the digest of that copy.** The run uses the version that made the plan, so a plan is never run by a different build.
+- **A cloud root needs no stick:** its ceremonies run on your workstation ([Where a plan runs](#where-a-plan-runs)).
 - **The one-time-code (OTP) application is switched off** on the root and day-to-day cards that ritueel adopts. On a server card ritueel changes nothing; on a rehearsal card it may.
 - **A card check and a proof of life run every six months.** The card check is the read-only comparison above. The proof of life is a short test that the card still works for its holder; its exact steps are written in the card reference when the check is built.
 
@@ -65,6 +69,7 @@ The four kinds of card, where a plan runs and the relaxed mode for tests are dec
 - A holder with more than four roots on a card buys another pair.
 - A card with a placeholder certificate in every used slot no longer looks empty to other tools. That is the intent.
 - The offline system costs a boot for every card or real software-root ceremony. It replaces the "ordinary workstation" of [0002](/decisions/0002-key-custody-every-key-is-born-in-its-store-two-root-cards-or-one-kms-root-and-a-replica/#the-yearly-ceremony). A cloud root is unaffected, and so is a test root.
+- The stick is one more thing to keep and to refresh. A bundle copied to the stick carries no key, because key files stay beside the bundles; a key file is the root itself, even though it is encrypted, so the stick is kept with the same care as a root.
 - Firmware older than 5.7.4 cannot hold a root.
 - The six-monthly check adds work and gives early notice of a dead card between yearly ceremonies. The restore drill stays yearly ([0010](/decisions/0010-readiness-is-made-at-birth-and-proved-by-a-drill/#drills)).
 
@@ -87,8 +92,12 @@ The four kinds of card, where a plan runs and the relaxed mode for tests are dec
 - **A home bundle that holds the card's one sealed file.** One copy, but a second bundle could not be used or handed over without the first.
 - **A holder-level card file shared by bundles.** One inventory, but a new structure above the bundle.
 - **A pair of cards belongs to one bundle until a later milestone.** Nothing to build now, but the maintainer chose that bundles may share a pair.
+- **An AirgapOS fork or a ritueel-built image.** The program would be inside the system, but ritueel would then maintain an operating system and the holder would trust our build instead of AirgapOS as published; it lost to vanilla AirgapOS with an extra partition.
+- **A second stick for ritueel.** AirgapOS stays untouched on its own stick, but the holder carries and loses two sticks, and the plan, the program and the key files no longer travel together; it lost to one stick with one extra partition.
+- **Fetch the program at the offline system.** The stick would be smaller, but the offline system would need a network, which is the point of it; the program is carried on the stick instead.
 
 ## Follow-ups
 
 - Build the slot-map rows, the placeholder certificates, the read-only check and the inventory files, and test them on a rehearsal card, including the deletion of one slot on firmware 5.7.4 and the way other tools treat a placeholder certificate, then the adoption of a pair by a second bundle and the card check run for each bundle ([#11](https://github.com/truvity/ritueel/issues/11)).
+- Prove on a rehearsal stick that AirgapOS boots from a stick with such an extra partition and mounts it, and that the run finds the program there ([#11](https://github.com/truvity/ritueel/issues/11)).
 - Add the six-monthly card check and proof of life to `status` ([#30](https://github.com/truvity/ritueel/issues/30)).
