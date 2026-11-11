@@ -17,6 +17,7 @@ import {
   type SavePlanResponse,
 } from '../gen/ritueel/local/v1alpha1/plan_service_pb';
 import { isDemo, plans } from '../api/client';
+import { useViewState } from '../api/demoState';
 import { messageOf, useCall, useGoalMap, useIntentions } from '../api/hooks';
 import { intentionFromSlug, INTENTION_SLUG } from '../lib/finding';
 import { ymd } from '../lib/format';
@@ -38,7 +39,17 @@ const LINK = 'font-semibold text-accent underline underline-offset-4';
 // the plan file. It never confirms anything and never asks for a secret: the
 // only answers are choices from a fixed list.
 
-function Stepper({ current }: { current: 1 | 2 | 3 | 4 }) {
+/**
+ * Where the wizard is, 1 to 4 (Goal, Choices, Plan, Save). The choices are stage 2 until the
+ * plan is on the screen (stage 3). Save is stage 4 once the plan has been saved: it is the
+ * end of the path, not a screen of its own, so the wizard is told by the save section.
+ */
+export function wizardStage({ answers, planReady, saved }: { answers: Answer[] | null; planReady: boolean; saved: boolean }): 1 | 2 | 3 | 4 {
+  if (saved) return 4;
+  return answers !== null || planReady ? 3 : 2;
+}
+
+export function Stepper({ current }: { current: 1 | 2 | 3 | 4 }) {
   const names = ['Goal', 'Choices', 'Plan', 'Save'];
   return (
     <ol aria-label="Where you are in the wizard" className="mb-6 flex flex-wrap gap-x-1 gap-y-1">
@@ -250,7 +261,19 @@ function Needs({ step, place }: { step: PlanStep; place: RunPlace }) {
   );
 }
 
-export function PlanView({ plan }: { plan: PlanMessage }) {
+/** Demo only (its own component, so the real build drops it): what the made-up plan on the screen is. */
+function PlanDemoNote() {
+  const empty = useViewState() === 'empty';
+  return (
+    <p className="mt-3 border-l-4 border-accent bg-sunk px-3 py-2 text-sm">
+      {empty
+        ? 'Demo: this bundle is empty, so the one goal that applies is adopting a key you already have. The key named here is made up.'
+        : 'Demo: this plan is the same whatever you chose. The real program builds it from your answers.'}
+    </p>
+  );
+}
+
+export function PlanView({ plan, onSaved }: { plan: PlanMessage; onSaved?: (saved: boolean) => void }) {
   return (
     <div className="space-y-9">
       <div className="border-2 border-rule bg-panel p-4 sm:p-5">
@@ -269,11 +292,7 @@ export function PlanView({ plan }: { plan: PlanMessage }) {
             asks you to type it, and it cannot confirm the plan.
           </p>
         </div>
-        {isDemo ? (
-          <p className="mt-3 border-l-4 border-accent bg-sunk px-3 py-2 text-sm">
-            Demo: this plan is the same whatever you chose. The real program builds it from your answers.
-          </p>
-        ) : null}
+        {isDemo ? <PlanDemoNote /> : null}
       </div>
 
       <Sec title="Steps, in order" aside={`${plan.steps.length} steps`}>
@@ -341,7 +360,7 @@ export function PlanView({ plan }: { plan: PlanMessage }) {
         </div>
       </Sec>
 
-      <SavePlan plan={plan} />
+      <SavePlan plan={plan} onSaved={onSaved} />
     </div>
   );
 }
@@ -350,9 +369,17 @@ export function PlanView({ plan }: { plan: PlanMessage }) {
 
 type Save = { state: 'idle' } | { state: 'saving' } | { state: 'error'; message: string } | { state: 'done'; data: SavePlanResponse };
 
-function SavePlan({ plan }: { plan: PlanMessage }) {
+function SavePlan({ plan, onSaved }: { plan: PlanMessage; onSaved?: (saved: boolean) => void }) {
   const [save, setSave] = useState<Save>({ state: 'idle' });
   const toast = useToast();
+  // Tell the wizard when the plan is saved, so its step bar reaches "Save". Leaving this section
+  // (new choices, another page state or bundle) takes the plan off the screen and ends it again.
+  const done = save.state === 'done';
+  useEffect(() => {
+    if (!done) return;
+    onSaved?.(true);
+    return () => onSaved?.(false);
+  }, [done, onSaved]);
   const run = async () => {
     setSave({ state: 'saving' });
     try {
@@ -532,13 +559,13 @@ function Refusal({ text }: { text: string }) {
   );
 }
 
-function Build({ intention, answers }: { intention: Intention; answers: Answer[] }) {
+function Build({ intention, answers, onSaved }: { intention: Intention; answers: Answer[]; onSaved: (saved: boolean) => void }) {
   const res = useCall(`plan-build:${intention}:${JSON.stringify(answers.map((a) => [a.questionId, a.optionIds]))}`, () => plans.startPlan({ intention, answers }));
   return (
     <Load res={res} what="the plan">
       {(r) =>
         r.plan ? (
-          <PlanView plan={r.plan} />
+          <PlanView plan={r.plan} onSaved={onSaved} />
         ) : r.refusal ? (
           <Refusal text={r.refusal} />
         ) : (
@@ -563,15 +590,17 @@ function Wizard({ intention, slug }: { intention: Intention; slug: string }) {
     window.scrollTo(0, 0);
     document.getElementById('page-title')?.focus({ preventScroll: true });
   }, [step]);
-  const stage: 1 | 2 | 3 | 4 = answers !== null ? 3 : first.state === 'ready' && first.data.plan ? 3 : 2;
+  const [saved, setSaved] = useState(false);
+  const planReady = first.state === 'ready' && !!first.data.plan;
+  const stage = wizardStage({ answers, planReady, saved });
   let body: ReactNode;
-  if (answers !== null) body = <Build intention={intention} answers={answers} />;
+  if (answers !== null) body = <Build intention={intention} answers={answers} onSaved={setSaved} />;
   else
     body = (
       <Load res={first} what="the plan">
         {(r) => {
           if (r.refusal) return <Refusal text={r.refusal} />;
-          if (r.plan) return <PlanView plan={r.plan} />;
+          if (r.plan) return <PlanView plan={r.plan} onSaved={setSaved} />;
           return <Questions questions={r.questions} onSubmit={setAnswers} />;
         }}
       </Load>
@@ -579,9 +608,9 @@ function Wizard({ intention, slug }: { intention: Intention; slug: string }) {
   return (
     <Page
       kicker={goalTitle ? `Make a plan: ${safeString(goalTitle, 80)}` : 'Make a plan'}
-      title={answers !== null || (first.state === 'ready' && first.data.plan) ? 'Your plan' : 'A few choices'}
+      title={answers !== null || planReady ? 'Your plan' : 'A few choices'}
       lede={
-        answers !== null || (first.state === 'ready' && first.data.plan) ? (
+        answers !== null || planReady ? (
           <p>This is a preview. Nothing has happened and nothing will until you run the plan in a terminal, where the plan says.</p>
         ) : (
           <p>ritueel needs a few choices from you to build the plan. You can change them and look again as often as you like.</p>
