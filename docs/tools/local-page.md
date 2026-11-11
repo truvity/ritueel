@@ -28,7 +28,7 @@ The local page is the third face of the program, beside the command line and the
 | The screens, the words, the states | The real ones | The same bundle |
 | Where the answers come from | Fixtures in the bundle, through an in-memory transport | The ritueel process, over ConnectRPC on your computer |
 | Saving a plan | Shows the file it would write | Writes one inert file into your folder |
-| Steps of a ceremony in History | The usual steps of that kind of ceremony | The steps stored with each record (to be added to the contract) |
+| Steps of a ceremony in History | The usual steps of that kind of ceremony | The steps in the plan.json of the ceremony's sub-folder of the ledger |
 
 ## How it is built
 

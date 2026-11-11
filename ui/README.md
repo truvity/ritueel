@@ -195,10 +195,10 @@ tell whether a user ID inside it is quoted.
 
 ## Known gaps
 
-- The contract's `Ceremony` has the digest of the plan it ran but not its steps.
-  The ceremony screen shows the usual steps of that kind of ceremony from a small
-  catalogue in `src/lib/steps.ts`, and says so. The real program should send the
-  steps with the record.
+- The demo's ceremonies have no plan file. The ceremony screen shows the usual
+  steps of that kind of ceremony from a small catalogue in `src/lib/steps.ts`, and
+  says so. The real program should send the steps it reads from the plan in the
+  ledger.
 - The demo's wizard returns the same plan whatever is chosen (the fixtures have one
   plan per goal).
 - Fonts depend on what is installed (see Design).

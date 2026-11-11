@@ -35,7 +35,7 @@ function Seal({ l }: { l: LedgerStatus | undefined }) {
           </p>
           {l?.headRecordSha256 ? (
             <div className="mt-3">
-              <p className="text-sm text-dim">Fingerprint of the newest record (it stands for the whole chain):</p>
+              <p className="text-sm text-dim">Digest of the newest record (it stands for the whole chain):</p>
               <Fp value={l.headRecordSha256} />
             </div>
           ) : null}
@@ -98,7 +98,7 @@ function List() {
     >
       <Explain term="A ceremony">
         is one sitting at the ceremony machine, where a plan is run and something about your keys changes. The ledger is the book that keeps one record for each. Every record
-        carries the fingerprint of the one before it, so a record cannot be changed or taken out without the chain breaking.
+        names the one before it by digest, so a change to one record breaks the chain after it.
       </Explain>
       <Load res={res} what="the ledger" isEmpty={(d) => d.ceremonies.length === 0} empty={
         <>
@@ -238,8 +238,8 @@ function Detail({ id }: { id: string }) {
                     ))}
                   </ol>
                   <p className="mt-2 max-w-[70ch] text-sm text-dim">
-                    The ledger keeps the digest of the plan that was run, not its steps, so these are the usual steps of this kind of ceremony. The plan file itself is in
-                    your folder.
+                    The demo has no plan file for these ceremonies, so these are the usual steps of this kind of ceremony. In the program, the steps come from the plan in the
+                    ceremony's sub-folder of the ledger.
                   </p>
                 </Sec>
               ) : null}
