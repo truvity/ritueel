@@ -14,8 +14,8 @@
 //    a chain. When the page is published again, the next run turns the line back to a 301.
 //    A line whose target is not a page of docs/ (a record index, the status page) is kept.
 // 2. The generated block between the markers: one `302` for the old address of every file of
-//    docs/ that is not published and has no hand line, to the same file on GitHub. The 302 is
-//    deliberate: the page may come back.
+//    docs/ that is not published and has no hand line, to the same file on GitHub, once with the
+//    closing slash and once without. The 302 is deliberate: the page may come back.
 //
 // Cloudflare Workers static assets (https://developers.cloudflare.com/workers/static-assets/redirects/):
 // 2000 static rules, 1000 characters a line, the first match wins, and a redirect is followed
@@ -104,7 +104,13 @@ export function buildRedirects(root, current) {
     .map((file) => ({ from: addressOf(file), file }))
     .filter(({ from }) => !handFrom.has(from))
     .sort((a, b) => (a.from < b.from ? -1 : a.from > b.from ? 1 : 0))
-    .map(({ from, file }) => `${from} ${githubUrl(file)} 302`);
+    // The address without its closing slash too: Workers static assets match a rule on the exact
+    // path and add the slash only to a path that has an asset, so /guides/x would answer 404.
+    .flatMap(({ from, file }) =>
+      [from, ...(from.length > 1 && !handFrom.has(from.slice(0, -1)) ? [from.slice(0, -1)] : [])].map(
+        (address) => `${address} ${githubUrl(file)} 302`,
+      ),
+    );
 
   const all = [...hand, ...generated];
   const live = new Set([
