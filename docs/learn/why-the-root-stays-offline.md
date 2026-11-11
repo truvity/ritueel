@@ -1,6 +1,6 @@
 ---
 title: Why the root stays offline
-description: What offline protects a root against, what it cannot, and where a root may be used: a copyable key offline, a card or a cloud key also on a workstation.
+description: "What offline protects a root against, what it cannot, and where a root may be used: a copyable key offline, a card or a cloud key also on a workstation."
 sidebar:
   order: 3
 ---
