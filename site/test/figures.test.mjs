@@ -217,6 +217,17 @@ test('every <Figure name> of docs/**/*.mdx is registered, and every registered f
   for (const name of Object.keys(figures)) assert.ok(placed.has(name), `the figure "${name}" is on no page of docs/`);
 });
 
+test('an MDX page names its own address in `slug:`, because the link validator reads it by its real path', () => {
+  const root = repoRoot();
+  for (const file of docsFiles(root).filter((f) => f.endsWith('.mdx') && f !== 'index.mdx')) {
+    const src = readFileSync(join(root, 'docs', file), 'utf8');
+    const m = /^slug:[ \t]*(\S+)[ \t]*$/m.exec(src.split(/\r?\n---/)[0]);
+    const want = file.replace(/\.mdx$/, '').replace(/\/index$/, '');
+    assert.ok(m, `docs/${file}: no slug in the front matter`);
+    assert.equal(m[1], want, `docs/${file}: slug`);
+  }
+});
+
 test('the figure markup: a figure has its caption, a strip is a list of six, a layout holds both drawings', () => {
   for (const fig of all) {
     const html = renderFigure(fig, 'The caption.');
