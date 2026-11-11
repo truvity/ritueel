@@ -4,9 +4,9 @@ Status: a design, version `v1alpha1`. Nothing serves it yet: the program is not 
 
 The API between ritueel's local page (`ui/`) and the ritueel process, written in Protobuf (package `ritueel.local.v1alpha1`). The program will serve it with ConnectRPC; the page calls it with `@connectrpc/connect`. See [the local page](https://ritueel.id/tools/local-page/).
 
-The process is one long-running background process, started on demand, that serves one bundle (the directory of one trust domain). It serves this API twice with the same handlers: on a Unix socket for the command line, and on the loopback address for the browser while the page is in use, because a browser cannot open a Unix socket. The command line and the page get the same calls and the same answers. Same calls, not the same trust: the loopback listener binds 127.0.0.1 only, checks the Host header exactly and Origin or Sec-Fetch-Site on every request, and sets no permissive CORS header ([reference/wizard](https://ritueel.id/reference/wizard/), rules 1 and 4). It has the same calls as the socket, but any program or web page on the computer can send it a request, so it is trusted no more than any other web request.
+The process is one long-running background process, started on demand, that serves one bundle (the directory with a fixed structure that holds everything ritueel knows about one trust domain). It is the one described by [ADR 0011](https://ritueel.id/decisions/0011-the-wizards-one-engine-three-faces-and-a-web-page-that-cannot-confirm-anything/) and [the wizard reference](https://ritueel.id/reference/wizard/#the-ritueel-process). It serves this API on a Unix socket for the command line, and the page's part of it, the reads and `SavePlan`, on the loopback address for the browser while the page is in use, because a browser cannot open a Unix socket. A call that confirms or runs a ceremony is never registered on the loopback door: the digest typed in the terminal arrives over the socket. Same API, not the same trust: the loopback listener binds 127.0.0.1 on a random port, lets a request in only with the one-time token of the session (then a cookie), and checks the Host header exactly and, for a POST, Sec-Fetch-Site or Origin ([reference/wizard](https://ritueel.id/reference/wizard/#the-web-page-the-security-profile), rules 1 to 4 and 7). Other programs of the same user can reach that port while the page is in use, so it is trusted no more than any other web request.
 
-**No call takes or returns a secret, a PIN or a passphrase.** There is no field for one, and none will be added. The page is a view: it never confirms a ceremony. `ritueel run PLAN --confirm DIGEST` happens in the terminal, on the offline system or on your workstation. The only value that goes from the page to the process, other than choices from a fixed list, is the digest of a plan, which is public.
+**No call takes or returns a secret, a PIN or a passphrase.** There is no field for one, and none will be added. The page is a view: it never confirms a ceremony. `ritueel --dir BUNDLE run PLAN --confirm DIGEST` happens in the terminal, on the offline system or on your workstation. The only value that goes from the page to the process, other than choices from a fixed list, is the digest of a plan, which is public.
 
 ## What is here
 
@@ -36,7 +36,7 @@ The Go side comes with the program: `protoc-gen-go` and `protoc-gen-connect-go` 
 | | `ListTrustFiles` | `ListTrustFilesRequest` | `ListTrustFilesResponse` (`TrustFile` with its check) | no |
 | `PlanService` | `ListIntentions` | `ListIntentionsRequest` | `ListIntentionsResponse` (`IntentionOption`: applicable or greyed with a reason, recommended) | no |
 | | `StartPlan` | `StartPlanRequest` (intention, due ids, finding ids, target, `Answer`s) | `StartPlanResponse` (`Question`s, or the `Plan` with its `run_place`, or a refusal) | no (builds in memory) |
-| | `SavePlan` | `SavePlanRequest` (plan id, digest) | `SavePlanResponse` (bundle path, path `ledger/<ceremony>/plan.json`, digest, `written`, notice, run command, what to copy and bring, file preview) | **yes**, one inert file; the demo writes nothing |
+| | `SavePlan` | `SavePlanRequest` (plan id, digest) | `SavePlanResponse` (bundle path, path inside the bundle, digest, `written`, notice, run command, what to copy and bring, file preview) | **yes**, one inert file; the demo writes nothing |
 
 Enums, all with an `_UNSPECIFIED = 0` first value and the enum name as prefix:
 `Severity`, `Store`, `SubjectKind`, `Intention`, `ChainState` (common);
@@ -59,7 +59,7 @@ Enums, all with an `_UNSPECIFIED = 0` first value and the enum name as prefix:
 | **Trust files** | `ListTrustFiles`. |
 | **Wizard: goals** | `ListIntentions`. |
 | **Wizard: questions and preview** | `StartPlan` twice: first without answers (questions), then with them (the plan: steps, bundle changes, digest, equivalent command, run command). |
-| **Wizard: save and hand-over** | `SavePlan` (path `ledger/<ceremony>/plan.json`, digest, what to copy and bring, what the plan file holds). In the demo `written` is false and `notice` says so. |
+| **Wizard: save and hand-over** | `SavePlan` (path inside the bundle, digest, what to copy and bring, what the plan file holds). In the demo `written` is false and `notice` says so, and the path is the demo's proposal, `ledger/<ceremony>/plan.json`. |
 
 ## Things a designer must know
 
@@ -85,42 +85,59 @@ Enums, all with an `_UNSPECIFIED = 0` first value and the enum name as prefix:
 6. **Counting days.** Use `as_of` from `GetSummary` as "now". `DueItem.severity`
    is already computed (notice at 60 days, alert at 30, critical at 14).
 7. **The command is shown, never run.** `fix_command`, `equivalent_command`
-   and `run_command` are exact strings to display and copy. They run from the
-   bundle, so a plan is named by its path in the bundle,
-   `ledger/<ceremony>/plan.json`. Their names follow
-   `docs/reference/cli.md` where a command exists there; a few (`personal
-   primary extend`, `personal primary add`, `personal userid revoke`, `personal subkey revoke`, and the `--key` flag that names a
-   cloud key to adopt) are proposals until the command set is built; `card adopt`
-   and `card check` are the names cli.md gives, marked Proposed there, so the page
-   must show them as given and not parse them.
+   and `run_command` are exact strings to display and copy. A command that runs a
+   plan names the bundle's place with `--dir`, as cli.md has it
+   (`ritueel --dir BUNDLE run PLAN --confirm DIGEST`), and the plan is the file
+   `SavePlan` writes. Their names follow `docs/reference/cli.md` where a command
+   exists there: `due` plans without `--plan-only`, `ca-bundle build` builds the CA
+   bundle, `--ca-bundle` names it in the verifiers, and `init` makes the first root of
+   an empty bundle. A few (`personal primary extend`, `personal primary add`,
+   `personal userid revoke`, `personal subkey revoke`, and the `--key` and
+   `--expires-in` flags) are proposals that cli.md does not have, until the command
+   set is built; `card adopt` and `card check` are the names cli.md gives, marked
+   Proposed there, so the page must show them as given and not parse them.
 8. **The wizard has three outcomes.** `StartPlan` returns questions, a plan, or
    a refusal. Questions are choices only; there is no free-text answer, so no
    place a secret could be typed. `ListIntentions` marks goals that do not apply,
    with the reason; show them greyed.
 9. **Nothing happens here.** A plan's steps are what `ritueel run` does where the
-   plan says: `Plan.run_place` is the offline system (a root on cards or in a key
-   file) or the workstation (a cloud root). The USB-stick fields of the answer
+   plan says: `Plan.run_place` is the offline system (a root on cards, or a real
+   software root in a key file) or the workstation (a cloud root, used in a session of
+   its ceremony role: ritueel asks nothing of how the holder signed in, so there is no
+   hardware-key step). The USB-stick fields of the answer
    (what to copy and bring) are empty on the workstation, and the page then shows
    no stick step. A `Requirement` says that a card, a PIN, a touch or a
    passkey unlock is needed there; the PIN is never in the page. `SavePlan`
    in the demo answers `written: false` with a notice and a file preview: show
-   the preview as "what saving would write". The real call writes canonical JSON
-   (RFC 8785), and its SHA-256 is the digest.
+   the preview as "what saving would write". The real call rebuilds the plan, refuses a
+   digest that is not the rebuilt plan's, and writes canonical JSON (RFC 8785); its
+   SHA-256 is the digest. Where the file goes is the demo's proposal,
+   `ledger/<ceremony>/plan.json`: the records say only that the process writes the plan
+   inside the bundle.
 10. **`int64` is a string in JSON** (`size_bytes`), and `Timestamp` is an
     RFC 3339 string; the generated types turn them into `bigint` and `Timestamp`.
 11. **What each example bundle finds.** `globex` has one finding, a cloud key
     waiting to be adopted (`alias/globex-staging-signing`), so that the wizard goal
     "adopt a key" has something to adopt; `personal` and `acme` have none of that
     kind. An empty bundle in the demo recommends the same goal and answers it with a
-    plan of its own, `common/plan.start-plan.adopt-key.json`, whichever bundle is open.
+    plan of its own, `common/plan.start-plan.adopt-key.json`, whichever bundle is open;
+    as the bundle has no root yet, that plan starts with `init`, and the transport puts
+    the open bundle's place into its commands. A personal bundle has no root list: its
+    one trust file is the person's public certificate (`TRUST_FILE_KIND_OPENPGP_CERTIFICATE`).
     `PendingPlan` (`GetSummaryResponse.pending_plans`) lists plans saved as
-    `ledger/<ceremony>/plan.json` and not yet run; no example bundle has one and no
+    the proposed `ledger/<ceremony>/plan.json` and not yet run; no example bundle has one and no
     screen shows the list yet.
 12. **A root is written `bundle/label`.** `Root.label` is `A`, `B` and so on, as in
-    the bundle's `root.json`; the bundle name comes from `GetSummary.bundle.name`.
+    the bundle's `root.json`; the bundle is named by its directory, and the name
+    comes from `GetSummary.bundle.name`. Inside a bundle a root is `A`; across bundles
+    it is written with the bundle's name, `acme/A`.
     One process serves one bundle, so no call names or selects a bundle. The demo
     has three example bundles and a switch for them; the switch is in the page, not
     in this API.
-13. **The four card kinds** are root, day-to-day, server and rehearsal. A server
-    card (`CARD_KIND_SERVER`) is a card that stays in a server and does a hardware
-    key's work there. The demo shows no server card.
+13. **The four card kinds** are root, day-to-day, server and rehearsal, and a card
+    never changes its kind. A server card (`CARD_KIND_SERVER`) stays plugged into a
+    server of a requester system and signs for its services. It is an ordinary card,
+    not a hardware security module product; ritueel lists it and only ever reads it, so
+    it has no adoption, no sealed file and no layout check. A rehearsal card never holds
+    a real key, may be reset, and serves only a test root. The demo shows no server
+    card.
