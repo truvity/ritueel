@@ -468,8 +468,9 @@ describe('the words of the maintainer stay', () => {
   });
   // The words the ten records replaced (0006 rule 5, 0001, 0008, glossary): the history, not the
   // ledger; trust files in trust/<number>/, not products; requests/<name>/, not answers/; and no
-  // staff key, certifier, card helper, board card or yearly command (0008, 0003, 0005).
-  const OLD_WORDS_OF_THE_RECORDS = /ledger|trust products?|\bproducts\b|\banswers\/|staff|certifier|card helper|board card|yearly (command|intention)/i;
+  // staff key, certifier, card helper, board card or yearly command (0008, 0003, 0005); and no Unix
+  // socket, random port, hardware-key rule, old ADR number or unpublished site page (0010, 0004).
+  const OLD_WORDS_OF_THE_RECORDS = /ledger|trust products?|\bproducts\b|\banswers\/|staff|certifier|card helper|board card|yearly (command|intention)|unix socket|random port|hardware.key|ADR[ -]?00|ritueel\.id\/(reference|decisions|tools)\//i;
   it('no fixture, screen, contract or README uses a word the ten records replaced', () => {
     const PROTO = '../../proto/ritueel/local/v1alpha1/';
     const sources = [
@@ -477,6 +478,7 @@ describe('the words of the maintainer stay', () => {
       ...['common.proto', 'inspect_service.proto', 'plan_service.proto'].map((n) => join(HERE, PROTO, n)),
       join(HERE, '../README.md'),
       join(HERE, '../../proto/README.md'),
+      join(HERE, 'api/client.ts'),
     ];
     const hits: string[] = [];
     for (const f of sources) {

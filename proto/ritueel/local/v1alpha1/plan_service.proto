@@ -8,20 +8,24 @@
 // the holder confirms in the terminal, with `ritueel run PLAN --confirm
 // DIGEST`.
 //
-// Who answers. One long-running background process, started on demand, serves
-// this API from the bundle it was started on (ADR 0011). The command line
-// reaches it on a Unix socket, which only the same user can open. A browser
-// cannot open a Unix socket, so while this page is in use the same process
-// also listens on the loopback address, and serves the page the reads and
-// SavePlan only: no call that confirms, signs, creates a key or runs a
-// ceremony is registered there. The digest of a ceremony is typed in the
-// terminal and travels over the Unix socket. Same API, not the same trust: the
-// loopback listener binds 127.0.0.1 on a random port, lets a request in only
-// with the one-time token of the session (then a cookie), checks the Host
-// header exactly and, for a POST, Sec-Fetch-Site or Origin (the wizard's
-// profile, rules 1 to 4, 7 and 9, https://ritueel.id/reference/wizard/). Other
-// programs of the same user can reach that port while the page is in use, so
-// it is trusted no more than any other web request.
+// Who answers. One ritueel process, the same program as the command line,
+// started by the first command that needs it and not a service, serves the
+// command line and this page on one fixed loopback port (localhost, 127.0.0.1
+// only; the number 7488 is proposed, record 0010). There are two kinds of
+// token: a full-rights token, read from a file only the user can read, for the
+// command line; and a page-rights token, used once, which becomes an
+// HttpOnly, SameSite=Strict cookie and can call only the reads and SavePlan.
+// No call that confirms, signs, creates a key or runs a ceremony is open to
+// the page-rights token; the digest of a ceremony is typed in the terminal.
+// Every request is checked for its Host and, separately, its Origin. Before
+// the command line sends a confirmation or a PIN, the listener proves that it
+// knows the secret in the token file. There is one exclusive lock per bundle.
+// The process keeps no ceremony state and no PIN, and ends after 15 minutes
+// without a call (never in the middle of a running ceremony), at once on a
+// stop command, and at logout or reboot. Other programs of the same user can
+// reach the port while the process runs, so the page is trusted no more than
+// any other web request. See
+// docs/decisions/0010-the-engine-the-process-and-the-page.md.
 //
 // No call takes or returns a secret, a PIN or a passphrase. The wizard
 // asks only questions with a fixed list of answers (no free text), and the
