@@ -276,7 +276,7 @@ function RootsView({ ix, shown }: { ix: InvIndex; shown?: ObjectId }) {
     {
       key: 'name',
       header: 'Name',
-      width: 18,
+      width: 19.5,
       render: (r, { current }) => {
         switch (r.t) {
           case 'key':
@@ -318,21 +318,21 @@ function RootsView({ ix, shown }: { ix: InvIndex; shown?: ObjectId }) {
         }
       },
     },
-    { key: 'place', header: 'Place', width: 8, render: (r) => (r.t === 'key' ? placeWord(r.key) : null) },
+    { key: 'place', header: 'Place', width: 9.4, render: (r) => (r.t === 'key' ? <span className="whitespace-nowrap">{placeWord(r.key)}</span> : null) },
     {
       key: 'until',
       header: 'Until',
-      width: 6.5,
+      width: 8.7,
       render: (r) => {
-        if (r.t === 'key') return r.key.expiresAt ? ymd(r.key.expiresAt) : keyEndWord(r.key);
-        if (r.t === 'del') return r.line.certification?.validUntil ? ymd(r.line.certification.validUntil) : null;
+        if (r.t === 'key') return <span className="whitespace-nowrap">{r.key.expiresAt ? ymd(r.key.expiresAt) : keyEndWord(r.key)}</span>;
+        if (r.t === 'del') return r.line.certification?.validUntil ? <span className="whitespace-nowrap">{ymd(r.line.certification.validUntil)}</span> : null;
         return null;
       },
     },
     {
       key: 'state',
       header: 'State',
-      width: 8,
+      width: 4.7,
       render: (r) => {
         switch (r.t) {
           case 'key':
@@ -346,7 +346,7 @@ function RootsView({ ix, shown }: { ix: InvIndex; shown?: ObjectId }) {
         }
       },
     },
-    { key: 'changes', header: 'Changes', width: 3.5, render: (r) => marks(changesOn(ix, [rootRowObject(r)])) },
+    { key: 'changes', header: 'Changes', width: 5.2, render: (r) => marks(changesOn(ix, [rootRowObject(r)])) },
   ];
 
   const rows: Group<RootRow>[] = groups.map((g) => {
@@ -398,19 +398,19 @@ function DatesView({ ix, shown }: { ix: InvIndex; shown?: ObjectId }) {
     {
       key: 'ends',
       header: 'Ends',
-      width: 7,
+      width: 7.2,
       render: (c, { current }) => (
         <RowLink href={to.certification(c.id)} current={current}>
-          {ymd(c.validUntil)}
+          <span className="whitespace-nowrap">{ymd(c.validUntil)}</span>
         </RowLink>
       ),
     },
-    { key: 'in', header: 'In', width: 4, render: (c) => endsIn(daysBetween(ix.inv.readAt, c.validUntil)) },
-    { key: 'kind', header: 'Kind', width: 8, render: (c) => CERTIFICATION_KIND_WORD[c.kind] },
+    { key: 'in', header: 'In', width: 5.7, render: (c) => <span className="whitespace-nowrap">{endsIn(daysBetween(ix.inv.readAt, c.validUntil))}</span> },
+    { key: 'kind', header: 'Kind', width: 8.3, render: (c) => CERTIFICATION_KIND_WORD[c.kind] },
     {
       key: 'issuer',
       header: 'Issuer',
-      width: 7,
+      width: 7.8,
       render: (c) => {
         const k = ix.keys.get(c.issuer);
         if (!k) return null;
@@ -427,7 +427,7 @@ function DatesView({ ix, shown }: { ix: InvIndex; shown?: ObjectId }) {
     {
       key: 'for',
       header: 'For',
-      width: 11,
+      width: 14,
       render: (c) => {
         const s = c.subject;
         if (!s) return null;
@@ -520,7 +520,7 @@ export function Inventory({ view, object }: { view: InventoryView; object?: Obje
               {view === 'cards' ? <CardsView ix={ix} shown={shown} /> : view === 'roots' ? <RootsView ix={ix} shown={shown} /> : <DatesView ix={ix} shown={shown} />}
             </>
           );
-          return <SplitView list={list} right={shown ? <Panel key={`${shown.kind}/${shown.id}`} ix={ix} view={view} object={shown} /> : null} panelOpen={object !== undefined} />;
+          return <SplitView list={list} right={shown ? <Panel key={`${shown.kind}/${shown.id}`} ix={ix} view={view} object={shown} /> : null} panelOpen={object !== undefined} panelRem={view === 'cards' ? 30 : 26} />;
         }}
       </Load>
     </Page>

@@ -102,7 +102,7 @@ export function Todo({ tab }: { tab: TabName }) {
  */
 function TodoGrid({ list, apply, bundle }: { list: ReactNode; apply?: ReactNode; bundle: ReactNode }) {
   return (
-    <div className="grid gap-6 min-[1440px]:grid-cols-[minmax(0,1fr)_24rem] min-[1800px]:grid-cols-[minmax(0,62rem)_40rem]">
+    <div className="grid gap-6 min-[1440px]:grid-cols-[minmax(0,1fr)_29rem] min-[1800px]:grid-cols-[minmax(0,62rem)_40rem]">
       <div className="order-2 min-w-0 min-[1440px]:order-none min-[1440px]:col-start-1 min-[1440px]:row-start-1">{list}</div>
       <div className="contents min-[1440px]:col-start-2 min-[1440px]:row-start-1 min-[1440px]:grid min-[1440px]:content-start min-[1440px]:gap-6 min-[1800px]:grid-cols-2 min-[1800px]:items-start">
         {apply ? <div className="order-1 min-w-0">{apply}</div> : null}
@@ -207,7 +207,7 @@ function ChangeTable({ inv }: { inv: GetInventoryResponse }) {
           {
             key: 'needs',
             header: 'Needs',
-            width: 6,
+            width: 9,
             render: (c) =>
               c.needs.length === 0 ? (
                 'nothing'
@@ -224,7 +224,7 @@ function ChangeTable({ inv }: { inv: GetInventoryResponse }) {
           {
             key: 'state',
             header: 'State',
-            width: 15,
+            width: 11.5,
             render: (c) => (
               <>
                 <span className="inline-flex items-center gap-1.5 font-semibold">
@@ -237,9 +237,9 @@ function ChangeTable({ inv }: { inv: GetInventoryResponse }) {
                   </span>
                 ) : null}
                 {c.inCeremony ? (
-                  <span className="mt-0.5 block text-dim [overflow-wrap:anywhere] lg:[overflow-wrap:normal]">
+                  <span className="mt-0.5 block text-dim [overflow-wrap:anywhere]">
                     In the plan of{' '}
-                    <a className="font-mono text-[0.8125rem] underline underline-offset-4 lg:whitespace-nowrap" href={href.history(c.inCeremony)}>
+                    <a className="font-mono text-[0.8125rem] underline underline-offset-4" href={href.history(c.inCeremony)}>
                       <T cap={CAPS['Ceremony.id']}>{c.inCeremony}</T>
                     </a>
                   </span>
