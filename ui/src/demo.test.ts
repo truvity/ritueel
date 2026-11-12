@@ -534,6 +534,21 @@ describe('the commands in the made-up answers follow docs/reference/cli.md', () 
     if (words.length > 0) known.add(words.join(' '));
   }
 
+  /** The earlier names that cli.md lists in its table "Earlier names". The made-up answers still use them until the page is rewritten to the thirteen words. */
+  const earlier = new Set<string>();
+  const earlierTable = CLI.split('### Earlier names')[1]?.split('\n###')[0] ?? '';
+  for (const row of earlierTable.split('\n')) {
+    const cell = /^\| (.*?) \|/.exec(row)?.[1] ?? '';
+    for (const m of cell.matchAll(/`([^`]*)`/g)) {
+      const words: string[] = [];
+      for (const w of m[1].split(' ')) {
+        if (!/^[a-z][a-z-]*$/.test(w)) break;
+        words.push(w);
+      }
+      if (words.length > 0) earlier.add(words.join(' '));
+    }
+  }
+
   function commandsOf(v: unknown, out: string[] = []): string[] {
     if (Array.isArray(v)) v.forEach((x) => commandsOf(x, out));
     else if (v && typeof v === 'object') {
@@ -550,7 +565,7 @@ describe('the commands in the made-up answers follow docs/reference/cli.md', () 
   const commands = fixtureFiles('fixtures').flatMap((f) => commandsOf(JSON.parse(readFileSync(join(HERE, f), 'utf8'))).map((c) => ({ f, c })));
 
   it('has commands to check (an empty walk proves nothing)', () => {
-    expect(known.has('run') && known.has('due') && known.has('ca-bundle build') && known.has('card adopt') && known.has('card check')).toBe(true);
+    expect(known.has('apply') && known.has('status') && earlier.has('run') && earlier.has('due') && earlier.has('ca-bundle build') && earlier.has('card adopt') && earlier.has('card check')).toBe(true);
     expect(commands.length).toBeGreaterThan(30);
   });
   it('every command is one cli.md has, or a listed proposal', () => {
@@ -567,6 +582,7 @@ describe('the commands in the made-up answers follow docs/reference/cli.md', () 
         words.push(w);
       }
       const name = words.join(' ');
+      if (earlier.has(name) && !known.has(name)) continue; // an earlier name: its flags are not in the reference any more
       if (!known.has(name) && !PROPOSED_COMMANDS.includes(name)) bad.push(`${f}: ${name}: ${c}`);
       // A flag must be a flag of the whole reference (its table of flags) or be on a line of the command itself.
       if (PROPOSED_COMMANDS.includes(name)) continue; // every flag of a proposed command is a proposal too
