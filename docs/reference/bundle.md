@@ -390,7 +390,7 @@ Five rules the schema cannot state: a delegation name is unique, which its file 
 
 `roots/<label>/root.json` is one canonical JSON object ([the common rules](/reference/ceremony-record/#common-rules)). The ceremony that makes the key writes it once, and nothing changes it after ([record 0006](../decisions/0006-bundle-history-and-trust-files.md), rule 29).
 
-Whether a key is active, retired or revoked is read from the ceremony records and the newest root list, not from this file ([record 0007](../decisions/0007-changing-and-losing-a-root.md), rule 3). What a key replaces, and until when, is a wanted field (rules 3 and 4). Root state as files is later.
+A key is active, retired or revoked ([record 0007](../decisions/0007-changing-and-losing-a-root.md), rule 3); which one is read from the ceremony records and the newest root list, not from this file. What a key replaces, and until when, is a wanted field (rules 3 and 4). Root state as files is later.
 
 | Member | Meaning |
 |---|---|
