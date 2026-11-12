@@ -92,15 +92,15 @@ Both vouches are signed by the vouching root key, at the ceremony that adds the 
 | Field | Value |
 |---|---|
 | Version, serial | 3. A positive number of at most 20 bytes with at least 64 random bits. |
-| Signature | `ecdsa-with-SHA384`, by the vouching root's X.509 key. |
-| Issuer | The subject of the vouching root's current certificate. |
-| Subject | The subject of the new root's certificate. |
-| Subject public key | The new root's X.509 key. |
+| Signature | `ecdsa-with-SHA384`, by the vouching root key. |
+| Issuer | The subject of the vouching root key's current certificate. |
+| Subject | The subject of the new root key's certificate. |
+| Subject public key | The new root key's public key. |
 | Validity | `notBefore` is the ceremony time. `notAfter` is 13 calendar months later, as for an intermediate. It is made again by each yearly ceremony while the overlap lasts. |
 | Basic constraints | Critical. `cA` true, no path length. |
 | Key usage | Critical. `keyCertSign` and `cRLSign`. |
 | Subject key identifier | The new key's, as in the [root certificate profile](/reference/bundle/#the-root-certificate). |
-| Authority key identifier | The vouching root's subject key identifier. |
+| Authority key identifier | The vouching root key's subject key identifier. |
 | Name constraints | Absent: constraints belong to the intermediates. |
 | Anything else | Absent: no CRL distribution point, no authority information access. |
 
