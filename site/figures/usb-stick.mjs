@@ -1,19 +1,21 @@
 // The USB stick of the offline system: vanilla AirgapOS, unchanged, and ONE extra partition whose
 // layout ritueel defines. The partition holds ritueel's binaries (one directory per version, then per
-// system and architecture), the bundles (each exactly as on your workstation) and the encrypted key
-// files, beside the bundles and not inside them. The directory names are PROPOSED: the figure says so
+// system and architecture), the bundles (without their wanted files: record 0005, rule 21) and the
+// encrypted key files, beside the bundles and not inside them. The way back is a join (record 0005,
+// rule 26): an arrow from the bundles to the workstation says it adds the missing files. The directory names are PROPOSED: the figure says so
 // on the partition itself. That AirgapOS boots from such a stick and uses the partition is not yet
 // proven on hardware, and a dotted badge says so. The accent marks the one thing the figure is about:
 // the plan, which holds the digest of the copy of ritueel that made it. The wide and the narrow
 // drawing are both made from the one table ROWS, so they cannot drift.
-import { acc, arrow, circle, f, line, path, poly, rect, sheet, text } from './draw.mjs';
+import { acc, arrow, circle, f, laptop, line, path, poly, rect, sheet, text } from './draw.mjs';
 import { svgBox } from './svg.mjs';
 import { lock } from './parts.mjs';
 
 const LABEL =
   'A USB stick drawn as a box with a connector, in two parts: a part for AirgapOS, vanilla and unchanged, and one extra partition marked Proposed. ' +
-  'The partition shows a tree of three directories: ritueel with one directory per version and per system, bundles with acme and personal, and keys with one encrypted key file beside the bundles. ' +
+  'The partition shows a tree of three directories: ritueel with one directory per version and per system, bundles with acme and personal, which hold roots and requests and no wanted files, and keys with one encrypted key file beside the bundles. ' +
   'In the accent colour, an arrow runs from a plan inside acme to the ritueel binary of the version that made it. Dashed leader lines join the three notes at the right to the three directories. ' +
+  'An arrow runs back from the bundles to a laptop named workstation and says it adds missing files. ' +
   'A dotted badge with a question mark says that booting AirgapOS from such a stick is still to be proven on hardware.';
 
 // The tree, top to bottom. d is the depth, k the kind of entry, g the group a head row opens.
@@ -25,7 +27,7 @@ const ROWS = [
   { d: 1, k: 'dir', n: '0.2.0/ …' },
   { d: 0, k: 'dir', n: 'bundles/', g: 'bun' },
   { d: 1, k: 'dir', n: 'acme/' },
-  { d: 2, k: 'more', n: 'ritueel.yaml, roots/, …' },
+  { d: 2, k: 'more', n: 'roots/, requests/, …' },
   { d: 2, k: 'plan', n: 'a plan' },
   { d: 1, k: 'dir', n: 'personal/' },
   { d: 0, k: 'dir', n: 'keys/', g: 'key' },
@@ -39,7 +41,10 @@ const NOTES = {
     wide: ['binaries: several versions,', 'several architectures.', 'The run uses the version', 'that made the plan.'],
     narrow: ['binaries: several versions and', 'architectures. The run uses the', 'version that made the plan.'],
   },
-  bun: { wide: ['several bundles, each', 'as on your workstation'], narrow: ['several bundles, each as on', 'your workstation'] },
+  bun: {
+    wide: ['bundles without their wanted files.', 'A plan carries copies of the', 'wanted files it used.'],
+    narrow: ['bundles without their wanted', 'files. A plan carries copies of', 'the wanted files it used.'],
+  },
   key: { wide: ['encrypted key files,', 'beside the bundles'], narrow: ['encrypted key files,', 'beside the bundles'] },
 };
 
@@ -163,16 +168,20 @@ function wide() {
   for (const [g, b] of Object.entries(gs)) {
     // a leader from the end of the directory's name to the rule of its note
     const head = placed.out.find((p) => p.r.g === g);
-    s += line(head.x + head.r.n.length * 7.6 + 8, head.y + 9, 534, head.y + 9, 'ln ln-thin ln-dim ln-dash');
-    s += line(534, b.top + 3, 534, b.bottom - 4, 'ln');
+    s += line(head.x + head.r.n.length * 7.6 + 8, head.y + 9, 528, head.y + 9, 'ln ln-thin ln-dim ln-dash');
+    s += line(528, b.top + 3, 528, b.bottom - 4, 'ln');
     NOTES[g].wide.forEach((l, i) => {
-      s += text(546, b.top + 15 + i * 16, l, 't t-s t-long');
+      s += text(540, b.top + 15 + i * 16, l, 't t-s t-long');
     });
   }
   const by = bodyY + bodyH + 14;
   const b = badge(38, by, 480, ['To be proven on hardware:', 'AirgapOS boots from such a stick and uses the partition.']);
   s += b.s;
   const H = by + b.h + 14;
+  // the way back: a join adds the files the stick's bundles lack to the workstation's bundle
+  const wx = 702;
+  s += poly([[528, 300], [wx, 300], [wx, 340]], 'ln') + arrow(wx, 340, wx, by + 4, 'adds missing files', { lx: wx - 58, ly: 432 });
+  s += laptop(wx - 32, by + 4, 64, 30) + text(wx, by + 54, 'workstation', 't t-s', 'm');
   return svgBox(W, H, LABEL, rect(2, 2, W - 4, H - 4, 'p-frame', 10) + s, 'fig-wide');
 }
 
@@ -194,7 +203,15 @@ function narrow() {
   s += tree(placed.out, 'narrow');
   s += planArrow(placed.out, 'narrow', px + pw - 14);
   s += note(px + 14, placed.end + 14);
-  const by = bodyY + bodyH + 14;
+  // the way back: a join adds the files the stick's bundles lack to the workstation's bundle
+  const zone = bodyY + bodyH;
+  const wx = 312;
+  const back = placed.out.find((p) => p.r.n === 'personal/' && p.r.d === 1);
+  const by0 = back.y + 9;
+  s += poly([[back.x + 9 * 7.6 + 10, by0], [wx, by0], [wx, zone - 6]], 'ln');
+  s += arrow(wx, zone - 6, wx, zone + 44, 'adds missing files', { lx: wx - 30, ly: zone + 24 });
+  s += laptop(wx - 28, zone + 46, 56, 26) + text(wx - 40, zone + 62, 'workstation', 't t-s', 'e');
+  const by = zone + 96;
   const b = badge(14, by, 332, ['To be proven on hardware:', 'AirgapOS boots from such a stick', 'and uses the partition.']);
   s += b.s;
   const H = by + b.h + 14;
@@ -206,7 +223,7 @@ export default {
   kind: 'layout',
   label: 'The USB stick: AirgapOS and one extra partition for ritueel',
   caption:
-    'The stick holds vanilla AirgapOS and one extra partition. Key files sit beside the bundles, not inside: a bundle is made to be copied and shared; a key file is the root itself, even though it is encrypted.',
+    'Key files sit beside the bundles, not inside: a key file is the root itself, even though it is encrypted. The way back is a join: it adds the files the bundle lacks.',
   wide: wide(),
   narrow: narrow(),
 };
