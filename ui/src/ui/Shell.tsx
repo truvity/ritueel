@@ -195,8 +195,8 @@ export function Shell({ route, children }: { route: Route; children: ReactNode }
                         <T cap={CAPS['Bundle.path#shell']}>{data.bundle?.path}</T>
                       </span>
                     </dd>
-                    <dt>Read</dt>
-                    <dd className="min-w-0 font-mono text-ink">
+                    <dt className="col-span-2">Read</dt>
+                    <dd className="col-span-2 min-w-0 font-mono text-ink">
                       <ReadTime ts={data.readAt} label={false} />
                     </dd>
                     <dt>Build</dt>

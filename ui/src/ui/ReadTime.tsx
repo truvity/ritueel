@@ -10,12 +10,12 @@ export function ReadTime({ ts, label = true }: { ts: Timestamp | undefined; labe
   const d = toDate(ts);
   if (!d) return null;
   return (
-    <>
+    <span className="whitespace-nowrap">
       {label ? 'Read ' : null}
       <time dateTime={d.toISOString()} className="whitespace-nowrap">
         {readTime(ts)}
       </time>
-    </>
+    </span>
   );
 }
 
