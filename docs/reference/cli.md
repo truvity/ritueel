@@ -44,7 +44,7 @@ Three more lines are proposed and are not rules. `apply` could refuse to make a 
 
 ### Earlier names
 
-An older page or record may use these words. Each went into one of the thirteen, except `renew`, which no record maps.
+An older page or record may use these words. Each went into one of the thirteen.
 
 | Earlier name | Now |
 |---|---|
@@ -61,14 +61,11 @@ An older page or record may use these words. Each went into one of the thirteen,
 | `card adopt` | A wanted card file, then `apply`; the order against the first plan that makes keys is open (record 0003) |
 | `card check` | `check cards` |
 | `root extend`, `subkey extend`, `crl renew`, `root-list sign` | A change found from the end date; `apply` does it |
-| `renew` (proposed, M7) | Not decided; no record maps it (see below) |
 | `handoff check` | `check request` |
 | `ca-bundle build`, `keyring build` | Written into the trust set by `apply` |
 | `root-list verify`, `crl verify`, `ssh-ca-keys verify`, `keyring verify` | `verify` with the same word after it |
 | `records list`, `records verify`, `records close` | `status ceremonies`, `check history`, `close` |
 | `drill restore` | `check restore` |
-
-The cloud root's renewal under a policy, with no person, is proposed for M7 and no record decides it; [the KMS root page](/reference/kms-root/#renewal-under-a-policy) describes it under its earlier name.
 
 ### How a root changes
 
