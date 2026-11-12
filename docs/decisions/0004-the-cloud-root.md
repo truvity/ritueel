@@ -18,6 +18,7 @@
 11. A KMS key that was born and not recorded is left for the operator to schedule for deletion with the admin role. ritueel never deletes a key.
 12. The aws-kms store uses the AWS SDK and holds a root key and an intermediate key, each in a KMS key. Its evidence is the key's description, policy and audit trail, read from the service every time. This is not proof that the key was made in an HSM. The software store gives no evidence at all.
 13. The aws-kms store, which adopts a key, is in M2, because the cloud root is the recommended path for a team with a cloud account.
+14. A cloud root key signs only in a ceremony, with a person present who confirms the plan. Nothing renews under a policy with no person.
 
 ## Why
 
@@ -57,6 +58,7 @@
 - **Reach the ceremony role by role chaining.** It would reach the role from another one, but AssumeRole takes caller-supplied tags, so the tag proves nothing.
 - **A tag that holds an expiry checked against the clock.** It would limit a session in time, but AWS allows no policy variable in a date comparison.
 - **An organisation-policy lock on the keys.** It would be a second wall around the key policy, but it needs the operator's organisation to carry it, so it was dropped.
+- **An unattended renewal role.** It would keep a cloud root alive without a yearly visit, but it would be the one act with no person present, against rules 1, 6 and 12 of [0005](0005-a-ceremony-and-where-it-runs.md), and a second principal could sign with the root key.
 - **A card gate, a passkey identity or a management account behind the cards for the cloud root.** It would add a hardware gate, but it was dropped, and a gate is not proposed again; hardware keys on the cloud management account are the operator's own choice.
 
 ## Not yet proven or only proposed
