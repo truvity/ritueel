@@ -9,7 +9,7 @@ sidebar:
 
 A key has to live somewhere. The places differ in one question above all: **can the key be copied?** A key that cannot be copied can only be lost. A key that can be copied can also be stolen without anyone noticing.
 
-One rule holds for every store ([principle 1](/principles/)): **a key is born in its store and never leaves it.** ritueel does not import a key, with one stated exception, an adopted primary for a person's own OpenPGP key ([record 0008](../decisions/0008-a-persons-own-key.md)), and it never offers to export a key from a card or a cloud key service "for backup". For software stores the rule means the key is generated in memory and written directly into the store, never to a file on disk.
+One rule holds for every store ([principle 1](/principles/)): **a key is born in its store and never leaves it.** ritueel does not import a key, with two stated exceptions for a person's own OpenPGP key, an adopted primary and an encryption subkey made in software ([record 0002](../decisions/0002-where-a-key-lives.md), rule 2), and it never offers to export a key from a card or a cloud key service "for backup". For software stores the rule means the key is generated in memory and written directly into the store, never to a file on disk.
 
 ## Which path is yours
 
