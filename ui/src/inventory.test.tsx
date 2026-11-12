@@ -224,8 +224,8 @@ describe('N3: a cloud key shows its provider and its account', () => {
   it('the key panel has Ceremony role and Admin role after Account, each with what it may do, and one sentence under them', async () => {
     const text = plain(await view(loadWorld('acme', 1), 'cards', { kind: 'key', id: SSH_C }));
     const at = (word: string) => text.indexOf(word);
-    expect(text).toContain('Ceremony role arn:aws:iam::444455556666:role/example-ritueel-ceremony may sign');
-    expect(text).toContain('Admin role arn:aws:iam::444455556666:role/example-ritueel-admin creates and reads, never signs');
+    expect(text).toContain('Ceremony role · may sign arn:aws:iam::444455556666:role/example-ritueel-ceremony');
+    expect(text).toContain('Admin role · creates and reads, never signs arn:aws:iam::444455556666:role/example-ritueel-admin');
     const sentence = 'You take a session of the ceremony role by your own means. ritueel holds no credential.';
     expect(text).toContain(sentence);
     expect(at('Account')).toBeLessThan(at('Ceremony role'));
