@@ -61,7 +61,7 @@ An example, wrapped here for reading; the file is one line:
 ## How a key enters the list
 
 - **A system's key** enters by the [hand-off](/reference/hand-off-contract/#ssh-ca-key): a request of type `ssh-ca-key` with a proof of where the key lives, answered at a ceremony. The key is listed under the name of the delegation whose wanted file has the type `ssh-ca-key` and the `use` the request asks for. An SSH CA key is withdrawn by the next list ([record 0006](../decisions/0006-bundle-history-and-trust-files.md), rule 25).
-- **A break-glass key** is made by ritueel, in the store of the root it belongs to, when that key is born (the first `apply`, or an `apply` that adds a root key): a retired PIV slot recorded in the slot map for a card ([record 0003](../decisions/0003-root-cards.md)), a key of its own in the root account for a cloud root, a file for a software root ([record 0006](../decisions/0006-bundle-history-and-trust-files.md), rule 25). The key is listed as `break-glass-<label>`, use `user`, and leaves the list with its root.
+- **A break-glass key** is made by ritueel, in the store of the root key it belongs to, when that key is born (the first `apply`, or an `apply` that adds a root key): a retired PIV slot recorded in the slot map for a card ([record 0003](../decisions/0003-root-cards.md)), a key of its own in the root account for a cloud root, a file for a software root ([record 0006](../decisions/0006-bundle-history-and-trust-files.md), rule 25). The key is listed as `break-glass-<label>`, use `user`, and leaves the list with its root.
 - **Nothing else** enters. Nobody edits the list, and no wanted file lists an SSH CA key; a delegation only declares that a key of its type may enter.
 
 ## The signature
