@@ -1,28 +1,28 @@
-# 0003 — Roots live on two independent root cards laid out as six rows of four slots
+# 0003 — Root keys live on two independent root cards laid out as six rows of four slots
 
 **Status:** Accepted
-**Date:** 2026-11-11
+**Date:** 2026-11-12
 
 ## Decision
 
-1. The root is two independent root cards, A and B. Each generates its own keys; they are never copies. One holder operates both and keeps them in two places. They are redundancy, not two-person control.
+1. A root on cards has two independent keys, A and B, one on each card. Each card generates its own keys; they are never copies. One holder operates both and keeps them in two places. They are redundancy, not two-person control.
 2. Every key has its PIN rule and touch rule stated; root keys have both always. A touch rule is fixed at birth.
-3. The 24 PIV slots are taken four at a time in the order 9a, 9c, 9d, 9e, then 82 to 95, as six rows. Row 1 is the card's own jobs: 9a and 9c empty, 9d a spare unlocking key made only if passkey unlocking cannot be used, 9e never used. Rows 2 to 6 are each one root of one bundle; a root has four columns: an X.509 root key, an OpenPGP primary, a break-glass SSH CA key, and an empty one (a root with fewer kinds leaves cells empty; a personal root has only the primary). A root's row number is in its record. Details: [cards reference](/reference/cards/).
-4. The slot map is built into ritueel, versioned (version 1), written into every record, and not edited by the holder. It gives each purpose one place and refuses a collision or a purpose with no place. A checked copy is in the requester system.
-5. Each card holds its own root of every bundle on the pair, in rows 2 to 6 shared by all bundles. One row stays free on each card for a replacement born beside the old root, so a card holds at most four roots: four bundles on a pair. More roots need another pair.
-6. One pair may serve more than one bundle of the holder. Each bundle keeps its own card list (the same serial is in both lists) and its own copy of the card secrets, sealed to its own recipients. The card has one PIN, one PUK and one management key for all its bundles; a sealed copy out of step shows as check 7, `management-key-unsealed`.
-7. A second bundle cannot adopt the cards again. It gets its sealed copy by a request to the first bundle, which wraps the secrets for it; they never travel in the clear. Request and answer travel as in [0005](0005-a-ceremony-and-where-it-runs.md), rule 26. The record names the serial, never the other bundle.
-8. A row of another bundle of the holder is declared in the card's file. An undeclared occupied row is a finding.
+3. The 24 PIV slots are taken four at a time in the order 9a, 9c, 9d, 9e, then 82 to 95, as six rows. Row 1 is the card's own jobs: 9a and 9c empty, 9d a spare unlocking key made only if passkey unlocking cannot be used, 9e never used. Rows 2 to 6 are each the keys the card keeps for one bundle, in four columns: an X.509 root key, an OpenPGP primary, a break-glass SSH CA key, and an empty one (fewer kinds leave cells empty; a personal bundle has only the primary). A row's number is in the ceremony record. Details: [cards reference](/reference/cards/).
+4. The slot map is built into ritueel, versioned (version 1), written into every ceremony record, and not edited by the holder. It gives each purpose one place and refuses a collision or a purpose with no place. A checked copy is in the requester system.
+5. Each card holds its own keys of every bundle on the pair, in rows 2 to 6 shared by all bundles. One row stays free on each card for a replacement born beside the old keys, so a pair serves at most four bundles; more need another pair.
+6. One pair may serve more than one bundle of the holder. Each bundle keeps its card files (the same serial is in both) and its own copy of the card secrets, sealed to its own recipients. The card has one PIN, one PUK and one management key for all its bundles; a sealed copy out of step shows as check 7, `management-key-unsealed`.
+7. A second bundle cannot adopt the cards again. It gets its sealed copy by a request to the first bundle, which wraps the secrets for it; they never travel in the clear. Request and answer travel as in [0005](0005-a-ceremony-and-where-it-runs.md), rule 26. The ceremony record names the serial, never the other bundle.
+8. A row of another bundle of the holder is declared in the wanted card file. An undeclared occupied row is a finding.
 9. PIN, PUK and management key are changed from factory values before any key is born. The holder sets each root card's PIN with the maker's tool. ritueel reads whether they are still factory values and refuses if so, never guesses a PIN to find out, and refuses a card that cannot report them.
-10. Adoption replaces the management key by a random one that needs a touch, and seals it in the bundle (one file per card, to the key file's recipients); nothing else is accepted for a root card. The PUK, and a day-to-day card's OpenPGP Admin PIN, are random and sealed the same way. The holder remembers only the PINs typed.
-11. A card that holds real roots is never reset; a half-born key is removed by deleting that one slot. A used root slot carries a placeholder certificate that tools looking for empty slots skip.
+10. Adoption, on the workstation only, replaces the management key by a random one that needs a touch, and seals it in the bundle (one file per card, to the key file's recipients); nothing else is accepted for a root card. The PUK, and a day-to-day card's OpenPGP Admin PIN, are random and sealed the same way. The holder remembers only the PINs typed.
+11. A card that holds real root keys is never reset; a half-born key is removed by deleting that one slot. A used root slot carries a placeholder certificate that tools looking for empty slots skip.
 12. A read-only check compares the whole card with the built-in layout and reports anything not the layout's own.
 13. The firmware floor for a root card is 5.7.4: ritueel's rule; older firmware cannot hold a root.
-14. A card has one of four kinds and never changes it. Root: holds roots by row; adopted; used on the workstation or in the offline system by the rules of the ceremony record. Day-to-day: a person's signing and authentication subkeys and passkeys; adopted. Server: stays plugged into a requester's server and signs for its services; an ordinary card, not an HSM product, named "server"; ritueel lists it and only reads it: no adoption, no secret changed or sealed, no layout check. Rehearsal: for practice and tests; never holds a real key, may be reset, serves only a test root; the M1 proofs and drills use it.
+14. A card has one of four kinds and never changes it. Root: holds root keys by row; adopted; used on the workstation or in the offline system by the rules of the ceremony record. Day-to-day: a person's signing and authentication subkeys and passkeys; adopted. Server: stays plugged into a requester's server and signs for its services; an ordinary card, not an HSM product, named "server"; ritueel lists it and only reads it: no adoption, no secret changed or sealed, no layout check. Rehearsal: for practice and tests; never holds a real key, may be reset, serves only a test root; the M1 proofs and drills use it.
 15. A root card is never also a server, day-to-day or rehearsal card (piv-go and scdaemon each open a card exclusively); a day-to-day card is never also a requester card or a root card. The holder keeps at least three cards: two root cards and a daily card. A root ceremony never touches the daily card's OpenPGP applet.
 16. The one-time-code (OTP) application is switched off on the root and day-to-day cards ritueel adopts; on a server card ritueel changes nothing; on a rehearsal card it may switch it off.
 17. Attestation of a piv key is verified against the maker's current root and an attestation bundle of intermediates, shipped in the repository with a refresh step and a test that fails when a chain does not verify. piv-go's built-in root list is not used. A card with a missing intermediate is refused until the bundle is refreshed; `--extra-intermediates` may supply it as a helper only, and it must chain to the pinned root. An openpgp-card key's attestation chains to the maker's root through its OpenPGP intermediate.
-18. The bundle holds a card inventory: one file lists the cards this bundle uses, for its own rows, and one file per card maps every slot of its PIV, OpenPGP and FIDO2 applications to its use; a card may hold several roots, each by its row. ritueel writes both from the read-only check; nobody edits them. A serial is never reused for another holder's role.
+18. The bundle holds one wanted card file for each card it uses. ritueel writes a card map of each card from the read-only check, every slot of its PIV, OpenPGP and FIDO2 applications mapped to its use; nobody edits it. A card may hold keys of several bundles, each by its row. A serial is never reused for another holder's role.
 19. The piv store uses piv-go and holds root keys on a root card and an intermediate in a card slot; its proof is the slot's attestation certificate and the card's certificate. ritueel builds the OpenPGP packets and the card signs digests; no gpg at run time.
 20. If the PIN was accepted in the same session and the card refused after 10 seconds or more, ritueel reports that no touch was given in time or PIN state was lost; a sooner refusal is reported as a refusal. It claims no more than it knows and does not retry.
 
@@ -46,7 +46,7 @@ Each card makes its own keys, so no copy exists and each key can be attested at 
 - **One pair per bundle.** A holder with two bundles keeps four cards.
 - **Pair per bundle until a later milestone.** A shared pair was chosen.
 - **Home bundle holding the sealed file.** A second bundle could not be used without it.
-- **Holder-level card file.** A new structure above the bundle.
+- **A card list above the bundle.** A new structure above the bundle.
 - **Rows by purpose.** A root's keys scatter, and a replacement cannot be born beside the old one.
 - **Third key signing the root list.** A slot and a touch per card, for the same audience, lifetime and revocation.
 - **Holder-edited slot map.** A collision becomes a user error that overwrites a key.
@@ -57,6 +57,8 @@ Each card makes its own keys, so no copy exists and each key can be attested at 
 - **Master key in plain text.** Refused outright.
 - **No placeholder certificate.** Tools looking for empty slots would offer to overwrite a root key.
 - **Card reset for a half-born key.** It destroys every other root on the card.
+- **The card list written only by ritueel.** One writer, but a row of another bundle needs a person to declare it; the card files are wanted files and the card map is what the check saw (rules 8 and 18).
+- **Adoption on the stick as well as on the workstation.** A card could be adopted where the root is used, but two copies of a bundle could each make a secret for one card, and a lost stick could hold the only copy; adoption runs on the workstation only (rule 10).
 - **Two kinds of card only.** A server's card and a practice card would have no honest place.
 - **Server card managed like a root card.** Its slots belong to the requester; adoption would break the service.
 - **Names "hsm" and "board".** "hsm" names a product class this design rejects; "board" was the first name, and another was asked for.
@@ -73,7 +75,8 @@ Each card makes its own keys, so no copy exists and each key can be attested at 
 - **Not yet proven.** On Linux the card is reached by direct USB (CCID) in ritueel, tried first; a pure-Go pcscd client is the fallback; macOS is for planning only, with no card access. To be tried on a spare real card ([#11](https://github.com/truvity/ritueel/issues/11)).
 - **Not yet proven.** At a card: touch always holds across a ceremony with several signatures through piv-go, and reading the factory-value report spends no PIN try. On a rehearsal card in M1: deleting one slot works on firmware 5.7.4, and how other tools treat a placeholder certificate ([#11](https://github.com/truvity/ritueel/issues/11)).
 - **Not yet proven.** Until the encoding of the openpgp-card attestation extensions is measured, ritueel records the key as attested and enforces no PIN or touch policy from it ([#18](https://github.com/truvity/ritueel/issues/18)).
-- **Proposed.** A declared row of another bundle is not a failure; a key outside the layout still fails with `card-layout`; the plan takes the lowest empty row; another bundle's slot is listed as "use: other-bundle" with its row, no key hash. The severity of an undeclared occupied row, and whether it blocks a ceremony or sets an exit code, are open ([#11](https://github.com/truvity/ritueel/issues/11)).
+- **Proposed.** A row of another bundle that the wanted card file declares is not a failure; a key outside the layout still fails with `card-layout`; the plan takes the lowest empty row; another bundle's slot is listed as "use: other-bundle" with its row, no key hash. The severity of an undeclared occupied row, and whether it blocks a ceremony or sets an exit code, are open ([#11](https://github.com/truvity/ritueel/issues/11)).
+- **Proposed.** Whether an adoption leaves a ceremony record; whether an adoption is a plan of its own applied before the plan that makes keys, or a first step of that plan; the order of sealing the new secrets and setting them on the card; and which sealed file is the current one after a stop ([#144](https://github.com/truvity/ritueel/issues/144)).
 
 ## Replaces
 
