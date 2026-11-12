@@ -5,7 +5,7 @@ sidebar:
   order: 14
 ---
 
-*Partly built: the local page exists as code and a demo (`ui/`, `proto/`); the program that serves it, the guided mode and every test of the profile below are not built. The demo and the contract still show the page before [record 0010](../decisions/0010-the-engine-the-process-and-the-page.md) was rewritten (seven entries, a wizard, a plan screen and a save call); they change with the first build of the new page. This is the page that record 0010 leaves for the details; the code is [issue #16](https://github.com/truvity/ritueel/issues/16) for the guided mode (after the first signed release) and [issue #17](https://github.com/truvity/ritueel/issues/17) for the local page (M2). What the wizard is for is on [the Tools page](/tools/wizard/); the threats behind the profile are in [the research](/research/local-wizard-threats-2026-11-01/).*
+*Partly built: the local page exists as code and a demo (`ui/`, `proto/`); the program that serves it, the guided mode and every test of the profile below are not built. The demo and the contract show the page of [record 0010](../decisions/0010-the-engine-the-process-and-the-page.md): four entries, five reads and no write. This is the page that record 0010 leaves for the details; the code is [issue #16](https://github.com/truvity/ritueel/issues/16) for the guided mode (after the first signed release) and [issue #17](https://github.com/truvity/ritueel/issues/17) for the local page (M2). What the wizard is for is on [the Tools page](/tools/wizard/); the threats behind the profile are in [the research](/research/local-wizard-threats-2026-11-01/).*
 
 ## What the guided mode and the page drive
 
@@ -74,7 +74,7 @@ The page has four entries: To do, Inventory, History and Trust set (rule 10). Th
 | **History** | The ceremonies, newest first, each in one of four states. For one ceremony: the plan and its digest in full, to compare; the changes in the plan, and the changes left out with the reason; the sentence "type the first eight characters in the terminal"; and, after the run, the keyserver step with its command. |
 | **Trust set** | The newest trust set: its number, its files, the check of each file and the command that verifies it. |
 
-Decided in rule 10: the four entries, the home with the findings as its second tab, the three views with one panel, and no wizard and no plan screen. The demo on the site is to have the same four entries (rule 17).
+Decided in rule 10: the four entries, the home with the findings as its second tab, the three views with one panel, and no wizard and no plan screen. The demo on the site has the same four entries (rule 17).
 
 :::note[Proposed]
 What each entry holds, the four states of a ceremony, the rules for every entry and the aims for width and height, as written in this section ([#17](https://github.com/truvity/ritueel/issues/17)). The page step may change them.
@@ -111,7 +111,7 @@ The folding of plans that were never run is a choice of the page build and not a
 
 ## One API
 
-The contract is in `proto/ritueel/local/v1alpha1/` and is not copied here. The version `v1alpha1` is a design and may change before a release. The contract in `proto/` today is the one of the older page (six reads and a service with three plan calls, one of them a write). It changes in place at the page step.
+The contract is in `proto/ritueel/local/v1alpha1/` and is not copied here. The version `v1alpha1` is a design and may change before a release. The contract in `proto/` has these five reads.
 
 All calls of the first build are reads. Each is marked `NO_SIDE_EFFECTS`, so that it may be a `GET`. No call has a field for a secret, a PIN or a passphrase, and the calls made with the page-rights token do not confirm, sign, create a key or run a ceremony (rules 7 and 10).
 
@@ -126,7 +126,7 @@ All calls of the first build are reads. Each is marked `NO_SIDE_EFFECTS`, so tha
 `GetInventory` is one read, and every call reads the bundle again (rule 9), so the three views cannot show two states of the bundle.
 
 :::note[Proposed]
-The names and the shapes of these five calls, and that the service of plan calls goes ([#17](https://github.com/truvity/ritueel/issues/17)). Record 0010 decides that the calls are reads, in rule 7 and rule 10.
+The names and the shapes of these five calls ([#17](https://github.com/truvity/ritueel/issues/17)). Record 0010 decides that the calls are reads, in rule 7 and rule 10.
 :::
 
 ## The inert proposal
@@ -212,7 +212,7 @@ Semantic HTML, reachable by keyboard alone, with text and contrast that follow t
 - The guided mode, the catalogue and the conformance test ([issue #16](https://github.com/truvity/ritueel/issues/16)).
 - The program side of the local page: the ConnectRPC server, the embedded build and a test for each row ([issue #17](https://github.com/truvity/ritueel/issues/17)).
 - The process behind the commands: start by the first command, the fixed port, the two tokens, the lock for each bundle, the idle end and `ritueel stop`, with tests that a second command reuses the process, `stop` ends it, idleness ends it, and a page-rights token reaches no method that is not open to it ([issue #17](https://github.com/truvity/ritueel/issues/17)).
-- The first build of the page: the contract and the page change together, the four entries and five reads of this page, and the demo with them ([issue #17](https://github.com/truvity/ritueel/issues/17)).
+- The first build of the page is in the repository: the four entries, the five reads and the demo. The program side is not built ([issue #17](https://github.com/truvity/ritueel/issues/17)).
 
 ## Later
 

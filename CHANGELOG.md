@@ -14,4 +14,4 @@ This file is written by hand, for the person who uses a release. It is not a lis
 ## Unreleased
 
 - Nothing is released yet. The first docs, the scope decision and the roadmap are in `docs/`.
-- The site has a demo of the local page, the browser view of a ritueel bundle, at `/demo/`: the real page over made-up data, with three example bundles (`personal`, `acme`, `globex`) and a switch between them. Its commands follow the command reference, and it shows a saved plan at `history/<ceremony>/plan.json`, the place record 0006 gives. The program that serves it is not built.
+- The site has a demo of the local page, the browser view of a ritueel bundle, at `/demo/`: the real page over made-up data, with three example bundles (`acme`, `globex`, `personal`), a switch between them and five scenes for `acme`. It has four entries, To do, Inventory, History and Trust set, and writes nothing. Its commands follow the command reference. The program that serves it is not built.
