@@ -23,7 +23,7 @@ Every ceremony runs the same steps: **plan** every byte that will be signed, **c
 
 A PIN is entered by the holder at the terminal. The tool never retries a wrong PIN ([record 0002](../decisions/0002-where-a-key-lives.md), rule 3) and refuses to run when fewer than three tries are left ([record 0005](../decisions/0005-a-ceremony-and-where-it-runs.md), rule 14), because the card blocks after three and then needs the PUK. The PINs the holder types live in the holder's password manager, one entry per card; the PUK and the management key are random and sealed in the bundle ([record 0003](../decisions/0003-root-cards.md), rule 10).
 
-## The three ceremonies
+## Three kinds of work
 
 | Work | When | Card | Result |
 |---|---|---|---|
@@ -58,4 +58,4 @@ Every command that reads or writes a bundle talks to one ritueel process. The fi
 
 ## Which code talks to the cards
 
-The CLI is written in Go. The root keys of a card live in PIV slots, reached through piv-go, and ritueel builds the OpenPGP packets itself: one applet, one library, one binary, and no `gpg` at run time. A root card is never also a server, day-to-day or rehearsal card, because the program that holds a card keeps every other out. The ritueel process holds a card only during a ceremony. The reasons, and the roads not taken, are in [record 0003](../decisions/0003-root-cards.md), and the spike behind them in [Card libraries and tooling](/research/card-libraries-and-tooling-2026-11-01/).
+The CLI is written in Go. The root keys of a card live in PIV slots, reached through piv-go, and ritueel builds the OpenPGP packets itself: one applet, one library, one binary, and no `gpg` at run time. A root card is never also a server, day-to-day or rehearsal card, because the program that holds a card keeps every other out. The reasons, and the roads not taken, are in [record 0003](../decisions/0003-root-cards.md), and the spike behind them in [Card libraries and tooling](/research/card-libraries-and-tooling-2026-11-01/).
