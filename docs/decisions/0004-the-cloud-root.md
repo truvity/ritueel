@@ -1,15 +1,15 @@
-# 0004 — Cloud keys live in one dedicated account as three replicated keys, created or adopted
+# 0004 — Cloud keys are replicated keys in an account the holder chooses, one for each kind of root, created or adopted
 
 **Status:** Accepted
 **Date:** 2026-11-12
 
 ## Decision
 
-1. The cloud keys live in one dedicated account that holds nothing else.
-2. The account holds one key for each kind of root the bundle uses: an X.509 root key, an OpenPGP primary and a break-glass SSH CA key. Each is a multi-Region key with a replica in a second Region. A replica is the same key. It covers a lost Region or a lost primary copy, and it is never counted as a second key. A company that wants a root independent of one provider gives it keys on cards too.
+1. The cloud keys of a root live in an account that the holder chooses. ritueel checks each root key, its key policy and its replica, and records the account; it does not rule on what else the holder keeps there. The holder should keep there only keys that are used in ceremonies, and run no workload in it.
+2. A cloud root has one key for each kind of root the bundle uses: an X.509 root key, an OpenPGP primary and a break-glass SSH CA key. Each is a multi-Region key with a replica in a second Region. A replica is the same key. It covers a lost Region or a lost primary copy, and it is never counted as a second key. A company that wants a root independent of one provider gives it keys on cards too.
 3. A cloud root signs every year at a ceremony. It has nothing to alternate with.
 4. The first `apply` creates the cloud keys, born in KMS and each replicated to the declared Region, or adopts keys that already exist. Both ways leave the same checks, evidence files and ceremony records. The company's existing key may be confirmed as its OpenPGP primary.
-5. The holder provides the dedicated account, an admin role, a ceremony role and a break-glass principal. The admin role creates and reads, and can never sign. Only the break-glass principal may replicate a key or move its primary Region. The ceremony role may Sign digests and is the only principal that may sign anything new.
+5. The holder provides the account, an admin role, a ceremony role and a break-glass principal. The admin role creates and reads, and can never sign. Only the break-glass principal may replicate a key or move its primary Region. The ceremony role may Sign digests and is the only principal that may sign anything new.
 6. The reference key policy refuses new replicas and moving the primary Region for every principal except the break-glass principal, and it allows digests only. ritueel renders one key policy from the wanted files for each key and each replica, and checks a replica's policy on its own. A lost Region is answered by the break-glass principal, a manual logged act.
 7. ritueel reads the key's description and policy back every time it signs. A changed policy is shown in the plan and confirmed by the person. A KMS key is read, never taken from a claim. A key in another account is read through a read-only role created by its owner, because GetKeyPolicy does not work across accounts. A key tag on a KMS key is read when present and is not required.
 8. The KMS confirmation is the typed plan digest plus a session of the ceremony role through the caller's standard credential chain. ritueel holds no credential. The record holds the key ARN, the digest of the key policy and the role session. The Sign statement keeps the conditions kms:SigningAlgorithm = ECDSA_SHA_384 and kms:MessageType = DIGEST, and has no session-tag condition and no aws:MultiFactorAuthPresent condition.
@@ -22,7 +22,7 @@
 
 ## Why
 
-- The cloud keys are in one account that holds nothing else, so the account holds those keys and no other work.
+- ritueel can read a key, its policy and its replica, so it checks them. It cannot read what else an account holds, so it does not rule on it. Every workload in the account brings more administrators near the keys, so the advice to keep only ceremony keys there stays.
 - A replica covers the loss of a Region. So a second account is not needed for that loss, and a copy of the root key cannot appear in a Region where no one watches.
 - A claim is verified, never trusted. So ritueel reads the key and its policy, and does not take them on a person's word.
 - AWS does not set the multi-factor flag for a federated sign-in, so most operators could never pass a gate on it. The gate is the typed digest, and the accepted limit says so.
@@ -38,6 +38,7 @@
 - A replica is not a second key. A company that wants a root independent of one provider must give it keys on cards too.
 - The record needs one key policy for each key and each replica, and a read-back at every signing.
 - The aws-kms store adds work to M2.
+- What else the account holds is the holder's choice. ritueel advises and does not check it.
 
 ## Roads not taken
 
@@ -70,3 +71,4 @@
 ## Replaces
 
 0002, 0003, 0004, 0005, 0008, 0013 and 0018, in part: the cloud-root rules of each, read at commit d0ae12da2432d5ae95cf95d68fb85ba3dda6cfee.
+- **One dedicated account that holds nothing else, as a rule (earlier design).** It would keep all other work away from the keys, but ritueel cannot check what else an account holds, and the rule would refuse a holder who keeps the roots of several bundles, or the ceremony keys of another system, in one account.
