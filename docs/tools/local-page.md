@@ -24,8 +24,8 @@ Every command is shown as text with a Copy control. The page reads when you open
 
 [Open the demo](/demo/). It is the real page, built in a demo mode, shown with made-up data. A [bundle](/reference/bundle/) is the directory with a fixed structure that holds everything ritueel knows about one trust domain. The example bundles are:
 
-- `acme`: a company with two root cards, one cloud key, a day-to-day card, three roots (X.509, OpenPGP and SSH CA), two delegations and thirteen trust sets. It follows the example of [the bundle page](/reference/bundle/) and has five scenes.
-- `globex`: another company, with one cloud root and no card.
+- `acme`: a company with two root cards, three cloud keys (one for each root), a day-to-day card, three roots (X.509, OpenPGP and SSH CA), two delegations and thirteen trust sets. It follows the example of [the bundle page](/reference/bundle/) and has five scenes.
+- `globex`: another company, with three roots, each with one cloud key, and no card.
 - `personal`: one person, with an OpenPGP key in a key file and three day-to-day cards. Its ceremonies run in the offline system.
 
 Every name, fingerprint, serial and date in it is invented and looks it. Today in the demo is always 2026-11-24.

@@ -7,7 +7,7 @@ sidebar:
 
 *Not built yet: no ceremony command exists. This page describes what the commands will do ([record 0005](../decisions/0005-a-ceremony-and-where-it-runs.md)); the commands and their exit codes are in [the command reference](/reference/cli/). To learn what a ceremony is before you meet the tool, read [What a ceremony is](/learn/ceremonies/).*
 
-The command line is the first of three faces of the ceremony engine; the others are the guided mode and the read-only local page ([the wizard](/tools/wizard/)). A ceremony is a scripted, reviewable use of a root. A key that can be copied, a key file, is used only in a machine booted from a read-only system made for the purpose (the offline system), never in the everyday system (ritueel teaches this and does not check it). A key that cannot be copied, a root on cards or a cloud root, may be used on your workstation. A cloud root always runs there, because the offline system has no network; the offline system is an option for a root on cards. A root on cards needs four conditions: a touch for every signature, the number of signatures stated in the plan, no retry of a failed touch, and the result checked on a second device. A cloud key has no touch: for a cloud root the typed digest and the role session stand, its audit trail records every signature, and the other three conditions apply ([record 0005](../decisions/0005-a-ceremony-and-where-it-runs.md), rule 18). The program checks nothing about the machine, so the check on a second device is taught, not checked. A test root may be used on the workstation or on a rehearsal card. The machine is not trusted: the root keys never leave their store, so a compromised machine cannot copy a key it never holds. It can still try to trick the holder, which is why the checks below exist.
+The command line is the first of three faces of the ceremony engine; the others are the guided mode and the read-only local page ([the wizard](/tools/wizard/)). A ceremony is a scripted, reviewable use of a root key. A key that can be copied, a key file, is used only in a machine booted from a read-only system made for the purpose (the offline system), never in the everyday system (ritueel teaches this and does not check it). A key that cannot be copied, a root on cards or a cloud root, may be used on your workstation. A cloud root always runs there, because the offline system has no network; the offline system is an option for a root on cards. A root on cards needs four conditions: a touch for every signature, the number of signatures stated in the plan, no retry of a failed touch, and the result checked on a second device. A cloud key has no touch: for a cloud root the typed digest and the role session stand, its audit trail records every signature, and the other three conditions apply ([record 0005](../decisions/0005-a-ceremony-and-where-it-runs.md), rule 18). The program checks nothing about the machine, so the check on a second device is taught, not checked. A test root may be used on the workstation or on a rehearsal card. The machine is not trusted: the root keys never leave their store, so a compromised machine cannot copy a key it never holds. It can still try to trick the holder, which is why the checks below exist.
 
 ## Six steps
 
@@ -15,8 +15,8 @@ Every ceremony runs the same steps: **plan** every byte that will be signed, **c
 
 ## What the tool checks
 
-1. **The card.** Read its serial, and check it against the inventory of cards before anything is written: the right card for the root, PIN tries left, no default PIN, PUK or management key ([the checks](/reference/cards/#what-is-checked-on-a-card)). The holder sets the PIN with the maker's tool ([Prepare a root card](/guides/prepare-a-root-card/)); ritueel's adoption of the card replaces the PUK and the management key.
-2. **The attestation of every key it certifies, and of every root it creates.** A card's chain must lead to the maker's current root through the maker's intermediates, which ritueel ships and refreshes; a KMS key is read from the service, with its policy and replica ([the checks](/reference/kms-root/#the-checks)). A key that cannot be attested is refused, because an imported key cannot be.
+1. **The card.** Read its serial, and check it against the cards registered in the bundle before anything is written: the right card for the root, PIN tries left, no default PIN, PUK or management key ([the checks](/reference/cards/#what-is-checked-on-a-card)). The holder sets the PIN with the maker's tool ([Prepare a root card](/guides/prepare-a-root-card/)); ritueel's adoption of the card replaces the PUK and the management key.
+2. **The attestation of every key it certifies, and of every root key it creates.** A card's chain must lead to the maker's current root through the maker's intermediates, which ritueel ships and refreshes; a KMS key is read from the service, with its policy and replica ([the checks](/reference/kms-root/#the-checks)). A key that cannot be attested is refused where policy asks for it, and always for a hardware or cloud root key; an imported key cannot be attested.
 3. **What is about to be signed.** Show the key's fingerprint, its store, its lifetime and the serial before each touch. The holder confirms by comparing, not by pressing a button.
 4. **The result.** After signing, verify the certificate or binding against the request and the plan.
 5. **The record.** Write a hash-chained ceremony record that contains no PIN, no key and no secret.
@@ -25,13 +25,13 @@ A PIN is entered by the holder at the terminal. The tool never retries a wrong P
 
 ## The three ceremonies
 
-| Ceremony | When | Card | Result |
+| Work | When | Card | Result |
 |---|---|---|---|
-| Renewals, yearly: `ritueel due`, then `ritueel run` | Month 12 of the intermediates' life | The card for the year | New 13-month certificates over the same intermediate keys, and new bindings that extend the same subkeys. The card's own root extended, a new keyring package and root list. |
-| Intermediate add, replace or revoke | Between yearly ceremonies | The card for the year; for `revoke`, the card of each root that issued an unexpired certificate of the intermediate | `add`: a certificate, binding or SSH CA key listing for a new intermediate. `replace`: new key material, on an event. `revoke`: the certificate and binding withdrawn, and the certificate put on the issuing root's [CRL](/reference/crl/). |
-| Root add, retire or revoke | A card is lost, retired or compromised | Every active card; for a lost one, its stored removal authorisation | A new root that an active root vouches for, an overlap that ends on a day you name, or a root list without the old root ([root transitions](/reference/transitions/)). |
+| Renewals, yearly: `ritueel apply` | Month 12 of the intermediates' life | The card for the year | New 13-month certificates over the same intermediate keys, and new bindings that extend the same subkeys. The card's own root key extended, a new keyring file and root list. |
+| Intermediate add or replace: `ritueel apply`. Intermediate revoke: `ritueel revoke` | Between yearly ceremonies | The card for the year; for `revoke`, the card of each root key that issued an unexpired certificate of the intermediate | Add: a certificate, binding or SSH CA key listing for a new intermediate. Replace: new key material, on an event. Revoke: the certificate and binding withdrawn, and the certificate put on the issuing root key's [CRL](/reference/crl/). |
+| Root key add or retire: `ritueel apply`. Root key revoke: `ritueel revoke` | A card is lost, retired or compromised | Every active card; for a lost one, its stored removal authorisation | A new root key that an active root key vouches for, an overlap that ends on a day you name, or a root list without the old root key ([root transitions](/reference/transitions/)). |
 
-Each is one to three commands. [Adopting the roots](/guides/root-adoption/) is the first one you run, and [A lost root card](/guides/lost-root-card/) walks through the last. An intermediate key is renewed by re-signing ([record 0007](../decisions/0007-changing-and-losing-a-root.md), rule 15) and replaced on an event, and a key in software also at most every three years ([record 0002](../decisions/0002-where-a-key-lives.md), rules 15 and 16).
+Each is one or two commands. [Adopting the roots](/guides/root-adoption/) is the first one you run, and [A lost root card](/guides/lost-root-card/) walks through the last. An intermediate key is renewed by re-signing ([record 0007](../decisions/0007-changing-and-losing-a-root.md), rule 15) and replaced on an event, and a key in software also at most every three years ([record 0002](../decisions/0002-where-a-key-lives.md), rules 15 and 16).
 
 ## After a ceremony
 
@@ -43,14 +43,14 @@ A touch not given comes back from the card after about 15 seconds as a generic s
 
 ## Root validity and its extension
 
-A root is valid for about three years, and each use extends it. The card that signs at a ceremony also extends its own root to about three years from that day:
+A root key is valid for about three years, and each use extends it. The card that signs at a ceremony also extends its own root key to about three years from that day:
 
 - **OpenPGP.** A new self-signature on the primary moves its expiry.
 - **X.509.** The root certificate is re-issued over the same key and the same subject, with a new validity.
-- **Pinning holds.** Clients of the signed root list pin the public keys of the roots, not their certificates, so a re-issued certificate keeps the pin.
-- **A dead or lost card shows itself.** Its root is not extended, and runs out.
+- **Pinning holds.** Clients of the signed root list pin the root keys, not their certificates, so a re-issued certificate keeps the pin.
+- **A dead or lost card shows itself.** Its root key is not extended, and runs out.
 
-`status` warns about a root 6 months, 3 months and 30 days before it expires. Cards alternate, so a healthy root always has about a year left; a warning means an extension was missed, with time left to act.
+`status` warns about a root key 6 months, 3 months and 30 days before it expires. Cards alternate, so a healthy root key always has about a year left; a warning means an extension was missed, with time left to act.
 
 ## One process behind the commands
 
@@ -58,4 +58,4 @@ Every command that reads or writes a bundle talks to one ritueel process. The fi
 
 ## Which code talks to the cards
 
-The CLI is written in Go. Both root keys of a card live in PIV slots, reached through piv-go, and ritueel builds the OpenPGP packets itself: one applet, one library, one binary, and no `gpg` at run time. The root cards hold only roots, because the program that holds a card keeps every other out. The ritueel process holds a card only during a ceremony. The reasons, and the roads not taken, are in [record 0003](../decisions/0003-root-cards.md), and the spike behind them in [Card libraries and tooling](/research/card-libraries-and-tooling-2026-11-01/).
+The CLI is written in Go. The root keys of a card live in PIV slots, reached through piv-go, and ritueel builds the OpenPGP packets itself: one applet, one library, one binary, and no `gpg` at run time. A root card is never also a server, day-to-day or rehearsal card, because the program that holds a card keeps every other out. The ritueel process holds a card only during a ceremony. The reasons, and the roads not taken, are in [record 0003](../decisions/0003-root-cards.md), and the spike behind them in [Card libraries and tooling](/research/card-libraries-and-tooling-2026-11-01/).
