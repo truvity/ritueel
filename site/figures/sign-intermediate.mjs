@@ -74,7 +74,7 @@ function p5() {
   b += check(160, 128, 1.2) + text(181, 132, 'same as plan', 't t-s t-b');
   b += under(210, 'second device');
   b += arrow(66, 74, 150, 74, 'compares', { lx: 108, ly: 66 });
-  return pnl(5, 'Second device', b, 'A certificate sheet next to a laptop, and a second device, drawn as a tablet, with the plan sheet and a tick that says it is the same as the plan on its screen. An arrow shows the certificate being compared.');
+  return pnl(5, 'Second device', b, 'A certificate sheet lies next to a laptop. A second device, drawn as a tablet, shows the plan sheet and a tick. The tick says the certificate is the same as the plan. An arrow shows the certificate being compared.');
 }
 
 function p6() {
@@ -99,10 +99,10 @@ export default {
   caption: 'Signing the intermediate of a requester with a root card, on your workstation. The accent follows the plan.',
   panels: [
     { n: 1, title: 'Ask', caption: 'The requester writes a request, a proof and a fingerprint.', svg: p1() },
-    { n: 2, title: 'Plan', caption: 'You copy them into the bundle. The command apply writes the plan: one signature, one touch.', svg: p2() },
+    { n: 2, title: 'Plan', caption: 'You copy them into the bundle and run apply. The plan: one signature, one touch.', svg: p2() },
     { n: 3, title: 'Confirm', caption: 'You type the digest’s start and compare the fingerprint.', svg: p3() },
     { n: 4, title: 'Touch, sign', caption: 'One touch for each signature. A failed touch ends the ceremony.', svg: p4() },
     { n: 5, title: 'Second check', caption: 'You check the certificate against the plan on a second device.', svg: p5() },
-    { n: 6, title: 'Hand over', caption: 'The command apply writes the ceremony record last. You hand the certificate over after the second check.', svg: p6() },
+    { n: 6, title: 'Hand over', caption: 'The ceremony record is written last. You hand the certificate over after the second check.', svg: p6() },
   ],
 };

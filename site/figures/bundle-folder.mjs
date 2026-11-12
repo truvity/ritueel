@@ -12,8 +12,8 @@ import { acc, circle, f, line, path, rect, sheet, text } from './draw.mjs';
 import { svgBox } from './svg.mjs';
 
 const LABEL =
-  'A bundle drawn as an open directory named acme, holding six labelled parts in a tree: the wanted files, the card maps, the roots, the requests part with its answers beside the requests, ' +
-  'the history part in the accent colour, and the numbered trust sets part. A small tag on each part says what kind it is: wanted, seen, history or request. ' +
+  'A bundle drawn as an open directory named acme. It holds six labelled parts in a tree. They are the wanted files, the card maps, the roots, the requests with their answers, ' +
+  'the history in the accent colour, and the numbered trust sets. A small tag on each part says what kind it is: wanted, seen, history or request. ' +
   'Under the bundle sits a second, closed bundle named personal, and a dashed box that says key files stay outside the bundle.';
 
 const W = 376;

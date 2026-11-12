@@ -13,7 +13,7 @@ import { lock } from './parts.mjs';
 
 const LABEL =
   'A USB stick drawn as a box with a connector, in two parts: a part for AirgapOS, vanilla and unchanged, and one extra partition marked Proposed. ' +
-  'The partition shows a tree of three directories: ritueel with one directory per version and per system, bundles with acme and personal, which hold roots and requests and no wanted files, and keys with one encrypted key file beside the bundles. ' +
+  'The partition shows a tree of three directories. The first is ritueel, with one directory for each version and each system. The second is bundles, with acme and personal. They hold roots and requests and no wanted files. The third is keys, with one encrypted key file beside the bundles. ' +
   'In the accent colour, an arrow runs from a plan inside acme to the ritueel binary of the version that made it. Dashed leader lines join the three notes at the right to the three directories. ' +
   'An arrow runs back from the bundles to a laptop named workstation and says it adds missing files. ' +
   'A dotted badge with a question mark says that booting AirgapOS from such a stick is still to be proven on hardware.';

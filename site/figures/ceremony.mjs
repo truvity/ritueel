@@ -17,7 +17,7 @@ function p1() {
   p += line(x + 10, y + 108, x + w - 12, y + 108, 'ln ln-thin ln-acc') + text(x + 10, y + 128, DIGEST, 't t-mono t-acc t-b');
   b += acc('plan', p);
   b += under(52, 'no card needed', 190);
-  return pnl(1, 'Anywhere', b, 'A terminal shows the command apply and writes one sheet, the plan, with lines for the root, the keys, the serials, the times and the touches, and the digest 7f3a 91c2 at its foot. No card is in the picture.');
+  return pnl(1, 'Anywhere', b, 'A terminal runs the command apply. It writes one sheet, the plan. The plan has lines for the root, the keys, the serials, the times and the touches, and the digest 7f3a 91c2 at its foot. No card is in the picture.');
 }
 
 function p2() {
@@ -87,7 +87,7 @@ function p6() {
   b += note(104, 62, 78, 44, 'transcript');
   b += sheet(188, 62, 82, 44, { rows: 0 }) + text(229, 82, 'ceremony', 't t-s t-b', 'm') + text(229, 97, 'record', 't t-s t-b', 'm');
   b += bundle(116, 178, 154, 54, 'history');
-  return pnl(6, '', b, 'A terminal runs apply, which writes two sheets into the history part of the bundle: the transcript on the left, written first, and the ceremony record on the right, written last.');
+  return pnl(6, '', b, 'A terminal runs apply. It writes two sheets into the history part of the bundle. The transcript is on the left, written first. The ceremony record is on the right, written last.');
 }
 
 export default {
@@ -96,7 +96,7 @@ export default {
   label: 'Six panels: the six steps of every ceremony',
   caption: 'The six steps of every ceremony.',
   panels: [
-    { n: 1, title: 'Plan', caption: 'The command apply finds what is not applied yet. The plan fixes every byte to sign, except new keys.', svg: p1() },
+    { n: 1, title: 'Plan', caption: 'ritueel finds what is not applied yet. The plan fixes every byte to sign, except new keys.', svg: p1() },
     { n: 2, title: 'Confirm', caption: 'You type the first eight characters of its digest.', svg: p2() },
     { n: 3, title: 'Reserve', caption: 'The attempt, a file that says keys may exist, is written before the first key is born.', svg: p3() },
     { n: 4, title: 'Sign', caption: 'The fingerprint shows first. Then you touch the card.', svg: p4() },

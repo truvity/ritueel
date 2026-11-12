@@ -7,9 +7,9 @@ import { COLUMNS, PIV_ROWS, ROOT_CARD_NOTES, ROOT_CARD_PASSKEY, ROOT_CARD_ROWS }
 
 const LABEL =
   'A root card drawn as 24 PIV key slots in six rows of four, with the key kind written in each held slot. ' +
-  'Row 1, the card’s own jobs, holds no root: all four slots are drawn empty, 9d is tagged spare key (a key made there only if the passkey way cannot be used) and 9e never used. ' +
+  'Row 1, the card’s own jobs, holds no root: all four slots are drawn empty. 9d is tagged spare key, a key made there only if the passkey way cannot be used. 9e is tagged never used. ' +
   'Rows 2 to 6 each hold the keys of one bundle, the same kind of key in the same column: X.509 root key, OpenPGP primary, SSH CA key, empty. ' +
-  'Row 2 is the example bundle acme, whose key A is on this card and whose key B is in the same row of the second card; row 3 is bundle personal, with an OpenPGP primary only; row 4 is bundle initech, without an SSH CA key. ' +
+  'Row 2 is the example bundle acme. Its key A is on this card and its key B is in the same row of the second card. Row 3 is bundle personal, with an OpenPGP primary only. Row 4 is bundle initech, without an SSH CA key. ' +
   'Row 5 is room for a new bundle, dashed like any empty slot. Row 6 is kept free for a replacement root, dotted and hatched. A pill under the card says a passkey on the card opens key files, decided and not yet proven.';
 
 const dot = (cx, cy, n) => circle(cx, cy, 10, 'fill-ink') + `<text class="t t-s t-b t-num t-mid" x="${cx}" y="${cy + 4.5}">${n}</text>`;
