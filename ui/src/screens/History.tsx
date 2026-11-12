@@ -9,7 +9,7 @@ import { domKey } from '../lib/inventory';
 import { href } from '../lib/route';
 import { safeString } from '../lib/safe';
 import { CEREMONY_COMMAND_WORD, CEREMONY_STATE_WORD } from '../lib/words';
-import { CeremonyPanel } from '../ui/CeremonyPanel';
+import { CeremonyPanel, StepsBelow } from '../ui/CeremonyPanel';
 import { DataTable, type Column } from '../ui/DataTable';
 import { Glyph, type SevKey } from '../ui/Glyph';
 import { Page } from '../ui/Page';
@@ -129,7 +129,7 @@ function NoSuchCeremony({ id }: { id: string }) {
   return (
     <PanelFrame kind="ceremony" title="No such ceremony" backHref={href.history()}>
       <PanelSection title="Not found">
-        <p className="max-w-[62ch]">
+        <p className="max-w-[56ch]">
           This bundle holds no ceremony folder called <T cap={CAPS['Ceremony.id']}>{id}</T>.
         </p>
       </PanelSection>
@@ -188,12 +188,12 @@ export function History({ id }: { id?: string }) {
           const list = (
             <>
               {status?.message ? (
-                <p className="mb-2 max-w-[62ch] text-[0.9375rem] text-dim">
+                <p className="mb-2 max-w-[56ch] text-[0.9375rem] text-dim">
                   <T cap={CAPS['HistoryStatus.message#history']}>{status.message}</T>
                 </p>
               ) : null}
               {fork || broken ? (
-                <p role="alert" className="mb-2 flex max-w-[62ch] items-center gap-2 font-semibold text-critical">
+                <p role="alert" className="mb-2 flex max-w-[56ch] items-center gap-2 font-semibold text-critical">
                   <Glyph level="critical" size={16} />
                   {fork ? `The history has ${status?.ends} ends. This is a fork.` : 'The chain of the history is broken.'}
                 </p>
@@ -201,6 +201,7 @@ export function History({ id }: { id?: string }) {
               <GoToPanel />
               <CeremonyTable rows={rows} caption="Ceremonies, newest first." selectedKey={selectedKey} />
               {folded.length > 0 ? <Folded rows={folded} selectedKey={selectedKey} /> : null}
+              {shown ? <StepsBelow c={shown} /> : null}
             </>
           );
           const panel = shown ? (

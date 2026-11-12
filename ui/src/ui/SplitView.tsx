@@ -15,7 +15,7 @@ import type { ReactNode } from 'react';
  * and out of the reading order. `rightLabel` names the right column when it is
  * a landmark of its own; a panel names itself (`PanelFrame`) and passes none.
  */
-export const SPLIT_COLUMNS = 'min-[1440px]:grid-cols-[minmax(0,1fr)_26rem] min-[1800px]:grid-cols-[minmax(0,62rem)_40rem]';
+export const SPLIT_COLUMNS = 'min-[1440px]:grid-cols-[minmax(0,1fr)_30rem] min-[1800px]:grid-cols-[minmax(0,62rem)_40rem]';
 
 export function SplitView({ list, right, rightLabel, panelOpen = false }: { list: ReactNode; right: ReactNode; rightLabel?: string; panelOpen?: boolean }) {
   const rightClass = `min-w-0 ${panelOpen ? '' : 'hidden min-[1440px]:block'}`;

@@ -230,11 +230,11 @@ export function Shell({ route, children }: { route: Route; children: ReactNode }
             </header>
             <main className="mx-auto flex w-full max-w-[112rem] flex-1 flex-col px-4 pt-4 pb-28 lg:px-8 lg:pt-5 lg:pb-5">
               <div className="flex-1">{children}</div>
-              <footer className="mt-6 border-t border-line pt-2 text-sm text-dim">
-                <p className="max-w-[62ch]">
+              <footer className="mt-4 gap-x-10 border-t border-line pt-2 text-sm text-dim lg:flex lg:items-start">
+                <p className="max-w-[60ch]">
                   This page only shows. It never asks for a PIN, a passphrase or a key, and it cannot confirm a ceremony. You confirm in the terminal.
                 </p>
-                <p className="flex flex-wrap gap-x-6">
+                <p className="flex flex-wrap gap-x-6 lg:shrink-0">
                   <a className="inline-flex min-h-11 items-center underline underline-offset-4 lg:min-h-8" href={`${import.meta.env.BASE_URL}THIRD-PARTY-LICENSES.md`}>
                     Licences of the parts this page is built from
                   </a>

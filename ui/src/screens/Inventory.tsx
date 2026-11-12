@@ -221,7 +221,7 @@ function CardsView({ ix, shown }: { ix: InvIndex; shown?: ObjectId }) {
         rowAttrs={(l) => (l.kind === 'key' ? keyAttrs(ix, l.key) : {})}
         columns={columns}
       />
-      {ix.inv.cards.length === 0 && ix.inv.keys.length > 0 ? <p className="mt-2 max-w-[62ch] text-sm text-dim">No card is listed. A cloud root needs none.</p> : null}
+      {ix.inv.cards.length === 0 && ix.inv.keys.length > 0 ? <p className="mt-2 max-w-[56ch] text-sm text-dim">No card is listed. A cloud root needs none.</p> : null}
     </>
   );
 }
@@ -276,7 +276,7 @@ function RootsView({ ix, shown }: { ix: InvIndex; shown?: ObjectId }) {
     {
       key: 'name',
       header: 'Name',
-      width: 14,
+      width: 18,
       render: (r, { current }) => {
         switch (r.t) {
           case 'key':
@@ -318,11 +318,11 @@ function RootsView({ ix, shown }: { ix: InvIndex; shown?: ObjectId }) {
         }
       },
     },
-    { key: 'place', header: 'Place', width: 10, render: (r) => (r.t === 'key' ? placeWord(r.key) : null) },
+    { key: 'place', header: 'Place', width: 8, render: (r) => (r.t === 'key' ? placeWord(r.key) : null) },
     {
       key: 'until',
       header: 'Until',
-      width: 7,
+      width: 6.5,
       render: (r) => {
         if (r.t === 'key') return r.key.expiresAt ? ymd(r.key.expiresAt) : keyEndWord(r.key);
         if (r.t === 'del') return r.line.certification?.validUntil ? ymd(r.line.certification.validUntil) : null;
@@ -332,7 +332,7 @@ function RootsView({ ix, shown }: { ix: InvIndex; shown?: ObjectId }) {
     {
       key: 'state',
       header: 'State',
-      width: 5,
+      width: 8,
       render: (r) => {
         switch (r.t) {
           case 'key':
@@ -346,7 +346,7 @@ function RootsView({ ix, shown }: { ix: InvIndex; shown?: ObjectId }) {
         }
       },
     },
-    { key: 'changes', header: 'Changes', width: 4.5, render: (r) => marks(changesOn(ix, [rootRowObject(r)])) },
+    { key: 'changes', header: 'Changes', width: 3.5, render: (r) => marks(changesOn(ix, [rootRowObject(r)])) },
   ];
 
   const rows: Group<RootRow>[] = groups.map((g) => {
@@ -520,7 +520,7 @@ export function Inventory({ view, object }: { view: InventoryView; object?: Obje
               {view === 'cards' ? <CardsView ix={ix} shown={shown} /> : view === 'roots' ? <RootsView ix={ix} shown={shown} /> : <DatesView ix={ix} shown={shown} />}
             </>
           );
-          return <SplitView list={list} right={shown ? <Panel ix={ix} view={view} object={shown} /> : null} panelOpen={object !== undefined} />;
+          return <SplitView list={list} right={shown ? <Panel key={`${shown.kind}/${shown.id}`} ix={ix} view={view} object={shown} /> : null} panelOpen={object !== undefined} />;
         }}
       </Load>
     </Page>

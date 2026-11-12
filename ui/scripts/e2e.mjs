@@ -480,7 +480,7 @@ await fresh('#/inventory/roots');
 }
 
 // ======== L. layout, measured =====================================================================
-// At 1440 by 900 and 1920 by 970, for four worlds and seven screens: the height as a multiple of the
+// At 1440 by 900 and 1920 by 970, for seven worlds and seven screens: the height as a multiple of the
 // window, the width, the longest line of text, the use of the width, and the place of the panel. The
 // aims are one screen for To do and one and a half for the others. The table is printed so that it can be
 // put into the pull request; a number above its aim fails the check and nothing is loosened.
@@ -495,6 +495,9 @@ const LAYOUT_ROUTES = [
 ];
 const WORLDS = [
   ['acme scene 1', async () => { await useBundle('acme'); await useScene(1); }],
+  ['acme scene 2', async () => { await useBundle('acme'); await useScene(2); }],
+  ['acme scene 3', async () => { await useBundle('acme'); await useScene(3); }],
+  ['acme scene 4', async () => { await useBundle('acme'); await useScene(4); }],
   ['acme scene 5', async () => { await useBundle('acme'); await useScene(5); }],
   ['globex', async () => { await useBundle('globex'); }],
   ['personal', async () => { await useBundle('personal'); }],
@@ -547,13 +550,24 @@ for (const [w, h] of [[1440, 900], [1920, 970]]) {
       const line = JSON.parse(await evalJs(LONGEST_LINE));
       check(`L: no line of text is longer than 70 characters (${where})`, line.chars <= 70, `${line.chars}: ${line.text}`);
       // The right column reaches the right edge of the window; the list is wide.
-      const grid = route === '#/trust' ? 'main div.grid.gap-6' : 'main div.grid.gap-6';
+      if (route === '#/trust') {
+        // Trust set has one table at the full width, and its facts in a strip above it.
+        const t = await rectOfSel('main table');
+        check(`L: the table reaches within 72 px of the right edge of the window and is at least 900 px wide (${where})`, t && t.innerWidth - t.right <= 72 && t.width >= 900, JSON.stringify(t));
+        continue;
+      }
+      const grid = 'main div.grid.gap-6';
       const cols = await evalJs(
         `(() => { const g = document.querySelector('${grid}'); if (!g || g.children.length < 2) return null; const a = g.children[0].getBoundingClientRect(); const b = g.children[1].getBoundingClientRect(); return JSON.stringify({ listWidth: a.width, rightEdge: b.right, rightLeft: b.left, listRight: a.right, innerWidth }); })()`,
       ).then((v) => (v ? JSON.parse(v) : null));
       if (cols && cols.rightLeft > 0) {
         check(`L: the right column ends within 72 px of the window and the list is at least 600 px wide (${where})`, cols.innerWidth - cols.rightEdge <= 72 && cols.listWidth >= 600, JSON.stringify(cols));
         check(`L: the right column stands beside the list (${where})`, cols.rightLeft >= cols.listRight - 1, JSON.stringify(cols));
+      } else if (route === '#/todo/findings' && (await count('main article')) > 0) {
+        // With findings, the cards stand in columns over the width and the facts of the bundle follow them
+        // (one or two findings: in the next column; more: in a strip). There is no right column to measure.
+        const wideCards = await evalJs(`(() => { const a = [...document.querySelectorAll('main article')].map((e) => e.getBoundingClientRect()); return JSON.stringify({ n: a.length, rows: new Set(a.map((r) => Math.round(r.top))).size, innerWidth }); })()`).then(JSON.parse);
+        check(`L: ${wideCards.n} findings stand in ${wideCards.rows} row(s), not in one long column (${where})`, wideCards.n <= 1 || wideCards.rows < wideCards.n, JSON.stringify(wideCards));
       } else {
         check(`L: the screen has a list and a right column (${where})`, false, JSON.stringify(cols));
       }
