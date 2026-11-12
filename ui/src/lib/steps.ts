@@ -1,56 +1,30 @@
-import { CeremonyKind } from '../gen/ritueel/local/v1alpha1/inspect_service_pb';
+import { CeremonyCommand } from '../gen/ritueel/local/v1alpha1/common_pb';
 
-// The usual steps of each kind of ceremony, in the words of the plan steps.
-// The contract's Ceremony message carries the digest of the plan it ran but
-// not its steps; the demo has no plan files, so the page shows the usual steps
-// by kind and says so (the real program would read them from plan.json in the
-// history).
+// The usual steps of a ceremony, one catalogue for the page.
+//
+// Record 0005 (rules 3 to 9) gives the six steps of `apply` in this order, and
+// rule 7 says what `close` does. Record 0010 (rule 4) wants one catalogue that
+// the page and the guided mode both read. The guided mode does not exist yet,
+// so the catalogue is the page's own; the sentences below are short readings of
+// those rules and add no fact. The contract does not carry the steps of one
+// ceremony, so the page shows the usual steps of its command.
 
 export interface UsualStep {
   title: string;
   detail: string;
 }
 
-const CHECK: UsualStep = { title: 'Check the plan', detail: 'ritueel compares the plan with the bundle and the history, and you confirm its digest at the terminal.' };
-const CARDS: UsualStep = { title: 'Read the cards', detail: 'Every slot of each card in the plan is read and compared with the layout. Nothing is written to a card in this step.' };
-const TRUST: UsualStep = { title: 'Build the trust files', detail: 'The root list, the CA bundle, a revocation list for each root, the SSH CA key list and the public OpenPGP keyring are built as the next trust sequence.' };
-const RECORD: UsualStep = { title: 'Write the record', detail: 'The record of this ceremony is written. It names the record before it, so the history stays a chain. It says where the ceremony ran.' };
-
-export const USUAL_STEPS: Partial<Record<CeremonyKind, UsualStep[]>> = {
-  [CeremonyKind.INIT]: [
-    CHECK,
-    CARDS,
-    { title: 'Make the root keys on each card', detail: 'The X.509 root, the OpenPGP primary and the SSH CA are born in their own row of each root card.' },
-    { title: 'Certify the public keys', detail: 'The public halves are written to the bundle with their creation time fixed.' },
-    TRUST,
-    RECORD,
+export const USUAL_STEPS: Partial<Record<CeremonyCommand, UsualStep[]>> = {
+  [CeremonyCommand.APPLY]: [
+    { title: 'Plan', detail: 'ritueel finds what is not applied yet and writes a plan. The plan needs no card.' },
+    { title: 'Confirm', detail: 'ritueel shows the plan in words with its digest. You type the first eight characters in the terminal.' },
+    { title: 'Reserve', detail: 'Before the first key is born, ritueel writes an attempt and starts its journals.' },
+    { title: 'Sign', detail: 'The root key signs. Each fingerprint is shown before its touch.' },
+    { title: 'Verify', detail: 'Code that did not sign checks every artifact against its request and the plan.' },
+    { title: 'Record', detail: 'ritueel writes the transcript, the artifacts and, last, the ceremony record.' },
   ],
-  [CeremonyKind.ADOPT_KEY]: [
-    CHECK,
-    { title: 'Read the public key', detail: 'ritueel reads the public key of the key being adopted and checks it and its policy against its rules. The key is not changed.' },
-    { title: 'Write the certificate', detail: 'The certificate is written, with its creation time fixed and recorded.' },
-    RECORD,
-  ],
-  [CeremonyKind.ADD_DELEGATED_KEY]: [
-    CHECK,
-    CARDS,
-    { title: 'Certify the delegated key', detail: 'A root certifies the key of the requester, with limits on what it may do and for how long.' },
-    TRUST,
-    RECORD,
-  ],
-  [CeremonyKind.RENEW]: [CHECK, CARDS, { title: 'Sign the renewal', detail: 'A root signs a new certificate or binding for the delegated key. The old one stays valid until it ends.' }, TRUST, RECORD],
-  [CeremonyKind.REPLACE]: [CHECK, CARDS, { title: 'Make the new key', detail: 'The new key is made, and the old one is marked as replaced.' }, TRUST, RECORD],
-  [CeremonyKind.REVOKE]: [CHECK, CARDS, { title: 'Revoke', detail: 'The revocation is signed with its reason and written to the bundle.' }, TRUST, RECORD],
-  [CeremonyKind.CARD_CHECK]: [
-    CHECK,
-    CARDS,
-    { title: 'Prove each card is alive', detail: 'Each card passes the proof of life. Nothing changes outside the record.' },
-    RECORD,
-  ],
-  [CeremonyKind.RESTORE_DRILL]: [
-    { title: 'Clone the bundle on a clean machine', detail: 'The check runs on a copy of the bundle, so nothing in your own bundle is touched.' },
-    { title: 'Verify the records, the last digest and the signed commits', detail: 'Every record is checked against the one before it, the newest digest against the one you kept apart, and the commits against their signatures.' },
-    { title: 'Compare the roots with their holders and check the revocation signatures', detail: 'Each root is compared with the keys its holder has, and every revocation is checked for a valid signature.' },
-    { title: 'Write the report', detail: 'The report is written for you to read. No record is written to the history.' },
+  [CeremonyCommand.CLOSE]: [
+    { title: 'Print the journals', detail: 'ritueel prints the journals of the attempt, so that you can see what was born and signed.' },
+    { title: 'Write the closing record', detail: 'ritueel writes a closing record. It names the attempt it closes and the reason you gave.' },
   ],
 };
