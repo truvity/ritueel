@@ -17,7 +17,7 @@ One bundle is one trust domain: the roots, the history and the cards of one orga
 |---|---|
 | The wanted files you write: `ritueel.yaml` and one file each for cards, roots, delegations and user IDs. | A private key in clear. |
 | For each root key: its certificate or public key, where it lives, and the evidence of its birth. | A PIN you type, a passphrase or a token. |
-| The OpenPGP creation time of each key. | A revocation certificate itself. The bundle holds only its digest. |
+| The OpenPGP creation time of each key. | A revocation signature itself. The bundle holds only its digest. |
 | The history: ceremony records, chained by hash. | Anything you would not show an auditor. |
 | The trust files, a new numbered trust set each time they change. | |
 | Requests, each with its answer beside it, in `requests/<name>/`. | |
@@ -42,7 +42,7 @@ The bundle is only half. The other half is what it deliberately does not hold.
 
 | Item | Why it is kept | Where |
 |---|---|---|
-| **Revocation certificates** of the OpenPGP primary keys, made when each key was born, one for each of two reasons (compromised and superseded). | They are the only way to revoke a primary key whose card and PIN are gone. | Apart from the cards, in at least two places: for example printed and sealed, and in the password manager. A third place is not wasteful. |
+| **Revocation signatures** of the OpenPGP primary keys, made when each key was born, one for each of two reasons (compromised and superseded). | They are the only way to revoke a primary key whose card and PIN are gone. | Apart from the cards, in at least two places: for example printed and sealed, and in the password manager. A third place is not wasteful. |
 | **The PINs you type**, one entry per card, and the passphrase of the recovery key. | Without the PIN a card is a locked box; three wrong tries block it. The PUK and the management key are made and sealed by ritueel, so you do not keep them. | The password manager, never in the bundle. |
 | **The recovery key**: an age identity in a passphrase-protected file. | If all the cards named to open the file are lost as well, the key files cannot be opened without it. | Apart from the cards, and apart from its passphrase: the file and the passphrase never sit in the same place. |
 | **Software keys,** if any. | A software key is a copy by nature. | In the software store you chose, whose own replication is the backup (see [where a key lives](/learn/key-stores/)). |
@@ -63,6 +63,6 @@ A restore you have never practised is a hope. The restore drill is the practice:
 1. Start on a clean machine with nothing but the bundle's remote and the password manager.
 2. Clone the bundle, verify the hash chain, and list the roots and what expires when.
 3. Compare each key with its card or cloud key: the serial, the fingerprint, the attestation.
-4. Walk through the loss of one card with its revocation certificate.
+4. Walk through the loss of one card with its revocation signature.
 
 It ends when every check passes, and the report says how long each step took. The drill runs on test keys first, then once on the real ones. This is planned as `check restore` ([the drills](/guides/)).

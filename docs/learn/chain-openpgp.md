@@ -39,8 +39,8 @@ Publish **version 4** certificates today. Version 6 (RFC 9580) works with Sequoi
 
 ## Revocation
 
-The primary key's revocation certificate is made when the key is born and kept apart from the card, because after a loss it cannot be made. A subkey is revoked by the primary key. A revocation does not reach every verifier; see [revoke](/learn/revoke/) and the [table of what each verifier does](/learn/openpgp-release-keys/#revocation).
+The primary key's revocation signature is made when the key is born and kept apart from the card, because after a loss it cannot be made. A subkey is revoked by the primary key. A revocation does not reach every verifier; see [revoke](/learn/revoke/) and the [table of what each verifier does](/learn/openpgp-release-keys/#revocation).
 
 ## Where ritueel fits
 
-ritueel creates the primary key in its store (or, in stage one, adopts an existing one), makes the revocation certificate, binds the subkeys, including onto a card, extends the expiry each year and writes the keyring file; the release pipeline builds the package from it ([record 0009](../decisions/0009-release-keys-and-the-keyring.md)). How to use the subkeys day to day is in the guides: [SSH login](/guides/openpgp-ssh-authentication/), [signing git commits and tags](/guides/openpgp-sign-git/), [signing releases](/guides/openpgp-sign-releases/), and [OpenPGP or Sigstore](/guides/openpgp-and-sigstore/).
+ritueel creates the primary key in its store (or, in stage one, adopts an existing one), makes the revocation signature, binds the subkeys, including onto a card, extends the expiry each year and writes the keyring file; the release pipeline builds the package from it ([record 0009](../decisions/0009-release-keys-and-the-keyring.md)). How to use the subkeys day to day is in the guides: [SSH login](/guides/openpgp-ssh-authentication/), [signing git commits and tags](/guides/openpgp-sign-git/), [signing releases](/guides/openpgp-sign-releases/), and [OpenPGP or Sigstore](/guides/openpgp-and-sigstore/).

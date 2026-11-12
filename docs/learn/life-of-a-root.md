@@ -25,7 +25,7 @@ A root key is created at a ceremony, in the store where it will live: a card, a 
 Three things are made at birth:
 
 - the **evidence of where it was born**: a card's attestation, or a cloud key's description and policy;
-- for an OpenPGP primary key, a **revocation certificate**, kept apart from the card;
+- for an OpenPGP primary key, a **revocation signature**, kept apart from the card;
 - the **second key**, on a second card, if you use cards: an independent key, never a copy.
 
 Because a first ceremony is the one you have practised least, practise on test keys first. That is the point of a [drill](/guides/root-adoption/).
@@ -45,7 +45,7 @@ A ceremony without a ceremony record cannot be audited. The [history](/learn/the
 After the first ceremony, and after every change:
 
 - push the bundle, with its [history](/learn/the-history/), to its remotes and keep the [end of the history](/glossary/) elsewhere;
-- put the revocation certificates in their two places;
+- put the revocation signatures in their two places;
 - check that the second card exists, in a second place;
 - make sure the PINs are in the password manager.
 
@@ -68,7 +68,7 @@ The rule: **re-sign yearly; rotate on an event, and a key in software after at m
 
 ## Revoke
 
-Revoking declares a key untrustworthy now. It is the emergency exit, and its material is made in advance: an OpenPGP revocation certificate made when the key was born, and for X.509 a signed list that leaves the key out (for an intermediate, a CRL from its root key). A revocation reaches different verifiers differently; see [what a revocation reaches](/learn/openpgp-release-keys/#revocation). See [revoke](/learn/revoke/).
+Revoking declares a key untrustworthy now. It is the emergency exit, and its material is made in advance: an OpenPGP revocation signature made when the key was born, and for X.509 a signed list that leaves the key out (for an intermediate, a CRL from its root key). A revocation reaches different verifiers differently; see [what a revocation reaches](/learn/openpgp-release-keys/#revocation). See [revoke](/learn/revoke/).
 
 ## Recover
 
