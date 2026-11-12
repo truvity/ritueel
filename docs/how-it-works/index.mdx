@@ -10,9 +10,9 @@ sidebar:
 
 import Figure from '../../site/src/components/Figure.astro';
 
-ritueel guides each use of a root key (the top key of your certificates, or your OpenPGP primary key) and keeps a record of it. A root is the key that others trust without further proof. A ceremony is the planned, recorded occasion on which a root is used. Below: three layers of a key, then two real jobs drawn as comics. Jump to [sign an intermediate](#sign-an-intermediate) or [bind the subkeys](#bind-the-subkeys-of-your-card).
+ritueel guides each use of a root key (the top key of your certificates, or your OpenPGP primary key) and keeps a record of it. A root is what others trust without further proof; it is built from one or more keys. A ceremony is the planned, recorded occasion on which a root is used. Below: three layers of a key, then the ceremony and two real jobs drawn as comics. Jump to [sign an intermediate](#sign-an-intermediate) or [bind the subkeys](#bind-the-subkeys-of-your-card).
 
-A plan is the sheet that fixes what will be signed; its digest is a short fingerprint of it. The offline system is a computer started from a USB stick, with no network. A key file is an encrypted file that holds a software key.
+A plan is the sheet that fixes what will be signed, except new keys; its digest is a short fingerprint of it. The offline system is a computer started from a USB stick, with no network. A key file is an encrypted file that holds a software key.
 
 ritueel is in its design phase: the program does not exist yet. These pictures show how it is designed to work.
 
@@ -47,7 +47,7 @@ The last three hold for both kinds. A key in a file is used only in the offline 
 
 ## Bind the subkeys of your card
 
-ritueel binds the subkeys of your day-to-day card to your own OpenPGP primary, kept in a key file. A key file can be copied, so this ceremony runs in the offline system. Each subkey is its own ceremony.
+ritueel binds the subkeys of your day-to-day card to your own OpenPGP primary, kept in a key file. A key file can be copied, so this ceremony runs in the offline system. The signing and the authentication subkey are made in one ceremony.
 
 <Figure name="bind-subkeys">
   A passkey on a root card opens the key file: decided, not yet proven.
