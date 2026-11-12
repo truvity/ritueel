@@ -1056,7 +1056,7 @@
                     "label": "Example Release Security <security@example.com>"
                   },
                   "validFrom": "2026-11-24T11:08:00Z",
-                  "validUntil": "2029-11-24T11:08:00Z",
+                  "validUntil": "2028-12-23T10:00:00Z",
                   "ceremonyId": "20261124T100400Z-apply-7d41e9b3",
                   "touchedBy": [
                     {
@@ -1076,7 +1076,7 @@
                     "label": "Example Release Security <security@example.com>"
                   },
                   "validFrom": "2026-11-24T11:08:00Z",
-                  "validUntil": "2029-11-24T11:08:00Z",
+                  "validUntil": "2029-11-20T10:00:00Z",
                   "ceremonyId": "20261124T100400Z-apply-7d41e9b3",
                   "touchedBy": [
                     {
@@ -1096,7 +1096,7 @@
                     "label": "Example Release Security <security@example.com>"
                   },
                   "validFrom": "2026-11-24T11:08:00Z",
-                  "validUntil": "2029-11-24T11:08:00Z",
+                  "validUntil": "2028-03-18T10:00:00Z",
                   "ceremonyId": "20261124T100400Z-apply-7d41e9b3",
                   "touchedBy": [
                     {

@@ -112,9 +112,9 @@ export async function emptyWorld(bundle: DemoBundle): Promise<World> {
 export const WORLDS = (): World[] => WORLD_IDS.map((w) => loadWorld(w.bundle, w.scene));
 
 /** The same world with the marker after every string. Numbers, bigints and enums stay. */
-export function marked<T>(v: T): T {
+export function marked<T>(v: T, change: (s: string) => string = (s) => s + BAD): T {
   const mark = (x: unknown): unknown => {
-    if (typeof x === 'string') return x + BAD;
+    if (typeof x === 'string') return change(x);
     if (Array.isArray(x)) return x.map(mark);
     if (x && typeof x === 'object') {
       const o: Record<string, unknown> = {};
@@ -126,8 +126,8 @@ export function marked<T>(v: T): T {
   return mark(v) as T;
 }
 
-export function markedWorld(w: World): World {
-  return { ...w, summary: marked(w.summary), findings: marked(w.findings), inventory: marked(w.inventory), ceremonies: marked(w.ceremonies), trust: marked(w.trust) };
+export function markedWorld(w: World, change?: (s: string) => string): World {
+  return { ...w, summary: marked(w.summary, change), findings: marked(w.findings, change), inventory: marked(w.inventory, change), ceremonies: marked(w.ceremonies, change), trust: marked(w.trust, change) };
 }
 
 /** What the mocked hooks answer. A test sets it before it renders a screen. */

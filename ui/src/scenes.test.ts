@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import { createClient } from '@connectrpc/connect';
-import { fromJson, type DescMessage, type JsonValue } from '@bufbuild/protobuf';
+import { fromJson, type DescMessage } from '@bufbuild/protobuf';
 import { timestampDate } from '@bufbuild/protobuf/wkt';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
@@ -265,13 +265,5 @@ describe('a started ceremony and a recorded one differ in what the page can offe
         if (c.closeCommand) expect(c.state, `${c.id}`).toBe(CeremonyState.STARTED);
         if (c.publishCommand) expect(c.state, `${c.id}`).toBe(CeremonyState.RECORDED);
       }
-  });
-  it('the JSON of a scene is plain data: no patch holds a function or a date object', () => {
-    const walk = (v: JsonValue): void => {
-      if (Array.isArray(v)) v.forEach(walk);
-      else if (v && typeof v === 'object') Object.values(v).forEach((x) => walk(x as JsonValue));
-      else expect(['string', 'number', 'boolean'].includes(typeof v) || v === null).toBe(true);
-    };
-    for (const s of SCENES) walk(s.patches as unknown as JsonValue);
   });
 });

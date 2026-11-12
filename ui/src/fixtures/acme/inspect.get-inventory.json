@@ -1088,6 +1088,18 @@
       "ceremonyId": "20251223T100000Z-apply-27b0e8c9",
       "path": "requests/acme-release-2027/",
       "answerPath": "requests/acme-release-2027/acme-release-2027.result.json"
+    },
+    {
+      "stem": "acme-ci-2026",
+      "delegation": "acme-ci",
+      "type": "DELEGATION_TYPE_X509_INTERMEDIATE",
+      "key": "9c2e5a719c2e5a719c2e5a719c2e5a719c2e5a719c2e5a719c2e5a719c2e5a71",
+      "outcome": "REQUEST_OUTCOME_REFUSED",
+      "code": "policy",
+      "answeredAt": "2026-11-20T10:00:00Z",
+      "ceremonyId": "20261120T100000Z-apply-3fa9c1d2",
+      "path": "requests/acme-ci-2026/",
+      "answerPath": "requests/acme-ci-2026/acme-ci-2026.result.json"
     }
   ],
   "changes": [
