@@ -1,325 +1,216 @@
-import { ChainState, RunPlace } from '../gen/ritueel/local/v1alpha1/common_pb';
-import { CeremonyKind, CeremonyOutcome, type Ceremony } from '../gen/ritueel/local/v1alpha1/inspect_service_pb';
-import { useBundleName, useCeremonies, useRoots } from '../api/hooks';
-import { plural, rootRef, ymd } from '../lib/format';
-import { href } from '../lib/route';
-import { USUAL_STEPS } from '../lib/steps';
-import { CEREMONY_KIND_WORD, OUTCOME_WORD, RAN_PLACE_VALUE, RAN_PLACE_WORD } from '../lib/words';
-import { Fp } from '../ui/Fp';
-import { Glyph } from '../ui/Glyph';
-import { LearnLink, Page } from '../ui/Page';
-import { Empty, Explain, Load, Sec } from '../ui/Sec';
-import { T } from '../ui/T';
-import type { HistoryStatus } from '../gen/ritueel/local/v1alpha1/common_pb';
+import { useEffect, useState } from 'react';
+import useMediaQuery from '@mui/material/useMediaQuery';
+import { ChainState } from '../gen/ritueel/local/v1alpha1/common_pb';
+import { CeremonyOutcome, CeremonyState, type Ceremony } from '../gen/ritueel/local/v1alpha1/inspect_service_pb';
+import { combine, useCeremonies, useSummary } from '../api/hooks';
 import { CAPS } from '../lib/caps';
+import { plural, ymd } from '../lib/format';
+import { domKey } from '../lib/inventory';
+import { href } from '../lib/route';
+import { safeString } from '../lib/safe';
+import { CEREMONY_COMMAND_WORD, CEREMONY_STATE_WORD } from '../lib/words';
+import { CeremonyPanel } from '../ui/CeremonyPanel';
+import { DataTable, type Column } from '../ui/DataTable';
+import { Glyph, type SevKey } from '../ui/Glyph';
+import { Page } from '../ui/Page';
+import { PanelFrame, PanelSection } from '../ui/PanelFrame';
+import { GoToPanel } from '../ui/Panel';
+import { ReadTime } from '../ui/ReadTime';
+import { Empty, Load } from '../ui/Sec';
+import { SplitView } from '../ui/SplitView';
+import { T } from '../ui/T';
 
-/** Kinds that read and compare but sign nothing (record 0007, rule 25): the conditions for a signature do not apply to them. */
-const SIGNS_NOTHING: ReadonlySet<CeremonyKind> = new Set([CeremonyKind.CARD_CHECK, CeremonyKind.RESTORE_DRILL]);
+// History: what happened, newest first, and each ceremony that has no record.
+// One list and one panel. The list is a table, one line for each ceremony
+// folder. A ceremony in one of four states (planned, started, recorded,
+// closed) is a line. A plan that was planned and never run (planned and stale)
+// is not a line: the plans are folded into one line with a count, closed, and
+// opened they are lines with the state "planned, stale".
+//
+// The panel shows the ceremony the address names; when it names none and the
+// screen is 1440 px or wider, the newest ceremony that is not folded. Below
+// 1440 px nothing is implied: the list shows first, and a chosen line shows the
+// panel in place of the list (the rules are in ui/PanelFrame.tsx).
 
-const LINK = 'font-semibold text-accent underline underline-offset-4';
+const WIDE = '(min-width:1440px)';
 
-function Seal({ l }: { l: HistoryStatus | undefined }) {
-  const ok = l?.chainState === ChainState.VERIFIED;
-  const none = (l?.recordCount ?? 0) === 0;
-  const broken = l?.chainState === ChainState.BROKEN;
+const isFolded = (c: Ceremony): boolean => c.state === CeremonyState.PLANNED && c.stale;
+
+/** The date of a ceremony: the time it was planned, which is the time in the name of its folder. */
+const dateOf = (c: Ceremony) => ymd(c.plannedAt ?? c.startedAt ?? c.finishedAt);
+
+function stateWord(c: Ceremony): string {
+  const word = CEREMONY_STATE_WORD[c.state] ?? '';
+  if (c.state === CeremonyState.RECORDED && c.outcome === CeremonyOutcome.DECLINED) return `${word}, declined`;
+  if (isFolded(c)) return `${word}, stale`;
+  return word;
+}
+
+/** One shape for each state, always with its word. */
+function stateLevel(c: Ceremony): SevKey {
+  switch (c.state) {
+    case CeremonyState.STARTED:
+      return 'critical';
+    case CeremonyState.RECORDED:
+      return 'ok';
+    case CeremonyState.CLOSED:
+      return 'notice';
+    default:
+      return 'info';
+  }
+}
+
+/**
+ * The link of a line. Its name is the date, the command and the title; the
+ * folder name is its description. The chosen line has `aria-current`.
+ */
+function CeremonyRowLink({ c, current }: { c: Ceremony; current: boolean }) {
+  const name = `${dateOf(c)} ${CEREMONY_COMMAND_WORD[c.command] ?? ''} ${safeString(c.title, CAPS['Ceremony.title#cell'])}`;
   return (
-    <div className={`border-2 bg-panel p-4 sm:p-5 ${broken ? 'border-critical' : 'border-rule'}`}>
-      <div className="flex flex-wrap items-start gap-x-5 gap-y-3">
-        <div className="flex items-center gap-3">
-          <Glyph level={none ? 'info' : ok ? 'ok' : 'critical'} size={32} />
-          <div className="leading-tight">
-            <p className="font-mono text-4xl font-bold">{l?.recordCount ?? 0}</p>
-            <p className="font-mono text-xs font-semibold tracking-wider uppercase">{l?.recordCount === 1 ? 'record' : 'records'}</p>
-          </div>
-        </div>
-        <div className="min-w-0 flex-1">
-          <p className="text-lg font-bold">{none ? 'The history has no records yet.' : ok ? 'The chain is verified.' : broken ? 'The chain is broken.' : 'The chain has not been checked.'}</p>
-          <p className="mt-0.5 max-w-[65ch]">
-            <T cap={CAPS['HistoryStatus.message#history']}>{l?.message}</T>
-          </p>
-          {l?.headRecordSha256 ? (
-            <div className="mt-3">
-              <p className="text-sm text-dim">Digest of the newest record (it stands for the whole chain):</p>
-              <Fp kind="Digest" value={l.headRecordSha256} />
-            </div>
-          ) : null}
-          {l?.checkedAt ? <p className="mt-2 text-sm text-dim">Checked {ymd(l.checkedAt)}.</p> : null}
-        </div>
-      </div>
-    </div>
+    <a
+      href={href.history(c.id)}
+      aria-current={current ? 'true' : undefined}
+      aria-label={name}
+      aria-description={safeString(c.id, CAPS['Ceremony.id'])}
+      className="font-semibold text-accent underline underline-offset-4"
+    >
+      {dateOf(c)}
+    </a>
   );
 }
 
-function outcomeLevel(o: CeremonyOutcome): 'ok' | 'alert' | 'critical' {
-  return o === CeremonyOutcome.DONE ? 'ok' : o === CeremonyOutcome.REFUSED ? 'critical' : 'alert';
+const COLUMNS: Column<Ceremony>[] = [
+  { key: 'date', header: 'Date', width: 7, render: (c, { current }) => <CeremonyRowLink c={c} current={current} /> },
+  { key: 'command', header: 'Command', width: 5, render: (c) => CEREMONY_COMMAND_WORD[c.command] },
+  { key: 'what', header: 'What', width: 22, render: (c) => <T cap={CAPS['Ceremony.title#cell']}>{c.title}</T> },
+  {
+    key: 'state',
+    header: 'State',
+    width: 7,
+    render: (c) => (
+      <span className="inline-flex items-start gap-1.5">
+        <span className="mt-[3px]">
+          <Glyph level={stateLevel(c)} size={14} />
+        </span>
+        <span>{stateWord(c)}</span>
+      </span>
+    ),
+  },
+];
+
+const rowAttrs = (c: Ceremony) => ({ 'data-state': stateWord(c), 'data-command': CEREMONY_COMMAND_WORD[c.command] });
+
+function CeremonyTable({ rows, caption, selectedKey }: { rows: Ceremony[]; caption: string; selectedKey?: string }) {
+  return <DataTable caption={caption} rows={rows} rowKey={(c) => domKey(c.id)} selectedKey={selectedKey} rowAttrs={rowAttrs} columns={COLUMNS} />;
 }
 
-function Entry({ c }: { c: Ceremony }) {
+/** The fold line: closed unless the chosen ceremony is inside it. */
+function Folded({ rows, selectedKey }: { rows: Ceremony[]; selectedKey?: string }) {
+  const holdsChosen = selectedKey !== undefined && rows.some((c) => domKey(c.id) === selectedKey);
+  const [open, setOpen] = useState(holdsChosen);
+  // A link to a folded plan opens the fold, so the chosen line is on screen.
+  useEffect(() => {
+    if (holdsChosen) setOpen(true);
+  }, [holdsChosen]);
   return (
-    <li className="grid gap-x-5 gap-y-1 border border-line bg-panel p-4 sm:grid-cols-[8rem_minmax(0,1fr)]">
-      <div>
-        <p className="font-mono text-sm font-bold">{ymd(c.completedAt)}</p>
-        <p className="mt-1 text-sm text-dim">{CEREMONY_KIND_WORD[c.kind]}</p>
+    <details open={open} onToggle={(e) => setOpen(e.currentTarget.open)} className="mt-3">
+      <summary className="inline-flex min-h-11 cursor-pointer items-center font-semibold text-accent underline underline-offset-4 lg:min-h-9">
+        {plural(rows.length, 'plan')} {rows.length === 1 ? 'was' : 'were'} never run
+      </summary>
+      <div className="mt-1">
+        <CeremonyTable rows={rows} caption="Plans that were never run." selectedKey={selectedKey} />
       </div>
-      <div className="min-w-0">
-        <h3 className="text-lg leading-snug font-bold">
-          <a className="text-ink underline decoration-line underline-offset-4 hover:decoration-accent" href={href.history(c.id)}>
-            <T cap={CAPS['Ceremony.title']}>{c.title}</T>
-          </a>
-        </h3>
-        <p className="mt-1 max-w-[70ch]">
-          <T cap={CAPS['Ceremony.summary']}>{c.summary}</T>
-        </p>
-        <p className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-dim">
-          <span className="inline-flex items-center gap-1.5 font-semibold text-ink">
-            <Glyph level={outcomeLevel(c.outcome)} size={14} /> {OUTCOME_WORD[c.outcome]}
-          </span>
-          {c.trustSequence ? <span>trust sequence {c.trustSequence}</span> : null}
-          {RAN_PLACE_WORD[c.runPlace] ? <span>{RAN_PLACE_WORD[c.runPlace]}</span> : null}
-          {c.cardSerials.length > 0 ? (
-            <span>
-              cards{' '}
-              {c.cardSerials.map((s, i) => (
-                <span key={i}>
-                  {i > 0 ? ', ' : ''}
-                  <T cap={CAPS['Ceremony.card_serials']}>{s}</T>
-                </span>
-              ))}
-            </span>
-          ) : null}
-        </p>
-      </div>
-    </li>
+    </details>
   );
 }
 
-function List() {
-  const res = useCeremonies();
+/** The address names a folder that this bundle does not hold. The panel says so and goes back to the list. */
+function NoSuchCeremony({ id }: { id: string }) {
+  return (
+    <PanelFrame kind="ceremony" title="No such ceremony" backHref={href.history()}>
+      <PanelSection title="Not found">
+        <p className="max-w-[70ch]">
+          This bundle holds no ceremony folder called <T cap={CAPS['Ceremony.id']}>{id}</T>.
+        </p>
+      </PanelSection>
+    </PanelFrame>
+  );
+}
+
+export function History({ id }: { id?: string }) {
+  const ceremonies = useCeremonies();
+  const summary = useSummary();
+  const res = combine(ceremonies, summary);
+  const wide = useMediaQuery(WIDE);
+  const ready = res.state === 'ready' ? res.data : undefined;
+  const h = ready?.[0].history;
   return (
     <Page
-      kicker="History"
-      title="The history, one record per ceremony"
-      lede={<p>Every time something about your keys changed, a record was written. Here they are, newest first.</p>}
-    >
-      <Explain term="A ceremony">
-        is one sitting at a terminal, where a plan is run and something about your keys changes. The history is the write-once part of your bundle: a sub-folder for each ceremony, with its plan, record and transcript. Every record
-        names the one before it by digest, so a change to one record breaks the chain after it.
-      </Explain>
-      <Load res={res} what="the history" isEmpty={(d) => d.ceremonies.length === 0} empty={
-        <>
-          <Empty title="The history is empty. No ceremony has been recorded yet.">
-            <p>The first ceremony writes the first record. Until then there is nothing to read here, and nothing is wrong.</p>
-            <p>
-              <a className={LINK} href={href.plan()}>
-                Make a plan
-              </a>
-            </p>
-          </Empty>
-        </>
-      }>
-        {(d) => (
+      title="History"
+      line={
+        ready ? (
           <>
-            <Seal l={d.history} />
-            <Sec title="Ceremonies" aside={plural(d.ceremonies.length, 'ceremony', 'ceremonies')}>
-              <ol className="space-y-3">
-                {d.ceremonies.map((c) => (
-                  <Entry key={c.id} c={c} />
-                ))}
-              </ol>
-            </Sec>
+            <T cap={CAPS['Bundle.name']}>{ready[1].bundle?.name}</T> {'·'} {plural(h?.recordCount ?? 0, 'record')}
+            {h && h.recordCount > 0 && h.endRecordSha256 ? (
+              <>
+                {' '}
+                {'·'} End of the history{' '}
+                <span className="font-mono">
+                  <T cap={8}>{h.endRecordSha256.slice(0, 8)}</T>
+                </span>
+              </>
+            ) : null}{' '}
+            {'·'} <ReadTime ts={ready[0].readAt} />
           </>
-        )}
-      </Load>
-    </Page>
-  );
-}
-
-function Detail({ id }: { id: string }) {
-  const res = useCeremonies();
-  const roots = useRoots();
-  const bundle = useBundleName();
-  return (
-    <Page kicker="History" title="One ceremony" aside={<a className={LINK} href={href.history()}>Back to the history</a>}>
-      <Load res={res} what="the history">
-        {(d) => {
-          const at = d.ceremonies.findIndex((c) => c.id === id);
-          const c = d.ceremonies[at];
-          if (!c) {
-            return (
-              <Empty title="There is no record with that name.">
-                <p>The history holds {plural(d.ceremonies.length, 'record')}, and none is called that. Go back and choose one.</p>
-              </Empty>
-            );
-          }
-          const prev = d.ceremonies.find((x) => x.id === c.previousId);
-          const next = at > 0 ? d.ceremonies[at - 1] : undefined;
-          const steps = USUAL_STEPS[c.kind as CeremonyKind] ?? [];
-          const rootLabels = roots.state === 'ready' ? new Set(roots.data.roots.map((r) => r.label)) : new Set<string>();
-          return (
+        ) : undefined
+      }
+    >
+      <Load
+        res={res}
+        what="the history"
+        isEmpty={([d]) => d.ceremonies.length === 0}
+        empty={
+          <Empty title="No ceremony yet." command={{ text: 'ritueel apply', label: 'Make the plan in the terminal' }}>
+            <p>The first apply writes the first ceremony and its record.</p>
+          </Empty>
+        }
+      >
+        {([d, s]) => {
+          const status = d.history;
+          const rows = d.ceremonies.filter((c) => !isFolded(c));
+          const folded = d.ceremonies.filter(isFolded);
+          // The panel shows the chosen ceremony, or on a wide screen the newest one that is not folded.
+          const chosen = id !== undefined ? d.ceremonies.find((c) => c.id === id) : undefined;
+          const shown = chosen ?? (id === undefined && wide ? rows[0] : undefined);
+          const selectedKey = shown ? domKey(shown.id) : undefined;
+          const fork = (status?.ends ?? 0) > 1;
+          const broken = status?.chainState === ChainState.BROKEN;
+          const list = (
             <>
-              <div className="border-2 border-rule bg-panel">
-                <header className="border-b-2 border-rule bg-sunk px-4 py-3">
-                  <p className="font-mono text-xs font-semibold tracking-wider text-dim uppercase">
-                    {CEREMONY_KIND_WORD[c.kind]}, {ymd(c.completedAt)}
-                  </p>
-                  <h2 className="mt-1 text-2xl leading-tight font-bold">
-                    <T cap={CAPS['Ceremony.title']}>{c.title}</T>
-                  </h2>
-                </header>
-                <div className="space-y-3 p-4">
-                  <p className="max-w-[70ch] text-[1.0625rem]">
-                    <T cap={CAPS['Ceremony.summary#open']}>{c.summary}</T>
-                  </p>
-                  <dl className="grid gap-x-8 gap-y-2 text-[0.9375rem] sm:grid-cols-2">
-                    <div>
-                      <dt className="text-sm text-dim">Outcome</dt>
-                      <dd className="flex items-center gap-1.5 font-bold">
-                        <Glyph level={outcomeLevel(c.outcome)} size={14} /> {OUTCOME_WORD[c.outcome]}
-                      </dd>
-                    </div>
-                    <div>
-                      <dt className="text-sm text-dim">Completed</dt>
-                      <dd className="font-mono">{ymd(c.completedAt)}</dd>
-                    </div>
-                    {RAN_PLACE_VALUE[c.runPlace] ? (
-                      <div>
-                        <dt className="text-sm text-dim">Where it ran</dt>
-                        <dd>
-                          <span className="font-bold">{RAN_PLACE_VALUE[c.runPlace]}</span>
-                          {c.runPlace === RunPlace.WORKSTATION && !SIGNS_NOTHING.has(c.kind) ? (
-                            <span className="block text-sm text-dim">
-                              A key that cannot be copied runs here under the four conditions of record 0005, rule 18: on cards a touch for every signature (a cloud key has no touch), the count stated in the plan, no retry, and a check on a second device. A test root may also run here (rule 28). The record does not yet show whether each condition was met (record 0005, issue 30).
-                            </span>
-                          ) : null}
-                        </dd>
-                      </div>
-                    ) : null}
-                    {c.subjectLabels.length > 0 ? (
-                      <div>
-                        <dt className="text-sm text-dim">About</dt>
-                        <dd className="flex flex-wrap gap-x-3">
-                          {c.subjectLabels.map((l) =>
-                            rootLabels.has(l) ? (
-                              <a key={l} className={LINK} href={href.key(l)}>
-                                <T cap={60}>{rootRef(bundle, l)}</T>
-                              </a>
-                            ) : (
-                              <span key={l} className="font-mono">
-                                <T cap={CAPS['Ceremony.subject_labels']}>{l}</T>
-                              </span>
-                            ),
-                          )}
-                        </dd>
-                      </div>
-                    ) : null}
-                    {c.cardSerials.length > 0 ? (
-                      <div>
-                        <dt className="text-sm text-dim">Cards present</dt>
-                        <dd className="flex flex-wrap gap-x-3">
-                          {c.cardSerials.map((s) => (
-                            <a key={s} className={`${LINK} font-mono`} href={href.cards(s)}>
-                              <T cap={CAPS['Ceremony.card_serials']}>{s}</T>
-                            </a>
-                          ))}
-                        </dd>
-                      </div>
-                    ) : null}
-                    {c.trustSequence ? (
-                      <div>
-                        <dt className="text-sm text-dim">Trust files built</dt>
-                        <dd>
-                          <a className={LINK} href={href.trust()}>
-                            Trust sequence {c.trustSequence}
-                          </a>
-                        </dd>
-                      </div>
-                    ) : null}
-                  </dl>
-                  {c.guidePath ? (
-                    <p>
-                      <LearnLink path={c.guidePath}>Read the guide for this kind of ceremony</LearnLink>
-                    </p>
-                  ) : null}
-                </div>
-              </div>
-
-              {steps.length > 0 ? (
-                <Sec title="Steps" aside="the usual steps of this kind of ceremony">
-                  <ol className="border border-line bg-panel">
-                    {steps.map((st, i) => (
-                      <li key={st.title} className={`grid grid-cols-[2rem_minmax(0,1fr)] gap-3 p-4 ${i > 0 ? 'border-t border-line' : ''}`}>
-                        <span className="flex h-7 w-7 items-center justify-center bg-ink font-mono text-sm font-bold text-bg">{i + 1}</span>
-                        <div>
-                          <p className="font-bold">{st.title}</p>
-                          <p className="text-[0.9375rem] text-dim">{st.detail}</p>
-                        </div>
-                      </li>
-                    ))}
-                  </ol>
-                  <p className="mt-2 max-w-[70ch] text-sm text-dim">
-                    The demo has no plan file for these ceremonies, so these are the usual steps of this kind of ceremony. In the program, the steps come from the plan in the
-                    ceremony's sub-folder of the history.
-                  </p>
-                </Sec>
+              {status?.message ? (
+                <p className="mb-2 max-w-[70ch] text-[0.9375rem] text-dim">
+                  <T cap={CAPS['HistoryStatus.message#history']}>{status.message}</T>
+                </p>
               ) : null}
-
-              <Sec title="Records" aside="how this record is chained">
-                <dl className="space-y-4 border border-line bg-panel p-4">
-                  <div>
-                    <dt className="text-sm font-semibold">This record</dt>
-                    <dd>
-                      <p className="font-mono text-sm text-dim">
-                        <T cap={CAPS['Ceremony.id']}>{c.id}</T>
-                      </p>
-                      <Fp kind="Digest" value={c.recordSha256} />
-                    </dd>
-                  </div>
-                  <div>
-                    <dt className="text-sm font-semibold">The record before it</dt>
-                    <dd>
-                      {prev ? (
-                        <p>
-                          <a className={LINK} href={href.history(prev.id)}>
-                            <T cap={CAPS['Ceremony.title#neighbour']}>{prev.title}</T>
-                          </a>
-                        </p>
-                      ) : (
-                        <p className="text-dim">None: this is the first record.</p>
-                      )}
-                      {c.previousRecordSha256 ? <Fp kind="Digest" value={c.previousRecordSha256} /> : null}
-                    </dd>
-                  </div>
-                  <div>
-                    <dt className="text-sm font-semibold">The record after it</dt>
-                    <dd>
-                      {next ? (
-                        <a className={LINK} href={href.history(next.id)}>
-                          <T cap={CAPS['Ceremony.title#neighbour']}>{next.title}</T>
-                        </a>
-                      ) : (
-                        <span className="text-dim">None yet: this is the newest record.</span>
-                      )}
-                    </dd>
-                  </div>
-                  {c.planDigest ? (
-                    <div>
-                      <dt className="text-sm font-semibold">Digest of the plan that was run</dt>
-                      <dd>
-                        <Fp kind="Digest" value={c.planDigest} />
-                      </dd>
-                    </div>
-                  ) : null}
-                </dl>
-              </Sec>
+              {fork || broken ? (
+                <p role="alert" className="mb-2 flex max-w-[70ch] items-center gap-2 font-semibold text-critical">
+                  <Glyph level="critical" size={16} />
+                  {fork ? `The history has ${status?.ends} ends. This is a fork.` : 'The chain of the history is broken.'}
+                </p>
+              ) : null}
+              <GoToPanel />
+              <CeremonyTable rows={rows} caption="Ceremonies, newest first." selectedKey={selectedKey} />
+              {folded.length > 0 ? <Folded rows={folded} selectedKey={selectedKey} /> : null}
             </>
           );
+          const panel = shown ? (
+            <CeremonyPanel key={shown.id} c={shown} all={d.ceremonies} trustSequence={s.trustSequence} />
+          ) : id !== undefined ? (
+            <NoSuchCeremony id={id} />
+          ) : null;
+          return <SplitView list={list} right={panel} panelOpen={id !== undefined} />;
         }}
       </Load>
     </Page>
   );
 }
-
-export function History({ id }: { id?: string }) {
-  return id ? <Detail id={id} /> : <List />;
-}
-
