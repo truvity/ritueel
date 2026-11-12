@@ -16,6 +16,10 @@ import { hrefOf, parseHash, routeForBundle, type BundleContents } from '../lib/r
 // contract has no call that names or selects a bundle (which bundle the process
 // serves is not decided by the records, record 0010), so there is no such switch
 // there and no call for it.
+//
+// A third control steps through the five scenes of the bundle acme (see
+// api/scenes.ts). A scene is one moment of one change; the other two bundles
+// have none. The scene chosen stays when the bundle is changed and changed back.
 
 export type ViewState = 'loaded' | 'empty' | 'failed' | 'waiting';
 
@@ -26,15 +30,15 @@ export const VIEW_STATES: { value: ViewState; label: string; hint: string }[] = 
   { value: 'waiting', label: 'Waiting', hint: 'ritueel has not answered yet. It stays so until you choose another page state.' },
 ];
 
-export type DemoBundle = 'personal' | 'acme' | 'globex';
+export type DemoBundle = 'acme' | 'globex' | 'personal';
 
 export const DEMO_BUNDLES: { value: DemoBundle; label: string; hint: string }[] = [
-  { value: 'personal', label: 'personal', hint: 'A holder\'s own OpenPGP key, kept in an encrypted file.' },
-  { value: 'acme', label: 'acme', hint: 'A company with two roots, acme/A and acme/B, on two root cards.' },
-  { value: 'globex', label: 'globex', hint: 'A company with one cloud root, used from the workstation.' },
+  { value: 'acme', label: 'acme', hint: 'A company with two root cards and one cloud key.' },
+  { value: 'globex', label: 'globex', hint: 'A company with one cloud root only.' },
+  { value: 'personal', label: 'personal', hint: 'One person: an OpenPGP key in a key file, and day-to-day cards.' },
 ];
 
-let currentBundle: DemoBundle = 'personal';
+let currentBundle: DemoBundle = 'acme';
 const bundleListeners = new Set<() => void>();
 
 export function getBundle(): DemoBundle {
@@ -58,15 +62,8 @@ export function provideBundleContents(read: () => BundleContents): void {
   contentsOfBundle = read;
 }
 
-/**
- * Choose the example bundle. The page keeps the screen it is on. Only a detail
- * view the new bundle cannot show falls back to its list (routeForBundle), and
- * the address changes only then. The fallback replaces the history entry, so
- * Back never returns to an address the new bundle cannot show.
- */
-export function setBundle(next: DemoBundle): void {
-  if (next === currentBundle) return;
-  currentBundle = next;
+/** Keep the screen after the demo's data changed (bundle or scene): only a detail view the data cannot show falls back to its list. */
+function keepScreen(): void {
   if (typeof window !== 'undefined' && window.location && contentsOfBundle) {
     try {
       const now = parseHash(window.location.hash);
@@ -76,6 +73,18 @@ export function setBundle(next: DemoBundle): void {
       // The contents could not be read: keep the address.
     }
   }
+}
+
+/**
+ * Choose the example bundle. The page keeps the screen it is on. Only a detail
+ * view the new bundle cannot show falls back to its list (routeForBundle), and
+ * the address changes only then. The fallback replaces the history entry, so
+ * Back never returns to an address the new bundle cannot show.
+ */
+export function setBundle(next: DemoBundle): void {
+  if (next === currentBundle) return;
+  currentBundle = next;
+  keepScreen();
   bundleListeners.forEach((l) => l());
 }
 
@@ -122,4 +131,42 @@ export function whenViewStateChanges(): Promise<void> {
       resolve();
     });
   });
+}
+
+// ---- the scenes of acme ------------------------------------------------------
+
+/** The first and the last scene. The text of each scene is in api/scenes.ts and fixtures/acme/scenes.json. */
+export const FIRST_SCENE = 1;
+export const LAST_SCENE = 5;
+
+let currentScene = FIRST_SCENE;
+const sceneListeners = new Set<() => void>();
+
+export function getScene(): number {
+  return currentScene;
+}
+
+/**
+ * Choose a scene, 1 to 5. A value outside that range is refused: the scene does
+ * not change and false comes back. The page keeps the screen, as for a bundle:
+ * an object that the new scene lacks falls back to its list.
+ */
+export function setScene(next: number): boolean {
+  if (!Number.isInteger(next) || next < FIRST_SCENE || next > LAST_SCENE) return false;
+  if (next === currentScene) return true;
+  currentScene = next;
+  keepScreen();
+  sceneListeners.forEach((l) => l());
+  return true;
+}
+
+export function subscribeScene(cb: () => void): () => void {
+  sceneListeners.add(cb);
+  return () => {
+    sceneListeners.delete(cb);
+  };
+}
+
+export function useScene(): number {
+  return useSyncExternalStore(subscribeScene, getScene, getScene);
 }

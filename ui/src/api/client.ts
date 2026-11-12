@@ -1,6 +1,5 @@
 import { createClient, type Transport } from '@connectrpc/connect';
 import { InspectService } from '../gen/ritueel/local/v1alpha1/inspect_service_pb';
-import { PlanService } from '../gen/ritueel/local/v1alpha1/plan_service_pb';
 
 /** True in the build that is the demo on the site. */
 export const isDemo = __RITUEEL_MODE__ === 'demo';
@@ -16,7 +15,7 @@ export const isDemo = __RITUEEL_MODE__ === 'demo';
  * one ritueel process, which serves the command line and this page on one
  * fixed loopback port. The page is served from that origin, so baseUrl '/' is
  * that origin. The page holds only the page-rights token (a cookie); it can
- * call the reads and SavePlan.
+ * call the five reads and nothing else.
  */
 async function loadTransport(): Promise<Transport> {
   if (__RITUEEL_MODE__ === 'demo') {
@@ -40,4 +39,3 @@ function lazyTransport(load: () => Promise<Transport>): Transport {
 const transport = lazyTransport(loadTransport);
 
 export const inspect = createClient(InspectService, transport);
-export const plans = createClient(PlanService, transport);
