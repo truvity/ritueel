@@ -156,7 +156,7 @@ ui-demo: ui-install
     cd ui && OUT_DIR=../site/public/demo npm run build
 
 # The page in headless Chrome (Chrome or Chromium on PATH, or CHROME): keyboard, focus, theme,
-# the wizard, the four states, copy, the phone. The demo is served under the site's own
+# the panel, the scenes, the four states, copy, the layout, the phone. The demo is served under the site's own
 # Content-Security-Policy (site/public/_headers), and the run fails on a console error or a policy
 # violation. Needs no other server.
 ui-e2e: ui-build
