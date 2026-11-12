@@ -40,20 +40,20 @@ If nothing has gone wrong, no advisory touches the key, and a key in software is
 
 ## What may run unattended
 
-A renewal changes nothing about who is trusted, which is why it can be automated where the key store allows it ([principle 7](/principles/)). The test that separates the routine from the decisions: **if every byte the root will sign is fixed by the bundle and the clock, it is routine; if any byte names a key, a subject or a constraint the bundle does not already hold, a person decides.**
+A renewal changes nothing about who is trusted, which is why it is routine work ([principle 7](/principles/)). The test that separates the routine from the decisions: **if every byte the root will sign is fixed by the bundle and the clock, it is routine; if any byte names a key, a subject or a constraint the bundle does not already hold, a person decides.**
 
 | Act | Card roots | Cloud root | Why |
 |---|---|---|---|
 | Make a root; add or retire keys | Ceremony | Ceremony: the ceremony role and the typed plan digest | It changes who is trusted ([root transitions](/reference/transitions/)). |
 | Certify a new intermediate key, bind a new subkey, list a new SSH CA key | Ceremony | Ceremony | A person compares the fingerprint and the evidence of a key nobody has seen before. |
-| Re-sign the same intermediate key or subkey binding, within its profile, before it expires | Ceremony: the PIN and the touch are physical. `status` reminds at 60, 30 and 14 days. | Ceremony now; unattended later (M7), run by the operator's scheduler | Every byte is fixed by the bundle and the clock. |
-| Re-sign the root list, the SSH CA key list or a CRL with the same content, and rebuild the CA bundle | Ceremony | Ceremony now; unattended later (M7), as above | The same: a new validity and the next trust sequence. |
-| Extend the root's own certificate and primary over the same keys | Ceremony | Ceremony now; unattended later (M7), as above | The same. |
+| Re-sign the same intermediate key or subkey binding, within its profile, before it expires | Ceremony: the PIN and the touch are physical. `status` reminds at 60, 30 and 14 days. | Ceremony | Every byte is fixed by the bundle and the clock. |
+| Re-sign the root list, the SSH CA key list or a CRL with the same content, and rebuild the CA bundle | Ceremony | Ceremony | The same: a new validity and the next trust sequence. |
+| Extend the root's own certificate and primary over the same keys | Ceremony | Ceremony | The same. |
 | Revoke an intermediate, a subkey or a key | A person runs `revoke` | A person runs `revoke` | A revocation is a decision. |
 | Issue a leaf certificate, or an SSH user or host certificate | Never | Never | ritueel holds no online key ([record 0001](../decisions/0001-what-ritueel-is.md)). |
 
-A cloud root's renewal is for later (M7) under a second role that can sign only what the bundle already holds, so it can extend trust but never create it ([The cloud root](/reference/kms-root/#renewal-under-a-policy)). A card root cannot be left to a machine: its PIN and touch are the protection, so its holder comes once a year, and the long warning is what keeps that from being forgotten.
+A cloud root renews at a ceremony like every other root, with a person present ([record 0004](../decisions/0004-the-cloud-root.md), rule 14). A card root cannot be left to a machine: its PIN and touch are the protection, so its holder comes once a year, and the long warning is what keeps that from being forgotten.
 
 ## In ritueel
 
-There is no `yearly` command: the end date makes a renewal a change not applied yet. `ritueel status` shows it. `ritueel apply` plans it. Once you type the first eight characters of the plan's digest, it re-signs every declared intermediate and subkey binding with the card of the year (the card that signed longest ago), extends that card's key and writes the next trust sequence. Not built yet. For a cloud root, renewal without a person is for later (M7); its command is only proposed, and no record decides it. The steps and a drill are in the [guide](/guides/re-sign-yearly/), and the details of validity and extension are in [the command line](/tools/cli/#root-validity-and-its-extension).
+There is no `yearly` command: the end date makes a renewal a change not applied yet. `ritueel status` shows it. `ritueel apply` plans it. Once you type the first eight characters of the plan's digest, it re-signs every declared intermediate and subkey binding with the card of the year (the card that signed longest ago), extends that card's key and writes the next trust sequence. Not built yet. A cloud root renews the same way. The steps and a drill are in the [guide](/guides/re-sign-yearly/), and the details of validity and extension are in [the command line](/tools/cli/#root-validity-and-its-extension).

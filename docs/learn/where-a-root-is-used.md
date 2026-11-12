@@ -28,7 +28,7 @@ A root that is online is exposed to all of them every day. A root that is used o
 | **A key that cannot leave a card** | A computer at a ceremony cannot copy the key, even if it is hostile. Possession of the card, its PIN and a touch for every signature are needed. | A card can be lost or break, so you need two. |
 | **A key in a cloud service behind a role** | Nobody downloads the key. Every use is an audited call to the service, and a role gates it. A person types the plan's digest; there is no touch. | Trust in the provider and in the account. Losing the account loses the key. |
 
-ritueel's rule has two parts. First, a root is never used without a person present: every ceremony is interactive, you type the start of the plan's digest, and a card also needs its PIN and a touch for every signature. A renewal role for a cloud root is planned for later (milestone M7); it can only keep alive what the bundle already holds ([record 0002](../decisions/0002-where-a-key-lives.md), rule 17).
+ritueel's rule has two parts. First, a root is never used without a person present: every ceremony is interactive, you type the start of the plan's digest, and a card also needs its PIN and a touch for every signature.
 
 Second, the machine depends on whether the key can be copied ([record 0005](../decisions/0005-a-ceremony-and-where-it-runs.md)):
 

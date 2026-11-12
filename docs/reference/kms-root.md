@@ -1,6 +1,6 @@
 ---
 title: The cloud root in AWS KMS
-description: What the operator provides for a KMS root, the ritueel.yaml block, the keys ritueel makes or adopts, the key policy, its checks and a proposed renewal.
+description: What the operator provides for a KMS root, the ritueel.yaml block, the keys ritueel makes or adopts, the key policy and its checks.
 sidebar:
   order: 10
 ---
