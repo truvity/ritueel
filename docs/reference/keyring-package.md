@@ -72,7 +72,7 @@ Record 0009, rule 21, gives the package build to the release pipeline; who write
 | 1 | Each file parses as what its name says: an `ar` archive of the three members with `debian-binary` `2.0`, or an rpm with a `noarch` header and a `cpio` payload; a `.gpg` or `.asc` of OpenPGP packets. | `malformed` |
 | 2 | The name and version fields are those of the file name, and the version is `<year>.<sequence>` with `sequence` equal to the root list's. | `version-mismatch` |
 | 3 | The package holds exactly the files of the table above for its kind, with the owner, modes and times of the build. | `files-mismatch` |
-| 4 | The primaries in the certificates are exactly the `openpgp_fingerprint` of the root keys on the root list, in its order, and each rpm key file holds one of them, named by its short fingerprint. | `primaries-mismatch` |
+| 4 | The primaries in the certificates are exactly the `openpgp_fingerprint` of the entries on the root list that have one, in its order, and each rpm key file holds one of them, named by its short fingerprint. | `primaries-mismatch` |
 | 5 | Every binding signature verifies with its primary over the primary and the subkey, with the embedded back-signature of the subkey for that primary; every certification verifies; every signature has both the issuer fingerprint and the issuer key ID ([the packet rule](/reference/hand-off-contract/#issuer-key-id)). | `signature-invalid` |
 | 6 | No encryption subkey, no third-party certification, and nothing that is revoked hard. With `--dir`, every subkey the bundle's answers bound and the ceremony records did not revoke hard is present. | `contents-mismatch` |
 | 7 | The `.gpg` and the `.asc` hold the same packets, and the digests in `SHA256SUMS` are those of the files. | `malformed` |

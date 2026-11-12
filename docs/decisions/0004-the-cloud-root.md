@@ -6,7 +6,7 @@
 ## Decision
 
 1. The cloud keys live in one dedicated account that holds nothing else.
-2. The account holds three keys, one for each kind of root: an X.509 root key, an OpenPGP primary and a break-glass SSH CA key. Each is a multi-Region key with a replica in a second Region. A replica is the same key. It covers a lost Region or a lost primary copy, and it is never counted as a second key. A company that wants a root independent of one provider gives it keys on cards too.
+2. The account holds one key for each kind of root the bundle uses: an X.509 root key, an OpenPGP primary and a break-glass SSH CA key. Each is a multi-Region key with a replica in a second Region. A replica is the same key. It covers a lost Region or a lost primary copy, and it is never counted as a second key. A company that wants a root independent of one provider gives it keys on cards too.
 3. A cloud root signs every year at a ceremony. It has nothing to alternate with.
 4. The first `apply` creates the cloud keys, born in KMS and each replicated to the declared Region, or adopts keys that already exist. Both ways leave the same checks, evidence files and ceremony records. The company's existing key may be confirmed as its OpenPGP primary.
 5. The holder provides the dedicated account, an admin role, a ceremony role and a break-glass principal. The admin role creates and reads, and can never sign. Only the break-glass principal may replicate a key or move its primary Region. The ceremony role may Sign digests and is the only principal that may sign anything new.
@@ -59,6 +59,7 @@
 - **A tag that holds an expiry checked against the clock.** It would limit a session in time, but AWS allows no policy variable in a date comparison.
 - **An organisation-policy lock on the keys.** It would be a second wall around the key policy, but it needs the holder's organisation to carry it, so it was dropped.
 - **An unattended renewal role.** It would keep a cloud root alive without a yearly visit, but it would be the one act with no person present, against rules 1, 6 and 12 of [0005](0005-a-ceremony-and-where-it-runs.md), and a second principal could sign with the root key.
+- **Always three keys, also for a bundle that uses one kind.** It would give one shape for every cloud account, but a bundle with an X.509 root only would hold, pay for and guard two keys it never signs with, and rule 2 of [0006](0006-bundle-history-and-trust-files.md) already makes the kinds optional.
 - **A card gate, a passkey identity or a management account behind the cards for the cloud root.** It would add a hardware gate, but it was dropped, and a gate is not proposed again; hardware keys on the cloud management account are the holder's own choice.
 
 ## Not yet proven or only proposed

@@ -15,7 +15,7 @@ One rule holds for every store ([principle 1](/principles/)): **a key is born in
 
 Two paths lead to a root that others rely on. Pick the first unless you cannot.
 
-- **The cloud root** is the recommended path for a team with a cloud account. It is one dedicated account with three keys, each with a replica that the service keeps in a second Region, an audit trail of every use, and no cards to alternate. You pay in an account to secure, a provider to trust, and a key that cannot attest where it was made: you read its policy from the service instead ([what a store can prove](/learn/what-a-store-can-prove/)). The first guide is [Prepare the cloud root](/guides/prepare-the-cloud-root/).
+- **The cloud root** is the recommended path for a team with a cloud account. It is one dedicated account with a key for each kind of root you use, each with a replica that the service keeps in a second Region, an audit trail of every use, and no cards to alternate. You pay in an account to secure, a provider to trust, and a key that cannot attest where it was made: you read its policy from the service instead ([what a store can prove](/learn/what-a-store-can-prove/)). The first guide is [Prepare the cloud root](/guides/prepare-the-cloud-root/).
 - **Two cards** is the path for a person or a lab with no cloud account, and it is the more demanding one: two independent keys on two cards, each made on its card, kept in two places, alternating by year ([Two roots in practice](/learn/two-roots/)).
 
 To walk the questions in order, read [Choosing where a root lives](/learn/choosing-where-a-root-lives/).
@@ -55,7 +55,7 @@ To walk the questions in order, read [Choosing where a root lives](/learn/choosi
 
 The two hardware and cloud stores are opened up in [How a YubiKey holds keys](/learn/how-a-yubikey-holds-keys/) and [How a KMS key works](/learn/how-a-kms-key-works/).
 
-The dedicated cloud root account holds **three keys, one for each kind of root, each with a multi-Region replica** ([record 0004](../decisions/0004-the-cloud-root.md)). A company that wants a root that does not depend on one provider gives it card keys.
+The dedicated cloud root account holds **one key for each kind of root the bundle uses, each with a multi-Region replica** ([record 0004](../decisions/0004-the-cloud-root.md)). A company that wants a root that does not depend on one provider gives it card keys.
 
 ## Planned stores
 
@@ -78,7 +78,7 @@ These are not supported and not scheduled. Each arrives with its first real inst
 | You want a drill to survive a lost laptop | 1Password, on a root that is still only a drill. |
 | One person or a small team holds the roots, and no cloud is involved | Two independent root cards, in two places ([which path is yours](#which-path-is-yours)). |
 | A person wants a daily OpenPGP key | A subkey born on an OpenPGP card, bound by a primary key kept offline. |
-| An organisation already runs on AWS and wants audited, policy-gated roots | A cloud root: three keys, each with a multi-Region replica, in a dedicated root account, with a ceremony role and the controls around it. |
+| An organisation already runs on AWS and wants audited, policy-gated roots | A cloud root: a key for each kind of root, each with a multi-Region replica, in a dedicated root account, with a ceremony role and the controls around it. |
 | You want the strongest story | A root with keys in different stores: for example cards and a KMS key. A failure of one kind does not take out the other. |
 
 ## Moving between stores
