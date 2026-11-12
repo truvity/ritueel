@@ -20,13 +20,13 @@ A root lives for years, and most of what happens to it is waiting. This page fol
 
 ## Create
 
-A root is created at a ceremony, in the store where it will live: on a card, or in a cloud key service. It is born there and never leaves. Before anything else you decide the store ([where a key lives](/learn/key-stores/)), the name, the algorithm and the lifetime.
+A root key is created at a ceremony, in the store where it will live: a card, a cloud key service or a key file. On a card or in a cloud service the key never leaves. First you decide the store ([where a key lives](/learn/key-stores/)), the name, the algorithm and the lifetime.
 
-Three things are made at the same time as the root, because they cannot be made later:
+Three things are made at birth:
 
 - the **evidence of where it was born**: a card's attestation, or a cloud key's description and policy;
 - for an OpenPGP primary key, a **revocation certificate**, kept apart from the card;
-- the **second root**, on a second card, if you use cards: an independent key, never a copy.
+- the **second key**, on a second card, if you use cards: an independent key, never a copy.
 
 Because a first ceremony is the one you have practised least, practise on test keys first. That is the point of a [drill](/guides/root-adoption/).
 
@@ -38,13 +38,13 @@ For a person's OpenPGP key the same step puts subkeys onto a card: the card make
 
 ## Record
 
-A ceremony without a record is a ceremony you cannot audit. The [history](/learn/the-history/) gets one record per ceremony: what was signed, by which key, in which store, and what outsiders now see. The record holds no secret and is chained to the one before.
+A ceremony without a ceremony record cannot be audited. The [history](/learn/the-history/) gets one ceremony record for each ceremony: what was signed, by which key, in which store, and what outsiders now see. It holds no secret and is chained to the one before.
 
 ## Back up
 
 After the first ceremony, and after every change:
 
-- push the bundle, with its [history](/learn/the-history/), to its remotes and write the last digest apart;
+- push the bundle, with its [history](/learn/the-history/), to its remotes and keep the [end of the history](/glossary/) elsewhere;
 - put the revocation certificates in their two places;
 - check that the second card exists, in a second place;
 - make sure the PINs are in the password manager.
@@ -53,7 +53,7 @@ Then practise getting it back. A restore drill on a clean machine is the proof.
 
 ## Re-sign
 
-Re-signing is the ordinary yearly ritual. The **same key** gets a **new validity**. A certificate for an intermediate is issued again over the same public key, or a binding is signed again with a later expiry. The root itself is extended at the same time, because each use of the root extends it by about three years.
+Re-signing is the ordinary yearly ritual. The **same key** gets a **new validity**. A certificate for an intermediate is issued again over the same public key, or a binding is signed again with a later expiry. The key that signs is extended at the same time, because each use extends it by about three years.
 
 Re-signing is cheap, and it changes nothing for anyone who already trusts the key. It keeps validity short, so a lost or forgotten key ages out, and it keeps the ceremony practised. The rule: **re-sign every year.** See [re-sign](/learn/re-sign/) for the reasons.
 
@@ -61,17 +61,17 @@ Re-signing is cheap, and it changes nothing for anyone who already trusts the ke
 
 Rotating is different: a **new key** replaces the old one. It is a larger event, because everything that trusted the old key must learn the new one, so it is done only when there is a reason:
 
-- **On an event.** An advisory that affects the card, its firmware or the service; the deprecation of the algorithm; a lost card or one at its end of life; a suspected compromise; a change of store or custody. The yearly ceremony includes a review of the advisories, so that this kind of event is not missed.
+- **On an event.** An advisory that affects the card, its firmware or the service; the deprecation of the algorithm; a lost card or one at its end of life; a suspected compromise; a change of store or of place. The yearly ceremony includes a review of the advisories, so that this kind of event is not missed.
 - **For a key in software, also after at most three years,** whatever else happened, because a file can be copied without a trace. Three years is the top of the usual lifetime for a private signing key, and a forced rotation keeps the rotate path exercised. A key on a card or in a cloud key service cannot be copied, and has no such limit.
 
 The rule: **re-sign yearly; rotate on an event, and a key in software after at most three years.** See [rotate](/learn/rotate/).
 
 ## Revoke
 
-Revoking declares a key untrustworthy now. It is the emergency exit, and its material is made in advance: an OpenPGP revocation certificate made when the key was born, and for X.509 a signed list that leaves the root out (for an intermediate, a CRL signed by the root). A revocation reaches different verifiers differently; see [what a revocation reaches](/learn/openpgp-release-keys/#revocation). See [revoke](/learn/revoke/).
+Revoking declares a key untrustworthy now. It is the emergency exit, and its material is made in advance: an OpenPGP revocation certificate made when the key was born, and for X.509 a signed list that leaves the key out (for an intermediate, a CRL from its root key). A revocation reaches different verifiers differently; see [what a revocation reaches](/learn/openpgp-release-keys/#revocation). See [revoke](/learn/revoke/).
 
 ## Recover
 
-Recovering is what you do after a loss: a card broken, stolen or forgotten in a taxi. It is a revocation, a replacement root, and a re-signing of whatever chained only to the lost one. See [recover](/learn/recover/) and [moving from one root to another](/learn/transitions/).
+Recovering is what you do after a loss: a card broken, stolen or forgotten in a taxi. It is a revocation, a replacement key, and a re-signing of whatever chained only to the lost one. See [recover](/learn/recover/) and [moving from one root to another](/learn/transitions/).
 
 Next: [revoke](/learn/revoke/).
