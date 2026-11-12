@@ -187,24 +187,33 @@ describe('the user IDs and the certifications', () => {
     expect(added).toHaveLength(3);
     for (const u of added) expect(u.certified, u.id).toBe(true);
     const fresh = s5.certifications.filter((c) => !base.certifications.some((b) => b.id === c.id));
-    expect(fresh).toHaveLength(3);
-    for (const c of fresh) {
+    // Three certifications of the new user ID, and four from the extension of keys A and B (record 0007, rule 13).
+    expect(fresh).toHaveLength(7);
+    for (const c of fresh) expect(c.ceremonyId, c.id).toBe(NEW);
+    const ofUserId = fresh.filter((c) => added.some((u) => u.id === c.subject?.id));
+    expect(ofUserId).toHaveLength(3);
+    for (const c of ofUserId) {
       expect(c.kind, c.id).toBe(CertificationKind.PRIMARY_SELF_SIGNATURE);
       expect(c.subject?.kind, c.id).toBe(ObjectKind.USER_ID);
-      expect(added.map((u) => u.id), c.id).toContain(c.subject?.id);
-      expect(c.ceremonyId, c.id).toBe(NEW);
     }
+    const extended = fresh.filter((c) => !ofUserId.includes(c));
+    expect(extended.map((c) => c.kind).sort()).toEqual([CertificationKind.ROOT_CERTIFICATE, CertificationKind.ROOT_CERTIFICATE, CertificationKind.PRIMARY_SELF_SIGNATURE, CertificationKind.PRIMARY_SELF_SIGNATURE].sort());
     // Before the ceremony ended, the user IDs were not certified.
     for (const n of [2, 3, 4]) for (const u of loadWorld('acme', n).inventory.userIds.filter((x) => added.some((a) => a.id === x.id))) expect(u.certified, `scene ${n} ${u.id}`).toBe(false);
   });
-  it('the keys of scene 5 are the base keys, and only touchedBy differs (a patch replaces the whole list, so it must not drift)', () => {
-    const strip = (keys: { toJson?: unknown }[]) => JSON.parse(JSON.stringify(keys, (k, v) => (k === 'touchedBy' ? undefined : typeof v === 'bigint' ? v.toString() : v)));
+  it('the keys of scene 5 are the base keys, and only touchedBy and the end of keys A and B differ (a patch replaces the whole list, so it must not drift)', () => {
+    const strip = (keys: { toJson?: unknown }[]) => JSON.parse(JSON.stringify(keys, (k, v) => (k === 'touchedBy' || k === 'expiresAt' ? undefined : typeof v === 'bigint' ? v.toString() : v)));
     const base = loadWorld('acme', 1).inventory.keys;
     const s5 = loadWorld('acme', 5).inventory.keys;
     expect(strip(s5 as never)).toEqual(strip(base as never));
+    const day = (k: { expiresAt?: { seconds: bigint } }) => (k.expiresAt ? new Date(Number(k.expiresAt.seconds) * 1000).toISOString().slice(0, 10) : '');
+    // Record 0007, rule 13: the signing card extends its own key by 36 months from the ceremony; the cloud key is no card and does not.
+    const moved = s5.filter((k, i) => day(k) !== day(base[i]));
+    expect(moved.map((k) => `${k.root}/${k.label}`).sort()).toEqual(['acme-release/A', 'acme-release/B', 'acme-tls/A', 'acme-tls/B']);
+    for (const k of moved) expect(day(k), k.fingerprint).toBe('2029-11-24');
     const touched = s5.filter((k) => k.touchedBy.some((t) => t.id === NEW));
-    expect(touched).toHaveLength(3);
-    expect(touched.every((k) => k.kind === 2 /* OPENPGP */ && k.role === 1 /* ROOT_KEY */)).toBe(true);
+    expect(touched).toHaveLength(5);
+    expect(touched.every((k) => k.role === 1 /* ROOT_KEY */ && (k.kind === 2 /* OPENPGP */ || (k.kind === 1 /* X509 */ && ['A', 'B'].includes(k.label))))).toBe(true);
   });
   it('the changes follow the moment: three certify changes in the plan in scenes 3 and 4, none in scene 5', () => {
     for (const n of [3, 4]) {

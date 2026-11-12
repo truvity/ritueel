@@ -456,7 +456,8 @@ function FindingsTab({ summary, onRead }: { summary: Loaded<GetSummaryResponse>;
       <Load res={res} what="the findings">
         {([s, f]) => {
           const worstFirst = [...f.findings].sort((a, b) => b.severity - a.severity);
-          // The note that a command is an example stands once under the cards when they hold a command; then the hint does not repeat it.
+          // The note that a command is an example stands once on the page. With three findings or more it stands under the cards and the hint does
+          // not repeat it; with one or two it stands under the command of the hint, which keeps the cards short.
           const exampleUnderCards = isDemo && worstFirst.some((x) => x.fixCommand);
           const hint = (strip: boolean) => (
             <div className="space-y-2 text-[0.9375rem]">
@@ -511,10 +512,7 @@ function FindingsTab({ summary, onRead }: { summary: Loaded<GetSummaryResponse>;
             <>
               {few ? (
                 <div className="grid gap-x-3 gap-y-4 min-[1440px]:grid-cols-3 min-[1440px]:items-start">
-                  <div className={`min-w-0 ${worstFirst.length === 1 ? '' : 'min-[1440px]:col-span-2'}`}>
-                    {list}
-                    {example}
-                  </div>
+                  <div className={`min-w-0 ${worstFirst.length === 1 ? '' : 'min-[1440px]:col-span-2'}`}>{list}</div>
                   <div className="min-w-0 min-[1440px]:pl-3">{bundle}</div>
                 </div>
               ) : (

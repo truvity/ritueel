@@ -536,7 +536,9 @@ await fresh('#/inventory/roots');
 // At 1440 by 900 and 1920 by 970, for seven worlds and seven screens: the height as a multiple of the
 // window, the width, the longest line of text, the use of the width, and the place of the panel. The
 // aims are one screen for To do and one and a half for the others. The table is printed so that it can be
-// put into the pull request; a number above its aim is reported under the table and nothing is loosened.
+// put into the pull request. A number above its aim is reported under the table and the aim is not
+// loosened; a number more than AIM_SLACK above its aim fails, so that a long screen cannot come back unseen.
+const AIM_SLACK = 0.15;
 const LAYOUT_ROUTES = [
   ['#/todo', 1.0],
   ['#/todo/findings', 1.0],
@@ -558,7 +560,7 @@ const WORLDS = [
 /** In the page: the longest line of text, by block and by top of the characters. */
 const LONGEST_LINE = `(() => {
   const worst = { chars: 0, text: '' };
-  const root = document.querySelector('main');
+  const root = document.body;
   const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
   const blockOf = (n) => { let e = n.parentElement; while (e && getComputedStyle(e).display.startsWith('inline')) e = e.parentElement; return e; };
   const lines = new Map();
@@ -599,9 +601,13 @@ for (const [w, h] of [[1440, 900], [1920, 970]]) {
       const ratio = Math.round(m.ratio * 100) / 100;
       const where = `${world}, ${route}, ${w}x${h}`;
       table.push({ world, route, size: `${w}x${h}`, ratio, aim });
-      // A height above its aim is reported, never loosened and never turned into a failure (the build list, C.1): the aim is the maintainer's.
+      // A height above its aim is reported and the aim is the maintainer's, so it is not loosened. Only a height
+      // more than AIM_SLACK above the aim is a failure.
       if (m.ratio > aim + 0.005) over.push(`${where}: ${ratio} (aim ${aim})`);
+      check(`L: the document is not more than ${AIM_SLACK} above its aim (${where})`, m.ratio <= aim + AIM_SLACK, `${ratio} > ${aim} + ${AIM_SLACK}`);
       check(`L: the document is not wider than the window (${where})`, m.sw <= m.cw, `${m.sw} > ${m.cw}`);
+      const noted = (await evalJs(`document.body.innerText`)).match(/Example only\. The ritueel command line is not built yet\./g) ?? [];
+      check(`L: the note that a command is an example stands at most once (${where})`, noted.length <= 1, String(noted.length));
       const line = JSON.parse(await evalJs(LONGEST_LINE));
       check(`L: no line of text is longer than 70 characters (${where})`, line.chars <= 70, `${line.chars}: ${line.text}`);
       // The right column reaches the right edge of the window; the list is wide.
@@ -635,7 +641,7 @@ for (const size of ['1440x900', '1920x970']) {
   console.log(`-- ${size}`);
   for (const [world] of WORLDS) console.log(world.padEnd(14) + '| ' + LAYOUT_ROUTES.map(([r]) => String(table.find((t) => t.world === world && t.route === r && t.size === size)?.ratio.toFixed(2) ?? '').padEnd(17)).join(''));
 }
-console.log(over.length ? `Above the aim (reported, not a failure):\n  ${over.join('\n  ')}` : 'No screen is above its aim.');
+console.log(over.length ? `Above the aim (reported; a failure only above the aim plus ${AIM_SLACK}):\n  ${over.join('\n  ')}` : 'No screen is above its aim.');
 check('L: every height is measured and the table is printed', table.length === 2 * WORLDS.length * LAYOUT_ROUTES.length, String(table.length));
 console.log('');
 await desktop();
