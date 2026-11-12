@@ -38,10 +38,11 @@
 31. A join writes no ceremony record; it only adds files, so the end of the history changes only when a ceremony happens.
 32. A delegation may declare one permitted DNS zone. ritueel writes it into the intermediate certificate as a name constraint and refuses a request for a name outside it. This comes with M2.
 33. A root list entry for a root key that has no OpenPGP primary leaves out `openpgp_fingerprint`. A reader takes such an entry as a key with no OpenPGP primary and does not refuse it.
+34. A temporary name is at most 15 characters long: a fixed prefix and a random part. It does not carry the final name.
 
 ## Why
 
-A holder must prove what was done, and outsiders must check the roots. One bundle per trust domain keeps a person's files apart from a company's. A write-once history shows a rewritten ceremony. One trust sequence and an expiry on every list let a host tell a current set from a stale one.
+A holder must prove what was done, and outsiders must check the roots. One bundle per trust domain keeps a person's files apart from a company's. A write-once history shows a rewritten ceremony. One trust sequence and an expiry on every list let a host tell a current set from a stale one. On exFAT, a file or folder renamed from a long temporary name to a shorter final name kept a folder entry with a wrong checksum until the system wrote the entry again; a name of at most 15 characters fits in one name entry, so the rename never shortens it (rule 34).
 
 ## What it costs
 
@@ -49,6 +50,7 @@ A holder must prove what was done, and outsiders must check the roots. One bundl
 - A change of the root set needs more signatures than a renewal.
 - The root list must be re-signed once a year.
 - The word "bundle" must be renamed across the site, pages and contract names.
+- A temporary name says nothing about the file it holds, so a person reading a stopped write finds out from the digests that `close` lists (rule 34).
 
 ## Roads not taken
 
@@ -94,6 +96,8 @@ A holder must prove what was done, and outsiders must check the roots. One bundl
 - **A note outside the chain for each join.** The holder could see when a copy was joined, but `seen/` is replaced and is not history, so the note would be no record, and it would be a new kind of file to specify (rule 31).
 - **An empty value for a missing OpenPGP fingerprint.** Every entry would have the same shape, but an empty value that means "none" looks the same as a value someone forgot to fill.
 - **A second version of the root list for bundles without OpenPGP.** An old reader would refuse the file clearly, but two formats would have to be kept for years, for a case that will be common.
+- **One more flush of the renamed file after each rename.** It also left no wrong entry in the trial, but it costs one more flush for every file and leaves a short gap between the rename and that flush (rule 34).
+- **Both the short name and the extra flush.** Belt and braces, but slower, and more to explain and test (rule 34).
 
 ## Not yet proven or only proposed
 
@@ -102,6 +106,7 @@ A holder must prove what was done, and outsiders must check the roots. One bundl
 - **Proposed.** The rules a request is checked against are split: store, firmware, PIN and validity in policy; name constraints and KMS read roles in each declared delegation's wanted file. Excluded DNS subtrees and excluded IP ranges are not decided ([#9](https://github.com/truvity/ritueel/issues/9)).
 - **Proposed.** The repair of a fork: one ceremony record that names every end, a root list signed only when the history has one end, and a result from the stick that counts only after a join has checked it ([#138](https://github.com/truvity/ritueel/issues/138)). What a host does when it is several root lists behind is not said either ([#139](https://github.com/truvity/ritueel/issues/139)).
 - **Proposed.** What `acme/A` names when one letter labels the keys of several roots in a bundle ([#137](https://github.com/truvity/ritueel/issues/137)).
+- **Not yet proven.** That the temporary names of rule 34 leave no wrong folder entry on a real stick. The trial of 2026-11-12 ran in a virtual machine and, with a long temporary name, left an entry that the exFAT check tool called corrupted; what other operating systems do with such an entry was not tested ([#8](https://github.com/truvity/ritueel/issues/8)).
 
 ## Replaces
 

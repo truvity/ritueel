@@ -37,10 +37,11 @@
 30. A wanted line or file that is deleted retires, revokes and removes nothing, and it is shown as a finding. The history wins over a wanted file.
 31. `close` asks the person to type the first eight characters of the digest of the plan, as `apply` does (rule 6); a script gives `--confirm DIGEST`.
 32. The digest of a wanted file is the SHA-256 of the bytes as stored, so `sha256sum` gives the same value. Two files with one meaning have two digests, which is accepted.
+33. The extra partition of the stick is exFAT, so that every operating system can read it.
 
 ## Why
 
-A root signs for everything below it, so the person must see what will be signed before it is signed. The machine is not trusted, so the rules rest on what stays in the store and on what the person confirmed. A copyable key is the root itself and needs a clean machine; rule 18 bounds the rest.
+A root signs for everything below it, so the person must see what will be signed before it is signed. The machine is not trusted, so the rules rest on what stays in the store and on what the person confirmed. A copyable key is the root itself and needs a clean machine; rule 18 bounds the rest. Windows and macOS read exFAT as well as Linux, so a holder is not tied to one kind of workstation to read the stick (rule 33).
 
 ## What it costs
 
@@ -49,6 +50,7 @@ A root signs for everything below it, so the person must see what will be signed
 - A stopped run leaves a critical attempt until a person closes it.
 - The reference pages must follow this record.
 - The stick is kept with the same care as a root: a key file is the root itself, even though it is encrypted.
+- exFAT has no journal. A bundle on the stick stays whole by the write steps of 0006 rule 29, not by the file system (rule 33).
 
 ## Roads not taken
 
@@ -85,6 +87,8 @@ A root signs for everything below it, so the person must see what will be signed
 - **Nothing to type for `close`, only the reason.** Nothing to learn, but rule 12 asks for a confirmation, a key press is not accepted for a plan (rule 6), and closing an attempt ends a critical finding of `status` (rule 31).
 - **A digest of a canonical form of the parsed YAML.** One meaning would give one digest, but a canonical form must be specified and tested, the digest would depend on the parser, and no standard tool gives the value (rule 32).
 - **A fixed normalisation of line ends before the digest.** The most common differences between machines and editors would go, but ritueel would digest bytes that are not in the file, and a copy in `wanted/` would no longer be an exact copy (rule 32).
+- **ext4 for the stick's partition.** A journal, and clean in the trial, but Windows and macOS do not read it, so only a Linux workstation could read the stick (rule 33).
+- **Both file systems, the holder chooses.** Each holder gets the one wanted, but there are two paths to test and keep working (rule 33).
 
 ## Not yet proven or only proposed
 
@@ -94,7 +98,8 @@ A root signs for everything below it, so the person must see what will be signed
 - **Not yet proven.** Which card checks run for a test root on a rehearsal card; fixed with the card proofs of the first milestone ([#11](https://github.com/truvity/ritueel/issues/11)).
 - **Proposed.** The program enforces: (1) set in the card at birth; (2) the count and (3) no retry, kept by the program; (4) the second-device check is taught and recorded, because the program checks nothing about the machine. Whether the ceremony record carries a field that a second-device check was declared, and what is compared, is open ([#30](https://github.com/truvity/ritueel/issues/30)).
 - **Proposed.** When a plan is prepared online and no stick is present, the plan is still made, nothing is refreshed, and the person is told the stick is not current ([#30](https://github.com/truvity/ritueel/issues/30)).
-- **Proposed.** The names of the directories on the extra partition of the stick, and its file system; the layout is decided, the names and the file system are not ([#30](https://github.com/truvity/ritueel/issues/30)).
+- **Not yet proven.** That a real stick with an exFAT partition keeps a bundle whole after a power cut. A trial on 2026-11-12 cut the power of a virtual machine that ran the offline system (AirgapOS 2026.07.0) while a program wrote a ceremony to a stick image, on ext4 and on exFAT; with the write steps of 0006 rule 29, no cut left a broken bundle on either. A real stick can lose or reorder writes it has reported as flushed; that is not shown ([#30](https://github.com/truvity/ritueel/issues/30)).
+- **Proposed.** The names of the directories on the extra partition of the stick; the layout and the file system (rule 33) are decided, the names are not ([#30](https://github.com/truvity/ritueel/issues/30)).
 - **Proposed.** An age limit of a plan, and a flag `--only` that a script must pass to confirm: both guard a scheduled run, and neither is decided; no number and no spelling is fixed here ([#142](https://github.com/truvity/ritueel/issues/142), [#143](https://github.com/truvity/ritueel/issues/143)).
 - **Proposed.** Whether `apply` refuses to make a new plan while an attempt is open, or only refuses to run the plan that has the attempt (the ceremony record page says the second) ([#140](https://github.com/truvity/ritueel/issues/140)).
 

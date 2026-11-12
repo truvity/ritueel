@@ -110,11 +110,11 @@ The trust sequence is one integer for the bundle. It grows by one whenever any t
 
 | # | Step | Source |
 |---|---|---|
-| 1 | Write the whole content under a new name in the same folder (a temporary name). | [0006](../decisions/0006-bundle-history-and-trust-files.md) rule 29 |
+| 1 | Write the whole content under a new name in the same folder (a temporary name: at most 15 characters, a fixed prefix and a random part, not the final name). | [0006](../decisions/0006-bundle-history-and-trust-files.md) rules 29 and 34 |
 | 2 | Flush the file, so that the data reaches the disk. | Proposed |
 | 3 | Rename it to its final name. A name in `history/`, `trust/`, `sealed/` or `requests/` is never replaced, so the rename refuses to replace. Every name carries its identity, so two writers do not meet on one name. | 0006 rule 29 |
 | 4 | Flush the folder. | Proposed |
-| 5 | A set of files, such as a trust set, is built beside under one temporary name. Then the folder is renamed into place. Its final name carries its number and its identity. The flush of each file is Proposed. | 0006 rules 12 and 29 |
+| 5 | A set of files, such as a trust set, is built beside under one temporary name (step 1). Then the folder is renamed into place. Its final name carries its number and its identity. The flush of each file is Proposed. | 0006 rules 12, 29 and 34 |
 | 6 | The ceremony record is written last, after the transcript and the artifacts. It lists them by digest and ends the ceremony. A ceremony folder with no ceremony record has not ended. If it holds an attempt, `status` shows it as critical until a person closes it. | [0005](../decisions/0005-a-ceremony-and-where-it-runs.md) rules 7 and 9; 0006 rule 6 |
 | 7 | The attempt is written before the first key is born. Each key goes into the birth journal as soon as it exists, and each signature into the journal of signatures. | 0005 rule 7 |
 | 8 | A file that a ceremony record lists and that fails its digest is an error for every reader. It is never "absent". | 0006 rule 29 |
@@ -126,7 +126,7 @@ These parts of the steps are not decided and are fixed with the code ([issue #8]
 - After a stop, ritueel does not delete a folder with a temporary name. `close` lists it with its digests. When the ceremony record is written and the rename has not happened, the next command finishes the rename first.
 - After a write to the stick, ritueel prints "flushed; the join on the workstation checks every file", and not "safe to remove". A removable stick can report a flush it did not do.
 
-The rename that refuses to replace is a Linux call (`renameat2` with the no-replace flag). Its manual page lists ext4, btrfs, xfs and vfat and does not list exFAT (read 2026-11-12). It is not tested on a stick. The steps rest on digests and not on the rename, so they hold on any file system. The file system of the stick, and the trial of the rename on it, are open ([issue #30](https://github.com/truvity/ritueel/issues/30)).
+The rename that refuses to replace is a Linux call (`renameat2` with the no-replace flag). Its manual page lists ext4, btrfs, xfs and vfat and does not list exFAT (read 2026-11-12). In a trial on 2026-11-12 in a virtual machine, the rename worked on exFAT with the kernel of the offline system. It is not tested on a real stick. The steps rest on digests and not on the rename, so they hold on any file system. The file system of the stick is exFAT ([record 0005](../decisions/0005-a-ceremony-and-where-it-runs.md), rule 33).
 :::
 
 ### How a name carries its identity
@@ -201,7 +201,7 @@ RITUEEL/                          the extra partition
 - **`keys/<bundle>/`** holds the key files of that bundle. Key files are never inside a bundle, so a copy of a bundle cannot carry a key by accident. The folder has the name of the bundle.
 - **The plan records the copy that made it** in the member `ritueel`: `{ "version", "os_arch", "sha256" }` ([the ceremony files](/reference/ceremony-record/)). The run is then `<stick>/ritueel/<version>/<system>-<arch>/ritueel --dir <stick>/bundles/acme apply history/<ceremony>/plan.json`.
 
-Not decided: the label and the file system of the partition, whether a checksum file sits beside each binary, and whether the `keys/` folder of a bundle may sit inside the parent of the bundle ([issue #30](https://github.com/truvity/ritueel/issues/30)).
+The file system of the partition is exFAT ([record 0005](../decisions/0005-a-ceremony-and-where-it-runs.md), rule 33). Not decided: the label of the partition, whether a checksum file sits beside each binary, and whether the `keys/` folder of a bundle may sit inside the parent of the bundle ([issue #30](https://github.com/truvity/ritueel/issues/30)).
 :::
 
 Not yet proven on hardware: that AirgapOS boots from a stick with such a partition and mounts it ([record 0005](../decisions/0005-a-ceremony-and-where-it-runs.md)).
