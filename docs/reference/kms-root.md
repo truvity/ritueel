@@ -5,7 +5,7 @@ sidebar:
   order: 10
 ---
 
-*Not built yet. This is the page that [record 0004](../decisions/0004-the-cloud-root.md) leaves for the details of the `aws-kms` store; the code is [issue #12](https://github.com/truvity/ritueel/issues/12), in M2. The custody model is in that record: one dedicated root account, one root, a multi-Region replica that is never counted as a second root.*
+*Not built yet. This is the page that [record 0004](../decisions/0004-the-cloud-root.md) leaves for the details of the `aws-kms` store; the code is [issue #12](https://github.com/truvity/ritueel/issues/12), in M2. The custody model is in that record: one dedicated root account, one root, a multi-Region replica that is never counted as a second root. The commands, words and file names on this page are from before the decisions of 2026-11-12; the design is at https://ritueel.id/design/.*
 
 A KMS key has no attestation. The evidence that it is the root it should be is the key itself, its policy and its audit trail, read from the service every time ([principle 4](/principles/)). This page says what ritueel creates or adopts, what it reads, and what makes it refuse.
 

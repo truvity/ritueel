@@ -5,7 +5,7 @@ sidebar:
   order: 12
 ---
 
-*Not built yet. This is the page that [record 0007](../decisions/0007-changing-and-losing-a-root.md) leaves for the format and the commands; the code is [issue #69](https://github.com/truvity/ritueel/issues/69), in M2, with the roots of [issue #48](https://github.com/truvity/ritueel/issues/48). The ideas are taught in [Revoke](/learn/revoke/).*
+*Not built yet. This is the page that [record 0007](../decisions/0007-changing-and-losing-a-root.md) leaves for the format and the commands; the code is [issue #69](https://github.com/truvity/ritueel/issues/69), in M2, with the roots of [issue #48](https://github.com/truvity/ritueel/issues/48). The ideas are taught in [Revoke](/learn/revoke/). The commands, words and file names on this page are from before the decisions of 2026-11-12; the design is at https://ritueel.id/design/.*
 
 A revocation made after a primary key is lost cannot be made at all. So ritueel makes the revocation signatures when the key is born, for every OpenPGP primary key it creates: the primary of each root, and a person's own primary when personal OpenPGP is built (M3, [issue #18](https://github.com/truvity/ritueel/issues/18)). For the same reason every root also makes its **removal authorisation** at birth, which lets it leave the root set without signing ([below](/reference/revocation-material/#the-removal-authorisation)).
 

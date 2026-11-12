@@ -5,7 +5,7 @@ sidebar:
   order: 0.6
 ---
 
-*Design phase: not built yet. The roles and the checks are specified in [The cloud root in AWS KMS](/reference/kms-root/); the code is [issue #12](https://github.com/truvity/ritueel/issues/12), in M2. ritueel creates the keys and their policy, or adopts a key that already exists ([record 0004](../decisions/0004-the-cloud-root.md)); it does not create the account or the roles ([record 0001](../decisions/0001-what-ritueel-is.md)). Try everything in a test account first.*
+*Design phase: not built yet. The roles and the checks are specified in [The cloud root in AWS KMS](/reference/kms-root/); the code is [issue #12](https://github.com/truvity/ritueel/issues/12), in M2. ritueel creates the keys and their policy, or adopts a key that already exists ([record 0004](../decisions/0004-the-cloud-root.md)); it does not create the account or the roles ([record 0001](../decisions/0001-what-ritueel-is.md)). Try everything in a test account first. The commands, words and file names on this page are from before the decisions of 2026-11-12; the design is at https://ritueel.id/design/.*
 
 A cloud root is the recommended path for a team with a cloud account ([which path is yours](/learn/key-stores/#which-path-is-yours)), and this guide is its first step. It is a permission: the key never leaves the service, so the root is as safe as the rules about who may use it. Those rules are yours to set up, once, before ritueel makes or adopts the key. This guide says what to make, in words; use whatever infrastructure tool your organisation already uses, and review the result as you would any change to who can sign for you.
 
