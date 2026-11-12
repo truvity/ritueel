@@ -7,13 +7,13 @@
 //  - Row 1 (9a 9c 9d 9e) is the card's own jobs and holds no root. All four are drawn empty: three stay
 //    empty, and 9d is tagged "spare key" because records 0002 (rule 24) and 0003 (rule 3) make a spare
 //    key there only if the passkey way cannot be used (a fallback, never a held key in the picture).
-//  - Rows 2 to 6 hold one root each, the same kind of key in the same column: X.509 root key,
+//  - Rows 2 to 6 each hold the keys of one bundle, the same kind of key in the same column: X.509 root key,
 //    OpenPGP primary, break-glass SSH CA key, empty. One row is kept free so that a replacement root
 //    can be born beside the old one: four bundles on a pair of cards. Which row stays free is drawn as
 //    row 6 only for the picture; the rule that the plan takes the lowest empty row is Proposed
 //    (reference/cards), so no caption states it.
-//  - The partner root of the same bundle sits in the same row on the second card (acme/A on card
-//    one, acme/B on card two).
+//  - A root has key A on one card and key B on the other (record 0003, rule 1), in the same row of the
+//    second card as of the first; this card holds the A keys.
 //  - The bundle names acme, personal and initech are made-up examples (the public repository holds no real name).
 
 /** The four columns of rows 2 to 6: the kind of key, and what it is for. */
@@ -38,7 +38,7 @@ const KEY_COLUMNS = COLUMNS.map((c) => c.type);
 const held = (n, label, accent = false) => ({
   n,
   label,
-  sub: 'root A',
+  sub: 'keys A',
   kind: 'bundle',
   accent,
   states: [accent ? 'acme' : 'held', accent ? 'acme' : 'held', accent ? 'acme' : 'held', 'empty'],
@@ -87,7 +87,7 @@ export function rootCardCells() {
  */
 export const ROOT_CARD_NOTES = {
   own: ['Row 1', 'the card’s own jobs, no root.', '9d: a spare key to open key', 'files, only if the passkey', 'way cannot be used.'],
-  bundles: ['Rows 2 to 5', 'one root of one bundle each,', 'the same key kind in a column:', 'four bundles on a pair of cards.', 'Root B: same row, second card.', 'Fewer kinds leave cells empty.'],
+  bundles: ['Rows 2 to 5', 'the keys of one bundle each,', 'the same key kind in a column:', 'four bundles on a pair of cards.', 'Key B: same row, second card.', 'Fewer kinds leave cells empty.'],
   free: ['Row 6', 'kept free: a replacement root', 'is born here, beside the old one.'],
 };
 

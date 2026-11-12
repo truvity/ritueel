@@ -8,8 +8,8 @@ import { COLUMNS, PIV_ROWS, ROOT_CARD_NOTES, ROOT_CARD_PASSKEY, ROOT_CARD_ROWS }
 const LABEL =
   'A root card drawn as 24 PIV key slots in six rows of four, with the key kind written in each held slot. ' +
   'Row 1, the card’s own jobs, holds no root: all four slots are drawn empty, 9d is tagged spare key (a key made there only if the passkey way cannot be used) and 9e never used. ' +
-  'Rows 2 to 6 hold one root each with the same kind of key in the same column: X.509 root key, OpenPGP primary, SSH CA key, empty. ' +
-  'Row 2 is the example bundle acme, root A, whose partner root B sits in the same row of the second card; row 3 is bundle personal, with an OpenPGP primary only; row 4 is bundle initech, without an SSH CA key. ' +
+  'Rows 2 to 6 each hold the keys of one bundle, the same kind of key in the same column: X.509 root key, OpenPGP primary, SSH CA key, empty. ' +
+  'Row 2 is the example bundle acme, whose key A is on this card and whose key B is in the same row of the second card; row 3 is bundle personal, with an OpenPGP primary only; row 4 is bundle initech, without an SSH CA key. ' +
   'Row 5 is room for a new bundle, dashed like any empty slot. Row 6 is kept free for a replacement root, dotted and hatched. A pill under the card says a passkey on the card opens key files, decided and not yet proven.';
 
 const dot = (cx, cy, n) => circle(cx, cy, 10, 'fill-ink') + `<text class="t t-s t-b t-num t-mid" x="${cx}" y="${cy + 4.5}">${n}</text>`;
@@ -114,7 +114,7 @@ function narrow() {
       body.push(
         line(16, y + 6, 344, y + 6, 'ln ln-thin ln-dim') +
           text(16, y + 24, 'Rows 2 to 5: four bundles on a pair of cards.', 't t-s t-b t-long') +
-          text(16, y + 40, 'Root A here; root B in the same row of card two.', 't t-s t-long') +
+          text(16, y + 40, 'Key A here; key B in the same row of card two.', 't t-s t-long') +
           text(16, y + 56, 'Fewer kinds of key leave cells empty.', 't t-s t-long'),
       );
       y += 66;
@@ -148,7 +148,7 @@ export default {
   kind: 'layout',
   label: 'The root card as 24 key slots in six rows of four',
   caption:
-    'Six rows of four PIV slots. Row 1 is the card’s own jobs; each other row holds one root of one bundle, the same key kind in each column.',
+    'Six rows of four PIV slots. Row 1 is the card’s own jobs; each other row holds the keys of one bundle, the same key kind in each column.',
   wide: wide(),
   narrow: narrow(),
 };
