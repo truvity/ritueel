@@ -17,7 +17,7 @@ index.mdx
 design.md
 
 learn/index.md
-learn/what-is-a-root.md
+learn/what-is-a-root.mdx
 learn/where-a-root-is-used.md
 learn/how-a-yubikey-holds-keys.mdx
 learn/how-passkeys-work.mdx
