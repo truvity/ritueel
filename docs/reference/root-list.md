@@ -7,7 +7,7 @@ sidebar:
 
 *Not built yet. This is version 1 of the format that [record 0006](../decisions/0006-bundle-history-and-trust-files.md) leaves to a reference page; the code is [issue #14](https://github.com/truvity/ritueel/issues/14), in M2, and its [test vectors](/reference/root-list/#test-vectors) match this page. The SSH CA key list follows the same shape in M4 ([its page](/reference/ssh-ca-key-list/)), and the CRLs of the roots are on [their page](/reference/crl/).*
 
-A system that updates its own trust, such as a system that holds intermediates, needs to know which roots are active today. The **signed root list** tells it: the active roots, pinned by their public keys, with the [trust sequence](../decisions/0006-bundle-history-and-trust-files.md), signed by one active root when the roots stay the same, and by every current root when they change ([who signs](/reference/root-list/#who-signs)). The **CA bundle** carries the same roots' certificates, for a TLS client and for chain building. A requester of the [hand-off contract](/reference/hand-off-contract/) reads the root list to fill `primaries` and to check an answer's issuer and `trust_sequence`.
+A system that updates its own trust, such as a system that holds delegated keys, needs to know which roots are active today. The **signed root list** tells it: the active roots, pinned by their public keys, with the [trust sequence](../decisions/0006-bundle-history-and-trust-files.md), signed by one active root when the roots stay the same, and by every current root or its stored removal authorisation when they change ([who signs](/reference/root-list/#who-signs)). The **CA bundle** carries the same roots' certificates, for a TLS client and for chain building. A requester of the [hand-off contract](/reference/hand-off-contract/) reads the root list to fill `primaries` and to check an answer's issuer and `trust_sequence`.
 
 ## Files
 
@@ -95,7 +95,7 @@ It is a JWS in **compact serialisation with the payload attached**: `<header>.<p
 
 A ceremony that changes any trust file writes a new list with the next sequence, signed in the same ceremony. The yearly ceremony and every transition always do, so the list is re-signed at least once a year ([record 0006](../decisions/0006-bundle-history-and-trust-files.md)); so does any other ceremony that signs with a root, because each use re-issues that root's certificate and so changes the CA bundle ([record 0007](../decisions/0007-changing-and-losing-a-root.md), rule 13). The list's bytes are fixed in the ceremony's plan, so each signature is one of the plan's signatures and its touch is counted. `status` warns 60, 30 and 14 days before the newest list expires ([commands](/reference/cli/#exit-codes)).
 
-**Adding, retiring and revoking a root** are the ceremonies that change the root set ([root transitions](/reference/transitions/#the-commands)). A revoked root key, or a key that can no longer sign, is left out of the new list, with its removal authorisation attached when it cannot sign, and with a CA bundle and a keyring without it beside it, and its break-glass SSH CA key off the SSH CA key list. The root stops publishing its [CRL](/reference/crl/).
+**Adding or retiring a root** is a ceremony, and `revoke` is an act of its own. All three change the root set ([root transitions](/reference/transitions/#the-commands)). A revoked root key, or a key that can no longer sign, is left out of the new list, with its removal authorisation attached when it cannot sign, and with a CA bundle and a keyring without it beside it, and its break-glass SSH CA key off the SSH CA key list. The root stops publishing its [CRL](/reference/crl/).
 
 ## How a host reads it
 
@@ -117,13 +117,13 @@ A host holds one list: the last good one. Before its first list it holds **initi
 
 The host verifies the bytes it received and does not re-serialise them. When every check passes, the new list replaces the one it holds, and its roots are the host's pins from then on. Receiving the current list again is not an error: a list at the same sequence passes when its `root-list.json` is byte-identical to the held one, whichever active root signed it, and is refused with `sequence-conflict` when its content differs, because one sequence names one set of roots. A signer need not be on the new list: a root that retires signs the list that removes it, because checks 2, 8 and 10 read the list the host held.
 
-**A host that missed a list** compares the next one it receives with the list it holds, not with the one before it. A change of the root set it has not seen may then be refused (`unknown-signer` or `insufficient-signers`); it takes the lists in between, in order, from where the operator publishes them. ritueel keeps every list under `trust/<number>/`, so the operator can publish them all.
+**A host that missed a list** compares the next one it receives with the list it holds, not with the one before it. A change of the root set it has not seen may then be refused (`unknown-signer` or `insufficient-signers`); it takes the lists in between, in order, from where the operator publishes them. ritueel keeps every list in its numbered trust set, so every list can be published.
 
 **When the list a host holds expires** and no newer one has arrived, it keeps the list, goes on trusting its roots, and raises a warning. It does not drop its roots ([record 0006](../decisions/0006-bundle-history-and-trust-files.md)).
 
 These codes belong to the host and are not sent anywhere. The vectors fix the outcome and the code, not the wording of a message.
 
-**The command.** `ritueel root-list verify FILE` runs these checks on the list `FILE` (its `root-list.json`; the signature is the `.jws` file beside it), against the list the host holds (`--held FILE`) or its initial pins (`--pin SHA256`, once for each). `--ca-bundle FILE` also checks a CA bundle against the list: its first line names the list's `sequence`, and its certificates are the keys of the list's `roots`, in that order, or it is refused with `ca-bundle-mismatch`. It signs and writes nothing ([Commands](/reference/cli/#the-first-versions-commands)).
+**The command.** `ritueel verify root-list FILE` runs these checks on the list `FILE` (its `root-list.json`; the signature is the `.jws` file beside it), against the list the host holds (`--held FILE`) or its initial pins (`--pin SHA256`, once for each). `--ca-bundle FILE` also checks a CA bundle against the list: its first line names the list's `sequence`, and its certificates are the keys of the list's `roots`, in that order, or it is refused with `ca-bundle-mismatch`. It signs and writes nothing ([Commands](/reference/cli/#the-first-versions-commands)).
 
 ## The CA bundle
 
@@ -133,7 +133,7 @@ These codes belong to the host and are not sent anywhere. The vectors fix the ou
 2. Then the current certificate of each root on that list, in the order of `roots`, each PEM-armoured with the label `CERTIFICATE` (RFC 7468), Base64 in lines of 64 characters.
 3. Nothing else.
 
-It is deterministic (0006 rule 27): the same roots in the same order give the same bytes. A PEM parser skips the text outside the armour (RFC 7468, section 2), so OpenSSL reads the file as a list of trust anchors (checked with OpenSSL 3.5.5 on 2026-11-01: `openssl verify -CAfile` with the vectors' CA bundles accepts the hand-off answers of the roots in the CA bundle and refuses the others). The root certificates follow the [root profile](/reference/bundle/#the-root-certificate).
+It is deterministic (0006 rules 27 and 28): the same certificates in the same order give the same bytes. A PEM parser skips the text outside the armour (RFC 7468, section 2), so OpenSSL reads the file as a list of trust anchors (checked with OpenSSL 3.5.5 on 2026-11-01: `openssl verify -CAfile` with the vectors' CA bundles accepts the hand-off answers of the roots in the CA bundle and refuses the others). The root certificates follow the [root profile](/reference/bundle/#the-root-certificate).
 
 The CA bundle is not signed: a TLS client trusts the file it was given. A system that also holds the signed root list uses a certificate from the CA bundle as an anchor only when its key is on the list it holds, and its sequence is the list's.
 
