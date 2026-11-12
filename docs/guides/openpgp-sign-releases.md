@@ -11,7 +11,7 @@ A release signature lets a user check that the file they downloaded is the one y
 
 ## What you start with
 
-- A release signing subkey held in a store (a card, or a cloud key service), bound by a primary key that stays offline ([the OpenPGP chain](/learn/chain-openpgp/)).
+- A release signing subkey held in a store (a card, or a cloud key service), bound by a primary key that stays in its root store, a root card or a cloud key ([the OpenPGP chain](/learn/chain-openpgp/)).
 - The release files, built reproducibly if you can.
 - A place to publish: your site, your repository's releases, a package repository.
 
