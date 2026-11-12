@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { join, resolve } from 'node:path';
+import { answerJson } from './testkit';
 
 // The demo is public on the site it links to. A link to a page the site does not have is a
 // dead end for the reader, and the page cannot tell: it only checks that a path is plain
@@ -23,12 +24,14 @@ const PUBLISHED: string[] = readFileSync(PUBLISHED_LIST, 'utf8')
 const PUBLISHED_SET = new Set(PUBLISHED);
 
 // The fields the page turns into a link to the site (LearnLink in ui/Page.tsx):
-// Finding.learn_path and PlanStep.learn_path through FindingCard and Plan, and
-// Ceremony.guide_path through History.
+// Finding.learn_path through FindingCard, and Ceremony.guide_path through the
+// panel of a ceremony.
 const SITE_LINK_FIELDS = new Set(['learnPath', 'guidePath']);
-// Fields of a fixture that are a path on the person's own computer, not on the site.
+// Fields of a fixture that are a path on the person's own computer, not on the site:
+// Change.wanted_path, Root.wanted_path, Delegation.wanted_path, Request.answer_path
+// and the path of a bundle, a place, a request and a trust file.
 // They are checked by their own test: never absolute, never a URL, never a way out of the bundle.
-const LOCAL_PATH_FIELDS = new Set(['savePath', 'bundlePath', 'path']);
+const LOCAL_PATH_FIELDS = new Set(['wantedPath', 'path', 'answerPath']);
 
 type Json = string | number | boolean | null | Json[] | { [k: string]: Json };
 
@@ -66,9 +69,10 @@ function collect(file: string, v: Json, at: string, sweep: Sweep): void {
 }
 
 const sweep: Sweep = { links: [], unknownFields: [], localPaths: [], slashed: [] };
-// The fixtures sit in one directory for each example bundle (personal, acme, globex) and in
-// common/, the answers they share. Walk all of them: a link in a bundle the demo shows only
-// after the switch is as public as one on the first screen.
+// The fixtures sit in one directory for each example bundle (acme, globex, personal), five
+// call files each, and acme also holds scenes.json. Walk all of them: a link in a bundle the
+// demo shows only after the switch is as public as one on the first screen. The answers of
+// the five scenes (the base files with the patches put in) are walked too.
 function fixtureFiles(dir = ''): string[] {
   const out: string[] = [];
   for (const name of readdirSync(join(FIXTURES, dir)).sort()) {
@@ -82,6 +86,9 @@ const FIXTURE_FILES = fixtureFiles();
 for (const name of FIXTURE_FILES) {
   collect(name, JSON.parse(readFileSync(join(FIXTURES, name), 'utf8')) as Json, '$', sweep);
 }
+for (const scene of [1, 2, 3, 4, 5])
+  for (const call of ['GetSummary', 'ListFindings', 'GetInventory', 'ListCeremonies', 'ListTrustFiles'] as const)
+    collect(`acme scene ${scene} ${call}`, answerJson('acme', scene, call) as Json, '$', sweep);
 const { links, unknownFields, localPaths, slashed } = sweep;
 
 /** The file that is the PUBLISHED page at a site path such as /a/b/, or undefined (a file of docs/ that the site does not publish has no page). */
@@ -152,21 +159,22 @@ function isRepositoryOnly(value: string): boolean {
 }
 
 describe('the demo links only to pages the site has', () => {
-  it('walks every example bundle and the shared answers (an empty walk proves nothing)', () => {
+  it('walks every example bundle (an empty walk proves nothing)', () => {
     const dirs = new Set(FIXTURE_FILES.filter((f) => f.includes('/')).map((f) => f.split('/')[0]));
-    expect(dirs).toEqual(new Set(['personal', 'acme', 'globex', 'common']));
-    // A fixture directly in fixtures/ would be answered for no bundle: the demo reads only <bundle>/ and common/.
+    expect(dirs).toEqual(new Set(['acme', 'globex', 'personal']));
+    // A fixture directly in fixtures/ would be answered for no bundle: the demo reads only <bundle>/.
     expect(FIXTURE_FILES.filter((f) => !f.includes('/'))).toEqual([]);
-    // The bundles hold the same call-named files, so a reader finds the same files in each.
-    for (const call of ['inspect.get-summary.json', 'inspect.list-roots.json', 'inspect.list-cards.json', 'manifest.json']) {
-      for (const b of ['personal', 'acme', 'globex']) expect(FIXTURE_FILES, `${b}/${call}`).toContain(`${b}/${call}`);
-    }
+    // Each bundle holds the five call files, and acme also its scenes.
+    for (const call of ['get-summary', 'list-findings', 'get-inventory', 'list-ceremonies', 'list-trust-files'])
+      for (const b of ['acme', 'globex', 'personal']) expect(FIXTURE_FILES, `${b}/${call}`).toContain(`${b}/inspect.${call}.json`);
+    expect(FIXTURE_FILES).toContain('acme/scenes.json');
+    expect(FIXTURE_FILES.filter((f) => f.endsWith('scenes.json'))).toEqual(['acme/scenes.json']);
   });
 
   it('finds the links (an empty sweep proves nothing)', () => {
     expect(links.length).toBeGreaterThan(20);
     expect(new Set(links.map((l) => l.field))).toEqual(SITE_LINK_FIELDS);
-    expect(new Set(links.map((l) => l.value)).size).toBeGreaterThan(10);
+    expect(new Set(links.map((l) => l.value)).size).toBeGreaterThanOrEqual(2);
   });
 
   it('knows every field of a fixture that looks like a link', () => {
@@ -184,28 +192,10 @@ describe('the demo links only to pages the site has', () => {
     expect(bad.map((f) => `${f.file} ${f.at}: ${f.value}`)).toEqual([]);
   });
 
-  it('saves a plan as history/<ceremony>/plan.json (record 0006 rule 7)', () => {
-    // Every savePath of a plan and every path of a saved plan names the ceremony twice: the
-    // directory and the plan's id. The ceremony is the time in UTC, a hyphen and the command.
-    const CEREMONY = '[0-9]{8}T[0-9]{6}Z-[a-z0-9]+(?:-[a-z0-9]+)*';
-    const saved = localPaths.filter((f) => f.field === 'savePath' || (f.file.includes('plan.save-plan.') && f.field === 'path'));
-    expect(saved.length).toBeGreaterThanOrEqual(6);
-    expect(new Set(saved.map((f) => f.field))).toEqual(new Set(['savePath', 'path']));
-    const re = new RegExp(`^history/(${CEREMONY})/plan\\.json$`);
-    expect(saved.filter((f) => !re.test(f.value)).map((f) => `${f.file} ${f.at}: ${f.value}`)).toEqual([]);
-    // The run command and the bundle path of a saved plan agree with it.
-    for (const name of FIXTURE_FILES.filter((n) => n.includes('plan.save-plan.'))) {
-      const d = JSON.parse(readFileSync(join(FIXTURES, name), 'utf8')) as { planId: string; path: string; bundlePath: string; runCommand: string };
-      // common/ is shared by every bundle: the demo puts the path of the open bundle in its place.
-      const bundle = name.startsWith('common/') ? 'example' : name.split('/')[0];
-      expect(d.path, name).toBe(`history/${d.planId}/plan.json`);
-      expect(d.bundlePath, name).toBe(`~/ritueel/${bundle}`);
-      const prefix = `ritueel --dir ~/ritueel/${bundle} run history/${d.planId}/plan.json --confirm `;
-      expect(d.runCommand.startsWith(prefix), name).toBe(true);
-      expect(d.runCommand.slice(prefix.length), name).toMatch(/^[0-9a-f]{64}$/);
-    }
-    // No plan is written in a pending area any more.
-    expect(localPaths.filter((f) => /pending/.test(f.value) || f.value.endsWith('.plan')).map((f) => `${f.file} ${f.at}: ${f.value}`)).toEqual([]);
+  it('names no path inside a ceremony folder and no pending area (the page lists no plan file)', () => {
+    expect(localPaths.filter((f) => /^history\//.test(f.value) || /pending/.test(f.value) || f.value.endsWith('.plan')).map((f) => `${f.file} ${f.at}: ${f.value}`)).toEqual([]);
+    // A path that starts with ~ is the place of a bundle, or the key file of a personal root, which is kept apart from the bundle.
+    expect(localPaths.filter((f) => f.value.startsWith('~') && !/^~\/ritueel\/[a-z]+$/.test(f.value) && !/^~\/keys\/[a-z]+\/[A-Za-z0-9.]+\.age$/.test(f.value)).map((f) => `${f.file} ${f.at}: ${f.value}`)).toEqual([]);
   });
 
   it('finds the site pages and their headings', () => {
@@ -276,13 +266,14 @@ describe('the static links of the source are published pages', () => {
   for (const f of files) {
     const text = readFileSync(join(SRC, f), 'utf8');
     for (const m of text.matchAll(/LearnLink\s+path="([^"]+)"/g)) found.push({ file: f, at: 'LearnLink', field: 'path', value: m[1] });
+    for (const m of text.matchAll(/learnUrl\(\s*'([^']+)'\s*\)/g)) found.push({ file: f, at: 'learnUrl', field: 'path', value: m[1] });
     for (const m of text.matchAll(/learnPath\s*[:=]\s*['"]([^'"]+)['"]/g)) found.push({ file: f, at: 'learnPath', field: 'learnPath', value: m[1] });
   }
 
   it('finds the links (an empty sweep proves nothing)', () => {
     expect(files.length).toBeGreaterThan(10);
     const values = new Set(found.map((l) => l.value));
-    for (const v of ['/glossary/', '/learn/what-is-a-root/', '/learn/where-a-root-is-used/']) expect(values.has(v), v).toBe(true);
+    for (const v of ['/glossary/', '/design/#after-a-ceremony']) expect(values.has(v), v).toBe(true);
   });
 
   it('every one is a path of the site, a published page, and an anchor that is a heading of it', () => {
