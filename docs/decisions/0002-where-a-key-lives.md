@@ -1,7 +1,7 @@
 # 0002 — A key is born in its store and never leaves it; a key file opens with a passkey on a card named for it
 
 **Status:** Accepted
-**Date:** 2026-11-11
+**Date:** 2026-11-12
 
 ## Decision
 
@@ -9,21 +9,21 @@
 2. Every key is born in the store that holds it and never leaves it. Nothing is imported, except for a person's own key: an existing primary adopted as a software key, and an encryption subkey made in software and loaded onto day-to-day cards. An adopted cloud key is not an import, because it was born in the service.
 3. ritueel never keeps a private key outside the store that made it (except as in rule 2), and keeps no PIN or passphrase a person types. It never retries a PIN, and reads one only from the terminal, without echo. The holder keeps PINs in a password manager, one entry per card.
 4. A software key is generated in memory and written directly into its store, never to a plain file on disk.
-5. Attested stores (piv, openpgp-card) and aws-kms may hold roots, intermediates and subkeys. Stores with no evidence (software; a token that cannot attest) may hold test roots, drills, development and a person's own primary (encrypted file only), and intermediates and subkeys only where policy.stores lists the store.
-6. No root that others rely on exists in software or in any store with no evidence. The software store serves test roots, drills, development, the first consumer's harness and a person's own primary. Every record says it can be copied. A software root never anchors a signed release.
+5. Attested stores (piv, openpgp-card) and aws-kms may hold root keys, intermediates and subkeys. Stores with no evidence (software; a token that cannot attest) may hold test roots, drills, development and a person's own primary (encrypted file only), and intermediates and subkeys only where policy.stores lists the store.
+6. No root key that others rely on exists in software or in any store with no evidence. The software store serves test roots, drills, development, the first consumer's harness and a person's own primary. Every ceremony record says it can be copied. A software root never anchors a signed release.
 7. The software store has three backends, chosen at creation: encrypted file, 1Password (op) and OS keyring (go-keyring). The last two are planned.
 8. The encrypted key file is the default backend, the home of drills, tests and a person's own primary (offline). It is a copy by nature; its backup is encrypted copies, which are more copies.
-9. 1Password (op) is a home only for the software keys of test roots, intermediates and subkeys. Its sync is redundancy against loss only; it is never the home of a production root or a person's master key.
+9. 1Password (op) is a home only for the software keys of test roots, intermediates and subkeys. Its sync is redundancy against loss only; it is never the home of a production root key or a person's master key.
 10. The OS keyring backend is offered with a warning (creation output, every record, the site) that it can be insecure and has no copy. ritueel refuses to fall back to a file when no keyring exists.
 11. The default key algorithm is P-384, always with SHA-384 on every backend. RSA-4096 is allowed per key.
-12. ritueel offers three custody modes for a root: a software key in an encrypted age file (opened by a passkey or a passphrase), a pair of root cards with card-born keys, and one cloud KMS key with a replica. A software root is generated in memory and written as an age file (rule 21); accepted costs: no attestation, the key in memory at each ceremony, a copy that may go unnoticed.
+12. ritueel offers three kinds of place for a root key: a software key in an encrypted age file, a card-born key on a root card, and one cloud KMS key with a replica. A software root key is written as an age file (rule 21); accepted costs: no attestation, the key in memory at each ceremony, a copy that may go unnoticed.
 13. Redundancy protects against loss, not compromise, so the number of root keys follows the store. No hardware security module is used.
 14. ritueel never exports a key from a card or KMS: backup means two independent cards or a KMS replica.
-15. A key that can be copied (a test root, a person's primary, any software key) is replaced at the latest after three years (NIST SP 800-57 cryptoperiod).
-16. Key material on a card or in a cloud KMS, a root included, is replaced only on an event, with no calendar: an advisory about the device, firmware or cloud service; deprecation of its algorithm; loss or end of life of a card; a suspected compromise; a change of store or custody.
-17. Accepted limit: whoever holds one root card and its PIN, or the cloud root's role, can sign things outsiders trust until that root is revoked and the update reaches them; standard tools cannot require m-of-n. A stolen card without its PIN locks after three tries. Whoever will hold a cloud root's renewal role (later, M7) can only keep alive what the bundle holds, past its lapse, until a ceremony revokes it. Whoever tricks the holder into one extra touch on the workstation gets one signature that no card logs. ritueel shows this at init.
+15. A key that can be copied (a test root's key, a person's primary, any software key) is replaced at the latest after three years (NIST SP 800-57 cryptoperiod).
+16. Key material on a card or in a cloud KMS, a root key included, is replaced only on an event, with no calendar: an advisory about the device, firmware or cloud service; deprecation of its algorithm; loss or end of life of a card; a suspected compromise; a change of store or of place.
+17. Accepted limit: whoever holds one root card and its PIN, or the cloud root's role, can sign things outsiders trust until that root key is revoked and the update reaches them; standard tools cannot require m-of-n. A stolen card without its PIN locks after three tries. Whoever will hold a cloud root's renewal role (later, M7) can only keep alive what the bundle holds, past its lapse, until a ceremony revokes it. Whoever tricks the holder into one extra touch on the workstation gets one signature that no card logs. ritueel shows this at the first `apply`.
 18. Succession is the holder's organisational duty; ritueel reminds and does not enforce.
-19. The break-glass SSH CA is kept as one of a root's key kinds.
+19. The break-glass SSH CA is kept as a root of the kind SSH CA.
 20. A software key file opens by default with a passkey on each root card named to open it: a CTAP2 hmac-secret credential that stores nothing on the card, with user verification required. It unwraps the private half of an age key, the unlock key. Any one is enough; a file may name more than two. No PIV slot is used.
 21. A key file is an age file encrypted to two recipients, the unlock key's public half and a recovery recipient. Encrypting needs no card.
 22. Every card-opened key file has a recovery key: an age identity in a passphrase-protected file, apart from the cards. Its passphrase, the break-glass, may live in a password manager, never beside the file it protects. A password manager holds a backup of the encrypted key file and the recovery passphrase, never a usable key.
@@ -41,7 +41,6 @@ A card or KMS key cannot be copied, so a calendar would force a new anchor on ev
 ## What it costs
 
 - The bundle is no longer public material only: sealed files rest on the unlock key and the recovery key, and the unlock key's private half is in memory at each unlock.
-- Test roots and scripts are unchanged.
 - A lost recovery key together with every card named as a way to open the file means the key files cannot be opened. The guides say where the recovery file and passphrase go.
 
 ## Roads not taken
@@ -55,7 +54,7 @@ A card or KMS key cannot be copied, so a calendar would force a new anchor on ev
 - **Importing a key into 1Password or the keyring.** It lets people bring an old key, but the key then existed outside its store.
 - **The OS keyring as the default.** No setup, but the weakest option, so it is offered with a warning and not chosen for the user.
 - **Exporting a key from a card or KMS for backup.** An easy restore, but a key copied out can be stolen from the copy.
-- **Dropping the break-glass SSH CA.** One key kind less; proposed in review and refused.
+- **Dropping the break-glass SSH CA.** One kind of root less; proposed in review and refused.
 - **A passphrase for every key file.** Nothing to build, but one typed secret on the machine at every use and no second recipient; kept for a holder without cards.
 - **The age key in PIV slot 9d as the default.** No second protocol, but it spends the slot and the PIV PIN that guard the root keys; kept as the fallback.
 - **A card secret that wraps each file directly, with no age key between.** No key in memory, but encrypting would need a card present, and there is no standard format.
@@ -63,6 +62,7 @@ A card or KMS key cannot be copied, so a calendar would force a new anchor on ev
 - **A synced or password-manager passkey as the unlocker, or as an extra way next to the cards.** Easy, but it puts a root-level key file behind a cloud account and adds nothing the recovery passphrase kept in the manager does not give; a key file is opened in the offline system, which has no network, manager or browser, so a passphrase can be typed there and a passkey cannot.
 - **Unlocking inside the local page.** Friendly, but the browser would hand the secret to the page's script; the page never receives a secret, and the offline system has no browser.
 - **A day-to-day card as the unlocker.** Always at hand, but carried and used every day, and it must not open a root-level file.
+- **A and B as two roots of one kind (the meaning until now).** Simple to say, but the word root would keep three meanings and could not name one root with a key on a card and a key in the cloud; a root is built from keys in any place ([0001](0001-what-ritueel-is.md), rule 28).
 
 ## Not yet proven or only proposed
 
