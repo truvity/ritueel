@@ -262,7 +262,9 @@ export const NextDateSchema: GenMessage<NextDate> = /*@__PURE__*/
 export type ListFindingsRequest = Message<"ritueel.local.v1alpha1.ListFindingsRequest"> & {
   /**
    * Only findings at this level or above. Unspecified means all. A choice from
-   * a fixed list; no text.
+   * a fixed list; no text. [proposed: wizard.md lists no filter; the nearest
+   * decided text is the exit codes 10, 11 and 12 of cli.md. The three labels on
+   * To do (All, Alert and critical, Critical) are proposed words too.]
    *
    * @generated from field: ritueel.local.v1alpha1.Severity min_severity = 1;
    */
