@@ -33,6 +33,7 @@
 26. A software key's files sit beside the bundles on the stick partition, not in the bundle.
 27. ritueel covers backup and restore drills (rebuild the state on a clean machine from the bundle and the password manager, compare it with the cards), revocation, and card loss and replacement.
 28. An X.509 root key is not renamed: its name is inside the certificate and every intermediate names it as issuer. A new name is a new key, by add, overlap and retire, and the command line and the page say so.
+29. `revoke` takes the reason `compromised` or `superseded` for every kind of key, and `cessation` for an X.509 intermediate only; a value that the kind does not have is refused. In a CRL entry they are written as `keyCompromise`, `superseded` and `cessationOfOperation`.
 
 ## Why
 
@@ -78,6 +79,8 @@ A root must change, and may be lost, without the trust files failing. So each ch
 - **The program chooses the card when the card of the year is absent.** No stop for a missing card, but a person would not see which card signs; a person names the card and the reason is recorded.
 - **Revocation as a line in a wanted file.** One way for everything, but a revocation would wait for a plan; `revoke` is an act of its own.
 - **A change of the root keys together with renewals in one ceremony.** One sitting, but a failed touch could leave the set half changed beside renewals nobody planned; it runs alone.
+- **The spelling `compromise` for the first value.** One value for each CRL code, but rule 20 spells it `compromised`, and one flag would have two spellings for one idea; one spelling is used on every page (rule 29).
+- **Only the two values `compromised` and `superseded`.** The smallest set, and both exist for every OpenPGP primary from birth, but an intermediate that ceased to be used with no replacement would be written as `superseded`, and the code `cessationOfOperation` of RFC 5280 would never be written (rule 29).
 
 ## Not yet proven or only proposed
 
