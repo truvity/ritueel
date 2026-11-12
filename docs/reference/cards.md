@@ -7,7 +7,7 @@ sidebar:
 
 *Not built yet. This is the page that [record 0003](../decisions/0003-root-cards.md) leaves for the formats of the `piv` store; the code is [issue #11](https://github.com/truvity/ritueel/issues/11): the card files and the card maps come with M2, and the `piv` store and the card adoption with M6. The rows of slots are in that record and are not repeated here. The commands, words and file names on this page are from before the decisions of 2026-11-12; the design is at https://ritueel.id/design/.*
 
-A root card is a hardware token that holds root keys and nothing else: the root keys of the holder's bundles, each bundle in its own row ([record 0003](../decisions/0003-root-cards.md)). It is never also a day-to-day card, a server card or a rehearsal card. Before it holds anything, the holder sets its PIN with the maker's tool ([Prepare a root card](/guides/prepare-a-root-card/)). ritueel then adopts it, which replaces the PUK and the management key with random ones sealed in the bundle ([record 0003](../decisions/0003-root-cards.md)); it registers the card, checks it before every ceremony, and keeps the evidence that a key was born on it. A root card is used on the holder's workstation, under the four conditions of [record 0005](../decisions/0005-a-ceremony-and-where-it-runs.md) (a touch for every signature, the number of signatures stated in the plan, no retry of a failed touch, and a check on a second device), or in the offline system, by the rules of the ceremony record ([record 0003](../decisions/0003-root-cards.md)).
+A root card is a hardware token that is used for root keys only: the root keys of the holder's bundles, each bundle in its own row, and the card's own jobs in row 1 ([record 0003](../decisions/0003-root-cards.md), rules 3 and 15). It is never also a day-to-day card, a server card or a rehearsal card. Before it holds anything, the holder sets its PIN with the maker's tool ([Prepare a root card](/guides/prepare-a-root-card/)). ritueel then adopts it, which replaces the PUK and the management key with random ones sealed in the bundle ([record 0003](../decisions/0003-root-cards.md)); it registers the card, checks it before every ceremony, and keeps the evidence that a key was born on it. A root card is used on the holder's workstation, under the four conditions of [record 0005](../decisions/0005-a-ceremony-and-where-it-runs.md) (a touch for every signature, the number of signatures stated in the plan, no retry of a failed touch, and a check on a second device), or in the offline system, by the rules of the ceremony record ([record 0003](../decisions/0003-root-cards.md)).
 
 ## The four kinds
 
@@ -26,59 +26,41 @@ A server card works like a small do-it-yourself HSM, but it is an ordinary card,
 
 | Path | Written by | Holds |
 |---|---|---|
-| `cards.yaml` | ritueel | The inventory list: one entry for each card this bundle uses, of any of the four kinds. |
-| `cards/NAME.yaml` | ritueel | The map of one card: every slot of its PIV, OpenPGP and FIDO2 applications and what it is used for. |
-| `cards/NAME.sealed.age` | ritueel | This bundle's own copy of the card's secrets (management key, PUK and, on a day-to-day card, the Admin PIN of the OpenPGP application), sealed to the same recipients as the key files ([record 0003](../decisions/0003-root-cards.md)). One file for each card that ritueel adopted, root and day-to-day. |
+| `want/cards/NAME.yaml` | A person | The card file: one for each card this bundle uses, of any of the four kinds. It holds the card's serial and kind, and the rows of other bundles that the card declares. |
+| `cards/NAME.yaml` (proposed path; the bundle page has `seen/` and `sealed/`) | ritueel | The map of one card: every slot of its PIV, OpenPGP and FIDO2 applications and what it is used for. |
+| `cards/NAME.sealed.age` (proposed path; the bundle page has `seen/` and `sealed/`) | ritueel | This bundle's own copy of the card's secrets (management key, PUK and, on a day-to-day card, the Admin PIN of the OpenPGP application), sealed to the same recipients as the key files ([record 0003](../decisions/0003-root-cards.md)). One file for each card that ritueel adopted, root and day-to-day. |
 | `roots/<label>/attestation/slot-<slot>.pem` | ritueel | The attestation certificate of one key, as the card made it: one file for each key born for the root key, in the slots of this bundle's row. |
 | `roots/<label>/attestation/card.pem` | ritueel | The token's own certificate (slot `f9`), which signed the slot certificates. |
 | `roots/<label>/attestation/result.json` | ritueel | What ritueel read and checked, as below. |
 
 The sealed file is not public material: it is safe only because the recipients' keys are. The other files are public material. A person writes the card file; ritueel writes the card map from the read-only check below, and nobody edits it by hand. The attestation files are written at the first `apply` and at an `apply` that adds a root key, once, and never changed: a replacement key is born beside the old keys, in the row kept free for it, and has its own files ([record 0003](../decisions/0003-root-cards.md)).
 
-## The inventory, `cards.yaml` and `cards/NAME.yaml`
+## The card file and the card map
 
 :::note[Proposed]
-The maintainer decided what the inventory holds (one file that lists the cards, one file per card that maps its slots). The file names, the members and the values below are the proposed shape, awaiting his word, and are fixed with the card proofs (M1).
+The maintainer decided what the bundle holds for cards: one wanted card file for each card, which a person writes, and one card map for each card, which ritueel writes. The file names, the members and the values below are the proposed shape, awaiting his word, and are fixed with the card proofs (M1).
 :::
 
-ritueel writes both files from the read-only check; the operator does not edit them ([record 0003](../decisions/0003-root-cards.md)). A card is added at the ceremony that first uses it, and the plan names the entry so that the person confirms it.
+A person writes the card file ([record 0006](../decisions/0006-bundle-history-and-trust-files.md), rule 11). ritueel writes the card map from the read-only check, and nobody edits it ([record 0003](../decisions/0003-root-cards.md), rule 18). The plan names a card that the ceremony adopts, so that the person confirms it.
 
-### The list, `cards.yaml`
+### The card file, `want/cards/NAME.yaml`
 
 ```yaml
 version: 1
-cards:
-  - name: root-a
-    serial: "00000000"
-    kind: root
-    maker: yubico
-    model: example-model
-    firmware: 5.8.0
-    form_factor: usb-c-keychain
-    applications: [piv]
-    roots:
-      - { root: A, row: 2 }
-    management_key: sealed
-    slot_map: 1
-    registered_at: 2026-11-15T12:00:00Z
+serial: "00000000"
+kind: root
+applications: [piv]
 ```
 
 | Member | Meaning |
 |---|---|
 | `version` | `1`. |
-| `name` | The holder's name for the card. It names the card's map file and its sealed file. |
-| `serial` | The serial number the card reports about itself, as a string of digits. It identifies the card in every later check. |
+| the file name | The holder's name for the card, not its serial ([record 0006](../decisions/0006-bundle-history-and-trust-files.md), rule 11). It names the card's map file and its sealed file. |
+| `serial` | The serial number the card reports about itself, as a string of digits. It identifies the card in every later check. A serial is never reused for another holder's role ([record 0003](../decisions/0003-root-cards.md), rule 18). |
 | `kind` | `root`, `day-to-day`, `server` or `rehearsal` ([the four kinds](/reference/cards/#the-four-kinds)). A card has one kind and never changes it. |
-| `roots` | For a root card only: the roots of this bundle that it holds, each as `{ root, row }`, where `root` is the root's label and `row` its row in the slot map ([record 0003](../decisions/0003-root-cards.md)). |
-| `maker` | The maker whose attestation roots verify it. `yubico` today. |
-| `model` | The model, as read from the card. |
-| `firmware` | The firmware version read when the card was registered. For a root card it is at least 5.7.4, which is ritueel's floor for a root card ([record 0003](../decisions/0003-root-cards.md)). |
-| `form_factor` | As read from the slot certificate. |
-| `applications` | The applications of the card that are in use: a list of `piv`, `openpgp` and `fido2`. The one-time-code application is switched off on the root and day-to-day cards that ritueel adopts. |
-| `management_key` | For root and day-to-day cards only, and absent for `server` and `rehearsal`. `sealed`: a random key that needs a touch to use, sealed in `cards/NAME.sealed.age`. Nothing else is accepted for a root card ([record 0003](../decisions/0003-root-cards.md), [record 0002](../decisions/0002-where-a-key-lives.md)). |
-| `slot_map` | The version of the slot map in force when the card was registered. |
-| `registered_at` | The time of that ceremony, UTC. |
-| `retired_at` | Present once the card holds no active root. The entry stays: a serial is never reused for another holder's card. |
+| `applications` | The applications of the card that this bundle uses: a list of `piv`, `openpgp` and `fido2`. |
+
+A card file also declares the rows of other bundles that the card holds ([record 0003](../decisions/0003-root-cards.md), rule 8; [a pair shared by bundles](/reference/cards/#a-pair-shared-by-bundles)). Adoption replaces the management key by a random one that needs a touch to use, sealed in `cards/NAME.sealed.age`; nothing else is accepted for a root card (rule 10). The one-time-code application is switched off on the root and day-to-day cards that ritueel adopts (rule 16). The version of the slot map in force is written into every ceremony record (rule 4).
 
 A serial number is the operator's own data and sits in the operator's bundle, not in this repository ([public content](/contributing/public-content/#hardware-tokens)).
 
