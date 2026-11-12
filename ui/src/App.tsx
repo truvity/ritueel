@@ -1,30 +1,17 @@
 import { useRoute } from './lib/route';
 import { Shell } from './ui/Shell';
-import { Cards } from './screens/Cards';
-import { Findings } from './screens/Findings';
 import { History } from './screens/History';
-import { Key } from './screens/Key';
+import { Inventory } from './screens/Inventory';
 import { NotFound } from './screens/NotFound';
-import { Plan } from './screens/Plan';
-import { Roots } from './screens/Roots';
-import { Start } from './screens/Start';
+import { Todo } from './screens/Todo';
 import { Trust } from './screens/Trust';
 
 export function App() {
   const route = useRoute();
   let screen;
   switch (route.name) {
-    case 'findings':
-      screen = <Findings />;
-      break;
-    case 'roots':
-      screen = <Roots />;
-      break;
-    case 'key':
-      screen = <Key root={route.root} />;
-      break;
-    case 'cards':
-      screen = <Cards serial={route.serial} />;
+    case 'inventory':
+      screen = <Inventory view={route.view} object={route.object} />;
       break;
     case 'history':
       screen = <History id={route.id} />;
@@ -32,14 +19,11 @@ export function App() {
     case 'trust':
       screen = <Trust />;
       break;
-    case 'plan':
-      screen = <Plan goal={route.goal} />;
-      break;
     case 'notfound':
       screen = <NotFound hash={route.hash} />;
       break;
     default:
-      screen = <Start />;
+      screen = <Todo tab={route.tab} />;
   }
   return <Shell route={route}>{screen}</Shell>;
 }
