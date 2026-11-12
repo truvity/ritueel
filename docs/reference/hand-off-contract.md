@@ -182,7 +182,7 @@ The profile of the certificate. The requester can check every row.
 | Field | Value |
 |---|---|
 | Version, serial | 3. A positive number of at most 20 bytes from a cryptographic random source, with at least 64 random bits. |
-| Signature | `ecdsa-with-SHA384`, made by a root on P-384. |
+| Signature | `ecdsa-with-SHA384`, by a root key on P-384. |
 | Issuer | The subject of the issuing root. |
 | Subject, public key | The CSR's, unchanged. |
 | Validity | `notBefore` is the ceremony time; `notAfter` is 13 calendar months later (same day and time of the month, or the last day of the month if it has none), both UTC. |
@@ -237,7 +237,7 @@ The same ten checks and codes as for X.509, with these differences.
 | 4 | The subkey is ECDSA P-384. |
 | 5 | The packets are the ones above, one back-signature for each listed primary. Each has type `0x19` and verifies with the subkey over that primary and the subkey, and carries the issuer fingerprint and the issuer key ID of the subkey. |
 | 7, 8 | As for X.509. The key in the evidence is the point of the subkey. |
-| 9 | Reference policy: as for X.509, without the name constraints rule, and the capability is the `capability` of the intermediate's entry in the certifier's configuration. |
+| 9 | Reference policy: as for X.509, without the name constraints rule, and the capability is the `capability` of the delegation the operator declared. |
 
 ### What comes back
 
@@ -254,7 +254,7 @@ Add the packets to the primary's certificate to get the updated certificate, wit
 cat test-primary-a.pgp pgp-piv-valid.bound.pgp > updated.pgp
 ```
 
-A verifier then needs nothing from ritueel. The first set of vectors was checked this way with `sqv` on 2026-11-01, and the set regenerated with the root list vectors with `gpgv` 2.4.8 the same day: a signature made by an accepted subkey verifies against `updated.pgp`, and one made by a subkey whose answer lacks the embedded back-signature, or was bound by another primary, does not. The authentication answer was imported into `gpg` 2.4.8 on 2026-11-02, with the primary of root A: `gpg` lists the subkey with the capability `a`, and the answer bound for signing with `s`. The ritueel keyring package carries the same certificates ([issue #15](https://github.com/truvity/ritueel/issues/15)).
+A verifier then needs nothing from ritueel. The first set of vectors was checked this way with `sqv` on 2026-11-01, and the set regenerated with the root list vectors with `gpgv` 2.4.8 the same day: a signature made by an accepted subkey verifies against `updated.pgp`, and one made by a subkey whose answer lacks the embedded back-signature, or was bound by another primary, does not. The authentication answer was imported into `gpg` 2.4.8 on 2026-11-02, with the primary key A: `gpg` lists the subkey with the capability `a`, and the answer bound for signing with `s`. The ritueel keyring package carries the same certificates ([issue #15](https://github.com/truvity/ritueel/issues/15)).
 
 ### What the requester checks before it installs
 
@@ -292,11 +292,11 @@ The same ten checks and codes as for X.509, with these differences.
 | 5 | `<stem>.sshca.sig` is a valid SSHSIG by the key in the request, in the namespace above, over the bytes of `<stem>.sshca.pub`. Anything else, including another namespace, is `possession-invalid`. |
 | 6 | The store is `piv`, `aws-kms` or `software`, and the policy allows it. An `openpgp-card` key is refused with `store-not-allowed` for this type: a person's daily card is not an SSH CA. |
 | 7, 8 | As for X.509: the attested key of a PIV slot, or the key KMS returns, is the key in the request. |
-| 9 | Reference policy: the rules of X.509 that do not concern a certificate (firmware, PIN policy, the KMS key policy), and `use` is the `use` of the intermediate's entry in the certifier's configuration. A `use` other than `user` or `host` is `malformed`. |
+| 9 | Reference policy: the rules of X.509 that do not concern a certificate (firmware, PIN policy, the KMS key policy), and `use` is the `use` of the delegation the operator declared. A `use` other than `user` or `host` is `malformed`. |
 
 ### What is listed
 
-On confirmation the certifier adds the key to the SSH CA key list of the ceremony, under the name of the intermediate in its configuration, with the `use` asked. If that intermediate already has a key on the list, the new key replaces it: that is the event path of an intermediate whose key changes. The list is signed in the same ceremony, so the answer carries the trust sequence of the list that holds the key. Nothing else is written for the requester.
+On confirmation the certifier adds the key to the SSH CA key list of the ceremony, under the name of the delegation the operator declared, with the `use` asked. If that delegation already has a key on the list, the new key replaces it: that is the event path of a delegation whose key changes. The list is signed in the same ceremony, so the answer carries the trust sequence of the list that holds the key. Nothing else is written for the requester.
 
 `<stem>.result.json` has `outcome` `issued`, an empty `artifacts` list, `valid_from` (the ceremony time), no `valid_until` (a key stays on the list until a ceremony withdraws it; the list has its own expiry), `issuer` (the SHA-256 of the DER `SubjectPublicKeyInfo` of the root that signed the list) and `trust_sequence`.
 
@@ -310,7 +310,7 @@ On confirmation the certifier adds the key to the SSH CA key list of the ceremon
 | The entry has the `use` it asked for. | `profile` |
 | `artifacts` is empty, and the digests and members of `result.json` are well formed. | `malformed` |
 
-The requester reads the list from where the operator publishes it, with the host rules of [its page](/reference/ssh-ca-key-list/#how-a-host-reads-it); the answer does not carry it. A key is withdrawn when a ceremony publishes a list without it, and hosts stop trusting it when they take that list. No revocation signature exists for an SSH CA key, and certificates it already signed stay valid to a host that still holds the key.
+The requester reads the list from where the operator publishes it, with the host rules of [its page](/reference/ssh-ca-key-list/#how-a-host-reads-it); the answer does not carry it. A key is withdrawn when a ceremony writes a list without it, and hosts stop trusting it when they take that list. No revocation signature exists for an SSH CA key, and certificates it already signed stay valid to a host that still holds the key.
 
 ## The answer
 
@@ -365,11 +365,11 @@ The vectors are in [`testdata/hand-off/v1/`](https://github.com/truvity/ritueel/
 | Group | Accepted | Refused |
 |---|---|---|
 | X.509 requests | A PIV key, a KMS key, a KMS key in another account read through its role, a software key in development. | A software key in development that the person declines, software in production, a bad CSR signature, a P-256 key, version 2, a proof for another request, an unknown member, an attested key that is not the request's, an untrusted attestation chain, PIN policy never, old firmware, no name constraints, a name constraint outside the policy, a KMS key that is not the request's, a KMS policy that names two actors, a KMS key in an account with no read role. |
-| X.509 answers | A PIV key, a KMS key, a software key, an answer from the other root. | Another key, path length 1, expired, an issuer that is not on the root list. |
+| X.509 answers | A PIV key, a KMS key, a software key, an answer from the other key. | Another key, path length 1, expired, an issuer that is not on the root list. |
 | OpenPGP requests | A PIV key, a KMS key, an OpenPGP-card key, a software key; each with a back-signature for both active primaries. An OpenPGP-card key for authentication. | No back-signature; one for only one primary; one over a primary not on the list, of type `0x18`, damaged, or without the issuer key ID; version 2; a primary not on the list; `primaries` missing an active one; an attested key that is not the subkey; an untrusted OpenPGP-card chain; an Ed25519 subkey; two capabilities, and `encrypt` (`malformed`). |
 | OpenPGP answers | A PIV key, a KMS key, an OpenPGP-card key, a software key, a binding by the other primary; an authentication subkey, with key flag `0x20`. | No embedded back-signature, another subkey, a primary not on the list, an expiry of two months; an authentication subkey bound for signing (`profile`). |
 | SSH CA key requests | A PIV key for users, a KMS key for hosts, a software key in development. | Software in production, an OpenPGP-card key, a signature over other bytes, a signature in another namespace, an Ed25519 key, version 2, a proof for another request, an unknown member, `use` missing or `both`, an attested key that is not the request's, an untrusted attestation chain, PIN policy never, a KMS key that is not the request's, a KMS policy that names two actors. |
-| SSH CA key answers | A key on the list, a list signed by the other root. | A key not on the list, listed with the other use, a list older than `trust_sequence`. |
+| SSH CA key answers | A key on the list, a list signed by the other key. | A key not on the list, listed with the other use, a list older than `trust_sequence`. |
 | X.509 floor answers | A certificate from the installed foreign CA, with SHA-1 key identifiers, which the requester does not check. | One without the requested extensions (`profile`), one from a CA that is not installed (`issuer`), one valid for two years (`validity`). |
 
 A request of type `ssh-ca-key` is `<case>.sshca.pub` with `<case>.sshca.sig`, and `ssh-keygen -Y check-novalidate -n ssh-ca-key@ritueel.id -s <case>.sshca.sig < <case>.sshca.pub` accepts every one except the two that are refused for their signature (OpenSSH 10.2p1, checked 2026-11-01).
@@ -394,8 +394,8 @@ The choices that had a real alternative, with the reason each alternative lost.
 | Third request type in version 1 | `ssh-ca-key`, added to version 1 in place. | Contract version 2 for the new type; a separate contract for SSH. | Nothing has been released, so there is no receiver that version 1 could surprise, and a version that had to be read next to version 1 for 24 months would cost every reader a second code path for no one. The rule that a new type is a new version starts with the first release. |
 | Proof of possession of an SSH CA key | An SSHSIG signature over the request file, in a fixed namespace. | A self-signed SSH certificate; a signature in a made-up format; none, since the ceremony compares fingerprints. | `ssh-keygen -Y check-novalidate` verifies it, so a requester and a certifier can both be tested with a tool people already have, and a card or KMS key signs its digest as for every other type. A certificate would carry validity and principals that mean something else. Comparing fingerprints proves nothing about possession. |
 | An SSH CA key enters the list | By a request, a proof and a ceremony, like every other key. | The operator edits the list; a request that carries the list entry. | A key that is listed without a check of where it lives is the one place the contract's evidence rules would not apply, and a hand-edited list would be a second way to change what hosts trust. |
-| Subkey capabilities | One per subkey: `sign` or `authenticate`, each with its back-signatures, and the capability fixed by the intermediate's entry. | Several flags on one subkey; no back-signature for an authentication subkey; an encryption capability. | One purpose per subkey, as [Root and intermediate](/learn/root-and-intermediate/) teaches, and one proof of possession for both. Encryption is not a capability of version 1 (this row's choice). A person's encryption subkey is made in software, loaded onto each day-to-day card and kept as a wrapped backup in the bundle, so a lost card does not lose the mail it decrypted; its format and command are fixed with stage one ([record 0008](../decisions/0008-a-persons-own-key.md)). |
-| OpenPGP request | The subkey and a back-signature for every active primary, plus the proof naming the primaries. | One primary per request, with a second request for the second root; the whole primary certificate in the request. | Either root card can make the binding, with no second request, and the requester need not know whose year it is. The certifier already holds the primaries. Cost: one more signature in the request for each active primary. |
+| Subkey capabilities | One per subkey: `sign` or `authenticate`, each with its back-signatures, and the capability fixed by the delegation the operator declared. | Several flags on one subkey; no back-signature for an authentication subkey; an encryption capability. | One purpose per subkey, as [Root and intermediate](/learn/root-and-intermediate/) teaches, and one proof of possession for both. Encryption is not a capability of version 1 (this row's choice). A person's encryption subkey is made in software, loaded onto each day-to-day card and kept as a wrapped backup in the bundle, so a lost card does not lose the mail it decrypted; its format and command are fixed with stage one ([record 0008](../decisions/0008-a-persons-own-key.md)). |
+| OpenPGP request | The subkey and a back-signature for every active primary, plus the proof naming the primaries. | One primary per request, with a second request for the second key; the whole primary certificate in the request. | Either root card can make the binding, with no second request, and the requester need not know whose year it is. The certifier already holds the primaries. Cost: one more signature in the request for each active primary. |
 
 ## Follow-ups
 
