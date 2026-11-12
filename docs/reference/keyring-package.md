@@ -10,7 +10,7 @@ sidebar:
 The keyring package carries the public certificates of every active primary to apt, rpm and `gpg` users, so that a signature by any subkey a primary bound verifies. ritueel makes the keyring file, which holds those certificates. The release pipeline builds the package from the file (`.deb`, `.rpm` and plain files) and publishes it. ritueel does not build, sign or publish the package: the user's repository signs it with its current subkey ([record 0009](../decisions/0009-release-keys-and-the-keyring.md), rules 20 to 22).
 
 :::note[Proposed]
-The records fix the content of the keyring file and the name and version of the package. They do not fix the file set of the package, the maintainer field, the file names of the revocation signatures, the build steps, the byte-identical rule, `ritueel keyring verify` or the installer matrix below, which are the proposed specification for the pipeline's builder and its checks, awaiting the maintainer. Below, "the builder" is the pipeline's builder.
+The records fix the content of the keyring file and the name and version of the package. They do not fix the file set of the package, the maintainer field, the file names of the revocation signatures, the build steps, the byte-identical rule, `ritueel verify keyring` or the installer matrix below, which are the proposed specification for the pipeline's builder and its checks, awaiting the maintainer. Below, "the builder" is the pipeline's builder.
 :::
 
 ## Name and version
@@ -31,16 +31,16 @@ The package puts these files on the system. The same files are written beside th
 | `<name>-keyring.fingerprints` | plain | One line for each primary: fingerprint, role, creation and expiry. |
 | `SHA256SUMS` | plain | Digests of the files above and of the two packages. |
 
-ritueel writes the keyring file under `trust/<number>/keyring/`. The keyring holds the public certificates of the root keys and their subkeys ([record 0006](../decisions/0006-bundle-history-and-trust-files.md), rule 12). The pipeline's builder makes from it the two packages, `<name>-keyring_<version>_all.deb` and `<name>-keyring-<version>-1.noarch.rpm`, and the plain files beside them. A `.deb` holds only the first two files, and a `.rpm` the first three. The key files of a package do not replace a user's own keyring: apt reads `Signed-By`, and rpm imports only when told to.
+ritueel writes the keyring file in the trust set, under `keyring/`. The keyring holds the public certificates of the root keys and their subkeys ([record 0006](../decisions/0006-bundle-history-and-trust-files.md), rule 12). The pipeline's builder makes from it the two packages, `<name>-keyring_<version>_all.deb` and `<name>-keyring-<version>-1.noarch.rpm`, and the plain files beside them. A `.deb` holds only the first two files, and a `.rpm` the first three. The key files of a package do not replace a user's own keyring: apt reads `Signed-By`, and rpm imports only when told to.
 
-Beside the packages, not in them, in `trust/<number>/revocations/`: the revocation signature of every primary or subkey that was revoked hard and dropped from this version, armoured, one file for each, named by the fingerprint it revokes. The holder gives a primary's stored revocation signature to `root revoke`, which checks its digest against the entry of `revocations` for that reason in the root's `root.json` ([the bundle](/reference/bundle/#rootjson)) before it publishes it; a subkey's revocation is made at the ceremony.
+Beside the packages, not in them: the revocation signature of every primary or subkey that was revoked hard and dropped from this version, armoured, one file for each, named by the fingerprint it revokes. The signature stays with the holder, outside the bundle ([record 0006](../decisions/0006-bundle-history-and-trust-files.md), rule 1). The holder gives a primary's stored revocation signature to `revoke`, which checks its digest against the entry of `revocations` for that reason in the `root.json` of that root key ([the bundle](/reference/bundle/#rootjson)) before it uses it; a subkey's revocation is made at the ceremony.
 
 ## What the certificates hold
 
 For each active primary, in the order of the root list, one complete public certificate, as OpenPGP packets in this order (RFC 9580, section 10.1):
 
 1. The primary key packet.
-2. The user ID packet (the release identity) with every certification ritueel made on it, in creation order. The yearly extension adds one each time; a verifier takes the newest as of the time it checks.
+2. The user ID packet (the release identity) with every certification ritueel made on it, in creation order. Each extension of the key adds one; a verifier takes the newest as of the time it checks.
 3. For every subkey the primary ever bound, in the order of the subkey's creation time and then its fingerprint: the subkey packet, every binding signature ritueel made for it (each with its embedded back-signature), in creation order, then its subkey revocation if it was retired softly.
 
 Left out: an encryption subkey, a third-party certification, a notation, and anything revoked hard, which means a whole certificate of a revoked primary and the whole subkey of one revoked as compromised ([record 0009](../decisions/0009-release-keys-and-the-keyring.md)). The binding signatures are kept even when newer ones exist, so that a signature made before a renewal verifies at its own time. The certificates are read from the bundle: the primary's `openpgp.pgp` and the bindings in the answers beside the requests, in `requests/<name>/` ([record 0006](../decisions/0006-bundle-history-and-trust-files.md)).
@@ -51,7 +51,7 @@ The binary form is the packets, concatenated; the armoured form is a single bloc
 
 Record 0009, rule 21, gives the package build to the release pipeline; who writes the archive writer and the verifier is not decided (proposed). Proposed: the build needs neither `dpkg-deb` nor `rpmbuild`, and the same bundle gives the same bytes. In order:
 
-1. **Read** the newest root list of the bundle ([the root list](/reference/root-list/)) and the certificates it names. The list's `sequence` and the year of its `signed_at` give the version. A test root and a real root are never mixed, as for the CA bundle.
+1. **Read** the newest root list of the bundle ([the root list](/reference/root-list/)) and the certificates of the primaries it pins. The list's `sequence` and the year of its `signed_at` give the version. A test root and a real root are never mixed, as for the CA bundle.
 2. **Assemble** the certificates as above, drop what is revoked hard, and write the binary and armoured forms and one armoured file for each primary.
 3. **Write the `.deb`**: an `ar` archive of three members in this order, `debian-binary` (`2.0`), `control.tar` and `data.tar`, then the `.rpm`: the lead, the header with the tags a noarch package of files needs, and a `cpio` payload (`newc` format).
 4. **Fix every variable field**: the build time and every file's modification time is the ceremony time (`SOURCE_DATE_EPOCH`), entries are sorted, owner and group are root (numeric 0), files have mode 0644 and directories 0755, there are no extended attributes, and the `.rpm` has no build host or signature.
@@ -65,16 +65,16 @@ ritueel does not sign the package. The user's repository signs the `.deb` and th
 
 ## Verify
 
-Record 0009, rule 21, gives the package build to the release pipeline; who writes the verifier is not decided (proposed). `ritueel keyring verify FILE... --root-list FILE [--dir DIR]` is a proposed command that reads packages and plain files and checks them with code that did not build them. The pipeline may run the same checks on its output. The first check that fails gives the reason code.
+Record 0009, rule 21, gives the package build to the release pipeline; who writes the verifier is not decided (proposed). `ritueel verify keyring FILE... --root-list FILE [--dir DIR]` is a proposed command that reads packages and plain files and checks them with code that did not build them. The pipeline may run the same checks on its output. The first check that fails gives the reason code.
 
 | # | Check | Code |
 |---|---|---|
 | 1 | Each file parses as what its name says: an `ar` archive of the three members with `debian-binary` `2.0`, or an rpm with a `noarch` header and a `cpio` payload; a `.gpg` or `.asc` of OpenPGP packets. | `malformed` |
 | 2 | The name and version fields are those of the file name, and the version is `<year>.<sequence>` with `sequence` equal to the root list's. | `version-mismatch` |
 | 3 | The package holds exactly the files of the table above for its kind, with the owner, modes and times of the build. | `files-mismatch` |
-| 4 | The primaries in the certificates are exactly the `openpgp_fingerprint` of the roots on the root list, in its order, and each rpm key file holds one of them, named by its short fingerprint. | `primaries-mismatch` |
+| 4 | The primaries in the certificates are exactly the `openpgp_fingerprint` of the root keys on the root list, in its order, and each rpm key file holds one of them, named by its short fingerprint. | `primaries-mismatch` |
 | 5 | Every binding signature verifies with its primary over the primary and the subkey, with the embedded back-signature of the subkey for that primary; every certification verifies; every signature has both the issuer fingerprint and the issuer key ID ([the packet rule](/reference/hand-off-contract/#issuer-key-id)). | `signature-invalid` |
-| 6 | No encryption subkey, no third-party certification, and nothing that is revoked hard. With `--dir`, every subkey the bundle's answers bound and the records did not revoke hard is present. | `contents-mismatch` |
+| 6 | No encryption subkey, no third-party certification, and nothing that is revoked hard. With `--dir`, every subkey the bundle's answers bound and the ceremony records did not revoke hard is present. | `contents-mismatch` |
 | 7 | The `.gpg` and the `.asc` hold the same packets, and the digests in `SHA256SUMS` are those of the files. | `malformed` |
 
 Without `--dir`, check 6 can only look at what is inside. It exits 0 when every check passes and 3 with the code when one fails; it writes nothing ([Commands](/reference/cli/#commands-for-the-trust-files-that-come-later)). These codes belong to the checker and are not sent anywhere.
