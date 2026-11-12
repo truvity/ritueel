@@ -82,8 +82,8 @@ How a primary is adopted is fixed with the code ([issue #18](https://github.com/
 
 Decided, not built; it depends on the root cards and their proofs (M1, M6). Card-born primaries come after adoption ([record 0008](../decisions/0008-a-persons-own-key.md)).
 
-:::note[Proposed]
-The layout is awaiting the maintainer. Two primaries are born, one on each root card, in the personal bundle's row ([record 0003](../decisions/0003-root-cards.md)). One is published; the other is a standby that the published one certifies. The old key vouches for the published one, with an overlap, and then ends ([record 0007](../decisions/0007-changing-and-losing-a-root.md)). Record 0008 names the standby primary only as the answer to a card that has no backup, and fixes no layout. Record 0008 lists the layout under Not yet proven or only proposed.
+:::note[Not yet proven]
+The layout is decided and not yet proven. Two primaries are born, one on each root card, in the personal bundle's row ([record 0003](../decisions/0003-root-cards.md)). One is published; the other is a standby that the published one certifies. Both are keys of the person's one OpenPGP root. The standby is the answer to a card that has no backup. The old key vouches for the published one, with an overlap, and then ends ([record 0007](../decisions/0007-changing-and-losing-a-root.md)). Record 0008 lists the layout under Not yet proven or only proposed.
 :::
 
 ## Retiring a subkey
