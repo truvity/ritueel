@@ -25,25 +25,18 @@ policy:
   pin_policy: [once, always]
   require_name_constraints: false
   validity_months: 13
-intermediates:
-  - name: daily
-    type: openpgp-subkey
-    capability: sign
-  - name: ssh
-    type: openpgp-subkey
-    capability: authenticate
 ```
 
-`kind: personal` replaces `name` and `release_address` with `person` (a name of 1 to 64 characters and an address) and is otherwise [the same file](/reference/bundle/#ritueelyaml). It is additive: a file without `kind` is a company bundle, as before.
+`kind: personal` replaces `name` and `release_address` with `person` (a name of 1 to 64 characters and an address) and is otherwise [the same file](/reference/bundle/#ritueelyaml). It is additive: a file without `kind` is a company bundle, as before. Its two delegations, `daily` (`capability: sign`) and `ssh` (`capability: authenticate`), are wanted delegation files under the OpenPGP root ([a delegation file](/reference/bundle/#a-delegation-file)).
 
 | Part | In a company bundle | In a personal bundle |
 |---|---|---|
-| Roots | `A` and `B` (two cards), or one cloud root. | One root, `A`, with an OpenPGP primary and no X.509 key. |
+| Roots | Keys `A` and `B` (two cards), or one cloud key. | One root, of the kind OpenPGP, with one key, `A`, the primary, and no X.509 key. |
 | `root.json` | Has `x509_spki_sha256`. | Has no X.509 member. |
-| Trust files | Root list, CA bundle, CRLs, SSH CA key list, keyring package. | The person's public certificate, `trust/<number>/<fingerprint>.pgp` and `.asc`. |
+| Trust files | Root list, CA bundle, CRLs, SSH CA key list, keyring file. | The person's public certificate in the trust set, `<fingerprint>.pgp` and `.asc`. |
 | Hand-off check 3 | The primaries equal those on the root list. | They equal the bundle's one primary ([the contract](/reference/hand-off-contract/#what-the-certifier-checks-1)). |
 | Target of the root set | 2 or 1. | 1; `status` raises no `root-set` finding for it. |
-| `root add`, `retire`, `revoke` | [As the transitions page says](/reference/transitions/). | The same, with the OpenPGP half only: no cross-certificate. |
+| Adding, retiring or revoking a root key | [As the transitions page says](/reference/transitions/). | The same, with the OpenPGP half only: no cross-certificate. |
 | The software root | A test root only for a company. | The real primary, in the encrypted file backend ([the software store](/reference/software-store/)). |
 
 ## The profiles
@@ -58,13 +51,13 @@ The encryption subkey is the exception: it is made in software, loaded onto each
 
 | Command | Does | Needs a person |
 |---|---|---|
-| `ritueel init --kind personal --store software --backend file --key-dir DIR --revocation-dir DIR` | Makes the bundle, the primary and its revocation signatures ([revocation material](/reference/revocation-material/)), and the first certificate. | Yes |
-| `ritueel personal subkey add NAME --card SERIAL` | One ceremony: the card makes the subkey of the entry `NAME`, with its capability, and its back-signature, the primary binds it, and the certificate is rebuilt. It writes the request and the proof into `requests/` like any requester, then answers them. | Yes |
-| `ritueel personal userid change` | Proposed; the name is not decided. One ceremony: the primary certifies the new user ID and makes it primary, and the old user ID gets a revocation that says it is no longer valid (record 0008, rule 17). The fingerprint and all trust stay. The certificate is rebuilt. | Yes |
+| `ritueel new --template personal DIR` (the template name is proposed), then `ritueel apply --key-dir DIR` | `new` makes the bundle folder and the starter wanted files, with `kind: personal` in `ritueel.yaml`. The first `apply` makes the primary and its revocation signatures ([revocation material](/reference/revocation-material/)), and the first certificate. | Yes |
+| A wanted delegation file for a key on a day-to-day card, then `ritueel apply` | One ceremony: the card makes the subkey of the delegation, with its capability, and its back-signature, the primary binds it, and the certificate is rebuilt. The card is the only one connected, or the one named with `--with`. It writes the request and the proof into `requests/` like any requester, then answers them. | Yes |
+| An edit of the wanted user IDs, then `ritueel apply` | One ceremony: the primary certifies the new user ID, and the old user ID gets a revocation that says it is no longer valid (record 0008, rule 17). The fingerprint and all trust stay. The certificate is rebuilt. Proposed: it also makes the new user ID primary, and the file of the user IDs is open ([issue #18](https://github.com/truvity/ritueel/issues/18)). | Yes |
 
-Everything else is planned: the renewal plan (`ritueel due`, then `ritueel run PLAN`) renews the binding and extends the primary, `status` warns at 60, 30 and 14 days for the binding and at 6 months, 3 months and 30 days for the primary, and `revocation make`, `revocation check` and `drill restore` work as for a root.
+Everything else is planned: `ritueel apply` renews the binding when it is due, 60 days before its end date, and extends the primary at each use; `status` warns at 60, 30 and 14 days for the binding and at 6 months, 3 months and 30 days for the primary; and the reasons in the wanted root file, `check material` and `check restore` work as for a root.
 
-### The ceremony of `personal subkey add`
+### The ceremony of a day-to-day subkey
 
 1. **Plan.** The card's serial and slot, the creation time of the subkey, the validity of the binding and the number of touches. The subkey is a birth, so the binding is a derived signature ([record 0005](../decisions/0005-a-ceremony-and-where-it-runs.md)).
 2. **Confirm** by typing the first eight characters of the plan digest, as always.
@@ -73,7 +66,7 @@ Everything else is planned: the renewal plan (`ritueel due`, then `ritueel run P
 5. **Sign.** The primary's key file is opened as [record 0002](../decisions/0002-where-a-key-lives.md) says, and the primary binds the subkey. The fingerprint is shown first.
 6. **Verify and record,** and write the certificate.
 
-A lost card is answered with `ritueel personal subkey add` on a new card after the primary has revoked the old subkey (a subkey revocation, type `0x28`, made by the primary at that ceremony). No pre-made file is needed, because the primary is a file.
+A lost card is answered with a wanted delegation file for a key on a new card, then `ritueel apply`, after the primary has revoked the old subkey (a subkey revocation, type `0x28`, made by the primary at that ceremony). No pre-made file is needed, because the primary is a file.
 
 ## Stage one: an adopted primary
 
@@ -83,7 +76,7 @@ A person who already has a primary, with years of certifications, may adopt it a
 - It may be RSA-4096 and without expiry on arrival, so it is outside the P-384 profile above until it is replaced.
 - It gets an expiry at adoption, and is replaced within three years of adoption, or moved to stage two.
 
-The adoption command is fixed with the code ([issue #18](https://github.com/truvity/ritueel/issues/18)).
+How a primary is adopted is fixed with the code ([issue #18](https://github.com/truvity/ritueel/issues/18)).
 
 ## Stage two: card-born primaries
 
@@ -99,10 +92,10 @@ A subkey that is replaced is retired by a revocation with the reason "superseded
 
 ## Changing a name or address
 
-Adding and retiring a user ID of an OpenPGP primary is a ceremony like any other: a new self-certification by the primary, and the old user ID gets a revocation that says it is no longer valid, not compromised. The fingerprint and all trust stay, which a new key for a new address would lose. It is offered in the command line and in the page (Make a plan), and for a person's own key it is part of M3 ([record 0008](../decisions/0008-a-persons-own-key.md), rule 17). A published copy of the old user ID cannot be withdrawn; the revocation is what servers and hosts can show. After the ceremony ritueel prints the next steps; the guide is [After a ceremony](/guides/after-a-ceremony/).
+Adding and retiring a user ID of an OpenPGP primary is a ceremony like any other: a new self-certification by the primary, and the old user ID gets a revocation that says it is no longer valid, not compromised. The fingerprint and all trust stay, which a new key for a new address would lose. It is done by editing the wanted user IDs and running `apply`, and for a person's own key it is part of M3 ([record 0008](../decisions/0008-a-persons-own-key.md), rule 17). A published copy of the old user ID cannot be withdrawn; the revocation is what servers and hosts can show. After the ceremony ritueel prints the next steps; the guide is [After a ceremony](/guides/after-a-ceremony/).
 
 ## Follow-ups
 
-- `init --kind personal`, `personal subkey add`, the adoption of a primary, the day-to-day subkeys and the encryption subkey with its wrapped backup, the output and the tests on a rehearsal card ([issue #18](https://github.com/truvity/ritueel/issues/18)).
+- The personal bundle and its first `apply`, the ceremony of the day-to-day subkeys, the adoption of a primary, the encryption subkey with its wrapped backup, the output and the tests on a rehearsal card ([issue #18](https://github.com/truvity/ritueel/issues/18)).
 - Stage two on the root cards, after the card proofs ([issue #11](https://github.com/truvity/ritueel/issues/11)).
 - The schema of `ritueel.yaml` for `kind` and `person`, and the vectors of the `openpgp-card` proof ([issue #18](https://github.com/truvity/ritueel/issues/18)).
