@@ -23,7 +23,7 @@ export const SEV_WORD: Record<SevKey, string> = {
   ok: 'OK',
 };
 
-export const SEV_ORDER: Severity[] = [Severity.CRITICAL, Severity.ALERT, Severity.NOTICE, Severity.INFO];
+export const SEV_ORDER: Severity[] = [Severity.CRITICAL, Severity.ALERT, Severity.NOTICE];
 
 /** Classes by level, written out so Tailwind sees them. */
 export const SEV_TEXT: Record<SevKey, string> = {
