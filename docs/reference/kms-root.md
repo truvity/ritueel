@@ -90,7 +90,7 @@ The reference key policy: the same text for every key, with the role ARNs and th
 | Deny replicas | every principal except the break-glass principal | `ReplicateKey`, `UpdatePrimaryRegion` | none |
 | Deny grants | every principal | `CreateGrant`, `RetireGrant`, `RevokeGrant` | none |
 
-`PutKeyPolicy` stays with the admin role because AWS refuses a policy that would lock out its own caller. The policy refuses new replicas and moving the primary Region to everyone but the break-glass principal, so that an administrator cannot copy the key to a Region where no one watches; it allows digests only (the Sign row). The replicas are made before the refusal applies, or by the break-glass principal; the sequence for the keys that ritueel creates is written here when the store is built ([record 0004](../decisions/0004-the-cloud-root.md)). No statement names the account root, and none allows `Sign` to the admin role or the break-glass principal. The break-glass SSH CA key has no Renew statement: nothing it signs is ever renewed. The `kms:` condition keys are those of the KMS documentation (read 2026-11-02, [AWS KMS condition keys](https://docs.aws.amazon.com/kms/latest/developerguide/conditions-kms.html)). The digest of the policy text, as the service returns it, is `policy_sha256` in the record.
+`PutKeyPolicy` stays with the admin role because AWS refuses a policy that would lock out its own caller. The policy refuses new replicas and moving the primary Region to everyone but the break-glass principal, so that an administrator cannot copy the key to a Region where no one watches; it allows digests only (the Sign row). The replicas are made before the refusal applies, or by the break-glass principal; the sequence for the keys that ritueel creates is written here when the store is built ([record 0004](../decisions/0004-the-cloud-root.md)). No statement names the account root, and none allows `Sign` to the admin role or the break-glass principal. The break-glass SSH CA key has no Renew statement: nothing it signs is ever renewed. The `kms:` condition keys are those of the KMS documentation (read 2026-11-02, [AWS KMS condition keys](https://docs.aws.amazon.com/kms/latest/developerguide/conditions-kms.html)). The digest of the policy text, as the service returns it, is `policy_sha256` in the ceremony record.
 
 ## The checks
 
@@ -107,7 +107,7 @@ Made at the first `apply` after the keys exist, and again, reading from the serv
 | 5 | The key has no grant. | `kms-grants` |
 | 6 | The replica exists in `replica_region`, has the same public key, and passes checks 1 to 5 on its own policy. | `kms-replica` |
 | 7 | For a key ritueel created, the tags are present and `ritueel:openpgp-created` equals the creation time in the bundle. For an adopted key, a tag is read when present and must equal the bundle's value; it is not required. | `kms-tags` |
-| 8 | The policy is the one the last ceremony recorded. If its digest changed, the plan says so in words and shows both digests, and the person confirms the change as part of the plan; the record keeps both. | none |
+| 8 | The policy is the one the last ceremony recorded. If its digest changed, the plan says so in words and shows both digests, and the person confirms the change as part of the plan; the ceremony record keeps both. | none |
 | 9 | At a ceremony that signs: `sts get-caller-identity` names a session of the ceremony role, in `account`. At a renewal: the same with the renewal role. A different role or an expired session stops the run, and the message says to take a session of the ceremony role again. | `kms-session` |
 
 ## Renewal under a policy
@@ -146,7 +146,7 @@ The validity of everything `renew` signs is the profile's (13 calendar months fo
 1. **Read, under the renewal role.** The checks 1 to 9 above, on every key it will use. A key policy with a third principal that can sign stops it (`extra-sign-principal`).
 2. **Plan.** For each intermediate in `intermediates` that is not revoked or replaced, the certificate or binding over the key of its last one, with that one's subject, extensions or key flags; then the root list with the same roots, the SSH CA key list with the same keys, each root's CRL with the entries of its last one that have not expired, the root's certificate and self-signature over the same keys, the CA bundle and the keyring. It prints the plan in words and its digest, as for every ceremony, and writes it. `--plan-only` stops there.
 3. **Check the plan against the bundle and the policy,** below. A refused check stops the run before anything is signed.
-4. **Reserve, sign, verify and record,** as the six steps of every ceremony, with no confirmation by a person: the record says `confirmation.by` `policy` ([the record](/reference/ceremony-record/#the-record)).
+4. **Reserve, sign, verify and record,** as the six steps of every ceremony, with no confirmation by a person: the ceremony record says `confirmation.by` `policy` ([the record](/reference/ceremony-record/#the-record)).
 
 A request that a requester left in `requests/` is used when its key, subject and extensions equal the bundle's; one that differs is refused, and the change waits for a ceremony.
 
@@ -164,7 +164,7 @@ Exit code 3 for each, except `kms-session` (4). They follow the KMS checks above
 
 ### What the renewal role can and cannot do
 
-It can keep alive what a ceremony already certified. It cannot add a key, a name or a root, change the root set, or revoke. If it is misused, an intermediate that should have lapsed keeps working until a person revokes it with `revoke`; every use is a `Sign` call in the audit trail under its own principal, distinct from the ceremony role, and each run leaves a record. What it cannot do is the reason a renewal needs no person ([principle 7](/principles/)).
+It can keep alive what a ceremony already certified. It cannot add a key, a name or a root, change the root set, or revoke. If it is misused, an intermediate that should have lapsed keeps working until a person revokes it with `revoke`; every use is a `Sign` call in the audit trail under its own principal, distinct from the ceremony role, and each run leaves a ceremony record. What it cannot do is the reason a renewal needs no person ([principle 7](/principles/)).
 
 **A person still meets the root.** A new key and a change of the root keys are ceremonies with the ceremony role, and a revocation is `revoke`, an act of its own. The [restore drill](/reference/drill/#when-it-is-due) stays yearly.
 
@@ -178,7 +178,7 @@ Written at the first `apply` under `roots/<label>/attestation/`, one set for eac
 | `<purpose>.key.json` | One canonical JSON object ([the common rules](/reference/ceremony-record/#common-rules)): `key_arn`, `spec`, `usage`, `origin`, `multi_region`, `state`, `replica_arn`, the tags, `public_key_sha256` and `policy_sha256`. |
 | `result.json` | The checks that ran and their results, the `role_session` (the assumed-role ARN and session name, never a credential), and `checked_at`. |
 
-A ceremony that signs writes a new `result.json` into its record, not over the old file.
+A ceremony that signs writes a new `result.json` into its ceremony record, not over the old file.
 
 ## Failure
 

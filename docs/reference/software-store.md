@@ -67,7 +67,7 @@ Through `github.com/zalando/go-keyring`. The entries are under the service `ritu
 
 ritueel stores no passphrase in the keyring, because it keeps no passphrase anywhere ([record 0002](../decisions/0002-where-a-key-lives.md)).
 
-## The record
+## The ceremony record
 
 A ceremony with a software root writes in its ceremony record: `copyable` true (as the plan's `root` already says), `backend`, and `warnings`, a list of codes: `software-copyable` for every backend, and `onepassword-copyable` or `keyring-insecure` as above. No secret and no reference to a path.
 
