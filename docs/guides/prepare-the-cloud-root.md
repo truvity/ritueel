@@ -1,6 +1,6 @@
 ---
 title: Prepare the cloud root
-description: Make the dedicated AWS account, the admin role and the ceremony role that ritueel needs for a KMS root, and the controls worth adding, before the first apply.
+description: Make the AWS account, the admin role and the ceremony role that ritueel needs for a KMS root, and the controls worth adding, before the first apply.
 sidebar:
   order: 0.6
 ---
@@ -11,13 +11,13 @@ A cloud root is the recommended path for a team with a cloud account ([which pat
 
 ## What you start with
 
-- A cloud account for the roots and for nothing else. If it also runs services, a service's problem becomes the root's problem.
+- A cloud account for the root's keys. Keep only keys that are used in ceremonies in it and run no workload there: if the account also runs services, a service's problem becomes the root's problem. ritueel does not check this.
 - Someone who can create roles in it.
 - The names you will put in `ritueel.yaml`: the account id, two Regions, and the two role names. The break-glass principal is not named in `ritueel.yaml`; it is in the key policy.
 
 ## Steps
 
-1. **Make the account,** inside your organisation, with nothing deployed in it. Result: an account whose only job is to hold roots.
+1. **Make the account, or choose one,** inside your organisation, with no workload deployed in it. Result: an account that holds only keys used in ceremonies.
 2. **Make the admin role.** It may create keys, tag them and read them. It may replicate a key only before the policy that refuses replicas is in force, and it may do nothing else. It must not be able to `Sign`. Result: the role that the first `ritueel apply` uses to make the keys.
 3. **Make the break-glass principal.** It is the only principal that may replicate a key or move its primary Region once the key policy is in force, for example after the loss of a Region. Create it like the admin role and never name it after a person. It must not be able to `Sign`. Using it is a manual act that you log. Result: a lost Region can still be answered, and nobody else can copy the key to a Region where no one watches ([record 0004](../decisions/0004-the-cloud-root.md)).
 4. **Make the ceremony role.** Its trust policy is yours to write, and ritueel never reads it. ritueel asks nothing of how the role is assumed ([record 0004](../decisions/0004-the-cloud-root.md)). Because nothing in AWS ties a signature to a person, make the role hard to assume: whoever can assume it can sign any digest. It may be given nothing but the right to use the root keys; the key policy that ritueel makes names this role as the only one that may sign anything new. Result: the role the person assumes at a ceremony.

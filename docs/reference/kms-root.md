@@ -5,7 +5,7 @@ sidebar:
   order: 10
 ---
 
-*Not built yet. This is the page that [record 0004](../decisions/0004-the-cloud-root.md) leaves for the details of the `aws-kms` store; the code is [issue #12](https://github.com/truvity/ritueel/issues/12), in M2. The custody model is in that record: one dedicated root account that holds one key for each kind of root the bundle uses, and a multi-Region replica that is never counted as a second key. The commands, words and file names on this page are from before the decisions of 2026-11-12; the design is at https://ritueel.id/design/.*
+*Not built yet. This is the page that [record 0004](../decisions/0004-the-cloud-root.md) leaves for the details of the `aws-kms` store; the code is [issue #12](https://github.com/truvity/ritueel/issues/12), in M2. The custody model is in that record: an account the holder chooses, with one key for each kind of root the bundle uses, and a multi-Region replica that is never counted as a second key. The commands, words and file names on this page are from before the decisions of 2026-11-12; the design is at https://ritueel.id/design/.*
 
 A KMS key has no attestation. The evidence that it is the root it should be is the key itself, its policy and its audit trail, read from the service every time ([principle 4](/principles/)). This page says what ritueel creates or adopts, what it reads, and what makes it refuse.
 
@@ -15,7 +15,7 @@ Before the first `apply`, with the holder's own infrastructure tools ([Prepare t
 
 | Part | What it is |
 |---|---|
-| The root account | A dedicated AWS account that holds nothing else. |
+| The root account | The AWS account the holder chooses for the root's keys. ritueel records it and checks each key, its policy and its replica; it does not rule on what else is there. Keep only keys that are used in ceremonies in it, and run no workload. |
 | The admin role | Creates the keys and reads them. It replicates only before the policy that refuses replicas is in force, or through the break-glass principal. It can never `kms:Sign`. |
 | The ceremony role | The principal that may `kms:Sign` with a root key at a ceremony, and the only one that may sign anything new. ritueel asks for no particular sign-in to assume it ([record 0004](../decisions/0004-the-cloud-root.md)); how it is assumed is the holder's. |
 | The break-glass principal | The one principal that may still replicate a key or move its primary Region, for example after the loss of a Region. It is created like the admin role and is never named after a person. Using it is a manual, logged act ([record 0004](../decisions/0004-the-cloud-root.md)). It can never `kms:Sign`. |
