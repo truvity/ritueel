@@ -5,7 +5,7 @@ sidebar:
   order: 12.2
 ---
 
-*Design phase: this page teaches the model. The checks it describes are planned: the cloud store's for M2 ([issue #12](https://github.com/truvity/ritueel/issues/12)) and the card checks that gate a ceremony for M6 (the read-only check and the inventory come with M2; [issue #11](https://github.com/truvity/ritueel/issues/11)); the rule they follow is in [record 0002](../decisions/0002-where-a-key-lives.md).*
+*Design phase: this page teaches the model. The checks it describes are planned: the cloud store's for M2 ([issue #12](https://github.com/truvity/ritueel/issues/12)) and the card checks that gate a ceremony for M6 (the read-only check and the card files come with M2; [issue #11](https://github.com/truvity/ritueel/issues/11)); the rule they follow is in [record 0002](../decisions/0002-where-a-key-lives.md).*
 
 Someone tells you a root key is "safe on a hardware token", or "in the cloud, locked down". How would you know? A claim is not evidence, and a root is the one key where being wrong is expensive. This page is about what each kind of store can show, so you can tell a claim from a proof.
 
@@ -27,7 +27,7 @@ The chain is checked against the maker's root, which ritueel carries and refresh
 
 ## What the cloud gives instead
 
-A cloud key service cannot attest where its key was made, but it can tell you, truthfully and every time you ask, who may use the key. For a root, ritueel reads three things from the service and compares them with what it expects: the key's description (its type, its Region, that it is enabled), its policy (that one role may sign anything new, and only digests; and, if you declared one, that a renewal role may only re-sign what you already certified), and its replica. If the policy changed since the last ceremony, you are shown the change before you confirm anything ([The cloud root](/reference/kms-root/)).
+A cloud key service cannot attest where its key was made, but it can tell you, truthfully and every time you ask, who may use the key. For a root, ritueel reads three things from the service and compares them with what it expects: the key's description (its type, its Region, that it is enabled), its policy (that one role may sign anything new, and only digests), and its replica. If the policy changed since the last ceremony, you are shown the change before you confirm anything ([The cloud root](/reference/kms-root/)).
 
 ## What the kind allows a store to hold
 
@@ -47,4 +47,4 @@ A new device or service is judged the same way before it joins: what does it pro
 
 ## Drill
 
-On two rehearsal cards, make a key on one and import a key into a slot of the other with the maker's tool. Ask each for its attestation certificate. Result: the first answers, the second refuses. Then run the same ceremony with ritueel on each (when `init` exists) and read the refusal.
+On two rehearsal cards, make a key on one and import a key into a slot of the other with the maker's tool. Ask each for its attestation certificate. Result: the first answers, the second refuses. Then run the same ceremony with ritueel on each (when `apply` exists) and read the refusal.
