@@ -22,7 +22,7 @@ import { T } from '../ui/T';
 
 // History: what happened, newest first, and each ceremony that has no record.
 // One list and one panel. The list is a table, one line for each ceremony
-// folder. A ceremony in one of four states (planned, started, recorded,
+// (its ceremony folder). A ceremony in one of four states (planned, started, recorded,
 // closed) is a line. A plan that was planned and never run (planned and stale)
 // is not a line: the plans are folded into one line with a count, closed, and
 // opened they are lines with the state "planned, stale".
@@ -36,7 +36,7 @@ const WIDE = '(min-width:1440px)';
 
 const isFolded = (c: Ceremony): boolean => c.state === CeremonyState.PLANNED && c.stale;
 
-/** The date of a ceremony: the time it was planned, which is the time in the name of its folder. */
+/** The date of a ceremony: the time it was planned, which is the time in the name of its ceremony folder. */
 const dateOf = (c: Ceremony) => ymd(c.plannedAt ?? c.startedAt ?? c.finishedAt);
 
 function stateWord(c: Ceremony): string {
@@ -62,7 +62,7 @@ function stateLevel(c: Ceremony): SevKey {
 
 /**
  * The link of a line. Its name is the date, the command and the title; the
- * folder name is its description. The chosen line has `aria-current`.
+ * ceremony folder name is its description. The chosen line has `aria-current`.
  */
 function CeremonyRowLink({ c, current }: { c: Ceremony; current: boolean }) {
   const name = `${dateOf(c)} ${CEREMONY_COMMAND_WORD[c.command] ?? ''} ${safeString(c.title, CAPS['Ceremony.title#cell'])}`;
@@ -124,7 +124,7 @@ function Folded({ rows, selectedKey }: { rows: Ceremony[]; selectedKey?: string 
   );
 }
 
-/** The address names a folder that this bundle does not hold. The panel says so and goes back to the list. */
+/** The address names a ceremony folder that this bundle does not hold. The panel says so and goes back to the list. */
 function NoSuchCeremony({ id }: { id: string }) {
   return (
     <PanelFrame kind="ceremony" title="No such ceremony" backHref={href.history()}>
