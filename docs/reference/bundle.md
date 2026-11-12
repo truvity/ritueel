@@ -491,7 +491,7 @@ These are named and are not rules. Nothing on this page depends on them.
 - A decided repair of a fork ([issue #138](https://github.com/truvity/ritueel/issues/138)).
 - The sealed single-file form of the history, for backups that reveal nothing (record 0006, rule 5).
 - Trust numbers that skip. Until then the number grows by one (record 0006, rule 14).
-- The lock kept as a file, which keeps two writers from one bundle. The lock of [record 0010](../decisions/0010-the-engine-the-process-and-the-page.md) (rule 8) is not this file; that the running process holds it is Proposed.
+- The lock kept as a file, which keeps two writers from one bundle. The lock of [record 0010](../decisions/0010-the-engine-the-process-and-the-page.md) (rule 8) is not this file; the running process holds it (rule 23).
 - Root state as files: a key's state is read from the ceremony records, as in [`root.json`](/reference/bundle/#rootjson).
 
 ## Standards

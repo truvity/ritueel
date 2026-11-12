@@ -27,6 +27,7 @@
 20. ritueel's key handling, signing and revocation get review, tests on real test devices, and the rules in GOVERNANCE.md. A test that needs hardware is tagged, skipped by default, and selects its card by serial.
 21. ritueel delivers one statically linked executable for Linux (copy and run, Go only, no installers), a small release signer program for CI until the requester system signs natively, and later a Go library for infrastructure code built on the same policy package.
 22. The flow of a change has four steps. The person fills a form in the page, and the page leaves an inert proposal (rule 11). In the terminal the person accepts it by typing the first eight characters of its digest. Then `apply` makes the plan, and the person types the first eight characters of the plan's digest. Last, the person gives the PIN and the touch where the store asks for them. On the workstation the page shows the progress; for a key that can be copied the run is in the offline system, with no page and no network, so the progress is in the terminal. The last step, the keyserver upload, is shown in the page with its command and done in the terminal after a typed confirmation: there is no button. The page never confirms or runs a ceremony and never sees a secret.
+23. The running ritueel process holds the one exclusive lock of a bundle (rule 8). No command holds it on its own, and no file in the bundle is the lock.
 
 ## Why
 
@@ -68,6 +69,8 @@ One engine means the ceremony is tested once and the faces cannot drift apart. T
 - **A hand-written page (the earlier design).** It had HTML templates, one stylesheet, one script and no package tree, but plain screens, a second stack beside sluis and no page that doubles as the public demo; the maintainer chose the sluis stack.
 - **The wizard prepares the card and the account.** It gives one guided path from the box, but the tool stays out of PINs and accounts, and a wizard is no exception.
 - **Upstream a signer API to go-crypto, or write the packets ourselves.** It removes the bypass, but waits on review or adds security-critical code to keep.
+- **Each command holds the lock while it runs.** The lock is as short as the work, but the process keeps no ceremony state (rule 9), so a ceremony of several calls has gaps in which another command can write, and each command must take and free the lock itself (rule 23).
+- **A lock kept as a file in the bundle.** It could keep out a second writer on a shared folder and does not depend on the life of the process, but a file left behind by a crash blocks the next command, the layout of the bundle has no place for it, and a join would have to skip it (rule 23).
 
 ## Not yet proven or only proposed
 
