@@ -33,7 +33,7 @@ Of these names only the path `history/<ceremony>/plan.json` is decided (0006 rul
 The name ends with a hyphen and the first eight characters of the plan digest, for example `20261120T100000Z-apply-3fa9c1d2`, so that two ceremonies of one second cannot meet on one name. A closing record has the first eight characters of the digest of the attempt it closes. Both are fixed with the code ([#8](https://github.com/truvity/ritueel/issues/8)).
 :::
 
-Two commands leave a ceremony folder: `apply`, with the plan, and `close`, with a closing record (0005 rules 7 and 10). `join` leaves none: it adds the ceremony folders of another copy as they are (0006 rule 30).
+Two commands leave a ceremony folder: `apply`, with the plan, and `close`, with a closing record (0005 rules 7 and 10). `join` leaves none: it adds the ceremony folders of another copy as they are (0006 rules 30 and 31).
 
 :::note[Proposed]
 Whether `revoke` leaves a ceremony folder, a ceremony record and a printed end of the history is not decided ([#141](https://github.com/truvity/ritueel/issues/141)); it reads no plan. If it leaves no ceremony record, no ceremony record lists the trust set that it writes, and [the hash chain](/reference/ceremony-record/#the-hash-chain) check for such a trust set would report it. Whether an adoption of a card leaves a ceremony record of its own is not decided either ([#144](https://github.com/truvity/ritueel/issues/144)).

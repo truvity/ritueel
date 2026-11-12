@@ -148,7 +148,7 @@ A name that does not carry its identity is a road not taken: two copies of a bun
 - It adds the files that one copy of a bundle has and the other lacks. It never merges text.
 - It stops when one name has two contents, and when one request has two answers (rule 30).
 - Two ends of the history are a fork. A join adds both and shows the fork as a critical finding, in `status` and in `check history` (rules 6 and 30).
-- A join writes no ceremony record and changes no file. It only adds.
+- A join writes no ceremony record and changes no file. It only adds (rule 31).
 - After every join ritueel prints the end of the history ([below](/reference/bundle/#the-end-of-the-history)) (rule 9).
 - The refresh of the stick before a plan is run there ([record 0005](../decisions/0005-a-ceremony-and-where-it-runs.md), rule 22) also only adds files, and skips the wanted files.
 - Wanted files never go to the stick and never come back from it ([record 0005](../decisions/0005-a-ceremony-and-where-it-runs.md), rule 21; [record 0006](../decisions/0006-bundle-history-and-trust-files.md), rule 11). The copies of the wanted files in a ceremony folder are copies and not wanted files; they travel with the plan (rule 5).
