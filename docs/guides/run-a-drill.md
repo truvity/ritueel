@@ -13,18 +13,18 @@ A ceremony happens about once a year, so nobody is practised, and the day you ne
 
 - The ritueel repository, or the drill scripts from it, and a scratch directory.
 - For a walk-through on cards: two rehearsal cards, prepared as in [Prepare a root card](/guides/prepare-a-root-card/), whose serials you put in the environment. Never a card that holds or will hold a real root.
-- For the restore check: a clean machine, the bundle cloned, your revocation files in reach, the last record's digest from where you kept it, and your signers file.
+- For the restore check: a clean machine, the bundle cloned, your revocation files in reach, the end of the history from where you kept it, and your signers file.
 
 ## Steps: a walk-through
 
 1. **Pick the drill.** The list is in [the reference](/reference/drill/#walk-throughs): start with the lost-card drill.
-2. **Set up.** `drills/lost-card/setup.sh` makes a scratch bundle with two test roots and one intermediate. Result: the start state, and nothing real.
-3. **Run it.** `drills/lost-card/run.sh` runs the steps of [A lost root card](/guides/lost-root-card/). On rehearsal cards, add `--cards` and give the serials; it pauses at every PIN and every touch. Result: a card is out of use, a replacement root is added, and the intermediate is certified again.
-4. **Check it.** `drills/lost-card/check.sh` checks the end state against the checks of the guide, and writes a report with how long each ceremony took, from the records. Result: pass or fail, and a time from loss to refusal.
+2. **Set up.** `drills/lost-card/setup.sh` makes a scratch bundle with a test root of keys A and B and one intermediate. Result: the start state, and nothing real.
+3. **Run it.** `drills/lost-card/run.sh` runs the steps of [A lost root card](/guides/lost-root-card/). On rehearsal cards, add `--cards` and give the serials; it pauses at every PIN and every touch. Result: a card is out of use, a replacement root key is added, and the intermediate is certified again.
+4. **Check it.** `drills/lost-card/check.sh` checks the end state against the checks of the guide, and writes a report with how long each ceremony took, from the ceremony records. Result: pass or fail, and a time from loss to refusal.
 
 ## Steps: the restore check
 
-1. **Run it.** `ritueel drill restore --expect-last DIGEST --allowed-signers FILE --revocation-dir DIR`. Result: a table of seven checks, each `passed`, `failed` or `not-run`.
+1. **Run it.** `ritueel check restore --expect-last DIGEST --allowed-signers FILE --revocation-dir DIR`. Result: a table of seven checks, each `passed`, `failed` or `not-run`.
 2. **Read every line.** A check that did not run is not a check that passed. Give it what it lacked (the card, the credentials, the file), or accept it by name if it cannot run on this machine.
 3. **Commit the report** under `drills/` in the bundle.
 

@@ -25,7 +25,7 @@ What ritueel cannot do:
 
 - **keys.openpgp.org** shows an address only after the owner of the address clicks a link in a mail. ritueel cannot click it. The state of each server and address is one of not sent, sent and unconfirmed, confirmed, or failed (proposed).
 - **A key cannot be withdrawn** from the older kind of server (HKP). A user ID you published stays.
-- **Two roots with one release address** collide on keys.openpgp.org, which keeps one key for each address. ritueel warns, sends the newer root there and both to the other servers (proposed).
+- **Two primaries with one release address** collide on keys.openpgp.org, which keeps one key for each address. ritueel warns, sends the newer primary there and both to the other servers (proposed).
 - **A revocation** goes to a second kind of server too, because a revoked primary has no user IDs on keys.openpgp.org and plain `gpg` ignores that kind of revocation: `ritueel publish --revocation FILE` (proposed), after a stricter confirmation (sixteen characters), and never from a scheduler. See [Revoke a key](/guides/revoke-a-key/).
 - **Refused:** a test root, and any run while a ceremony is running.
 
@@ -61,14 +61,14 @@ spec:
   sources:
     - inLine: |
         -----BEGIN CERTIFICATE-----
-        (placeholder: the PEM text of every root in the CA bundle)
+        (placeholder: the PEM text of every certificate in the CA bundle)
         -----END CERTIFICATE-----
   target:
     configMap:
       key: ca.crt
 ```
 
-Undo: delete the Bundle (`kubectl delete bundle acme-roots`) once the new roots are in somewhere else; not run. During an overlap both roots stay in. Add the new root first; remove the old one only after the leaf certificates have moved to the new chain ([Rotate a key](/guides/rotate-a-key/)). Not tested: trust-manager with the comment line at the top of ritueel's file.
+Undo: delete the Bundle (`kubectl delete bundle acme-roots`) once the new root keys are in somewhere else; not run. During an overlap both root keys stay in. Add the new root key first; remove the old one only after the leaf certificates have moved to the new chain ([Rotate a key](/guides/rotate-a-key/)). Not tested: trust-manager with the comment line at the top of ritueel's file.
 
 ## sshd
 
@@ -93,7 +93,7 @@ Some other consumers send bare requests, without the limits the hand-off contrac
 
 ## The trust store of one machine
 
-For one computer ritueel writes one certificate file per active root and prints the add and undo commands for that system. It never runs them, and never runs with administrator rights. It refuses a test root, a retired root, an expired root list and a root list with a lower sequence than this machine has seen (proposed). The commands below are examples with example names; the Debian and Ubuntu commands follow the [manual page of `update-ca-certificates`](https://manpages.debian.org/trixie/ca-certificates/update-ca-certificates.8.en.html), and the macOS commands were read on 2026-11-11 from a mirror of the `security(1)` man page (keith.github.io/xcode-man-pages/security.1.html) and not run. The macOS undo removes the trust setting and may leave the certificate in the keychain; it was not run.
+For one computer ritueel writes one certificate file per active root key and prints the add and undo commands for that system. It never runs them, and never runs with administrator rights. It refuses a test root, a retired root key, an expired root list and a root list with a lower sequence than this machine has seen (proposed). The commands below are examples with example names; the Debian and Ubuntu commands follow the [manual page of `update-ca-certificates`](https://manpages.debian.org/trixie/ca-certificates/update-ca-certificates.8.en.html), and the macOS commands were read on 2026-11-11 from a mirror of the `security(1)` man page (keith.github.io/xcode-man-pages/security.1.html) and not run. The macOS undo removes the trust setting and may leave the certificate in the keychain; it was not run.
 
 **Debian and Ubuntu.** One certificate in each file.
 
@@ -126,9 +126,9 @@ Read these warnings first:
 - **The root becomes trusted for every site,** with no name limits.
 - **Compare the key pin** that ritueel prints with a value kept outside the bundle. The bundle cannot vouch for itself.
 - **Never install a root whose key is a software file on this computer.** Whoever reads the file can intercept secure requests from the machine.
-- **Never install a test root or a retired root.**
+- **Never install a test root or a retired root key.**
 - **Chrome and Firefox on Linux do not read the system store.** They need separate steps (read from the makers' pages on 2026-11-11, not run).
-- **No store reads the root's revocation list.** To stop trusting a revoked root, remove its file with the undo command above.
+- **No store reads the root key's revocation list.** To stop trusting a revoked root key, remove its file with the undo command above.
 
 ## Is the world up to date?
 
