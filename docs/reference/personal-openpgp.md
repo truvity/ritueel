@@ -70,7 +70,7 @@ A lost card is answered with a wanted delegation file for a key on a new card, t
 
 ## Stage one: an adopted primary
 
-A person who already has a primary, with years of certifications, may adopt it as it is, as a software key in a key file ([record 0008](../decisions/0008-a-persons-own-key.md)). This is the one stated exception to "nothing is imported".
+A person who already has a primary, with years of certifications, may adopt it as it is, as a software key in a key file ([record 0008](../decisions/0008-a-persons-own-key.md)). This is one of the two stated exceptions to "nothing is imported" ([record 0002](../decisions/0002-where-a-key-lives.md), rule 2).
 
 - The key is marked `adopted` in its `root.json` ([the bundle](/reference/bundle/#rootjson)).
 - It may be RSA-4096 and without expiry on arrival, so it is outside the P-384 profile above until it is replaced.
