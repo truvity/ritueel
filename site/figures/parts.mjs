@@ -1,5 +1,5 @@
 // Parts shared by the strips of the page "How it works" (ceremony, sign-intermediate, bind-subkeys) and
-// its five ideas: the walking holder, the terminal, the plan sheet, the stick with chips, the bundle.
+// its other figures: the walking holder, the terminal, the plan sheet, the stick with chips, the bundle.
 // They are built from the primitives of draw.mjs and use only classes of figures.css.
 import { acc, arrowq, circle, f, line, path, person, rect, sheet, text, wifiOff } from './draw.mjs';
 import { svgBox } from './svg.mjs';
@@ -52,7 +52,7 @@ export function bundle(x, base, w, h, name) {
   );
 }
 
-/** A cloud of width 28k and height 24k with its top left at (x,y); k = 1 is the cloud of the five ideas. */
+/** A cloud of width 28k and height 24k with its top left at (x,y); k = 1 is the smallest cloud (three-layers and whole-chain use larger ones). */
 export const cloud = (x, y, k = 1) =>
   path(`M${f(x)} ${f(y + 24 * k)} H${f(x + 28 * k)} A${f(8 * k)} ${f(8 * k)} 0 0 0 ${f(x + 26 * k)} ${f(y + 9 * k)} A${f(10 * k)} ${f(10 * k)} 0 0 0 ${f(x + 8 * k)} ${f(y + 11 * k)} A${f(7 * k)} ${f(7 * k)} 0 0 0 ${f(x)} ${f(y + 24 * k)} Z`, 'paper');
 
@@ -69,14 +69,22 @@ export function walker(cx, hx, hy, side = 1) {
   return leg(cx - 7, cx - 22) + leg(cx + 8, cx + 20) + person(cx, hipY, [[side, hx, hy]]);
 }
 
-/** A stick big enough to show what is on it. chips: [{text, accent, lock}]; the connector is on the right. */
+/**
+ * A stick big enough to show what is on it. chips: [{text, accent, lock, mark}]; the connector is on the right.
+ * `mark` names an accent object drawn as a small sheet at the right end of the chip (the plan inside a bundle).
+ */
 export function stickBig(x, y, w, chips) {
   const h = 14 + chips.length * 18;
   // the plug: a metal shell on the right with two contacts, as on the stick of the stick figure
   let s = rect(x + w, y + h / 2 - 10, 12, 20, 'paper-t', 2) + rect(x + w + 4, y + h / 2 - 6, 4, 4, 'fill-ink', 1) + rect(x + w + 4, y + h / 2 + 2, 4, 4, 'fill-ink', 1) + rect(x, y, w, h, 'paper', 6) + circle(x + 10, y + 8, 2, 'fill-ink');
   chips.forEach((c, i) => {
     const cy = y + 14 + i * 18;
-    const chip = rect(x + 8, cy, w - 16, 15, c.accent ? 'acc-f' : 'paper-t', 3) + text(x + (c.lock ? w / 2 - 8 : w / 2), cy + 11.5, c.text, 't t-s' + (c.accent ? ' t-acc' : ''), 'm') + (c.lock ? lock(x + w - 24, cy + 1) : '');
+    const left = c.lock || c.mark; // a chip with a mark at its right end writes its word a little to the left
+    const chip =
+      rect(x + 8, cy, w - 16, 15, c.accent ? 'acc-f' : 'paper-t', 3) +
+      text(x + (left ? w / 2 - 8 : w / 2), cy + 11.5, c.text, 't t-s' + (c.accent ? ' t-acc' : ''), 'm') +
+      (c.lock ? lock(x + w - 24, cy + 1) : '') +
+      (c.mark ? acc(c.mark, sheet(x + w - 22, cy + 1, 11, 13, { accent: true, rows: 0 })) : '');
     s += c.accent ? acc(c.accent, chip) : chip;
   });
   return s;
