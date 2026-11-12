@@ -135,7 +135,9 @@ test('words the owner decided against, and nothing that looks like a secret, a s
     const pieces = [fig.label, fig.caption, ...(fig.panels ?? []).flatMap((p) => [p.title, p.caption])];
     for (const d of drawings(fig)) pieces.push(unesc(label(d.svg)), ...textsOf(d.svg).map((t) => unesc(t.text)));
     for (const s of pieces) {
-      for (const re of banned) assert.ok(!re.test(s), `${fig.id}: ${re} in "${s}"`);
+      // The glossary fixes the phrase "ceremony folder" (the folder history/<ceremony>/); the bare word stays banned.
+      const bare = s.replace(/\bceremony folders?\b/gi, '');
+      for (const re of banned) assert.ok(!re.test(bare), `${fig.id}: ${re} in "${s}"`);
       assert.ok(!/\bgate\b/i.test(s) || !/cloud/i.test(s), `${fig.id}: a gate near a cloud root: "${s}"`);
       assert.ok(!/\d{12}/.test(s), `${fig.id}: a 12-digit run in "${s}"`);
       for (const n of s.match(/\b\d{8,}\b/g) ?? []) assert.ok(/^0+\d$/.test(n), `${fig.id}: ${n} looks like a real serial (use 00000001)`);
