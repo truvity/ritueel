@@ -5,13 +5,13 @@ sidebar:
   order: 1
 ---
 
-Trust has to start somewhere. When your browser accepts the certificate of a website, it has not met the website. It follows a chain of signatures to a certificate that was already on your computer before you opened the browser. That certificate, and the key behind it, is a **root**.
+Trust has to start somewhere. When your browser accepts the certificate of a website, it has not met the website. It follows a chain of signatures to a certificate that was already on your computer before you opened the browser. That certificate, and the key behind it, form a **root**.
 
 ## Two places a root shows up
 
 | | X.509 (certificates, TLS, code signing) | OpenPGP (signatures on software, mail, git) |
 |---|---|---|
-| The root is | A *root CA certificate* and its private key. | The *primary key* of an identity. |
+| The root has | A *root CA certificate* and its private key. | The *primary key* of an identity. |
 | Outsiders trust it because | It is installed in their trust store: the operating system's, the browser's, or a file your company ships. | They hold its public key in a keyring, and they have checked the fingerprint some other way. |
 | What it signs | Certificates of intermediate CAs (CAs that the root vouches for and that do the everyday signing). | Certifications of identities and the bindings of subkeys. |
 | Looks like | A file of a few hundred bytes of public data. | A fingerprint of 40 hexadecimal characters. |
