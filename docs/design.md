@@ -4,7 +4,7 @@ description: What ritueel decides, by area, in short sentences, with what is not
 flow: rows
 ---
 
-The program is not built. This page is the design as decided on 2026-11-11, and it marks the main points that are not yet proven or only proposed; each record lists all of its own under Not yet proven or only proposed.
+The program is not built. This page is the design as decided on 2026-11-11 and 2026-11-12, and it marks the main points that are not yet proven or only proposed; each record lists all of its own.
 
 ## The five core ideas
 
@@ -12,13 +12,13 @@ The program is not built. This page is the design as decided on 2026-11-11, and 
 2. Prefer a key that cannot be copied. A root on cards or in the cloud cannot be copied, and it avoids the reboot into the offline system.
 3. One bundle keeps the roots of a PKI and of OpenPGP together, with what is known about the cards.
 4. Requests in, answers out. Other systems connect through files, and plans can travel.
-5. An opinionated, automated workflow: what is due, then plan, confirm, reserve, sign, verify, record.
+5. An opinionated, automated workflow: what is wanted and not applied yet, then plan, confirm, reserve, sign, verify, record.
 
 Decided in [0001](decisions/0001-what-ritueel-is.md) and [0005](decisions/0005-a-ceremony-and-where-it-runs.md). [How it works](/how-it-works/) draws the five.
 
 ## What ritueel is
 
-- A tool for the root keys of a company or of one person: an X.509 CA root or an OpenPGP primary, in one model.
+- A tool for the roots of a company or of one person: an X.509 trust anchor, an OpenPGP identity or an SSH CA, in one model.
 - A teaching product first: each procedure has a Learn page, a guide and a drill.
 - Kept apart from systems that issue certificates every day. They exchange standard formats through the [hand-off contract](/reference/hand-off-contract/).
 - Out of scope: online signing, leaf certificates, secret storage and staff keys.
@@ -29,8 +29,9 @@ Decided in [0001](decisions/0001-what-ritueel-is.md) and [0011](decisions/0011-p
 ## A ceremony
 
 - Six steps for every store: plan, confirm, reserve, sign, verify, record.
+- A person writes what is wanted. ritueel finds what is not applied yet each time, and `apply` plans it.
 - The plan fixes every byte to sign except the new keys. The person confirms by typing the first eight characters of its digest. In the page the person edits and a plan is written; in the terminal one short command runs it, and the page shows that command without the digest.
-- Plans and requests are detachable: they travel by any channel, run elsewhere, and the answer returns.
+- Plans and requests are detachable: they travel by any channel, run elsewhere, and the answer returns by `join`.
 
 Decided in [0005](decisions/0005-a-ceremony-and-where-it-runs.md) and [0010](decisions/0010-the-engine-the-process-and-the-page.md).
 
@@ -45,9 +46,9 @@ Decided in [0011](decisions/0011-publishing-and-what-to-do-after-a-ceremony.md).
 
 ## The bundle and its parts
 
-- A bundle is a directory of plain files for one trust domain. A root is written with the bundle name, such as acme/A.
-- `ritueel.yaml` is the one file a person writes.
-- `history/` is write-once, one folder per ceremony. `trust/<number>/` holds the root list, CA bundle, revocation lists, SSH CA key list and public OpenPGP keyring. `requests/<name>/` holds a request and its answer.
+- A bundle is a directory of plain files for one trust domain. A root key is written with the bundle name, such as acme/A.
+- A person writes only wanted files: `ritueel.yaml` and one file for each card, root, delegation and the user IDs.
+- `history/` is write-once, one ceremony folder for each ceremony. A numbered trust set holds the root list, CA bundle, revocation lists, SSH CA key list and public OpenPGP keyring. `requests/<name>/` holds a request and its answer.
 - A bundle never holds a private key in the clear, a PIN or a passphrase.
 
 Decided in [0006](decisions/0006-bundle-history-and-trust-files.md).
@@ -63,7 +64,7 @@ Decided in [0002](decisions/0002-where-a-key-lives.md).
 ## Cards
 
 - Two independent root cards: redundancy, not two-person control.
-- Six rows of four slots. Row 1 is the card's own jobs; rows 2 to 6 hold one root each. One row stays free.
+- Six rows of four slots. Row 1 is the card's own jobs; rows 2 to 6 hold one bundle's keys each. One row stays free.
 - One pair serves up to four bundles. A second bundle gets its sealed copy of the card secrets by a request to the first. An occupied row nobody declared is a finding.
 - Root keys need the PIN and a touch, set at birth.
 
@@ -80,14 +81,14 @@ Decided in [0002](decisions/0002-where-a-key-lives.md).
 
 - A copyable key is used only in the offline system. A cloud root always runs on the workstation, because the offline system has no network; the offline system is an option for a root on cards.
 - A key that cannot be copied may be used on the workstation, with four conditions: a touch for every signature; the count stated in the plan; no retry of a failed touch; and a check against the plan on a second device. The touch is for a root on cards only: a cloud key has no touch, and for a cloud root the typed digest and the role session stand; the other three conditions apply to both kinds.
-- Every record says where the ceremony ran.
+- Every ceremony record says where it ran.
 - The limit: a card has no screen, so one tricked touch gives one signature that no card logs.
 
 Decided in [0005](decisions/0005-a-ceremony-and-where-it-runs.md).
 
 ## The stick
 
-- The offline system is vanilla AirgapOS plus one partition that ritueel lays out, holding programs, bundles, and key files beside the bundles, never inside one.
+- The offline system is vanilla AirgapOS plus one partition that ritueel lays out, holding programs, bundles, and key files beside the bundles, never inside one. The bundles on the stick carry no wanted files.
 
 Decided in [0005](decisions/0005-a-ceremony-and-where-it-runs.md).
 
@@ -109,17 +110,17 @@ Decided in [0008](decisions/0008-a-persons-own-key.md).
 
 ## A company's roots and a cloud root
 
-- A root changes by add, overlap, retire and revoke. A compromise is answered by revocation, never a second copy.
+- A root changes by adding, overlapping, retiring and revoking its keys. A compromise is answered by revocation, never a second copy.
 - A cloud root is one dedicated account with three keys, each replicated to a second Region. ritueel creates or adopts them.
 - The operator supplies the roles; ritueel writes no hardware-key rule.
-- An X.509 root is not renamed: its name is inside the certificate and every intermediate names it as issuer. A new name is a new root (add, overlap, retire).
+- An X.509 root key is not renamed: its name is inside its certificate and every intermediate names it as issuer. A new name is a new key (add, overlap, retire).
 
 Decided in [0007](decisions/0007-changing-and-losing-a-root.md), [0006](decisions/0006-bundle-history-and-trust-files.md) and [0004](decisions/0004-the-cloud-root.md).
 
 ## Test roots and the yearly rhythm
 
-- A test root is born with `init --test-root`, as a key file with no passphrase or on a rehearsal card; its records are marked as test.
-- A root is valid about three years; an intermediate about 13 months, renewed by re-signing.
+- A test root is marked at birth, as a key file with no passphrase or on a rehearsal card; its ceremony records are marked as test.
+- A root key is valid about three years; an intermediate about 13 months, renewed by re-signing.
 
 Decided in [0005](decisions/0005-a-ceremony-and-where-it-runs.md) and [0007](decisions/0007-changing-and-losing-a-root.md).
 
@@ -148,8 +149,8 @@ Decided in [0009](decisions/0009-release-keys-and-the-keyring.md).
 
 ## Proposed or open
 
-- The exact file names in a bundle ([0006](decisions/0006-bundle-history-and-trust-files.md#not-yet-proven-or-only-proposed)).
-- Which conditions the program enforces ([0005](decisions/0005-a-ceremony-and-where-it-runs.md#not-yet-proven-or-only-proposed)).
+- The exact file names in a bundle and the repair of a fork ([0006](decisions/0006-bundle-history-and-trust-files.md#not-yet-proven-or-only-proposed)).
+- Which conditions the program enforces, the age of a plan and a flag for scripts ([0005](decisions/0005-a-ceremony-and-where-it-runs.md#not-yet-proven-or-only-proposed)); revoke while a ceremony runs ([0007](decisions/0007-changing-and-losing-a-root.md#not-yet-proven-or-only-proposed)); the ceremony record of an adoption ([0003](decisions/0003-root-cards.md#not-yet-proven-or-only-proposed)).
 - One passkey credential for each bundle on a shared card ([0002](decisions/0002-where-a-key-lives.md#not-yet-proven-or-only-proposed)).
 - What the publish step shows and refuses, where the keyserver list lives, and the names of the new commands ([0011](decisions/0011-publishing-and-what-to-do-after-a-ceremony.md#not-yet-proven-or-only-proposed)).
 - Whether keys.openpgp.org accepts a certify-only primary ([0011](decisions/0011-publishing-and-what-to-do-after-a-ceremony.md#not-yet-proven-or-only-proposed)), and whether Maven Central accepts a signing subkey under one ([0009](decisions/0009-release-keys-and-the-keyring.md#not-yet-proven-or-only-proposed)).
