@@ -5,7 +5,7 @@ sidebar:
   order: 10
 ---
 
-*Not built yet. This is the page that [record 0004](../decisions/0004-the-cloud-root.md) leaves for the details of the `aws-kms` store; the code is [issue #12](https://github.com/truvity/ritueel/issues/12), in M2. The custody model is in that record: one dedicated root account that holds three keys, one for each kind of root, and a multi-Region replica that is never counted as a second key. The commands, words and file names on this page are from before the decisions of 2026-11-12; the design is at https://ritueel.id/design/.*
+*Not built yet. This is the page that [record 0004](../decisions/0004-the-cloud-root.md) leaves for the details of the `aws-kms` store; the code is [issue #12](https://github.com/truvity/ritueel/issues/12), in M2. The custody model is in that record: one dedicated root account that holds one key for each kind of root the bundle uses, and a multi-Region replica that is never counted as a second key. The commands, words and file names on this page are from before the decisions of 2026-11-12; the design is at https://ritueel.id/design/.*
 
 A KMS key has no attestation. The evidence that it is the root it should be is the key itself, its policy and its audit trail, read from the service every time ([principle 4](/principles/)). This page says what ritueel creates or adopts, what it reads, and what makes it refuse.
 
@@ -47,7 +47,7 @@ Credentials come from the caller's standard chain ([record 0004](../decisions/00
 
 ## What ritueel creates
 
-At the first `apply`, and at an `apply` that adds a root key in `aws-kms`, for each of the three keys, one for each kind of root (`x509-root`, `openpgp-primary`, `ssh-break-glass`), under the admin role:
+At the first `apply`, and at an `apply` that adds a root key in `aws-kms`, for each key, one for each kind of root the bundle uses (`x509-root`, `openpgp-primary`, `ssh-break-glass`), under the admin role:
 
 | Property | Value |
 |---|---|

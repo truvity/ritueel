@@ -213,7 +213,7 @@ And these where they apply:
 | `record` | ceremonies, `close` | `{ "path", "sha256" }`: the ceremony record. |
 | `artifacts` | ceremonies | A list of `{ "path", "sha256" }`, as in the ceremony record. |
 | `trust_sequence` | ceremonies | The trust sequence of the trust set written. |
-| `roots` | `apply`, `status` | A list of the root keys: `{ "label", "store", "test", "x509_spki_sha256", "openpgp_fingerprint", "not_after" }`. |
+| `roots` | `apply`, `status` | A list of the root keys: `{ "label", "store", "test", "x509_spki_sha256", "openpgp_fingerprint", "not_after" }`, with `openpgp_fingerprint` only when the bundle has an OpenPGP root. |
 | `answer` | `apply` | `{ "stem", "outcome", "reasons", "artifacts" }`, as in `result.json`. |
 | `checks` | `check request` | A list of `{ "n", "result" }` for checks 1 to 9, where `result` is `passed`, `failed` or `not-run`. |
 | `findings` | `status` | A list of `{ "level", "kind", "name", "expires_at", "days_left" }`: `level` is `notice`, `alert` or `critical`, `kind` is `intermediate` (the certificate of a delegation), `root`, `root-list`, `ssh-ca-keys`, `crl`, `attempt`, `root-set`, `root-overlap`, `drill`, `fork` or `wanted` (a wanted file that fails its check, not a deleted line; the name `wanted` is proposed). A deleted wanted line is a finding too (0005 rule 30); its kind is fixed with the code. |

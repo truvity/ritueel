@@ -255,7 +255,7 @@ keyring:
 |---|---|
 | `version` | `1`. |
 | `name` | 1 to 64 characters: letters, digits, spaces and hyphens. It names the root keys and their primaries ([below](/reference/bundle/#the-root-certificate)). |
-| `release_address` | The address in every primary's user ID: the project's release identity, never a person's ([record 0009](../decisions/0009-release-keys-and-the-keyring.md)). |
+| `release_address` | Required in a company bundle. The address in every primary's user ID, when the bundle has an OpenPGP root: the project's release identity, never a person's ([record 0009](../decisions/0009-release-keys-and-the-keyring.md)). |
 | `policy` | The rules every request is checked against: `stores`, `min_firmware`, `pin_policy`, `require_name_constraints` and `validity_months`, with the meanings of the [reference policy](/reference/hand-off-contract/#what-the-certifier-checks). All five are required. |
 | `kind` | Optional. `personal` for a person's own OpenPGP key; absent for a company bundle. A personal bundle has `person` instead of `name` and `release_address` ([personal OpenPGP](/reference/personal-openpgp/)). |
 | `person` | Only with `kind: personal`: `name` (1 to 64 characters) and `address`. |
@@ -403,12 +403,12 @@ A key is active, retired or revoked ([record 0007](../decisions/0007-changing-an
 | `test` | True for a test root key. Set at birth and never changed; a real root never becomes a test root ([record 0005](../decisions/0005-a-ceremony-and-where-it-runs.md), rule 28). |
 | `created_at` | When the key was made: the time of its ceremony. |
 | `x509_spki_sha256` | The pin of the X.509 root key. |
-| `openpgp_fingerprint` | The primary's fingerprint. |
-| `openpgp_created` | The OpenPGP creation time of the primary, which fixes its fingerprint and is on no card ([record 0006](../decisions/0006-bundle-history-and-trust-files.md), rule 8). |
+| `openpgp_fingerprint` | The primary's fingerprint. Present when the bundle has an OpenPGP root. |
+| `openpgp_created` | The OpenPGP creation time of the primary, which fixes its fingerprint and is on no card ([record 0006](../decisions/0006-bundle-history-and-trust-files.md), rule 8). Present with the fingerprint. |
 | `revocations` | An object from reason (`compromised`, `superseded`, and any the holder added) to the SHA-256 of that revocation signature packet, which is stored elsewhere ([revocation material](/reference/revocation-material/)). |
 | `removal_sha256` | The SHA-256 of the key's removal authorisation, which is stored elsewhere with the revocation signatures ([revocation material](/reference/revocation-material/#the-removal-authorisation)). Absent in a personal bundle. |
 | `adopted` | True for an OpenPGP primary adopted as it was ([record 0008](../decisions/0008-a-persons-own-key.md)) or for a cloud key that ritueel adopted instead of creating ([record 0004](../decisions/0004-the-cloud-root.md)). Absent otherwise. |
-| `store_ref` | For a key in `piv` (from M6) or `aws-kms` (from M2); absent for `software`. For `piv`: `{ "serial", "row" }`, the card's serial and the key's row in the [slot map](../decisions/0003-root-cards.md); the slots follow from the built-in map. For `aws-kms`: `{ "x509_arn", "openpgp_arn", "ssh_arn" }`, the ARNs of the primary keys ([the cloud root](/reference/kms-root/#what-ritueel-creates)). |
+| `store_ref` | For a key in `piv` (from M6) or `aws-kms` (from M2); absent for `software`. For `piv`: `{ "serial", "row" }`, the card's serial and the key's row in the [slot map](../decisions/0003-root-cards.md); the slots follow from the built-in map. For `aws-kms`: `{ "x509_arn", "openpgp_arn", "ssh_arn" }`, the ARNs of the primary keys, one for each kind of root the bundle uses ([the cloud root](/reference/kms-root/#what-ritueel-creates)). |
 | `vouched_by`, `vouches` | For a key added by a transition, from M4: the digests of the two vouch files as first made ([the transitions page](/reference/transitions/#in-rootjson)). |
 
 :::note[Proposed]
