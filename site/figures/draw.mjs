@@ -209,17 +209,6 @@ export function sheet(x, y, w, h, { accent = false, rows = 3 } = {}) {
   return s;
 }
 
-/** A folder (a bundle): its back with the tab, then the front. `base` is the bottom edge. */
-export function folder(x, base, w = 58, h = 44) {
-  const top = base - h;
-  return (
-    path(`M${f(x)} ${f(top)} H${f(x + 22)} L${f(x + 28)} ${f(top - 7)} H${f(x + w)} V${f(base)} H${f(x)} Z`, 'paper') +
-    rect(x, top, w, h, 'paper', 4) +
-    line(x + 8, top + 14, x + w - 8, top + 14, 'ln ln-thin') +
-    line(x + 8, top + 24, x + w - 14, top + 24, 'ln ln-thin')
-  );
-}
-
 /**
  * A speech bubble (x,y,w,h) whose tail leaves the bottom edge near tx and ends at (tipx,tipy). Keep
  * it for the words a person really says or types ("PIN"), at most one in a panel.
