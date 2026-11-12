@@ -61,8 +61,9 @@ Enums, all with an `_UNSPECIFIED = 0` first value and the enum name as prefix:
 2. **A key is its full fingerprint.** `Key.fingerprint` is complete (40 hexadecimal
    characters for OpenPGP, 64 for an X.509 or SSH key), and so is every `ObjectRef.id` that
    names a key. Never identify a key by a name or a short id. Names (`label`, `name`) can repeat.
-3. **Unset means something.** An unset `expires_at` on a key means *no expiry*: the end
-   of an SSH CA key is its list, not a date. An empty `apply_command` means no change is
+3. **Unset means something.** An unset `expires_at` on a key never means *no expiry*.
+   For an SSH CA key it means no certificate: the key ends when the next list leaves it
+   out (record 0006, rule 25). For any other key it means that no end date is known. An empty `apply_command` means no change is
    ready. An empty `verify_command` means the page has no command for that file (a
    personal bundle has no root list to check it against). An empty `close_command` and an
    empty `publish_command` mean the state of the ceremony offers no such step.
@@ -123,8 +124,9 @@ Enums, all with an `_UNSPECIFIED = 0` first value and the enum name as prefix:
     the pull request that added it lists them for the maintainer. They are the kinds and
     the two states of a change, what a change needs, the four names of a ceremony, the
     status of the history (the chain states, the time of the last check, the sentence),
-    the texts the program writes for a ceremony and a card, and the names of the five
-    calls themselves.
+    the texts the program writes for a ceremony and a card, the level filter of the
+    findings (`ListFindingsRequest.min_severity` and its three labels on To do), and the
+    names of the five calls themselves.
 
 ## What went with the wizard
 
