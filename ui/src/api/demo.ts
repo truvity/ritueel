@@ -1,99 +1,75 @@
 // Demo mode: an in-memory ConnectRPC transport. The handlers answer from the
 // fixture files of the contract (the same messages the real service sends).
-// There is no server and no network. The transport answers for one bundle at a
-// time, chosen by the switch in the demo bar (api/demoState.ts): the contract
-// has no call that names a bundle, and the name of the bundle comes from
-// GetSummary in the same way. Every handler is a read, except the one
-// write of the contract, SavePlan: it answers from its fixture, which says
-// written=false and that this is a demo, and nothing is written anywhere.
+// There is no server and no network. Every call is a read; the contract has no
+// call that writes. The transport answers for one bundle at a time, chosen by
+// the switch in the demo bar (api/demoState.ts): the contract has no call that
+// names a bundle, and the name of the bundle comes from GetSummary in the same
+// way.
+//
+// Each bundle has five files, one for each call, named
+// fixtures/<bundle>/inspect.<call in kebab case>.json, each the protobuf JSON
+// of the response. The bundle acme also has five scenes (api/scenes.ts): a
+// scene is the base file plus its own patches, and the answer carries the time
+// of the scene. The other bundles have no scene. Every name, serial,
+// fingerprint and date of the fixtures is made up; the names of the example
+// company are those of docs/reference/bundle.md.
 //
 // The demo also shows the four states of a read. The switch in the demo bar
 // (api/demoState.ts) makes the transport answer as an empty bundle, fail, or
-// not answer yet.
+// not answer yet. The empty answers are built here, not read from files, and
+// ignore the scene.
 import { Code, ConnectError, createRouterTransport, type Transport } from '@connectrpc/connect';
 import { create, fromJson, type DescMessage, type JsonValue, type MessageShape } from '@bufbuild/protobuf';
-import { ChainState, Intention, HistoryStatusSchema, Severity } from '../gen/ritueel/local/v1alpha1/common_pb';
+import { ChainState, HistoryStatusSchema, Severity } from '../gen/ritueel/local/v1alpha1/common_pb';
 import {
-  CountsSchema,
-  FindingCountSchema,
+  ChangeCountsSchema,
+  GetInventoryResponseSchema,
   GetSummaryResponseSchema,
   InspectService,
-  ListCardsResponseSchema,
   ListCeremoniesResponseSchema,
   ListFindingsResponseSchema,
-  ListRootsResponseSchema,
   ListTrustFilesResponseSchema,
-  SetupStepSchema,
 } from '../gen/ritueel/local/v1alpha1/inspect_service_pb';
-import {
-  ListIntentionsResponseSchema,
-  PlanService,
-  SavePlanResponseSchema,
-  StartPlanResponseSchema,
-  type SavePlanRequest,
-  type StartPlanRequest,
-} from '../gen/ritueel/local/v1alpha1/plan_service_pb';
-import { INTENTION_SLUG } from '../lib/finding';
 import type { BundleContents } from '../lib/route';
-import { getBundle, getViewState, provideBundleContents, whenViewStateChanges } from './demoState';
+import { getBundle, getScene, getViewState, provideBundleContents, whenViewStateChanges } from './demoState';
+import { applyScene, SCENE_COUNT } from './scenes';
 
-// One directory of fixtures for each example bundle (personal, acme, globex), each
-// with the same call-named files, and common/ for the answers all of them share.
+/** The five calls, with the kebab-case word that names the fixture file of each. */
+const FILES = {
+  GetSummary: 'get-summary',
+  ListFindings: 'list-findings',
+  GetInventory: 'get-inventory',
+  ListCeremonies: 'list-ceremonies',
+  ListTrustFiles: 'list-trust-files',
+} as const;
+type Call = keyof typeof FILES;
+
+// One directory of fixtures for each example bundle (acme, globex, personal).
+// The glob also finds acme/scenes.json; only the call files are read as answers.
 const files = import.meta.glob('../fixtures/*/*.json', { eager: true, import: 'default' }) as Record<string, JsonValue>;
 
-// The answers in common/ are written for a bundle called "example". Where one names the
-// bundle's place (the --dir of a command, the bundle path of a saved plan) the open
-// bundle's own place is put in, as the process would name it.
-const COMMON_BUNDLE_PATH = '~/ritueel/example';
-
-/** A fixture of the current bundle, or of common/ when the name says so. */
-function load(name: string): JsonValue {
-  const common = name.startsWith('common/');
-  const path = common ? name : `${getBundle()}/${name}`;
-  const hit = files[`../fixtures/${path}`];
+/** The JSON of the base file of a call, for the open bundle. No scene is applied. */
+function baseJson(call: Call): JsonValue {
+  const path = `../fixtures/${getBundle()}/inspect.${FILES[call]}.json`;
+  const hit = files[path];
   if (hit === undefined) throw new ConnectError(`demo: fixture ${path} is missing`, Code.Internal);
-  if (!common) return hit;
-  const summary = files[`../fixtures/${getBundle()}/inspect.get-summary.json`] as { bundle?: { path?: string } } | undefined;
-  const bundlePath = summary?.bundle?.path;
-  return bundlePath ? (JSON.parse(JSON.stringify(hit).split(COMMON_BUNDLE_PATH).join(JSON.stringify(bundlePath).slice(1, -1))) as JsonValue) : hit;
+  return hit;
 }
 
-function parse<S extends DescMessage>(schema: S, name: string): MessageShape<S> {
-  return fromJson(schema, load(name));
+function parseBase<S extends DescMessage>(schema: S, call: Call): MessageShape<S> {
+  return fromJson(schema, baseJson(call));
 }
 
-interface ManifestEntry {
-  service: string;
-  method: string;
-  when?: { intention?: string; answers?: 'none' | 'any'; planId?: string };
-  file: string;
-}
-
-/** The manifest of the current bundle, read at the time of the call: the bundle can change between calls. */
-function manifest(): ManifestEntry[] {
-  return (load('manifest.json') as unknown as { responses: ManifestEntry[] }).responses;
-}
-
-const INTENTION_NAMES: Record<number, string> = {
-  [Intention.RENEW_DUE]: 'INTENTION_RENEW_DUE',
-  [Intention.ADOPT_KEY]: 'INTENTION_ADOPT_KEY',
-  [Intention.RETIRE_SUBKEYS]: 'INTENTION_RETIRE_SUBKEYS',
-  [Intention.ADD_CARD]: 'INTENTION_ADD_CARD',
-  [Intention.REPLACE_CARD]: 'INTENTION_REPLACE_CARD',
-};
-
-function pick(method: string, test: (when: NonNullable<ManifestEntry['when']>) => boolean): string {
-  const hit = manifest().find((e) => e.method === method && e.when && test(e.when));
-  if (!hit) {
-    // A call that matches no entry fails loudly, as the contract asks.
-    throw new ConnectError(`The demo has no recorded answer for this ${method} request.`, Code.Unimplemented);
-  }
-  return hit.file;
+/** The answer of a call for the open bundle. Only acme has scenes: its base file gets the patches of the scene shown. */
+function answer<S extends DescMessage>(schema: S, call: Call): MessageShape<S> {
+  if (getBundle() !== 'acme') return parseBase(schema, call);
+  if (getScene() > SCENE_COUNT) throw new ConnectError(`demo: scene ${getScene()} does not exist`, Code.Internal);
+  return fromJson(schema, applyScene(call, baseJson(call)));
 }
 
 /** The made-up reason a failed read gives, built from the path of the current bundle. */
 export function failedMessage(): string {
-  const path = parse(GetSummaryResponseSchema, 'inspect.get-summary.json').bundle?.path ?? '~/ritueel';
+  const path = parseBase(GetSummaryResponseSchema, 'GetSummary').bundle?.path ?? '~/ritueel';
   return `ritueel could not read the bundle at ${path}. The reason, made up for this demo: the history could not be opened.`;
 }
 
@@ -113,135 +89,78 @@ async function gate<T>(loaded: () => T | Promise<T>, empty: () => T): Promise<T>
 
 // ---- the empty bundle, built from the loaded one so the two never drift ------
 
-const SEVERITIES = [Severity.CRITICAL, Severity.ALERT, Severity.NOTICE, Severity.INFO];
-
-function emptySummary() {
-  const full = parse(GetSummaryResponseSchema, 'inspect.get-summary.json');
-  return create(GetSummaryResponseSchema, {
-    bundle: full.bundle,
-    asOf: full.asOf,
-    demo: true,
-    programVersion: full.programVersion,
-    history: create(HistoryStatusSchema, {
-      recordCount: 0,
-      chainState: ChainState.NOT_CHECKED,
-      message: 'The history has no records yet. The first ceremony writes the first record.',
-    }),
-    due: [],
-    findingCounts: SEVERITIES.map((severity) => create(FindingCountSchema, { severity, count: 0 })),
-    counts: create(CountsSchema, {}),
-    pendingPlans: [],
-    setupSteps: full.setupSteps.map((s) =>
-      create(SetupStepSchema, {
-        ...s,
-        done: s.id === 'bundle',
-        // The loaded bundle's sentences name its keys and cards: an empty bundle has none.
-        detail: s.id === 'cards' ? 'No cards are registered yet.' : s.id === 'first-plan' ? 'Start by adopting the key you already have.' : s.id === 'public-key' ? 'Only the public half is ever needed here.' : s.detail,
-      }),
-    ),
+/** The history of a bundle with no record: the first ceremony writes the first one. */
+function emptyHistory() {
+  return create(HistoryStatusSchema, {
+    recordCount: 0,
+    chainState: ChainState.NOT_CHECKED,
+    message: 'The history has no records yet. The first ceremony writes the first record.',
   });
 }
 
-function emptyIntentions() {
-  const full = parse(ListIntentionsResponseSchema, 'plan.list-intentions.json');
-  const reasons: Partial<Record<Intention, string>> = {
-    [Intention.RENEW_DUE]: 'Nothing is due, because the bundle holds no keys yet.',
-    [Intention.RETIRE_SUBKEYS]: 'There are no subkeys to retire yet.',
-    [Intention.ADD_CARD]: 'No card is registered yet, and the demo has no card to connect.',
-    [Intention.REPLACE_CARD]: 'The bundle holds no card yet.',
-  };
-  return create(ListIntentionsResponseSchema, {
-    options: full.options.map((o) => {
-      if (o.intention === Intention.ADOPT_KEY) {
-        return { ...o, applicable: true, recommended: true, recommendedReason: 'The bundle holds no key yet. Adopt the one you already have.' };
-      }
-      const why = reasons[o.intention];
-      return why ? { ...o, applicable: false, recommended: false, notApplicableReason: why } : o;
-    }),
+function emptySummary() {
+  const full = parseBase(GetSummaryResponseSchema, 'GetSummary');
+  return create(GetSummaryResponseSchema, {
+    bundle: full.bundle,
+    readAt: full.readAt,
+    demo: true,
+    programVersion: full.programVersion,
+    history: emptyHistory(),
+    changes: create(ChangeCountsSchema, {}),
+    ceremoniesWithoutRecord: 0,
+    trustSequence: 0,
   });
+}
+
+/** The time of the base read, for the answers of the empty bundle. */
+function emptyReadAt() {
+  return parseBase(GetSummaryResponseSchema, 'GetSummary').readAt;
 }
 
 /**
- * What the open bundle holds, for the bundle switch: it keeps the screen, and a
- * detail view falls back only if the bundle has no such card, record, root or
- * goal. Read from the same answers the transport gives, in the page state shown now.
+ * What the open bundle holds, for the bundle switch and the scene switch: they
+ * keep the screen, and a detail view falls back only if the bundle (or the
+ * scene) has no such object or ceremony. Read from the same answers the
+ * transport gives, in the page state shown now.
  */
 function bundleContents(): BundleContents {
-  const goals = (r: { options: { intention: Intention; applicable: boolean }[] }) => r.options.filter((o) => o.applicable).flatMap((o) => INTENTION_SLUG[o.intention] ?? []);
-  // The empty state holds no root, card or record, and offers only the goal that applies to an empty bundle.
-  if (getViewState() === 'empty') return { roots: [], cards: [], records: [], goals: goals(emptyIntentions()) };
-  return {
-    roots: parse(ListRootsResponseSchema, 'inspect.list-roots.json').roots.map((r) => r.label),
-    cards: parse(ListCardsResponseSchema, 'inspect.list-cards.json').cards.map((c) => c.serial),
-    records: parse(ListCeremoniesResponseSchema, 'inspect.list-ceremonies.json').ceremonies.map((c) => c.id),
-    goals: goals(parse(ListIntentionsResponseSchema, 'plan.list-intentions.json')),
-  };
+  // The empty state holds no object and no ceremony.
+  if (getViewState() === 'empty') return { objects: [], ceremonies: [] };
+  const inv = answer(GetInventoryResponseSchema, 'GetInventory');
+  const objects = [
+    ...inv.cards.map((c) => `card/${c.name}`),
+    ...inv.roots.map((r) => `root/${r.name}`),
+    ...inv.keys.map((k) => `key/${k.fingerprint}`),
+    ...inv.userIds.map((u) => `userid/${u.id}`),
+    ...inv.delegations.map((d) => `delegation/${d.name}`),
+    ...inv.certifications.map((c) => `certification/${c.id}`),
+    ...inv.requests.map((r) => `request/${r.stem}`),
+  ];
+  return { objects, ceremonies: answer(ListCeremoniesResponseSchema, 'ListCeremonies').ceremonies.map((c) => c.id) };
 }
 provideBundleContents(bundleContents);
 
 export function createDemoTransport(): Transport {
   return createRouterTransport(({ service }) => {
     service(InspectService, {
-      getSummary: () => gate(() => parse(GetSummaryResponseSchema, 'inspect.get-summary.json'), emptySummary),
+      getSummary: () => gate(() => answer(GetSummaryResponseSchema, 'GetSummary'), emptySummary),
       listFindings: (req) =>
         gate(
           () => {
-            const all = parse(ListFindingsResponseSchema, 'inspect.list-findings.json');
+            const all = answer(ListFindingsResponseSchema, 'ListFindings');
             // min_severity is applied here, not by the file.
             const min = req.minSeverity === Severity.UNSPECIFIED ? 0 : req.minSeverity;
-            return { findings: all.findings.filter((f) => f.severity >= min) };
+            return create(ListFindingsResponseSchema, { findings: all.findings.filter((f) => f.severity >= min), readAt: all.readAt });
           },
-          () => create(ListFindingsResponseSchema, {}),
+          () => create(ListFindingsResponseSchema, { readAt: emptyReadAt() }),
         ),
-      listRoots: () => gate(() => parse(ListRootsResponseSchema, 'inspect.list-roots.json'), () => create(ListRootsResponseSchema, {})),
+      getInventory: () => gate(() => answer(GetInventoryResponseSchema, 'GetInventory'), () => create(GetInventoryResponseSchema, { readAt: emptyReadAt() })),
       listCeremonies: () =>
         gate(
-          () => parse(ListCeremoniesResponseSchema, 'inspect.list-ceremonies.json'),
-          () => create(ListCeremoniesResponseSchema, { history: emptySummary().history }),
+          () => answer(ListCeremoniesResponseSchema, 'ListCeremonies'),
+          () => create(ListCeremoniesResponseSchema, { history: emptyHistory(), readAt: emptyReadAt() }),
         ),
-      listCards: () => gate(() => parse(ListCardsResponseSchema, 'inspect.list-cards.json'), () => create(ListCardsResponseSchema, {})),
-      listTrustFiles: () => gate(() => parse(ListTrustFilesResponseSchema, 'inspect.list-trust-files.json'), () => create(ListTrustFilesResponseSchema, {})),
-    });
-    service(PlanService, {
-      listIntentions: () => gate(() => parse(ListIntentionsResponseSchema, 'plan.list-intentions.json'), emptyIntentions),
-      startPlan: (req: StartPlanRequest) => {
-        const hasAnswers = req.answers.length > 0;
-        const build = () => {
-          const name = INTENTION_NAMES[req.intention] ?? '';
-          const file = pick('StartPlan', (w) => w.intention === name && (w.answers === undefined || (w.answers === 'any') === hasAnswers));
-          return parse(StartPlanResponseSchema, file);
-        };
-        // An empty bundle answers the same for every example bundle, and never from the loaded
-        // bundle's manifest: the one goal that applies there, adopting a key, has a plan of its
-        // own; the goals that need a key are not now; the goals that need a card are refused.
-        // A goal this switch does not name fails loudly, as the contract asks.
-        const buildEmpty = () => {
-          switch (req.intention) {
-            case Intention.ADOPT_KEY:
-              return parse(StartPlanResponseSchema, hasAnswers ? 'common/plan.start-plan.adopt-key.json' : 'common/plan.start-plan.adopt-key.questions.json');
-            case Intention.RENEW_DUE:
-            case Intention.RETIRE_SUBKEYS:
-              return parse(StartPlanResponseSchema, 'common/plan.start-plan.not-now.json');
-            case Intention.ADD_CARD:
-            case Intention.REPLACE_CARD:
-              return parse(StartPlanResponseSchema, 'common/plan.start-plan.refused.json');
-            default:
-              throw new ConnectError('The demo has no recorded answer for this StartPlan request.', Code.Unimplemented);
-          }
-        };
-        return gate(build, buildEmpty);
-      },
-      savePlan: (req: SavePlanRequest) => {
-        // The one call that would act. The demo answers, writes nothing, and says so.
-        const build = () => parse(SavePlanResponseSchema, pick('SavePlan', (w) => w.planId === req.planId));
-        const buildEmpty = () => {
-          const common = parse(SavePlanResponseSchema, 'common/plan.save-plan.adopt-key.json');
-          // Only the one plan of the empty bundle has a recorded answer: the loaded bundle's plans are not its own.
-          if (req.planId === common.planId) return common;
-          throw new ConnectError('The demo has no recorded answer for this SavePlan request.', Code.Unimplemented);
-        };
-        return gate(build, buildEmpty);
-      },
+      listTrustFiles: () => gate(() => answer(ListTrustFilesResponseSchema, 'ListTrustFiles'), () => create(ListTrustFilesResponseSchema, { readAt: emptyReadAt() })),
     });
   });
 }
