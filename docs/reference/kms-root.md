@@ -1,6 +1,6 @@
 ---
 title: The cloud root in AWS KMS
-description: What the operator provides for a KMS root, the ritueel.yaml block, the keys ritueel makes or adopts, the key policy and its checks.
+description: What the holder provides for a KMS root, the ritueel.yaml block, the keys ritueel makes or adopts, the key policy and its checks.
 sidebar:
   order: 10
 ---
@@ -9,18 +9,18 @@ sidebar:
 
 A KMS key has no attestation. The evidence that it is the root it should be is the key itself, its policy and its audit trail, read from the service every time ([principle 4](/principles/)). This page says what ritueel creates or adopts, what it reads, and what makes it refuse.
 
-## What the operator provides
+## What the holder provides
 
-Before the first `apply`, with the operator's own infrastructure tools ([Prepare the cloud root](/guides/prepare-the-cloud-root/)):
+Before the first `apply`, with the holder's own infrastructure tools ([Prepare the cloud root](/guides/prepare-the-cloud-root/)):
 
 | Part | What it is |
 |---|---|
 | The root account | A dedicated AWS account that holds nothing else. |
 | The admin role | Creates the keys and reads them. It replicates only before the policy that refuses replicas is in force, or through the break-glass principal. It can never `kms:Sign`. |
-| The ceremony role | The principal that may `kms:Sign` with a root key at a ceremony, and the only one that may sign anything new. ritueel asks for no particular sign-in to assume it ([record 0004](../decisions/0004-the-cloud-root.md)); how it is assumed is the operator's. |
+| The ceremony role | The principal that may `kms:Sign` with a root key at a ceremony, and the only one that may sign anything new. ritueel asks for no particular sign-in to assume it ([record 0004](../decisions/0004-the-cloud-root.md)); how it is assumed is the holder's. |
 | The break-glass principal | The one principal that may still replicate a key or move its primary Region, for example after the loss of a Region. It is created like the admin role and is never named after a person. Using it is a manual, logged act ([record 0004](../decisions/0004-the-cloud-root.md)). It can never `kms:Sign`. |
-| The keys | Optional. An existing key that ritueel [adopts](/reference/kms-root/#adopting-an-existing-key), with its alias and policy owned by the operator's own infrastructure code. Without one, ritueel creates the keys. |
-| Controls around them | Optional and the operator's: an alarm on every `Sign`, retention of the audit trail. The guide teaches them; ritueel does not create or check them. |
+| The keys | Optional. An existing key that ritueel [adopts](/reference/kms-root/#adopting-an-existing-key), with its alias and policy owned by the holder's own infrastructure code. Without one, ritueel creates the keys. |
+| Controls around them | Optional and the holder's: an alarm on every `Sign`, retention of the audit trail. The guide teaches them; ritueel does not create or check them. |
 
 One person may be able to assume the admin and the ceremony role ([record 0004](../decisions/0004-the-cloud-root.md)). The roles separate the acts (creating, signing) so that each is a decision and leaves its own trail.
 
@@ -65,18 +65,18 @@ At the first `apply`, and at an `apply` that adds a root key in `aws-kms`, for e
 Four details on this page go beyond what the maintainer decided, and await the maintainer's word: that the identity of an adopted key is its ARN and not its alias; that ritueel never edits the policy of an adopted key; that the break-glass principal can never `kms:Sign`; and the check `kms-policy-replica` (3b) with its reason code.
 :::
 
-A cloud root may be a key that already exists in the service ([record 0004](../decisions/0004-the-cloud-root.md)). The operator's own infrastructure code may own the key, its alias and its policy. ritueel then does not create the key. At the first `apply`, and at an `apply` that adds a root key, it:
+A cloud root may be a key that already exists in the service ([record 0004](../decisions/0004-the-cloud-root.md)). The holder's own infrastructure code may own the key, its alias and its policy. ritueel then does not create the key. At the first `apply`, and at an `apply` that adds a root key, it:
 
 1. reads the public key from the service;
 2. reads the key policy and runs [the checks](/reference/kms-root/#the-checks) on it, the same checks as for a key it created;
 3. fixes the OpenPGP creation time and records it in the bundle and in the certificate;
 4. writes the certificate.
 
-The identity of the key is its ARN, not its alias. ritueel reads the policy at every ceremony and never edits an adopted key's policy. An adopted key must be one born in the service: key material imported from outside is refused, as it is for a created key. A key that fails a check is refused with the check's reason code. How the operator names the key to adopt is fixed with the store ([issue #12](https://github.com/truvity/ritueel/issues/12)). The file `root.json` of the key says it was adopted ([`adopted`](/reference/bundle/#rootjson)).
+The identity of the key is its ARN, not its alias. ritueel reads the policy at every ceremony and never edits an adopted key's policy. An adopted key must be one born in the service: key material imported from outside is refused, as it is for a created key. A key that fails a check is refused with the check's reason code. How the holder names the key to adopt is fixed with the store ([issue #12](https://github.com/truvity/ritueel/issues/12)). The file `root.json` of the key says it was adopted ([`adopted`](/reference/bundle/#rootjson)).
 
 ## The key policy
 
-The reference key policy: the same text for every key, with the role ARNs and the account filled in. A key that ritueel creates gets it; an adopted key's policy is the operator's, and is checked against the same rules. A role named here exists; a principal that does not is refused by AWS.
+The reference key policy: the same text for every key, with the role ARNs and the account filled in. A key that ritueel creates gets it; an adopted key's policy is the holder's, and is checked against the same rules. A role named here exists; a principal that does not is refused by AWS.
 
 | Statement | Principal | Allows | Condition |
 |---|---|---|---|
@@ -121,7 +121,7 @@ A ceremony that signs writes a new `result.json` into its ceremony record, not o
 
 ## Failure
 
-- **A key made and not recorded.** The birth journal ([record 0005](../decisions/0005-a-ceremony-and-where-it-runs.md)) lists every ARN as it is created. `close` prints them, and ritueel asks the operator to schedule their deletion with the admin role. It does not delete them.
+- **A key made and not recorded.** The birth journal ([record 0005](../decisions/0005-a-ceremony-and-where-it-runs.md)) lists every ARN as it is created. `close` prints them, and ritueel asks the holder to schedule their deletion with the admin role. It does not delete them.
 - **A replica that failed.** The root is not complete: the first `apply` stops before it signs anything, and `status` shows the attempt as critical until a person runs `close`.
 - **A deleted or disabled key** shows as check 1 at the next ceremony or drill. For a root key, that is a loss: answer it with `revoke`, then add a new key to the wanted root file and run `apply`.
 

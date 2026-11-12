@@ -19,7 +19,7 @@ Nothing names a real organisation account, hostname, cluster, ticket, secret pat
 | cloud account id | `123456789012` |
 | key id, fingerprint or serial number | an obviously made-up value, or `<fingerprint>` |
 | ticket or issue key of an internal tracker | nothing; link a public issue of this repository instead |
-| person | a role: "the holder", "the operator", "the relying party" |
+| person | a role: "the holder", "the relying party" |
 
 Internal reasoning that needs real names stays internal; only the final, generic text is public ([GOVERNANCE.md](https://github.com/truvity/ritueel/blob/main/GOVERNANCE.md), "From internal reasoning to a public ADR").
 
