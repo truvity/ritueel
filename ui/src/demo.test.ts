@@ -522,9 +522,14 @@ describe('the commands follow docs/reference/cli.md', () => {
   const CLI = read('../../docs/reference/cli.md');
   // The thirteen words of the reference: the first word after `ritueel` in the rows of its first table.
   const WORDS = [...new Set([...CLI.matchAll(/^\| `ritueel ([a-z]+)/gm)].map((m) => m[1]))];
-  // Flags the page uses that the reference marks as proposed or lists with a command. A flag not in cli.md and not here fails.
-  const LISTED_FLAGS = ['--with', '--material', '--delegation', '--reason', '--decline', '--allow-missing', '--plan-only', '--held', '--pin', '--ca-bundle', '--root-list', '--card'];
-  const flagsOfReference = new Set([...CLI.matchAll(/--[a-z][a-z-]*/g)].map((m) => m[0]));
+  // What the page shows and the reference does not have yet, per command word. It is listed for the maintainer
+  // (proto/ and ui/ comments say [proposed]); a flag that is not on a line of its own command, not in the table of
+  // flags every ceremony shares, and not here fails. Empty today: every flag of the fixtures is in the reference.
+  const PROPOSED_FLAGS: Record<string, string[]> = {};
+  /** The flags the reference lists for every command, in rows that begin with the flag. */
+  const GLOBAL_FLAGS = new Set([...CLI.matchAll(/^\| `(--[a-z][a-z-]*)/gm)].map((m) => m[1]));
+  /** The lines of the reference that hold a command of this word, for example `ritueel verify root-list`. */
+  const ownLines = (word: string) => CLI.split('\n').filter((line) => line.includes(`\`ritueel ${word}`) || line.includes(`\`ritueel --dir DIR ${word}`));
 
   /** Every command string of the fixtures and of the patched answers: each field named *_command, and TrustFile.verify_command. */
   function commandsOf(v: unknown, out: string[] = []): string[] {
@@ -573,13 +578,29 @@ describe('the commands follow docs/reference/cli.md', () => {
     }
     expect(bad).toEqual([]);
   });
-  it('every flag is one of cli.md or a listed proposal, and apply never carries --confirm', () => {
+  it('every flag is a flag of its own command in cli.md, a flag every ceremony shares, or a listed proposal of that command; apply never carries --confirm', () => {
     const bad: string[] = [];
     for (const { where, c } of all) {
-      for (const flag of c.match(/--[a-z][a-z-]*/g) ?? []) if (!flagsOfReference.has(flag) && !LISTED_FLAGS.includes(flag)) bad.push(`${where}: ${flag} in ${c}`);
+      const m = /^ritueel (?:--dir \S+ )?([a-z][a-z-]*)(?: (\S+))?/.exec(c);
+      if (!m) continue; // the earlier test reports it
+      const [, word, second] = m;
+      const own = ownLines(word);
+      // The subcommand of check, verify and status is on a line of the reference too: `check cards`, `verify root-list`.
+      if (['check', 'verify', 'status'].includes(word) && second && /^[a-z][a-z-]*$/.test(second) && !own.some((l) => l.includes(second))) bad.push(`${where}: ${word} ${second} is not in cli.md: ${c}`);
+      for (const flag of c.match(/--[a-z][a-z-]*/g) ?? []) {
+        if (flag === '--dir' || GLOBAL_FLAGS.has(flag) || (PROPOSED_FLAGS[word] ?? []).includes(flag)) continue;
+        if (!own.some((line) => new RegExp(`${flag}(?![a-z-])`).test(line))) bad.push(`${where}: ${flag} is not a flag of ${word} in cli.md: ${c}`);
+      }
       if (/ apply\b/.test(c) && /--confirm/.test(c)) bad.push(`${where}: apply with --confirm: ${c}`);
     }
     expect(bad).toEqual([]);
+  });
+  it('the check of flags finds a wrong flag on a wrong command', () => {
+    // --pin belongs to `verify root-list` and --card to `revoke`: on any other command they fail.
+    expect(ownLines('apply').some((l) => /--pin(?![a-z-])/.test(l))).toBe(false);
+    expect(ownLines('verify').some((l) => /--pin(?![a-z-])/.test(l))).toBe(true);
+    expect(ownLines('close').some((l) => /--card(?![a-z-])/.test(l))).toBe(false);
+    expect(ownLines('revoke').some((l) => /--card(?![a-z-])/.test(l))).toBe(true);
   });
   it('no command names a digest or holds the word --confirm', () => {
     for (const { where, c } of all) {
