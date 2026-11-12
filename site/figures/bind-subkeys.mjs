@@ -11,10 +11,10 @@ const cardHead = (x, y, word = 'day-to-day') => rect(x, y, 16, 12, 'paper-t', 2)
 
 function p1() {
   let b = '';
-  b += person(46, B, [[1, 78, 150]]);
-  // the plan is made first and run later on the stick: the command is `apply --plan-only`; the arrow says "plan only"
-  b += terminal(78, 118, 60, 44) + text(84, 146, '$ apply', 't t-s t-mono');
-  b += arrow(142, 140, 190, 140, 'plan only', { lx: 166, ly: 132 });
+  b += person(42, B, [[-1, 15, 156], [1, 73, 150]]);
+  // the plan is made first and run later on the stick: the command is `apply --plan-only`, on two lines
+  b += terminal(73, 118, 86, 52) + text(78, 142, '$ apply', 't t-s t-mono') + text(78, 157, '--plan-only', 't t-s t-mono');
+  b += arrow(162, 144, 192, 144, 'plan', { lx: 177, ly: 136 });
   const x = 194, y = 38, w = 80, h = 140;
   let p = sheet(x, y, w, h, { accent: true, rows: 0 }) + text(x + 10, y + 24, 'plan', 't t-b t-acc');
   p += text(x + 10, y + 42, 'card', 't t-s t-acc') + text(x + 10, y + 57, '00000001', 't t-s t-mono t-acc');
@@ -24,8 +24,8 @@ function p1() {
   });
   p += line(x + 10, y + 108, x + w - 10, y + 108, 'ln ln-thin ln-acc') + text(x + 7, y + 128, DIGEST, 't t-mono t-acc t-b');
   b += acc('plan', p);
-  b += under(46, 'you');
-  return pnl(1, 'Your workstation', b, 'You sit at a terminal that runs apply and writes only the plan: a sheet with the card’s example number 00000001, a slot, a creation time, the number of touches and the digest 7f3a 91c2.');
+  b += under(42, 'you');
+  return pnl(1, 'Your workstation', b, 'You sit at a terminal that runs apply with the plan-only flag. It writes only the plan. The plan is a sheet with the card’s example number 00000001, a slot, a creation time, the number of touches and the digest 7f3a 91c2.');
 }
 
 function p2() {
@@ -81,13 +81,13 @@ function p6() {
   b += rect(124, 94, 64, 40, 'paper-t', 4) + text(131, 108, 'history', 't t-s t-dim') + rect(128, 112, 56, 17, 'hl', 3) + text(156, 124.5, 'record', 't t-s t-b', 'm');
   b += rect(124, 140, 64, 28, 'paper-t', 4) + text(156, 158, 'certificate', 't t-s', 'm');
   // the run on the stick uses the saved plan: `apply PLAN`
-  b += terminal(6, 104, 60, 52) + text(12, 132, '$ apply', 't t-s t-mono') + text(12, 147, 'PLAN', 't t-s t-mono');
-  b += arrow(71, 114, 110, 114, 'writes', { lx: 90, ly: 106 });
-  b += arrow(71, 146, 110, 146, 'rebuilds', { lx: 90, ly: 138 });
+  b += terminal(4, 104, 64, 52) + text(10, 132, '$ apply', 't t-s t-mono') + text(10, 147, 'PLAN', 't t-s t-mono');
+  b += arrow(74, 114, 112, 114, 'writes', { lx: 93, ly: 106 });
+  b += arrow(74, 146, 112, 146, 'builds', { lx: 93, ly: 138 });
   b += person(232, B, [[-1, 204, 124]]);
   b += card(196, 32, 26, 20) + text(246, 46, 'git, ssh', 't t-s', 'm');
   b += text(232, 76, 'you', 't t-s', 'm');
-  return pnl(6, 'Offline system', b, 'A terminal runs apply with the saved plan. It writes a record into the history part of the personal bundle and rebuilds the certificate sheet. You hold the unplugged card, marked for git and ssh.');
+  return pnl(6, 'Offline system', b, 'A terminal runs apply with the saved plan. It writes a record into the history part of the personal bundle and builds the certificate sheet again. You hold the unplugged card, marked for git and ssh.');
 }
 
 export default {
@@ -101,6 +101,6 @@ export default {
     { n: 3, title: 'Birth', caption: 'After your PIN, the card makes both subkeys in one ceremony.', svg: p4() },
     { n: 4, title: 'Unlock', caption: 'To bind, a root card opens the key file. The recovery key stays apart.', svg: p3() },
     { n: 5, title: 'Bind', caption: 'Your primary binds each subkey. Each fingerprint shows first.', svg: p5() },
-    { n: 6, title: 'Record', caption: 'ritueel records it and rebuilds your certificate.', svg: p6() },
+    { n: 6, title: 'Record', caption: 'The command apply records it and rebuilds your certificate.', svg: p6() },
   ],
 };

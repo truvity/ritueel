@@ -96,11 +96,11 @@ export default {
   label: 'Six panels: the six steps of every ceremony',
   caption: 'The six steps of every ceremony.',
   panels: [
-    { n: 1, title: 'Plan', caption: 'apply finds what is not applied yet. The plan fixes every byte to sign, except new keys.', svg: p1() },
+    { n: 1, title: 'Plan', caption: 'The command apply finds what is not applied yet. The plan fixes every byte to sign, except new keys.', svg: p1() },
     { n: 2, title: 'Confirm', caption: 'You type the first eight characters of its digest.', svg: p2() },
-    { n: 3, title: 'Reserve', caption: 'An attempt is written before the first key is born.', svg: p3() },
+    { n: 3, title: 'Reserve', caption: 'The attempt, a file that says keys may exist, is written before the first key is born.', svg: p3() },
     { n: 4, title: 'Sign', caption: 'The fingerprint shows first. Then you touch the card.', svg: p4() },
     { n: 5, title: 'Verify', caption: 'Code that did not sign checks the result.', svg: p5() },
-    { n: 6, title: 'Record', caption: 'The transcript is written first, the ceremony record last.', svg: p6() },
+    { n: 6, title: 'Record', caption: 'The transcript, what ritueel printed, is written first. The ceremony record is last.', svg: p6() },
   ],
 };
