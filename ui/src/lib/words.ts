@@ -23,7 +23,6 @@ import {
   CeremonyOutcome,
   CeremonyState,
   CertificationKind,
-  ChangeKind,
   ChangeSource,
   ChangeState,
   DelegationType,
@@ -122,15 +121,6 @@ export const REQUEST_OUTCOME_WORD: Record<number, string> = {
   [RequestOutcome.UNSPECIFIED]: 'no answer yet',
   [RequestOutcome.ISSUED]: 'issued',
   [RequestOutcome.REFUSED]: 'refused',
-};
-
-export const CHANGE_KIND_WORD: Record<number, string> = {
-  [ChangeKind.ADOPT]: 'adopt',
-  [ChangeKind.BIRTH]: 'birth',
-  [ChangeKind.CERTIFY]: 'certify',
-  [ChangeKind.RETIRE]: 'retire',
-  [ChangeKind.RENEW]: 'renew',
-  [ChangeKind.ISSUE]: 'issue',
 };
 
 export const CHANGE_STATE_WORD: Record<number, string> = {

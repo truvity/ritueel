@@ -20,6 +20,7 @@ import {
 import { createDemoTransport } from './api/demo';
 import { applySceneNumber, SCENE_COUNT, SCENES, sceneLine, sceneReadAt } from './api/scenes';
 import { setBundle, setScene, setViewState } from './api/demoState';
+import { CeremonyPanel } from './ui/CeremonyPanel';
 import { SceneSwitch } from './ui/SceneSwitch';
 import { baseJson, loadWorld, plain } from './testkit';
 
@@ -274,5 +275,22 @@ describe('a started ceremony and a recorded one differ in what the page can offe
         if (c.closeCommand) expect(c.state, `${c.id}`).toBe(CeremonyState.STARTED);
         if (c.publishCommand) expect(c.state, `${c.id}`).toBe(CeremonyState.RECORDED);
       }
+  });
+});
+
+describe('the plan lines of a ceremony say the verb once', () => {
+  it('a line does not repeat the kind before a title that starts with it', () => {
+    const doubled = /\b(adopt|birth|make|certify|retire|renew|issue)\s+\1\b/i;
+    let lines = 0;
+    for (let n = 3; n <= 5; n++) {
+      const w = loadWorld('acme', n);
+      for (const c of w.ceremonies.ceremonies) {
+        const text = plain(renderToStaticMarkup(createElement(CeremonyPanel, { c, all: w.ceremonies.ceremonies, trustSequence: w.summary.trustSequence })));
+        expect(text, `scene ${n} ${c.id}`).not.toMatch(doubled);
+        lines += c.applied.length + c.leftOut.length;
+        for (const ch of [...c.applied, ...c.leftOut]) expect(text, `scene ${n} ${c.id}`).toContain(ch.text);
+      }
+    }
+    expect(lines).toBeGreaterThan(0);
   });
 });
