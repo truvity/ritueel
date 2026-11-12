@@ -5,9 +5,9 @@ sidebar:
   order: 12.45
 ---
 
-*Design phase: ritueel is in design and has no release, and none of the three stores is built ([roadmap](/roadmap/)). Everything said here about ritueel is what an accepted decision record says on 2026-11-11, and where a record says "decided, not yet proven", so does this page. The AWS price was read on 2026-11-11; prices change, so check it before you rely on it.*
+*Design phase: ritueel is in design and has no release, and none of the three stores is built ([roadmap](/roadmap/)). Everything said here about ritueel is what an accepted decision record says on 2026-11-12, and where a record says "decided, not yet proven", so does this page. The AWS price was read on 2026-11-11; prices change, so check it before you rely on it.*
 
-You are about to make a root, and the first question is where it will live. The answer is hard to undo: a root never moves from one store to another. A new root in the new store is made, the old one vouches for it, and the two overlap ([moving from one root to another](/learn/transitions/)). So choose with some care.
+You are about to make a root, and the first question is where it will live. The answer is hard to undo: a key never moves from one store to another. A new key in the new store is made, an old key vouches for it, and the two overlap ([moving from one root to another](/learn/transitions/)). So choose with some care.
 
 This page sits at the first link of [the custody chain](/learn/custody-chain/): the store that holds the root. It helps you choose; the pages under "Where to go next" explain the stores.
 
@@ -15,7 +15,7 @@ ritueel has three stores for a root ([record 0002](../decisions/0002-where-a-key
 
 - **A software key in an encrypted key file.**
 - **A pair of root cards,** two independent hardware tokens.
-- **A cloud key,** one root in a cloud key service, which ritueel creates or adopts.
+- **A cloud key,** one key in a cloud key service, which ritueel creates or adopts.
 
 ## Two questions to pick, two to follow up
 
@@ -25,15 +25,15 @@ Questions 1 and 2 pick the store. Ask them in order; the first answer that fits 
 
 If no, because it is for practice, a drill or development, use **a software key in an encrypted key file.** The records allow these uses and refuse one: the software store never holds a root that others rely on ([record 0002](../decisions/0002-where-a-key-lives.md), [the software store](/reference/software-store/#the-backends)). A person's own OpenPGP primary is the one exception the records allow, because it stays offline in the file ([record 0008](../decisions/0008-a-persons-own-key.md)); it is not a root a company relies on.
 
-The reason is in the key. A software key can be copied and read without a trace, and it gives no evidence of where it lives. Every record of a software root says so. If yes, go on to question 2.
+The reason is in the key. A software key can be copied and read without a trace, and it gives no evidence of where it lives. Every ceremony record of a software root says so. If yes, go on to question 2.
 
 ### 2. Can your organisation set up a separate cloud account used only for the root?
 
-If yes, the usual choice is **a cloud key.** It is one root that the service keeps, with a replica in a second Region (a geographic area where the provider runs its data centres). There are no cards to alternate and no card to lose. [Where a key lives](/learn/key-stores/#which-path-is-yours) gives this as the first choice for a team with a cloud account.
+If yes, the usual choice is **a cloud key.** It is one key that the service keeps, with a replica in a second Region (a geographic area where the provider runs its data centres). There are no cards to alternate and no card to lose. [Where a key lives](/learn/key-stores/#which-path-is-yours) gives this as the first choice for a team with a cloud account.
 
 If no, use **two root cards.** This is the path for a person or a lab with no cloud account. It asks more of you, and the rest of this page shows how much.
 
-A cloud root and a card root can also sit side by side. A company that wants a root that does not depend on one provider adds a card root ([record 0004](../decisions/0004-the-cloud-root.md)).
+A root can have keys in the cloud and on cards. A company that wants a root that does not depend on one provider gives it card keys too ([record 0004](../decisions/0004-the-cloud-root.md)).
 
 ### 3. If it is a cloud key: does the key already exist?
 
@@ -63,7 +63,7 @@ The rows that decide are below. Where a key is born, whether it can be copied, r
 
 | | Software key in a file | Two root cards | Cloud key |
 |---|---|---|---|
-| **May hold** | Test roots, drills, development, a person's own primary. Never a root that others rely on. | The roots of the holder's bundles, on a pair of cards, each in its own row. | One dedicated root account with one root. |
+| **May hold** | Test roots, drills, development, a person's own primary. Never a root that others rely on. | The root keys of the holder's bundles, on a pair of cards, a row for each bundle. | One dedicated account with three keys. |
 | **A ceremony runs on** | A key that can be copied is used only in the offline system. A test root: any machine that can open the file, or a rehearsal card; the key is in memory while it signs. | Your workstation, under four conditions (a touch for every signature, the number of signatures stated in the plan, no retry of a failed touch, a check on a second device), or the offline system. | Your workstation, through the ceremony role, with the typed plan digest and the role session. There is no touch. The stated number of signatures, no retry and the check on a second device apply as for cards ([record 0005](../decisions/0005-a-ceremony-and-where-it-runs.md), rule 18). |
 | **When the key ends** | Replaced at most every three years, because it can be copied. | On an event: an advisory, a lost card, a compromise, a change of store. Not on a date. | The same events. |
 | **Built in** | M2 (the file). | M6, after the first signed release. | M2 (the store), and adoption is drilled in M4. |
@@ -80,14 +80,14 @@ Money is easy to count. Time and care are not, so the table lists both.
 | **The yearly ceremony** | None for a practice root. A person's own primary follows [personal OpenPGP](/reference/personal-openpgp/). | One, from your workstation, or in the offline system if you choose it, which costs a boot. The cards alternate: A one year, B the next. | One, from your workstation. A cloud root has nothing to alternate with, so it signs every year. |
 | **Checks you repeat** | A restore drill each year, for a real bundle. | A card check and a proof of life every six months. A restore drill each year. | A restore drill each year. |
 | **What you keep safe** | The file, and what opens it: root cards with a recovery key, or a passphrase. | Two cards in two places. One PIN per card, in your password manager. A recovery key. | An account to secure, and the roles around the key. |
-| **If it is lost** | The key is gone unless a copy exists, and a copy is the danger. | Lose a card: the other root exists, and you revoke the lost one with the revocation signature stored apart. | Lose a Region: the break-glass principal recovers it, a manual and logged act. |
+| **If it is lost** | The key is gone unless a copy exists, and a copy is the danger. | Lose a card: the other key exists, and you revoke the lost one with the revocation signature stored apart. | Lose a Region: the break-glass principal recovers it, a manual and logged act. |
 
 How to read the table:
 
 - **The price.** AWS lists each KMS key at USD 1 a month, prorated hourly, and counts each primary and each replica multi-Region key (AWS KMS pricing, read 2026-11-11, [aws.amazon.com/kms/pricing](https://aws.amazon.com/kms/pricing/)). The cloud root page lists three keys: an X.509 root, an OpenPGP primary and a break-glass SSH CA key ([the cloud root](/reference/kms-root/#what-ritueel-creates)). Six keys at USD 1 for twelve months is USD 72. A root without the SSH CA key costs USD 48. That is arithmetic, not a quote from AWS. A request costs extra: AWS's own example prices an ECC 256 signing key at USD 0.15 per 10,000 requests, and a root signs rarely. The root keys are P-384, and the pricing page lists no request price for P-384, so treat USD 0.15 as the example only.
 - **The words in the table.** A *revocation signature* is made when the key is born and kept apart; it cancels the key if its card is lost ([revoke](/learn/revoke/)). The *break-glass principal* is the one account role kept for emergencies. A *restore drill* is a yearly test that the backup brings the bundle back ([the history](/learn/the-history/)). A *proof of life* is a short test that a card still works for its holder.
 - **The yearly ceremony and the checks** come from [record 0007](../decisions/0007-changing-and-losing-a-root.md). A drill is due once a year, with the yearly ceremony. ritueel teaches the rhythm and does not enforce it. `ritueel apply` renews what is due ([record 0005](../decisions/0005-a-ceremony-and-where-it-runs.md), rule 11).
-- **The advisory review** is a step of every yearly ceremony, whatever the store, and the record says it was done; a practice software root has no yearly ceremony and so no review. A missed advisory is the one event a holder can fail to notice ([record 0007](../decisions/0007-changing-and-losing-a-root.md)).
+- **The advisory review** is a step of every yearly ceremony, whatever the store, and the ceremony record says it was done; a practice software root has no yearly ceremony, so no review. A missed advisory is the one event a holder can fail to notice ([record 0007](../decisions/0007-changing-and-losing-a-root.md)).
 - **A renewal role for a cloud root** is planned for later (M7) ([record 0002](../decisions/0002-where-a-key-lives.md), rule 17).
 - **Firmware.** A card with firmware older than 5.7.4 cannot hold a root ([record 0003](../decisions/0003-root-cards.md)).
 
@@ -109,6 +109,6 @@ Two more limits apply when a root is used on the workstation. If you are tricked
 
 ## Sources
 
-- The records named above, accepted on 2026-11-11.
+- The records named above, accepted on 2026-11-12.
 - AWS, [AWS KMS pricing](https://aws.amazon.com/kms/pricing/): USD 1 a month for each key, prorated hourly, each primary and each replica counted; the ECC 256 example at USD 0.15 per 10,000 requests. Read 2026-11-11.
 - age, [the age v1 specification](https://github.com/C2SP/C2SP/blob/main/age.md): a passphrase recipient must be the only recipient of a file. Read 2026-11-11, the sentence "An scrypt stanza, if present, MUST be the only stanza in the header".
