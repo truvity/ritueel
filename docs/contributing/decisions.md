@@ -44,7 +44,7 @@ Every record keeps the options it did not take: one line each, saying what the o
 
 ## Changing a record
 
-- **Until the first release (design phase),** a record is rewritten in place, merged with another, renumbered or removed, so that the set stays small and current. The earlier text stays in git history. Records have no page on the site, so a moved record needs no redirect line. In the same pull request, keep [the design in brief](/design/) and the glossary in step with the records they link, and update every link to the record. Do not amend a record with a note that the design phase would rather absorb.
+- **Until the first release (design phase),** a record is rewritten in place, merged with another, renumbered or removed, so that the set stays small and current. The earlier text stays in git history. Inside a record, a rule number is never changed and a new rule goes at the end, so that a citation by number stays true. Records have no page on the site, so a moved record needs no redirect line. In the same pull request, keep [the design in brief](/design/) and the glossary in step with the records they link, and update every link to the record. Do not amend a record with a note that the design phase would rather absorb.
 - **From the first release on,** records are append-only. A changed mind gets a new record that supersedes the old one, and the old status line says so (`Superseded by NNNN`, or `Accepted; amended by NNNN`). The decision is never edited; typos and links may be fixed in place. A number is never reused.
 
 The first release is the line between the two. Which side a record is on is the maintainer's to say when it is not clear.

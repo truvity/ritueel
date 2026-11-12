@@ -44,10 +44,10 @@ Every record has these parts, in this order:
 |-----|----------|--------|
 | [0001](0001-what-ritueel-is.md) | ritueel keeps roots and teaches how; systems that issue every day keep intermediates | Accepted |
 | [0002](0002-where-a-key-lives.md) | A key is born in its store and never leaves it; a key file opens with a passkey on a card named for it | Accepted |
-| [0003](0003-root-cards.md) | Roots live on two independent root cards laid out as six rows of four slots | Accepted |
+| [0003](0003-root-cards.md) | Root keys live on two independent root cards laid out as six rows of four slots | Accepted |
 | [0004](0004-the-cloud-root.md) | A cloud root is one dedicated account with three replicated keys, created or adopted | Accepted |
-| [0005](0005-a-ceremony-and-where-it-runs.md) | A ceremony has six steps; a key that cannot be copied may be used on the workstation | Accepted |
-| [0006](0006-bundle-history-and-trust-files.md) | A bundle is one trust domain; its history is write-once and its trust files are numbered sets | Accepted |
+| [0005](0005-a-ceremony-and-where-it-runs.md) | A ceremony applies what is wanted and not applied yet, in six steps; a key that cannot be copied may be used on the workstation | Accepted |
+| [0006](0006-bundle-history-and-trust-files.md) | A bundle is one trust domain; a person writes only wanted files, its history is write-once and its trust files are numbered sets | Accepted |
 | [0007](0007-changing-and-losing-a-root.md) | A root changes by add, overlap, retire and revoke; revocation material and a drill prove the way back | Accepted |
 | [0008](0008-a-persons-own-key.md) | A person uses OpenPGP as their own key, an adopted primary first and card-born primaries later | Accepted |
 | [0009](0009-release-keys-and-the-keyring.md) | Release keys are the root primaries; the keyring is a file that ritueel makes and a pipeline packages | Accepted |
