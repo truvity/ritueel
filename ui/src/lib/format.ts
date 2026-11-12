@@ -36,21 +36,12 @@ export function agoDays(n: number | undefined): string {
   return n === 1 ? '1 day ago' : `${n} days ago`;
 }
 
-/** A root as the holder writes it: the name of its bundle, a slash, its label (acme/A). Just the label until the bundle is known. */
-export function rootRef(bundle: string | undefined, label: string): string {
-  return bundle ? `${bundle}/${label}` : label;
-}
-
 export function plural(n: number, one: string, many = one + 's'): string {
   return `${n} ${n === 1 ? one : many}`;
 }
 
-/** Fractional year of a timestamp, for the validity chart. */
-export function yearFraction(ts: Timestamp | undefined): number | undefined {
+/** The time of a read, as every screen writes it: 2026-11-24 09:00 UTC. Always UTC, so it reads the same everywhere. */
+export function readTime(ts: Timestamp | undefined): string {
   const d = toDate(ts);
-  if (!d) return undefined;
-  const y = d.getUTCFullYear();
-  const start = Date.UTC(y, 0, 1);
-  const end = Date.UTC(y + 1, 0, 1);
-  return y + (d.getTime() - start) / (end - start);
+  return d ? `${d.toISOString().slice(0, 10)} ${d.toISOString().slice(11, 16)} UTC` : '-';
 }

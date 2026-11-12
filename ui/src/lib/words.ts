@@ -1,95 +1,191 @@
 // The words of the page. The fixed words are: bundle, root, delegated key,
-// holder, requester, store, ceremony, history, record, renew, replace, trust files.
-// Replace means making a new key; retire is revoking a subkey that a newer one
+// delegation, holder, requester, store, ceremony, history, record, renew,
+// replace, trust set, wanted, not applied yet, apply. One item of "not applied
+// yet" is a change, never a row. A row is one row of four slots on a card.
+// Replace means making a new key; retire is revoking a key that a newer one
 // already replaced. The bare word bundle means the directory of one trust
 // domain; the trust file keeps its full name, CA bundle.
-import { RunPlace, Store } from '../gen/ritueel/local/v1alpha1/common_pb';
+//
+// Every value of an enum of the contract has a word here. A value with no word
+// is not drawn. A word that no record or reference page decides is listed as
+// proposed in the comments of the contract (proto/), not here.
 import {
+  CeremonyCommand,
+  ChainState,
+  ObjectKind,
+  RunPlace,
+  Severity,
+  Store,
+} from '../gen/ritueel/local/v1alpha1/common_pb';
+import {
+  BundleKind,
   CardKind,
-  CardState,
-  CeremonyKind,
   CeremonyOutcome,
-  DelegatedKeyKind,
-  DelegatedKeyState,
+  CeremonyState,
+  CertificationKind,
+  ChangeKind,
+  ChangeSource,
+  ChangeState,
+  DelegationType,
+  KeyKind,
+  KeyState,
+  NeedKind,
   PinRule,
-  RootKeyKind,
-  RootState,
+  RequestOutcome,
   SlotState,
   SlotUse,
-  SubkeyOrigin,
-  SubkeyUsage,
   TouchRule,
   TrustCheckResult,
   TrustFileKind,
 } from '../gen/ritueel/local/v1alpha1/inspect_service_pb';
-import { BundleChangeAction, Requirement } from '../gen/ritueel/local/v1alpha1/plan_service_pb';
+
+export const SEVERITY_WORD: Record<number, string> = {
+  [Severity.NOTICE]: 'notice',
+  [Severity.ALERT]: 'alert',
+  [Severity.CRITICAL]: 'critical',
+};
 
 export const STORE_WORD: Record<number, string> = {
-  [Store.SOFTWARE_FILE]: 'Encrypted file',
-  [Store.ROOT_CARDS]: 'Root card',
-  [Store.CLOUD_KMS]: 'Cloud KMS key',
+  [Store.PIV]: 'PIV card',
+  [Store.OPENPGP_CARD]: 'OpenPGP card',
+  [Store.AWS_KMS]: 'AWS KMS',
+  [Store.SOFTWARE]: 'key file',
 };
 
-export const STORE_SENTENCE: Record<number, string> = {
-  [Store.SOFTWARE_FILE]: 'The key is an encrypted file kept beside the bundle (on the extra partition of the stick), never inside it. A passkey on any one of your root cards opens it (a passphrase is the other way), and a recovery key is kept apart. It can be copied, so you use it only in the offline system (a test root is the exception).',
-  [Store.ROOT_CARDS]: 'The root has its own key, born on one root card and never leaving it. Its partner root is on the other card. It cannot be copied. You may use it on your workstation with a touch for every signature, the count in the plan, no retry and a check on a second device, or in the offline system.',
-  [Store.CLOUD_KMS]: 'The key lives in a cloud key service and never leaves it. If ritueel adopted it, it read the public key and the policy and did not change the key. It cannot be copied. You may use it from your workstation in a session of its ceremony role; the count, no retry and the second-device check apply. A cloud key has no touch: the typed digest and the role session stand, and its audit trail records every signature.',
+/** Where a ceremony runs, or ran (record 0005, rules 17 to 21), as a phrase: "on this workstation". */
+export const RUN_PLACE_WORD: Record<number, string> = {
+  [RunPlace.OFFLINE_SYSTEM]: 'in the offline system',
+  [RunPlace.WORKSTATION]: 'on this workstation',
 };
 
-export const ROOT_STATE_WORD: Record<number, string> = {
-  [RootState.ACTIVE]: 'active',
-  [RootState.OVERLAP]: 'overlap',
-  [RootState.RETIRED]: 'retired',
-  [RootState.REVOKED]: 'revoked',
+/** The same as the value of a detail list: "In the offline system", "On this workstation". */
+export const RUN_PLACE_VALUE: Record<number, string> = {
+  [RunPlace.OFFLINE_SYSTEM]: 'In the offline system',
+  [RunPlace.WORKSTATION]: 'On this workstation',
 };
 
+export const OBJECT_KIND_WORD: Record<number, string> = {
+  [ObjectKind.BUNDLE]: 'bundle',
+  [ObjectKind.CARD]: 'card',
+  [ObjectKind.ROOT]: 'root',
+  [ObjectKind.KEY]: 'key',
+  [ObjectKind.USER_ID]: 'user ID',
+  [ObjectKind.DELEGATION]: 'delegation',
+  [ObjectKind.CERTIFICATION]: 'certification',
+  [ObjectKind.REQUEST]: 'request',
+  [ObjectKind.CEREMONY]: 'ceremony',
+  [ObjectKind.TRUST_SET]: 'trust set',
+  [ObjectKind.TRUST_FILE]: 'trust file',
+};
+
+/** A root of this kind. */
+export const ROOT_KIND_WORD: Record<number, string> = {
+  [KeyKind.X509]: 'X.509 root',
+  [KeyKind.OPENPGP]: 'OpenPGP root',
+  [KeyKind.SSH_CA]: 'SSH CA root',
+};
+
+/** A key of a root, by the kind of its root. */
 export const ROOT_KEY_WORD: Record<number, string> = {
-  [RootKeyKind.X509_ROOT]: 'X.509 root',
-  [RootKeyKind.OPENPGP_PRIMARY]: 'OpenPGP primary',
-  [RootKeyKind.SSH_CA]: 'SSH CA',
+  [KeyKind.X509]: 'X.509 root key',
+  [KeyKind.OPENPGP]: 'OpenPGP primary',
+  [KeyKind.SSH_CA]: 'SSH CA key',
 };
 
-export const DELEGATED_WORD: Record<number, string> = {
-  [DelegatedKeyKind.X509_INTERMEDIATE]: 'X.509 intermediate',
-  [DelegatedKeyKind.OPENPGP_SUBKEY]: 'OpenPGP subkey',
-  [DelegatedKeyKind.SSH_CA_KEY]: 'SSH CA key',
+/** A delegated key, by the kind of its root. */
+export const DELEGATED_KEY_WORD: Record<number, string> = {
+  [KeyKind.X509]: 'X.509 intermediate key',
+  [KeyKind.OPENPGP]: 'OpenPGP subkey',
+  [KeyKind.SSH_CA]: 'SSH CA key',
 };
 
-export const DELEGATED_STATE_WORD: Record<number, string> = {
-  [DelegatedKeyState.ACTIVE]: 'active',
-  [DelegatedKeyState.EXPIRED]: 'expired',
-  [DelegatedKeyState.REVOKED]: 'revoked',
+export const KEY_STATE_WORD: Record<number, string> = {
+  [KeyState.ACTIVE]: 'active',
+  [KeyState.RETIRED]: 'retired',
+  [KeyState.REVOKED]: 'revoked',
 };
 
-export const USAGE_WORD: Record<number, string> = {
-  [SubkeyUsage.SIGN]: 'sign',
-  [SubkeyUsage.AUTHENTICATE]: 'authenticate',
-  [SubkeyUsage.ENCRYPT]: 'encrypt',
+export const DELEGATION_TYPE_WORD: Record<number, string> = {
+  [DelegationType.X509_INTERMEDIATE]: 'X.509 intermediate',
+  [DelegationType.OPENPGP_SUBKEY]: 'OpenPGP subkey',
+  [DelegationType.SSH_CA_KEY]: 'SSH CA key',
 };
 
-export const USAGE_LETTER: Record<number, string> = {
-  [SubkeyUsage.SIGN]: 'S',
-  [SubkeyUsage.AUTHENTICATE]: 'A',
-  [SubkeyUsage.ENCRYPT]: 'E',
+export const CERTIFICATION_KIND_WORD: Record<number, string> = {
+  [CertificationKind.ROOT_CERTIFICATE]: 'root certificate',
+  [CertificationKind.INTERMEDIATE_CERTIFICATE]: 'intermediate certificate',
+  [CertificationKind.SUBKEY_BINDING]: 'subkey binding',
+  [CertificationKind.PRIMARY_SELF_SIGNATURE]: 'user ID certification',
 };
 
-export const ORIGIN_WORD: Record<number, string> = {
-  [SubkeyOrigin.BORN_ON_CARD]: 'born on a card',
-  [SubkeyOrigin.MADE_IN_SOFTWARE]: 'made in software',
-  [SubkeyOrigin.BORN_IN_KMS]: 'born in the cloud KMS',
+export const REQUEST_OUTCOME_WORD: Record<number, string> = {
+  [RequestOutcome.UNSPECIFIED]: 'no answer yet',
+  [RequestOutcome.ISSUED]: 'issued',
+  [RequestOutcome.REFUSED]: 'refused',
+};
+
+export const CHANGE_KIND_WORD: Record<number, string> = {
+  [ChangeKind.ADOPT]: 'adopt',
+  [ChangeKind.BIRTH]: 'birth',
+  [ChangeKind.CERTIFY]: 'certify',
+  [ChangeKind.RETIRE]: 'retire',
+  [ChangeKind.RENEW]: 'renew',
+  [ChangeKind.ISSUE]: 'issue',
+};
+
+export const CHANGE_STATE_WORD: Record<number, string> = {
+  [ChangeState.READY]: 'Ready',
+  [ChangeState.WAITS]: 'Waits',
+};
+
+export const CHANGE_SOURCE_WORD: Record<number, string> = {
+  [ChangeSource.WANTED_FILE]: 'wanted file',
+  [ChangeSource.HISTORY]: 'history',
+  [ChangeSource.DATE]: 'date',
+  [ChangeSource.REQUEST]: 'request',
+};
+
+/** "card root-b", "request for acme-release", "key file A.openpgp.key.age": the word, then the name. */
+export const NEED_KIND_WORD: Record<number, string> = {
+  [NeedKind.CARD]: 'card',
+  [NeedKind.REQUEST]: 'request for',
+  [NeedKind.KEY_FILE]: 'key file',
+};
+
+export const CEREMONY_COMMAND_WORD: Record<number, string> = {
+  [CeremonyCommand.APPLY]: 'apply',
+  [CeremonyCommand.CLOSE]: 'close',
+};
+
+export const CEREMONY_STATE_WORD: Record<number, string> = {
+  [CeremonyState.PLANNED]: 'planned',
+  [CeremonyState.STARTED]: 'started',
+  [CeremonyState.RECORDED]: 'recorded',
+  [CeremonyState.CLOSED]: 'closed',
+};
+
+export const CEREMONY_OUTCOME_WORD: Record<number, string> = {
+  [CeremonyOutcome.COMPLETED]: 'completed',
+  [CeremonyOutcome.DECLINED]: 'declined',
+  [CeremonyOutcome.CLOSED]: 'closed',
 };
 
 export const CARD_KIND_WORD: Record<number, string> = {
-  [CardKind.ROOT]: 'Root card',
-  [CardKind.DAY_TO_DAY]: 'Day-to-day card',
-  [CardKind.REHEARSAL]: 'Rehearsal card',
-  [CardKind.SERVER]: 'Server card',
+  [CardKind.ROOT]: 'root card',
+  [CardKind.DAY_TO_DAY]: 'day-to-day card',
+  [CardKind.REHEARSAL]: 'rehearsal card',
+  [CardKind.SERVER]: 'server card',
 };
 
-export const CARD_STATE_WORD: Record<number, string> = {
-  [CardState.ACTIVE]: 'active',
-  [CardState.RETIRED]: 'retired',
-  [CardState.LOST]: 'lost',
+export const CHAIN_STATE_WORD: Record<number, string> = {
+  [ChainState.NOT_CHECKED]: 'not checked',
+  [ChainState.VERIFIED]: 'verified',
+  [ChainState.BROKEN]: 'broken',
+};
+
+export const BUNDLE_KIND_WORD: Record<number, string> = {
+  [BundleKind.COMPANY]: 'company',
+  [BundleKind.PERSONAL]: 'personal',
 };
 
 export const SLOT_STATE_WORD: Record<number, string> = {
@@ -127,79 +223,18 @@ export const TOUCH_WORD: Record<number, string> = {
   [TouchRule.ALWAYS]: 'asked every time',
 };
 
-export const CEREMONY_KIND_WORD: Record<number, string> = {
-  [CeremonyKind.INIT]: 'Start of a root',
-  [CeremonyKind.ADOPT_KEY]: 'Adopt a key',
-  [CeremonyKind.ADD_DELEGATED_KEY]: 'Add a delegated key',
-  [CeremonyKind.RENEW]: 'Renew',
-  [CeremonyKind.REPLACE]: 'Replace',
-  [CeremonyKind.REVOKE]: 'Revoke',
-  [CeremonyKind.CARD_CHECK]: 'Card check',
-  [CeremonyKind.RESTORE_DRILL]: 'Restore drill',
-};
-
-export const OUTCOME_WORD: Record<number, string> = {
-  [CeremonyOutcome.DONE]: 'done',
-  [CeremonyOutcome.NOT_CONFIRMED]: 'not confirmed',
-  [CeremonyOutcome.REFUSED]: 'refused',
-  [CeremonyOutcome.UNRESOLVED]: 'unresolved',
-};
-
 export const TRUST_KIND_WORD: Record<number, string> = {
-  [TrustFileKind.ROOT_LIST]: 'Root list',
+  [TrustFileKind.ROOT_LIST]: 'root list',
   [TrustFileKind.CA_BUNDLE]: 'CA bundle',
-  [TrustFileKind.CRL]: 'Revocation list (CRL)',
-  [TrustFileKind.SSH_CA_KEYS]: 'SSH CA keys',
-  [TrustFileKind.KEYRING]: 'Keyring',
-  [TrustFileKind.OPENPGP_CERTIFICATE]: 'Public certificate',
+  [TrustFileKind.CRL]: 'CRL',
+  [TrustFileKind.SSH_CA_KEYS]: 'SSH CA key list',
+  [TrustFileKind.KEYRING]: 'keyring',
+  [TrustFileKind.OPENPGP_CERTIFICATE]: 'OpenPGP certificate',
 };
 
 export const TRUST_CHECK_WORD: Record<number, string> = {
-  [TrustCheckResult.PASSED]: 'check passed',
-  [TrustCheckResult.PASSED_WITH_WARNING]: 'check passed with a warning',
-  [TrustCheckResult.FAILED]: 'check failed',
-  [TrustCheckResult.NOT_RUN]: 'not built',
-};
-
-export const REQUIREMENT_WORD: Record<number, string> = {
-  [Requirement.CARD_PRESENT]: 'Card present',
-  [Requirement.PIN_AT_TERMINAL]: 'PIN typed at the terminal',
-  [Requirement.TOUCH]: 'Touch the card',
-  [Requirement.KEY_FILE_UNLOCK]: 'Key file opened by a passkey',
-  [Requirement.CONFIRM_DIGEST_AT_TERMINAL]: 'Digest confirmed at the terminal',
-};
-
-/**
- * Where a plan is run (record 0005, rules 17 and 18): in the offline system for a key that can be copied (a key file),
- * on your workstation for a key that cannot be copied (a root on cards or in the cloud), under four conditions the plan lists.
- */
-export const RUN_PLACE_WORD: Record<number, string> = {
-  [RunPlace.OFFLINE_SYSTEM]: 'in the offline system',
-  [RunPlace.WORKSTATION]: 'on your workstation',
-};
-
-/** What the page says when a plan does not say where it is run. */
-export const RUN_PLACE_DEFAULT = 'in the terminal where you run it';
-
-/** "in the offline system", "on your workstation", or "in the terminal where you run it". */
-export function onPlace(place: RunPlace | undefined): string {
-  return RUN_PLACE_WORD[place ?? RunPlace.UNSPECIFIED] ?? RUN_PLACE_DEFAULT;
-}
-
-/** Where a ceremony of the history ran (record 0005, rule 2), in a clause: "ran on the workstation". */
-export const RAN_PLACE_WORD: Record<number, string> = {
-  [RunPlace.OFFLINE_SYSTEM]: 'ran in the offline system',
-  [RunPlace.WORKSTATION]: 'ran on the workstation',
-};
-
-/** The same as a value of a detail list: "In the offline system", "On the workstation". */
-export const RAN_PLACE_VALUE: Record<number, string> = {
-  [RunPlace.OFFLINE_SYSTEM]: 'In the offline system',
-  [RunPlace.WORKSTATION]: 'On the workstation',
-};
-
-export const BUNDLE_ACTION_WORD: Record<number, string> = {
-  [BundleChangeAction.CREATE]: 'create',
-  // Not "replace": the site's glossary keeps that word for making a new key. This file is rewritten.
-  [BundleChangeAction.REPLACE]: 'rewrite',
+  [TrustCheckResult.PASSED]: 'passed',
+  [TrustCheckResult.PASSED_WITH_WARNING]: 'passed, with a warning',
+  [TrustCheckResult.FAILED]: 'failed',
+  [TrustCheckResult.NOT_RUN]: 'not run',
 };
