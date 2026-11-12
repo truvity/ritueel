@@ -71,8 +71,11 @@ export function GoToPanel() {
 
 // ---- small parts ------------------------------------------------------------------
 
-/** A fact is a label and a value. A `block` fact puts its value under the label, in the whole width: a fingerprint or a long reference. */
-type Fact = [label: string, value: ReactNode, layout?: 'block'] | false | null | undefined;
+/**
+ * A fact is a label and a value. A `block` fact puts its value under the label, in the whole width: a fingerprint or a long reference.
+ * A `note` has no label: it is a sentence in the whole width under the fact before it.
+ */
+type Fact = [label: string, value: ReactNode, layout?: 'block' | 'note'] | false | null | undefined;
 
 function Facts({ rows, pairs = false }: { rows: Fact[]; pairs?: boolean }) {
   // `pairs`: from 1440 px to 1799 px two short facts stand side by side (the panel is 30rem wide); a block fact takes the whole width.
@@ -84,8 +87,8 @@ function Facts({ rows, pairs = false }: { rows: Fact[]; pairs?: boolean }) {
       {rows.map((r, i) =>
         r ? (
           <Fragment key={i}>
-            <dt className={`text-dim ${r[2] ? `col-span-2 mt-1 ${span}` : ''}`}>{r[0]}</dt>
-            <dd className={`max-w-[60ch] min-w-0 [overflow-wrap:anywhere] ${r[2] ? `col-span-2 ${span}` : ''}`}>{r[1]}</dd>
+            {r[2] === 'note' ? null : <dt className={`text-dim ${r[2] ? `col-span-2 mt-1 ${span}` : ''}`}>{r[0]}</dt>}
+            <dd className={`max-w-[60ch] min-w-0 [overflow-wrap:anywhere] ${r[2] ? `col-span-2 ${span}` : ''} ${r[2] === 'note' ? 'text-sm text-dim' : ''}`}>{r[1]}</dd>
           </Fragment>
         ) : null,
       )}
@@ -196,6 +199,16 @@ function RootFacts({ ix, r }: { ix: InvIndex; r: Root }) {
   );
 }
 
+/** A role as the settings name it, and in a few words what it may do. */
+function RoleValue({ role, cap, note }: { role: string; cap: number; note: string }) {
+  return (
+    <>
+      <Mono cap={cap}>{role}</Mono>
+      <span className="block text-sm text-dim">{note}</span>
+    </>
+  );
+}
+
 function PlaceFacts({ k }: { k: Key }): Fact[] {
   const p = k.place;
   if (!p) return [];
@@ -220,6 +233,10 @@ function PlaceFacts({ k }: { k: Key }): Fact[] {
         store,
         !!CLOUD_PROVIDER_WORD[p.provider] && ['Provider', CLOUD_PROVIDER_WORD[p.provider]],
         !!p.account && ['Account', <Mono cap={CAPS['Place.account']}>{p.account}</Mono>],
+        !!p.ceremonyRole && ['Ceremony role', <RoleValue role={p.ceremonyRole} cap={CAPS['Place.ceremony_role']} note="may sign" />, 'block'],
+        !!p.adminRole && ['Admin role', <RoleValue role={p.adminRole} cap={CAPS['Place.admin_role']} note="creates and reads, never signs" />, 'block'],
+        // Record 0004, rules 8 and 9: a session of the ceremony role comes from the person's own credential chain; ritueel holds no credential.
+        !!p.ceremonyRole && ['', 'You take a session of the ceremony role by your own means. ritueel holds no credential.', 'note'],
         ['Key reference', <Mono cap={CAPS['Place.key_ref']}>{p.keyRef}</Mono>, 'block'],
         ['Region', <T cap={CAPS['Place.region']}>{p.region}</T>],
         !!p.replicaRegion && ['Replica Region', <T cap={CAPS['Place.replica_region']}>{p.replicaRegion}</T>],
