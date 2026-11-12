@@ -34,7 +34,7 @@ There are two ways a root fails, and they need different answers.
 
 So ritueel never offers to export a key from a card or a cloud key to make a backup. For cards, backup means two cards. For a cloud key, it means a replica. For a key in a software store, the store's own replication is the backup, and the next page on [key stores](/learn/key-stores/) says what that costs.
 
-Redundancy is not control either. Any one root a client trusts can sign anything that client accepts. Two roots do not mean that two people must agree. Protect each root as if it were the only one.
+Redundancy is not control. Any one root key can sign anything clients of this root accept. Two root keys do not mean that two people must agree. Protect each key as if it were the only one.
 
 ## What outsiders see
 
