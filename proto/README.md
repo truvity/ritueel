@@ -12,7 +12,7 @@ The process is one ritueel process, the same program as the command line. The fi
 
 | Path | What |
 |---|---|
-| `ritueel/local/v1alpha1/common.proto` | Shared words: `Severity`, `Store`, `RunPlace`, `ObjectKind`, `ObjectRef`, `CeremonyCommand`, `CeremonyRef`, `ChainState`, `HistoryStatus`. |
+| `ritueel/local/v1alpha1/common.proto` | Shared words: `Severity`, `Store`, `CloudProvider`, `RunPlace`, `ObjectKind`, `ObjectRef`, `CeremonyCommand`, `CeremonyRef`, `ChainState`, `HistoryStatus`. |
 | `ritueel/local/v1alpha1/inspect_service.proto` | `InspectService`: five read calls. |
 | `../buf.yaml`, `../buf.gen.yaml` | The buf module (lint `STANDARD`) and the TypeScript generator, at the repository root. |
 | `../ui/src/gen/` | The generated TypeScript, committed so the page builds without buf. |
@@ -36,7 +36,7 @@ Every call is a read, marked `NO_SIDE_EFFECTS` so that each may be a `GET`. Ever
 | | `ListTrustFiles` | `ListTrustFilesRequest` | `ListTrustFilesResponse` (the newest set and its `TrustFile`s, each with its check and the command that verifies it) | no |
 
 Enums, all with an `_UNSPECIFIED = 0` first value and the enum name as prefix:
-`Severity`, `Store`, `RunPlace`, `ObjectKind`, `CeremonyCommand`, `ChainState` (common);
+`Severity`, `Store`, `CloudProvider`, `RunPlace`, `ObjectKind`, `CeremonyCommand`, `ChainState` (common);
 `BundleKind`, `KeyKind`, `KeyRole`, `KeyState`, `DelegationType`, `CertificationKind`,
 `RequestOutcome`, `ChangeKind`, `ChangeState`, `ChangeSource`, `NeedKind`, `CardKind`,
 `ApplicationUse`, `SlotState`, `SlotUse`, `PinRule`, `TouchRule`, `CeremonyState`,

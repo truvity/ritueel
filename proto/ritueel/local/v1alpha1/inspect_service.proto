@@ -222,6 +222,19 @@ message Place {
   string replica_ref = 7;
   // For a key file: its path outside the bundle.
   string path = 8;
+  // For a cloud key: the provider. The page shows it as given and never reads
+  // it out of `key_ref`. Unset for a key that is not in a cloud store.
+  // [decided: kms-root.md, the block `aws_kms`; record 0004, rule 1]
+  CloudProvider provider = 9;
+  // For a cloud key: the id of the account that holds the key (12 digits for
+  // AWS), as a text. It is the `account` of the settings block when the key is
+  // in the root account, and the account of the key's own ARN otherwise (a key
+  // in another account, read through a role its owner made: record 0004, rule
+  // 7). The page never reads it out of `key_ref`; the process reads it from
+  // the settings and checks it against the ARN. Unset for a key that is not in
+  // a cloud store. [decided: kms-root.md, `ritueel.yaml`, `account`; record
+  // 0004, rules 1 and 7]
+  string account = 10;
 }
 
 message Key {

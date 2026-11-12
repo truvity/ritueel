@@ -40,7 +40,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file ritueel/local/v1alpha1/common.proto.
  */
 export const file_ritueel_local_v1alpha1_common: GenFile = /*@__PURE__*/
-  fileDesc("CiNyaXR1ZWVsL2xvY2FsL3YxYWxwaGExL2NvbW1vbi5wcm90bxIWcml0dWVlbC5sb2NhbC52MWFscGhhMSJYCglPYmplY3RSZWYSMAoEa2luZBgBIAEoDjIiLnJpdHVlZWwubG9jYWwudjFhbHBoYTEuT2JqZWN0S2luZBIKCgJpZBgCIAEoCRINCgVsYWJlbBgDIAEoCSJ7CgtDZXJlbW9ueVJlZhIKCgJpZBgBIAEoCRImCgJhdBgCIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASOAoHY29tbWFuZBgDIAEoDjInLnJpdHVlZWwubG9jYWwudjFhbHBoYTEuQ2VyZW1vbnlDb21tYW5kIq8CCg1IaXN0b3J5U3RhdHVzEhQKDHJlY29yZF9jb3VudBgBIAEoBRI3CgtjaGFpbl9zdGF0ZRgCIAEoDjIiLnJpdHVlZWwubG9jYWwudjFhbHBoYTEuQ2hhaW5TdGF0ZRIZChFlbmRfcmVjb3JkX3NoYTI1NhgDIAEoCRIWCg5sYXN0X3JlY29yZF9pZBgEIAEoCRIZChFsYXN0X3JlY29yZF90aXRsZRgFIAEoCRIyCg5sYXN0X3JlY29yZF9hdBgGIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASLgoKY2hlY2tlZF9hdBgHIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASDwoHbWVzc2FnZRgIIAEoCRIMCgRlbmRzGAkgASgFKnkKCFNldmVyaXR5EhgKFFNFVkVSSVRZX1VOU1BFQ0lGSUVEEAASEwoPU0VWRVJJVFlfTk9USUNFEAISEgoOU0VWRVJJVFlfQUxFUlQQAxIVChFTRVZFUklUWV9DUklUSUNBTBAEIgQIARABKg1TRVZFUklUWV9JTkZPKmwKBVN0b3JlEhUKEVNUT1JFX1VOU1BFQ0lGSUVEEAASDQoJU1RPUkVfUElWEAESFgoSU1RPUkVfT1BFTlBHUF9DQVJEEAISEQoNU1RPUkVfQVdTX0tNUxADEhIKDlNUT1JFX1NPRlRXQVJFEAQqXgoIUnVuUGxhY2USGQoVUlVOX1BMQUNFX1VOU1BFQ0lGSUVEEAASHAoYUlVOX1BMQUNFX09GRkxJTkVfU1lTVEVNEAESGQoVUlVOX1BMQUNFX1dPUktTVEFUSU9OEAIqwAIKCk9iamVjdEtpbmQSGwoXT0JKRUNUX0tJTkRfVU5TUEVDSUZJRUQQABIWChJPQkpFQ1RfS0lORF9CVU5ETEUQARIUChBPQkpFQ1RfS0lORF9DQVJEEAISFAoQT0JKRUNUX0tJTkRfUk9PVBADEhMKD09CSkVDVF9LSU5EX0tFWRAEEhcKE09CSkVDVF9LSU5EX1VTRVJfSUQQBRIaChZPQkpFQ1RfS0lORF9ERUxFR0FUSU9OEAYSHQoZT0JKRUNUX0tJTkRfQ0VSVElGSUNBVElPThAHEhcKE09CSkVDVF9LSU5EX1JFUVVFU1QQCBIYChRPQkpFQ1RfS0lORF9DRVJFTU9OWRAJEhkKFU9CSkVDVF9LSU5EX1RSVVNUX1NFVBAKEhoKFk9CSkVDVF9LSU5EX1RSVVNUX0ZJTEUQCyprCg9DZXJlbW9ueUNvbW1hbmQSIAocQ0VSRU1PTllfQ09NTUFORF9VTlNQRUNJRklFRBAAEhoKFkNFUkVNT05ZX0NPTU1BTkRfQVBQTFkQARIaChZDRVJFTU9OWV9DT01NQU5EX0NMT1NFEAIqeAoKQ2hhaW5TdGF0ZRIbChdDSEFJTl9TVEFURV9VTlNQRUNJRklFRBAAEhsKF0NIQUlOX1NUQVRFX05PVF9DSEVDS0VEEAESGAoUQ0hBSU5fU1RBVEVfVkVSSUZJRUQQAhIWChJDSEFJTl9TVEFURV9CUk9LRU4QA2IGcHJvdG8z", [file_google_protobuf_timestamp]);
+  fileDesc("CiNyaXR1ZWVsL2xvY2FsL3YxYWxwaGExL2NvbW1vbi5wcm90bxIWcml0dWVlbC5sb2NhbC52MWFscGhhMSJYCglPYmplY3RSZWYSMAoEa2luZBgBIAEoDjIiLnJpdHVlZWwubG9jYWwudjFhbHBoYTEuT2JqZWN0S2luZBIKCgJpZBgCIAEoCRINCgVsYWJlbBgDIAEoCSJ7CgtDZXJlbW9ueVJlZhIKCgJpZBgBIAEoCRImCgJhdBgCIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASOAoHY29tbWFuZBgDIAEoDjInLnJpdHVlZWwubG9jYWwudjFhbHBoYTEuQ2VyZW1vbnlDb21tYW5kIq8CCg1IaXN0b3J5U3RhdHVzEhQKDHJlY29yZF9jb3VudBgBIAEoBRI3CgtjaGFpbl9zdGF0ZRgCIAEoDjIiLnJpdHVlZWwubG9jYWwudjFhbHBoYTEuQ2hhaW5TdGF0ZRIZChFlbmRfcmVjb3JkX3NoYTI1NhgDIAEoCRIWCg5sYXN0X3JlY29yZF9pZBgEIAEoCRIZChFsYXN0X3JlY29yZF90aXRsZRgFIAEoCRIyCg5sYXN0X3JlY29yZF9hdBgGIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASLgoKY2hlY2tlZF9hdBgHIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASDwoHbWVzc2FnZRgIIAEoCRIMCgRlbmRzGAkgASgFKnkKCFNldmVyaXR5EhgKFFNFVkVSSVRZX1VOU1BFQ0lGSUVEEAASEwoPU0VWRVJJVFlfTk9USUNFEAISEgoOU0VWRVJJVFlfQUxFUlQQAxIVChFTRVZFUklUWV9DUklUSUNBTBAEIgQIARABKg1TRVZFUklUWV9JTkZPKmwKBVN0b3JlEhUKEVNUT1JFX1VOU1BFQ0lGSUVEEAASDQoJU1RPUkVfUElWEAESFgoSU1RPUkVfT1BFTlBHUF9DQVJEEAISEQoNU1RPUkVfQVdTX0tNUxADEhIKDlNUT1JFX1NPRlRXQVJFEAQqRwoNQ2xvdWRQcm92aWRlchIeChpDTE9VRF9QUk9WSURFUl9VTlNQRUNJRklFRBAAEhYKEkNMT1VEX1BST1ZJREVSX0FXUxABKl4KCFJ1blBsYWNlEhkKFVJVTl9QTEFDRV9VTlNQRUNJRklFRBAAEhwKGFJVTl9QTEFDRV9PRkZMSU5FX1NZU1RFTRABEhkKFVJVTl9QTEFDRV9XT1JLU1RBVElPThACKsACCgpPYmplY3RLaW5kEhsKF09CSkVDVF9LSU5EX1VOU1BFQ0lGSUVEEAASFgoST0JKRUNUX0tJTkRfQlVORExFEAESFAoQT0JKRUNUX0tJTkRfQ0FSRBACEhQKEE9CSkVDVF9LSU5EX1JPT1QQAxITCg9PQkpFQ1RfS0lORF9LRVkQBBIXChNPQkpFQ1RfS0lORF9VU0VSX0lEEAUSGgoWT0JKRUNUX0tJTkRfREVMRUdBVElPThAGEh0KGU9CSkVDVF9LSU5EX0NFUlRJRklDQVRJT04QBxIXChNPQkpFQ1RfS0lORF9SRVFVRVNUEAgSGAoUT0JKRUNUX0tJTkRfQ0VSRU1PTlkQCRIZChVPQkpFQ1RfS0lORF9UUlVTVF9TRVQQChIaChZPQkpFQ1RfS0lORF9UUlVTVF9GSUxFEAsqawoPQ2VyZW1vbnlDb21tYW5kEiAKHENFUkVNT05ZX0NPTU1BTkRfVU5TUEVDSUZJRUQQABIaChZDRVJFTU9OWV9DT01NQU5EX0FQUExZEAESGgoWQ0VSRU1PTllfQ09NTUFORF9DTE9TRRACKngKCkNoYWluU3RhdGUSGwoXQ0hBSU5fU1RBVEVfVU5TUEVDSUZJRUQQABIbChdDSEFJTl9TVEFURV9OT1RfQ0hFQ0tFRBABEhgKFENIQUlOX1NUQVRFX1ZFUklGSUVEEAISFgoSQ0hBSU5fU1RBVEVfQlJPS0VOEANiBnByb3RvMw", [file_google_protobuf_timestamp]);
 
 /**
  * The thing a line of text is about, so the page can link to it.
@@ -277,6 +277,35 @@ export const StoreSchema: GenEnum<Store> = /*@__PURE__*/
   enumDesc(file_ritueel_local_v1alpha1_common, 1);
 
 /**
+ * The company that runs a cloud key service: the provider of the keys in a
+ * cloud store. It is a word of its own beside Store, because a store names the
+ * service (`aws-kms`) and the account and the roles belong to the provider's
+ * side. Only the provider of the one cloud store is decided.
+ *
+ * @generated from enum ritueel.local.v1alpha1.CloudProvider
+ */
+export enum CloudProvider {
+  /**
+   * @generated from enum value: CLOUD_PROVIDER_UNSPECIFIED = 0;
+   */
+  UNSPECIFIED = 0,
+
+  /**
+   * Amazon Web Services, the provider of the store `aws-kms`. [decided:
+   * kms-root.md, the block `aws_kms`; record 0004, rule 1]
+   *
+   * @generated from enum value: CLOUD_PROVIDER_AWS = 1;
+   */
+  AWS = 1,
+}
+
+/**
+ * Describes the enum ritueel.local.v1alpha1.CloudProvider.
+ */
+export const CloudProviderSchema: GenEnum<CloudProvider> = /*@__PURE__*/
+  enumDesc(file_ritueel_local_v1alpha1_common, 2);
+
+/**
  * Where a ceremony runs, or ran (record 0005, rules 17 to 21). Every ceremony
  * record says where its ceremony ran (rule 2).
  * [decided: the two places, record 0005; the spelling `ran_on`, `workstation`
@@ -313,7 +342,7 @@ export enum RunPlace {
  * Describes the enum ritueel.local.v1alpha1.RunPlace.
  */
 export const RunPlaceSchema: GenEnum<RunPlace> = /*@__PURE__*/
-  enumDesc(file_ritueel_local_v1alpha1_common, 2);
+  enumDesc(file_ritueel_local_v1alpha1_common, 3);
 
 /**
  * What an ObjectRef names. The panel of the page shows one object of these
@@ -410,7 +439,7 @@ export enum ObjectKind {
  * Describes the enum ritueel.local.v1alpha1.ObjectKind.
  */
 export const ObjectKindSchema: GenEnum<ObjectKind> = /*@__PURE__*/
-  enumDesc(file_ritueel_local_v1alpha1_common, 3);
+  enumDesc(file_ritueel_local_v1alpha1_common, 4);
 
 /**
  * The command that leaves a ceremony folder. Only `apply` and `close` do
@@ -444,7 +473,7 @@ export enum CeremonyCommand {
  * Describes the enum ritueel.local.v1alpha1.CeremonyCommand.
  */
 export const CeremonyCommandSchema: GenEnum<CeremonyCommand> = /*@__PURE__*/
-  enumDesc(file_ritueel_local_v1alpha1_common, 4);
+  enumDesc(file_ritueel_local_v1alpha1_common, 5);
 
 /**
  * Whether the hash chain of the history checks out. [proposed: no record and
@@ -486,5 +515,5 @@ export enum ChainState {
  * Describes the enum ritueel.local.v1alpha1.ChainState.
  */
 export const ChainStateSchema: GenEnum<ChainState> = /*@__PURE__*/
-  enumDesc(file_ritueel_local_v1alpha1_common, 5);
+  enumDesc(file_ritueel_local_v1alpha1_common, 6);
 

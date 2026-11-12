@@ -24,6 +24,7 @@ import {
   CEREMONY_COMMAND_WORD,
   CERTIFICATION_KIND_WORD,
   CHANGE_STATE_WORD,
+  CLOUD_PROVIDER_WORD,
   DELEGATED_KEY_WORD,
   DELEGATION_TYPE_WORD,
   KEY_STATE_WORD,
@@ -217,6 +218,8 @@ function PlaceFacts({ k }: { k: Key }): Fact[] {
     case Store.AWS_KMS:
       return [
         store,
+        !!CLOUD_PROVIDER_WORD[p.provider] && ['Provider', CLOUD_PROVIDER_WORD[p.provider]],
+        !!p.account && ['Account', <Mono cap={CAPS['Place.account']}>{p.account}</Mono>],
         ['Key reference', <Mono cap={CAPS['Place.key_ref']}>{p.keyRef}</Mono>, 'block'],
         ['Region', <T cap={CAPS['Place.region']}>{p.region}</T>],
         !!p.replicaRegion && ['Replica Region', <T cap={CAPS['Place.replica_region']}>{p.replicaRegion}</T>],

@@ -1,8 +1,8 @@
 // The joins of the inventory: what the three views and the panel need from the
 // lists of one GetInventory answer. Pure functions, no React, no window.
 //
-//  - By card: keys by the card they sit on, then the cloud keys, then the key
-//    files.
+//  - By card: keys by the card they sit on, then the cloud keys (one group for
+//    each provider and account), then the key files.
 //  - By root: for each root its keys, user IDs, delegations and, under a
 //    delegation, its requests.
 //  - By date: the certifications, soonest end first.
@@ -14,7 +14,7 @@
 // An object is named by "<slug>/<id>" (the slugs of lib/route.ts), the same
 // string the demo gives to BundleContents. That string is data. Before it goes
 // into an attribute it passes `domKey`.
-import { ObjectKind, Store, type ObjectRef } from '../gen/ritueel/local/v1alpha1/common_pb';
+import { CloudProvider, ObjectKind, Store, type ObjectRef } from '../gen/ritueel/local/v1alpha1/common_pb';
 import {
   CardKind,
   KeyKind,
@@ -121,13 +121,17 @@ const cardName = (c: Card) => `card/${c.name}`;
 
 export type CardLine = { kind: 'key'; key: Key } | { kind: 'none'; card: string };
 
-/** A group of the By card view: a card, the cloud keys, the key files, or a card that the inventory does not list. */
+/** A group of the By card view: a card, the cloud keys of one provider and account, the key files, or a card that the inventory does not list. */
 export interface CardGroup {
   id: string;
   kind: 'card' | 'cloud' | 'files' | 'unlisted';
   /** The card (kind `card`) or the name of an unlisted card (kind `unlisted`). */
   card?: Card;
   name?: string;
+  /** For kind `cloud`: what the group is named by, as the contract gives it. An unset provider or account is left out of the title, never guessed. */
+  provider?: CloudProvider;
+  store?: Store;
+  account?: string;
   keys: Key[];
   lines: CardLine[];
 }
@@ -139,7 +143,7 @@ function slotOrder(card: Card): Map<string, number> {
   return new Map(ids.map((id, i) => [id, i]));
 }
 
-/** Groups in this order: root cards, day-to-day cards, rehearsal cards, server cards (each by name), cloud keys, key files. */
+/** Groups in this order: root cards, day-to-day cards, rehearsal cards, server cards (each by name), cloud keys (each provider and account, in the order the answer first names them), key files. */
 export function cardGroups(ix: InvIndex): CardGroup[] {
   const { cards, keys } = ix.inv;
   const onCard = (k: Key, name: string) => (k.place?.store === Store.PIV || k.place?.store === Store.OPENPGP_CARD) && k.place.card === name;
@@ -168,8 +172,17 @@ export function cardGroups(ix: InvIndex): CardGroup[] {
     if ((p?.store === Store.PIV || p?.store === Store.OPENPGP_CARD) && !known.has(p.card)) strays.set(p.card, [...(strays.get(p.card) ?? []), k]);
   }
   for (const [name, mine] of strays) groups.push({ id: `unlisted/${name}`, kind: 'unlisted', name, keys: mine, lines: mine.map((key) => ({ kind: 'key' as const, key })) });
-  const cloud = keys.filter((k) => k.place?.store === Store.AWS_KMS);
-  if (cloud.length > 0) groups.push({ id: 'cloud', kind: 'cloud', keys: cloud, lines: cloud.map((key) => ({ kind: 'key' as const, key })) });
+  // The cloud keys: one group for each provider, store and account. The facts are the contract's own fields; none is read out of an ARN.
+  const clouds = new Map<string, { provider: CloudProvider; store: Store; account: string; keys: Key[] }>();
+  for (const k of keys) {
+    const p = k.place;
+    if (p?.store !== Store.AWS_KMS) continue;
+    const id = `cloud/${p.provider}/${p.store}/${p.account}`;
+    const group = clouds.get(id) ?? { provider: p.provider, store: p.store, account: p.account, keys: [] };
+    group.keys.push(k);
+    clouds.set(id, group);
+  }
+  for (const [id, g] of clouds) groups.push({ id, kind: 'cloud', provider: g.provider, store: g.store, account: g.account, keys: g.keys, lines: g.keys.map((key) => ({ kind: 'key' as const, key })) });
   const files = keys.filter((k) => k.place?.store === Store.SOFTWARE);
   if (files.length > 0) groups.push({ id: 'files', kind: 'files', keys: files, lines: files.map((key) => ({ kind: 'key' as const, key })) });
   return groups;

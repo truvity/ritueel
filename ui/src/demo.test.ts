@@ -29,7 +29,7 @@ import { CAPS } from './lib/caps';
 import { COMMAND_CAP, DEFAULT_CAP, FINGERPRINT_CAP } from './lib/safe';
 import { parseHash, type ObjectSlug, type Route } from './lib/route';
 import { DEMO_BUNDLES, getBundle, getScene, setBundle, setScene, setViewState, type DemoBundle } from './api/demoState';
-import { baseJson, loadWorld, type World } from './testkit';
+import { baseJson, loadWorld, WORLDS, type World } from './testkit';
 
 // The made-up world of the demo, checked from outside: the transport answers as the
 // contract says, the numbers of the summary agree with the lists, the example company
@@ -253,6 +253,38 @@ describe('the fixtures tell the made-up world, one bundle at a time', () => {
     const all = (['GetSummary', 'ListFindings', 'GetInventory', 'ListCeremonies', 'ListTrustFiles'] as const).map((c) => JSON.stringify(baseJson('acme', c))).join('\n');
     const accounts = new Set((JSON.stringify(all).match(/\b\d{12}\b/g) ?? []).filter((n) => !/^0000/.test(n)));
     for (const a of accounts) expect(['123456789012', '111122223333', '444455556666'], a).toContain(a);
+  });
+
+  // A cloud key's provider and account are fields of the contract, so the page never reads them out of the ARN.
+  // The fixture is where the two could disagree, so a test compares them: the account and the Region of a key
+  // are the ones inside its ARN and its replica's ARN, in every example bundle and every scene.
+  it('a cloud key names its provider and its account, and the account is the one inside its ARNs', () => {
+    const arn = /^arn:aws:kms:([a-z0-9-]+):(\d{12}):key\/[0-9a-z-]+$/;
+    let checked = 0;
+    for (const w of WORLDS()) {
+      for (const k of w.inventory.keys) {
+        const p = k.place;
+        if (p?.store !== Store.AWS_KMS) {
+          expect(p?.account ?? '', `${w.id} ${k.fingerprint}: only a cloud key has an account`).toBe('');
+          expect(p?.provider, `${w.id} ${k.fingerprint}: only a cloud key has a provider`).toBe(commonPb.CloudProvider.UNSPECIFIED);
+          continue;
+        }
+        checked += 1;
+        const at = `${w.id} ${k.label || k.delegation}`;
+        expect(p.provider, `${at}: provider`).toBe(commonPb.CloudProvider.AWS);
+        const primary = arn.exec(p.keyRef);
+        expect(primary, `${at}: key_ref is an ARN`).not.toBeNull();
+        expect(p.account, `${at}: the account is the one inside key_ref`).toBe(primary?.[2]);
+        expect(p.region, `${at}: the Region is the one inside key_ref`).toBe(primary?.[1]);
+        if (p.replicaRef) {
+          const replica = arn.exec(p.replicaRef);
+          expect(replica, `${at}: replica_ref is an ARN`).not.toBeNull();
+          expect(p.account, `${at}: the replica is in the same account`).toBe(replica?.[2]);
+          expect(p.replicaRegion, `${at}: the replica Region is the one inside replica_ref`).toBe(replica?.[1]);
+        }
+      }
+    }
+    expect(checked).toBeGreaterThan(8);
   });
 
   it('a root key is never lost: no enum of the contract has a value named LOST', () => {
