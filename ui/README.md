@@ -192,7 +192,7 @@ no library (they drive headless Chrome over the DevTools protocol).
 | No call takes or returns a secret, no call writes, and the page has no text field and no control named like an act | the contract has no field for a secret and no write (`src/contract.test.ts`); the page has choices only; `src/acts.test.tsx`; e2e checks there is no text input on any entry and no control named like an act |
 | The page reads when a screen opens and when the window gets the focus, with no timer, and every screen shows the time of its read | `src/reads.test.tsx`; e2e (the focus read) |
 | No command holds a digest or `--confirm` | `src/demo.test.ts` (the commands are read from the fixtures, the scenes and the source) |
-| Width and height: a list and a panel side by side on a wide screen and no line of text longer than 70 characters; the aim is one screen for To do and at most one and a half for the others | the browser test (layout, measured at 1440 by 900 and 1920 by 970; it prints the numbers) |
+| Width and height: a list and a panel side by side on a wide screen and no line of text longer than 70 characters; the aim is one screen for To do and at most one and a half for the others | the browser test (layout, measured at 1440 by 900 and 1920 by 970; it prints the numbers and reports a height above its aim; the aims do not change) |
 
 The rules are a test and not an ESLint rule on purpose: ESLint's TypeScript parser
 does not run on TypeScript 7 yet, and a second TypeScript only for linting was not
