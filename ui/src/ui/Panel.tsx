@@ -4,7 +4,8 @@ import { KeyRole, type Card, type Certification, type Change, type Delegation, t
 import type { Timestamp } from '@bufbuild/protobuf/wkt';
 import { isDemo } from '../api/client';
 import { CAPS } from '../lib/caps';
-import { daysBetween, plural, ymd } from '../lib/format';
+import { daysBetween, plural } from '../lib/format';
+import { Day } from './ReadTime';
 import {
   changesOn,
   domKey,
@@ -115,7 +116,7 @@ function DayAndCount({ ix, ts }: { ix: InvIndex; ts: Timestamp | undefined }) {
   const rel = n === undefined ? '' : n === 0 ? 'today' : n < 0 ? `ended ${plural(-n, 'day')} ago` : `in ${plural(n, 'day')}`;
   return (
     <>
-      {ymd(ts)}
+      <Day ts={ts} />
       {rel ? `, ${rel}` : ''}
     </>
   );
@@ -154,7 +155,7 @@ function CardFacts({ c }: { c: Card }) {
         ['Firmware', <T cap={CAPS['Card.firmware']}>{c.firmware}</T>],
         !!c.holder && ['Holder', <T cap={CAPS['Card.holder']}>{c.holder}</T>],
         !!c.kept && ['Kept', <T cap={CAPS['Card.kept']}>{c.kept}</T>],
-        !!c.lastCheckedAt && ['Last checked', ymd(c.lastCheckedAt)],
+        !!c.lastCheckedAt && ['Last checked', <Day ts={c.lastCheckedAt} />],
         ['One-time codes', c.oneTimeCodesOff ? 'off' : 'on'],
         c.changesSinceLastReading.length > 0 && [
           'Changed since the last reading',
@@ -187,7 +188,7 @@ function RootFacts({ ix, r }: { ix: InvIndex; r: Root }) {
         ],
         r.test && ['Test root', 'yes'],
         r.adopted && ['Adopted', 'yes'],
-        !!r.createdAt && ['Made', ymd(r.createdAt)],
+        !!r.createdAt && ['Made', <Day ts={r.createdAt} />],
         !!r.note && ['Note', <T cap={CAPS['Root.note']}>{r.note}</T>],
       ]}
     />
@@ -240,9 +241,9 @@ function KeyFacts({ ix, k }: { ix: InvIndex; k: Key }) {
         ['State', KEY_STATE_WORD[k.state]],
         !!k.algorithm && ['Algorithm', <T cap={CAPS['Key.algorithm']}>{k.algorithm}</T>],
         ...PlaceFacts({ k }),
-        !!k.createdAt && ['Made', ymd(k.createdAt)],
+        !!k.createdAt && ['Made', <Day ts={k.createdAt} />],
         ['Ends', k.expiresAt ? <DayAndCount ix={ix} ts={k.expiresAt} /> : keyEndWord(k)],
-        !!k.retireAt && ['Retire on', ymd(k.retireAt)],
+        !!k.retireAt && ['Retire on', <Day ts={k.retireAt} />],
         !!k.delegation && [
           'Delegation',
           ix.delegations.has(k.delegation) ? (
@@ -337,7 +338,7 @@ function CertificationFacts({ ix, c }: { ix: InvIndex; c: Certification }) {
             <T cap={CAPS['ObjectRef.label']}>{c.subject.label}</T>
           ),
         ],
-        ['From', ymd(c.validFrom)],
+        ['From', <Day ts={c.validFrom} />],
         ['Until', <DayAndCount ix={ix} ts={c.validUntil} />],
         !!c.ceremonyId && ['Ceremony', <Link to={href.history(c.ceremonyId)}><T cap={CAPS['CeremonyRef.id']}>{c.ceremonyId}</T></Link>],
       ]}
@@ -364,7 +365,7 @@ function RequestFacts({ ix, r }: { ix: InvIndex; r: Request }) {
         !!r.key && ['Key of the requester', <Fp value={r.key} />, 'block'],
         ['Answer', REQUEST_OUTCOME_WORD[r.outcome]],
         !!r.code && ['Reason code', <T cap={CAPS['Request.code']}>{r.code}</T>],
-        !!r.answeredAt && ['Answered on', ymd(r.answeredAt)],
+        !!r.answeredAt && ['Answered on', <Day ts={r.answeredAt} />],
         !!r.ceremonyId && ['Ceremony', <Link to={href.history(r.ceremonyId)}><T cap={CAPS['CeremonyRef.id']}>{r.ceremonyId}</T></Link>],
         !!r.answerPath && ['Answer in', <PathCopy path={r.answerPath} cap={CAPS['Request.answer_path']} />],
       ]}
@@ -405,7 +406,7 @@ function CeremoniesSection({ touchedBy }: { touchedBy: CeremonyRef[] }) {
         {newest.slice(0, TOUCHED_SHOWN).map((c) => (
           <li key={c.id}>
             <Link to={href.history(c.id)}>
-              {ymd(c.at)} {CEREMONY_COMMAND_WORD[c.command] ?? ''}
+              <Day ts={c.at} /> {CEREMONY_COMMAND_WORD[c.command] ?? ''}
             </Link>
           </li>
         ))}

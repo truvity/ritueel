@@ -3,7 +3,7 @@ import { TrustCheckResult, type ListTrustFilesResponse, type TrustFile } from '.
 import { isDemo } from '../api/client';
 import { useTrustFiles } from '../api/hooks';
 import { CAPS } from '../lib/caps';
-import { daysBetween, inDays, ymd } from '../lib/format';
+import { daysBetween, inDays } from '../lib/format';
 import { href } from '../lib/route';
 import { safeString } from '../lib/safe';
 import { TRUST_CHECK_WORD, TRUST_KIND_WORD } from '../lib/words';
@@ -11,7 +11,7 @@ import { Cmd } from '../ui/Cmd';
 import { DataTable, type Column } from '../ui/DataTable';
 import { Glyph, type SevKey } from '../ui/Glyph';
 import { Page } from '../ui/Page';
-import { ReadTime } from '../ui/ReadTime';
+import { Day, ReadTime } from '../ui/ReadTime';
 import { Empty, Load } from '../ui/Sec';
 import { T } from '../ui/T';
 
@@ -64,7 +64,7 @@ function makeColumns(d: ListTrustFilesResponse): Column<TrustFile>[] {
       render: (f) =>
         f.validUntil ? (
           <>
-            {ymd(f.validUntil)}
+            <Day ts={f.validUntil} />
             <span className="block text-dim">{inDays(daysBetween(d.readAt, f.validUntil))}</span>
           </>
         ) : (
@@ -121,7 +121,7 @@ function Facts({ d }: { d: ListTrustFilesResponse }) {
         <Fact label="Name">
           <T cap={CAPS['ListTrustFilesResponse.set_name']}>{d.setName}</T>
         </Fact>
-        <Fact label="Written">{ymd(d.writtenAt)}</Fact>
+        <Fact label="Written"><Day ts={d.writtenAt} /></Fact>
         {d.ceremonyId ? (
           <Fact label="By ceremony">
             <a className="font-semibold text-accent underline underline-offset-4" href={href.history(d.ceremonyId)}>
@@ -151,7 +151,7 @@ export function Trust() {
           <>
             {d.trustSequence > 0 ? (
               <>
-                Set <T cap={CAPS['ListTrustFilesResponse.set_name']}>{d.setName}</T> {'·'} written {ymd(d.writtenAt)} {'·'}{' '}
+                Set <T cap={CAPS['ListTrustFilesResponse.set_name']}>{d.setName}</T> {'·'} written <Day ts={d.writtenAt} /> {'·'}{' '}
               </>
             ) : null}
             <ReadTime ts={d.readAt} />

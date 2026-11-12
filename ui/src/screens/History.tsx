@@ -72,7 +72,7 @@ function CeremonyRowLink({ c, current }: { c: Ceremony; current: boolean }) {
       aria-current={current ? 'true' : undefined}
       aria-label={name}
       aria-description={safeString(c.id, CAPS['Ceremony.id'])}
-      className="font-semibold text-accent underline underline-offset-4"
+      className="whitespace-nowrap font-semibold text-accent underline underline-offset-4"
     >
       {dateOf(c)}
     </a>

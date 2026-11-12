@@ -17,7 +17,7 @@ import {
 import { isDemo } from '../api/client';
 import { combine, useFindings, useInventory, useSummary, type Loaded } from '../api/hooks';
 import { CAPS } from '../lib/caps';
-import { daysBetween, inDays, plural, ymd } from '../lib/format';
+import { daysBetween, inDays, plural } from '../lib/format';
 import { href, hrefForChange } from '../lib/route';
 import { CHAIN_STATE_WORD, CHANGE_STATE_WORD, NEED_KIND_WORD, OBJECT_KIND_WORD } from '../lib/words';
 import { Cmd } from '../ui/Cmd';
@@ -25,7 +25,7 @@ import { DataTable, RowLink } from '../ui/DataTable';
 import { FindingCard } from '../ui/FindingCard';
 import { DemoLede } from '../ui/FirstVisit';
 import { Page } from '../ui/Page';
-import { ReadTime } from '../ui/ReadTime';
+import { Day, ReadTime } from '../ui/ReadTime';
 import { Empty, Load, Sec } from '../ui/Sec';
 import { T } from '../ui/T';
 
@@ -152,7 +152,7 @@ function NeedLine({ n }: { n: Need }) {
 function SourceLine({ c, inv }: { c: Change; inv: GetInventoryResponse }) {
   switch (c.source) {
     case ChangeSource.DATE:
-      return <>Ends {ymd(c.dueAt)}, {inDays(daysBetween(inv.readAt, c.dueAt))}</>;
+      return <>Ends <Day ts={c.dueAt} />, {inDays(daysBetween(inv.readAt, c.dueAt))}</>;
     case ChangeSource.WANTED_FILE:
       return c.wantedPath ? (
         <>
@@ -326,8 +326,8 @@ function NothingWaits({ s }: { s: GetSummaryResponse }) {
     return (
       <Empty title="Nothing waits.">
         <p>
-          The next end is <T cap={CAPS['ObjectRef.label']}>{next.object?.label}</T>, on {ymd(next.endsAt)}, {inDays(daysBetween(s.readAt, next.endsAt))}. It is due from{' '}
-          {ymd(next.dueFrom)}.
+          The next end is <T cap={CAPS['ObjectRef.label']}>{next.object?.label}</T>, on <Day ts={next.endsAt} />, {inDays(daysBetween(s.readAt, next.endsAt))}. It is due from{' '}
+          <Day ts={next.dueFrom} />.
         </p>
       </Empty>
     );
@@ -396,7 +396,7 @@ function BundleBlock({ s, row = false }: { s: GetSummaryResponse; row?: boolean 
             <dt className={term}>Last ceremony</dt>
             <dd className="m-0">
               <a className={link} href={href.history(last)}>
-                {ymd(s.history?.lastRecordAt)}
+                <Day ts={s.history?.lastRecordAt} />
               </a>
             </dd>
           </div>

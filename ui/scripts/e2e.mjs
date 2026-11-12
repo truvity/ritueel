@@ -559,7 +559,8 @@ const WORLDS = [
 ];
 /** In the page: the longest line of text, by block and by top of the characters. */
 const LONGEST_LINE = `(() => {
-  const worst = { chars: 0, text: '' };
+  // outside: the characters seen outside <main> (the demo bar, the side bar, the footer), so a test can show that they are read.
+  const worst = { chars: 0, text: '', outside: 0 };
   const root = document.body;
   const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
   const blockOf = (n) => { let e = n.parentElement; while (e && getComputedStyle(e).display.startsWith('inline')) e = e.parentElement; return e; };
@@ -578,6 +579,7 @@ const LONGEST_LINE = `(() => {
       if (!r || r.width === 0) continue;
       const key = Math.round(r.top / 4) + ':' + Math.round(r.left / 600);
       const line = ids.get(key) ?? { chars: 0, text: '' };
+      if (!n.parentElement.closest('main')) worst.outside += 1;
       line.chars += 1;
       line.text += s[i];
       ids.set(key, line);
@@ -610,6 +612,7 @@ for (const [w, h] of [[1440, 900], [1920, 970]]) {
       check(`L: the note that a command is an example stands at most once (${where})`, noted.length <= 1, String(noted.length));
       const line = JSON.parse(await evalJs(LONGEST_LINE));
       check(`L: no line of text is longer than 70 characters (${where})`, line.chars <= 70, `${line.chars}: ${line.text}`);
+      check(`L: the line check reads the demo bar, the side bar and the footer too (${where})`, line.outside > 100, `${line.outside} characters outside main`);
       // The right column reaches the right edge of the window; the list is wide.
       if (route === '#/trust') {
         // Trust set has one table at the full width, and its facts in a strip above it.
