@@ -189,15 +189,15 @@ export function Shell({ route, children }: { route: Route; children: ReactNode }
                 {data ? (
                   <dl className="grid grid-cols-[auto_1fr] gap-x-2 gap-y-0.5">
                     <dt>Bundle</dt>
-                    <dd className="font-mono text-ink">
+                    <dd className="min-w-0 font-mono text-ink [overflow-wrap:anywhere]">
                       <T cap={CAPS['Bundle.name']}>{data.bundle?.name}</T>
                       <span className="block text-dim">
                         <T cap={CAPS['Bundle.path#shell']}>{data.bundle?.path}</T>
                       </span>
                     </dd>
                     <dt>Read</dt>
-                    <dd className="font-mono text-ink">
-                      <ReadTime ts={data.readAt} />
+                    <dd className="min-w-0 font-mono text-ink">
+                      <ReadTime ts={data.readAt} label={false} />
                     </dd>
                     <dt>Build</dt>
                     <dd className="font-mono text-ink">

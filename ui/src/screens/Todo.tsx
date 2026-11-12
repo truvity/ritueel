@@ -475,13 +475,16 @@ function FindingsTab({ summary, onRead }: { summary: Loaded<GetSummaryResponse>;
               list={
                 <>
                   <p className="mb-3 font-semibold">{plural(worstFirst.length, 'finding')}, worst first</p>
-                  <ol className="m-0 list-none space-y-3 p-0">
+                  <ol className="m-0 grid list-none gap-3 p-0 min-[1800px]:grid-cols-2 min-[1800px]:items-start">
                     {worstFirst.map((x) => (
-                      <li key={x.id}>
-                        <FindingCard f={x} />
+                      <li key={x.id} className="min-w-0">
+                        <FindingCard f={x} commandNote={false} />
                       </li>
                     ))}
                   </ol>
+                  {isDemo && worstFirst.some((x) => x.fixCommand) ? (
+                    <p className="mt-2 max-w-[70ch] text-sm text-dim">Example only. The ritueel command line is not built yet.</p>
+                  ) : null}
                 </>
               }
               bundle={bundle}
