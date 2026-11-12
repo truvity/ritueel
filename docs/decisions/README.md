@@ -52,7 +52,7 @@ Every record has these parts, in this order:
 | [0008](0008-a-persons-own-key.md) | A person uses OpenPGP as their own key, an adopted primary first and card-born primaries later | Accepted |
 | [0009](0009-release-keys-and-the-keyring.md) | Release keys are the root primaries; the keyring is a file that ritueel makes and a pipeline packages | Accepted |
 | [0010](0010-the-engine-the-process-and-the-page.md) | One engine with three faces, one process on one fixed port, and a page that cannot confirm anything | Accepted |
-| [0011](0011-publishing-and-what-to-do-after-a-ceremony.md) | ritueel changes only your bundle; it sends out one public key and prints what to do after a ceremony | Proposed |
+| [0011](0011-publishing-and-what-to-do-after-a-ceremony.md) | ritueel changes only your bundle, sends out only a public OpenPGP key, and prints what to do after a ceremony | Accepted |
 
 ## The first eighteen records
 

@@ -1,7 +1,7 @@
 # 0011 — ritueel changes only your bundle, sends out only a public OpenPGP key, and prints what to do after a ceremony
 
-**Status:** Proposed
-**Date:** 2026-11-11
+**Status:** Accepted
+**Date:** 2026-11-12
 
 ## Decision
 
@@ -27,7 +27,7 @@ Only keyservers take a public key from anyone without an account, so publishing 
 - What is published and copied by servers cannot be withdrawn.
 - ritueel does not do the host's, the machine's or the site's part: the holder or their pipeline follows the printed list.
 - Records 0001, 0006, 0008, 0009 and 0010 mention the new rule, and pages that said "publishes nothing" follow.
-- The set would be eleven records, not ten: a new subject, not a split (PLA-17). The maintainer has not yet said he wants an eleventh record, so this record stays Proposed; its rules are his answers of 2026-11-11.
+- The set is eleven records, not ten: a new subject, not a split. Its rules are the maintainer's answers of 2026-11-11.
 
 ## Roads not taken
 
@@ -51,7 +51,7 @@ Only keyservers take a public key from anyone without an account, so publishing 
 ## Not yet proven or only proposed
 
 - **Proposed.** What the send step shows and refuses: a preview of every user ID (those without an address are marked: keys.openpgp.org drops them), the subkeys, the fingerprint and each server, with the line that what is published cannot be withdrawn; a typed confirmation of the first 8 characters of the primary's fingerprint and the server's name; the key rebuilt from the verified record in the bundle with third-party signatures stripped; after the send a read-back that compares what the server serves with the bundle; a refusal of a test root and while a ceremony runs; no token read; "nothing to send" when the server holds the same key; no consent file ([#18](https://github.com/truvity/ritueel/issues/18)).
-- **Proposed.** The list is a short keyservers block in ritueel.yaml, the one file a person writes; init ships no default that sends; keys.openpgp.org and keyserver.ubuntu.com are commented examples ([#18](https://github.com/truvity/ritueel/issues/18)).
+- **Proposed.** The list is a short keyservers block in ritueel.yaml, a wanted file (a person writes only wanted files: 0006 rule 11); `new` ships no default that sends; keys.openpgp.org and keyserver.ubuntu.com are commented examples ([#18](https://github.com/truvity/ritueel/issues/18)).
 - **Proposed.** A revocation also goes to a second kind of server (HKP), because one kind alone does not reach every user; this reads the stated default "into the keyring file" as: a hard revocation is published beside the keyring file (record 0009, rule 17) and only a soft one stays inside it (rule 18), and the signature is not stored in the bundle or printed; its typed confirmation is stricter, 16 characters; the file is the one the holder keeps apart ([#18](https://github.com/truvity/ritueel/issues/18)).
 - **Proposed.** Two kinds of server (the keys.openpgp.org interface and HKP); the state of each server and address is not-sent, sent-unconfirmed, confirmed or failed; two roots of a company with one release address: keys.openpgp.org keeps one key per address, so ritueel warns, sends the newer root there and both to the other servers ([#18](https://github.com/truvity/ritueel/issues/18)).
 - **Proposed.** The printed list of next steps says for each step what changed, who needs it and how; its name (NEXT STEPS) is proposed; a JSON Web Key Set belongs to the system that signs tokens and ritueel makes no JWK document ([#30](https://github.com/truvity/ritueel/issues/30)).
@@ -60,8 +60,8 @@ Only keyservers take a public key from anyone without an account, so publishing 
 - **Proposed.** "Is the world up to date?" means reading a public copy and comparing it with the bundle: the keyserver read-back, the chain a live service presents, and which intermediate and root it shows (whether Go exposes the full presented chain is not researched), and a root list fetched from a web address; ritueel never claims more than "this source served this copy at this time" and never says "safe": every result prints the time, the source and the facts and says it is not proof; ritueel does not ask servers about their bundles, hosts check themselves with the signed numbered root list ([#14](https://github.com/truvity/ritueel/issues/14)).
 - **Proposed.** The guide "After a ceremony" (unpublished) with three snippets: a trust-manager Bundle with the roots inline, the sshd lines for the SSH CA key list, and that cluster certificates come from the issuing system; ([#30](https://github.com/truvity/ritueel/issues/30)).
 - **Proposed.** Whether keys.openpgp.org accepts a certify-only primary with its subkeys, and whether later updates need no new click in the mail, is not known; one upload of a throwaway key by hand answers it before the first real upload ([#18](https://github.com/truvity/ritueel/issues/18)).
-- **Proposed.** Every name here is proposed, not decided: `ritueel publish`, `publish --revocation FILE`, the keyservers block, the list called NEXT STEPS, `ritueel check tls HOST:PORT`, the user ID commands (record 0008) and `ritueel run --latest` (record 0005) ([#18](https://github.com/truvity/ritueel/issues/18)).
-- **Proposed.** Build order: M2 no code (this record, the guide, the page security additions, a fix of answers/ against requests/STEM); M3 the list of next steps after run, publish, the user ID change and the latest-plan option; M4 the check of a live service and the trust-store text. Not built and not planned: outputs for SPIRE, Linkerd and kubeadm, a feed for the Debian and Arch keyrings, DNS changes ([#30](https://github.com/truvity/ritueel/issues/30)).
+- **Proposed.** The command words `publish` and `check` are two of the thirteen of the command reference. These names are proposed, not decided: the flag in `publish --revocation FILE`, the keyservers block, the list called NEXT STEPS and the form `ritueel check tls HOST:PORT` ([#18](https://github.com/truvity/ritueel/issues/18)).
+- **Proposed.** Build order: M2 no code (this record, the guide, the page security additions, a fix of answers/ against requests/STEM); M3 the list of next steps after apply, publish, the user ID change and the latest-plan option; M4 the check of a live service and the trust-store text. Not built and not planned: outputs for SPIRE, Linkerd and kubeadm, a feed for the Debian and Arch keyrings, DNS changes ([#30](https://github.com/truvity/ritueel/issues/30)).
 
 ## Replaces
 
