@@ -17,7 +17,7 @@ A system that updates its own trust, such as a system that holds intermediates, 
 | `root-list.jws` | Its signatures: a detached JSON Web Signature over the bytes of `root-list.json`, with one signature for each root that signs it. |
 | `ca-bundle.pem` | The certificates of the roots on the list, in its order, with the trust sequence in the first line. |
 
-ritueel writes the three files together, under `trust/<number>/` in [the bundle](/reference/bundle/#the-layout). Publishing them is the operator's pipeline; the names a host fetches them under are the operator's choice.
+ritueel writes the three files together, in a numbered trust set of [the bundle](/reference/bundle/#the-layout). Publishing them is the operator's pipeline; the names a host fetches them under are the operator's choice.
 
 ## Versioning
 
@@ -37,16 +37,18 @@ ritueel writes the three files together, under `trust/<number>/` in [the bundle]
 | `signed_at` | yes | When the list was signed: the time of the ceremony. |
 | `expires_at` | yes | 13 calendar months after `signed_at`: the same day and time of the month, or the last day of the month if it has none, as for an intermediate. |
 | `roots` | yes | The active roots, one or more, in a fixed order: the order in which a hand-off request lists `primaries`. Each is an object below. |
-| `last_record_sha256` | yes, except in the list `init` makes | The SHA-256 of the newest [ceremony record](/reference/ceremony-record/) in the bundle when the ceremony's plan was made. It anchors the hash chain of the records up to the ceremony before this one; the record of this ceremony is anchored by the next list. The list that `init` makes has no record before it, and leaves the member out. |
+| `last_record_sha256` | yes, except in the first list | The SHA-256 of the end of the history when the ceremony's plan was made: the newest [ceremony record](/reference/ceremony-record/) in the bundle. It anchors the hash chain of the ceremony records up to the ceremony before this one; the ceremony record of this ceremony is anchored by the next list. The first list, made by the first `apply`, has no ceremony record before it, and leaves the member out. |
 | `removals` | only in a list that removes a root that does not sign it | One entry for each such root, in label order: `label`, `x509_spki_sha256` and `authorisation`, the root's [removal authorisation](/reference/root-list/#the-removal-authorisation) as a string. Absent when there is none. |
 
 Each member of `roots`:
 
 | Member | Required | Meaning |
 |---|---|---|
-| `label` | yes | The root's label, as in its certificate's subject: one upper-case letter. `init` names its roots `A` and `B`, and `root add` takes the next free letter (`C`, `D`, and so on) whatever the key store. A label names a root, never its store, and is never reused. It is the root's label inside its bundle (`acme/A` across bundles); the list carries no bundle name. |
+| `label` | yes | The label of the key, as in its certificate's subject: one upper-case letter. The keys of a root are labelled `A` and `B`, then the next letter ([record 0006](../decisions/0006-bundle-history-and-trust-files.md), rule 2), whatever the key store. A label names a key, never its store, and is never reused. It is the key's label inside its bundle (`acme/A` across bundles); the list carries no bundle name. |
 | `x509_spki_sha256` | yes | The SHA-256 of the DER `SubjectPublicKeyInfo` of the root's X.509 key: the pin. It is the `issuer` member of a hand-off answer for X.509. |
 | `openpgp_fingerprint` | yes | The fingerprint of the root's OpenPGP primary, 40 hexadecimal digits (version 4). It is a member of `primaries` in a hand-off request. |
+
+**What an entry means.** An entry of `roots` is one key label with its pins. It is not a root in the sense of [record 0001](../decisions/0001-what-ritueel-is.md), rule 28: there a root is one thing of one kind, built from keys, and a bundle has one root of each kind it uses ([record 0006](../decisions/0006-bundle-history-and-trust-files.md), rule 2). Each entry pins the key of the X.509 root and the primary of the OpenPGP root that carry the same label, for example the two keys of one row of a card ([record 0003](../decisions/0003-root-cards.md), rule 3). The SSH CA keys are in [the SSH CA key list](/reference/ssh-ca-key-list/). A host installs each `x509_spki_sha256` as a trust anchor, so a host installs one anchor for each key. The member keeps the name `roots`, `label` keeps its name, and no test vector changes ([record 0006](../decisions/0006-bundle-history-and-trust-files.md), rule 15). On this page, "root" means one root key wherever it stands for a key: in a member name, in a column, in a table row and in the prose, for example "the signers".
 
 The list pins keys, never certificates: a root certificate re-issued over the same key keeps its pin ([record 0006](../decisions/0006-bundle-history-and-trust-files.md)). A list never mixes test roots and real roots.
 
@@ -91,7 +93,7 @@ It is a JWS in **compact serialisation with the payload attached**: `<header>.<p
 
 A ceremony that changes any trust file writes a new list with the next sequence, signed in the same ceremony. The yearly ceremony and every transition always do, so the list is re-signed at least once a year ([record 0006](../decisions/0006-bundle-history-and-trust-files.md)); so does any other ceremony that signs with a root, because each use re-issues that root's certificate and so changes the CA bundle ([record 0007](../decisions/0007-changing-and-losing-a-root.md), rule 13). The list's bytes are fixed in the ceremony's plan, so each signature is one of the plan's signatures and its touch is counted. `status` warns 60, 30 and 14 days before the newest list expires ([commands](/reference/cli/#exit-codes)).
 
-**Adding, retiring and revoking a root** are the ceremonies that change the root set ([root transitions](/reference/transitions/#the-commands)). A revoked or lost root is left out of the new list, with its removal authorisation attached when it cannot sign, and with a CA bundle and a keyring without it beside it, and its break-glass SSH CA key off the SSH CA key list. The root stops publishing its [CRL](/reference/crl/).
+**Adding, retiring and revoking a root** are the ceremonies that change the root set ([root transitions](/reference/transitions/#the-commands)). A revoked root key, or a key that can no longer sign, is left out of the new list, with its removal authorisation attached when it cannot sign, and with a CA bundle and a keyring without it beside it, and its break-glass SSH CA key off the SSH CA key list. The root stops publishing its [CRL](/reference/crl/).
 
 ## How a host reads it
 
@@ -143,7 +145,7 @@ The vectors are in [`testdata/root-list/v1/`](https://github.com/truvity/ritueel
 
 | Group | Cases |
 |---|---|
-| Accepted | A first list against the initial pins, and the list `init` makes; an update with the same roots, signed by one root; an update signed by the other root; a list without A, signed by B and carrying A's removal authorisation, which revokes A; a list without A signed by A and B, which retires A; a list that adds C, signed by A, B and C; the same list again. |
+| Accepted | A first list against the initial pins, the kind the first `apply` makes; an update with the same roots, signed by one root; an update signed by the other root; a list without A, signed by B and carrying A's removal authorisation, which revokes A; a list without A signed by A and B, which retires A; a list that adds C, signed by A, B and C; the same list again. |
 | Refused | A lower sequence (`rollback`); another list at the same sequence (`sequence-conflict`); a list signed by the revoked root A after it left the list, one signed by Z, and one with a second signature by Z (`unknown-signer`); a change of the root set with one signature, a list without A that B signs with no authorisation for A, a list that adds C without C's signature, and one that adds C without B's (`insufficient-signers`); a list whose entry for A carries B's authorisation (`removal-invalid`); a list changed after signing (`signature-invalid`); an expired list (`expired`); version 2 (`version-unsupported`); an unknown member (`malformed`). |
 | Warned | The held list expired and no newer one came. |
 | CA bundles | Sequence 7 with A and B; sequence 8 with B only. |
@@ -155,7 +157,7 @@ CI checks that the manifest names every file of the set, that the pins match the
 | Choice | Chosen | Other options | Why |
 |---|---|---|---|
 | Signature | A detached JWS, ES384, by the roots' X.509 keys. | CMS (RFC 5652); an OpenPGP signature by the primary; minisign or an SSH signature. | The readers already parse JSON and JOSE, every language has a JWS library, and a card or a KMS key makes the raw `r` and `s` that ES384 carries. CMS needs an ASN.1 stack for a JSON file; an OpenPGP signature would need the primary, a second touch, for a list whose audience is the X.509 key's. |
-| Who signs a change of the root set | Every current root, or its stored removal authorisation; and every added root. | Any one active root, as for a list with the same roots; every current root, with no stored authorisation; a separate key for changes of the set. | The roots decide together who is trusted, while a renewal stays a one-root ceremony. Without the stored authorisation a lost root could never leave the set by a signature, and every host would need its pins replaced by hand. A separate key costs a slot and a touch for the same audience. ([record 0006](../decisions/0006-bundle-history-and-trust-files.md)) |
+| Who signs a change of the root set | Every current root, or its stored removal authorisation; and every added root. | Any one active root, as for a list with the same roots; every current root, with no stored authorisation; a separate key for changes of the set. | The roots decide together who is trusted, while a renewal stays a one-root ceremony. Without the stored authorisation a key that can no longer sign could never leave the set by a signature, and every host would need its pins replaced by hand. A separate key costs a slot and a touch for the same audience. ([record 0006](../decisions/0006-bundle-history-and-trust-files.md)) |
 | Serialisation | The general JSON serialisation, one signature for each signer, also when there is one. | Compact for one signer and JSON for several; one compact JWS file for each signer. | One format for every list, which a JWS library reads as it is. Two formats would be two code paths, and loose signature files could be separated from their list. |
 | The removal authorisation | A compact JWS over the root's own pin, made at its birth, attached to the list that removes it. | A signature over a future list; a revocation of the root's certificate. | A future list's bytes cannot be known at birth. A certificate revocation would need a CRL that hosts of the root list do not read. |
 | Where the verifier finds the key | The signing root's certificate in `x5c`; the host trusts only its key, and only when its hash is a pin. | Only `kid`, with the key taken from the CA bundle; a `jwk` header. | The list verifies alone, and comparing the SHA-256 of a DER key with a pin is the same operation as for the hand-off's `issuer`. A `jwk` would need a conversion to compute the same hash. |
