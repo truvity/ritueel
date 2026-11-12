@@ -1,6 +1,6 @@
 ---
 title: Root transitions, version 1
-description: The states of a root key, adding, retiring and revoking a root key with their checks, the cross-certificate and the OpenPGP vouch, and what each state does to the trust files.
+description: The states of a root key, adding, retiring and revoking one with their checks, the cross-certificate and the OpenPGP vouch, and the effect on trust files.
 sidebar:
   order: 11
 ---
