@@ -612,6 +612,9 @@ for (const [w, h] of [[1440, 900], [1920, 970]]) {
       check(`L: the note that a command is an example stands at most once (${where})`, noted.length <= 1, String(noted.length));
       const line = JSON.parse(await evalJs(LONGEST_LINE));
       check(`L: no line of text is longer than 70 characters (${where})`, line.chars <= 70, `${line.chars}: ${line.text}`);
+      // A time or a day does not wrap, so it must fit in its column: none reaches past the side bar or the window.
+      const clipped = await evalJs(`(() => { const a = document.querySelector('aside'); const ar = a && a.getBoundingClientRect(); return JSON.stringify([...document.querySelectorAll('time')].filter((t) => { const r = t.getBoundingClientRect(); if (r.width === 0) return false; return r.right > innerWidth + 0.5 || (a && a.contains(t) && r.right > ar.right - 3); }).map((t) => t.textContent)); })()`).then(JSON.parse);
+      check(`L: no time or day reaches past its column or the window (${where})`, clipped.length === 0, clipped.join(' | '));
       check(`L: the line check reads the demo bar, the side bar and the footer too (${where})`, line.outside > 100, `${line.outside} characters outside main`);
       // The right column reaches the right edge of the window; the list is wide.
       if (route === '#/trust') {
