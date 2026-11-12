@@ -18,7 +18,8 @@ import passkeyOpensKeyFile from './passkey-opens-key-file.mjs';
 import twoBundlesOnePair from './two-bundles-one-pair.mjs';
 import wholeChain from './whole-chain.mjs';
 import threeStores from './three-stores.mjs';
+import everyday from './everyday.mjs';
 
-const list = [signIntermediate, rootCard, dayToDayCard, serverCard, ceremony, bindSubkeys, threeLayers, bundleFolder, usbStick, insideAYubikey, onePivSlot, pivSignature, twoKindsOfPasskey, signIn, passkeyOpensKeyFile, twoBundlesOnePair, wholeChain, threeStores];
+const list = [signIntermediate, rootCard, dayToDayCard, serverCard, ceremony, bindSubkeys, threeLayers, bundleFolder, usbStick, insideAYubikey, onePivSlot, pivSignature, twoKindsOfPasskey, signIn, passkeyOpensKeyFile, twoBundlesOnePair, wholeChain, threeStores, everyday];
 
 export const figures = Object.fromEntries(list.map((fig) => [fig.id, fig]));
