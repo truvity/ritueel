@@ -12,7 +12,7 @@ import { CEREMONY_COMMAND_WORD, CEREMONY_STATE_WORD } from '../lib/words';
 import { CeremonyPanel, StepsBelow } from '../ui/CeremonyPanel';
 import { DataTable, type Column } from '../ui/DataTable';
 import { Glyph, type SevKey } from '../ui/Glyph';
-import { Page } from '../ui/Page';
+import { Page, Parts } from '../ui/Page';
 import { PanelFrame, PanelSection } from '../ui/PanelFrame';
 import { GoToPanel } from '../ui/Panel';
 import { ReadTime } from '../ui/ReadTime';
@@ -149,19 +149,19 @@ export function History({ id }: { id?: string }) {
       title="History"
       line={
         ready ? (
-          <>
-            <T cap={CAPS['Bundle.name']}>{ready[1].bundle?.name}</T> {'·'} {plural(h?.recordCount ?? 0, 'record')}
+          <Parts>
+            <T cap={CAPS['Bundle.name']}>{ready[1].bundle?.name}</T>
+            <span className="whitespace-nowrap">{plural(h?.recordCount ?? 0, 'record')}</span>
             {h && h.recordCount > 0 && h.endRecordSha256 ? (
-              <>
-                {' '}
-                {'·'} End of the history{' '}
+              <span className="whitespace-nowrap">
+                End of the history{' '}
                 <span className="font-mono">
                   <T cap={8}>{h.endRecordSha256.slice(0, 8)}</T>
                 </span>
-              </>
-            ) : null}{' '}
-            {'·'} <ReadTime ts={ready[0].readAt} />
-          </>
+              </span>
+            ) : null}
+            <ReadTime ts={ready[0].readAt} />
+          </Parts>
         ) : undefined
       }
     >

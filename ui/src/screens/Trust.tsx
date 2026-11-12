@@ -10,7 +10,7 @@ import { TRUST_CHECK_WORD, TRUST_KIND_WORD } from '../lib/words';
 import { Cmd } from '../ui/Cmd';
 import { DataTable, type Column } from '../ui/DataTable';
 import { Glyph, type SevKey } from '../ui/Glyph';
-import { Page } from '../ui/Page';
+import { Page, Parts } from '../ui/Page';
 import { Day, ReadTime } from '../ui/ReadTime';
 import { Empty, Load } from '../ui/Sec';
 import { T } from '../ui/T';
@@ -148,14 +148,19 @@ export function Trust() {
       title="Trust set"
       line={
         d ? (
-          <>
+          <Parts>
             {d.trustSequence > 0 ? (
-              <>
-                Set <T cap={CAPS['ListTrustFilesResponse.set_name']}>{d.setName}</T> {'·'} written <Day ts={d.writtenAt} /> {'·'}{' '}
-              </>
+              <span>
+                Set <T cap={CAPS['ListTrustFilesResponse.set_name']}>{d.setName}</T>
+              </span>
+            ) : null}
+            {d.trustSequence > 0 ? (
+              <span className="whitespace-nowrap">
+                written <Day ts={d.writtenAt} />
+              </span>
             ) : null}
             <ReadTime ts={d.readAt} />
-          </>
+          </Parts>
         ) : undefined
       }
     >

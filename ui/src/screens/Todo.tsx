@@ -24,7 +24,7 @@ import { Cmd } from '../ui/Cmd';
 import { DataTable, RowLink } from '../ui/DataTable';
 import { FindingCard } from '../ui/FindingCard';
 import { DemoLede } from '../ui/FirstVisit';
-import { Page } from '../ui/Page';
+import { Page, Parts } from '../ui/Page';
 import { Day, ReadTime } from '../ui/ReadTime';
 import { Empty, Load, Sec } from '../ui/Sec';
 import { T } from '../ui/T';
@@ -73,9 +73,10 @@ export function Todo({ tab }: { tab: TabName }) {
       lede={isDemo ? <DemoLede /> : undefined}
       line={
         s && stamp ? (
-          <>
-            <T cap={CAPS['Bundle.name']}>{s.bundle?.name}</T> {'·'} <ReadTime ts={stamp} />
-          </>
+          <Parts>
+            <T cap={CAPS['Bundle.name']}>{s.bundle?.name}</T>
+            <ReadTime ts={stamp} />
+          </Parts>
         ) : undefined
       }
     >
