@@ -3,7 +3,7 @@
 // (record 0010 rule 10; docs/reference/wizard.md): by card, by root, by date.
 //   Band 1, where it lives: a slot of a card, a cloud key, a key file (record 0002 rule 12, 0003 rule 3).
 //   Band 2, what it is for: a root, and a delegated key that the root certifies or binds (0001 rule 28).
-//   Band 3, when it ends: a delegated key about 13 months and renewed by re-signing (0007 rule 15,
+//   Band 3, when it ends: an intermediate or a subkey about 13 months and re-signed (0007 rule 15,
 //   0008 rule 10); a root key about 3 years, each use extends it (0007 rule 13, 0009 rule 1); a key
 //   replaced on an event, a key file within 3 years (0002 rules 15 and 16).
 // The accent is the root, in all three bands: its slot, its box and its bar.
@@ -92,21 +92,21 @@ const bar = (x, y, months, name, accent) => {
 
 function band3Wide() {
   const x0 = 182;
-  let s = bar(x0, 10, 13, 'delegated key') + text(x0 + 13 * MONTH + 12, 28.5, 'about 13 months', 't t-s') + text(x0 + 13 * MONTH + 124, 28.5, 'renewed by re-signing', 't t-s t-dim');
+  let s = bar(x0, 10, 13, 'delegated key') + text(x0 + 13 * MONTH + 12, 28.5, 'about 13 months', 't t-s') + text(x0 + 13 * MONTH + 124, 28.5, 'intermediate, subkey: re-signed', 't t-s t-dim');
   s += bar(x0, 46, 36, 'root key', true) + text(x0 + 36 * MONTH + 12, 64.5, 'about 3 years', 't t-s') + text(x0 + 36 * MONTH + 106, 64.5, 'each use extends it', 't t-s t-dim t-long');
-  s += text(x0, 90, 'Replaced on an event; a key file within 3 years.', 't t-s t-long');
+  s += text(x0, 88, 'A key is replaced on an event. A key in a file is replaced after 3 years at most.', 't t-s t-long');
   return s;
 }
 function band3Narrow() {
   const x0 = 16;
-  let s = bar(x0, 42, 13, 'delegated key') + text(x0, 90, 'about 13 months', 't t-s') + text(x0 + 112, 90, 'renewed by re-signing', 't t-s t-dim');
+  let s = bar(x0, 42, 13, 'delegated key') + text(x0, 90, 'about 13 months', 't t-s') + text(x0 + 112, 90, 'intermediate, subkey: re-signed', 't t-s t-dim');
   s += bar(x0, 102, 36, 'root key', true) + text(x0, 150, 'about 3 years', 't t-s') + text(x0 + 112, 150, 'each use extends it', 't t-s t-dim t-long');
-  s += text(x0, 176, 'Replaced on an event; a key file within 3 years.', 't t-s t-long');
+  s += text(x0, 176, 'A key is replaced on an event.', 't t-s t-long') + text(x0, 192, 'A key in a file is replaced after 3 years at most.', 't t-s t-long');
   return s;
 }
 
 const LABEL =
-  'Three bands, one above the other, that show one key three ways. Where it lives: a key in a slot of a card, a cloud key and a key file. What it is for: a root and a delegated key, with an arrow from the root to the delegated key that says certifies or binds. When it ends: a delegated key lasts about 13 months and is renewed by re-signing; a root key lasts about 3 years and each use extends it. The root, drawn in the accent colour, is the same root in all three bands.';
+  'Three bands, one above the other, that show one key three ways. Where it lives: a key in a slot of a card, a cloud key and a key file. What it is for: a root and a delegated key, with an arrow from the root to the delegated key that says certifies or binds. When it ends: an intermediate or a subkey lasts about 13 months and is re-signed; a root key lasts about 3 years and each use extends it. A key is replaced on an event, and a key in a file after 3 years at most. The root, drawn in the accent colour, is the same root in all three bands.';
 
 function wide() {
   const hs = [82, 76, 98];
@@ -126,7 +126,7 @@ function wide() {
 }
 
 function narrow() {
-  const hs = [152, 240, 188];
+  const hs = [152, 240, 204];
   const gap = 8;
   const bands = [
     ['Where it lives', 'by card', band1Narrow()],

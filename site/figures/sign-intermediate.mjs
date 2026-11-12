@@ -99,10 +99,10 @@ export default {
   caption: 'Signing the intermediate of a requester with a root card, on your workstation. The accent follows the plan.',
   panels: [
     { n: 1, title: 'Ask', caption: 'The requester writes a request, a proof and a fingerprint.', svg: p1() },
-    { n: 2, title: 'Plan', caption: 'You copy them into the bundle. apply finds the request and writes the plan: one signature, one touch.', svg: p2() },
+    { n: 2, title: 'Plan', caption: 'You copy them into the bundle. The command apply writes the plan: one signature, one touch.', svg: p2() },
     { n: 3, title: 'Confirm', caption: 'You type the digest’s start and compare the fingerprint.', svg: p3() },
     { n: 4, title: 'Touch, sign', caption: 'One touch for each signature. A failed touch ends the ceremony.', svg: p4() },
-    { n: 5, title: 'Check', caption: 'You check the certificate against the plan on a second device.', svg: p5() },
-    { n: 6, title: 'Hand over', caption: 'ritueel writes the ceremony record, which says it ran on your workstation. You hand the certificate over.', svg: p6() },
+    { n: 5, title: 'Second check', caption: 'You check the certificate against the plan on a second device.', svg: p5() },
+    { n: 6, title: 'Hand over', caption: 'The command apply writes the ceremony record last. You hand the certificate over after the second check.', svg: p6() },
   ],
 };
