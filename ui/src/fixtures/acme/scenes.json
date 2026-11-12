@@ -1,0 +1,1347 @@
+{
+  "scenes": [
+    {
+      "scene": 1,
+      "line": "Nothing was done. The end of acme-release is 60 days away, and its request has not come.",
+      "readAt": "2026-11-24T09:00:00Z",
+      "patches": []
+    },
+    {
+      "scene": 2,
+      "line": "A user ID was added to want/openpgp.yaml in an editor.",
+      "readAt": "2026-11-24T09:40:00Z",
+      "patches": [
+        {
+          "call": "GetSummary",
+          "set": {
+            "changes": {
+              "ready": 3,
+              "waits": 1
+            },
+            "applyCommand": "ritueel apply --allow-missing acme-release"
+          }
+        },
+        {
+          "call": "GetInventory",
+          "lists": {
+            "userIds": {
+              "append": [
+                {
+                  "id": "uid-A-2",
+                  "key": "7D440B197D440B197D440B197D440B197D440B19",
+                  "text": "Example Release Security <security@example.com>"
+                },
+                {
+                  "id": "uid-B-2",
+                  "key": "90C311F790C311F790C311F790C311F790C311F7",
+                  "text": "Example Release Security <security@example.com>"
+                },
+                {
+                  "id": "uid-C-2",
+                  "key": "C4A2E605C4A2E605C4A2E605C4A2E605C4A2E605",
+                  "text": "Example Release Security <security@example.com>"
+                }
+              ]
+            },
+            "changes": {
+              "replace": [
+                {
+                  "id": "chg-2",
+                  "object": {
+                    "kind": "OBJECT_KIND_USER_ID",
+                    "id": "uid-A-2",
+                    "label": "Example Release Security <security@example.com>"
+                  },
+                  "kind": "CHANGE_KIND_CERTIFY",
+                  "state": "CHANGE_STATE_READY",
+                  "text": "Certify Example Release Security <security@example.com> by key A",
+                  "needs": [
+                    {
+                      "kind": "NEED_KIND_CARD",
+                      "name": "root-a",
+                      "met": true
+                    }
+                  ],
+                  "source": "CHANGE_SOURCE_WANTED_FILE",
+                  "wantedPath": "want/openpgp.yaml",
+                  "involves": [
+                    {
+                      "kind": "OBJECT_KIND_KEY",
+                      "id": "7D440B197D440B197D440B197D440B197D440B19",
+                      "label": "key A of acme-release"
+                    },
+                    {
+                      "kind": "OBJECT_KIND_CARD",
+                      "id": "root-a",
+                      "label": "root-a"
+                    }
+                  ]
+                },
+                {
+                  "id": "chg-3",
+                  "object": {
+                    "kind": "OBJECT_KIND_USER_ID",
+                    "id": "uid-B-2",
+                    "label": "Example Release Security <security@example.com>"
+                  },
+                  "kind": "CHANGE_KIND_CERTIFY",
+                  "state": "CHANGE_STATE_READY",
+                  "text": "Certify Example Release Security <security@example.com> by key B",
+                  "needs": [
+                    {
+                      "kind": "NEED_KIND_CARD",
+                      "name": "root-b",
+                      "met": true
+                    }
+                  ],
+                  "source": "CHANGE_SOURCE_WANTED_FILE",
+                  "wantedPath": "want/openpgp.yaml",
+                  "involves": [
+                    {
+                      "kind": "OBJECT_KIND_KEY",
+                      "id": "90C311F790C311F790C311F790C311F790C311F7",
+                      "label": "key B of acme-release"
+                    },
+                    {
+                      "kind": "OBJECT_KIND_CARD",
+                      "id": "root-b",
+                      "label": "root-b"
+                    }
+                  ]
+                },
+                {
+                  "id": "chg-4",
+                  "object": {
+                    "kind": "OBJECT_KIND_USER_ID",
+                    "id": "uid-C-2",
+                    "label": "Example Release Security <security@example.com>"
+                  },
+                  "kind": "CHANGE_KIND_CERTIFY",
+                  "state": "CHANGE_STATE_READY",
+                  "text": "Certify Example Release Security <security@example.com> by key C",
+                  "source": "CHANGE_SOURCE_WANTED_FILE",
+                  "wantedPath": "want/openpgp.yaml",
+                  "involves": [
+                    {
+                      "kind": "OBJECT_KIND_KEY",
+                      "id": "C4A2E605C4A2E605C4A2E605C4A2E605C4A2E605",
+                      "label": "key C of acme-release"
+                    }
+                  ]
+                },
+                {
+                  "id": "chg-1",
+                  "object": {
+                    "kind": "OBJECT_KIND_DELEGATION",
+                    "id": "acme-release",
+                    "label": "acme-release"
+                  },
+                  "kind": "CHANGE_KIND_RENEW",
+                  "state": "CHANGE_STATE_WAITS",
+                  "text": "Renew acme-release",
+                  "needs": [
+                    {
+                      "kind": "NEED_KIND_CARD",
+                      "name": "root-b",
+                      "met": true
+                    },
+                    {
+                      "kind": "NEED_KIND_REQUEST",
+                      "name": "acme-release",
+                      "met": false
+                    }
+                  ],
+                  "reason": "No request for acme-release has come.",
+                  "source": "CHANGE_SOURCE_DATE",
+                  "dueAt": "2027-01-23T10:00:00Z",
+                  "involves": [
+                    {
+                      "kind": "OBJECT_KIND_CERTIFICATION",
+                      "id": "cert-8",
+                      "label": "binding of acme-release"
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "scene": 3,
+      "line": "In the terminal, ritueel apply --allow-missing acme-release printed the plan. It waits for eight characters.",
+      "readAt": "2026-11-24T10:05:00Z",
+      "patches": [
+        {
+          "call": "GetSummary",
+          "set": {
+            "changes": {
+              "ready": 3,
+              "waits": 1
+            },
+            "applyCommand": "ritueel apply --allow-missing acme-release",
+            "ceremoniesWithoutRecord": 3
+          }
+        },
+        {
+          "call": "GetInventory",
+          "lists": {
+            "userIds": {
+              "append": [
+                {
+                  "id": "uid-A-2",
+                  "key": "7D440B197D440B197D440B197D440B197D440B19",
+                  "text": "Example Release Security <security@example.com>"
+                },
+                {
+                  "id": "uid-B-2",
+                  "key": "90C311F790C311F790C311F790C311F790C311F7",
+                  "text": "Example Release Security <security@example.com>"
+                },
+                {
+                  "id": "uid-C-2",
+                  "key": "C4A2E605C4A2E605C4A2E605C4A2E605C4A2E605",
+                  "text": "Example Release Security <security@example.com>"
+                }
+              ]
+            },
+            "changes": {
+              "replace": [
+                {
+                  "id": "chg-2",
+                  "object": {
+                    "kind": "OBJECT_KIND_USER_ID",
+                    "id": "uid-A-2",
+                    "label": "Example Release Security <security@example.com>"
+                  },
+                  "kind": "CHANGE_KIND_CERTIFY",
+                  "state": "CHANGE_STATE_READY",
+                  "text": "Certify Example Release Security <security@example.com> by key A",
+                  "needs": [
+                    {
+                      "kind": "NEED_KIND_CARD",
+                      "name": "root-a",
+                      "met": true
+                    }
+                  ],
+                  "source": "CHANGE_SOURCE_WANTED_FILE",
+                  "wantedPath": "want/openpgp.yaml",
+                  "inCeremony": "20261124T100400Z-apply-7d41e9b3",
+                  "involves": [
+                    {
+                      "kind": "OBJECT_KIND_KEY",
+                      "id": "7D440B197D440B197D440B197D440B197D440B19",
+                      "label": "key A of acme-release"
+                    },
+                    {
+                      "kind": "OBJECT_KIND_CARD",
+                      "id": "root-a",
+                      "label": "root-a"
+                    }
+                  ]
+                },
+                {
+                  "id": "chg-3",
+                  "object": {
+                    "kind": "OBJECT_KIND_USER_ID",
+                    "id": "uid-B-2",
+                    "label": "Example Release Security <security@example.com>"
+                  },
+                  "kind": "CHANGE_KIND_CERTIFY",
+                  "state": "CHANGE_STATE_READY",
+                  "text": "Certify Example Release Security <security@example.com> by key B",
+                  "needs": [
+                    {
+                      "kind": "NEED_KIND_CARD",
+                      "name": "root-b",
+                      "met": true
+                    }
+                  ],
+                  "source": "CHANGE_SOURCE_WANTED_FILE",
+                  "wantedPath": "want/openpgp.yaml",
+                  "inCeremony": "20261124T100400Z-apply-7d41e9b3",
+                  "involves": [
+                    {
+                      "kind": "OBJECT_KIND_KEY",
+                      "id": "90C311F790C311F790C311F790C311F790C311F7",
+                      "label": "key B of acme-release"
+                    },
+                    {
+                      "kind": "OBJECT_KIND_CARD",
+                      "id": "root-b",
+                      "label": "root-b"
+                    }
+                  ]
+                },
+                {
+                  "id": "chg-4",
+                  "object": {
+                    "kind": "OBJECT_KIND_USER_ID",
+                    "id": "uid-C-2",
+                    "label": "Example Release Security <security@example.com>"
+                  },
+                  "kind": "CHANGE_KIND_CERTIFY",
+                  "state": "CHANGE_STATE_READY",
+                  "text": "Certify Example Release Security <security@example.com> by key C",
+                  "source": "CHANGE_SOURCE_WANTED_FILE",
+                  "wantedPath": "want/openpgp.yaml",
+                  "inCeremony": "20261124T100400Z-apply-7d41e9b3",
+                  "involves": [
+                    {
+                      "kind": "OBJECT_KIND_KEY",
+                      "id": "C4A2E605C4A2E605C4A2E605C4A2E605C4A2E605",
+                      "label": "key C of acme-release"
+                    }
+                  ]
+                },
+                {
+                  "id": "chg-1",
+                  "object": {
+                    "kind": "OBJECT_KIND_DELEGATION",
+                    "id": "acme-release",
+                    "label": "acme-release"
+                  },
+                  "kind": "CHANGE_KIND_RENEW",
+                  "state": "CHANGE_STATE_WAITS",
+                  "text": "Renew acme-release",
+                  "needs": [
+                    {
+                      "kind": "NEED_KIND_CARD",
+                      "name": "root-b",
+                      "met": true
+                    },
+                    {
+                      "kind": "NEED_KIND_REQUEST",
+                      "name": "acme-release",
+                      "met": false
+                    }
+                  ],
+                  "reason": "No request for acme-release has come.",
+                  "source": "CHANGE_SOURCE_DATE",
+                  "dueAt": "2027-01-23T10:00:00Z",
+                  "involves": [
+                    {
+                      "kind": "OBJECT_KIND_CERTIFICATION",
+                      "id": "cert-8",
+                      "label": "binding of acme-release"
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        {
+          "call": "ListCeremonies",
+          "lists": {
+            "ceremonies": {
+              "prepend": [
+                {
+                  "id": "20261124T100400Z-apply-7d41e9b3",
+                  "command": "CEREMONY_COMMAND_APPLY",
+                  "state": "CEREMONY_STATE_PLANNED",
+                  "title": "Certify the new user ID with keys A, B and C",
+                  "summary": "Three changes are in the plan. The renewal of acme-release is left out, because its request is missing.",
+                  "plannedAt": "2026-11-24T10:04:00Z",
+                  "ranOn": "RUN_PLACE_WORKSTATION",
+                  "planSha256": "7d41e9b37d41e9b37d41e9b37d41e9b37d41e9b37d41e9b37d41e9b37d41e9b3",
+                  "trustSequence": 14,
+                  "trustSetName": "14-7d41e9b3",
+                  "applied": [
+                    {
+                      "object": {
+                        "kind": "OBJECT_KIND_USER_ID",
+                        "id": "uid-A-2",
+                        "label": "Example Release Security <security@example.com>"
+                      },
+                      "kind": "CHANGE_KIND_CERTIFY",
+                      "text": "Certify Example Release Security <security@example.com> by key A"
+                    },
+                    {
+                      "object": {
+                        "kind": "OBJECT_KIND_USER_ID",
+                        "id": "uid-B-2",
+                        "label": "Example Release Security <security@example.com>"
+                      },
+                      "kind": "CHANGE_KIND_CERTIFY",
+                      "text": "Certify Example Release Security <security@example.com> by key B"
+                    },
+                    {
+                      "object": {
+                        "kind": "OBJECT_KIND_USER_ID",
+                        "id": "uid-C-2",
+                        "label": "Example Release Security <security@example.com>"
+                      },
+                      "kind": "CHANGE_KIND_CERTIFY",
+                      "text": "Certify Example Release Security <security@example.com> by key C"
+                    }
+                  ],
+                  "leftOut": [
+                    {
+                      "object": {
+                        "kind": "OBJECT_KIND_DELEGATION",
+                        "id": "acme-release",
+                        "label": "acme-release"
+                      },
+                      "kind": "CHANGE_KIND_RENEW",
+                      "text": "Renew acme-release",
+                      "reason": "No request for acme-release has come. The plan leaves this renewal out and records it, because --allow-missing acme-release was named."
+                    }
+                  ],
+                  "cards": [
+                    "root-a",
+                    "root-b"
+                  ],
+                  "signatureCount": 3,
+                  "touchCount": 2,
+                  "guidePath": "/design/#a-ceremony"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "scene": 4,
+      "line": "The eight characters were typed. The cards and the cloud key are signing.",
+      "readAt": "2026-11-24T10:30:00Z",
+      "patches": [
+        {
+          "call": "GetSummary",
+          "set": {
+            "changes": {
+              "ready": 3,
+              "waits": 1
+            },
+            "applyCommand": "ritueel apply --allow-missing acme-release",
+            "ceremoniesWithoutRecord": 3
+          },
+          "lists": {
+            "findingCounts": {
+              "replace": [
+                {
+                  "severity": "SEVERITY_CRITICAL",
+                  "count": 1
+                },
+                {
+                  "severity": "SEVERITY_NOTICE",
+                  "count": 1
+                }
+              ]
+            }
+          }
+        },
+        {
+          "call": "GetInventory",
+          "lists": {
+            "userIds": {
+              "append": [
+                {
+                  "id": "uid-A-2",
+                  "key": "7D440B197D440B197D440B197D440B197D440B19",
+                  "text": "Example Release Security <security@example.com>"
+                },
+                {
+                  "id": "uid-B-2",
+                  "key": "90C311F790C311F790C311F790C311F790C311F7",
+                  "text": "Example Release Security <security@example.com>"
+                },
+                {
+                  "id": "uid-C-2",
+                  "key": "C4A2E605C4A2E605C4A2E605C4A2E605C4A2E605",
+                  "text": "Example Release Security <security@example.com>"
+                }
+              ]
+            },
+            "changes": {
+              "replace": [
+                {
+                  "id": "chg-2",
+                  "object": {
+                    "kind": "OBJECT_KIND_USER_ID",
+                    "id": "uid-A-2",
+                    "label": "Example Release Security <security@example.com>"
+                  },
+                  "kind": "CHANGE_KIND_CERTIFY",
+                  "state": "CHANGE_STATE_READY",
+                  "text": "Certify Example Release Security <security@example.com> by key A",
+                  "needs": [
+                    {
+                      "kind": "NEED_KIND_CARD",
+                      "name": "root-a",
+                      "met": true
+                    }
+                  ],
+                  "source": "CHANGE_SOURCE_WANTED_FILE",
+                  "wantedPath": "want/openpgp.yaml",
+                  "inCeremony": "20261124T100400Z-apply-7d41e9b3",
+                  "involves": [
+                    {
+                      "kind": "OBJECT_KIND_KEY",
+                      "id": "7D440B197D440B197D440B197D440B197D440B19",
+                      "label": "key A of acme-release"
+                    },
+                    {
+                      "kind": "OBJECT_KIND_CARD",
+                      "id": "root-a",
+                      "label": "root-a"
+                    }
+                  ]
+                },
+                {
+                  "id": "chg-3",
+                  "object": {
+                    "kind": "OBJECT_KIND_USER_ID",
+                    "id": "uid-B-2",
+                    "label": "Example Release Security <security@example.com>"
+                  },
+                  "kind": "CHANGE_KIND_CERTIFY",
+                  "state": "CHANGE_STATE_READY",
+                  "text": "Certify Example Release Security <security@example.com> by key B",
+                  "needs": [
+                    {
+                      "kind": "NEED_KIND_CARD",
+                      "name": "root-b",
+                      "met": true
+                    }
+                  ],
+                  "source": "CHANGE_SOURCE_WANTED_FILE",
+                  "wantedPath": "want/openpgp.yaml",
+                  "inCeremony": "20261124T100400Z-apply-7d41e9b3",
+                  "involves": [
+                    {
+                      "kind": "OBJECT_KIND_KEY",
+                      "id": "90C311F790C311F790C311F790C311F790C311F7",
+                      "label": "key B of acme-release"
+                    },
+                    {
+                      "kind": "OBJECT_KIND_CARD",
+                      "id": "root-b",
+                      "label": "root-b"
+                    }
+                  ]
+                },
+                {
+                  "id": "chg-4",
+                  "object": {
+                    "kind": "OBJECT_KIND_USER_ID",
+                    "id": "uid-C-2",
+                    "label": "Example Release Security <security@example.com>"
+                  },
+                  "kind": "CHANGE_KIND_CERTIFY",
+                  "state": "CHANGE_STATE_READY",
+                  "text": "Certify Example Release Security <security@example.com> by key C",
+                  "source": "CHANGE_SOURCE_WANTED_FILE",
+                  "wantedPath": "want/openpgp.yaml",
+                  "inCeremony": "20261124T100400Z-apply-7d41e9b3",
+                  "involves": [
+                    {
+                      "kind": "OBJECT_KIND_KEY",
+                      "id": "C4A2E605C4A2E605C4A2E605C4A2E605C4A2E605",
+                      "label": "key C of acme-release"
+                    }
+                  ]
+                },
+                {
+                  "id": "chg-1",
+                  "object": {
+                    "kind": "OBJECT_KIND_DELEGATION",
+                    "id": "acme-release",
+                    "label": "acme-release"
+                  },
+                  "kind": "CHANGE_KIND_RENEW",
+                  "state": "CHANGE_STATE_WAITS",
+                  "text": "Renew acme-release",
+                  "needs": [
+                    {
+                      "kind": "NEED_KIND_CARD",
+                      "name": "root-b",
+                      "met": true
+                    },
+                    {
+                      "kind": "NEED_KIND_REQUEST",
+                      "name": "acme-release",
+                      "met": false
+                    }
+                  ],
+                  "reason": "No request for acme-release has come.",
+                  "source": "CHANGE_SOURCE_DATE",
+                  "dueAt": "2027-01-23T10:00:00Z",
+                  "involves": [
+                    {
+                      "kind": "OBJECT_KIND_CERTIFICATION",
+                      "id": "cert-8",
+                      "label": "binding of acme-release"
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        {
+          "call": "ListCeremonies",
+          "lists": {
+            "ceremonies": {
+              "prepend": [
+                {
+                  "id": "20261124T100400Z-apply-7d41e9b3",
+                  "command": "CEREMONY_COMMAND_APPLY",
+                  "state": "CEREMONY_STATE_STARTED",
+                  "title": "Certify the new user ID with keys A, B and C",
+                  "summary": "Three changes are in the plan. The renewal of acme-release is left out, because its request is missing.",
+                  "plannedAt": "2026-11-24T10:04:00Z",
+                  "ranOn": "RUN_PLACE_WORKSTATION",
+                  "planSha256": "7d41e9b37d41e9b37d41e9b37d41e9b37d41e9b37d41e9b37d41e9b37d41e9b3",
+                  "trustSequence": 14,
+                  "trustSetName": "14-7d41e9b3",
+                  "applied": [
+                    {
+                      "object": {
+                        "kind": "OBJECT_KIND_USER_ID",
+                        "id": "uid-A-2",
+                        "label": "Example Release Security <security@example.com>"
+                      },
+                      "kind": "CHANGE_KIND_CERTIFY",
+                      "text": "Certify Example Release Security <security@example.com> by key A"
+                    },
+                    {
+                      "object": {
+                        "kind": "OBJECT_KIND_USER_ID",
+                        "id": "uid-B-2",
+                        "label": "Example Release Security <security@example.com>"
+                      },
+                      "kind": "CHANGE_KIND_CERTIFY",
+                      "text": "Certify Example Release Security <security@example.com> by key B"
+                    },
+                    {
+                      "object": {
+                        "kind": "OBJECT_KIND_USER_ID",
+                        "id": "uid-C-2",
+                        "label": "Example Release Security <security@example.com>"
+                      },
+                      "kind": "CHANGE_KIND_CERTIFY",
+                      "text": "Certify Example Release Security <security@example.com> by key C"
+                    }
+                  ],
+                  "leftOut": [
+                    {
+                      "object": {
+                        "kind": "OBJECT_KIND_DELEGATION",
+                        "id": "acme-release",
+                        "label": "acme-release"
+                      },
+                      "kind": "CHANGE_KIND_RENEW",
+                      "text": "Renew acme-release",
+                      "reason": "No request for acme-release has come. The plan leaves this renewal out and records it, because --allow-missing acme-release was named."
+                    }
+                  ],
+                  "cards": [
+                    "root-a",
+                    "root-b"
+                  ],
+                  "signatureCount": 3,
+                  "touchCount": 2,
+                  "guidePath": "/design/#a-ceremony",
+                  "startedAt": "2026-11-24T10:06:00Z",
+                  "closeCommand": "ritueel close 20261124T100400Z-apply-7d41e9b3 --reason TEXT"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "call": "ListFindings",
+          "lists": {
+            "findings": {
+              "replace": [
+                {
+                  "id": "f-2",
+                  "code": "attempt",
+                  "severity": "SEVERITY_CRITICAL",
+                  "title": "A ceremony has an attempt and no ceremony record",
+                  "reason": "The attempt of 20261124T100400Z-apply-7d41e9b3 has no ceremony record yet. If the run is still going, wait for it. If it stopped, a signature may exist.",
+                  "object": {
+                    "kind": "OBJECT_KIND_CEREMONY",
+                    "id": "20261124T100400Z-apply-7d41e9b3",
+                    "label": "20261124T100400Z-apply-7d41e9b3"
+                  },
+                  "evidence": [
+                    "Attempt written at 2026-11-24 10:06."
+                  ],
+                  "fixCommand": "ritueel close 20261124T100400Z-apply-7d41e9b3 --reason TEXT",
+                  "learnPath": "/design/#a-ceremony"
+                },
+                {
+                  "id": "f-1",
+                  "code": "intermediate",
+                  "severity": "SEVERITY_NOTICE",
+                  "title": "acme-release ends in 60 days",
+                  "reason": "Its certificate ends on 2027-01-23. A renewal needs a request for acme-release, and none has come. apply stops while a request is missing.",
+                  "object": {
+                    "kind": "OBJECT_KIND_DELEGATION",
+                    "id": "acme-release",
+                    "label": "acme-release"
+                  },
+                  "evidence": [
+                    "Binding valid from 2025-12-23 to 2027-01-23.",
+                    "A delegation warns at 60, 30 and 14 days."
+                  ],
+                  "learnPath": "/learn/life-of-a-root/#re-sign"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "scene": 5,
+      "line": "The ceremony ended. The terminal printed the end of the history.",
+      "readAt": "2026-11-24T11:10:00Z",
+      "patches": [
+        {
+          "call": "GetSummary",
+          "set": {
+            "history": {
+              "recordCount": 15,
+              "chainState": "CHAIN_STATE_VERIFIED",
+              "endRecordSha256": "e8f90a1be8f90a1be8f90a1be8f90a1be8f90a1be8f90a1be8f90a1be8f90a1b",
+              "lastRecordId": "20261124T100400Z-apply-7d41e9b3",
+              "lastRecordTitle": "Certified the new user ID with keys A, B and C",
+              "lastRecordAt": "2026-11-24T11:08:00Z",
+              "checkedAt": "2026-11-24T11:10:00Z",
+              "message": "All 15 records check out. The newest is 0 days old.",
+              "ends": 1
+            },
+            "changes": {
+              "ready": 0,
+              "waits": 1
+            },
+            "trustSequence": 14
+          }
+        },
+        {
+          "call": "GetInventory",
+          "lists": {
+            "keys": {
+              "replace": [
+                {
+                  "fingerprint": "3a1f9c023a1f9c023a1f9c023a1f9c023a1f9c023a1f9c023a1f9c023a1f9c02",
+                  "label": "A",
+                  "role": "KEY_ROLE_ROOT_KEY",
+                  "kind": "KEY_KIND_X509",
+                  "root": "acme-tls",
+                  "state": "KEY_STATE_ACTIVE",
+                  "algorithm": "ecdsa-p384",
+                  "createdAt": "2023-12-04T10:00:00Z",
+                  "revokeCommand": "ritueel revoke acme/A --reason REASON",
+                  "place": {
+                    "store": "STORE_PIV",
+                    "card": "root-a",
+                    "slot": "82"
+                  },
+                  "expiresAt": "2028-12-23T10:00:00Z",
+                  "touchedBy": [
+                    {
+                      "id": "20231204T100000Z-apply-5b1e7a90",
+                      "at": "2023-12-04T10:00:00Z",
+                      "command": "CEREMONY_COMMAND_APPLY"
+                    }
+                  ]
+                },
+                {
+                  "fingerprint": "5be4d8715be4d8715be4d8715be4d8715be4d8715be4d8715be4d8715be4d871",
+                  "label": "B",
+                  "role": "KEY_ROLE_ROOT_KEY",
+                  "kind": "KEY_KIND_X509",
+                  "root": "acme-tls",
+                  "state": "KEY_STATE_ACTIVE",
+                  "algorithm": "ecdsa-p384",
+                  "createdAt": "2023-12-04T10:00:00Z",
+                  "revokeCommand": "ritueel revoke acme/B --reason REASON",
+                  "place": {
+                    "store": "STORE_PIV",
+                    "card": "root-b",
+                    "slot": "82"
+                  },
+                  "expiresAt": "2029-11-20T10:00:00Z",
+                  "touchedBy": [
+                    {
+                      "id": "20231204T100000Z-apply-5b1e7a90",
+                      "at": "2023-12-04T10:00:00Z",
+                      "command": "CEREMONY_COMMAND_APPLY"
+                    }
+                  ]
+                },
+                {
+                  "fingerprint": "51e077aa51e077aa51e077aa51e077aa51e077aa51e077aa51e077aa51e077aa",
+                  "label": "C",
+                  "role": "KEY_ROLE_ROOT_KEY",
+                  "kind": "KEY_KIND_X509",
+                  "root": "acme-tls",
+                  "state": "KEY_STATE_ACTIVE",
+                  "algorithm": "ecdsa-p384",
+                  "createdAt": "2025-03-18T10:00:00Z",
+                  "revokeCommand": "ritueel revoke acme/C --reason REASON",
+                  "place": {
+                    "store": "STORE_AWS_KMS",
+                    "keyRef": "arn:aws:kms:eu-west-1:444455556666:key/mrk-0000000000000000000000000000c001",
+                    "region": "eu-west-1",
+                    "replicaRegion": "eu-central-1",
+                    "replicaRef": "arn:aws:kms:eu-central-1:444455556666:key/mrk-0000000000000000000000000000c001"
+                  },
+                  "expiresAt": "2028-03-18T10:00:00Z",
+                  "touchedBy": [
+                    {
+                      "id": "20250318T100000Z-apply-9e07b6c5",
+                      "at": "2025-03-18T10:00:00Z",
+                      "command": "CEREMONY_COMMAND_APPLY"
+                    }
+                  ]
+                },
+                {
+                  "fingerprint": "d3a7b0c8d3a7b0c8d3a7b0c8d3a7b0c8d3a7b0c8d3a7b0c8d3a7b0c8d3a7b0c8",
+                  "role": "KEY_ROLE_DELEGATED_KEY",
+                  "kind": "KEY_KIND_X509",
+                  "root": "acme-tls",
+                  "delegation": "acme-ca",
+                  "state": "KEY_STATE_ACTIVE",
+                  "algorithm": "ecdsa-p384",
+                  "place": {
+                    "store": "STORE_AWS_KMS",
+                    "keyRef": "arn:aws:kms:eu-west-1:444455556666:key/1234abcd-12ab-34cd-56ef-1234567890ab",
+                    "region": "eu-west-1"
+                  },
+                  "createdAt": "2026-11-10T09:00:00Z",
+                  "expiresAt": "2027-12-20T10:00:00Z",
+                  "revokeCommand": "ritueel revoke acme-ca --reason REASON"
+                },
+                {
+                  "fingerprint": "7D440B197D440B197D440B197D440B197D440B19",
+                  "label": "A",
+                  "role": "KEY_ROLE_ROOT_KEY",
+                  "kind": "KEY_KIND_OPENPGP",
+                  "root": "acme-release",
+                  "state": "KEY_STATE_ACTIVE",
+                  "algorithm": "ecdsa-p384",
+                  "createdAt": "2023-12-04T10:00:00Z",
+                  "revokeCommand": "ritueel revoke acme/A --reason REASON",
+                  "place": {
+                    "store": "STORE_PIV",
+                    "card": "root-a",
+                    "slot": "83"
+                  },
+                  "expiresAt": "2028-12-23T10:00:00Z",
+                  "touchedBy": [
+                    {
+                      "id": "20261124T100400Z-apply-7d41e9b3",
+                      "at": "2026-11-24T10:04:00Z",
+                      "command": "CEREMONY_COMMAND_APPLY"
+                    },
+                    {
+                      "id": "20231204T100000Z-apply-5b1e7a90",
+                      "at": "2023-12-04T10:00:00Z",
+                      "command": "CEREMONY_COMMAND_APPLY"
+                    }
+                  ]
+                },
+                {
+                  "fingerprint": "90C311F790C311F790C311F790C311F790C311F7",
+                  "label": "B",
+                  "role": "KEY_ROLE_ROOT_KEY",
+                  "kind": "KEY_KIND_OPENPGP",
+                  "root": "acme-release",
+                  "state": "KEY_STATE_ACTIVE",
+                  "algorithm": "ecdsa-p384",
+                  "createdAt": "2023-12-04T10:00:00Z",
+                  "revokeCommand": "ritueel revoke acme/B --reason REASON",
+                  "place": {
+                    "store": "STORE_PIV",
+                    "card": "root-b",
+                    "slot": "83"
+                  },
+                  "expiresAt": "2029-11-20T10:00:00Z",
+                  "touchedBy": [
+                    {
+                      "id": "20261124T100400Z-apply-7d41e9b3",
+                      "at": "2026-11-24T10:04:00Z",
+                      "command": "CEREMONY_COMMAND_APPLY"
+                    },
+                    {
+                      "id": "20231204T100000Z-apply-5b1e7a90",
+                      "at": "2023-12-04T10:00:00Z",
+                      "command": "CEREMONY_COMMAND_APPLY"
+                    }
+                  ]
+                },
+                {
+                  "fingerprint": "C4A2E605C4A2E605C4A2E605C4A2E605C4A2E605",
+                  "label": "C",
+                  "role": "KEY_ROLE_ROOT_KEY",
+                  "kind": "KEY_KIND_OPENPGP",
+                  "root": "acme-release",
+                  "state": "KEY_STATE_ACTIVE",
+                  "algorithm": "ecdsa-p384",
+                  "createdAt": "2025-03-18T10:00:00Z",
+                  "revokeCommand": "ritueel revoke acme/C --reason REASON",
+                  "place": {
+                    "store": "STORE_AWS_KMS",
+                    "keyRef": "arn:aws:kms:eu-west-1:444455556666:key/mrk-0000000000000000000000000000c002",
+                    "region": "eu-west-1",
+                    "replicaRegion": "eu-central-1",
+                    "replicaRef": "arn:aws:kms:eu-central-1:444455556666:key/mrk-0000000000000000000000000000c002"
+                  },
+                  "expiresAt": "2028-03-18T10:00:00Z",
+                  "touchedBy": [
+                    {
+                      "id": "20261124T100400Z-apply-7d41e9b3",
+                      "at": "2026-11-24T10:04:00Z",
+                      "command": "CEREMONY_COMMAND_APPLY"
+                    },
+                    {
+                      "id": "20250318T100000Z-apply-9e07b6c5",
+                      "at": "2025-03-18T10:00:00Z",
+                      "command": "CEREMONY_COMMAND_APPLY"
+                    }
+                  ]
+                },
+                {
+                  "fingerprint": "E1F4A923E1F4A923E1F4A923E1F4A923E1F4A923",
+                  "role": "KEY_ROLE_DELEGATED_KEY",
+                  "kind": "KEY_KIND_OPENPGP",
+                  "root": "acme-release",
+                  "delegation": "acme-release",
+                  "state": "KEY_STATE_ACTIVE",
+                  "algorithm": "ecdsa-p384",
+                  "place": {
+                    "store": "STORE_AWS_KMS",
+                    "keyRef": "arn:aws:kms:eu-west-1:111122223333:key/9f8e7d6c-5b4a-4321-8fed-cba987654321",
+                    "region": "eu-west-1"
+                  },
+                  "createdAt": "2025-12-20T09:00:00Z",
+                  "expiresAt": "2027-01-23T10:00:00Z",
+                  "revokeCommand": "ritueel revoke acme-release --reason REASON"
+                },
+                {
+                  "fingerprint": "c21055aec21055aec21055aec21055aec21055aec21055aec21055aec21055ae",
+                  "label": "A",
+                  "role": "KEY_ROLE_ROOT_KEY",
+                  "kind": "KEY_KIND_SSH_CA",
+                  "root": "acme-ssh",
+                  "state": "KEY_STATE_ACTIVE",
+                  "algorithm": "ecdsa-p384",
+                  "createdAt": "2023-12-04T10:00:00Z",
+                  "revokeCommand": "ritueel revoke acme/A --reason REASON",
+                  "place": {
+                    "store": "STORE_PIV",
+                    "card": "root-a",
+                    "slot": "84"
+                  },
+                  "touchedBy": [
+                    {
+                      "id": "20231204T100000Z-apply-5b1e7a90",
+                      "at": "2023-12-04T10:00:00Z",
+                      "command": "CEREMONY_COMMAND_APPLY"
+                    }
+                  ]
+                },
+                {
+                  "fingerprint": "e6d3a920e6d3a920e6d3a920e6d3a920e6d3a920e6d3a920e6d3a920e6d3a920",
+                  "label": "B",
+                  "role": "KEY_ROLE_ROOT_KEY",
+                  "kind": "KEY_KIND_SSH_CA",
+                  "root": "acme-ssh",
+                  "state": "KEY_STATE_ACTIVE",
+                  "algorithm": "ecdsa-p384",
+                  "createdAt": "2023-12-04T10:00:00Z",
+                  "revokeCommand": "ritueel revoke acme/B --reason REASON",
+                  "place": {
+                    "store": "STORE_PIV",
+                    "card": "root-b",
+                    "slot": "84"
+                  },
+                  "touchedBy": [
+                    {
+                      "id": "20231204T100000Z-apply-5b1e7a90",
+                      "at": "2023-12-04T10:00:00Z",
+                      "command": "CEREMONY_COMMAND_APPLY"
+                    }
+                  ]
+                },
+                {
+                  "fingerprint": "0f8b64c10f8b64c10f8b64c10f8b64c10f8b64c10f8b64c10f8b64c10f8b64c1",
+                  "label": "C",
+                  "role": "KEY_ROLE_ROOT_KEY",
+                  "kind": "KEY_KIND_SSH_CA",
+                  "root": "acme-ssh",
+                  "state": "KEY_STATE_ACTIVE",
+                  "algorithm": "ecdsa-p384",
+                  "createdAt": "2025-03-18T10:00:00Z",
+                  "revokeCommand": "ritueel revoke acme/C --reason REASON",
+                  "place": {
+                    "store": "STORE_AWS_KMS",
+                    "keyRef": "arn:aws:kms:eu-west-1:444455556666:key/mrk-0000000000000000000000000000c003",
+                    "region": "eu-west-1",
+                    "replicaRegion": "eu-central-1",
+                    "replicaRef": "arn:aws:kms:eu-central-1:444455556666:key/mrk-0000000000000000000000000000c003"
+                  },
+                  "touchedBy": [
+                    {
+                      "id": "20250318T100000Z-apply-9e07b6c5",
+                      "at": "2025-03-18T10:00:00Z",
+                      "command": "CEREMONY_COMMAND_APPLY"
+                    }
+                  ]
+                }
+              ]
+            },
+            "userIds": {
+              "append": [
+                {
+                  "id": "uid-A-2",
+                  "key": "7D440B197D440B197D440B197D440B197D440B19",
+                  "text": "Example Release Security <security@example.com>",
+                  "certified": true,
+                  "createdAt": "2026-11-24T11:08:00Z",
+                  "touchedBy": [
+                    {
+                      "id": "20261124T100400Z-apply-7d41e9b3",
+                      "at": "2026-11-24T10:04:00Z",
+                      "command": "CEREMONY_COMMAND_APPLY"
+                    }
+                  ]
+                },
+                {
+                  "id": "uid-B-2",
+                  "key": "90C311F790C311F790C311F790C311F790C311F7",
+                  "text": "Example Release Security <security@example.com>",
+                  "certified": true,
+                  "createdAt": "2026-11-24T11:08:00Z",
+                  "touchedBy": [
+                    {
+                      "id": "20261124T100400Z-apply-7d41e9b3",
+                      "at": "2026-11-24T10:04:00Z",
+                      "command": "CEREMONY_COMMAND_APPLY"
+                    }
+                  ]
+                },
+                {
+                  "id": "uid-C-2",
+                  "key": "C4A2E605C4A2E605C4A2E605C4A2E605C4A2E605",
+                  "text": "Example Release Security <security@example.com>",
+                  "certified": true,
+                  "createdAt": "2026-11-24T11:08:00Z",
+                  "touchedBy": [
+                    {
+                      "id": "20261124T100400Z-apply-7d41e9b3",
+                      "at": "2026-11-24T10:04:00Z",
+                      "command": "CEREMONY_COMMAND_APPLY"
+                    }
+                  ]
+                }
+              ]
+            },
+            "certifications": {
+              "append": [
+                {
+                  "id": "cert-9",
+                  "kind": "CERTIFICATION_KIND_PRIMARY_SELF_SIGNATURE",
+                  "issuer": "7D440B197D440B197D440B197D440B197D440B19",
+                  "subject": {
+                    "kind": "OBJECT_KIND_USER_ID",
+                    "id": "uid-A-2",
+                    "label": "Example Release Security <security@example.com>"
+                  },
+                  "validFrom": "2026-11-24T11:08:00Z",
+                  "validUntil": "2029-11-24T11:08:00Z",
+                  "ceremonyId": "20261124T100400Z-apply-7d41e9b3",
+                  "touchedBy": [
+                    {
+                      "id": "20261124T100400Z-apply-7d41e9b3",
+                      "at": "2026-11-24T10:04:00Z",
+                      "command": "CEREMONY_COMMAND_APPLY"
+                    }
+                  ]
+                },
+                {
+                  "id": "cert-10",
+                  "kind": "CERTIFICATION_KIND_PRIMARY_SELF_SIGNATURE",
+                  "issuer": "90C311F790C311F790C311F790C311F790C311F7",
+                  "subject": {
+                    "kind": "OBJECT_KIND_USER_ID",
+                    "id": "uid-B-2",
+                    "label": "Example Release Security <security@example.com>"
+                  },
+                  "validFrom": "2026-11-24T11:08:00Z",
+                  "validUntil": "2029-11-24T11:08:00Z",
+                  "ceremonyId": "20261124T100400Z-apply-7d41e9b3",
+                  "touchedBy": [
+                    {
+                      "id": "20261124T100400Z-apply-7d41e9b3",
+                      "at": "2026-11-24T10:04:00Z",
+                      "command": "CEREMONY_COMMAND_APPLY"
+                    }
+                  ]
+                },
+                {
+                  "id": "cert-11",
+                  "kind": "CERTIFICATION_KIND_PRIMARY_SELF_SIGNATURE",
+                  "issuer": "C4A2E605C4A2E605C4A2E605C4A2E605C4A2E605",
+                  "subject": {
+                    "kind": "OBJECT_KIND_USER_ID",
+                    "id": "uid-C-2",
+                    "label": "Example Release Security <security@example.com>"
+                  },
+                  "validFrom": "2026-11-24T11:08:00Z",
+                  "validUntil": "2029-11-24T11:08:00Z",
+                  "ceremonyId": "20261124T100400Z-apply-7d41e9b3",
+                  "touchedBy": [
+                    {
+                      "id": "20261124T100400Z-apply-7d41e9b3",
+                      "at": "2026-11-24T10:04:00Z",
+                      "command": "CEREMONY_COMMAND_APPLY"
+                    }
+                  ]
+                }
+              ]
+            },
+            "changes": {
+              "replace": [
+                {
+                  "id": "chg-1",
+                  "object": {
+                    "kind": "OBJECT_KIND_DELEGATION",
+                    "id": "acme-release",
+                    "label": "acme-release"
+                  },
+                  "kind": "CHANGE_KIND_RENEW",
+                  "state": "CHANGE_STATE_WAITS",
+                  "text": "Renew acme-release",
+                  "needs": [
+                    {
+                      "kind": "NEED_KIND_CARD",
+                      "name": "root-b",
+                      "met": true
+                    },
+                    {
+                      "kind": "NEED_KIND_REQUEST",
+                      "name": "acme-release",
+                      "met": false
+                    }
+                  ],
+                  "reason": "No request for acme-release has come.",
+                  "source": "CHANGE_SOURCE_DATE",
+                  "dueAt": "2027-01-23T10:00:00Z",
+                  "involves": [
+                    {
+                      "kind": "OBJECT_KIND_CERTIFICATION",
+                      "id": "cert-8",
+                      "label": "binding of acme-release"
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        {
+          "call": "ListCeremonies",
+          "set": {
+            "history": {
+              "recordCount": 15,
+              "chainState": "CHAIN_STATE_VERIFIED",
+              "endRecordSha256": "e8f90a1be8f90a1be8f90a1be8f90a1be8f90a1be8f90a1be8f90a1be8f90a1b",
+              "lastRecordId": "20261124T100400Z-apply-7d41e9b3",
+              "lastRecordTitle": "Certified the new user ID with keys A, B and C",
+              "lastRecordAt": "2026-11-24T11:08:00Z",
+              "checkedAt": "2026-11-24T11:10:00Z",
+              "message": "All 15 records check out. The newest is 0 days old.",
+              "ends": 1
+            }
+          },
+          "lists": {
+            "ceremonies": {
+              "prepend": [
+                {
+                  "id": "20261124T100400Z-apply-7d41e9b3",
+                  "command": "CEREMONY_COMMAND_APPLY",
+                  "state": "CEREMONY_STATE_RECORDED",
+                  "title": "Certified the new user ID with keys A, B and C",
+                  "summary": "The ceremony certified the new user ID with keys A, B and C and wrote trust set 14. The renewal of acme-release was left out, because its request is missing.",
+                  "plannedAt": "2026-11-24T10:04:00Z",
+                  "ranOn": "RUN_PLACE_WORKSTATION",
+                  "planSha256": "7d41e9b37d41e9b37d41e9b37d41e9b37d41e9b37d41e9b37d41e9b37d41e9b3",
+                  "trustSequence": 14,
+                  "trustSetName": "14-7d41e9b3",
+                  "applied": [
+                    {
+                      "object": {
+                        "kind": "OBJECT_KIND_USER_ID",
+                        "id": "uid-A-2",
+                        "label": "Example Release Security <security@example.com>"
+                      },
+                      "kind": "CHANGE_KIND_CERTIFY",
+                      "text": "Certify Example Release Security <security@example.com> by key A"
+                    },
+                    {
+                      "object": {
+                        "kind": "OBJECT_KIND_USER_ID",
+                        "id": "uid-B-2",
+                        "label": "Example Release Security <security@example.com>"
+                      },
+                      "kind": "CHANGE_KIND_CERTIFY",
+                      "text": "Certify Example Release Security <security@example.com> by key B"
+                    },
+                    {
+                      "object": {
+                        "kind": "OBJECT_KIND_USER_ID",
+                        "id": "uid-C-2",
+                        "label": "Example Release Security <security@example.com>"
+                      },
+                      "kind": "CHANGE_KIND_CERTIFY",
+                      "text": "Certify Example Release Security <security@example.com> by key C"
+                    }
+                  ],
+                  "leftOut": [
+                    {
+                      "object": {
+                        "kind": "OBJECT_KIND_DELEGATION",
+                        "id": "acme-release",
+                        "label": "acme-release"
+                      },
+                      "kind": "CHANGE_KIND_RENEW",
+                      "text": "Renew acme-release",
+                      "reason": "No request for acme-release has come. The plan leaves this renewal out and records it, because --allow-missing acme-release was named."
+                    }
+                  ],
+                  "cards": [
+                    "root-a",
+                    "root-b"
+                  ],
+                  "signatureCount": 3,
+                  "touchCount": 2,
+                  "guidePath": "/design/#a-ceremony",
+                  "outcome": "CEREMONY_OUTCOME_COMPLETED",
+                  "startedAt": "2026-11-24T10:06:00Z",
+                  "finishedAt": "2026-11-24T11:08:00Z",
+                  "recordSha256": "e8f90a1be8f90a1be8f90a1be8f90a1be8f90a1be8f90a1be8f90a1be8f90a1b",
+                  "prevRecordSha256": "d7e8f90ad7e8f90ad7e8f90ad7e8f90ad7e8f90ad7e8f90ad7e8f90ad7e8f90a",
+                  "publishCommand": "ritueel publish"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "call": "ListTrustFiles",
+          "set": {
+            "trustSequence": 14,
+            "setName": "14-7d41e9b3",
+            "writtenAt": "2026-11-24T11:08:00Z",
+            "ceremonyId": "20261124T100400Z-apply-7d41e9b3"
+          },
+          "lists": {
+            "files": {
+              "replace": [
+                {
+                  "name": "root-list.json",
+                  "kind": "TRUST_FILE_KIND_ROOT_LIST",
+                  "path": "trust/14-7d41e9b3/root-list.json",
+                  "trustSequence": 14,
+                  "builtAt": "2026-11-24T11:08:00Z",
+                  "validUntil": "2027-12-24T00:00:00Z",
+                  "checkResult": "TRUST_CHECK_RESULT_PASSED",
+                  "checkDetail": "The list names three roots and is signed by keys A, B and C. It replaces set 13.",
+                  "sha256": "c3d9a7e1c3d9a7e1c3d9a7e1c3d9a7e1c3d9a7e1c3d9a7e1c3d9a7e1c3d9a7e1",
+                  "sizeBytes": "2412",
+                  "verifyCommand": "ritueel verify root-list trust/14-7d41e9b3/root-list.json --held trust/13-3fa9c1d2/root-list.json"
+                },
+                {
+                  "name": "ca-bundle.pem",
+                  "kind": "TRUST_FILE_KIND_CA_BUNDLE",
+                  "path": "trust/14-7d41e9b3/ca-bundle.pem",
+                  "trustSequence": 14,
+                  "builtAt": "2026-11-24T11:08:00Z",
+                  "validUntil": "2029-11-20T00:00:00Z",
+                  "checkResult": "TRUST_CHECK_RESULT_PASSED",
+                  "checkDetail": "The bundle holds the three X.509 root certificates and matches the root list.",
+                  "sha256": "4b7f20d64b7f20d64b7f20d64b7f20d64b7f20d64b7f20d64b7f20d64b7f20d6",
+                  "sizeBytes": "3120",
+                  "verifyCommand": "ritueel verify root-list trust/14-7d41e9b3/root-list.json --held trust/13-3fa9c1d2/root-list.json --ca-bundle trust/14-7d41e9b3/ca-bundle.pem"
+                },
+                {
+                  "name": "crl-A.pem",
+                  "kind": "TRUST_FILE_KIND_CRL",
+                  "path": "trust/14-7d41e9b3/crl-A.pem",
+                  "trustSequence": 14,
+                  "builtAt": "2026-11-24T11:08:00Z",
+                  "validUntil": "2028-12-24T00:00:00Z",
+                  "checkResult": "TRUST_CHECK_RESULT_PASSED",
+                  "checkDetail": "Signed by key A. It was made in this set, because key A signed in it.",
+                  "sha256": "9a1e5c839a1e5c839a1e5c839a1e5c839a1e5c839a1e5c839a1e5c839a1e5c83",
+                  "sizeBytes": "524",
+                  "verifyCommand": "ritueel verify crl trust/14-7d41e9b3/crl-A.pem --ca-bundle trust/14-7d41e9b3/ca-bundle.pem"
+                },
+                {
+                  "name": "crl-B.pem",
+                  "kind": "TRUST_FILE_KIND_CRL",
+                  "path": "trust/14-7d41e9b3/crl-B.pem",
+                  "trustSequence": 14,
+                  "builtAt": "2026-11-24T11:08:00Z",
+                  "validUntil": "2028-12-24T00:00:00Z",
+                  "checkResult": "TRUST_CHECK_RESULT_PASSED",
+                  "checkDetail": "Signed by key B. It was made in this set, because key B signed in it.",
+                  "sha256": "2d6b8f042d6b8f042d6b8f042d6b8f042d6b8f042d6b8f042d6b8f042d6b8f04",
+                  "sizeBytes": "526",
+                  "verifyCommand": "ritueel verify crl trust/14-7d41e9b3/crl-B.pem --ca-bundle trust/14-7d41e9b3/ca-bundle.pem"
+                },
+                {
+                  "name": "crl-C.pem",
+                  "kind": "TRUST_FILE_KIND_CRL",
+                  "path": "trust/14-7d41e9b3/crl-C.pem",
+                  "trustSequence": 14,
+                  "builtAt": "2026-11-24T11:08:00Z",
+                  "validUntil": "2028-12-24T00:00:00Z",
+                  "checkResult": "TRUST_CHECK_RESULT_PASSED",
+                  "checkDetail": "Signed by key C. It was made in this set, because key C signed in it.",
+                  "sha256": "f05a7e39f05a7e39f05a7e39f05a7e39f05a7e39f05a7e39f05a7e39f05a7e39",
+                  "sizeBytes": "524",
+                  "verifyCommand": "ritueel verify crl trust/14-7d41e9b3/crl-C.pem --ca-bundle trust/14-7d41e9b3/ca-bundle.pem"
+                },
+                {
+                  "name": "ssh-ca-keys.json",
+                  "kind": "TRUST_FILE_KIND_SSH_CA_KEYS",
+                  "path": "trust/14-7d41e9b3/ssh-ca-keys.json",
+                  "trustSequence": 14,
+                  "builtAt": "2026-11-24T11:08:00Z",
+                  "validUntil": "2027-12-24T00:00:00Z",
+                  "checkResult": "TRUST_CHECK_RESULT_PASSED",
+                  "checkDetail": "The list names the SSH CA keys of the root and is signed by keys A, B and C.",
+                  "sha256": "81c4d6b281c4d6b281c4d6b281c4d6b281c4d6b281c4d6b281c4d6b281c4d6b2",
+                  "sizeBytes": "1180",
+                  "verifyCommand": "ritueel verify ssh-ca-keys trust/14-7d41e9b3/ssh-ca-keys.json --held trust/13-3fa9c1d2/ssh-ca-keys.json"
+                },
+                {
+                  "name": "acme-keyring.gpg",
+                  "kind": "TRUST_FILE_KIND_KEYRING",
+                  "path": "trust/14-7d41e9b3/keyring/acme-keyring.gpg",
+                  "trustSequence": 14,
+                  "builtAt": "2026-11-24T11:08:00Z",
+                  "validUntil": "2028-03-18T00:00:00Z",
+                  "checkResult": "TRUST_CHECK_RESULT_PASSED",
+                  "checkDetail": "The keyring holds the public keys of the OpenPGP root and its subkey.",
+                  "sha256": "a6e3190fa6e3190fa6e3190fa6e3190fa6e3190fa6e3190fa6e3190fa6e3190f",
+                  "sizeBytes": "4096",
+                  "verifyCommand": "ritueel verify keyring trust/14-7d41e9b3/keyring/acme-keyring.gpg --root-list trust/14-7d41e9b3/root-list.json"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
