@@ -62,7 +62,7 @@ acme/
 ```
 
 :::note[Proposed]
-The names `ritueel.yaml`, `history/`, `trust/` and `requests/` are decided ([record 0006](../decisions/0006-bundle-history-and-trust-files.md), rules 5, 10, 11 and 12). Every other folder name, the file names inside a ceremony folder and the spelling of the names that carry an identity await the maintainer's word and are fixed with the code ([issue #8](https://github.com/truvity/ritueel/issues/8)).
+The names `ritueel.yaml`, `history/` and `requests/` are decided ([record 0006](../decisions/0006-bundle-history-and-trust-files.md), rules 5, 10 and 11). Every other folder name, among them `trust/`, the file names inside a ceremony folder and the spelling of the names that carry an identity await the maintainer's word and are fixed with the code ([issue #8](https://github.com/truvity/ritueel/issues/8)).
 :::
 
 | Path | Mark | Written by | Holds |
@@ -76,7 +76,7 @@ The names `ritueel.yaml`, `history/`, `trust/` and `requests/` are decided ([rec
 | `roots/<label>/ssh-break-glass.pub` | HISTORY | The same ceremony, from M2 with the cloud store | The break-glass SSH CA key of the root key, one OpenSSH line ([record 0006](../decisions/0006-bundle-history-and-trust-files.md), rule 25; [the SSH CA key list](/reference/ssh-ca-key-list/#how-a-key-enters-the-list)). |
 | `requests/<name>/` | REQUEST | The requester writes the request; a ceremony adds the answer (requests in, answers out: [record 0001](../decisions/0001-what-ritueel-is.md), rule 3) | One folder for each request; `<name>` is the stem of the [hand-off contract](/reference/hand-off-contract/#messages-and-files). It holds the request files and, once given, the answer beside them: `<name>.result.json`, and `<name>.cert.pem` or `<name>.bound.pgp` ([record 0006](../decisions/0006-bundle-history-and-trust-files.md), rule 10). |
 | `history/<ceremony>/` | HISTORY | A ceremony; `close` writes a closing record | One ceremony folder for each ceremony, with the [ceremony files](/reference/ceremony-record/): the plan, exact copies of the wanted files the plan used, the attempt, the [birth journal](/reference/ceremony-record/#the-birth-journal), the journal of signatures, the transcript and the ceremony record ([record 0006](../decisions/0006-bundle-history-and-trust-files.md), rule 5). Each ceremony record names the one before it (rule 6). |
-| `trust/<number>-<identity>/` | HISTORY | A ceremony, built beside and renamed into place; also `revoke`, which writes the trust set without the key ([record 0007](../decisions/0007-changing-and-losing-a-root.md), rule 8) | One trust set ([record 0006](../decisions/0006-bundle-history-and-trust-files.md), rule 12): `root-list.json`, `root-list.jws` and `ca-bundle.pem` ([the root list](/reference/root-list/#files)); from M4 `crl-<label>.pem` for each active root key ([the CRLs](/reference/crl/#files)); from M4 `ssh-ca-keys.json`, `ssh-ca-keys.jws` and `ssh-user-ca-keys.pub` ([the SSH CA key list](/reference/ssh-ca-key-list/#files)) and `revocations/`; from M5 `keyring/` ([the keyring package](/reference/keyring-package/#files)). |
+| `trust/<number>-<identity>/` | HISTORY | A ceremony, built beside and renamed into place; also `revoke`, which writes the trust set without the key ([record 0007](../decisions/0007-changing-and-losing-a-root.md), rule 8) | One trust set ([record 0006](../decisions/0006-bundle-history-and-trust-files.md), rule 12): `root-list.json`, `root-list.jws` and `ca-bundle.pem` ([the root list](/reference/root-list/#files)); from M4 `crl-<label>.pem` for each active root key ([the CRLs](/reference/crl/#files)); from M4 `ssh-ca-keys.json`, `ssh-ca-keys.jws` and `ssh-user-ca-keys.pub` ([the SSH CA key list](/reference/ssh-ca-key-list/#files)); from M5 `keyring/` ([the keyring package](/reference/keyring-package/#files)). |
 | `drills/` | SEEN | The restore check; the holder commits the reports | Reports of the restore check. They are not ceremony records and stay out of the hash chain ([record 0007](../decisions/0007-changing-and-losing-a-root.md), rule 25). |
 
 An inert proposal of the page ([record 0010](../decisions/0010-the-engine-the-process-and-the-page.md), rule 11) is not a wanted file and has no mark here. It is built after the first build of the page. Where it waits and what it may hold are open ([issue #147](https://github.com/truvity/ritueel/issues/147)).
@@ -85,7 +85,7 @@ A personal bundle also holds the wrapped backup of the encryption subkey (record
 
 - A ceremony only adds files. Nothing under `history/`, `trust/`, `sealed/` or `requests/` is ever overwritten ([record 0006](../decisions/0006-bundle-history-and-trust-files.md), rule 29). `seen/` is the one place that is replaced: a check writes a new map whole over the old one.
 - The bundle keeps no second copy of a root key's certificate or public key. They are in the newest trust set that holds them (rule 12), because a copy that a ceremony replaced would break rule 29.
-- ritueel never changes a wanted file after `new`, and never changes a request. It adds the answer beside it (rules 10 and 11). A person edits no other path than the wanted files and the requests.
+- ritueel never changes a wanted file on its own, and never changes a request. It adds the answer beside it (rules 10 and 11). A person edits no other path than the wanted files and the requests.
 - ritueel refuses a request whose folder already has an answer (rule 10).
 - The bundle is found by `--dir DIR`, or is the current directory when it holds `ritueel.yaml` ([Commands](/reference/cli/#flags-every-ceremony-shares)).
 - Outside the bundle are the key files of a software root key ([record 0007](../decisions/0007-changing-and-losing-a-root.md), rule 26) and the revocation material (rule 22).
@@ -162,13 +162,13 @@ The repair of a fork is later ([issue #138](https://github.com/truvity/ritueel/i
 - The end of the history is the ceremony record that no other ceremony record names ([record 0006](../decisions/0006-bundle-history-and-trust-files.md), rule 6).
 - After every ceremony and every join ritueel prints it: the first eight characters of its digest, and the count of ceremony records (rule 9).
 - The holder keeps that print apart from the repository. It is advice and is not enforced (rule 9). Ceremony records are not signed (rule 6), so the eight characters are a check for the holder's eye and not a defence against an attacker.
-- The rest of the advice of rule 9 is also not enforced: keep the bundle in a git repository of its own, with signed commits and review before a change lands, and back it up to a second remote on another provider.
+- The rest of the advice of rule 9 is also not enforced: keep the bundle in a git repository of its own, and back it up to a second remote. [Learn](/learn/the-history/) adds signed commits and review.
 - The next signed root list carries the digest of the end of the history as `last_record_sha256`. It anchors the chain without another use of the root (rules 6 and 15; [the root list](/reference/root-list/)).
 - Whether `revoke` leaves a ceremony record and prints the end of the history is open ([record 0007](../decisions/0007-changing-and-losing-a-root.md), Proposed; [issue #141](https://github.com/truvity/ritueel/issues/141)).
 
 ## On the stick
 
-A key that can be copied, such as a key file, is used only in the offline system, which boots from a USB stick. A root key on a card may also run there. A cloud root key always runs on the workstation, because the offline system has no network ([record 0005](../decisions/0005-a-ceremony-and-where-it-runs.md), rules 17, 18 and 20). The stick carries one extra partition, and ritueel defines its layout (rule 21). The picture is on [the bundle and the USB stick](/how-it-works/bundle-and-stick/#the-usb-stick).
+A key that can be copied, such as a key file, is used only in the offline system, which boots from a USB stick; a test root is the exception. A root key on a card may also run there. A cloud root key always runs on the workstation, because the offline system has no network ([record 0005](../decisions/0005-a-ceremony-and-where-it-runs.md), rules 17, 18 and 20). The stick carries one extra partition, and ritueel defines its layout (rule 21). The picture is on [the bundle and the USB stick](/how-it-works/bundle-and-stick/#the-usb-stick).
 
 **The stick carries:** the ritueel program, in several versions and architectures; the bundles; the encrypted key files, beside the bundles and never inside one (rule 21). The stick's copy of a bundle carries no wanted files (rule 21). A saved plan travels inside the bundle with the exact copies of the wanted files it used (rules 21 and 4).
 
@@ -195,7 +195,7 @@ RITUEEL/                          the extra partition
 
 - **`RITUEEL/`** is the extra partition. AirgapOS's own partitions are not touched.
 - **`ritueel/<version>/<system>-<arch>/ritueel`** holds the program, and nothing else, because it is one static file. The version comes first, so that the run can use the exact version that made the plan (rule 25). The system and the architecture come second, so that several machines can use one stick.
-- **`bundles/<name>/`** is a bundle copied without its wanted files, so the plan in its history and the bundle the plan was made from arrive together. It is the directory that your workstation uses with `--dir`, with no second format.
+- **`bundles/<name>/`** is a bundle copied without its wanted files, so the plan in its history and the bundle the plan was made from arrive together. It is a bundle that your workstation uses with `--dir`, with no second format.
 - **`keys/<bundle>/`** holds the key files of that bundle. Key files are never inside a bundle, so a copy of a bundle cannot carry a key by accident. The folder has the name of the bundle.
 - **The plan records the copy that made it** in the member `ritueel`: `{ "version", "os_arch", "sha256" }` ([the ceremony files](/reference/ceremony-record/)). The run is then `<stick>/ritueel/<version>/<system>-<arch>/ritueel --dir <stick>/bundles/acme apply history/<ceremony>/plan.json`.
 
@@ -406,7 +406,7 @@ A key is active, retired or revoked ([record 0007](../decisions/0007-changing-an
 | Member | Meaning |
 |---|---|
 | `version` | `1`. |
-| `label` | The label of the root key: one upper-case letter, `A` and `B` for the two keys the first `apply` makes, then the next free letter for each key added, whatever its key store. It never names the store, is unique inside its bundle and is never reused. What a label names across roots is open ([issue #137](https://github.com/truvity/ritueel/issues/137)). |
+| `label` | The label of the root key: one upper-case letter, `A` for the first key and `B` for the second key when the first `apply` makes two keys, then the next free letter for each key added, whatever its key store. It never names the store, is unique inside its bundle and is never reused. What a label names across roots is open ([issue #137](https://github.com/truvity/ritueel/issues/137)). |
 | `store` | `software`, `piv` or `aws-kms`. |
 | `test` | True for a test root key. Set at birth and never changed; a real root never becomes a test root ([record 0005](../decisions/0005-a-ceremony-and-where-it-runs.md), rule 28). |
 | `created_at` | When the key was made: the time of its ceremony. |
@@ -451,7 +451,7 @@ Every root key's OpenPGP primary has this profile, as [record 0009](../decisions
 | Key | Version 4, ECDSA on P-384 (algorithm 19). The creation time is `openpgp_created`. |
 | User ID | One: `<name> Release Root <label> <release_address>`, for example `Example Release Root A <release@example.com>`. A test root key's adds ` (TEST ONLY)` before the address. No person's name. |
 | Self-signature | A positive certification (type `0x13`) of the user ID, SHA-384. Hashed: signature creation time (the ceremony time), key flags `0x01` (certify only), key expiration time, marked critical, so that the key expires 36 calendar months after the ceremony, and the issuer fingerprint. Unhashed: the issuer key ID ([the packet rule](/reference/hand-off-contract/#issuer-key-id)). |
-| Subkeys | None of its own. It binds the subkeys of intermediates through the hand-off. |
+| Subkeys | None of its own. It binds the subkeys that a requester asks for through the hand-off. |
 | Revocation | A key revocation signature (type `0x20`), made when the key is born and stored apart from it. |
 
 **Each use extends it,** with a new self-signature of the same shape at the ceremony time. The new public certificate is a new file in the trust set.
@@ -470,7 +470,7 @@ A software root key ([the `software` store](../decisions/0002-where-a-key-lives.
 | `<label>.removal.jws.age` | The key's removal authorisation, encrypted the same way; the SHA-256 of the JWS text before encryption is `removal_sha256`. |
 
 - **Encryption.** The age format (`age-encryption.org/v1`). By default a key file is encrypted to two recipients: the public half of an age key (the unlock key) and a recovery recipient. A passkey on each card named as a way to open the file (the root cards) unwraps the private half of the unlock key; any one of those cards is enough, and a file may name more than two; the recovery key is an age identity in a passphrase-protected file kept apart from the cards ([record 0002](../decisions/0002-where-a-key-lives.md), rules 20 to 22). Encrypting needs no card. The members that hold the wrapped private half of the unlock key, and the recovery file, are fixed with the passkey proof (M1), and are not written here before it.
-- **A passphrase instead,** for a holder without cards: the age passphrase recipient, which derives the key with scrypt (record 0002, rule 23). A passphrase file holds only that recipient, because the age v1 specification says "An scrypt stanza, if present, MUST be the only stanza in the header" (read 2026-11-11, [age v1](https://age-encryption.org/v1)). The passphrase is read from the terminal without echo, or from `--passphrase-fd N`; it is never a flag, an environment variable or a line of output. A test root key or a script uses it ([record 0005](../decisions/0005-a-ceremony-and-where-it-runs.md), rule 27).
+- **A passphrase instead,** for a holder without cards: the age passphrase recipient, which derives the key with scrypt (record 0002, rule 23). A passphrase file holds only that recipient, because the age v1 specification says "An scrypt stanza, if present, MUST be the only stanza in the header" (read 2026-11-11, [age v1](https://age-encryption.org/v1)). The passphrase is read from the terminal without echo, or from `--passphrase-fd N`; it is never a flag, an environment variable or a line of output. A script root that is not a test root uses it ([record 0005](../decisions/0005-a-ceremony-and-where-it-runs.md), rule 27).
 - **A test root** is marked at birth and has no passphrase ([record 0005](../decisions/0005-a-ceremony-and-where-it-runs.md), rule 28). Its key files are written with no encryption: `<label>.x509.key.pem` with the line `TEST ONLY: a test root with no passphrase; anyone with this file can sign as this root.` before the armour, `<label>.openpgp.key.asc` and `<label>.revocation.<reason>.asc`, ASCII-armoured with the header `Comment: TEST ONLY`, and `<label>.removal.jws`. The names of its keys carry ` (TEST ONLY)` too, and `apply` refuses to put a test root and a real root in one trust set.
 - The holder keeps the revocation files and the removal authorisation apart from the key files, as for a card ([record 0007](../decisions/0007-changing-and-losing-a-root.md), rule 22).
 
@@ -489,7 +489,7 @@ These are named and are not rules. Nothing on this page depends on them.
 - A decided repair of a fork ([issue #138](https://github.com/truvity/ritueel/issues/138)).
 - The sealed single-file form of the history, for backups that reveal nothing (record 0006, rule 5).
 - Trust numbers that skip. Until then the number grows by one (record 0006, rule 14).
-- The lock kept as a file, which keeps two writers from one bundle. The Proposed lock of [record 0010](../decisions/0010-the-engine-the-process-and-the-page.md) is held by the running process; it is not this file.
+- The lock kept as a file, which keeps two writers from one bundle. The lock of [record 0010](../decisions/0010-the-engine-the-process-and-the-page.md) (rule 8) is not this file; that the running process holds it is Proposed.
 - Root state as files: a key's state is read from the ceremony records, as in [`root.json`](/reference/bundle/#rootjson).
 
 ## Standards
