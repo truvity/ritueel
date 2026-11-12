@@ -5,7 +5,7 @@ sidebar:
   order: 6
 ---
 
-*Design phase: not built yet. The restore drill is planned as its own command. Read [The history](/learn/the-history/) first for what is kept, where, and why.*
+*Design phase: not built yet. The restore check is planned as the command `ritueel check restore`. Read [The history](/learn/the-history/) first for what is kept, where, and why.*
 
 ## What you start with
 
@@ -18,22 +18,22 @@ sidebar:
 ## Back up
 
 1. **Push the bundle** to both remotes, and check each shows the latest commit.
-2. **Note the last digest** of the record chain apart from the repository.
+2. **Note the end of the history** that ritueel printed, apart from the repository.
 3. **Check the revocation certificates:** both places hold them, and each digest equals the one in the bundle.
 4. **Check the second card** is where you think it is.
 5. **Check the PINs** are in the password manager, one entry per card, and that the recovery key and its passphrase are in two different places.
 
 ## Restore, as a drill
 
-0. **Run the check.** `ritueel drill restore --expect-last DIGEST --allowed-signers FILE --revocation-dir DIR` does steps 1 to 4 below, compares the stored revocation signatures with their digests, and writes a report ([the check](/reference/drill/#the-restore-check)). The steps say what it does, so you can do each by hand once.
+0. **Run the check.** `ritueel check restore --expect-last DIGEST --allowed-signers FILE --revocation-dir DIR` does steps 1 to 4 below, compares the stored revocation signatures with their digests, and writes a report ([the check](/reference/drill/#the-restore-check)). The steps say what it does, so you can do each by hand once.
 1. **Clone the bundle** on the clean machine from the remote, and verify the signed commits.
-2. **Verify the chain.** `ritueel records verify`, then compare the last digest with the note. Result: the history is whole.
+2. **Verify the chain.** `ritueel check history`, then compare the end of the history with the note. Result: the history is whole.
 3. **List the state.** `ritueel status`. Result: the roots, the intermediates and what expires when.
-4. **Compare with the keys.** For each root, read the serial and fingerprint from the card or the cloud key and compare with the bundle. Result: the bundle describes the keys you hold.
+4. **Compare with the keys.** For each root key, read the serial and fingerprint from the card or the cloud key and compare with the bundle. Result: the bundle describes the keys you hold.
 5. **Walk through a loss.** Take one rehearsal card out of use and follow [A lost root card](/guides/lost-root-card/) with the stored revocation certificate.
 
 ## How you know it worked
 
-Every comparison matches, and the walk-through ends with the checks of the lost-card guide. The drill's record says how long each step took.
+Every comparison matches, and the walk-through ends with the checks of the lost-card guide. The drill's report says how long each step took.
 
 Run this on test keys first, then once on the real ones, and then once a year.
