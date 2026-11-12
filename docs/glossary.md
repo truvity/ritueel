@@ -25,4 +25,4 @@ These words carry the design. The pages and the records use each in the sense be
 | **not applied yet** | What is wanted and not done, found each time from wanted files, history, date and requests; never stored. An item is a **change**, never a row. | `not applied yet`, `a change` | [0005](decisions/0005-a-ceremony-and-where-it-runs.md) (rule 29) |
 | **apply** | Do the changes not applied yet in one ceremony: `apply` finds them, plans, and once confirmed signs and records. `apply PLAN` runs a saved one. | `apply` | [0005](decisions/0005-a-ceremony-and-where-it-runs.md) (rules 4, 10) |
 
-The words `card`, `row` and `card file` are defined on their own pages: [the bundle](/reference/bundle/) and [cards](/reference/cards/). The cards page still says `inventory` and is rewritten to follow the records.
+The words `card`, `row` and `card file` are defined on their own pages: [the bundle](/reference/bundle/) and [cards](/reference/cards/).
