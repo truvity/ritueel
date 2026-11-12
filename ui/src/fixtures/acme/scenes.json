@@ -713,7 +713,7 @@
               "lastRecordTitle": "Certified the new user ID with keys A, B and C",
               "lastRecordAt": "2026-11-24T11:08:00Z",
               "checkedAt": "2026-11-24T11:10:00Z",
-              "message": "All 15 records check out. The newest is 0 days old.",
+              "message": "All 15 records check out. The newest is from today.",
               "ends": 1
             },
             "changes": {
@@ -1248,7 +1248,7 @@
               "lastRecordTitle": "Certified the new user ID with keys A, B and C",
               "lastRecordAt": "2026-11-24T11:08:00Z",
               "checkedAt": "2026-11-24T11:10:00Z",
-              "message": "All 15 records check out. The newest is 0 days old.",
+              "message": "All 15 records check out. The newest is from today.",
               "ends": 1
             }
           },
