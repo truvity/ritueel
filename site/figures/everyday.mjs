@@ -1,16 +1,20 @@
-// Four things a reader does every day (a web page, a signed tag, a release file, a server login) and the
-// one thing they end at: a root. The page "What is a root?" shows it under its first sentence. Each panel
-// says in one short note how its thing ends at a root; the bar under the panels says how a root is used.
+// Four things (a web page, a signed tag, a release file, a server login) and the root each one ends at.
+// The page "What is a root?" shows it under its first sentence. Each panel says in one short note how its
+// thing ends at a root; the bar under the panels says that each has its own and how a root is used.
 // The words are the page's own and the records':
 //   Web page: the page "What is a root?" (a browser follows signatures to a root it already holds);
 //     record 0006 rule 27 (the CA bundle holds the certificates of the active X.509 roots).
 //   Signed tag: record 0008 rule 7 (a signing subkey on the card, bound by the primary key).
 //   Release file: record 0009 rules 13, 23 and 24 (users check a signature with a keyring or a published fingerprint).
-//   Server login: record 0008 rule 7 (the authentication subkey serves SSH through gpg-agent).
-//   Bar: the page "What is a root?", "It is used rarely"; records 0007 rules 12 and 16 (a yearly ceremony).
-// The four things end at two roots, not one: a web page at an X.509 root, the other three at an OpenPGP
-// root (record 0001 rule 28). The figure says "a root", never "one key". The accent marks the bar, which
-// is the one object. Wide (760 units) and narrow (360 units) are made from the same table, so their
+//   Server login: record 0006 rules 15, 21 and 23 (a host trusts a signed list of SSH CA keys; the list is
+//     signed with an X.509 root key; an SSH CA key is a delegated key) and docs/learn/chain-ssh.md (an SSH CA
+//     key signs user certificates). Not the OpenPGP authentication subkey (0008 rule 7): a host that lists
+//     that subkey in authorized_keys trusts it on its own and never follows its binding to a root.
+//   Bar: the page "What is a root?", "It is used rarely".
+// The four things end at several roots, not one: a web page at an X.509 root, the tag and the release file
+// at OpenPGP roots, the server login at the X.509 root that signs the SSH CA key list (record 0001 rule 28:
+// a root is of one kind). The figure says "a root", never "one key", and the bar says each has its own.
+// The accent marks the bar, which is the one object. Wide (760 units) and narrow (360 units) are made from the same table, so their
 // words cannot drift.
 import { acc, circle, line, path, poly, rect, sheet, text } from './draw.mjs';
 import { svgBox } from './svg.mjs';
@@ -37,8 +41,8 @@ const THINGS = [
   },
   {
     name: 'A server login',
-    tag: 'OpenPGP, SSH',
-    lines: ['An authentication subkey', 'bound by the primary key', 'logs you in by SSH.'],
+    tag: 'SSH CA',
+    lines: ['A CA key signs your login.', 'The host trusts it from a', 'list that a root signed.'],
   },
 ];
 
@@ -84,15 +88,15 @@ function panel(t, i, w) {
 }
 
 const BAR_NAME = 'A root';
-const BAR_NOTE = 'Set up once, used a few times a year.';
+const BAR_NOTE = 'Each has its own. Used rarely.';
 
 const LABEL =
   'Four small panels and one bar. Each panel has a picture and a short note about how its thing ends at a root. ' +
   'A web page, with a padlock: your browser follows signatures to a root already on it. ' +
   'A signed tag: a signing subkey signed it, and the primary key binds the subkey. ' +
   'A release file with a signature: the signature is checked against a keyring or a published fingerprint. ' +
-  'A server login: an authentication subkey, bound by the primary key, logs you in by SSH. ' +
-  'A line leads from each panel to one bar below them, in the accent colour, named A root. The bar says a root is set up once and used a few times a year.';
+  'A server login: a CA key signs your login, and the host trusts that CA key from a list that a root signed. ' +
+  'A line leads from each panel to one bar below them, in the accent colour, named A root. The bar says each of the four has its own root, and a root is used rarely.';
 
 function wide() {
   const pw = 178;
@@ -139,8 +143,8 @@ function narrow() {
 export default {
   id: 'everyday',
   kind: 'layout',
-  label: 'Four things you do every day, and the root each one ends at',
-  caption: 'All four end at a root. If the root breaks, everything below it breaks.',
+  label: 'Four things and the root each one ends at',
+  caption: 'All four end at a root. If a root is lost or stolen, what is below it is at risk.',
   wide: wide(),
   narrow: narrow(),
 };
