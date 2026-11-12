@@ -1,14 +1,19 @@
-// The read service: everything the local page shows about the bundle.
+// The reads of the local page (record 0010, rules 6, 7 and 10).
 //
-// Every call here only reads. No call takes or returns a secret, a PIN or a
-// passphrase (see common.proto). In the real program the answers come from
-// the same functions as `ritueel status`, `ritueel records list` and the
-// card check; in the demo they come from the fixture files.
+// Five calls, all reads, all marked NO_SIDE_EFFECTS so that each may be a GET.
+// The names and the shapes of the five calls are proposed (wizard.md, One API,
+// issue 17); that they are reads is decided (record 0010, rules 7 and 10).
+// There is no call that confirms, signs, creates a key, runs a ceremony or
+// writes, and no field that carries text typed in the page. The only request
+// field is a level to filter by, a choice from a fixed list.
 //
-// All text in an answer is data written by the bundle, not by the program:
-// the page shows it as text only, caps its length, and shows any character
-// that is not plain ASCII, any bidirectional, zero-width or control
-// character as a visible U+XXXX escape.
+// Every response carries `read_at`, the time of the read: the page shows it on
+// every screen and counts every day from it, never from the browser clock
+// (wizard.md, Rules for every entry). The name `read_at` is proposed.
+//
+// Each text from the bundle is data: the page shows it as text only, caps its
+// length and shows any non-ASCII, bidirectional, zero-width or control
+// character as a U+XXXX escape.
 
 syntax = "proto3";
 
@@ -18,115 +23,80 @@ import "google/protobuf/timestamp.proto";
 import "ritueel/local/v1alpha1/common.proto";
 
 service InspectService {
-  // The start screen: the bundle, what is due, how many findings of each
-  // severity, the state of the history, and what is left to set up.
+  // The frame of every entry: the bundle, the counts and the numbers.
   rpc GetSummary(GetSummaryRequest) returns (GetSummaryResponse) {
     option idempotency_level = NO_SIDE_EFFECTS;
   }
-
-  // What is wrong or weak, each with its reason, its severity and the
-  // command that fixes it. Most of it can be told from a public key alone.
+  // The findings of `ritueel status`: To do, tab "Findings".
   rpc ListFindings(ListFindingsRequest) returns (ListFindingsResponse) {
     option idempotency_level = NO_SIDE_EFFECTS;
   }
-
-  // The roots and their keys, their delegated keys, and for an OpenPGP
-  // certificate its primary, user IDs and subkeys by year and by card.
-  rpc ListRoots(ListRootsRequest) returns (ListRootsResponse) {
+  // Cards, roots, keys, user IDs, delegations, certifications, requests and
+  // changes in one read, so the three views of the Inventory and the list of
+  // changes cannot show two states of the bundle (wizard.md, One API).
+  rpc GetInventory(GetInventoryRequest) returns (GetInventoryResponse) {
     option idempotency_level = NO_SIDE_EFFECTS;
   }
-
-  // The history: one record for each ceremony, newest first, and whether
-  // the chain of hashes checks out.
+  // The ceremonies of the history folder, newest first: History.
   rpc ListCeremonies(ListCeremoniesRequest) returns (ListCeremoniesResponse) {
     option idempotency_level = NO_SIDE_EFFECTS;
   }
-
-  // The inventory of cards: every card, and for each card the use of every
-  // slot of its three applications (PIV, OpenPGP and FIDO2).
-  rpc ListCards(ListCardsRequest) returns (ListCardsResponse) {
-    option idempotency_level = NO_SIDE_EFFECTS;
-  }
-
-  // The trust files the bundle can produce, with a check of each: the
-  // newest numbered set, trust/<number>/. Publishing them is left to the
-  // holder.
+  // The newest trust set and its files: Trust set.
   rpc ListTrustFiles(ListTrustFilesRequest) returns (ListTrustFilesResponse) {
     option idempotency_level = NO_SIDE_EFFECTS;
   }
 }
 
-// ---------------------------------------------------------------- summary
+// ---- GetSummary ------------------------------------------------------------
 
 message GetSummaryRequest {}
 
 message GetSummaryResponse {
   Bundle bundle = 1;
-  // The moment the bundle was read. The page counts "days left" from this,
-  // never from its own clock, so a fixture stays the same on any day.
-  google.protobuf.Timestamp as_of = 2;
-  // True when the answers come from a fixture and nothing can act.
+  // The time of this read. [proposed name; wizard.md: "the time of the read"]
+  google.protobuf.Timestamp read_at = 2;
+  // True in the demo. The real process sets it to false.
   bool demo = 3;
-  // The version of the program that answers, for example "0.0.0-demo".
+  // The version of the program, for the footer of the frame.
   string program_version = 4;
+  // [proposed: wizard.md lists neither the chain state nor the time of the
+  // check for this call]
   HistoryStatus history = 5;
-  // What is due, soonest first.
-  repeated DueItem due = 6;
-  // How many findings there are of each severity.
-  repeated FindingCount finding_counts = 7;
-  Counts counts = 8;
-  // Plans saved in the bundle that no ceremony has run yet.
-  repeated PendingPlan pending_plans = 9;
-  // The getting-started checklist, in order.
-  repeated SetupStep setup_steps = 10;
+  // One entry for each level that has a finding, worst first.
+  repeated FindingCount finding_counts = 6;
+  // [proposed: wizard.md, GetSummary: "counts of findings and changes"]
+  ChangeCounts changes = 7;
+  // Ceremonies in the state planned or started: no ceremony record yet.
+  // [decided: wizard.md, GetSummary lists it; states from ceremony-record.md]
+  int32 ceremonies_without_record = 8;
+  // The trust set number, 0 when there is none. [decided: record 0006, rule 14]
+  int32 trust_sequence = 9;
+  // The command that applies the changes that are ready, as text: for example
+  // `ritueel apply`. Empty when no change is ready. It never holds a digest
+  // (record 0010, rule 10). [decided: cli.md, `apply`, `--allow-missing`,
+  // `--plan-only`; the field is proposed]
+  string apply_command = 10;
+  // Set when no change waits or is ready: the nearest end date. wizard.md:
+  // "When nothing waits, the page says so and shows the next date". [proposed
+  // field]
+  NextDate next_date = 11;
 }
 
-// The directory with a fixed structure that holds everything ritueel knows
-// about one trust domain: its history, roots, cards and trust files. No call
-// names a bundle; which bundle the process serves is not decided by the records.
+// Whether the bundle is a company's or a person's. [decided: bundle.md,
+// ritueel.yaml `kind`: `personal`, absent for a company]
+enum BundleKind {
+  BUNDLE_KIND_UNSPECIFIED = 0;
+  BUNDLE_KIND_COMPANY = 1;
+  BUNDLE_KIND_PERSONAL = 2;
+}
+
 message Bundle {
-  // Where the bundle is, as the holder knows it, for example
-  // "~/ritueel/acme".
+  // Where the bundle is on this computer, for example ~/ritueel/acme.
   string path = 1;
-  // The bundle's name, which is the name of its directory: for example
-  // "personal" or "acme". Also the first half of a root's written name across
-  // bundles: acme/A. No file stores it.
+  // The name of the bundle: its directory (record 0006, rule 3).
   string name = 2;
-  bool exists = 3;
+  BundleKind kind = 3;
   google.protobuf.Timestamp created_at = 4;
-  // A role for the holder, never a real name: "the holder".
-  string holder_label = 5;
-}
-
-// Something that has to be renewed or checked by a date.
-message DueItem {
-  string id = 1;
-  DueKind kind = 2;
-  string title = 3;
-  // One or two plain sentences: what happens if it is left.
-  string detail = 4;
-  Subject subject = 5;
-  google.protobuf.Timestamp due_at = 6;
-  // From the number of days left: notice at 60, alert at 30, critical at 14.
-  // Before the window opens it is info.
-  Severity severity = 7;
-  google.protobuf.Timestamp last_done_at = 8;
-  // The wizard goal that plans it.
-  Intention intention = 9;
-}
-
-enum DueKind {
-  DUE_KIND_UNSPECIFIED = 0;
-  // Renew a delegated key by certifying it again under its root.
-  DUE_KIND_RENEW_DELEGATED_KEY = 1;
-  // Renew a root's own certificate or primary.
-  DUE_KIND_RENEW_ROOT = 2;
-  // Renew the root list, a CRL or another trust file.
-  DUE_KIND_RENEW_TRUST_FILE = 3;
-  // The check of the root cards and the proof of life, every six months.
-  DUE_KIND_CARD_CHECK = 4;
-  // The restore check on a clean machine.
-  DUE_KIND_RESTORE_DRILL = 5;
 }
 
 message FindingCount {
@@ -134,482 +104,472 @@ message FindingCount {
   int32 count = 2;
 }
 
-message Counts {
-  int32 roots = 1;
-  int32 delegated_keys = 2;
-  int32 cards = 3;
-  int32 trust_files = 4;
+// Changes not applied yet, by state. [proposed]
+message ChangeCounts {
+  int32 ready = 1;
+  int32 waits = 2;
 }
 
-// A plan that was saved and that no ceremony has attempted or recorded yet.
-message PendingPlan {
-  // The plan's name: the name of its ceremony.
-  string plan_id = 1;
-  // Path inside the bundle: history/<ceremony>/plan.json, for example
-  // "history/20261111T090000Z-due/plan.json". Record 0006 (rule 7) decides
-  // that the running process writes a saved plan there. The names of the
-  // other members of the folder are proposed. record_count counts records
-  // only.
-  string path = 2;
-  Intention intention = 3;
-  string title = 4;
-  // The plan's digest in full (64 hexadecimal characters).
-  string digest = 5;
-  google.protobuf.Timestamp saved_at = 6;
+// The nearest end date. [proposed]
+message NextDate {
+  // What ends: a delegation, a key or a trust file.
+  ObjectRef object = 1;
+  google.protobuf.Timestamp ends_at = 2;
+  // The day from which `apply` renews it: 60 days before the end
+  // (record 0005, rule 11).
+  google.protobuf.Timestamp due_from = 3;
 }
 
-message SetupStep {
-  string id = 1;
-  string title = 2;
-  string detail = 3;
-  bool done = 4;
-}
-
-// --------------------------------------------------------------- findings
+// ---- ListFindings ----------------------------------------------------------
 
 message ListFindingsRequest {
-  // Leave unspecified for all findings.
+  // Only findings at this level or above. Unspecified means all. A choice from
+  // a fixed list; no text.
   Severity min_severity = 1;
 }
 
 message ListFindingsResponse {
-  // Most serious first.
   repeated Finding findings = 1;
+  google.protobuf.Timestamp read_at = 2;
 }
 
 message Finding {
-  // Stable while the cause stays, so a link to it keeps working.
   string id = 1;
-  // A short stable word for the kind of finding, for example "no-expiry".
+  // The kind of the finding, as `ritueel status --output json` names it:
+  // intermediate, root, root-list, ssh-ca-keys, crl, attempt, root-set,
+  // root-overlap, drill, fork or wanted. [decided: cli.md, Machine-readable
+  // output; the name `wanted` is proposed there] The old codes of the page
+  // (undeclared-row and others) are gone.
   string code = 2;
   Severity severity = 3;
-  // One line.
   string title = 4;
-  // The reason, in plain words: why this matters to the holder.
   string reason = 5;
-  Subject subject = 6;
-  // The facts the finding rests on, one short line each.
+  // What the finding is about. Unset for a finding about the whole bundle.
+  ObjectRef object = 6;
   repeated string evidence = 7;
-  // The exact command that fixes it (or builds the plan that fixes it).
+  // The command that deals with it, as text. Empty when there is none.
   string fix_command = 8;
-  // The wizard goal that plans the fix; unspecified if there is none.
-  Intention fix_intention = 9;
-  // A path on the ritueel site that teaches the point, for example
-  // "/learn/revoke/". The page links to it.
+  // The old field 9, fix_intention, and field 11 are gone with the wizard.
+  reserved 9, 11;
+  reserved "fix_intention", "visible_from_public_key";
+  // A plain path of a page that the site publishes (site/published.txt), with
+  // an anchor that is a heading of that page, or empty.
   string learn_path = 10;
-  // True when the page could tell this from a public key alone.
-  bool visible_from_public_key = 11;
 }
 
-// ------------------------------------------------------------------ roots
+// ---- GetInventory ----------------------------------------------------------
 
-message ListRootsRequest {}
+message GetInventoryRequest {}
 
-message ListRootsResponse {
-  repeated Root roots = 1;
+message GetInventoryResponse {
+  google.protobuf.Timestamp read_at = 1;
+  repeated Card cards = 2;
+  repeated Root roots = 3;
+  // Root keys and delegated keys, in the order of the roots, then by label.
+  repeated Key keys = 4;
+  repeated UserId user_ids = 5;
+  repeated Delegation delegations = 6;
+  repeated Certification certifications = 7;
+  repeated Request requests = 8;
+  // What is not applied yet, found from the wanted files, the history, the
+  // date and the requests; never stored. [decided: record 0005, rule 29]
+  repeated Change changes = 9;
 }
 
-enum RootKind {
-  ROOT_KIND_UNSPECIFIED = 0;
-  // A holder's own OpenPGP key.
-  ROOT_KIND_PERSONAL = 1;
-  // A small company's root: X.509, OpenPGP, break-glass SSH CA.
-  ROOT_KIND_COMPANY = 2;
+// ---- keys, roots, delegations ----------------------------------------------
+
+// What a key is. [decided: glossary and record 0006, rule 2: the three kinds of
+// root]
+enum KeyKind {
+  KEY_KIND_UNSPECIFIED = 0;
+  KEY_KIND_X509 = 1;
+  KEY_KIND_OPENPGP = 2;
+  KEY_KIND_SSH_CA = 3;
 }
 
-enum RootState {
-  ROOT_STATE_UNSPECIFIED = 0;
-  ROOT_STATE_ACTIVE = 1;
-  // An old root and its replacement are both valid for a time.
-  ROOT_STATE_OVERLAP = 2;
-  ROOT_STATE_RETIRED = 3;
-  ROOT_STATE_REVOKED = 4;
+// Whether a key is a key of a root or a delegated key. [decided: glossary]
+enum KeyRole {
+  KEY_ROLE_UNSPECIFIED = 0;
+  KEY_ROLE_ROOT_KEY = 1;
+  KEY_ROLE_DELEGATED_KEY = 2;
 }
 
-message Root {
-  // The root's label in the bundle: A, B ... as in root.json, and the next
-  // free letter for a later root. The page writes it bundle/label, for
-  // example acme/A.
-  string label = 1;
-  // For example "Acme root A".
-  string name = 2;
-  RootKind kind = 3;
-  Store store = 4;
-  RootState state = 5;
-  // True when the key existed before ritueel and was adopted as it is.
-  bool adopted = 6;
-  // A personal key has two stages. 1: an adopted software key, with its
-  // history. 2: two more roots, card-born primaries (B and C), one on each
-  // root card. 0 for other roots.
-  int32 stage = 7;
-  // The row of the root cards' layout that this root owns, 1 to 6 as drawn
-  // (row 1 is the card's own jobs, so roots start at row 2). 0 when the
-  // root is not on cards; a personal root at stage 1 names the row that is
-  // kept for stage two. The map is built into the program and versioned.
-  int32 card_row = 8;
-  // The root card that holds it: one serial for a card-born root (empty
-  // unless the store is root cards).
-  repeated string card_serials = 9;
-  // The OpenPGP creation time ritueel fixed and recorded.
+// The state of a key. A root key is active, retired or revoked, never "lost"
+// (record 0007, rule 3). An overlap is a period, not a state; an end date is a
+// finding, not a state. For a delegated key the same three words are used.
+// [decided for a root key: record 0007, rule 3; for a delegated key: proposed,
+// nearest text 0007 rule 3 and 0008 rule 13]
+enum KeyState {
+  KEY_STATE_UNSPECIFIED = 0;
+  KEY_STATE_ACTIVE = 1;
+  KEY_STATE_RETIRED = 2;
+  KEY_STATE_REVOKED = 3;
+}
+
+// Where a key lives.
+message Place {
+  Store store = 1;
+  // For a card: the name of the card file (the id of the Card).
+  string card = 2;
+  // The slot id on the card (82, 83, 84, or sign for the OpenPGP application).
+  string slot = 3;
+  // For a KMS key: the key's ARN or alias, its Region and its replica.
+  string key_ref = 4;
+  string region = 5;
+  string replica_region = 6;
+  string replica_ref = 7;
+  // For a key file: its path outside the bundle.
+  string path = 8;
+}
+
+message Key {
+  // The full fingerprint: 40 hexadecimal characters for OpenPGP, 64 for an
+  // X.509 or SSH CA key. The id of the key.
+  string fingerprint = 1;
+  // A, B, C ...: the label of a root key (bundle.md, root.json). The first
+  // `apply` makes A and B; a key added later takes the next free letter.
+  // What one label names across the roots of a bundle is open (issue 137).
+  // Empty for a delegated key.
+  string label = 2;
+  KeyRole role = 3;
+  KeyKind kind = 4;
+  // The name of the root: of this key, or the root the delegation is under.
+  string root = 5;
+  // The name of the delegation, for a delegated key.
+  string delegation = 6;
+  KeyState state = 7;
+  string algorithm = 8;
+  Place place = 9;
   google.protobuf.Timestamp created_at = 10;
-  // The keys of the root itself, one entry for each key.
-  repeated RootKey keys = 11;
-  // Set when the root has an OpenPGP primary.
-  OpenPgpCertificate certificate = 12;
-  // Set when the store is a cloud KMS.
-  CloudKey cloud_key = 13;
-  // What this root has certified for a requester.
-  repeated DelegatedKey delegated_keys = 14;
-  // One plain sentence about the root's situation.
-  string note = 15;
+  // The end of the key's own validity that ritueel knows: the end of the root
+  // certificate (X.509 root key), the end of the intermediate certificate
+  // (X.509 delegated key) or the key's expiry (OpenPGP key). Unset for an SSH
+  // CA key, which has no certificate: it ends when the next list leaves it
+  // out (record 0006, rule 25). Unset never means "no expiry".
+  google.protobuf.Timestamp expires_at = 11;
+  // The wanted retire date, if the wanted file has one. [decided: bundle.md,
+  // want/roots/NAME.yaml]
+  google.protobuf.Timestamp retire_at = 12;
+  // The command that revokes this key, as text, for the panel. Empty for a
+  // key that has none. [proposed: cli.md has `revoke KEY...`; how a key is
+  // named in it is open (issue 137), and `--reason` is proposed there for
+  // `revoke`; the form with `--reason REASON` is the page's choice]
+  string revoke_command = 13;
+  repeated CeremonyRef touched_by = 14;
 }
 
-enum RootKeyKind {
-  ROOT_KEY_KIND_UNSPECIFIED = 0;
-  ROOT_KEY_KIND_X509_ROOT = 1;
-  ROOT_KEY_KIND_OPENPGP_PRIMARY = 2;
-  // The break-glass SSH CA key.
-  ROOT_KEY_KIND_SSH_CA = 3;
-}
-
-message RootKey {
-  RootKeyKind kind = 1;
-  // The two sides of a pair of root cards are two roots now (acme/A and
-  // acme/B), each with its own keys, so a key has no side.
-  reserved 2;
-  reserved "side";
-  // For example "rsa4096", "ecdsa-p384".
-  string algorithm = 3;
-  // The full fingerprint: 40 hexadecimal characters for OpenPGP, 64 for the
-  // SHA-256 of an X.509 certificate or an SSH key.
-  string fingerprint = 4;
-  google.protobuf.Timestamp created_at = 5;
-  // Unset means the key has no expiry.
-  google.protobuf.Timestamp expires_at = 6;
-  // The PIV slot on the card, for example "86". Empty if not on a card.
-  string slot = 7;
-  string card_serial = 8;
-}
-
-// A cloud KMS key. ritueel reads its public key and checks its policy; the
-// operator's own code may own the key.
-message CloudKey {
-  // For example "aws-kms".
-  string provider = 1;
-  // The key as the provider names it (for AWS an ARN).
-  string key_ref = 2;
-  string alias = 3;
-  string region = 4;
-  string replica_region = 5;
-  string replica_ref = 6;
-  // True when the key policy passed ritueel's reference rules.
-  bool policy_ok = 7;
-  repeated string policy_notes = 8;
-  google.protobuf.Timestamp adopted_at = 9;
-}
-
-enum DelegatedKeyKind {
-  DELEGATED_KEY_KIND_UNSPECIFIED = 0;
-  DELEGATED_KEY_KIND_X509_INTERMEDIATE = 1;
-  DELEGATED_KEY_KIND_OPENPGP_SUBKEY = 2;
-  DELEGATED_KEY_KIND_SSH_CA_KEY = 3;
-}
-
-enum DelegatedKeyState {
-  DELEGATED_KEY_STATE_UNSPECIFIED = 0;
-  DELEGATED_KEY_STATE_ACTIVE = 1;
-  DELEGATED_KEY_STATE_EXPIRED = 2;
-  DELEGATED_KEY_STATE_REVOKED = 3;
-}
-
-// A key that a root has certified or bound for a requester system. The
-// private half stays where the requester made it.
-message DelegatedKey {
-  // The name in the bundle's configuration, for example "acme-ca".
+// One root of one kind, built from keys in any place. [decided: record 0001,
+// rule 28; record 0006, rule 2]
+message Root {
+  // The name of the wanted file without .yaml, for example acme-tls.
   string name = 1;
-  DelegatedKeyKind kind = 2;
-  // The requester system that holds the key, as a name.
-  string requester = 3;
-  string fingerprint = 4;
-  string algorithm = 5;
-  // Where the requester keeps the private half.
-  Store store = 6;
-  DelegatedKeyState state = 7;
-  google.protobuf.Timestamp certified_at = 8;
-  google.protobuf.Timestamp expires_at = 9;
-  // Fingerprint of the root key that certified it.
-  string certified_by = 10;
-  string detail = 11;
-}
-
-// An OpenPGP certificate: a primary, its user IDs and its subkeys.
-message OpenPgpCertificate {
-  RootKey primary = 1;
-  repeated UserId user_ids = 2;
-  // Oldest year first. One set is the subkeys made in one year on one card, or in one cloud key.
-  repeated SubkeySet subkey_sets = 3;
+  KeyKind kind = 2;
+  // The fingerprints of its keys, in label order.
+  repeated string key_ids = 3;
+  // True for a test root. [decided: record 0005, rule 28]
+  bool test = 4;
+  // True when ritueel adopted an existing key. [decided: bundle.md, root.json]
+  bool adopted = 5;
+  // For example want/roots/acme-tls.yaml. [path decided as a Proposed name in
+  // bundle.md]
+  string wanted_path = 6;
+  google.protobuf.Timestamp created_at = 7;
+  string note = 8;
+  repeated CeremonyRef touched_by = 9;
 }
 
 message UserId {
-  string text = 1;
-  bool primary = 2;
-  google.protobuf.Timestamp created_at = 3;
-  bool revoked = 4;
-}
-
-// The subkeys made in one year on one card. A subkey that was made in
-// software and loaded onto several cards is listed once, in the first set
-// that holds it, with all its cards in Subkey.card_serials.
-message SubkeySet {
-  int32 year = 1;
-  // The card the set was born on; empty for a set that lives in software
-  // or in a cloud key.
-  string card_serial = 2;
-  // True when card_serial is set and that card is in the inventory of
-  // ListCards. False when the set has no card, or when the card is not in
-  // the inventory (the holder may no longer have it).
-  bool card_in_inventory = 3;
-  repeated Subkey subkeys = 4;
-}
-
-enum SubkeyUsage {
-  SUBKEY_USAGE_UNSPECIFIED = 0;
-  SUBKEY_USAGE_SIGN = 1;
-  SUBKEY_USAGE_AUTHENTICATE = 2;
-  SUBKEY_USAGE_ENCRYPT = 3;
-}
-
-enum SubkeyState {
-  SUBKEY_STATE_UNSPECIFIED = 0;
-  SUBKEY_STATE_VALID = 1;
-  SUBKEY_STATE_EXPIRED = 2;
-  SUBKEY_STATE_REVOKED = 3;
-}
-
-enum RevocationReason {
-  REVOCATION_REASON_UNSPECIFIED = 0;
-  // Replaced by a newer key. sqv and gpgv keep signatures made before the revocation; git verify-tag fails for any revoked key (measured 2026-11-10).
-  REVOCATION_REASON_SUPERSEDED = 1;
-  // The key may be in someone else's hands; signatures no longer stand.
-  REVOCATION_REASON_COMPROMISED = 2;
-  // No longer used.
-  REVOCATION_REASON_RETIRED = 3;
-}
-
-enum SubkeyOrigin {
-  SUBKEY_ORIGIN_UNSPECIFIED = 0;
-  SUBKEY_ORIGIN_BORN_ON_CARD = 1;
-  SUBKEY_ORIGIN_MADE_IN_SOFTWARE = 2;
-  // Born in a cloud KMS key; the private half never left it.
-  SUBKEY_ORIGIN_BORN_IN_KMS = 3;
-}
-
-message Subkey {
-  string fingerprint = 1;
-  SubkeyUsage usage = 2;
-  string algorithm = 3;
-  google.protobuf.Timestamp created_at = 4;
-  // Unset means no expiry.
-  google.protobuf.Timestamp expires_at = 5;
-  SubkeyState state = 6;
-  RevocationReason revocation_reason = 7;
-  google.protobuf.Timestamp revoked_at = 8;
-  SubkeyOrigin origin = 9;
-  // The cards that hold the private half, as far as the bundle knows.
-  repeated string card_serials = 10;
-  // Fingerprint of the later subkey of the same use that replaces this
-  // one; empty for the newest. A subkey that is valid and has this set is
-  // "still valid though replaced".
-  string replaced_by = 11;
-}
-
-// -------------------------------------------------------------- ceremonies
-
-message ListCeremoniesRequest {}
-
-message ListCeremoniesResponse {
-  HistoryStatus history = 1;
-  // Newest first. One record for each ceremony.
-  repeated Ceremony ceremonies = 2;
-}
-
-enum CeremonyKind {
-  CEREMONY_KIND_UNSPECIFIED = 0;
-  // The first ceremony of a root: its keys are born.
-  CEREMONY_KIND_INIT = 1;
-  // An existing key is adopted as it is.
-  CEREMONY_KIND_ADOPT_KEY = 2;
-  // A first certificate or binding for a requester's key.
-  CEREMONY_KIND_ADD_DELEGATED_KEY = 3;
-  CEREMONY_KIND_RENEW = 4;
-  CEREMONY_KIND_REPLACE = 5;
-  CEREMONY_KIND_REVOKE = 6;
-  // The check of the cards and the proof of life.
-  CEREMONY_KIND_CARD_CHECK = 7;
-  CEREMONY_KIND_RESTORE_DRILL = 8;
-}
-
-enum CeremonyOutcome {
-  CEREMONY_OUTCOME_UNSPECIFIED = 0;
-  CEREMONY_OUTCOME_DONE = 1;
-  CEREMONY_OUTCOME_NOT_CONFIRMED = 2;
-  CEREMONY_OUTCOME_REFUSED = 3;
-  // An attempt that may have signed something and was never recorded.
-  CEREMONY_OUTCOME_UNRESOLVED = 4;
-}
-
-// One record of the history.
-message Ceremony {
-  // The record's name, which is also the name of its sub-folder of the
-  // history: the ceremony's time in UTC, a hyphen and the command with its
-  // words joined by hyphens, for example "20260127T142000Z-due".
+  // An id the process makes.
   string id = 1;
-  CeremonyKind kind = 2;
-  string title = 3;
-  // What was done, in plain words, as the record tells it.
-  string summary = 4;
-  google.protobuf.Timestamp completed_at = 5;
-  CeremonyOutcome outcome = 6;
-  // The record this one names as the one before; empty for the first.
-  string previous_id = 7;
-  string record_sha256 = 8;
-  string previous_record_sha256 = 9;
-  // The digest of the plan that was confirmed (64 hexadecimal characters).
-  string plan_digest = 10;
-  // Labels of the roots (A) and names of the delegated keys it touched.
-  repeated string subject_labels = 11;
-  repeated string card_serials = 12;
-  // The trust sequence this ceremony wrote; 0 if none.
-  int32 trust_sequence = 13;
-  // The guide on the site that the record names.
-  string guide_path = 14;
-  // Where the ceremony ran. Record 0005, rule 2: every record says where it
-  // ran, on the workstation or in the offline system.
-  RunPlace run_place = 15;
+  // The fingerprint of the primary key that holds it.
+  string key = 2;
+  string text = 3;
+  bool primary = 4;
+  // Unset until the user ID is certified.
+  google.protobuf.Timestamp created_at = 5;
+  // True once a self-certification exists. False for a wanted user ID that is
+  // not applied yet. [decided: record 0008, rule 17; record 0009, rule 28]
+  bool certified = 6;
+  // True once the user ID has a revocation. [decided: record 0008, rule 17]
+  bool revoked = 7;
+  repeated CeremonyRef touched_by = 8;
 }
 
-// ------------------------------------------------------------------ cards
-
-message ListCardsRequest {}
-
-message ListCardsResponse {
-  repeated Card cards = 1;
-  // When the inventory was last written from a read-only check.
-  google.protobuf.Timestamp inventory_written_at = 2;
+// The type of a delegation. [decided: bundle.md, a delegation file]
+enum DelegationType {
+  DELEGATION_TYPE_UNSPECIFIED = 0;
+  DELEGATION_TYPE_X509_INTERMEDIATE = 1;
+  DELEGATION_TYPE_OPENPGP_SUBKEY = 2;
+  DELEGATION_TYPE_SSH_CA_KEY = 3;
 }
 
+// A declared name under a root for a key that does daily work. [decided:
+// glossary; record 0006, rule 23]
+message Delegation {
+  // The name of the wanted file without .yaml, for example acme-ca.
+  string name = 1;
+  DelegationType type = 2;
+  // The name of the root it is under.
+  string root = 3;
+  // The fingerprint of the delegated key. Empty if none was certified yet.
+  string key = 4;
+  // Who asks for it, as text.
+  string requester = 5;
+  // `capability` of an OpenPGP subkey (sign or authenticate) or `use` of an
+  // SSH CA key (user or host). Empty for an X.509 intermediate.
+  string use = 6;
+  // The limits of the delegation file, one line each, for example
+  // "permitted URI hosts: example.com".
+  repeated string limits = 7;
+  string wanted_path = 8;
+  // The id of the certification that is in force now. Empty if none.
+  string certification = 9;
+  repeated CeremonyRef touched_by = 10;
+}
+
+// What a certification is. They are the kinds of signature of a plan.
+// [decided: ceremony-record.md, `signatures.kind`; the names inside plan.json
+// are proposed there, issue 8]
+enum CertificationKind {
+  CERTIFICATION_KIND_UNSPECIFIED = 0;
+  CERTIFICATION_KIND_ROOT_CERTIFICATE = 1;
+  CERTIFICATION_KIND_INTERMEDIATE_CERTIFICATE = 2;
+  CERTIFICATION_KIND_SUBKEY_BINDING = 3;
+  // The certification of a user ID by its own primary key.
+  CERTIFICATION_KIND_PRIMARY_SELF_SIGNATURE = 4;
+}
+
+// A certification runs from a day to a day. [decided: glossary, under "renew"]
+// It has no state field: whether it has ended is read from `valid_until` and
+// `read_at`. A state of a certification is decided nowhere.
+message Certification {
+  string id = 1;
+  CertificationKind kind = 2;
+  // The fingerprint of the key that signed.
+  string issuer = 3;
+  // What it is for: a key, a user ID or a delegation.
+  ObjectRef subject = 4;
+  google.protobuf.Timestamp valid_from = 5;
+  google.protobuf.Timestamp valid_until = 6;
+  // The name of the ceremony that made it.
+  string ceremony_id = 7;
+  repeated CeremonyRef touched_by = 8;
+}
+
+// What the requester system gets back. A request with no answer has an
+// unspecified outcome. [decided: bundle.md and ceremony-record.md,
+// `result.json` outcome: issued or refused]
+enum RequestOutcome {
+  REQUEST_OUTCOME_UNSPECIFIED = 0;
+  REQUEST_OUTCOME_ISSUED = 1;
+  REQUEST_OUTCOME_REFUSED = 2;
+}
+
+// A request in requests/<stem>/. [decided: record 0006, rule 10]
+message Request {
+  string stem = 1;
+  // The name of the delegation it is for.
+  string delegation = 2;
+  DelegationType type = 3;
+  // The fingerprint of the requester's key. [decided: ceremony-record.md,
+  // plan `requests[].key`]
+  string key = 4;
+  RequestOutcome outcome = 5;
+  // The reason code of a refusal, for example policy or declined. [decided:
+  // cli.md, ceremony-record.md]
+  string code = 6;
+  google.protobuf.Timestamp answered_at = 7;
+  // The ceremony that gave the answer.
+  string ceremony_id = 8;
+  // For example requests/acme-ca-2027/.
+  string path = 9;
+  // For example requests/acme-ca-2027/acme-ca-2027.result.json.
+  string answer_path = 10;
+  repeated CeremonyRef touched_by = 11;
+}
+
+// ---- changes ---------------------------------------------------------------
+
+// What a change does. [proposed: the kinds are in no record and no reference
+// page. Nearest decided text: 0003 rule 10 and 0004 rule 4 (adopt), 0005 rule
+// 15 (the first apply makes the keys), 0008 rule 17 and 0009 rule 4 (certify a
+// user ID), 0007 rules 3 and 4 (retire), 0005 rule 11 (renew), the request
+// answer `issued` (issue)]
+enum ChangeKind {
+  CHANGE_KIND_UNSPECIFIED = 0;
+  CHANGE_KIND_ADOPT = 1;
+  CHANGE_KIND_BIRTH = 2;
+  CHANGE_KIND_CERTIFY = 3;
+  CHANGE_KIND_RETIRE = 4;
+  CHANGE_KIND_RENEW = 5;
+  CHANGE_KIND_ISSUE = 6;
+}
+
+// Whether `apply` can do a change now. [proposed: wizard.md says "whether it is
+// ready or waits" under a Proposed note. Nearest decided text: 0007 rule 17, a
+// renewal plan stops when a request is missing]
+enum ChangeState {
+  CHANGE_STATE_UNSPECIFIED = 0;
+  CHANGE_STATE_READY = 1;
+  CHANGE_STATE_WAITS = 2;
+}
+
+// Where a change comes from. [decided: record 0005, rule 29: "from the wanted
+// files, the history, the date and the requests"]
+enum ChangeSource {
+  CHANGE_SOURCE_UNSPECIFIED = 0;
+  CHANGE_SOURCE_WANTED_FILE = 1;
+  CHANGE_SOURCE_HISTORY = 2;
+  CHANGE_SOURCE_DATE = 3;
+  CHANGE_SOURCE_REQUEST = 4;
+}
+
+// What a change needs. [proposed: cli.md says "what it needs" without a list.
+// Nearest decided text: 0007 rules 12 and 14 (a card), rule 17 (a request),
+// 0005 rule 17 (a key file in the offline system)]
+enum NeedKind {
+  NEED_KIND_UNSPECIFIED = 0;
+  NEED_KIND_CARD = 1;
+  NEED_KIND_REQUEST = 2;
+  NEED_KIND_KEY_FILE = 3;
+}
+
+message Need {
+  NeedKind kind = 1;
+  // The name of the card file, the name of the delegation that lacks a request,
+  // or the name of the key file.
+  string name = 2;
+  // False for a need that is missing: a request that has not come.
+  bool met = 3;
+}
+
+// One item of "not applied yet". [decided: record 0005, rule 29; glossary]
+message Change {
+  string id = 1;
+  // The object it is on: the thing the person reads in the list.
+  ObjectRef object = 2;
+  ChangeKind kind = 3;
+  ChangeState state = 4;
+  // One line for people, for example "Renew acme-release".
+  string text = 5;
+  repeated Need needs = 6;
+  // Why it waits, as a sentence. Empty when it is ready.
+  string reason = 7;
+  ChangeSource source = 8;
+  // For source WANTED_FILE: the file that holds the wish.
+  string wanted_path = 9;
+  // For source DATE: the end date it answers.
+  google.protobuf.Timestamp due_at = 10;
+  // The name of the planned or started ceremony whose plan holds this change.
+  // Empty if no plan holds it. The change stays not applied until a ceremony
+  // record names it.
+  string in_ceremony = 11;
+  // Other objects the change marks besides `object`: the key that signs, the
+  // certification that ends.
+  repeated ObjectRef involves = 12;
+}
+
+// ---- cards -----------------------------------------------------------------
+
+// The four kinds of card. [decided: record 0003, rule 14]
 enum CardKind {
   CARD_KIND_UNSPECIFIED = 0;
-  // A root card: it holds roots by row; used on the workstation or in the
-  // offline system by the rules of the ceremony record (0005 rules 17 and 18).
   CARD_KIND_ROOT = 1;
-  // A day-to-day card: signing and authentication subkeys, passkeys.
   CARD_KIND_DAY_TO_DAY = 2;
-  // A rehearsal card: practice and tests. It never holds a real key, may be
-  // reset, and serves only a test root. A card never changes its kind.
   CARD_KIND_REHEARSAL = 3;
-  // A server card: a card that stays plugged into a server of a requester
-  // system and signs for its services. An ordinary card, not a hardware
-  // security module product. ritueel lists it in the inventory and only ever
-  // reads it: it adopts nothing on it, changes no secret and checks no layout.
   CARD_KIND_SERVER = 4;
 }
 
-enum CardState {
-  CARD_STATE_UNSPECIFIED = 0;
-  CARD_STATE_ACTIVE = 1;
-  CARD_STATE_RETIRED = 2;
-  CARD_STATE_LOST = 3;
+// The old field `state` and its enum (active, retired, lost) are gone: no
+// record gives a card a state, and "lost" is not a state (record 0007, rule 3).
+message Card {
+  string serial = 1;
+  // The name of the card file: the id of the card.
+  string name = 2;
+  CardKind kind = 3;
+  string model = 4;
+  string firmware = 5;
+  // Who holds it. [decided: bundle.md, the card file holds the holder]
+  string holder = 6;
+  // Where the card is kept, as text. [proposed: no record or reference page
+  // gives a card file this member]
+  string kept = 7;
+  int32 layout_version = 8;
+  google.protobuf.Timestamp last_seen_at = 9;
+  google.protobuf.Timestamp last_checked_at = 10;
+  // One or two sentences about what the card holds, written by the program.
+  // [proposed: no record or reference page gives this text]
+  string role_summary = 11;
+  bool one_time_codes_off = 12;
+  repeated string changes_since_last_reading = 13;
+  PivApplication piv = 14;
+  OpenPgpApplication openpgp = 15;
+  Fido2Application fido2 = 16;
+  // The command that revokes what this card issued, as text. It holds the
+  // placeholder REASON. [decided: cli.md, `revoke --card CARD --reason REASON`]
+  string revoke_command = 17;
+  repeated CeremonyRef touched_by = 18;
 }
 
+// Whether an application of a card holds anything of the bundle. [proposed:
+// no record names an application as in use. Nearest decided text: record
+// 0003, rule 16 and rule 14 (what a card of each kind holds)]
 enum ApplicationUse {
   APPLICATION_USE_UNSPECIFIED = 0;
   APPLICATION_USE_IN_USE = 1;
   APPLICATION_USE_UNUSED = 2;
 }
 
-message Card {
-  // The serial, as the holder's own data. The page shows it because the
-  // page is private to the holder; the demo uses visibly made-up serials.
-  string serial = 1;
-  string name = 2;
-  CardKind kind = 3;
-  string model = 4;
-  string firmware = 5;
-  CardState state = 6;
-  // Where the card is kept, for example "in the safe".
-  string kept = 7;
-  // The layout the card is checked against, and its version.
-  int32 layout_version = 8;
-  google.protobuf.Timestamp last_seen_at = 9;
-  // The last check of the whole card against the layout.
-  google.protobuf.Timestamp last_checked_at = 10;
-  // One line: what the card is for and what it holds.
-  string role_summary = 11;
-  // Labels of the roots (A) that have a row on this card.
-  repeated string root_labels = 12;
-  // True when the one-time code application is switched off.
-  bool one_time_codes_off = 13;
-  // What changed since the previous reading; empty when nothing did.
-  repeated string changes_since_last_reading = 14;
-  PivApplication piv = 15;
-  OpenPgpApplication openpgp = 16;
-  Fido2Application fido2 = 17;
-}
-
-// PIV: 24 key slots, in six rows of four in the order 9a, 9c, 9d, 9e,
-// then 82 to 95. Row 1 is the card's own jobs. Each row below is one root,
-// with the same kind of key in the same column: X.509 root, OpenPGP
-// primary, SSH CA, and one left empty.
 message PivApplication {
   ApplicationUse use = 1;
-  // Always six rows of four slots, so a page can draw them as given.
+  // Always six rows of four slots, in the order 9a, 9c, 9d, 9e, then 82 to 95.
+  // [decided: record 0003, rule 3]
   repeated PivRow rows = 2;
 }
 
 message PivRow {
-  // 1 to 6.
   int32 number = 1;
-  // A word for the row: "card", or the label of the root that owns it (A),
-  // or "free" for a row that no root owns yet.
   string label = 2;
-  // The label of the root that owns the row; empty for row 1 and for free
-  // rows.
-  string root_label = 3;
-  // Four slots.
+  // The label of the keys the row holds (A, B ...), as the fixtures name it.
+  // A row is the keys the card keeps for one bundle (record 0003, rule 3).
+  // What one label names across roots is open (issue 137).
+  string key_label = 3;
   repeated Slot slots = 4;
 }
 
-// OpenPGP: three keys, sign, decrypt and authenticate.
 message OpenPgpApplication {
   ApplicationUse use = 1;
-  // Three slots with ids "sig", "dec" and "aut".
   repeated Slot slots = 2;
 }
 
-// FIDO2: passkeys. The cells shown are the ones the layout names.
 message Fido2Application {
   ApplicationUse use = 1;
   repeated Slot passkeys = 2;
 }
 
+// What a slot is. [EMPTY is decided: record 0003, rule 3. USED and RESERVED
+// are in wizard.md ("in use, reserved, empty") under a Proposed note. SPARE is
+// proposed: record 0003, rule 3, uses "spare" only for the unlocking key of
+// slot 9d; here it would mean a row that no root owns yet]
 enum SlotState {
   SLOT_STATE_UNSPECIFIED = 0;
   SLOT_STATE_EMPTY = 1;
   SLOT_STATE_USED = 2;
-  // Kept for a key that is planned but not yet born.
   SLOT_STATE_RESERVED = 3;
-  // Not part of any root's row yet; free for a later root.
   SLOT_STATE_SPARE = 4;
 }
 
+// What a slot is for. [decided: X509_ROOT, OPENPGP_PRIMARY, SSH_CA and
+// UNLOCK_KEY (record 0003, rule 3); OPENPGP_SIGN, OPENPGP_DECRYPT and
+// OPENPGP_AUTHENTICATE (record 0008, rules 7 and 8). Proposed: PASSKEY_SIGN_IN,
+// PASSKEY_SSH, PASSKEY_UNLOCK and REHEARSAL (records 0003, rule 14, and 0008,
+// rule 15, name passkeys and the rehearsal card, not these uses) and
+// OTHER_BUNDLE (record 0003, issue 11)]
 enum SlotUse {
   SLOT_USE_UNSPECIFIED = 0;
   SLOT_USE_X509_ROOT = 1;
   SLOT_USE_OPENPGP_PRIMARY = 2;
   SLOT_USE_SSH_CA = 3;
-  // A spare key-agreement key for unlocking a key file, made only if
-  // passkey unlocking cannot be used.
   SLOT_USE_UNLOCK_KEY = 4;
   SLOT_USE_OPENPGP_SIGN = 5;
   SLOT_USE_OPENPGP_DECRYPT = 6;
@@ -617,14 +577,11 @@ enum SlotUse {
   SLOT_USE_PASSKEY_SIGN_IN = 8;
   SLOT_USE_PASSKEY_SSH = 9;
   SLOT_USE_PASSKEY_UNLOCK = 10;
-  // A key made on a rehearsal card to practise.
   SLOT_USE_REHEARSAL = 11;
-  // A slot of a row that belongs to another bundle of the holder, declared in
-  // this card's file; no key hash is shown. PROPOSED in record 0003 (Not yet
-  // proven or only proposed, issue 11).
   SLOT_USE_OTHER_BUNDLE = 12;
 }
 
+// [decided: bundle.md, policy.pin_policy: never, once, always]
 enum PinRule {
   PIN_RULE_UNSPECIFIED = 0;
   PIN_RULE_NEVER = 1;
@@ -639,38 +596,152 @@ enum TouchRule {
   TOUCH_RULE_ALWAYS = 3;
 }
 
-// One slot of one application. Only public facts: the use, the rules, the
-// hash of the public key. Never a PIN, never a key.
 message Slot {
-  // PIV: "9a", "9c", "9d", "9e", "82" to "95". OpenPGP: "sig", "dec",
-  // "aut". FIDO2: "1", "2", "3".
   string id = 1;
   SlotState state = 2;
   SlotUse use = 3;
-  // The use in plain words, for example "X.509 root of acme/A".
   string purpose = 4;
-  // The root the slot belongs to; empty if none.
-  string root_label = 5;
+  // The label of the key it holds (A, B ...), or empty.
+  string key_label = 5;
   string algorithm = 6;
   PinRule pin_rule = 7;
   TouchRule touch_rule = 8;
-  // SHA-256 of the public key, in hexadecimal; empty for an empty slot.
+  // The SHA-256 of the public key. Empty for a row of another bundle.
   string public_key_sha256 = 9;
   google.protobuf.Timestamp born_at = 10;
-  // True when the bundle holds the maker's attestation for the key.
   bool attested = 11;
 }
 
-// ------------------------------------------------------------ trust files
+// ---- ListCeremonies --------------------------------------------------------
+
+message ListCeremoniesRequest {}
+
+message ListCeremoniesResponse {
+  HistoryStatus history = 1;
+  // Newest first, by the time in the name of the folder.
+  repeated Ceremony ceremonies = 2;
+  google.protobuf.Timestamp read_at = 3;
+}
+
+// The four states of a ceremony folder. [decided as facts: ceremony-record.md
+// and record 0005, rules 7 and 9. The four NAMES are proposed there, issue 17]
+enum CeremonyState {
+  CEREMONY_STATE_UNSPECIFIED = 0;
+  // A plan and no attempt. Nothing was signed.
+  CEREMONY_STATE_PLANNED = 1;
+  // An attempt and no ceremony record. `status` reports it as critical.
+  CEREMONY_STATE_STARTED = 2;
+  // A ceremony record with the outcome completed or declined. The folder of a
+  // closing record has the state recorded too; that is proposed, because the
+  // table of ceremony-record.md has no row for it.
+  CEREMONY_STATE_RECORDED = 3;
+  // A started ceremony that a closing record from `close` names.
+  CEREMONY_STATE_CLOSED = 4;
+}
+
+// The outcome of a ceremony record. [decided: ceremony-record.md, The record]
+// A planned, a started and a closed ceremony have no record of their own, so
+// their outcome is unspecified.
+enum CeremonyOutcome {
+  CEREMONY_OUTCOME_UNSPECIFIED = 0;
+  CEREMONY_OUTCOME_COMPLETED = 1;
+  CEREMONY_OUTCOME_DECLINED = 2;
+  CEREMONY_OUTCOME_CLOSED = 3;
+}
+
+// One change in a plan or a record. [decided: record 0005, rule 4: the plan
+// lists what it applies and what it leaves out with the reason; the members are
+// proposed, ceremony-record.md, issue 8]
+message CeremonyChange {
+  ObjectRef object = 1;
+  ChangeKind kind = 2;
+  string text = 3;
+  // For a change left out: the reason, as text. Empty for a change applied.
+  // [proposed: that a change is left out when `apply --allow-missing NAME`
+  // names a missing request is not decided; cli.md says only "plan without a
+  // request for this delegation, and record it"]
+  string reason = 4;
+}
+
+message Ceremony {
+  // The name of the folder: the time in UTC, the command and the first eight
+  // characters of the plan's digest, for example
+  // 20261120T100000Z-apply-3fa9c1d2. [decided: record 0006, rule 29; the
+  // spelling is proposed in bundle.md]
+  string id = 1;
+  CeremonyCommand command = 2;
+  CeremonyState state = 3;
+  CeremonyOutcome outcome = 4;
+  // One line about the ceremony, written by the program. [proposed: no record
+  // or reference page gives a ceremony this text]
+  string title = 5;
+  // One or two sentences about the title. [proposed]
+  string summary = 6;
+  google.protobuf.Timestamp planned_at = 7;
+  google.protobuf.Timestamp started_at = 8;
+  google.protobuf.Timestamp finished_at = 9;
+  // Where it ran, or will run.
+  RunPlace ran_on = 10;
+  // The full digest of the plan, 64 hexadecimal characters. The page shows it
+  // to compare; the first eight characters are typed in the terminal. Empty in
+  // a closing record, which has no plan of its own.
+  string plan_sha256 = 11;
+  // The digest of the ceremony record. Empty until it is recorded.
+  string record_sha256 = 12;
+  // The digest of the record before it. Empty in the first record.
+  string prev_record_sha256 = 13;
+  // The trust sequence the ceremony wrote, or will write. 0 if none.
+  int32 trust_sequence = 14;
+  // The name of that trust set, for example 13-3fa9c1d2.
+  string trust_set_name = 15;
+  repeated CeremonyChange applied = 16;
+  repeated CeremonyChange left_out = 17;
+  // The names of the cards the plan needs.
+  repeated string cards = 18;
+  // The numbers of the plan. [decided: ceremony-record.md, plan `signatures`
+  // and `touches`]
+  int32 signature_count = 19;
+  int32 touch_count = 20;
+  // True for a planned ceremony whose plan no longer matches the bundle: the
+  // end of the history or the trust sequence moved on. `apply` refuses it with
+  // `plan-stale`. The page folds these. [decided: cli.md, `plan-stale`; the
+  // field and the folding are proposed, wizard.md]
+  bool stale = 21;
+  // For a closed ceremony: the name of the closing record's folder.
+  string closed_by = 22;
+  // For a closing record: the name of the ceremony it closes.
+  string closes = 23;
+  // For a closing record: the reason the person gave.
+  string close_reason = 24;
+  // The command of the keyserver step, as text, for a recorded ceremony that
+  // changed an OpenPGP key. Empty if there is none. [decided: record 0011,
+  // rule 5; the flags are proposed]
+  string publish_command = 25;
+  // The command that closes a started ceremony, as text. It holds the
+  // placeholder TEXT. [decided: cli.md, `close CEREMONY --reason TEXT`]
+  string close_command = 26;
+  // A plain path of a page that the site publishes (site/published.txt), with
+  // an anchor that is a heading of that page, or empty.
+  string guide_path = 27;
+}
+
+// ---- ListTrustFiles --------------------------------------------------------
 
 message ListTrustFilesRequest {}
 
 message ListTrustFilesResponse {
-  // The newest trust sequence.
+  // The number of the newest trust set, 0 if there is none.
   int32 trust_sequence = 1;
-  repeated TrustFile files = 2;
+  // Its name: the number, a hyphen and eight characters of a digest.
+  string set_name = 2;
+  google.protobuf.Timestamp written_at = 3;
+  // The ceremony that wrote it.
+  string ceremony_id = 4;
+  repeated TrustFile files = 5;
+  google.protobuf.Timestamp read_at = 6;
 }
 
+// [decided: record 0006, rule 12; bundle.md, the trust set]
 enum TrustFileKind {
   TRUST_FILE_KIND_UNSPECIFIED = 0;
   TRUST_FILE_KIND_ROOT_LIST = 1;
@@ -678,11 +749,11 @@ enum TrustFileKind {
   TRUST_FILE_KIND_CRL = 3;
   TRUST_FILE_KIND_SSH_CA_KEYS = 4;
   TRUST_FILE_KIND_KEYRING = 5;
-  // A person's public OpenPGP certificate, the one trust file of a personal
-  // bundle: trust/<number>/<fingerprint>.pgp or .asc.
   TRUST_FILE_KIND_OPENPGP_CERTIFICATE = 6;
 }
 
+// The result of one check of a file. [decided: cli.md, `verify` and `checks`:
+// passed, failed, not-run, and a warning for an expired held file]
 enum TrustCheckResult {
   TRUST_CHECK_RESULT_UNSPECIFIED = 0;
   TRUST_CHECK_RESULT_PASSED = 1;
@@ -692,21 +763,21 @@ enum TrustCheckResult {
 }
 
 message TrustFile {
-  // The file name, for example "root-list.json".
   string name = 1;
   TrustFileKind kind = 2;
-  // Path inside the bundle.
+  // The path inside the bundle, for example trust/13-3fa9c1d2/root-list.json.
   string path = 3;
   int32 trust_sequence = 4;
   google.protobuf.Timestamp built_at = 5;
   google.protobuf.Timestamp valid_until = 6;
   TrustCheckResult check_result = 7;
-  // The check in plain words.
   string check_detail = 8;
   string sha256 = 9;
   int64 size_bytes = 10;
-  // The command that checks the file (writes nothing).
+  // The command that checks the file, as text, in the `verify` form of cli.md.
+  // Empty when none applies (a personal bundle has no root list).
   string verify_command = 11;
-  // The command that plans a rebuild of it.
-  string rebuild_command = 12;
+  // The old field 12, rebuild_command, is gone: `apply` writes the trust set.
+  reserved 12;
+  reserved "rebuild_command";
 }
