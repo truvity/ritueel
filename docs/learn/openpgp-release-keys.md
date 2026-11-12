@@ -5,22 +5,22 @@ sidebar:
   order: 21
 ---
 
-*Design phase: this page teaches the model of [record 0009](../decisions/0009-release-keys-and-the-keyring.md). No release is signed until the project's root is adopted and attested or read, and the adoption drill has run. Card roots are added after the first release. The measurements are in [the verifier matrix](/research/openpgp-verifier-matrix-2026-11/).*
+*Design phase: this page teaches the model of [record 0009](../decisions/0009-release-keys-and-the-keyring.md). No release is signed until the project's root is adopted and attested or read, and the adoption drill has run. Card keys are added after the first release. The measurements are in [the verifier matrix](/research/openpgp-verifier-matrix-2026-11/).*
 
 OpenPGP has no certificate chains. It has a primary key, subkeys that the primary binds, and certifications. A release is signed by a subkey that a primary has bound, and users verify with a keyring that holds the primaries.
 
 ## The shape
 
-- **The primaries are on the root cards.** Each is generated on its card, in a PIV slot, and attested; neither is a copy of the other. The same cards hold the X.509 roots. A cloud setup has one primary in its root account.
+- **The primaries are on the root cards.** Each is generated on its card, in a PIV slot, and attested; neither is a copy. The cards also hold the X.509 root keys. A cloud setup has one primary in its root account.
 - **A primary lasts about three years, and each use extends it** with a new self-signature. A dead card shows itself by not extending.
 - **No personal key certifies a primary.** Release trust rests on a dedicated release identity and the keyring, not on anyone's own key.
 - **Each holder of an intermediate holds one signing subkey,** generated where it lives (a PIV slot or a KMS key). The subkey makes a *back-signature* (type `0x19`) over a primary and itself, which proves it agreed to be bound; `gpg`, `gpgv` and `sqv` refuse a signing subkey without one. **The request carries a back-signature for every active primary,** so either root card can make the binding.
-- **The root of the year binds the subkey for about 13 months,** and each yearly ceremony re-signs the binding, so years overlap. The subkey is replaced on an event, and a subkey in software also at most every three years.
+- **The primary of the year binds the subkey for about 13 months,** and each yearly ceremony re-signs the binding, so years overlap. The subkey is replaced on an event, and a subkey in software also at most every three years.
 - **Users hold a keyring, not one certificate.** The keyring package carries every active primary and every subkey binding. A verifier that holds one primary cannot check a subkey that the other bound, so the instructions say "use the keyring package". Its files are in [the keyring package reference](/reference/keyring-package/).
 
 ## Revocation
 
-- A subkey is revoked by the root of the year. A primary is revoked with the revocation signature made when it was born and stored apart from its card ([RFC 9580](https://datatracker.ietf.org/doc/html/rfc9580), section 13.9). There is no designated revoker: section 5.2.3.23 deprecates it.
+- A subkey is revoked by the primary of the year. A primary is revoked with the revocation signature made when it was born and stored apart from its card ([RFC 9580](https://datatracker.ietf.org/doc/html/rfc9580), section 13.9). There is no designated revoker: section 5.2.3.23 deprecates it.
 - **What is revoked hard leaves the next keyring package:** a revoked primary, and a subkey revoked as compromised. Its revocation signature is published beside the package, for the users of `gpg` and Sequoia.
 - **What is retired softly stays,** with its revocation inside the package, so its old signatures keep verifying. Expired subkeys stay too.
 
