@@ -1,30 +1,93 @@
 {
   "history": {
-    "recordCount": 1,
+    "recordCount": 2,
     "chainState": "CHAIN_STATE_VERIFIED",
-    "headRecordSha256": "600b0123456789abcdef0123456789abcdef0123456789abcdef0123456789ab",
-    "lastRecordId": "20260915T142000Z-init",
-    "lastRecordTitle": "Adopted the cloud root globex/A",
-    "lastRecordAt": "2026-09-15T14:20:00Z",
-    "checkedAt": "2026-11-11T09:00:00Z",
-    "message": "The only record checks out. It is 57 days old."
+    "endRecordSha256": "b2c3d4e5b2c3d4e5b2c3d4e5b2c3d4e5b2c3d4e5b2c3d4e5b2c3d4e5b2c3d4e5",
+    "lastRecordId": "20261020T130000Z-apply-48c7e1d3",
+    "lastRecordTitle": "Certified globex-ca for the request globex-ca-2027",
+    "lastRecordAt": "2026-10-20T13:00:00Z",
+    "checkedAt": "2026-11-24T09:00:00Z",
+    "message": "All 2 records check out. The newest is 35 days old.",
+    "ends": 1
   },
   "ceremonies": [
     {
-      "id": "20260915T142000Z-init",
-      "kind": "CEREMONY_KIND_ADOPT_KEY",
-      "title": "Adopted the cloud root globex/A",
-      "summary": "ritueel read the public key of an existing cloud key, checked its policy against the rules, fixed and recorded the OpenPGP creation time, and wrote the certificate. It ran on the workstation. The key was not created or changed.",
-      "completedAt": "2026-09-15T14:20:00Z",
-      "outcome": "CEREMONY_OUTCOME_DONE",
-      "recordSha256": "600b0123456789abcdef0123456789abcdef0123456789abcdef0123456789ab",
-      "planDigest": "4a2e0aaa0123456789abcdef0123456789abcdef0123456789abcdefdeadbeef",
-      "subjectLabels": [
-        "A"
+      "id": "20261020T130000Z-apply-48c7e1d3",
+      "command": "CEREMONY_COMMAND_APPLY",
+      "state": "CEREMONY_STATE_RECORDED",
+      "title": "Certified globex-ca for the request globex-ca-2027",
+      "summary": "The platform team asked for an intermediate certificate. The ceremony signed it and wrote trust set 2.",
+      "plannedAt": "2026-10-20T13:00:00Z",
+      "ranOn": "RUN_PLACE_WORKSTATION",
+      "outcome": "CEREMONY_OUTCOME_COMPLETED",
+      "planSha256": "48c7e1d348c7e1d348c7e1d348c7e1d348c7e1d348c7e1d348c7e1d348c7e1d3",
+      "startedAt": "2026-10-20T13:02:00Z",
+      "finishedAt": "2026-10-20T13:20:00Z",
+      "recordSha256": "b2c3d4e5b2c3d4e5b2c3d4e5b2c3d4e5b2c3d4e5b2c3d4e5b2c3d4e5b2c3d4e5",
+      "prevRecordSha256": "a1b2c3d4a1b2c3d4a1b2c3d4a1b2c3d4a1b2c3d4a1b2c3d4a1b2c3d4a1b2c3d4",
+      "trustSequence": 2,
+      "trustSetName": "2-48c7e1d3",
+      "applied": [
+        {
+          "object": {
+            "kind": "OBJECT_KIND_DELEGATION",
+            "id": "globex-ca",
+            "label": "globex-ca"
+          },
+          "kind": "CHANGE_KIND_ISSUE",
+          "text": "Certify globex-ca"
+        }
       ],
+      "signatureCount": 4,
+      "guidePath": "/design/#a-ceremony"
+    },
+    {
+      "id": "20260915T130000Z-apply-b6d2f0a9",
+      "command": "CEREMONY_COMMAND_APPLY",
+      "state": "CEREMONY_STATE_RECORDED",
+      "title": "Adopted the cloud keys of the three roots",
+      "summary": "ritueel read the existing cloud keys and did not change them. It wrote trust set 1.",
+      "plannedAt": "2026-09-15T13:00:00Z",
+      "ranOn": "RUN_PLACE_WORKSTATION",
+      "outcome": "CEREMONY_OUTCOME_COMPLETED",
+      "planSha256": "b6d2f0a9b6d2f0a9b6d2f0a9b6d2f0a9b6d2f0a9b6d2f0a9b6d2f0a9b6d2f0a9",
+      "startedAt": "2026-09-15T13:02:00Z",
+      "finishedAt": "2026-09-15T13:20:00Z",
+      "recordSha256": "a1b2c3d4a1b2c3d4a1b2c3d4a1b2c3d4a1b2c3d4a1b2c3d4a1b2c3d4a1b2c3d4",
       "trustSequence": 1,
-      "guidePath": "/learn/choosing-where-a-root-lives/",
-      "runPlace": "RUN_PLACE_WORKSTATION"
+      "trustSetName": "1-b6d2f0a9",
+      "applied": [
+        {
+          "object": {
+            "kind": "OBJECT_KIND_KEY",
+            "id": "3001a0b13001a0b13001a0b13001a0b13001a0b13001a0b13001a0b13001a0b1",
+            "label": "key A of globex-tls"
+          },
+          "kind": "CHANGE_KIND_ADOPT",
+          "text": "Adopt key A of globex-tls"
+        },
+        {
+          "object": {
+            "kind": "OBJECT_KIND_KEY",
+            "id": "3002C2D33002C2D33002C2D33002C2D33002C2D3",
+            "label": "key A of globex-release"
+          },
+          "kind": "CHANGE_KIND_ADOPT",
+          "text": "Adopt key A of globex-release"
+        },
+        {
+          "object": {
+            "kind": "OBJECT_KIND_KEY",
+            "id": "3003e4f53003e4f53003e4f53003e4f53003e4f53003e4f53003e4f53003e4f5",
+            "label": "key A of globex-ssh"
+          },
+          "kind": "CHANGE_KIND_ADOPT",
+          "text": "Adopt key A of globex-ssh"
+        }
+      ],
+      "signatureCount": 3,
+      "guidePath": "/design/#a-ceremony"
     }
-  ]
+  ],
+  "readAt": "2026-11-24T09:00:00Z"
 }

@@ -1,27 +1,33 @@
 {
-  "trustSequence": 1,
+  "trustSequence": 3,
+  "setName": "3-f40b9a62",
+  "writtenAt": "2025-12-10T12:14:00Z",
+  "ceremonyId": "20251210T120000Z-apply-f40b9a62",
   "files": [
     {
-      "name": "10000123456789ABCDEF0123456789ABCDEF0123.pgp",
+      "name": "holder.pgp",
       "kind": "TRUST_FILE_KIND_OPENPGP_CERTIFICATE",
-      "path": "trust/1/10000123456789ABCDEF0123456789ABCDEF0123.pgp",
-      "trustSequence": 1,
-      "builtAt": "2026-11-03T14:10:00Z",
-      "checkResult": "TRUST_CHECK_RESULT_PASSED_WITH_WARNING",
-      "checkDetail": "The public certificate of personal/A, in binary form: the primary, its user ID and its subkeys. A personal bundle has no root list, no CA bundle and no keyring. Warning: the primary has no expiry.",
-      "sha256": "71010123456789abcdef0123456789abcdef0123456789abcdef0123456789ab",
-      "sizeBytes": "9874"
+      "path": "trust/3-f40b9a62/holder.pgp",
+      "trustSequence": 3,
+      "builtAt": "2025-12-10T12:14:00Z",
+      "validUntil": "2028-12-10T00:00:00Z",
+      "checkResult": "TRUST_CHECK_RESULT_PASSED",
+      "checkDetail": "The certificate holds both user IDs and the three signing subkeys.",
+      "sha256": "8bb352db8bb352db8bb352db8bb352db8bb352db8bb352db8bb352db8bb352db",
+      "sizeBytes": "1884"
     },
     {
-      "name": "10000123456789ABCDEF0123456789ABCDEF0123.asc",
+      "name": "holder.asc",
       "kind": "TRUST_FILE_KIND_OPENPGP_CERTIFICATE",
-      "path": "trust/1/10000123456789ABCDEF0123456789ABCDEF0123.asc",
-      "trustSequence": 1,
-      "builtAt": "2026-11-03T14:10:00Z",
-      "checkResult": "TRUST_CHECK_RESULT_PASSED_WITH_WARNING",
-      "checkDetail": "The same certificate in ASCII armour, to paste into a mail or a web form. Warning: the primary has no expiry.",
-      "sha256": "71020123456789abcdef0123456789abcdef0123456789abcdef0123456789ab",
-      "sizeBytes": "13412"
+      "path": "trust/3-f40b9a62/holder.asc",
+      "trustSequence": 3,
+      "builtAt": "2025-12-10T12:14:00Z",
+      "validUntil": "2028-12-10T00:00:00Z",
+      "checkResult": "TRUST_CHECK_RESULT_PASSED",
+      "checkDetail": "The same certificate in the armored form.",
+      "sha256": "85b62bf685b62bf685b62bf685b62bf685b62bf685b62bf685b62bf685b62bf6",
+      "sizeBytes": "2604"
     }
-  ]
+  ],
+  "readAt": "2026-11-24T09:00:00Z"
 }

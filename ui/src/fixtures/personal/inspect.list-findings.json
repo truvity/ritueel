@@ -1,156 +1,59 @@
 {
   "findings": [
     {
-      "id": "replaced-signing-subkeys-valid",
-      "code": "replaced-signing-subkeys-valid",
-      "severity": "SEVERITY_CRITICAL",
-      "title": "Two signing subkeys are still valid although newer ones replaced them",
-      "reason": "Anyone who holds the card that made them can still sign as you until March or April 2027, and nobody would see the difference. They sit on card 00000102, which is not in your inventory.",
-      "subject": {
-        "kind": "SUBJECT_KIND_SUBKEY",
-        "identifier": "1B220123456789ABCDEF0123456789ABCDEF0123",
-        "label": "Signing subkey of 2022"
-      },
-      "evidence": [
-        "1B220123456789ABCDEF0123456789ABCDEF0123: signing subkey of 2022, valid until 2027-03-14, replaced by the 2025 set",
-        "1B320123456789ABCDEF0123456789ABCDEF0123: signing subkey of 2023, valid until 2027-04-02, replaced by the 2025 set",
-        "Neither has a revocation. Both are on card 00000102.",
-        "The fix command is a proposal: the command reference does not have it yet."
-      ],
-      "fixCommand": "ritueel personal subkey revoke --reason superseded 1B220123456789ABCDEF0123456789ABCDEF0123 1B320123456789ABCDEF0123456789ABCDEF0123 --plan-only",
-      "fixIntention": "INTENTION_RETIRE_SUBKEYS",
-      "learnPath": "/learn/revoke/",
-      "visibleFromPublicKey": true
-    },
-    {
-      "id": "primary-no-expiry",
-      "code": "no-expiry",
-      "severity": "SEVERITY_ALERT",
-      "title": "The primary key has no expiry, and adoption should have set one",
-      "reason": "ritueel gives an adopted key an expiry at adoption. This one arrived without, and the adoption did not set one: that is a gap. A key without an expiry stays valid for ever if you lose track of it, while one with an expiry that you extend is a safety net: forgotten keys die by themselves.",
-      "subject": {
-        "kind": "SUBJECT_KIND_ROOT",
-        "identifier": "10000123456789ABCDEF0123456789ABCDEF0123",
-        "label": "personal/A"
-      },
-      "evidence": [
-        "RSA-4096 primary, created 2012-06-19, no expiry set",
-        "Adopted on 2026-11-03; the adoption did not set an expiry",
-        "The fix command is a proposal: the command reference does not have it yet."
-      ],
-      "fixCommand": "ritueel personal primary extend --expires-in 3y --plan-only",
-      "learnPath": "/design/#a-persons-key",
-      "visibleFromPublicKey": true
-    },
-    {
-      "id": "subkeys-on-unknown-cards",
-      "code": "cards-not-in-inventory",
-      "severity": "SEVERITY_ALERT",
-      "title": "Subkeys sit on 2 cards that are not in your inventory",
-      "reason": "You cannot revoke or replace what you cannot find. If one of these cards is lost, you will not know which keys it took with it.",
-      "subject": {
-        "kind": "SUBJECT_KIND_CARD",
-        "identifier": "00000102",
-        "label": "Card 00000102"
-      },
-      "evidence": [
-        "Card 00000101: 4 subkey sets, 2016 to 2019",
-        "Card 00000102: 4 subkey sets, 2020 to 2023, 2 signing subkeys still valid"
-      ],
-      "fixCommand": "ritueel card adopt --card 00000102 --plan-only",
-      "fixIntention": "INTENTION_ADD_CARD",
-      "learnPath": "/learn/how-a-yubikey-holds-keys/",
-      "visibleFromPublicKey": true
-    },
-    {
-      "id": "misspelt-user-id",
-      "code": "misspelt-user-id",
+      "id": "f-1",
+      "code": "intermediate",
       "severity": "SEVERITY_NOTICE",
-      "title": "One user ID looks like a misspelling of another",
-      "reason": "People who look you up may pick the wrong one, and a name that is nearly yours is also how a look-alike key is made. Revoke the one you did not mean.",
-      "subject": {
-        "kind": "SUBJECT_KIND_USER_ID",
-        "identifier": "10000123456789ABCDEF0123456789ABCDEF0123",
-        "label": "Exmaple Holder"
+      "title": "desk ends in 47 days",
+      "reason": "Its binding ends on 2027-01-10. The request for desk has come, so apply can renew it. The key file is used in the offline system.",
+      "object": {
+        "kind": "OBJECT_KIND_DELEGATION",
+        "id": "desk",
+        "label": "desk"
       },
       "evidence": [
-        "\"Exmaple Holder <holder@example.com>\" differs from \"Example Holder <holder@example.com>\" by two letters swapped",
-        "The fix command is a proposal: the command reference does not have it yet."
+        "Binding valid from 2025-12-10 to 2027-01-10.",
+        "A delegation warns at 60, 30 and 14 days."
       ],
-      "fixCommand": "ritueel personal userid revoke \"Exmaple Holder <holder@example.com>\" --plan-only",
-      "visibleFromPublicKey": true
+      "fixCommand": "ritueel apply --plan-only",
+      "learnPath": "/learn/life-of-a-root/#re-sign"
     },
     {
-      "id": "day-to-day-keychain-touch-cached",
-      "code": "touch-rule-changed",
+      "id": "f-2",
+      "code": "intermediate",
       "severity": "SEVERITY_NOTICE",
-      "title": "The signing key on \"Day-to-day, keychain\" now caches its touch",
-      "reason": "The last reading differs from the one before: the touch rule was always and is now cached. A cached touch lets a program on your computer sign several times after one touch.",
-      "subject": {
-        "kind": "SUBJECT_KIND_CARD",
-        "identifier": "00000004",
-        "label": "Day-to-day, keychain"
+      "title": "keychain ends in 47 days",
+      "reason": "Its binding ends on 2027-01-10. The request for keychain has come, so apply can renew it. The key file is used in the offline system.",
+      "object": {
+        "kind": "OBJECT_KIND_DELEGATION",
+        "id": "keychain",
+        "label": "keychain"
       },
       "evidence": [
-        "Slot sig: touch rule cached (was always) at the reading of 2026-11-04"
+        "Binding valid from 2025-12-10 to 2027-01-10.",
+        "A delegation warns at 60, 30 and 14 days."
       ],
-      "fixCommand": "ritueel card check --card 00000004",
-      "learnPath": "/learn/how-a-yubikey-holds-keys/"
+      "fixCommand": "ritueel apply --plan-only",
+      "learnPath": "/learn/life-of-a-root/#re-sign"
     },
     {
-      "id": "undeclared-row",
-      "code": "undeclared-row",
+      "id": "f-3",
+      "code": "intermediate",
       "severity": "SEVERITY_NOTICE",
-      "title": "Root card two holds a key in row 4 that no bundle declares",
-      "reason": "A key sits in a row that neither this bundle nor another bundle of the holder has declared. It may be a collision or a key that is not yours.",
-      "subject": {
-        "kind": "SUBJECT_KIND_CARD",
-        "identifier": "00000002",
-        "label": "Root card two"
+      "title": "laptop ends in 47 days",
+      "reason": "Its binding ends on 2027-01-10. The request for laptop has come, so apply can renew it. The key file is used in the offline system.",
+      "object": {
+        "kind": "OBJECT_KIND_DELEGATION",
+        "id": "laptop",
+        "label": "laptop"
       },
       "evidence": [
-        "Slot 8a is occupied",
-        "The severity and the name of this finding are proposed (record 0003, issue 11)"
+        "Binding valid from 2025-12-10 to 2027-01-10.",
+        "A delegation warns at 60, 30 and 14 days."
       ],
-      "fixCommand": "ritueel card check --card 00000002",
-      "learnPath": "/design/#cards"
-    },
-    {
-      "id": "adopted-rsa-primary",
-      "code": "adopted-stage-one",
-      "severity": "SEVERITY_INFO",
-      "title": "Your primary is RSA-4096, adopted as it is (stage one)",
-      "reason": "ritueel accepts an old key once, with its history. Stage two uses card-born keys. Replace it within three years, or move to stage two with two card-born primaries.",
-      "subject": {
-        "kind": "SUBJECT_KIND_ROOT",
-        "identifier": "10000123456789ABCDEF0123456789ABCDEF0123",
-        "label": "personal/A"
-      },
-      "evidence": [
-        "Adopted on 2026-11-03",
-        "Row 2 of both root cards is reserved for stage two",
-        "The fix command is a proposal: the command reference does not have it yet."
-      ],
-      "fixCommand": "ritueel personal primary add --card 00000001 --plan-only",
-      "learnPath": "/design/#a-persons-key",
-      "visibleFromPublicKey": true
-    },
-    {
-      "id": "rehearsal-card-old-firmware",
-      "code": "firmware-old",
-      "severity": "SEVERITY_INFO",
-      "title": "The rehearsal card is below the firmware floor of a root card",
-      "reason": "A card that holds roots needs firmware 5.7.4 or later (ritueel's rule, record 0003). The rehearsal card runs 5.2.6. A rehearsal card never holds a real key and never changes its kind, so this is fine for practice with a test root.",
-      "subject": {
-        "kind": "SUBJECT_KIND_CARD",
-        "identifier": "00000006",
-        "label": "Rehearsal"
-      },
-      "evidence": [
-        "Firmware 5.2.6, floor for a root card 5.7.4"
-      ],
-      "fixCommand": "ritueel card check --card 00000006",
-      "learnPath": "/learn/how-a-yubikey-holds-keys/"
+      "fixCommand": "ritueel apply --plan-only",
+      "learnPath": "/learn/life-of-a-root/#re-sign"
     }
-  ]
+  ],
+  "readAt": "2026-11-24T09:00:00Z"
 }

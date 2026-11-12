@@ -1,0 +1,910 @@
+{
+  "readAt": "2026-11-24T09:00:00Z",
+  "cards": [
+    {
+      "serial": "00000001",
+      "name": "desk",
+      "kind": "CARD_KIND_DAY_TO_DAY",
+      "model": "YubiKey 5C NFC",
+      "firmware": "5.8.0",
+      "holder": "Example Holder",
+      "kept": "in the desk drawer",
+      "layoutVersion": 1,
+      "lastSeenAt": "2026-11-18T09:00:00Z",
+      "lastCheckedAt": "2026-11-18T09:00:00Z",
+      "roleSummary": "Day-to-day card. Holds the signing subkey of the desk delegation.",
+      "piv": {
+        "use": "APPLICATION_USE_UNUSED",
+        "rows": [
+          {
+            "number": 1,
+            "label": "card",
+            "slots": [
+              {
+                "id": "9a",
+                "state": "SLOT_STATE_EMPTY"
+              },
+              {
+                "id": "9c",
+                "state": "SLOT_STATE_EMPTY"
+              },
+              {
+                "id": "9d",
+                "state": "SLOT_STATE_EMPTY"
+              },
+              {
+                "id": "9e",
+                "state": "SLOT_STATE_EMPTY"
+              }
+            ]
+          },
+          {
+            "number": 2,
+            "label": "free",
+            "slots": [
+              {
+                "id": "82",
+                "state": "SLOT_STATE_EMPTY"
+              },
+              {
+                "id": "83",
+                "state": "SLOT_STATE_EMPTY"
+              },
+              {
+                "id": "84",
+                "state": "SLOT_STATE_EMPTY"
+              },
+              {
+                "id": "85",
+                "state": "SLOT_STATE_EMPTY"
+              }
+            ]
+          },
+          {
+            "number": 3,
+            "label": "free",
+            "slots": [
+              {
+                "id": "86",
+                "state": "SLOT_STATE_EMPTY"
+              },
+              {
+                "id": "87",
+                "state": "SLOT_STATE_EMPTY"
+              },
+              {
+                "id": "88",
+                "state": "SLOT_STATE_EMPTY"
+              },
+              {
+                "id": "89",
+                "state": "SLOT_STATE_EMPTY"
+              }
+            ]
+          },
+          {
+            "number": 4,
+            "label": "free",
+            "slots": [
+              {
+                "id": "8a",
+                "state": "SLOT_STATE_EMPTY"
+              },
+              {
+                "id": "8b",
+                "state": "SLOT_STATE_EMPTY"
+              },
+              {
+                "id": "8c",
+                "state": "SLOT_STATE_EMPTY"
+              },
+              {
+                "id": "8d",
+                "state": "SLOT_STATE_EMPTY"
+              }
+            ]
+          },
+          {
+            "number": 5,
+            "label": "free",
+            "slots": [
+              {
+                "id": "8e",
+                "state": "SLOT_STATE_EMPTY"
+              },
+              {
+                "id": "8f",
+                "state": "SLOT_STATE_EMPTY"
+              },
+              {
+                "id": "90",
+                "state": "SLOT_STATE_EMPTY"
+              },
+              {
+                "id": "91",
+                "state": "SLOT_STATE_EMPTY"
+              }
+            ]
+          },
+          {
+            "number": 6,
+            "label": "free",
+            "slots": [
+              {
+                "id": "92",
+                "state": "SLOT_STATE_EMPTY"
+              },
+              {
+                "id": "93",
+                "state": "SLOT_STATE_EMPTY"
+              },
+              {
+                "id": "94",
+                "state": "SLOT_STATE_EMPTY"
+              },
+              {
+                "id": "95",
+                "state": "SLOT_STATE_EMPTY"
+              }
+            ]
+          }
+        ]
+      },
+      "openpgp": {
+        "use": "APPLICATION_USE_IN_USE",
+        "slots": [
+          {
+            "id": "sig",
+            "state": "SLOT_STATE_USED",
+            "use": "SLOT_USE_OPENPGP_SIGN",
+            "purpose": "Signing subkey of the desk delegation",
+            "algorithm": "ecdsa-p384",
+            "publicKeySha256": "5dad41fb5dad41fb5dad41fb5dad41fb5dad41fb5dad41fb5dad41fb5dad41fb",
+            "bornAt": "2025-01-10T12:00:00Z"
+          },
+          {
+            "id": "dec",
+            "state": "SLOT_STATE_EMPTY"
+          },
+          {
+            "id": "aut",
+            "state": "SLOT_STATE_EMPTY"
+          }
+        ]
+      },
+      "fido2": {
+        "use": "APPLICATION_USE_UNUSED"
+      },
+      "revokeCommand": "ritueel revoke --card desk --reason REASON"
+    },
+    {
+      "serial": "00000002",
+      "name": "keychain",
+      "kind": "CARD_KIND_DAY_TO_DAY",
+      "model": "YubiKey 5C NFC",
+      "firmware": "5.8.0",
+      "holder": "Example Holder",
+      "kept": "on the key ring",
+      "layoutVersion": 1,
+      "lastSeenAt": "2026-11-18T09:00:00Z",
+      "lastCheckedAt": "2026-11-18T09:00:00Z",
+      "roleSummary": "Day-to-day card. Holds the signing subkey of the keychain delegation.",
+      "piv": {
+        "use": "APPLICATION_USE_UNUSED",
+        "rows": [
+          {
+            "number": 1,
+            "label": "card",
+            "slots": [
+              {
+                "id": "9a",
+                "state": "SLOT_STATE_EMPTY"
+              },
+              {
+                "id": "9c",
+                "state": "SLOT_STATE_EMPTY"
+              },
+              {
+                "id": "9d",
+                "state": "SLOT_STATE_EMPTY"
+              },
+              {
+                "id": "9e",
+                "state": "SLOT_STATE_EMPTY"
+              }
+            ]
+          },
+          {
+            "number": 2,
+            "label": "free",
+            "slots": [
+              {
+                "id": "82",
+                "state": "SLOT_STATE_EMPTY"
+              },
+              {
+                "id": "83",
+                "state": "SLOT_STATE_EMPTY"
+              },
+              {
+                "id": "84",
+                "state": "SLOT_STATE_EMPTY"
+              },
+              {
+                "id": "85",
+                "state": "SLOT_STATE_EMPTY"
+              }
+            ]
+          },
+          {
+            "number": 3,
+            "label": "free",
+            "slots": [
+              {
+                "id": "86",
+                "state": "SLOT_STATE_EMPTY"
+              },
+              {
+                "id": "87",
+                "state": "SLOT_STATE_EMPTY"
+              },
+              {
+                "id": "88",
+                "state": "SLOT_STATE_EMPTY"
+              },
+              {
+                "id": "89",
+                "state": "SLOT_STATE_EMPTY"
+              }
+            ]
+          },
+          {
+            "number": 4,
+            "label": "free",
+            "slots": [
+              {
+                "id": "8a",
+                "state": "SLOT_STATE_EMPTY"
+              },
+              {
+                "id": "8b",
+                "state": "SLOT_STATE_EMPTY"
+              },
+              {
+                "id": "8c",
+                "state": "SLOT_STATE_EMPTY"
+              },
+              {
+                "id": "8d",
+                "state": "SLOT_STATE_EMPTY"
+              }
+            ]
+          },
+          {
+            "number": 5,
+            "label": "free",
+            "slots": [
+              {
+                "id": "8e",
+                "state": "SLOT_STATE_EMPTY"
+              },
+              {
+                "id": "8f",
+                "state": "SLOT_STATE_EMPTY"
+              },
+              {
+                "id": "90",
+                "state": "SLOT_STATE_EMPTY"
+              },
+              {
+                "id": "91",
+                "state": "SLOT_STATE_EMPTY"
+              }
+            ]
+          },
+          {
+            "number": 6,
+            "label": "free",
+            "slots": [
+              {
+                "id": "92",
+                "state": "SLOT_STATE_EMPTY"
+              },
+              {
+                "id": "93",
+                "state": "SLOT_STATE_EMPTY"
+              },
+              {
+                "id": "94",
+                "state": "SLOT_STATE_EMPTY"
+              },
+              {
+                "id": "95",
+                "state": "SLOT_STATE_EMPTY"
+              }
+            ]
+          }
+        ]
+      },
+      "openpgp": {
+        "use": "APPLICATION_USE_IN_USE",
+        "slots": [
+          {
+            "id": "sig",
+            "state": "SLOT_STATE_USED",
+            "use": "SLOT_USE_OPENPGP_SIGN",
+            "purpose": "Signing subkey of the keychain delegation",
+            "algorithm": "ecdsa-p384",
+            "publicKeySha256": "baf98b01baf98b01baf98b01baf98b01baf98b01baf98b01baf98b01baf98b01",
+            "bornAt": "2025-01-10T12:00:00Z"
+          },
+          {
+            "id": "dec",
+            "state": "SLOT_STATE_EMPTY"
+          },
+          {
+            "id": "aut",
+            "state": "SLOT_STATE_EMPTY"
+          }
+        ]
+      },
+      "fido2": {
+        "use": "APPLICATION_USE_UNUSED"
+      },
+      "revokeCommand": "ritueel revoke --card keychain --reason REASON"
+    },
+    {
+      "serial": "00000003",
+      "name": "laptop",
+      "kind": "CARD_KIND_DAY_TO_DAY",
+      "model": "YubiKey 5C NFC",
+      "firmware": "5.8.0",
+      "holder": "Example Holder",
+      "kept": "in the laptop bag",
+      "layoutVersion": 1,
+      "lastSeenAt": "2026-11-18T09:00:00Z",
+      "lastCheckedAt": "2026-11-18T09:00:00Z",
+      "roleSummary": "Day-to-day card. Holds the signing subkey of the laptop delegation.",
+      "piv": {
+        "use": "APPLICATION_USE_UNUSED",
+        "rows": [
+          {
+            "number": 1,
+            "label": "card",
+            "slots": [
+              {
+                "id": "9a",
+                "state": "SLOT_STATE_EMPTY"
+              },
+              {
+                "id": "9c",
+                "state": "SLOT_STATE_EMPTY"
+              },
+              {
+                "id": "9d",
+                "state": "SLOT_STATE_EMPTY"
+              },
+              {
+                "id": "9e",
+                "state": "SLOT_STATE_EMPTY"
+              }
+            ]
+          },
+          {
+            "number": 2,
+            "label": "free",
+            "slots": [
+              {
+                "id": "82",
+                "state": "SLOT_STATE_EMPTY"
+              },
+              {
+                "id": "83",
+                "state": "SLOT_STATE_EMPTY"
+              },
+              {
+                "id": "84",
+                "state": "SLOT_STATE_EMPTY"
+              },
+              {
+                "id": "85",
+                "state": "SLOT_STATE_EMPTY"
+              }
+            ]
+          },
+          {
+            "number": 3,
+            "label": "free",
+            "slots": [
+              {
+                "id": "86",
+                "state": "SLOT_STATE_EMPTY"
+              },
+              {
+                "id": "87",
+                "state": "SLOT_STATE_EMPTY"
+              },
+              {
+                "id": "88",
+                "state": "SLOT_STATE_EMPTY"
+              },
+              {
+                "id": "89",
+                "state": "SLOT_STATE_EMPTY"
+              }
+            ]
+          },
+          {
+            "number": 4,
+            "label": "free",
+            "slots": [
+              {
+                "id": "8a",
+                "state": "SLOT_STATE_EMPTY"
+              },
+              {
+                "id": "8b",
+                "state": "SLOT_STATE_EMPTY"
+              },
+              {
+                "id": "8c",
+                "state": "SLOT_STATE_EMPTY"
+              },
+              {
+                "id": "8d",
+                "state": "SLOT_STATE_EMPTY"
+              }
+            ]
+          },
+          {
+            "number": 5,
+            "label": "free",
+            "slots": [
+              {
+                "id": "8e",
+                "state": "SLOT_STATE_EMPTY"
+              },
+              {
+                "id": "8f",
+                "state": "SLOT_STATE_EMPTY"
+              },
+              {
+                "id": "90",
+                "state": "SLOT_STATE_EMPTY"
+              },
+              {
+                "id": "91",
+                "state": "SLOT_STATE_EMPTY"
+              }
+            ]
+          },
+          {
+            "number": 6,
+            "label": "free",
+            "slots": [
+              {
+                "id": "92",
+                "state": "SLOT_STATE_EMPTY"
+              },
+              {
+                "id": "93",
+                "state": "SLOT_STATE_EMPTY"
+              },
+              {
+                "id": "94",
+                "state": "SLOT_STATE_EMPTY"
+              },
+              {
+                "id": "95",
+                "state": "SLOT_STATE_EMPTY"
+              }
+            ]
+          }
+        ]
+      },
+      "openpgp": {
+        "use": "APPLICATION_USE_IN_USE",
+        "slots": [
+          {
+            "id": "sig",
+            "state": "SLOT_STATE_USED",
+            "use": "SLOT_USE_OPENPGP_SIGN",
+            "purpose": "Signing subkey of the laptop delegation",
+            "algorithm": "ecdsa-p384",
+            "publicKeySha256": "9a39741d9a39741d9a39741d9a39741d9a39741d9a39741d9a39741d9a39741d",
+            "bornAt": "2025-01-10T12:00:00Z"
+          },
+          {
+            "id": "dec",
+            "state": "SLOT_STATE_EMPTY"
+          },
+          {
+            "id": "aut",
+            "state": "SLOT_STATE_EMPTY"
+          }
+        ]
+      },
+      "fido2": {
+        "use": "APPLICATION_USE_UNUSED"
+      },
+      "revokeCommand": "ritueel revoke --card laptop --reason REASON"
+    }
+  ],
+  "roots": [
+    {
+      "name": "holder",
+      "kind": "KEY_KIND_OPENPGP",
+      "keyIds": [
+        "1A2B3C4D1A2B3C4D1A2B3C4D1A2B3C4D1A2B3C4D"
+      ],
+      "adopted": true,
+      "wantedPath": "want/roots/holder.yaml",
+      "createdAt": "2025-01-10T12:00:00Z"
+    }
+  ],
+  "keys": [
+    {
+      "fingerprint": "1A2B3C4D1A2B3C4D1A2B3C4D1A2B3C4D1A2B3C4D",
+      "label": "A",
+      "role": "KEY_ROLE_ROOT_KEY",
+      "kind": "KEY_KIND_OPENPGP",
+      "root": "holder",
+      "state": "KEY_STATE_ACTIVE",
+      "algorithm": "ecdsa-p384",
+      "place": {
+        "store": "STORE_SOFTWARE",
+        "path": "~/keys/personal/A.openpgp.key.age"
+      },
+      "createdAt": "2025-01-10T12:00:00Z",
+      "expiresAt": "2028-12-10T12:00:00Z",
+      "revokeCommand": "ritueel revoke personal/A --reason REASON",
+      "touchedBy": [
+        {
+          "id": "20250110T120000Z-apply-2e9a4b11",
+          "at": "2025-01-10T12:00:00Z",
+          "command": "CEREMONY_COMMAND_APPLY"
+        }
+      ]
+    },
+    {
+      "fingerprint": "2A0000012A0000012A0000012A0000012A000001",
+      "role": "KEY_ROLE_DELEGATED_KEY",
+      "kind": "KEY_KIND_OPENPGP",
+      "root": "holder",
+      "delegation": "desk",
+      "state": "KEY_STATE_ACTIVE",
+      "algorithm": "ecdsa-p384",
+      "place": {
+        "store": "STORE_OPENPGP_CARD",
+        "card": "desk",
+        "slot": "sig"
+      },
+      "createdAt": "2025-01-10T12:00:00Z",
+      "expiresAt": "2027-01-10T12:00:00Z",
+      "revokeCommand": "ritueel revoke desk --reason REASON"
+    },
+    {
+      "fingerprint": "2A0000022A0000022A0000022A0000022A000002",
+      "role": "KEY_ROLE_DELEGATED_KEY",
+      "kind": "KEY_KIND_OPENPGP",
+      "root": "holder",
+      "delegation": "keychain",
+      "state": "KEY_STATE_ACTIVE",
+      "algorithm": "ecdsa-p384",
+      "place": {
+        "store": "STORE_OPENPGP_CARD",
+        "card": "keychain",
+        "slot": "sig"
+      },
+      "createdAt": "2025-01-10T12:00:00Z",
+      "expiresAt": "2027-01-10T12:00:00Z",
+      "revokeCommand": "ritueel revoke keychain --reason REASON"
+    },
+    {
+      "fingerprint": "2A0000032A0000032A0000032A0000032A000003",
+      "role": "KEY_ROLE_DELEGATED_KEY",
+      "kind": "KEY_KIND_OPENPGP",
+      "root": "holder",
+      "delegation": "laptop",
+      "state": "KEY_STATE_ACTIVE",
+      "algorithm": "ecdsa-p384",
+      "place": {
+        "store": "STORE_OPENPGP_CARD",
+        "card": "laptop",
+        "slot": "sig"
+      },
+      "createdAt": "2025-01-10T12:00:00Z",
+      "expiresAt": "2027-01-10T12:00:00Z",
+      "revokeCommand": "ritueel revoke laptop --reason REASON"
+    }
+  ],
+  "userIds": [
+    {
+      "id": "uid-A-1",
+      "key": "1A2B3C4D1A2B3C4D1A2B3C4D1A2B3C4D1A2B3C4D",
+      "text": "Example Holder <holder@example.com>",
+      "primary": true,
+      "createdAt": "2025-01-10T12:00:00Z",
+      "certified": true
+    },
+    {
+      "id": "uid-A-2",
+      "key": "1A2B3C4D1A2B3C4D1A2B3C4D1A2B3C4D1A2B3C4D",
+      "text": "Example Holder <holder@mail.example.com>",
+      "createdAt": "2025-06-02T12:00:00Z",
+      "certified": true,
+      "touchedBy": [
+        {
+          "id": "20250602T120000Z-apply-8c15d7e3",
+          "at": "2025-06-02T12:00:00Z",
+          "command": "CEREMONY_COMMAND_APPLY"
+        }
+      ]
+    }
+  ],
+  "delegations": [
+    {
+      "name": "desk",
+      "type": "DELEGATION_TYPE_OPENPGP_SUBKEY",
+      "root": "holder",
+      "key": "2A0000012A0000012A0000012A0000012A000001",
+      "requester": "Example Holder",
+      "use": "sign",
+      "limits": [
+        "capability: sign"
+      ],
+      "wantedPath": "want/delegations/desk.yaml",
+      "certification": "cert-3",
+      "touchedBy": [
+        {
+          "id": "20251210T120000Z-apply-f40b9a62",
+          "at": "2025-12-10T12:00:00Z",
+          "command": "CEREMONY_COMMAND_APPLY"
+        },
+        {
+          "id": "20250110T120000Z-apply-2e9a4b11",
+          "at": "2025-01-10T12:00:00Z",
+          "command": "CEREMONY_COMMAND_APPLY"
+        }
+      ]
+    },
+    {
+      "name": "keychain",
+      "type": "DELEGATION_TYPE_OPENPGP_SUBKEY",
+      "root": "holder",
+      "key": "2A0000022A0000022A0000022A0000022A000002",
+      "requester": "Example Holder",
+      "use": "sign",
+      "limits": [
+        "capability: sign"
+      ],
+      "wantedPath": "want/delegations/keychain.yaml",
+      "certification": "cert-4",
+      "touchedBy": [
+        {
+          "id": "20251210T120000Z-apply-f40b9a62",
+          "at": "2025-12-10T12:00:00Z",
+          "command": "CEREMONY_COMMAND_APPLY"
+        },
+        {
+          "id": "20250110T120000Z-apply-2e9a4b11",
+          "at": "2025-01-10T12:00:00Z",
+          "command": "CEREMONY_COMMAND_APPLY"
+        }
+      ]
+    },
+    {
+      "name": "laptop",
+      "type": "DELEGATION_TYPE_OPENPGP_SUBKEY",
+      "root": "holder",
+      "key": "2A0000032A0000032A0000032A0000032A000003",
+      "requester": "Example Holder",
+      "use": "sign",
+      "limits": [
+        "capability: sign"
+      ],
+      "wantedPath": "want/delegations/laptop.yaml",
+      "certification": "cert-5",
+      "touchedBy": [
+        {
+          "id": "20251210T120000Z-apply-f40b9a62",
+          "at": "2025-12-10T12:00:00Z",
+          "command": "CEREMONY_COMMAND_APPLY"
+        },
+        {
+          "id": "20250110T120000Z-apply-2e9a4b11",
+          "at": "2025-01-10T12:00:00Z",
+          "command": "CEREMONY_COMMAND_APPLY"
+        }
+      ]
+    }
+  ],
+  "certifications": [
+    {
+      "id": "cert-1",
+      "kind": "CERTIFICATION_KIND_PRIMARY_SELF_SIGNATURE",
+      "issuer": "1A2B3C4D1A2B3C4D1A2B3C4D1A2B3C4D1A2B3C4D",
+      "subject": {
+        "kind": "OBJECT_KIND_USER_ID",
+        "id": "uid-A-1",
+        "label": "Example Holder <holder@example.com>"
+      },
+      "validFrom": "2025-12-10T12:00:00Z",
+      "validUntil": "2028-12-10T12:00:00Z",
+      "ceremonyId": "20251210T120000Z-apply-f40b9a62"
+    },
+    {
+      "id": "cert-2",
+      "kind": "CERTIFICATION_KIND_PRIMARY_SELF_SIGNATURE",
+      "issuer": "1A2B3C4D1A2B3C4D1A2B3C4D1A2B3C4D1A2B3C4D",
+      "subject": {
+        "kind": "OBJECT_KIND_USER_ID",
+        "id": "uid-A-2",
+        "label": "Example Holder <holder@mail.example.com>"
+      },
+      "validFrom": "2025-12-10T12:00:00Z",
+      "validUntil": "2028-12-10T12:00:00Z",
+      "ceremonyId": "20251210T120000Z-apply-f40b9a62"
+    },
+    {
+      "id": "cert-3",
+      "kind": "CERTIFICATION_KIND_SUBKEY_BINDING",
+      "issuer": "1A2B3C4D1A2B3C4D1A2B3C4D1A2B3C4D1A2B3C4D",
+      "subject": {
+        "kind": "OBJECT_KIND_DELEGATION",
+        "id": "desk",
+        "label": "desk"
+      },
+      "validFrom": "2025-12-10T12:00:00Z",
+      "validUntil": "2027-01-10T12:00:00Z",
+      "ceremonyId": "20251210T120000Z-apply-f40b9a62"
+    },
+    {
+      "id": "cert-4",
+      "kind": "CERTIFICATION_KIND_SUBKEY_BINDING",
+      "issuer": "1A2B3C4D1A2B3C4D1A2B3C4D1A2B3C4D1A2B3C4D",
+      "subject": {
+        "kind": "OBJECT_KIND_DELEGATION",
+        "id": "keychain",
+        "label": "keychain"
+      },
+      "validFrom": "2025-12-10T12:00:00Z",
+      "validUntil": "2027-01-10T12:00:00Z",
+      "ceremonyId": "20251210T120000Z-apply-f40b9a62"
+    },
+    {
+      "id": "cert-5",
+      "kind": "CERTIFICATION_KIND_SUBKEY_BINDING",
+      "issuer": "1A2B3C4D1A2B3C4D1A2B3C4D1A2B3C4D1A2B3C4D",
+      "subject": {
+        "kind": "OBJECT_KIND_DELEGATION",
+        "id": "laptop",
+        "label": "laptop"
+      },
+      "validFrom": "2025-12-10T12:00:00Z",
+      "validUntil": "2027-01-10T12:00:00Z",
+      "ceremonyId": "20251210T120000Z-apply-f40b9a62"
+    }
+  ],
+  "requests": [
+    {
+      "stem": "desk-2028",
+      "delegation": "desk",
+      "type": "DELEGATION_TYPE_OPENPGP_SUBKEY",
+      "key": "2A0000012A0000012A0000012A0000012A000001",
+      "path": "requests/desk-2028/"
+    },
+    {
+      "stem": "keychain-2028",
+      "delegation": "keychain",
+      "type": "DELEGATION_TYPE_OPENPGP_SUBKEY",
+      "key": "2A0000022A0000022A0000022A0000022A000002",
+      "path": "requests/keychain-2028/"
+    },
+    {
+      "stem": "laptop-2028",
+      "delegation": "laptop",
+      "type": "DELEGATION_TYPE_OPENPGP_SUBKEY",
+      "key": "2A0000032A0000032A0000032A0000032A000003",
+      "path": "requests/laptop-2028/"
+    }
+  ],
+  "changes": [
+    {
+      "id": "chg-1",
+      "object": {
+        "kind": "OBJECT_KIND_DELEGATION",
+        "id": "desk",
+        "label": "desk"
+      },
+      "kind": "CHANGE_KIND_RENEW",
+      "state": "CHANGE_STATE_READY",
+      "text": "Renew desk",
+      "needs": [
+        {
+          "kind": "NEED_KIND_KEY_FILE",
+          "name": "A.openpgp.key.age",
+          "met": true
+        },
+        {
+          "kind": "NEED_KIND_REQUEST",
+          "name": "desk",
+          "met": true
+        }
+      ],
+      "source": "CHANGE_SOURCE_DATE",
+      "dueAt": "2027-01-10T12:00:00Z",
+      "involves": [
+        {
+          "kind": "OBJECT_KIND_CERTIFICATION",
+          "id": "cert-3",
+          "label": "binding of desk"
+        }
+      ]
+    },
+    {
+      "id": "chg-2",
+      "object": {
+        "kind": "OBJECT_KIND_DELEGATION",
+        "id": "keychain",
+        "label": "keychain"
+      },
+      "kind": "CHANGE_KIND_RENEW",
+      "state": "CHANGE_STATE_READY",
+      "text": "Renew keychain",
+      "needs": [
+        {
+          "kind": "NEED_KIND_KEY_FILE",
+          "name": "A.openpgp.key.age",
+          "met": true
+        },
+        {
+          "kind": "NEED_KIND_REQUEST",
+          "name": "keychain",
+          "met": true
+        }
+      ],
+      "source": "CHANGE_SOURCE_DATE",
+      "dueAt": "2027-01-10T12:00:00Z",
+      "involves": [
+        {
+          "kind": "OBJECT_KIND_CERTIFICATION",
+          "id": "cert-4",
+          "label": "binding of keychain"
+        }
+      ]
+    },
+    {
+      "id": "chg-3",
+      "object": {
+        "kind": "OBJECT_KIND_DELEGATION",
+        "id": "laptop",
+        "label": "laptop"
+      },
+      "kind": "CHANGE_KIND_RENEW",
+      "state": "CHANGE_STATE_READY",
+      "text": "Renew laptop",
+      "needs": [
+        {
+          "kind": "NEED_KIND_KEY_FILE",
+          "name": "A.openpgp.key.age",
+          "met": true
+        },
+        {
+          "kind": "NEED_KIND_REQUEST",
+          "name": "laptop",
+          "met": true
+        }
+      ],
+      "source": "CHANGE_SOURCE_DATE",
+      "dueAt": "2027-01-10T12:00:00Z",
+      "involves": [
+        {
+          "kind": "OBJECT_KIND_CERTIFICATION",
+          "id": "cert-5",
+          "label": "binding of laptop"
+        }
+      ]
+    }
+  ]
+}

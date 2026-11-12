@@ -2,65 +2,35 @@
   "bundle": {
     "path": "~/ritueel/globex",
     "name": "globex",
-    "exists": true,
-    "createdAt": "2026-09-15T12:30:00Z",
-    "holderLabel": "the holder"
+    "kind": "BUNDLE_KIND_COMPANY",
+    "createdAt": "2026-09-15T12:50:00Z"
   },
-  "asOf": "2026-11-11T09:00:00Z",
+  "readAt": "2026-11-24T09:00:00Z",
   "demo": true,
   "programVersion": "0.0.0-demo",
   "history": {
-    "recordCount": 1,
+    "recordCount": 2,
     "chainState": "CHAIN_STATE_VERIFIED",
-    "headRecordSha256": "600b0123456789abcdef0123456789abcdef0123456789abcdef0123456789ab",
-    "lastRecordId": "20260915T142000Z-init",
-    "lastRecordTitle": "Adopted the cloud root globex/A",
-    "lastRecordAt": "2026-09-15T14:20:00Z",
-    "checkedAt": "2026-11-11T09:00:00Z",
-    "message": "The only record checks out. It is 57 days old."
+    "endRecordSha256": "b2c3d4e5b2c3d4e5b2c3d4e5b2c3d4e5b2c3d4e5b2c3d4e5b2c3d4e5b2c3d4e5",
+    "lastRecordId": "20261020T130000Z-apply-48c7e1d3",
+    "lastRecordTitle": "Certified globex-ca for the request globex-ca-2027",
+    "lastRecordAt": "2026-10-20T13:00:00Z",
+    "checkedAt": "2026-11-24T09:00:00Z",
+    "message": "All 2 records check out. The newest is 35 days old.",
+    "ends": 1
   },
-  "due": [],
-  "findingCounts": [
-    {
-      "severity": "SEVERITY_CRITICAL",
-      "count": 0
-    },
-    {
-      "severity": "SEVERITY_ALERT",
-      "count": 0
-    },
-    {
-      "severity": "SEVERITY_NOTICE",
-      "count": 0
-    },
-    {
-      "severity": "SEVERITY_INFO",
-      "count": 1
-    }
-  ],
-  "counts": {
-    "roots": 1,
-    "delegatedKeys": 0,
-    "cards": 0,
-    "trustFiles": 5
+  "trustSequence": 2,
+  "changes": {
+    "ready": 0,
+    "waits": 0
   },
-  "setupSteps": [
-    {
-      "id": "bundle",
-      "title": "Open your ritueel bundle",
-      "detail": "The bundle holds plain files, the history and your plans.",
-      "done": true
+  "nextDate": {
+    "object": {
+      "kind": "OBJECT_KIND_DELEGATION",
+      "id": "globex-ca",
+      "label": "globex-ca"
     },
-    {
-      "id": "public-key",
-      "title": "Bring in your public key",
-      "detail": "Only the public half is ever needed here.",
-      "done": true
-    },
-    {
-      "id": "first-plan",
-      "title": "Make your first plan",
-      "detail": "Start from what is due, or from a finding."
-    }
-  ]
+    "endsAt": "2027-11-20T13:00:00Z",
+    "dueFrom": "2027-09-21T13:00:00Z"
+  }
 }

@@ -1,33 +1,156 @@
 {
   "history": {
-    "recordCount": 1,
+    "recordCount": 3,
     "chainState": "CHAIN_STATE_VERIFIED",
-    "headRecordSha256": "600c0123456789abcdef0123456789abcdef0123456789abcdef0123456789ab",
-    "lastRecordId": "20261103T142000Z-init",
-    "lastRecordTitle": "Adopted the holder's OpenPGP key, stage one",
-    "lastRecordAt": "2026-11-03T14:20:00Z",
-    "checkedAt": "2026-11-11T09:00:00Z",
-    "message": "The only record checks out. It is 8 days old."
+    "endRecordSha256": "e5f60718e5f60718e5f60718e5f60718e5f60718e5f60718e5f60718e5f60718",
+    "lastRecordId": "20251210T120000Z-apply-f40b9a62",
+    "lastRecordTitle": "Renewed the subkeys of three cards and extended the primary key",
+    "lastRecordAt": "2025-12-10T12:00:00Z",
+    "checkedAt": "2026-11-24T09:00:00Z",
+    "message": "All 3 records check out. The newest is 349 days old.",
+    "ends": 1
   },
   "ceremonies": [
     {
-      "id": "20261103T142000Z-init",
-      "kind": "CEREMONY_KIND_ADOPT_KEY",
-      "title": "Adopted the holder's OpenPGP key, stage one",
-      "summary": "The existing primary was adopted as it is, with its history of subkeys: RSA-4096, no expiry. It now lives in an encrypted key file that a passkey on each root card opens. The adoption did not set the expiry that an adopted key should get: a later plan does it.",
-      "completedAt": "2026-11-03T14:20:00Z",
+      "id": "20251210T120000Z-apply-f40b9a62",
+      "command": "CEREMONY_COMMAND_APPLY",
+      "state": "CEREMONY_STATE_RECORDED",
+      "title": "Renewed the subkeys of three cards and extended the primary key",
+      "summary": "The bindings of the three subkeys were signed again and the primary key was extended. The ceremony wrote trust set 3.",
+      "plannedAt": "2025-12-10T12:00:00Z",
+      "ranOn": "RUN_PLACE_OFFLINE_SYSTEM",
+      "outcome": "CEREMONY_OUTCOME_COMPLETED",
+      "planSha256": "f40b9a62f40b9a62f40b9a62f40b9a62f40b9a62f40b9a62f40b9a62f40b9a62",
+      "startedAt": "2025-12-10T12:02:00Z",
+      "finishedAt": "2025-12-10T12:20:00Z",
+      "recordSha256": "e5f60718e5f60718e5f60718e5f60718e5f60718e5f60718e5f60718e5f60718",
+      "prevRecordSha256": "d4e5f607d4e5f607d4e5f607d4e5f607d4e5f607d4e5f607d4e5f607d4e5f607",
+      "trustSequence": 3,
+      "trustSetName": "3-f40b9a62",
+      "applied": [
+        {
+          "object": {
+            "kind": "OBJECT_KIND_DELEGATION",
+            "id": "desk",
+            "label": "desk"
+          },
+          "kind": "CHANGE_KIND_RENEW",
+          "text": "Renew desk"
+        },
+        {
+          "object": {
+            "kind": "OBJECT_KIND_DELEGATION",
+            "id": "keychain",
+            "label": "keychain"
+          },
+          "kind": "CHANGE_KIND_RENEW",
+          "text": "Renew keychain"
+        },
+        {
+          "object": {
+            "kind": "OBJECT_KIND_DELEGATION",
+            "id": "laptop",
+            "label": "laptop"
+          },
+          "kind": "CHANGE_KIND_RENEW",
+          "text": "Renew laptop"
+        }
+      ],
+      "signatureCount": 4,
+      "guidePath": "/design/#a-ceremony"
+    },
+    {
+      "id": "20250602T120000Z-apply-8c15d7e3",
+      "command": "CEREMONY_COMMAND_APPLY",
+      "state": "CEREMONY_STATE_RECORDED",
+      "title": "Added a second user ID",
+      "summary": "The holder added a second user ID to the wanted file. The ceremony certified it and wrote trust set 2.",
+      "plannedAt": "2025-06-02T12:00:00Z",
+      "ranOn": "RUN_PLACE_OFFLINE_SYSTEM",
+      "outcome": "CEREMONY_OUTCOME_COMPLETED",
+      "planSha256": "8c15d7e38c15d7e38c15d7e38c15d7e38c15d7e38c15d7e38c15d7e38c15d7e3",
+      "startedAt": "2025-06-02T12:02:00Z",
+      "finishedAt": "2025-06-02T12:20:00Z",
+      "recordSha256": "d4e5f607d4e5f607d4e5f607d4e5f607d4e5f607d4e5f607d4e5f607d4e5f607",
+      "prevRecordSha256": "c3d4e5f6c3d4e5f6c3d4e5f6c3d4e5f6c3d4e5f6c3d4e5f6c3d4e5f6c3d4e5f6",
+      "trustSequence": 2,
+      "trustSetName": "2-8c15d7e3",
+      "applied": [
+        {
+          "object": {
+            "kind": "OBJECT_KIND_USER_ID",
+            "id": "uid-A-2",
+            "label": "Example Holder <holder@mail.example.com>"
+          },
+          "kind": "CHANGE_KIND_CERTIFY",
+          "text": "Certify Example Holder <holder@mail.example.com>"
+        }
+      ],
+      "signatureCount": 1,
+      "guidePath": "/design/#a-ceremony"
+    },
+    {
+      "id": "20250110T120000Z-apply-2e9a4b11",
+      "command": "CEREMONY_COMMAND_APPLY",
+      "state": "CEREMONY_STATE_RECORDED",
+      "title": "Adopted the key and bound the subkeys of three cards",
+      "summary": "ritueel adopted the key in the key file and bound one signing subkey on each card. It wrote trust set 1.",
+      "plannedAt": "2025-01-10T12:00:00Z",
+      "ranOn": "RUN_PLACE_OFFLINE_SYSTEM",
+      "outcome": "CEREMONY_OUTCOME_COMPLETED",
+      "planSha256": "2e9a4b112e9a4b112e9a4b112e9a4b112e9a4b112e9a4b112e9a4b112e9a4b11",
+      "startedAt": "2025-01-10T12:02:00Z",
+      "finishedAt": "2025-01-10T12:20:00Z",
+      "recordSha256": "c3d4e5f6c3d4e5f6c3d4e5f6c3d4e5f6c3d4e5f6c3d4e5f6c3d4e5f6c3d4e5f6",
       "trustSequence": 1,
-      "outcome": "CEREMONY_OUTCOME_DONE",
-      "recordSha256": "600c0123456789abcdef0123456789abcdef0123456789abcdef0123456789ab",
-      "planDigest": "4b310bab0123456789abcdef0123456789abcdef0123456789abcdefdeadbeef",
-      "subjectLabels": [
-        "A"
+      "trustSetName": "1-2e9a4b11",
+      "applied": [
+        {
+          "object": {
+            "kind": "OBJECT_KIND_KEY",
+            "id": "1A2B3C4D1A2B3C4D1A2B3C4D1A2B3C4D1A2B3C4D",
+            "label": "key A of holder"
+          },
+          "kind": "CHANGE_KIND_ADOPT",
+          "text": "Adopt key A of holder"
+        },
+        {
+          "object": {
+            "kind": "OBJECT_KIND_DELEGATION",
+            "id": "desk",
+            "label": "desk"
+          },
+          "kind": "CHANGE_KIND_ISSUE",
+          "text": "Certify desk"
+        },
+        {
+          "object": {
+            "kind": "OBJECT_KIND_DELEGATION",
+            "id": "keychain",
+            "label": "keychain"
+          },
+          "kind": "CHANGE_KIND_ISSUE",
+          "text": "Certify keychain"
+        },
+        {
+          "object": {
+            "kind": "OBJECT_KIND_DELEGATION",
+            "id": "laptop",
+            "label": "laptop"
+          },
+          "kind": "CHANGE_KIND_ISSUE",
+          "text": "Certify laptop"
+        }
       ],
-      "cardSerials": [
-        "00000001"
+      "cards": [
+        "desk",
+        "keychain",
+        "laptop"
       ],
-      "guidePath": "/design/#a-persons-key",
-      "runPlace": "RUN_PLACE_OFFLINE_SYSTEM"
+      "signatureCount": 6,
+      "touchCount": 3,
+      "guidePath": "/design/#a-ceremony"
     }
-  ]
+  ],
+  "readAt": "2026-11-24T09:00:00Z"
 }

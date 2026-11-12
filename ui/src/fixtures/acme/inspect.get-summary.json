@@ -2,117 +2,33 @@
   "bundle": {
     "path": "~/ritueel/acme",
     "name": "acme",
-    "exists": true,
-    "createdAt": "2023-12-02T09:50:00Z",
-    "holderLabel": "the holder"
+    "kind": "BUNDLE_KIND_COMPANY",
+    "createdAt": "2023-12-04T09:50:00Z"
   },
-  "asOf": "2026-11-11T09:00:00Z",
+  "readAt": "2026-11-24T09:00:00Z",
   "demo": true,
   "programVersion": "0.0.0-demo",
   "history": {
-    "recordCount": 10,
+    "recordCount": 14,
     "chainState": "CHAIN_STATE_VERIFIED",
-    "headRecordSha256": "600a0123456789abcdef0123456789abcdef0123456789abcdef0123456789ab",
-    "lastRecordId": "20260602T142000Z-card-check",
-    "lastRecordTitle": "Checked both root cards and proved they are alive",
-    "lastRecordAt": "2026-06-02T14:20:00Z",
-    "checkedAt": "2026-11-11T09:00:00Z",
-    "message": "All 10 records check out. The newest is 162 days old."
+    "endRecordSha256": "d7e8f90ad7e8f90ad7e8f90ad7e8f90ad7e8f90ad7e8f90ad7e8f90ad7e8f90a",
+    "lastRecordId": "20261120T100000Z-apply-3fa9c1d2",
+    "lastRecordTitle": "Renewed acme-ca for the request acme-ca-2027",
+    "lastRecordAt": "2026-11-20T10:00:00Z",
+    "checkedAt": "2026-11-24T09:00:00Z",
+    "message": "All 14 records check out. The newest is 4 days old.",
+    "ends": 1
   },
-  "due": [
-    {
-      "id": "card-check-root-cards",
-      "kind": "DUE_KIND_CARD_CHECK",
-      "title": "Check the root cards and prove they are alive",
-      "detail": "Every six months both root cards are read against the layout and each passes the proof of life, a short test that the card still works for its holder. The last check was 2026-06-02.",
-      "subject": {
-        "kind": "SUBJECT_KIND_CARD",
-        "identifier": "00000011",
-        "label": "Root card A and root card B"
-      },
-      "dueAt": "2026-12-02T00:00:00Z",
-      "severity": "SEVERITY_ALERT",
-      "lastDoneAt": "2026-06-02T14:20:00Z",
-      "intention": "INTENTION_RENEW_DUE"
-    },
-    {
-      "id": "renew-acme-ca",
-      "kind": "DUE_KIND_RENEW_DELEGATED_KEY",
-      "title": "Renew acme-ca for acme-gateway",
-      "detail": "The certificate of the intermediate ends on 2027-01-02. After that the requester acme-gateway can no longer issue certificates. acme/B signs this year.",
-      "subject": {
-        "kind": "SUBJECT_KIND_DELEGATED_KEY",
-        "identifier": "23010123456789abcdef0123456789abcdef0123456789abcdef0123456789ab",
-        "label": "acme-ca"
-      },
-      "dueAt": "2027-01-02T00:00:00Z",
-      "severity": "SEVERITY_NOTICE",
-      "lastDoneAt": "2025-12-02T14:20:00Z",
-      "intention": "INTENTION_RENEW_DUE"
-    },
-    {
-      "id": "renew-acme-release",
-      "kind": "DUE_KIND_RENEW_DELEGATED_KEY",
-      "title": "Renew the release subkey acme-release",
-      "detail": "The binding of the release subkey ends on 2027-02-27. After that releases cannot be signed. acme/B signs this year.",
-      "subject": {
-        "kind": "SUBJECT_KIND_DELEGATED_KEY",
-        "identifier": "22010123456789ABCDEF0123456789ABCDEF0123",
-        "label": "acme-release"
-      },
-      "dueAt": "2027-02-27T00:00:00Z",
-      "severity": "SEVERITY_INFO",
-      "lastDoneAt": "2026-01-27T14:20:00Z",
-      "intention": "INTENTION_RENEW_DUE"
-    }
-  ],
   "findingCounts": [
-    {
-      "severity": "SEVERITY_CRITICAL",
-      "count": 0
-    },
-    {
-      "severity": "SEVERITY_ALERT",
-      "count": 0
-    },
     {
       "severity": "SEVERITY_NOTICE",
       "count": 1
-    },
-    {
-      "severity": "SEVERITY_INFO",
-      "count": 0
     }
   ],
-  "counts": {
-    "roots": 2,
-    "delegatedKeys": 2,
-    "cards": 2,
-    "trustFiles": 6
+  "changes": {
+    "ready": 0,
+    "waits": 1
   },
-  "setupSteps": [
-    {
-      "id": "bundle",
-      "title": "Open your ritueel bundle",
-      "detail": "The bundle holds plain files, the history and your plans.",
-      "done": true
-    },
-    {
-      "id": "public-key",
-      "title": "Bring in your public key",
-      "detail": "Only the public half is ever needed here.",
-      "done": true
-    },
-    {
-      "id": "cards",
-      "title": "Register the root cards",
-      "detail": "Both root cards are registered.",
-      "done": true
-    },
-    {
-      "id": "first-plan",
-      "title": "Make your first plan",
-      "detail": "Start from what is due, or from a finding."
-    }
-  ]
+  "ceremoniesWithoutRecord": 2,
+  "trustSequence": 13
 }
