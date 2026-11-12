@@ -27,9 +27,9 @@ function p2() {
   b += rect(158, 116, 108, 90, 'paper-t', 4) + text(166, 132, 'history', 't t-s t-b');
   b += plan(172, 142, 80, 54);
   b += arrow(112, 82, 160, 90, 'copies', { lx: 124, ly: 114 });
-  b += terminal(6, 142, 82, 44) + text(14, 170, '$ plan', 't t-s t-mono');
+  b += terminal(6, 142, 82, 44) + text(14, 170, '$ apply', 't t-s t-mono');
   b += arrow(96, 168, 170, 168, 'writes', { lx: 124, ly: 160, accent: 'plan' });
-  return pnl(2, 'Your workstation', b, 'Two sheets, request and proof, are copied into the requests part of the bundle acme. Then the terminal writes the plan sheet, with its digest, into the history part of the same bundle.');
+  return pnl(2, 'Your workstation', b, 'Two sheets, request and proof, are copied into the requests part of the bundle acme. Then the terminal runs apply, which writes the plan sheet, with its digest, into the history part of the same bundle.');
 }
 
 function p3() {
@@ -83,13 +83,13 @@ function p6() {
   b += arrow(72, 86, 108, 86, 'checks', { lx: 90, ly: 78 });
   b += rect(112, 44, 74, 56, 'paper', 5) + text(117, 64, 'chains to', 't t-s t-mono') + text(117, 80, 'root', 't t-s t-mono') + check(148, 76, 1);
   // the record that ritueel wrote at the workstation: it says where the ceremony ran
-  b += sheet(194, 40, 78, 58, { rows: 0 }) + text(233, 62, 'record', 't t-s t-b', 'm') + text(233, 78, 'ran on', 't t-s t-dim', 'm') + text(233, 92, 'workstation', 't t-s t-dim', 'm');
+  b += sheet(194, 36, 78, 76, { rows: 0 }) + text(233, 56, 'ceremony', 't t-s t-b', 'm') + text(233, 70, 'record', 't t-s t-b', 'm') + text(233, 88, 'ran on', 't t-s t-dim', 'm') + text(233, 102, 'workstation', 't t-s t-dim', 'm');
   b += arrow(204, 140, 72, 140, 'copies answer', { lx: 140, ly: 132 });
   b += note(100, 146, 46, 30, 'cert');
   b += laptop(206, 120, 52, 34);
   b += under(232, 'workstation');
   b += under(40, 'server card');
-  return pnl(6, 'The requester’s server', b, 'A laptop sends the certificate sheet to the rack with one arrow. A second arrow shows the rack’s small screen checking that the certificate chains to the root it trusts. The server card is still in its slot. Above the laptop, a record sheet says the ceremony ran on the workstation.');
+  return pnl(6, 'The requester’s server', b, 'A laptop sends the certificate sheet to the rack with one arrow. A second arrow shows the rack’s small screen checking that the certificate chains to the root it trusts. The server card is still in its slot. Above the laptop, a sheet called ceremony record says it ran on the workstation.');
 }
 
 export default {
@@ -99,10 +99,10 @@ export default {
   caption: 'Signing the intermediate of a requester with a root card, on your workstation. The accent follows the plan.',
   panels: [
     { n: 1, title: 'Ask', caption: 'The requester writes a request, a proof and a fingerprint.', svg: p1() },
-    { n: 2, title: 'Plan', caption: 'You copy them into the bundle. ritueel writes the plan: one signature, one touch.', svg: p2() },
+    { n: 2, title: 'Plan', caption: 'You copy them into the bundle. apply finds the request and writes the plan: one signature, one touch.', svg: p2() },
     { n: 3, title: 'Confirm', caption: 'You type the digest’s start and compare the fingerprint.', svg: p3() },
     { n: 4, title: 'Touch, sign', caption: 'One touch for each signature. A failed touch ends the ceremony.', svg: p4() },
     { n: 5, title: 'Check', caption: 'You check the certificate against the plan on a second device.', svg: p5() },
-    { n: 6, title: 'Hand over', caption: 'ritueel writes the record, which says it ran on your workstation. You hand the certificate over.', svg: p6() },
+    { n: 6, title: 'Hand over', caption: 'ritueel writes the ceremony record, which says it ran on your workstation. You hand the certificate over.', svg: p6() },
   ],
 };
