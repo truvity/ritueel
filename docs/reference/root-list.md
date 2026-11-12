@@ -5,7 +5,7 @@ sidebar:
   order: 4
 ---
 
-*Not built yet. This is version 1 of the format that [record 0006](../decisions/0006-bundle-history-and-trust-files.md) leaves to a reference page; the code is [issue #14](https://github.com/truvity/ritueel/issues/14), in M2, and its [test vectors](/reference/root-list/#test-vectors) match this page. The SSH CA key list follows the same shape in M4 ([its page](/reference/ssh-ca-key-list/)), and the CRLs of the roots are on [their page](/reference/crl/).*
+*Not built yet. This is version 1 of the format that [record 0006](../decisions/0006-bundle-history-and-trust-files.md) leaves to a reference page; the code is [issue #14](https://github.com/truvity/ritueel/issues/14), in M2, and its [test vectors](/reference/root-list/#test-vectors) match this page. The SSH CA key list follows the same shape in M4 ([its page](/reference/ssh-ca-key-list/)), and the CRLs of the root keys are on [their page](/reference/crl/).*
 
 A system that updates its own trust, such as a system that holds delegated keys, needs to know which root keys are active today. The **signed root list** tells it: the active root keys, pinned by their public keys, with the [trust sequence](../decisions/0006-bundle-history-and-trust-files.md), signed by one active root key when the root keys stay the same, and by every current root key or its stored removal authorisation when they change ([who signs](/reference/root-list/#who-signs)). The **CA bundle** carries the same root keys' certificates, for a TLS client and for chain building. A requester of the [hand-off contract](/reference/hand-off-contract/) reads the root list to fill `primaries` and to check an answer's issuer and `trust_sequence`.
 
@@ -47,8 +47,8 @@ Each member of `roots`:
 | Member | Required | Meaning |
 |---|---|---|
 | `label` | yes | The label of the key, as in its certificate's subject: one upper-case letter. The keys of a root are labelled `A` and `B`, then the next letter ([record 0006](../decisions/0006-bundle-history-and-trust-files.md), rule 2), whatever the key store. A label names a key, never its store, and is never reused. It is the key's label inside its bundle (`acme/A` across bundles); the list carries no bundle name. |
-| `x509_spki_sha256` | yes | The SHA-256 of the DER `SubjectPublicKeyInfo` of the root's X.509 key: the pin. It is the `issuer` member of a hand-off answer for X.509. |
-| `openpgp_fingerprint` | yes | The fingerprint of the root's OpenPGP primary, 40 hexadecimal digits (version 4). It is a member of `primaries` in a hand-off request. |
+| `x509_spki_sha256` | yes | The SHA-256 of the DER `SubjectPublicKeyInfo` of the X.509 root key: the pin. It is the `issuer` member of a hand-off answer for X.509. |
+| `openpgp_fingerprint` | yes | The fingerprint of the OpenPGP primary, 40 hexadecimal digits (version 4). It is a member of `primaries` in a hand-off request. |
 
 **What an entry means.** An entry of `roots` is one key label with its pins. It is not a root in the sense of [record 0001](../decisions/0001-what-ritueel-is.md), rule 28: there a root is one thing of one kind, built from keys, and a bundle has one root of each kind it uses ([record 0006](../decisions/0006-bundle-history-and-trust-files.md), rule 2). Each entry pins the key of the X.509 root and the primary of the OpenPGP root that carry the same label, for example the two keys of one row of a card ([record 0003](../decisions/0003-root-cards.md), rule 3). The SSH CA keys are in [the SSH CA key list](/reference/ssh-ca-key-list/). A host installs each `x509_spki_sha256` as a trust anchor, so a host installs one anchor for each key. The member keeps the name `roots`, `label` keeps its name, and no test vector changes ([record 0006](../decisions/0006-bundle-history-and-trust-files.md), rule 15). On this page, "root key" is written in full wherever one key is meant. The member keeps the name `roots`.
 
@@ -78,7 +78,7 @@ Each protected header has exactly these members:
 
 ### Who signs
 
-Each root signs with its X.509 root key: in the PIV slot that [record 0003](../decisions/0003-root-cards.md) gives it on a card, through the cloud key service, or from the root's file in software mode.
+Each root key signs with its X.509 key: in the PIV slot that [record 0003](../decisions/0003-root-cards.md) gives it on a card, through the cloud key service, or from the root key's file in software mode.
 
 - **A list with the same root keys as the list it replaces** carries one signature, by any active root key: the root key used at that ceremony. This is every yearly ceremony and every ceremony that changes only another trust file.
 - **A list that changes the root set** carries, for every active root key of the list it replaces, either that root key's signature or its stored removal authorisation in `removals`; and every root key it adds signs it. Changing the root set therefore requires every current root key, or a root key's stored removal authorisation.
@@ -158,7 +158,7 @@ CI checks that the manifest names every file of the set, that the pins match the
 
 | Choice | Chosen | Other options | Why |
 |---|---|---|---|
-| Signature | A detached JWS, ES384, by the roots' X.509 keys. | CMS (RFC 5652); an OpenPGP signature by the primary; minisign or an SSH signature. | The readers already parse JSON and JOSE, every language has a JWS library, and a card or a KMS key makes the raw `r` and `s` that ES384 carries. CMS needs an ASN.1 stack for a JSON file; an OpenPGP signature would need the primary, a second touch, for a list whose audience is the X.509 key's. |
+| Signature | A detached JWS, ES384, by the X.509 root keys. | CMS (RFC 5652); an OpenPGP signature by the primary; minisign or an SSH signature. | The readers already parse JSON and JOSE, every language has a JWS library, and a card or a KMS key makes the raw `r` and `s` that ES384 carries. CMS needs an ASN.1 stack for a JSON file; an OpenPGP signature would need the primary, a second touch, for a list whose audience is the X.509 key's. |
 | Who signs a change of the root set | Every current root key, or its stored removal authorisation; and every added root key. | Any one active root key, as for a list with the same root keys; every current root key, with no stored authorisation; a separate key for changes of the set. | A change of the root set does not rest on one root key, while a renewal stays a one-key ceremony. Without the stored authorisation a key that can no longer sign could never leave the set by a signature, and every host would need its pins replaced by hand. A separate key costs a slot and a touch for the same audience. ([record 0006](../decisions/0006-bundle-history-and-trust-files.md)) |
 | Serialisation | The general JSON serialisation, one signature for each signer, also when there is one. | Compact for one signer and JSON for several; one compact JWS file for each signer. | One format for every list, which a JWS library reads as it is. Two formats would be two code paths, and loose signature files could be separated from their list. |
 | The removal authorisation | A compact JWS over the root key's own pin, made at its birth, attached to the list that removes it. | A signature over a future list; a revocation of the root key's certificate. | A future list's bytes cannot be known at birth. A certificate revocation would need a CRL that hosts of the root list do not read. |
