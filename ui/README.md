@@ -41,7 +41,7 @@ your workstation, under conditions that record 0005 (rules 17 and 18) lists. A t
 root may run on your workstation (wording only, no flag).
 
 The page reads when a screen opens and when its window gets the focus. It has no timer.
-Every screen shows the time of its read.
+Every screen shows the time of its read, and the state is as of that read, not live.
 
 ## Screens
 
@@ -293,8 +293,11 @@ one write the page may cause later, an inert proposal that is accepted in the te
 - The steps of a ceremony are a small catalogue in `src/lib/steps.ts` (the guided mode,
   which would share it with the page, does not exist). The panel of a ceremony lists
   them under "The usual steps".
-- The page shows the state of a ceremony as of its last read, not live. A started
-  ceremony may be running or may have stopped, and the page says it cannot tell.
+- A started ceremony may be running or may have stopped. The page shows what the
+  bundle holds at its last read and says what to do in both cases (the Attempt section
+  of its panel).
+- The page does not say that a new name is a new key (record 0007, rule 28). Where
+  and in which words is open: issue #155.
 - The folding of the plans that were never run is a choice of the page build (a plan
   that is stale is folded; no record gives an age limit).
 - The Empty state shows no starter files: it is an empty bundle.
