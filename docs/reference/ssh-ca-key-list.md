@@ -17,7 +17,7 @@ SSH hosts trust a CA by holding its public key. The **SSH CA key list** tells a 
 | `ssh-ca-keys.jws` | Its signature: a detached JSON Web Signature over the bytes of `ssh-ca-keys.json`. |
 | `ssh-user-ca-keys.pub` | The keys with use `user`, for sshd's `TrustedUserCAKeys` ([below](/reference/ssh-ca-key-list/#the-file-for-sshd)). |
 
-ritueel writes the three files with the other trust files, in a numbered trust set of [the bundle](/reference/bundle/#the-layout). It writes them at every trust sequence from the first one that lists a key, so the list a host holds is always as recent as its root list. Publishing them is the operator's pipeline.
+ritueel writes the three files with the other trust files, in a numbered trust set of [the bundle](/reference/bundle/#the-layout). It writes them at every trust sequence from the first one that lists a key, so the list a host holds is always as recent as its root list. Publishing them is the holder's pipeline.
 
 ## Versioning
 

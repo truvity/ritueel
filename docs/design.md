@@ -112,7 +112,7 @@ Decided in [0008](decisions/0008-a-persons-own-key.md).
 
 - A root changes by adding, overlapping, retiring and revoking its keys. A compromise is answered by revocation, never a second copy.
 - The cloud keys live in one dedicated account: three keys, each replicated to a second Region. ritueel creates or adopts them.
-- The operator supplies the roles; ritueel writes no hardware-key rule.
+- The holder supplies the roles; ritueel writes no hardware-key rule.
 - An X.509 root key is not renamed: its name is inside its certificate and every intermediate names it as issuer. A new name is a new key (add, overlap, retire).
 
 Decided in [0007](decisions/0007-changing-and-losing-a-root.md), [0006](decisions/0006-bundle-history-and-trust-files.md) and [0004](decisions/0004-the-cloud-root.md).

@@ -62,7 +62,7 @@ applications: [piv]
 
 A card file also declares the rows of other bundles that the card holds ([record 0003](../decisions/0003-root-cards.md), rule 8; [a pair shared by bundles](/reference/cards/#a-pair-shared-by-bundles)). Adoption replaces the management key by a random one that needs a touch to use, sealed in `cards/NAME.sealed.age`; nothing else is accepted for a root card (rule 10). The one-time-code application is switched off on the root and day-to-day cards that ritueel adopts (rule 16). The version of the slot map in force is written into every ceremony record (rule 4).
 
-A serial number is the operator's own data and sits in the operator's bundle, not in this repository ([public content](/contributing/public-content/#hardware-tokens)).
+A serial number is the holder's own data and sits in the holder's bundle, not in this repository ([public content](/contributing/public-content/#hardware-tokens)).
 
 ### The map of one card, `cards/NAME.yaml`
 

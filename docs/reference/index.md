@@ -25,5 +25,5 @@ Reference pages say exactly what a file, a message or a command is. The reasons 
 | [SSH CA key list](/reference/ssh-ca-key-list/) | How an SSH CA key enters the list, its members and signature, how a host reads it, and the file for sshd, with test vectors. |
 | [Root-signed CRLs](/reference/crl/) | The CRL each root key signs to revoke an intermediate: profile, cadence, how a relying party reads it, with test vectors. |
 | [Cards](/reference/cards/) | The four kinds of card, the wanted card file and the card map, the rows of slots, the checks made on a card, the attestation files and the attestation bundle with its refresh step. |
-| [The cloud root in AWS KMS](/reference/kms-root/) | The operator's roles, the `ritueel.yaml` block, the keys ritueel creates or adopts, the key policy, and the checks it makes. |
+| [The cloud root in AWS KMS](/reference/kms-root/) | The holder's roles, the `ritueel.yaml` block, the keys ritueel creates or adopts, the key policy, and the checks it makes. |
 | [Glossary](/glossary/) | The fixed words of the design, the word a page uses where it differs, and the record that decides each. |

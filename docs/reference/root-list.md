@@ -17,7 +17,7 @@ A system that updates its own trust, such as a system that holds delegated keys,
 | `root-list.jws` | Its signatures: a detached JSON Web Signature over the bytes of `root-list.json`, with one signature for each root key that signs it. |
 | `ca-bundle.pem` | The certificates of the root keys on the list, in its order, with the trust sequence in the first line. |
 
-ritueel writes the three files together, in a numbered trust set of [the bundle](/reference/bundle/#the-layout). Publishing them is the operator's pipeline; the names a host fetches them under are the operator's choice.
+ritueel writes the three files together, in a numbered trust set of [the bundle](/reference/bundle/#the-layout). Publishing them is the holder's pipeline; the names a host fetches them under are the holder's choice.
 
 ## Versioning
 
@@ -99,7 +99,7 @@ A ceremony that changes any trust file writes a new list with the next sequence,
 
 ## How a host reads it
 
-A host holds one list: the last good one. Before its first list it holds **initial pins**, the `x509_spki_sha256` of the root keys it was installed to trust, which the operator gives it by a channel of its own. It checks a new list in this order; the first check that fails gives the reason code, and the host keeps the list it holds.
+A host holds one list: the last good one. Before its first list it holds **initial pins**, the `x509_spki_sha256` of the root keys it was installed to trust, which the host's operator gives it by a channel of its own. It checks a new list in this order; the first check that fails gives the reason code, and the host keeps the list it holds.
 
 | # | Check | Code |
 |---|---|---|
@@ -117,7 +117,7 @@ A host holds one list: the last good one. Before its first list it holds **initi
 
 The host verifies the bytes it received and does not re-serialise them. When every check passes, the new list replaces the one it holds, and its root keys are the host's pins from then on. Receiving the current list again is not an error: a list at the same sequence passes when its `root-list.json` is byte-identical to the held one, whichever active root key signed it, and is refused with `sequence-conflict` when its content differs, because one sequence names one set of root keys. A signer need not be on the new list: a root key that retires signs the list that removes it, because checks 2, 8 and 10 read the list the host held.
 
-**A host that missed a list** compares the next one it receives with the list it holds, not with the one before it. A change of the root set it has not seen may then be refused (`unknown-signer` or `insufficient-signers`); it takes the lists in between, in order, from where the operator publishes them. ritueel keeps every list in its numbered trust set, so every list can be published.
+**A host that missed a list** compares the next one it receives with the list it holds, not with the one before it. A change of the root set it has not seen may then be refused (`unknown-signer` or `insufficient-signers`); it takes the lists in between, in order, from where the holder publishes them. ritueel keeps every list in its numbered trust set, so every list can be published.
 
 **When the list a host holds expires** and no newer one has arrived, it keeps the list, goes on trusting its root keys, and raises a warning. It does not drop its root keys ([record 0006](../decisions/0006-bundle-history-and-trust-files.md)).
 
