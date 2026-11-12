@@ -221,4 +221,42 @@ describe('N3: a cloud key shows its provider and its account', () => {
       expect(plain(html), `${v}: marked as cut`).toContain('cut');
     }
   });
+  it('the key panel has Ceremony role and Admin role after Account, each with what it may do, and one sentence under them', async () => {
+    const text = plain(await view(loadWorld('acme', 1), 'cards', { kind: 'key', id: SSH_C }));
+    const at = (word: string) => text.indexOf(word);
+    expect(text).toContain('Ceremony role arn:aws:iam::444455556666:role/example-ritueel-ceremony may sign');
+    expect(text).toContain('Admin role arn:aws:iam::444455556666:role/example-ritueel-admin creates and reads, never signs');
+    const sentence = 'You take a session of the ceremony role by your own means. ritueel holds no credential.';
+    expect(text).toContain(sentence);
+    expect(at('Account')).toBeLessThan(at('Ceremony role'));
+    expect(at('Ceremony role')).toBeLessThan(at('Admin role'));
+    expect(at('Admin role')).toBeLessThan(at(sentence));
+    expect(at(sentence)).toBeLessThan(at('Key reference'));
+    expect(text.match(/ritueel holds no credential/g)).toHaveLength(1);
+  });
+  it('a cloud key in another account shows no role and no sentence; a card key shows none either', async () => {
+    const other = plain(await view(loadWorld('acme', 1), 'cards', { kind: 'key', id: 'E1F4A923E1F4A923E1F4A923E1F4A923E1F4A923' }));
+    expect(other).toContain('Account 111122223333');
+    expect(other).not.toContain('Ceremony role');
+    expect(other).not.toContain('Admin role');
+    expect(other).not.toContain('credential');
+    const card = plain(await view(loadWorld('acme', 1), 'cards', { kind: 'key', id: '3a1f9c023a1f9c023a1f9c023a1f9c023a1f9c023a1f9c023a1f9c023a1f9c02' }));
+    expect(card).not.toContain('Ceremony role');
+  });
+  it('no panel of any key names a profile', async () => {
+    for (const w of WORLDS())
+      for (const k of w.inventory.keys) {
+        const text = plain(await view(w, 'cards', { kind: 'key', id: k.fingerprint }));
+        expect(text, `${w.id} ${k.fingerprint}`).not.toMatch(/profile/i);
+      }
+  });
+  it('a long or odd role is cut by its cap in the panel and never reaches the markup whole', async () => {
+    const base = loadWorld('acme', 1);
+    const odd = 'arn:aws:iam::444455556666:role/' + 'r'.repeat(300) + '\u202e';
+    const w = { ...base, inventory: { ...base.inventory, keys: base.inventory.keys.map((k) => (k.place?.store === Store.AWS_KMS ? { ...k, place: { ...k.place, ceremonyRole: odd, adminRole: odd } } : k)) } } as World;
+    const html = await view(w, 'cards', { kind: 'key', id: SSH_C });
+    expect(html).not.toContain('r'.repeat(250));
+    expect(html).not.toContain('\u202e');
+    expect(plain(html)).toContain('cut');
+  });
 });

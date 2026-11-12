@@ -235,6 +235,20 @@ message Place {
   // a cloud store. [decided: kms-root.md, `ritueel.yaml`, `account`; record
   // 0004, rules 1 and 7]
   string account = 10;
+  // For a cloud key: the ceremony role, the only principal that may sign with
+  // the key at a ceremony. The role as the settings give it: an ARN. Unset for
+  // a key that is not in a cloud store, and for a key in an account that the
+  // settings name no roles for. The page shows it as given. It is not how a
+  // person signs in: ritueel sets, requires and checks nothing of that, and the
+  // page shows no profile, because a profile is each person's own local
+  // setting. [decided: kms-root.md, `ritueel.yaml`, `ceremony_role`; record
+  // 0004, rules 5, 8 and 9]
+  string ceremony_role = 11;
+  // For a cloud key: the admin role, which creates and reads the keys and can
+  // never sign. The role as the settings give it: an ARN. Unset in the same
+  // cases as `ceremony_role`. [decided: kms-root.md, `ritueel.yaml`,
+  // `admin_role`; record 0004, rule 5]
+  string admin_role = 12;
 }
 
 message Key {

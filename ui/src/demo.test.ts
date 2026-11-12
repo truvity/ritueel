@@ -287,6 +287,37 @@ describe('the fixtures tell the made-up world, one bundle at a time', () => {
     expect(checked).toBeGreaterThan(8);
   });
 
+  // The settings of a cloud root name one account and two roles in it. A key in another account has no role of this bundle's.
+  it('the ceremony role and the admin role are examples in the account of the key, the same two for the whole bundle', () => {
+    const role = /^arn:aws:iam::(\d{12}):role\/example-[a-z-]+$/;
+    let withRoles = 0;
+    for (const w of WORLDS()) {
+      const pairs = new Set<string>();
+      for (const k of w.inventory.keys) {
+        const p = k.place;
+        const at = `${w.id} ${k.label || k.delegation}`;
+        if (p?.store !== Store.AWS_KMS) {
+          expect([p?.ceremonyRole ?? '', p?.adminRole ?? ''], `${at}: only a cloud key has roles`).toEqual(['', '']);
+          continue;
+        }
+        if (k.role === inspectPb.KeyRole.ROOT_KEY) expect([p.ceremonyRole, p.adminRole], `${at}: a root key names its two roles`).not.toContain('');
+        if (!p.ceremonyRole && !p.adminRole) continue;
+        withRoles += 1;
+        expect(p.ceremonyRole, `${at}: ceremony role`).toMatch(role);
+        expect(p.adminRole, `${at}: admin role`).toMatch(role);
+        expect(p.ceremonyRole, `${at}: the two roles differ`).not.toBe(p.adminRole);
+        expect(role.exec(p.ceremonyRole)?.[1], `${at}: the ceremony role is in the account of the key`).toBe(p.account);
+        expect(role.exec(p.adminRole)?.[1], `${at}: the admin role is in the account of the key`).toBe(p.account);
+        pairs.add(`${p.ceremonyRole} ${p.adminRole}`);
+      }
+      expect(pairs.size, `${w.id}: one pair of roles for the bundle`).toBeLessThanOrEqual(1);
+    }
+    expect(withRoles).toBeGreaterThan(8);
+  });
+  it('no fixture names a profile', () => {
+    for (const b of BUNDLES) for (const call of ['GetSummary', 'ListFindings', 'GetInventory', 'ListCeremonies', 'ListTrustFiles'] as const) expect(JSON.stringify(baseJson(b, call)), `${b} ${call}`).not.toMatch(/profile/i);
+  });
+
   it('a root key is never lost: no enum of the contract has a value named LOST', () => {
     const names: string[] = [];
     for (const mod of [inspectPb, commonPb]) for (const [name, value] of Object.entries(mod)) if (value && typeof value === 'object' && !('typeName' in value) && /^[A-Z]/.test(name) && Object.values(value).some((v) => typeof v === 'number')) names.push(...Object.keys(value).filter((k) => /lost/i.test(k)));

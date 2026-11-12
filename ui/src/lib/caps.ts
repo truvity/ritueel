@@ -52,6 +52,8 @@ export const CAPS = {
   'Key.revoke_command': 300,
   'Place.card': 60, // the place cell
   'Place.slot': 12, // the place cell
+  'Place.ceremony_role': 200, // the key panel (an ARN)
+  'Place.admin_role': 200, // the key panel (an ARN)
   'Place.key_ref': 200, // the key panel
   'Place.account': 20, // the group title of the By card view, the place cell of By root and the key panel (an AWS account id has 12 digits)
   'Place.region': 30, // the key panel and the place cell of By card
