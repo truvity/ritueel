@@ -211,7 +211,7 @@ Not yet proven on hardware: that AirgapOS boots from a stick with such a partiti
 A person writes `ritueel.yaml` and one strict YAML file for each card, root and delegation. The user IDs of the OpenPGP root are a wanted file too; its shape is Proposed (below). A person writes them only on the workstation ([record 0006](../decisions/0006-bundle-history-and-trust-files.md), rule 11). `new` writes the starter files ([record 0005](../decisions/0005-a-ceremony-and-where-it-runs.md), rule 15). `want` opens one in `$EDITOR` and writes only what the person saves ([Commands](/reference/cli/)).
 
 - **Strict YAML** (record 0006, rule 11). What strict means is Proposed (below).
-- **The digest** of a wanted file is the SHA-256 of the bytes as stored, so `sha256sum` gives the same value. The plan lists the wanted files it used by digest ([record 0005](../decisions/0005-a-ceremony-and-where-it-runs.md), rule 4). Two files with one meaning have two digests. This is accepted.
+- **The digest** of a wanted file is the SHA-256 of the bytes as stored, so `sha256sum` gives the same value. The plan lists the wanted files it used by digest ([record 0005](../decisions/0005-a-ceremony-and-where-it-runs.md), rule 4). Two files with one meaning have two digests. This is accepted (record 0005, rule 32).
 - **The name** of an object is the name of its file without `.yaml`. A card's file is named by a name the holder gives, not by its serial (record 0006, rule 11).
 - **A deleted line or file** retires, revokes and removes nothing, and `status` shows it as a finding. The history wins over a wanted file (record 0005, rule 30). The name of the finding is fixed with the code. A wanted file that fails its check stops `apply` before anything is written (rule 14).
 

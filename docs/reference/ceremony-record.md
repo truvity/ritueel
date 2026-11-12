@@ -77,7 +77,7 @@ The facts are decided in the records of the last column. The names of the four s
 
 The plan, the attempt and the ceremony record are JSON. They follow the JSON rules of the [hand-off contract](/reference/hand-off-contract/#messages-and-files): UTF-8 without a byte order mark, a member once, an unknown member is an error, integers only, times as `YYYY-MM-DDThh:mm:ssZ` in UTC, digests as SHA-256 in lower-case hexadecimal. ritueel writes them in the canonical form of RFC 8785, with no trailing newline, so a file's digest is the SHA-256 of its bytes and the same content gives the same digest on any machine. A reader verifies a digest over the bytes as stored and never re-serialises a file (0006 rule 11: everything the program writes is JSON or a standard format).
 
-The copies in `wanted/` are strict YAML, as the person wrote them. Their digest is also over the stored bytes ([the wanted files](/reference/bundle/#the-wanted-files)).
+The copies in `wanted/` are strict YAML, as the person wrote them. Their digest is also over the stored bytes ([the wanted files](/reference/bundle/#the-wanted-files); 0005 rule 32).
 
 A **key fingerprint** in these files is the SHA-256 of the DER `SubjectPublicKeyInfo` for an X.509 key, and the version 4 fingerprint (40 hexadecimal digits) for an OpenPGP key, as in the contract.
 
@@ -94,7 +94,7 @@ The plan fixes every byte to be signed in advance: the root keys, each key's fin
 | `made_at` | When the plan was written. |
 | `ritueel` | The copy of ritueel that made the plan: `{ "version", "os_arch", "sha256" }`. That the plan records the digest of the ritueel binary that made it, and that the run uses that version, is decided (0005 rules 22 and 25); the member name and its members are proposed. See the note below the table. |
 | `ceremony_time` | The time every signature carries and every validity starts from. Drawn once, here (0005 rule 4). |
-| `wanted` | A list of `{ "path", "sha256" }`: every wanted file the plan used, `ritueel.yaml` included, in path order. The digest is over the stored bytes. `wanted/` holds exact copies (0005 rule 4; 0006 rules 5 and 6). |
+| `wanted` | A list of `{ "path", "sha256" }`: every wanted file the plan used, `ritueel.yaml` included, in path order. The digest is over the stored bytes (0005 rule 32). `wanted/` holds exact copies (0005 rule 4; 0006 rules 5 and 6). |
 | `inputs` | A list of `{ "path", "sha256" }`: every other file the plan was made from, the request files among them, in path order. |
 | `applies` | The changes the plan applies, each with its object. |
 | `leaves_out` | The changes the plan leaves out, each with its object and the reason (0005 rule 4; 0007 rules 7 and 12). |
