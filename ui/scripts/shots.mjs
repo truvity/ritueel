@@ -47,6 +47,7 @@ const screens = [
   ['inventory-root-key', `#/inventory/roots/key/${KEY_A}`],
   ['inventory-delegation', '#/inventory/roots/delegation/acme-release'],
   ['inventory-dates', '#/inventory/dates'],
+  ['inventory-dates-scene5', '#/todo', via(null, '#/inventory/dates', 5)],
   ['inventory-certification', '#/inventory/dates/certification/cert-8'],
   ['inventory-scene2-roots', '#/todo', via(null, '#/inventory/roots', 2)],
   ['inventory-cards-globex', '#/todo', via('globex', '#/inventory/cards')],
