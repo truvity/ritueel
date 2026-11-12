@@ -7,7 +7,7 @@ sidebar:
 
 *Not built yet. This is version 1 of the format that [record 0006](../decisions/0006-bundle-history-and-trust-files.md) leaves to a reference page; the code is [issue #55](https://github.com/truvity/ritueel/issues/55), in M4, and its [test vectors](/reference/ssh-ca-key-list/#test-vectors) match this page. It has the shape of the [root list](/reference/root-list/), which it follows wherever it can. The commands, words and file names on this page are from before the decisions of 2026-11-12; the design is at https://ritueel.id/design/.*
 
-SSH hosts trust a CA by holding its public key. The **SSH CA key list** tells a host which SSH CA keys are current: the keys of the systems that hold intermediates, which keep their private halves, and the break-glass SSH CA of each root, which ritueel holds offline. It carries the [trust sequence](../decisions/0006-bundle-history-and-trust-files.md) and is signed by one active root, with the X.509 root key that signs the root list, so a host that already trusts the root list needs nothing new to trust this one.
+SSH hosts trust a CA by holding its public key. The **SSH CA key list** tells a host which SSH CA keys are current: the keys of the systems that hold delegations, which keep their private halves, and the break-glass SSH CA key of each root that keeps one, which ritueel holds offline. It carries the [trust sequence](../decisions/0006-bundle-history-and-trust-files.md) and is signed by one active root, with the X.509 root key that signs the root list, so a host that already trusts the root list needs nothing new to trust this one.
 
 ## Files
 
@@ -17,7 +17,7 @@ SSH hosts trust a CA by holding its public key. The **SSH CA key list** tells a 
 | `ssh-ca-keys.jws` | Its signature: a detached JSON Web Signature over the bytes of `ssh-ca-keys.json`. |
 | `ssh-user-ca-keys.pub` | The keys with use `user`, for sshd's `TrustedUserCAKeys` ([below](/reference/ssh-ca-key-list/#the-file-for-sshd)). |
 
-ritueel writes the three files with the other trust files, under `trust/<number>/` in [the bundle](/reference/bundle/#the-layout). It writes them at every trust sequence from the first one that lists a key, so the list a host holds is always as recent as its root list. Publishing them is the operator's pipeline.
+ritueel writes the three files with the other trust files, in a numbered trust set of [the bundle](/reference/bundle/#the-layout). It writes them at every trust sequence from the first one that lists a key, so the list a host holds is always as recent as its root list. Publishing them is the operator's pipeline.
 
 ## Versioning
 
@@ -41,7 +41,7 @@ Each member of `keys`:
 
 | Member | Required | Meaning |
 |---|---|---|
-| `name` | yes | The name of the intermediate in `ritueel.yaml` that holds the key, or `break-glass-<label>` for a root's break-glass key. Unique in the list. |
+| `name` | yes | The name of the delegation that the key is listed under, or `break-glass-<label>` for a root's break-glass key. Unique in the list. |
 | `use` | yes | `user` or `host`: whether the key signs certificates for users or for hosts. The break-glass keys are `user`. |
 | `ssh_public_key` | yes | The key as OpenSSH writes it with no comment: `ecdsa-sha2-nistp384 <Base64>`. No key is listed twice. |
 | `fingerprint` | yes | The SHA-256 fingerprint as `ssh-keygen -l` prints it: `SHA256:` and the Base64 of the digest of the key blob, with no padding. The number a person compares with the one printed at the request. |
@@ -60,9 +60,9 @@ An example, wrapped here for reading; the file is one line:
 
 ## How a key enters the list
 
-- **A system's key** enters by the [hand-off](/reference/hand-off-contract/#ssh-ca-key): a request of type `ssh-ca-key` with a proof of where the key lives, answered at a ceremony. The key is listed under the name of the intermediate whose entry in `ritueel.yaml` has the type `ssh-ca-key` and the `use` the request asks for. `intermediate replace` swaps the key under its name, and `intermediate revoke` takes it off the next list.
-- **A break-glass key** is made by ritueel, in the store of the root it belongs to, when the root is made (`init` and `root add`): a retired PIV slot recorded in the slot map for a card ([record 0003](../decisions/0003-root-cards.md)), a key of its own in the root account for a cloud root, a file for a software root ([record 0006](../decisions/0006-bundle-history-and-trust-files.md)). The key is listed as `break-glass-<label>`, use `user`, and leaves the list with its root.
-- **Nothing else** enters. The operator does not edit the list, and `ritueel.yaml` does not name keys, only the intermediates that may have one.
+- **A system's key** enters by the [hand-off](/reference/hand-off-contract/#ssh-ca-key): a request of type `ssh-ca-key` with a proof of where the key lives, answered at a ceremony. The key is listed under the name of the delegation whose wanted file has the type `ssh-ca-key` and the `use` the request asks for. An SSH CA key is withdrawn by the next list ([record 0006](../decisions/0006-bundle-history-and-trust-files.md), rule 25).
+- **A break-glass key** is made by ritueel, in the store of the root it belongs to, when that key is born (the first `apply`, or an `apply` that adds a root key): a retired PIV slot recorded in the slot map for a card ([record 0003](../decisions/0003-root-cards.md)), a key of its own in the root account for a cloud root, a file for a software root ([record 0006](../decisions/0006-bundle-history-and-trust-files.md), rule 25). The key is listed as `break-glass-<label>`, use `user`, and leaves the list with its root.
+- **Nothing else** enters. Nobody edits the list, and no wanted file lists an SSH CA key; a delegation only declares that a key of its type may enter.
 
 ## The signature
 
@@ -101,7 +101,7 @@ These codes belong to the host and are not sent anywhere.
 
 It is the file sshd reads as `TrustedUserCAKeys`; a line that begins with `#` is a comment there. It is deterministic, and it is not signed: a host that holds the list checks the file against it (`user-keys-mismatch`) before it installs it. A host key list for `known_hosts` is not derived, because a `@cert-authority` line names the hosts it applies to, and ritueel does not know them; the entries with use `host` are in the list for the system that does.
 
-**The command.** `ritueel ssh-ca-keys verify FILE (--held FILE | --root-list FILE) [--user-keys FILE]` runs the host's checks on the list `FILE` (its `ssh-ca-keys.json`; the signature is the `.jws` beside it) against the list the host holds, with the roots of the root list it holds (`--root-list FILE`, checked as `root-list verify` checks it; the roots that signed it are in the `.jws` beside it, which check 2 reads when the sequences are equal). `--user-keys FILE` also checks the file for sshd. It signs and writes nothing, and exits 0 when the list is accepted and 3 with the code when it is refused ([Commands](/reference/cli/#commands-for-the-trust-files-that-come-later)).
+**The command.** `ritueel verify ssh-ca-keys FILE (--held FILE | --root-list FILE) [--user-keys FILE]` runs the host's checks on the list `FILE` (its `ssh-ca-keys.json`; the signature is the `.jws` beside it) against the list the host holds, with the roots of the root list it holds (`--root-list FILE`, checked as `ritueel verify root-list` checks it; the roots that signed it are in the `.jws` beside it, which check 2 reads when the sequences are equal). `--user-keys FILE` also checks the file for sshd. It signs and writes nothing, and exits 0 when the list is accepted and 3 with the code when it is refused ([Commands](/reference/cli/#commands-for-the-trust-files-that-come-later)).
 
 ## Test vectors
 
