@@ -12,13 +12,13 @@ The program does not exist yet; the pictures show how ritueel is designed to wor
 
 ## The bundle
 
-A bundle holds everything ritueel knows about one trust domain (the roots of a company, or of a person): plain files, and never a private key in clear ([the layout](/reference/bundle/#the-layout)). It does hold the card secrets, but encrypted to the recipients of the key file (the keys that open it). You write one file, `ritueel.yaml`. ritueel writes the history and the trust files. A request, from the requester, sits with its answer in `requests/<name>/`.
+A bundle holds everything ritueel knows about one trust domain (the roots of a company, or of a person): plain files, and never a private key in clear ([the layout](/reference/bundle/#the-layout)). It does hold the card secrets, but encrypted to the recipients of the key file (the keys that open it). You write only the wanted files, such as `ritueel.yaml`. ritueel writes the history and the trust files. A request, from the requester, sits with its answer in `requests/<name>/`.
 
 <Figure name="bundle-folder">
-  A bundle is one directory of plain files for one trust domain. Its history (see the [glossary](/glossary/)) is never changed afterwards.
+  A bundle is one directory of plain files for one trust domain. Its history (see the [glossary](/glossary/)) is never changed afterwards. Key files are never inside.
 </Figure>
 
-The directories `history/` and `trust/<number>/` are decided ([record 0006](../decisions/0006-bundle-history-and-trust-files.md)).
+The folders `history/` and `trust/` are decided ([record 0006](../decisions/0006-bundle-history-and-trust-files.md)).
 
 ## The USB stick
 
@@ -27,7 +27,7 @@ A key file can be copied, so it is used only in the offline system, and the plan
 The stick holds vanilla AirgapOS and one extra partition for ritueel: several versions of ritueel, several bundles and the encrypted key files. When you prepare a plan online, ritueel refreshes its copy on the stick and the plan records the digest of the program (a short fingerprint of it), so the run uses the version of the program that made the plan.
 
 <Figure name="usb-stick">
-  Key files sit beside the bundles, not inside: a bundle is made to be copied and shared; a key file is the root itself, even though it is encrypted.
+  Key files sit beside the bundles, not inside: a key file is the root itself, even though it is encrypted. The way back is a join: it adds the files the bundle lacks.
 </Figure>
 
 <Proposed>
