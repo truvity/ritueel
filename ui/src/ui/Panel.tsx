@@ -18,7 +18,7 @@ import {
   type ObjectId,
 } from '../lib/inventory';
 import { href, hrefForChange, hrefForObject, objectSlug, type InventoryView, type ObjectSlug } from '../lib/route';
-import { isSerial } from '../lib/safe';
+import { isSerial, safeString } from '../lib/safe';
 import {
   CARD_KIND_WORD,
   CEREMONY_COMMAND_WORD,
@@ -70,7 +70,8 @@ export function GoToPanel() {
 
 // ---- small parts ------------------------------------------------------------------
 
-type Fact = [label: string, value: ReactNode] | false | null | undefined;
+/** A fact is a label and a value. A `block` fact puts its value under the label, in the whole width: a fingerprint or a long reference. */
+type Fact = [label: string, value: ReactNode, layout?: 'block'] | false | null | undefined;
 
 function Facts({ rows }: { rows: Fact[] }) {
   return (
@@ -78,13 +79,18 @@ function Facts({ rows }: { rows: Fact[] }) {
       {rows.map((r, i) =>
         r ? (
           <Fragment key={i}>
-            <dt className="text-dim">{r[0]}</dt>
-            <dd className="max-w-[60ch] min-w-0 [overflow-wrap:anywhere]">{r[1]}</dd>
+            <dt className={`text-dim ${r[2] ? 'col-span-2 mt-1' : ''}`}>{r[0]}</dt>
+            <dd className={`max-w-[60ch] min-w-0 [overflow-wrap:anywhere] ${r[2] ? 'col-span-2' : ''}`}>{r[1]}</dd>
           </Fragment>
         ) : null,
       )}
     </dl>
   );
+}
+
+/** A value of the data face that wraps anywhere, shown as plain safe text. It is not grouped by fours: a reference is shown as it is. */
+function Mono({ children, cap }: { children: string; cap: number }) {
+  return <span className="font-mono text-[0.8125rem] [overflow-wrap:anywhere]">{safeString(children, cap)}</span>;
 }
 
 const List = ({ children }: { children: ReactNode[] }) => (
@@ -206,13 +212,13 @@ function PlaceFacts({ k }: { k: Key }): Fact[] {
     case Store.AWS_KMS:
       return [
         store,
-        ['Key reference', <span className="font-mono text-sm"><T cap={CAPS['Place.key_ref']}>{p.keyRef}</T></span>],
+        ['Key reference', <Mono cap={CAPS['Place.key_ref']}>{p.keyRef}</Mono>, 'block'],
         ['Region', <T cap={CAPS['Place.region']}>{p.region}</T>],
         !!p.replicaRegion && ['Replica Region', <T cap={CAPS['Place.replica_region']}>{p.replicaRegion}</T>],
-        !!p.replicaRef && ['Replica reference', <span className="font-mono text-sm"><T cap={CAPS['Place.replica_ref']}>{p.replicaRef}</T></span>],
+        !!p.replicaRef && ['Replica reference', <Mono cap={CAPS['Place.replica_ref']}>{p.replicaRef}</Mono>, 'block'],
       ];
     case Store.SOFTWARE:
-      return [store, ['Key file', <span className="font-mono text-sm"><T cap={CAPS['Place.path']}>{p.path}</T></span>]];
+      return [store, ['Key file', <Mono cap={CAPS['Place.path']}>{p.path}</Mono>, 'block']];
     default:
       return [store];
   }
@@ -223,7 +229,7 @@ function KeyFacts({ ix, k }: { ix: InvIndex; k: Key }) {
   return (
     <Facts
       rows={[
-        ['Fingerprint', <Fp value={k.fingerprint} />],
+        ['Fingerprint', <Fp value={k.fingerprint} />, 'block'],
         ['Kind', (delegated ? DELEGATED_KEY_WORD : ROOT_KEY_WORD)[k.kind]],
         ix.roots.has(k.root) ? ['Root', <Link to={hrefForObject({ kind: ObjectKind.ROOT, id: k.root })}><T cap={CAPS['Key.root']}>{k.root}</T></Link>] : ['Root', <T cap={CAPS['Key.root']}>{k.root}</T>],
         !!k.label && ['Label', <T cap={CAPS['Key.label']}>{k.label}</T>],
@@ -351,7 +357,7 @@ function RequestFacts({ ix, r }: { ix: InvIndex; r: Request }) {
           ),
         ],
         ['Kind', DELEGATION_TYPE_WORD[r.type]],
-        !!r.key && ['Key of the requester', <Fp value={r.key} />],
+        !!r.key && ['Key of the requester', <Fp value={r.key} />, 'block'],
         ['Answer', REQUEST_OUTCOME_WORD[r.outcome]],
         !!r.code && ['Reason code', <T cap={CAPS['Request.code']}>{r.code}</T>],
         !!r.answeredAt && ['Answered on', ymd(r.answeredAt)],
