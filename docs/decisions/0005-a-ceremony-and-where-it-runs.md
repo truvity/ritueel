@@ -41,7 +41,7 @@
 
 ## Why
 
-A root signs for everything below it, so the person must see what will be signed before it is signed. The machine is not trusted, so the rules rest on what stays in the store and on what the person confirmed. A copyable key is the root itself and needs a clean machine; rule 18 bounds the rest. Windows and macOS read exFAT as well as Linux, so a holder is not tied to one kind of workstation to read the stick (rule 33).
+A root signs for everything below it, so the person must see what will be signed before it is signed. The machine is not trusted, so the rules rest on what stays in the store and on what the person confirmed. A copyable key is the root itself and needs a clean machine; rule 18 bounds the rest. Windows and macOS read exFAT as well as Linux, so a holder can read the stick on any workstation (rule 33).
 
 ## What it costs
 
@@ -87,8 +87,8 @@ A root signs for everything below it, so the person must see what will be signed
 - **Nothing to type for `close`, only the reason.** Nothing to learn, but rule 12 asks for a confirmation, a key press is not accepted for a plan (rule 6), and closing an attempt ends a critical finding of `status` (rule 31).
 - **A digest of a canonical form of the parsed YAML.** One meaning would give one digest, but a canonical form must be specified and tested, the digest would depend on the parser, and no standard tool gives the value (rule 32).
 - **A fixed normalisation of line ends before the digest.** The most common differences between machines and editors would go, but ritueel would digest bytes that are not in the file, and a copy in `wanted/` would no longer be an exact copy (rule 32).
-- **ext4 for the stick's partition.** A journal, and clean in the trial, but Windows and macOS do not read it, so only a Linux workstation could read the stick (rule 33).
-- **Both file systems, the holder chooses.** Each holder gets the one wanted, but there are two paths to test and keep working (rule 33).
+- **ext4 for the stick's partition.** It has a journal and the trial found no fault in it, but Windows and macOS do not read it, so only a Linux workstation could read the stick (rule 33).
+- **Both file systems, the holder chooses.** Each holder gets the file system wanted, but there are two paths to test and to keep working (rule 33).
 
 ## Not yet proven or only proposed
 

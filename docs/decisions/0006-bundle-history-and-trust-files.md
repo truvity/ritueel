@@ -54,7 +54,7 @@ A holder must prove what was done, and outsiders must check the roots. One bundl
 - The word "bundle" must be renamed across the site, pages and contract names.
 - A temporary name says nothing about the file it holds, so a person reading a stopped write finds out from the digests that `close` lists (rule 34).
 - The check needs the attempt to tell an unfinished ceremony from a removed ceremony record (rule 35).
-- A short glitch of the stick ends the ceremony, and the person starts the command again (rule 36).
+- A short fault of the stick ends the ceremony, and the person starts the command again (rule 36).
 
 ## Roads not taken
 
@@ -101,9 +101,9 @@ A holder must prove what was done, and outsiders must check the roots. One bundl
 - **An empty value for a missing OpenPGP fingerprint.** Every entry would have the same shape, but an empty value that means "none" looks the same as a value someone forgot to fill.
 - **A second version of the root list for bundles without OpenPGP.** An old reader would refuse the file clearly, but two formats would have to be kept for years, for a case that will be common.
 - **One more flush of the renamed file after each rename.** It also left no wrong entry in the trial, but it costs one more flush for every file and leaves a short gap between the rename and that flush (rule 34).
-- **Both the short name and the extra flush.** Belt and braces, but slower, and more to explain and test (rule 34).
+- **Both the short name and the extra flush.** It would give two independent protections, but it is slower, and there is more to explain and test (rule 34).
 - **A trust set with no record is always an alarm.** The simplest rule, but a power cut at the wrong moment would look like tampering (rule 35).
-- **Retry after a write error.** It would survive a short glitch, but it hides a failing stick and may write a mixed state (rule 36).
+- **Retry after a write error.** It would work through a short fault of the stick, but it hides a failing stick and may write a mixed state (rule 36).
 
 ## Not yet proven or only proposed
 
