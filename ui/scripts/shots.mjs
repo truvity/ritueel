@@ -1,10 +1,10 @@
 // Screenshots of every screen with headless Chrome over the DevTools protocol (no dependency):
-// 1440 and 390 px wide, light and dark. Also the four states of a few screens, and
+// 1920, 1440 and 390 px wide, light and dark. Also the four states of a few screens, and
 // it measures sideways overflow. It fails when a page scrolls sideways.
-// usage: node scripts/shots.mjs http://127.0.0.1:PORT/demo/ [outdir]
+// usage: node scripts/shots.mjs http://127.0.0.1:PORT/demo/ [outdir] [part of a name]
 import { mkdir, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
-import { clickText, launch, sleep } from './cdp.mjs';
+import { launch, sleep } from './cdp.mjs';
 
 const base = process.argv[2];
 const out = process.argv[3] ?? new URL('../shots/', import.meta.url).pathname;
@@ -13,57 +13,65 @@ await mkdir(out, { recursive: true });
 
 const { send, evalJs, close } = await launch();
 
-// name, hash, steps to run after the page is up, [state to show]
-const key = (n) => `#/key/${n}`;
-// The demo starts on the personal bundle. A screen of another bundle starts on Start, picks the bundle in the
-// demo bar (which sends the page back to Start), then goes to its own address.
-const via = (bundle, target, more) => async () => {
-  await clickText(evalJs, bundle);
+// A group of the demo bar is a set of toggle buttons named by its label.
+const pick = (group, label) =>
+  evalJs(`(() => { const b = [...document.querySelectorAll('[aria-labelledby="${group}"] button')].find((x) => x.textContent.trim() === ${JSON.stringify(label)}); if (!b) return false; b.click(); return true; })()`);
+const scene = (n) => evalJs(`document.querySelector('button[aria-label="Scene ${n} of 5"]')?.click()`);
+
+// name, hash, steps to run after the page is up. The demo starts on acme, scene 1. A screen of another
+// bundle or scene picks it in the demo bar (the page keeps the screen), then goes to its own address.
+const via = (bundle, target, sceneNumber, more) => async () => {
+  if (bundle) await pick('bundle-switch-label', bundle);
+  await sleep(300);
+  if (sceneNumber) await scene(sceneNumber);
   await sleep(300);
   await evalJs(`location.hash = ${JSON.stringify(target.slice(1))}`);
   await sleep(500);
   if (more) await more();
 };
-const saveThePlan = async () => { await clickText(evalJs, 'Show me the plan'); await sleep(500); await clickText(evalJs, 'Save the plan'); await sleep(500); };
+const KEY_A = '7D440B197D440B197D440B197D440B197D440B19';
+const NEW = '20261124T100400Z-apply-7d41e9b3';
 const screens = [
-  ['start', '#/start'],
-  ['findings', '#/findings'],
-  ['roots', '#/roots'],
-  ['key-personal-A', key('A')],
-  ['key-acme-A', '#/start', via('acme', key('A'))],
-  ['key-acme-B', '#/start', via('acme', key('B'))],
-  ['key-globex-A', '#/start', via('globex', key('A'))],
-  ['roots-acme', '#/start', via('acme', '#/roots')],
-  ['cards-acme', '#/start', via('acme', '#/cards')],
-  ['cards-globex', '#/start', via('globex', '#/cards')],
-  ['start-acme', '#/start', via('acme', '#/start')],
-  ['start-globex', '#/start', via('globex', '#/start')],
-  ['cards', '#/cards'],
-  ['card-root', '#/cards/00000001'],
-  ['card-day-to-day', '#/cards/00000004'],
-  ['card-slot-open', '#/cards/00000001', async () => { await evalJs(`document.querySelector('button[aria-haspopup=dialog]')?.click()`); await sleep(400); }],
-  ['card-unlisted', '#/cards/00000102'],
+  ['todo', '#/todo'],
+  ['todo-findings', '#/todo/findings'],
+  ['todo-scene2', '#/todo', via(null, '#/todo', 2)],
+  ['todo-scene3', '#/todo', via(null, '#/todo', 3)],
+  ['todo-scene4-findings', '#/todo', via(null, '#/todo/findings', 4)],
+  ['todo-scene5', '#/todo', via(null, '#/todo', 5)],
+  ['todo-globex', '#/todo', via('globex', '#/todo')],
+  ['todo-personal', '#/todo', via('personal', '#/todo')],
+  ['inventory-cards', '#/inventory/cards'],
+  ['inventory-card-root-a', '#/inventory/cards/card/root-a'],
+  ['inventory-card-slot-open', '#/inventory/cards/card/root-a', async () => { await evalJs(`document.querySelector('button[aria-haspopup=dialog]')?.click()`); await sleep(400); }],
+  ['inventory-roots', '#/inventory/roots'],
+  ['inventory-root-key', `#/inventory/roots/key/${KEY_A}`],
+  ['inventory-delegation', '#/inventory/roots/delegation/acme-release'],
+  ['inventory-dates', '#/inventory/dates'],
+  ['inventory-certification', '#/inventory/dates/certification/cert-8'],
+  ['inventory-scene2-roots', '#/todo', via(null, '#/inventory/roots', 2)],
+  ['inventory-cards-globex', '#/todo', via('globex', '#/inventory/cards')],
+  ['inventory-cards-personal', '#/todo', via('personal', '#/inventory/cards')],
+  ['inventory-roots-personal', '#/todo', via('personal', '#/inventory/roots')],
   ['history', '#/history'],
-  ['ceremony', '#/history/20261103T142000Z-init'],
-  ['history-acme', '#/start', via('acme', '#/history')],
+  ['history-ceremony', '#/history/20261120T100000Z-apply-3fa9c1d2'],
+  ['history-closed', '#/history/20250902T100000Z-apply-4d6b21fa'],
+  ['history-scene3-planned', '#/todo', via(null, `#/history/${NEW}`, 3)],
+  ['history-scene4-started', '#/todo', via(null, `#/history/${NEW}`, 4)],
+  ['history-scene5-recorded', '#/todo', via(null, `#/history/${NEW}`, 5)],
+  ['history-globex', '#/todo', via('globex', '#/history')],
   ['trust', '#/trust'],
-  ['plan-goals', '#/plan'],
-  ['plan-questions', '#/start', via('acme', '#/plan/renew-due')],
-  ['plan-preview', '#/start', via('acme', '#/plan/renew-due', async () => { await clickText(evalJs, 'Show me the plan'); await sleep(500); })],
-  ['plan-saved', '#/start', via('acme', '#/plan/renew-due', saveThePlan)],
-  ['plan-saved-offline-key-file', '#/plan/retire-subkeys', saveThePlan],
-  ['plan-saved-workstation', '#/start', via('globex', '#/plan/adopt-key', saveThePlan)],
-  ['plan-refused', '#/plan/add-card'],
+  ['trust-scene5', '#/todo', via(null, '#/trust', 5)],
+  ['trust-personal', '#/todo', via('personal', '#/trust')],
   ['notfound', '#/nothing-here'],
 ];
 // the four states of a few screens (loaded is the screens above)
 const states = [];
-for (const [name, hash] of [['start', '#/start'], ['findings', '#/findings'], ['cards', '#/cards'], ['history', '#/history'], ['trust', '#/trust'], ['roots', '#/roots'], ['plan-goals', '#/plan']]) {
+for (const [name, hash] of [['todo', '#/todo'], ['todo-findings', '#/todo/findings'], ['inventory', '#/inventory/cards'], ['history', '#/history'], ['trust', '#/trust']]) {
   for (const st of ['Empty', 'Failed read', 'Waiting']) states.push([`${name}-${st.split(' ')[0].toLowerCase()}`, hash, st]);
 }
-states.push(['key-personal-A-failed', key('A'), 'Failed read'], ['plan-saved-failed', '#/plan/retire-subkeys', 'Failed read']);
 
 const sizes = [
+  ['1920', 1920, 970, 1],
   ['1440', 1440, 900, 1],
   ['390', 390, 844, 2],
 ];
@@ -75,13 +83,13 @@ async function shoot(name, hash, steps, state, scheme, wname, w, h, dpr) {
   await send('Emulation.setEmulatedMedia', { features: [{ name: 'prefers-color-scheme', value: scheme }] });
   // a fresh page each time: the state switch lives in the page and must start at Loaded
   await send('Page.navigate', { url: 'about:blank' });
-  await send('Page.navigate', { url: base + '#/start' });
+  await send('Page.navigate', { url: base + '#/todo' });
   await sleep(900);
   await evalJs(`location.hash = ${JSON.stringify(hash.slice(1))}`);
   await sleep(500);
   if (state) {
     // the state switch is in the demo bar; Failed read and Waiting need no data first
-    await clickText(evalJs, state);
+    await pick('state-switch-label', state);
     await sleep(state === 'Waiting' ? 4200 : 600);
   }
   if (steps) await steps();
