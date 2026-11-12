@@ -30,10 +30,10 @@ Under each option below, "what ritueel adds" is designed or taught, not built, u
 ritueel adds three things. None of the options above, as read on 2026-11-02, does all three.
 
 1. **Teaching with measurements.** Which verifier honours a revocation ([What a revocation reaches](/learn/revoke/#what-a-revocation-reaches)), how Go and OpenSSL differ on name constraints ([Private PKI](/learn/chain-private-pki/)), why two certificates for one intermediate can break a path builder ([Two roots](/learn/two-roots/)), and what a custody chain is as distinct from a signature chain ([Custody chain](/learn/custody-chain/)). This is built: the pages exist.
-2. **Roots born in their store, with attestation, a history and a trust sequence.** A root is made inside its card or its cloud key and never leaves, a token's attestation proves it ([What a store can prove](/learn/what-a-store-can-prove/)), every ceremony is written to a hash-chained record ([The history](/learn/the-history/)), and a signed list of roots carries a sequence number that a host can check ([record 0006](../decisions/0006-bundle-history-and-trust-files.md)). This is designed, not built.
+2. **Root keys born in their store, with attestation, a history and a trust sequence.** A root key is made inside its card or cloud key and never leaves, a token's attestation proves it ([What a store can prove](/learn/what-a-store-can-prove/)), every ceremony is written to a hash-chained record ([The history](/learn/the-history/)), and a signed root list carries a sequence number that a host can check ([record 0006](../decisions/0006-bundle-history-and-trust-files.md)). This is designed, not built.
 3. **A written hand-off with test vectors** between a root custodian and a system that holds intermediates ([the contract](/reference/hand-off-contract/#test-vectors)). The contract and its vectors exist; no tool implements either end yet.
 
-ritueel does not offer **M-of-N control**: any one active root signs alone, and [the accepted limit](../decisions/0002-where-a-key-lives.md) says so. It does not offer **Ed25519 roots**, because a PIV slot cannot sign with them ([record 0009](../decisions/0009-release-keys-and-the-keyring.md), Roads not taken). And it is **not the daily tool**: you will keep using `gpg` and `step` for daily work, and ritueel is the occasional ceremony, a single command-line program that is planned ([the roadmap](/roadmap/)).
+ritueel does not offer **M-of-N control**: any one active key signs alone, and [the accepted limit](../decisions/0002-where-a-key-lives.md) says so. It does not offer **Ed25519 roots**, because a PIV slot cannot sign with them ([record 0009](../decisions/0009-release-keys-and-the-keyring.md), Roads not taken). And it is **not the daily tool**: you will keep using `gpg` and `step` for daily work, and ritueel is the occasional ceremony, a single command-line program that is planned ([the roadmap](/roadmap/)).
 
 ## offline-pki
 
@@ -41,7 +41,7 @@ ritueel does not offer **M-of-N control**: any one active root signs alone, and 
 
 **Better when** you want almost exactly this niche today, from a small project, and a copied root on two cards is acceptable to you.
 
-**What ritueel adds:** an attestation for a key made on the card, a revocation list, a history, and the teaching. **What it lacks:** a tool that runs. The key is not copied in ritueel, so a lost card is a loss to survive with the second root, as [Two roots](/learn/two-roots/) explains.
+**What ritueel adds:** an attestation for a key made on the card, a revocation list, a history, and the teaching. **What it lacks:** a tool that runs. The key is not copied in ritueel, so a lost card is a loss to survive with the second key, as [Two roots](/learn/two-roots/) explains.
 
 ## Smallstep's YubiKey recipe
 
@@ -49,7 +49,7 @@ ritueel does not offer **M-of-N control**: any one active root signs alone, and 
 
 **Better when** you want one toolset for the root ceremony and the online CA, and you accept a root that existed as a file once.
 
-**What ritueel adds:** a root that was never a file, and a record. **What it lacks:** the online CA. ritueel never holds an intermediate; a system like [sluis](https://sluis.id) does ([record 0001](../decisions/0001-what-ritueel-is.md)).
+**What ritueel adds:** a key that was never a file, and a record. **What it lacks:** the online CA. ritueel never holds an intermediate; a system like [sluis](https://sluis.id) does ([record 0001](../decisions/0001-what-ritueel-is.md)).
 
 ## The drduh YubiKey guide
 
