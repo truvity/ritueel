@@ -225,7 +225,7 @@ Ceremony records form one chain (0006 rule 6). The first ceremony record of a bu
 - a `record.json` in a ceremony folder of `history/` that is not on the chain;
 - a ceremony record that is not in canonical form, or whose version is unknown;
 - a transcript whose digest is not the `transcript_sha256` of its ceremony record;
-- a trust set in `trust/` that is not an artifact of a ceremony record, which shows that the newest ceremony record was removed;
+- a trust set in `trust/` that is not an artifact of a ceremony record. With an open attempt of that ceremony it is an unfinished ceremony, and the next command finishes it; with no such attempt it shows that the newest ceremony record was removed (0006 rule 35);
 - the `last_record_sha256` of a root list in `trust/` that is not on the chain;
 - **a file that a ceremony record lists and that fails its digest.** It is an error, never "absent" (0006 rule 29). The files checked are the copies in `wanted/` and the artifacts. A wanted file in `want/` may have changed since, because a person writes it.
 

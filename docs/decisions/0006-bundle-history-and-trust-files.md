@@ -39,10 +39,12 @@
 32. A delegation may declare one permitted DNS zone. ritueel writes it into the intermediate certificate as a name constraint and refuses a request for a name outside it. This comes with M2.
 33. A root list entry for a root key that has no OpenPGP primary leaves out `openpgp_fingerprint`. A reader takes such an entry as a key with no OpenPGP primary and does not refuse it.
 34. A temporary name is at most 15 characters long: a fixed prefix and a random part. It does not carry the final name.
+35. A trust set that no ceremony record lists is an unfinished ceremony when an open attempt of that ceremony exists, and the next command finishes it. With no such attempt, the check reports it as a sign that the newest ceremony record was removed.
+36. When a write or a flush returns an error, ritueel stops at once with an error. It does not retry, and it does not print the line that says the write was flushed.
 
 ## Why
 
-A holder must prove what was done, and outsiders must check the roots. One bundle per trust domain keeps a person's files apart from a company's. A write-once history shows a rewritten ceremony. One trust sequence and an expiry on every list let a host tell a current set from a stale one. On exFAT, a file or folder renamed from a long temporary name to a shorter final name kept a folder entry with a wrong checksum until the system wrote the entry again; a name of at most 15 characters fits in one name entry, so the rename never shortens it (rule 34).
+A holder must prove what was done, and outsiders must check the roots. One bundle per trust domain keeps a person's files apart from a company's. A write-once history shows a rewritten ceremony. One trust sequence and an expiry on every list let a host tell a current set from a stale one. On exFAT, a file or folder renamed from a long temporary name to a shorter final name kept a folder entry with a wrong checksum until the system wrote the entry again; a name of at most 15 characters fits in one name entry, so the rename never shortens it (rule 34). A power cut between the rename of a trust set and the ceremony record leaves a trust set no record lists, and that is not tampering when the attempt is still open (rule 35). A failing stick is shown by its error and not hidden by a retry, and a line that says "flushed" must never follow a write that failed (rule 36).
 
 ## What it costs
 
@@ -51,6 +53,8 @@ A holder must prove what was done, and outsiders must check the roots. One bundl
 - The root list must be re-signed once a year.
 - The word "bundle" must be renamed across the site, pages and contract names.
 - A temporary name says nothing about the file it holds, so a person reading a stopped write finds out from the digests that `close` lists (rule 34).
+- The check needs the attempt to tell an unfinished ceremony from a removed ceremony record (rule 35).
+- A short glitch of the stick ends the ceremony, and the person starts the command again (rule 36).
 
 ## Roads not taken
 
@@ -98,6 +102,8 @@ A holder must prove what was done, and outsiders must check the roots. One bundl
 - **A second version of the root list for bundles without OpenPGP.** An old reader would refuse the file clearly, but two formats would have to be kept for years, for a case that will be common.
 - **One more flush of the renamed file after each rename.** It also left no wrong entry in the trial, but it costs one more flush for every file and leaves a short gap between the rename and that flush (rule 34).
 - **Both the short name and the extra flush.** Belt and braces, but slower, and more to explain and test (rule 34).
+- **A trust set with no record is always an alarm.** The simplest rule, but a power cut at the wrong moment would look like tampering (rule 35).
+- **Retry after a write error.** It would survive a short glitch, but it hides a failing stick and may write a mixed state (rule 36).
 
 ## Not yet proven or only proposed
 
