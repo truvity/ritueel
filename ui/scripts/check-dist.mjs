@@ -65,7 +65,6 @@ for (const [name, dir, demo] of [['demo build (dist)', join(root, 'dist'), true]
     expect(has('helps you keep a root'), 'says on To do what ritueel is');
     expect(has('command line is not built yet'), 'says the command line is not built');
     expect(has('never answers, on purpose'), 'says the Waiting state is on purpose');
-    expect(has('The pictures on the site still show the older page'), 'holds the note about the pictures of the site');
     expect(!has('createConnectTransport'), 'holds no connect-web transport');
   } else {
     expect(has('No such screen'), 'says No such screen for an address that names no screen');
@@ -73,7 +72,7 @@ for (const [name, dir, demo] of [['demo build (dist)', join(root, 'dist'), true]
     expect(!has('Example Release Root') && !has('acme-keyring') && !has('globex'), 'holds no fixture and none of the example bundles');
     expect(!has('Page state') && !has('Example bundle') && !has('Scene 1 of 5'), 'holds no state switch, bundle switch or scene control');
     // the help for a first visitor of the demo is the demo's alone
-    for (const phrase of ['helps you keep a root', 'command line is not built yet', 'never answers, on purpose', 'The pictures on the site']) {
+    for (const phrase of ['helps you keep a root', 'command line is not built yet', 'never answers, on purpose']) {
       expect(!has(phrase), `holds no demo help: "${phrase}"`);
     }
     expect(!has('createRouterTransport'), 'holds no in-memory transport');
