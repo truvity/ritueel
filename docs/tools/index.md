@@ -14,7 +14,7 @@ ritueel is in the design phase and has no release. The program is planned, and s
 
 | Tool | What it is | Status |
 |---|---|---|
-| [The command line](/tools/cli/) | One to three commands for each ceremony, with a plan, a confirmation, a record and the checks before every touch. | Planned (M2 to M7) |
+| [The command line](/tools/cli/) | One or two commands for each ceremony, with a plan, a confirmation, a record and the checks before every touch. | Planned (M2 to M7) |
 | [The wizard](/tools/wizard/) | A guided mode in the terminal, and a read-only page served on your own computer only. | Planned (page M2, guided mode after the first signed release) |
 | [The local page](/tools/local-page/) | The browser view of your own bundle, served on your computer and read-only. A [demo](/demo/) shows the real page over made-up data. | Partly built: the page and its demo exist; the program that serves the page is planned (M2) |
 | [Command reference](/reference/cli/) | The commands, flags, files and exit codes. | Specified |
@@ -25,7 +25,7 @@ The command line, the guided mode and the local page are three faces of the **sa
 
 ## What the tools never do
 
-- Hold a private key outside the store that made it (a person's own key has one stated exception: [record 0008](../decisions/0008-a-persons-own-key.md)), or keep a PIN or a passphrase that a person types.
+- Hold a private key outside the store that made it (a person's own key has two stated exceptions, an adopted primary and an encryption subkey: [record 0008](../decisions/0008-a-persons-own-key.md) and rule 2 of [record 0002](../decisions/0002-where-a-key-lives.md)), or keep a PIN or a passphrase that a person types.
 - Confirm an irreversible step for you.
 - Sign online, or issue the certificates of servers and people. That belongs to a system that holds intermediates.
 - Send anything out except a public OpenPGP key, to the keyservers you list. For everything else they print what to do ([record 0011](../decisions/0011-publishing-and-what-to-do-after-a-ceremony.md)).

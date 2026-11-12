@@ -9,7 +9,7 @@ sidebar:
 The page exists as code and a demo (`ui/`, `proto/`); the program that serves it is planned for milestone M2 ([issue #17](https://github.com/truvity/ritueel/issues/17)), and the guided mode comes after the first signed release ([issue #16](https://github.com/truvity/ritueel/issues/16)). This page is the design that [record 0010](../decisions/0010-the-engine-the-process-and-the-page.md) decides; the exact rules are in [the reference](/reference/wizard/).
 :::
 
-Some people prefer a page to a terminal, and a ceremony is easier to follow when each step is shown with its explanation next to it. The wizard is that: a guided front end that keeps you in charge. It has two parts, a guided mode in the terminal and a read-only page.
+Some people prefer a page to a terminal, and a ceremony is easier to follow when each step is shown with its explanation next to it. The read-only page does that. The wizard is the guided mode in the terminal, a front end that keeps you in charge.
 
 ## What it is
 
@@ -22,7 +22,7 @@ Some people prefer a page to a terminal, and a ceremony is easier to follow when
 | The page may | The page may not |
 |---|---|
 | Show the plan, the facts about each key, and the teaching text for the step. | Confirm, sign, create or delete anything: the page has no such control. |
-| Collect choices: which root, which request, which store. | Ask for, receive or show a PIN, a passphrase or a key. |
+| Later, take a form and leave an inert proposal; the first build has no write. | Ask for, receive or show a PIN, a passphrase or a key. |
 | Show progress, the record and what outsiders will see. | Load anything from outside your computer. |
 
 The confirmation of every irreversible step is given in the terminal, or by the touch on the card, never by a click in the page. History shows the plan and its digest, to compare, and the page shows the command as text, without the digest (a person could paste it without reading). You type the first eight characters of the digest in the terminal. The page does not make a plan and does not save one: `ritueel apply` makes it, and `ritueel apply --plan-only` writes it, so that you can run it on your workstation or boot the offline system and run it there. A key that can be copied is used only in the offline system; a key that cannot be copied may also be used on your workstation, and a cloud root always is, because the offline system has no network. The last step of a change, the keyserver upload, is shown in the page with its command and done in the terminal after a typed confirmation: there is no button. A test root may use the workstation or a rehearsal card. You give the confirmation in the terminal.
@@ -33,15 +33,15 @@ The page is served by a program on your computer that sits beside the ceremony e
 
 1. **It listens on 127.0.0.1 only,** and refuses to start on any other address.
 2. **On one fixed port,** the same one the command line uses (7488).
-3. **With a one-time token** in the address it prints. A request without the token is refused, and the token stops working when the wizard stops.
+3. **With a one-time token** in the address it prints. A request with no token and no cookie is refused, and the token works once: the first request that carries it gets a cookie.
 4. **It checks the Host and Origin headers** of every request against its own address and port. This stops a web page you visit from talking to it, including by a trick that points a hostile name at your own computer (DNS rebinding).
 5. **It loads no remote assets:** no web fonts, no scripts, no images from other sites. The page works with the network cable out.
 6. **It sends a strict Content-Security-Policy** that allows its own files only for scripts, images and connections. The page's component library may write styles inline; scripts may not.
 7. **Every irreversible step needs confirmation in the terminal or by touch.**
 8. **No telemetry,** and no network call other than the ones a ceremony itself needs.
 
-Each rule has a test in the plan for the wizard: a request with the wrong token, Host or Origin is refused, and the page loads nothing when the network is blocked. [The reference](/reference/wizard/#the-web-page-the-security-profile) lists the rows, and [the research](/research/local-wizard-threats-2026-11-01/) the threats behind them. Two threats stay: another program of yours on the same computer can reach a local port while the page is open, and a browser extension can read the page. Use a clean browser profile, and remember that nothing irreversible can be done from the page.
+Each rule has a test in the test plan for the page: a request with the wrong token, Host or Origin is refused, and the page loads nothing when the network is blocked. [The reference](/reference/wizard/#the-web-page-the-security-profile) lists the rows, and [the research](/research/local-wizard-threats-2026-11-01/) the threats behind them. Two threats stay: another program of yours on the same computer can reach a local port while the page is open, and a browser extension can read the page. Use a clean browser profile, and remember that nothing irreversible can be done from the page.
 
 ## What it drives
 
-The ceremonies and the checks: adopting the roots, the renewals of the yearly ceremony, intermediates, the five transitions, the trust files, the drills and a person's own key. It does not prepare a card or change a PIN; it names the guide for those. Publishing a key is a separate command after a ceremony; the page shows the step and its command ([the list](/reference/wizard/#what-the-guided-mode-and-the-page-drive)).
+The ceremonies and the checks: adopting the roots, the renewals of the yearly ceremony, intermediates, a change of the keys of a root, the trust files, the drills and a person's own key. It does not prepare a card or change a PIN; it names the guide for those. Publishing a key is a separate command after a ceremony; the page shows the step and its command ([the list](/reference/wizard/#what-the-guided-mode-and-the-page-drive)).
