@@ -1,22 +1,30 @@
-// Words and shapes shared by the two services of the local page.
+// Words and shapes shared by the reads of the local page.
 //
-// THE RULE OF THIS WHOLE PACKAGE: no call takes or returns a secret.
-// There is no field for a PIN, a passphrase, a recovery key, a private
-// key, a key file, a management key or a revocation signature, and none
-// will be added. The page is a view. It never confirms a ceremony;
-// confirmation, PINs, passphrases and touches happen in the terminal, on
-// the offline system or the workstation. What the page may show about a key is public:
-// fingerprints, algorithms, dates, the use of a slot.
+// THE RULE OF THIS WHOLE PACKAGE: no call takes or returns a secret, and no
+// call writes. There is no field for a PIN, a passphrase, a recovery key, a
+// private key, a key file, a management key or a revocation signature, and
+// none will be added. Every call is a read (record 0010, rules 7 and 10; the
+// first build of the page has no write). The page is a view. It never
+// confirms a ceremony; confirmation, PINs, passphrases and touches happen in
+// the terminal, in the offline system or on the workstation. What the page
+// may show about a key is public: fingerprints, algorithms, dates, the use of
+// a slot.
 //
 // Everything the page shows is about one bundle: the directory of one trust
 // domain (for example personal or acme), with its history, its roots, its
-// cards and its trust files. The trust file keeps its full name, "CA
-// bundle"; the bare word "bundle" means only the directory.
+// cards and its trust set. The trust file keeps its full name, "CA bundle";
+// the bare word "bundle" means only the directory.
 //
-// The words are the glossary's: bundle, root, delegated key, holder,
-// requester, store, ceremony, history, record, renew, replace, trust files.
-// Replace means making a new key; a goal that only revokes subkeys that a
-// newer one already replaced is called retire.
+// The words are the glossary's: root, delegated key, delegation, holder,
+// requester, store, ceremony, bundle, history, record, renew, replace, trust
+// files, wanted, not applied yet, apply. One item of "not applied yet" is a
+// change (record 0005, rule 29), never a row. A row is one row of four slots
+// on a card (record 0003, rule 3).
+//
+// Each enum value and each word below ends in a tag. [decided: X] means a
+// record or a reference page that is not marked Proposed gives it. [proposed]
+// means no record and no reference page decides it, so it waits for the
+// maintainer; the nearest decided text is named.
 
 syntax = "proto3";
 
@@ -24,121 +32,147 @@ package ritueel.local.v1alpha1;
 
 import "google/protobuf/timestamp.proto";
 
-// How serious a finding or a due item is. The three upper levels are the
-// ones of `ritueel status` (notice, alert, critical); `info` is for things
-// that are true and worth knowing but need no action by a date.
+// How serious a finding is. The levels of `ritueel status`.
 enum Severity {
   SEVERITY_UNSPECIFIED = 0;
-  SEVERITY_INFO = 1;
+  // The old level "info" is gone: cli.md has three levels only.
+  reserved 1;
+  reserved "SEVERITY_INFO";
+  // [decided: cli.md exit code 10; record 0007, rule 16]
   SEVERITY_NOTICE = 2;
+  // [decided: cli.md exit code 11]
   SEVERITY_ALERT = 3;
+  // [decided: cli.md exit code 12]
   SEVERITY_CRITICAL = 4;
 }
 
-// A store is where a key lives.
+// A store is where a key lives. The values are the stores of `policy.stores`
+// in ritueel.yaml.
 enum Store {
   STORE_UNSPECIFIED = 0;
-  // A software key in an encrypted file, kept outside the bundle.
-  STORE_SOFTWARE_FILE = 1;
-  // A root card: the root's keys are born on one card; a bundle with two
-  // roots uses a pair.
-  STORE_ROOT_CARDS = 2;
-  // A cloud KMS key, with a replica. It may be a key that ritueel adopted.
-  STORE_CLOUD_KMS = 3;
+  // A PIV application of a card. [decided: bundle.md, ritueel.yaml, `piv`]
+  STORE_PIV = 1;
+  // The OpenPGP application of a card. [decided: bundle.md, `openpgp-card`]
+  STORE_OPENPGP_CARD = 2;
+  // A cloud KMS key with a replica. [decided: bundle.md, `aws-kms`; record 0004]
+  STORE_AWS_KMS = 3;
+  // A key file outside the bundle. [decided: bundle.md, `software`; record 0002, rule 6]
+  STORE_SOFTWARE = 4;
 }
 
-// Where a ceremony runs, or ran (record 0005, rules 17 to 21). Every record
-// says where its ceremony ran (rule 2), and a plan says where it will run.
+// Where a ceremony runs, or ran (record 0005, rules 17 to 21). Every ceremony
+// record says where its ceremony ran (rule 2).
+// [decided: the two places, record 0005; the spelling `ran_on`, `workstation`
+// and `offline-system` is proposed in ceremony-record.md]
 enum RunPlace {
-  // Not said; the page then writes "the terminal where you run it".
+  // Not said. The page then writes nothing about the place.
   RUN_PLACE_UNSPECIFIED = 0;
-  // Vanilla AirgapOS, started from the ceremony USB stick, which has one
-  // extra partition. Required for a key that can be copied (a key file); any
-  // root may use it. The bundle goes there inside the stick's extra partition.
+  // Vanilla AirgapOS from the ceremony USB stick. Required for a key that can
+  // be copied, such as a key file.
   RUN_PLACE_OFFLINE_SYSTEM = 1;
-  // The holder's own computer. Allowed for a key that cannot be copied (a
-  // root on cards, a cloud root) under four conditions: a touch for every
-  // signature, the number of signatures stated in the plan, no retry of a
-  // failed touch, and the result checked against the plan on a second device
-  // before it is handed over or published. A test root may also run here.
-  // A cloud key has no touch: for a cloud root the typed digest and the role
-  // session stand, and its audit trail records every signature (record 0005,
-  // rules 18 and 19). The count, no retry and the second-device check apply to both
-  // kinds of key. No stick is needed.
+  // The holder's own computer. Allowed for a key that cannot be copied (a root
+  // on cards, a cloud root). A cloud key has no touch (record 0005, rule 18).
   RUN_PLACE_WORKSTATION = 2;
 }
 
-// What a finding, a due item or a plan is about.
-enum SubjectKind {
-  SUBJECT_KIND_UNSPECIFIED = 0;
-  SUBJECT_KIND_BUNDLE = 1;
-  SUBJECT_KIND_ROOT = 2;
-  SUBJECT_KIND_DELEGATED_KEY = 3;
-  // A subkey of an OpenPGP certificate.
-  SUBJECT_KIND_SUBKEY = 4;
-  SUBJECT_KIND_USER_ID = 5;
-  SUBJECT_KIND_CARD = 6;
-  SUBJECT_KIND_CLOUD_KEY = 7;
-  SUBJECT_KIND_TRUST_FILE = 8;
+// What an ObjectRef names. The panel of the page shows one object of these
+// kinds. [proposed: the list is in wizard.md under a Proposed note; every word
+// is a word of the glossary or of a record, see each value]
+enum ObjectKind {
+  OBJECT_KIND_UNSPECIFIED = 0;
+  // The bundle itself, for a finding about the whole bundle. [decided: glossary]
+  OBJECT_KIND_BUNDLE = 1;
+  // [decided: record 0003]
+  OBJECT_KIND_CARD = 2;
+  // [decided: glossary; one root of one kind, record 0006, rule 2]
+  OBJECT_KIND_ROOT = 3;
+  // A root key or a delegated key. [decided: glossary]
+  OBJECT_KIND_KEY = 4;
+  // [decided: record 0008, rule 17; record 0009, rule 4]
+  OBJECT_KIND_USER_ID = 5;
+  // [decided: glossary]
+  OBJECT_KIND_DELEGATION = 6;
+  // [decided: glossary, under "renew"]
+  OBJECT_KIND_CERTIFICATION = 7;
+  // [decided: record 0006, rule 10]
+  OBJECT_KIND_REQUEST = 8;
+  // [decided: glossary]
+  OBJECT_KIND_CEREMONY = 9;
+  // [decided: record 0006, rule 12]
+  OBJECT_KIND_TRUST_SET = 10;
+  // One file of a trust set. [decided: record 0006, rule 12]
+  OBJECT_KIND_TRUST_FILE = 11;
 }
 
 // The thing a line of text is about, so the page can link to it.
-message Subject {
-  SubjectKind kind = 1;
-  // How to find it. For a key: its FULL fingerprint, never a short id (a
-  // key is identified by its full fingerprint, not by its name). For a
-  // card: its serial. For a root: its label (A, B ...), unique inside the
-  // bundle; the page writes it bundle/label, for example acme/A. For a
-  // trust file: its path.
-  string identifier = 2;
-  // A name for people. It is data, shown as text only, and never an
-  // identity: two keys may carry the same label.
+message ObjectRef {
+  ObjectKind kind = 1;
+  // How to find it, unique inside its kind. A key: its FULL fingerprint, never
+  // a short id. A card: the name of its card file. A root, a delegation: the
+  // name of its wanted file without .yaml. A request: its stem. A ceremony: the
+  // name of its folder. A user ID and a certification: an id the process makes.
+  // A trust set: its name, for example 13-3fa9c1d2. The page never parses an id.
+  string id = 2;
+  // A name for people. It is data, shown as text only, and never an identity.
   string label = 3;
 }
 
-// What a holder wants to do. A plan is always built from one of these.
-// Renewals are separate actions: there is no "yearly" intention.
-enum Intention {
-  INTENTION_UNSPECIFIED = 0;
-  // Renew what `ritueel due` lists: a delegated key, a card check.
-  INTENTION_RENEW_DUE = 1;
-  // Adopt a key that already exists: an OpenPGP key, or a cloud KMS key.
-  INTENTION_ADOPT_KEY = 2;
-  // Retire subkeys that a newer one already replaced, by revoking them
-  // with the reason "superseded".
-  INTENTION_RETIRE_SUBKEYS = 3;
-  // Register a new card in the bundle's inventory.
-  INTENTION_ADD_CARD = 4;
-  // Replace a lost or retired card.
-  INTENTION_REPLACE_CARD = 5;
+// The command that leaves a ceremony folder. Only `apply` and `close` do
+// (ceremony-record.md); `join` leaves none, and whether `revoke` does is open
+// (issue 141), so it has no value here.
+enum CeremonyCommand {
+  CEREMONY_COMMAND_UNSPECIFIED = 0;
+  // [decided: record 0005, rule 10; cli.md]
+  CEREMONY_COMMAND_APPLY = 1;
+  // [decided: record 0005, rule 7; cli.md]
+  CEREMONY_COMMAND_CLOSE = 2;
 }
 
-// Whether the hash chain of the history checks out.
+// A ceremony that touched an object, newest first in the lists that use it.
+message CeremonyRef {
+  // The name of the ceremony folder.
+  string id = 1;
+  google.protobuf.Timestamp at = 2;
+  CeremonyCommand command = 3;
+}
+
+// Whether the hash chain of the history checks out. [proposed: no record and
+// no reference page names these states. Nearest decided text: record 0006,
+// rule 6 (each ceremony record names the one before it) and cli.md (`check
+// history` walks the chain)]
 enum ChainState {
   CHAIN_STATE_UNSPECIFIED = 0;
   // Not checked yet. What the page shows is then not authoritative.
   CHAIN_STATE_NOT_CHECKED = 1;
-  // Every record names the one before and every hash matches.
+  // Every ceremony record names the one before and every hash matches.
   CHAIN_STATE_VERIFIED = 2;
-  // A record is missing, changed or out of order.
+  // A record is missing, changed or out of order, or the history has two ends.
   CHAIN_STATE_BROKEN = 3;
 }
 
-// The state of the history: the write-once part of the bundle, the folder
-// history/, with one sub-folder and one record for each ceremony.
-// record_count counts records, not saved plans.
+// The state of the history: the write-once folder history/ of the bundle.
+// [proposed as a whole: wizard.md lists neither the chain state nor the time
+// of the check for the summary. Decided: `record_count` and
+// `end_record_sha256` (record 0006, rule 9 prints them) and `ends` (rule 30)]
 message HistoryStatus {
+  // The count of ceremony records, the closing records included. [decided:
+  // record 0006, rule 9 prints it]
   int32 record_count = 1;
+  // [proposed: see ChainState]
   ChainState chain_state = 2;
-  // The hash of the newest record, in hexadecimal.
-  string head_record_sha256 = 3;
-  // The id (the ceremony's name, for example 20260602T142000Z-card-check)
-  // and title of the newest record, so a page can say "Last record".
+  // The digest of the end of the history: the ceremony record that no other
+  // record names, in hexadecimal. The page shows its first eight characters.
+  // [decided: record 0006, rules 6 and 9]
+  string end_record_sha256 = 3;
+  // The name and the title of the newest record. [proposed]
   string last_record_id = 4;
   string last_record_title = 5;
   google.protobuf.Timestamp last_record_at = 6;
-  // When the chain was last checked.
+  // When the chain was last checked. [proposed]
   google.protobuf.Timestamp checked_at = 7;
-  // A sentence for people, for example "All 12 records check out."
+  // A sentence for people, for example "All 14 records check out." [proposed]
   string message = 8;
+  // The number of ends of the history. More than one is a fork, a critical
+  // finding. [decided: record 0006, rule 30]
+  int32 ends = 9;
 }
