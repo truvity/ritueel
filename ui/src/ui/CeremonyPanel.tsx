@@ -39,7 +39,7 @@ function Stepper({ c }: { c: Ceremony }) {
   const words = ['planned', 'started', c.state === CeremonyState.CLOSED ? 'closed' : 'recorded'];
   const at = c.state === CeremonyState.PLANNED ? 0 : c.state === CeremonyState.STARTED ? 1 : 2;
   return (
-    <ol aria-label="The place of this ceremony" className="m-0 flex list-none flex-wrap items-center gap-x-1.5 gap-y-1 p-0">
+    <ol aria-label="The place of this ceremony" className="flex list-none flex-wrap items-center gap-x-1.5 gap-y-1 p-0">
       {words.map((w, i) => (
         <Fragment key={w}>
           {i > 0 ? (
@@ -112,29 +112,38 @@ export function CeremonyPanel({ c, all, trustSequence }: { c: Ceremony; all: Cer
 
       {c.ranOn || c.cards.length > 0 || counts ? (
         <PanelSection title="Where it runs">
-          {RUN_PLACE_VALUE[c.ranOn] ? <p>{RUN_PLACE_VALUE[c.ranOn]}</p> : null}
-          {c.cards.length > 0 ? (
-            <p>
-              {c.cards.length === 1 ? 'Card' : 'Cards'}:{' '}
-              {c.cards.map((name, i) => (
+          <p>
+            {[
+              RUN_PLACE_VALUE[c.ranOn],
+              c.cards.length > 0 ? (
+                <span key="cards">
+                  {c.cards.length === 1 ? 'Card' : 'Cards'}:{' '}
+                  {c.cards.map((name, i) => (
+                    <span key={i}>
+                      {i > 0 ? ', ' : ''}
+                      <T cap={CAPS['Ceremony.cards']}>{name}</T>
+                    </span>
+                  ))}
+                </span>
+              ) : null,
+              counts ? `${plural(c.signatureCount, 'signature')}, ${plural(c.touchCount, 'touch', 'touches')}` : null,
+            ]
+              .filter(Boolean)
+              .map((part, i) => (
                 <span key={i}>
-                  {i > 0 ? ', ' : ''}
-                  <T cap={CAPS['Ceremony.cards']}>{name}</T>
+                  {i > 0 ? ' · ' : ''}
+                  {part}
                 </span>
               ))}
-            </p>
-          ) : null}
-          {counts ? (
-            <p>
-              {plural(c.signatureCount, 'signature')}, {plural(c.touchCount, 'touch', 'touches')}
-            </p>
-          ) : null}
+          </p>
         </PanelSection>
       ) : null}
 
       {c.planSha256 ? (
         <PanelSection title="Plan digest">
-          <Fp kind="Digest" value={c.planSha256} />
+          <div>
+            <Fp kind="Digest" value={c.planSha256} />
+          </div>
           {planned ? (
             <p className="max-w-[70ch]">Compare it with the terminal. Type the first eight characters in the terminal, not here. This page cannot confirm.</p>
           ) : null}
