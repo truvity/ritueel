@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import { Children, Fragment, type ReactNode } from 'react';
 import Typography from '@mui/material/Typography';
 import { learnPathOk, learnUrl } from '../lib/finding';
 
@@ -23,6 +23,28 @@ export function Page({ title, line, aside, lede, children }: { title: string; li
       </header>
       <div className="space-y-4">{children}</div>
     </>
+  );
+}
+
+/**
+ * The parts of the line under a title, with a dot between two parts. The dot belongs to the part
+ * after it and is drawn in the space left of that part. The row is clipped one step from its left
+ * edge, so the dot of a part that wraps to the start of a line is cut off. A line then never ends
+ * or starts with a dot.
+ */
+export function Parts({ children }: { children: ReactNode }) {
+  const parts = Children.toArray(children);
+  return (
+    <span className="block overflow-hidden">
+      <span className="-ml-4 block">
+        {parts.map((p, i) => (
+          <Fragment key={i}>
+            {i > 0 ? ' ' : null}
+            <span className={`relative inline-block max-w-full pl-4 align-top ${i > 0 ? "before:absolute before:top-0 before:left-1 before:content-['·']" : ''}`}>{p}</span>
+          </Fragment>
+        ))}
+      </span>
+    </span>
   );
 }
 

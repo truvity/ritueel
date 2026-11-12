@@ -36,7 +36,7 @@ import { href, type InventoryView } from '../lib/route';
 import { CARD_KIND_WORD, DELEGATED_KEY_WORD, DELEGATION_TYPE_WORD, KEY_STATE_WORD, REQUEST_OUTCOME_WORD, ROOT_KEY_WORD, ROOT_KIND_WORD, CERTIFICATION_KIND_WORD } from '../lib/words';
 import { ChangeMark } from '../ui/ChangeMark';
 import { DataTable, RowLink, type Column, type Group } from '../ui/DataTable';
-import { Page } from '../ui/Page';
+import { Page, Parts } from '../ui/Page';
 import { GoToPanel, Panel } from '../ui/Panel';
 import { ReadTime } from '../ui/ReadTime';
 import { Empty, Load } from '../ui/Sec';
@@ -490,9 +490,10 @@ export function Inventory({ view, object }: { view: InventoryView; object?: Obje
       title="Inventory"
       line={
         ready ? (
-          <>
-            <T cap={CAPS['Bundle.name']}>{ready[0].bundle?.name}</T> {'·'} <ReadTime ts={ready[1].readAt} />
-          </>
+          <Parts>
+            <T cap={CAPS['Bundle.name']}>{ready[0].bundle?.name}</T>
+            <ReadTime ts={ready[1].readAt} />
+          </Parts>
         ) : undefined
       }
       aside={<ViewSwitch view={view} object={object} />}
