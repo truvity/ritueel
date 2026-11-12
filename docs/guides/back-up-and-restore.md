@@ -10,7 +10,7 @@ sidebar:
 ## What you start with
 
 - The bundle in its repository, with two remotes. Its history is the write-once part.
-- The revocation certificates in their two places.
+- The revocation signatures in their two places.
 - The PINs you type in the password manager.
 - The recovery key, apart from the cards and apart from its passphrase ([record 0002](../decisions/0002-where-a-key-lives.md)). The sealed secrets of the cards are in the bundle; the PUK and the management key are not kept by hand ([record 0003](../decisions/0003-root-cards.md)).
 - A clean machine, or a freshly made user account.
@@ -19,7 +19,7 @@ sidebar:
 
 1. **Push the bundle** to both remotes, and check each shows the latest commit.
 2. **Note the end of the history** that ritueel printed, apart from the repository.
-3. **Check the revocation certificates:** both places hold them, and each digest equals the one in the bundle.
+3. **Check the revocation signatures:** both places hold them, and each digest equals the one in the bundle.
 4. **Check the second card** is where you think it is.
 5. **Check the PINs** are in the password manager, one entry per card, and that the recovery key and its passphrase are in two different places.
 
@@ -30,7 +30,7 @@ sidebar:
 2. **Verify the chain.** `ritueel check history`, then compare the end of the history with the note. Result: the history is whole.
 3. **List the state.** `ritueel status`. Result: the roots, the intermediates and what expires when.
 4. **Compare with the keys.** For each root key, read the serial and fingerprint from the card or the cloud key and compare with the bundle. Result: the bundle describes the keys you hold.
-5. **Walk through a loss.** Take one rehearsal card out of use and follow [A lost root card](/guides/lost-root-card/) with the stored revocation certificate.
+5. **Walk through a loss.** Take one rehearsal card out of use and follow [A lost root card](/guides/lost-root-card/) with the stored revocation signature.
 
 ## How you know it worked
 
