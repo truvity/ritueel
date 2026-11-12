@@ -5,7 +5,7 @@ sidebar:
   order: 3
 ---
 
-*Design phase: ritueel is in design and has no release; nothing here is built ([roadmap](/roadmap/)). What the page says about ritueel is what accepted decision records say on 2026-11-11. The offline system on a stick is decided, not yet proven, and how the program enforces the four conditions is proposed ([record 0005](../decisions/0005-a-ceremony-and-where-it-runs.md)).*
+*Design phase: ritueel is in design and has no release; nothing here is built ([roadmap](/roadmap/)). What the page says about ritueel is what accepted decision records say on 2026-11-12. The offline system on a stick is decided, not yet proven, and how the program enforces the four conditions is proposed ([record 0005](../decisions/0005-a-ceremony-and-where-it-runs.md)).*
 
 This page answers two questions. Who can use a root at all? Nobody, in any store, without a person present. On which machine does a ceremony run? A key that can be copied is used only in the offline system; a key that cannot be copied is used on your workstation, under four conditions; a root on cards may also be used in the offline system, and a cloud root cannot, because that system has no network. Behind the second answer is the oldest rule of PKI, "keep the root offline". It is worth knowing what that rule is for, because it has a literal form (a machine in a safe) and a practical form, and they are not the same.
 
