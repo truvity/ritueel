@@ -43,6 +43,8 @@
       "algorithm": "ecdsa-p384",
       "place": {
         "store": "STORE_AWS_KMS",
+        "provider": "CLOUD_PROVIDER_AWS",
+        "account": "123456789012",
         "keyRef": "arn:aws:kms:eu-west-1:123456789012:key/mrk-00000000000000000000000000000001",
         "region": "eu-west-1",
         "replicaRegion": "eu-central-1",
@@ -69,6 +71,8 @@
       "algorithm": "ecdsa-p384",
       "place": {
         "store": "STORE_AWS_KMS",
+        "provider": "CLOUD_PROVIDER_AWS",
+        "account": "111122223333",
         "keyRef": "arn:aws:kms:eu-west-1:111122223333:key/5c4d3e2f-1a0b-4987-8765-43210fedcba9",
         "region": "eu-west-1"
       },
@@ -86,6 +90,8 @@
       "algorithm": "ecdsa-p384",
       "place": {
         "store": "STORE_AWS_KMS",
+        "provider": "CLOUD_PROVIDER_AWS",
+        "account": "123456789012",
         "keyRef": "arn:aws:kms:eu-west-1:123456789012:key/mrk-00000000000000000000000000000002",
         "region": "eu-west-1",
         "replicaRegion": "eu-central-1",
@@ -112,6 +118,8 @@
       "algorithm": "ecdsa-p384",
       "place": {
         "store": "STORE_AWS_KMS",
+        "provider": "CLOUD_PROVIDER_AWS",
+        "account": "123456789012",
         "keyRef": "arn:aws:kms:eu-west-1:123456789012:key/mrk-00000000000000000000000000000003",
         "region": "eu-west-1",
         "replicaRegion": "eu-central-1",

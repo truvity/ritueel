@@ -53,7 +53,8 @@ export const CAPS = {
   'Place.card': 60, // the place cell
   'Place.slot': 12, // the place cell
   'Place.key_ref': 200, // the key panel
-  'Place.region': 30, // the key panel
+  'Place.account': 20, // the group title of the By card view, the place cell of By root and the key panel (an AWS account id has 12 digits)
+  'Place.region': 30, // the key panel and the place cell of By card
   'Place.replica_region': 30, // the key panel
   'Place.replica_ref': 200, // the key panel
   'Place.path': 120, // the key panel

@@ -798,6 +798,8 @@
                   "revokeCommand": "ritueel revoke acme/C --reason REASON",
                   "place": {
                     "store": "STORE_AWS_KMS",
+                    "provider": "CLOUD_PROVIDER_AWS",
+                    "account": "444455556666",
                     "keyRef": "arn:aws:kms:eu-west-1:444455556666:key/mrk-0000000000000000000000000000c001",
                     "region": "eu-west-1",
                     "replicaRegion": "eu-central-1",
@@ -822,6 +824,8 @@
                   "algorithm": "ecdsa-p384",
                   "place": {
                     "store": "STORE_AWS_KMS",
+                    "provider": "CLOUD_PROVIDER_AWS",
+                    "account": "444455556666",
                     "keyRef": "arn:aws:kms:eu-west-1:444455556666:key/1234abcd-12ab-34cd-56ef-1234567890ab",
                     "region": "eu-west-1"
                   },
@@ -899,6 +903,8 @@
                   "revokeCommand": "ritueel revoke acme/C --reason REASON",
                   "place": {
                     "store": "STORE_AWS_KMS",
+                    "provider": "CLOUD_PROVIDER_AWS",
+                    "account": "444455556666",
                     "keyRef": "arn:aws:kms:eu-west-1:444455556666:key/mrk-0000000000000000000000000000c002",
                     "region": "eu-west-1",
                     "replicaRegion": "eu-central-1",
@@ -928,6 +934,8 @@
                   "algorithm": "ecdsa-p384",
                   "place": {
                     "store": "STORE_AWS_KMS",
+                    "provider": "CLOUD_PROVIDER_AWS",
+                    "account": "111122223333",
                     "keyRef": "arn:aws:kms:eu-west-1:111122223333:key/9f8e7d6c-5b4a-4321-8fed-cba987654321",
                     "region": "eu-west-1"
                   },
@@ -993,6 +1001,8 @@
                   "revokeCommand": "ritueel revoke acme/C --reason REASON",
                   "place": {
                     "store": "STORE_AWS_KMS",
+                    "provider": "CLOUD_PROVIDER_AWS",
+                    "account": "444455556666",
                     "keyRef": "arn:aws:kms:eu-west-1:444455556666:key/mrk-0000000000000000000000000000c003",
                     "region": "eu-west-1",
                     "replicaRegion": "eu-central-1",

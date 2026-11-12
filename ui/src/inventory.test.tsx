@@ -1,10 +1,11 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { ReactElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { ObjectKind } from './gen/ritueel/local/v1alpha1/common_pb';
+import { ObjectKind, Store } from './gen/ritueel/local/v1alpha1/common_pb';
 import type { ObjectRef } from './gen/ritueel/local/v1alpha1/common_pb';
 import { feed, loadWorld, noStyle, plain, WORLDS, attrsOf, type World } from './testkit';
 import { objectSlug, type InventoryView, type ObjectSlug } from './lib/route';
+import { buildIndex, cardGroups } from './lib/inventory';
 
 vi.mock('./api/hooks', async (orig) => (await import('./testkit')).hooksMock(await orig()));
 
@@ -156,4 +157,68 @@ describe('N2b: the panel counts the ceremonies that touched an object', () => {
       expect(withCount, `${w.id}: some object was touched`).toBeGreaterThan(0);
     });
   }
+});
+
+describe('N3: a cloud key shows its provider and its account', () => {
+  const SSH_C = '0f8b64c10f8b64c10f8b64c10f8b64c10f8b64c10f8b64c10f8b64c10f8b64c1';
+
+  for (const w of WORLDS()) {
+    it(`${w.id}: By card has one group for each provider and account, and each key is in the group of its own account`, () => {
+      const groups = cardGroups(buildIndex(w.inventory)).filter((g) => g.kind === 'cloud');
+      const cloud = w.inventory.keys.filter((k) => k.place?.store === Store.AWS_KMS);
+      const wanted = new Set(cloud.map((k) => `${k.place?.provider}/${k.place?.account}`));
+      expect(groups.map((g) => `${g.provider}/${g.account}`).sort(), 'one group each').toEqual([...wanted].sort());
+      for (const g of groups) for (const k of g.keys) expect(k.place?.account, `${w.id}: ${k.fingerprint}`).toBe(g.account);
+      expect(groups.flatMap((g) => g.keys).length, 'every cloud key is in a group').toBe(cloud.length);
+    });
+  }
+
+  it('acme, scene 1: two groups, each with its provider and account in its title line', async () => {
+    const text = plain(await view(loadWorld('acme', 1), 'cards'));
+    expect(text).toContain('Cloud keys · AWS KMS · account 444455556666');
+    expect(text).toContain('Cloud keys · AWS KMS · account 111122223333');
+    expect(text.match(/Cloud keys/g)).toHaveLength(2);
+    // The Region stays in the column Place.
+    expect(text).toContain('eu-west-1');
+  });
+  it('globex: its own account and the other account of its one delegated key', async () => {
+    const text = plain(await view(loadWorld('globex', 1), 'cards'));
+    expect(text).toContain('Cloud keys · AWS KMS · account 123456789012');
+    expect(text).toContain('Cloud keys · AWS KMS · account 111122223333');
+  });
+  it('a bundle with no cloud key has no cloud group', async () => {
+    expect(plain(await view(loadWorld('personal', 1), 'cards'))).not.toContain('Cloud keys');
+  });
+  it('By root says the provider and the account where a card says its name', async () => {
+    const text = plain(await view(loadWorld('acme', 1), 'roots'));
+    expect(text).toContain('AWS · 444455556666');
+    // A delegation line has no Place cell, so the key it holds in the other account is not drawn here.
+    expect(text).not.toContain('cloud key');
+  });
+  it('the key panel has Provider and Account before Region', async () => {
+    const html = await view(loadWorld('acme', 1), 'cards', { kind: 'key', id: SSH_C });
+    const text = plain(html);
+    const at = (word: string) => text.indexOf(` ${word} `);
+    expect(text).toMatch(/ Provider AWS Account 444455556666 /);
+    expect(at('Store')).toBeGreaterThan(-1);
+    expect(at('Provider')).toBeGreaterThan(at('Store'));
+    expect(at('Account')).toBeGreaterThan(at('Provider'));
+    expect(at('Region')).toBeGreaterThan(at('Account'));
+  });
+  it('a card key has no Provider and no Account row', async () => {
+    const text = plain(await view(loadWorld('acme', 1), 'cards', { kind: 'key', id: '3a1f9c023a1f9c023a1f9c023a1f9c023a1f9c023a1f9c023a1f9c023a1f9c02' }));
+    expect(text).not.toContain(' Provider ');
+    expect(text).not.toContain(' Account ');
+  });
+  it('a long or odd account is cut by its cap in the title, the cell and the panel, and never reaches the markup whole', async () => {
+    const base = loadWorld('acme', 1);
+    const odd = '4'.repeat(300) + '\u202e' + 'x';
+    const w = { ...base, inventory: { ...base.inventory, keys: base.inventory.keys.map((k) => (k.place?.store === Store.AWS_KMS ? { ...k, place: { ...k.place, account: odd } } : k)) } } as World;
+    for (const [v, object] of [['cards', undefined], ['roots', undefined], ['cards', { kind: 'key' as const, id: SSH_C }]] as const) {
+      const html = await view(w, v, object);
+      expect(html, `${v}: the whole account`).not.toContain('4'.repeat(40));
+      expect(html, `${v}: the override`).not.toContain('\u202e');
+      expect(plain(html), `${v}: marked as cut`).toContain('cut');
+    }
+  });
 });

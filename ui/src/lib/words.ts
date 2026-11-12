@@ -12,6 +12,7 @@
 import {
   CeremonyCommand,
   ChainState,
+  CloudProvider,
   ObjectKind,
   RunPlace,
   Severity,
@@ -49,6 +50,11 @@ export const STORE_WORD: Record<number, string> = {
   [Store.OPENPGP_CARD]: 'OpenPGP card',
   [Store.AWS_KMS]: 'AWS KMS',
   [Store.SOFTWARE]: 'key file',
+};
+
+/** The company that runs a cloud key service. */
+export const CLOUD_PROVIDER_WORD: Record<number, string> = {
+  [CloudProvider.AWS]: 'AWS',
 };
 
 /** Where a ceremony runs, or ran (record 0005, rules 17 to 21), as a phrase: "on this workstation". */

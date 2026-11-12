@@ -33,7 +33,7 @@ import {
   type RootGroup,
 } from '../lib/inventory';
 import { href, type InventoryView } from '../lib/route';
-import { CARD_KIND_WORD, DELEGATED_KEY_WORD, DELEGATION_TYPE_WORD, KEY_STATE_WORD, REQUEST_OUTCOME_WORD, ROOT_KEY_WORD, ROOT_KIND_WORD, CERTIFICATION_KIND_WORD } from '../lib/words';
+import { CARD_KIND_WORD, CLOUD_PROVIDER_WORD, DELEGATED_KEY_WORD, DELEGATION_TYPE_WORD, KEY_STATE_WORD, REQUEST_OUTCOME_WORD, ROOT_KEY_WORD, ROOT_KIND_WORD, CERTIFICATION_KIND_WORD, STORE_WORD } from '../lib/words';
 import { ChangeMark } from '../ui/ChangeMark';
 import { DataTable, RowLink, type Column, type Group } from '../ui/DataTable';
 import { Page, Parts } from '../ui/Page';
@@ -122,7 +122,17 @@ function placeWord(k: Key): ReactNode {
         </>
       );
     case Store.AWS_KMS:
-      return 'cloud key';
+      return (
+        <>
+          {CLOUD_PROVIDER_WORD[p.provider] ?? 'cloud key'}
+          {p.account ? (
+            <>
+              {' '}
+              {'·'} <T cap={CAPS['Place.account']}>{p.account}</T>
+            </>
+          ) : null}
+        </>
+      );
     case Store.SOFTWARE:
       return 'key file';
     default:
@@ -200,7 +210,25 @@ function CardsView({ ix, shown }: { ix: InvIndex; shown?: ObjectId }) {
         </>
       );
     }
-    return g.kind === 'cloud' ? 'Cloud keys' : 'Key files';
+    if (g.kind === 'cloud') {
+      // Like a card's title line: the name, then the facts that tell one group from another. A fact the answer does not give is left out.
+      const service = g.store === undefined ? undefined : STORE_WORD[g.store];
+      return (
+        <span className="[overflow-wrap:anywhere]">
+          Cloud keys{' '}
+          <span className="font-normal text-dim">
+            {service ? <>{'·'} {service}</> : null}
+            {g.account ? (
+              <>
+                {service ? ' ' : null}
+                {'·'} account <T cap={CAPS['Place.account']}>{g.account}</T>
+              </>
+            ) : null}
+          </span>
+        </span>
+      );
+    }
+    return 'Key files';
   };
 
   const rows: Group<CardLine>[] = groups.map((g) => ({

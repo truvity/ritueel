@@ -60,6 +60,17 @@ enum Store {
   STORE_SOFTWARE = 4;
 }
 
+// The company that runs a cloud key service: the provider of the keys in a
+// cloud store. It is a word of its own beside Store, because a store names the
+// service (`aws-kms`) and the account and the roles belong to the provider's
+// side. Only the provider of the one cloud store is decided.
+enum CloudProvider {
+  CLOUD_PROVIDER_UNSPECIFIED = 0;
+  // Amazon Web Services, the provider of the store `aws-kms`. [decided:
+  // kms-root.md, the block `aws_kms`; record 0004, rule 1]
+  CLOUD_PROVIDER_AWS = 1;
+}
+
 // Where a ceremony runs, or ran (record 0005, rules 17 to 21). Every ceremony
 // record says where its ceremony ran (rule 2).
 // [decided: the two places, record 0005; the spelling `ran_on`, `workstation`
