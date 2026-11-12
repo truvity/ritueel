@@ -4,6 +4,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { attrsOf, emptyWorld, feed, plain, WORLDS, type World } from './testkit';
 import { BUNDLES } from './testkit';
 import type { InventoryView, ObjectSlug } from './lib/route';
+import { CeremonyState } from './gen/ritueel/local/v1alpha1/inspect_service_pb';
 
 vi.mock('./api/hooks', async (orig) => (await import('./testkit')).hooksMock(await orig()));
 
@@ -41,7 +42,7 @@ function controlsOf(html: string): Control[] {
 }
 
 /** True if the markup has a control that takes text. */
-const takesText = (html: string) => /<(input|textarea|select)\b/.test(html) || /\bcontenteditable\b/i.test(html);
+const takesText = (html: string) => /<(input|textarea|select|form)\b/.test(html) || /\bcontenteditable\b/i.test(html);
 
 const noStyle = (html: string) => html.replace(/<style[\s\S]*?<\/style>/g, '');
 
@@ -52,6 +53,7 @@ describe('the checker itself', () => {
     expect(controlsOf(html).filter((c) => ACT.test(c.name))).toHaveLength(5);
     expect(takesText('<input type="text">')).toBe(true);
     expect(takesText('<p contenteditable="true">x</p>')).toBe(true);
+    expect(takesText('<form action="#"></form>')).toBe(true);
     expect(takesText('<button>Copy</button>')).toBe(false);
   });
 });
@@ -153,5 +155,60 @@ describe('N5: no control is named like an act, and no field takes text', () => {
     expect(controlsOf(html).filter((c) => /revoke/.test(c.name))).toEqual([]);
     expect(html).toMatch(/<code[^>]*>[\s\S]*?ritueel[\s\S]*?revoke/);
     feed.state = 'ready';
+  });
+
+  it('the footer of every screen says that the page cannot confirm a ceremony', async () => {
+    for (const w of [...WORLDS(), ...empties])
+      for (const state of ['ready', 'loading', 'error'] as const) {
+        const { Shell } = await import('./ui/Shell');
+        feed.world = w;
+        feed.state = state;
+        for (const route of [{ name: 'todo', tab: 'changes' }, { name: 'history' }, { name: 'trust' }] as const) {
+          const t = plain(noStyle(renderToStaticMarkup(<Shell route={route as never}><p>x</p></Shell>)));
+          expect(t, `${w.id} ${state} ${route.name}`).toContain('it cannot confirm a ceremony');
+        }
+      }
+  });
+
+  it('the apply block of To do and the plan digest of a planned ceremony say that the page cannot confirm', async () => {
+    const { Todo } = await import('./screens/Todo');
+    const { History } = await import('./screens/History');
+    let planned = 0;
+    let applyBlocks = 0;
+    for (const w of WORLDS()) {
+      feed.world = w;
+      feed.state = 'ready';
+      const todo = plain(noStyle(renderToStaticMarkup(<Todo tab="changes" />)));
+      if (todo.includes('The terminal prints the plan and its digest')) {
+        applyBlocks += 1;
+        expect(todo, `${w.id} apply block`).toContain('This page cannot confirm.');
+      }
+      for (const c of w.ceremonies.ceremonies) {
+        if (!c.planSha256 || c.state !== CeremonyState.PLANNED) continue;
+        const t = plain(noStyle(renderToStaticMarkup(<History id={c.id} />)));
+        if (!t.includes('Plan digest')) continue;
+        if (t.includes('Compare it with the terminal')) {
+          planned += 1;
+          expect(t, `${w.id} ${c.id}`).toContain('This page cannot confirm.');
+        }
+      }
+    }
+    expect(applyBlocks, 'some world has an apply block').toBeGreaterThan(0);
+    expect(planned, 'some ceremony is planned with a digest').toBeGreaterThan(0);
+  });
+
+  it('every command that holds REASON or TEXT is followed by a sentence that names the placeholder', async () => {
+    let met = 0;
+    for (const w of [...WORLDS(), ...empties])
+      for (const html of await drawn(w, 'ready'))
+        for (const m of html.matchAll(/<code\b[^>]*>([\s\S]*?)<\/code>([\s\S]*?)(?=<code\b|$)/g)) {
+          const command = plain(m[1]);
+          for (const word of ['REASON', 'TEXT']) {
+            if (!new RegExp(`(^| )${word}( |$)`).test(command)) continue;
+            met += 1;
+            expect(plain(m[2]), `${w.id}: ${command}`).toContain(`Replace ${word} before you use it.`);
+          }
+        }
+    expect(met, 'the walk met commands with a placeholder').toBeGreaterThan(20);
   });
 });

@@ -33,6 +33,10 @@ export function useCopy(text: string): { canCopy: boolean; done: boolean; copy: 
 /** The look of the Copy control, shared by `Cmd` and `PathCopy`. */
 export const COPY_BUTTON_SX = { borderRadius: 0, color: 'text.primary', minWidth: 96 } as const;
 
+/** The placeholders that a command holds (proto/README.md, rule 7). The page tells the reader to replace each one. */
+const PLACEHOLDERS = ['REASON', 'TEXT'] as const;
+export const placeholdersOf = (command: string): string[] => PLACEHOLDERS.filter((w) => new RegExp(`(^| )${w}( |$)`).test(command));
+
 /**
  * A command as the program gave it. It is shown and can be copied; the page
  * never runs it and never reads it apart. It wraps at spaces only: each word
@@ -44,6 +48,9 @@ export const COPY_BUTTON_SX = { borderRadius: 0, color: 'text.primary', minWidth
  * name, so no control of the page is named after an act (apply, sign, run,
  * confirm, revoke, publish). The group takes its name from `label`.
  *
+ * A command that holds a placeholder (REASON or TEXT) is followed by the sentence
+ * that names it and tells the reader to replace it.
+ *
  * `note` draws, in the demo, the sentence that the command line is not built
  * yet. A table of commands passes `note={false}` and says it once after the
  * table.
@@ -52,7 +59,7 @@ export function Cmd({ children, label = 'Type this in the terminal', note = true
   const id = useId();
   const { canCopy, done, copy } = useCopy(children);
   return (
-    <div className="max-w-[62ch]">
+    <div className="max-w-[56ch]">
       <div className="flex min-w-0 flex-col border border-rule bg-sunk sm:flex-row sm:items-stretch" role="group" aria-label={safeString(label, 120)}>
         <div className="flex min-w-0 flex-1 items-start">
           <span aria-hidden className="self-stretch bg-ink px-2.5 py-2 font-mono text-sm font-bold text-bg">
@@ -78,6 +85,11 @@ export function Cmd({ children, label = 'Type this in the terminal', note = true
           Example only. The ritueel command line is not built yet.
         </p>
       ) : null}
+      {placeholdersOf(children).map((word) => (
+        <p key={word} className="mt-1 text-sm text-dim" role="note">
+          Replace {word} before you use it. This page only shows the command.
+        </p>
+      ))}
       {canCopy ? null : (
         <p className="mt-1 text-sm text-dim" role="note">
           This command holds characters, or is longer than {COMMAND_CAP} characters, so the page will not copy it. Read it in the terminal.

@@ -8,7 +8,6 @@ import { daysBetween, plural, ymd } from '../lib/format';
 import {
   changesOn,
   domKey,
-  isCommandWord,
   keyEndWord,
   keyOfObject,
   listedIn,
@@ -456,14 +455,13 @@ function partsOf(ix: InvIndex, found: Found): Parts {
     }
     case 'root': {
       const r = found.value;
-      const shared = ix.delegations.has(r.name);
       return {
         ...none,
         kind: ROOT_KIND_WORD[r.kind] ?? 'root',
         title: <T cap={CAPS['Root.name']}>{r.name}</T>,
         facts: <RootFacts ix={ix} r={r} />,
         touchedBy: r.touchedBy,
-        wanted: r.wantedPath ? <WantedSection path={r.wantedPath} name={shared ? undefined : r.name} last={true} /> : undefined,
+        wanted: r.wantedPath ? <WantedSection path={r.wantedPath} /> : undefined,
       };
     }
     case 'key': {
@@ -477,7 +475,9 @@ function partsOf(ix: InvIndex, found: Found): Parts {
         facts: <KeyFacts ix={ix} k={k} />,
         touchedBy: k.touchedBy,
         wanted: !delegated && root?.wantedPath ? <KeyWantedSection path={root.wantedPath} /> : undefined,
-        revoke: k.revokeCommand ? <RevokeSection command={k.revokeCommand} what="key" rootKey={!delegated} /> : undefined,
+        revoke: k.revokeCommand ? (
+          <RevokeSection command={k.revokeCommand} what="key" rootKey={!delegated} ambiguous={ix.inv.keys.filter((o) => o.revokeCommand === k.revokeCommand).length > 1} />
+        ) : undefined,
       };
     }
     case 'userid': {
@@ -494,14 +494,13 @@ function partsOf(ix: InvIndex, found: Found): Parts {
     }
     case 'delegation': {
       const d = found.value;
-      const shared = ix.roots.has(d.name);
       return {
         ...none,
         kind: DELEGATION_TYPE_WORD[d.type] ?? 'delegation',
         title: <T cap={CAPS['Delegation.name']}>{d.name}</T>,
         facts: <DelegationFacts ix={ix} d={d} />,
         touchedBy: d.touchedBy,
-        wanted: d.wantedPath ? <WantedSection path={d.wantedPath} name={shared ? undefined : d.name} last={true} /> : undefined,
+        wanted: d.wantedPath ? <WantedSection path={d.wantedPath} /> : undefined,
       };
     }
     case 'certification': {
@@ -555,22 +554,15 @@ function idOf(f: Found): string {
 }
 
 /**
- * The wanted file of a root, a delegation or a user ID. `name` is given only
- * when no other wanted file shares the name: `want NAME` then opens that file.
- * A root and a delegation can share a name (`acme-release`), and the command
- * reference does not say which file `want NAME` opens, so the panel shows the
- * paths and no command.
+ * The wanted file of a root, a delegation or a user ID, as a path to copy. The
+ * page builds no command (proto/README.md, rule 7): the contract has no field
+ * for a command that opens a wanted file, and two wanted files can share a
+ * name (a root and a delegation, `acme-release`), so the panel shows the path.
  */
-function WantedSection({ path, name, last }: { path: string; name?: string; last?: boolean }) {
+function WantedSection({ path }: { path: string }) {
   return (
     <PanelSection title="Wanted in">
       <PathCopy path={path} cap={CAPS['Root.wanted_path']} />
-      {name && isCommandWord(name) ? (
-        <>
-          <Cmd label="Open the wanted file in the terminal" note={false}>{`ritueel want ${name}`}</Cmd>
-          {last ? <CommandNote /> : null}
-        </>
-      ) : null}
     </PanelSection>
   );
 }
@@ -584,14 +576,19 @@ function KeyWantedSection({ path }: { path: string }) {
   );
 }
 
-function RevokeSection({ command, what, rootKey = false }: { command: string; what: 'key' | 'card'; rootKey?: boolean }) {
+function RevokeSection({ command, what, rootKey = false, ambiguous = false }: { command: string; what: 'key' | 'card'; rootKey?: boolean; ambiguous?: boolean }) {
   return (
     <PanelSection title={what === 'card' ? 'If this card is lost' : 'If this key is lost or exposed'}>
       <Cmd label="Show this in the terminal" note={false}>
         {command}
       </Cmd>
-      <p>Replace REASON before you use it. This page only shows the command.</p>
       {what === 'key' ? <p>The form of this command is proposed in the command reference.</p> : null}
+      {ambiguous ? (
+        <p>
+          In this bundle the same command names more than one key. The command reference does not say yet which key it opens (issue 137 of ritueel). Check in the
+          terminal which key it names before you use it.
+        </p>
+      ) : null}
       {rootKey ? <p>What only this key certified is critical in ritueel status until a ceremony certifies it again.</p> : null}
       <CommandNote />
     </PanelSection>
