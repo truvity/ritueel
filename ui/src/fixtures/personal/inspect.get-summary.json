@@ -2,70 +2,33 @@
   "bundle": {
     "path": "~/ritueel/personal",
     "name": "personal",
-    "exists": true,
-    "createdAt": "2026-11-03T14:00:00Z",
-    "holderLabel": "the holder"
+    "kind": "BUNDLE_KIND_PERSONAL",
+    "createdAt": "2025-01-10T11:50:00Z"
   },
-  "asOf": "2026-11-11T09:00:00Z",
+  "readAt": "2026-11-24T09:00:00Z",
   "demo": true,
   "programVersion": "0.0.0-demo",
   "history": {
-    "recordCount": 1,
+    "recordCount": 3,
     "chainState": "CHAIN_STATE_VERIFIED",
-    "headRecordSha256": "600c0123456789abcdef0123456789abcdef0123456789abcdef0123456789ab",
-    "lastRecordId": "20261103T142000Z-init",
-    "lastRecordTitle": "Adopted the holder's OpenPGP key, stage one",
-    "lastRecordAt": "2026-11-03T14:20:00Z",
-    "checkedAt": "2026-11-11T09:00:00Z",
-    "message": "The only record checks out. It is 8 days old."
+    "endRecordSha256": "e5f60718e5f60718e5f60718e5f60718e5f60718e5f60718e5f60718e5f60718",
+    "lastRecordId": "20251210T120000Z-apply-f40b9a62",
+    "lastRecordTitle": "Renewed the subkeys of three cards and extended the primary key",
+    "lastRecordAt": "2025-12-10T12:00:00Z",
+    "checkedAt": "2026-11-24T09:00:00Z",
+    "message": "All 3 records check out. The newest is 349 days old.",
+    "ends": 1
   },
-  "due": [],
   "findingCounts": [
-    {
-      "severity": "SEVERITY_CRITICAL",
-      "count": 1
-    },
-    {
-      "severity": "SEVERITY_ALERT",
-      "count": 2
-    },
     {
       "severity": "SEVERITY_NOTICE",
       "count": 3
-    },
-    {
-      "severity": "SEVERITY_INFO",
-      "count": 2
     }
   ],
-  "counts": {
-    "roots": 1,
-    "delegatedKeys": 0,
-    "cards": 6,
-    "trustFiles": 2
+  "changes": {
+    "ready": 3,
+    "waits": 0
   },
-  "setupSteps": [
-    {
-      "id": "bundle",
-      "title": "Open your ritueel bundle",
-      "detail": "The bundle holds plain files, the history and your plans.",
-      "done": true
-    },
-    {
-      "id": "public-key",
-      "title": "Bring in your public key",
-      "detail": "Only the public half is ever needed here.",
-      "done": true
-    },
-    {
-      "id": "cards",
-      "title": "Register the cards that hold your subkeys",
-      "detail": "3 of the 5 cards that hold your subkeys are registered. 00000101 and 00000102 are not."
-    },
-    {
-      "id": "first-plan",
-      "title": "Make your first plan",
-      "detail": "Start from what is due, or from a finding."
-    }
-  ]
+  "trustSequence": 3,
+  "applyCommand": "ritueel apply --plan-only"
 }

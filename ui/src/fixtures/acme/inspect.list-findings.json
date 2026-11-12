@@ -1,21 +1,22 @@
 {
   "findings": [
     {
-      "id": "no-restore-check",
-      "code": "no-restore-check",
+      "id": "f-1",
+      "code": "intermediate",
       "severity": "SEVERITY_NOTICE",
-      "title": "No restore check has ever been recorded",
-      "reason": "A backup you have never restored is a hope, not a backup. The restore check runs on a clean machine and signs nothing.",
-      "subject": {
-        "kind": "SUBJECT_KIND_BUNDLE",
-        "identifier": "~/ritueel/acme",
-        "label": "Your bundle"
+      "title": "acme-release ends in 60 days",
+      "reason": "Its certificate ends on 2027-01-23. A renewal needs a request for acme-release, and none has come. apply stops while a request is missing.",
+      "object": {
+        "kind": "OBJECT_KIND_DELEGATION",
+        "id": "acme-release",
+        "label": "acme-release"
       },
       "evidence": [
-        "No restore report has ever been made; the history holds 10 records."
+        "Binding valid from 2025-12-23 to 2027-01-23.",
+        "A delegation warns at 60, 30 and 14 days."
       ],
-      "fixCommand": "ritueel drill restore",
-      "learnPath": "/design/#more-that-is-decided"
+      "learnPath": "/learn/life-of-a-root/#re-sign"
     }
-  ]
+  ],
+  "readAt": "2026-11-24T09:00:00Z"
 }

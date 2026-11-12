@@ -1,0 +1,1128 @@
+{
+  "readAt": "2026-11-24T09:00:00Z",
+  "cards": [
+    {
+      "serial": "00000011",
+      "name": "root-a",
+      "kind": "CARD_KIND_ROOT",
+      "model": "YubiKey 5C NFC",
+      "firmware": "5.8.0",
+      "holder": "Ana",
+      "kept": "in the safe, place one",
+      "layoutVersion": 1,
+      "lastSeenAt": "2026-11-18T09:00:00Z",
+      "lastCheckedAt": "2026-11-18T09:00:00Z",
+      "roleSummary": "Root card. Holds key A of the three roots in row 2. Its partner is root-b.",
+      "oneTimeCodesOff": true,
+      "piv": {
+        "use": "APPLICATION_USE_IN_USE",
+        "rows": [
+          {
+            "number": 1,
+            "label": "card",
+            "slots": [
+              {
+                "id": "9a",
+                "state": "SLOT_STATE_EMPTY"
+              },
+              {
+                "id": "9c",
+                "state": "SLOT_STATE_EMPTY"
+              },
+              {
+                "id": "9d",
+                "state": "SLOT_STATE_RESERVED",
+                "use": "SLOT_USE_UNLOCK_KEY",
+                "purpose": "Spare unlock key (made only if passkey unlocking cannot be used)"
+              },
+              {
+                "id": "9e",
+                "state": "SLOT_STATE_EMPTY"
+              }
+            ]
+          },
+          {
+            "number": 2,
+            "label": "A",
+            "slots": [
+              {
+                "id": "82",
+                "state": "SLOT_STATE_USED",
+                "use": "SLOT_USE_X509_ROOT",
+                "purpose": "X.509 root key A of acme-tls",
+                "keyLabel": "A",
+                "algorithm": "ecdsa-p384",
+                "pinRule": "PIN_RULE_ALWAYS",
+                "touchRule": "TOUCH_RULE_ALWAYS",
+                "publicKeySha256": "3a1f9c023a1f9c023a1f9c023a1f9c023a1f9c023a1f9c023a1f9c023a1f9c02",
+                "bornAt": "2023-12-04T10:00:00Z",
+                "attested": true
+              },
+              {
+                "id": "83",
+                "state": "SLOT_STATE_USED",
+                "use": "SLOT_USE_OPENPGP_PRIMARY",
+                "purpose": "OpenPGP primary key A of acme-release",
+                "keyLabel": "A",
+                "algorithm": "ecdsa-p384",
+                "pinRule": "PIN_RULE_ALWAYS",
+                "touchRule": "TOUCH_RULE_ALWAYS",
+                "publicKeySha256": "2a9132892a9132892a9132892a9132892a9132892a9132892a9132892a913289",
+                "bornAt": "2023-12-04T10:00:00Z",
+                "attested": true
+              },
+              {
+                "id": "84",
+                "state": "SLOT_STATE_USED",
+                "use": "SLOT_USE_SSH_CA",
+                "purpose": "SSH CA key A of acme-ssh",
+                "keyLabel": "A",
+                "algorithm": "ecdsa-p384",
+                "pinRule": "PIN_RULE_ALWAYS",
+                "touchRule": "TOUCH_RULE_ALWAYS",
+                "publicKeySha256": "c21055aec21055aec21055aec21055aec21055aec21055aec21055aec21055ae",
+                "bornAt": "2023-12-04T10:00:00Z",
+                "attested": true
+              },
+              {
+                "id": "85",
+                "state": "SLOT_STATE_EMPTY"
+              }
+            ],
+            "keyLabel": "A"
+          },
+          {
+            "number": 3,
+            "label": "free",
+            "slots": [
+              {
+                "id": "86",
+                "state": "SLOT_STATE_SPARE"
+              },
+              {
+                "id": "87",
+                "state": "SLOT_STATE_SPARE"
+              },
+              {
+                "id": "88",
+                "state": "SLOT_STATE_SPARE"
+              },
+              {
+                "id": "89",
+                "state": "SLOT_STATE_SPARE"
+              }
+            ]
+          },
+          {
+            "number": 4,
+            "label": "free",
+            "slots": [
+              {
+                "id": "8a",
+                "state": "SLOT_STATE_SPARE"
+              },
+              {
+                "id": "8b",
+                "state": "SLOT_STATE_SPARE"
+              },
+              {
+                "id": "8c",
+                "state": "SLOT_STATE_SPARE"
+              },
+              {
+                "id": "8d",
+                "state": "SLOT_STATE_SPARE"
+              }
+            ]
+          },
+          {
+            "number": 5,
+            "label": "free",
+            "slots": [
+              {
+                "id": "8e",
+                "state": "SLOT_STATE_SPARE"
+              },
+              {
+                "id": "8f",
+                "state": "SLOT_STATE_SPARE"
+              },
+              {
+                "id": "90",
+                "state": "SLOT_STATE_SPARE"
+              },
+              {
+                "id": "91",
+                "state": "SLOT_STATE_SPARE"
+              }
+            ]
+          },
+          {
+            "number": 6,
+            "label": "free",
+            "slots": [
+              {
+                "id": "92",
+                "state": "SLOT_STATE_SPARE"
+              },
+              {
+                "id": "93",
+                "state": "SLOT_STATE_SPARE"
+              },
+              {
+                "id": "94",
+                "state": "SLOT_STATE_SPARE"
+              },
+              {
+                "id": "95",
+                "state": "SLOT_STATE_SPARE"
+              }
+            ]
+          }
+        ]
+      },
+      "openpgp": {
+        "use": "APPLICATION_USE_UNUSED",
+        "slots": [
+          {
+            "id": "sig",
+            "state": "SLOT_STATE_EMPTY"
+          },
+          {
+            "id": "dec",
+            "state": "SLOT_STATE_EMPTY"
+          },
+          {
+            "id": "aut",
+            "state": "SLOT_STATE_EMPTY"
+          }
+        ]
+      },
+      "fido2": {
+        "use": "APPLICATION_USE_UNUSED"
+      },
+      "revokeCommand": "ritueel revoke --card root-a --reason REASON"
+    },
+    {
+      "serial": "00000012",
+      "name": "root-b",
+      "kind": "CARD_KIND_ROOT",
+      "model": "YubiKey 5C NFC",
+      "firmware": "5.8.0",
+      "holder": "Boris",
+      "kept": "in the safe, place two",
+      "layoutVersion": 1,
+      "lastSeenAt": "2026-11-18T09:00:00Z",
+      "lastCheckedAt": "2026-11-18T09:00:00Z",
+      "roleSummary": "Root card. Holds key B of the three roots in row 2. Its partner is root-a.",
+      "oneTimeCodesOff": true,
+      "piv": {
+        "use": "APPLICATION_USE_IN_USE",
+        "rows": [
+          {
+            "number": 1,
+            "label": "card",
+            "slots": [
+              {
+                "id": "9a",
+                "state": "SLOT_STATE_EMPTY"
+              },
+              {
+                "id": "9c",
+                "state": "SLOT_STATE_EMPTY"
+              },
+              {
+                "id": "9d",
+                "state": "SLOT_STATE_RESERVED",
+                "use": "SLOT_USE_UNLOCK_KEY",
+                "purpose": "Spare unlock key (made only if passkey unlocking cannot be used)"
+              },
+              {
+                "id": "9e",
+                "state": "SLOT_STATE_EMPTY"
+              }
+            ]
+          },
+          {
+            "number": 2,
+            "label": "B",
+            "slots": [
+              {
+                "id": "82",
+                "state": "SLOT_STATE_USED",
+                "use": "SLOT_USE_X509_ROOT",
+                "purpose": "X.509 root key B of acme-tls",
+                "keyLabel": "B",
+                "algorithm": "ecdsa-p384",
+                "pinRule": "PIN_RULE_ALWAYS",
+                "touchRule": "TOUCH_RULE_ALWAYS",
+                "publicKeySha256": "5be4d8715be4d8715be4d8715be4d8715be4d8715be4d8715be4d8715be4d871",
+                "bornAt": "2023-12-04T10:00:00Z",
+                "attested": true
+              },
+              {
+                "id": "83",
+                "state": "SLOT_STATE_USED",
+                "use": "SLOT_USE_OPENPGP_PRIMARY",
+                "purpose": "OpenPGP primary key B of acme-release",
+                "keyLabel": "B",
+                "algorithm": "ecdsa-p384",
+                "pinRule": "PIN_RULE_ALWAYS",
+                "touchRule": "TOUCH_RULE_ALWAYS",
+                "publicKeySha256": "a400a4cda400a4cda400a4cda400a4cda400a4cda400a4cda400a4cda400a4cd",
+                "bornAt": "2023-12-04T10:00:00Z",
+                "attested": true
+              },
+              {
+                "id": "84",
+                "state": "SLOT_STATE_USED",
+                "use": "SLOT_USE_SSH_CA",
+                "purpose": "SSH CA key B of acme-ssh",
+                "keyLabel": "B",
+                "algorithm": "ecdsa-p384",
+                "pinRule": "PIN_RULE_ALWAYS",
+                "touchRule": "TOUCH_RULE_ALWAYS",
+                "publicKeySha256": "e6d3a920e6d3a920e6d3a920e6d3a920e6d3a920e6d3a920e6d3a920e6d3a920",
+                "bornAt": "2023-12-04T10:00:00Z",
+                "attested": true
+              },
+              {
+                "id": "85",
+                "state": "SLOT_STATE_EMPTY"
+              }
+            ],
+            "keyLabel": "B"
+          },
+          {
+            "number": 3,
+            "label": "free",
+            "slots": [
+              {
+                "id": "86",
+                "state": "SLOT_STATE_SPARE"
+              },
+              {
+                "id": "87",
+                "state": "SLOT_STATE_SPARE"
+              },
+              {
+                "id": "88",
+                "state": "SLOT_STATE_SPARE"
+              },
+              {
+                "id": "89",
+                "state": "SLOT_STATE_SPARE"
+              }
+            ]
+          },
+          {
+            "number": 4,
+            "label": "free",
+            "slots": [
+              {
+                "id": "8a",
+                "state": "SLOT_STATE_SPARE"
+              },
+              {
+                "id": "8b",
+                "state": "SLOT_STATE_SPARE"
+              },
+              {
+                "id": "8c",
+                "state": "SLOT_STATE_SPARE"
+              },
+              {
+                "id": "8d",
+                "state": "SLOT_STATE_SPARE"
+              }
+            ]
+          },
+          {
+            "number": 5,
+            "label": "free",
+            "slots": [
+              {
+                "id": "8e",
+                "state": "SLOT_STATE_SPARE"
+              },
+              {
+                "id": "8f",
+                "state": "SLOT_STATE_SPARE"
+              },
+              {
+                "id": "90",
+                "state": "SLOT_STATE_SPARE"
+              },
+              {
+                "id": "91",
+                "state": "SLOT_STATE_SPARE"
+              }
+            ]
+          },
+          {
+            "number": 6,
+            "label": "free",
+            "slots": [
+              {
+                "id": "92",
+                "state": "SLOT_STATE_SPARE"
+              },
+              {
+                "id": "93",
+                "state": "SLOT_STATE_SPARE"
+              },
+              {
+                "id": "94",
+                "state": "SLOT_STATE_SPARE"
+              },
+              {
+                "id": "95",
+                "state": "SLOT_STATE_SPARE"
+              }
+            ]
+          }
+        ]
+      },
+      "openpgp": {
+        "use": "APPLICATION_USE_UNUSED",
+        "slots": [
+          {
+            "id": "sig",
+            "state": "SLOT_STATE_EMPTY"
+          },
+          {
+            "id": "dec",
+            "state": "SLOT_STATE_EMPTY"
+          },
+          {
+            "id": "aut",
+            "state": "SLOT_STATE_EMPTY"
+          }
+        ]
+      },
+      "fido2": {
+        "use": "APPLICATION_USE_UNUSED"
+      },
+      "revokeCommand": "ritueel revoke --card root-b --reason REASON"
+    },
+    {
+      "serial": "00000013",
+      "name": "day-ana",
+      "kind": "CARD_KIND_DAY_TO_DAY",
+      "model": "YubiKey 5C NFC",
+      "firmware": "5.8.0",
+      "holder": "Ana",
+      "kept": "on Ana's key ring",
+      "layoutVersion": 1,
+      "lastSeenAt": "2026-11-18T09:00:00Z",
+      "lastCheckedAt": "2026-11-18T09:00:00Z",
+      "roleSummary": "Day-to-day card. Holds no key of this bundle.",
+      "piv": {
+        "use": "APPLICATION_USE_UNUSED",
+        "rows": [
+          {
+            "number": 1,
+            "label": "card",
+            "slots": [
+              {
+                "id": "9a",
+                "state": "SLOT_STATE_EMPTY"
+              },
+              {
+                "id": "9c",
+                "state": "SLOT_STATE_EMPTY"
+              },
+              {
+                "id": "9d",
+                "state": "SLOT_STATE_EMPTY"
+              },
+              {
+                "id": "9e",
+                "state": "SLOT_STATE_EMPTY"
+              }
+            ]
+          },
+          {
+            "number": 2,
+            "label": "free",
+            "slots": [
+              {
+                "id": "82",
+                "state": "SLOT_STATE_EMPTY"
+              },
+              {
+                "id": "83",
+                "state": "SLOT_STATE_EMPTY"
+              },
+              {
+                "id": "84",
+                "state": "SLOT_STATE_EMPTY"
+              },
+              {
+                "id": "85",
+                "state": "SLOT_STATE_EMPTY"
+              }
+            ]
+          },
+          {
+            "number": 3,
+            "label": "free",
+            "slots": [
+              {
+                "id": "86",
+                "state": "SLOT_STATE_EMPTY"
+              },
+              {
+                "id": "87",
+                "state": "SLOT_STATE_EMPTY"
+              },
+              {
+                "id": "88",
+                "state": "SLOT_STATE_EMPTY"
+              },
+              {
+                "id": "89",
+                "state": "SLOT_STATE_EMPTY"
+              }
+            ]
+          },
+          {
+            "number": 4,
+            "label": "free",
+            "slots": [
+              {
+                "id": "8a",
+                "state": "SLOT_STATE_EMPTY"
+              },
+              {
+                "id": "8b",
+                "state": "SLOT_STATE_EMPTY"
+              },
+              {
+                "id": "8c",
+                "state": "SLOT_STATE_EMPTY"
+              },
+              {
+                "id": "8d",
+                "state": "SLOT_STATE_EMPTY"
+              }
+            ]
+          },
+          {
+            "number": 5,
+            "label": "free",
+            "slots": [
+              {
+                "id": "8e",
+                "state": "SLOT_STATE_EMPTY"
+              },
+              {
+                "id": "8f",
+                "state": "SLOT_STATE_EMPTY"
+              },
+              {
+                "id": "90",
+                "state": "SLOT_STATE_EMPTY"
+              },
+              {
+                "id": "91",
+                "state": "SLOT_STATE_EMPTY"
+              }
+            ]
+          },
+          {
+            "number": 6,
+            "label": "free",
+            "slots": [
+              {
+                "id": "92",
+                "state": "SLOT_STATE_EMPTY"
+              },
+              {
+                "id": "93",
+                "state": "SLOT_STATE_EMPTY"
+              },
+              {
+                "id": "94",
+                "state": "SLOT_STATE_EMPTY"
+              },
+              {
+                "id": "95",
+                "state": "SLOT_STATE_EMPTY"
+              }
+            ]
+          }
+        ]
+      },
+      "openpgp": {
+        "use": "APPLICATION_USE_UNUSED",
+        "slots": [
+          {
+            "id": "sig",
+            "state": "SLOT_STATE_EMPTY"
+          },
+          {
+            "id": "dec",
+            "state": "SLOT_STATE_EMPTY"
+          },
+          {
+            "id": "aut",
+            "state": "SLOT_STATE_EMPTY"
+          }
+        ]
+      },
+      "fido2": {
+        "use": "APPLICATION_USE_UNUSED"
+      },
+      "revokeCommand": "ritueel revoke --card day-ana --reason REASON"
+    }
+  ],
+  "roots": [
+    {
+      "name": "acme-tls",
+      "kind": "KEY_KIND_X509",
+      "keyIds": [
+        "3a1f9c023a1f9c023a1f9c023a1f9c023a1f9c023a1f9c023a1f9c023a1f9c02",
+        "5be4d8715be4d8715be4d8715be4d8715be4d8715be4d8715be4d8715be4d871",
+        "51e077aa51e077aa51e077aa51e077aa51e077aa51e077aa51e077aa51e077aa"
+      ],
+      "wantedPath": "want/roots/acme-tls.yaml",
+      "createdAt": "2023-12-04T10:00:00Z"
+    },
+    {
+      "name": "acme-release",
+      "kind": "KEY_KIND_OPENPGP",
+      "keyIds": [
+        "7D440B197D440B197D440B197D440B197D440B19",
+        "90C311F790C311F790C311F790C311F790C311F7",
+        "C4A2E605C4A2E605C4A2E605C4A2E605C4A2E605"
+      ],
+      "wantedPath": "want/roots/acme-release.yaml",
+      "createdAt": "2023-12-04T10:00:00Z"
+    },
+    {
+      "name": "acme-ssh",
+      "kind": "KEY_KIND_SSH_CA",
+      "keyIds": [
+        "c21055aec21055aec21055aec21055aec21055aec21055aec21055aec21055ae",
+        "e6d3a920e6d3a920e6d3a920e6d3a920e6d3a920e6d3a920e6d3a920e6d3a920",
+        "0f8b64c10f8b64c10f8b64c10f8b64c10f8b64c10f8b64c10f8b64c10f8b64c1"
+      ],
+      "wantedPath": "want/roots/acme-ssh.yaml",
+      "createdAt": "2023-12-04T10:00:00Z"
+    }
+  ],
+  "keys": [
+    {
+      "fingerprint": "3a1f9c023a1f9c023a1f9c023a1f9c023a1f9c023a1f9c023a1f9c023a1f9c02",
+      "label": "A",
+      "role": "KEY_ROLE_ROOT_KEY",
+      "kind": "KEY_KIND_X509",
+      "root": "acme-tls",
+      "state": "KEY_STATE_ACTIVE",
+      "algorithm": "ecdsa-p384",
+      "createdAt": "2023-12-04T10:00:00Z",
+      "revokeCommand": "ritueel revoke acme/A --reason REASON",
+      "place": {
+        "store": "STORE_PIV",
+        "card": "root-a",
+        "slot": "82"
+      },
+      "expiresAt": "2028-12-23T10:00:00Z",
+      "touchedBy": [
+        {
+          "id": "20231204T100000Z-apply-5b1e7a90",
+          "at": "2023-12-04T10:00:00Z",
+          "command": "CEREMONY_COMMAND_APPLY"
+        }
+      ]
+    },
+    {
+      "fingerprint": "5be4d8715be4d8715be4d8715be4d8715be4d8715be4d8715be4d8715be4d871",
+      "label": "B",
+      "role": "KEY_ROLE_ROOT_KEY",
+      "kind": "KEY_KIND_X509",
+      "root": "acme-tls",
+      "state": "KEY_STATE_ACTIVE",
+      "algorithm": "ecdsa-p384",
+      "createdAt": "2023-12-04T10:00:00Z",
+      "revokeCommand": "ritueel revoke acme/B --reason REASON",
+      "place": {
+        "store": "STORE_PIV",
+        "card": "root-b",
+        "slot": "82"
+      },
+      "expiresAt": "2029-11-20T10:00:00Z",
+      "touchedBy": [
+        {
+          "id": "20231204T100000Z-apply-5b1e7a90",
+          "at": "2023-12-04T10:00:00Z",
+          "command": "CEREMONY_COMMAND_APPLY"
+        }
+      ]
+    },
+    {
+      "fingerprint": "51e077aa51e077aa51e077aa51e077aa51e077aa51e077aa51e077aa51e077aa",
+      "label": "C",
+      "role": "KEY_ROLE_ROOT_KEY",
+      "kind": "KEY_KIND_X509",
+      "root": "acme-tls",
+      "state": "KEY_STATE_ACTIVE",
+      "algorithm": "ecdsa-p384",
+      "createdAt": "2025-03-18T10:00:00Z",
+      "revokeCommand": "ritueel revoke acme/C --reason REASON",
+      "place": {
+        "store": "STORE_AWS_KMS",
+        "keyRef": "arn:aws:kms:eu-west-1:444455556666:key/mrk-0000000000000000000000000000c001",
+        "region": "eu-west-1",
+        "replicaRegion": "eu-central-1",
+        "replicaRef": "arn:aws:kms:eu-central-1:444455556666:key/mrk-0000000000000000000000000000c001"
+      },
+      "expiresAt": "2028-03-18T10:00:00Z",
+      "touchedBy": [
+        {
+          "id": "20250318T100000Z-apply-9e07b6c5",
+          "at": "2025-03-18T10:00:00Z",
+          "command": "CEREMONY_COMMAND_APPLY"
+        }
+      ]
+    },
+    {
+      "fingerprint": "d3a7b0c8d3a7b0c8d3a7b0c8d3a7b0c8d3a7b0c8d3a7b0c8d3a7b0c8d3a7b0c8",
+      "role": "KEY_ROLE_DELEGATED_KEY",
+      "kind": "KEY_KIND_X509",
+      "root": "acme-tls",
+      "delegation": "acme-ca",
+      "state": "KEY_STATE_ACTIVE",
+      "algorithm": "ecdsa-p384",
+      "place": {
+        "store": "STORE_AWS_KMS",
+        "keyRef": "arn:aws:kms:eu-west-1:444455556666:key/1234abcd-12ab-34cd-56ef-1234567890ab",
+        "region": "eu-west-1"
+      },
+      "createdAt": "2026-11-10T09:00:00Z",
+      "expiresAt": "2027-12-20T10:00:00Z",
+      "revokeCommand": "ritueel revoke acme-ca --reason REASON"
+    },
+    {
+      "fingerprint": "7D440B197D440B197D440B197D440B197D440B19",
+      "label": "A",
+      "role": "KEY_ROLE_ROOT_KEY",
+      "kind": "KEY_KIND_OPENPGP",
+      "root": "acme-release",
+      "state": "KEY_STATE_ACTIVE",
+      "algorithm": "ecdsa-p384",
+      "createdAt": "2023-12-04T10:00:00Z",
+      "revokeCommand": "ritueel revoke acme/A --reason REASON",
+      "place": {
+        "store": "STORE_PIV",
+        "card": "root-a",
+        "slot": "83"
+      },
+      "expiresAt": "2028-12-23T10:00:00Z",
+      "touchedBy": [
+        {
+          "id": "20231204T100000Z-apply-5b1e7a90",
+          "at": "2023-12-04T10:00:00Z",
+          "command": "CEREMONY_COMMAND_APPLY"
+        }
+      ]
+    },
+    {
+      "fingerprint": "90C311F790C311F790C311F790C311F790C311F7",
+      "label": "B",
+      "role": "KEY_ROLE_ROOT_KEY",
+      "kind": "KEY_KIND_OPENPGP",
+      "root": "acme-release",
+      "state": "KEY_STATE_ACTIVE",
+      "algorithm": "ecdsa-p384",
+      "createdAt": "2023-12-04T10:00:00Z",
+      "revokeCommand": "ritueel revoke acme/B --reason REASON",
+      "place": {
+        "store": "STORE_PIV",
+        "card": "root-b",
+        "slot": "83"
+      },
+      "expiresAt": "2029-11-20T10:00:00Z",
+      "touchedBy": [
+        {
+          "id": "20231204T100000Z-apply-5b1e7a90",
+          "at": "2023-12-04T10:00:00Z",
+          "command": "CEREMONY_COMMAND_APPLY"
+        }
+      ]
+    },
+    {
+      "fingerprint": "C4A2E605C4A2E605C4A2E605C4A2E605C4A2E605",
+      "label": "C",
+      "role": "KEY_ROLE_ROOT_KEY",
+      "kind": "KEY_KIND_OPENPGP",
+      "root": "acme-release",
+      "state": "KEY_STATE_ACTIVE",
+      "algorithm": "ecdsa-p384",
+      "createdAt": "2025-03-18T10:00:00Z",
+      "revokeCommand": "ritueel revoke acme/C --reason REASON",
+      "place": {
+        "store": "STORE_AWS_KMS",
+        "keyRef": "arn:aws:kms:eu-west-1:444455556666:key/mrk-0000000000000000000000000000c002",
+        "region": "eu-west-1",
+        "replicaRegion": "eu-central-1",
+        "replicaRef": "arn:aws:kms:eu-central-1:444455556666:key/mrk-0000000000000000000000000000c002"
+      },
+      "expiresAt": "2028-03-18T10:00:00Z",
+      "touchedBy": [
+        {
+          "id": "20250318T100000Z-apply-9e07b6c5",
+          "at": "2025-03-18T10:00:00Z",
+          "command": "CEREMONY_COMMAND_APPLY"
+        }
+      ]
+    },
+    {
+      "fingerprint": "E1F4A923E1F4A923E1F4A923E1F4A923E1F4A923",
+      "role": "KEY_ROLE_DELEGATED_KEY",
+      "kind": "KEY_KIND_OPENPGP",
+      "root": "acme-release",
+      "delegation": "acme-release",
+      "state": "KEY_STATE_ACTIVE",
+      "algorithm": "ecdsa-p384",
+      "place": {
+        "store": "STORE_AWS_KMS",
+        "keyRef": "arn:aws:kms:eu-west-1:111122223333:key/9f8e7d6c-5b4a-4321-8fed-cba987654321",
+        "region": "eu-west-1"
+      },
+      "createdAt": "2025-12-20T09:00:00Z",
+      "expiresAt": "2027-01-23T10:00:00Z",
+      "revokeCommand": "ritueel revoke acme-release --reason REASON"
+    },
+    {
+      "fingerprint": "c21055aec21055aec21055aec21055aec21055aec21055aec21055aec21055ae",
+      "label": "A",
+      "role": "KEY_ROLE_ROOT_KEY",
+      "kind": "KEY_KIND_SSH_CA",
+      "root": "acme-ssh",
+      "state": "KEY_STATE_ACTIVE",
+      "algorithm": "ecdsa-p384",
+      "createdAt": "2023-12-04T10:00:00Z",
+      "revokeCommand": "ritueel revoke acme/A --reason REASON",
+      "place": {
+        "store": "STORE_PIV",
+        "card": "root-a",
+        "slot": "84"
+      },
+      "touchedBy": [
+        {
+          "id": "20231204T100000Z-apply-5b1e7a90",
+          "at": "2023-12-04T10:00:00Z",
+          "command": "CEREMONY_COMMAND_APPLY"
+        }
+      ]
+    },
+    {
+      "fingerprint": "e6d3a920e6d3a920e6d3a920e6d3a920e6d3a920e6d3a920e6d3a920e6d3a920",
+      "label": "B",
+      "role": "KEY_ROLE_ROOT_KEY",
+      "kind": "KEY_KIND_SSH_CA",
+      "root": "acme-ssh",
+      "state": "KEY_STATE_ACTIVE",
+      "algorithm": "ecdsa-p384",
+      "createdAt": "2023-12-04T10:00:00Z",
+      "revokeCommand": "ritueel revoke acme/B --reason REASON",
+      "place": {
+        "store": "STORE_PIV",
+        "card": "root-b",
+        "slot": "84"
+      },
+      "touchedBy": [
+        {
+          "id": "20231204T100000Z-apply-5b1e7a90",
+          "at": "2023-12-04T10:00:00Z",
+          "command": "CEREMONY_COMMAND_APPLY"
+        }
+      ]
+    },
+    {
+      "fingerprint": "0f8b64c10f8b64c10f8b64c10f8b64c10f8b64c10f8b64c10f8b64c10f8b64c1",
+      "label": "C",
+      "role": "KEY_ROLE_ROOT_KEY",
+      "kind": "KEY_KIND_SSH_CA",
+      "root": "acme-ssh",
+      "state": "KEY_STATE_ACTIVE",
+      "algorithm": "ecdsa-p384",
+      "createdAt": "2025-03-18T10:00:00Z",
+      "revokeCommand": "ritueel revoke acme/C --reason REASON",
+      "place": {
+        "store": "STORE_AWS_KMS",
+        "keyRef": "arn:aws:kms:eu-west-1:444455556666:key/mrk-0000000000000000000000000000c003",
+        "region": "eu-west-1",
+        "replicaRegion": "eu-central-1",
+        "replicaRef": "arn:aws:kms:eu-central-1:444455556666:key/mrk-0000000000000000000000000000c003"
+      },
+      "touchedBy": [
+        {
+          "id": "20250318T100000Z-apply-9e07b6c5",
+          "at": "2025-03-18T10:00:00Z",
+          "command": "CEREMONY_COMMAND_APPLY"
+        }
+      ]
+    }
+  ],
+  "userIds": [
+    {
+      "id": "uid-A-1",
+      "key": "7D440B197D440B197D440B197D440B197D440B19",
+      "text": "Example Release Root A <release@example.com>",
+      "primary": true,
+      "createdAt": "2023-12-04T10:00:00Z",
+      "certified": true
+    },
+    {
+      "id": "uid-B-1",
+      "key": "90C311F790C311F790C311F790C311F790C311F7",
+      "text": "Example Release Root B <release@example.com>",
+      "primary": true,
+      "createdAt": "2023-12-04T10:00:00Z",
+      "certified": true
+    },
+    {
+      "id": "uid-C-1",
+      "key": "C4A2E605C4A2E605C4A2E605C4A2E605C4A2E605",
+      "text": "Example Release Root C <release@example.com>",
+      "primary": true,
+      "createdAt": "2025-03-18T10:00:00Z",
+      "certified": true
+    }
+  ],
+  "delegations": [
+    {
+      "name": "acme-ca",
+      "type": "DELEGATION_TYPE_X509_INTERMEDIATE",
+      "root": "acme-tls",
+      "key": "d3a7b0c8d3a7b0c8d3a7b0c8d3a7b0c8d3a7b0c8d3a7b0c8d3a7b0c8d3a7b0c8",
+      "requester": "Acme platform team",
+      "limits": [
+        "permitted URI hosts: example.com"
+      ],
+      "wantedPath": "want/delegations/acme-ca.yaml",
+      "certification": "cert-7",
+      "touchedBy": [
+        {
+          "id": "20261120T100000Z-apply-3fa9c1d2",
+          "at": "2026-11-20T10:00:00Z",
+          "command": "CEREMONY_COMMAND_APPLY"
+        },
+        {
+          "id": "20251216T100000Z-apply-f1d96a45",
+          "at": "2025-12-16T10:00:00Z",
+          "command": "CEREMONY_COMMAND_APPLY"
+        },
+        {
+          "id": "20241210T100000Z-apply-12cd5e86",
+          "at": "2024-12-10T10:00:00Z",
+          "command": "CEREMONY_COMMAND_APPLY"
+        },
+        {
+          "id": "20231211T100000Z-apply-c04d2e71",
+          "at": "2023-12-11T10:00:00Z",
+          "command": "CEREMONY_COMMAND_APPLY"
+        }
+      ]
+    },
+    {
+      "name": "acme-release",
+      "type": "DELEGATION_TYPE_OPENPGP_SUBKEY",
+      "root": "acme-release",
+      "key": "E1F4A923E1F4A923E1F4A923E1F4A923E1F4A923",
+      "requester": "Acme release engineering",
+      "use": "sign",
+      "limits": [
+        "capability: sign",
+        "read role: arn:aws:iam::111122223333:role/example-certifier-read"
+      ],
+      "wantedPath": "want/delegations/acme-release.yaml",
+      "certification": "cert-8",
+      "touchedBy": [
+        {
+          "id": "20251223T100000Z-apply-27b0e8c9",
+          "at": "2025-12-23T10:00:00Z",
+          "command": "CEREMONY_COMMAND_APPLY"
+        },
+        {
+          "id": "20241210T100000Z-apply-12cd5e86",
+          "at": "2024-12-10T10:00:00Z",
+          "command": "CEREMONY_COMMAND_APPLY"
+        },
+        {
+          "id": "20231211T100000Z-apply-c04d2e71",
+          "at": "2023-12-11T10:00:00Z",
+          "command": "CEREMONY_COMMAND_APPLY"
+        }
+      ]
+    }
+  ],
+  "certifications": [
+    {
+      "id": "cert-1",
+      "kind": "CERTIFICATION_KIND_ROOT_CERTIFICATE",
+      "issuer": "3a1f9c023a1f9c023a1f9c023a1f9c023a1f9c023a1f9c023a1f9c023a1f9c02",
+      "subject": {
+        "kind": "OBJECT_KIND_KEY",
+        "id": "3a1f9c023a1f9c023a1f9c023a1f9c023a1f9c023a1f9c023a1f9c023a1f9c02",
+        "label": "key A of acme-tls"
+      },
+      "validFrom": "2025-12-23T10:00:00Z",
+      "validUntil": "2028-12-23T10:00:00Z",
+      "ceremonyId": "20251223T100000Z-apply-27b0e8c9"
+    },
+    {
+      "id": "cert-2",
+      "kind": "CERTIFICATION_KIND_ROOT_CERTIFICATE",
+      "issuer": "5be4d8715be4d8715be4d8715be4d8715be4d8715be4d8715be4d8715be4d871",
+      "subject": {
+        "kind": "OBJECT_KIND_KEY",
+        "id": "5be4d8715be4d8715be4d8715be4d8715be4d8715be4d8715be4d8715be4d871",
+        "label": "key B of acme-tls"
+      },
+      "validFrom": "2026-11-20T10:00:00Z",
+      "validUntil": "2029-11-20T10:00:00Z",
+      "ceremonyId": "20261120T100000Z-apply-3fa9c1d2"
+    },
+    {
+      "id": "cert-3",
+      "kind": "CERTIFICATION_KIND_ROOT_CERTIFICATE",
+      "issuer": "51e077aa51e077aa51e077aa51e077aa51e077aa51e077aa51e077aa51e077aa",
+      "subject": {
+        "kind": "OBJECT_KIND_KEY",
+        "id": "51e077aa51e077aa51e077aa51e077aa51e077aa51e077aa51e077aa51e077aa",
+        "label": "key C of acme-tls"
+      },
+      "validFrom": "2025-03-18T10:00:00Z",
+      "validUntil": "2028-03-18T10:00:00Z",
+      "ceremonyId": "20250318T100000Z-apply-9e07b6c5"
+    },
+    {
+      "id": "cert-4",
+      "kind": "CERTIFICATION_KIND_PRIMARY_SELF_SIGNATURE",
+      "issuer": "7D440B197D440B197D440B197D440B197D440B19",
+      "subject": {
+        "kind": "OBJECT_KIND_USER_ID",
+        "id": "uid-A-1",
+        "label": "Example Release Root A <release@example.com>"
+      },
+      "validFrom": "2025-12-23T10:00:00Z",
+      "validUntil": "2028-12-23T10:00:00Z",
+      "ceremonyId": "20251223T100000Z-apply-27b0e8c9"
+    },
+    {
+      "id": "cert-5",
+      "kind": "CERTIFICATION_KIND_PRIMARY_SELF_SIGNATURE",
+      "issuer": "90C311F790C311F790C311F790C311F790C311F7",
+      "subject": {
+        "kind": "OBJECT_KIND_USER_ID",
+        "id": "uid-B-1",
+        "label": "Example Release Root B <release@example.com>"
+      },
+      "validFrom": "2026-11-20T10:00:00Z",
+      "validUntil": "2029-11-20T10:00:00Z",
+      "ceremonyId": "20261120T100000Z-apply-3fa9c1d2"
+    },
+    {
+      "id": "cert-6",
+      "kind": "CERTIFICATION_KIND_PRIMARY_SELF_SIGNATURE",
+      "issuer": "C4A2E605C4A2E605C4A2E605C4A2E605C4A2E605",
+      "subject": {
+        "kind": "OBJECT_KIND_USER_ID",
+        "id": "uid-C-1",
+        "label": "Example Release Root C <release@example.com>"
+      },
+      "validFrom": "2025-03-18T10:00:00Z",
+      "validUntil": "2028-03-18T10:00:00Z",
+      "ceremonyId": "20250318T100000Z-apply-9e07b6c5"
+    },
+    {
+      "id": "cert-7",
+      "kind": "CERTIFICATION_KIND_INTERMEDIATE_CERTIFICATE",
+      "issuer": "5be4d8715be4d8715be4d8715be4d8715be4d8715be4d8715be4d8715be4d871",
+      "subject": {
+        "kind": "OBJECT_KIND_DELEGATION",
+        "id": "acme-ca",
+        "label": "acme-ca"
+      },
+      "validFrom": "2026-11-20T10:00:00Z",
+      "validUntil": "2027-12-20T10:00:00Z",
+      "ceremonyId": "20261120T100000Z-apply-3fa9c1d2"
+    },
+    {
+      "id": "cert-8",
+      "kind": "CERTIFICATION_KIND_SUBKEY_BINDING",
+      "issuer": "7D440B197D440B197D440B197D440B197D440B19",
+      "subject": {
+        "kind": "OBJECT_KIND_DELEGATION",
+        "id": "acme-release",
+        "label": "acme-release"
+      },
+      "validFrom": "2025-12-23T10:00:00Z",
+      "validUntil": "2027-01-23T10:00:00Z",
+      "ceremonyId": "20251223T100000Z-apply-27b0e8c9"
+    }
+  ],
+  "requests": [
+    {
+      "stem": "acme-ca-2027",
+      "delegation": "acme-ca",
+      "type": "DELEGATION_TYPE_X509_INTERMEDIATE",
+      "key": "d3a7b0c8d3a7b0c8d3a7b0c8d3a7b0c8d3a7b0c8d3a7b0c8d3a7b0c8d3a7b0c8",
+      "outcome": "REQUEST_OUTCOME_ISSUED",
+      "answeredAt": "2026-11-20T10:00:00Z",
+      "ceremonyId": "20261120T100000Z-apply-3fa9c1d2",
+      "path": "requests/acme-ca-2027/",
+      "answerPath": "requests/acme-ca-2027/acme-ca-2027.result.json"
+    },
+    {
+      "stem": "acme-release-2027",
+      "delegation": "acme-release",
+      "type": "DELEGATION_TYPE_OPENPGP_SUBKEY",
+      "key": "E1F4A923E1F4A923E1F4A923E1F4A923E1F4A923",
+      "outcome": "REQUEST_OUTCOME_ISSUED",
+      "answeredAt": "2025-12-23T10:00:00Z",
+      "ceremonyId": "20251223T100000Z-apply-27b0e8c9",
+      "path": "requests/acme-release-2027/",
+      "answerPath": "requests/acme-release-2027/acme-release-2027.result.json"
+    }
+  ],
+  "changes": [
+    {
+      "id": "chg-1",
+      "object": {
+        "kind": "OBJECT_KIND_DELEGATION",
+        "id": "acme-release",
+        "label": "acme-release"
+      },
+      "kind": "CHANGE_KIND_RENEW",
+      "state": "CHANGE_STATE_WAITS",
+      "text": "Renew acme-release",
+      "needs": [
+        {
+          "kind": "NEED_KIND_CARD",
+          "name": "root-b",
+          "met": true
+        },
+        {
+          "kind": "NEED_KIND_REQUEST",
+          "name": "acme-release",
+          "met": false
+        }
+      ],
+      "reason": "No request for acme-release has come.",
+      "source": "CHANGE_SOURCE_DATE",
+      "dueAt": "2027-01-23T10:00:00Z",
+      "involves": [
+        {
+          "kind": "OBJECT_KIND_CERTIFICATION",
+          "id": "cert-8",
+          "label": "binding of acme-release"
+        }
+      ]
+    }
+  ]
+}

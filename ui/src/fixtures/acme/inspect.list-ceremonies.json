@@ -1,233 +1,633 @@
 {
   "history": {
-    "recordCount": 10,
+    "recordCount": 14,
     "chainState": "CHAIN_STATE_VERIFIED",
-    "headRecordSha256": "600a0123456789abcdef0123456789abcdef0123456789abcdef0123456789ab",
-    "lastRecordId": "20260602T142000Z-card-check",
-    "lastRecordTitle": "Checked both root cards and proved they are alive",
-    "lastRecordAt": "2026-06-02T14:20:00Z",
-    "checkedAt": "2026-11-11T09:00:00Z",
-    "message": "All 10 records check out. The newest is 162 days old."
+    "endRecordSha256": "d7e8f90ad7e8f90ad7e8f90ad7e8f90ad7e8f90ad7e8f90ad7e8f90ad7e8f90a",
+    "lastRecordId": "20261120T100000Z-apply-3fa9c1d2",
+    "lastRecordTitle": "Renewed acme-ca for the request acme-ca-2027",
+    "lastRecordAt": "2026-11-20T10:00:00Z",
+    "checkedAt": "2026-11-24T09:00:00Z",
+    "message": "All 14 records check out. The newest is 4 days old.",
+    "ends": 1
   },
   "ceremonies": [
     {
-      "id": "20260602T142000Z-card-check",
-      "kind": "CEREMONY_KIND_CARD_CHECK",
-      "title": "Checked both root cards and proved they are alive",
-      "summary": "Both root cards matched the layout. The next check is due in six months.",
-      "completedAt": "2026-06-02T14:20:00Z",
-      "outcome": "CEREMONY_OUTCOME_DONE",
-      "previousId": "20260127T142000Z-due",
-      "recordSha256": "600a0123456789abcdef0123456789abcdef0123456789abcdef0123456789ab",
-      "previousRecordSha256": "60090123456789abcdef0123456789abcdef0123456789abcdef0123456789ab",
-      "planDigest": "492b09a90123456789abcdef0123456789abcdef0123456789abcdefdeadbeef",
-      "subjectLabels": [
-        "A",
-        "B"
+      "id": "20261120T100000Z-apply-3fa9c1d2",
+      "command": "CEREMONY_COMMAND_APPLY",
+      "state": "CEREMONY_STATE_RECORDED",
+      "title": "Renewed acme-ca for the request acme-ca-2027",
+      "summary": "The request acme-ca-2027 came from the platform team. The ceremony signed a new intermediate certificate and wrote trust set 13.",
+      "plannedAt": "2026-11-20T10:00:00Z",
+      "ranOn": "RUN_PLACE_WORKSTATION",
+      "outcome": "CEREMONY_OUTCOME_COMPLETED",
+      "planSha256": "3fa9c1d23fa9c1d23fa9c1d23fa9c1d23fa9c1d23fa9c1d23fa9c1d23fa9c1d2",
+      "startedAt": "2026-11-20T10:02:00Z",
+      "finishedAt": "2026-11-20T10:20:00Z",
+      "recordSha256": "d7e8f90ad7e8f90ad7e8f90ad7e8f90ad7e8f90ad7e8f90ad7e8f90ad7e8f90a",
+      "prevRecordSha256": "c6d7e8f9c6d7e8f9c6d7e8f9c6d7e8f9c6d7e8f9c6d7e8f9c6d7e8f9c6d7e8f9",
+      "trustSequence": 13,
+      "trustSetName": "13-3fa9c1d2",
+      "applied": [
+        {
+          "object": {
+            "kind": "OBJECT_KIND_DELEGATION",
+            "id": "acme-ca",
+            "label": "acme-ca"
+          },
+          "kind": "CHANGE_KIND_RENEW",
+          "text": "Renew acme-ca"
+        }
       ],
-      "cardSerials": [
-        "00000011",
-        "00000012"
+      "cards": [
+        "root-b"
       ],
-      "guidePath": "/learn/choosing-where-a-root-lives/",
-      "runPlace": "RUN_PLACE_WORKSTATION"
+      "signatureCount": 3,
+      "touchCount": 3,
+      "guidePath": "/design/#a-ceremony"
     },
     {
-      "id": "20260127T142000Z-due",
-      "kind": "CEREMONY_KIND_RENEW",
-      "title": "Renewed acme-release",
-      "summary": "The release subkey was bound again for 13 months.",
-      "completedAt": "2026-01-27T14:20:00Z",
-      "outcome": "CEREMONY_OUTCOME_DONE",
-      "previousId": "20251202T142000Z-due",
-      "recordSha256": "60090123456789abcdef0123456789abcdef0123456789abcdef0123456789ab",
-      "previousRecordSha256": "60080123456789abcdef0123456789abcdef0123456789abcdef0123456789ab",
-      "planDigest": "482808a80123456789abcdef0123456789abcdef0123456789abcdefdeadbeef",
-      "subjectLabels": [
-        "A",
-        "acme-release"
+      "id": "20260915T100000Z-apply-03e4a9f6",
+      "command": "CEREMONY_COMMAND_APPLY",
+      "state": "CEREMONY_STATE_RECORDED",
+      "title": "Root list made again",
+      "summary": "The yearly rhythm made the root list and the other trust files again. Trust set 12 replaces the one before it.",
+      "plannedAt": "2026-09-15T10:00:00Z",
+      "ranOn": "RUN_PLACE_WORKSTATION",
+      "outcome": "CEREMONY_OUTCOME_COMPLETED",
+      "planSha256": "03e4a9f603e4a9f603e4a9f603e4a9f603e4a9f603e4a9f603e4a9f603e4a9f6",
+      "startedAt": "2026-09-15T10:02:00Z",
+      "finishedAt": "2026-09-15T10:20:00Z",
+      "recordSha256": "c6d7e8f9c6d7e8f9c6d7e8f9c6d7e8f9c6d7e8f9c6d7e8f9c6d7e8f9c6d7e8f9",
+      "prevRecordSha256": "b5c6d7e8b5c6d7e8b5c6d7e8b5c6d7e8b5c6d7e8b5c6d7e8b5c6d7e8b5c6d7e8",
+      "trustSequence": 12,
+      "trustSetName": "12-03e4a9f6",
+      "applied": [
+        {
+          "object": {
+            "kind": "OBJECT_KIND_TRUST_SET",
+            "id": "12-03e4a9f6",
+            "label": "12-03e4a9f6"
+          },
+          "kind": "CHANGE_KIND_RENEW",
+          "text": "Renew trust set 12-03e4a9f6"
+        }
       ],
-      "cardSerials": [
-        "00000011"
+      "cards": [
+        "root-b"
       ],
+      "signatureCount": 2,
+      "touchCount": 2,
+      "guidePath": "/design/#a-ceremony"
+    },
+    {
+      "id": "20260616T100000Z-apply-d85c2b07",
+      "command": "CEREMONY_COMMAND_APPLY",
+      "state": "CEREMONY_STATE_RECORDED",
+      "title": "Root list made again",
+      "summary": "The yearly rhythm made the root list and the other trust files again. Trust set 11 replaces the one before it.",
+      "plannedAt": "2026-06-16T10:00:00Z",
+      "ranOn": "RUN_PLACE_WORKSTATION",
+      "outcome": "CEREMONY_OUTCOME_COMPLETED",
+      "planSha256": "d85c2b07d85c2b07d85c2b07d85c2b07d85c2b07d85c2b07d85c2b07d85c2b07",
+      "startedAt": "2026-06-16T10:02:00Z",
+      "finishedAt": "2026-06-16T10:20:00Z",
+      "recordSha256": "b5c6d7e8b5c6d7e8b5c6d7e8b5c6d7e8b5c6d7e8b5c6d7e8b5c6d7e8b5c6d7e8",
+      "prevRecordSha256": "a4b5c6d7a4b5c6d7a4b5c6d7a4b5c6d7a4b5c6d7a4b5c6d7a4b5c6d7a4b5c6d7",
+      "trustSequence": 11,
+      "trustSetName": "11-d85c2b07",
+      "applied": [
+        {
+          "object": {
+            "kind": "OBJECT_KIND_TRUST_SET",
+            "id": "11-d85c2b07",
+            "label": "11-d85c2b07"
+          },
+          "kind": "CHANGE_KIND_RENEW",
+          "text": "Renew trust set 11-d85c2b07"
+        }
+      ],
+      "cards": [
+        "root-b"
+      ],
+      "signatureCount": 2,
+      "touchCount": 2,
+      "guidePath": "/design/#a-ceremony"
+    },
+    {
+      "id": "20260310T100000Z-apply-6a3f5d12",
+      "command": "CEREMONY_COMMAND_APPLY",
+      "state": "CEREMONY_STATE_RECORDED",
+      "title": "Root list made again",
+      "summary": "The yearly rhythm made the root list and the other trust files again. Trust set 10 replaces the one before it.",
+      "plannedAt": "2026-03-10T10:00:00Z",
+      "ranOn": "RUN_PLACE_WORKSTATION",
+      "outcome": "CEREMONY_OUTCOME_COMPLETED",
+      "planSha256": "6a3f5d126a3f5d126a3f5d126a3f5d126a3f5d126a3f5d126a3f5d126a3f5d12",
+      "startedAt": "2026-03-10T10:02:00Z",
+      "finishedAt": "2026-03-10T10:20:00Z",
+      "recordSha256": "a4b5c6d7a4b5c6d7a4b5c6d7a4b5c6d7a4b5c6d7a4b5c6d7a4b5c6d7a4b5c6d7",
+      "prevRecordSha256": "93a4b5c693a4b5c693a4b5c693a4b5c693a4b5c693a4b5c693a4b5c693a4b5c6",
+      "trustSequence": 10,
+      "trustSetName": "10-6a3f5d12",
+      "applied": [
+        {
+          "object": {
+            "kind": "OBJECT_KIND_TRUST_SET",
+            "id": "10-6a3f5d12",
+            "label": "10-6a3f5d12"
+          },
+          "kind": "CHANGE_KIND_RENEW",
+          "text": "Renew trust set 10-6a3f5d12"
+        }
+      ],
+      "cards": [
+        "root-b"
+      ],
+      "signatureCount": 2,
+      "touchCount": 2,
+      "guidePath": "/design/#a-ceremony"
+    },
+    {
+      "id": "20260205T100000Z-apply-61fd30a8",
+      "command": "CEREMONY_COMMAND_APPLY",
+      "state": "CEREMONY_STATE_PLANNED",
+      "title": "A plan that was never run",
+      "summary": "This plan renews acme-release. Nobody ran it, and the history moved on. apply refuses it as stale.",
+      "plannedAt": "2026-02-05T10:00:00Z",
+      "ranOn": "RUN_PLACE_WORKSTATION",
+      "planSha256": "61fd30a861fd30a861fd30a861fd30a861fd30a861fd30a861fd30a861fd30a8",
+      "applied": [
+        {
+          "object": {
+            "kind": "OBJECT_KIND_DELEGATION",
+            "id": "acme-release",
+            "label": "acme-release"
+          },
+          "kind": "CHANGE_KIND_RENEW",
+          "text": "Renew acme-release"
+        }
+      ],
+      "cards": [
+        "root-b"
+      ],
+      "signatureCount": 3,
+      "touchCount": 3,
+      "stale": true,
+      "guidePath": "/design/#a-ceremony"
+    },
+    {
+      "id": "20251223T100000Z-apply-27b0e8c9",
+      "command": "CEREMONY_COMMAND_APPLY",
+      "state": "CEREMONY_STATE_RECORDED",
+      "title": "Renewed acme-release for the request acme-release-2027",
+      "summary": "The release engineers asked for a new binding of their signing subkey. The ceremony signed it and wrote trust set 9.",
+      "plannedAt": "2025-12-23T10:00:00Z",
+      "ranOn": "RUN_PLACE_WORKSTATION",
+      "outcome": "CEREMONY_OUTCOME_COMPLETED",
+      "planSha256": "27b0e8c927b0e8c927b0e8c927b0e8c927b0e8c927b0e8c927b0e8c927b0e8c9",
+      "startedAt": "2025-12-23T10:02:00Z",
+      "finishedAt": "2025-12-23T10:20:00Z",
+      "recordSha256": "93a4b5c693a4b5c693a4b5c693a4b5c693a4b5c693a4b5c693a4b5c693a4b5c6",
+      "prevRecordSha256": "8293a4b58293a4b58293a4b58293a4b58293a4b58293a4b58293a4b58293a4b5",
+      "trustSequence": 9,
+      "trustSetName": "9-27b0e8c9",
+      "applied": [
+        {
+          "object": {
+            "kind": "OBJECT_KIND_DELEGATION",
+            "id": "acme-release",
+            "label": "acme-release"
+          },
+          "kind": "CHANGE_KIND_RENEW",
+          "text": "Renew acme-release"
+        }
+      ],
+      "cards": [
+        "root-a"
+      ],
+      "signatureCount": 3,
+      "touchCount": 3,
+      "guidePath": "/design/#a-ceremony"
+    },
+    {
+      "id": "20251216T100000Z-apply-f1d96a45",
+      "command": "CEREMONY_COMMAND_APPLY",
+      "state": "CEREMONY_STATE_RECORDED",
+      "title": "Renewed acme-ca",
+      "summary": "The intermediate certificate of acme-ca was signed again. The ceremony wrote trust set 8.",
+      "plannedAt": "2025-12-16T10:00:00Z",
+      "ranOn": "RUN_PLACE_WORKSTATION",
+      "outcome": "CEREMONY_OUTCOME_COMPLETED",
+      "planSha256": "f1d96a45f1d96a45f1d96a45f1d96a45f1d96a45f1d96a45f1d96a45f1d96a45",
+      "startedAt": "2025-12-16T10:02:00Z",
+      "finishedAt": "2025-12-16T10:20:00Z",
+      "recordSha256": "8293a4b58293a4b58293a4b58293a4b58293a4b58293a4b58293a4b58293a4b5",
+      "prevRecordSha256": "718293a4718293a4718293a4718293a4718293a4718293a4718293a4718293a4",
+      "trustSequence": 8,
+      "trustSetName": "8-f1d96a45",
+      "applied": [
+        {
+          "object": {
+            "kind": "OBJECT_KIND_DELEGATION",
+            "id": "acme-ca",
+            "label": "acme-ca"
+          },
+          "kind": "CHANGE_KIND_RENEW",
+          "text": "Renew acme-ca"
+        }
+      ],
+      "cards": [
+        "root-a"
+      ],
+      "signatureCount": 2,
+      "touchCount": 2,
+      "guidePath": "/design/#a-ceremony"
+    },
+    {
+      "id": "20250909T100000Z-apply-b7280c3e",
+      "command": "CEREMONY_COMMAND_APPLY",
+      "state": "CEREMONY_STATE_RECORDED",
+      "title": "Root list made again",
+      "summary": "The yearly rhythm made the root list and the other trust files again. Trust set 7 replaces the one before it.",
+      "plannedAt": "2025-09-09T10:00:00Z",
+      "ranOn": "RUN_PLACE_WORKSTATION",
+      "outcome": "CEREMONY_OUTCOME_COMPLETED",
+      "planSha256": "b7280c3eb7280c3eb7280c3eb7280c3eb7280c3eb7280c3eb7280c3eb7280c3e",
+      "startedAt": "2025-09-09T10:02:00Z",
+      "finishedAt": "2025-09-09T10:20:00Z",
+      "recordSha256": "718293a4718293a4718293a4718293a4718293a4718293a4718293a4718293a4",
+      "prevRecordSha256": "6071829360718293607182936071829360718293607182936071829360718293",
       "trustSequence": 7,
-      "guidePath": "/learn/life-of-a-root/",
-      "runPlace": "RUN_PLACE_WORKSTATION"
+      "trustSetName": "7-b7280c3e",
+      "applied": [
+        {
+          "object": {
+            "kind": "OBJECT_KIND_TRUST_SET",
+            "id": "7-b7280c3e",
+            "label": "7-b7280c3e"
+          },
+          "kind": "CHANGE_KIND_RENEW",
+          "text": "Renew trust set 7-b7280c3e"
+        }
+      ],
+      "cards": [
+        "root-a"
+      ],
+      "signatureCount": 2,
+      "touchCount": 2,
+      "guidePath": "/design/#a-ceremony"
     },
     {
-      "id": "20251202T142000Z-due",
-      "kind": "CEREMONY_KIND_RENEW",
-      "title": "Renewed acme-ca",
-      "summary": "acme-ca was certified again for 13 months and the trust files were rebuilt.",
-      "completedAt": "2025-12-02T14:20:00Z",
-      "outcome": "CEREMONY_OUTCOME_DONE",
-      "previousId": "20250609T142000Z-card-check",
-      "recordSha256": "60080123456789abcdef0123456789abcdef0123456789abcdef0123456789ab",
-      "previousRecordSha256": "60070123456789abcdef0123456789abcdef0123456789abcdef0123456789ab",
-      "planDigest": "472507a70123456789abcdef0123456789abcdef0123456789abcdefdeadbeef",
-      "subjectLabels": [
-        "A",
-        "acme-ca"
+      "id": "20250903T093000Z-close-0c9e47d1",
+      "command": "CEREMONY_COMMAND_CLOSE",
+      "state": "CEREMONY_STATE_RECORDED",
+      "title": "Closing record for 20250902T100000Z-apply-4d6b21fa",
+      "summary": "The holder closed the stopped ceremony. The closing record names it and gives the reason.",
+      "plannedAt": "2025-09-03T09:30:00Z",
+      "ranOn": "RUN_PLACE_WORKSTATION",
+      "outcome": "CEREMONY_OUTCOME_CLOSED",
+      "recordSha256": "6071829360718293607182936071829360718293607182936071829360718293",
+      "prevRecordSha256": "5f6071825f6071825f6071825f6071825f6071825f6071825f6071825f607182",
+      "cards": [
+        "root-a"
       ],
-      "cardSerials": [
-        "00000011"
+      "guidePath": "/design/#a-ceremony",
+      "closes": "20250902T100000Z-apply-4d6b21fa",
+      "closeReason": "The laptop lost power after one signature.",
+      "finishedAt": "2025-09-03T09:32:00Z"
+    },
+    {
+      "id": "20250902T100000Z-apply-4d6b21fa",
+      "command": "CEREMONY_COMMAND_APPLY",
+      "state": "CEREMONY_STATE_CLOSED",
+      "title": "Stopped after one signature",
+      "summary": "The run stopped after one signature. The history has no ceremony record for it. A closing record names it.",
+      "plannedAt": "2025-09-02T10:00:00Z",
+      "ranOn": "RUN_PLACE_WORKSTATION",
+      "planSha256": "4d6b21fa4d6b21fa4d6b21fa4d6b21fa4d6b21fa4d6b21fa4d6b21fa4d6b21fa",
+      "startedAt": "2025-09-02T10:02:00Z",
+      "cards": [
+        "root-a"
       ],
+      "signatureCount": 3,
+      "touchCount": 3,
+      "guidePath": "/design/#a-ceremony",
+      "closedBy": "20250903T093000Z-close-0c9e47d1"
+    },
+    {
+      "id": "20250610T100000Z-apply-e3a54f08",
+      "command": "CEREMONY_COMMAND_APPLY",
+      "state": "CEREMONY_STATE_RECORDED",
+      "title": "Root list made again",
+      "summary": "The yearly rhythm made the root list and the other trust files again. Trust set 6 replaces the one before it.",
+      "plannedAt": "2025-06-10T10:00:00Z",
+      "ranOn": "RUN_PLACE_WORKSTATION",
+      "outcome": "CEREMONY_OUTCOME_COMPLETED",
+      "planSha256": "e3a54f08e3a54f08e3a54f08e3a54f08e3a54f08e3a54f08e3a54f08e3a54f08",
+      "startedAt": "2025-06-10T10:02:00Z",
+      "finishedAt": "2025-06-10T10:20:00Z",
+      "recordSha256": "5f6071825f6071825f6071825f6071825f6071825f6071825f6071825f607182",
+      "prevRecordSha256": "4e5f60714e5f60714e5f60714e5f60714e5f60714e5f60714e5f60714e5f6071",
       "trustSequence": 6,
-      "guidePath": "/learn/life-of-a-root/",
-      "runPlace": "RUN_PLACE_WORKSTATION"
+      "trustSetName": "6-e3a54f08",
+      "applied": [
+        {
+          "object": {
+            "kind": "OBJECT_KIND_TRUST_SET",
+            "id": "6-e3a54f08",
+            "label": "6-e3a54f08"
+          },
+          "kind": "CHANGE_KIND_RENEW",
+          "text": "Renew trust set 6-e3a54f08"
+        }
+      ],
+      "cards": [
+        "root-a"
+      ],
+      "signatureCount": 2,
+      "touchCount": 2,
+      "guidePath": "/design/#a-ceremony"
     },
     {
-      "id": "20250609T142000Z-card-check",
-      "kind": "CEREMONY_KIND_CARD_CHECK",
-      "title": "Checked both root cards and proved they are alive",
-      "summary": "Both root cards matched the layout. The firmware floor of 5.7.4 is met.",
-      "completedAt": "2025-06-09T14:20:00Z",
-      "outcome": "CEREMONY_OUTCOME_DONE",
-      "previousId": "20250128T142000Z-due",
-      "recordSha256": "60070123456789abcdef0123456789abcdef0123456789abcdef0123456789ab",
-      "previousRecordSha256": "60060123456789abcdef0123456789abcdef0123456789abcdef0123456789ab",
-      "planDigest": "462206a60123456789abcdef0123456789abcdef0123456789abcdefdeadbeef",
-      "subjectLabels": [
-        "A",
-        "B"
-      ],
-      "cardSerials": [
-        "00000011",
-        "00000012"
-      ],
-      "guidePath": "/learn/choosing-where-a-root-lives/",
-      "runPlace": "RUN_PLACE_WORKSTATION"
-    },
-    {
-      "id": "20250128T142000Z-due",
-      "kind": "CEREMONY_KIND_RENEW",
-      "title": "Renewed acme-release",
-      "summary": "The binding of the release subkey was renewed for 13 months over the same key, by acme/B.",
-      "completedAt": "2025-01-28T14:20:00Z",
-      "outcome": "CEREMONY_OUTCOME_DONE",
-      "previousId": "20241203T142000Z-due",
-      "recordSha256": "60060123456789abcdef0123456789abcdef0123456789abcdef0123456789ab",
-      "previousRecordSha256": "60050123456789abcdef0123456789abcdef0123456789abcdef0123456789ab",
-      "planDigest": "451f05a50123456789abcdef0123456789abcdef0123456789abcdefdeadbeef",
-      "subjectLabels": [
-        "B",
-        "acme-release"
-      ],
-      "cardSerials": [
-        "00000012"
-      ],
+      "id": "20250318T100000Z-apply-9e07b6c5",
+      "command": "CEREMONY_COMMAND_APPLY",
+      "state": "CEREMONY_STATE_RECORDED",
+      "title": "Key C added in the cloud key service",
+      "summary": "Key C was born in the cloud key service for each of the three roots. A change of the root keys runs with both root cards.",
+      "plannedAt": "2025-03-18T10:00:00Z",
+      "ranOn": "RUN_PLACE_WORKSTATION",
+      "outcome": "CEREMONY_OUTCOME_COMPLETED",
+      "planSha256": "9e07b6c59e07b6c59e07b6c59e07b6c59e07b6c59e07b6c59e07b6c59e07b6c5",
+      "startedAt": "2025-03-18T10:02:00Z",
+      "finishedAt": "2025-03-18T10:20:00Z",
+      "recordSha256": "4e5f60714e5f60714e5f60714e5f60714e5f60714e5f60714e5f60714e5f6071",
+      "prevRecordSha256": "3d4e5f603d4e5f603d4e5f603d4e5f603d4e5f603d4e5f603d4e5f603d4e5f60",
       "trustSequence": 5,
-      "guidePath": "/learn/life-of-a-root/",
-      "runPlace": "RUN_PLACE_WORKSTATION"
+      "trustSetName": "5-9e07b6c5",
+      "applied": [
+        {
+          "object": {
+            "kind": "OBJECT_KIND_KEY",
+            "id": "51e077aa51e077aa51e077aa51e077aa51e077aa51e077aa51e077aa51e077aa",
+            "label": "key C of acme-tls"
+          },
+          "kind": "CHANGE_KIND_BIRTH",
+          "text": "Make key C of acme-tls"
+        },
+        {
+          "object": {
+            "kind": "OBJECT_KIND_KEY",
+            "id": "C4A2E605C4A2E605C4A2E605C4A2E605C4A2E605",
+            "label": "key C of acme-release"
+          },
+          "kind": "CHANGE_KIND_BIRTH",
+          "text": "Make key C of acme-release"
+        },
+        {
+          "object": {
+            "kind": "OBJECT_KIND_KEY",
+            "id": "0f8b64c10f8b64c10f8b64c10f8b64c10f8b64c10f8b64c10f8b64c10f8b64c1",
+            "label": "key C of acme-ssh"
+          },
+          "kind": "CHANGE_KIND_BIRTH",
+          "text": "Make key C of acme-ssh"
+        }
+      ],
+      "cards": [
+        "root-a",
+        "root-b"
+      ],
+      "signatureCount": 6,
+      "touchCount": 4,
+      "guidePath": "/design/#a-ceremony"
     },
     {
-      "id": "20241203T142000Z-due",
-      "kind": "CEREMONY_KIND_RENEW",
-      "title": "Renewed acme-ca",
-      "summary": "The same key of acme-gateway was certified again for 13 months, under acme/B. The next trust sequence was written.",
-      "completedAt": "2024-12-03T14:20:00Z",
-      "outcome": "CEREMONY_OUTCOME_DONE",
-      "previousId": "20240610T142000Z-card-check",
-      "recordSha256": "60050123456789abcdef0123456789abcdef0123456789abcdef0123456789ab",
-      "previousRecordSha256": "60040123456789abcdef0123456789abcdef0123456789abcdef0123456789ab",
-      "planDigest": "441c04a40123456789abcdef0123456789abcdef0123456789abcdefdeadbeef",
-      "subjectLabels": [
-        "B",
-        "acme-ca"
+      "id": "20250130T100000Z-apply-b27c9e15",
+      "command": "CEREMONY_COMMAND_APPLY",
+      "state": "CEREMONY_STATE_PLANNED",
+      "title": "A plan that was never run",
+      "summary": "This plan renews acme-ca. Nobody ran it, and the history moved on. apply refuses it as stale.",
+      "plannedAt": "2025-01-30T10:00:00Z",
+      "ranOn": "RUN_PLACE_WORKSTATION",
+      "planSha256": "b27c9e15b27c9e15b27c9e15b27c9e15b27c9e15b27c9e15b27c9e15b27c9e15",
+      "applied": [
+        {
+          "object": {
+            "kind": "OBJECT_KIND_DELEGATION",
+            "id": "acme-ca",
+            "label": "acme-ca"
+          },
+          "kind": "CHANGE_KIND_RENEW",
+          "text": "Renew acme-ca"
+        }
       ],
-      "cardSerials": [
-        "00000012"
+      "cards": [
+        "root-a"
       ],
+      "signatureCount": 3,
+      "touchCount": 3,
+      "stale": true,
+      "guidePath": "/design/#a-ceremony"
+    },
+    {
+      "id": "20241210T100000Z-apply-12cd5e86",
+      "command": "CEREMONY_COMMAND_APPLY",
+      "state": "CEREMONY_STATE_RECORDED",
+      "title": "Renewed acme-ca and acme-release",
+      "summary": "Both delegations were signed again in one ceremony. The ceremony wrote trust set 4.",
+      "plannedAt": "2024-12-10T10:00:00Z",
+      "ranOn": "RUN_PLACE_WORKSTATION",
+      "outcome": "CEREMONY_OUTCOME_COMPLETED",
+      "planSha256": "12cd5e8612cd5e8612cd5e8612cd5e8612cd5e8612cd5e8612cd5e8612cd5e86",
+      "startedAt": "2024-12-10T10:02:00Z",
+      "finishedAt": "2024-12-10T10:20:00Z",
+      "recordSha256": "3d4e5f603d4e5f603d4e5f603d4e5f603d4e5f603d4e5f603d4e5f603d4e5f60",
+      "prevRecordSha256": "2c3d4e5f2c3d4e5f2c3d4e5f2c3d4e5f2c3d4e5f2c3d4e5f2c3d4e5f2c3d4e5f",
       "trustSequence": 4,
-      "guidePath": "/learn/life-of-a-root/",
-      "runPlace": "RUN_PLACE_WORKSTATION"
+      "trustSetName": "4-12cd5e86",
+      "applied": [
+        {
+          "object": {
+            "kind": "OBJECT_KIND_DELEGATION",
+            "id": "acme-ca",
+            "label": "acme-ca"
+          },
+          "kind": "CHANGE_KIND_RENEW",
+          "text": "Renew acme-ca"
+        },
+        {
+          "object": {
+            "kind": "OBJECT_KIND_DELEGATION",
+            "id": "acme-release",
+            "label": "acme-release"
+          },
+          "kind": "CHANGE_KIND_RENEW",
+          "text": "Renew acme-release"
+        }
+      ],
+      "cards": [
+        "root-b"
+      ],
+      "signatureCount": 4,
+      "touchCount": 4,
+      "guidePath": "/design/#a-ceremony"
     },
     {
-      "id": "20240610T142000Z-card-check",
-      "kind": "CEREMONY_KIND_CARD_CHECK",
-      "title": "Checked both root cards and proved they are alive",
-      "summary": "Every slot of both root cards matched the built-in layout and both passed the proof of life. Nothing else changed.",
-      "completedAt": "2024-06-10T14:20:00Z",
-      "outcome": "CEREMONY_OUTCOME_DONE",
-      "previousId": "20240120T142000Z-intermediate-add",
-      "recordSha256": "60040123456789abcdef0123456789abcdef0123456789abcdef0123456789ab",
-      "previousRecordSha256": "60030123456789abcdef0123456789abcdef0123456789abcdef0123456789ab",
-      "planDigest": "431903a30123456789abcdef0123456789abcdef0123456789abcdefdeadbeef",
-      "subjectLabels": [
-        "A",
-        "B"
-      ],
-      "cardSerials": [
-        "00000011",
-        "00000012"
-      ],
-      "guidePath": "/learn/choosing-where-a-root-lives/",
-      "runPlace": "RUN_PLACE_WORKSTATION"
-    },
-    {
-      "id": "20240120T142000Z-intermediate-add",
-      "kind": "CEREMONY_KIND_ADD_DELEGATED_KEY",
-      "title": "Bound the release subkey acme-release",
-      "summary": "The OpenPGP primary of acme bound a signing subkey made in a cloud KMS key for the release workflow. The key has exactly one signer.",
-      "completedAt": "2024-01-20T14:20:00Z",
-      "outcome": "CEREMONY_OUTCOME_DONE",
-      "previousId": "20231209T142000Z-intermediate-add",
-      "recordSha256": "60030123456789abcdef0123456789abcdef0123456789abcdef0123456789ab",
-      "previousRecordSha256": "60020123456789abcdef0123456789abcdef0123456789abcdef0123456789ab",
-      "planDigest": "421602a20123456789abcdef0123456789abcdef0123456789abcdefdeadbeef",
-      "subjectLabels": [
-        "A",
-        "acme-release"
-      ],
-      "cardSerials": [
-        "00000011"
-      ],
+      "id": "20240610T100000Z-apply-a8f19d34",
+      "command": "CEREMONY_COMMAND_APPLY",
+      "state": "CEREMONY_STATE_RECORDED",
+      "title": "Root list made again",
+      "summary": "The yearly rhythm made the root list and the other trust files again. Trust set 3 replaces the one before it.",
+      "plannedAt": "2024-06-10T10:00:00Z",
+      "ranOn": "RUN_PLACE_WORKSTATION",
+      "outcome": "CEREMONY_OUTCOME_COMPLETED",
+      "planSha256": "a8f19d34a8f19d34a8f19d34a8f19d34a8f19d34a8f19d34a8f19d34a8f19d34",
+      "startedAt": "2024-06-10T10:02:00Z",
+      "finishedAt": "2024-06-10T10:20:00Z",
+      "recordSha256": "2c3d4e5f2c3d4e5f2c3d4e5f2c3d4e5f2c3d4e5f2c3d4e5f2c3d4e5f2c3d4e5f",
+      "prevRecordSha256": "1b2c3d4e1b2c3d4e1b2c3d4e1b2c3d4e1b2c3d4e1b2c3d4e1b2c3d4e1b2c3d4e",
       "trustSequence": 3,
-      "guidePath": "/learn/chain-openpgp/",
-      "runPlace": "RUN_PLACE_WORKSTATION"
+      "trustSetName": "3-a8f19d34",
+      "applied": [
+        {
+          "object": {
+            "kind": "OBJECT_KIND_TRUST_SET",
+            "id": "3-a8f19d34",
+            "label": "3-a8f19d34"
+          },
+          "kind": "CHANGE_KIND_RENEW",
+          "text": "Renew trust set 3-a8f19d34"
+        }
+      ],
+      "cards": [
+        "root-b"
+      ],
+      "signatureCount": 2,
+      "touchCount": 2,
+      "guidePath": "/design/#a-ceremony"
     },
     {
-      "id": "20231209T142000Z-intermediate-add",
-      "kind": "CEREMONY_KIND_ADD_DELEGATED_KEY",
-      "title": "Certified acme-ca for the requester acme-gateway",
-      "summary": "The requester acme-gateway sent a request for an intermediate. All checks passed, acme/A certified it for 13 months, and the trust files were rebuilt.",
-      "completedAt": "2023-12-09T14:20:00Z",
-      "outcome": "CEREMONY_OUTCOME_DONE",
-      "previousId": "20231202T142000Z-init",
-      "recordSha256": "60020123456789abcdef0123456789abcdef0123456789abcdef0123456789ab",
-      "previousRecordSha256": "60010123456789abcdef0123456789abcdef0123456789abcdef0123456789ab",
-      "planDigest": "411301a10123456789abcdef0123456789abcdef0123456789abcdefdeadbeef",
-      "subjectLabels": [
-        "A",
-        "acme-ca"
-      ],
-      "cardSerials": [
-        "00000011"
-      ],
+      "id": "20231211T100000Z-apply-c04d2e71",
+      "command": "CEREMONY_COMMAND_APPLY",
+      "state": "CEREMONY_STATE_RECORDED",
+      "title": "Certified acme-ca and acme-release",
+      "summary": "The first intermediate certificate and the first subkey binding were signed. The ceremony wrote trust set 2.",
+      "plannedAt": "2023-12-11T10:00:00Z",
+      "ranOn": "RUN_PLACE_WORKSTATION",
+      "outcome": "CEREMONY_OUTCOME_COMPLETED",
+      "planSha256": "c04d2e71c04d2e71c04d2e71c04d2e71c04d2e71c04d2e71c04d2e71c04d2e71",
+      "startedAt": "2023-12-11T10:02:00Z",
+      "finishedAt": "2023-12-11T10:20:00Z",
+      "recordSha256": "1b2c3d4e1b2c3d4e1b2c3d4e1b2c3d4e1b2c3d4e1b2c3d4e1b2c3d4e1b2c3d4e",
+      "prevRecordSha256": "0a1b2c3d0a1b2c3d0a1b2c3d0a1b2c3d0a1b2c3d0a1b2c3d0a1b2c3d0a1b2c3d",
       "trustSequence": 2,
-      "guidePath": "/reference/hand-off-contract/",
-      "runPlace": "RUN_PLACE_WORKSTATION"
+      "trustSetName": "2-c04d2e71",
+      "applied": [
+        {
+          "object": {
+            "kind": "OBJECT_KIND_DELEGATION",
+            "id": "acme-ca",
+            "label": "acme-ca"
+          },
+          "kind": "CHANGE_KIND_ISSUE",
+          "text": "Certify acme-ca"
+        },
+        {
+          "object": {
+            "kind": "OBJECT_KIND_DELEGATION",
+            "id": "acme-release",
+            "label": "acme-release"
+          },
+          "kind": "CHANGE_KIND_ISSUE",
+          "text": "Certify acme-release"
+        }
+      ],
+      "cards": [
+        "root-a"
+      ],
+      "signatureCount": 4,
+      "touchCount": 4,
+      "guidePath": "/design/#a-ceremony"
     },
     {
-      "id": "20231202T142000Z-init",
-      "kind": "CEREMONY_KIND_INIT",
-      "title": "Created the roots acme/A and acme/B on two root cards",
-      "summary": "The X.509 root, the OpenPGP primary and the break-glass SSH CA key of acme/A were born on root card A, and those of acme/B on root card B, in row 2 of the layout. Each key has PIN always and touch always. The first trust files were written. It ran in the offline system, from the ceremony stick.",
-      "completedAt": "2023-12-02T14:20:00Z",
-      "outcome": "CEREMONY_OUTCOME_DONE",
-      "recordSha256": "60010123456789abcdef0123456789abcdef0123456789abcdef0123456789ab",
-      "planDigest": "401000a00123456789abcdef0123456789abcdef0123456789abcdefdeadbeef",
-      "subjectLabels": [
-        "A",
-        "B"
-      ],
-      "cardSerials": [
-        "00000011",
-        "00000012"
-      ],
+      "id": "20231204T100000Z-apply-5b1e7a90",
+      "command": "CEREMONY_COMMAND_APPLY",
+      "state": "CEREMONY_STATE_RECORDED",
+      "title": "First apply: keys A and B for the three roots",
+      "summary": "The first apply made keys A and B for the X.509, OpenPGP and SSH CA roots, with both root cards. It wrote trust set 1.",
+      "plannedAt": "2023-12-04T10:00:00Z",
+      "ranOn": "RUN_PLACE_WORKSTATION",
+      "outcome": "CEREMONY_OUTCOME_COMPLETED",
+      "planSha256": "5b1e7a905b1e7a905b1e7a905b1e7a905b1e7a905b1e7a905b1e7a905b1e7a90",
+      "startedAt": "2023-12-04T10:02:00Z",
+      "finishedAt": "2023-12-04T10:20:00Z",
+      "recordSha256": "0a1b2c3d0a1b2c3d0a1b2c3d0a1b2c3d0a1b2c3d0a1b2c3d0a1b2c3d0a1b2c3d",
       "trustSequence": 1,
-      "guidePath": "/learn/choosing-where-a-root-lives/",
-      "runPlace": "RUN_PLACE_OFFLINE_SYSTEM"
+      "trustSetName": "1-5b1e7a90",
+      "applied": [
+        {
+          "object": {
+            "kind": "OBJECT_KIND_KEY",
+            "id": "3a1f9c023a1f9c023a1f9c023a1f9c023a1f9c023a1f9c023a1f9c023a1f9c02",
+            "label": "key A of acme-tls"
+          },
+          "kind": "CHANGE_KIND_BIRTH",
+          "text": "Make key A of acme-tls"
+        },
+        {
+          "object": {
+            "kind": "OBJECT_KIND_KEY",
+            "id": "5be4d8715be4d8715be4d8715be4d8715be4d8715be4d8715be4d8715be4d871",
+            "label": "key B of acme-tls"
+          },
+          "kind": "CHANGE_KIND_BIRTH",
+          "text": "Make key B of acme-tls"
+        },
+        {
+          "object": {
+            "kind": "OBJECT_KIND_KEY",
+            "id": "7D440B197D440B197D440B197D440B197D440B19",
+            "label": "key A of acme-release"
+          },
+          "kind": "CHANGE_KIND_BIRTH",
+          "text": "Make key A of acme-release"
+        },
+        {
+          "object": {
+            "kind": "OBJECT_KIND_KEY",
+            "id": "90C311F790C311F790C311F790C311F790C311F7",
+            "label": "key B of acme-release"
+          },
+          "kind": "CHANGE_KIND_BIRTH",
+          "text": "Make key B of acme-release"
+        },
+        {
+          "object": {
+            "kind": "OBJECT_KIND_KEY",
+            "id": "c21055aec21055aec21055aec21055aec21055aec21055aec21055aec21055ae",
+            "label": "key A of acme-ssh"
+          },
+          "kind": "CHANGE_KIND_BIRTH",
+          "text": "Make key A of acme-ssh"
+        },
+        {
+          "object": {
+            "kind": "OBJECT_KIND_KEY",
+            "id": "e6d3a920e6d3a920e6d3a920e6d3a920e6d3a920e6d3a920e6d3a920e6d3a920",
+            "label": "key B of acme-ssh"
+          },
+          "kind": "CHANGE_KIND_BIRTH",
+          "text": "Make key B of acme-ssh"
+        }
+      ],
+      "cards": [
+        "root-a",
+        "root-b"
+      ],
+      "signatureCount": 12,
+      "touchCount": 12,
+      "guidePath": "/design/#a-ceremony"
     }
-  ]
+  ],
+  "readAt": "2026-11-24T09:00:00Z"
 }

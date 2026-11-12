@@ -1,0 +1,216 @@
+{
+  "readAt": "2026-11-24T09:00:00Z",
+  "roots": [
+    {
+      "name": "globex-tls",
+      "kind": "KEY_KIND_X509",
+      "keyIds": [
+        "3001a0b13001a0b13001a0b13001a0b13001a0b13001a0b13001a0b13001a0b1"
+      ],
+      "adopted": true,
+      "wantedPath": "want/roots/globex-tls.yaml",
+      "createdAt": "2026-09-15T13:00:00Z"
+    },
+    {
+      "name": "globex-release",
+      "kind": "KEY_KIND_OPENPGP",
+      "keyIds": [
+        "3002C2D33002C2D33002C2D33002C2D33002C2D3"
+      ],
+      "adopted": true,
+      "wantedPath": "want/roots/globex-release.yaml",
+      "createdAt": "2026-09-15T13:00:00Z"
+    },
+    {
+      "name": "globex-ssh",
+      "kind": "KEY_KIND_SSH_CA",
+      "keyIds": [
+        "3003e4f53003e4f53003e4f53003e4f53003e4f53003e4f53003e4f53003e4f5"
+      ],
+      "adopted": true,
+      "wantedPath": "want/roots/globex-ssh.yaml",
+      "createdAt": "2026-09-15T13:00:00Z"
+    }
+  ],
+  "keys": [
+    {
+      "fingerprint": "3001a0b13001a0b13001a0b13001a0b13001a0b13001a0b13001a0b13001a0b1",
+      "label": "A",
+      "role": "KEY_ROLE_ROOT_KEY",
+      "kind": "KEY_KIND_X509",
+      "root": "globex-tls",
+      "state": "KEY_STATE_ACTIVE",
+      "algorithm": "ecdsa-p384",
+      "place": {
+        "store": "STORE_AWS_KMS",
+        "keyRef": "arn:aws:kms:eu-west-1:123456789012:key/mrk-00000000000000000000000000000001",
+        "region": "eu-west-1",
+        "replicaRegion": "eu-central-1",
+        "replicaRef": "arn:aws:kms:eu-central-1:123456789012:key/mrk-00000000000000000000000000000001"
+      },
+      "createdAt": "2026-09-15T13:00:00Z",
+      "revokeCommand": "ritueel revoke globex/A --reason REASON",
+      "expiresAt": "2029-10-20T13:00:00Z",
+      "touchedBy": [
+        {
+          "id": "20260915T130000Z-apply-b6d2f0a9",
+          "at": "2026-09-15T13:00:00Z",
+          "command": "CEREMONY_COMMAND_APPLY"
+        }
+      ]
+    },
+    {
+      "fingerprint": "d5e6f708d5e6f708d5e6f708d5e6f708d5e6f708d5e6f708d5e6f708d5e6f708",
+      "role": "KEY_ROLE_DELEGATED_KEY",
+      "kind": "KEY_KIND_X509",
+      "root": "globex-tls",
+      "delegation": "globex-ca",
+      "state": "KEY_STATE_ACTIVE",
+      "algorithm": "ecdsa-p384",
+      "place": {
+        "store": "STORE_AWS_KMS",
+        "keyRef": "arn:aws:kms:eu-west-1:111122223333:key/5c4d3e2f-1a0b-4987-8765-43210fedcba9",
+        "region": "eu-west-1"
+      },
+      "createdAt": "2026-10-15T09:00:00Z",
+      "expiresAt": "2027-11-20T13:00:00Z",
+      "revokeCommand": "ritueel revoke globex-ca --reason REASON"
+    },
+    {
+      "fingerprint": "3002C2D33002C2D33002C2D33002C2D33002C2D3",
+      "label": "A",
+      "role": "KEY_ROLE_ROOT_KEY",
+      "kind": "KEY_KIND_OPENPGP",
+      "root": "globex-release",
+      "state": "KEY_STATE_ACTIVE",
+      "algorithm": "ecdsa-p384",
+      "place": {
+        "store": "STORE_AWS_KMS",
+        "keyRef": "arn:aws:kms:eu-west-1:123456789012:key/mrk-00000000000000000000000000000002",
+        "region": "eu-west-1",
+        "replicaRegion": "eu-central-1",
+        "replicaRef": "arn:aws:kms:eu-central-1:123456789012:key/mrk-00000000000000000000000000000002"
+      },
+      "createdAt": "2026-09-15T13:00:00Z",
+      "revokeCommand": "ritueel revoke globex/A --reason REASON",
+      "expiresAt": "2029-10-20T13:00:00Z",
+      "touchedBy": [
+        {
+          "id": "20260915T130000Z-apply-b6d2f0a9",
+          "at": "2026-09-15T13:00:00Z",
+          "command": "CEREMONY_COMMAND_APPLY"
+        }
+      ]
+    },
+    {
+      "fingerprint": "3003e4f53003e4f53003e4f53003e4f53003e4f53003e4f53003e4f53003e4f5",
+      "label": "A",
+      "role": "KEY_ROLE_ROOT_KEY",
+      "kind": "KEY_KIND_SSH_CA",
+      "root": "globex-ssh",
+      "state": "KEY_STATE_ACTIVE",
+      "algorithm": "ecdsa-p384",
+      "place": {
+        "store": "STORE_AWS_KMS",
+        "keyRef": "arn:aws:kms:eu-west-1:123456789012:key/mrk-00000000000000000000000000000003",
+        "region": "eu-west-1",
+        "replicaRegion": "eu-central-1",
+        "replicaRef": "arn:aws:kms:eu-central-1:123456789012:key/mrk-00000000000000000000000000000003"
+      },
+      "createdAt": "2026-09-15T13:00:00Z",
+      "revokeCommand": "ritueel revoke globex/A --reason REASON",
+      "touchedBy": [
+        {
+          "id": "20260915T130000Z-apply-b6d2f0a9",
+          "at": "2026-09-15T13:00:00Z",
+          "command": "CEREMONY_COMMAND_APPLY"
+        }
+      ]
+    }
+  ],
+  "userIds": [
+    {
+      "id": "uid-A-1",
+      "key": "3002C2D33002C2D33002C2D33002C2D33002C2D3",
+      "text": "Globex Release Root A <release@globex.example>",
+      "primary": true,
+      "createdAt": "2026-10-20T13:00:00Z",
+      "certified": true
+    }
+  ],
+  "delegations": [
+    {
+      "name": "globex-ca",
+      "type": "DELEGATION_TYPE_X509_INTERMEDIATE",
+      "root": "globex-tls",
+      "key": "d5e6f708d5e6f708d5e6f708d5e6f708d5e6f708d5e6f708d5e6f708d5e6f708",
+      "requester": "Globex platform team",
+      "limits": [
+        "permitted URI hosts: globex.example"
+      ],
+      "wantedPath": "want/delegations/globex-ca.yaml",
+      "certification": "cert-3",
+      "touchedBy": [
+        {
+          "id": "20261020T130000Z-apply-48c7e1d3",
+          "at": "2026-10-20T13:00:00Z",
+          "command": "CEREMONY_COMMAND_APPLY"
+        }
+      ]
+    }
+  ],
+  "certifications": [
+    {
+      "id": "cert-1",
+      "kind": "CERTIFICATION_KIND_ROOT_CERTIFICATE",
+      "issuer": "3001a0b13001a0b13001a0b13001a0b13001a0b13001a0b13001a0b13001a0b1",
+      "subject": {
+        "kind": "OBJECT_KIND_KEY",
+        "id": "3001a0b13001a0b13001a0b13001a0b13001a0b13001a0b13001a0b13001a0b1",
+        "label": "key A of globex-tls"
+      },
+      "validFrom": "2026-10-20T13:00:00Z",
+      "validUntil": "2029-10-20T13:00:00Z",
+      "ceremonyId": "20261020T130000Z-apply-48c7e1d3"
+    },
+    {
+      "id": "cert-2",
+      "kind": "CERTIFICATION_KIND_PRIMARY_SELF_SIGNATURE",
+      "issuer": "3002C2D33002C2D33002C2D33002C2D33002C2D3",
+      "subject": {
+        "kind": "OBJECT_KIND_USER_ID",
+        "id": "uid-A-1",
+        "label": "Globex Release Root A <release@globex.example>"
+      },
+      "validFrom": "2026-10-20T13:00:00Z",
+      "validUntil": "2029-10-20T13:00:00Z",
+      "ceremonyId": "20261020T130000Z-apply-48c7e1d3"
+    },
+    {
+      "id": "cert-3",
+      "kind": "CERTIFICATION_KIND_INTERMEDIATE_CERTIFICATE",
+      "issuer": "3001a0b13001a0b13001a0b13001a0b13001a0b13001a0b13001a0b13001a0b1",
+      "subject": {
+        "kind": "OBJECT_KIND_DELEGATION",
+        "id": "globex-ca",
+        "label": "globex-ca"
+      },
+      "validFrom": "2026-10-20T13:00:00Z",
+      "validUntil": "2027-11-20T13:00:00Z",
+      "ceremonyId": "20261020T130000Z-apply-48c7e1d3"
+    }
+  ],
+  "requests": [
+    {
+      "stem": "globex-ca-2027",
+      "delegation": "globex-ca",
+      "type": "DELEGATION_TYPE_X509_INTERMEDIATE",
+      "key": "d5e6f708d5e6f708d5e6f708d5e6f708d5e6f708d5e6f708d5e6f708d5e6f708",
+      "outcome": "REQUEST_OUTCOME_ISSUED",
+      "answeredAt": "2026-10-20T13:00:00Z",
+      "ceremonyId": "20261020T130000Z-apply-48c7e1d3",
+      "path": "requests/globex-ca-2027/",
+      "answerPath": "requests/globex-ca-2027/globex-ca-2027.result.json"
+    }
+  ]
+}
