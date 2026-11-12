@@ -342,7 +342,7 @@
                   "command": "CEREMONY_COMMAND_APPLY",
                   "state": "CEREMONY_STATE_PLANNED",
                   "title": "Certify the new user ID with keys A, B and C",
-                  "summary": "Three changes are in the plan. The renewal of acme-release is left out, because its request is missing.",
+                  "summary": "Three changes are in the plan. Cards A and B also extend their own keys. The renewal of acme-release is left out, because its request is missing.",
                   "plannedAt": "2026-11-24T10:04:00Z",
                   "ranOn": "RUN_PLACE_WORKSTATION",
                   "planSha256": "7d41e9b37d41e9b37d41e9b37d41e9b37d41e9b37d41e9b37d41e9b37d41e9b3",
@@ -393,7 +393,7 @@
                     "root-a",
                     "root-b"
                   ],
-                  "signatureCount": 3,
+                  "signatureCount": 7,
                   "touchCount": 2,
                   "guidePath": "/design/#a-ceremony"
                 }
@@ -591,7 +591,7 @@
                   "command": "CEREMONY_COMMAND_APPLY",
                   "state": "CEREMONY_STATE_STARTED",
                   "title": "Certify the new user ID with keys A, B and C",
-                  "summary": "Three changes are in the plan. The renewal of acme-release is left out, because its request is missing.",
+                  "summary": "Three changes are in the plan. Cards A and B also extend their own keys. The renewal of acme-release is left out, because its request is missing.",
                   "plannedAt": "2026-11-24T10:04:00Z",
                   "ranOn": "RUN_PLACE_WORKSTATION",
                   "planSha256": "7d41e9b37d41e9b37d41e9b37d41e9b37d41e9b37d41e9b37d41e9b37d41e9b3",
@@ -642,7 +642,7 @@
                     "root-a",
                     "root-b"
                   ],
-                  "signatureCount": 3,
+                  "signatureCount": 7,
                   "touchCount": 2,
                   "guidePath": "/design/#a-ceremony",
                   "startedAt": "2026-11-24T10:06:00Z",
@@ -743,8 +743,13 @@
                     "card": "root-a",
                     "slot": "82"
                   },
-                  "expiresAt": "2028-12-23T10:00:00Z",
+                  "expiresAt": "2029-11-24T11:08:00Z",
                   "touchedBy": [
+                    {
+                      "id": "20261124T100400Z-apply-7d41e9b3",
+                      "at": "2026-11-24T10:04:00Z",
+                      "command": "CEREMONY_COMMAND_APPLY"
+                    },
                     {
                       "id": "20231204T100000Z-apply-5b1e7a90",
                       "at": "2023-12-04T10:00:00Z",
@@ -767,8 +772,13 @@
                     "card": "root-b",
                     "slot": "82"
                   },
-                  "expiresAt": "2029-11-20T10:00:00Z",
+                  "expiresAt": "2029-11-24T11:08:00Z",
                   "touchedBy": [
+                    {
+                      "id": "20261124T100400Z-apply-7d41e9b3",
+                      "at": "2026-11-24T10:04:00Z",
+                      "command": "CEREMONY_COMMAND_APPLY"
+                    },
                     {
                       "id": "20231204T100000Z-apply-5b1e7a90",
                       "at": "2023-12-04T10:00:00Z",
@@ -834,7 +844,7 @@
                     "card": "root-a",
                     "slot": "83"
                   },
-                  "expiresAt": "2028-12-23T10:00:00Z",
+                  "expiresAt": "2029-11-24T11:08:00Z",
                   "touchedBy": [
                     {
                       "id": "20261124T100400Z-apply-7d41e9b3",
@@ -863,7 +873,7 @@
                     "card": "root-b",
                     "slot": "83"
                   },
-                  "expiresAt": "2029-11-20T10:00:00Z",
+                  "expiresAt": "2029-11-24T11:08:00Z",
                   "touchedBy": [
                     {
                       "id": "20261124T100400Z-apply-7d41e9b3",
@@ -1056,7 +1066,7 @@
                     "label": "Example Release Security <security@example.com>"
                   },
                   "validFrom": "2026-11-24T11:08:00Z",
-                  "validUntil": "2028-12-23T10:00:00Z",
+                  "validUntil": "2029-11-24T11:08:00Z",
                   "ceremonyId": "20261124T100400Z-apply-7d41e9b3",
                   "touchedBy": [
                     {
@@ -1076,7 +1086,7 @@
                     "label": "Example Release Security <security@example.com>"
                   },
                   "validFrom": "2026-11-24T11:08:00Z",
-                  "validUntil": "2029-11-20T10:00:00Z",
+                  "validUntil": "2029-11-24T11:08:00Z",
                   "ceremonyId": "20261124T100400Z-apply-7d41e9b3",
                   "touchedBy": [
                     {
@@ -1097,6 +1107,86 @@
                   },
                   "validFrom": "2026-11-24T11:08:00Z",
                   "validUntil": "2028-03-18T10:00:00Z",
+                  "ceremonyId": "20261124T100400Z-apply-7d41e9b3",
+                  "touchedBy": [
+                    {
+                      "id": "20261124T100400Z-apply-7d41e9b3",
+                      "at": "2026-11-24T10:04:00Z",
+                      "command": "CEREMONY_COMMAND_APPLY"
+                    }
+                  ]
+                },
+                {
+                  "id": "cert-12",
+                  "kind": "CERTIFICATION_KIND_ROOT_CERTIFICATE",
+                  "issuer": "3a1f9c023a1f9c023a1f9c023a1f9c023a1f9c023a1f9c023a1f9c023a1f9c02",
+                  "subject": {
+                    "kind": "OBJECT_KIND_KEY",
+                    "id": "3a1f9c023a1f9c023a1f9c023a1f9c023a1f9c023a1f9c023a1f9c023a1f9c02",
+                    "label": "key A of acme-tls"
+                  },
+                  "validFrom": "2026-11-24T11:08:00Z",
+                  "validUntil": "2029-11-24T11:08:00Z",
+                  "ceremonyId": "20261124T100400Z-apply-7d41e9b3",
+                  "touchedBy": [
+                    {
+                      "id": "20261124T100400Z-apply-7d41e9b3",
+                      "at": "2026-11-24T10:04:00Z",
+                      "command": "CEREMONY_COMMAND_APPLY"
+                    }
+                  ]
+                },
+                {
+                  "id": "cert-13",
+                  "kind": "CERTIFICATION_KIND_ROOT_CERTIFICATE",
+                  "issuer": "5be4d8715be4d8715be4d8715be4d8715be4d8715be4d8715be4d8715be4d871",
+                  "subject": {
+                    "kind": "OBJECT_KIND_KEY",
+                    "id": "5be4d8715be4d8715be4d8715be4d8715be4d8715be4d8715be4d8715be4d871",
+                    "label": "key B of acme-tls"
+                  },
+                  "validFrom": "2026-11-24T11:08:00Z",
+                  "validUntil": "2029-11-24T11:08:00Z",
+                  "ceremonyId": "20261124T100400Z-apply-7d41e9b3",
+                  "touchedBy": [
+                    {
+                      "id": "20261124T100400Z-apply-7d41e9b3",
+                      "at": "2026-11-24T10:04:00Z",
+                      "command": "CEREMONY_COMMAND_APPLY"
+                    }
+                  ]
+                },
+                {
+                  "id": "cert-14",
+                  "kind": "CERTIFICATION_KIND_PRIMARY_SELF_SIGNATURE",
+                  "issuer": "7D440B197D440B197D440B197D440B197D440B19",
+                  "subject": {
+                    "kind": "OBJECT_KIND_USER_ID",
+                    "id": "uid-A-1",
+                    "label": "Example Release Root A <release@example.com>"
+                  },
+                  "validFrom": "2026-11-24T11:08:00Z",
+                  "validUntil": "2029-11-24T11:08:00Z",
+                  "ceremonyId": "20261124T100400Z-apply-7d41e9b3",
+                  "touchedBy": [
+                    {
+                      "id": "20261124T100400Z-apply-7d41e9b3",
+                      "at": "2026-11-24T10:04:00Z",
+                      "command": "CEREMONY_COMMAND_APPLY"
+                    }
+                  ]
+                },
+                {
+                  "id": "cert-15",
+                  "kind": "CERTIFICATION_KIND_PRIMARY_SELF_SIGNATURE",
+                  "issuer": "90C311F790C311F790C311F790C311F790C311F7",
+                  "subject": {
+                    "kind": "OBJECT_KIND_USER_ID",
+                    "id": "uid-B-1",
+                    "label": "Example Release Root B <release@example.com>"
+                  },
+                  "validFrom": "2026-11-24T11:08:00Z",
+                  "validUntil": "2029-11-24T11:08:00Z",
                   "ceremonyId": "20261124T100400Z-apply-7d41e9b3",
                   "touchedBy": [
                     {
@@ -1170,7 +1260,7 @@
                   "command": "CEREMONY_COMMAND_APPLY",
                   "state": "CEREMONY_STATE_RECORDED",
                   "title": "Certified the new user ID with keys A, B and C",
-                  "summary": "The ceremony certified the new user ID with keys A, B and C and wrote trust set 14. The renewal of acme-release was left out, because its request is missing.",
+                  "summary": "The ceremony certified the new user ID with keys A, B and C and wrote trust set 14. Cards A and B extended their own keys. The renewal of acme-release was left out, because its request is missing.",
                   "plannedAt": "2026-11-24T10:04:00Z",
                   "ranOn": "RUN_PLACE_WORKSTATION",
                   "planSha256": "7d41e9b37d41e9b37d41e9b37d41e9b37d41e9b37d41e9b37d41e9b37d41e9b3",
@@ -1221,7 +1311,7 @@
                     "root-a",
                     "root-b"
                   ],
-                  "signatureCount": 3,
+                  "signatureCount": 7,
                   "touchCount": 2,
                   "guidePath": "/design/#a-ceremony",
                   "outcome": "CEREMONY_OUTCOME_COMPLETED",
@@ -1265,7 +1355,7 @@
                   "path": "trust/14-7d41e9b3/ca-bundle.pem",
                   "trustSequence": 14,
                   "builtAt": "2026-11-24T11:08:00Z",
-                  "validUntil": "2029-11-20T00:00:00Z",
+                  "validUntil": "2029-11-24T00:00:00Z",
                   "checkResult": "TRUST_CHECK_RESULT_PASSED",
                   "checkDetail": "The bundle holds the three X.509 root certificates and matches the root list.",
                   "sha256": "4b7f20d64b7f20d64b7f20d64b7f20d64b7f20d64b7f20d64b7f20d64b7f20d6",

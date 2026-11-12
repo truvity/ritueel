@@ -11,7 +11,7 @@ export function DemoLede() {
   return (
     <div className="grid gap-x-6 gap-y-1 text-[0.9375rem] min-[1440px]:grid-cols-2">
       <p className="max-w-[56ch]">
-        ritueel helps you keep a root, what others trust. A root is built from keys. This page shows what is not applied yet, where every key is, what happened and the
+        ritueel helps you keep a root that others trust. A root is built from keys. This page shows what is not applied yet, where every key is, what happened and the
         trust set.
       </p>
       <p className="max-w-[56ch]">
