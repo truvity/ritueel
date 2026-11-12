@@ -1,46 +1,61 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useRef, type ReactNode } from 'react';
 import { useColorScheme } from '@mui/material/styles';
-import Menu from '@mui/material/Menu';
-import MenuItem from '@mui/material/MenuItem';
 import ToggleButton from '@mui/material/ToggleButton';
 import ToggleButtonGroup from '@mui/material/ToggleButtonGroup';
+import { Severity } from '../gen/ritueel/local/v1alpha1/common_pb';
+import type { GetSummaryResponse } from '../gen/ritueel/local/v1alpha1/inspect_service_pb';
 import { isDemo } from '../api/client';
-import { DEMO_BUNDLES, VIEW_STATES, setBundle, setViewState, useBundle, useViewState } from '../api/demoState';
 import { useSummary } from '../api/hooks';
-import { plural, ymd } from '../lib/format';
+import { CAPS } from '../lib/caps';
+import { plural } from '../lib/format';
 import { href, routeTitle, siteUrl, type Route } from '../lib/route';
+import { DemoBar } from './DemoBar';
+import { ReadTime } from './ReadTime';
 import { T } from './T';
 import { ToastProvider } from './Toast';
-import { CAPS } from '../lib/caps';
 
-type NavKey = 'start' | 'findings' | 'roots' | 'cards' | 'history' | 'trust' | 'plan';
+// The frame: four entries, in this order. To do is the home entry.
+//   To do      #/todo, #/todo/findings   the count of changes not applied yet
+//   Inventory  #/inventory/...
+//   History    #/history[/<ceremony>]
+//   Trust set  #/trust                   the number of the newest set
+// From 1024 px the entries stand in a sidebar; below that, in a bar at the
+// bottom with four equal tabs. There is no menu.
+
+type NavKey = 'todo' | 'inventory' | 'history' | 'trust';
 
 const NAV: { key: NavKey; label: string; href: string }[] = [
-  { key: 'start', label: 'Start', href: href.start() },
-  { key: 'findings', label: 'Findings', href: href.findings() },
-  { key: 'roots', label: 'Roots', href: href.roots() },
-  { key: 'cards', label: 'Cards', href: href.cards() },
+  { key: 'todo', label: 'To do', href: href.todo() },
+  { key: 'inventory', label: 'Inventory', href: href.inventory() },
   { key: 'history', label: 'History', href: href.history() },
-  { key: 'trust', label: 'Trust files', href: href.trust() },
-  { key: 'plan', label: 'Make a plan', href: href.plan() },
+  { key: 'trust', label: 'Trust set', href: href.trust() },
 ];
 
-const MAIN_TABS: NavKey[] = ['start', 'findings', 'roots', 'cards'];
-const MORE: NavKey[] = ['history', 'trust', 'plan'];
-
 function navKeyOf(r: Route): NavKey | undefined {
+  return r.name === 'notfound' ? undefined : r.name;
+}
+
+/**
+ * A change of screen moves the focus to the heading and scrolls to the top. A
+ * change inside one screen does not: the other tab of To do, the other object
+ * of an Inventory view, the other ceremony of History. The focus rules of those
+ * screens apply (the table and the panel own them).
+ */
+function screenKey(r: Route): string {
   switch (r.name) {
-    case 'key':
-      return 'roots';
-    case 'notfound':
-      return undefined;
+    case 'todo':
+      return 'todo';
+    case 'inventory':
+      return `inventory:${r.view}`;
+    case 'history':
+      return 'history';
     default:
-      return r.name;
+      return JSON.stringify(r);
   }
 }
 
 function Mark({ size = 22 }: { size?: number }) {
-  // Four slots: used, empty, reserved, spare. The shapes of the cards screen.
+  // Four slots: used, empty, reserved, spare. The shapes of the slot grid.
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden focusable={false}>
       <rect x="1.5" y="1.5" width="9" height="9" fill="currentColor" />
@@ -72,114 +87,67 @@ function SchemeSwitch() {
   );
 }
 
-/** Demo mode only. Lets a visitor see the four states of every screen. */
-function StateSwitch() {
-  const view = useViewState();
-  return (
-    <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-      <span id="state-switch-label" className="text-sm font-semibold">
-        Page state
-      </span>
-      <ToggleButtonGroup
-        exclusive
-        size="small"
-        value={view}
-        onChange={(_e, value) => value && setViewState(value)}
-        aria-labelledby="state-switch-label"
-        sx={{ '& .MuiToggleButton-root': { minHeight: { xs: 44, lg: 34 }, fontSize: '0.8125rem', paddingInline: '0.7rem' } }}
-      >
-        {VIEW_STATES.map((s) => (
-          <ToggleButton key={s.value} value={s.value} title={s.hint}>
-            {s.label}
-          </ToggleButton>
-        ))}
-      </ToggleButtonGroup>
-    </div>
-  );
+/** The counts of the entries, from the summary. Undefined while it is not read. */
+function countsOf(s: GetSummaryResponse | undefined) {
+  if (!s) return undefined;
+  const changes = (s.changes?.ready ?? 0) + (s.changes?.waits ?? 0);
+  const urgent = s.findingCounts.filter((c) => c.severity >= Severity.ALERT).reduce((n, c) => n + c.count, 0);
+  return { changes, urgent, trust: s.trustSequence };
 }
 
-/** Demo mode only. Chooses which example bundle the demo answers for; the contract has no call that names or selects a bundle, so the real page has no such switch. */
-function BundleSwitch() {
-  const bundle = useBundle();
-  return (
-    <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-      <span id="bundle-switch-label" className="text-sm font-semibold">
-        Example bundle
-      </span>
-      <ToggleButtonGroup
-        exclusive
-        size="small"
-        value={bundle}
-        onChange={(_e, value) => value && setBundle(value)}
-        aria-labelledby="bundle-switch-label"
-        sx={{ '& .MuiToggleButton-root': { minHeight: { xs: 44, lg: 34 }, fontSize: '0.8125rem', paddingInline: '0.7rem' } }}
-      >
-        {DEMO_BUNDLES.map((b) => (
-          <ToggleButton key={b.value} value={b.value} title={b.hint}>
-            {b.label}
-          </ToggleButton>
-        ))}
-      </ToggleButtonGroup>
-    </div>
-  );
-}
-
-/**
- * The calm mark that this is a demo: on every screen, in words, with the way
- * back to the site. It only exists in the demo build.
- */
-function DemoBar() {
-  return (
-    <div role="region" aria-label="This is a demo" data-print="hide" className="z-40 border-b border-rule bg-sunk lg:sticky lg:top-0">
-      <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-1 px-4 py-1.5 lg:min-h-12">
-        <p className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-0 text-sm">
-          <span className="border border-rule bg-panel px-1.5 font-mono text-xs font-bold tracking-wider">DEMO</span>
-          <span>The data is made up, and ritueel is still in design. Nothing here acts.</span>
-          {/* Below lg the way back is the DEMO mark in the header under this bar and the link in the footer; dropping the third line here
-              (44 px) keeps the first screen of a phone for the Start-here links. */}
-          <a className="hidden items-center font-semibold text-accent underline underline-offset-4 lg:inline-flex" href={siteUrl()}>
-            Back to ritueel.id
-          </a>
-        </p>
-        <div className="flex flex-wrap items-center gap-x-6 gap-y-1">
-          <BundleSwitch />
-          <StateSwitch />
-        </div>
-      </div>
-    </div>
-  );
+/** The text a screen reader says for the count of To do. */
+function todoName(changes: number, urgent: number): string {
+  const c = `${plural(changes, 'change')} not applied yet`;
+  return urgent > 0 ? `${c}, ${urgent} ${urgent === 1 ? 'finding needs' : 'findings need'} you` : c;
 }
 
 export function Shell({ route, children }: { route: Route; children: ReactNode }) {
   const summary = useSummary();
-  const total = summary.state === 'ready' ? summary.data.findingCounts.reduce((n, c) => n + c.count, 0) : undefined;
-  const urgent = summary.state === 'ready' ? summary.data.findingCounts.filter((c) => c.severity >= 3).reduce((n, c) => n + c.count, 0) : 0;
+  const data = summary.state === 'ready' ? summary.data : undefined;
+  const counts = countsOf(data);
   const active = navKeyOf(route);
-  const [more, setMore] = useState<HTMLElement | null>(null);
 
   // On a change of screen: a title for the tab, back to the top, and focus on
   // the heading, so a keyboard or screen-reader user starts at the new page.
   const first = useRef(true);
-  const hashKey = JSON.stringify(route);
+  const lastScreen = useRef(screenKey(route));
+  const title = `${routeTitle(route)} - ritueel local page${isDemo ? ' (demo)' : ''}`;
+  const screen = screenKey(route);
   useEffect(() => {
-    document.title = `${routeTitle(route)} - ritueel local page${isDemo ? ' (demo)' : ''}`;
+    document.title = title;
+    const moved = lastScreen.current !== screen;
+    lastScreen.current = screen;
     if (first.current) {
       first.current = false;
       return;
     }
+    if (!moved) return;
     window.scrollTo(0, 0);
     document.getElementById('page-title')?.focus({ preventScroll: true });
-  }, [hashKey]);
+  }, [title, screen]);
 
-  const count = (key: NavKey) =>
-    key === 'findings' && total !== undefined ? (
-      <span
-        className={`font-mono text-xs font-bold ${urgent > 0 ? 'bg-critical px-1.5 text-bg' : 'text-dim'}`}
-        aria-label={`${plural(total, 'finding')}${urgent > 0 ? `, ${urgent} ${urgent === 1 ? 'needs' : 'need'} you` : ''}`}
-      >
-        {total}
-      </span>
-    ) : null;
+  /** The count beside an entry. It is a number for the eye and a sentence for a screen reader. */
+  const badge = (key: NavKey, onBar: boolean) => {
+    if (!counts) return null;
+    if (key === 'todo' && (counts.changes > 0 || counts.urgent > 0)) {
+      const critical = counts.urgent > 0;
+      return (
+        <span className={`font-mono text-xs leading-none font-bold ${critical ? 'bg-critical px-1.5 py-0.5 text-bg' : onBar ? 'text-inherit' : 'text-dim'}`}>
+          <span aria-hidden>{counts.changes}</span>
+          <span className="sr-only">{todoName(counts.changes, counts.urgent)}</span>
+        </span>
+      );
+    }
+    if (key === 'trust' && counts.trust > 0) {
+      return (
+        <span className={`font-mono text-xs leading-none font-bold ${onBar ? 'text-inherit' : 'text-dim'}`}>
+          <span aria-hidden>{counts.trust}</span>
+          <span className="sr-only">trust set {counts.trust}</span>
+        </span>
+      );
+    }
+    return null;
+  };
 
   return (
     <ToastProvider>
@@ -192,10 +160,10 @@ export function Shell({ route, children }: { route: Route; children: ReactNode }
         >
           Skip to the page
         </button>
-        <div className="lg:grid lg:grid-cols-[14rem_minmax(0,1fr)]">
+        <div className="lg:grid lg:min-h-dvh lg:grid-cols-[14rem_minmax(0,1fr)]">
           <aside data-print="hide" className="hidden border-r-[3px] border-double border-rule lg:block">
             <div className="sticky top-0 flex h-dvh flex-col overflow-y-auto px-4 py-5">
-              <a href={href.start()} className="mb-6 flex items-center gap-2.5 text-ink no-underline" aria-label="ritueel local page, start">
+              <a href={href.todo()} className="mb-6 flex items-center gap-2.5 text-ink no-underline" aria-label="ritueel local page, to do">
                 <Mark size={28} />
                 <span className="leading-none">
                   <span className="block font-mono text-lg font-bold tracking-tight">ritueel</span>
@@ -213,25 +181,27 @@ export function Shell({ route, children }: { route: Route; children: ReactNode }
                     }`}
                   >
                     <span className="flex-1">{n.label}</span>
-                    {count(n.key)}
+                    {badge(n.key, false)}
                   </a>
                 ))}
               </nav>
               <div className="mt-auto space-y-3 border-t border-line pt-4 text-sm text-dim">
-                {summary.state === 'ready' ? (
+                {data ? (
                   <dl className="grid grid-cols-[auto_1fr] gap-x-2 gap-y-0.5">
                     <dt>Bundle</dt>
                     <dd className="font-mono text-ink">
-                      <T cap={CAPS['Bundle.name']}>{summary.data.bundle?.name}</T>
+                      <T cap={CAPS['Bundle.name']}>{data.bundle?.name}</T>
                       <span className="block text-dim">
-                        <T cap={CAPS['Bundle.path#shell']}>{summary.data.bundle?.path}</T>
+                        <T cap={CAPS['Bundle.path#shell']}>{data.bundle?.path}</T>
                       </span>
                     </dd>
-                    <dt>As of</dt>
-                    <dd className="font-mono text-ink">{ymd(summary.data.asOf)}</dd>
+                    <dt>Read</dt>
+                    <dd className="font-mono text-ink">
+                      <ReadTime ts={data.readAt} />
+                    </dd>
                     <dt>Build</dt>
                     <dd className="font-mono text-ink">
-                      <T cap={CAPS['GetSummaryResponse.program_version']}>{summary.data.programVersion}</T>
+                      <T cap={CAPS['GetSummaryResponse.program_version']}>{data.programVersion}</T>
                     </dd>
                   </dl>
                 ) : null}
@@ -240,10 +210,10 @@ export function Shell({ route, children }: { route: Route; children: ReactNode }
             </div>
           </aside>
 
-          <div className="min-w-0">
+          <div className="flex min-w-0 flex-col">
             {isDemo ? <DemoBar /> : null}
             <header data-print="hide" className="sticky top-0 z-40 flex min-w-0 items-center justify-between gap-1 border-b-[3px] border-double border-rule bg-bg px-3 py-1 sm:px-4 lg:hidden">
-              <a href={href.start()} className="flex min-h-11 items-center gap-2 text-ink no-underline max-[359px]:min-w-11 max-[359px]:justify-center" aria-label="ritueel local page, start">
+              <a href={href.todo()} className="flex min-h-11 items-center gap-2 text-ink no-underline max-[359px]:min-w-11 max-[359px]:justify-center" aria-label="ritueel local page, to do">
                 <Mark size={22} />
                 <span className="font-mono text-base font-bold max-[359px]:sr-only">ritueel</span>
               </a>
@@ -258,70 +228,40 @@ export function Shell({ route, children }: { route: Route; children: ReactNode }
               ) : null}
               <SchemeSwitch />
             </header>
-            <main className="mx-auto w-full max-w-[80rem] px-4 pt-4 pb-28 lg:px-8 lg:pt-8 lg:pb-14">
-              {children}
-              <footer className="mt-14 border-t border-line pt-4 text-sm text-dim">
+            <main className="mx-auto flex w-full max-w-[112rem] flex-1 flex-col px-4 pt-4 pb-28 lg:px-8 lg:pt-5 lg:pb-5">
+              <div className="flex-1">{children}</div>
+              <footer className="mt-6 border-t border-line pt-2 text-sm text-dim">
                 <p className="max-w-[70ch]">
-                  This page only shows. It never asks for a PIN, a passphrase or any secret, and it never confirms a ceremony. You confirm in the terminal, in the
-                  offline system or on your workstation, as the plan says.
+                  This page only shows. It never asks for a PIN, a passphrase or a key, and it cannot confirm a ceremony. You confirm in the terminal.
                 </p>
-                <p className="mt-2 max-w-[70ch]">
-                  <a className="inline-flex min-h-11 items-center underline underline-offset-4" href={`${import.meta.env.BASE_URL}THIRD-PARTY-LICENSES.md`}>
+                <p className="flex flex-wrap gap-x-6">
+                  <a className="inline-flex min-h-11 items-center underline underline-offset-4 lg:min-h-8" href={`${import.meta.env.BASE_URL}THIRD-PARTY-LICENSES.md`}>
                     Licences of the parts this page is built from
                   </a>
-                </p>
-                {isDemo ? (
-                  <p className="mt-2 max-w-[70ch]">
-                    This is a demo of the local page. The data is made up and ritueel is in design.{' '}
-                    <a className="inline-flex min-h-11 items-center font-semibold text-accent underline underline-offset-4" href={siteUrl()}>
+                  {isDemo ? (
+                    <a className="inline-flex min-h-11 items-center font-semibold text-accent underline underline-offset-4 lg:min-h-8" href={siteUrl()}>
                       Back to ritueel.id
                     </a>
-                  </p>
-                ) : null}
+                  ) : null}
+                </p>
               </footer>
             </main>
           </div>
         </div>
 
-        <nav aria-label="Screens" data-print="hide" className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-[repeat(5,minmax(0,1fr))] border-t-[3px] border-double border-rule bg-panel lg:hidden">
-          {MAIN_TABS.map((k) => {
-            const n = NAV.find((x) => x.key === k)!;
-            return (
-              <a
-                key={k}
-                href={n.href}
-                aria-current={active === k ? 'page' : undefined}
-                className={`flex min-h-14 min-w-0 flex-col items-center justify-center gap-0.5 px-1 text-xs no-underline [@media(max-height:760px)]:min-h-12 ${active === k ? 'bg-ink font-bold text-bg' : 'text-ink'}`}
-              >
-                <span className="max-w-full min-w-0 truncate text-sm leading-none">{n.label}</span>
-                {k === 'findings' && total !== undefined ? (
-                  <span className={`font-mono text-xs leading-none font-bold ${active === k ? 'text-bg' : urgent > 0 ? 'text-critical' : 'text-dim'}`} aria-label={plural(total, 'finding')}>
-                    {total}
-                  </span>
-                ) : null}
-              </a>
-            );
-          })}
-          <button
-            type="button"
-            aria-haspopup="menu"
-            aria-expanded={more ? 'true' : undefined}
-            onClick={(e) => setMore(e.currentTarget)}
-            className={`flex min-h-14 min-w-0 cursor-pointer flex-col items-center justify-center gap-0.5 px-1 text-sm ${active && MORE.includes(active) ? 'bg-ink font-bold text-bg' : 'bg-transparent text-ink'} [@media(max-height:760px)]:min-h-12`}
-          >
-            <span className="max-w-full min-w-0 truncate">More</span>
-          </button>
+        <nav aria-label="Screens" data-print="hide" className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-4 border-t-[3px] border-double border-rule bg-panel lg:hidden">
+          {NAV.map((n) => (
+            <a
+              key={n.key}
+              href={n.href}
+              aria-current={active === n.key ? 'page' : undefined}
+              className={`flex min-h-14 min-w-0 flex-col items-center justify-center gap-0.5 px-1 text-xs no-underline [@media(max-height:760px)]:min-h-12 ${active === n.key ? 'bg-ink font-bold text-bg' : 'text-ink'}`}
+            >
+              <span className="max-w-full min-w-0 truncate text-sm leading-none">{n.label}</span>
+              {badge(n.key, true)}
+            </a>
+          ))}
         </nav>
-        <Menu anchorEl={more} open={more !== null} onClose={() => setMore(null)} anchorOrigin={{ vertical: 'top', horizontal: 'right' }} transformOrigin={{ vertical: 'bottom', horizontal: 'right' }}>
-          {MORE.map((k) => {
-            const n = NAV.find((x) => x.key === k)!;
-            return (
-              <MenuItem key={k} component="a" href={n.href} selected={active === k} onClick={() => setMore(null)}>
-                {n.label}
-              </MenuItem>
-            );
-          })}
-        </Menu>
       </div>
     </ToastProvider>
   );
