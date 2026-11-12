@@ -1,10 +1,12 @@
 // Checks the two builds (npm run build, npm run build:real).
 //  - no remote host except the ones listed (namespace URIs, the error pages
 //    React and MUI name in a message, and the link back to the site),
-//  - the demo build holds the fixtures (the three example bundles), the in-memory
-//    transport, the state switch ("Page state") and the bundle switch ("Example bundle"),
-//    the help for a first visitor, and not the real transport,
-//  - the real build holds none of the demo, and none of that help.
+//  - the demo build holds the fixtures (the three example bundles and the five
+//    scenes of acme), the in-memory transport, the state switch ("Page state"),
+//    the bundle switch ("Example bundle"), the scene control ("Scene"), the help
+//    for a first visitor, and not the real transport,
+//  - the real build holds none of the demo, and none of that help,
+//  - neither build holds a word of the plan service that went.
 import { readdirSync, readFileSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -47,37 +49,35 @@ for (const [name, dir, demo] of [['demo build (dist)', join(root, 'dist'), true]
   const has = (s) => all.includes(s);
   const expect = (cond, msg) => (cond ? ok(`${name}: ${msg}`) : fail(`${name}: ${msg}`));
   expect(files.some(([p, t]) => p.endsWith('index.html') && t.includes("connect-src 'self'")), "index.html carries connect-src 'self'");
+  // The plan service and its words went with the plan screen (record 0010). No build carries them.
+  for (const word of ['SavePlan', 'StartPlan', 'PlanService', 'ListIntentions', 'Make a plan', 'Save the plan']) {
+    expect(!has(word), `holds no "${word}"`);
+  }
   if (demo) {
-    expect(has('Example Holder'), 'holds the fixtures');
     expect(has('Page state'), 'holds the state switch, named Page state');
     expect(has('Example bundle'), 'holds the bundle switch, named Example bundle');
+    expect(has('Scene'), 'holds the scene control, named Scene');
     expect(!has('Try the states') && !has('Try a bundle'), 'holds neither of the old switch names');
+    expect(has('Example Release Root A'), 'holds the fixtures');
+    expect(has('acme-keyring') && has('globex'), 'holds the three example bundles');
+    expect(has('Back to ritueel.id'), 'holds the way back to the site');
     // the help for a first visitor of the demo
-    expect(has('helps you keep a root'), 'says on Start what ritueel is');
-    expect(has('Start here'), 'holds the Start-here path');
+    expect(has('helps you keep a root'), 'says on To do what ritueel is');
     expect(has('command line is not built yet'), 'says the command line is not built');
     expect(has('never answers, on purpose'), 'says the Waiting state is on purpose');
-    expect(has('Where it runs'), 'says on the plan where the ceremony runs');
-    expect(has('A touch for every signature'), 'states the four conditions of the workstation');
-    expect(has('this bundle is empty'), 'says the plan of the empty state is an example');
-    expect(has('globex') && has('acme-keyring') && has('acme-gateway'), 'holds the three example bundles');
-    expect(has('history/20261111T090000Z-due/plan.json'), 'holds a plan saved as history/<ceremony>/plan.json');
+    expect(has('The pictures on the site still show the older page'), 'holds the note about the pictures of the site');
     expect(!has('createConnectTransport'), 'holds no connect-web transport');
   } else {
-    expect(!has('Example Holder') && !has('deadbeef') && !has('0123456789ABCDEF'), 'holds no fixture');
-    // the conditions of the workstation are not demo help: the real build says them too
-    expect(has('Where it runs'), 'says on the plan where the ceremony runs');
-    expect(has('second device'), 'states the second-device condition');
-    expect(!has('Try the states') && !has('Page state'), 'holds no state switch');
-    expect(!has('Try a bundle') && !has('Example bundle'), 'holds no bundle switch');
+    expect(has('No such screen'), 'says No such screen for an address that names no screen');
+    expect(has('createConnectTransport'), 'holds the real transport');
+    expect(!has('Example Release Root') && !has('acme-keyring') && !has('globex'), 'holds no fixture and none of the example bundles');
+    expect(!has('Page state') && !has('Example bundle') && !has('Scene 1 of 5'), 'holds no state switch, bundle switch or scene control');
     // the help for a first visitor of the demo is the demo's alone
-    for (const phrase of ['helps you keep a root', 'Start here', 'ceremony, history and more', 'All the words', 'command line is not built yet', 'never answers, on purpose', 'this bundle is empty']) {
+    for (const phrase of ['helps you keep a root', 'command line is not built yet', 'never answers, on purpose', 'The pictures on the site']) {
       expect(!has(phrase), `holds no demo help: "${phrase}"`);
     }
-    expect(!has('globex') && !has('acme-keyring') && !has('acme-gateway'), 'holds none of the example bundles');
-    expect(!has('20261111T090000Z'), 'holds no made-up ceremony');
     expect(!has('createRouterTransport'), 'holds no in-memory transport');
-    expect(has('createConnectTransport'), 'holds the real transport');
+    expect(!has('20261124T'), 'holds no made-up ceremony');
   }
 }
 if (failed) process.exit(1);
