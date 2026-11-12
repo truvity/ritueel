@@ -22,7 +22,7 @@ learn/where-a-root-is-used.md
 learn/how-a-yubikey-holds-keys.mdx
 learn/how-passkeys-work.mdx
 learn/how-a-kms-key-works.md
-learn/choosing-where-a-root-lives.md
+learn/choosing-where-a-root-lives.mdx
 learn/life-of-a-root.md
 learn/revoke.md
 learn/custody-chain.md
