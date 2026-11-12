@@ -81,8 +81,11 @@ export function Failed({ what, message, retry }: { what: string; message: string
       <p className="mt-2 max-w-[70ch] text-sm text-dim">
         What ritueel said: <T cap={300}>{message}</T>
       </p>
+      <p className="mt-2 max-w-[70ch] text-sm text-dim">
+        If this page stayed open for a long time, the ritueel process may have ended. It ends after 15 minutes without a call. Run ritueel status in a terminal to start
+        it again, then open the page again with the address ritueel prints.
+      </p>
       <div className="mt-3 max-w-[40rem] space-y-3">
-        <p className="text-sm">In a terminal, this reads the same bundle and prints the reason:</p>
         <Cmd label="Read the bundle in a terminal">ritueel status</Cmd>
         {retry ? (
           <Button variant="outlined" onClick={retry}>

@@ -2,23 +2,24 @@ import type { ReactNode } from 'react';
 import Typography from '@mui/material/Typography';
 import { learnPathOk, learnUrl } from '../lib/finding';
 
-/** The head of a screen. The heading takes focus when the screen changes. */
-export function Page({ kicker, title, lede, aside, children }: { kicker: string; title: string; lede?: ReactNode; aside?: ReactNode; children: ReactNode }) {
+/**
+ * The head of a screen: the title, and one line under it (the bundle and the
+ * time of the read). The head is compact, so a screen keeps its height for the
+ * list. The heading takes focus when the screen changes.
+ */
+export function Page({ title, line, aside, children }: { title: string; line?: ReactNode; aside?: ReactNode; children: ReactNode }) {
   return (
     <>
-      <header className="mb-7 [@media(max-height:760px)]:mb-4 flex flex-wrap items-end justify-between gap-x-8 gap-y-3">
-        <div className="min-w-0 max-w-[48rem]">
-          <Typography variant="overline" component="p" color="text.secondary">
-            {kicker}
-          </Typography>
-          <Typography variant="h1" component="h1" id="page-title" tabIndex={-1} className="mt-1 outline-none">
+      <header className="mb-3 flex flex-wrap items-end justify-between gap-x-8 gap-y-1">
+        <div className="min-w-0">
+          <Typography variant="h1" component="h1" id="page-title" tabIndex={-1} className="outline-none" sx={{ fontSize: { xs: '1.75rem', lg: '2rem' } }}>
             {title}
           </Typography>
-          {lede ? <div className="mt-3 text-[1.0625rem] text-dim">{lede}</div> : null}
+          {line ? <p className="mt-0.5 text-[0.9375rem] text-dim">{line}</p> : null}
         </div>
         {aside ? <div className="text-sm text-dim">{aside}</div> : null}
       </header>
-      <div className="space-y-9">{children}</div>
+      <div className="space-y-5">{children}</div>
     </>
   );
 }
