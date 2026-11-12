@@ -6,15 +6,21 @@
 // the same three panel functions and one timeline function, so they cannot drift.
 // The accent is the root that cannot be copied: its two stores, the one step that uses it (sign), and
 // the one key that stays. Rests on the records 0001 (three stores), 0002 (cannot be copied; a card or
-// cloud key replaced only on an event, a copy within three years), 0005 (six steps; only step 4 uses
-// the root), 0007 (rules 13 to 19: the same key is re-signed, not replaced) and 0008 (subkeys on the card).
+// cloud key replaced only on an event, a copy within three years), 0005 (a person says what is wanted,
+// looks at the plan of what is not applied yet, and runs apply; only apply uses the root), 0007 (rules 13 to 19: the same key is re-signed, not replaced) and 0008 (subkeys on the card).
 import { acc, arrow, card, circle, f, key, line, person, rect, sheet, text } from './draw.mjs';
 import { svgBox } from './svg.mjs';
 import { cloud } from './parts.mjs';
 
 const at = (x, y, s) => `<g transform="translate(${f(x)} ${f(y)})">${s}</g>`;
 const ACC = 'root';
-const STEPS = ['plan', 'confirm', 'reserve', 'sign', 'verify', 'record'];
+// what the person does, in the words of the glossary: say what is wanted, look at the plan of what is not
+// applied yet, run apply. Each has up to three small lines under it; only apply uses the root.
+const DOES = [
+  ['wanted', ['you write']],
+  ['plan', ['you read']],
+  ['apply', ['you confirm', 'key signs', 'it records']],
+];
 const PH = 236; // the height of a panel
 
 // a panel: the heavy frame and a two-line title
@@ -42,20 +48,22 @@ function calendar(x, y) {
   return s + circle(x + 5 + 2 * 7.4, y + 25, 3.4, 'fill-ink');
 }
 
-// 2: once a year, one ceremony: the holder with a root card, a calendar, and the six steps in order.
-// Only the step "sign" uses the root. The cluster is 208 units wide and centred in the panel.
+// 2: once a year, one ceremony: the holder with a root card, a calendar, and the three things the holder
+// does, in order: wanted, plan, apply. Only apply uses the root. The cluster is 208 units wide and centred in the panel.
 function ceremony(w) {
   let s = panel(w, 'Once a year,', 'one ceremony');
   const ox = (w - 208) / 2;
   // the holder is drawn in its own coordinates and moved, so that it stays inside the kit's limits
   s += at(ox, 0, person(44, 206, [[1, 80, 170]]) + acc(ACC, card(72, 144, 40, 26, 'acc-f')) + text(44, 226, 'you', 't t-s', 'm') + calendar(28, 66));
-  const x0 = ox + 132;
-  s += line(x0, 70, x0, 190, 'ln ln-thin ln-dim');
-  STEPS.forEach((word, i) => {
-    const y = 70 + i * 24;
-    const root = word === 'sign';
+  const x0 = ox + 126;
+  const ys = [74, 114, 154];
+  s += line(x0, ys[0], x0, ys[2], 'ln ln-thin ln-dim');
+  DOES.forEach(([word, notes], i) => {
+    const y = ys[i];
+    const root = word === 'apply';
     const num = `<text class="t t-s t-b ${root ? 't-acc' : 't-num'} t-mid" x="${f(x0)}" y="${f(y + 4.3)}">${i + 1}</text>`;
-    s += (root ? acc(ACC, circle(x0, y, 9.5, 'acc-f') + num) : circle(x0, y, 9, 'fill-ink') + num) + text(x0 + 17, y + 4.3, word, 't t-s' + (root ? ' t-b t-acc' : ''));
+    s += (root ? acc(ACC, circle(x0, y, 9.5, 'acc-f') + num) : circle(x0, y, 9, 'fill-ink') + num) + text(x0 + 17, y + 4.3, word, 't' + (root ? ' t-b t-acc' : ' t-b'));
+    notes.forEach((n, j) => (s += text(x0 + 17, y + 20 + j * 14, n, 't t-s ' + (root ? 't-acc' : 't-dim'))));
   });
   return s;
 }
@@ -111,7 +119,7 @@ function timeline(W, y0, side) {
 
 const LABEL =
   'The chain of ritueel from the root to the keys of every day, with a four-year contrast under it. Your root in three stores: two root cards and a cloud key, drawn solid because they cannot be copied, and a key file, drawn dashed because it can be copied. ' +
-  'The ceremony: a holder with a root card, a calendar with one day marked, and six numbered steps, plan, confirm, reserve, sign, verify, record, of which only sign uses the root. ' +
+  'The ceremony: a holder with a root card, a calendar with one day marked, and the three things the holder does, numbered: wanted, which the holder writes, plan, which the holder reads, and apply, which the holder confirms, after which the key signs and a record is made. Only apply uses the root. ' +
   'Keys for every day: an intermediate in your certificate system and subkeys on your day-to-day card. An arrow labelled used in leads from the root to the ceremony and one labelled signs from the ceremony to the keys. ' +
   'Under the chain, over four years: a key file is replaced on a calendar, with a new key in year one and again in year four, three years at most; a key on a card or in a cloud key service is the same key all four years, replaced only on an event.';
 
