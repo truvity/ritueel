@@ -87,7 +87,7 @@ const List = ({ children }: { children: ReactNode }) => <ul className="m-0 list-
 
 const first8 = (digest: string) => digest.slice(0, 8);
 
-/** The folder of a ceremony, as a link to its panel. */
+/** The ceremony folder, as a link to the panel of its ceremony. */
 function CeremonyLink({ id }: { id: string }) {
   return (
     <Link to={href.history(id)}>
