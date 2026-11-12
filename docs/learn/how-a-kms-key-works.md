@@ -93,7 +93,7 @@ AWS does not copy any of the right-hand column. A replica made without a policy 
 Each rule is followed by its reason and by whose rule it is.
 
 - **Name the key by its ARN, not by an alias.** An alias is a pointer that anyone with the right permission can move. *ritueel's design.*
-- **Let as few roles sign as the job needs.** Whoever can sign can sign. *ritueel's design for a root:* the ceremony role, plus one renewal role only when a renewal policy is declared. *For a delegated key:* exactly one role (hand-off contract). Never the admin role or the account root.
+- **Let as few roles sign as the job needs.** Whoever can sign can sign. *ritueel's design for a root:* the ceremony role. A renewal role is planned for later (M7). *For a delegated key:* exactly one role (hand-off contract). Never the admin role or the account root.
 - **Say what it may sign:** one algorithm (ECDSA_SHA_384) and digests only. This limits what a stolen session can do. *ritueel's design.*
 - **Say how the signer got in.** AWS does not set `aws:MultiFactorAuthPresent` for a federated sign-in (IAM global condition keys, read 2026-11-10), so a hardware-key sign-in can be shown to AWS only as a session tag that the provider sets, and that proof is only as good as the provider. *ritueel's design:* it asks for no particular sign-in ([record 0004](../decisions/0004-the-cloud-root.md)); making the role hard to assume is the operator's job.
 - **Deny grants to everyone.** A grant can hand out Sign to anyone and cannot be denied by another grant. *ritueel's design.*
