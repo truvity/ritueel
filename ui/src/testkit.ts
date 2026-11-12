@@ -2,10 +2,12 @@
 // carries it. It gives a test the made-up worlds of the demo (three bundles, and
 // the five scenes of acme), a way to mark every string of a world, and the
 // mock of the read hooks that the screen tests share.
+import { createClient } from '@connectrpc/connect';
 import { fromJson, type JsonValue } from '@bufbuild/protobuf';
 import {
   GetInventoryResponseSchema,
   GetSummaryResponseSchema,
+  InspectService,
   ListCeremoniesResponseSchema,
   ListFindingsResponseSchema,
   ListTrustFilesResponseSchema,
@@ -16,7 +18,8 @@ import {
   type ListTrustFilesResponse,
 } from './gen/ritueel/local/v1alpha1/inspect_service_pb';
 import { applySceneNumber } from './api/scenes';
-import type { DemoBundle } from './api/demoState';
+import { createDemoTransport } from './api/demo';
+import { setBundle, setScene, setViewState, type DemoBundle } from './api/demoState';
 
 /** The marker the hostile test appends to every string: a bidirectional override, a joiner and a BEL. */
 export const BAD = String.fromCodePoint(0x202e, 0x200d, 0x0007);
@@ -80,6 +83,32 @@ export function loadWorld(bundle: DemoBundle, scene = 1): World {
   };
 }
 
+/**
+ * The world as the demo transport answers it in the Empty page state: a bundle that holds
+ * nothing. The answers are built by code in api/demo.ts, so they are asked of the transport.
+ */
+export async function emptyWorld(bundle: DemoBundle): Promise<World> {
+  const inspect = createClient(InspectService, createDemoTransport());
+  setBundle(bundle);
+  setScene(1);
+  setViewState('empty');
+  try {
+    return {
+      id: `${bundle} empty`,
+      bundle,
+      scene: 1,
+      summary: await inspect.getSummary({}),
+      findings: await inspect.listFindings({}),
+      inventory: await inspect.getInventory({}),
+      ceremonies: await inspect.listCeremonies({}),
+      trust: await inspect.listTrustFiles({}),
+    };
+  } finally {
+    setViewState('loaded');
+    setBundle('acme');
+  }
+}
+
 export const WORLDS = (): World[] => WORLD_IDS.map((w) => loadWorld(w.bundle, w.scene));
 
 /** The same world with the marker after every string. Numbers, bigints and enums stay. */
@@ -129,6 +158,7 @@ export function hooksMock<H extends object>(real: H): H {
 /** The text of some markup: tags removed, entities of the quote and the ampersand read back, spaces folded. */
 export function plain(html: string): string {
   return html
+    .replace(/<style[\s\S]*?<\/style>/g, ' ')
     .replace(/<[^>]*>/g, ' ')
     .replace(/&#x27;/g, "'")
     .replace(/&quot;/g, '"')
