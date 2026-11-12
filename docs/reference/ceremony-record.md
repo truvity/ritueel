@@ -269,7 +269,6 @@ These are later. They are not rules, and this page does not write them.
 - The sealed single-file export of a bundle, for backups.
 - Trust numbers that skip.
 - The state of a root key as files. Until then it is read from the ceremony records and the newest root list.
-- A renewal of a cloud root under a policy, with no person. It would add a `renewal` member to the ceremony record and the value `policy` to `confirmation.by`. No record decides it (M7; [the KMS root page](/reference/kms-root/#renewal-under-a-policy)).
 
 ## Follow-ups
 

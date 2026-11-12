@@ -259,7 +259,7 @@ keyring:
 | `policy` | The rules every request is checked against: `stores`, `min_firmware`, `pin_policy`, `require_name_constraints` and `validity_months`, with the meanings of the [reference policy](/reference/hand-off-contract/#what-the-certifier-checks). All five are required. |
 | `kind` | Optional. `personal` for a person's own OpenPGP key; absent for a company bundle. A personal bundle has `person` instead of `name` and `release_address` ([personal OpenPGP](/reference/personal-openpgp/)). |
 | `person` | Only with `kind: personal`: `name` (1 to 64 characters) and `address`. |
-| `aws_kms` | Optional, from M2; required when a root key's store is `aws-kms`. The root account, the two Regions and the two roles, and, proposed for M7, the renewal policy ([the block](/reference/kms-root/#ritueelyaml), [the policy](/reference/kms-root/#the-policy-in-ritueelyaml)). |
+| `aws_kms` | Optional, from M2; required when a root key's store is `aws-kms`. The root account, the two Regions and the two roles ([the block](/reference/kms-root/#ritueelyaml)). |
 | `keyring` | Proposed; no record has this member. `license` would be the SPDX identifier written into the `.rpm`, which the release pipeline builds ([record 0009](../decisions/0009-release-keys-and-the-keyring.md), rule 21): the operator's choice, which ritueel does not default ([the keyring package](/reference/keyring-package/)). |
 | `keyservers` | Proposed in record 0011 (rule 4 decides a managed list; the block and its member names are proposed). The keyservers `ritueel publish` may send the public OpenPGP key to, one entry for each server (an address and the kind, the keys.openpgp.org interface or HKP). The holder lists them; `new` ships no default that sends, and keys.openpgp.org and keyserver.ubuntu.com are commented examples ([record 0011](../decisions/0011-publishing-and-what-to-do-after-a-ceremony.md)). It is not in the schema below until it is decided. |
 
@@ -318,17 +318,7 @@ The schema, in JSON Schema (draft 2020-12), which the code ships and checks the 
         "region": { "type": "string", "minLength": 1 },
         "replica_region": { "type": "string", "minLength": 1 },
         "admin_role": { "type": "string", "pattern": "^arn:aws[a-z-]*:iam::[0-9]{12}:role/" },
-        "ceremony_role": { "type": "string", "pattern": "^arn:aws[a-z-]*:iam::[0-9]{12}:role/" },
-        "renewal": {
-          "type": "object",
-          "additionalProperties": false,
-          "required": ["role", "intermediates", "within_days"],
-          "properties": {
-            "role": { "type": "string", "pattern": "^arn:aws[a-z-]*:iam::[0-9]{12}:role/" },
-            "intermediates": { "type": "array", "uniqueItems": true, "items": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]{0,62}$" } },
-            "within_days": { "type": "integer", "minimum": 14, "maximum": 90 }
-          }
-        }
+        "ceremony_role": { "type": "string", "pattern": "^arn:aws[a-z-]*:iam::[0-9]{12}:role/" }
       }
     }
   }
