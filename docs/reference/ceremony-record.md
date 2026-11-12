@@ -119,7 +119,7 @@ Each member of `signatures`:
 | Member | Meaning |
 |---|---|
 | `n` | Its place in the order, from 1. |
-| `kind` | `intermediate-certificate`, `subkey-binding`, `root-certificate`, `primary-self-signature`, `primary-revocation` (at the birth of an OpenPGP primary, and again by `apply` for the reasons in the wanted root file; one for each reason, with a `reason` member: 0007 rules 20 and 22), `root-removal` (the removal authorisation, at the birth of a root key: 0007 rule 21), `cross-certificate` and `openpgp-vouch` (when a key is added: 0007 rule 6), `root-list`, and from M2 and M3 `crl` and `ssh-ca-key-list`. |
+| `kind` | `intermediate-certificate`, `subkey-binding`, `root-certificate`, `primary-self-signature`, `primary-revocation` (at the birth of an OpenPGP primary, and again by `apply` for the reasons in the wanted root file; one for each reason, with a `reason` member: 0007 rules 20 and 22), `root-removal` (the removal authorisation, at the birth of a root key: 0007 rule 21), `cross-certificate` and `openpgp-vouch` (when a key is added: 0007 rule 6), `root-list`, and from M4 `crl` and `ssh-ca-key-list`. |
 | `key` | The fingerprint of the signing key: the root key's X.509 key or its OpenPGP primary. |
 | `subject` | What is signed for: the request's stem, or the root key's label for its own certificate, self-signature, revocation, CRL, root list and SSH CA key list. |
 | `reason` | For `primary-revocation`: `compromised`, `superseded`, `retired` or `no-reason` (0007 rules 20 and 22). |
@@ -212,7 +212,7 @@ The members `wanted`, `applied` and `left_out` are new. That the ceremony record
 
 Each member of `requests` holds what the [hand-off contract records](/reference/hand-off-contract/#what-the-certifier-records): `stem`, `type`, `request_sha256`, `proof_sha256`, `store`, `key`, `evidence`, `policy`, `outcome` and `artifacts`.
 
-- `evidence` holds what was read from the proof and checked. For a key file it is `{ "unprotected": true }`: the key proves nothing about where it lives. The members for `piv` (serial, firmware, PIN and touch policy, form factor, slot), `aws-kms` (the ARN, the key's description and the digest of its policy) and `openpgp-card` are fixed with those stores, in M2 and M4.
+- `evidence` holds what was read from the proof and checked. For a key file it is `{ "unprotected": true }`: the key proves nothing about where it lives. The members for `piv` (serial, firmware, PIN and touch policy, form factor, slot), `aws-kms` (the ARN, the key's description and the digest of its policy) and `openpgp-card` are fixed with those stores: `aws-kms` in M2, `openpgp-card` in M3 and `piv` in M6.
 - `policy` is a copy of the policy applied to the request: the `policy` block of `ritueel.yaml` and the wanted file of the delegation ([the bundle](/reference/bundle/#ritueelyaml)).
 - `outcome` is `issued`, and `artifacts` the answer's files with their digests, as in `result.json`; in a declining record, `outcome` is `refused` with the code `declined`.
 
@@ -268,7 +268,7 @@ These are later. They are not rules, and this page does not write them.
 - A decided repair of a fork ([#138](https://github.com/truvity/ritueel/issues/138)).
 - The sealed single-file export of a bundle, for backups.
 - Trust numbers that skip.
-- A lock on the bundle as a file. The Proposed lock of record 0010 is held by the running process; it is not this file.
+- A lock on the bundle as a file. The lock of record 0010 (rule 8) is not this file; that the running process holds it is Proposed.
 - The state of a root key as files. Until then it is read from the ceremony records and the newest root list.
 - A renewal of a cloud root under a policy, with no person. It would add a `renewal` member to the ceremony record and the value `policy` to `confirmation.by`. No record decides it (M7; [the KMS root page](/reference/kms-root/#renewal-under-a-policy)).
 
