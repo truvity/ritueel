@@ -1,4 +1,4 @@
-// Two bundles of one holder on one pair of root cards: each bundle keeps its own card list and its own
+// Two bundles of one holder on one pair of root cards: each bundle keeps its own card files and its own
 // sealed copy of the card's secrets; a second bundle gets its copy by a request to the first, which
 // wraps the secrets for it. Rests on record 0003, rules 6 to 8 (and record 0005, rule 26, for the way
 // request and answer travel). The pair is two cards, and each card has its own PIN, PUK and management
@@ -11,7 +11,7 @@ import { svgBox } from './svg.mjs';
 
 const LABEL =
   'Two bundles drawn as open directories, acme above and personal below, with two cards between them. ' +
-  'Each bundle holds a card list and a padlock chip with its own sealed copy of the card secrets. ' +
+  'Each bundle holds card files and a padlock chip with its own sealed copy of the card secrets. ' +
   'An arrow up from personal to acme carries a request. An arrow down from acme to personal carries the answer, a padlock chip in the accent colour: the secrets wrapped for personal. ' +
   'Beside the cards a note says each card has one PIN for all its bundles.';
 
@@ -21,11 +21,11 @@ const H = 486;
 /** A padlock chip with a label, (x,y) its top left. */
 const chip = (x, y, w, word, cls = 'paper-t') => rect(x, y, w, 26, cls, 6) + lock(x + 8, y + 5.5) + text(x + 26, y + 18, word, 't t-s');
 
-/** A bundle with its card list and its sealed copy, `top` its top edge, 328 wide at x = 16. */
+/** A bundle with its card files and its sealed copy, `top` its top edge, 328 wide at x = 16. */
 function holder(top, name) {
   return (
     bundle(16, top + 112, 328, 112, `bundle ${name}`) +
-    rect(28, top + 28, 304, 30, 'paper-t', 5) + text(40, top + 48, 'card list', 't t-s') +
+    rect(28, top + 28, 304, 30, 'paper-t', 5) + text(40, top + 48, 'card files', 't t-s') +
     chip(28, top + 68, 304, `sealed for ${name}`)
   );
 }
