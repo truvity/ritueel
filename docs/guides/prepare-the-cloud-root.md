@@ -18,14 +18,14 @@ A cloud root is the recommended path for a team with a cloud account ([which pat
 ## Steps
 
 1. **Make the account,** inside your organisation, with nothing deployed in it. Result: an account whose only job is to hold roots.
-2. **Make the admin role.** It may create keys, tag them and read them. It may replicate a key only before the policy that refuses replicas is in force, and it may do nothing else. It must not be able to `Sign`. Result: the role that `ritueel init` uses to make the keys.
+2. **Make the admin role.** It may create keys, tag them and read them. It may replicate a key only before the policy that refuses replicas is in force, and it may do nothing else. It must not be able to `Sign`. Result: the role that the first `ritueel apply` uses to make the keys.
 3. **Make the break-glass principal.** It is the only principal that may replicate a key or move its primary Region once the key policy is in force, for example after the loss of a Region. Create it like the admin role and never name it after a person. It must not be able to `Sign`. Using it is a manual act that you log. Result: a lost Region can still be answered, and nobody else can copy the key to a Region where no one watches ([record 0004](../decisions/0004-the-cloud-root.md)).
 4. **Make the ceremony role.** Its trust policy is yours to write, and ritueel never reads it. ritueel asks nothing of how the role is assumed ([record 0004](../decisions/0004-the-cloud-root.md)). Because nothing in AWS ties a signature to a person, make the role hard to assume: whoever can assume it can sign any digest. It may be given nothing but the right to use the root keys; the key policy that ritueel makes names this role as the only one that may sign anything new. Result: the role the person assumes at a ceremony.
-5. **Optionally, make the renewal role.** Make it only if you want the root's renewals to run without a person ([renewal under a policy](/reference/kms-root/#renewal-under-a-policy)). It trusts only the identity your scheduler runs as (a CI job, a scheduled function), and may be given nothing but the right to use the root keys; the key policy that ritueel makes lets it sign only on the X.509 root key and the primary, and ritueel lets it sign only what the bundle already holds. If the renewal role is misused, the most it can do is keep an intermediate that should have lapsed working until you revoke it at a ceremony, and every use shows in the audit trail under its own name. Result: the role your scheduler assumes to run `ritueel renew`.
+5. **Optionally, make the renewal role.** Make it only if you want the root's renewals to run without a person ([renewal under a policy](/reference/kms-root/#renewal-under-a-policy)). It trusts only the identity your scheduler runs as (a CI job, a scheduled function), and may be given nothing but the right to use the root keys; the key policy that ritueel makes lets it sign only on the X.509 root key and the primary, and ritueel lets it sign only what the bundle already holds. If the renewal role is misused, the most it can do is keep an intermediate that should have lapsed working until you revoke it with `ritueel revoke`, and every use shows in the audit trail under its own name. Result: the role your scheduler assumes to run `ritueel renew`.
 6. **Add the controls you can.** None is checked by ritueel, all are worth having:
    - an alarm on every `Sign` by the roots, to a place you read, so a use you did not make is noticed, and one on every `Sign` by the renewal role outside the days your policy allows;
    - the audit trail kept somewhere the account's own roles cannot erase.
-7. **Write the names into `ritueel.yaml`** ([the block](/reference/kms-root/#ritueelyaml)). Run the drill on test keys: `ritueel init --store aws-kms` in a test account, then the restore drill.
+7. **Write the names into `ritueel.yaml`** ([the block](/reference/kms-root/#ritueelyaml)). Run the drill on test keys: `ritueel new DIR` and `ritueel apply` in a test account, then the restore check.
 
 ## If the key already exists
 
@@ -36,7 +36,7 @@ If your own infrastructure code already owns a key, with its alias and its polic
 - You can assume the admin role and read, but a `Sign` attempt with it is denied.
 - You can assume the ceremony role, and only that role can `Sign`.
 - If you made the renewal role, only your scheduler's identity can assume it, and `ritueel renew --plan-only` under it (planned for later, M7) prints a plan that holds nothing new.
-- After `init`, `ritueel status` lists the root, and its record holds the key policy's digest.
+- After the first `apply`, `ritueel status` lists the root, and its ceremony record holds the key policy's digest.
 
 ## When something goes wrong
 
