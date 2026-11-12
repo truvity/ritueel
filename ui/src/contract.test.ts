@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { MethodOptions_IdempotencyLevel } from '@bufbuild/protobuf/wkt';
 import { ScalarType, type DescMessage } from '@bufbuild/protobuf';
@@ -12,6 +12,16 @@ import { file_ritueel_local_v1alpha1_inspect_service, InspectService } from './g
 
 const FILES = [file_ritueel_local_v1alpha1_common, file_ritueel_local_v1alpha1_inspect_service];
 const MESSAGES: DescMessage[] = FILES.flatMap((f) => f.messages);
+
+describe('the contract is two files and nothing else', () => {
+  // A third proto file with a write service would generate a third _pb.ts that FILES never
+  // imports, so the two folders are compared with the two expected names.
+  it('proto/ritueel/local/v1alpha1 holds common.proto and inspect_service.proto, and the generated folder their two files', () => {
+    const list = (rel: string) => readdirSync(new URL(rel, import.meta.url)).sort();
+    expect(list('../../proto/ritueel/local/v1alpha1/')).toEqual(['common.proto', 'inspect_service.proto']);
+    expect(list('./gen/ritueel/local/v1alpha1/')).toEqual(['common_pb.ts', 'inspect_service_pb.ts']);
+  });
+});
 
 describe('the service has five reads and nothing that writes', () => {
   it('the files declare one service, InspectService, with these five methods in this order', () => {

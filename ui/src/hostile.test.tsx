@@ -105,6 +105,40 @@ describe('hostile text never reaches the markup raw', () => {
     });
   }
 
+  // A very long string and a markup string, on every screen. The caps and the escaping are tested
+  // on T and safeString alone (text.test.tsx); this walk proves that no screen skips them.
+  const LONG = 5000;
+  it(`with every string ${LONG} characters long, no screen draws a run of it longer than the longest cap`, async () => {
+    for (const plainWorld of WORLDS()) {
+      const w = markedWorld(plainWorld, () => 'x'.repeat(LONG));
+      feed.world = w;
+      feed.state = 'ready';
+      const longest: string[] = [];
+      for (const [name, render] of await screens(w)) {
+        const html = noStyle(renderToStaticMarkup(render()));
+        // What a person can read: the text, and the names and titles in attributes. An address or a row key may hold the whole id.
+        const readable = plain(html) + ' ' + [...html.matchAll(/\b(?:aria-label|title|aria-description)="([^"]*)"/g)].map((m) => m[1]).join(' ');
+        const run = Math.max(0, ...[...readable.matchAll(/x{300,}/g)].map((m) => m[0].length));
+        if (run > 500) longest.push(`${name.slice(0, 40)}: a run of ${run}`);
+        expect(html.length, `${plainWorld.id} ${name.slice(0, 40)}`).toBeLessThan(3_000_000);
+      }
+      expect(longest, plainWorld.id).toEqual([]);
+    }
+  });
+
+  it('with every string a markup string, no screen draws an element from the data', async () => {
+    const MARKUP = '<img src=x onerror=alert(1)><script>alert(1)</script>';
+    for (const plainWorld of WORLDS()) {
+      const w = markedWorld(plainWorld, () => MARKUP);
+      feed.world = w;
+      feed.state = 'ready';
+      for (const [name, render] of await screens(w)) {
+        const html = noStyle(renderToStaticMarkup(render()));
+        expect(html, `${plainWorld.id} ${name.slice(0, 40)}`).not.toMatch(/<img\b|<script\b/i);
+      }
+    }
+  });
+
   it('the page states that read nothing draw no data at all, and still no raw character', async () => {
     const w = markedWorld(loadWorld('acme', 1));
     feed.world = w;
