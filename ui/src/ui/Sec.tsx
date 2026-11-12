@@ -27,7 +27,7 @@ export function Sec({ title, aside, children, id }: { title: string; aside?: Rea
 /** A short plain sentence that says what a thing is, set where it first appears. */
 export function Explain({ term, children }: { term: string; children: ReactNode }) {
   return (
-    <p className="mb-3 max-w-[70ch] border-l-4 border-accent bg-sunk px-3 py-2 text-[0.9375rem]">
+    <p className="mb-3 max-w-[62ch] border-l-4 border-accent bg-sunk px-3 py-2 text-[0.9375rem]">
       <strong>{term}</strong> {children}
     </p>
   );
@@ -75,13 +75,13 @@ export function Failed({ what, message, retry }: { what: string; message: string
       <p className="flex items-center gap-2 font-bold text-critical">
         <Glyph level="critical" size={18} /> Could not read {what}
       </p>
-      <p className="mt-2 max-w-[70ch]">
+      <p className="mt-2 max-w-[62ch]">
         This is not the same as empty. ritueel could not read it, so this page cannot say what is there. Nothing was changed.
       </p>
-      <p className="mt-2 max-w-[70ch] text-sm text-dim">
+      <p className="mt-2 max-w-[62ch] text-sm text-dim">
         What ritueel said: <T cap={300}>{message}</T>
       </p>
-      <p className="mt-2 max-w-[70ch] text-sm text-dim">
+      <p className="mt-2 max-w-[62ch] text-sm text-dim">
         If this page stayed open for a long time, the ritueel process may have ended. It ends after 15 minutes without a call. Run ritueel status in a terminal to start
         it again, then open the page again with the address ritueel prints.
       </p>
@@ -104,7 +104,7 @@ export function Empty({ title, children, command }: { title: string; children?: 
       <p className="flex items-center gap-2 font-bold">
         <Glyph level="info" size={18} /> {title}
       </p>
-      {children ? <div className="mt-2 max-w-[70ch] space-y-2">{children}</div> : null}
+      {children ? <div className="mt-2 max-w-[62ch] space-y-2">{children}</div> : null}
       {command ? (
         <div className="mt-3 max-w-[40rem]">
           <Cmd label={command.label}>{command.text}</Cmd>

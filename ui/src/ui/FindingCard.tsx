@@ -19,7 +19,7 @@ export function FindingCard({ f, commandNote = true }: { f: Finding; commandNote
   return (
     <article
       aria-label={safeString(f.title, CAPS['Finding.title'])}
-      className={`max-w-[70ch] border border-line border-l-[6px] bg-panel px-4 py-3 ${SEV_EDGE[k]} ${k === 'critical' ? 'border-y-2 border-r-2 border-y-critical border-r-critical' : ''}`}
+      className={`max-w-[62ch] border border-line border-l-[6px] bg-panel px-4 py-3 ${SEV_EDGE[k]} ${k === 'critical' ? 'border-y-2 border-r-2 border-y-critical border-r-critical' : ''}`}
     >
       <Sev level={k} label={SEVERITY_WORD[f.severity] ?? 'finding'} />
       <h3 className="mt-1.5 text-lg leading-snug font-bold">

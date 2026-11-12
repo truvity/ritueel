@@ -40,7 +40,7 @@ export function SceneSwitch() {
           ))}
         </ToggleButtonGroup>
       </div>
-      <p role="status" aria-live="polite" data-testid="scene-line" className="order-last m-0 w-full max-w-[70ch] text-sm text-dim">
+      <p role="status" aria-live="polite" data-testid="scene-line" className="order-last m-0 w-full max-w-[62ch] text-sm text-dim">
         <T>{`Scene ${scene} of ${SCENE_COUNT}: ${sceneLine(scene)}`}</T>
       </p>
     </>

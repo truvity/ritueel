@@ -249,7 +249,7 @@ function ChangeTable({ inv }: { inv: GetInventoryResponse }) {
           },
         ]}
       />
-      <p className="mt-2 max-w-[70ch] text-sm text-dim">A line opens its object in the inventory.</p>
+      <p className="mt-2 max-w-[62ch] text-sm text-dim">A line opens its object in the inventory.</p>
     </>
   );
 }
@@ -483,7 +483,7 @@ function FindingsTab({ summary, onRead }: { summary: Loaded<GetSummaryResponse>;
                     ))}
                   </ol>
                   {isDemo && worstFirst.some((x) => x.fixCommand) ? (
-                    <p className="mt-2 max-w-[70ch] text-sm text-dim">Example only. The ritueel command line is not built yet.</p>
+                    <p className="mt-2 max-w-[62ch] text-sm text-dim">Example only. The ritueel command line is not built yet.</p>
                   ) : null}
                 </>
               }

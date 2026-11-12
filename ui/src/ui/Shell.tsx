@@ -231,7 +231,7 @@ export function Shell({ route, children }: { route: Route; children: ReactNode }
             <main className="mx-auto flex w-full max-w-[112rem] flex-1 flex-col px-4 pt-4 pb-28 lg:px-8 lg:pt-5 lg:pb-5">
               <div className="flex-1">{children}</div>
               <footer className="mt-6 border-t border-line pt-2 text-sm text-dim">
-                <p className="max-w-[70ch]">
+                <p className="max-w-[62ch]">
                   This page only shows. It never asks for a PIN, a passphrase or a key, and it cannot confirm a ceremony. You confirm in the terminal.
                 </p>
                 <p className="flex flex-wrap gap-x-6">

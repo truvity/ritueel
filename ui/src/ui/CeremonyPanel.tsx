@@ -145,10 +145,10 @@ export function CeremonyPanel({ c, all, trustSequence }: { c: Ceremony; all: Cer
             <Fp kind="Digest" value={c.planSha256} />
           </div>
           {planned ? (
-            <p className="max-w-[70ch]">Compare it with the terminal. Type the first eight characters in the terminal, not here. This page cannot confirm.</p>
+            <p className="max-w-[62ch]">Compare it with the terminal. Type the first eight characters in the terminal, not here. This page cannot confirm.</p>
           ) : null}
           {planned && c.stale ? (
-            <p className="max-w-[70ch]">This plan is stale. The end of the history or the trust set moved on, and apply refuses it.</p>
+            <p className="max-w-[62ch]">This plan is stale. The end of the history or the trust set moved on, and apply refuses it.</p>
           ) : null}
         </PanelSection>
       ) : null}
@@ -176,7 +176,7 @@ export function CeremonyPanel({ c, all, trustSequence }: { c: Ceremony; all: Cer
       {c.state === CeremonyState.RECORDED && c.publishCommand ? (
         <PanelSection title="After the record">
           <Cmd label="Send the public key in the terminal">{c.publishCommand}</Cmd>
-          <p className="max-w-[70ch]">A published user ID cannot be withdrawn. You type the confirmation in the terminal. This page has no button.</p>
+          <p className="max-w-[62ch]">A published user ID cannot be withdrawn. You type the confirmation in the terminal. This page has no button.</p>
           <p>
             <LearnLink path="/design/#after-a-ceremony">After a ceremony</LearnLink>
           </p>
@@ -185,7 +185,7 @@ export function CeremonyPanel({ c, all, trustSequence }: { c: Ceremony; all: Cer
 
       {c.state === CeremonyState.STARTED ? (
         <PanelSection title="Attempt">
-          <p className="max-w-[70ch]">
+          <p className="max-w-[62ch]">
             This ceremony has an attempt and no ceremony record. ritueel status reports it as critical until it is recorded or closed. If the run is still going,
             wait for it. If it stopped, a signature may exist.
           </p>
@@ -206,7 +206,7 @@ export function CeremonyPanel({ c, all, trustSequence }: { c: Ceremony; all: Cer
             </p>
           ) : null}
           {reason ? (
-            <p className="max-w-[70ch]">
+            <p className="max-w-[62ch]">
               <T cap={CAPS['Ceremony.close_reason']}>{reason}</T>
             </p>
           ) : null}

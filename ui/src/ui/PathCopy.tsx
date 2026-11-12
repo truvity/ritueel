@@ -14,7 +14,7 @@ export function PathCopy({ path, cap = 120 }: { path: string; cap?: number }) {
   // A path that is cut on screen is not copied: the control writes what the screen shows.
   const { canCopy, done, copy } = useCopy(path.length <= cap ? path : '');
   return (
-    <div className="flex max-w-[70ch] min-w-0 items-stretch border border-rule bg-sunk">
+    <div className="flex max-w-[62ch] min-w-0 items-stretch border border-rule bg-sunk">
       <code id={id} className="min-w-0 flex-1 px-3 py-1.5 font-mono text-[0.8125rem] leading-relaxed [overflow-wrap:anywhere] select-all">
         {safeString(path, cap)}
       </code>

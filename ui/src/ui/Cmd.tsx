@@ -52,7 +52,7 @@ export function Cmd({ children, label = 'Type this in the terminal', note = true
   const id = useId();
   const { canCopy, done, copy } = useCopy(children);
   return (
-    <div className="max-w-[70ch]">
+    <div className="max-w-[62ch]">
       <div className="flex min-w-0 flex-col border border-rule bg-sunk sm:flex-row sm:items-stretch" role="group" aria-label={safeString(label, 120)}>
         <div className="flex min-w-0 flex-1 items-start">
           <span aria-hidden className="self-stretch bg-ink px-2.5 py-2 font-mono text-sm font-bold text-bg">

@@ -10,11 +10,11 @@ import { learnUrl } from '../lib/finding';
 export function DemoLede() {
   return (
     <div className="grid gap-x-6 gap-y-1 text-[0.9375rem] min-[1440px]:grid-cols-2">
-      <p className="max-w-[70ch]">
+      <p className="max-w-[62ch]">
         ritueel helps you keep a root, the key that everything else trusts. This page only shows what is not applied yet. You write what you want in files, and you apply
         it in the terminal.
       </p>
-      <p className="max-w-[70ch]">
+      <p className="max-w-[62ch]">
         Use the bar above: change the example bundle, step through the five scenes of acme, or change the page state. The words are in the{' '}
         <a className="font-semibold text-accent underline underline-offset-4" href={learnUrl('/glossary/')} target="_blank" rel="noopener noreferrer">
           glossary
