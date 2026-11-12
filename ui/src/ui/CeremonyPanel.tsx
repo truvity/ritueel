@@ -6,7 +6,7 @@ import { plural } from '../lib/format';
 import { domKey } from '../lib/inventory';
 import { href, hrefForObject } from '../lib/route';
 import { USUAL_STEPS } from '../lib/steps';
-import { CHANGE_KIND_WORD, RUN_PLACE_VALUE } from '../lib/words';
+import { RUN_PLACE_VALUE } from '../lib/words';
 import { Cmd } from './Cmd';
 import { Fp } from './Fp';
 import { LearnLink } from './Page';
@@ -60,11 +60,15 @@ function Stepper({ c }: { c: Ceremony }) {
   );
 }
 
-/** A change of the plan: the kind word, the text, and the object as a link to the inventory. */
+/**
+ * A change of the plan: the text, and the object as a link to the inventory. The text is the title
+ * of the change and starts with its kind ("Certify ...", "Renew ..."), as in the To do table, so
+ * the kind is not written a second time.
+ */
 function ChangeLine({ ch }: { ch: CeremonyChange }) {
   return (
     <li className="[overflow-wrap:anywhere]">
-      <span className="text-dim">{CHANGE_KIND_WORD[ch.kind] ?? ''}</span> <T cap={CAPS['CeremonyChange.text']}>{ch.text}</T>
+      <T cap={CAPS['CeremonyChange.text']}>{ch.text}</T>
       {ch.object ? (
         <>
           {' '}
