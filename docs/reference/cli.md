@@ -1,6 +1,6 @@
 ---
 title: Commands
-description: The thirteen ritueel commands, their forms, the shared flags, the exit codes and the JSON output, as decided for the first version. Not built yet.
+description: The thirteen ritueel commands, their forms, the shared flags, the exit codes and the JSON output. Not built yet.
 sidebar:
   order: 2
 ---

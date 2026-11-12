@@ -1,6 +1,6 @@
 ---
 title: Root-signed CRLs, version 1
-description: The CRL each ritueel root signs to revoke an intermediate certificate, its profile, cadence and the rules for a relying party, with test vectors.
+description: The CRL that each ritueel root key signs to revoke an intermediate certificate, its profile, cadence and the rules for a relying party, with test vectors.
 sidebar:
   order: 8
 ---

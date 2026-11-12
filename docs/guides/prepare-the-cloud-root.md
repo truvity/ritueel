@@ -1,6 +1,6 @@
 ---
 title: Prepare the cloud root
-description: Make the dedicated AWS account, the admin role and the ceremony role that ritueel needs for a KMS root, and the controls worth adding, before the first init.
+description: Make the dedicated AWS account, the admin role and the ceremony role that ritueel needs for a KMS root, and the controls worth adding, before the first apply.
 sidebar:
   order: 0.6
 ---

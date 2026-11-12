@@ -1,6 +1,6 @@
 ---
 title: Revocation material
-description: The revocation signatures and removal authorisation made when a root is born, where they are written and refused, how to make and check one later.
+description: The revocation signatures and removal authorisation made when a root key is born, where they are written and refused, how to make and check one later.
 sidebar:
   order: 12
 ---

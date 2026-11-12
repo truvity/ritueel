@@ -1,6 +1,6 @@
 ---
-title: Cards, the inventory and the attestation bundle
-description: The four kinds of card, the inventory cards.yaml and cards/NAME.yaml, the checks made on a card, and the attestation files kept for each root key
+title: Cards, the card files and the attestation bundle
+description: The four kinds of card, the card file and the card map, the checks made on a card, and the attestation files kept for each root key
 sidebar:
   order: 9
 ---
