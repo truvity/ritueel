@@ -27,8 +27,8 @@
 20. Full TUF, with separate roles and thresholds, is not used.
 21. Hosts trust a signed, versioned list of SSH CA public keys. The SSH CA keys of a system that holds delegations stay with that system, as an SSH CA key is an anchor, not a chain. The break-glass SSH CA is ritueel's own root of the kind SSH CA, held offline like the other root keys.
 22. The SSH CA key list holds those system keys and the break-glass SSH CA keys of the root keys that keep one. It has the same expiry and host rules as the root list, takes ECDSA P-384 keys only, and nobody edits it ([its format](/reference/ssh-ca-key-list/#the-list)).
-23. A system's SSH CA key enters by a third hand-off request type, `ssh-ca-key`: the public key and an SSH signature as proof of possession ([the request](/reference/hand-off-contract/#ssh-ca-key)). ritueel checks it, a person confirms it, and the key, a delegated key, is listed under a delegation the operator declared with that type. The answer says the key is listed (nothing to certify).
-24. Each SSH CA key has a use, user or host, asked in the request and fixed by the operator's declaration, so a host never trusts a user CA as a host CA or the reverse.
+23. A system's SSH CA key enters by a third hand-off request type, `ssh-ca-key`: the public key and an SSH signature as proof of possession ([the request](/reference/hand-off-contract/#ssh-ca-key)). ritueel checks it, a person confirms it, and the key, a delegated key, is listed under a delegation the holder declared with that type. The answer says the key is listed (nothing to certify).
+24. Each SSH CA key has a use, user or host, asked in the request and fixed by the holder's declaration, so a host never trusts a user CA as a host CA or the reverse.
 25. A break-glass SSH CA key is made by ritueel in the store of its root key when that key is born, and leaves the list with it. An SSH CA key is withdrawn by the next list. There is no revocation signature for it, and the list may be empty.
 26. An intermediate certificate is revoked by a CRL, one per issuing root key. A root key signs its CRL at every ceremony in which it signs, and when it is born (empty if nothing is revoked); the CRL of every other active root key is copied unchanged beside it. A CRL is valid for 25 months, and an entry lasts until the certificate it names expires ([the profile](/reference/crl/#the-profile)). OpenPGP is not covered by CRLs.
 27. The CA bundle is the certificates of the active X.509 root keys in one PEM file ([the file](/reference/root-list/#the-ca-bundle)).
@@ -70,7 +70,7 @@ A holder must prove what was done, and outsiders must check the roots. One bundl
 - **Accept any list at an equal sequence.** Simpler, but two different root sets could carry one sequence.
 - **Fail closed when the list expires.** Stronger on paper, but a missed ceremony would cut every host off its roots at once.
 - **Full TUF.** Mature freeze and rollback protection, but standard verifiers cannot count signatures and one holder cannot staff separate roles.
-- **The operator edits the SSH CA key list.** No request to write, but a key would be trusted that nothing checked and the list would have a second author.
+- **The holder edits the SSH CA key list.** No request to write, but a key would be trusted that nothing checked and the list would have a second author.
 - **Version 2 of the hand-off contract, or a contract of its own, for the SSH CA key type.** Keeps version 1 as written, but nothing is released so no receiver is surprised, and a second version costs every reader a second code path.
 - **A key that does both user and host certificates.** One key fewer, but its holder can vouch for hosts as well as users.
 - **OCSP for an intermediate.** Live status, but it needs a responder that signs online, which ritueel never holds, and a certificate that names it.
