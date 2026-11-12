@@ -29,7 +29,7 @@ export function LearnLink({ path, children = 'Read why' }: { path: string; child
   // A path that is not a plain site path is not a link: it is shown as no guide at all.
   if (!learnPathOk(path)) return null;
   return (
-    <a className="inline-flex min-h-11 items-center font-semibold text-accent underline underline-offset-4" href={learnUrl(path)} target="_blank" rel="noopener noreferrer">
+    <a className="inline-flex min-h-11 items-center lg:min-h-8 font-semibold text-accent underline underline-offset-4" href={learnUrl(path)} target="_blank" rel="noopener noreferrer">
       {children} <span aria-hidden>{'↗'}</span>
       <span className="sr-only"> (a guide on ritueel.id, opens in a new tab)</span>
     </a>

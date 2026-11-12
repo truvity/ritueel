@@ -13,12 +13,13 @@ import { T } from './T';
  * ritueel saw, the object it is about, a guide, and the command that deals with
  * it. The page shows the command and copies it; the terminal runs it.
  */
-export function FindingCard({ f }: { f: Finding }) {
+/** `commandNote` is false when a list of findings says once, after the list, that its commands are examples. */
+export function FindingCard({ f, commandNote = true }: { f: Finding; commandNote?: boolean }) {
   const k = sevKey(f.severity);
   return (
     <article
       aria-label={safeString(f.title, CAPS['Finding.title'])}
-      className={`max-w-[70ch] border border-line border-l-[6px] bg-panel p-4 ${SEV_EDGE[k]} ${k === 'critical' ? 'border-y-2 border-r-2 border-y-critical border-r-critical' : ''}`}
+      className={`max-w-[70ch] border border-line border-l-[6px] bg-panel px-4 py-3 ${SEV_EDGE[k]} ${k === 'critical' ? 'border-y-2 border-r-2 border-y-critical border-r-critical' : ''}`}
     >
       <Sev level={k} label={SEVERITY_WORD[f.severity] ?? 'finding'} />
       <h3 className="mt-1.5 text-lg leading-snug font-bold">
@@ -28,7 +29,7 @@ export function FindingCard({ f }: { f: Finding }) {
         <T cap={CAPS['Finding.reason']}>{f.reason}</T>
       </p>
       {f.evidence.length > 0 ? (
-        <ul aria-label="What ritueel saw" className="mt-2 list-disc space-y-0.5 pl-5 text-sm">
+        <ul aria-label="What ritueel saw" className="mt-1.5 list-disc space-y-0.5 pl-5 text-sm">
           {f.evidence.map((e, i) => (
             <li key={i}>
               <T cap={CAPS['Finding.evidence']}>{e}</T>
@@ -37,9 +38,9 @@ export function FindingCard({ f }: { f: Finding }) {
         </ul>
       ) : null}
       {f.object || f.learnPath ? (
-        <p className="mt-2 flex flex-wrap items-center gap-x-5 gap-y-0 text-sm">
+        <p className="mt-1 flex flex-wrap items-center gap-x-5 gap-y-0 text-sm">
           {f.object ? (
-            <span className="inline-flex min-h-11 items-center gap-1.5">
+            <span className="inline-flex min-h-11 items-center gap-1.5 lg:min-h-8">
               <span className="text-dim">About:</span>
               <span className="text-dim">{OBJECT_KIND_WORD[f.object.kind]}</span>
               <a className="font-semibold text-accent underline underline-offset-4" href={hrefForObject(f.object)}>
@@ -57,7 +58,7 @@ export function FindingCard({ f }: { f: Finding }) {
       ) : null}
       {f.fixCommand ? (
         <div className="mt-2">
-          <Cmd label={`Fix for: ${safeString(f.title, CAPS['Finding.title#fix'])}`}>{f.fixCommand}</Cmd>
+          <Cmd label={`Fix for: ${safeString(f.title, CAPS['Finding.title#fix'])}`} note={commandNote}>{f.fixCommand}</Cmd>
         </div>
       ) : null}
     </article>
