@@ -12,7 +12,7 @@ You write what you want in wanted files. ritueel finds what is not applied yet, 
 ## Commands
 
 :::note[Proposed]
-These names and flags are proposed, awaiting the maintainer: the template names of `new`, the spelling of `--test-root` ([#136](https://github.com/truvity/ritueel/issues/136)), `--with`, `--material`, `--delegation`, `--reason` of `apply`, `close` and `revoke`, the exit code 3 of `join`, and `--decline`. `want accept` and `want decline` are later and belong to [record 0010](../decisions/0010-the-engine-the-process-and-the-page.md). The flag `--only` and an age limit of a plan are not decided ([#143](https://github.com/truvity/ritueel/issues/143), [#142](https://github.com/truvity/ritueel/issues/142)); the page names them, but they are not rules.
+These names and flags are proposed, awaiting the maintainer: the template names of `new`, the spelling of `--test-root` ([#136](https://github.com/truvity/ritueel/issues/136)), `--with`, `--material`, `--delegation`, `--reason` of `apply`, `close` and `revoke`, `--card` of `revoke`, the exit code 3 of `join`, and `--decline`. `want accept` and `want decline` are later and belong to [record 0010](../decisions/0010-the-engine-the-process-and-the-page.md). The flag `--only` and an age limit of a plan are not decided ([#143](https://github.com/truvity/ritueel/issues/143), [#142](https://github.com/truvity/ritueel/issues/142)); the page names them, but they are not rules.
 :::
 
 | Command | Does | Needs a person | Decided by |
@@ -96,7 +96,7 @@ There is no command that renames an X.509 root key. Its name is inside its certi
 
 The card of a root key is named in its wanted card file, so there is no flag that names a card by serial.
 
-*Earlier flags.* `--root` is now `--with` and a reason. `--card`, `--roots`, `--kind`, `--reasons`, `--intermediate`, `--request` and `--out` are now the wanted files, or are gone.
+*Earlier flags.* `--root` is now `--with` and a reason. `--roots`, `--kind`, `--reasons`, `--intermediate`, `--request` and `--out` are now the wanted files, or are gone.
 
 Proposed. The text output writes a root key across bundles as `acme/A`. What `acme/A` names when one letter labels the keys of several roots is open ([#137](https://github.com/truvity/ritueel/issues/137)). The JSON output is unchanged.
 
