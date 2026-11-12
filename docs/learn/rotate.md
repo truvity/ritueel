@@ -14,7 +14,7 @@ sidebar:
 | **An event** | An advisory about the card, its firmware or the cloud key service that affects the key; the deprecation of its algorithm; a lost card, or one at its end of life; a suspected compromise; a change of key store (from a file to a card); a change of who holds the key. |
 | **Age, for a key in software** | After at most three years, whatever else happened. |
 
-**What ages a key depends on where it lives.** A key in a file can be copied and read without leaving a trace, so a calendar limit bounds how long an unnoticed copy stays useful. Three years is the top of the cryptoperiod that NIST SP 800-57 Part 1 gives a private signing key, and a forced rotation also keeps the rotation path practised: a path used only in an emergency is a path that has never been tested. A key born on a card or in a cloud key service cannot be copied, so the calendar adds nothing; what ends it is something that happens to the device, the service or the algorithm. In 2024, for example, a side channel in the ECDSA code inside some security keys let someone with physical access and specialised equipment recover the private key; the devices took no firmware update, so the remedy was a new device and a new key. The rule is [record 0008](../decisions/0008-a-persons-own-key.md), rule 11: a key on a card is replaced on an event, not by calendar. The sources of this example are in [a research note](/research/earlier-records-two-sources-2026-11-11/#the-2024-side-channel-in-a-cards-signature-code).
+**What ages a key depends on where it lives.** A key in a file can be copied and read without leaving a trace, so a calendar limit bounds how long an unnoticed copy stays useful. Three years is the top of the cryptoperiod that NIST SP 800-57 Part 1 gives a private signing key, and a forced rotation also keeps the rotation path practised: a path used only in an emergency is a path that has never been tested. A key born on a card or in a cloud key service cannot be copied, so the calendar adds nothing; what ends it is something that happens to the device, the service or the algorithm. In 2024 a side channel in the ECDSA code inside some security keys let someone with physical access and specialised equipment recover the private key; the devices took no firmware update, so the remedy was a new device and a new key. The rule is [record 0002](../decisions/0002-where-a-key-lives.md), rule 16: a key on a card is replaced on an event, not by calendar. The sources are in [a research note](/research/earlier-records-two-sources-2026-11-11/#the-2024-side-channel-in-a-cards-signature-code).
 
 **So every yearly ceremony includes a review of the advisories** for the cards, the services and the algorithms you use, and the record says you did it. An advisory is the one event you can miss by not looking ([record 0007](../decisions/0007-changing-and-losing-a-root.md)).
 
@@ -35,7 +35,7 @@ For an intermediate:
 3. The system switches to the new key. For a time both certificates exist.
 4. The old intermediate is retired, or revoked if the reason was compromise.
 
-For a root, rotating is a [transition](/learn/transitions/): create the new root, have the old one vouch for it, overlap, supersede. A root rotation is the biggest ritual there is; it is planned years ahead, which is why a root has an expiry and the warning that goes with it.
+For a root key, rotating is a [transition](/learn/transitions/): create the new key, have the old one vouch for it, overlap, supersede. A root rotation is the biggest ritual there is; it is planned years ahead, which is why a root key has an expiry and the warning that goes with it.
 
 For OpenPGP subkeys, make a new subkey, bind it, and let the old one expire or revoke it with a soft reason (*superseded*), so old signatures stay valid. Rotating the primary key means a new identity: everyone who recorded your fingerprint must record the new one, so it is the most expensive rotation.
 
@@ -62,4 +62,4 @@ Two patterns follow. **Extend the same key's expiry** when the key is safe (Tail
 
 ## In ritueel
 
-`intermediate replace` certifies a new key for a registered intermediate; `root add` and `root retire` carry out a root transition. Both are planned (M4). The steps and a drill are in the [guide](/guides/rotate-a-key/).
+`apply` carries out a root transition from the wanted root file, and certifies a new intermediate key from a request under a declared delegation. Planned for M4. The steps and a drill are in the [guide](/guides/rotate-a-key/).
