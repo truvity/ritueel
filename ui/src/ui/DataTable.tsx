@@ -1,5 +1,6 @@
 import { Fragment, useEffect, useRef, type ReactNode } from 'react';
 import useMediaQuery from '@mui/material/useMediaQuery';
+import { safeString } from '../lib/safe';
 
 // One table for the lists of the page (changes, inventory, history, trust files).
 //
@@ -89,7 +90,8 @@ export function DataTable<R>({ columns, rows, groups, caption, selectedKey, rowK
     row?.querySelector<HTMLElement>('a')?.focus();
   });
 
-  const attrsOf = (row: R) => ({ 'data-row-id': rowKey(row), ...(rowAttrs?.(row) ?? {}) });
+  // The key is data (an id, a path): it reaches the attribute only as plain ASCII, with anything else written as its U+XXXX code.
+  const attrsOf = (row: R) => ({ 'data-row-id': safeString(rowKey(row), 100), ...(rowAttrs?.(row) ?? {}) });
   const chosen = (row: R) => selectedKey !== undefined && rowKey(row) === selectedKey;
   const lines = (groups ? groups.flatMap((g) => g.rows) : (rows ?? [])).length;
   const full = `${caption} ${lines} ${lines === 1 ? 'line' : 'lines'}.`;
