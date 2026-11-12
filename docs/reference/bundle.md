@@ -15,6 +15,8 @@ The bundle holds the wanted files, the history, the trust sets, the certificates
 
 A bundle has its own history, trust sequence and one root of each kind it uses (X.509, OpenPGP, SSH CA). A company bundle also has a root list; a personal bundle has none ([record 0006](../decisions/0006-bundle-history-and-trust-files.md), rule 2). The keys of a root are labelled `A` and `B`, then the next letter. A holder with a personal key and a company keeps two bundles, for example `personal/` and `acme/`. Across bundles a root key is written with the bundle's name, `acme/A` (rule 3). Two bundles may share a pair of root cards. Each keeps its own card files, its own sealed copy of the card secrets and its own rows ([the cards page](/reference/cards/), [record 0003](../decisions/0003-root-cards.md), rules 6 and 7).
 
+A **card** is a hardware token, such as a YubiKey. A **card file** is the wanted file of one card. A **row** is the four PIV slots that a card keeps for the keys of one bundle ([record 0003](../decisions/0003-root-cards.md), rules 3 and 18).
+
 A bundle is named by its directory (record 0006, rule 3).
 
 :::note[Proposed]
