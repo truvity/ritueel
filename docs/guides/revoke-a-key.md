@@ -22,13 +22,13 @@ sidebar:
 
 ## Revoke an X.509 intermediate
 
-1. `ritueel intermediate revoke NAME --reason compromise`. The plan names the roots whose CRLs get an entry. Result: those roots sign new CRLs listing the certificate.
+1. `ritueel revoke NAME --reason compromised` (`--reason` is proposed). It needs the card of each root key whose CRL gets an entry. Result: those root keys sign new CRLs listing the certificate.
 2. **Publish the CRLs** with the next trust sequence. Clients that load them reject the certificate.
 3. **Issue a replacement** if one is needed: see [Rotate a key](/guides/rotate-a-key/).
 
 ## Revoke a root
 
-For a root that is lost, stolen or compromised, use [A lost root card](/guides/lost-root-card/): `ritueel root revoke LABEL --reason REASON --revocation FILE` ([the checks](/reference/transitions/#revoking-a-root-key)).
+For a root key that is lost, stolen or compromised, use [A lost root card](/guides/lost-root-card/): `ritueel revoke --card CARD --reason REASON --material FILE` (`--reason` and `--material` are proposed) ([the checks](/reference/transitions/#revoking-a-root-key)).
 
 ## How you know it worked
 
