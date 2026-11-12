@@ -35,6 +35,7 @@
 28. A test root is marked at birth, has no passphrase, and is a key file or lives on a rehearsal card. The normal first `apply` makes it. It is marked TEST ONLY in its certificate name and every ceremony record, and `apply` refuses to put it in one trust set with a real root. A real root never becomes a test root, because test is set at birth. A test root may run its ceremonies on the workstation or on a rehearsal card. The relaxed mode for tests is wording only; no flag turns the offline rule off.
 29. What is not applied yet is found each time from the wanted files, the history, the date and the requests, and never stored. Each item is called a change.
 30. A wanted line or file that is deleted retires, revokes and removes nothing, and it is shown as a finding. The history wins over a wanted file.
+31. `close` asks the person to type the first eight characters of the digest of the plan, as `apply` does (rule 6); a script gives `--confirm DIGEST`.
 
 ## Why
 
@@ -79,6 +80,8 @@ A root signs for everything below it, so the person must see what will be signed
 - **A deleted line retires the object.** Short, but a slip in an editor would retire a key; a deleted line retires, revokes and removes nothing (rule 30).
 - **A plan made on the stick.** One trip fewer, but the stick would need the wanted files and could bring old ones back; the stick runs only a saved plan (rule 21).
 - **A count typed at `apply` as well as the eight characters.** A person would see the numbers, but it is a second prompt of the key-press habit refused above, and the plan in words already shows the counts; the eight characters are the one confirmation (rule 6).
+- **The first eight characters of the digest of the attempt for `close`.** It names what is closed, but it is a second kind of eight characters that the person does not see in the folder name, and the digest of the plan is the habit of `apply` (rule 31).
+- **Nothing to type for `close`, only the reason.** Nothing to learn, but rule 12 asks for a confirmation, a key press is not accepted for a plan (rule 6), and closing an attempt ends a critical finding of `status` (rule 31).
 
 ## Not yet proven or only proposed
 
