@@ -5,7 +5,7 @@ sidebar:
   order: 11
 ---
 
-*Not built yet. This is the page that [record 0007](../decisions/0007-changing-and-losing-a-root.md) leaves for the rules and profiles; the code is [issue #13](https://github.com/truvity/ritueel/issues/13), in M4. The ideas are taught in [Moving from one root to another](/learn/transitions/).*
+*Not built yet. This is the page that [record 0007](../decisions/0007-changing-and-losing-a-root.md) leaves for the rules and profiles; the code is [issue #13](https://github.com/truvity/ritueel/issues/13), in M4. The ideas are taught in [Moving from one root to another](/learn/transitions/). The commands, words and file names on this page are from before the decisions of 2026-11-12; the design is at https://ritueel.id/design/.*
 
 A transition moves trust from one root to another without breaking a client that has not learned of the change. It never moves a key: the new root is born in its store, and an active root vouches for it ([principle 1](/principles/)).
 

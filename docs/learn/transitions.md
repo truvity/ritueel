@@ -5,7 +5,7 @@ sidebar:
   order: 19
 ---
 
-*Design phase: this page teaches the model. The tools that carry out each step are planned; see the [roadmap](/roadmap/).*
+*Design phase: this page teaches the model. The tools that carry out each step are planned; see the [roadmap](/roadmap/). The commands, words and file names on this page are from before the decisions of 2026-11-12; the design is at https://ritueel.id/design/.*
 
 Roots change. A key store is replaced, an algorithm ages, a root nears its expiry, or a root is lost. The step from one root to the next is a *transition*, and doing it without breaking anyone is the skill this page teaches. [The life of a root](/learn/life-of-a-root/) says when it happens; [why more than one root](/learn/layered-trust/) says why you are rarely left with only one.
 

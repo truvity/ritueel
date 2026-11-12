@@ -5,7 +5,7 @@ sidebar:
   order: 7
 ---
 
-*Not built yet. This is version 1 of the format that [record 0006](../decisions/0006-bundle-history-and-trust-files.md) leaves to a reference page; the code is [issue #55](https://github.com/truvity/ritueel/issues/55), in M4, and its [test vectors](/reference/ssh-ca-key-list/#test-vectors) match this page. It has the shape of the [root list](/reference/root-list/), which it follows wherever it can.*
+*Not built yet. This is version 1 of the format that [record 0006](../decisions/0006-bundle-history-and-trust-files.md) leaves to a reference page; the code is [issue #55](https://github.com/truvity/ritueel/issues/55), in M4, and its [test vectors](/reference/ssh-ca-key-list/#test-vectors) match this page. It has the shape of the [root list](/reference/root-list/), which it follows wherever it can. The commands, words and file names on this page are from before the decisions of 2026-11-12; the design is at https://ritueel.id/design/.*
 
 SSH hosts trust a CA by holding its public key. The **SSH CA key list** tells a host which SSH CA keys are current: the keys of the systems that hold intermediates, which keep their private halves, and the break-glass SSH CA of each root, which ritueel holds offline. It carries the [trust sequence](../decisions/0006-bundle-history-and-trust-files.md) and is signed by one active root, with the X.509 root key that signs the root list, so a host that already trusts the root list needs nothing new to trust this one.
 

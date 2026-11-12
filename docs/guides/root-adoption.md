@@ -5,7 +5,7 @@ sidebar:
   order: 1
 ---
 
-*Design phase: not built yet. This page is the plan that `ritueel init` will follow, and the drill that will rehearse it ([issue #48](https://github.com/truvity/ritueel/issues/48)). No release is signed until the project's root has been adopted and the drill has passed ([record 0009](../decisions/0009-release-keys-and-the-keyring.md)). The adoption on a cloud root comes first (M4) and card roots follow the first signed release (M6); the [roadmap](/roadmap/) has the order.*
+*Design phase: not built yet. This page is the plan that `ritueel init` will follow, and the drill that will rehearse it ([issue #48](https://github.com/truvity/ritueel/issues/48)). No release is signed until the project's root has been adopted and the drill has passed ([record 0009](../decisions/0009-release-keys-and-the-keyring.md)). The adoption on a cloud root comes first (M4) and card roots follow the first signed release (M6); the [roadmap](/roadmap/) has the order. The commands, words and file names on this page are from before the decisions of 2026-11-12; the design is at https://ritueel.id/design/.*
 
 Adoption makes the real roots: on two dedicated root cards, or in one cloud root account. It runs once, and everything signed afterwards hangs from it, so it is rehearsed first.
 

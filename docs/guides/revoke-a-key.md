@@ -5,7 +5,7 @@ sidebar:
   order: 5
 ---
 
-*Design phase: not built yet. This page is the plan that `ritueel intermediate revoke` and `root revoke` will follow, and the plan for the revocation certificates that `init` will make. Read [Revoke](/learn/revoke/) first.*
+*Design phase: not built yet. This page is the plan that `ritueel intermediate revoke` and `root revoke` will follow, and the plan for the revocation certificates that `init` will make. Read [Revoke](/learn/revoke/) first. The commands, words and file names on this page are from before the decisions of 2026-11-12; the design is at https://ritueel.id/design/.*
 
 ## What you start with
 

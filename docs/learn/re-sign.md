@@ -5,6 +5,8 @@ sidebar:
   order: 15
 ---
 
+*The commands, words and file names on this page are from before the decisions of 2026-11-12; the design is at https://ritueel.id/design/.*
+
 **Re-signing is the ordinary yearly ritual.** The key stays the same. Its authority is signed again with a later end date.
 
 ## What happens

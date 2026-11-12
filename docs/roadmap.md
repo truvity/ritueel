@@ -55,7 +55,7 @@ None of these is planned in detail. Each starts as a decision proposal. The deci
 - The build of revocation make and check, the restore check, the drill scripts and the adoption drill; root add, retire and revoke with their vectors; an advisory review asked for in the plan (all in the M4 and M7 rows).
 - The guided mode and the program side of the page (the M2 and M7 rows).
 - Recipes for consumers that need a change of the hand-off contract (Vault and OpenBao, step-ca, AWS Private CA, Istio).
-- A check of the local trust store, a hand-over screen and an edit form in the page, and calling a code host's own tool (each needs the maintainer's word where record 0011 says so).
+- A check of the local trust store, a list of the next steps in the panel of the ceremony in History and a form in the page, and calling a code host's own tool (each needs the maintainer's word where record 0011 says so).
 - Three teaching pages wait: user IDs, checking your cards, and renewing a delegated key.
 
 ### What is delivered

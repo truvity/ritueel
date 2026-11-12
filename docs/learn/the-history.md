@@ -5,7 +5,7 @@ sidebar:
   order: 13
 ---
 
-*Design phase: the layout described here is what the first version will write ([the bundle](/reference/bundle/)). The advice is ritueel's opinion; the reasons are in [record 0001](../decisions/0001-what-ritueel-is.md) and [record 0006](../decisions/0006-bundle-history-and-trust-files.md).*
+*Design phase: the layout described here is what the first version will write ([the bundle](/reference/bundle/)). The advice is ritueel's opinion; the reasons are in [record 0001](../decisions/0001-what-ritueel-is.md) and [record 0006](../decisions/0006-bundle-history-and-trust-files.md). The commands, words and file names on this page are from before the decisions of 2026-11-12; the design is at https://ritueel.id/design/.*
 
 Every ceremony changes what outsiders can trust, and in a year nobody remembers what was done. ritueel keeps the written memory in one **bundle**, a directory of plain files with a fixed structure, that says which roots exist, where each lives, what was signed, and when. Its write-once part is the **history**, the folder `history/`: one sub-folder for each ceremony, holding its plan, record and transcript, each naming the one before it ([ceremony files](/reference/ceremony-record/)). Nothing needs git. This page is about how to keep the bundle, because the history alone is not enough.
 
