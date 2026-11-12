@@ -254,7 +254,7 @@ Add the packets to the primary's certificate to get the updated certificate, wit
 cat test-primary-a.pgp pgp-piv-valid.bound.pgp > updated.pgp
 ```
 
-A verifier then needs nothing from ritueel. The first set of vectors was checked this way with `sqv` on 2026-11-01, and the set regenerated with the root list vectors with `gpgv` 2.4.8 the same day: a signature made by an accepted subkey verifies against `updated.pgp`, and one made by a subkey whose answer lacks the embedded back-signature, or was bound by another primary, does not. The authentication answer was imported into `gpg` 2.4.8 on 2026-11-02, with the primary of root A: `gpg` lists the subkey with the capability `a`, and the answer bound for signing with `s`. The ritueel keyring package carries the same certificates ([issue #15](https://github.com/truvity/ritueel/issues/15)).
+A verifier then needs nothing from ritueel. The first set of vectors was checked this way with `sqv` on 2026-11-01, and the set regenerated with the root list vectors with `gpgv` 2.4.8 the same day: a signature made by an accepted subkey verifies against `updated.pgp`, and one made by a subkey whose answer lacks the embedded back-signature, or was bound by another primary, does not. The authentication answer was imported into `gpg` 2.4.8 on 2026-11-02, with the primary key A: `gpg` lists the subkey with the capability `a`, and the answer bound for signing with `s`. The ritueel keyring package carries the same certificates ([issue #15](https://github.com/truvity/ritueel/issues/15)).
 
 ### What the requester checks before it installs
 
