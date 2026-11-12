@@ -119,6 +119,8 @@ The trust sequence is one integer for the bundle. It grows by one whenever any t
 | 7 | The attempt is written before the first key is born. Each key goes into the birth journal as soon as it exists, and each signature into the journal of signatures. | 0005 rule 7 |
 | 8 | A file that a ceremony record lists and that fails its digest is an error for every reader. It is never "absent". | 0006 rule 29 |
 
+- When a write or a flush returns an error, ritueel stops at once with an error. It does not retry, and it does not print the line that says the write was flushed ([0006](../decisions/0006-bundle-history-and-trust-files.md) rule 36).
+
 :::note[Proposed]
 These parts of the steps are not decided and are fixed with the code ([issue #8](https://github.com/truvity/ritueel/issues/8)).
 
