@@ -36,6 +36,7 @@
 29. What is not applied yet is found each time from the wanted files, the history, the date and the requests, and never stored. Each item is called a change.
 30. A wanted line or file that is deleted retires, revokes and removes nothing, and it is shown as a finding. The history wins over a wanted file.
 31. `close` asks the person to type the first eight characters of the digest of the plan, as `apply` does (rule 6); a script gives `--confirm DIGEST`.
+32. The digest of a wanted file is the SHA-256 of the bytes as stored, so `sha256sum` gives the same value. Two files with one meaning have two digests, which is accepted.
 
 ## Why
 
@@ -82,6 +83,8 @@ A root signs for everything below it, so the person must see what will be signed
 - **A count typed at `apply` as well as the eight characters.** A person would see the numbers, but it is a second prompt of the key-press habit refused above, and the plan in words already shows the counts; the eight characters are the one confirmation (rule 6).
 - **The first eight characters of the digest of the attempt for `close`.** It names what is closed, but it is a second kind of eight characters that the person does not see in the folder name, and the digest of the plan is the habit of `apply` (rule 31).
 - **Nothing to type for `close`, only the reason.** Nothing to learn, but rule 12 asks for a confirmation, a key press is not accepted for a plan (rule 6), and closing an attempt ends a critical finding of `status` (rule 31).
+- **A digest of a canonical form of the parsed YAML.** One meaning would give one digest, but a canonical form must be specified and tested, the digest would depend on the parser, and no standard tool gives the value (rule 32).
+- **A fixed normalisation of line ends before the digest.** The most common differences between machines and editors would go, but ritueel would digest bytes that are not in the file, and a copy in `wanted/` would no longer be an exact copy (rule 32).
 
 ## Not yet proven or only proposed
 
