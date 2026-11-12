@@ -5,7 +5,7 @@ sidebar:
   order: 8
 ---
 
-*Design phase: not built yet. ritueel prints this list after every ceremony; the command words are decided, and the flag, form and list names marked proposed are not ([record 0011](../decisions/0011-publishing-and-what-to-do-after-a-ceremony.md)). The commands of other tools below are for you to run by hand; ritueel runs none of them and holds no token. Use example names; the snippets are not tested. The commands, words and file names on this page are from before the decisions of 2026-11-12; the design is at https://ritueel.id/design/.*
+*Design phase: not built yet. ritueel prints this list after every ceremony; the command words are decided, and the flag, form and list names marked proposed are not ([record 0011](../decisions/0011-publishing-and-what-to-do-after-a-ceremony.md)). The commands of other tools below are for you to run by hand; ritueel runs none of them and holds no token. Use example names; the snippets are not tested.*
 
 The rule is short: ritueel changes only your bundle. The one thing it may send out is your public OpenPGP key, to the keyservers you list. For everything else it prints what to do. This page is that "what to do", one section for each place a ceremony's result goes.
 
