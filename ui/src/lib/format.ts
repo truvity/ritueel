@@ -26,7 +26,7 @@ export function daysBetween(from: Timestamp | undefined, to: Timestamp | undefin
 export function inDays(n: number | undefined): string {
   if (n === undefined) return '-';
   if (n === 0) return 'today';
-  if (n < 0) return `${-n} days overdue`;
+  if (n < 0) return `${plural(-n, 'day')} overdue`;
   return n === 1 ? 'in 1 day' : `in ${n} days`;
 }
 
