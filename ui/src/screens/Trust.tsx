@@ -88,6 +88,7 @@ function makeColumns(d: ListTrustFilesResponse): Column<TrustFile>[] {
       key: 'verify',
       header: 'Verify',
       width: 38,
+      block: true,
       render: (f) =>
         f.verifyCommand ? (
           <Cmd label={`Check this file in the terminal: ${safeString(f.name, CAPS['TrustFile.name#cmd'])}`} note={false} wide>

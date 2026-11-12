@@ -39,6 +39,7 @@ const active = () =>
     `(() => { const a = document.activeElement; const row = a.closest('[data-row-id]'); return JSON.stringify({ tag: a.tagName, id: a.id, text: (a.textContent || '').trim().slice(0, 40), label: a.getAttribute('aria-label') || '', current: a.getAttribute('aria-current') || '', row: row ? row.getAttribute('data-row-id') : '', ring: getComputedStyle(a).outlineStyle + ' ' + getComputedStyle(a).outlineWidth }); })()`,
   ).then(JSON.parse);
 const text = () => evalJs(`document.body.innerText`);
+const mainText = async () => (await textOf('main')).replace(/\s+/g, ' ');
 const flat = async () => (await text()).replace(/\s+/g, ' ');
 const hash = () => evalJs('location.hash');
 const b64 = (t) => Buffer.from(t, 'utf8').toString('base64');
@@ -226,7 +227,8 @@ await fresh('#/inventory/cards');
   const t = await flat();
   check('D: By card has the groups root-a, root-b, day-ana and Cloud keys', ['root-a', 'root-b', 'day-ana', 'Cloud keys'].every((g) => t.includes(g)));
   const table = await textOf('main table');
-  check('D: the rows of the list show no fingerprint', !/[0-9A-Fa-f]{16}/.test(table.replace(/\s+/g, '')) || !/[0-9A-Fa-f]{4} [0-9A-Fa-f]{4} [0-9A-Fa-f]{4}/.test(table));
+  // No run of 16 hexadecimal characters in the text as shown, and no group of three groups of four: neither a bare nor a grouped fingerprint.
+  check('D: the rows of the list show no fingerprint', !/[0-9A-Fa-f]{16}/.test(table) && !/[0-9A-Fa-f]{4} [0-9A-Fa-f]{4} [0-9A-Fa-f]{4}/.test(table), table.slice(0, 120));
   check('D: the list shows 11 keys and the panel is beside it with the first object implied (root-a)', (await count('main tr[data-key-fp]')) === 11 && (await textOf('#panel-title')) === 'root-a');
   const list = await rectOfSel('main table');
   const panel = await rectOfSel('aside[aria-labelledby=panel-title]');
@@ -288,6 +290,54 @@ await go('#/inventory/cards');
   await sleep(450);
   const b = await active();
   check('D: at 1280 px Escape does what Back to the list does', (await hash()) === '#/inventory/cards' && b.tag === 'A' && b.row !== '', `${await hash()} ${JSON.stringify(b)}`);
+}
+await desktop();
+
+// ======== D2. behaviours of the lists and the panel ==========================================
+// The findings filter, the hidden button that goes to the panel, the mark on the implied first row, the
+// rows of a table as row headers, the lines of the Apply block, the Back button, and the focus when a link
+// inside the panel changes the object.
+await fresh('#/todo/findings');
+{
+  await clickButton('Critical');
+  await sleep(500);
+  check('D2: the filter Critical on scene 1 says "No finding at this level."', /No finding at this level\./.test(await mainText()), (await mainText()).slice(0, 200));
+  await clickButton('All');
+  await sleep(500);
+  check('D2: the filter All brings the finding back', /1 finding, worst first/.test(await mainText()) && /acme-release ends in 60 days/.test(await mainText()));
+}
+await useScene(2);
+await go('#/todo');
+{
+  const t = await mainText();
+  check('D2: the Apply block of scene 2 names the cards at hand, the allow-missing line and the command', /Cards at hand: root-a, root-b/.test(t) && /unless you name it with --allow-missing/.test(t) && /3 ready, 1 waiting/.test(t), t.slice(0, 400));
+  check('D2: each line of the Changes table has a row header (th scope=row), four of them', (await count('main table th[scope=row]')) === 4, String(await count('main table th[scope=row]')));
+}
+await useScene(1);
+await fresh('#/inventory/cards');
+{
+  check('D2: the implied first row is marked as current at 1440 px', (await evalJs(`${sel('main tr[data-row-id] a')}.getAttribute('aria-current')`)) === 'true' || (await evalJs(`!!document.querySelector('main [aria-current=true]')`)));
+  check('D2: the hidden button "Go to the panel" exists at 1440 px', await evalJs(`[...document.querySelectorAll('button')].some((b) => b.textContent.trim() === 'Go to the panel')`));
+  await clickButton('Go to the panel');
+  await sleep(200);
+  check('D2: "Go to the panel" moves the focus to the heading of the panel', (await active()).id === 'panel-title', JSON.stringify(await active()));
+}
+await desktop(1280, 900);
+await go('#/inventory/cards');
+{
+  await evalJs(`${sel('[data-row-id^="key/"] a')}.click()`);
+  await sleep(450);
+  const chosen = await hash();
+  await evalJs('history.back()');
+  await sleep(500);
+  const a = await active();
+  check('D2: the Back button of the browser returns to the list and puts the focus on the row', (await hash()) === '#/inventory/cards' && a.tag === 'A' && a.row !== '' && chosen.endsWith(a.row.split('/')[1]), `${chosen} ${JSON.stringify(a)}`);
+  // A link inside the panel changes the object: the panel starts again and the focus goes to its heading.
+  await go(`#/inventory/roots/key/${KEY_A}`);
+  const before = await textOf('#panel-title');
+  const moved = await evalJs(`(() => { const a = [...document.querySelectorAll('aside[aria-labelledby=panel-title] a')].find((x) => /#\\/inventory\\/roots\\/root\\//.test(x.getAttribute('href') || '')); if (!a) return false; a.focus(); a.click(); return true; })()`);
+  await sleep(500);
+  check('D2: a link inside the panel (Key to Root) changes the object and the focus goes to the new heading', moved && (await textOf('#panel-title')) !== before && (await active()).id === 'panel-title', JSON.stringify({ moved, before, now: await textOf('#panel-title'), active: await active() }));
 }
 await desktop();
 
@@ -419,17 +469,20 @@ for (const [h, emptyText, waitingText] of SCREENS) {
   await useState('Failed read');
   const failed = await flat();
   check(`H: Failed read on ${h} shows an alert, never an empty page, and the sentence about the ended process`, (await evalJs(`!!${sel('[role=alert]')}`)) && /Could not read/.test(failed) && /the ritueel process may have ended/.test(failed) && !emptyText.test(failed));
+  check(`H: Failed read on ${h} shows no time of a read`, !/Read 20\d\d-\d\d-\d\d/.test(await mainText()), failed.slice(0, 160));
   check(`I: no text input on ${h} in the Failed state`, (await noInput()) === 0);
   await useState('Empty');
   const empty = await flat();
   check(`H: Empty on ${h} shows no alert and says what it means`, !(await evalJs(`!!${sel('[role=alert]')}`)) && emptyText.test(empty), empty.slice(0, 200));
+  check(`H: Empty on ${h} shows the time of its read`, /Read 2026-11-24 09:00 UTC/.test(await mainText()), empty.slice(0, 200));
   check(`I: no text input on ${h} in the Empty state`, (await noInput()) === 0);
   await useState('Waiting');
   const waiting = await flat();
   check(`H: Waiting on ${h} says it is reading and shows neither empty nor failed`, waitingText.test(waiting) && !/Could not read/.test(waiting) && !emptyText.test(waiting));
+  check(`H: Waiting on ${h} shows no time of a read`, !/Read 20\d\d-\d\d-\d\d/.test(await mainText()), waiting.slice(0, 160));
   check(`I: no text input on ${h} in the Waiting state`, (await noInput()) === 0);
   await useState('Loaded');
-  check(`H: Loaded again on ${h} returns the data`, (await flat()).length > 200 && !waitingText.test(await flat()) && !/Could not read/.test(await flat()) && (loaded.includes('Read 2026-11-24 09:00 UTC') ? /Read 2026-11-24 09:00 UTC/.test(await flat()) : true));
+  check(`H: Loaded again on ${h} returns the data and the time of the read`, (await flat()).length > 200 && !waitingText.test(await flat()) && !/Could not read/.test(await flat()) && /Read 2026-11-24 09:00 UTC/.test(await mainText()));
 }
 {
   // Waiting does not end by itself.
@@ -483,7 +536,7 @@ await fresh('#/inventory/roots');
 // At 1440 by 900 and 1920 by 970, for seven worlds and seven screens: the height as a multiple of the
 // window, the width, the longest line of text, the use of the width, and the place of the panel. The
 // aims are one screen for To do and one and a half for the others. The table is printed so that it can be
-// put into the pull request; a number above its aim fails the check and nothing is loosened.
+// put into the pull request; a number above its aim is reported under the table and nothing is loosened.
 const LAYOUT_ROUTES = [
   ['#/todo', 1.0],
   ['#/todo/findings', 1.0],
@@ -532,6 +585,7 @@ const LONGEST_LINE = `(() => {
   return JSON.stringify(worst);
 })()`;
 const table = [];
+const over = [];
 for (const [w, h] of [[1440, 900], [1920, 970]]) {
   await desktop(w, h);
   await fresh('#/todo');
@@ -545,7 +599,8 @@ for (const [w, h] of [[1440, 900], [1920, 970]]) {
       const ratio = Math.round(m.ratio * 100) / 100;
       const where = `${world}, ${route}, ${w}x${h}`;
       table.push({ world, route, size: `${w}x${h}`, ratio, aim });
-      check(`L: height ${ratio} is at most ${aim} (${where})`, m.ratio <= aim + 0.005, String(ratio));
+      // A height above its aim is reported, never loosened and never turned into a failure (the build list, C.1): the aim is the maintainer's.
+      if (m.ratio > aim + 0.005) over.push(`${where}: ${ratio} (aim ${aim})`);
       check(`L: the document is not wider than the window (${where})`, m.sw <= m.cw, `${m.sw} > ${m.cw}`);
       const line = JSON.parse(await evalJs(LONGEST_LINE));
       check(`L: no line of text is longer than 70 characters (${where})`, line.chars <= 70, `${line.chars}: ${line.text}`);
@@ -580,6 +635,8 @@ for (const size of ['1440x900', '1920x970']) {
   console.log(`-- ${size}`);
   for (const [world] of WORLDS) console.log(world.padEnd(14) + '| ' + LAYOUT_ROUTES.map(([r]) => String(table.find((t) => t.world === world && t.route === r && t.size === size)?.ratio.toFixed(2) ?? '').padEnd(17)).join(''));
 }
+console.log(over.length ? `Above the aim (reported, not a failure):\n  ${over.join('\n  ')}` : 'No screen is above its aim.');
+check('L: every height is measured and the table is printed', table.length === 2 * WORLDS.length * LAYOUT_ROUTES.length, String(table.length));
 console.log('');
 await desktop();
 await fresh('#/inventory/cards');

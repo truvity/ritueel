@@ -20,6 +20,8 @@ export interface Column<R> {
   header: string;
   /** Width in rem at 1440 px. A column without one takes the rest of the width. */
   width?: number;
+  /** On a phone the cell stands under its header in the whole width, not beside it (a command). */
+  block?: boolean;
   /** The cell. The first column holds the link of the row (use `RowLink`). */
   render: (row: R, ctx: { current: boolean }) => ReactNode;
 }
@@ -106,6 +108,13 @@ export function DataTable<R>({ columns, rows, groups, caption, selectedKey, rowK
           <div className="min-h-11 text-base">{first.render(row, { current })}</div>
           {rest.map((c) => {
             const cell = c.render(row, { current });
+            if (c.block && !isEmptyCell(cell))
+              return (
+                <div key={c.key} className="py-0.5 text-sm">
+                  <span className="text-dim">{c.header}</span>
+                  <div className="mt-0.5 min-w-0">{cell}</div>
+                </div>
+              );
             return isEmptyCell(cell) ? null : (
               <div key={c.key} className="flex gap-2 py-0.5 text-sm">
                 <span className="w-24 shrink-0 text-dim">{c.header}</span>
