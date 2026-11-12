@@ -56,7 +56,7 @@ Refused with `root-absent` unless every active root key can sign the next root l
 
 ### Retiring a root key
 
-Refused unless all of these hold:
+The plan leaves the retirement out, with the reason, unless all of these hold:
 
 | Check | Code |
 |---|---|
