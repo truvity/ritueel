@@ -35,6 +35,7 @@
 28. The exact members, encoding and signature format of each trust file are reference pages with test vectors. They follow this design and cannot change it.
 29. A ceremony only adds files, each named by its identity (a digest or a time) and written whole or not at all ([steps](/reference/bundle/)). A listed file that fails its digest is an error, never absent.
 30. Coming back from the stick is a join: ritueel adds the missing files and never merges text. Two ends of the history are a fork, a critical finding. Two answers to one request stop the join.
+31. A join writes no ceremony record; it only adds files, so the end of the history changes only when a ceremony happens.
 
 ## Why
 
@@ -86,6 +87,8 @@ A holder must prove what was done, and outsiders must check the roots. One bundl
 - **A store of every old text of a wanted file, now.** Undo without git, but about eight more commands; the exact copies in each ceremony folder (rule 5) and git (rule 9) cover the need until it is built. It is later, not refused.
 - **Merge the text of two copies at the join.** One result, but a merge of a signed answer or of a history would decide which one is true; the join adds files only and shows a fork (rule 30).
 - **A name that does not carry its identity.** Short names such as a plain counter, but two copies could hold two contents under one name and the join would no longer be a union; every name carries its identity (rule 29).
+- **A ceremony record for each join.** The history would show every join, but two copies that each join would get two ends of the history, which is a fork (rule 30), and a saved plan that names the end of the history would go stale after every join; a join only adds files (rule 31).
+- **A note outside the chain for each join.** The holder could see when a copy was joined, but `seen/` is replaced and is not history, so the note would be no record, and it would be a new kind of file to specify (rule 31).
 
 ## Not yet proven or only proposed
 
