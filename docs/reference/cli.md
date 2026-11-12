@@ -18,7 +18,7 @@ These names and flags are proposed, awaiting the maintainer: the template names 
 | Command | Does | Needs a person | Decided by |
 |---|---|---|---|
 | `ritueel new [--template two-cards\|cloud\|personal\|file] [--test-root] DIR` | Makes the bundle folder and the starter wanted files. It touches no card and makes no key. The first `apply` makes the keys. | No | 0005 rule 15; 0006 rule 11 |
-| `ritueel status [cards\|keys\|certs\|ceremonies]` | With no argument: what is not applied yet, by object, with its source and what it needs; the findings; the due dates. With an argument: that list. A fork and an unresolved attempt are critical. A deleted wanted line, or a key that is active and no longer wanted, may be shown as a finding (proposed, [#133](https://github.com/truvity/ritueel/issues/133)). Exit codes 10, 11 and 12. | No | 0005 rules 7, 29, 30; 0007 rules 5, 16; 0006 rule 30 |
+| `ritueel status [cards\|keys\|certs\|ceremonies]` | With no argument: what is not applied yet, by object, with its source and what it needs; the findings; the due dates. With an argument: that list. A fork and an unresolved attempt are critical. A deleted wanted line is shown as a finding (0005 rule 30); the name of the finding is fixed with the code. Exit codes 10, 11 and 12. | No | 0005 rules 7, 29, 30; 0007 rules 5, 16; 0006 rule 30 |
 | `ritueel want [OBJECT]` | Opens the wanted file of `OBJECT` in `$EDITOR`; with no `OBJECT`, lists the wanted files. It checks the file (strict YAML, a label twice, a delegation under no root, the only key of a root retired) and shows the changes that are now not applied yet. It writes only what the person saves. | Only the editor | 0006 rule 11; 0005 rule 29 |
 | `ritueel want accept ID`, `want decline ID` | Proposed, later (record 0010). Take or refuse a proposal made in the local page. `accept` would show the edit first. | `accept` only | [record 0010](../decisions/0010-the-engine-the-process-and-the-page.md) |
 | `ritueel apply [--plan-only] [--with CARD...] [--reason TEXT] [--allow-missing NAME] [--confirm DIGEST]` | Does the changes that are not applied yet, in one ceremony: plan, confirm, reserve, sign, verify, record. It shows what it applies and what it leaves out, with the reason. The person types the first eight characters of the plan's digest and nothing more. A change of the set of root keys runs alone, never with renewals. A card is adopted only on the workstation. `--plan-only` stops after the plan. | Yes | 0005 rules 1, 4, 6, 10, 11, 14; 0007 rules 12, 17; 0003 rule 10 |
@@ -32,7 +32,7 @@ These names and flags are proposed, awaiting the maintainer: the template names 
 | `ritueel wizard [--web]` | The guided mode, which asks line by line in the terminal; with `--web`, also a read-only page served on localhost. The page has four entries, shows the plan and its digest in History, and cannot confirm anything; its one write, built later, is an inert proposal ([the page](/reference/wizard/)). The page calls the same API as the commands, served by the same ritueel process on one fixed loopback port; `--web` prints its address, and the name of the flag is proposed ([the process](/reference/wizard/#the-ritueel-process)). | Yes | [record 0010](../decisions/0010-the-engine-the-process-and-the-page.md) rules 2, 3, 6, 10, 11 |
 | `ritueel stop` | Proposed. Ends the ritueel process if one runs, and exits 0 also when none runs. The process otherwise ends by itself after an idle time. | No | [record 0010](../decisions/0010-the-engine-the-process-and-the-page.md) rule 9 |
 | `ritueel version` | Prints the version and the commit. | No | None |
-| `ritueel join SOURCE` | Adds to the bundle the files of another copy (the stick, a clone) that it lacks. It never merges text. It stops when one name has two contents, or when one request has two answers. It prints the end of the history: the first eight characters of the digest of its ceremony record, and the count of ceremony records. Two ends are a fork, shown as a critical finding; the repair of a fork is not decided ([#138](https://github.com/truvity/ritueel/issues/138)). | No | 0006 rules 9, 30 |
+| `ritueel join SOURCE` | Adds to the bundle the files of another copy (the stick, a clone; coming back from the stick is a join, 0006 rule 30) that it lacks. It never merges text. It stops when one name has two contents, or when one request has two answers. It prints the end of the history: the first eight characters of the digest of its ceremony record, and the count of ceremony records. Two ends are a fork, shown as a critical finding; the repair of a fork is not decided ([#138](https://github.com/truvity/ritueel/issues/138)). | No | 0006 rules 9, 30 |
 
 ritueel also prints the end of the history after every ceremony.
 
@@ -82,14 +82,14 @@ There is no command that renames an X.509 root key. Its name is inside its certi
 |---|---|
 | `--dir DIR` | The bundle. The default is the current directory when it holds `ritueel.yaml`. |
 | `--plan-only` | `apply` only: write the plan (`history/<ceremony>/plan.json`) and stop. |
-| `--confirm DIGEST` | Confirm a plan from a script; the digest must be the plan's. Without it, `apply` asks the person for the first eight characters. |
+| `--confirm DIGEST` | Confirm a plan from a script; the digest must be the plan's (0005 rule 6). Without it, `apply` asks the person for the first eight characters. |
 | `--with CARD` | `apply`: name the cards at hand when none is connected (for `--plan-only`). It also names the card that signs instead of the card of the year, and must when that card is absent; `--reason` is recorded ([record 0007](../decisions/0007-changing-and-losing-a-root.md), rule 14). Without it, the only card connected is used, and two cards are refused with `card-ambiguous` ([cards](/reference/cards/#what-is-checked-on-a-card)). `CARD` is the name of a card file. |
 | `--allow-missing NAME` | `apply` only: plan without a request for this delegation, and record it. |
 | `--decline REASON` | `apply PLAN` from a script: decline the request, and write the answer with the code `declined` ([declining](/reference/ceremony-record/#declining)). |
 | `--extra-intermediates FILE` | `piv` roots: PEM certificates of the maker's intermediates that the attestation bundle lacks. Helpers only: each must chain to the pinned root ([the attestation bundle](/reference/cards/#the-attestation-bundle)). |
 | `--revocation-dir DIR` | Every command that makes revocation signatures for a root key that is not in an encrypted-file software store: where to write them. Refused inside the bundle or its repository ([revocation material](/reference/revocation-material/#where-it-is-written)). The reasons are listed in the wanted root file. |
 | `--backend file\|onepassword\|keyring` | Software roots: the backend ([the software store](/reference/software-store/)). `--op-vault NAME` names the vault for `onepassword`. |
-| `--passphrase-fd N` | Software roots whose key file is opened by a passphrase (a test root, a script, a holder without cards): read the passphrase from this file descriptor. |
+| `--passphrase-fd N` | Software roots whose key file is opened by a passphrase (a test root, a script, a holder without cards): read the passphrase from this file descriptor (0005 rule 27). |
 | `--key-dir DIR` | Software roots: the directory of the [key files](/reference/bundle/#the-software-roots-key-files). Refused when it is inside `--dir`. |
 | `--test-root` | `new` only (the place of the mark and the spelling are open, [#136](https://github.com/truvity/ritueel/issues/136)): marks the roots as test roots at birth. A test root is marked `TEST ONLY` everywhere, and no trust set holds a test root and a real root together. With a software store it has no passphrase; its key may also live on a rehearsal card. It may run its ceremonies on the workstation or on a rehearsal card; the program checks nothing about where it runs. |
 | `--output json` | Every command, ceremony or not: print one JSON object on standard output ([below](/reference/cli/#machine-readable-output)). The default is `--output text`. |
@@ -109,10 +109,10 @@ A PIN is never a flag or an environment variable; the holder types it at the ter
 | 0 | Success; for `status`, nothing due. |
 | 1 | Failure. |
 | 2 | Usage error. |
-| 3 | Refused by a check or by the policy. `join` also stops with this code. |
+| 3 | Refused by a check or by the policy. `join` also stops with this code (proposed). |
 | 4 | Refused by the card or its PIN state, or by the key store backend: a locked store, or a KMS session that is not a session of the ceremony role, or has expired (`kms-session`). |
 | 5 | Not confirmed. |
-| 10, 11, 12 | `status` only: notice, alert and critical. Delegations warn at 60, 30 and 14 days, the root list, the SSH CA key list and each CRL at 60, 30 and 14 days, root keys at 6 months, 3 months and 30 days. An unresolved attempt is critical, because it may mean a signature that was made and never recorded. A fork is critical. A short root set is an alert, an overdue overlap an alert and a running one a notice ([root transitions](/reference/transitions/#the-target)); a restore check older than 13 months is a notice ([drills](/reference/drill/#when-it-is-due)). The highest finding wins. |
+| 10, 11, 12 | `status` only: notice, alert and critical. Delegations warn at 60, 30 and 14 days, the root list, the SSH CA key list and each CRL at 60, 30 and 14 days, root keys at 6 months, 3 months and 30 days. An unresolved attempt is critical, because it may mean a signature that was made and never recorded. A fork is critical. A short root set is an alert (finding `root-set`), an overdue overlap an alert and a running one a notice (finding `root-overlap`) (0007 rule 5; [root transitions](/reference/transitions/#the-target)); a restore check older than 13 months is a notice ([drills](/reference/drill/#when-it-is-due)). The highest finding wins. |
 
 ## The first version's commands
 
@@ -128,7 +128,7 @@ M2 builds these, with the software store and the cloud store ([issue #8](https:/
 | `ritueel status` | The bundle. | Nothing. | 0, 1, 2, 10, 11, 12 |
 | `ritueel check history` | The bundle. | Nothing. | 0, 1, 2, 3 |
 | `ritueel close CEREMONY --reason TEXT` | `history/CEREMONY/attempt.json` and the journals. | A closing record and its transcript. | 0, 1, 2, 3, 5 |
-| `ritueel join SOURCE` | The bundle and the other copy. | The files the bundle lacked. | 0, 1, 2, 3 |
+| `ritueel join SOURCE` | The bundle and the other copy. | The files the bundle lacked. | 0, 1, 2, 3 (3 proposed) |
 | `ritueel verify root-list FILE (--held FILE \| --pin SHA256...) [--ca-bundle FILE]` | A root list, the list the host holds or its initial pins, and a CA bundle. | Nothing. | 0, 1, 2, 3 |
 
 - **`new`** and the first **`apply`** make a bundle. `new` touches no card. The first `apply` makes the keys of the roots, 2 keys of each root by default and 1 allowed for a software root. It refuses a key directory that already has key files. The key files are opened as [record 0002](../decisions/0002-where-a-key-lives.md) says; a passphrase, where one is used, is asked once for each key, or read from `--passphrase-fd`; a test root asks none. It prints the accepted limit, and the ceremony record says so.
@@ -137,7 +137,7 @@ M2 builds these, with the software store and the cloud store ([issue #8](https:/
 - **`status`** exits with the highest finding ([Exit codes](/reference/cli/#exit-codes)). An unresolved attempt is critical (12).
 - **`check history`** checks the [hash chain](/reference/ceremony-record/#the-hash-chain), and that every file a ceremony record lists matches its digest. A break, or a file that fails its digest, is exit code 3. The file is an error, never "absent".
 - **`close`** shows the attempt and asks the person to type the first eight characters of its plan digest, or takes `--confirm DIGEST`. Its closing record says that signatures may exist from that plan.
-- **`join`** adds files and never changes one. It prints the end of the history. It stops with exit code 3 when one name has two contents or one request has two answers, and shows a fork as a critical finding.
+- **`join`** adds files and never changes one. It prints the end of the history. It stops when one name has two contents or one request has two answers, with exit code 3 (proposed), and shows a fork as a critical finding.
 - **`verify root-list`** is the host's side: it runs [the host's checks](/reference/root-list/#how-a-host-reads-it) on `FILE` (a `root-list.json`, with its `.jws` beside it) against `--held FILE`, the list the host holds, or `--pin`, its initial pins. `--ca-bundle FILE` also checks a CA bundle against the list. It exits 0 when the list is accepted and 3 with the code when it is refused; a held list that has expired is a warning in the output. It needs no bundle.
 
 The CA bundle is one of the files `apply` writes into the trust set. A command that prints it alone is proposed. `new`, `apply` and `status` come with M2; the milestone of `want` is not set. The thirteen command words are decided; the flags and the exit codes of `join` are proposed. `check cards` comes with M2 and `check restore` with M2 or later, and the name of `check cards` is proposed. `revoke` comes with M4, `verify keyring` with M5, and the guided mode comes after the first signed release; the read-only page of `wizard --web` comes with M2. The commands of the trust files that come later are below.
@@ -178,7 +178,7 @@ A script that confirms may also have to pass `--only`. That is proposed and not 
 ## After a ceremony
 
 :::note[Proposed]
-Every name in this section is proposed, awaiting the maintainer; the rules are [record 0011](../decisions/0011-publishing-and-what-to-do-after-a-ceremony.md). ritueel changes only your bundle, sends out only a public OpenPGP key, and never runs a command with administrator rights.
+Every flag, form and list name in this section is proposed, awaiting the maintainer; the command words are decided (the thirteen of the command reference). The rules are [record 0011](../decisions/0011-publishing-and-what-to-do-after-a-ceremony.md). ritueel changes only your bundle, sends out only a public OpenPGP key, and never runs a command with administrator rights.
 :::
 
 | Command | Does | Needs a person |
@@ -219,7 +219,7 @@ And these where they apply:
 | `roots` | `apply`, `status` | A list of the root keys: `{ "label", "store", "test", "x509_spki_sha256", "openpgp_fingerprint", "not_after" }`. |
 | `answer` | `apply` | `{ "stem", "outcome", "reasons", "artifacts" }`, as in `result.json`. |
 | `checks` | `check request` | A list of `{ "n", "result" }` for checks 1 to 9, where `result` is `passed`, `failed` or `not-run`. |
-| `findings` | `status` | A list of `{ "level", "kind", "name", "expires_at", "days_left" }`: `level` is `notice`, `alert` or `critical`, `kind` is `intermediate` (the certificate of a delegation), `root`, `root-list`, `ssh-ca-keys`, `crl`, `attempt`, `root-set`, `root-overlap`, `drill`, `fork` or `wanted` (a wanted file that fails its check, not a deleted line; `wanted` is proposed, [#133](https://github.com/truvity/ritueel/issues/133)). |
+| `findings` | `status` | A list of `{ "level", "kind", "name", "expires_at", "days_left" }`: `level` is `notice`, `alert` or `critical`, `kind` is `intermediate` (the certificate of a delegation), `root`, `root-list`, `ssh-ca-keys`, `crl`, `attempt`, `root-set`, `root-overlap`, `drill`, `fork` or `wanted` (a wanted file that fails its check, not a deleted line; the name `wanted` is proposed). A deleted wanted line is a finding too (0005 rule 30); its kind is fixed with the code. |
 | `records` | `status ceremonies` | A list of `{ "ceremony", "command", "outcome", "sha256" }`, in chain order. |
 
 The members are named with lower-case words and underscores, times and digests are written as in the [hand-off contract](/reference/hand-off-contract/#messages-and-files), and the object is not in canonical form. A new member is not a new version, so a reader ignores a member it does not know; a member renamed, removed or changed in meaning is version 2.

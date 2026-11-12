@@ -192,7 +192,7 @@ message Plan {
   // The touches the plan asks of the holder: one for every signature made by
   // a card, plus a passkey touch that opens a key file. 0 for a cloud key,
   // which has no touch: the typed digest and the role session stand, and its
-  // audit trail records every signature (record 0005, rule 18).
+  // audit trail records every signature (record 0005, rules 18 and 19).
   int32 touch_count = 16;
   // The store of the root that signs. The page cannot tell a key file, a card
   // or a cloud key from the other fields, so the plan says.

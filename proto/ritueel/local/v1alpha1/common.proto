@@ -63,7 +63,7 @@ enum RunPlace {
   // before it is handed over or published. A test root may also run here.
   // A cloud key has no touch: for a cloud root the typed digest and the role
   // session stand, and its audit trail records every signature (record 0005,
-  // rule 18). The count, no retry and the second-device check apply to both
+  // rules 18 and 19). The count, no retry and the second-device check apply to both
   // kinds of key. No stick is needed.
   RUN_PLACE_WORKSTATION = 2;
 }

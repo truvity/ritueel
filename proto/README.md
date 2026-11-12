@@ -113,7 +113,7 @@ Enums, all with an `_UNSPECIFIED = 0` first value and the enum name as prefix:
    and the result checked against the plan on a second device. The plan carries what the
    page needs to say so: `signing_store` (the page cannot tell a key file from a cloud
    key by the other fields), `signature_count` (the sum of the steps' counts),
-   `touch_count` (0 for a cloud key, which has no touch: the typed digest and the role session stand, and its audit trail records every signature, record 0005 rule 18)
+   `touch_count` (0 for a cloud key, which has no touch: the typed digest and the role session stand, and its audit trail records every signature, record 0005 rules 18 and 19)
    and `test_root`. The stick fields of the answer (what goes on the stick, what to
    bring) are empty on the workstation, and the page then shows no stick step. A
    `Requirement` says that a card, a PIN, a touch or a passkey unlock is needed there;

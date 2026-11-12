@@ -83,6 +83,8 @@ A **key fingerprint** in these files is the SHA-256 of the DER `SubjectPublicKey
 
 ## The plan
 
+The plan fixes every byte to be signed in advance: the root keys, each key's fingerprint and store, serials, times, the numbers of signatures and touches (0005 rule 4).
+
 | Member | Meaning |
 |---|---|
 | `version` | `1`. |
@@ -128,7 +130,7 @@ Each member of `signatures`:
 
 `tbs_sha256` is what makes the plan exact: two machines that build the same plan from the same bundle compute the same bytes to sign, and the verify step compares each artifact with it.
 
-**A key that is born in the ceremony is the exception** (0005 rule 5). The first `apply` and each added root key make keys, and a signature that covers a new key (its root certificate, its primary's self-signature and revocation signatures, a vouching signature, a cross-certificate) cannot have its bytes fixed before the key exists. The plan lists such a signature with `derived` set to true and without `tbs_sha256` (and without `key` when the new key signs itself), and lists the keys to be born in `births`: for each, `{ "label", "purpose", "store", "place", "creation_time" }`, where `place` is the card's serial and slot, or the Region, and `creation_time` is the OpenPGP creation time drawn here. The verify step checks every derived artifact against the profile and the key that was born, with code that did not sign it, and the ceremony record carries the digests that the plan could not.
+**A key that is born in the ceremony is the exception** (0005 rule 5). The first `apply` and each added root key make keys, and a signature that covers a new key (its root certificate, its primary's self-signature and revocation signatures, a vouching signature, a cross-certificate) cannot have its bytes fixed before the key exists. The plan lists such a signature with `derived` set to true and without `tbs_sha256` (and without `key` when the new key signs itself), and lists the keys to be born in `births`: for each, `{ "label", "purpose", "store", "place", "creation_time" }`, where `place` is the card's serial and slot, or the Region, and `creation_time` is the OpenPGP creation time drawn here. The verify step checks every derived artifact against the profile and the key that was born, with code that did not sign it, and the ceremony record carries the digests that the plan could not. For such a key the plan fixes everything else (0005 rule 5): the store, the serial and slot or the Region, the algorithm, the OpenPGP creation time, the serials, the validity and the touches.
 
 ### The plan digest and the confirmation
 
@@ -178,7 +180,7 @@ The name `signatures.jsonl` and the members of a line are fixed with the code ([
 
 ## The record
 
-The ceremony record is the file `record.json`.
+The ceremony record is the file `record.json`, written last in its ceremony folder (0006 rule 6). It holds no secret. It says what was done, with which keys, on which store, what outsiders see and where it ran (0005 rule 2). Its members are the time in UTC, the command, the plan digest, the wanted files and the artifacts with their digests, the keys and stores, the evidence checked, the policy applied, the slot map version and the confirmation (0006 rule 6). The table gives each.
 
 | Member | Meaning |
 |---|---|

@@ -5,7 +5,7 @@ sidebar:
   order: 8
 ---
 
-*Design phase: not built yet. ritueel prints this list after every ceremony; the names of the commands marked proposed are not decided ([record 0011](../decisions/0011-publishing-and-what-to-do-after-a-ceremony.md)). The commands of other tools below are for you to run by hand; ritueel runs none of them and holds no token. Use example names; the snippets are not tested. The commands, words and file names on this page are from before the decisions of 2026-11-12; the design is at https://ritueel.id/design/.*
+*Design phase: not built yet. ritueel prints this list after every ceremony; the command words are decided, and the flag, form and list names marked proposed are not ([record 0011](../decisions/0011-publishing-and-what-to-do-after-a-ceremony.md)). The commands of other tools below are for you to run by hand; ritueel runs none of them and holds no token. Use example names; the snippets are not tested. The commands, words and file names on this page are from before the decisions of 2026-11-12; the design is at https://ritueel.id/design/.*
 
 The rule is short: ritueel changes only your bundle. The one thing it may send out is your public OpenPGP key, to the keyservers you list. For everything else it prints what to do. This page is that "what to do", one section for each place a ceremony's result goes.
 
@@ -15,9 +15,9 @@ After every ceremony ritueel prints a list of next steps. Each line says what ch
 
 ## Your public OpenPGP key to the keyservers
 
-This is the one step ritueel does itself, and it is a separate command run after a ceremony, never inside one: the offline system has no network. The command is `ritueel publish` (proposed). It runs as a separate process that never opens a card and never reads a token, and it is left out of the offline build.
+This is the one step ritueel does itself, and it is a separate command run after a ceremony, never inside one: the offline system has no network. The command word is `ritueel publish`; its flags are proposed. It runs as a separate process that never opens a card and never reads a token, and it is left out of the offline build.
 
-1. **List your keyservers** in `ritueel.yaml`, the one file you write (a `keyservers` block, proposed). There is no default that sends; the examples in the file are commented out.
+1. **List your keyservers** in `ritueel.yaml`, one of the wanted files you write (a `keyservers` block, proposed). There is no default that sends; the examples in the file are commented out.
 2. **Read the preview.** It shows every user ID (a user ID without an address is marked: keys.openpgp.org drops it, the older kind of server keeps it), the subkeys, the fingerprint, the bundle and each server address. It says that what is published cannot be withdrawn.
 3. **Type the confirmation:** the first eight characters of the primary's fingerprint and the name of the server (proposed). Result: the key is sent, read back from the server and compared with what was sent. If the server already holds the same key, ritueel says there is nothing to send.
 

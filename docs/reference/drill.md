@@ -11,6 +11,8 @@ A restore you have never practised is a hope. A drill is a practice run with a k
 
 ## The restore check
 
+A restore drill rebuilds the state on a clean machine from the bundle and the password manager and compares it with the cards ([record 0007](../decisions/0007-changing-and-losing-a-root.md), rule 27).
+
 ```sh
 ritueel drill restore [--dir DIR] [--expect-last DIGEST] [--allowed-signers FILE] [--revocation-dir DIR] [--accept-not-run CHECK]... [--output json]
 ```
@@ -27,7 +29,7 @@ Run it on a clean machine with the bundle cloned. It signs nothing, writes only 
 | 6 | The revocation signatures | For every root and every reason in the bundle, and for every root's removal authorisation, a file in `--revocation-dir` passes `revocation check` and has the bundle's digest. A missing file fails; it is not skipped. | `--revocation-dir` is not given |
 | 7 | The trust files | The newest root list verifies, is not expired, and names exactly the active roots; the CA bundle, the CRLs and the SSH CA key list agree with it. | never |
 
-A check that cannot run is reported `not-run`, never `passed` ([principle 4](/principles/)). **The drill exits 0 only when every check ran and passed.** It exits 3 if one failed or did not run; `--accept-not-run CHECK` (by number) lets one pass that the holder knows cannot run on this machine, as in CI with software roots, and the report says it was accepted.
+A check that cannot run is reported `not-run`, never `passed` ([principle 4](/principles/)). **The drill exits 0 only when every check ran and passed** ([record 0007](../decisions/0007-changing-and-losing-a-root.md), rule 23). It exits 3 if one failed or did not run; `--accept-not-run CHECK` (by number) lets one pass that the holder knows cannot run on this machine, as in CI with software roots, and the report says it was accepted.
 
 ### The report
 
@@ -45,7 +47,7 @@ The report holds no secret, no revocation signature and no path.
 
 ## Walk-throughs
 
-A walk-through is a guide that can also be run as a script. It lives in the ritueel repository under `drills/<name>/` with three files that call only public commands:
+A walk-through is a guide that can also be run as a script ([record 0007](../decisions/0007-changing-and-losing-a-root.md), rule 23). It lives in the ritueel repository under `drills/<name>/` with three files that call only public commands:
 
 | File | Does |
 |---|---|

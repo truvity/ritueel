@@ -28,6 +28,8 @@ ritueel writes the three files together, in a numbered trust set of [the bundle]
 
 ## The list
 
+The root list holds the active root keys, each pinned by the SHA-256 of its SubjectPublicKeyInfo and, for OpenPGP, the primary's fingerprint, with the sequence, the signing time, the expiry and the digest of the end of the history. Its members keep the names `roots` and `label` ([record 0006](../decisions/0006-bundle-history-and-trust-files.md), rule 15).
+
 `root-list.json` is one UTF-8 object with no byte order mark and no more than 256 KiB. A member name appears once; a member this page does not define is an error. Numbers are integers. A time is `YYYY-MM-DDThh:mm:ssZ` in UTC (RFC 3339, whole seconds). A digest is SHA-256 in lower-case hexadecimal. The writer serialises it in the canonical form of RFC 8785, with no trailing newline, so the same bundle gives the same bytes.
 
 | Member | Required | Meaning |
@@ -125,13 +127,13 @@ These codes belong to the host and are not sent anywhere. The vectors fix the ou
 
 ## The CA bundle
 
-`ca-bundle.pem` is text, with LF line endings:
+`ca-bundle.pem` is text, with LF line endings. It is the certificates of the active X.509 root keys in one PEM file, with the trust sequence in a comment line ([record 0006](../decisions/0006-bundle-history-and-trust-files.md), rule 27):
 
 1. The first line is `# trust-sequence: <sequence>`, the sequence of the root list it was built with.
 2. Then the current certificate of each root on that list, in the order of `roots`, each PEM-armoured with the label `CERTIFICATE` (RFC 7468), Base64 in lines of 64 characters.
 3. Nothing else.
 
-It is deterministic: the same roots in the same order give the same bytes. A PEM parser skips the text outside the armour (RFC 7468, section 2), so OpenSSL reads the file as a list of trust anchors (checked with OpenSSL 3.5.5 on 2026-11-01: `openssl verify -CAfile` with the vectors' CA bundles accepts the hand-off answers of the roots in the CA bundle and refuses the others). The root certificates follow the [root profile](/reference/bundle/#the-root-certificate).
+It is deterministic (0006 rule 27): the same roots in the same order give the same bytes. A PEM parser skips the text outside the armour (RFC 7468, section 2), so OpenSSL reads the file as a list of trust anchors (checked with OpenSSL 3.5.5 on 2026-11-01: `openssl verify -CAfile` with the vectors' CA bundles accepts the hand-off answers of the roots in the CA bundle and refuses the others). The root certificates follow the [root profile](/reference/bundle/#the-root-certificate).
 
 The CA bundle is not signed: a TLS client trusts the file it was given. A system that also holds the signed root list uses a certificate from the CA bundle as an anchor only when its key is on the list it holds, and its sequence is the list's.
 

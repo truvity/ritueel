@@ -9,6 +9,8 @@ sidebar:
 
 A revocation made after a primary key is lost cannot be made at all. So ritueel makes the revocation signatures when the key is born, for every OpenPGP primary key it creates: the primary of each root, and a person's own primary when personal OpenPGP is built (M3, [issue #18](https://github.com/truvity/ritueel/issues/18)). For the same reason every root also makes its **removal authorisation** at birth, which lets it leave the root set without signing ([below](/reference/revocation-material/#the-removal-authorisation)).
 
+Revocation is covered with OpenPGP revocation signatures made in advance and kept apart, and with CRLs and root lists for X.509 ([record 0007](../decisions/0007-changing-and-losing-a-root.md), rule 27).
+
 ## What is made
 
 For each primary key, one **key revocation signature** (RFC 9580, section 5.2.1.11, type `0x20`) for each reason:

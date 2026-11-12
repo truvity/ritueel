@@ -152,7 +152,7 @@ no library (they drive headless Chrome over the DevTools protocol).
   of signatures stated in the plan (`signature_count`, with `touch_count`), no retry of a
   failed touch, and the result checked against the plan on a second device. A cloud key has no
   touch: the typed digest and the role session stand, and its audit trail records every
-  signature (record 0005, rule 18), so the page asks for 0 touches there. The
+  signature (record 0005, rules 18 and 19), so the page asks for 0 touches there. The
   stick step (vanilla AirgapOS on the ceremony stick) shows only in the offline system. A
   test root may run on the workstation; that is wording only, as there is no flag for it.
   The commands follow [the command reference](../docs/reference/cli.md): the

@@ -47,7 +47,7 @@ Each member of `keys`:
 | `fingerprint` | yes | The SHA-256 fingerprint as `ssh-keygen -l` prints it: `SHA256:` and the Base64 of the digest of the key blob, with no padding. The number a person compares with the one printed at the request. |
 | `root` | for a break-glass key only | The label of the root whose break-glass key it is. Present exactly when `name` is `break-glass-<label>`. |
 
-Version 1 lists ECDSA P-384 keys only, as the [hand-off](/reference/hand-off-contract/#ssh-ca-key) accepts only those.
+Version 1 lists ECDSA P-384 keys only ([record 0006](../decisions/0006-bundle-history-and-trust-files.md), rule 22), as the [hand-off](/reference/hand-off-contract/#ssh-ca-key) accepts only those.
 
 An example, wrapped here for reading; the file is one line:
 
