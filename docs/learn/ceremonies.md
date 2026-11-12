@@ -39,6 +39,6 @@ These steps are the same in every key store and in every tool. ritueel's engine 
 | Check the result and write the record. | Treat a check that did not run as a check that passed. |
 | Warn you well before a root expires. | Take a decision that belongs to you, such as revoking a root. |
 
-The rituals you will meet are: [create](/learn/life-of-a-root/#create), sign an intermediate or a subkey, record, back up, re-sign, rotate, revoke and recover. Each is a ceremony or follows one. Revoke is its own command, done at once outside `apply`.
+The rituals you will meet are: [create](/learn/life-of-a-root/#create), sign an intermediate or a subkey, record, back up, re-sign, rotate, revoke and recover. Each is a ceremony or follows one. Revoke is its own command, done at once outside [`apply`](/glossary/).
 
 Next: [layered trust](/learn/layered-trust/).
