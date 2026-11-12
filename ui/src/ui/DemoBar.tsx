@@ -4,12 +4,6 @@ import { DEMO_BUNDLES, VIEW_STATES, setBundle, setViewState, useBundle, useViewS
 import { siteUrl } from '../lib/route';
 import { SceneSwitch } from './SceneSwitch';
 
-/**
- * The line under the sentence of the bar. It says that the pictures on the site
- * still show the older page. The site step removes it by deleting this constant.
- */
-export const SITE_PICTURES_NOTE = 'The pictures on the site still show the older page. They follow in a later step.';
-
 const GROUP_SX = { '& .MuiToggleButton-root': { minHeight: { xs: 44, lg: 28 }, fontSize: '0.8125rem', paddingInline: '0.55rem' } } as const;
 
 /** Demo only. Shows the bundle the demo answers for. The contract has no call that names or selects a bundle, so the real page has no such switch. */
@@ -55,9 +49,8 @@ function StateSwitch() {
  * back to the site. It only exists in the demo build.
  *
  * Three controls: the example bundle, the scene (acme only, ui/SceneSwitch.tsx)
- * and the page state. From 1024 px the
- * sentence is the first line, and the site line and the controls share the
- * second one. On a phone the order is the sentence, the controls, the site line.
+ * and the page state. The sentence is the first line and the controls are the
+ * second one.
  */
 export function DemoBar() {
   return (
@@ -76,7 +69,6 @@ export function DemoBar() {
           <SceneSwitch />
           <StateSwitch />
         </div>
-        <p className="order-3 min-w-0 max-w-[56ch] flex-1 basis-60 text-sm text-dim lg:order-2 lg:basis-[26rem]">{SITE_PICTURES_NOTE}</p>
       </div>
     </div>
   );

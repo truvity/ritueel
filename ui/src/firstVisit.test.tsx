@@ -102,15 +102,14 @@ describe('the lede is in the demo and not in the real build', () => {
 
 describe('the demo bar', () => {
   it('names three controls, Example bundle, Scene (acme only) and Page state, and keeps its sentence and the way back', async () => {
-    const { DemoBar, SITE_PICTURES_NOTE } = await import('./ui/DemoBar');
+    const { DemoBar } = await import('./ui/DemoBar');
     const acme = text(renderToStaticMarkup(<DemoBar />));
     expect(acme).toContain('Example bundle');
     expect(acme).toContain('Scene');
     expect(acme).toContain('Page state');
     expect(acme).toContain('The data is made up, and ritueel is still in design. Nothing here acts.');
     expect(acme).toContain('Back to ritueel.id');
-    expect(acme).toContain(SITE_PICTURES_NOTE);
-    expect(SITE_PICTURES_NOTE).toContain('pictures on the site still show the older page');
+    expect(acme).not.toContain('pictures on the site');
     setBundle('globex');
     const globex = text(renderToStaticMarkup(<DemoBar />));
     expect(globex).toContain('Example bundle');
@@ -122,11 +121,6 @@ describe('the demo bar', () => {
     const shell = source('ui/Shell.tsx');
     expect(shell).toContain('aria-label="This is a demo. Back to ritueel.id"');
     expect(shell.match(/Back to ritueel\.id/g)!.length).toBeGreaterThanOrEqual(2);
-  });
-  it('the note about the pictures of the site is in the demo bar only', () => {
-    const users = ['ui/Shell.tsx', 'screens/Todo.tsx', 'screens/Inventory.tsx', 'screens/History.tsx', 'screens/Trust.tsx', 'ui/Sec.tsx'].filter((f) => /SITE_PICTURES_NOTE|pictures on the site/.test(source(f)));
-    expect(users).toEqual([]);
-    expect(source('ui/DemoBar.tsx')).toContain('export const SITE_PICTURES_NOTE');
   });
   it('the demo bar is drawn by the frame only in the demo build', () => {
     expect(source('ui/Shell.tsx')).toMatch(/\{isDemo \? <DemoBar \/> : null\}/);
