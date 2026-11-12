@@ -52,9 +52,7 @@ Each member of `roots`:
 
 **What an entry means.** An entry of `roots` is one key label with its pins. It is not a root in the sense of [record 0001](../decisions/0001-what-ritueel-is.md), rule 28: there a root is one thing of one kind, built from keys, and a bundle has one root of each kind it uses ([record 0006](../decisions/0006-bundle-history-and-trust-files.md), rule 2). Each entry pins the key of the X.509 root and, when the bundle has an OpenPGP root, the primary of that root with the same label, for example the two keys of one row of a card ([record 0003](../decisions/0003-root-cards.md), rule 3). The SSH CA keys are in [the SSH CA key list](/reference/ssh-ca-key-list/). A host installs each `x509_spki_sha256` as a trust anchor, so a host installs one anchor for each key. The member keeps the name `roots`, `label` keeps its name, and no test vector changes ([record 0006](../decisions/0006-bundle-history-and-trust-files.md), rule 15). On this page, "root key" is written in full wherever one key is meant. The member keeps the name `roots`.
 
-:::note[Proposed]
-A bundle that has no OpenPGP root writes entries without `openpgp_fingerprint`. A host takes such an entry as a key with no OpenPGP primary, and check 5 below does not refuse it. No test vector has such an entry, and the choice is not decided (issue #TBD).
-:::
+A bundle that has no OpenPGP root writes entries without `openpgp_fingerprint` ([record 0006](../decisions/0006-bundle-history-and-trust-files.md), rule 33). A host takes such an entry as a key with no OpenPGP primary, and check 5 below does not refuse it. No test vector has such an entry yet.
 
 The list pins keys, never certificates: a root certificate re-issued over the same key keeps its pin ([record 0006](../decisions/0006-bundle-history-and-trust-files.md)). A list never mixes test roots and real roots.
 

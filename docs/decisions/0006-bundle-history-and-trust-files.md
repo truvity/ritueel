@@ -37,6 +37,7 @@
 30. Coming back from the stick is a join: ritueel adds the missing files and never merges text. Two ends of the history are a fork, a critical finding. Two answers to one request stop the join.
 31. A join writes no ceremony record; it only adds files, so the end of the history changes only when a ceremony happens.
 32. A delegation may declare one permitted DNS zone. ritueel writes it into the intermediate certificate as a name constraint and refuses a request for a name outside it. This comes with M2.
+33. A root list entry for a root key that has no OpenPGP primary leaves out `openpgp_fingerprint`. A reader takes such an entry as a key with no OpenPGP primary and does not refuse it.
 
 ## Why
 
@@ -91,6 +92,8 @@ A holder must prove what was done, and outsiders must check the roots. One bundl
 - **A name that does not carry its identity.** Short names such as a plain counter, but two copies could hold two contents under one name and the join would no longer be a union; every name carries its identity (rule 29).
 - **A ceremony record for each join.** The history would show every join, but two copies that each join would get two ends of the history, which is a fork (rule 30), and a saved plan that names the end of the history would go stale after every join; a join only adds files (rule 31).
 - **A note outside the chain for each join.** The holder could see when a copy was joined, but `seen/` is replaced and is not history, so the note would be no record, and it would be a new kind of file to specify (rule 31).
+- **An empty value for a missing OpenPGP fingerprint.** Every entry would have the same shape, but an empty value that means "none" looks the same as a value someone forgot to fill.
+- **A second version of the root list for bundles without OpenPGP.** An old reader would refuse the file clearly, but two formats would have to be kept for years, for a case that will be common.
 
 ## Not yet proven or only proposed
 

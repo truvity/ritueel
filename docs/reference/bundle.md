@@ -255,7 +255,7 @@ keyring:
 |---|---|
 | `version` | `1`. |
 | `name` | 1 to 64 characters: letters, digits, spaces and hyphens. It names the root keys and their primaries ([below](/reference/bundle/#the-root-certificate)). |
-| `release_address` | Required in a company bundle. The address in every primary's user ID, when the bundle has an OpenPGP root: the project's release identity, never a person's ([record 0009](../decisions/0009-release-keys-and-the-keyring.md)). |
+| `release_address` | Required in a company bundle, with or without an OpenPGP root. The address in every primary's user ID: the project's release identity, never a person's ([record 0009](../decisions/0009-release-keys-and-the-keyring.md)). |
 | `policy` | The rules every request is checked against: `stores`, `min_firmware`, `pin_policy`, `require_name_constraints` and `validity_months`, with the meanings of the [reference policy](/reference/hand-off-contract/#what-the-certifier-checks). All five are required. |
 | `kind` | Optional. `personal` for a person's own OpenPGP key; absent for a company bundle. A personal bundle has `person` instead of `name` and `release_address` ([personal OpenPGP](/reference/personal-openpgp/)). |
 | `person` | Only with `kind: personal`: `name` (1 to 64 characters) and `address`. |

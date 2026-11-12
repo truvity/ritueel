@@ -66,6 +66,7 @@ A release is trusted because its signature verifies against a key the user alrea
 - **One keyring package for each primary.** Each primary moves alone, but users install two, and a missing one looks like a bug.
 - **ritueel signs the package.** It is self-contained, but it needs an online key that ritueel does not hold.
 - **A historical keyring package for old releases.** It helps late verifiers, but it is one more package to build and keep trusted.
+- **`release_address` required only when the bundle has an OpenPGP root.** A bundle with X.509 roots only would not carry an unused address, but the settings file's schema cannot express the condition, and the address is already there when an OpenPGP root is added later.
 
 ## Not yet proven or only proposed
 
