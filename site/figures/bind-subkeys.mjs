@@ -12,23 +12,24 @@ const cardHead = (x, y, word = 'day-to-day') => rect(x, y, 16, 12, 'paper-t', 2)
 function p1() {
   let b = '';
   b += person(46, B, [[1, 78, 150]]);
-  b += terminal(78, 118, 52, 44) + text(84, 146, '$ plan', 't t-s t-mono');
-  b += arrow(136, 140, 176, 140, 'writes', { lx: 156, ly: 132 });
-  const x = 180, y = 38, w = 94, h = 140;
+  // the plan is made first and run later on the stick: the command is `apply --plan-only`; the arrow says "plan only"
+  b += terminal(78, 118, 60, 44) + text(84, 146, '$ apply', 't t-s t-mono');
+  b += arrow(142, 140, 190, 140, 'plan only', { lx: 166, ly: 132 });
+  const x = 194, y = 38, w = 80, h = 140;
   let p = sheet(x, y, w, h, { accent: true, rows: 0 }) + text(x + 10, y + 24, 'plan', 't t-b t-acc');
   p += text(x + 10, y + 42, 'card', 't t-s t-acc') + text(x + 10, y + 57, '00000001', 't t-s t-mono t-acc');
   ['slot', 'created', 'touches'].forEach((s, i) => {
     const yy = y + 76 + i * 15;
-    p += text(x + 10, yy, s, 't t-s t-acc') + line(x + 62, yy - 4, x + w - 10, yy - 4, 'ln ln-thin ln-acc');
+    p += text(x + 10, yy, s, 't t-s t-acc') + line(x + 58, yy - 4, x + w - 10, yy - 4, 'ln ln-thin ln-acc');
   });
-  p += line(x + 10, y + 108, x + w - 10, y + 108, 'ln ln-thin ln-acc') + text(x + 10, y + 128, DIGEST, 't t-mono t-acc t-b');
+  p += line(x + 10, y + 108, x + w - 10, y + 108, 'ln ln-thin ln-acc') + text(x + 7, y + 128, DIGEST, 't t-mono t-acc t-b');
   b += acc('plan', p);
   b += under(46, 'you');
-  return pnl(1, 'Your workstation', b, 'You sit at a terminal that writes the plan: a sheet with the card’s example number 00000001, a slot, a creation time, the number of touches and the digest 7f3a 91c2.');
+  return pnl(1, 'Your workstation', b, 'You sit at a terminal that runs apply and writes only the plan: a sheet with the card’s example number 00000001, a slot, a creation time, the number of touches and the digest 7f3a 91c2.');
 }
 
 function p2() {
-  return pnl(2, '', carryBody([{ text: 'ritueel' }, { text: 'personal' }, { text: 'key file', lock: true }, { text: 'plan', accent: 'plan' }]), 'You are in mid-stride on a ground line with a USB stick in your hand. Chips on the stick show a copy of ritueel, the personal bundle, a key file with a padlock mark and the plan. A curved arrow leads to the offline laptop.');
+  return pnl(2, '', carryBody([{ text: 'ritueel' }, { text: 'personal', mark: 'plan' }, { text: 'key file', lock: true }]), 'You are in mid-stride on a ground line with a USB stick in your hand. Chips on the stick show a copy of ritueel, the personal bundle with a small accent mark for the plan inside it, and a key file with a padlock mark. A curved arrow leads to the offline laptop.');
 }
 
 function p3() {
@@ -59,7 +60,7 @@ function p4() {
   b += person(232, B, [[-1, 214, 146]]);
   b += bubble(170, 30, 94, 40, 232, 232, 84, []) + text(217, 47, 'PIN', 't t-s t-dim', 'm') + text(217, 63, '••••••', 't t-s t-mono t-b', 'm');
   b += under(232, 'you');
-  return pnl(3, 'Offline system', b, 'The day-to-day card is plugged into the terminal. Inside the card, an arrow makes two keys, one ceremony each, a signing key and an authentication key, that stay in the card. The holder types the PIN, and the card gives a back-signature sheet.');
+  return pnl(3, 'Offline system', b, 'The day-to-day card is plugged into the terminal. Inside the card, an arrow makes two keys in one ceremony, a signing key and an authentication key, that stay in the card. The holder types the PIN, and the card gives a back-signature sheet.');
 }
 
 function p5() {
@@ -76,16 +77,17 @@ function p5() {
 
 function p6() {
   let b = '';
-  b += bundle(112, 178, 76, 108, 'personal');
-  b += rect(118, 94, 64, 40, 'paper-t', 4) + text(125, 108, 'history', 't t-s t-dim') + rect(122, 112, 56, 17, 'hl', 3) + text(150, 124.5, 'record', 't t-s t-b', 'm');
-  b += rect(118, 140, 64, 28, 'paper-t', 4) + text(150, 158, 'certificate', 't t-s', 'm');
-  b += terminal(6, 112, 48, 40) + text(12, 140, '$ run', 't t-s t-mono');
-  b += arrow(60, 114, 104, 114, 'writes', { lx: 82, ly: 106 });
-  b += arrow(60, 146, 104, 146, 'rebuilds', { lx: 82, ly: 138 });
+  b += bundle(118, 178, 76, 108, 'personal');
+  b += rect(124, 94, 64, 40, 'paper-t', 4) + text(131, 108, 'history', 't t-s t-dim') + rect(128, 112, 56, 17, 'hl', 3) + text(156, 124.5, 'record', 't t-s t-b', 'm');
+  b += rect(124, 140, 64, 28, 'paper-t', 4) + text(156, 158, 'certificate', 't t-s', 'm');
+  // the run on the stick uses the saved plan: `apply PLAN`
+  b += terminal(6, 104, 60, 52) + text(12, 132, '$ apply', 't t-s t-mono') + text(12, 147, 'PLAN', 't t-s t-mono');
+  b += arrow(71, 114, 110, 114, 'writes', { lx: 90, ly: 106 });
+  b += arrow(71, 146, 110, 146, 'rebuilds', { lx: 90, ly: 138 });
   b += person(232, B, [[-1, 204, 124]]);
   b += card(196, 32, 26, 20) + text(246, 46, 'git, ssh', 't t-s', 'm');
   b += text(232, 76, 'you', 't t-s', 'm');
-  return pnl(6, 'Offline system', b, 'A terminal writes a record into the history part of the personal bundle and rebuilds the certificate sheet. You hold the unplugged card, marked for git and ssh.');
+  return pnl(6, 'Offline system', b, 'A terminal runs apply with the saved plan. It writes a record into the history part of the personal bundle and rebuilds the certificate sheet. You hold the unplugged card, marked for git and ssh.');
 }
 
 export default {
@@ -95,10 +97,10 @@ export default {
   caption: 'Binding the subkeys of a day-to-day card to your own OpenPGP primary.',
   panels: [
     { n: 1, title: 'Plan', caption: 'The plan names the card, slot, time and touches.', svg: p1() },
-    { n: 2, title: 'Carry', caption: 'The stick holds ritueel, your bundle, key file and plan.', svg: p2() },
-    { n: 3, title: 'Birth', caption: 'After your PIN, the card makes a subkey. Once for each.', svg: p4() },
+    { n: 2, title: 'Carry', caption: 'The stick holds ritueel, your bundle with the plan, and the key file.', svg: p2() },
+    { n: 3, title: 'Birth', caption: 'After your PIN, the card makes both subkeys in one ceremony.', svg: p4() },
     { n: 4, title: 'Unlock', caption: 'To bind, a root card opens the key file. The recovery key stays apart.', svg: p3() },
-    { n: 5, title: 'Bind', caption: 'Your primary binds the subkey, one at a time. The fingerprint shows first.', svg: p5() },
+    { n: 5, title: 'Bind', caption: 'Your primary binds each subkey. Each fingerprint shows first.', svg: p5() },
     { n: 6, title: 'Record', caption: 'ritueel records it and rebuilds your certificate.', svg: p6() },
   ],
 };
