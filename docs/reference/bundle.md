@@ -90,6 +90,18 @@ A personal bundle also holds the wrapped backup of the encryption subkey (record
 - The bundle is found by `--dir DIR`, or is the current directory when it holds `ritueel.yaml` ([Commands](/reference/cli/#flags-every-ceremony-shares)).
 - Outside the bundle are the key files of a software root key ([record 0007](../decisions/0007-changing-and-losing-a-root.md), rule 26) and the revocation material (rule 22).
 
+### Where the trust sequence is carried
+
+The trust sequence is one integer for the bundle. It grows by one whenever any trust file changes, there is no second counter, and every trust file carries it ([record 0006](../decisions/0006-bundle-history-and-trust-files.md), rule 14):
+
+| Trust file | Where it carries the sequence |
+|---|---|
+| The root list | The member `sequence` ([the root list](/reference/root-list/#the-list)). |
+| The SSH CA key list | The member `sequence` ([the list](/reference/ssh-ca-key-list/#the-list)). |
+| The CA bundle | The first line, `# trust-sequence: <sequence>` ([the CA bundle](/reference/root-list/#the-ca-bundle)). |
+| A CRL | The CRL number ([the profile](/reference/crl/#the-profile)). |
+| The keyring package | The version, `<year>.<sequence>` ([the package](/reference/keyring-package/#name-and-version)). |
+
 ## How a file is written
 
 [Record 0006](../decisions/0006-bundle-history-and-trust-files.md), rule 29, decides: a ceremony only adds files, each named by its identity (a digest or a time) and written whole or not at all, under a temporary name and then by one rename. These are the steps. The commands write in this order, so a stop leaves a file whole or leaves it unwritten.
@@ -150,6 +162,7 @@ The repair of a fork is later ([issue #138](https://github.com/truvity/ritueel/i
 - The end of the history is the ceremony record that no other ceremony record names ([record 0006](../decisions/0006-bundle-history-and-trust-files.md), rule 6).
 - After every ceremony and every join ritueel prints it: the first eight characters of its digest, and the count of ceremony records (rule 9).
 - The holder keeps that print apart from the repository. It is advice and is not enforced (rule 9). Ceremony records are not signed (rule 6), so the eight characters are a check for the holder's eye and not a defence against an attacker.
+- The rest of the advice of rule 9 is also not enforced: keep the bundle in a git repository of its own, with signed commits and review before a change lands, and back it up to a second remote on another provider.
 - The next signed root list carries the digest of the end of the history as `last_record_sha256`. It anchors the chain without another use of the root (rules 6 and 15; [the root list](/reference/root-list/)).
 - Whether `revoke` leaves a ceremony record and prints the end of the history is open ([record 0007](../decisions/0007-changing-and-losing-a-root.md), Proposed; [issue #141](https://github.com/truvity/ritueel/issues/141)).
 
@@ -198,7 +211,7 @@ A person writes `ritueel.yaml` and one strict YAML file for each card, root and 
 - **Strict YAML** (record 0006, rule 11). What strict means is Proposed (below).
 - **The digest** of a wanted file is the SHA-256 of the bytes as stored, so `sha256sum` gives the same value. The plan lists the wanted files it used by digest ([record 0005](../decisions/0005-a-ceremony-and-where-it-runs.md), rule 4). Two files with one meaning have two digests. This is accepted.
 - **The name** of an object is the name of its file without `.yaml`. A card's file is named by a name the holder gives, not by its serial (record 0006, rule 11).
-- **A deleted line or file** retires, revokes and removes nothing. The history wins over a wanted file (record 0005, rule 30). A wanted file that fails its check stops `apply` before anything is written (rule 14).
+- **A deleted line or file** retires, revokes and removes nothing, and `status` shows it as a finding. The history wins over a wanted file (record 0005, rule 30). The name of the finding is fixed with the code. A wanted file that fails its check stops `apply` before anything is written (rule 14).
 
 | File | One for each | Holds | Decided by |
 |---|---|---|---|
@@ -215,9 +228,7 @@ The rules a request is checked against are split between `policy` in `ritueel.ya
 
 A card file never holds another bundle's name. A row of another bundle is declared as `use: other-bundle` with its row ([issue #11](https://github.com/truvity/ritueel/issues/11)).
 
-Who owns a user ID of the OpenPGP root, whether the user IDs are one file for the root or one file for each object (the decision asks one file for each object), and how an old user ID is marked to retire, are open ([issue #18](https://github.com/truvity/ritueel/issues/18)). A test root is marked in its wanted root file at birth; the spelling is open ([issue #136](https://github.com/truvity/ritueel/issues/136)).
-
-That `status` shows a deleted wanted line as a finding, and the name of the finding, is a Proposed line of [record 0005](../decisions/0005-a-ceremony-and-where-it-runs.md).
+Who owns a user ID of the OpenPGP root, whether the user IDs are one file for the root or one file for each object (the decision asks one file for each object), and how an old user ID is marked to retire, are open ([issue #18](https://github.com/truvity/ritueel/issues/18)). Where a test root is marked, for example in its wanted root file, and how a test bundle starts, is open ([issue #136](https://github.com/truvity/ritueel/issues/136)).
 :::
 
 ## `ritueel.yaml`

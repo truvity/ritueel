@@ -7,7 +7,7 @@ sidebar:
 
 *Design phase: no certifier or requester is built yet. This is version 1 of the specification ([issue #7](https://github.com/truvity/ritueel/issues/7)), and its [test vectors](/reference/hand-off-contract/#test-vectors) match it. The choices that had a real alternative are in [Choices made](/reference/hand-off-contract/#choices-made).*
 
-A system that holds intermediate keys, called the **requester** on this page, and ritueel, called the **certifier**, depend on neither product nor shared code. They meet at standard formats, and this page is the one place that says exactly which. A requester can be built from this page alone, and so can a certifier. The reasons are in [record 0001](../decisions/0001-what-ritueel-is.md). The vocabulary (root, intermediate, ceremony) is in [Root and intermediate](/learn/root-and-intermediate/).
+A system that holds intermediate keys, called the **requester** on this page, and ritueel, called the **certifier**, depend on neither product nor shared code. They meet at standard formats (PKCS#10, X.509, OpenPGP packets and attestation certificates; [record 0001](../decisions/0001-what-ritueel-is.md), rule 5), and this page is the one place that says exactly which. A requester can be built from this page alone, and so can a certifier. The reasons are in [record 0001](../decisions/0001-what-ritueel-is.md). The vocabulary (root, intermediate, ceremony) is in [Root and intermediate](/learn/root-and-intermediate/).
 
 ## What travels
 
@@ -272,7 +272,7 @@ Every version 4 signature ritueel writes, and every back-signature it accepts, c
 
 ## SSH CA key
 
-An SSH CA key signs SSH certificates, for users or for hosts. ritueel does not certify it, because there is nothing to certify: an SSH host trusts a CA key by being given its public key. What ritueel does, at a ceremony and after the checks below, is **list** the key on the signed [SSH CA key list](/reference/ssh-ca-key-list/), which hosts read the way they read the root list.
+An SSH CA key signs SSH certificates, for users or for hosts. It enters by a third request type, `ssh-ca-key` ([record 0006](../decisions/0006-bundle-history-and-trust-files.md), rule 23): the request below holds the public key as an OpenSSH line and an SSH signature as proof of possession, and the proof file says where the key lives. ritueel does not certify it, because there is nothing to certify: an SSH host trusts a CA key by being given its public key. What ritueel does, at a ceremony and after the checks below, is **list** the key on the signed [SSH CA key list](/reference/ssh-ca-key-list/), which hosts read the way they read the root list.
 
 ### The request
 

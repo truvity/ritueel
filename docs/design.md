@@ -31,7 +31,7 @@ Decided in [0001](decisions/0001-what-ritueel-is.md) and [0011](decisions/0011-p
 - Six steps for every store: plan, confirm, reserve, sign, verify, record.
 - A person writes what is wanted. ritueel finds what is not applied yet each time, and `apply` plans it.
 - The plan fixes every byte to sign except the new keys. The person confirms by typing the first eight characters of its digest. The page makes no plan: `apply` makes it in the terminal, and the page shows that command as text.
-- Plans and requests are detachable: they travel by any channel, run elsewhere, and the answer returns by `join`.
+- Plans and requests are detachable: they travel by any channel, run elsewhere, and the answer returns; coming back from the stick is a `join`.
 
 Decided in [0005](decisions/0005-a-ceremony-and-where-it-runs.md) and [0010](decisions/0010-the-engine-the-process-and-the-page.md).
 
@@ -153,7 +153,7 @@ Decided in [0009](decisions/0009-release-keys-and-the-keyring.md).
 - The exact file names in a bundle and the repair of a fork ([0006](decisions/0006-bundle-history-and-trust-files.md#not-yet-proven-or-only-proposed)).
 - Which conditions the program enforces, the age of a plan and a flag for scripts ([0005](decisions/0005-a-ceremony-and-where-it-runs.md#not-yet-proven-or-only-proposed)); revoke while a ceremony runs ([0007](decisions/0007-changing-and-losing-a-root.md#not-yet-proven-or-only-proposed)); the ceremony record of an adoption ([0003](decisions/0003-root-cards.md#not-yet-proven-or-only-proposed)).
 - One passkey credential for each bundle on a shared card ([0002](decisions/0002-where-a-key-lives.md#not-yet-proven-or-only-proposed)).
-- What the publish step shows and refuses, where the keyserver list lives, and the names of the new commands ([0011](decisions/0011-publishing-and-what-to-do-after-a-ceremony.md#not-yet-proven-or-only-proposed)).
+- What the publish step shows and refuses, where the keyserver list lives, and the flag and form names of the new commands ([0011](decisions/0011-publishing-and-what-to-do-after-a-ceremony.md#not-yet-proven-or-only-proposed)).
 - Whether keys.openpgp.org accepts a certify-only primary ([0011](decisions/0011-publishing-and-what-to-do-after-a-ceremony.md#not-yet-proven-or-only-proposed)), and whether Maven Central accepts a signing subkey under one ([0009](decisions/0009-release-keys-and-the-keyring.md#not-yet-proven-or-only-proposed)).
 
 ## What comes later

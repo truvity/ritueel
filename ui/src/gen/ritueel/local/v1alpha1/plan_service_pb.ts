@@ -438,7 +438,7 @@ export type Plan = Message<"ritueel.local.v1alpha1.Plan"> & {
    * The touches the plan asks of the holder: one for every signature made by
    * a card, plus a passkey touch that opens a key file. 0 for a cloud key,
    * which has no touch: the typed digest and the role session stand, and its
-   * audit trail records every signature (record 0005, rule 18).
+   * audit trail records every signature (record 0005, rules 18 and 19).
    *
    * @generated from field: int32 touch_count = 16;
    */
