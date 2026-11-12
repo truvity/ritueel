@@ -39,7 +39,8 @@ done <<< "$unpublished"
 # and drawings that are images with a label, and none of the drawings keeps its text in the search.
 # (Starlight's own icons are <svg> too, so the check names the drawings by role="img".)
 for f in index.html how-it-works/index.html how-it-works/cards/index.html how-it-works/bundle-and-stick/index.html \
-         learn/how-a-yubikey-holds-keys/index.html learn/how-passkeys-work/index.html; do
+         learn/how-a-yubikey-holds-keys/index.html learn/how-passkeys-work/index.html \
+         learn/choosing-where-a-root-lives/index.html; do
   [ -s "$dist/$f" ] || continue
   grep -q '<figure class="fig ' "$dist/$f" || bad "$f has no figure"
   [ "$(grep -o '<svg[^>]* role="img"[^>]* data-pagefind-ignore' "$dist/$f" | wc -l)" -ge 1 ] || bad "$f has no drawing with role=img and data-pagefind-ignore (did a sanitizer drop them?)"

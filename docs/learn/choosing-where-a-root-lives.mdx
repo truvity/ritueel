@@ -3,7 +3,11 @@ title: Choosing where a root lives
 description: Questions that pick where a root lives (a key file, a pair of root cards or a cloud key), how a key file opens, and what each costs you in a year.
 sidebar:
   order: 12.45
+# The link validator reads an MDX page by its real path under docs/, so the page names its own address.
+slug: learn/choosing-where-a-root-lives
 ---
+
+import Figure from '../../site/src/components/Figure.astro';
 
 *Design phase: ritueel is in design and has no release, and none of the three stores is built ([roadmap](/roadmap/)). Everything said here about ritueel is what an accepted decision record says on 2026-11-12, and where a record says "decided, not yet proven", so does this page. The AWS price was read on 2026-11-11; prices change, so check it before you rely on it.*
 
@@ -11,7 +15,7 @@ You are about to make a root, and the first question is where it will live. The 
 
 This page sits at the first link of [the custody chain](/learn/custody-chain/): the store that holds the root. It helps you choose; the pages under "Where to go next" explain the stores.
 
-ritueel has three stores for a root ([record 0002](../decisions/0002-where-a-key-lives.md), [record 0003](../decisions/0003-root-cards.md), [record 0004](../decisions/0004-the-cloud-root.md)). They arrive in different milestones, as the table below shows:
+ritueel has three stores for a root ([record 0002](../decisions/0002-where-a-key-lives.md), [record 0003](../decisions/0003-root-cards.md), [record 0004](../decisions/0004-the-cloud-root.md)). They arrive in different milestones, as the picture below shows:
 
 - **A software key in an encrypted key file.**
 - **A pair of root cards,** two independent hardware tokens.
@@ -59,16 +63,11 @@ Three ways are not supported, each with its reason in [record 0002](../decisions
 
 ## The three stores side by side
 
-The rows that decide are below. Where a key is born, whether it can be copied, redundancy and evidence are compared on [where a key lives](/learn/key-stores/) and [what a key store can prove](/learn/what-a-store-can-prove/).
+The figure shows what each store holds and when its key ends. The long rows, such as the four conditions, are on [where a root is used](/learn/where-a-root-is-used/).
 
-| | Software key in a file | Two root cards | Cloud key |
-|---|---|---|---|
-| **May hold** | Test roots, drills, development, a person's own primary. Never a root that others rely on. | The root keys of the holder's bundles, on a pair of cards, a row for each bundle. | One dedicated account with three keys. |
-| **A ceremony runs on** | A key that can be copied is used only in the offline system. A test root: any machine that can open the file, or a rehearsal card; the key is in memory while it signs. | Your workstation, under four conditions (a touch for every signature, the number of signatures stated in the plan, no retry of a failed touch, a check on a second device), or the offline system. | Your workstation, through the ceremony role, with the typed plan digest and the role session. There is no touch. The stated number of signatures, no retry and the check on a second device apply as for cards ([record 0005](../decisions/0005-a-ceremony-and-where-it-runs.md), rule 18). |
-| **When the key ends** | Replaced at most every three years, because it can be copied. | On an event: an advisory, a lost card, a compromise, a change of store. Not on a date. | The same events. |
-| **Built in** | M2 (the file). | M6, after the first signed release. | M2 (the store), and adoption is drilled in M4. |
-
-Sources of the rows: [record 0002](../decisions/0002-where-a-key-lives.md), [record 0003](../decisions/0003-root-cards.md), [record 0004](../decisions/0004-the-cloud-root.md), [the software store](/reference/software-store/), [root cards](/reference/cards/), [the cloud root](/reference/kms-root/) and the [roadmap](/roadmap/).
+<Figure name="three-stores">
+  Ask the two questions in order; the first answer that fits is your store. Nothing here is built: Planned names the milestone on the [roadmap](/roadmap/). Sources: [record 0002](../decisions/0002-where-a-key-lives.md), [0003](../decisions/0003-root-cards.md), [0004](../decisions/0004-the-cloud-root.md) and [0005](../decisions/0005-a-ceremony-and-where-it-runs.md) (rule 18).
+</Figure>
 
 ## What it costs you each year
 
