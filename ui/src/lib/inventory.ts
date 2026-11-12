@@ -329,11 +329,6 @@ export function inventoryIsEmpty(inv: Inventory): boolean {
   );
 }
 
-/** A name that is safe as one word of a command: letters, digits, "." "_" and "-" only. Anything else is never put into a command. */
-export function isCommandWord(s: string): boolean {
-  return /^[A-Za-z0-9][A-Za-z0-9._-]{0,59}$/.test(s);
-}
-
 /** Days to an end, as a table cell: `60 days`, `1 day`, `today`, `ended 3 days ago`. */
 export function endsIn(days: number | undefined): string {
   if (days === undefined) return '-';

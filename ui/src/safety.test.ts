@@ -68,6 +68,23 @@ describe('banned calls (src, outside gen/ and fixtures/)', () => {
   });
 });
 
+describe('the page builds no command', () => {
+  // proto/README.md, rule 7: a command is an exact string from the program. A template
+  // that starts with "ritueel " and holds a value, or a string joined to "ritueel ", would
+  // be a command made on the page.
+  it('no template literal and no concatenation puts a value into a string that starts with "ritueel " and a command word', () => {
+    const W = '(?:apply|check|close|join|new|publish|revoke|status|stop|verify|version|want|wizard)\\b';
+    const tpl = new RegExp('`\\s*ritueel\\s+' + W + '[^`]*\\$\\{');
+    const cat = new RegExp('[\'"]\\s*ritueel\\s+' + W + '[^\'"]*[\'"]\\s*\\+');
+    const bad = code.filter(([, text]) => tpl.test(text) || cat.test(text)).map(([f]) => f);
+    expect(bad).toEqual([]);
+  });
+  it('the check itself finds a built command', () => {
+    const W = '(?:want)\\b';
+    expect(new RegExp('`\\s*ritueel\\s+' + W + '[^`]*\\$\\{').test('<Cmd>{`ritueel want ${name}`}</Cmd>')).toBe(true);
+  });
+});
+
 describe('the page and its files', () => {
   const html = readFileSync(new URL('../index.html', import.meta.url), 'utf8');
   it('links nothing remote and carries a content security policy', () => {
