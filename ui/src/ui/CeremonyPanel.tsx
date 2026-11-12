@@ -98,6 +98,41 @@ function CeremonyLink({ id }: { id: string }) {
   );
 }
 
+/**
+ * The usual steps of the command of a ceremony. Below 1440 px they stand in the
+ * panel. From 1440 px the screen draws them under the list (`StepsBelow`), where
+ * the free height is, so the panel stays short.
+ */
+export function UsualSteps({ c, columns = false }: { c: Ceremony; columns?: boolean }) {
+  const steps = USUAL_STEPS[c.command] ?? [];
+  if (steps.length === 0) return null;
+  return (
+    <PanelSection title="The usual steps">
+      <ol className={`m-0 list-none space-y-1 p-0 ${columns ? 'min-[1440px]:columns-2 min-[1440px]:gap-x-8 min-[1440px]:space-y-0 [&>li]:break-inside-avoid [&>li]:mb-1' : ''}`}>
+        {steps.map((st) => (
+          <li key={st.title}>
+            <span className="font-semibold">{st.title}.</span> {st.detail}
+          </li>
+        ))}
+      </ol>
+      {c.guidePath ? (
+        <p>
+          <LearnLink path={c.guidePath}>About a ceremony</LearnLink>
+        </p>
+      ) : null}
+    </PanelSection>
+  );
+}
+
+/** From 1440 px: the usual steps of the ceremony that the panel shows, in two columns under the list. */
+export function StepsBelow({ c }: { c: Ceremony }) {
+  return (
+    <div className="mt-6 hidden min-[1440px]:block">
+      <UsualSteps c={c} columns />
+    </div>
+  );
+}
+
 export function CeremonyPanel({ c, all, trustSequence }: { c: Ceremony; all: Ceremony[]; trustSequence: number }) {
   const planned = c.state === CeremonyState.PLANNED;
   const closingRecord = c.command === CeremonyCommand.CLOSE;
@@ -145,10 +180,10 @@ export function CeremonyPanel({ c, all, trustSequence }: { c: Ceremony; all: Cer
             <Fp kind="Digest" value={c.planSha256} />
           </div>
           {planned ? (
-            <p className="max-w-[62ch]">Compare it with the terminal. Type the first eight characters in the terminal, not here. This page cannot confirm.</p>
+            <p className="max-w-[56ch]">Compare it with the terminal. Type the first eight characters in the terminal, not here. This page cannot confirm.</p>
           ) : null}
           {planned && c.stale ? (
-            <p className="max-w-[62ch]">This plan is stale. The end of the history or the trust set moved on, and apply refuses it.</p>
+            <p className="max-w-[56ch]">This plan is stale. The end of the history or the trust set moved on, and apply refuses it.</p>
           ) : null}
         </PanelSection>
       ) : null}
@@ -176,7 +211,7 @@ export function CeremonyPanel({ c, all, trustSequence }: { c: Ceremony; all: Cer
       {c.state === CeremonyState.RECORDED && c.publishCommand ? (
         <PanelSection title="After the record">
           <Cmd label="Send the public key in the terminal">{c.publishCommand}</Cmd>
-          <p className="max-w-[62ch]">A published user ID cannot be withdrawn. You type the confirmation in the terminal. This page has no button.</p>
+          <p className="max-w-[56ch]">A published user ID cannot be withdrawn. You type the confirmation in the terminal. This page has no button.</p>
           <p>
             <LearnLink path="/design/#after-a-ceremony">After a ceremony</LearnLink>
           </p>
@@ -185,7 +220,7 @@ export function CeremonyPanel({ c, all, trustSequence }: { c: Ceremony; all: Cer
 
       {c.state === CeremonyState.STARTED ? (
         <PanelSection title="Attempt">
-          <p className="max-w-[62ch]">
+          <p className="max-w-[56ch]">
             This ceremony has an attempt and no ceremony record. ritueel status reports it as critical until it is recorded or closed. If the run is still going,
             wait for it. If it stopped, a signature may exist.
           </p>
@@ -206,7 +241,7 @@ export function CeremonyPanel({ c, all, trustSequence }: { c: Ceremony; all: Cer
             </p>
           ) : null}
           {reason ? (
-            <p className="max-w-[62ch]">
+            <p className="max-w-[56ch]">
               <T cap={CAPS['Ceremony.close_reason']}>{reason}</T>
             </p>
           ) : null}
@@ -246,20 +281,9 @@ export function CeremonyPanel({ c, all, trustSequence }: { c: Ceremony; all: Cer
       ) : null}
 
       {steps.length > 0 ? (
-        <PanelSection title="The usual steps">
-          <ol className="m-0 list-none space-y-1 p-0">
-            {steps.map((st) => (
-              <li key={st.title}>
-                <span className="font-semibold">{st.title}.</span> {st.detail}
-              </li>
-            ))}
-          </ol>
-          {c.guidePath ? (
-            <p>
-              <LearnLink path={c.guidePath}>About a ceremony</LearnLink>
-            </p>
-          ) : null}
-        </PanelSection>
+        <div className="min-[1440px]:hidden">
+          <UsualSteps c={c} />
+        </div>
       ) : null}
     </PanelFrame>
   );

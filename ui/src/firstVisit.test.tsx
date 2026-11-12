@@ -85,7 +85,7 @@ describe('the lede is in the demo and not in the real build', () => {
   });
   it('Todo.tsx draws the lede only behind isDemo, outside the data load, and nothing else imports FirstVisit', () => {
     const todo = source('screens/Todo.tsx');
-    expect(todo).toMatch(/\{isDemo \? <DemoLede \/> : null\}/);
+    expect(todo).toMatch(/lede=\{isDemo \? <DemoLede \/> : undefined\}/);
     expect(todo.indexOf('<DemoLede />')).toBeLessThan(todo.indexOf('<Tabs'));
     for (const f of ['screens/Inventory.tsx', 'screens/History.tsx', 'screens/Trust.tsx', 'ui/Shell.tsx', 'ui/Cmd.tsx', 'ui/Sec.tsx', 'App.tsx']) expect(source(f), f).not.toMatch(/FirstVisit/);
   });

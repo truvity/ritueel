@@ -70,6 +70,7 @@ export function Todo({ tab }: { tab: TabName }) {
   return (
     <Page
       title="To do"
+      lede={isDemo ? <DemoLede /> : undefined}
       line={
         s && stamp ? (
           <>
@@ -78,13 +79,12 @@ export function Todo({ tab }: { tab: TabName }) {
         ) : undefined
       }
     >
-      {isDemo ? <DemoLede /> : null}
       <div>
-        <Tabs value={tab} aria-label="To do" sx={{ minHeight: 44, borderBottom: 1, borderColor: 'divider' }}>
+        <Tabs value={tab} aria-label="To do" sx={{ minHeight: { xs: 44, lg: 38 }, '& .MuiTab-root': { minHeight: { xs: 44, lg: 38 } }, borderBottom: 1, borderColor: 'divider' }}>
           <Tab component="a" href={href.todo()} value="changes" id="todo-tab-changes" aria-controls="todo-panel" label={label('Not applied yet', changes)} />
           <Tab component="a" href={href.findings()} value="findings" id="todo-tab-findings" aria-controls="todo-panel" label={label('Findings', findings)} />
         </Tabs>
-        <div role="tabpanel" id="todo-panel" aria-labelledby={`todo-tab-${tab}`} className="pt-4">
+        <div role="tabpanel" id="todo-panel" aria-labelledby={`todo-tab-${tab}`} className="pt-3">
           {tab === 'changes' ? <ChangesTab summary={summary} onRead={setStamp} /> : <FindingsTab summary={summary} onRead={setStamp} />}
         </div>
       </div>
@@ -102,7 +102,7 @@ export function Todo({ tab }: { tab: TabName }) {
  */
 function TodoGrid({ list, apply, bundle }: { list: ReactNode; apply?: ReactNode; bundle: ReactNode }) {
   return (
-    <div className="grid gap-6 min-[1440px]:grid-cols-[minmax(0,1fr)_26rem] min-[1800px]:grid-cols-[minmax(0,62rem)_40rem]">
+    <div className="grid gap-6 min-[1440px]:grid-cols-[minmax(0,1fr)_24rem] min-[1800px]:grid-cols-[minmax(0,62rem)_40rem]">
       <div className="order-2 min-w-0 min-[1440px]:order-none min-[1440px]:col-start-1 min-[1440px]:row-start-1">{list}</div>
       <div className="contents min-[1440px]:col-start-2 min-[1440px]:row-start-1 min-[1440px]:grid min-[1440px]:content-start min-[1440px]:gap-6 min-[1800px]:grid-cols-2 min-[1800px]:items-start">
         {apply ? <div className="order-1 min-w-0">{apply}</div> : null}
@@ -181,7 +181,7 @@ function ChangeTable({ inv }: { inv: GetInventoryResponse }) {
           {
             key: 'object',
             header: 'Object',
-            width: 12,
+            width: 11,
             render: (c, { current }) => (
               <>
                 <span className="text-dim">{OBJECT_KIND_WORD[c.object?.kind ?? 0]}</span>{' '}
@@ -207,7 +207,7 @@ function ChangeTable({ inv }: { inv: GetInventoryResponse }) {
           {
             key: 'needs',
             header: 'Needs',
-            width: 9,
+            width: 6,
             render: (c) =>
               c.needs.length === 0 ? (
                 'nothing'
@@ -224,7 +224,7 @@ function ChangeTable({ inv }: { inv: GetInventoryResponse }) {
           {
             key: 'state',
             header: 'State',
-            width: 7,
+            width: 15,
             render: (c) => (
               <>
                 <span className="inline-flex items-center gap-1.5 font-semibold">
@@ -237,9 +237,9 @@ function ChangeTable({ inv }: { inv: GetInventoryResponse }) {
                   </span>
                 ) : null}
                 {c.inCeremony ? (
-                  <span className="mt-0.5 block text-dim [overflow-wrap:anywhere]">
+                  <span className="mt-0.5 block text-dim [overflow-wrap:anywhere] lg:[overflow-wrap:normal]">
                     In the plan of{' '}
-                    <a className="underline underline-offset-4" href={href.history(c.inCeremony)}>
+                    <a className="font-mono text-[0.8125rem] underline underline-offset-4 lg:whitespace-nowrap" href={href.history(c.inCeremony)}>
                       <T cap={CAPS['Ceremony.id']}>{c.inCeremony}</T>
                     </a>
                   </span>
@@ -249,7 +249,7 @@ function ChangeTable({ inv }: { inv: GetInventoryResponse }) {
           },
         ]}
       />
-      <p className="mt-2 max-w-[62ch] text-sm text-dim">A line opens its object in the inventory.</p>
+      <p className="mt-1 max-w-[56ch] text-sm text-dim">A line opens its object in the inventory.</p>
     </>
   );
 }
@@ -268,21 +268,24 @@ function ApplyBlock({ s, changes }: { s: GetSummaryResponse; changes: Change[] }
   const keyFile = readyChanges.some((c) => c.needs.some((n) => n.kind === NeedKind.KEY_FILE));
   return (
     <Sec title="Apply in the terminal">
-      <div className="space-y-3 text-[0.9375rem]">
-        <p className="font-semibold">
-          {ready} ready, {waits} waiting
+      <div className="space-y-2 text-[0.9375rem]">
+        <p>
+          <span className="font-semibold">
+            {ready} ready, {waits} waiting.
+          </span>
+          {cards.length > 0 ? (
+            <>
+              {' '}
+              Cards at hand:{' '}
+              {cards.map((name, i) => (
+                <span key={i}>
+                  {i > 0 ? ', ' : ''}
+                  <T cap={CAPS['Need.name']}>{name}</T>
+                </span>
+              ))}
+            </>
+          ) : null}
         </p>
-        {cards.length > 0 ? (
-          <p>
-            Cards at hand:{' '}
-            {cards.map((name, i) => (
-              <span key={i}>
-                {i > 0 ? ', ' : ''}
-                <T cap={CAPS['Need.name']}>{name}</T>
-              </span>
-            ))}
-          </p>
-        ) : null}
         {s.applyCommand ? (
           <>
             <Cmd label="Make the plan in the terminal">{s.applyCommand}</Cmd>
@@ -352,54 +355,61 @@ function HistoryFact({ s }: { s: GetSummaryResponse }) {
   return (
     <>
       {plural(h.recordCount, 'record')}. End of the history <span className="font-mono"><T cap={8}>{h.endRecordSha256.slice(0, 8)}</T></span>.
-      <span className={`block ${h.chainState === ChainState.BROKEN ? 'font-semibold text-critical' : 'text-dim'}`}>
+      <span className={`chain block ${h.chainState === ChainState.BROKEN ? 'font-semibold text-critical' : 'text-dim'}`}>
         {h.chainState === ChainState.BROKEN ? 'The chain of the history is broken.' : `Chain: ${CHAIN_STATE_WORD[h.chainState] ?? 'not checked'}`}
       </span>
     </>
   );
 }
 
-/** The facts of the bundle: the history, the newest trust set, the last ceremony, the ceremonies without a record. */
-function BundleBlock({ s }: { s: GetSummaryResponse }) {
+/**
+ * The facts of the bundle: the history, the newest trust set, the last ceremony, the ceremonies without a record.
+ * `row` lays the facts side by side (the strip under the findings); otherwise they stand in a column.
+ */
+function BundleBlock({ s, row = false }: { s: GetSummaryResponse; row?: boolean }) {
   const link = 'font-semibold text-accent underline underline-offset-4';
   const last = s.history?.lastRecordId;
   const without = s.ceremoniesWithoutRecord;
+  const item = row ? 'flex gap-x-2' : 'flex gap-x-4';
+  const term = row ? 'text-dim' : 'w-32 shrink-0 text-dim';
   return (
     <Sec title="Bundle">
-      <dl className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 gap-y-1.5 text-[0.9375rem]">
-        <dt className="text-dim">History</dt>
-        <dd>
-          <HistoryFact s={s} />
-        </dd>
+      <dl className={row ? 'm-0 flex flex-wrap gap-x-8 gap-y-1.5 text-[0.9375rem] [&_.chain]:ml-2 [&_.chain]:inline' : 'm-0 space-y-1.5 text-[0.9375rem]'}>
+        <div className={item}>
+          <dt className={term}>History</dt>
+          <dd className="m-0 min-w-0">
+            <HistoryFact s={s} />
+          </dd>
+        </div>
         {s.trustSequence > 0 ? (
-          <>
-            <dt className="text-dim">Trust set</dt>
-            <dd>
+          <div className={item}>
+            <dt className={term}>Trust set</dt>
+            <dd className="m-0">
               <a className={link} href={href.trust()}>
                 Set {s.trustSequence}
               </a>
             </dd>
-          </>
+          </div>
         ) : null}
         {last ? (
-          <>
-            <dt className="text-dim">Last ceremony</dt>
-            <dd>
+          <div className={item}>
+            <dt className={term}>Last ceremony</dt>
+            <dd className="m-0">
               <a className={link} href={href.history(last)}>
                 {ymd(s.history?.lastRecordAt)}
               </a>
             </dd>
-          </>
+          </div>
         ) : null}
         {without > 0 ? (
-          <>
-            <dt className="text-dim">Without a record</dt>
-            <dd>
+          <div className={item}>
+            <dt className={term}>Without a record</dt>
+            <dd className="m-0">
               <a className={link} href={href.history()}>
                 {without}
               </a>
             </dd>
-          </>
+          </div>
         ) : null}
       </dl>
     </Sec>
@@ -441,17 +451,25 @@ function FindingsTab({ summary, onRead }: { summary: Loaded<GetSummaryResponse>;
             </ToggleButton>
           ))}
         </ToggleButtonGroup>
+        {res.state === 'ready' && res.data[1].findings.length > 0 ? <p className="m-0 ml-3 font-semibold">{plural(res.data[1].findings.length, 'finding')}, worst first</p> : null}
       </div>
       <Load res={res} what="the findings">
         {([s, f]) => {
           const worstFirst = [...f.findings].sort((a, b) => b.severity - a.severity);
+          // The note that a command is an example stands once under the cards when they hold a command; then the hint does not repeat it.
+          const exampleUnderCards = isDemo && worstFirst.some((x) => x.fixCommand);
+          const hint = (strip: boolean) => (
+            <div className="space-y-2 text-[0.9375rem]">
+              <p>Read the same list in the terminal:</p>
+              <Cmd label="Read the findings in the terminal" note={!(strip && exampleUnderCards)}>
+                ritueel status
+              </Cmd>
+            </div>
+          );
           const bundle = (
             <div className="space-y-4">
               <BundleBlock s={s} />
-              <div className="space-y-2 text-[0.9375rem]">
-                <p>Read the same list in the terminal:</p>
-                <Cmd label="Read the findings in the terminal">ritueel status</Cmd>
-              </div>
+              {hint(false)}
             </div>
           );
           if (worstFirst.length === 0) {
@@ -470,25 +488,46 @@ function FindingsTab({ summary, onRead }: { summary: Loaded<GetSummaryResponse>;
               />
             );
           }
+          // From 1440 px the findings stand in columns over the whole width (up to three, four from 1800 px).
+          // With one or two findings the facts of the bundle stand in the next column; with more they stand
+          // in a strip under the findings. Below 1440 px everything follows in one column.
+          const few = worstFirst.length <= 2;
+          const list = (
+            <ol
+              className={`m-0 grid list-none gap-3 p-0 min-[1440px]:items-start ${
+                worstFirst.length === 1 ? 'min-[1440px]:grid-cols-1' : few ? 'min-[1440px]:grid-cols-2' : 'min-[1440px]:grid-cols-3 min-[1800px]:grid-cols-4'
+              }`}
+            >
+              {worstFirst.map((x) => (
+                <li key={x.id} className="min-w-0">
+                  <FindingCard f={x} commandNote={false} />
+                </li>
+              ))}
+            </ol>
+          );
+          const example =
+            exampleUnderCards ? <p className="mt-2 max-w-[56ch] text-sm text-dim">Example only. The ritueel command line is not built yet.</p> : null;
           return (
-            <TodoGrid
-              list={
+            <>
+              {few ? (
+                <div className="grid gap-x-3 gap-y-4 min-[1440px]:grid-cols-3 min-[1440px]:items-start">
+                  <div className={`min-w-0 ${worstFirst.length === 1 ? '' : 'min-[1440px]:col-span-2'}`}>
+                    {list}
+                    {example}
+                  </div>
+                  <div className="min-w-0 min-[1440px]:pl-3">{bundle}</div>
+                </div>
+              ) : (
                 <>
-                  <p className="mb-3 font-semibold">{plural(worstFirst.length, 'finding')}, worst first</p>
-                  <ol className="m-0 grid list-none gap-3 p-0 min-[1800px]:grid-cols-2 min-[1800px]:items-start">
-                    {worstFirst.map((x) => (
-                      <li key={x.id} className="min-w-0">
-                        <FindingCard f={x} commandNote={false} />
-                      </li>
-                    ))}
-                  </ol>
-                  {isDemo && worstFirst.some((x) => x.fixCommand) ? (
-                    <p className="mt-2 max-w-[62ch] text-sm text-dim">Example only. The ritueel command line is not built yet.</p>
-                  ) : null}
+                  {list}
+                  {example}
+                  <div className="mt-5 grid gap-x-10 gap-y-4 min-[1440px]:grid-cols-[minmax(0,1fr)_auto] min-[1440px]:items-start">
+                    <BundleBlock s={s} row />
+                    <div className="min-[1440px]:pt-1">{hint(true)}</div>
+                  </div>
                 </>
-              }
-              bundle={bundle}
-            />
+              )}
+            </>
           );
         }}
       </Load>

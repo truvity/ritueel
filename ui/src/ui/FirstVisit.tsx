@@ -12,10 +12,10 @@ export function DemoLede() {
     <div className="grid gap-x-6 gap-y-1 text-[0.9375rem] min-[1440px]:grid-cols-2">
       <p className="max-w-[56ch]">
         ritueel helps you keep a root, what others trust. A root is built from keys. This page shows what is not applied yet, where every key is, what happened and the
-        trust set. You write what you want in files, and you apply it in the terminal.
+        trust set.
       </p>
       <p className="max-w-[56ch]">
-        Use the bar above: change the example bundle, step through the five scenes of acme, or change the page state. The words are in the{' '}
+        You write what you want in files and apply it in the terminal. Use the bar above to change the bundle, step through the five scenes of acme, or change the page state. The words are in the{' '}
         <a className="font-semibold text-accent underline underline-offset-4" href={learnUrl('/glossary/')} target="_blank" rel="noopener noreferrer">
           glossary
           <span className="sr-only"> (on ritueel.id, opens in a new tab)</span>

@@ -13,8 +13,8 @@ import { Cmd } from './Cmd';
 export function Sec({ title, aside, children, id }: { title: string; aside?: ReactNode; children: ReactNode; id?: string }) {
   return (
     <section aria-labelledby={id ? `${id}-h` : undefined} id={id} className="min-w-0">
-      <header className="mb-3 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 border-b-[3px] border-double border-rule pb-1.5">
-        <Typography variant="h2" component="h2" id={id ? `${id}-h` : undefined}>
+      <header className="mb-2 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 border-b-[3px] border-double border-rule pb-1">
+        <Typography variant="h2" component="h2" id={id ? `${id}-h` : undefined} sx={{ fontSize: '1.375rem' }}>
           {title}
         </Typography>
         {aside ? <div className="text-sm text-dim">{aside}</div> : null}
@@ -27,7 +27,7 @@ export function Sec({ title, aside, children, id }: { title: string; aside?: Rea
 /** A short plain sentence that says what a thing is, set where it first appears. */
 export function Explain({ term, children }: { term: string; children: ReactNode }) {
   return (
-    <p className="mb-3 max-w-[62ch] border-l-4 border-accent bg-sunk px-3 py-2 text-[0.9375rem]">
+    <p className="mb-3 max-w-[56ch] border-l-4 border-accent bg-sunk px-3 py-2 text-[0.9375rem]">
       <strong>{term}</strong> {children}
     </p>
   );
@@ -48,7 +48,7 @@ function useAfter(ms: number): boolean {
 function WaitingOnPurpose() {
   if (useViewState() !== 'waiting') return null;
   return (
-    <p className="border-l-4 border-accent bg-sunk px-3 py-2 text-sm">
+    <p className="max-w-[56ch] border-l-4 border-accent bg-sunk px-3 py-2 text-sm">
       Demo: in this state ritueel never answers, on purpose, so you can see this screen. Choose another page state to end the wait.
     </p>
   );
@@ -75,13 +75,13 @@ export function Failed({ what, message, retry }: { what: string; message: string
       <p className="flex items-center gap-2 font-bold text-critical">
         <Glyph level="critical" size={18} /> Could not read {what}
       </p>
-      <p className="mt-2 max-w-[62ch]">
+      <p className="mt-2 max-w-[56ch]">
         This is not the same as empty. ritueel could not read it, so this page cannot say what is there. Nothing was changed.
       </p>
-      <p className="mt-2 max-w-[62ch] text-sm text-dim">
+      <p className="mt-2 max-w-[56ch] text-sm text-dim">
         What ritueel said: <T cap={300}>{message}</T>
       </p>
-      <p className="mt-2 max-w-[62ch] text-sm text-dim">
+      <p className="mt-2 max-w-[56ch] text-sm text-dim">
         If this page stayed open for a long time, the ritueel process may have ended. It ends after 15 minutes without a call. Run ritueel status in a terminal to start
         it again, then open the page again with the address ritueel prints.
       </p>
@@ -104,7 +104,7 @@ export function Empty({ title, children, command }: { title: string; children?: 
       <p className="flex items-center gap-2 font-bold">
         <Glyph level="info" size={18} /> {title}
       </p>
-      {children ? <div className="mt-2 max-w-[62ch] space-y-2">{children}</div> : null}
+      {children ? <div className="mt-2 max-w-[56ch] space-y-2">{children}</div> : null}
       {command ? (
         <div className="mt-3 max-w-[40rem]">
           <Cmd label={command.label}>{command.text}</Cmd>

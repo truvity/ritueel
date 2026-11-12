@@ -72,14 +72,18 @@ export function GoToPanel() {
 /** A fact is a label and a value. A `block` fact puts its value under the label, in the whole width: a fingerprint or a long reference. */
 type Fact = [label: string, value: ReactNode, layout?: 'block'] | false | null | undefined;
 
-function Facts({ rows }: { rows: Fact[] }) {
+function Facts({ rows, pairs = false }: { rows: Fact[]; pairs?: boolean }) {
+  // `pairs`: from 1440 px to 1799 px two short facts stand side by side (the panel is 30rem wide); a block fact takes the whole width.
+  // The facts of a key are short. The facts of the other objects hold long values and stay in one column.
+  const two = pairs ? 'min-[1440px]:max-[1799px]:grid-cols-[auto_minmax(0,1fr)_auto_minmax(0,1fr)]' : '';
+  const span = pairs ? 'min-[1440px]:max-[1799px]:col-span-4' : '';
   return (
-    <dl className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 gap-y-1">
+    <dl className={`grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 gap-y-1 ${two}`}>
       {rows.map((r, i) =>
         r ? (
           <Fragment key={i}>
-            <dt className={`text-dim ${r[2] ? 'col-span-2 mt-1' : ''}`}>{r[0]}</dt>
-            <dd className={`max-w-[60ch] min-w-0 [overflow-wrap:anywhere] ${r[2] ? 'col-span-2' : ''}`}>{r[1]}</dd>
+            <dt className={`text-dim ${r[2] ? `col-span-2 mt-1 ${span}` : ''}`}>{r[0]}</dt>
+            <dd className={`max-w-[60ch] min-w-0 [overflow-wrap:anywhere] ${r[2] ? `col-span-2 ${span}` : ''}`}>{r[1]}</dd>
           </Fragment>
         ) : null,
       )}
@@ -142,7 +146,7 @@ function keyTitle(k: Key): ReactNode {
 
 function CardFacts({ c }: { c: Card }) {
   return (
-    <Facts
+    <Facts pairs
       rows={[
         ['Serial', isSerial(c.serial) ? <span className="font-mono">{c.serial}</span> : <T cap={CAPS['Card.serial']}>{c.serial}</T>],
         ['Kind', CARD_KIND_WORD[c.kind]],
@@ -161,6 +165,7 @@ function CardFacts({ c }: { c: Card }) {
               </T>
             ))}
           </List>,
+          'block',
         ],
       ]}
     />
@@ -226,7 +231,7 @@ function PlaceFacts({ k }: { k: Key }): Fact[] {
 function KeyFacts({ ix, k }: { ix: InvIndex; k: Key }) {
   const delegated = k.role === KeyRole.DELEGATED_KEY;
   return (
-    <Facts
+    <Facts pairs
       rows={[
         ['Fingerprint', <Fp value={k.fingerprint} />, 'block'],
         ['Kind', (delegated ? DELEGATED_KEY_WORD : ROOT_KEY_WORD)[k.kind]],
@@ -585,8 +590,7 @@ function RevokeSection({ command, what, rootKey = false, ambiguous = false }: { 
       {what === 'key' ? <p>The form of this command is proposed in the command reference.</p> : null}
       {ambiguous ? (
         <p>
-          In this bundle the same command names more than one key. The command reference does not say yet which key it opens (issue 137 of ritueel). Check in the
-          terminal which key it names before you use it.
+          This command names more than one key of this bundle (issue 137). Check in the terminal which key it opens.
         </p>
       ) : null}
       {rootKey ? <p>What only this key certified is critical in ritueel status until a ceremony certifies it again.</p> : null}

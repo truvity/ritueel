@@ -51,15 +51,18 @@ export const placeholdersOf = (command: string): string[] => PLACEHOLDERS.filter
  * A command that holds a placeholder (REASON or TEXT) is followed by the sentence
  * that names it and tells the reader to replace it.
  *
+ * `wide` gives the box 72ch in place of 56ch, for a table that has the room: the lines of
+ * the command stay under 70 characters.
+ *
  * `note` draws, in the demo, the sentence that the command line is not built
  * yet. A table of commands passes `note={false}` and says it once after the
  * table.
  */
-export function Cmd({ children, label = 'Type this in the terminal', note = true }: { children: string; label?: string; note?: boolean }) {
+export function Cmd({ children, label = 'Type this in the terminal', note = true, wide = false }: { children: string; label?: string; note?: boolean; wide?: boolean }) {
   const id = useId();
   const { canCopy, done, copy } = useCopy(children);
   return (
-    <div className="max-w-[56ch]">
+    <div className={wide ? 'max-w-[72ch]' : 'max-w-[56ch]'}>
       <div className="flex min-w-0 flex-col border border-rule bg-sunk sm:flex-row sm:items-stretch" role="group" aria-label={safeString(label, 120)}>
         <div className="flex min-w-0 flex-1 items-start">
           <span aria-hidden className="self-stretch bg-ink px-2.5 py-2 font-mono text-sm font-bold text-bg">

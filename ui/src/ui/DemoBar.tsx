@@ -10,7 +10,7 @@ import { SceneSwitch } from './SceneSwitch';
  */
 export const SITE_PICTURES_NOTE = 'The pictures on the site still show the older page. They follow in a later step.';
 
-const GROUP_SX = { '& .MuiToggleButton-root': { minHeight: { xs: 44, lg: 32 }, fontSize: '0.8125rem', paddingInline: '0.55rem' } } as const;
+const GROUP_SX = { '& .MuiToggleButton-root': { minHeight: { xs: 44, lg: 28 }, fontSize: '0.8125rem', paddingInline: '0.55rem' } } as const;
 
 /** Demo only. Shows the bundle the demo answers for. The contract has no call that names or selects a bundle, so the real page has no such switch. */
 function BundleSwitch() {
@@ -63,20 +63,20 @@ export function DemoBar() {
   return (
     <div role="region" aria-label="This is a demo" data-print="hide" className="z-40 border-b border-rule bg-sunk lg:sticky lg:top-0">
       <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-1 px-4 py-1">
-        <p className="order-1 flex w-full min-w-0 flex-wrap items-center gap-x-3 gap-y-0 text-sm">
+        <p className="order-1 flex w-full min-w-0 flex-wrap items-center gap-x-3 gap-y-0 text-sm lg:w-auto">
           <span className="border border-rule bg-panel px-1.5 font-mono text-xs font-bold tracking-wider">DEMO</span>
-          <span>The data is made up, and ritueel is still in design. Nothing here acts.</span>
+          <span className="max-w-[56ch]">The data is made up, and ritueel is still in design. Nothing here acts.</span>
           {/* Below lg the way back is the DEMO mark in the header under this bar and the link in the footer. */}
           <a className="hidden items-center font-semibold text-accent underline underline-offset-4 lg:inline-flex" href={siteUrl()}>
             Back to ritueel.id
           </a>
         </p>
-        <div className="order-2 flex flex-wrap items-center gap-x-5 gap-y-1 lg:order-3">
+        <div className="order-2 flex flex-wrap items-center gap-x-5 gap-y-1 lg:order-3 lg:w-full">
           <BundleSwitch />
           <SceneSwitch />
           <StateSwitch />
         </div>
-        <p className="order-3 min-w-0 flex-1 basis-60 text-sm text-dim lg:order-2">{SITE_PICTURES_NOTE}</p>
+        <p className="order-3 min-w-0 max-w-[56ch] flex-1 basis-60 text-sm text-dim lg:order-2 lg:basis-[26rem]">{SITE_PICTURES_NOTE}</p>
       </div>
     </div>
   );

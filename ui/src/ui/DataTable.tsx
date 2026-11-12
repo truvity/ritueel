@@ -143,12 +143,12 @@ export function DataTable<R>({ columns, rows, groups, caption, selectedKey, rowK
     const second = detail?.(r);
     return (
       <Fragment key={rowKey(r)}>
-        <tr {...attrsOf(r)} className={`h-11 lg:h-10 ${second ? '' : 'border-b border-line'} align-top ${current ? 'bg-sunk' : ''}`}>
-          <th scope="row" className="min-h-10 px-2 py-2 text-left align-top text-[0.875rem] font-normal">
+        <tr {...attrsOf(r)} className={`h-11 lg:h-8 ${second ? '' : 'border-b border-line'} align-top ${current ? 'bg-sunk' : ''}`}>
+          <th scope="row" className="min-h-10 px-2 py-2 text-left align-top text-[0.875rem] font-normal lg:min-h-8 lg:py-1.5">
             {first.render(r, { current })}
           </th>
           {rest.map((c) => (
-            <td key={c.key} className="px-2 py-2 align-top text-[0.875rem]">
+            <td key={c.key} className="px-2 py-2 align-top text-[0.875rem] lg:py-1.5">
               {c.render(r, { current })}
             </td>
           ))}

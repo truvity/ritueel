@@ -5,7 +5,7 @@ import { SCENE_COUNT, sceneLine } from '../api/scenes';
 import { T } from './T';
 
 // The same sizes as the other two groups of the demo bar: 44 px on a phone.
-const GROUP_SX = { '& .MuiToggleButton-root': { minHeight: { xs: 44, lg: 32 }, fontSize: '0.8125rem', paddingInline: '0.55rem' } } as const;
+const GROUP_SX = { '& .MuiToggleButton-root': { minHeight: { xs: 44, lg: 28 }, fontSize: '0.8125rem', paddingInline: '0.55rem' } } as const;
 
 const NUMBERS = Array.from({ length: SCENE_COUNT }, (_, i) => i + 1);
 
@@ -19,7 +19,7 @@ const NUMBERS = Array.from({ length: SCENE_COUNT }, (_, i) => i + 1);
  * the scene changes.
  *
  * It returns two elements for the flex row of the demo bar: the control, and
- * the line on a row of its own under all the controls (order-last).
+ * the line, on a row of its own under the controls below 1024 px and at their right from there (order-last).
  */
 export function SceneSwitch() {
   const bundle = useBundle();
@@ -40,7 +40,7 @@ export function SceneSwitch() {
           ))}
         </ToggleButtonGroup>
       </div>
-      <p role="status" aria-live="polite" data-testid="scene-line" className="order-last m-0 w-full max-w-[62ch] text-sm text-dim">
+      <p role="status" aria-live="polite" data-testid="scene-line" className="order-last m-0 w-full max-w-[56ch] text-sm text-dim lg:w-auto lg:flex-1 lg:basis-[26rem]">
         <T>{`Scene ${scene} of ${SCENE_COUNT}: ${sceneLine(scene)}`}</T>
       </p>
     </>
