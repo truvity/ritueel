@@ -42,7 +42,7 @@ A requester is a system that asks for a certificate, such as sluis (a system tha
 The last three hold for both kinds. A key in a file is used only in the offline system, which is an option for a root on cards; a cloud root always runs on the workstation ([the stick](/how-it-works/bundle-and-stick/)).
 
 <Figure name="sign-intermediate">
-  Signing the intermediate of a requester with a root card, on your workstation. The strip leaves out two of the six steps, reserve and verify. The request comes before the ceremony. The second check comes before the hand-over.
+  Signing a requester’s intermediate with a root card. It leaves out reserve and verify.
 </Figure>
 
 ## Bind the subkeys of your card
@@ -50,7 +50,7 @@ The last three hold for both kinds. A key in a file is used only in the offline 
 ritueel binds the subkeys of your day-to-day card to your own OpenPGP primary, kept in a key file. A key file can be copied, so this ceremony runs in the offline system. The signing and the authentication subkey are made in one ceremony.
 
 <Figure name="bind-subkeys">
-  Binding the subkeys of your card in the offline system, in six steps. Step 4, a root card that opens the key file, is decided and not yet proven.
+  Six steps to bind your card’s subkeys. Step 4 is decided, not yet proven.
 </Figure>
 
 ## Where to go next

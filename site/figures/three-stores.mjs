@@ -45,7 +45,7 @@ const STORES = [
     planned: 'Planned: M2',
     rows: [
       ['Holds', ['three keys in one account', 'used only for the roots']],
-      ['Runs on', ['your workstation, through', 'the ceremony role']],
+      ['Runs on', ['your workstation, through', 'the ceremony role that signs']],
       ['Ends', ['on an event, not on a date']],
     ],
   },
@@ -94,10 +94,16 @@ const qBox = (x, y, w, h, lines) =>
 
 const Q1 = ['Will other people or systems', 'rely on this root?'];
 const Q2 = ['Can your organisation set up a', 'separate cloud account used', 'only for the root?'];
-const EXCEPTION = ['One exception:', 'a person’s own primary.'];
+const EXCEPTION = 'One exception: a person’s own primary.';
 
 const LABEL =
-  'Three panels and two questions. The panels show the three stores. The key file can be copied, holds test roots, drills, development and a person’s own primary, runs on the offline system, and is replaced at most every three years. Two root cards cannot be copied, hold keys A and B of the roots, one key on each card, run on the workstation under four conditions or on the offline system, and end on an event. The cloud key cannot be copied out, is three keys in one account used only for the roots, runs on the workstation through the ceremony role, and ends on an event. Each panel is marked as planned for a milestone. Under the panels, two questions choose a store. The first asks whether other people or systems rely on the root; no leads to the key file, yes leads to the second question. The second asks whether the organisation can set up a separate cloud account used only for the root; yes leads to the cloud key, no leads to two root cards.';
+  'Three panels and two questions. The panels show the three stores. ' +
+  'The key file can be copied. It holds test roots, drills, development and a person’s own primary. It runs on the offline system. It is replaced at most every three years. ' +
+  'Two root cards cannot be copied. They hold keys A and B of the roots, one key on each card. They run on the workstation under four conditions, or on the offline system. Their keys end on an event. ' +
+  'The cloud key cannot be copied out. It is three keys in one account used only for the roots. It runs on the workstation through the ceremony role that signs. Its keys end on an event. ' +
+  'Each panel is marked as planned for a milestone. Under the panels, two questions choose a store, and the first has a mark that says start. ' +
+  'The first asks whether other people or systems rely on the root. No leads to the key file, with the note that a person’s own primary is the one exception. Yes leads to the second question. ' +
+  'The second asks whether the organisation can set up a separate cloud account used only for the root. Yes leads to the cloud key. No leads to two root cards.';
 
 const PH = 197;
 
@@ -109,17 +115,17 @@ function wide() {
     s += at(i * (pw + gap), 0, panel(st, i, pw, PH));
   });
   // the flow: the exception above question 1, question 1 and 2 on one row, the three names at the right
-  const fy = PH + 8; // top of the flow
+  const fy = PH + 20; // top of the flow
   const qy = fy + 28; // top of the question boxes
   const qh = 50;
   const nx = 602;
   const nw = 156;
-  s += EXCEPTION.map((l, k) => text(2, fy + 8 + k * 14, l, 't t-s t-long')).join('');
+  s += text(3, qy - 8, 'Start', 't t-s t-b');
   s += qBox(1.5, qy, 204.5, qh, Q1) + qBox(262, qy, 214, qh, Q2);
   s += nameBox(nx, fy, nw, 22, 'Key file', true) + nameBox(nx, fy + 28, nw, 22, 'Cloud key', false) + nameBox(nx, fy + 56, nw, 22, 'Two root cards', false);
   // question 1: yes to question 2, no up and over to the key file
   s += arrow(206, qy + qh / 2, 262, qy + qh / 2, 'yes', { ly: qy + qh / 2 - 7 });
-  s += line(190, qy, 190, fy + 11, 'ln') + arrow(190, fy + 11, nx, fy + 11, 'no', { ly: fy + 4, lx: 400 });
+  s += line(190, qy, 190, fy + 11, 'ln') + arrow(190, fy + 11, nx, fy + 11, 'no', { ly: fy + 4, lx: 232 }) + text(262, fy + 4, EXCEPTION, 't t-s t-dim t-long');
   // question 2: yes to the cloud key, no to the root cards
   s += arrow(476, fy + 39, nx, fy + 39, 'yes', { ly: fy + 32 });
   s += arrow(476, fy + 67, nx, fy + 67, 'no', { ly: fy + 60 });
@@ -133,12 +139,13 @@ function narrow() {
   STORES.forEach((st, i) => {
     s += at(0, i * (ph + 10), panel(st, i, w, ph));
   });
-  let y = 3 * ph + 20 + 12;
-  s += EXCEPTION.map((l, k) => text(2, y + 8 + k * 15, l, 't t-s t-long')).join('');
-  const q1y = y + 40;
+  const y = 3 * ph + 20 + 12;
+  const q1y = y + 20;
+  s += text(3, q1y - 8, 'Start', 't t-s t-b');
   const qh = 50;
   s += qBox(1.5, q1y, 204.5, qh, Q1) + nameBox(254, q1y + 13, 104, 24, 'Key file', true);
   s += arrow(206, q1y + qh / 2, 254, q1y + qh / 2, 'no', { ly: q1y + qh / 2 - 7 });
+  s += ['One exception:', 'a person’s own', 'primary.'].map((l, k) => text(256, q1y + 58 + k * 15, l, 't t-s t-dim t-long')).join('');
   const q2y = q1y + qh + 36;
   const q2h = 62;
   s += qBox(1.5, q2y, 204.5, q2h, Q2) + nameBox(254, q2y + 19, 104, 24, 'Cloud key', false);

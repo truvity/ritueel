@@ -94,7 +94,7 @@ function band3Wide() {
   const x0 = 182;
   let s = bar(x0, 10, 13, 'delegated key') + text(x0 + 13 * MONTH + 12, 28.5, 'about 13 months', 't t-s') + text(x0 + 13 * MONTH + 124, 28.5, 'intermediate, subkey: re-signed', 't t-s t-dim');
   s += bar(x0, 46, 36, 'root key', true) + text(x0 + 36 * MONTH + 12, 64.5, 'about 3 years', 't t-s') + text(x0 + 36 * MONTH + 106, 64.5, 'each use extends it', 't t-s t-dim t-long');
-  s += text(x0, 88, 'A key is replaced on an event. A key in a file is replaced after 3 years at most.', 't t-s t-long');
+  s += text(x0, 88, 'A key is replaced on an event.', 't t-s t-long') + text(x0 + 212, 88, 'A key in a file is replaced after 3 years at most.', 't t-s t-long');
   return s;
 }
 function band3Narrow() {

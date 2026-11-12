@@ -14,7 +14,7 @@ The program is not built. This page is the design as decided on 2026-11-11 and 2
 4. Requests in, answers out. Other systems connect through files, and plans can travel.
 5. An opinionated, automated workflow: what is wanted and not applied yet, then plan, confirm, reserve, sign, verify, record.
 
-Decided in [0001](decisions/0001-what-ritueel-is.md) and [0005](decisions/0005-a-ceremony-and-where-it-runs.md). [How it works](/how-it-works/) draws a key in three layers.
+Decided in [0001](decisions/0001-what-ritueel-is.md) and [0005](decisions/0005-a-ceremony-and-where-it-runs.md). [How it works](/how-it-works/) draws the key and the ceremony.
 
 ## What ritueel is
 

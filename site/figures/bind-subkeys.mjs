@@ -25,11 +25,11 @@ function p1() {
   p += line(x + 10, y + 108, x + w - 10, y + 108, 'ln ln-thin ln-acc') + text(x + 7, y + 128, DIGEST, 't t-mono t-acc t-b');
   b += acc('plan', p);
   b += under(42, 'you');
-  return pnl(1, 'Your workstation', b, 'You sit at a terminal that runs apply with the plan-only flag. It writes only the plan. The plan is a sheet with the card’s example number 00000001, a slot, a creation time, the number of touches and the digest 7f3a 91c2.');
+  return pnl(1, 'Your workstation', b, 'You sit at a terminal that runs apply with the plan-only flag. It writes only the plan. The plan is a sheet. It shows the card’s example number 00000001, a slot, a creation time, the number of touches and the digest 7f3a 91c2.');
 }
 
 function p2() {
-  return pnl(2, '', carryBody([{ text: 'ritueel' }, { text: 'personal', mark: 'plan' }, { text: 'key file', lock: true }]), 'You are in mid-stride on a ground line with a USB stick in your hand. Chips on the stick show a copy of ritueel, the personal bundle with a small accent mark for the plan inside it, and a key file with a padlock mark. A curved arrow leads to the offline laptop.');
+  return pnl(2, '', carryBody([{ text: 'ritueel' }, { text: 'personal', mark: 'plan' }, { text: 'key file', lock: true }]), 'You walk with a USB stick in your hand. Chips on the stick show a copy of ritueel, the personal bundle with a small accent mark for the plan, and a key file with a padlock mark. A curved arrow leads to the offline laptop.');
 }
 
 function p3() {
@@ -98,7 +98,7 @@ export default {
   panels: [
     { n: 1, title: 'Plan', caption: 'The plan names the card, slot, time and touches.', svg: p1() },
     { n: 2, title: 'Carry', caption: 'The stick holds ritueel, your bundle with the plan, and the key file.', svg: p2() },
-    { n: 3, title: 'Birth', caption: 'After your PIN, the card makes both subkeys in one ceremony.', svg: p4() },
+    { n: 3, title: 'Birth', caption: 'After your PIN, the card makes both subkeys. Back-sig: the subkey signs the primary.', svg: p4() },
     { n: 4, title: 'Unlock', caption: 'To bind, a root card opens the key file. The recovery key stays apart.', svg: p3() },
     { n: 5, title: 'Bind', caption: 'Your primary binds each subkey. Each fingerprint shows first.', svg: p5() },
     { n: 6, title: 'Record', caption: 'The command apply records it and rebuilds your certificate.', svg: p6() },

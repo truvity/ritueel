@@ -15,7 +15,7 @@ The program does not exist yet; the pictures show how ritueel is designed to wor
 A bundle holds everything ritueel knows about one trust domain (the roots of a company, or of a person): plain files, and never a private key in clear ([the layout](/reference/bundle/#the-layout)). It does hold the card secrets, but encrypted to the recipients of the key file (the keys that open it). You write only the wanted files, such as `ritueel.yaml`. ritueel writes the history and the trust files. A request, from the requester, sits with its answer in `requests/<name>/`.
 
 <Figure name="bundle-folder">
-  A bundle is one directory of plain files for one trust domain. Its history (see the [glossary](/glossary/)) is never changed afterwards. Key files are never inside.
+  A bundle: plain files for one trust domain. Key files are never inside. Tags: wanted, you write it; seen, a check read it; history ([glossary](/glossary/)), written once; request, with its answer.
 </Figure>
 
 The folders `history/` and `trust/` are decided ([record 0006](../decisions/0006-bundle-history-and-trust-files.md)).

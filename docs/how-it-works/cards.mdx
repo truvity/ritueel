@@ -16,7 +16,7 @@ A root card holds keys of roots, and a few jobs of its own: row 1, and the passk
 A root card may be used on your own workstation, under four conditions: a touch for every signature, the number of signatures stated in the plan, no retry of a failed touch, and the result checked against the plan on a second device. It may also be used in the offline system, which stays available ([record 0005](../decisions/0005-a-ceremony-and-where-it-runs.md)).
 
 <Figure name="root-card">
-  Six rows of four PIV slots. Row 1 is the card’s own jobs; each other row holds the keys of one bundle, the same key kind in each column. Each bundle on the pair keeps its own card files and its own sealed copy of the card’s secrets.
+  Six rows of four PIV slots. Row 1 is the card’s own jobs; each other row holds the keys of one bundle, the same key kind in each column. A break-glass key is an SSH CA key that ritueel holds offline.
 </Figure>
 
 One pair of cards serves up to four bundles. Each card has one PIN, one PUK and one management key, for all the bundles on it. Each bundle has its own card files and its own sealed copy of the card’s secrets. A second bundle gets its copy by a request to the first bundle, which wraps the secrets for it. A row that belongs to another bundle is declared in the card’s file in the bundle ([record 0003](../decisions/0003-root-cards.md)).
