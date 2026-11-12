@@ -2,8 +2,8 @@
 // delegation, holder, requester, store, ceremony, history, record, renew,
 // replace, trust set, wanted, not applied yet, apply. One item of "not applied
 // yet" is a change, never a row. A row is one row of four slots on a card.
-// Replace means making a new key; retire is revoking a key that a newer one
-// already replaced. The bare word bundle means the directory of one trust
+// Replace means making a new key. A key retires at its wanted date; revoke is
+// the separate act of `revoke` (record 0007, rules 3, 4 and 8). The bare word bundle means the directory of one trust
 // domain; the trust file keeps its full name, CA bundle.
 //
 // Every value of an enum of the contract has a word here. A value with no word

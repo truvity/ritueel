@@ -68,7 +68,7 @@ describe('the lede is in the demo and not in the real build', () => {
       for (const tab of ['changes', 'findings'] as const) {
         const t = text(renderToStaticMarkup(<Todo tab={tab} />));
         expect(t, `${state} ${tab}`).toContain('ritueel helps you keep a root');
-        expect(t, `${state} ${tab}`).toContain('the key that everything else trusts');
+        expect(t, `${state} ${tab}`).toContain('what others trust');
       }
     }
   });
@@ -94,7 +94,7 @@ describe('the lede is in the demo and not in the real build', () => {
     const html = renderToStaticMarkup(<DemoLede />);
     expect(html.match(/<p\b/g)).toHaveLength(2);
     const t = text(html);
-    expect(t).toMatch(/keep a root, the key that everything else trusts/);
+    expect(t).toMatch(/keep a root, what others trust/);
     expect(t).toContain('step through the five scenes of acme');
     expect(t).toContain('glossary');
     expect(html).not.toMatch(/<(input|textarea|form)\b/);

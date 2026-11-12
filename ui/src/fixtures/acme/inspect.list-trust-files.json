@@ -12,7 +12,7 @@
       "builtAt": "2026-11-20T10:14:00Z",
       "validUntil": "2027-12-20T00:00:00Z",
       "checkResult": "TRUST_CHECK_RESULT_PASSED",
-      "checkDetail": "The list names three roots and is signed by key B. It replaces set 12.",
+      "checkDetail": "The list pins keys A, B and C and is signed by key B. It replaces set 12.",
       "sha256": "7331888673318886733188867331888673318886733188867331888673318886",
       "sizeBytes": "2412",
       "verifyCommand": "ritueel verify root-list trust/13-3fa9c1d2/root-list.json --held trust/12-03e4a9f6/root-list.json"
