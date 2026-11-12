@@ -5,7 +5,7 @@ sidebar:
   order: 5
 ---
 
-*Design phase: not built yet. This page is the plan that `ritueel revoke` will follow, and the plan for the revocation signatures that the first `ritueel apply` will make. Read [Revoke](/learn/revoke/) first. The commands, words and file names on this page are from before the decisions of 2026-11-12; the design is at https://ritueel.id/design/.*
+*Design phase: not built yet. This page is the plan that `ritueel revoke` will follow, and the plan for the revocation signatures that the first `ritueel apply` will make. Read [Revoke](/learn/revoke/) first.*
 
 ## What you start with
 

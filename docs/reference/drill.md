@@ -5,7 +5,7 @@ sidebar:
   order: 13
 ---
 
-*Not built yet. This is the page that [record 0007](../decisions/0007-changing-and-losing-a-root.md) leaves for the command, the report and the scripts; the code is [issue #68](https://github.com/truvity/ritueel/issues/68) for the restore check, in M4, and [issue #20](https://github.com/truvity/ritueel/issues/20) for the scripts: the adoption drill ([issue #48](https://github.com/truvity/ritueel/issues/48)) is part of M4, the lost-card drill of M6, and the others come in M7. The ideas are taught in [The history](/learn/the-history/) and the guides [Back up and restore](/guides/back-up-and-restore/) and [Run a drill](/guides/run-a-drill/). The commands, words and file names on this page are from before the decisions of 2026-11-12; the design is at https://ritueel.id/design/.*
+*Not built yet. This is the page that [record 0007](../decisions/0007-changing-and-losing-a-root.md) leaves for the command, the report and the scripts; the code is [issue #68](https://github.com/truvity/ritueel/issues/68) for the restore check, in M4, and [issue #20](https://github.com/truvity/ritueel/issues/20) for the scripts: the adoption drill ([issue #48](https://github.com/truvity/ritueel/issues/48)) is part of M4, the lost-card drill of M6, and the others come in M7. The ideas are taught in [The history](/learn/the-history/) and the guides [Back up and restore](/guides/back-up-and-restore/) and [Run a drill](/guides/run-a-drill/).*
 
 A restore you have never practised is a hope. A drill is a practice run with a known start and a known end, on test keys, so that the first real run is not the first run. There are two kinds: a **check** that reads the real state and signs nothing, and a **walk-through** that runs ceremonies on test roots.
 
