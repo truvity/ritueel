@@ -85,7 +85,7 @@ function makeColumns(d: ListTrustFilesResponse): Column<TrustFile>[] {
 /** Under a line: what the check found, then the command that checks the file again. */
 function FileDetail({ f }: { f: TrustFile }) {
   return (
-    <div className="max-w-[70ch] space-y-1.5">
+    <div className="max-w-[62ch] space-y-1.5">
       {f.checkDetail ? (
         <p className="text-dim">
           <T cap={CAPS['TrustFile.check_detail']}>{f.checkDetail}</T>
@@ -137,7 +137,7 @@ function Facts({ d }: { d: ListTrustFilesResponse }) {
           {warned > 0 ? `, ${warned} with a warning` : ''}
         </Fact>
       </dl>
-      <p className="mt-3 max-w-[70ch] text-[0.9375rem]">Hosts and relying parties check these files with ritueel verify. The commands are in the table.</p>
+      <p className="mt-3 max-w-[62ch] text-[0.9375rem]">Hosts and relying parties check these files with ritueel verify. The commands are in the table.</p>
     </aside>
   );
 }
@@ -182,7 +182,7 @@ export function Trust() {
                 detail={(f) => <FileDetail f={f} />}
               />
               {isDemo && r.files.some((f) => f.verifyCommand) ? (
-                <p className="mt-2 max-w-[70ch] text-sm text-dim">Example only. The ritueel command line is not built yet.</p>
+                <p className="mt-2 max-w-[62ch] text-sm text-dim">Example only. The ritueel command line is not built yet.</p>
               ) : null}
             </div>
             <Facts d={r} />

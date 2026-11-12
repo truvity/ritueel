@@ -221,7 +221,7 @@ function CardsView({ ix, shown }: { ix: InvIndex; shown?: ObjectId }) {
         rowAttrs={(l) => (l.kind === 'key' ? keyAttrs(ix, l.key) : {})}
         columns={columns}
       />
-      {ix.inv.cards.length === 0 && ix.inv.keys.length > 0 ? <p className="mt-2 max-w-[70ch] text-sm text-dim">No card is listed. A cloud root needs none.</p> : null}
+      {ix.inv.cards.length === 0 && ix.inv.keys.length > 0 ? <p className="mt-2 max-w-[62ch] text-sm text-dim">No card is listed. A cloud root needs none.</p> : null}
     </>
   );
 }

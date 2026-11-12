@@ -129,7 +129,7 @@ function NoSuchCeremony({ id }: { id: string }) {
   return (
     <PanelFrame kind="ceremony" title="No such ceremony" backHref={href.history()}>
       <PanelSection title="Not found">
-        <p className="max-w-[70ch]">
+        <p className="max-w-[62ch]">
           This bundle holds no ceremony folder called <T cap={CAPS['Ceremony.id']}>{id}</T>.
         </p>
       </PanelSection>
@@ -188,12 +188,12 @@ export function History({ id }: { id?: string }) {
           const list = (
             <>
               {status?.message ? (
-                <p className="mb-2 max-w-[70ch] text-[0.9375rem] text-dim">
+                <p className="mb-2 max-w-[62ch] text-[0.9375rem] text-dim">
                   <T cap={CAPS['HistoryStatus.message#history']}>{status.message}</T>
                 </p>
               ) : null}
               {fork || broken ? (
-                <p role="alert" className="mb-2 flex max-w-[70ch] items-center gap-2 font-semibold text-critical">
+                <p role="alert" className="mb-2 flex max-w-[62ch] items-center gap-2 font-semibold text-critical">
                   <Glyph level="critical" size={16} />
                   {fork ? `The history has ${status?.ends} ends. This is a fork.` : 'The chain of the history is broken.'}
                 </p>
