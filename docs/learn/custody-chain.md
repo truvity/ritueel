@@ -15,9 +15,9 @@ A small organisation runs a private certificate hierarchy. Its custody chain, wr
 
 | Link | Key | Held by | Lives in | Can be made to sign by | Authority came from |
 |---|---|---|---|---|---|
-| 1 | Root, card A | The holder | A YubiKey in a drawer | The holder, with the PIN and a touch | Self-signed at the first ceremony; extended at each yearly ceremony |
-| 1 | Root, card B | The holder | A YubiKey in another place | The same | The same, independently |
-| 2 | Intermediate for production | The production platform | A cloud key service | The platform's issuing service and the roles allowed to call it | A certificate signed by the root of the year at a yearly ceremony |
+| 1 | Root key A | The holder | A YubiKey in a drawer | The holder, with the PIN and a touch | Self-signed at the first ceremony; extended each time it signs |
+| 1 | Root key B | The holder | A YubiKey in another place | The same | The same, independently |
+| 2 | Intermediate for production | The production platform | A cloud key service | The platform's issuing service and the roles allowed to call it | A certificate signed with the card of the year at a yearly ceremony |
 | 3 | Leaf certificate of a workload | The workload | The workload's memory | The workload | Issued automatically by the intermediate, valid for days |
 
 For OpenPGP, the same idea:
@@ -36,7 +36,7 @@ Reading across a row tells you what an attacker would need: the card and its PIN
 
 **A break anywhere breaks everything below it.** If the key at link 2 is stolen, everything the thief signs with it looks genuine to every client that trusts the root. If the root is stolen, everything under it is suspect. The strength of the chain is the strength of its weakest link, and the weakest link is rarely the root: it is the intermediate that sits on a busy server, or the subkey on a laptop without a PIN.
 
-**It tells you what to do when something goes wrong.** With the table in front of you, "a card was lost" reads as "link 1, card A: revoke it, publish a root list without it, re-sign what chained only to it". Without the table, it reads as a bad day.
+**It tells you what to do when something goes wrong.** With the table in front of you, "a card was lost" reads as "link 1, key A: revoke it, publish a root list without it, re-sign what chained only to it". Without the table, it reads as a bad day.
 
 Four questions for every link, written down before you need them:
 
@@ -49,9 +49,9 @@ Four questions for every link, written down before you need them:
 
 ritueel keeps the chain in the bundle, a directory of plain files with a fixed structure that holds public material and, sealed, the secrets of cards. Its write-once part is the [history](/learn/the-history/):
 
-- **The links it makes or signs.** For each root: its certificate or public key, where it lives, and the evidence of where it was born (the attestation of a card, or the description and policy of a cloud key). For each intermediate it certifies: the request it received, the proof that came with it, and the certificate or binding it returned.
-- **The ceremonies that made each link.** One record per ceremony, chained by hash to the one before it, saying what was signed, with which key, in which store, and what outsiders see as a result.
-- **When each link runs out.** Expiry dates of roots and certificates, with a warning well before they come.
+- **The links it makes or signs.** For each root key: its certificate or public key, where it lives, and the evidence of its birth (the attestation of a card, or the description and policy of a cloud key). For each intermediate it certifies: the request it received, the proof that came with it, and the certificate or binding it returned.
+- **The ceremonies that made each link.** One ceremony record per ceremony, chained by hash to the one before it, saying what was signed, with which key, in which store, and what outsiders see as a result.
+- **When each link runs out.** Expiry dates of root keys and certificates, with a warning before they come.
 - **What it does not hold.** Private keys, PINs, passphrases and the revocation certificates themselves are never in the bundle in clear. The bundle holds only a digest of each revocation certificate, so you can tell later that the right one is the one you kept.
 
 The history covers the links down to the intermediates that ritueel certifies. Below that, the system that holds the intermediate keeps its own record of the leaves it issues. The two meet at the [hand-off contract](/reference/hand-off-contract/).
