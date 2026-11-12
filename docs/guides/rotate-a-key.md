@@ -1,6 +1,6 @@
 ---
 title: Rotate a key
-description: Replace an intermediate's key, or a root, on an event. A new key, a ceremony that signs it, an overlap, and the retirement of the old one.
+description: Replace an intermediate's key, or a root key, on an event. A new key, a ceremony that signs it, an overlap, and the retirement of the old one.
 sidebar:
   order: 4
 ---

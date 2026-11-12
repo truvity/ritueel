@@ -1,6 +1,6 @@
 ---
 title: Back up and restore
-description: Back up the bundle, the revocation certificates and the PINs, then prove it by restoring on a clean machine and comparing the result with the cards.
+description: Back up the bundle, the revocation signatures and the PINs, then prove it by restoring on a clean machine and comparing the result with the cards.
 sidebar:
   order: 6
 ---

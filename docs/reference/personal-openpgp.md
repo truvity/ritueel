@@ -1,6 +1,6 @@
 ---
 title: Personal OpenPGP
-description: The personal bundle and its ritueel.yaml, what differs from a company bundle, the profiles of the primary and daily subkey, and the two commands.
+description: The personal bundle and its ritueel.yaml, what differs from a company bundle, the profiles of the primary and daily subkey, and the ceremonies of a person's key.
 sidebar:
   order: 15
 ---

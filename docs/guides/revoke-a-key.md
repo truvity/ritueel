@@ -1,6 +1,6 @@
 ---
 title: Revoke a key
-description: Revoke a compromised or lost key with the pre-made OpenPGP revocation certificate or a CRL for an X.509 intermediate, and publish trust files without it.
+description: Revoke a compromised or lost key with the pre-made OpenPGP revocation signature or a CRL for an X.509 intermediate, and publish trust files without it.
 sidebar:
   order: 5
 ---

@@ -1,6 +1,6 @@
 ---
 title: The wizard
-description: A guided mode in the terminal and a read-only page on localhost that guide a ceremony, keep you in charge, and leave the PIN and the touch on the card.
+description: The guided mode in the terminal guides a ceremony and leaves the PIN and the touch on the card. A read-only page on localhost shows the same ceremony.
 sidebar:
   order: 2
 ---

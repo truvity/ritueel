@@ -1,6 +1,6 @@
 ---
 title: Re-sign every year
-description: The yearly ceremony in steps. Re-sign each intermediate over the same key, extend the root, publish the next trust sequence; or let a cloud root renew.
+description: The yearly ceremony in steps. Re-sign each intermediate over the same key, extend the root keys, publish the next trust sequence.
 sidebar:
   order: 3
 ---
