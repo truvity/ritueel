@@ -3,9 +3,19 @@ title: What is a root?
 description: A root is the key that other keys and people trust without further proof. What it is in X.509 and in OpenPGP, and what is at stake if it is lost or stolen.
 sidebar:
   order: 1
+# The link validator reads an MDX page by its real path under docs/, so the page names its own address.
+slug: learn/what-is-a-root
 ---
 
-Trust has to start somewhere. When your browser accepts the certificate of a website, it has not met the website. It follows a chain of signatures to a certificate that was already on your computer before you opened the browser. That certificate, and the key behind it, form a **root**.
+import Figure from '../../site/src/components/Figure.astro';
+
+Trust has to start somewhere. Four things you do every day end at a root.
+
+<Figure name="everyday">
+  All four end at a root. If the root breaks, everything below it breaks.
+</Figure>
+
+Your browser has not met the website it opens. It follows signatures to a certificate that was on your computer before, and that certificate, with its key, is a **root**.
 
 ## Two places a root shows up
 

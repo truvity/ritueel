@@ -25,7 +25,7 @@ ritueel does not sign online, issue leaf certificates or store secrets, and it c
 
 ## Read
 
-- [Learn](docs/learn/index.md), starting with [what a root is](docs/learn/what-is-a-root.md), then the [principles](docs/principles.md).
+- [Learn](docs/learn/index.md), starting with [what a root is](docs/learn/what-is-a-root.mdx), then the [principles](docs/principles.md).
 - [Decision records](docs/decisions/README.md): eleven records, each with the roads not taken; the first eighteen are in the history of the repository.
 - [Hand-off contract](docs/reference/hand-off-contract.md): what a system that holds intermediates sends and gets back, with [test vectors](testdata/hand-off/).
 - [Roadmap](docs/roadmap.md).
