@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import type { ReactElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { CeremonyState } from './gen/ritueel/local/v1alpha1/inspect_service_pb';
-import { BAD, feed, loadWorld, markedWorld, plain, WORLDS, type World } from './testkit';
+import { BAD, feed, loadWorld, markedWorld, noStyle, plain, stripTags, WORLDS, type World } from './testkit';
 import type { InventoryView, ObjectSlug } from './lib/route';
 
 vi.mock('./api/hooks', async (orig) => (await import('./testkit')).hooksMock(await orig()));
@@ -27,7 +27,6 @@ function offending(html: string): string[] {
   return [...seen].slice(0, 12);
 }
 
-const noStyle = (html: string) => html.replace(/<style[\s\S]*?<\/style>/g, '');
 
 const VIEW_OF: Record<ObjectSlug, InventoryView> = { card: 'cards', root: 'roots', key: 'roots', userid: 'roots', delegation: 'roots', certification: 'dates', request: 'roots' };
 
@@ -78,7 +77,8 @@ async function screens(w: World): Promise<[string, () => ReactElement][]> {
   return list;
 }
 
-describe('hostile text never reaches the markup raw', () => {
+// Each walk renders every screen of every example bundle. A shared CI runner needs more than the default 5 s.
+describe('hostile text never reaches the markup raw', { timeout: 60_000 }, () => {
   it('the marker is a bidi override, a joiner and a control character', () => {
     expect(RAW.test(BAD)).toBe(true);
   });
@@ -165,7 +165,7 @@ describe('hostile text never reaches the markup raw', () => {
     const { Inventory } = await import('./screens/Inventory');
     const { Shell } = await import('./ui/Shell');
     // Each escape is a span of its own: read the text with the tags removed and no space put in their place.
-    const flat = (el: ReactElement) => noStyle(renderToStaticMarkup(el)).replace(/<[^>]*>/g, '');
+    const flat = (el: ReactElement) => stripTags(noStyle(renderToStaticMarkup(el)));
     const head = flat(<History />);
     expect(head).toContain('acmeU+202EU+200DU+0007');
     const inv = flat(<Inventory view="cards" object={{ kind: 'card', id: w.inventory.cards[0].name }} />);
