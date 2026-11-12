@@ -1,33 +1,33 @@
 # 0009 — Release keys are the root primaries; the keyring is a file that ritueel makes and a pipeline packages
 
 **Status:** Accepted
-**Date:** 2026-11-11
+**Date:** 2026-11-12
 
 ## Decision
 
-1. The OpenPGP primaries of the release keys are the root primaries, one per root, on a root card or in the cloud root. Each is certify-only, version 4, ECDSA P-384 with SHA-384, valid about three years and extended at each use.
+1. The OpenPGP primaries of the release keys are the keys of the OpenPGP root: one primary for each key of the root, on a root card or in the cloud. Each is certify-only, version 4, ECDSA P-384 with SHA-384, valid about three years and extended at each use.
 2. Every release primary carries the project's release address and no person's name. No personal key certifies a primary.
 3. Version 6 keys come later, once the verifiers people use accept them.
 4. A company root's user ID carries a release-root name and a security contact address. A user ID can be added and revoked; only published copies cannot be withdrawn.
-5. The holder of an intermediate makes a signing-only subkey where it lives. The subkey request back-signs for every active primary, so either root can bind it.
-6. One primary, the root of the year, binds the subkey for about 13 months. Each yearly ceremony re-signs the binding.
+5. The holder of an intermediate makes a signing-only subkey where it lives. The subkey request back-signs for every active primary, so any active primary can bind it.
+6. The primary that signs in that year binds the subkey for about 13 months. Each yearly ceremony re-signs the binding.
 7. Every signature ritueel writes, and every back-signature it accepts, carries the Issuer Fingerprint subpacket (hashed) and the Issuer Key ID subpacket (unhashed). The test matrix imports every certificate into the oldest gpg that ritueel supports.
 8. A release subkey is replaced only on an event, or at most every three years. Three years is the upper limit for any release subkey. No shorter expiry is used as a second line of defence: the 13-month bindings and the root extension bound how long an unrevoked key stays usable.
 9. The release subkey may be temporary: a cloud KMS signing key in the production account, with exactly one signer, the release workflow. The workflow reaches the key through OIDC to the cloud and a small signer program that uses `kms:Sign`. This lasts until the requester system signs natively.
 10. The temporary release subkey is bound for 13 months. It is revoked as superseded from the day the new subkey is in use. The 13 months is the binding, not a calendar for the key; the key is replaced on that event (see the no-calendar rule, rule 16 of [0002](0002-where-a-key-lives.md)).
 11. No release is signed before the gate. The first signed release (M5) follows the adoption of the project's root and its drill (M4): the root adopted and attested or read, the revocation signatures stored apart, the adoption drill passed.
-12. There is no provisional software primary, no bootstrap key and no release signed by a person's key. Card roots are added after the first release (M6), as a transition.
+12. There is no provisional software primary, no bootstrap key and no release signed by a person's key. Keys on cards are added to the root after the first release (M6), as a transition.
 13. The proof of a ritueel release is the checksum file `SHA256SUMS`, signed by a release subkey that the project's root binds, with a keyless cosign signature beside it. The release subkey is named `ritueel-release-<year-month>`.
 14. The release subkey signs the checksum file only, never a git tag. There is no personal signature of the maintainer.
 15. The release chain is: an unsigned release candidate, then the personal key rebuilt, then the company's OpenPGP key, then the company's key signs ritueel's release.
-16. A revocation signature is published for the users who read it (gpg, Sequoia). For a subkey, the root of the year makes it. For a primary, it is the one made at its birth and stored apart.
+16. A revocation signature is published for the users who read it (gpg, Sequoia). For a subkey, the primary that signs in that year makes it (rule 6). For a primary, it is the one made at its birth and stored apart.
 17. What is revoked hard, a revoked primary or a subkey revoked as compromised, is dropped from the next keyring package. Its revocation signature is published beside the package, not in it. For apt users, the new package is the revocation.
 18. What is retired softly, a subkey superseded or retired, stays in the package with its revocation inside, and its old signatures stay valid. Expired subkeys also stay, because a signature is judged at its own time.
 19. The exit status of `gpg --verify` is never a trust decision. The guides say to use `sqv`, or `gpg --status-fd` and reject `REVKEYSIG`.
-20. The keyring is a file that ritueel makes. For every active primary it holds the complete public certificate: the primary, the release identity, its self-signatures, the subkeys bound with their bindings, and the soft revocations. It holds nothing else: no encryption subkey, no third-party certification. One file carries every root.
+20. The keyring is a file that ritueel makes. For every active primary it holds the complete public certificate: the primary, the release identity, its self-signatures, the subkeys bound with their bindings, and the soft revocations. It holds nothing else: no encryption subkey, no third-party certification. One file carries every primary.
 21. The release pipeline builds the package from the file (.deb, .rpm, plain files) and publishes it. It names the package `<name>-keyring` with the version `<year>.<sequence>`, where the sequence is the trust sequence.
 22. ritueel does not build, sign or publish the package. The user's repository signs the package with the current subkey, so a package that adds a primary is signed by an old key.
-23. Users verify with the keyring, never with one primary's certificate, because a subkey may be bound by either.
+23. Users verify with the keyring, never with one primary's certificate, because a subkey may be bound by any active primary.
 24. In the first version the package goes in the user's own repository. The fingerprints of the primaries are published on the project's site and in its security file.
 25. The root's key is published in more than one place that would have to be broken into separately: a key server (ritueel's publish step sends the public key to the keyservers the holder lists, [0011](0011-publishing-and-what-to-do-after-a-ceremony.md)), the release page with the keyring file, and a "how to verify" page with the commands. The last two belong to the user's own pipeline; ritueel prints what to do.
 26. Sigstore and build provenance are a complement. ritueel neither issues nor verifies provenance for a user's releases.
@@ -36,15 +36,13 @@
 
 ## Why
 
-A release is trusted because its signature verifies against a key the user already holds. The root primaries are used once a year, so a signer works with a subkey that a primary has bound, and either root can bind it. ritueel's scope ends at files: it makes the keyring file, and a pipeline packages it. Hard revocation must reach tools that cannot read a revocation signature, such as gpgv and apt, so the new package is the revocation.
+A release is trusted because its signature verifies against a key the user already holds. The root primaries are used once a year, so a signer works with a subkey that a primary has bound, and any active primary can bind it. ritueel's scope ends at files: it makes the keyring file, and a pipeline packages it. Hard revocation must reach tools that cannot read a revocation signature, such as gpgv and apt, so the new package is the revocation.
 
 ## What it costs
 
 - No release is signed until the root is adopted and its drill is passed.
-- Each yearly ceremony re-signs the binding of the subkey.
 - A package that adds a primary is signed by an old key.
 - A late verifier has only the keyring version of the time: no historical package is built.
-- A published copy of a user ID cannot be withdrawn.
 - The pipeline must follow the name and version rule of the package.
 - The temporary key and its signer program must be built, then replaced by native signing.
 
@@ -65,7 +63,7 @@ A release is trusted because its signature verifies against a key the user alrea
 - **A tag signed with the maintainer's own hardware key from the first release.** It was agreed earlier, then dropped.
 - **Cosign later, and a signed tag and checksums now.** It was proposed in a review pass and not taken.
 - **A signing endpoint in the requester system's first version.** It would remove the temporary key, but none is planned.
-- **One keyring package for each primary.** Each root moves alone, but users install two, and a missing one looks like a bug.
+- **One keyring package for each primary.** Each primary moves alone, but users install two, and a missing one looks like a bug.
 - **ritueel signs the package.** It is self-contained, but it needs an online key that ritueel does not hold.
 - **A historical keyring package for old releases.** It helps late verifiers, but it is one more package to build and keep trusted.
 
@@ -73,6 +71,7 @@ A release is trusted because its signature verifies against a key the user alrea
 
 - **Not yet proven.** The release workflow, the small signer program, the binding of the temporary release subkey and the keyless signature are not built yet ([#10](https://github.com/truvity/ritueel/issues/10)).
 - **Proposed.** Whether a well-known package repository (Maven Central) accepts a signing subkey under a certify-only primary is not known; its page says it can only verify against a primary key. A test comes before the first signed release ([#25](https://github.com/truvity/ritueel/issues/25)).
+- **Proposed.** Which primary signs in a year, and so binds the subkey (rule 6), when the OpenPGP root has a key on a card and a key in the cloud: the card of the year ([0007](0007-changing-and-losing-a-root.md), rule 14) names cards, and a cloud key has none ([#137](https://github.com/truvity/ritueel/issues/137)).
 
 ## Replaces
 
