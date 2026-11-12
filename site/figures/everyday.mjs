@@ -55,8 +55,8 @@ const ICONS = [
     path(`M${x + 1} ${y + 3} H${x + 20} L${x + 34} ${y + 14} L${x + 20} ${y + 25} H${x + 1} Z`, 'paper') +
     circle(x + 8, y + 14, 2.4, 'paper-t') +
     poly([[x + 17, y + 15], [x + 20.5, y + 18.5], [x + 26, y + 10]], 'ln'),
-  // a file and the small file that holds its signature
-  (x, y) => sheet(x + 1, y, 22, 28, { rows: 3 }) + sheet(x + 12, y + 10, 24, 18, { rows: 0 }) + text(x + 25, y + 24, 'sig', 't t-s t-b', 'm'),
+  // a file and a badge with its signature
+  (x, y) => sheet(x + 1, y, 24, 28, { rows: 3 }) + rect(x + 12, y + 11, 24, 18, 'paper', 5) + text(x + 24, y + 24.5, 'sig', 't t-s t-b', 'm'),
   // two servers and a key
   (x, y) =>
     rect(x, y + 1, 18, 11, 'paper', 3) +
