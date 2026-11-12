@@ -155,6 +155,30 @@ export function hooksMock<H extends object>(real: H): H {
   };
 }
 
+/** The markup without its <style> blocks. A loop, not a pattern, so that nothing is left half removed. */
+export function noStyle(html: string): string {
+  let out = html;
+  for (;;) {
+    const a = out.indexOf('<style');
+    if (a < 0) return out;
+    const close = out.indexOf('</style>', a);
+    out = out.slice(0, a) + (close < 0 ? '' : out.slice(close + '</style>'.length));
+  }
+}
+
+/** The markup with every tag removed and no space put in its place. A loop, so that nothing is left half removed. */
+export function stripTags(html: string): string {
+  let out = '';
+  let rest = html;
+  for (;;) {
+    const a = rest.indexOf('<');
+    if (a < 0) return out + rest;
+    out += rest.slice(0, a);
+    const b = rest.indexOf('>', a);
+    rest = b < 0 ? '' : rest.slice(b + 1);
+  }
+}
+
 /** The text of some markup: tags removed, entities of the quote and the ampersand read back, spaces folded. */
 export function plain(html: string): string {
   return html

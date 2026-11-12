@@ -3,7 +3,7 @@ import { join } from 'node:path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { setBundle, setScene, setViewState, VIEW_STATES } from './api/demoState';
-import { feed, loadWorld, plain } from './testkit';
+import { feed, loadWorld, noStyle, plain } from './testkit';
 
 // What a first visitor of the demo is helped with. The help is demo only: the real build must
 // not draw it. The checks of scripts/check-dist.mjs prove that on the two builds; here the same is
@@ -29,7 +29,6 @@ afterEach(() => {
 
 const SRC = new URL('./', import.meta.url).pathname;
 const source = (f: string) => readFileSync(join(SRC, f), 'utf8');
-const noStyle = (html: string) => html.replace(/<style[\s\S]*?<\/style>/g, '');
 const text = (html: string) => plain(noStyle(html));
 
 describe('Waiting is the purpose of the switch, and the screen says so', () => {

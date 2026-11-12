@@ -3,7 +3,7 @@ import type { ReactElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { ObjectKind } from './gen/ritueel/local/v1alpha1/common_pb';
 import type { ObjectRef } from './gen/ritueel/local/v1alpha1/common_pb';
-import { feed, loadWorld, plain, WORLDS, attrsOf, type World } from './testkit';
+import { feed, loadWorld, noStyle, plain, WORLDS, attrsOf, type World } from './testkit';
 import { objectSlug, type InventoryView, type ObjectSlug } from './lib/route';
 
 vi.mock('./api/hooks', async (orig) => (await import('./testkit')).hooksMock(await orig()));
@@ -15,7 +15,6 @@ vi.mock('./api/hooks', async (orig) => (await import('./testkit')).hooksMock(awa
 // of a wide screen is not made. Each test names the object it wants.
 
 const VIEWS: InventoryView[] = ['cards', 'roots', 'dates'];
-const noStyle = (html: string) => html.replace(/<style[\s\S]*?<\/style>/g, '');
 
 async function view(w: World, v: InventoryView, object?: { kind: ObjectSlug; id: string }): Promise<string> {
   const { Inventory } = await import('./screens/Inventory');

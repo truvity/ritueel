@@ -15,7 +15,7 @@ const { send, evalJs, close } = await launch();
 
 // A group of the demo bar is a set of toggle buttons named by its label.
 const pick = (group, label) =>
-  evalJs(`(() => { const b = [...document.querySelectorAll('[aria-labelledby="${group}"] button')].find((x) => x.textContent.trim() === ${JSON.stringify(label)}); if (!b) return false; b.click(); return true; })()`);
+  evalJs(`(() => { const b = [...document.querySelectorAll('[aria-labelledby="${group}"] button')].find((x) => x.textContent.trim() === atob('${Buffer.from(label, 'utf8').toString('base64')}')); if (!b) return false; b.click(); return true; })()`);
 const scene = (n) => evalJs(`document.querySelector('button[aria-label="Scene ${n} of 5"]')?.click()`);
 
 // name, hash, steps to run after the page is up. The demo starts on acme, scene 1. A screen of another

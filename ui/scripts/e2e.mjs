@@ -55,7 +55,7 @@ const textOf = (selector) => evalJs(`(() => { const el = ${sel(selector)}; retur
 const OVERRIDE = String.fromCharCode(0x202e);
 
 // ---- the demo bar: the three controls --------------------------------------------------------
-const pick = (group, label) => evalJs(`(() => { const b = [...${selAll(`[aria-labelledby="${group}"] button`)}].find((x) => x.textContent.trim() === ${JSON.stringify(label)}); if (!b) return false; b.click(); return true; })()`);
+const pick = (group, label) => evalJs(`(() => { const b = [...${selAll(`[aria-labelledby="${group}"] button`)}].find((x) => x.textContent.trim() === atob('${b64(label)}')); if (!b) return false; b.click(); return true; })()`);
 const useBundle = async (name) => {
   await pick('bundle-switch-label', name);
   await sleep(350);
@@ -68,7 +68,7 @@ const useScene = async (n) => {
   await evalJs(`${sel(`button[aria-label="Scene ${n} of 5"]`)}?.click()`);
   await sleep(350);
 };
-const clickButton = (label) => evalJs(`(() => { const b = [...document.querySelectorAll('button')].find((x) => x.textContent.trim() === ${JSON.stringify(label)}); if (!b) return false; b.click(); return true; })()`);
+const clickButton = (label) => evalJs(`(() => { const b = [...document.querySelectorAll('button')].find((x) => x.textContent.trim() === atob('${b64(label)}')); if (!b) return false; b.click(); return true; })()`);
 const pressedNames = (group) => evalJs(`JSON.stringify([...${selAll(`[aria-labelledby="${group}"] button`)}].filter((b) => b.getAttribute('aria-pressed') === 'true').map((b) => b.textContent.trim()))`).then(JSON.parse);
 const fresh = async (hashValue = '#/todo') => {
   await send('Page.navigate', { url: 'about:blank' });
@@ -129,7 +129,7 @@ await press('Tab');
 // ---- colour scheme toggle and its stored choice -------------------------------------------------
 {
   const scheme = () => evalJs(`(document.documentElement.hasAttribute('data-dark') ? 'dark' : 'light')`);
-  const click = (label) => evalJs(`(() => { const b = [...${selAll('aside [aria-label="Colour scheme"] button')}].find((x) => x.textContent.trim() === ${JSON.stringify(label)}); b.click(); return true; })()`);
+  const click = (label) => evalJs(`(() => { const b = [...${selAll('aside [aria-label="Colour scheme"] button')}].find((x) => x.textContent.trim() === atob('${b64(label)}')); b.click(); return true; })()`);
   await click('Dark');
   await sleep(300);
   check('A: Dark sets the dark scheme, and the choice is stored', (await scheme()) === 'dark' && (await evalJs(`localStorage.getItem('ritueel-mode')`)) === 'dark');

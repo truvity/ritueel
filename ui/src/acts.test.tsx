@@ -1,7 +1,7 @@
 import { beforeAll, describe, expect, it, vi } from 'vitest';
 import type { ReactElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { attrsOf, emptyWorld, feed, plain, WORLDS, type World } from './testkit';
+import { attrsOf, emptyWorld, feed, noStyle, plain, WORLDS, type World } from './testkit';
 import { BUNDLES } from './testkit';
 import type { InventoryView, ObjectSlug } from './lib/route';
 import { CeremonyState } from './gen/ritueel/local/v1alpha1/inspect_service_pb';
@@ -24,7 +24,7 @@ interface Control {
 /** The accessible name of every control of the markup: a button, a link, a tab, a menu item, a button input. */
 function controlsOf(html: string): Control[] {
   const out: Control[] = [];
-  const clean = html.replace(/<style[\s\S]*?<\/style>/g, '');
+  const clean = noStyle(html);
   for (const m of clean.matchAll(/<(button|a)\b([^>]*)>([\s\S]*?)<\/\1>/g)) {
     const attrs = attrsOf(`<${m[1]} ${m[2]}>`);
     out.push({ tag: m[1], name: (attrs['aria-label'] ?? plain(m[3])).toLowerCase().trim() });
@@ -44,7 +44,6 @@ function controlsOf(html: string): Control[] {
 /** True if the markup has a control that takes text. */
 const takesText = (html: string) => /<(input|textarea|select|form)\b/.test(html) || /\bcontenteditable\b/i.test(html);
 
-const noStyle = (html: string) => html.replace(/<style[\s\S]*?<\/style>/g, '');
 
 describe('the checker itself', () => {
   it('finds a button, a link, a tab and a menu item by their names', () => {

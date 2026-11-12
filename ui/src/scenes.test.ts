@@ -250,7 +250,7 @@ describe('the control', () => {
       const html = renderToStaticMarkup(createElement(SceneSwitch));
       expect(html).toContain('data-testid="scene-line"');
       expect(html).toContain('role="status"');
-      expect(plain(html)).toContain(`Scene ${n} of 5: ${sceneLine(n).replace(/'/g, "'")}`.replace(/\s+/g, ' '));
+      expect(plain(html)).toContain(`Scene ${n} of 5: ${sceneLine(n)}`.replace(/\s+/g, ' '));
       for (let k = 1; k <= 5; k++) expect(html, `button ${k}`).toContain(`aria-label="Scene ${k} of 5"`);
     }
   });
