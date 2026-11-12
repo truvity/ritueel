@@ -104,7 +104,7 @@ The trust sequence is one integer for the bundle. It grows by one whenever any t
 
 ## How a file is written
 
-[Record 0006](../decisions/0006-bundle-history-and-trust-files.md), rule 29, decides: a ceremony only adds files, each named by its identity (a digest or a time) and written whole or not at all, under a temporary name and then by one rename. These are the steps. The commands write in this order, so a stop leaves a file whole or leaves it unwritten.
+[Record 0006](../decisions/0006-bundle-history-and-trust-files.md), rule 29, decides: a ceremony only adds files, each named by its identity (a digest or a time) and written whole or not at all. These are the steps: under a temporary name, then one rename. The commands write in this order, so a stop leaves a file whole or leaves it unwritten.
 
 | # | Step | Source |
 |---|---|---|
