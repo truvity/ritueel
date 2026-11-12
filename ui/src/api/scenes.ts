@@ -24,7 +24,7 @@ import {
   ListTrustFilesResponseSchema,
 } from '../gen/ritueel/local/v1alpha1/inspect_service_pb';
 import scenesFile from '../fixtures/acme/scenes.json';
-import { getScene } from './demoState';
+import { getScene, LAST_SCENE } from './demoState';
 
 /** The five calls a patch may name, with the schema of the answer of each. */
 const SCHEMAS: Record<string, DescMessage> = {
@@ -97,7 +97,7 @@ function checkPatch(scene: number, index: number, p: unknown): Patch {
 
 function checkScenes(file: unknown): Scene[] {
   const list = isObject(file) ? file.scenes : undefined;
-  if (!Array.isArray(list) || list.length === 0) throw new Error('scenes.json needs a list of scenes');
+  if (!Array.isArray(list) || list.length !== SCENE_COUNT) throw new Error(`scenes.json needs a list of ${SCENE_COUNT} scenes`);
   return list.map((s: unknown, i: number) => {
     if (!isObject(s) || s.scene !== i + 1) throw new Error(`scenes.json: scene ${i + 1} is missing or out of order`);
     if (typeof s.line !== 'string' || typeof s.readAt !== 'string' || !Array.isArray(s.patches)) {
@@ -108,10 +108,14 @@ function checkScenes(file: unknown): Scene[] {
   });
 }
 
-/** The scenes in order, scene 1 first. Checked when this file loads. */
-export const SCENES: readonly Scene[] = checkScenes(scenesFile);
+/** How many scenes there are. The file must hold exactly so many (checked when this file loads). */
+export const SCENE_COUNT: number = LAST_SCENE;
 
-export const SCENE_COUNT: number = SCENES.length;
+/**
+ * The scenes in order, scene 1 first. Checked when this file loads. The call is marked as free of effects, so
+ * that the real build, which never draws the scene control, drops this file and the data with it.
+ */
+export const SCENES: readonly Scene[] = /* @__PURE__ */ checkScenes(scenesFile);
 
 /** The line that says what was done outside the page in scene n (1 to SCENE_COUNT). */
 export function sceneLine(n: number): string {
