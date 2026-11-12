@@ -92,14 +92,14 @@ const bar = (x, y, months, name, accent) => {
 
 function band3Wide() {
   const x0 = 182;
-  let s = bar(x0, 10, 13, 'intermediate') + text(x0 + 13 * MONTH + 12, 28.5, 'about 13 months', 't t-s') + text(x0 + 13 * MONTH + 124, 28.5, 'a subkey too; re-signed', 't t-s t-dim');
+  let s = bar(x0, 10, 13, 'intermediate') + text(x0 + 13 * MONTH + 12, 28.5, 'about 13 months', 't t-s') + text(x0 + 13 * MONTH + 124, 28.5, 'a subkey too; re-signed', 't t-s t-dim t-long');
   s += bar(x0, 46, 36, 'root key', true) + text(x0 + 36 * MONTH + 12, 64.5, 'about 3 years', 't t-s') + text(x0 + 36 * MONTH + 106, 64.5, 'each use extends it', 't t-s t-dim t-long');
   s += text(x0, 88, 'A key is replaced on an event.', 't t-s t-long') + text(x0 + 212, 88, 'A key in a file is replaced after 3 years at most.', 't t-s t-long');
   return s;
 }
 function band3Narrow() {
   const x0 = 16;
-  let s = bar(x0, 42, 13, 'intermediate') + text(x0, 90, 'about 13 months', 't t-s') + text(x0 + 112, 90, 'a subkey too; re-signed', 't t-s t-dim');
+  let s = bar(x0, 42, 13, 'intermediate') + text(x0, 90, 'about 13 months', 't t-s') + text(x0 + 112, 90, 'a subkey too; re-signed', 't t-s t-dim t-long');
   s += bar(x0, 102, 36, 'root key', true) + text(x0, 150, 'about 3 years', 't t-s') + text(x0 + 112, 150, 'each use extends it', 't t-s t-dim t-long');
   s += text(x0, 176, 'A key is replaced on an event.', 't t-s t-long') + text(x0, 192, 'A key in a file is replaced after 3 years at most.', 't t-s t-long');
   return s;
