@@ -5,21 +5,21 @@ sidebar:
   order: 9
 ---
 
-*Not built yet. This is the page that [record 0003](../decisions/0003-root-cards.md) leaves for the formats of the `piv` store; the code is [issue #11](https://github.com/truvity/ritueel/issues/11): the inventory files come with M2, and the `piv` store and the card adoption with M6. The rows of slots are in that record and are not repeated here. The commands, words and file names on this page are from before the decisions of 2026-11-12; the design is at https://ritueel.id/design/.*
+*Not built yet. This is the page that [record 0003](../decisions/0003-root-cards.md) leaves for the formats of the `piv` store; the code is [issue #11](https://github.com/truvity/ritueel/issues/11): the card files and the card maps come with M2, and the `piv` store and the card adoption with M6. The rows of slots are in that record and are not repeated here. The commands, words and file names on this page are from before the decisions of 2026-11-12; the design is at https://ritueel.id/design/.*
 
-A root card is a hardware token that holds roots and nothing else: the roots of the holder's bundles, each in its own row ([record 0003](../decisions/0003-root-cards.md)). It is never also a day-to-day card, a server card or a rehearsal card. Before it holds anything, the holder sets its PIN with the maker's tool ([Prepare a root card](/guides/prepare-a-root-card/)). ritueel then adopts it, which replaces the PUK and the management key with random ones sealed in the bundle ([record 0003](../decisions/0003-root-cards.md)); it registers the card, checks it before every ceremony, and keeps the evidence that a key was born on it. A root card is used on the holder's workstation, under the four conditions of [record 0005](../decisions/0005-a-ceremony-and-where-it-runs.md) (a touch for every signature, the number of signatures stated in the plan, no retry of a failed touch, and a check on a second device), or in the offline system, by the rules of the ceremony record ([record 0003](../decisions/0003-root-cards.md)).
+A root card is a hardware token that holds root keys and nothing else: the root keys of the holder's bundles, each bundle in its own row ([record 0003](../decisions/0003-root-cards.md)). It is never also a day-to-day card, a server card or a rehearsal card. Before it holds anything, the holder sets its PIN with the maker's tool ([Prepare a root card](/guides/prepare-a-root-card/)). ritueel then adopts it, which replaces the PUK and the management key with random ones sealed in the bundle ([record 0003](../decisions/0003-root-cards.md)); it registers the card, checks it before every ceremony, and keeps the evidence that a key was born on it. A root card is used on the holder's workstation, under the four conditions of [record 0005](../decisions/0005-a-ceremony-and-where-it-runs.md) (a touch for every signature, the number of signatures stated in the plan, no retry of a failed touch, and a check on a second device), or in the offline system, by the rules of the ceremony record ([record 0003](../decisions/0003-root-cards.md)).
 
 ## The four kinds
 
-The inventory knows four kinds of card. A card has one kind and never changes it.
+A card file names one of four kinds of card. A card has one kind and never changes it.
 
 A server card works like a small do-it-yourself HSM, but it is an ordinary card, not a hardware security module product ([record 0003](../decisions/0003-root-cards.md)).
 
 | Kind | What it is | What ritueel does with it |
 |---|---|---|
-| `root` | Holds roots by row. | Adopts it, seals its secrets, checks its layout; used on the workstation or in the offline system, by the rules of the ceremony record. |
+| `root` | Holds root keys by row. | Adopts it, seals its secrets, checks its layout; used on the workstation or in the offline system, by the rules of the ceremony record. |
 | `day-to-day` | A person's signing and authentication subkeys, and passkeys. | Adopts it; the Admin PIN is sealed. |
-| `server` | Stays plugged into a server of a requester system and signs for its services. | Lists it in the inventory and only ever reads it. Its slots follow the requester's layout. No adoption, no sealed file, no layout check. |
+| `server` | Stays plugged into a server of a requester system and signs for its services. | Lists it and only ever reads it. Its slots follow the requester's layout. No adoption, no sealed file, no layout check. |
 | `rehearsal` | Practice and tests (earlier pages and dated research call it a "test card"). It never holds a real key, may be reset, and serves only a test root. | Lists it. The M1 proofs and the drills use it. |
 
 ## Files
@@ -29,11 +29,11 @@ A server card works like a small do-it-yourself HSM, but it is an ordinary card,
 | `cards.yaml` | ritueel | The inventory list: one entry for each card this bundle uses, of any of the four kinds. |
 | `cards/NAME.yaml` | ritueel | The map of one card: every slot of its PIV, OpenPGP and FIDO2 applications and what it is used for. |
 | `cards/NAME.sealed.age` | ritueel | This bundle's own copy of the card's secrets (management key, PUK and, on a day-to-day card, the Admin PIN of the OpenPGP application), sealed to the same recipients as the key files ([record 0003](../decisions/0003-root-cards.md)). One file for each card that ritueel adopted, root and day-to-day. |
-| `roots/<label>/attestation/slot-<slot>.pem` | ritueel | The attestation certificate of one key, as the card made it: one file for each key of the root, in the slots of the root's row. |
+| `roots/<label>/attestation/slot-<slot>.pem` | ritueel | The attestation certificate of one key, as the card made it: one file for each key born for the root key, in the slots of this bundle's row. |
 | `roots/<label>/attestation/card.pem` | ritueel | The token's own certificate (slot `f9`), which signed the slot certificates. |
 | `roots/<label>/attestation/result.json` | ritueel | What ritueel read and checked, as below. |
 
-The sealed file is not public material: it is safe only because the recipients' keys are. The other files are public material, and ritueel writes the inventory from the read-only check below; nobody edits it by hand. The attestation files are written at `init` and `root add`, once, and never changed: a replacement root is born beside the old one, in the row kept free for it, and has its own files ([record 0003](../decisions/0003-root-cards.md)).
+The sealed file is not public material: it is safe only because the recipients' keys are. The other files are public material. A person writes the card file; ritueel writes the card map from the read-only check below, and nobody edits it by hand. The attestation files are written at the first `apply` and at an `apply` that adds a root key, once, and never changed: a replacement key is born beside the old keys, in the row kept free for it, and has its own files ([record 0003](../decisions/0003-root-cards.md)).
 
 ## The inventory, `cards.yaml` and `cards/NAME.yaml`
 
@@ -109,7 +109,7 @@ slots:
 | `application`, `slot` | The application (`piv`, `openpgp` or `fido2`) and the slot or the key position in it. |
 | `use` | What the slot is for: `unused`, or a purpose such as `x509-root`, `openpgp-primary`, `ssh-break-glass` or `unlock-key`. |
 | `row` | For a PIV slot of a root card: its row in the slot map. |
-| `root` | For a used slot of a root: the root's label. |
+| `root` | For a used slot of a root key: the root key's label. |
 | `algorithm` | The key's algorithm. |
 | `pin_rule`, `touch_rule` | `never`, `once`, `always` or `cached`, as the slot certificate states them. For a root key both are `always`. |
 | `public_key_sha256` | The SHA-256 of the DER `SubjectPublicKeyInfo` of the public key. |
@@ -120,40 +120,40 @@ The format is version 1 and is fixed with the card proofs (M1), when the read-on
 
 ### A pair shared by bundles
 
-A bundle that shares a pair of root cards with another keeps its own card list and its own sealed copy of the card secrets ([record 0003](../decisions/0003-root-cards.md)). As plain consequences: the card has one PIN, one PUK and one management key for all the bundles on it; a sealed copy that falls out of step with the card shows as check 7, `management-key-unsealed`; and a lost card is one transition in each bundle on it.
+A bundle that shares a pair of root cards with another keeps its own card files and its own sealed copy of the card secrets ([record 0003](../decisions/0003-root-cards.md)). As plain consequences: the card has one PIN, one PUK and one management key for all the bundles on it; a sealed copy that falls out of step with the card shows as check 7, `management-key-unsealed`; and a lost card is one transition in each bundle on it.
 
-A second bundle cannot adopt the cards again. It gets its sealed copy by a request to the first bundle, which wraps the secrets for it; they never travel in the clear. Request and answer travel as in [record 0005](../decisions/0005-a-ceremony-and-where-it-runs.md), rule 26. The record names the card's serial and never the other bundle ([record 0003](../decisions/0003-root-cards.md)). The six-monthly check and the proof of life run in each bundle and cover its own rows ([record 0007](../decisions/0007-changing-and-losing-a-root.md)).
+A second bundle cannot adopt the cards again. It gets its sealed copy by a request to the first bundle, which wraps the secrets for it; they never travel in the clear. Request and answer travel as in [record 0005](../decisions/0005-a-ceremony-and-where-it-runs.md), rule 26. The ceremony record names the card's serial and never the other bundle ([record 0003](../decisions/0003-root-cards.md)). The six-monthly check and the proof of life run in each bundle and cover its own rows ([record 0007](../decisions/0007-changing-and-losing-a-root.md)).
 
 :::note[Proposed]
 How a second bundle lists a card that another bundle adopted is proposed, awaiting the maintainer's word, and is fixed with the card proofs (M1):
 
-1. Each bundle's `cards.yaml` lists the card for its own rows. The same serial may be in several bundles. `roots` may be empty: a bundle that uses the card only for the passkey lists it with `applications: [fido2]`.
+1. Each bundle's card files list the card for its own rows. The same serial may be in several bundles. The list of rows may be empty: a bundle that uses the card only for the passkey lists it with `applications: [fido2]`.
 2. In `cards/NAME.yaml` a slot of another bundle's row is listed as `use: other-bundle` with its `row` and no key hash, because a hash would go stale when the other bundle replaces a root.
-3. Check 9 compares this bundle's own rows exactly and the rest against the built-in layout. A row the layout allows that holds another bundle's key is reported as information; a key outside the layout still fails with `card-layout`.
+3. Check 9 compares this bundle's own rows exactly and the rest against the built-in layout. A row of another bundle that the card file declares is not a failure; an undeclared occupied row is a finding; a key outside the layout still fails with `card-layout`.
 4. The plan takes the lowest row that is empty on the card, as the check reads it.
 :::
 
 ## What is checked on a card
 
-Checks 5 to 10 apply to adopted cards (root, day-to-day), and checks 8 to 10 to root cards. For a `server` card the read-only check lists what it finds (serial, model, firmware, applications, slots as found) and fails nothing about its layout. For a `rehearsal` card, check 3 refuses it for any ceremony that needs another kind (`card-wrong-role`), so a real root can never be born on it. A test root is the one root a rehearsal card serves.
+Checks 5 to 10 apply to adopted cards (root, day-to-day), and checks 8 to 10 to root cards. For a `server` card the read-only check lists what it finds (serial, model, firmware, applications, slots as found) and fails nothing about its layout. For a `rehearsal` card, check 3 refuses it for any ceremony that needs another kind (`card-wrong-role`), so a real root key can never be born on it. A test root is the one root a rehearsal card serves.
 
 :::note[Proposed]
-How a test root is born on a rehearsal card (`init --test-root` with a card) is proposed and fixed with the card proofs (M1), and so is which of the checks above run for a test root on a rehearsal card. No flag is added for it.
+How a test root is born on a rehearsal card (the first `apply` of a bundle made with `new --test-root`) is proposed and fixed with the card proofs (M1), and so is which of the checks above run for a test root on a rehearsal card. No flag is added for it.
 :::
 
 Before anything is written, in this order. A check that cannot run is `not-run` and the ceremony stops: it is never reported as passed ([principle 4](/principles/)). The code is the reason code of the command's JSON `reasons`.
 
 | # | Check | Code | Exit |
 |---|---|---|---|
-| 1 | Exactly one card is the one chosen: `--card SERIAL`, or the only card connected. | `card-ambiguous` | 2 |
+| 1 | Exactly one card is the one chosen: the card named with `--with` (name proposed), or the only card connected. | `card-ambiguous` | 2 |
 | 2 | No other program holds the card (`scdaemon`, a PKCS#11 module). The message names the way to free it. | `card-held` | 4 |
-| 3 | The serial is in the inventory with the kind the ceremony needs, and the root's row is free or holds the key the bundle says; or the ceremony registers the card (`init`, `root add`) and the plan says so. | `card-unknown`, `card-wrong-role` | 3 |
+| 3 | The serial is in a card file with the kind the ceremony needs, and the bundle's row is free or holds the key the bundle says; a card that is not adopted yet is adopted by the ceremony, and the plan says so. | `card-unknown`, `card-wrong-role` | 3 |
 | 4 | The firmware is at least `policy.min_firmware`, and for a root card at least 5.7.4. | `firmware-old` | 3 |
 | 5 | The PIN has at least three tries left. | `pin-tries-low` | 4 |
 | 6 | The PIN, the PUK and the management key are not the factory values. | `pin-default`, `puk-default`, `management-key-default` | 4 |
 | 7 | The management key is the sealed one: it opens with the secret sealed in the bundle, and the card needs a touch to use it. | `management-key-unsealed` | 3 |
 | 8 | Every slot the ceremony will write is empty, and every slot it will use holds the key the bundle says. | `slot-occupied`, `slot-mismatch` | 3 |
-| 9 | Every used root slot of this bundle's rows carries a placeholder certificate, and the whole card equals the built-in layout of its rows. Anything else on the card is reported. Proposed. A row the layout allows that holds another bundle's key is reported as information; a key outside the layout still fails ([a pair shared by bundles](/reference/cards/#a-pair-shared-by-bundles)). | `card-layout` | 3 |
+| 9 | Every used root slot of this bundle's rows carries a placeholder certificate, and the whole card equals the built-in layout of its rows. Anything else on the card is reported. Proposed. A row of another bundle that the card file declares is not a failure; an undeclared occupied row is a finding; a key outside the layout still fails ([a pair shared by bundles](/reference/cards/#a-pair-shared-by-bundles)). | `card-layout` | 3 |
 | 10 | After a key is made: its attestation chains to the maker's pinned root through the attestation bundle, its public key is the one the card reports, and its policies are what `policy` asks (PIN `always`, touch `always`). | `attestation-failed`, `policy` | 3 |
 
 The firmware floor of check 4 is ritueel's own rule ([record 0003](../decisions/0003-root-cards.md)); that deleting one slot works on that firmware is tried on a rehearsal card in M1. Check 6 reads whether each secret is still at its factory value from the card's own report (firmware 5.3 and later), as `ykman piv info` does when it prints "Using default PIN" (ykman 5.8.0, source read 2026-11-02). ritueel never guesses a PIN to find out. Where a card cannot report it, the check is `not-run` and the card is refused. That the report spends no PIN try is measured on a rehearsal card before the store is called supported ([issue #11](https://github.com/truvity/ritueel/issues/11)).
@@ -199,11 +199,11 @@ A test with no hardware verifies a recorded chain for every firmware family the 
 
 ## Other makers
 
-A maker joins the attestation bundle ([record 0003](../decisions/0003-root-cards.md)) when a store for it is admitted, and a store is supported only after it is proven ([record 0002](../decisions/0002-where-a-key-lives.md)). A token that offers no attestation has no attestation bundle and cannot hold a root ([record 0002](../decisions/0002-where-a-key-lives.md)).
+A maker joins the attestation bundle ([record 0003](../decisions/0003-root-cards.md)) when a store for it is admitted, and a store is supported only after it is proven ([record 0002](../decisions/0002-where-a-key-lives.md)). A token that offers no attestation has no attestation bundle and cannot hold a root key that others rely on ([record 0002](../decisions/0002-where-a-key-lives.md)).
 
 ## Follow-ups
 
-- The `piv` store, the inventory, the checks, the attestation bundle and its test ([issue #11](https://github.com/truvity/ritueel/issues/11)).
+- The `piv` store, the card files and the card maps, the checks, the attestation bundle and its test ([issue #11](https://github.com/truvity/ritueel/issues/11)).
 - Measure that reading the factory-value report spends no PIN try, on firmware 5.8 ([issue #11](https://github.com/truvity/ritueel/issues/11)).
 
 ## Standards
