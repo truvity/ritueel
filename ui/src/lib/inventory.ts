@@ -17,6 +17,7 @@
 import { ObjectKind, Store, type ObjectRef } from '../gen/ritueel/local/v1alpha1/common_pb';
 import {
   CardKind,
+  KeyKind,
   KeyRole,
   type Card,
   type Certification,
@@ -331,4 +332,17 @@ export function inventoryIsEmpty(inv: Inventory): boolean {
 /** A name that is safe as one word of a command: letters, digits, "." "_" and "-" only. Anything else is never put into a command. */
 export function isCommandWord(s: string): boolean {
   return /^[A-Za-z0-9][A-Za-z0-9._-]{0,59}$/.test(s);
+}
+
+/** Days to an end, as a table cell: `60 days`, `1 day`, `today`, `ended 3 days ago`. */
+export function endsIn(days: number | undefined): string {
+  if (days === undefined) return '-';
+  if (days === 0) return 'today';
+  if (days < 0) return `ended ${-days} ${days === -1 ? 'day' : 'days'} ago`;
+  return `${days} ${days === 1 ? 'day' : 'days'}`;
+}
+
+/** The end of a key as a person reads it. An SSH CA key has no certificate; any other key with no end set says so. Never "no expiry". */
+export function keyEndWord(k: Key): string {
+  return k.kind === KeyKind.SSH_CA ? 'no certificate' : 'no end date';
 }
