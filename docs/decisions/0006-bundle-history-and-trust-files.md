@@ -36,6 +36,7 @@
 29. A ceremony only adds files, each named by its identity (a digest or a time) and written whole or not at all ([steps](/reference/bundle/)). A listed file that fails its digest is an error, never absent.
 30. Coming back from the stick is a join: ritueel adds the missing files and never merges text. Two ends of the history are a fork, a critical finding. Two answers to one request stop the join.
 31. A join writes no ceremony record; it only adds files, so the end of the history changes only when a ceremony happens.
+32. A delegation may declare one permitted DNS zone. ritueel writes it into the intermediate certificate as a name constraint and refuses a request for a name outside it. This comes with M2.
 
 ## Why
 
@@ -84,6 +85,7 @@ A holder must prove what was done, and outsiders must check the roots. One bundl
 - **A Merkle tree over the history.** A short proof for one entry, but it helps only when someone outside remembers an earlier tree, and ritueel has no such party (a hosted history is a road above); every checker holds the whole history. It can be built later from the stored ceremony records.
 - **A storage engine (an LSM store, a B-tree file or SQLite) as the source of truth.** Made for speed and size, but a company bundle gets a few ceremony records a year, and an engine breaks "a directory of plain files" (rule 1) and a join that only adds files.
 - **Git as the way back from the stick.** Nothing to build, but "ritueel needs no git" (rule 5) and a holder without git would have no way back; the join (rule 30) does it.
+- **URI hosts only for the name constraint of an intermediate.** It is what the policy can list today and needs nothing new, but an intermediate that issues for DNS names would carry no limit on those names, so one more kind of name had to be expressible (rule 32).
 - **A store of every old text of a wanted file, now.** Undo without git, but about eight more commands; the exact copies in each ceremony folder (rule 5) and git (rule 9) cover the need until it is built. It is later, not refused.
 - **Merge the text of two copies at the join.** One result, but a merge of a signed answer or of a history would decide which one is true; the join adds files only and shows a fork (rule 30).
 - **A name that does not carry its identity.** Short names such as a plain counter, but two copies could hold two contents under one name and the join would no longer be a union; every name carries its identity (rule 29).
@@ -94,7 +96,7 @@ A holder must prove what was done, and outsiders must check the roots. One bundl
 
 - **Proposed.** The exact member names inside the folders (plan, copies of the wanted files, attempt, birth journal, journal of signatures, transcript, ceremony record, card files, card maps, sealed card files) and the names of the wanted files and their folders are fixed with the code and the card proofs. No file stores the bundle's name; `name` in `ritueel.yaml` is the name in the root keys' subjects, and whether it must differ between bundles is open ([#8](https://github.com/truvity/ritueel/issues/8)).
 - **Proposed.** Each bundle's card files list the cards for its own rows; the list of rows may be empty, and a card used only for the passkey is listed with applications `[fido2]` ([#8](https://github.com/truvity/ritueel/issues/8)).
-- **Proposed.** The rules a request is checked against are split: store, firmware, PIN and validity in policy; name constraints and KMS read roles in each declared delegation's wanted file ([#9](https://github.com/truvity/ritueel/issues/9)).
+- **Proposed.** The rules a request is checked against are split: store, firmware, PIN and validity in policy; name constraints and KMS read roles in each declared delegation's wanted file. Excluded DNS subtrees and excluded IP ranges are not decided ([#9](https://github.com/truvity/ritueel/issues/9)).
 - **Proposed.** The repair of a fork: one ceremony record that names every end, a root list signed only when the history has one end, and a result from the stick that counts only after a join has checked it ([#138](https://github.com/truvity/ritueel/issues/138)). What a host does when it is several root lists behind is not said either ([#139](https://github.com/truvity/ritueel/issues/139)).
 - **Proposed.** What `acme/A` names when one letter labels the keys of several roots in a bundle ([#137](https://github.com/truvity/ritueel/issues/137)).
 
