@@ -52,7 +52,7 @@ ritueel keeps the chain in the bundle, a directory of plain files with a fixed s
 - **The links it makes or signs.** For each root key: its certificate or public key, where it lives, and the evidence of its birth (the attestation of a card, or the description and policy of a cloud key). For each intermediate it certifies: the request it received, the proof that came with it, and the certificate or binding it returned.
 - **The ceremonies that made each link.** One ceremony record per ceremony, chained by hash to the one before it, saying what was signed, with which key, in which store, and what outsiders see as a result.
 - **When each link runs out.** Expiry dates of root keys and certificates, with a warning before they come.
-- **What it does not hold.** Private keys, PINs, passphrases and the revocation certificates themselves are never in the bundle in clear. The bundle holds only a digest of each revocation certificate, so you can tell later that the right one is the one you kept.
+- **What it does not hold.** Private keys, PINs, passphrases and the revocation signatures themselves are never in the bundle in clear. The bundle holds only a digest of each revocation signature, so you can tell later that the right one is the one you kept.
 
 The history covers the links down to the intermediates that ritueel certifies. Below that, the system that holds the intermediate keeps its own record of the leaves it issues. The two meet at the [hand-off contract](/reference/hand-off-contract/).
 

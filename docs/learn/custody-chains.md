@@ -17,7 +17,7 @@ sidebar:
 | **Typical lifetime of the end** | Days to a year. The maximum is set by the CA/Browser Forum. | Days to a year; your choice. | A signature lasts as long as the key does; a subkey a year or two. | Minutes to days; your choice. |
 | **Revocation** | The CA's lists and responders; browsers also push their own. | A CRL signed by the root, or short lifetimes. | A revocation certificate, published, and a keyring without the key. | A revoked-keys list on each host, or short lifetimes. |
 | **What you do not control** | The rules, the root programs, Certificate Transparency, the CA. | The distribution: every client you forgot to update. | How a verifier learns your fingerprint. | Which hosts trust the CA key, and for how long. |
-| **Where ritueel helps** | It does not hold a public CA's keys. It teaches what you depend on. | The root, the intermediates' ceremonies, the CA bundle and the root list. | The primary key, the subkeys onto cards, the revocation certificate, the keyring package. | The break-glass SSH CA and the SSH CA key list. |
+| **Where ritueel helps** | It does not hold a public CA's keys. It teaches what you depend on. | The root, the intermediates' ceremonies, the CA bundle and the root list. | The primary key, the subkeys onto cards, the revocation signature, the keyring package. | The break-glass SSH CA and the SSH CA key list. |
 
 ## What stays the same
 
