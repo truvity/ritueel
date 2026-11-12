@@ -2,6 +2,7 @@ import ToggleButton from '@mui/material/ToggleButton';
 import ToggleButtonGroup from '@mui/material/ToggleButtonGroup';
 import { DEMO_BUNDLES, VIEW_STATES, setBundle, setViewState, useBundle, useViewState } from '../api/demoState';
 import { siteUrl } from '../lib/route';
+import { SceneSwitch } from './SceneSwitch';
 
 /**
  * The line under the sentence of the bar. It says that the pictures on the site
@@ -53,8 +54,8 @@ function StateSwitch() {
  * The calm mark that this is a demo: on every screen, in words, with the way
  * back to the site. It only exists in the demo build.
  *
- * Three controls: the example bundle, the scene (acme only; it sits between
- * these two once ui/SceneSwitch.tsx exists) and the page state. From 1024 px the
+ * Three controls: the example bundle, the scene (acme only, ui/SceneSwitch.tsx)
+ * and the page state. From 1024 px the
  * sentence is the first line, and the site line and the controls share the
  * second one. On a phone the order is the sentence, the controls, the site line.
  */
@@ -72,6 +73,7 @@ export function DemoBar() {
         </p>
         <div className="order-2 flex flex-wrap items-center gap-x-5 gap-y-1 lg:order-3">
           <BundleSwitch />
+          <SceneSwitch />
           <StateSwitch />
         </div>
         <p className="order-3 min-w-0 flex-1 basis-60 text-sm text-dim lg:order-2">{SITE_PICTURES_NOTE}</p>
