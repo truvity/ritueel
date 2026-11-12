@@ -13,11 +13,11 @@ A software key has no evidence of where it lives and can be copied ([what a stor
 
 | Backend | May hold | Never holds | Platforms |
 |---|---|---|---|
-| `file`: an age-encrypted key file, opened by a passkey on each card named as a way to open it (the root cards), a recovery key or a passphrase ([record 0002](../decisions/0002-where-a-key-lives.md)) | Test roots, drills, development; a person's own primary, new or adopted ([record 0008](../decisions/0008-a-persons-own-key.md)). | A root that others rely on. | Linux, macOS |
-| `onepassword`: 1Password, through `op` | The keys of test roots, intermediates and subkeys. | A production root, or a person's primary key. | Linux, macOS |
+| `file`: an age-encrypted key file, opened by a passkey on each card named as a way to open it (the root cards), a recovery key or a passphrase ([record 0002](../decisions/0002-where-a-key-lives.md)) | Test roots, drills, development; a person's own primary, new or adopted ([record 0008](../decisions/0008-a-persons-own-key.md)). | A root key that others rely on. | Linux, macOS |
+| `onepassword`: 1Password, through `op` | The keys of test roots, intermediates and subkeys. | A production root key, or a person's primary key. | Linux, macOS |
 | `keyring`: the OS keyring | A throwaway test key. | Anything else, and any passphrase. | Linux, macOS |
 
-It is chosen when a root is made: `ritueel init --store software --backend file|onepassword|keyring`. A root is never moved between backends; a move is a transition ([root transitions](/reference/transitions/)). The backend and the reference to the key are in the root's `root.json`:
+It is chosen when a root key is made, by the `apply` that makes it: `ritueel apply --backend file|onepassword|keyring`. A root key is never moved between backends; a change of backend is a transition ([root transitions](/reference/transitions/)). The backend and the reference to the key are in the root key's `root.json`:
 
 | Member | Meaning |
 |---|---|
@@ -51,7 +51,7 @@ Through the `op` command line, not the Go SDK ([the research](/research/software
 - **Reading.** `op item get` with JSON output, parsed in memory.
 - **The plan records** the item's id and its version. A ceremony refuses with `item-changed` if the version differs when it signs.
 - **Refusals.** `backend-locked` (the vault is locked or `op` is not signed in; exit code 4), `backend-missing` (`op` is not on the path, or older than the version the tests were run with), `item-missing`, `item-changed`.
-- **Said plainly** in the creation output and in every record: whoever can unlock the vault has the key, and the vault's sync gives redundancy against loss, not against compromise (`warnings` carries `onepassword-copyable`).
+- **Said plainly** in the creation output and in every ceremony record: whoever can unlock the vault has the key, and the vault's sync gives redundancy against loss, not against compromise (`warnings` carries `onepassword-copyable`).
 
 A test with a stub `op` covers a locked vault, a missing item and an item changed since the plan; another scans the working directory and the temporary directory after a ceremony and finds no key material.
 
@@ -61,7 +61,7 @@ Through `github.com/zalando/go-keyring`. The entries are under the service `ritu
 
 - **Refusal, not fallback.** When the library reports no usable backend (no D-Bus session bus, no Secret Service provider), ritueel refuses with `backend-missing`. It never writes the key to a file instead.
 - **Size.** The limits of the platforms are in the research (about 3000 bytes on macOS in all, 2560 on Windows); an armoured OpenPGP secret key of about 1 KB and a P-384 PKCS#8 key fit. A write the platform refuses is reported as it is; the limits on each supported platform are measured and dated in a research page before the backend is called supported ([issue #60](https://github.com/truvity/ritueel/issues/60)).
-- **The warning.** Printed when the root is created and carried in every record (`warnings` has `keyring-insecure`). The words are fixed, and a test compares them:
+- **The warning.** Printed when the root key is made and carried in every ceremony record (`warnings` has `keyring-insecure`). The words are fixed, and a test compares them:
 
 > WARNING: the OS keyring is not a safe home for a root or primary key. Programs running as your user can usually read it once it is unlocked, it may be synced or backed up, and it cannot be made non-exportable. Use it only for a throwaway test key. Keep real root keys offline, on a hardware token or in a cloud key service.
 
@@ -69,7 +69,7 @@ ritueel stores no passphrase in the keyring, because it keeps no passphrase anyw
 
 ## The record
 
-A ceremony with a software root writes in its record: `copyable` true (as the plan's `root` already says), `backend`, and `warnings`, a list of codes: `software-copyable` for every backend, and `onepassword-copyable` or `keyring-insecure` as above. No secret and no reference to a path.
+A ceremony with a software root writes in its ceremony record: `copyable` true (as the plan's `root` already says), `backend`, and `warnings`, a list of codes: `software-copyable` for every backend, and `onepassword-copyable` or `keyring-insecure` as above. No secret and no reference to a path.
 
 ## Follow-ups
 
