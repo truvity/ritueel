@@ -284,7 +284,15 @@ describe('N8: a screen that has read shows the time of its read', () => {
       )],
     ];
   }
-  const timesOf = (html: string) => [...html.matchAll(/<time dateTime="([^"]*)">([^<]*)<\/time>/g)].map((m) => ({ iso: m[1], text: m[2] }));
+  // The time elements that hold a time of a read ("2026-11-24 09:00 UTC"). A day alone (Day) is a time element too.
+  const timesOf = (html: string) =>
+    [...html.matchAll(/<time dateTime="([^"]*)"([^>]*)>([^<]*)<\/time>/g)]
+      .map((m) => ({ iso: m[1], attrs: m[2], text: m[3] }))
+      .filter((t) => t.text.endsWith(' UTC'));
+  const daysOf = (html: string) =>
+    [...html.matchAll(/<time dateTime="([^"]*)"([^>]*)>([^<]*)<\/time>/g)]
+      .map((m) => ({ iso: m[1], attrs: m[2], text: m[3] }))
+      .filter((t) => !t.text.endsWith(' UTC'));
 
   it('in the loaded state: "Read <time>" inside a time element, with the time of the scene', async () => {
     for (const w of WORLDS()) {
@@ -295,11 +303,28 @@ describe('N8: a screen that has read shows the time of its read', () => {
         expect(times.length, `${w.id} ${name}`).toBeGreaterThan(0);
         for (const t of times) {
           expect(t.text, `${w.id} ${name}`).toBe(TIMES[w.id]);
+          expect(t.attrs, `${w.id} ${name}`).toContain('whitespace-nowrap');
           expect(t.iso, `${w.id} ${name}`).toBe(new Date(TIMES[w.id].replace(' UTC', 'Z').replace(' ', 'T')).toISOString());
         }
         if (name !== 'frame') expect(plain(html), `${w.id} ${name}`).toContain(`Read ${TIMES[w.id]}`);
       }
     }
+  });
+  it('a time and a day never break across two lines: each stands in a time element that does not wrap', async () => {
+    let days = 0;
+    for (const w of WORLDS()) {
+      await setFeed(w);
+      for (const [name, render] of await screens()) {
+        const html = renderToStaticMarkup(render());
+        for (const d of daysOf(html)) {
+          days += 1;
+          expect(d.text, `${w.id} ${name}`).toMatch(/^\d{4}-\d\d-\d\d$/);
+          expect(d.iso, `${w.id} ${name}`).toBe(d.text);
+          expect(d.attrs, `${w.id} ${name}`).toContain('whitespace-nowrap');
+        }
+      }
+    }
+    expect(days).toBeGreaterThan(0);
   });
   it('in the Empty state the screens have read too, and show the time', async () => {
     for (const w of empties) {

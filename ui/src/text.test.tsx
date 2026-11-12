@@ -63,6 +63,12 @@ describe('the component writes text, never markup', () => {
     const html = renderToStaticMarkup(<T cap={100}>{'y'.repeat(100_000)}</T>);
     expect(html.length).toBeLessThan(1000);
   });
+  it('a date, or a date with a time, in a sentence stays on one line', () => {
+    const html = renderToStaticMarkup(<T>{'Ends on 2027-01-23 and was read 2026-11-24 11:10 UTC.'}</T>);
+    expect(html).toContain('<span class="whitespace-nowrap">2027-01-23</span>');
+    expect(html).toContain('<span class="whitespace-nowrap">2026-11-24 11:10 UTC</span>');
+    expect(html.replace(/<[^>]*>/g, '')).toBe('Ends on 2027-01-23 and was read 2026-11-24 11:10 UTC.');
+  });
   it('a fingerprint is shown whole, in groups of four; a name is not split as one', () => {
     expect(groupFingerprint('10000123456789ABCDEF0123456789ABCDEF0123')).toHaveLength(10);
     expect(groupFingerprint('Not a fingerprint')).toEqual(['Not a fingerprint']);

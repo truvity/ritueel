@@ -3,7 +3,7 @@ import Button from '@mui/material/Button';
 import Popover from '@mui/material/Popover';
 import { ApplicationUse, SlotState, SlotUse, type Card, type PivRow, type Slot } from '../gen/ritueel/local/v1alpha1/inspect_service_pb';
 import { CAPS } from '../lib/caps';
-import { ymd } from '../lib/format';
+import { Day } from './ReadTime';
 import { safeString } from '../lib/safe';
 import { PIN_WORD, SLOT_STATE_WORD, SLOT_USE_TAG, TOUCH_WORD } from '../lib/words';
 import { Fp } from './Fp';
@@ -70,7 +70,7 @@ export function SlotInfo({ slot, group }: { slot: Slot; group: string }) {
         {slot.bornAt ? (
           <>
             <dt className="text-dim">Made</dt>
-            <dd>{ymd(slot.bornAt)}</dd>
+            <dd><Day ts={slot.bornAt} /></dd>
           </>
         ) : null}
         {slot.use === SlotUse.OTHER_BUNDLE ? null : (
