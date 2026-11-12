@@ -5,13 +5,13 @@ sidebar:
   order: 10
 ---
 
-*Not built yet. This is the page that [record 0004](../decisions/0004-the-cloud-root.md) leaves for the details of the `aws-kms` store; the code is [issue #12](https://github.com/truvity/ritueel/issues/12), in M2. The custody model is in that record: one dedicated root account, one root, a multi-Region replica that is never counted as a second root. The commands, words and file names on this page are from before the decisions of 2026-11-12; the design is at https://ritueel.id/design/.*
+*Not built yet. This is the page that [record 0004](../decisions/0004-the-cloud-root.md) leaves for the details of the `aws-kms` store; the code is [issue #12](https://github.com/truvity/ritueel/issues/12), in M2. The custody model is in that record: one dedicated root account that holds three keys, one for each kind of root, and a multi-Region replica that is never counted as a second key. The commands, words and file names on this page are from before the decisions of 2026-11-12; the design is at https://ritueel.id/design/.*
 
 A KMS key has no attestation. The evidence that it is the root it should be is the key itself, its policy and its audit trail, read from the service every time ([principle 4](/principles/)). This page says what ritueel creates or adopts, what it reads, and what makes it refuse.
 
 ## What the operator provides
 
-Before `init`, with the operator's own infrastructure tools ([Prepare the cloud root](/guides/prepare-the-cloud-root/)):
+Before the first `apply`, with the operator's own infrastructure tools ([Prepare the cloud root](/guides/prepare-the-cloud-root/)):
 
 | Part | What it is |
 |---|---|
@@ -27,7 +27,7 @@ One person may be able to assume the admin and the ceremony role ([record 0004](
 
 ## `ritueel.yaml`
 
-An optional block, required when a root's store is `aws-kms`. An unknown member is an error.
+An optional block, required when a root key's store is `aws-kms`. An unknown member is an error.
 
 ```yaml
 aws_kms:
@@ -49,7 +49,7 @@ Credentials come from the caller's standard chain ([record 0004](../decisions/00
 
 ## What ritueel creates
 
-At `init` and at `root add --store aws-kms`, for each of the three keys of a root (`x509-root`, `openpgp-primary`, `ssh-break-glass`), under the admin role:
+At the first `apply`, and at an `apply` that adds a root key in `aws-kms`, for each of the three keys, one for each kind of root (`x509-root`, `openpgp-primary`, `ssh-break-glass`), under the admin role:
 
 | Property | Value |
 |---|---|
@@ -67,14 +67,14 @@ At `init` and at `root add --store aws-kms`, for each of the three keys of a roo
 Four details on this page go beyond what the maintainer decided, and await the maintainer's word: that the identity of an adopted key is its ARN and not its alias; that ritueel never edits the policy of an adopted key; that the break-glass principal can never `kms:Sign`; and the check `kms-policy-replica` (3b) with its reason code.
 :::
 
-A cloud root may be a key that already exists in the service ([record 0004](../decisions/0004-the-cloud-root.md)). The operator's own infrastructure code may own the key, its alias and its policy. ritueel then does not create the key. At `init` and `root add` it:
+A cloud root may be a key that already exists in the service ([record 0004](../decisions/0004-the-cloud-root.md)). The operator's own infrastructure code may own the key, its alias and its policy. ritueel then does not create the key. At the first `apply`, and at an `apply` that adds a root key, it:
 
 1. reads the public key from the service;
 2. reads the key policy and runs [the checks](/reference/kms-root/#the-checks) on it, the same checks as for a key it created;
 3. fixes the OpenPGP creation time and records it in the bundle and in the certificate;
 4. writes the certificate.
 
-The identity of the key is its ARN, not its alias. ritueel reads the policy at every ceremony and never edits an adopted key's policy. An adopted key must be one born in the service: key material imported from outside is refused, as it is for a created key. A key that fails a check is refused with the check's reason code. How the operator names the key to adopt is fixed with the store ([issue #12](https://github.com/truvity/ritueel/issues/12)). The root's record says it was adopted ([`adopted`](/reference/bundle/#rootjson)).
+The identity of the key is its ARN, not its alias. ritueel reads the policy at every ceremony and never edits an adopted key's policy. An adopted key must be one born in the service: key material imported from outside is refused, as it is for a created key. A key that fails a check is refused with the check's reason code. How the operator names the key to adopt is fixed with the store ([issue #12](https://github.com/truvity/ritueel/issues/12)). The file `root.json` of the key says it was adopted ([`adopted`](/reference/bundle/#rootjson)).
 
 ## The key policy
 
@@ -94,7 +94,7 @@ The reference key policy: the same text for every key, with the role ARNs and th
 
 ## The checks
 
-Made at `init` after the keys exist, and again, reading from the service, at every ceremony that signs with the root and at the restore drill ([issue #68](https://github.com/truvity/ritueel/issues/68)). A check that cannot run is `not-run`, and the ceremony stops. Exit code 3 for each, except `kms-session`, which is 4: the key store's side refuses the session ([exit codes](/reference/cli/#exit-codes)).
+Made at the first `apply` after the keys exist, and again, reading from the service, at every ceremony that signs with the root and at the restore drill ([issue #68](https://github.com/truvity/ritueel/issues/68)). A check that cannot run is `not-run`, and the ceremony stops. Exit code 3 for each, except `kms-session`, which is 4: the key store's side refuses the session ([exit codes](/reference/cli/#exit-codes)).
 
 | # | Check | Code |
 |---|---|---|
@@ -156,7 +156,7 @@ Exit code 3 for each, except `kms-session` (4). They follow the KMS checks above
 
 | # | Check | Code |
 |---|---|---|
-| 10 | Every active root of the bundle is in `aws-kms`, and `renewal` is declared. A card or software root is refused with a message that names the yearly ceremony. | `not-in-policy` |
+| 10 | Every active root key of the bundle is in `aws-kms`, and `renewal` is declared. A card or software root key is refused with a message that names the yearly ceremony. | `not-in-policy` |
 | 11 | Every intermediate to renew is named in `intermediates`, and is neither revoked nor replaced. | `not-in-policy` |
 | 12 | Every key, subject, constraint, key flag, `use`, root and list entry in the plan is one the bundle already holds for that item, and every CRL entry of the last CRL that has not expired is kept. | `key-not-in-history` |
 | 13 | The item that expires first among those to renew expires within `within_days`. An earlier run is refused, so a schedule that runs too often cannot move the trust sequence every day. | `too-early` |
@@ -164,13 +164,13 @@ Exit code 3 for each, except `kms-session` (4). They follow the KMS checks above
 
 ### What the renewal role can and cannot do
 
-It can keep alive what a ceremony already certified. It cannot add a key, a name or a root, change the root set, or revoke. If it is misused, an intermediate that should have lapsed keeps working until a person revokes it at a ceremony; every use is a `Sign` call in the audit trail under its own principal, distinct from the ceremony role, and each run leaves a record. What it cannot do is the reason a renewal needs no person ([principle 7](/principles/)).
+It can keep alive what a ceremony already certified. It cannot add a key, a name or a root, change the root set, or revoke. If it is misused, an intermediate that should have lapsed keeps working until a person revokes it with `revoke`; every use is a `Sign` call in the audit trail under its own principal, distinct from the ceremony role, and each run leaves a record. What it cannot do is the reason a renewal needs no person ([principle 7](/principles/)).
 
-**A person still meets the root.** A new key, a change of the root set and a revocation are ceremonies with the ceremony role. The [restore drill](/reference/drill/#when-it-is-due) stays yearly.
+**A person still meets the root.** A new key and a change of the root keys are ceremonies with the ceremony role, and a revocation is `revoke`, an act of its own. The [restore drill](/reference/drill/#when-it-is-due) stays yearly.
 
 ## Evidence files
 
-Written at `init` under `roots/<label>/attestation/`, one set for each key, named by purpose. They are public material.
+Written at the first `apply` under `roots/<label>/attestation/`, one set for each key, named by purpose. They are public material.
 
 | File | Holds |
 |---|---|
@@ -182,9 +182,9 @@ A ceremony that signs writes a new `result.json` into its record, not over the o
 
 ## Failure
 
-- **A key made and not recorded.** The birth journal ([record 0005](../decisions/0005-a-ceremony-and-where-it-runs.md)) lists every ARN as it is created. `records close` prints them, and ritueel asks the operator to schedule their deletion with the admin role. It does not delete them.
-- **A replica that failed.** The root is not complete: `init` stops before it signs anything, and a re-run with the same plan finds the primary and replicates it, before the policy that refuses replicas is in force or through the break-glass principal.
-- **A deleted or disabled key** shows as check 1 at the next ceremony or drill. For a root, that is the loss of a root: `root revoke` and `root add`.
+- **A key made and not recorded.** The birth journal ([record 0005](../decisions/0005-a-ceremony-and-where-it-runs.md)) lists every ARN as it is created. `close` prints them, and ritueel asks the operator to schedule their deletion with the admin role. It does not delete them.
+- **A replica that failed.** The root is not complete: the first `apply` stops before it signs anything, and `status` shows the attempt as critical until a person runs `close`.
+- **A deleted or disabled key** shows as check 1 at the next ceremony or drill. For a root key, that is a loss: answer it with `revoke`, then add a new key to the wanted root file and run `apply`.
 
 ## Follow-ups
 
