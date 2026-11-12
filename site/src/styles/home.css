@@ -25,7 +25,7 @@
    A column of 72rem, centred; under 50rem everything is one column.
      row 1  the title, the buttons and the menu links | the two answers (what ritueel is, what it is not)
      row 2  "The whole chain": the picture across the column, drawn at about its natural size
-     row 3  "Three layers" | "What exists today" | "Is it for you?"
+     row 3  "Layers of a key" | "What exists today" | "Is it for you?"
    The columns come from classes on plain wrappers in docs/index.mdx (home-intro, home-chain, home-cols).
    Running text keeps a line of about 70 characters in its column. */
 :root[data-has-hero] {
