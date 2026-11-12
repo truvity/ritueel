@@ -1,89 +1,22 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { ReactElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { create, fromJson, type DescMessage, type JsonValue, type Message } from '@bufbuild/protobuf';
-import {
-  GetSummaryResponseSchema,
-  ListCardsResponseSchema,
-  ListCeremoniesResponseSchema,
-  ListFindingsResponseSchema,
-  ListRootsResponseSchema,
-  ListTrustFilesResponseSchema,
-} from './gen/ritueel/local/v1alpha1/inspect_service_pb';
-import { RunPlace, Store } from './gen/ritueel/local/v1alpha1/common_pb';
-import { ListIntentionsResponseSchema, PlanSchema, SavePlanResponseSchema, StartPlanResponseSchema } from './gen/ritueel/local/v1alpha1/plan_service_pb';
+import { CeremonyState } from './gen/ritueel/local/v1alpha1/inspect_service_pb';
+import { BAD, feed, loadWorld, markedWorld, plain, WORLDS, type World } from './testkit';
+import type { InventoryView, ObjectSlug } from './lib/route';
 
-// Every string that comes from the bundle is data. This test gives each screen a
-// world (one for each example bundle: personal, acme and globex, so acme/B, the cloud
-// root and an empty cards list are drawn too) in which EVERY string field ends in a bidirectional override, a joiner and
-// a BEL (control) character, renders the screen, and fails if any of those
-// characters reaches the markup raw, in a text node or in an attribute such as
-// aria-label or title. A string a screen forgot to pass through T or safeString
-// shows up here.
+vi.mock('./api/hooks', async (orig) => (await import('./testkit')).hooksMock(await orig()));
 
-const BAD = String.fromCodePoint(0x202e, 0x200d, 0x0007);
+// Every string that comes from the bundle is data. This test gives each screen a world
+// (the three example bundles, and scenes 2 to 5 of acme) in which EVERY string field ends in
+// a bidirectional override, a joiner and a BEL (control) character, renders the screen, and
+// fails if any of those characters reaches the markup raw, in a text node or in an
+// attribute such as aria-label or title. A string a screen forgot to pass through T or
+// safeString shows up here.
+
 const RANGES: [number, number][] = [[0, 8], [0xb, 0x1f], [0x7f, 0x9f], [0xad, 0xad], [0x61c, 0x61c], [0x200b, 0x200f], [0x2028, 0x202e], [0x2060, 0x206f], [0xfeff, 0xfeff]];
 const hex = (n: number) => '\\u' + n.toString(16).padStart(4, '0');
 const RAW = new RegExp('[' + RANGES.map(([a, b]) => (a === b ? hex(a) : hex(a) + '-' + hex(b))).join('') + ']');
-
-const w = vi.hoisted(() => ({ d: {} as Record<string, any> }));
-
-vi.mock('./api/hooks', async (importOriginal) => {
-  const real = await importOriginal<typeof import('./api/hooks')>();
-  const ready = (data: unknown) => ({ state: 'ready', data, reload() {} });
-  return {
-    ...real,
-    useSummary: () => ready(w.d.summary),
-    // The real one reads the summary through its own useCall, which a mock of the module does not reach.
-    // The name of the bundle goes into every root written as <bundle>/<label>, so it must be marked too.
-    useBundleName: () => (w.d.summary.bundle?.name as string | undefined) || undefined,
-    useFindings: (min = 0) => ready({ findings: w.d.findings.findings.filter((f: { severity: number }) => f.severity >= min) }),
-    useRoots: () => ready(w.d.roots),
-    useCards: () => ready(w.d.cards),
-    useCeremonies: () => ready(w.d.ceremonies),
-    useTrustFiles: () => ready(w.d.trust),
-    useIntentions: () => ready(w.d.intentions),
-    useGoalMap: () => new Map(w.d.intentions.options.map((o: { intention: number }) => [o.intention, o])),
-    useCall: (key: string) => (key.startsWith('plan-') ? ready(key.startsWith('plan-start') ? w.d.questions : w.d.plan) : ready(w.d.command)),
-  };
-});
-
-function mark(v: unknown): unknown {
-  if (typeof v === 'string') return v + BAD;
-  if (Array.isArray(v)) return v.map(mark);
-  if (v && typeof v === 'object') {
-    const o: Record<string, unknown> = {};
-    for (const [k, x] of Object.entries(v)) o[k] = k === '$typeName' ? x : mark(x);
-    return o;
-  }
-  return v;
-}
-
-// The fixtures sit in one directory for each example bundle. Each has the same call-named files, and
-// the plan files are named by goal.
-const files = import.meta.glob('./fixtures/*/*.json', { eager: true, import: 'default' }) as Record<string, JsonValue>;
-const parse = <S extends DescMessage>(schema: S, bundle: string, name: string) => mark(fromJson(schema, files[`./fixtures/${bundle}/${name}`])) as Message;
-
-const BUNDLES: { bundle: string; goal: string; roots: number; cards: number; ceremonies: number }[] = [
-  { bundle: 'personal', goal: 'retire-subkeys', roots: 1, cards: 6, ceremonies: 1 },
-  { bundle: 'acme', goal: 'renew-due', roots: 2, cards: 2, ceremonies: 10 },
-  { bundle: 'globex', goal: 'adopt-key', roots: 1, cards: 0, ceremonies: 1 },
-];
-
-/** Mark every string of one bundle's world, so that any screen that forgot T or safeString shows up. */
-function loadWorld(bundle: string, goal: string) {
-  w.d.summary = parse(GetSummaryResponseSchema, bundle, 'inspect.get-summary.json');
-  w.d.findings = parse(ListFindingsResponseSchema, bundle, 'inspect.list-findings.json');
-  w.d.roots = parse(ListRootsResponseSchema, bundle, 'inspect.list-roots.json');
-  w.d.cards = parse(ListCardsResponseSchema, bundle, 'inspect.list-cards.json');
-  w.d.ceremonies = parse(ListCeremoniesResponseSchema, bundle, 'inspect.list-ceremonies.json');
-  w.d.trust = parse(ListTrustFilesResponseSchema, bundle, 'inspect.list-trust-files.json');
-  w.d.intentions = parse(ListIntentionsResponseSchema, bundle, 'plan.list-intentions.json');
-  w.d.questions = parse(StartPlanResponseSchema, bundle, `plan.start-plan.${goal}.questions.json`);
-  w.d.plan = parse(StartPlanResponseSchema, bundle, `plan.start-plan.${goal}.json`);
-  w.d.saved = parse(SavePlanResponseSchema, bundle, `plan.save-plan.${goal}.json`);
-  w.d.command = 'ritueel plan' + BAD;
-}
 
 function offending(html: string): string[] {
   const seen = new Set<string>();
@@ -94,40 +27,54 @@ function offending(html: string): string[] {
   return [...seen].slice(0, 12);
 }
 
-async function screens(goal: string) {
-  const { Start } = await import('./screens/Start');
-  const { Findings } = await import('./screens/Findings');
-  const { Roots } = await import('./screens/Roots');
-  const { Key } = await import('./screens/Key');
-  const { Cards } = await import('./screens/Cards');
+const noStyle = (html: string) => html.replace(/<style[\s\S]*?<\/style>/g, '');
+
+const VIEW_OF: Record<ObjectSlug, InventoryView> = { card: 'cards', root: 'roots', key: 'roots', userid: 'roots', delegation: 'roots', certification: 'dates', request: 'roots' };
+
+/** Every object of a world as the route names it, with the view that shows it. */
+function objectsOf(w: World): { kind: ObjectSlug; id: string; view: InventoryView }[] {
+  const inv = w.inventory;
+  const list: [ObjectSlug, string][] = [
+    ...inv.cards.map((o): [ObjectSlug, string] => ['card', o.name]),
+    ...inv.roots.map((o): [ObjectSlug, string] => ['root', o.name]),
+    ...inv.keys.map((o): [ObjectSlug, string] => ['key', o.fingerprint]),
+    ...inv.userIds.map((o): [ObjectSlug, string] => ['userid', o.id]),
+    ...inv.delegations.map((o): [ObjectSlug, string] => ['delegation', o.name]),
+    ...inv.certifications.map((o): [ObjectSlug, string] => ['certification', o.id]),
+    ...inv.requests.map((o): [ObjectSlug, string] => ['request', o.stem]),
+  ];
+  return list.map(([kind, id]) => ({ kind, id, view: VIEW_OF[kind] }));
+}
+
+async function screens(w: World): Promise<[string, () => ReactElement][]> {
+  const { Todo } = await import('./screens/Todo');
+  const { Inventory } = await import('./screens/Inventory');
   const { History } = await import('./screens/History');
   const { Trust } = await import('./screens/Trust');
-  const { Plan, Questions, PlanView, Saved } = await import('./screens/Plan');
   const { NotFound } = await import('./screens/NotFound');
-  const roots = w.d.roots.roots as { label: string }[];
-  const cards = w.d.cards.cards as { serial: string }[];
-  const cer = w.d.ceremonies.ceremonies as { id: string }[];
+  const { Shell } = await import('./ui/Shell');
   const list: [string, () => ReactElement][] = [
-    ['start', () => <Start />],
-    ['findings', () => <Findings />],
-    ['roots', () => <Roots />],
-    ['cards', () => <Cards />],
+    ['to do', () => <Todo tab="changes" />],
+    ['findings', () => <Todo tab="findings" />],
+    ['inventory by card', () => <Inventory view="cards" />],
+    ['inventory by root', () => <Inventory view="roots" />],
+    ['inventory by date', () => <Inventory view="dates" />],
     ['history', () => <History />],
-    ['trust', () => <Trust />],
-    ['plan goals', () => <Plan />],
-    ['plan questions', () => <Plan goal={goal} />],
-    ['plan questions component', () => <Questions questions={w.d.questions.questions} onSubmit={() => {}} />],
-    ['plan preview', () => <PlanView plan={w.d.plan.plan} />],
-    ['plan saved', () => <Saved data={w.d.saved} place={w.d.plan.plan.runPlace} />],
-    ['plan saved, place unknown', () => <Saved data={w.d.saved} />],
+    ['trust set', () => <Trust />],
     ['not found', () => <NotFound hash={'#/x/' + BAD} />],
-    ['key route param', () => <Key root={'nope' + BAD} />],
-    ['card route param', () => <Cards serial={'nope' + BAD} />],
+    ['frame', () => (
+      <Shell route={{ name: 'todo', tab: 'changes' }}>
+        <p>x</p>
+      </Shell>
+    )],
+    // The routes with hostile ids: an object or a ceremony the bundle does not hold, named by an address.
+    ['object route param', () => <Inventory view="cards" object={{ kind: 'card', id: 'nope' + BAD }} />],
+    ['key route param', () => <Inventory view="roots" object={{ kind: 'key', id: 'nope' + BAD }} />],
     ['history route param', () => <History id={'nope' + BAD} />],
   ];
-  for (const r of roots) list.push([`key ${r.label}`, () => <Key root={r.label} />]);
-  for (const c of cards) list.push([`card ${c.serial}`, () => <Cards serial={c.serial} />]);
-  for (const c of cer) list.push([`ceremony ${c.id}`, () => <History id={c.id} />]);
+  // Each object in its own view, and in the other two views (where the panel says it is not listed).
+  for (const o of objectsOf(w)) for (const view of ['cards', 'roots', 'dates'] as const) list.push([`${o.kind} ${o.id} in ${view}`, () => <Inventory view={view} object={{ kind: o.kind, id: o.id }} />]);
+  for (const c of w.ceremonies.ceremonies) list.push([`ceremony ${c.id}`, () => <History id={c.id} />]);
   return list;
 }
 
@@ -135,193 +82,117 @@ describe('hostile text never reaches the markup raw', () => {
   it('the marker is a bidi override, a joiner and a control character', () => {
     expect(RAW.test(BAD)).toBe(true);
   });
-  for (const { bundle, goal, roots, cards, ceremonies } of BUNDLES) {
-    it(`every screen of the ${bundle} bundle, with every string of the world marked`, async () => {
-      loadWorld(bundle, goal);
-      // The world is the bundle it is said to be: the test would prove nothing on an empty one.
-      expect(w.d.roots.roots).toHaveLength(roots);
-      expect(w.d.cards.cards).toHaveLength(cards);
-      expect(w.d.ceremonies.ceremonies).toHaveLength(ceremonies);
-      const list = await screens(goal);
-      // 16 fixed screens, and one for every root, card and ceremony of the bundle
-      expect(list.length).toBeGreaterThanOrEqual(16 + roots + cards + ceremonies);
+  for (const plainWorld of WORLDS()) {
+    it(`every screen of ${plainWorld.id}, with every string of the world marked`, async () => {
+      const w = markedWorld(plainWorld);
+      feed.world = w;
+      feed.state = 'ready';
+      const list = await screens(w);
+      // The world is the one it is said to be: the test would prove nothing on an empty one.
+      expect(w.inventory.keys.length).toBeGreaterThan(3);
+      expect(list.length).toBeGreaterThanOrEqual(12 + 3 * objectsOf(w).length + w.ceremonies.ceremonies.length);
       const failures: string[] = [];
       let sawEscape = 0;
       for (const [name, render] of list) {
-        const html = renderToStaticMarkup(render());
+        const html = noStyle(renderToStaticMarkup(render()));
         const bad = offending(html);
-        if (bad.length) for (const b of bad) console.log(`HOSTILE ${bundle} ${name} ${b}`);
         if (bad.length) failures.push(`${name}:\n   ${bad.join('\n   ')}`);
         if (html.includes('U+202E')) sawEscape += 1;
       }
       expect(failures).toEqual([]);
-      // the marked world did reach the screens, drawn as escapes
-      expect(sawEscape, `${bundle} screens that show an escape`).toBeGreaterThanOrEqual(Math.max(15, list.length - 4));
+      // The marked world did reach the screens, drawn as escapes: nearly every screen shows some of it.
+      expect(sawEscape, `${plainWorld.id}: screens that show an escape`).toBeGreaterThanOrEqual(list.length - 6);
     });
   }
 
-  it('the stick sentence follows where the plan runs, not whether files are listed', async () => {
-    loadWorld('globex', 'adopt-key');
-    const { Saved } = await import('./screens/Plan');
-    const text = (el: ReactElement) => renderToStaticMarkup(el).split(/<[^>]*>/).join('');
-    const empty = { ...w.d.saved, copyToStick: [] };
-    const offline = text(<Saved data={empty} place={RunPlace.OFFLINE_SYSTEM} />);
-    expect(offline).not.toContain('your workstation, the computer');
-    expect(offline).not.toContain('No stick is needed');
-    expect(offline).toContain('The plan lists nothing to put on the stick');
-    expect(offline).toContain('vanilla AirgapOS');
-    const unknown = text(<Saved data={empty} place={RunPlace.UNSPECIFIED} />);
-    expect(unknown).not.toContain('No stick is needed');
-    expect(unknown).toContain('does not say where it runs');
-    const none = text(<Saved data={empty} />);
-    expect(none).not.toContain('No stick is needed');
-    const workstation = text(<Saved data={empty} place={RunPlace.WORKSTATION} />);
-    expect(workstation).toContain('No stick is needed');
-  });
-
-  it('the stick step is shown only for the offline system, with the new title and sentence', async () => {
-    loadWorld('personal', 'retire-subkeys');
-    const { Saved } = await import('./screens/Plan');
-    const text = (el: ReactElement) => renderToStaticMarkup(el).split(/<[^>]*>/).join('').replace(/&#x27;/g, "'");
-    const offline = text(<Saved data={w.d.saved} place={RunPlace.OFFLINE_SYSTEM} />);
-    expect(offline).toContain('On the ceremony stick');
-    expect(offline).not.toContain('Copy to the offline system');
-    expect(offline).toContain("The stick's extra partition carries ritueel, your bundle with the plan inside it, and the key files beside the bundle.");
-    // The same answer read as a plan for the workstation draws no stick step.
-    const workstation = text(<Saved data={w.d.saved} place={RunPlace.WORKSTATION} />);
-    expect(workstation).not.toContain('On the ceremony stick');
-    expect(workstation).toContain('No stick is needed');
-  });
-
-  it('WhereItRuns: six cases, each says what the record says and asks for nothing', async () => {
-    const { WhereItRuns } = await import('./screens/Plan');
-    const flat = (el: ReactElement) => renderToStaticMarkup(el).split(/<[^>]*>/).join('');
-    const html = (p: ReturnType<typeof create<typeof PlanSchema>>) => renderToStaticMarkup(<WhereItRuns plan={p} />);
-    const plan = (init: Parameters<typeof create<typeof PlanSchema>>[1]) => create(PlanSchema, init);
-    const A = plan({ runPlace: RunPlace.WORKSTATION, signingStore: Store.ROOT_CARDS, signatureCount: 7, touchCount: 7 });
-    const B = plan({ runPlace: RunPlace.WORKSTATION, signingStore: Store.CLOUD_KMS, signatureCount: 4, touchCount: 0 });
-    const C = plan({ runPlace: RunPlace.OFFLINE_SYSTEM, signingStore: Store.SOFTWARE_FILE, signatureCount: 2, touchCount: 1 });
-    const D = plan({ runPlace: RunPlace.WORKSTATION, signingStore: Store.SOFTWARE_FILE, testRoot: true });
-    const E = plan({});
-    const F = plan({ runPlace: RunPlace.WORKSTATION, signingStore: Store.SOFTWARE_FILE, testRoot: false });
-    const a = flat(<WhereItRuns plan={A} />);
-    expect(a).toContain('Where it runs: on your workstation');
-    expect(a).toContain('A touch for every signature. This plan makes 7 signatures and asks for 7 touches.');
-    expect(a).toContain('The number of signatures is fixed in this plan: 7.');
-    expect(a).toContain('Four conditions hold:');
-    expect(a).toContain('No retry');
-    expect(a).toContain('second device');
-    expect(a).not.toContain('Proposed');
-    const b = flat(<WhereItRuns plan={B} />);
-    expect(b).not.toContain('Proposed');
-    expect(b).toContain('A cloud key has no touch');
-    expect(b).toContain('audit trail');
-    expect(b).toContain('0 touches');
-    expect(b).toContain('second device');
-    expect(b).toContain('ritueel asks nothing of how you signed in.');
-    // Record 0005, rule 18: of the four conditions the touch is for a root on cards; three hold for a cloud key.
-    expect(b).toContain('Of the four conditions of record 0005, rule 18, the first, a touch for every signature, is for a root on cards only. Three hold for a cloud key');
-    expect(b).not.toContain('Four conditions hold');
-    expect(b).toContain('The number of signatures is fixed in this plan: 4.');
-    expect(renderToStaticMarkup(<WhereItRuns plan={B} />)).toContain('<ol class="mt-2 list-decimal space-y-1.5 pl-6" start="2">');
-    expect(renderToStaticMarkup(<WhereItRuns plan={A} />)).toContain('<ol class="mt-2 list-decimal space-y-1.5 pl-6" start="1">');
-    expect(b).not.toContain('A touch for every signature');
-    // A cloud key has no touch to fail, and the second-device check cannot stop an extra signature (record 0005, "What it costs").
-    expect(b).toContain('No retry of a failed step: a failure ends the ceremony.');
-    expect(b).not.toContain('If a touch fails');
-    expect(b).toContain('it cannot prevent an extra signature');
-    expect(b).not.toContain('These conditions bound it');
-    expect(a).toContain('These conditions bound it');
-    const c = flat(<WhereItRuns plan={C} />);
-    expect(c).toContain('Where it runs: in the offline system');
-    expect(c).toContain('vanilla AirgapOS');
-    // The stick step is on the save screen: the plan says where it is, and does not promise a step the list lacks.
-    expect(c).toContain('When you save the plan, this page lists what goes on the stick.');
-    expect(c).not.toContain('The stick step follows');
-    const d = flat(<WhereItRuns plan={D} />);
-    expect(d).toContain('A test root, marked TEST ONLY, may run here.');
-    const e = flat(<WhereItRuns plan={E} />);
-    expect(e).toContain('does not say where it runs');
-    const f = flat(<WhereItRuns plan={F} />);
-    expect(f).toContain('This plan says workstation for a root that can be copied.');
-    expect(f).toContain('Do not run it; make the plan again.');
-    expect(f).not.toContain('does not say where it runs');
-    // The stick is spoken of only where the stick step is.
-    for (const [name, text] of [['A', a], ['B', b], ['D', d], ['E', e], ['F', f]] as const) expect(text, name).not.toMatch(/USB stick|AirgapOS/);
-    for (const [name, text] of [['A', a], ['B', b], ['C', c], ['D', d], ['E', e], ['F', f]] as const) {
-      expect(text, name).toContain('You confirm in the terminal');
-      expect(text, name).not.toMatch(/type your PIN|passphrase/i);
-      expect(text, name).not.toMatch(/hardware key|YubiKey/i);
-    }
-    // The panel shows words only: no control that takes a value.
-    for (const p of [A, B, C, D, E, F]) expect(html(p)).not.toMatch(/<(input|textarea|select|button)\b/i);
-  });
-
-  it('the record of a workstation ceremony states the touch for cards only, and says a cloud key has none', async () => {
-    loadWorld('globex', 'adopt-key');
+  it('the page states that read nothing draw no data at all, and still no raw character', async () => {
+    const w = markedWorld(loadWorld('acme', 1));
+    feed.world = w;
+    const { Todo } = await import('./screens/Todo');
+    const { Inventory } = await import('./screens/Inventory');
     const { History } = await import('./screens/History');
-    // The world is marked, so the id carries the marker too: read it from the data.
-    const id = (w.d.ceremonies as unknown as { ceremonies: { id: string }[] }).ceremonies[0].id;
-    const text = renderToStaticMarkup(<History id={id} />).split(/<[^>]*>/).join('');
-    const at = text.indexOf('Where it ran');
-    expect(at).toBeGreaterThan(-1);
-    const sentence = text.slice(at, at + 520);
-    expect(sentence).toContain('four conditions of record 0005, rule 18');
-    expect(sentence).toContain('on cards a touch for every signature (a cloud key has no touch)');
-    expect(sentence).toContain('does not yet show whether each condition was met');
-    expect(sentence).not.toContain('applied');
+    const { Trust } = await import('./screens/Trust');
+    for (const state of ['loading', 'error'] as const) {
+      feed.state = state;
+      for (const el of [<Todo tab="changes" />, <Todo tab="findings" />, <Inventory view="roots" />, <History />, <Trust />]) {
+        const html = noStyle(renderToStaticMarkup(el));
+        expect(offending(html), state).toEqual([]);
+        expect(html, state).not.toContain('U+202E');
+      }
+    }
+    feed.state = 'ready';
   });
 
-  it('the marked name of the bundle reaches a root written bundle/label as an escape, never raw', async () => {
-    loadWorld('acme', 'renew-due');
-    const { Roots } = await import('./screens/Roots');
-    const { Key } = await import('./screens/Key');
-    for (const [name, el] of [['roots', <Roots />], ['key', <Key root="A" />]] as [string, ReactElement][]) {
-      const html = renderToStaticMarkup(el);
-      expect(offending(html), name).toEqual([]);
-      // Each escape is a span of its own: read the text. acme/A, with the marker after "acme" and after "A".
-      const text = html.split(/<[^>]*>/).join('');
-      expect(text, name).toContain('acmeU+202EU+200DU+0007/AU+202EU+200DU+0007');
-    }
+  it('the marked name of the bundle reaches the frame, the heading line and the command as an escape, never raw', async () => {
+    const w = markedWorld(loadWorld('acme', 1));
+    feed.world = w;
+    feed.state = 'ready';
+    const { History } = await import('./screens/History');
+    const { Inventory } = await import('./screens/Inventory');
+    const { Shell } = await import('./ui/Shell');
+    // Each escape is a span of its own: read the text with the tags removed and no space put in their place.
+    const flat = (el: ReactElement) => noStyle(renderToStaticMarkup(el)).replace(/<[^>]*>/g, '');
+    const head = flat(<History />);
+    expect(head).toContain('acmeU+202EU+200DU+0007');
+    const inv = flat(<Inventory view="cards" object={{ kind: 'card', id: w.inventory.cards[0].name }} />);
+    // The revoke command of the card is the program's text: the marker after it is an escape in the command.
+    expect(inv).toContain('REASONU+202EU+200DU+0007');
+    const frame = flat(
+      <Shell route={{ name: 'trust' }}>
+        <p>x</p>
+      </Shell>,
+    );
+    expect(frame).toContain('acmeU+202EU+200DU+0007');
   });
 
   it('a count of one reads in the singular wherever the page builds a count', async () => {
+    const { Todo } = await import('./screens/Todo');
     const { History } = await import('./screens/History');
-    const { Cards } = await import('./screens/Cards');
-    const { Start } = await import('./screens/Start');
-    const { PlanView, Saved } = await import('./screens/Plan');
+    const { Inventory } = await import('./screens/Inventory');
     const { Trust } = await import('./screens/Trust');
-    // The number of records, under the seal of the history: globex holds one, acme ten.
-    loadWorld('globex', 'adopt-key');
-    expect(renderToStaticMarkup(<History />)).toMatch(/uppercase">record</);
-    expect(renderToStaticMarkup(<Start />)).toMatch(/uppercase">record, chain verified</);
-    const oneStep = { ...w.d.plan.plan, steps: [w.d.plan.plan.steps[0]] };
-    expect(renderToStaticMarkup(<PlanView plan={oneStep} />)).toContain('1 step<');
-    expect(renderToStaticMarkup(<PlanView plan={w.d.plan.plan} />)).toContain('6 steps<');
-    const one = { ...w.d.saved, sizeBytes: 1n };
-    expect(renderToStaticMarkup(<Saved data={one} />)).toContain('1 byte<');
-    expect(renderToStaticMarkup(<Saved data={{ ...w.d.saved, sizeBytes: 2n }} />)).toContain('2 bytes<');
-    const trust = (w.d.trust.files as { sizeBytes: bigint }[]).length;
-    expect(trust).toBeGreaterThan(0);
-    expect(renderToStaticMarkup(<Trust />)).toMatch(/\d+ bytes?</);
-    loadWorld('acme', 'renew-due');
-    expect(renderToStaticMarkup(<History />)).toMatch(/uppercase">records</);
-    expect(renderToStaticMarkup(<Start />)).toMatch(/uppercase">records, chain verified</);
-    // Every "N slots in use" and "N days left" of the example bundles agrees with its number.
-    let slotTexts = 0;
-    let dayTexts = 0;
-    for (const bundle of ['personal', 'acme', 'globex']) {
-      loadWorld(bundle, bundle === 'personal' ? 'retire-subkeys' : bundle === 'acme' ? 'renew-due' : 'adopt-key');
-      for (const m of renderToStaticMarkup(<Cards />).matchAll(/(\d+) (slots?) in use/g)) {
-        slotTexts += 1;
-        expect(m[2], m[0]).toBe(m[1] === '1' ? 'slot' : 'slots');
-      }
-      for (const m of renderToStaticMarkup(<Start />).matchAll(/>(-?\d+)<\/p><p[^>]*>(days? left)</g)) {
-        dayTexts += 1;
-        expect(m[2], m[0]).toBe(m[1] === '1' ? 'day left' : 'days left');
+    const text = (el: ReactElement) => plain(noStyle(renderToStaticMarkup(el)));
+    // One record: globex cut to its newest ceremony.
+    const one = loadWorld('globex', 1);
+    one.ceremonies.ceremonies = one.ceremonies.ceremonies.slice(0, 1);
+    if (one.ceremonies.history) one.ceremonies.history.recordCount = 1;
+    if (one.summary.history) one.summary.history.recordCount = 1;
+    feed.world = one;
+    feed.state = 'ready';
+    expect(text(<History />)).toMatch(/\b1 record\b/);
+    expect(text(<History />)).not.toMatch(/\b1 records\b/);
+    expect(text(<Todo tab="changes" />)).toMatch(/\b1 record\b/);
+    // One plan that was never run: acme without one of its two stale plans.
+    const plan = loadWorld('acme', 1);
+    plan.ceremonies.ceremonies = plan.ceremonies.ceremonies.filter((c) => c.id !== '20250130T100000Z-apply-b27c9e15');
+    expect(plan.ceremonies.ceremonies.filter((c) => c.state === CeremonyState.PLANNED)).toHaveLength(1);
+    feed.world = plan;
+    expect(text(<History />)).toMatch(/\b1 plan was never run\b/);
+    expect(text(<History />)).not.toMatch(/\b1 plans were never run\b/);
+    // The worlds as they are: a number other than one takes the plural, and one takes the singular, in every screen.
+    const NOUNS: [string, string][] = [['change', 'changes'], ['finding', 'findings'], ['record', 'records'], ['line', 'lines'], ['slot', 'slots'], ['day', 'days'], ['key', 'keys'], ['byte', 'bytes'], ['file', 'files'], ['signature', 'signatures'], ['touch', 'touches']];
+    const seen = new Set<string>();
+    for (const world of WORLDS()) {
+      feed.world = world;
+      const objects = objectsOf(world).slice(0, 6);
+      const rendered = [
+        text(<Todo tab="changes" />),
+        text(<Todo tab="findings" />),
+        text(<History />),
+        text(<Trust />),
+        ...(['cards', 'roots', 'dates'] as const).map((view) => text(<Inventory view={view} />)),
+        ...objects.map((o) => text(<Inventory view={o.view} object={{ kind: o.kind, id: o.id }} />)),
+        ...world.ceremonies.ceremonies.slice(0, 5).map((c) => text(<History id={c.id} />)),
+      ].join('\n');
+      for (const [one1, many] of NOUNS) {
+        for (const m of rendered.matchAll(new RegExp(`(?<![\\w-])(\\d+) (${one1}|${many})(?![\\w-])`, 'g'))) {
+          seen.add(m[0]);
+          expect(m[2], `${world.id}: "${m[0]}"`).toBe(m[1] === '1' ? one1 : many);
+        }
       }
     }
-    expect(slotTexts).toBeGreaterThan(0);
-    expect(dayTexts).toBeGreaterThan(0);
+    // The walk did meet counts of both kinds.
+    expect([...seen].some((s) => s.startsWith('1 '))).toBe(true);
+    expect([...seen].some((s) => !s.startsWith('1 '))).toBe(true);
+    feed.state = 'ready';
   });
 });
