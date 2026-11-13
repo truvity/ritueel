@@ -40,7 +40,7 @@ What follows:
 - **Never treat the exit status of `gpg --verify` as a trust decision.** A script that must refuse a revoked key reads `gpg --status-fd` and rejects `REVKEYSIG`, or uses `sqv`.
 - **A soft reason is for retirement, a hard one for theft.** Use "superseded" or "retired" when the key was safe and old signatures should stay valid. Use "compromised" when they should not.
 
-## Version 4 now, version 6 later
+## Version 4, and version 6 later
 
 Release keys are OpenPGP **version 4**, ECDSA P-384, SHA-384, and **version 6** comes once the verifiers people use accept it. GnuPG implements no version 6: `gpg` 2.4.8 and `gpgv` refuse to parse a version 6 certificate, while Sequoia accepts it (measured 2026-11-01). A release key that `gpg` and apt cannot read does not serve its users. Every signature carries both the Issuer Fingerprint and the Issuer Key ID subpacket, because `gpg` 2.2 rejects a certificate whose signatures lack the key ID.
 
@@ -54,7 +54,7 @@ Checked on 2026-10-29.
 
 ## Personal OpenPGP
 
-A person's daily signing subkey is born on the card's OpenPGP applet, so `gpg` uses it directly, and an offline software primary binds it: the card makes the subkey and its back-signature, and the primary makes the binding. A software primary can be copied, and ritueel says so in every record. Where it fits among the stores is in [Where a key lives](/learn/key-stores/).
+A person's daily signing subkey is born on the card's OpenPGP applet, so `gpg` uses it directly, and an offline software primary binds it: the card makes the subkey and its back-signature, and the primary makes the binding. A software primary can be copied, and ritueel says so in every record. Where it fits among the key stores is in [Where a key lives](/learn/key-stores/).
 
 ## Old releases
 

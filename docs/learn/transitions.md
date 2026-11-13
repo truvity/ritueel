@@ -15,7 +15,7 @@ A transition has four verbs, and a fifth for emergencies.
 
 | Verb | Meaning |
 |---|---|
-| **Create** | Make the new key in its key store. Record where it lives and attest it if the store can. |
+| **Create** | Make the new key in its key store. Record where it lives and attest it if the key store can. |
 | **Vouch** | Let the old key vouch for the new one. For X.509 the old key issues a *cross-certificate* for the new key. For OpenPGP the old primary *certifies* the new primary. Now a client that trusts only the old key can still validate things signed under the new one. |
 | **Overlap** | Run both. New intermediates are issued under the new key, while the old key stays trusted. Outsiders receive a CA bundle or keyring that holds both. |
 | **Supersede** | Once every client has had time to learn the new key, publish a CA bundle or keyring without the old one. The old key is retired: no new intermediates, and it is removed from what you ship. |
@@ -54,7 +54,7 @@ Outsiders need only the tools they already have. Every trust file carries one *t
 |---|---|---|
 | TLS and other X.509 clients | A *CA bundle*: the root certificates in one PEM file, in the system or application trust store. | ritueel builds it from the active keys. |
 | Package managers and `gpg` | A *keyring*: the public OpenPGP primary keys and their subkeys, delivered as a `.deb` or `.rpm` package that places them where the package manager looks. | ritueel builds the keyring file. Your pipeline builds the package from it, signs it and publishes it. |
-| Systems that update their own trust | A *signed root list*: the active root keys, pinned by their public keys, with the trust sequence and an expiry 13 months after signing, signed by one key. It is re-signed at every yearly ceremony and every transition. A client refuses an older list; when its list expires with no newer one, it keeps the last good list and warns. | ritueel produces it. The client verifies it. |
+| Systems that update their own trust | A *signed root list*: the active root keys, pinned by their public keys, with the trust sequence and an expiry 13 months after signing, signed by an active root key (a list that changes the root keys carries more signatures). It is re-signed at every yearly ceremony and every transition. A client refuses an older list; when its list expires with no newer one, it keeps the last good list and warns. | ritueel produces it. The client verifies it. |
 | X.509 clients that check revocation | A *CRL* for each root key, to load beside the CA bundle: it lists the intermediate certificates that were revoked. Certificates carry no address to fetch it from. | ritueel signs it with that key. The holder publishes it. The client loads it. |
 | SSH hosts | An *SSH CA key list*: the SSH CA public keys that hosts trust, including the break-glass SSH CA that ritueel holds offline, signed and versioned like the root list. A system's key gets on it through the same hand-off as an intermediate. | ritueel produces it. The host verifies it. |
 

@@ -38,7 +38,7 @@ If nothing has gone wrong, no advisory touches the key, and a key in software is
 - **The wrong key is re-signed.** If the request is not checked, you extend the authority of a key you should have retired. A ceremony shows the key's fingerprint and where it lives before the touch.
 - **It is used to paper over a compromise.** Re-signing extends trust in a key. If the key may be stolen, re-signing it is the opposite of what you want.
 
-## What may run unattended
+## What is routine and what a person decides
 
 A renewal changes nothing about who is trusted, which is why it is routine work ([principle 7](/principles/)). The test that separates the routine from the decisions: **if every byte the root will sign is fixed by the bundle and the clock, it is routine; if any byte names a key, a subject or a constraint the bundle does not already hold, a person decides.**
 
