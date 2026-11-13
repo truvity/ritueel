@@ -13,18 +13,20 @@ A cloud root is the recommended path for a team with a cloud account ([which pat
 
 - A cloud account for the root's keys. Keep only keys that are used in ceremonies in it and run no workload there: if the account also runs services, a service's problem becomes the root's problem. ritueel does not check this.
 - Someone who can create roles in it.
-- The names you will put in `ritueel.yaml`: the account id, two Regions, and the two role names. The break-glass principal is not named in `ritueel.yaml`; it is in the key policy.
+- The names you will put in `ritueel.yaml`: the account id, two Regions, and the two role names. The break-glass principal and the deletion principal are not named in `ritueel.yaml`; they are in the key policy.
 
 ## Steps
 
 1. **Make the account, or choose one,** inside your organisation, with no workload deployed in it. Result: an account that holds only keys used in ceremonies.
 2. **Make the admin role.** It may create keys, tag them and read them. It may replicate a key only before the policy that refuses replicas is in force, and it may do nothing else. It must not be able to `Sign`. Result: the role that the first `ritueel apply` uses to make the keys and their replicas, before the policy that refuses replicas is set.
 3. **Make the break-glass principal.** It is the only principal that may replicate a key or move its primary Region once the key policy is in force, for example after the loss of a Region. Create it like the admin role and never name it after a person. It must not be able to `Sign`. Using it is a manual act that you log. Result: a lost Region can still be answered, and nobody else can copy the key to a Region where no one watches ([record 0004](../decisions/0004-the-cloud-root.md)).
-4. **Make the ceremony role.** Its trust policy is yours to write, and ritueel never reads it. ritueel asks nothing of how the role is assumed ([record 0004](../decisions/0004-the-cloud-root.md)). Because nothing in AWS ties a signature to a person, make the role hard to assume: whoever can assume it can sign any digest. It may be given nothing but the right to use the root keys; the key policy that ritueel makes names this role as the only one that may sign anything new. Result: the role the person assumes at a ceremony.
-5. **Add the controls you can.** None is checked by ritueel, all are worth having:
+4. **Make the deletion principal.** It is the only principal that may schedule the deletion of a key. It is not the admin role, it may do nothing else, and it can never `Sign`. Never name it after a person. It schedules a deletion with a waiting period of 30 days, which is the most that the service allows and its default ([record 0004](../decisions/0004-the-cloud-root.md), rule 14). Result: whoever creates and reads the keys cannot start the loss of a root key.
+5. **Make the ceremony role.** Its trust policy is yours to write, and ritueel never reads it. ritueel asks nothing of how the role is assumed ([record 0004](../decisions/0004-the-cloud-root.md)). Because nothing in AWS ties a signature to a person, make the role hard to assume: whoever can assume it can sign any digest. It may be given nothing but the right to use the root keys; the key policy that ritueel makes names this role as the only one that may sign anything new. Result: the role the person assumes at a ceremony.
+6. **Add the controls you can.** None is checked by ritueel, all are worth having ([record 0004](../decisions/0004-the-cloud-root.md), rule 15 for the last two alarms):
    - an alarm on every `Sign` by the roots, to a place you read, so a use you did not make is noticed;
+   - an alarm on scheduling a deletion and an alarm on disabling a key, to the same place;
    - the audit trail kept somewhere the account's own roles cannot erase.
-6. **Write the names into `ritueel.yaml`** ([the block](/reference/kms-root/#ritueelyaml)). Run the drill on test keys: `ritueel new DIR` and `ritueel apply` in a test account, then the restore check.
+7. **Write the names into `ritueel.yaml`** ([the block](/reference/kms-root/#ritueelyaml)). Run the drill on test keys: `ritueel new DIR` and `ritueel apply` in a test account, then the restore check.
 
 ## If the key already exists
 
@@ -34,6 +36,7 @@ If your own infrastructure code already owns a key, with its alias and its polic
 
 - You can assume the admin role and read, but a `Sign` attempt with it is denied.
 - You can assume the ceremony role, and only that role can `Sign`.
+- The deletion principal can schedule a deletion and nothing else, and a `Sign` attempt with it is denied.
 - After the first `apply`, `ritueel status` lists the root, and its ceremony record holds the key policy's digest.
 
 ## When something goes wrong
