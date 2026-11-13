@@ -15,6 +15,7 @@ const (
 	unstampedVersion = "dev"
 	unstampedCommit  = "unknown"
 	develVersion     = "(devel)"
+	dirtySuffix      = "-dirty"
 )
 
 // Info is the version and the commit of the running binary.
@@ -35,7 +36,7 @@ func Read() Info {
 
 // resolve picks each value: the stamped one unless it is empty or still the plain default,
 // then the embedded module version (a tagged `go install` build) and the embedded version
-// control revision, then the plain default.
+// control revision (with "-dirty" added when the tree had changes), then the plain default.
 func resolve(stampedVersion, stampedCommit string, bi *debug.BuildInfo) Info {
 	info := Info{Version: stampedVersion, Commit: stampedCommit}
 	if info.Version == "" || info.Version == unstampedVersion {
@@ -47,10 +48,20 @@ func resolve(stampedVersion, stampedCommit string, bi *debug.BuildInfo) Info {
 	if info.Commit == "" || info.Commit == unstampedCommit {
 		info.Commit = unstampedCommit
 		if bi != nil {
+			revision, modified := "", false
 			for _, s := range bi.Settings {
-				if s.Key == "vcs.revision" && s.Value != "" {
-					info.Commit = s.Value
-					break
+				switch s.Key {
+				case "vcs.revision":
+					revision = s.Value
+				case "vcs.modified":
+					modified = s.Value == "true"
+				}
+			}
+			if revision != "" {
+				info.Commit = revision
+				if modified {
+					// The tree had changes that the revision does not hold.
+					info.Commit += dirtySuffix
 				}
 			}
 		}
