@@ -24,42 +24,60 @@ import (
 	"ritueel.id/ritueel/internal/strictjson"
 )
 
+// maxIntermediate bounds what Marshal reads back from the standard encoder before it writes the
+// canonical form. The limit of the canonical form is strictjson.DefaultMaxBytes; a byte of it can
+// come from at most six bytes of what the encoder or a type's own JSON writes (the escape
+// A for A), so every value whose canonical form fits has an intermediate within this bound,
+// and one that is longer cannot fit.
+const maxIntermediate = 6 * strictjson.DefaultMaxBytes
+
 // Marshal returns the RFC 8785 canonical form of v: any value that encoding/json can marshal
 // whose numbers are integers. There is no trailing newline. A float in v is an error, and so is
 // a null (a nil pointer, map or slice).
+//
+// The size limit, strictjson.DefaultMaxBytes, counts the bytes of the result: the canonical form
+// that Marshal returns, with no trailing newline. It does not count the longer text that the
+// standard encoder writes on the way (it spells U+2028 and U+2029 as six bytes, and a type's own
+// JSON may spell any character as an escape). A result that is longer is an error. So is an
+// intermediate longer than six times the limit, which no value that fits can need; that bound
+// keeps the work of Marshal in proportion to the limit.
 func Marshal(v any) ([]byte, error) {
 	if err := refuseFloats(reflect.ValueOf(v), 0); err != nil {
 		return nil, err
 	}
-	raw, err := json.Marshal(v)
-	if err != nil {
+	var buf bytes.Buffer
+	enc := json.NewEncoder(&buf)
+	enc.SetEscapeHTML(false) // < > & are written as they are, as RFC 8785 asks
+	if err := enc.Encode(v); err != nil {
 		return nil, fmt.Errorf("canonjson: %w", err)
 	}
-	return canonicalize(raw)
+	raw := bytes.TrimSuffix(buf.Bytes(), []byte("\n")) // Encode ends the value with a newline
+	return canonicalize(raw, maxIntermediate)
 }
 
 // Canonicalize reads data under the rules of package strictjson (one object, UTF-8, no repeated
 // member, integers only, no null, nesting of at most strictjson.MaxDepth levels, at most
-// strictjson.DefaultMaxBytes) and returns its canonical
-// form. White space around the tokens, the order of the members and the spelling of the escapes
-// are the only things that change.
+// strictjson.DefaultMaxBytes) and returns its canonical form. White space around the tokens, the
+// order of the members and the spelling of the escapes are the only things that change, so the
+// result is never longer than data.
 func Canonicalize(data []byte) ([]byte, error) {
-	return canonicalize(data)
+	return canonicalize(data, strictjson.DefaultMaxBytes)
 }
 
 // IsCanonical reports whether data is byte for byte its own canonical form. It returns an error
 // when data breaks the rules of package strictjson, and then the answer is false.
 func IsCanonical(data []byte) (bool, error) {
-	canon, err := canonicalize(data)
+	canon, err := canonicalize(data, strictjson.DefaultMaxBytes)
 	if err != nil {
 		return false, err
 	}
 	return bytes.Equal(canon, data), nil
 }
 
-func canonicalize(data []byte) ([]byte, error) {
-	// The rules, the size limit included, are those of strictjson, for what Marshal writes too.
-	if err := strictjson.Check(data, 0); err != nil {
+// canonicalize reads data under the rules of strictjson, with maxIn as the limit of its size, and
+// returns the canonical form, which must itself be within strictjson.DefaultMaxBytes.
+func canonicalize(data []byte, maxIn int) ([]byte, error) {
+	if err := strictjson.Check(data, maxIn); err != nil {
 		return nil, err
 	}
 	dec := json.NewDecoder(bytes.NewReader(data))
@@ -71,6 +89,9 @@ func canonicalize(data []byte) ([]byte, error) {
 	var out bytes.Buffer
 	if err := write(&out, v); err != nil {
 		return nil, err
+	}
+	if out.Len() > strictjson.DefaultMaxBytes {
+		return nil, fmt.Errorf("%w: the canonical form is longer than %d bytes", strictjson.ErrMalformed, strictjson.DefaultMaxBytes)
 	}
 	return out.Bytes(), nil
 }
