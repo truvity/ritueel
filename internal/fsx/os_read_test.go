@@ -359,7 +359,7 @@ func TestOSANameSwappedBetweenTheLooksIsNeverFollowedOrWaitedOn(t *testing.T) {
 					}
 					// a link that is a regular file again by the time the open is classified is
 					// still refused, with the bare ELOOP of the open
-					if !errors.Is(r.err, want) && !(swap.kind == "link" && errors.Is(r.err, syscall.ELOOP)) {
+					if !errors.Is(r.err, want) && (swap.kind != "link" || !errors.Is(r.err, syscall.ELOOP)) {
 						stopAll()
 						wg.Wait()
 						t.Fatalf("ReadFile of a name that is swapped to %s: %v, want an error that wraps %v", swap.name, r.err, want)
