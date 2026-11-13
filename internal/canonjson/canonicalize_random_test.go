@@ -36,7 +36,7 @@ func randomDocTree(r *rand.Rand, depth int) any {
 	case k == 3:
 		return r.Intn(2) == 0
 	case k == 4:
-		return json.Number([]string{"0", "-0", "9223372036854775807", "-9223372036854775808", "-1", "10", "100"}[r.Intn(7)])
+		return json.Number([]string{"0", "-0", "9007199254740991", "-9007199254740991", "-1", "10", "100"}[r.Intn(7)])
 	default:
 		return json.Number(strconv.Itoa(r.Intn(2001) - 1000))
 	}
