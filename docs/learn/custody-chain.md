@@ -5,6 +5,8 @@ sidebar:
   order: 6
 ---
 
+This page assumes the [basics](/learn/what-is-a-root/#keys-from-zero): a key pair, a signature and a certificate.
+
 A **custody chain** is the answer to a plain question: for every key between the root and the thing a person actually uses, **who or what holds it, who can make it sign, and under which ceremony did it get its authority?**
 
 A *signature chain* tells a verifier which key signed which. A custody chain adds the human and physical side: where each key lives and who has power over it. The two have the same links, and you need both.
@@ -58,6 +60,18 @@ The history covers the links down to the intermediates that ritueel certifies. B
 
 ## Different chains
 
-The same four questions apply to every kind of chain, and the answers differ. [Custody chains compared](/learn/custody-chains/) puts public PKI, private PKI, OpenPGP and SSH side by side, with a page for each.
+The same four questions apply to every kind of chain, and the answers differ. The table puts public PKI, private PKI, OpenPGP and SSH side by side, with a page for each.
 
-Next: [OpenPGP: one identity, many keys](/learn/chain-openpgp/).
+| | [Public PKI](/learn/chain-public-pki/) | [Private PKI](/learn/chain-private-pki/) | [OpenPGP](/learn/chain-openpgp/) | [SSH](/learn/chain-ssh/) |
+|---|---|---|---|---|
+| **Root** | A public CA's root, in browser and system trust stores. | Your own root. | A primary key that only certifies. | An SSH CA key. |
+| **Held by** | The CA, in audited hardware. | You: cards, a cloud key. | You: in a key store only a ceremony reaches (a root card or the cloud root; a person's own primary in an encrypted file kept offline). | You, or a system you run. |
+| **Middle** | The CA's intermediates, online at the CA. | Per-environment intermediates, with name constraints. | Subkeys for signing, encryption and authentication, on a card. | Usually none, or one CA per environment. |
+| **End** | TLS certificates for your sites. | Certificates for workloads and hosts. | Signatures, encrypted messages, logins. | User and host certificates. |
+| **How a verifier gets the root** | It ships with the operating system or browser. | You distribute it to every trust store. | A fingerprint over a channel it trusts, a keyring package, or a key directory. | The host is configured with the CA's public key. |
+| **Typical lifetime of the end** | Days to a year. The maximum is set by the CA/Browser Forum. | Days to a year; your choice. | A signature lasts as long as the key does; a subkey a year or two. | Minutes to days; your choice. |
+| **Revocation** | The CA's lists and responders; browsers also push their own. | A CRL signed by the root, or short lifetimes. | A revocation certificate, published, and a keyring without the key. | A revoked-keys list on each host, or short lifetimes. |
+| **What you do not control** | The rules, the root programs, Certificate Transparency, the CA. | The distribution: every client you forgot to update. | How a verifier learns your fingerprint. | Which hosts trust the CA key, and for how long. |
+| **Where ritueel helps** | It does not hold a public CA's keys. It teaches what you depend on. | The root, the intermediates' ceremonies, the CA bundle and the root list. | The primary key, the subkeys onto cards, the revocation signature, the keyring file. | The break-glass SSH CA and the SSH CA key list. |
+
+Next: [Private PKI](/learn/chain-private-pki/).
