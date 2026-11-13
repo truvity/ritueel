@@ -64,7 +64,7 @@ func TestReadJournalAppendingToAReturnedLineDoesNotChangeTheNext(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	_ = append(lines[0], 'X')
+	_ = append(lines[0], "XXXX"...) // would overwrite the newline and the start of the next line
 	_ = append(lines[1], 'X')
 	_ = append(partial, 'Y')
 	if string(lines[1]) != "bb" || string(partial) != "cc" {

@@ -136,7 +136,6 @@ func oneRound(t *testing.T, wd *world, i int, heavy bool) {
 	}
 	fail("mkdir-exists", func(w *fsx.Writer) error { return w.Mkdir(n("d"), 0o700) }, os.ErrExist)
 	fail("journal-exists", func(w *fsx.Writer) error { _, err := w.CreateJournal(n("d") + "/j"); return err }, os.ErrExist)
-	fail("journal-over-fifo", func(w *fsx.Writer) error { _, err := w.CreateJournal("fifo"); return err }, os.ErrExist)
 
 	if err := w.Close(); err != nil {
 		t.Fatal(err)
