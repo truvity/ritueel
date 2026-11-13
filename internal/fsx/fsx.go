@@ -70,7 +70,10 @@ type FS interface {
 	// an entry carries the name, the type and permission bits and the size at the time of the
 	// call; its ModTime is the zero time. It lists what the running system shows, flushed or
 	// not. A folder with more than [MaxDirEntries] names is an error that wraps [ErrTooMany],
-	// and no part of the list is returned.
+	// and no part of the list is returned. A name in the list is data from the folder: it can
+	// hold a control code, bytes that are not UTF-8 or a character that reorders a text, and
+	// can break the rule for names; check it with [CheckName] before it is shown or used, and
+	// never print it as it is (%+q shows it safely).
 	ReadDir() ([]fs.DirEntry, error)
 	// Close releases this handle. A method called after Close returns an error that wraps
 	// fs.ErrClosed, and a second Close returns nil. Closing a folder closes nothing that

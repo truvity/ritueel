@@ -65,6 +65,11 @@
 //     case. A temporary folder that a stop left holds whole files under ordinary names, and a
 //     reader that lists it would take them for files of the bundle. [ReadDir] lists every name and
 //     leaves the skipping to the caller.
+//   - Checking a listed name before it is shown or used. A name that [ReadDir] returns is data
+//     from the stick, not a name that the writer made: it may hold a control code, bytes that are
+//     not UTF-8 or a character that reorders a text, and it may break the rule for names, so
+//     that [ReadFile] refuses it. [CheckName] applies the writer's own rule to one name; a caller
+//     checks each listed name with it, and never prints a name as it is (%+q shows it safely).
 //
 // A process that can write into the root while the writer runs is outside what this package
 // defends against. It can move a folder that the writer has open (the writer's next steps in

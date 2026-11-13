@@ -38,7 +38,11 @@ func ReadFile(fsys FS, path string) ([]byte, error) {
 // the temporary names that a stop left too. The caller that reads a bundle skips every name
 // with the prefix [TempPrefix], compared without case, because a temporary folder holds whole
 // files under ordinary names. A folder with more than [MaxDirEntries] names is an error that wraps
-// [ErrTooMany], and nothing is returned in part. The error of a failed read is an *[Error] as for
+// [ErrTooMany], and nothing is returned in part. The names in the list are data from the stick,
+// not names that the writer made: a hostile or damaged stick can give them any bytes, a control
+// code, a character that reorders a text, bytes that are not UTF-8. A caller checks each name
+// with [CheckName] before it shows the name (and shows it with %+q, never as it is) or uses it
+// in a path; [ReadFile] refuses a name that breaks the rule in any case. The error of a failed read is an *[Error] as for
 // [ReadFile].
 func ReadDir(fsys FS, path string) ([]fs.DirEntry, error) {
 	if fsys == nil {
