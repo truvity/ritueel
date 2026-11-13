@@ -15,9 +15,7 @@ import (
 	"errors"
 	"fmt"
 	"slices"
-	"strconv"
 	"strings"
-	"unicode"
 	"unicode/utf16"
 )
 
@@ -66,22 +64,55 @@ func (p Path) String() string {
 	return b.String()
 }
 
-// Shown writes a member name for an error: as it is when it is plain, else quoted and cut short.
+// most is how many bytes of a name an error shows.
+const most = 40
+
+// Shown writes a member name for an error: as it is when it is plain (ASCII letters, digits,
+// underscores and hyphens, and short), else quoted by Quote.
 func Shown(name string) string {
-	const most = 40
 	plain := name != "" && len(name) <= most
-	for _, c := range name {
-		if c != '_' && c != '-' && !unicode.IsLetter(c) && !unicode.IsDigit(c) {
+	for i := 0; i < len(name); i++ {
+		c := name[i]
+		if c != '_' && c != '-' && (c < '0' || c > '9') && (c < 'a' || c > 'z') && (c < 'A' || c > 'Z') {
 			plain = false
 		}
 	}
 	if plain {
 		return name
 	}
-	if len(name) > most {
-		name = name[:most] + "..."
+	return Quote(name)
+}
+
+// Quote writes a text for an error: in double quotes, cut short with "..." when it is long, with
+// the quote and the backslash escaped by a backslash and every character that is not printable
+// ASCII written as \uXXXX (a
+// character above U+FFFF as the pair of escapes of its surrogates), so that a look-alike of an
+// ASCII letter, a control character or bytes that are not UTF-8 cannot pass for what they are
+// not. Bytes that are not UTF-8 are shown as \ufffd.
+func Quote(s string) string {
+	suffix := ""
+	if len(s) > most {
+		s, suffix = s[:most], "..."
 	}
-	return strconv.QuoteToASCII(name)
+	var b strings.Builder
+	b.WriteByte('"')
+	for _, r := range s {
+		switch {
+		case r == '"' || r == '\\':
+			b.WriteByte('\\')
+			b.WriteRune(r)
+		case r >= 0x20 && r < 0x7f:
+			b.WriteRune(r)
+		case r >= 0x10000:
+			hi, lo := utf16.EncodeRune(r)
+			fmt.Fprintf(&b, "\\u%04x\\u%04x", hi, lo)
+		default:
+			fmt.Fprintf(&b, "\\u%04x", r)
+		}
+	}
+	b.WriteString(suffix)
+	b.WriteByte('"')
+	return b.String()
 }
 
 // CompareUTF16 orders two strings by their UTF-16 code units, as RFC 8785 section 3.2.3 sorts
