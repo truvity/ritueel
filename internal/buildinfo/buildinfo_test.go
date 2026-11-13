@@ -17,6 +17,10 @@ func revision(v string) debug.BuildSetting {
 	return debug.BuildSetting{Key: "vcs.revision", Value: v}
 }
 
+func modified(v string) debug.BuildSetting {
+	return debug.BuildSetting{Key: "vcs.modified", Value: v}
+}
+
 func TestResolve(t *testing.T) {
 	tests := []struct {
 		name          string
@@ -69,7 +73,61 @@ func TestResolve(t *testing.T) {
 				revision("c0ffee"),
 				debug.BuildSetting{Key: "vcs.modified", Value: "true"},
 			),
-			want: Info{Version: "dev", Commit: "c0ffee"},
+			want: Info{Version: "dev", Commit: "c0ffee-dirty"},
+		},
+		{
+			name:    "a changed tree marks the revision dirty",
+			version: "dev", comm: "unknown",
+			bi:   embedded("(devel)", revision("abc"), modified("true")),
+			want: Info{Version: "dev", Commit: "abc-dirty"},
+		},
+		{
+			name:    "the order of the settings does not matter",
+			version: "dev", comm: "unknown",
+			bi:   embedded("(devel)", modified("true"), revision("abc")),
+			want: Info{Version: "dev", Commit: "abc-dirty"},
+		},
+		{
+			name:    "an unchanged tree keeps the plain revision",
+			version: "dev", comm: "unknown",
+			bi:   embedded("(devel)", revision("abc"), modified("false")),
+			want: Info{Version: "dev", Commit: "abc"},
+		},
+		{
+			name:    "no vcs.modified setting keeps the plain revision",
+			version: "dev", comm: "unknown",
+			bi:   embedded("(devel)", revision("abc")),
+			want: Info{Version: "dev", Commit: "abc"},
+		},
+		{
+			name:    "only the exact value true counts as changed",
+			version: "dev", comm: "unknown",
+			bi:   embedded("(devel)", revision("abc"), modified("")),
+			want: Info{Version: "dev", Commit: "abc"},
+		},
+		{
+			name:    "a changed tree without a revision gives unknown",
+			version: "dev", comm: "unknown",
+			bi:   embedded("(devel)", modified("true")),
+			want: Info{Version: "dev", Commit: "unknown"},
+		},
+		{
+			name:    "a changed tree with an empty revision gives unknown",
+			version: "dev", comm: "unknown",
+			bi:   embedded("(devel)", revision(""), modified("true")),
+			want: Info{Version: "dev", Commit: "unknown"},
+		},
+		{
+			name:    "a stamped commit is not marked dirty",
+			version: "dev", comm: "abcdef0",
+			bi:   embedded("(devel)", revision("feedbeef"), modified("true")),
+			want: Info{Version: "dev", Commit: "abcdef0"},
+		},
+		{
+			name:    "a stamped commit and version are not marked dirty",
+			version: "v1.2.3", comm: "abcdef0",
+			bi:   embedded("v9.9.9", modified("true")),
+			want: Info{Version: "v1.2.3", Commit: "abcdef0"},
 		},
 		{
 			name:    "an empty revision is not a commit",
