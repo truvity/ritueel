@@ -1,4 +1,4 @@
-// What a bundle holds: one directory of plain files for one trust domain, drawn as a tree of labelled
+// What a bundle holds: one directory of plain files for one organisation or one person, drawn as a tree of labelled
 // parts, one entry to a line, with a small tag saying what kind of part it is. The tags are the marks of
 // reference/bundle: wanted (the only files a person writes), seen (what a check read), history (written
 // once, never changed) and request. The fifth mark, built, has no part here because it is never stored
@@ -54,7 +54,7 @@ function drawing() {
     y += rowH(p);
   }
   const bottom = y + 2;
-  s += dir(x0 + 4, 12) + text(x0 + 34, 26, 'acme/', 't t-b t-mono') + text(x0 + 88, 26, 'one bundle, one trust domain', 't t-s t-long');
+  s += dir(x0 + 4, 12) + text(x0 + 34, 26, 'acme/', 't t-b t-mono') + text(x0 + 88, 26, 'one bundle, one organisation or person', 't t-s t-long');
   s += rect(x0, top, W - 2 * x0, bottom - top, 'paper', 8);
   const trunk = x0 + 18;
   s += line(trunk, top + 2, trunk, rows[rows.length - 1].y + 12, 'ln ln-thin ln-dim');
@@ -71,7 +71,7 @@ function drawing() {
   }
   // a second bundle, closed
   const y2 = bottom + 18;
-  s += dir(x0 + 4, y2, 'paper') + text(x0 + 34, y2 + 13, 'personal/', 't t-b t-mono') + text(x0 + 114, y2 + 13, 'another trust domain, another bundle', 't t-s t-long');
+  s += dir(x0 + 4, y2, 'paper') + text(x0 + 34, y2 + 13, 'personal/', 't t-b t-mono') + text(x0 + 114, y2 + 13, 'a person, another bundle', 't t-s t-long');
   // key files: outside
   const y3 = y2 + 40;
   s += rect(x0, y3, W - 2 * x0, 56, 'cell-empty', 8);
@@ -86,6 +86,6 @@ export default {
   kind: 'single',
   label: 'The parts of a bundle and what kind each is',
   caption:
-    'A bundle is one directory of plain files for one trust domain. Its history is never changed afterwards. Key files are never inside.',
+    'A bundle is one directory of plain files for one organisation or one person. Its history is never changed afterwards. Key files are never inside.',
   svg: drawing(),
 };
