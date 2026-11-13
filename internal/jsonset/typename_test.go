@@ -165,14 +165,6 @@ func TestEveryTextThatShowsAGoFieldNameShowsItAsShown(t *testing.T) {
 	field := func(name, tag string) reflect.Type {
 		return reflect.StructOf([]reflect.StructField{{Name: name, Type: typeOf[int](), Tag: reflect.StructTag(tag)}})
 	}
-	embedded := func(name string) reflect.Type {
-		// An embedded field is named by its type: a struct type declared here, so that Go gives it the name.
-		switch name {
-		case "Ünit":
-			return typeOf[struct{ Ünit }]()
-		}
-		panic(name)
-	}
 	cases := []struct {
 		name string
 		typ  reflect.Type
@@ -190,7 +182,7 @@ func TestEveryTextThatShowsAGoFieldNameShowsItAsShown(t *testing.T) {
 		{"no tag name, a non-ASCII field name", field("É"+"cole", ``), `field "` + qesc(0xC9) + `cole" has no tag name, and its Go name is not a member name; ` + reasonName},
 		{"no tag name, the Kelvin sign", field(string(rune(0x212A)), ``), `field "` + qesc(0x212A) + `" has no tag name, and its Go name is not a member name; ` + reasonName},
 		{"an embedded field, ASCII", typeOf[struct{ pair }](), `the embedded field pair is not part of ritueel's JSON; give it a name`},
-		{"an embedded field, a non-ASCII name", embedded("Ünit"), `the embedded field "` + qesc(0xDC) + `nit" is not part of ritueel's JSON; give it a name`},
+		{"an embedded field, a non-ASCII name", typeOf[struct{ Ünit }](), `the embedded field "` + qesc(0xDC) + `nit" is not part of ritueel's JSON; give it a name`},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
