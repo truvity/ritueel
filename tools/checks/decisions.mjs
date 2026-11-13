@@ -20,7 +20,8 @@
 //     (a format is named and linked to its reference page, not written out);
 //   - "Not yet proven or only proposed" is `None.`, or a list of one-line bullets, each starting
 //     `**Not yet proven.**` (decided, waits for a test) or `**Proposed.**` (not decided) and linking
-//     the issue that carries it; "Replaces" is not empty;
+//     the issue that carries it (a second link beside the issue link is fine);
+//   - a record has no "Replaces" section: it states the design as it is, with no history;
 //   - size: Decision, Why and What it costs together aim at 900 words, and a record over 1,100 (or
 //     1,800 as a whole) is reported as a warning; with RECORD_SIZE_STRICT=1 it is an error;
 //   - an `Accepted` record has no part marked open: no `Open` heading and no `:::caution[Open]`;
@@ -89,11 +90,15 @@ const ROADS = 'Roads not taken';
 const FOLLOW = 'Not yet proven or only proposed';
 const DECISION = 'Decision';
 const CORE = [DECISION, 'Why', 'What it costs'];
+// A record has no history: what came before is in git, not in a section.
+const HISTORY = 'Replaces';
+const HISTORY_WHY = 'a record states the design as it is, and git keeps what came before';
 // The lines of the template's instructions comment; a record keeps none of them.
 const tplComment = (/<!--([\s\S]*?)--!?>/.exec(template)?.[1] ?? '').split('\n').map((l) => l.trim()).filter((l) => l.length >= 12);
 if (!FIELDS.includes('Status') || !FIELDS.includes('Date')) E(`${TEMPLATE}: no **Status:** and **Date:** fields found`);
 if (!SECTIONS.length) E(`${TEMPLATE}: no ## sections found`);
-for (const want of [DECISION, ROADS, FOLLOW, 'Replaces']) if (!SECTIONS.includes(want)) E(`${TEMPLATE}: no "## ${want}" section`);
+for (const want of [DECISION, ROADS, FOLLOW]) if (!SECTIONS.includes(want)) E(`${TEMPLATE}: no "## ${want}" section`);
+if (SECTIONS.includes(HISTORY)) E(`${TEMPLATE}: "## ${HISTORY}" is not a section of a record; ${HISTORY_WHY}`);
 
 // ---- the allowed statuses, from the README, cross-checked with the template comment
 const readme = existsSync(join(dir, 'README.md')) ? read('README.md') : '';
@@ -175,6 +180,8 @@ for (const rec of records.values()) {
     prev = at;
     if (!hits[0].body.some((l) => l.line.trim() && !/^<!--[\s\S]*--!?>$/.test(l.line.trim()))) E(`${where}:${hits[0].n}: "## ${s}" is empty`);
   }
+
+  for (const s of secs.filter((x) => x.title === HISTORY)) E(`${where}:${s.n}: "## ${HISTORY}" is not a section of a record; ${HISTORY_WHY}`);
 
   const body = (title) => (secs.find((x) => x.title === title)?.body ?? []).filter((l) => l.line.trim() && !/^<!--[\s\S]*--!?>$/.test(l.line.trim()));
   const roads = body(ROADS);
