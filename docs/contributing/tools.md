@@ -56,11 +56,11 @@ The `Justfile` holds the recipes, and CI runs the same recipes. Run the recipe, 
 | `just go-lint` | `golangci-lint config verify`, then `golangci-lint run`, with the rules of `.golangci.yaml` |
 | `just go-tidy` | `go.mod` and `go.sum` are what `go mod tidy` would write |
 | `just go-verify` | Downloads the modules, then `go mod verify` checks each one against `go.sum` |
-| `just go-test` | The unit tests. No network, no device, no cloud key |
-| `just go-build` | The release build into `bin/ritueel`, then three checks: the file is a static Linux executable (`tools/elfcheck`), `ritueel version` exits 0, and no arguments exit 2 |
+| `just go-test` | The unit tests. No network, no device, no cloud key. It sets `RITUEEL_REQUIRE_TOOLS=1`: a test that needs an outside tool skips unless this variable is set, and the recipe sets it, so nothing is skipped silently |
+| `just go-build` | The release build into `bin/ritueel`, then three checks: the file is a static Linux executable for the machine it was built on (`tools/elfcheck --arch`), `ritueel version` prints what was stamped, and no arguments exit 2 |
 | `just go-vuln` | `govulncheck`: known vulnerabilities in what the module imports. Run by `security.yaml`, not by `go-check` |
-| `just go-release-check` | The release configuration, `.goreleaser.yaml`. It checks the file, makes a snapshot build with no tag and no publishing, then checks every binary and archive: each binary is static, carries the stamped version and commit, and the one that fits this machine runs; each archive holds the binary, `LICENSE` and `README.md`; `SHA256SUMS` matches the archives. Part of `go-check` |
-| `just go-release-build` | For the release workflow only. It needs the tag in `RELEASE_TAG` and no token. It refuses a tag of the wrong form, a tag that is not at the checked-out commit, and a commit that is not on `main`. It builds the release without publishing, checks that build, and leaves the four files in `dist/upload/`: the two archives, `SHA256SUMS` and the release notes. Do not run it by hand |
+| `just go-release-check` | The release configuration, `.goreleaser.yaml`. It checks the file, makes a snapshot build with no tag and no publishing, then checks every binary and archive: each binary is static, is built for the machine its entry names, carries the stamped version and commit, and the one that fits this machine runs; the name of each archive ends in `_linux_<arch>.tar.gz` and it holds the binary, `LICENSE` and `README.md`; `SHA256SUMS` matches the archives. Part of `go-check` |
+| `just go-release-build` | For the release workflow only. It needs the tag in `RELEASE_TAG`, and the workflow gives it no token. It refuses a tag of the wrong form, a tag that is not at the checked-out commit, and a commit that is not on `main`. It builds the release without publishing, checks that build, and leaves the four files in `dist/upload/`: the two archives, `SHA256SUMS` and the release notes. Do not run it by hand |
 
 Read the recipe, and the workflow in `.github/workflows/` that calls it, to know what CI really runs.
 
@@ -81,7 +81,7 @@ The Go code is the program `ritueel`. Only `ritueel version` is built. [The firs
 |---|---|
 | `cmd/ritueel/` | The program. `main.go` builds the environment from the real streams, calls `cli.Run` and exits. It does nothing else |
 | `internal/` | The packages: `cli` (the command line, the exit codes, the JSON output) and `buildinfo` (the version and the commit) |
-| `tools/` | Small programs that run beside the build. `tools/elfcheck` checks that a file is a static Linux executable. They are not part of the release |
+| `tools/` | Small programs that run beside the build. `tools/elfcheck --arch amd64|arm64` checks that a file is a static Linux executable for that machine, 64-bit and little-endian, and that it loads something. They are not part of the release |
 
 The recipes name the Go folders (`./cmd/... ./internal/... ./tools/...`) and do not use `./...`. A bare `./...` would also walk the Go files that npm packages ship inside `ui/node_modules` and `site/node_modules`.
 
@@ -122,12 +122,13 @@ The other linters are the standard set (`errcheck`, `govet`, `ineffassign`, `sta
 - The job `go` of `.github/workflows/checks.yaml` runs `just go-check`. It is one of the jobs that the single job `checks` waits for.
 - The job installs the tools from this repository's own `devbox.json` and `devbox.lock`, with `jetify-com/devbox-install-action`. At run time the action fetches the devbox installer, and the job checks the devbox program it installs against a pinned checksum. The action also runs the Nix installer, which CI trusts. The other jobs use the shared setup action.
 - A pull request only reads the Go caches (the build cache and the module cache). It never saves them. `.github/workflows/go-cache.yaml` is the only workflow that saves them. It runs on `main`, after a change to a Go file, `go.mod`, `go.sum`, `devbox.json`, `devbox.lock` or the `Justfile`, and on demand. The build cache is not checked when it is read, so code that is not reviewed must not write it.
-- The release is its own workflow, `.github/workflows/release.yaml`. It runs on a pushed tag `vX.Y.Z` or `vX.Y.Z-suffix`, with numbers that have no leading zeros. It has three jobs:
+- The release is its own workflow, `.github/workflows/release.yaml`. It runs on a pushed tag `vX.Y.Z` or `vX.Y.Z-suffix`, with numbers that have no leading zeros. It has four jobs:
   - `verify` has read-only rights. For a tag it refuses a tag of the wrong form and a commit that is not on `main`, then it runs `just go-check`, which includes the snapshot build.
-  - `build` has read-only rights, and no step holds a token. It runs `just go-release-build` with the GoReleaser that `devbox.json` pins: it builds and checks the release, and keeps the release files as a workflow artifact.
-  - `publish` is the only job that may write to the repository's releases. It checks out nothing and runs no code of the repository. It checks the files against `SHA256SUMS`, refuses a tag that already has a release, and creates the release with `gh`.
+  - `build` has read-only rights. No step that runs repository code is given a write token, and the checkout and install actions receive the read-only token inside the actions. For a tag it runs `just go-release-build` with the GoReleaser that `devbox.json` pins: it builds and checks the release, and keeps the release files as a workflow artifact. A manual run builds a snapshot instead, with `just go-release-check`.
+  - `test` has no permissions, no checkout and no tool. It takes the artifact of `build` and runs on a runner of each machine, amd64 and arm64. It unpacks the archive of that machine and runs the binary in it, which must print exactly the stamped version and commit. No step that runs a built binary is given a token.
+  - `publish` is the only job that may write to the repository's releases. It checks out nothing and runs no code of the repository. It needs `test` to have passed on both machines. It checks the files against `SHA256SUMS`, refuses a tag that already has a release, refuses a tag that was moved during the run, and creates the release with `gh`. `verify` and `build` each give the commit they checked out, and `publish` asks GitHub which commit the tag points at and compares.
 
-  What is published is the build that was checked; nothing is built twice. The tag checks guard against mistakes, such as a tag on the wrong commit. The boundary is who may push tags (a tag ruleset in the repository settings) and who has write access to the repository. A manual run is a dry run: it runs `verify` only (below).
+  What is published is the build that was checked; nothing is built twice. The tag checks guard against mistakes, such as a tag on the wrong commit. The boundary is who may push tags (a tag ruleset in the repository settings) and who has write access to the repository. A manual run is a dry run (below).
 - The vulnerability scan is its own workflow, `.github/workflows/security.yaml`, which runs `just go-vuln` on `main`, on pull requests, every day and on demand. It is not part of `checks` and does not block a merge: a new advisory is news about the world, not about your change.
 
 ### A new top-level Go folder
@@ -156,12 +157,13 @@ The first consumer is the test harness of a system that holds intermediates, suc
 - **What a release is.** A tag `vX.Y.Z` or `vX.Y.Z-suffix` on `main`, with numbers that have no leading zeros. GoReleaser (version 2) builds the binary for Linux, on amd64 and arm64, into one `.tar.gz` for each platform, and writes `SHA256SUMS` with the digest of each. GoReleaser does not publish: a separate job of the workflow puts the files, as they were checked, on the repository's GitHub Releases page.
 - **The names.** `ritueel_<version>_linux_<amd64|arm64>.tar.gz` for each archive, with `<version>` the tag without the `v`, for example `ritueel_0.1.0_linux_amd64.tar.gz`, and `SHA256SUMS`. Each archive holds the `ritueel` binary, `LICENSE` and `README.md`.
 - **Not signed.** The archives are not signed, and `SHA256SUMS` is a plain file: it lists digests and proves nothing about who made them.
-- **Pre-release or release.** A tag with a suffix, such as `v0.1.0-rc.1`, becomes a pre-release on the Releases page. A plain `vX.Y.Z` becomes a normal release.
-- **A version is never replaced.** If a tag already has a release, the workflow fails. It does not overwrite, move or delete a published version.
-- **A dry run.** A manual run of the workflow on any branch runs the job `verify`: `just go-check`, which includes the snapshot build of `go-release-check`. It builds no release and publishes nothing.
+- **Pre-release or release.** A tag with a suffix, such as `v1.0.0-rc.1`, becomes a pre-release on the Releases page, and so does every `v0.x.y` ([`GOVERNANCE.md`](https://github.com/truvity/ritueel/blob/main/GOVERNANCE.md)). Only a plain `vN.x.y` with N at least 1 becomes a normal release.
+- **A version is never replaced.** If a tag already has a release, the workflow fails. It does not overwrite, move or delete a published version, and it refuses a tag that was moved during the run.
+- **A dry run.** A manual run of the workflow on any branch runs `verify` (`just go-check`, which includes the snapshot build of `go-release-check`), a snapshot `build` and `test` on both machines. `publish` does not run, so nothing is published. A manual run works only once the workflow file is on `main`.
 - **Checksums only, before the gate.** No release is signed until the project's root is adopted and drilled ([record 0009](../decisions/0009-release-keys-and-the-keyring.md)). Until the first signed release (M5) a consumer's trust in a build is the digest it pinned, not a signature. From M5 the proof is `SHA256SUMS` signed by a release subkey that the project's root binds, with a keyless signature beside it ([record 0009](../decisions/0009-release-keys-and-the-keyring.md)).
 - **How a consumer pins it.** It records the version and the SHA-256 of the archive for each platform it runs on in its own repository, downloads the archive from the release, compares the digest before it unpacks, and refuses a mismatch. A new version is a reviewed change of both. `ritueel version` prints the version and the commit, so a log shows which build ran.
 - **No container image and no packages.** ritueel is one statically linked executable for Linux that you copy and run, with no installer ([record 0010](../decisions/0010-the-engine-the-process-and-the-page.md), rule 23).
+- **Not proven yet.** Only a real run on GitHub proves the job `test`, with no permissions, on the arm64 runner, and the tag lookup in `publish`. A manual run proves the first once the workflow file is on `main`; the first tag proves the second.
 
 ## Commands from an agent shell
 
