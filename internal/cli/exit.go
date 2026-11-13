@@ -36,9 +36,9 @@ const (
 // Outcome is the word of the "outcome" member of the JSON output.
 type Outcome string
 
-// The outcomes of the JSON output. Each matches an exit code.
+// The outcomes of the JSON output. Each matches an exit code; outcomeOf is the table.
 const (
-	// OutcomeDone matches the exit codes 0, 10, 11 and 12.
+	// OutcomeDone matches the exit code 0. The page decides no outcome for 10, 11 and 12 yet.
 	OutcomeDone Outcome = "done"
 	// OutcomeRefused matches the exit codes 3 and 4.
 	OutcomeRefused Outcome = "refused"
@@ -52,38 +52,40 @@ const (
 
 // outcomeOf is the one table that ties an exit code to its outcome, the "matching the exit code"
 // of the member "outcome" in docs/reference/cli.md. The page names the outcomes (done, refused,
-// not-confirmed, usage, failed) and the meaning of each code: 0 success (done), 1 failure
-// (failed), 2 usage error (usage), 3 refused by a check or the policy and 4 refused by the card
-// or the backend (refused), 5 not confirmed (not-confirmed). It does not name the outcome of
-// 10, 11 and 12, which only status returns; the one outcome left that is not a failure, a refusal
-// or a misuse is done, and the table says so. ok is false for a code that is not in the table.
-func outcomeOf(code ExitCode) (Outcome, bool) {
+// not-confirmed, usage, failed) and the meaning of the codes 0 to 5 in its table "Exit codes":
+// 0 success (done), 1 failure (failed), 2 usage error (usage), 3 refused by a check or the policy
+// and 4 refused by the card or the backend (refused), 5 not confirmed (not-confirmed). Those six
+// codes are decided. The page names no outcome for 10, 11 and 12, which belong to status, and
+// status is not built yet; an outcome chosen because it is the only one left would be a default
+// that nobody decided, so outcomeOf panics for them, and for any code that is not in the table,
+// with a text that says which. The page must decide the outcome of 10, 11 and 12 before a
+// command returns them, and this table then gets the three.
+func outcomeOf(code ExitCode) Outcome {
 	switch code {
-	case ExitOK, ExitNotice, ExitAlert, ExitCritical:
-		return OutcomeDone, true
+	case ExitOK:
+		return OutcomeDone
 	case ExitFailure:
-		return OutcomeFailed, true
+		return OutcomeFailed
 	case ExitUsage:
-		return OutcomeUsage, true
+		return OutcomeUsage
 	case ExitRefused, ExitBackend:
-		return OutcomeRefused, true
+		return OutcomeRefused
 	case ExitNotConfirmed:
-		return OutcomeNotConfirmed, true
+		return OutcomeNotConfirmed
+	case ExitNotice, ExitAlert, ExitCritical:
+		panic(fmt.Sprintf("cli: the exit code %d has no decided outcome: docs/reference/cli.md must decide its outcome before a command returns it", int(code)))
 	default:
-		return "", false
+		panic(fmt.Sprintf("cli: the exit code %d is not in the table of docs/reference/cli.md", int(code)))
 	}
 }
 
 // agreed returns the outcome of an exit code and makes it impossible for the two to disagree:
 // the outcome is derived from the code, here and nowhere else. A given outcome that is not the
-// one of the code, or a code that is not in the table, is a mistake of the programmer, and
-// agreed panics with a text that says which; a run turns it into exit code 1. An empty given
-// outcome means "the one of the code".
+// one of the code, or a code that outcomeOf refuses, is a mistake of the programmer, and agreed
+// panics with a text that says which; a run turns it into exit code 1. An empty given outcome
+// means "the one of the code".
 func agreed(code ExitCode, given Outcome) Outcome {
-	want, ok := outcomeOf(code)
-	if !ok {
-		panic(fmt.Sprintf("cli: the exit code %d is not in the table of docs/reference/cli.md", int(code)))
-	}
+	want := outcomeOf(code)
 	if given != "" && given != want {
 		panic(fmt.Sprintf("cli: the exit code %d goes with the outcome %q, and the command gave %q", int(code), string(want), string(given)))
 	}
