@@ -17,7 +17,7 @@
 #            code of the repository. It needs `test` to have passed on both machines. It downloads that artifact, checks it against SHA256SUMS, refuses a
 #            tag that already has a release, refuses a tag that no longer points at the commit that
 #            `verify` and `build` checked out (each gives its commit as a job output; the tag's commit
-#            is asked of the API), and uploads exactly those files with `gh`. What is published is the
+#            is asked of GitHub with `git ls-remote`), and uploads exactly those files with `gh`. What is published is the
 #            build that was checked; nothing is built twice.
 #
 # Only a push of a tag runs `publish`. A pull request cannot reach any job: there is no `pull_request`,
@@ -256,6 +256,7 @@ jobs:
           VERIFIED_COMMIT: ${{ needs.verify.outputs.commit }}
           BUILT_COMMIT: ${{ needs.build.outputs.commit }}
         run: |
+          fail() { echo "::error::$*"; exit 1; }
           cd release
           sha256sum -c SHA256SUMS
           a="ritueel_${TAG#v}_linux_amd64.tar.gz"
@@ -265,18 +266,36 @@ jobs:
           if out=$(gh release view "$TAG" 2>&1); then echo "::error::a release for $TAG already exists"; exit 1; fi
           case "$out" in *"release not found"*) ;; *) echo "::error::cannot tell whether a release for $TAG exists: $out"; exit 1 ;; esac
           # The tag must still point at the commit that `verify` and `build` checked out. This job has no
-          # checkout, so it asks the API (GET /repos/{owner}/{repo}/commits/tags/{TAG}, which answers with
-          # the commit of an annotated tag too; the sha media type returns only the 40 hex digits). A tag
-          # that was moved after the build would otherwise get a release page that points at the new
-          # commit and carries files built from the old one. This is the last check before the upload.
-          now=$(gh api -H "Accept: application/vnd.github.sha" "repos/${GH_REPO}/commits/tags/${TAG}") || { echo "::error::cannot ask GitHub which commit the tag $TAG points at"; exit 1; }
-          for c in "$now" "$VERIFIED_COMMIT" "$BUILT_COMMIT"; do
-            [[ "$c" =~ ^[0-9a-f]{40}$ ]] || { echo "::error::not a commit id: '$c' (the tag now, the verified commit or the built commit)"; exit 1; }
-          done
-          if [ "$now" != "$VERIFIED_COMMIT" ] || [ "$now" != "$BUILT_COMMIT" ]; then
-            echo "::error::the tag $TAG points at $now now; verify checked out $VERIFIED_COMMIT and build $BUILT_COMMIT; the tag was moved, refusing to publish"
-            exit 1
-          fi
+          # checkout, so it asks GitHub with `git ls-remote` over https, which needs no token for a public
+          # repository (none is passed to git). The commit of an annotated tag is the peeled line
+          # `refs/tags/TAG^{}`; a lightweight tag has only the plain line, and that is the commit. (The
+          # REST call `commits/tags/TAG` was measured to answer 422 for an annotated tag, so it is not
+          # used.) A pattern of ls-remote also matches the tail of a longer ref, so only lines whose ref
+          # is exactly `refs/tags/TAG` or `refs/tags/TAG^{}` are kept. A tag that was moved after the
+          # build would otherwise get a release page that points at the new commit and carries files
+          # built from the old one.
+          tag_commit() {
+            local out sha ref plain="" peeled="" nplain=0 npeeled=0
+            out=$(GIT_TERMINAL_PROMPT=0 git ls-remote "https://github.com/${GH_REPO}.git" "refs/tags/${TAG}" "refs/tags/${TAG}^{}") || fail "cannot ask GitHub which commit the tag $TAG points at"
+            while read -r sha ref; do
+              if [ "$ref" = "refs/tags/${TAG}" ]; then plain=$sha; nplain=$((nplain + 1))
+              elif [ "$ref" = "refs/tags/${TAG}^{}" ]; then peeled=$sha; npeeled=$((npeeled + 1)); fi
+            done <<<"$out"
+            [ "$nplain" -eq 1 ] || fail "GitHub answered $nplain lines for the tag $TAG, wanted exactly one"
+            [ "$npeeled" -le 1 ] || fail "GitHub answered $npeeled peeled lines for the tag $TAG"
+            now=${peeled:-$plain}
+            [[ "$now" =~ ^[0-9a-f]{40}$ ]] || fail "the commit of the tag $TAG is not 40 hex digits"
+          }
+          check_tag() {
+            tag_commit
+            for c in "$VERIFIED_COMMIT" "$BUILT_COMMIT"; do
+              [[ "$c" =~ ^[0-9a-f]{40}$ ]] || fail "not a commit id: the verified commit or the built commit"
+            done
+            if [ "$now" != "$VERIFIED_COMMIT" ] || [ "$now" != "$BUILT_COMMIT" ]; then
+              fail "the tag $TAG points at $now now; verify checked out $VERIFIED_COMMIT and build $BUILT_COMMIT; the tag was moved, refusing to publish"
+            fi
+          }
+          check_tag
           set -- "$a" "$b" SHA256SUMS
           # A pre-release is a tag with a suffix (`v1.0.0-rc.1`) or a tag of major version 0 (`v0.x.y`):
           # GOVERNANCE.md says that until the first stable release the versions are pre-releases named
