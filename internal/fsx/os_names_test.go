@@ -24,6 +24,8 @@ var osNames = []nameRow{
 	{"Cyrillic and Chinese and an emoji", "ключ-鍵-😀.json"},
 	{"a decomposed accent", "e\u0301.json"},
 	{"the Kelvin sign", "\u212a.json"},
+	{"an emoji with the variation selector U+FE0F", "\u2764\ufe0f.json"},
+	{"a plain space inside", "my file.json"},
 	{"255 ASCII bytes", ascii255},
 	{"127 times é and a, 255 bytes", eAcute127a},
 	{"85 times €, 255 bytes", euro85},
@@ -188,13 +190,15 @@ func TestOSRefusedNamesCreateNothing(t *testing.T) {
 	readBack(t, dir, "ok.json")
 }
 
-// TestOSDeviceNameIsRefusedAndCreatesNothing: a device name of Windows, and the temporary prefix
-// in capitals, are refused for every method before the real file system is touched. Linux
+// TestOSDeviceNameIsRefusedAndCreatesNothing: a device name of Windows (also with spaces before
+// the extension), a name with a character that is not printable (a no-break space, a
+// zero-width space, an emoji sequence joined with U+200D), and the temporary prefix in
+// capitals, are refused for every method before the real file system is touched. Linux
 // would have created "aux"; the writer refuses it because the stick goes to Windows machines.
 func TestOSDeviceNameIsRefusedAndCreatesNothing(t *testing.T) {
 	dir := t.TempDir()
 	w := &fsx.Writer{}
-	for _, name := range []string{"aux", "Nul.txt", "COM1", "lpt².tar.gz", ".RT-x"} {
+	for _, name := range []string{"aux", "Nul.txt", "COM1", "lpt\u00b2.tar.gz", ".RT-x", "nul .txt", "com1 ", "a\u00a0b", "a\u200bb", "\U0001f468\u200d\U0001f469"} {
 		p := filepath.Join(dir, name)
 		for what, err := range map[string]error{
 			"WriteFile": w.WriteFile(p, []byte("x"), 0o600),
@@ -214,10 +218,10 @@ func TestOSDeviceNameIsRefusedAndCreatesNothing(t *testing.T) {
 	}
 	readBack(t, dir)
 	// a name that only looks like a device name is created as it is
-	for _, name := range []string{"auxiliary", "com10", ".con", "a.con", "COM²x"} {
+	for _, name := range []string{"auxiliary", "com10", ".con", "a.con", "COM\u00b2x", "com0", "lpt0", " nul", "nul x.txt"} {
 		if err := w.WriteFile(filepath.Join(dir, name), []byte(name), 0o600); err != nil {
 			t.Errorf("WriteFile %q: %v", name, err)
 		}
 	}
-	readBack(t, dir, "auxiliary", "com10", ".con", "a.con", "COM²x")
+	readBack(t, dir, "auxiliary", "com10", ".con", "a.con", "COM\u00b2x", "com0", "lpt0", " nul", "nul x.txt")
 }
