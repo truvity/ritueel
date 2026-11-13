@@ -278,5 +278,10 @@ jobs:
             exit 1
           fi
           set -- "$a" "$b" SHA256SUMS
-          case "$TAG" in *-*) set -- --prerelease "$@" ;; esac
+          # A pre-release is a tag with a suffix (`v1.0.0-rc.1`) or a tag of major version 0 (`v0.x.y`):
+          # GOVERNANCE.md says that until the first stable release the versions are pre-releases named
+          # `v0.x.y`. Only a plain `vN.x.y` with N at least 1 is a full release. The tag form was checked
+          # above (no leading zeros), so `v0.*` is exactly major version 0. This is the only place that
+          # decides it.
+          case "$TAG" in *-*|v0.*) set -- --prerelease "$@" ;; esac
           gh release create "$TAG" --verify-tag --title "$TAG" --notes-file NOTES.md "$@"
