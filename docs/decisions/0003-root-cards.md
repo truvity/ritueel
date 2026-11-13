@@ -31,6 +31,8 @@
 19. The piv store uses piv-go and holds root keys on a root card and an intermediate in a card slot; its proof is the slot's attestation certificate and the card's certificate. ritueel builds the OpenPGP packets and the card signs digests; no gpg at run time.
 20. If the PIN was accepted in the same session and the card refused after 10 seconds or more, ritueel reports that no touch was given in time or PIN state was lost; a sooner refusal is reported as a refusal. It claims no more than it knows and does not retry.
 
+21. ritueel unblocks a card's blocked PIN with the sealed PUK. ritueel never shows the PUK.
+
 ## Why
 
 Each card makes its own keys, so no copy exists and each key can be attested at birth.
