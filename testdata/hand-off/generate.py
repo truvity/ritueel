@@ -31,7 +31,7 @@ Made with Python 3.14 and cryptography 46.0.5.
 
 usage: generate.py HANDOFF_OUTDIR ROOTLIST_OUTDIR SSHCA_OUTDIR CRL_OUTDIR
 """
-import base64, contextlib, datetime as dt, hashlib, json, math, os, struct, sys
+import base64, contextlib, datetime as dt, hashlib, ipaddress, json, math, os, struct, sys
 from cryptography import x509
 from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import ec, ed25519, rsa
@@ -337,12 +337,14 @@ def kms_stub(pub, arn=ARN, two_actors=False, spec="ECC_NIST_P384", via_role=None
 
 
 # ---------------------------------------------------------------- CSR and certificate
-def make_csr(key, cn="acme example intermediate CA", nc=("%s" % HOST,), pathlen=0, hash_=hashes.SHA384()):
+def make_csr(key, cn="acme example intermediate CA", nc=("%s" % HOST,), pathlen=0, hash_=hashes.SHA384(), excluded=()):
     b = (x509.CertificateSigningRequestBuilder().subject_name(name(cn))
          .add_extension(x509.BasicConstraints(ca=True, path_length=pathlen), critical=True)
          .add_extension(KU_CA, critical=True))
     if nc:
-        b = b.add_extension(x509.NameConstraints([x509.UniformResourceIdentifier(h) for h in nc], None), critical=True)
+        # excluded: IP ranges as strings ("0.0.0.0/0"), or DNS names as x509.DNSName
+        ex = [e if isinstance(e, x509.GeneralName) else x509.IPAddress(ipaddress.ip_network(e)) for e in excluded]
+        b = b.add_extension(x509.NameConstraints([x509.UniformResourceIdentifier(h) for h in nc], ex or None), critical=True)
     return sign_builder(b, key, hash_)
 
 
@@ -586,6 +588,17 @@ x509_case("x509-piv-pin-never", policy=bytes([1, 1]), reason="policy")
 x509_case("x509-piv-old-firmware", firmware=bytes([5, 4, 3]), reason="policy")
 k = ec384(); x509_case("x509-no-name-constraints", key=k, csr=make_csr(k, nc=()), reason="policy")
 k = ec384(); x509_case("x509-name-constraint-outside", key=k, csr=make_csr(k, nc=("other.example",)), reason="policy")
+# Excluded subtrees (issue #70). The one accepted form excludes every IP address: 0.0.0.0/0 and ::/0, both, beside the permitted
+# URI host. The requester sluis writes it when its boundary declares no IP range. Any other excluded subtree is refused.
+# Made in a stream of their own, with a software key under the development configuration, so that no other file changes.
+with stream("x509-ip-excluded"):
+    ALL_IP = ("0.0.0.0/0", "::/0")
+    k = ec384(); x509_case("x509-ip-all-excluded", key=k, csr=make_csr(k, excluded=ALL_IP), store="software", cfg="development", expect="accept")
+    k = ec384(); x509_case("x509-ip-v4-excluded-only", key=k, csr=make_csr(k, excluded=ALL_IP[:1]), store="software", cfg="development", reason="policy")
+    k = ec384(); x509_case("x509-ip-all-excluded-and-dns", key=k, csr=make_csr(k, excluded=ALL_IP + (x509.DNSName("other.example"),)),
+                           store="software", cfg="development", reason="policy")
+    k = ec384(); x509_case("x509-dns-excluded", key=k, csr=make_csr(k, excluded=(x509.DNSName("other.example"),)),
+                           store="software", cfg="development", reason="policy")
 k = ec384(); x509_case("x509-kms-key-mismatch", key=k, store="aws-kms", evidence_pub=ec384().public_key(),
                        stub=kms_stub(k.public_key()), reason="key-mismatch")
 k = ec384(); x509_case("x509-kms-two-actors", key=k, store="aws-kms", stub=kms_stub(k.public_key(), two_actors=True), reason="policy")
