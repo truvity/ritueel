@@ -67,7 +67,7 @@
 
 45. The write steps delete nothing. A file or a folder under a temporary name that a stop or a cut left stays where it is. A temporary name is never read as a record or as a part of a bundle: a reader skips every name that starts with `.rt-`, in any case, because a temporary folder holds whole files under ordinary names. A path that is only read may name such a leftover, to look at it.
 
-46. A name that a reader gets from the list of a folder is data from the stick, not a name that ritueel made. The reader checks each such name with the check of rule 38 (`CheckName` in `internal/fsx`) before it shows the name or uses it in a path. It shows a name only with every character beyond printable ASCII written as an escape.
+46. A name that a reader gets from the list of a folder is data from the stick, not a name that ritueel made. The reader checks each such name by rule 38 before it shows the name or uses it in a path. It shows a name only with every character beyond printable ASCII written as an escape.
 
 ## Why
 
