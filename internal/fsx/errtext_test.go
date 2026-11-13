@@ -226,9 +226,8 @@ func TestAHostileMessageOfTheFileSystemNeverAppearsRawInAClose(t *testing.T) {
 // emoji, a Cyrillic letter that looks like a Latin one) is shown as an escape too, so that no
 // error text holds a raw byte that is not printable ASCII.
 //
-// This test fails for as long as the quoting leaves a printable character as it is: %q and
-// strconv.Quote write "é" as it stands, and the text of Err goes through unicode.IsPrint, which
-// keeps it. See the report: strconv.QuoteToASCII (and %+q) is the one-word change in each place.
+// The text of the path goes through strconv.QuoteToASCII, the names of a refusal through %+q,
+// and the text of a wrapped error through printable(); escape_test.go pins the forms.
 func TestNoErrorTextHoldsARawByteBeyondPrintableASCII(t *testing.T) {
 	check := func(t *testing.T, what, text string) {
 		t.Helper()

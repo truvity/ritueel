@@ -26,7 +26,6 @@ import (
 	"strconv"
 	"strings"
 	"testing"
-	"unicode/utf8"
 
 	"ritueel.id/ritueel/internal/fsx"
 )
@@ -70,30 +69,6 @@ func elemText(p, why string) string { return pathText(p, "has an element that "+
 // fileText is the text of a refusal of the name of a file of a set.
 func fileText(name, tail string) string {
 	return fmt.Sprintf("%sfile name %s %s", invalidPrefix, strconv.QuoteToASCII(name), tail)
-}
-
-// asciiEscaped writes every character beyond ASCII of a text as strconv.QuoteToASCII writes it
-// (\u00e9, \U0001f600). The source quotes with %q, which leaves a printable character beyond
-// ASCII as it is; the texts here are what the brief asks for (no raw byte beyond printable
-// ASCII), so a text is compared after this, and TestNoErrorTextHoldsARawByteBeyondPrintableASCII
-// (errtext_test.go) is the test that fails for as long as the source leaves one raw.
-func asciiEscaped(s string) string {
-	var b strings.Builder
-	for i := 0; i < len(s); {
-		r, size := utf8.DecodeRuneInString(s[i:])
-		switch {
-		case r == utf8.RuneError && size == 1:
-			b.WriteByte(s[i]) // not UTF-8: left as it is, so that the check for printable ASCII sees it
-		case r < 0x80:
-			b.WriteRune(r)
-		case r < 0x10000:
-			fmt.Fprintf(&b, `\u%04x`, r)
-		default:
-			fmt.Fprintf(&b, `\U%08x`, r)
-		}
-		i += size
-	}
-	return b.String()
 }
 
 const (
@@ -405,7 +380,7 @@ func requireRefused(t *testing.T, f *memFS, w *fsx.Writer, err error) {
 		t.Fatalf("a refused argument reached the file system: %v", f.opList())
 	}
 	requireOpen(t, f, 0)
-	requirePrintableASCII(t, asciiEscaped(err.Error()))
+	requirePrintableASCII(t, err.Error())
 	if err := w.WriteFile("b/d/ok.json", []byte("ok"), 0o600); err != nil {
 		t.Fatalf("the writer stopped after a refused argument: %v", err)
 	}
@@ -428,7 +403,7 @@ func refuseInEveryElementOfEveryPath(t *testing.T, rows []nameRow) {
 					p := pl.path(row.name)
 					err := use.do(t, w, p)
 					requireRefused(t, f, w, err)
-					if want := elemText(p, row.reason); asciiEscaped(err.Error()) != want {
+					if want := elemText(p, row.reason); err.Error() != want {
 						t.Fatalf("the text is\n  %s\nwant\n  %s", err.Error(), want)
 					}
 				})
@@ -455,7 +430,7 @@ func refuseAsSetFiles(t *testing.T, rows []nameRow) {
 				w := newWriter(t, f, 1)
 				err := w.WriteSet("b/d/s", files)
 				requireRefused(t, f, w, err)
-				if want := fileText(row.name, row.reason); asciiEscaped(err.Error()) != want {
+				if want := fileText(row.name, row.reason); err.Error() != want {
 					t.Fatalf("the text is\n  %s\nwant\n  %s", err.Error(), want)
 				}
 			})
@@ -515,7 +490,7 @@ func TestRefusedShapesOfAPath(t *testing.T) {
 				w := newWriter(t, f, 1)
 				err := use.do(t, w, row.path)
 				requireRefused(t, f, w, err)
-				if asciiEscaped(err.Error()) != row.text {
+				if err.Error() != row.text {
 					t.Fatalf("the text is\n  %s\nwant\n  %s", err.Error(), row.text)
 				}
 			})
@@ -551,7 +526,7 @@ func TestRefusedNamesThatAreNotOnePlainNameAsSetFiles(t *testing.T) {
 			w := newWriter(t, f, 1)
 			err := w.WriteSet("b/d/s", []fsx.NewFile{{Name: "good", Perm: 0o600}, {Name: c.name, Perm: 0o600}})
 			requireRefused(t, f, w, err)
-			if asciiEscaped(err.Error()) != c.text {
+			if err.Error() != c.text {
 				t.Fatalf("the text is\n  %s\nwant\n  %s", err.Error(), c.text)
 			}
 		})
@@ -607,7 +582,7 @@ func TestSetNamesThatDifferOnlyByCaseAreRefused(t *testing.T) {
 			w := newWriter(t, f, 1)
 			err := w.WriteSet("b/d/s", c.files)
 			requireRefused(t, f, w, err)
-			if want := fileText(c.second, "is given twice"); asciiEscaped(err.Error()) != want {
+			if want := fileText(c.second, "is given twice"); err.Error() != want {
 				t.Fatalf("the text is\n  %s\nwant\n  %s", err.Error(), want)
 			}
 		})
