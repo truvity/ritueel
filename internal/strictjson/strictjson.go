@@ -1,11 +1,11 @@
 // Package strictjson reads the JSON files of ritueel under one set of rules: one object, UTF-8
 // with no byte order mark, no member name twice in one object, no member that the reader does
-// not define, integers only, no null, and at most 256 KiB. The rules are those of
-// docs/reference/hand-off-contract.md ("Messages and files") and docs/reference/root-list.md
-// ("The list"). The standard decoder breaks several of them silently (a repeated member keeps
-// the last value, a lone surrogate escape becomes U+FFFD, a member name matches a field in any
-// letter case), so this package reads the bytes itself before it lets the standard decoder fill
-// a value.
+// not define, integers only, no null, nesting of at most MaxDepth levels, and at most 256 KiB.
+// The rules are those of docs/reference/hand-off-contract.md ("Messages and files") and
+// docs/reference/root-list.md ("The list"). The standard decoder breaks several of them silently
+// (a repeated member keeps the last value, a lone surrogate escape becomes U+FFFD, a member name
+// matches a field in any letter case), so this package reads the bytes itself before it lets the
+// standard decoder fill a value.
 //
 // Every error that this package returns for input that breaks a rule wraps ErrMalformed. An
 // error that does not wrap it is a mistake of the caller (a value that is not a pointer). An
@@ -26,9 +26,11 @@ import (
 // DefaultMaxBytes is the largest input the readers accept unless the caller says otherwise: 256 KiB.
 const DefaultMaxBytes = 256 << 10
 
-// maxDepth is how deep objects and arrays may nest. It is the limit of the standard decoder,
-// stated here so that the reader of this package does not depend on the stack.
-const maxDepth = 10000
+// MaxDepth is how deep objects and arrays may nest: 10000 levels in all, the top-level object
+// being level 1, so that a document of 10000 levels is read and one of 10001 is refused. It is
+// the limit of the standard decoder, stated here so that the reader of this package does not
+// depend on the stack.
+const MaxDepth = 10000
 
 // ErrMalformed is wrapped by every error this package returns for input that breaks a rule.
 var ErrMalformed = errors.New("malformed JSON")
@@ -82,7 +84,8 @@ func Unmarshal(data []byte, v any, opts Options) error {
 
 // Check applies the rules that need no type: size (maxBytes, 0 means DefaultMaxBytes), UTF-8,
 // no byte order mark, one object, no repeated member at any depth, integers only, no null, no
-// lone surrogate escape, and nothing but white space after the object.
+// lone surrogate escape, nesting of at most MaxDepth levels, and nothing but white space after
+// the object.
 func Check(data []byte, maxBytes int) error {
 	_, err := parseDocument(data, limit(maxBytes), true)
 	return err
@@ -91,10 +94,10 @@ func Check(data []byte, maxBytes int) error {
 // PeekInt returns the integer member name of the top-level object; ok is false when it is
 // absent. It is for the version check that must come before the unknown-member rule: a message
 // of a version the reader does not know is refused reading nothing else in it. So it demands
-// only that the input is one JSON object within the size limit, in UTF-8 with no byte order
-// mark, and that the member, when present, is there once and is an integer that fits int64. It
-// does not apply the other rules (floats, null and repeated members elsewhere are not its
-// business).
+// only that the input is one JSON object within the size limit and within MaxDepth levels of
+// nesting, in UTF-8 with no byte order mark, and that the member, when present, is there once
+// and is an integer that fits int64. It does not apply the other rules (floats, null and
+// repeated members elsewhere are not its business).
 func PeekInt(data []byte, name string) (n int64, ok bool, err error) {
 	root, err := parseDocument(data, DefaultMaxBytes, false)
 	if err != nil {
@@ -253,8 +256,8 @@ func (p *parser) literal(word string) bool {
 
 func (p *parser) enter() error {
 	p.depth++
-	if p.depth > maxDepth {
-		return p.errorf("nesting deeper than %d", maxDepth)
+	if p.depth > MaxDepth {
+		return p.errorf("nesting deeper than %d levels", MaxDepth)
 	}
 	return nil
 }

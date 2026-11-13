@@ -7,8 +7,8 @@
 //
 // ritueel's JSON holds integers only, so this package does not write a number with a fraction or
 // an exponent, and it reads input under the rules of package strictjson (no null, no repeated
-// member). A value with a nil pointer, map or slice marshals to null and is refused for that
-// reason.
+// member, nesting of at most strictjson.MaxDepth levels). A value with a nil pointer, map or
+// slice marshals to null and is refused for that reason.
 package canonjson
 
 import (
@@ -39,7 +39,8 @@ func Marshal(v any) ([]byte, error) {
 }
 
 // Canonicalize reads data under the rules of package strictjson (one object, UTF-8, no repeated
-// member, integers only, no null, at most strictjson.DefaultMaxBytes) and returns its canonical
+// member, integers only, no null, nesting of at most strictjson.MaxDepth levels, at most
+// strictjson.DefaultMaxBytes) and returns its canonical
 // form. White space around the tokens, the order of the members and the spelling of the escapes
 // are the only things that change.
 func Canonicalize(data []byte) ([]byte, error) {
@@ -167,7 +168,7 @@ func writeString(out *bytes.Buffer, s string) {
 // integer type. A field tagged "-" is not written and is not looked at. A type that writes its
 // own JSON is not looked into: its output is checked after it is written.
 func refuseFloats(v reflect.Value, depth int) error {
-	if !v.IsValid() || depth > 10000 {
+	if !v.IsValid() || depth > strictjson.MaxDepth {
 		return nil
 	}
 	switch v.Kind() {
