@@ -5,7 +5,7 @@ sidebar:
   order: 4
 ---
 
-A **ceremony** is a root being used. A person is present, they look at what is about to be signed, they confirm, a key signs, and a record is written. In older PKI practice it involved a locked room, several witnesses and a script read aloud. For one holder with a card, it can be a few commands at a desk. The idea is the same.
+A **ceremony** is a root being used. A person is present, they look at what is about to be signed, they confirm, a key signs, and a record is written. In older PKI practice it involved a locked room, several witnesses and a script read aloud. For one holder with a card, it can be one or two commands at a desk. The idea is the same.
 
 ## Why a ceremony is manual
 
@@ -19,16 +19,16 @@ So the rule is: **a person only where a person adds safety.** Reading the facts,
 
 ## What a good ceremony does
 
-Whatever the tool, a good ceremony does these things, in an order that keeps the person in charge:
+Whatever the tool, a good ceremony does these things. The rules say where the order matters: the person confirms the plan before anything is signed, and the record is written last:
 
 - Every byte that will be signed is fixed in advance, in a plan: which key, which name, which lifetime, which serial number. A plan that cannot change during the ceremony cannot be swapped during it.
 - The person compares the plan with what they expected and confirms it. A confirmation that is just a key press becomes a habit; a confirmation that needs typing a short digest of the plan does not.
 - An attempt is written down before any key is born or signed. If the run stops, the attempt shows signatures may exist.
 - The key signs. With a card, the PIN stays on the card and a touch is the proof that someone is there.
 - Each result is checked with code that did not sign it.
-- What was done is recorded: with which keys, in which store, and what outsiders now see. The record holds no secret.
+- What was done is recorded: with which keys, in which key store, and what outsiders see. The record holds no secret.
 
-ritueel does all of this in one command, `apply`, and it is the same in every key store ([the tools](/tools/cli/), [record 0005](../decisions/0005-a-ceremony-and-where-it-runs.md)).
+ritueel is to do all of this in one command, `apply`, the same in every key store (planned; only `version` is built) ([the tools](/tools/cli/), [record 0005](../decisions/0005-a-ceremony-and-where-it-runs.md)).
 
 ## What a tool may do, and what it may not
 

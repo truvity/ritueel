@@ -62,4 +62,4 @@ Two patterns follow. **Extend the same key's expiry** when the key is safe (Tail
 
 ## In ritueel
 
-`apply` carries out a root transition from the wanted root file, and certifies a new intermediate key from a request under a declared delegation. Planned for M4. The steps and a drill are in the [guide](/guides/rotate-a-key/).
+`apply` carries out a root transition from the wanted root file, and certifies a new intermediate key from a request under a declared delegation. A root transition is planned for M4; certifying an intermediate key from a request is planned for M2. The steps and a drill are in the [guide](/guides/rotate-a-key/).

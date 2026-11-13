@@ -42,7 +42,7 @@ The bundle is only half. The other half is what it deliberately does not hold.
 
 | Item | Why it is kept | Where |
 |---|---|---|
-| **Revocation signatures** of the OpenPGP primary keys, made when each key was born, one for each of two reasons (compromised and superseded). | They are the only way to revoke a primary key whose card and PIN are gone. | Apart from the cards, in at least two places: for example printed and sealed, and in the password manager. A third place is not wasteful. |
+| **Revocation signatures** of the OpenPGP primary keys, made when each key was born, one for each of two reasons (compromised and superseded). | For gpg and Sequoia users they revoke a primary key whose card and PIN are gone. For apt users the new keyring package is the revocation. | Apart from the cards, in at least two places: for example printed and sealed, and in the password manager. A third place is not wasteful. |
 | **The PINs you type**, one entry per card, and the passphrase of the recovery key. | Without the PIN a card is a locked box; three wrong tries block it. The PUK and the management key are made and sealed by ritueel, so you do not keep them. | The password manager, never in the bundle. |
 | **The recovery key**: an age identity in a passphrase-protected file. | If all the cards named to open the file are lost as well, the key files cannot be opened without it. | Apart from the cards, and apart from its passphrase: the file and the passphrase never sit in the same place. |
 | **Software keys,** if any. | A software key is a copy by nature. | In the software store you chose, whose own replication is the backup (see [where a key lives](/learn/key-stores/)). |
@@ -52,7 +52,7 @@ The bundle is only half. The other half is what it deliberately does not hold.
 
 - **A card** is not backed up. You have two cards. The second key of the root is made on a different card; it is not a copy.
 - **A cloud key** is not exported. You have a replica in another Region, which the service keeps for you.
-- **A software key** is as safe as its store. In an encrypted file, a backup is another copy, which is a danger as well as a safety. In a synced password manager, the sync is the backup. In the system keyring, there is none.
+- **A software key** is as safe as its key store. In an encrypted file, a backup is another copy, which is a danger as well as a safety. In a synced password manager, the sync is the backup. In the system keyring, there is none.
 
 None of these is a backup in the sense of "a copy I can restore from". It is redundancy against loss, and per [layered trust](/learn/layered-trust/), redundancy does not answer compromise.
 
@@ -65,4 +65,4 @@ A restore you have never practised is a hope. The restore drill is the practice:
 3. Compare each key with its card or cloud key: the serial, the fingerprint, the attestation.
 4. Walk through the loss of one card with its revocation signature.
 
-It ends when every check passes, and the report says how long each step took. The drill runs on test keys first, then once on the real ones. This is planned as `check restore` ([the drills](/guides/)).
+It ends when every check passes, and the report says how long each step took. The restore check reads the real bundle and signs nothing. The lost-card walk-through runs on rehearsal cards. This is planned as `check restore` ([the drills](/guides/)).

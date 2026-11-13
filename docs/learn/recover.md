@@ -15,9 +15,9 @@ sidebar:
 | **A card whose PIN is forgotten** | After three wrong tries it blocks; the PUK, which ritueel made and sealed in the bundle, unblocks it, and a full reset destroys the keys. | Treat it as a lost card. | The same. |
 | **Both root cards** | No key can sign. | Start again with a new root, and persuade every client to trust it. A disaster you prepared for by keeping the cards in two places. | The backup of the bundle; a plan for the clients. |
 | **The bundle** | The card files, attestations and the OpenPGP creation times, and the sealed secrets of the cards. | Restore it from its backup. | The [backup](/learn/the-history/). Without one, rebuild what the published certificates carry and accept the rest as lost. |
-| **A revocation signature** | The only way to revoke a primary key whose card is gone. | Make a new one now, while the card is still there. | The card and its PIN. |
+| **A revocation signature** | The way to revoke a primary key for gpg and Sequoia users when its card is gone. For apt users the new keyring package is the revocation. | Make a new one now, while the card is still there. | The card and its PIN. |
 | **A cloud root account** | The key is a permission, and the permission is gone. | Restore access through the provider; otherwise it is a lost root. | A replica in another Region covers a lost Region, not a lost account. |
-| **A software key** | Depends on the store. | Restore from the store's own replication, if it has any. | See [where a key lives](/learn/key-stores/). |
+| **A software key** | Depends on the key store. | Restore from the key store's own replication, if it has any. | See [where a key lives](/learn/key-stores/). |
 
 ## The same chain, whole again
 
