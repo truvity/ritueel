@@ -5,9 +5,9 @@ description: The milestones of ritueel from M0 to M7 in the order they are built
 
 The plan is public and small. Each milestone delivers something a person can use, and each work item is an [issue](https://github.com/truvity/ritueel/issues) with a "done when". Dates are not promised; the order is.
 
-**Status as of 2026-11-12:** design phase. M0, the written design, is not done: the records, reference pages, glossary and teaching pages do not yet say the same thing. Eleven [decision records](https://github.com/truvity/ritueel/tree/main/docs/decisions) are accepted; [the design in brief](/design/), the Learn pages, the site pictures, the How it works pages and the read-only build of the local page (`ui/`, `proto/`) follow them. Some [reference](/reference/) and guide pages show the earlier model. The hand-off contract, the root list, the SSH CA key list and the CRLs have test vectors; the keyring package is a specification that its builder will check. The program has no code yet. What is open lives in the issues and their milestones, not on this page.
+**Status as of 2026-11-13:** design phase. M0, the written design, is not done: the records, reference pages, glossary and teaching pages do not yet say the same thing. Eleven [decision records](https://github.com/truvity/ritueel/tree/main/docs/decisions) are accepted; [the design in brief](/design/), the Learn pages, the site pictures, the How it works pages and the read-only build of the local page (`ui/`, `proto/`) follow them. Some [reference](/reference/) and guide pages show the earlier model. The hand-off contract, the root list, the SSH CA key list and the CRLs have test vectors; the keyring package is a specification that its builder will check. The Go code has started with M2: the module, the command skeleton and `version`. The proofs of M1 are being written up. What is open lives in the issues and their milestones, not on this page.
 
-**Design: 11 decision records, 16 reference pages. Code: 0 lines.** Counted on 2026-11-12, in Go only; the page in `ui/` is TypeScript and is counted apart. The [project status](/status/) page counts them at each build and adds the issues closed in each milestone.
+**Design: 11 decision records, 16 reference pages.** Counted on 2026-11-12. The [project status](/status/) page counts the lines of Go at each build.
 
 ## The first version
 
