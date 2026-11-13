@@ -57,6 +57,8 @@ func TestWarningsOfAResultAreOnStandardErrorAndInTheObject(t *testing.T) {
 			members(ExitOK, "done", map[string]any{"warnings": []string{"b", "a", "c"}})},
 		{"a repeated warning is repeated", func() (*Result, error) { return &Result{Warnings: []string{"a", "b", "a", "a"}}, nil }, ExitOK, "", warnLines("a", "b", "a", "a"),
 			members(ExitOK, "done", map[string]any{"warnings": []string{"a", "b", "a", "a"}})},
+		{"a warning repeated at once is repeated", func() (*Result, error) { return &Result{Warnings: []string{"a", "a", "b", "b", "b"}}, nil }, ExitOK, "", warnLines("a", "a", "b", "b", "b"),
+			members(ExitOK, "done", map[string]any{"warnings": []string{"a", "a", "b", "b", "b"}})},
 		{"every odd warning is printable ASCII, on standard error and in the object", func() (*Result, error) {
 			return &Result{Warnings: slices.Clone(in)}, nil
 		}, ExitOK, "", warnLines(wantEsc...),
@@ -107,6 +109,8 @@ func TestWarningsWithEveryKindOfError(t *testing.T) {
 			return nil, WithWarnings(plain, in...)
 		}, ExitFailure, "", warnLines(wantEsc...) + "ritueel: disk on fire\n",
 			members(ExitFailure, "failed", map[string]any{"error": "disk on fire", "warnings": wantEsc})},
+		{"a warning repeated at once is repeated", func() (*Result, error) { return nil, WithWarnings(plain, "a", "a", "a") }, ExitFailure, "", warnLines("a", "a", "a") + "ritueel: disk on fire\n",
+			members(ExitFailure, "failed", map[string]any{"error": "disk on fire", "warnings": []string{"a", "a", "a"}})},
 		{"a repeated warning is repeated", func() (*Result, error) { return nil, WithWarnings(plain, "a", "b", "a") }, ExitFailure, "", warnLines("a", "b", "a") + "ritueel: disk on fire\n",
 			members(ExitFailure, "failed", map[string]any{"error": "disk on fire", "warnings": []string{"a", "b", "a"}})},
 		{"no warning: the error is as it was", func() (*Result, error) { return nil, WithWarnings(refusal()) }, ExitRefused, "", "ritueel: no\n",
@@ -128,6 +132,10 @@ func TestWarningsKeepTheirOrderThroughWrappingAndCopies(t *testing.T) {
 			members(ExitRefused, "refused", map[string]any{"reasons": []string{"policy"}, "warnings": []string{"a", "b"}})},
 		{"wrapped twice, with several each", func() (*Result, error) { return nil, WithWarnings(WithWarnings(refusal, "a", "b"), "c", "d") }, ExitRefused, "", warnLines("a", "b", "c", "d") + "ritueel: no\n",
 			members(ExitRefused, "refused", map[string]any{"reasons": []string{"policy"}, "warnings": []string{"a", "b", "c", "d"}})},
+		{"the same warning given by the next wrap is repeated", func() (*Result, error) {
+			return nil, WithWarnings(WithWarnings(refusal, "a"), "a")
+		}, ExitRefused, "", warnLines("a", "a") + "ritueel: no\n",
+			members(ExitRefused, "refused", map[string]any{"reasons": []string{"policy"}, "warnings": []string{"a", "a"}})},
 		{"wrapped three times", func() (*Result, error) {
 			return nil, WithWarnings(WithWarnings(WithWarnings(refusal, "a"), "b"), "c")
 		}, ExitRefused, "", warnLines("a", "b", "c") + "ritueel: no\n",
@@ -330,6 +338,11 @@ func TestAResultAndAnErrorBothGiven(t *testing.T) {
 	if text.code != ExitFailure || text.stdout != "" || text.stderr != r.stderr {
 		t.Errorf("text: (%d, %q, %q)", int(text.code), text.stdout, text.stderr)
 	}
+	// The faults of the error are found though the Result has warnings: a refusal with no code.
+	withSpecs(t, spec{name: "fake", usage: "u", run: func(context.Context, *Call) (*Result, error) {
+		return &Result{Warnings: []string{"from-result"}}, Refusal{Msg: "no"}
+	}})
+	ranFailed(t, "fake", noCode("fake", 3), "fake")
 }
 
 // The result does not reach the caller: the warnings are on standard error, then the line that says
