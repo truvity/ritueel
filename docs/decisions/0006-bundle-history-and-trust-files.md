@@ -108,6 +108,7 @@ A holder must prove what was done, and outsiders must check the roots. One bundl
 - **Full TUF.** Mature freeze and rollback protection, but standard verifiers cannot count signatures and one holder cannot staff separate roles.
 - **The holder edits the SSH CA key list.** No request to write, but a key would be trusted that nothing checked and the list would have a second author.
 - **Version 2 of the hand-off contract, or a contract of its own, for the SSH CA key type.** Keeps version 1 as written, but nothing is released so no receiver is surprised, and a second version costs every reader a second code path.
+- **Ed25519 as a second SSH CA key type.** It is the OpenSSH default, but BSI lists only ECDSA for SSH signatures, a host in FIPS mode refuses Ed25519, and a second type is a second code path ([the sources](/reference/ssh-ca-key-list/#choices-made)).
 - **A key that does both user and host certificates.** One key fewer, but its holder can vouch for hosts as well as users.
 - **Dropping the break-glass SSH CA.** One kind of root less, but the SSH CA is one of the three kinds of root ([record 0001](0001-what-ritueel-is.md), rule 8) and rule 29 makes a break-glass SSH CA key part of a root.
 - **OCSP for an intermediate.** Live status, but it needs a responder that signs online, which ritueel never holds, and a certificate that names it.
