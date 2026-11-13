@@ -151,18 +151,26 @@ func (w *Writer) closeJournal(s *journalState) error {
 // and counts as not written; it is for a person to read. partial is nil when the file ends
 // with a newline or is empty. The slices alias one buffer. path is relative to the root of fsys
 // and is read as [ReadFile] reads: walked from the root without following a link, and only a
-// regular file no longer than [MaxReadSize]. ReadJournal reaches no writer, so it works after a
-// stop.
+// regular file no longer than [MaxReadSize]. A journal with more than [MaxJournalLines] lines is
+// refused with an *[Error] (step read, with the path) that wraps [ErrTooMany], and nothing of it
+// is returned. The lines are counted first and the result is allocated once, so the memory of a
+// call is bounded: the buffer of the file (at most [MaxReadSize], up to twice that while it is
+// read) and 24 bytes for each of at most [MaxJournalLines] lines, 1.5 MiB. ReadJournal reaches no
+// writer, so it works after a stop.
 func ReadJournal(fsys FS, path string) (lines [][]byte, partial []byte, err error) {
 	data, err := ReadFile(fsys, path)
 	if err != nil {
 		return nil, nil, err
 	}
-	for {
+	n := bytes.Count(data, []byte{'\n'})
+	if n > MaxJournalLines {
+		return nil, nil, &Error{Step: StepRead, Path: path, Err: fmt.Errorf("%w: %d lines, more than %d", ErrTooMany, n, MaxJournalLines)}
+	}
+	if n > 0 {
+		lines = make([][]byte, 0, n)
+	}
+	for len(lines) < n {
 		i := bytes.IndexByte(data, '\n')
-		if i < 0 {
-			break
-		}
 		lines = append(lines, data[:i:i])
 		data = data[i+1:]
 	}

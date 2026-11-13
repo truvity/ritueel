@@ -86,6 +86,16 @@ type FS interface {
 // without end (a device, a file on a full-speed writer) from filling the memory.
 const MaxReadSize = 8 << 20
 
+// MaxJournalLines is the most lines that [ReadJournal] returns: 65,536. A journal of a ceremony has
+// a line for each event, a few dozen in all; 65,536 is a thousand times that. The limit is on the
+// number of lines and not only on the bytes, because each line costs a slice header of 24
+// bytes in the result: a file of [MaxReadSize] bytes that is nothing but line breaks would be
+// 8.4 million lines and over half a gigabyte. With the limit the worst case of a call is the buffer of
+// the file (at most [MaxReadSize], and up to twice that while the read grows it) and 24 bytes for
+// each of the [MaxJournalLines] lines, 1.5 MiB. A journal with more lines is an error that wraps
+// [ErrTooMany], and nothing of it is returned.
+const MaxJournalLines = 1 << 16
+
 // File is a file opened for writing by [FS.CreateExcl]. The file is empty when it is created,
 // and a Write adds to the end of it.
 type File interface {
@@ -221,6 +231,10 @@ var ErrNotRegular = errors.New("not a regular file")
 
 // ErrTooLarge is wrapped by the error of a read of a file longer than [MaxReadSize].
 var ErrTooLarge = errors.New("the file is longer than the limit of a read")
+
+// ErrTooMany is wrapped by the error of a read that finds more lines in a journal than
+// [MaxJournalLines].
+var ErrTooMany = errors.New("the file holds more lines than the limit of a read")
 
 // ErrNoRoot is returned by a [Writer] that has no [FS], that is by a Writer that was not made
 // by [Open] and whose FS field is nil: there is no root to work in, and the writer does not
