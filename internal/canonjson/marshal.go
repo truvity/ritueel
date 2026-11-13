@@ -3,7 +3,7 @@ package canonjson
 import (
 	"bytes"
 	"encoding/base64"
-	"fmt"
+	"errors"
 	"math"
 	"reflect"
 	"slices"
@@ -70,7 +70,7 @@ func Marshal(v any) ([]byte, error) {
 	}
 	out := w.out.Bytes()
 	if out[0] != '{' {
-		return nil, fmt.Errorf("%w: $: a value of type %T is not one JSON object", strictjson.ErrMalformed, v)
+		return nil, jsonset.Errorf(nil, "a value of type %T cannot be written: the top of a document is one JSON object, which a struct, a map, a Raw, or a pointer or an interface that holds one, writes", v)
 	}
 	// A Raw is placed at some level and nests below it; only the reader's own count tells whether
 	// the whole stays within strictjson.MaxDepth.
@@ -96,20 +96,19 @@ func (w *writer) refuseType(t reflect.Type, reason string) error {
 	return w.refuse("a value of type %s cannot be written: %s", t, reason)
 }
 
-// tooDeep and tooLong name no path: the path of a value that passes a limit says nothing, and
-// the text of the first is the reader's.
-func tooDeep() error {
-	return fmt.Errorf("%w: nesting deeper than %d levels", strictjson.ErrMalformed, strictjson.MaxDepth)
+// tooDeep and tooLong are the errors of the two limits, at the value where the writer passed one.
+func (w *writer) tooDeep() error {
+	return w.refuse("nesting deeper than %d levels", strictjson.MaxDepth)
 }
 
-func tooLong() error {
-	return fmt.Errorf("%w: the canonical form is longer than %d bytes", strictjson.ErrMalformed, strictjson.DefaultMaxBytes)
+func (w *writer) tooLong() error {
+	return w.refuse("the canonical form is longer than %d bytes", strictjson.DefaultMaxBytes)
 }
 
 // fits fails when n more bytes would pass the limit, so that a large string is not copied first.
 func (w *writer) fits(n int) error {
 	if w.out.Len()+n > strictjson.DefaultMaxBytes {
-		return tooLong()
+		return w.tooLong()
 	}
 	return nil
 }
@@ -124,7 +123,7 @@ func (w *writer) value(v reflect.Value, depth int) error {
 
 func (w *writer) write(v reflect.Value, depth int) error {
 	if !v.IsValid() {
-		return w.refuse("a nil value cannot be written (JSON null)")
+		return w.refuse("a value of type nil cannot be written: an untyped nil is JSON null")
 	}
 	t := v.Type()
 	if t == rawType {
@@ -189,7 +188,12 @@ func (w *writer) raw(v reflect.Value) error {
 		return w.refuse("an empty Raw cannot be written")
 	}
 	if err := canonicalizeInto(&w.out, doc); err != nil {
-		return err // Commit 4 (path)
+		// The document was read on its own, so its path starts at its own top: it goes on from here.
+		var at *jsonset.Error
+		if errors.As(err, &at) {
+			return jsonset.Errorf(append(slices.Clone(w.path), at.Path...), "%s", at.What)
+		}
+		return err
 	}
 	return nil
 }
@@ -197,7 +201,7 @@ func (w *writer) raw(v reflect.Value) error {
 // object writes a struct.
 func (w *writer) object(v reflect.Value, depth int) error {
 	if depth >= strictjson.MaxDepth {
-		return tooDeep()
+		return w.tooDeep()
 	}
 	w.out.WriteByte('{')
 	first := true
@@ -248,7 +252,7 @@ func (w *writer) mapObject(v reflect.Value, depth int) error {
 		return w.refuseType(v.Type(), "a nil map is JSON null")
 	}
 	if depth >= strictjson.MaxDepth {
-		return tooDeep()
+		return w.tooDeep()
 	}
 	keys := v.MapKeys()
 	slices.SortFunc(keys, func(a, b reflect.Value) int { return jsonset.CompareUTF16(a.String(), b.String()) })
@@ -288,7 +292,7 @@ func (w *writer) list(v reflect.Value, depth int) error {
 		return nil
 	}
 	if depth >= strictjson.MaxDepth {
-		return tooDeep()
+		return w.tooDeep()
 	}
 	w.out.WriteByte('[')
 	for i := range v.Len() {
