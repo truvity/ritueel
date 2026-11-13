@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"math"
 	"math/rand"
 	"reflect"
 	"sort"
@@ -566,7 +565,7 @@ func TestMarshalOfUnmarshalIsTheCanonicalDocument(t *testing.T) {
 		`{"any":{"a":[1,"x",true]},"blob":"aGk=","doc":{"k":"v"},"meta":{"a":"b"},"name":"n","pair":[1,2],"tags":["t"],"version":1}`,
 		`{"any":[],"blob":"","doc":{},"meta":{},"name":"","pair":[0,0],"tags":[],"version":0}`,
 		`{"any":"s","blob":"AA==","doc":{"a":{"b":{}}},"meta":{"":"","a":"b"},"name":"é","pair":[-128,127],"tags":["","a"],"version":-1}`,
-		`{"any":5,"blob":"+/+/","doc":{"z":[],"a":{}},"flag":true,"inner":{"any":false,"blob":"","doc":{},"meta":{},"name":"i","pair":[3,4],"tags":[],"version":2},"meta":{},"name":"o","opt":[1,2],"pair":[5,6],"tags":["x","y"],"version":9223372036854775807}`,
+		`{"any":5,"blob":"+/+/","doc":{"z":[],"a":{}},"flag":true,"inner":{"any":false,"blob":"","doc":{},"meta":{},"name":"i","pair":[3,4],"tags":[],"version":2},"meta":{},"name":"o","opt":[1,2],"pair":[5,6],"tags":["x","y"],"version":9007199254740991}`,
 	}
 	for i, in := range canonical {
 		if i == 3 {
@@ -684,14 +683,16 @@ func (g *generator) text() string {
 	return b.String()
 }
 
+// integer draws an integer inside the range of a record, -(2^53-1) to 2^53-1, with the edges and
+// small numbers among them. outsideInteger draws one outside it, on purpose.
 func (g *generator) integer() int64 {
 	switch g.r.Intn(4) {
 	case 0:
 		return int64(g.r.Intn(21) - 10)
 	case 1:
-		return g.r.Int63()
+		return g.r.Int63n(safeMax + 1) // up to 2^53-1, the edge of the range
 	case 2:
-		return -g.r.Int63()
+		return -g.r.Int63n(safeMax + 1)
 	default:
 		return int64(g.r.Intn(2000) - 1000)
 	}
@@ -783,11 +784,15 @@ func (g *generator) fill(v reflect.Value, omit bool) reflect.Value {
 		}
 		v.SetInt(n)
 	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
-		n := uint64(g.integer() & math.MaxInt64)
-		for v.OverflowUint(n) {
-			n /= 2
+		n := g.integer() // an unsigned kind takes the size of it
+		if n < 0 {
+			n = -n
 		}
-		v.SetUint(n)
+		u := uint64(n)
+		for v.OverflowUint(u) {
+			u /= 2
+		}
+		v.SetUint(u)
 	case reflect.String:
 		v.SetString(g.text())
 	case reflect.Pointer:

@@ -259,7 +259,7 @@ func TestTheRefusalOfAValueShowsItsTypeAsEscapes(t *testing.T) {
 		{"a nil slice", func(h *holder) { h.L = nil }, "malformed JSON: $.l: a value of type canonjson." + qesc(0x0421) + qesc(0x043F) + qesc(0x0438) + qesc(0x0441) + qesc(0x043E) + qesc(0x043A) + " cannot be written: a nil slice is JSON null"},
 		{"a nil pointer", func(h *holder) { h.P = nil }, "malformed JSON: $.p: a value of type *canonjson." + qesc(0xDC) + "nit cannot be written: a nil pointer is JSON null"},
 		{"a nil interface", func(h *holder) { h.I = nil }, "malformed JSON: $.i: a value of type canonjson." + qesc(0xDC) + "nterface0 cannot be written: a nil interface is JSON null"},
-		{"an integer above int64", func(h *holder) { h.U = 1 << 63 }, "malformed JSON: $.u: a value of type canonjson." + qesc(0xDC) + "nsigned cannot be written: an integer above 9223372036854775807, which ritueel's JSON does not hold"},
+		{"an integer above the range", func(h *holder) { h.U = 1 << 53 }, "malformed JSON: $.u: a value of type canonjson." + qesc(0xDC) + "nsigned cannot be written: " + outside("9007199254740992")},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -297,7 +297,7 @@ func TestTheIntegerThatDoesNotFitNamesItsTypeAsEscapes(t *testing.T) {
 	}
 	t.Run("the largest that fits is read", func(t *testing.T) {
 		var h holder
-		if err := strictjson.Unmarshal([]byte(`{"a":127,"b":255,"c":9223372036854775807}`), &h, strictjson.Options{}); err != nil || h.A != 127 || h.B != 255 || h.C != 1<<63-1 {
+		if err := strictjson.Unmarshal([]byte(`{"a":127,"b":255,"c":9007199254740991}`), &h, strictjson.Options{}); err != nil || h.A != 127 || h.B != 255 || h.C != Ünsigned(safeMax) {
 			t.Errorf("%+v, %v", h, err)
 		}
 	})
