@@ -1,6 +1,6 @@
 ---
-title: Two roots in practice
-description: Why a chain of trust runs two roots at once, what public CAs do, how clients behave with two certificates, how the cards alternate, and how keys move.
+title: Several keys, one root
+description: Why one root has more than one key, how public CAs and clients handle two roots or two certificates, how the cards alternate, and how keys move.
 sidebar:
   order: 11
 ---

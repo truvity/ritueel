@@ -64,4 +64,4 @@ A keyring package is also how a new OpenPGP key reaches people: the new package,
 
 ritueel does not sign online, issue leaf certificates for servers or people, or store secrets. Those belong to the system that holds an intermediate. The two meet at standard formats: a certificate request in, a certificate or a binding signature out. Neither depends on the other ([record 0001](../decisions/0001-what-ritueel-is.md)).
 
-Next: [two roots in practice](/learn/two-roots/).
+Next: [several keys, one root](/learn/two-roots/).

@@ -28,7 +28,7 @@ ritueel teaches first. These pages explain how to keep a root key safe, whatever
 
 ## Side by side
 
-- [Two roots in practice](/learn/two-roots/): why one root has more than one key, how the cards alternate, and how a key is added, moved, retired and revoked.
+- [Several keys, one root](/learn/two-roots/): why one root has more than one key, how the cards alternate, and how a key is added, moved, retired and revoked.
 - [The life of a root](/learn/life-of-a-root/): create, sign, record, back up, re-sign, rotate, revoke, recover, in order.
 - [Revoke](/learn/revoke/): lost or exposed a key? Make the certificate before you need it, and know what it reaches.
 

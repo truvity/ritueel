@@ -7,7 +7,7 @@ sidebar:
 
 *Not built yet. This is the page that [record 0006](../decisions/0006-bundle-history-and-trust-files.md) leaves for the format, cadence and rules; the code is [issue #30](https://github.com/truvity/ritueel/issues/30), in M4, and its [test vectors](/reference/crl/#test-vectors) match this page.*
 
-An intermediate certificate is revoked by a certificate revocation list (CRL), the standard way an X.509 client learns that a certificate it can still build a chain to must not be used (RFC 5280, section 5). Each root key signs a CRL of its own, because a CRL is per issuer, and a client that builds a path through either root key may ask for either list ([Two roots in practice](/learn/two-roots/#what-to-expect-from-clients)). A root key that has revoked nothing signs an empty one, so that the client always has a current list to check.
+An intermediate certificate is revoked by a certificate revocation list (CRL), the standard way an X.509 client learns that a certificate it can still build a chain to must not be used (RFC 5280, section 5). Each root key signs a CRL of its own, because a CRL is per issuer, and a client that builds a path through either root key may ask for either list ([Several keys, one root](/learn/two-roots/#what-to-expect-from-clients)). A root key that has revoked nothing signs an empty one, so that the client always has a current list to check.
 
 ritueel puts **no CRL distribution point in any certificate** it issues ([the profile](/reference/hand-off-contract/#what-is-issued): "Anything else: absent"). A relying party configures the file, the way a server is told which CRL file to load. The holder's pipeline publishes the files; the names a relying party fetches them under are the holder's choice.
 

@@ -10,7 +10,7 @@ A guide walks through one procedure step by step, with the result of each step a
 
 | Guide | When | Learn first |
 |---|---|---|
-| [Prepare a root card](/guides/prepare-a-root-card/) | Once for each new card, before anything else: its PIN, then the adoption that replaces its PUK and management key. | [Two roots in practice](/learn/two-roots/) |
+| [Prepare a root card](/guides/prepare-a-root-card/) | Once for each new card, before anything else: its PIN, then the adoption that replaces its PUK and management key. | [Several keys, one root](/learn/two-roots/) |
 | [Prepare the cloud root](/guides/prepare-the-cloud-root/) | Once, for a company on a cloud key service: the account, the admin role, the ceremony role and the break-glass principal. | [What a key store can prove](/learn/what-a-store-can-prove/) |
 | [Adopting the roots](/guides/root-adoption/) | Once, at the start: the real roots on two cards or in a cloud account, and the adoption drill that comes first. | [The life of a root](/learn/life-of-a-root/) |
 | [Re-sign every year](/guides/re-sign-yearly/) | Every year: the same keys, a new validity. | [Re-sign](/learn/re-sign/) |
