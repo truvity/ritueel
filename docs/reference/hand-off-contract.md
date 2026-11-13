@@ -88,7 +88,7 @@ A message is a set of files that share a **stem**, a name the requester chooses:
 
 The YubiKey makes two certificates on request. The first is the **attestation certificate of the key's slot**: it says that this key was made inside this token, and carries its policy. The second is the **token's own certificate** (slot F9), which signed the first. The list is in this order, leaf first. Certificates above them (the maker's intermediates) are not on the token. The certifier uses its own pinned copies, and it may use extra ones from the list as untrusted helpers. **A root in the file is never trusted.** Only the roots the certifier has pinned are.
 
-What the certifier reads from the slot certificate (checked on a test YubiKey 5, firmware 5.8.0, on 2026-10-31):
+What the certifier reads from the slot certificate:
 
 | Extension (`1.3.6.1.4.1.41482.3.…`) | Content |
 |---|---|
@@ -97,7 +97,7 @@ What the certifier reads from the slot certificate (checked on a test YubiKey 5,
 | `.8` | Two raw bytes: PIN policy (1 never, 2 once, 3 always), then touch policy (1 never, 2 always, 3 cached). |
 | `.9` | Form factor, one raw byte. |
 
-Firmware 5.7 and newer chain to the maker's *current* attestation root; older tokens chain to the earlier PIV root. The certifier pins whichever roots the holder lists, so a chain that ends in an unpinned root is refused. The certifier also needs the maker's **intermediates**: the list that piv-go v2.6.0 embeds lacks the intermediate that firmware 5.8 uses, and its built-in verification fails (measured 2026-11-01). The certifier's pinned set is therefore the maker's current root plus the full intermediate set in the attestation bundle, and a card whose intermediate is missing from it is refused until the attestation bundle is refreshed.
+Firmware 5.7 and newer chain to the maker's *current* attestation root; older tokens chain to the earlier PIV root. The certifier pins whichever roots the holder lists, so a chain that ends in an unpinned root is refused. The certifier also needs the maker's **intermediates**: the list that piv-go v2.6.0 embeds lacks the intermediate that firmware 5.8 uses, and its built-in verification fails. The certifier's pinned set is therefore the maker's current root plus the full intermediate set in the attestation bundle, and a card whose intermediate is missing from it is refused until the attestation bundle is refreshed.
 
 ### `openpgp-card`
 
@@ -105,7 +105,7 @@ Firmware 5.7 and newer chain to the maker's *current* attestation root; older to
 { "attestation": ["<key certificate, Base64 DER>", "<card certificate, Base64 DER>"] }
 ```
 
-The key lives in the OpenPGP applet of a card, and the card attests it with its own command (on a YubiKey, `80 FB 01 00`, after the user PIN is verified). The list holds the certificate the card returns for the key, then the card's own attestation certificate that signed it, leaf first. The certifier chains them to a pinned root of the maker through the maker's intermediates, from its own pinned copies, as for `piv`; on firmware 5.8 the chain passes through the intermediate "Yubico OPGP Attestation B2 1" (measured 2026-11-01). The extensions of the certificate are under the OID arc `1.3.6.1.4.1.41482.5`. Their encoding, and so the policy rules that read them, are not specified yet (see [Follow-ups](/reference/hand-off-contract/#follow-ups)); a certifier that cannot read them records the key as attested and does not enforce a PIN or touch policy. This store is the one a person's daily subkey uses, with the person's own card as the requester.
+The key lives in the OpenPGP applet of a card, and the card attests it with its own command (on a YubiKey, `80 FB 01 00`, after the user PIN is verified). The list holds the certificate the card returns for the key, then the card's own attestation certificate that signed it, leaf first. The certifier chains them to a pinned root of the maker through the maker's intermediates, from its own pinned copies, as for `piv`; on firmware 5.8 the chain passes through the intermediate "Yubico OPGP Attestation B2 1". The extensions of the certificate are under the OID arc `1.3.6.1.4.1.41482.5`. Their encoding, and so the policy rules that read them, are not specified yet (see [Follow-ups](/reference/hand-off-contract/#follow-ups)); a certifier that cannot read them records the key as attested and does not enforce a PIN or touch policy. This store is the one a person's daily subkey uses, with the person's own card as the requester.
 
 ### `aws-kms`
 
@@ -114,7 +114,7 @@ The key lives in the OpenPGP applet of a card, and the card attests it with its 
   "public_key": "<the public key, Base64 DER SubjectPublicKeyInfo>" }
 ```
 
-The ARN names the key together with its Region and account. A bare key identifier does not, and the same identifier can exist in two Regions. The public key is a claim. **The certifier does not trust it: it reads the key from KMS** with `DescribeKey`, `GetPublicKey` and `GetKeyPolicy`, and compares. A key in the certifier's own account is read with its own credentials. **A key in another account is read through a small read-only role inside that account**, because `GetKeyPolicy` does not work across accounts (AWS documentation, checked 2026-11-01). The requester creates the role. It allows `DescribeKey`, `GetPublicKey` and `GetKeyPolicy` on that key, nothing else (no `Sign`), and trusts the certifier's principal to assume it. The certifier assumes the role and reads the key and its policy as a same-account caller, so the single-principal rule below is checked the same way for both. The role's ARN is not taken from the request: the certifier's policy lists it for the requester, so a request cannot make the certifier assume a role of its choosing. **The certifier re-reads the public key itself. It never accepts a copy of the description, the policy or the key in the proof**, not even one marked unverified. A proof whose key the certifier cannot read is refused (`proof-invalid`). **KMS has no attestation.** The evidence for a KMS key is what the certifier reads: the key's description, its policy and the audit trail of its uses. Two further facts apply to an OpenPGP key in KMS (measured 2026-11-01). A P-384 key signs only 48-byte SHA-384 digests, which is the hash the contract uses everywhere. The OpenPGP creation time fixes the fingerprint and is not KMS's creation date, so the requester has to keep it (for example as a tag on the key) and put it in the subkey packet; the certifier takes it from the packet.
+The ARN names the key together with its Region and account. A bare key identifier does not, and the same identifier can exist in two Regions. The public key is a claim. **The certifier does not trust it: it reads the key from KMS** with `DescribeKey`, `GetPublicKey` and `GetKeyPolicy`, and compares. A key in the certifier's own account is read with its own credentials. **A key in another account is read through a small read-only role inside that account**, because `GetKeyPolicy` does not work across accounts. The requester creates the role. It allows `DescribeKey`, `GetPublicKey` and `GetKeyPolicy` on that key, nothing else (no `Sign`), and trusts the certifier's principal to assume it. The certifier assumes the role and reads the key and its policy as a same-account caller, so the single-principal rule below is checked the same way for both. The role's ARN is not taken from the request: the certifier's policy lists it for the requester, so a request cannot make the certifier assume a role of its choosing. **The certifier re-reads the public key itself. It never accepts a copy of the description, the policy or the key in the proof**, not even one marked unverified. A proof whose key the certifier cannot read is refused (`proof-invalid`). **KMS has no attestation.** The evidence for a KMS key is what the certifier reads: the key's description, its policy and the audit trail of its uses. Two further facts apply to an OpenPGP key in KMS. A P-384 key signs only 48-byte SHA-384 digests, which is the hash the contract uses everywhere. The OpenPGP creation time fixes the fingerprint and is not KMS's creation date, so the requester has to keep it (for example as a tag on the key) and put it in the subkey packet; the certifier takes it from the packet.
 
 ### `software`
 
@@ -138,7 +138,7 @@ No `evidence`. A software key proves nothing about where it lives. The certifier
 | Name constraints | Critical. At least one permitted subtree. (One permitted DNS zone is decided for M2. Planned: excluded DNS subtrees and excluded IP ranges.) |
 | Extended key usage | Optional. |
 
-Any other extension is refused with `policy`.
+Any other extension, and a known extension whose value is not the one in this table (a path length other than 0, an extension that is not critical, a key usage without `keyCertSign`), is refused with `policy`.
 
 The certifier **issues exactly what was asked, or refuses**. The request is the requester's statement of how much power it needs, and the policy of the certifier says how much it may have. A request for more than the policy allows is refused, not trimmed. Validity is the one thing the request does not carry: the certifier decides it.
 
@@ -169,8 +169,8 @@ In this order. The first check that fails gives the reason code; the others are 
 |---|---|
 | Firmware of a YubiKey | 5.7.0 or newer. |
 | PIN policy of the key | Once or always. Never is refused. |
-| KMS key policy | Every statement that allows `kms:Sign` (directly, or through `kms:*`) names the same single principal: a role or a user, not a wildcard and not the account root. |
-| Name constraints | Present, and every permitted subtree inside the subtrees the policy lists for the requester. |
+| KMS key policy | Every statement that allows `kms:Sign` (directly, or through `kms:*`) names the same single principal: a role or a user, not a wildcard and not the account root. A key with no such statement is refused. |
+| Name constraints | Present, and every permitted subtree inside the subtrees the policy lists for the requester. A URI host is inside only when it equals a listed host: `a.example.org` and `.example.org` are not inside `example.org`. A request with an excluded subtree, or with an IP range or an e-mail name as a permitted subtree, is refused. |
 | Validity | 13 calendar months. |
 
 Touch policy and form factor are read and recorded, and the reference policy does not enforce them.
@@ -254,7 +254,7 @@ Add the packets to the primary's certificate to get the updated certificate, wit
 cat test-primary-a.pgp pgp-piv-valid.bound.pgp > updated.pgp
 ```
 
-A verifier then needs nothing from ritueel. The first set of vectors was checked this way with `sqv` on 2026-11-01, and the set regenerated with the root list vectors with `gpgv` 2.4.8 the same day: a signature made by an accepted subkey verifies against `updated.pgp`, and one made by a subkey whose answer lacks the embedded back-signature, or was bound by another primary, does not. The authentication answer was imported into `gpg` 2.4.8 on 2026-11-02, with the primary key A: `gpg` lists the subkey with the capability `a`, and the answer bound for signing with `s`. The ritueel keyring package carries the same certificates ([issue #15](https://github.com/truvity/ritueel/issues/15)).
+A verifier then needs nothing from ritueel: a signature made by an accepted subkey verifies against `updated.pgp` with `sqv` and with `gpgv`, and one made by a subkey whose answer lacks the embedded back-signature, or was bound by another primary, does not. `gpg` lists the authentication subkey with the capability `a`, and the subkey bound for signing with `s`. The ritueel keyring package carries the same certificates ([issue #15](https://github.com/truvity/ritueel/issues/15)).
 
 ### What the requester checks before it installs
 
@@ -268,7 +268,7 @@ A verifier then needs nothing from ritueel. The first set of vectors was checked
 
 ### Issuer key ID
 
-Every version 4 signature ritueel writes, and every back-signature it accepts, carries **both** the Issuer Fingerprint subpacket (type 33, hashed) and the Issuer Key ID subpacket (type 16, unhashed). go-crypto v1.5.2 writes a version 4 signature with the fingerprint only, and `gpg` 2.2.27 rejects a certificate made of such signatures on import, so a signature without the key ID is not safe to ship (measured 2026-11-01). The rule is in [record 0009](../decisions/0009-release-keys-and-the-keyring.md) too.
+Every version 4 signature ritueel writes, and every back-signature it accepts, carries **both** the Issuer Fingerprint subpacket (type 33, hashed) and the Issuer Key ID subpacket (type 16, unhashed). go-crypto v1.5.2 writes a version 4 signature with the fingerprint only, and `gpg` 2.2.27 rejects a certificate made of such signatures on import, so a signature without the key ID is not safe to ship. The rule is in [record 0009](../decisions/0009-release-keys-and-the-keyring.md) too.
 
 ## SSH CA key
 
@@ -372,7 +372,7 @@ The vectors are in [`testdata/hand-off/v1/`](https://github.com/truvity/ritueel/
 | SSH CA key answers | A key on the list, a list signed by the other key. | A key not on the list, listed with the other use, a list older than `trust_sequence`. |
 | X.509 floor answers | A certificate from the installed foreign CA, with SHA-1 key identifiers, which the requester does not check. | One without the requested extensions (`profile`), one from a CA that is not installed (`issuer`), one valid for two years (`validity`). |
 
-A request of type `ssh-ca-key` is `<case>.sshca.pub` with `<case>.sshca.sig`, and `ssh-keygen -Y check-novalidate -n ssh-ca-key@ritueel.id -s <case>.sshca.sig < <case>.sshca.pub` accepts every one except the two that are refused for their signature (OpenSSH 10.2p1, checked 2026-11-01).
+A request of type `ssh-ca-key` is `<case>.sshca.pub` with `<case>.sshca.sig`, and `ssh-keygen -Y check-novalidate -n ssh-ca-key@ritueel.id -s <case>.sshca.sig < <case>.sshca.pub` accepts every one except the two that are refused for their signature.
 
 CI checks that the manifest names every file of the set, that every file it names is in the repository, that the digests in the proofs and results match their files, that an answer of type `ssh-ca-key` names a list of the SSH CA key list vectors, and that an installed floor answer holds its request's key and is signed by a floor anchor (`just check-vectors`).
 
@@ -417,5 +417,5 @@ The choices that had a real alternative, with the reason each alternative lost.
 | OpenSSH `PROTOCOL.sshsig` | The SSH signature format of the proof of possession of an SSH CA key. |
 | OpenSSH `PROTOCOL.certkeys` | What an SSH CA key signs: user and host certificates. |
 | [RFC 4648](https://datatracker.ietf.org/doc/html/rfc4648) | Base64. |
-| The maker's PIV attestation documentation | The extension arc `1.3.6.1.4.1.41482.3` and the attestation chain. The encodings above were measured on 2026-10-31. |
+| The maker's PIV attestation documentation | The extension arc `1.3.6.1.4.1.41482.3` and the attestation chain. |
 | AWS KMS API | `DescribeKey`, `GetPublicKey`, `GetKeyPolicy`, `Sign`. |
