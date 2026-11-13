@@ -359,6 +359,52 @@ expect('a CRL set that matches its manifest', 'vectors', crl, 'pass', { has: ['v
 expect('a CRL whose number is not the manifest\'s', 'vectors', edited(crl, 'manifest.json', (t) => t.replace('"number": 7,', '"number": 9,')), 'fail', { has: ['the CRL number is 7, not 9'] });
 expect('a revocation case the CRL does not bear out', 'vectors', edited(crl, 'manifest.json', (t) => t.replace('"expect": "revoked"', '"expect": "good"')), 'fail', { has: ['lists ca-a-1, but the case expects good'] });
 
+// ---- shared terms: the file shared with sluis, its pinned copy and the pages its links name
+const termsReal = readFileSync(join(repo, 'docs', 'shared-terms.yaml'), 'utf8');
+const termsRealPin = readFileSync(join(repo, 'third_party', 'sluis', 'PIN'), 'utf8');
+const termsPublished = readFileSync(join(repo, 'site', 'published.txt'), 'utf8');
+const sha = (t) => createHash('sha256').update(t).digest('hex');
+const termsFiles = ({ mine = termsReal, copy = mine, pinned = copy, commit = 'pending', pin } = {}) => ({
+  'docs/shared-terms.yaml': mine,
+  'third_party/sluis/shared-terms.yaml': copy,
+  'third_party/sluis/PIN': pin ?? `source: truvity/sluis\ncommit: ${commit}\nsha256: ${sha(pinned)}\n`,
+  'site/published.txt': termsPublished,
+});
+// a changed copy that is also pinned, so that only the shape or the link is judged
+const termsShape = (from, to) => {
+  const text = termsReal.replace(from, to);
+  if (text === termsReal) throw new Error(`selftest: ${JSON.stringify(from)} is not in docs/shared-terms.yaml`);
+  return termsFiles({ mine: text });
+};
+const TERM_FIRST = '  - term: root key\n';
+expect('the real shared file, its pinned copy and its pin', 'shared-terms', termsFiles(), 'pass', { has: ['shared terms, no errors'] });
+expect('the pin as committed', 'shared-terms', { ...termsFiles(), 'third_party/sluis/PIN': termsRealPin }, 'pass');
+expect('a commit id in the pin', 'shared-terms', termsFiles({ commit: 'a'.repeat(40) }), 'pass');
+expect('one byte of the file changed, the copy not', 'shared-terms', termsFiles({ mine: termsReal.replace('One key of a root.', 'One kay of a root.'), copy: termsReal, pinned: termsReal }), 'fail', { has: ['differs from the pinned copy', 'first difference at line 32'] });
+expect('one byte of the copy changed, the pin not', 'shared-terms', termsFiles({ mine: termsReal, copy: `${termsReal}\n`, pinned: termsReal }), 'fail', { has: ['differs from the pinned copy', 'pins'] });
+expect('both files changed, the pin not', 'shared-terms', termsFiles({ mine: `${termsReal}# x\n`, copy: `${termsReal}# x\n`, pinned: termsReal }), 'fail', { has: ['its sha256 is', 'pins'] });
+expect('a wrong sha256 in the pin', 'shared-terms', termsFiles({ pin: `source: truvity/sluis\ncommit: pending\nsha256: ${'0'.repeat(64)}\n` }), 'fail', { has: ['its sha256 is', 'pins'] });
+expect('a commit that is not a commit id', 'shared-terms', termsFiles({ commit: 'main' }), 'fail', { has: ['commit must be'] });
+expect('a pin that names this repository', 'shared-terms', termsFiles({ pin: termsRealPin.replace('truvity/sluis', 'truvity/ritueel') }), 'fail', { has: ['source must be truvity/sluis'] });
+expect('a pin with a fourth key', 'shared-terms', termsFiles({ pin: `${termsRealPin}branch: main\n` }), 'fail', { has: ['unknown key branch'] });
+expect('a pin without its sha256', 'shared-terms', termsFiles({ pin: 'source: truvity/sluis\ncommit: pending\n' }), 'fail', { has: ['sha256 is missing'] });
+expect('no pin', 'shared-terms', { ...termsFiles(), 'third_party/sluis/PIN': undefined }, 'fail', { has: ['PIN is missing'] });
+expect('no pinned copy', 'shared-terms', { ...termsFiles(), 'third_party/sluis/shared-terms.yaml': undefined }, 'fail', { has: ['shared-terms.yaml is missing'] });
+expect('a term listed twice', 'shared-terms', termsFiles({ mine: `${termsReal}\n  - term: root key\n    definition: "Again."\n    owner: ritueel\n    status: decided\n` }), 'fail', { has: ['the term is listed twice'] });
+expect('an owner that is neither product', 'shared-terms', termsShape('owner: sluis', 'owner: acme'), 'fail', { has: ['owner must be one of'] });
+expect('a status that is neither decided nor proposed', 'shared-terms', termsShape('status: proposed', 'status: maybe'), 'fail', { has: ['status must be one of'] });
+expect('a field that is not known', 'shared-terms', termsShape(TERM_FIRST, `${TERM_FIRST}    mood: calm\n`), 'fail', { has: ['unknown field mood'] });
+expect('a not that is a string, not a list', 'shared-terms', termsShape('    not:\n      - "a root, which is built from one or more root keys"\n', '    not: "a root"\n'), 'fail', { has: ['not must be a non-empty list of strings'] });
+expect('a see that is a repository path', 'shared-terms', termsShape('see: ["https://ritueel.id/learn/revoke/"]', 'see: ["docs/learn/revoke.md"]'), 'fail', { has: ['must be an absolute URL', 'not a repository path'] });
+expect('a see on a site that is not one of the two', 'shared-terms', termsShape('see: ["https://ritueel.id/learn/revoke/"]', 'see: ["https://example.com/learn/revoke/"]'), 'fail', { has: ['must be an absolute URL'] });
+expect('a see that names a page the site does not publish', 'shared-terms', termsShape('https://ritueel.id/learn/revoke/', 'https://ritueel.id/learn/no-such-page/'), 'fail', { has: ['is not a page that site/published.txt publishes'] });
+expect('a see to a page that is a record, not published', 'shared-terms', termsShape('https://ritueel.id/learn/revoke/', 'https://ritueel.id/decisions/0005-a-ceremony/'), 'fail', { has: ['is not a page that site/published.txt publishes'] });
+expect('a published page without the trailing slash', 'shared-terms', termsShape('https://ritueel.id/learn/revoke/', 'https://ritueel.id/learn/revoke'), 'fail', { has: ['trailing slash'] });
+expect('a published page with an anchor', 'shared-terms', termsShape('https://ritueel.id/learn/revoke/', 'https://ritueel.id/learn/revoke/#anything'), 'pass');
+expect('a page of sluis.id is not looked up here', 'shared-terms', termsShape('https://sluis.id/decisions/0027-the-console/', 'https://sluis.id/decisions/9999-anything/'), 'pass');
+expect('a schema that is not 1', 'shared-terms', termsShape('schema: 1', 'schema: 2'), 'fail', { has: ['schema must be 1'] });
+expect('a line the reader does not know', 'shared-terms', termsShape(TERM_FIRST, `${TERM_FIRST}    definition: [a, b]\n`), 'fail', { has: ['double-quoted strings only'] });
+
 rmSync(scratch, { recursive: true, force: true });
 if (failures) {
   console.error(`selftest: ${failures} of ${cases} cases failed`);

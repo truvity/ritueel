@@ -125,6 +125,12 @@ check-mdx-pages:
 check-agent-links:
     tools/checks/agent-links.mjs
 
+# The glossary words that ritueel shares with sluis: docs/shared-terms.yaml equals the pinned
+# copy third_party/sluis/shared-terms.yaml byte for byte, the pin's sha256 matches, the file's shape
+# holds, and every page that a ritueel word points to is published. Offline.
+check-shared-terms:
+    tools/checks/shared-terms.mjs
+
 # The checks above against scratch repositories that must pass or must fail.
 check-selftest:
     tools/checks/selftest.mjs
@@ -193,7 +199,7 @@ proto-check: proto-gen
     @test -z "$(git ls-files --others --exclude-standard -- ui/src/gen proto)" || { echo "proto-check: untracked generated files" >&2; exit 1; }
 
 # Every repository rule.
-check-rules: check-selftest check-decisions check-record-refs check-public check-yaml-ext check-mdx-pages check-agent-links check-vectors
+check-rules: check-selftest check-decisions check-record-refs check-public check-yaml-ext check-mdx-pages check-agent-links check-vectors check-shared-terms
 
 # The Go code (cmd/, internal/, tools/). Run the recipes inside the devbox shell like the rest.
 
