@@ -8,7 +8,7 @@
 1. The OpenPGP primaries of the release keys are the keys of the OpenPGP root: one primary for each key of the root, on a root card or in the cloud. Each is certify-only, version 4, ECDSA P-384 with SHA-384, valid about three years and extended at each use.
 2. Every release primary carries the project's release address and no person's name. No personal key certifies a primary.
 3. Version 6 keys come later, once the verifiers people use accept them.
-4. A company root's user ID carries a release-root name and a security contact address. A user ID can be added and revoked; only published copies cannot be withdrawn.
+4. A company root's user ID carries a release-root name and the release address. A user ID can be added and revoked; only published copies cannot be withdrawn.
 5. The release primary's user ID, the release address, is changed the same way as a person's: adding and retiring a user ID of an OpenPGP primary is a ceremony ([record 0008](0008-a-persons-own-key.md), rule 16). The primary stays, and so does the trust in it.
 
 6. The holder of an intermediate makes a signing-only subkey where it lives. The subkey request back-signs for every active primary, so any active primary can bind it.
