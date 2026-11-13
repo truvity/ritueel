@@ -276,7 +276,7 @@ An SSH CA key signs SSH certificates, for users or for hosts. It enters by a thi
 
 ### The request
 
-`<stem>.sshca.pub` is the public key as OpenSSH writes it: one line, `ecdsa-sha2-nistp384 <Base64>`, a newline, and nothing else (no comment, no options). Version 1 accepts no other key type. The key is ECDSA on P-384 (RFC 5656), because a PIV slot and a KMS key sign with it and neither signs with Ed25519; it is also the algorithm of the rest of the contract.
+`<stem>.sshca.pub` is the public key as OpenSSH writes it: one line, `ecdsa-sha2-nistp384 <Base64>`, a newline, and nothing else (no comment, no options). Version 1 accepts no other key type. The key is ECDSA on P-384 (RFC 5656), the algorithm of the rest of the contract.
 
 `<stem>.sshca.sig` is the proof of possession: an SSH signature (SSHSIG, OpenSSH's `PROTOCOL.sshsig`) in its armoured form, made by that key over the bytes of `<stem>.sshca.pub`, in the namespace `ssh-ca-key@ritueel.id`, with the hash algorithm `sha512` and an empty reserved string. For a key `ssh-keygen` can reach, it is what `ssh-keygen -Y sign -n ssh-ca-key@ritueel.id -f KEY` writes. For a key in a PIV slot or in KMS the requester builds the same blob and has the device sign its digest, which is the SHA-384 the device signs for every other type. The namespace keeps a signature made for another purpose from being taken for this one.
 
