@@ -12,7 +12,7 @@ Numbering starts at `0001`. `0000` is the [template](0000-template.md).
 
 ## Files
 
-A record is `NNNN-short-title-in-kebab-case.md`. Numbers are taken in the order pull requests open. After the first release a number is never reused, even for a rejected record.
+A record is `NNNN-short-title-in-kebab-case.md`. Numbers are taken in the order pull requests open. After the first release a number is never reused, even for a rejected record. A record has no history section; earlier versions are in the git history.
 
 ## Format
 
@@ -25,7 +25,6 @@ Every record has these parts, in this order:
 - **What it costs.** What gets harder, what must follow. Include costs.
 - **Roads not taken.** One line for each other option that was weighed: what it would have given, what it costs, and why it lost. This part is required.
 - **Not yet proven or only proposed.** `None.`, or bullets that start `**Not yet proven.**` (decided, waits for a test on a card or an account) or `**Proposed.**` (not decided), each ending in the issue that carries it. A point whose answer could change a numbered sentence is moved here.
-- **Replaces.** The records of the first eighteen that flow into this one, or `Nothing; new in the rewrite.`
 
 ## Rules
 
