@@ -56,7 +56,7 @@ Decided in [0006](decisions/0006-bundle-history-and-trust-files.md).
 ## Where a root lives
 
 - A key is born in its key store and never leaves it. The default algorithm is P-384.
-- Backup means two independent cards or a replica. A copyable key is replaced within three years, and a root key on a card or in the cloud within 15.
+- Backup means two independent cards or a replica. A copyable key is replaced within three years, and a root key on a card or in the cloud within 15 years.
 - The accepted limit: whoever holds a root card and its PIN, or the cloud role, can sign until that root key is revoked.
 
 Decided in [0002](decisions/0002-where-a-key-lives.md).
