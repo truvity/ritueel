@@ -84,7 +84,10 @@ type Writer struct {
 	journals map[*journalState]struct{} // the journals that are open
 }
 
-// NewFile is one file of a set written by [Writer.WriteSet]. Name is one plain name.
+// NewFile is one file of a set written by [Writer.WriteSet]. Name is one plain name. Perm is the
+// permission bits of the file, less the umask, and follows the rule of [Writer.WriteFile]: no bit
+// beyond the permission bits, and the owner's read and write bits set (a Perm that is left at 0 is
+// refused).
 type NewFile struct {
 	Name string
 	Data []byte
@@ -245,7 +248,9 @@ func (w *Writer) tempName() (string, error) {
 // fs.ErrExist (Step rename), the file at path is unchanged and the temporary file is left.
 // A cut before the rename leaves nothing at path; a cut after it leaves the whole content.
 // The folder of path is walked once, and the create, the rename and the flush work through
-// that one handle.
+// that one handle. perm is the permission bits of the new file, less the umask, and must have no
+// bit beyond the permission bits and both the owner's read and write bits (0o600): a file that
+// its owner cannot read back is refused with [ErrInvalid], as is a mode of 0.
 func (w *Writer) WriteFile(path string, data []byte, perm fs.FileMode) error {
 	w.mu.Lock()
 	defer w.mu.Unlock()
@@ -256,7 +261,7 @@ func (w *Writer) WriteFile(path string, data []byte, perm fs.FileMode) error {
 	if err != nil {
 		return err
 	}
-	if err := checkPerm(perm); err != nil {
+	if err := checkPerm(perm, false); err != nil {
 		return err
 	}
 	dir, name := elems[:len(elems)-1], elems[len(elems)-1]
@@ -345,7 +350,9 @@ func (w *Writer) WriteSet(finalDir string, files []NewFile) error {
 
 // Mkdir makes a folder at its final name (a ceremony folder) and flushes the parent. The
 // folder is empty and complete at once, so it needs no temporary name. It fails when the
-// folder exists.
+// folder exists. perm is the permission bits of the new folder, less the umask, and must have no
+// bit beyond the permission bits and the owner's read, write and search bits (0o700): a folder
+// that its owner cannot list, write into and enter is refused with [ErrInvalid], as is a mode of 0.
 func (w *Writer) Mkdir(path string, perm fs.FileMode) error {
 	w.mu.Lock()
 	defer w.mu.Unlock()
@@ -356,7 +363,7 @@ func (w *Writer) Mkdir(path string, perm fs.FileMode) error {
 	if err != nil {
 		return err
 	}
-	if err := checkPerm(perm); err != nil {
+	if err := checkPerm(perm, true); err != nil {
 		return err
 	}
 	parent, name := elems[:len(elems)-1], elems[len(elems)-1]
@@ -623,9 +630,20 @@ func parsePath(path string, forWrite bool) ([]string, error) {
 	return elems, nil
 }
 
-func checkPerm(perm fs.FileMode) error {
+// checkPerm refuses a mode with a bit beyond the permission bits, and a mode with which the owner
+// cannot use what is made: a file needs the owner's read and write bits (0o600), a folder the
+// owner's read, write and search bits (0o700). The writer made the file or the folder, so the
+// owner is its own user; a mode of 0 (an unset Perm) would make a file that nobody can read back.
+func checkPerm(perm fs.FileMode, folder bool) error {
 	if perm&^fs.ModePerm != 0 {
 		return fmt.Errorf("%w: mode %v has bits beyond the permission bits", ErrInvalid, perm)
+	}
+	need, what := fs.FileMode(0o600), "a file needs the owner's read and write bits"
+	if folder {
+		need, what = 0o700, "a folder needs the owner's read, write and search bits"
+	}
+	if perm&need != need {
+		return fmt.Errorf("%w: mode %v: %s", ErrInvalid, perm, what)
 	}
 	return nil
 }
@@ -647,7 +665,7 @@ func checkFiles(files []NewFile) error {
 			return fmt.Errorf("%w: file name %+q is given twice", ErrInvalid, f.Name)
 		}
 		seen[key] = true
-		if err := checkPerm(f.Perm); err != nil {
+		if err := checkPerm(f.Perm, false); err != nil {
 			return err
 		}
 	}
