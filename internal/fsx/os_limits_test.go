@@ -47,13 +47,14 @@ func TestOSReadJournalAtTheLimitOfLines(t *testing.T) {
 func TestOSReadDirAtTheLimitOfNames(t *testing.T) {
 	wd := newWorld(t)
 	wd.mkdir("d")
-	if err := os.WriteFile(filepath.Join(wd.root, "d", "n000000"), nil, 0o600); err != nil {
-		t.Fatal(err)
-	}
-	for i := 1; i < fsx.MaxDirEntries; i++ {
-		if err := os.Link(filepath.Join(wd.root, "d", "n000000"), filepath.Join(wd.root, "d", fmt.Sprintf("n%06d", i))); err != nil {
-			t.Skipf("cannot make %d names here: %v", fsx.MaxDirEntries, err)
+	// empty files, one for each name (a hard link would do, but a file system takes only about
+	// 65,000 links to one file)
+	for i := 0; i < fsx.MaxDirEntries; i++ {
+		f, err := os.OpenFile(filepath.Join(wd.root, "d", fmt.Sprintf("n%06d", i)), os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0o600)
+		if err != nil {
+			t.Fatalf("cannot make the name %d: %v", i, err)
 		}
+		_ = f.Close()
 	}
 	root := openFSIn(t, wd.root)
 	ents, err := fsx.ReadDir(root, "d")
@@ -65,8 +66,8 @@ func TestOSReadDirAtTheLimitOfNames(t *testing.T) {
 			t.Fatalf("entry %d is %s: the order is by name", i, e.Name())
 		}
 	}
-	if err := os.Link(filepath.Join(wd.root, "d", "n000000"), filepath.Join(wd.root, "d", "n999999")); err != nil {
-		t.Skipf("cannot make one more name: %v", err)
+	if err := os.WriteFile(filepath.Join(wd.root, "d", "n999999"), nil, 0o600); err != nil {
+		t.Fatalf("cannot make one more name: %v", err)
 	}
 	ents, err = fsx.ReadDir(root, "d")
 	want := fmt.Sprintf(`fsx: read "d": %s: more than 65536 names`, textTooMany)
