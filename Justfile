@@ -241,20 +241,28 @@ go-test:
     go test {{ go_packages }}
 
 # The release build, as the release makes it: static, no cgo, paths trimmed, the version and the commit
-# stamped in (VERSION and COMMIT in the environment override git's answer). Then: the file is a static
-# Linux executable (tools/elfcheck), `version` exits 0, and no arguments exit 2 (a usage error).
+# stamped in (VERSION and COMMIT in the environment override git's answer). Both must be plain
+# (letters, digits and . _ + -), because they go into one quoted -ldflags string. Then: the file is a
+# static Linux executable (tools/elfcheck), `version` prints exactly what was stamped (so a renamed
+# symbol or a broken -X fails here), and no arguments exit 2 (a usage error).
 go-build:
     #!/usr/bin/env bash
     set -euo pipefail
     version="${VERSION:-$(git describe --tags --match 'v[0-9]*' --dirty --always 2>/dev/null || echo dev)}"
     commit="${COMMIT:-$(git rev-parse HEAD 2>/dev/null || echo unknown)}"
+    for pair in "VERSION=${version}" "COMMIT=${commit}"; do
+      [[ "${pair#*=}" =~ ^[A-Za-z0-9._+-]+$ ]] || { echo "go-build: ${pair%%=*} must match [A-Za-z0-9._+-]+, got '${pair#*=}'" >&2; exit 1; }
+    done
     pkg=ritueel.id/ritueel/internal/buildinfo
     mkdir -p bin
     CGO_ENABLED=0 go build -trimpath \
       -ldflags "-s -w -X ${pkg}.version=${version} -X ${pkg}.commit=${commit}" \
       -o bin/ritueel ./cmd/ritueel
     go run ./tools/elfcheck bin/ritueel
-    bin/ritueel version
+    got=$(bin/ritueel version)
+    want="ritueel ${version} (commit ${commit})"
+    echo "$got"
+    [ "$got" = "$want" ] || { echo "go-build: 'ritueel version' printed '$got', wanted '$want'" >&2; exit 1; }
     rc=0; bin/ritueel > /dev/null 2>&1 || rc=$?
     [ "$rc" -eq 2 ] || { echo "go-build: no arguments should exit 2, got $rc" >&2; exit 1; }
 
