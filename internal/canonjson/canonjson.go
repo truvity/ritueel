@@ -12,8 +12,10 @@
 // other), maps with a string key, slices, arrays, strings, bools, integers, slices of bytes (as
 // standard Base64) and pointers and interfaces to these, and Raw, a document that is already JSON.
 // It refuses floats, nil, embedded fields, types with a MarshalJSON or MarshalText method, and
-// the rest, as the doc of Marshal lists. For every value that Marshal accepts and the standard
-// json.Marshal writes, Marshal(x) equals Canonicalize(json.Marshal(x)); the tests check this.
+// the rest, as the doc of Marshal lists. A type is accepted or refused as a type; the value
+// decides only the size, the nesting and the validity of its text. For every value that Marshal
+// accepts and the standard json.Marshal writes, Marshal(x) equals
+// Canonicalize(json.Marshal(x)); the tests check this.
 //
 // ritueel's JSON holds integers only, so this package does not write a number with a fraction or
 // an exponent, and it reads input under the rules of package strictjson (no null, no repeated
