@@ -318,11 +318,11 @@ func windowsDevice(name string) bool {
 
 // nameProblem says why one name (one element of a path, or the name of a file of a set) cannot
 // be used on the stick (exFAT) and on the desktop systems that read it, or is held there under
-// another name; it returns "" when the name is fine. The reasons: it is empty (the callers
-// refuse an empty name before they call it, so this is a guard that no caller reaches); it is not
-// valid UTF-8; it has a control code or a character of exFAT's list of invalid characters (the
-// colon is on that list, so a drive, "C:x", is refused by it and needs no rule of its own); it
-// has a character that is not printable; it is longer than 255 bytes (see [maxNameBytes]); it
+// another name; it returns "" when the name is fine. The reasons: it is empty (checkFiles
+// relies on this answer for the name of a file of a set; checkPath refuses an empty element
+// itself); it is not valid UTF-8; it has a control code or a character of exFAT's list of
+// invalid characters (the colon is on that list, so a drive, "C:x", is refused by it and needs
+// no rule of its own); it has a character that is not printable; it is longer than 255 bytes (see [maxNameBytes]); it
 // is a device name of Windows, see [windowsDevice]; it ends with a dot or a space (Windows
 // removes both, and the Linux exFAT driver removes trailing dots unless the mount option
 // keep_last_dots is given, so the name on the stick would not be the name asked for).
@@ -442,7 +442,7 @@ func checkFiles(files []NewFile) error {
 	seen := make(map[string]bool, len(files))
 	for _, f := range files {
 		// "." and ".." end with a dot, but "not one plain name" says more than "ends with a dot".
-		if f.Name == "" || f.Name == "." || f.Name == ".." || hasTempPrefix(f.Name) {
+		if f.Name == "." || f.Name == ".." || hasTempPrefix(f.Name) {
 			return fmt.Errorf("%w: file name %q is not one plain name", ErrInvalid, f.Name)
 		}
 		if why := nameProblem(f.Name); why != "" { // a separator in the name is on exFAT's list
