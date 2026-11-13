@@ -4,6 +4,7 @@ package cli
 
 import (
 	"errors"
+	"fmt"
 	"strings"
 )
 
@@ -48,6 +49,46 @@ const (
 	// OutcomeFailed matches the exit code 1.
 	OutcomeFailed Outcome = "failed"
 )
+
+// outcomeOf is the one table that ties an exit code to its outcome, the "matching the exit code"
+// of the member "outcome" in docs/reference/cli.md. The page names the outcomes (done, refused,
+// not-confirmed, usage, failed) and the meaning of each code: 0 success (done), 1 failure
+// (failed), 2 usage error (usage), 3 refused by a check or the policy and 4 refused by the card
+// or the backend (refused), 5 not confirmed (not-confirmed). It does not name the outcome of
+// 10, 11 and 12, which only status returns; the one outcome left that is not a failure, a refusal
+// or a misuse is done, and the table says so. ok is false for a code that is not in the table.
+func outcomeOf(code ExitCode) (Outcome, bool) {
+	switch code {
+	case ExitOK, ExitNotice, ExitAlert, ExitCritical:
+		return OutcomeDone, true
+	case ExitFailure:
+		return OutcomeFailed, true
+	case ExitUsage:
+		return OutcomeUsage, true
+	case ExitRefused, ExitBackend:
+		return OutcomeRefused, true
+	case ExitNotConfirmed:
+		return OutcomeNotConfirmed, true
+	default:
+		return "", false
+	}
+}
+
+// agreed returns the outcome of an exit code and makes it impossible for the two to disagree:
+// the outcome is derived from the code, here and nowhere else. A given outcome that is not the
+// one of the code, or a code that is not in the table, is a mistake of the programmer, and
+// agreed panics with a text that says which; a run turns it into exit code 1. An empty given
+// outcome means "the one of the code".
+func agreed(code ExitCode, given Outcome) Outcome {
+	want, ok := outcomeOf(code)
+	if !ok {
+		panic(fmt.Sprintf("cli: the exit code %d is not in the table of docs/reference/cli.md", int(code)))
+	}
+	if given != "" && given != want {
+		panic(fmt.Sprintf("cli: the exit code %d goes with the outcome %q, and the command gave %q", int(code), string(want), string(given)))
+	}
+	return want
+}
 
 // Coded is an error that carries its exit code. A command returns one to end with that code;
 // any other error ends with ExitFailure.
@@ -134,15 +175,16 @@ func (NotConfirmed) Outcome() Outcome { return OutcomeNotConfirmed }
 func (NotConfirmed) ReasonCodes() []string { return nil }
 
 // ExitFor maps the error a command returned to its exit code and outcome. No error is
-// ExitOK and OutcomeDone; an error that carries a code (Coded) gives that code; any other
-// error is ExitFailure and OutcomeFailed.
+// ExitOK and OutcomeDone; an error that carries a code (Coded) gives that code and the outcome
+// of that code (it panics when the error's own outcome disagrees, see agreed); any other error is
+// ExitFailure and OutcomeFailed.
 func ExitFor(err error) (ExitCode, Outcome) {
 	if err == nil {
 		return ExitOK, OutcomeDone
 	}
 	var c Coded
 	if errors.As(err, &c) {
-		return c.ExitCode(), c.Outcome()
+		return c.ExitCode(), agreed(c.ExitCode(), c.Outcome())
 	}
 	return ExitFailure, OutcomeFailed
 }
