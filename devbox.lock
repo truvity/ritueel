@@ -91,6 +91,120 @@
       "last_modified": "2026-11-06T15:06:19Z",
       "resolved": "github:NixOS/nixpkgs/4fe25e12eb9f4c744966dd3de5a05246cf098601?lastModified=1793977579"
     },
+    "go@1.27.0": {
+      "last_modified": "2026-09-04T02:50:00Z",
+      "resolved": "github:NixOS/nixpkgs/e5ead30d0824debba629dcf0720abeddee57b7d6#go_1_27",
+      "source": "devbox-search",
+      "version": "1.27.0",
+      "systems": {
+        "aarch64-darwin": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/lz3qw52rpazqga73xgsqlj4qz1lgs4hg-go-1.27.0",
+              "default": true
+            }
+          ],
+          "store_path": "/nix/store/lz3qw52rpazqga73xgsqlj4qz1lgs4hg-go-1.27.0"
+        },
+        "aarch64-linux": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/zqjvg5805xkf6zsd8nrdvgbv58yw2phr-go-1.27.0",
+              "default": true
+            }
+          ],
+          "store_path": "/nix/store/zqjvg5805xkf6zsd8nrdvgbv58yw2phr-go-1.27.0"
+        },
+        "x86_64-linux": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/fibbp1k5gcpaxcin4dzk70yd056rfjhg-go-1.27.0",
+              "default": true
+            }
+          ],
+          "store_path": "/nix/store/fibbp1k5gcpaxcin4dzk70yd056rfjhg-go-1.27.0"
+        }
+      }
+    },
+    "golangci-lint@2.13.1": {
+      "last_modified": "2026-08-29T00:50:12Z",
+      "resolved": "github:NixOS/nixpkgs/e8be7818e19ada32105a8af937a6a473b38167ca#golangci-lint",
+      "source": "devbox-search",
+      "version": "2.13.1",
+      "systems": {
+        "aarch64-darwin": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/vyl94dsc8a2vfpx0h9hs3ls3w9hfcyfa-golangci-lint-2.13.1",
+              "default": true
+            }
+          ],
+          "store_path": "/nix/store/vyl94dsc8a2vfpx0h9hs3ls3w9hfcyfa-golangci-lint-2.13.1"
+        },
+        "aarch64-linux": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/zg1nnbiiaiq65v0h4b22hqlqpqa8ja0j-golangci-lint-2.13.1",
+              "default": true
+            }
+          ],
+          "store_path": "/nix/store/zg1nnbiiaiq65v0h4b22hqlqpqa8ja0j-golangci-lint-2.13.1"
+        },
+        "x86_64-linux": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/sqm80s7p5kx9j4ia19rw3jy41ajx1v73-golangci-lint-2.13.1",
+              "default": true
+            }
+          ],
+          "store_path": "/nix/store/sqm80s7p5kx9j4ia19rw3jy41ajx1v73-golangci-lint-2.13.1"
+        }
+      }
+    },
+    "govulncheck@1.7.0": {
+      "last_modified": "2026-09-09T19:38:03Z",
+      "resolved": "github:NixOS/nixpkgs/5052d7ccbcfb7e4ae1586cb2ecf95a2e3707dce9#govulncheck",
+      "source": "devbox-search",
+      "version": "1.7.0",
+      "systems": {
+        "aarch64-darwin": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/zgblryrsf4vlmbzj04pl3ngwdsn2z6h7-govulncheck-1.7.0",
+              "default": true
+            }
+          ],
+          "store_path": "/nix/store/zgblryrsf4vlmbzj04pl3ngwdsn2z6h7-govulncheck-1.7.0"
+        },
+        "aarch64-linux": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/bg71fp9wcg8d956rfnrn398nrwcagmk4-govulncheck-1.7.0",
+              "default": true
+            }
+          ],
+          "store_path": "/nix/store/bg71fp9wcg8d956rfnrn398nrwcagmk4-govulncheck-1.7.0"
+        },
+        "x86_64-linux": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/zhxphpb7hydfq73p0zkdz7sxi202sdmv-govulncheck-1.7.0",
+              "default": true
+            }
+          ],
+          "store_path": "/nix/store/zhxphpb7hydfq73p0zkdz7sxi202sdmv-govulncheck-1.7.0"
+        }
+      }
+    },
     "jq@1.8.2": {
       "last_modified": "2026-10-30T07:30:20Z",
       "resolved": "github:NixOS/nixpkgs/885ba4d038f10c3d17d7a92e8c3cc185b99c9158#jq",
@@ -295,7 +409,7 @@
     },
     "nodejs@26.11.1": {
       "last_modified": "2026-10-14T08:20:44Z",
-      "plugin_version": "0.0.5",
+      "plugin_version": "0.0.6",
       "resolved": "github:NixOS/nixpkgs/319e4cebef10cbb636c6ea392137b52ad105336a#nodejs_26",
       "source": "devbox-search",
       "version": "26.11.1",
