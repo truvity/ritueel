@@ -45,7 +45,7 @@ The three tries used 30 different moments. The same two moments broke the bundle
 
 ## How to read it
 
-exFAT rewrites a folder's sector in place at every flush, and each appended journal line rewrites the journal's last sector. A write that goes wrong destroys the older data in that sector with the new, and no order of flushes prevents that. A stick image could not show it: there a sector is written whole or not at all.
+exFAT rewrites a folder's sector in place at every flush, and each appended journal line rewrites the journal's last sector. A write that goes wrong destroys the older data in that sector with the new, and no order of flushes prevents that. A stick image could not show it: there a sector is written whole or not at all. The detailed account, with the counts of every try and what each sector held, is in [what one sector of a cheap USB stick did after a cut](./usb-stick-cut-what-one-sector-did-2026-11-13.md).
 
 ## Limits
 
