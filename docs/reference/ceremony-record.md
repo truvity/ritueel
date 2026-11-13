@@ -17,7 +17,7 @@ Every ceremony leaves one **ceremony folder**, `history/<ceremony>/`, in the his
 |---|---|---|---|
 | `plan.json` | With the plan | Every byte that will be signed, fixed in advance; what the plan applies and what it leaves out; the wanted files it used, by digest. | 0005 rule 7; 0006 rule 9 |
 | `wanted/` | With the plan | Exact copies of the wanted files the plan used. They are copies, not wanted files. | 0005 rules 7 and 30; 0006 rule 7 |
-| `attempt.json` | Before the first key is born | That keys or signatures may exist from this plan. | 0005 rule 10 |
+| `attempt.json` | Before the first key is born; on the stick, as a record in the [trace area](/reference/trace-area/) first, and as this file when the ceremony ends | That keys or signatures may exist from this plan. | 0005 rules 10, 36 and 39 |
 | `births.jsonl` | With the attempt | The birth journal. Only in a ceremony that makes keys. | 0005 rule 10 |
 | `signatures.jsonl` | With the attempt | The journal of signatures. | 0005 rule 10 |
 | `transcript.txt` | At the end | What ritueel printed. | 0006 rule 9 |
@@ -48,14 +48,14 @@ The steps of a write (whole or not at all, under a temporary name, then one rena
 | When | Writes | Decided by |
 |---|---|---|
 | First | The ceremony folder, `plan.json` and the copies in `wanted/`. With `--plan-only` ritueel stops here. | 0005 rules 7 and 13; 0006 rule 9 |
-| Before the first key is born | `attempt.json`. The journals are created with it. | 0005 rule 10 |
-| While keys are born and signatures made | One line in `births.jsonl` after each key exists and one line in `signatures.jsonl` after each signature is made. | 0005 rule 10 |
-| At the end | `transcript.txt`, then the artifacts under names of their own (the trust set, the answers in `requests/`), and last `record.json`. | 0005 rule 12; 0006 rule 31 |
+| Before the first key is born | On the stick: the attempt, as the first record of the trace area. Elsewhere: `attempt.json`; the journals are created with it. | 0005 rules 10, 36 and 37 |
+| While keys are born and signatures made | One line in `births.jsonl` after each key exists and one line in `signatures.jsonl` after each signature is made. On the stick, each line is a record in the trace area, and a record that says what is about to be done comes before each act. | 0005 rules 10 and 38 |
+| At the end | On the stick: `attempt.json` and the journals, made from the trace area. Then `transcript.txt`, then the artifacts under names of their own (the trust set, the answers in `requests/`), and last `record.json`. On the stick, the end record in the trace area follows. | 0005 rules 12 and 39; 0006 rule 31 |
 
 A wrong or missing confirmation writes nothing (0005 rule 9). Every artifact is checked against its request and the plan, with code that did not sign it, before it is written out (0005 rule 12).
 
 :::note[Proposed]
-Rule 10 of record 0005 decides that an attempt is written before the first key and that each key and each signature is appended to a journal. That the attempt is made by an exclusive create, and that a journal grows by one flushed line at a time, is Proposed and is fixed with the code ([#8](https://github.com/truvity/ritueel/issues/8)).
+Rule 10 of record 0005 decides that an attempt is written before the first key and that each key and each signature is appended to a journal. That the attempt is made by an exclusive create, and that a journal grows by one flushed line at a time, is Proposed for a ceremony that is not on the stick, and is fixed with the code ([#8](https://github.com/truvity/ritueel/issues/8)).
 :::
 
 The ceremony record is the last file a ceremony writes, because it lists the others by digest. A ceremony folder with no ceremony record is a ceremony that has not ended.
@@ -67,7 +67,7 @@ A state is a fact on disk. The command `status ceremonies` and the History entry
 | State | On disk | Fact decided by |
 |---|---|---|
 | planned | A plan and no attempt. Nothing was signed. | 0005 rule 10 |
-| started | An attempt and no ceremony record. `status` reports it as critical (exit code 12) until a person closes it. | 0005 rule 10 |
+| started | An attempt, as a file or as an open ceremony in the trace area, and no ceremony record. `status` reports it as critical (exit code 12) until a person closes it. | 0005 rule 10 |
 | recorded | A ceremony record with the outcome `completed` or `declined`. | 0005 rule 12 |
 | closed | A started ceremony that a closing record from `close` names. | 0005 rule 10 |
 
@@ -162,7 +162,7 @@ A person who has read the plan may **decline** a request instead of confirming: 
 | `root` | The label of the root key that signs. |
 | `started_at` | When the attempt was written. |
 
-ritueel writes the file first, and only then makes the first birth or signature (0005 rule 10). An existing attempt for a plan means its serials may be used: ritueel refuses to run that plan again. An attempt is **resolved** when a ceremony record names its ceremony: the ceremony's own record, or a closing record from `close`. `status` reports every unresolved attempt as **critical** (exit code 12): an attempt with no ceremony record may mean a signature that was made and never recorded.
+ritueel writes the file first, and only then makes the first birth or signature (0005 rule 10). On the stick the attempt is a record in the trace area first, and `attempt.json` is made from it, byte for byte, when the ceremony ends (0005 rules 36 to 39). An existing attempt for a plan means its serials may be used: ritueel refuses to run that plan again. An attempt is **resolved** when a ceremony record names its ceremony: the ceremony's own record, or a closing record from `close`. `status` reports every unresolved attempt as **critical** (exit code 12): an attempt with no ceremony record may mean a signature that was made and never recorded.
 
 :::note[Proposed]
 Whether `apply` refuses to make a new plan while an attempt is open, or only refuses to run the plan that has the attempt, is not decided ([#140](https://github.com/truvity/ritueel/issues/140)). This page says the second.
@@ -170,11 +170,11 @@ Whether `apply` refuses to make a new plan while an attempt is open, or only ref
 
 ### The birth journal
 
-A ceremony that makes keys also creates `births.jsonl`, with the attempt and before the first birth (0005 rule 10). After each key exists, and before the next birth begins, ritueel appends one line (0005 rule 10): `{ "at", "label", "purpose", "store", "place", "public_key_sha256" }`, where `place` is as in the plan with the key's ARN for KMS. The journal holds no secret. If the run stops, `close` prints it, so that the holder can delete the slot of the half-born key (that deleting one slot works on firmware 5.7.4 is tried on a rehearsal card in M1; a card that holds roots is never reset: [record 0003](../decisions/0003-root-cards.md), rule 17) or schedule the key for deletion; ritueel does neither ([record 0005](../decisions/0005-a-ceremony-and-where-it-runs.md), rule 10; [record 0004](../decisions/0004-the-cloud-root.md), rule 11). An attempt is resolved by a ceremony record, as before; the journal is not a second record.
+A ceremony that makes keys also creates `births.jsonl`, with the attempt and before the first birth (0005 rule 10). On the stick the file is made from the trace area when the ceremony ends, and its bytes are the same; no member is added to a line, and the number and the chain of a line are in the area only. Before each birth, ritueel writes a record of the act in the area; the file does not carry it (0005 rule 38). After each key exists, and before the next birth begins, ritueel appends one line (0005 rule 10): `{ "at", "label", "purpose", "store", "place", "public_key_sha256" }`, where `place` is as in the plan with the key's ARN for KMS. The journal holds no secret. If the run stops, `close` prints it, so that the holder can delete the slot of the half-born key (that deleting one slot works on firmware 5.7.4 is tried on a rehearsal card in M1; a card that holds roots is never reset: [record 0003](../decisions/0003-root-cards.md), rule 17) or schedule the key for deletion; ritueel does neither ([record 0005](../decisions/0005-a-ceremony-and-where-it-runs.md), rule 10; [record 0004](../decisions/0004-the-cloud-root.md), rule 11). On the stick, `close` also shows a birth that has a record before it in the trace area and no result: the key may exist (0005 rule 38). An attempt is resolved by a ceremony record, as before; the journal is not a second record.
 
 ### The journal of signatures
 
-A ceremony that signs also creates `signatures.jsonl`, with the attempt and before the first signature (0005 rule 10). After each signature is made, and before the next begins, ritueel appends one line (0005 rule 10). The journal holds no secret. `close` prints it with the birth journal.
+A ceremony that signs also creates `signatures.jsonl`, with the attempt and before the first signature (0005 rule 10). On the stick it is made from the trace area in the same way, and a record of each signature, written before it is made, stays in the area (0005 rules 38 and 39). After each signature is made, and before the next begins, ritueel appends one line (0005 rule 10). The journal holds no secret. `close` prints it with the birth journal.
 
 :::note[Proposed]
 The members of a line of `signatures.jsonl` are fixed with the code ([#8](https://github.com/truvity/ritueel/issues/8)). The proposal: `{ "at", "n", "kind", "key", "signature_sha256" }`, where `n` is the place in the plan's `signatures`. Whether a line holds the signature itself is open. A line is whole when it ends with a newline. A last line without its newline does not parse and counts as not written, but it may mean that a key or a signature exists; so may a missing line, when the run stopped between making it and writing the line.
