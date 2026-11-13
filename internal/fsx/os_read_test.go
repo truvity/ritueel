@@ -340,6 +340,18 @@ func TestOSANameSwappedBetweenTheLooksIsNeverFollowedOrWaitedOn(t *testing.T) {
 				r := readFileWithin(t, root, "name")
 				reads++
 				if r.err != nil {
+					// what the name was when the reader met it says which refusal it gets
+					want := fsx.ErrLink
+					if swap.kind == "fifo" {
+						want = fsx.ErrNotRegular
+					}
+					// a link that is a regular file again by the time the open is classified is
+					// still refused, with the bare ELOOP of the open
+					if !errors.Is(r.err, want) && !(swap.kind == "link" && errors.Is(r.err, syscall.ELOOP)) {
+						close(stop)
+						wg.Wait()
+						t.Fatalf("ReadFile of a name that is swapped to %s: %v, want an error that wraps %v", swap.name, r.err, want)
+					}
 					refused++
 					continue
 				}

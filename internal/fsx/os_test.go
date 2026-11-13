@@ -618,3 +618,44 @@ func TestOneWriterRacingForOnePathStopsTheLoser(t *testing.T) {
 		t.Fatalf("%d writers succeeded, want exactly one", ok)
 	}
 }
+
+// TestOSAFolderHandleClosedWhileOtherGoroutinesUseIt: Close takes the lock that every call takes,
+// so a close never closes the descriptor under a call and a call after it never reaches a
+// descriptor that another file has taken. Only the race run (go test -race) proves the lock.
+func TestOSAFolderHandleClosedWhileOtherGoroutinesUseIt(t *testing.T) {
+	dir := t.TempDir()
+	if err := os.WriteFile(filepath.Join(dir, "f"), []byte("x"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	for round := 0; round < 40; round++ {
+		root, err := fsx.OpenFS(dir)
+		if err != nil {
+			t.Fatal(err)
+		}
+		var wg sync.WaitGroup
+		for g := 0; g < 4; g++ {
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+				for {
+					_, e1 := root.ReadDir()
+					_, e2 := root.ReadFile("f")
+					e3 := root.Sync()
+					for _, e := range []error{e1, e2, e3} {
+						if errors.Is(e, fs.ErrClosed) {
+							return
+						}
+						if e != nil {
+							t.Errorf("a call on a handle that is being closed: %v", e)
+							return
+						}
+					}
+				}
+			}()
+		}
+		if err := root.Close(); err != nil {
+			t.Errorf("Close: %v", err)
+		}
+		wg.Wait()
+	}
+}
