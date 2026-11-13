@@ -80,7 +80,7 @@ var ErrNoReplaceUnsupported = errors.New("the file system does not support a ren
 // ErrInvalid is wrapped by the error returned for an argument the writer refuses before it
 // touches the file system: a path that is empty, ends with a separator, has a "." or ".."
 // element or an empty element ("a//b"), or a final element with the prefix of a temporary
-// name; a name (any element of a path, and the name of a file of a set) that the exFAT file
+// name (compared without case); a name (any element of a path, and the name of a file of a set) that the exFAT file
 // system of a stick cannot hold or holds under another name, which is a control code or one of
 // the characters " * / : < > ? \ |, an end with a dot or a space, a length over 255 bytes, or
 // bytes that are not UTF-8; a name of a set that is not one plain name; a mode with bits
