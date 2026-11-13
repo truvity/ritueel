@@ -69,7 +69,8 @@ type FS interface {
 	// link is an entry with the type fs.ModeSymlink, a folder one with fs.ModeDir. The Info of
 	// an entry carries the name, the type and permission bits and the size at the time of the
 	// call; its ModTime is the zero time. It lists what the running system shows, flushed or
-	// not.
+	// not. A folder with more than [MaxDirEntries] names is an error that wraps [ErrTooMany],
+	// and no part of the list is returned.
 	ReadDir() ([]fs.DirEntry, error)
 	// Close releases this handle. A method called after Close returns an error that wraps
 	// fs.ErrClosed, and a second Close returns nil. Closing a folder closes nothing that
@@ -95,6 +96,14 @@ const MaxReadSize = 8 << 20
 // each of the [MaxJournalLines] lines, 1.5 MiB. A journal with more lines is an error that wraps
 // [ErrTooMany], and nothing of it is returned.
 const MaxJournalLines = 1 << 16
+
+// MaxDirEntries is the most names that [FS.ReadDir] and [ReadDir] list: 65,536. A folder of a
+// bundle holds some hundreds of names at most; 65,536 is hundreds of times that. A name is at
+// most 255 bytes on any file system that the package meets, so the worst case of a list is about
+// 18 MiB for the names (255 bytes and a 16-byte string header each) and about 7 MiB for the
+// entries built from them, some 25 MiB in all, whatever the folder holds. A folder with more
+// names is an error that wraps [ErrTooMany], and no part of the list is returned.
+const MaxDirEntries = 1 << 16
 
 // File is a file opened for writing by [FS.CreateExcl]. The file is empty when it is created,
 // and a Write adds to the end of it.
@@ -233,8 +242,8 @@ var ErrNotRegular = errors.New("not a regular file")
 var ErrTooLarge = errors.New("the file is longer than the limit of a read")
 
 // ErrTooMany is wrapped by the error of a read that finds more lines in a journal than
-// [MaxJournalLines].
-var ErrTooMany = errors.New("the file holds more lines than the limit of a read")
+// [MaxJournalLines], or more names in a folder than [MaxDirEntries].
+var ErrTooMany = errors.New("the file or folder holds more lines or names than the limit of a read")
 
 // ErrNoRoot is returned by a [Writer] that has no [FS], that is by a Writer that was not made
 // by [Open] and whose FS field is nil: there is no root to work in, and the writer does not
