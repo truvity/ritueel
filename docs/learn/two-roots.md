@@ -2,7 +2,7 @@
 title: Two roots in practice
 description: Why a chain of trust runs two roots at once, what public CAs do, how clients behave with two certificates, how the cards alternate, and how keys move.
 sidebar:
-  order: 20
+  order: 11
 ---
 
 *Design phase: this page teaches the model of [record 0003](../decisions/0003-root-cards.md). Checks of other projects were made on 2026-10-29; check again before you rely on one.*

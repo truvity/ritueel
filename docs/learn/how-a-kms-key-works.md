@@ -2,7 +2,7 @@
 title: How a KMS key works
 description: What an AWS KMS signing key is made of, what limits it, how a signature happens, how a replica works, and how it compares with a card slot.
 sidebar:
-  order: 12.4
+  order: 8
 ---
 
 *Design phase: ritueel is in design and has no release. The cloud root is not built yet ([the cloud root](/reference/kms-root/)), and where a page says what ritueel does, it is the design. The facts on this page were read on 2026-11-10 in AWS's documentation, and no call was made to AWS. Prices and limits change: check them before you rely on them.*

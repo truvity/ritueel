@@ -2,7 +2,7 @@
 title: The custody chain
 description: Who or what holds each key from root to leaf, who can use it and under which ceremony, why a break breaks all below it, and how ritueel records it.
 sidebar:
-  order: 6
+  order: 2
 ---
 
 This page assumes the [basics](/learn/what-is-a-root/#keys-from-zero): a key pair, a signature and a certificate.

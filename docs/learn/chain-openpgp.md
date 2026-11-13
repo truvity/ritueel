@@ -2,7 +2,7 @@
 title: OpenPGP
 description: The custody chain of OpenPGP. A primary key that only certifies, subkeys on a card for signing, encryption and login, and how verifiers learn your fingerprint.
 sidebar:
-  order: 10
+  order: 4
 ---
 
 This page assumes the [basics](/learn/what-is-a-root/#keys-from-zero) and [the custody chain](/learn/custody-chain/).

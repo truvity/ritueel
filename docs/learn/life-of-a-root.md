@@ -2,7 +2,7 @@
 title: The life of a root
 description: A root from birth to recovery in order. Create, sign intermediates or subkeys, record, back up, re-sign, rotate, revoke and recover, and when each step happens.
 sidebar:
-  order: 14
+  order: 12
 ---
 
 A root lives for years, and most of what happens to it is waiting. This page follows one root through every ritual, in order, and says when each is done. The steps are the same for an X.509 root and an OpenPGP primary key; where they differ, the page says so. It assumes the [basics](/learn/what-is-a-root/#keys-from-zero) and [the custody chain](/learn/custody-chain/).

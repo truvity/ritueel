@@ -1,6 +1,8 @@
 ---
 title: How a YubiKey holds keys
 description: What a YubiKey 5 holds, how PIV, OpenPGP and FIDO2 differ, how a PIV signature happens, and what locks or wipes a card.
+sidebar:
+  order: 6
 # The link validator reads an MDX page by its real path under docs/, so the page names its own address.
 slug: learn/how-a-yubikey-holds-keys
 ---
@@ -99,7 +101,7 @@ Three things follow:
 |---|---|---|
 | A root key (X.509 root or OpenPGP primary) | The bundle's row of the slot map: an X.509 root key slot and an OpenPGP primary slot; PIN always, touch always | The card can vouch for the key, and the rules hold at every use ([record 0003](../decisions/0003-root-cards.md)) |
 | Daily git signing and SSH sign-in | The OpenPGP application: a signing subkey and an authentication subkey | `gpg`, `git` and `ssh` use it without extra tools ([record 0008](../decisions/0008-a-persons-own-key.md)) |
-| Opening the key file of a software key | A passkey (the next page explains the kinds) of the kind the card does not keep, on each card named as a way to open the file | The holder types a PIN and touches the card. The file also has a recovery key, an age identity in a passphrase-protected file kept apart from the cards, so a lost card does not lock the file; a holder without cards uses a passphrase ([record 0002](../decisions/0002-where-a-key-lives.md), rules 19 to 22); decided, not yet proven; [how a passkey opens a key file](/learn/how-passkeys-work/#a-passkey-that-opens-a-key-file) |
+| Opening the key file of a software key | A passkey (the next page explains the kinds) of the kind the card does not keep, on each card named as a way to open the file | The holder types a PIN and touches the card. The file also has a recovery key, an age identity in a passphrase-protected file kept apart from the cards, so a lost card does not lock the file; a holder without cards uses a passphrase ([record 0002](../decisions/0002-where-a-key-lives.md), rules 19 to 22); decided, not yet proven; [how a passkey opens a key file](/learn/a-key-in-a-file/#a-passkey-that-opens-a-key-file) |
 
 All three are designs, not built tools. For the same question asked of a cloud key, read [how a KMS key works](/learn/how-a-kms-key-works/).
 

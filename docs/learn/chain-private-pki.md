@@ -2,7 +2,7 @@
 title: Private PKI
 description: The custody chain of a private PKI. Your own root, per-environment intermediates limited by name constraints, workload certificates, and distributing the root.
 sidebar:
-  order: 9
+  order: 3
 ---
 
 This page assumes the [basics](/learn/what-is-a-root/#keys-from-zero) and [the custody chain](/learn/custody-chain/).
