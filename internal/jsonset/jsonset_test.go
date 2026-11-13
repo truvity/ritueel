@@ -11,7 +11,6 @@ import (
 	"strconv"
 	"strings"
 	"testing"
-	"unicode"
 	"unicode/utf8"
 	"unsafe"
 )
@@ -120,11 +119,11 @@ func TestShown(t *testing.T) {
 		{"capitals and digits", "Ab1", "Ab1"},
 		{"underscore and dash", "a_b-c", "a_b-c"},
 		{"digits only", "0", "0"},
-		{"a letter outside ASCII", string(rune(0xE9)), string(rune(0xE9))},
-		{"a Hebrew letter", string(rune(0xFB33)), string(rune(0xFB33))},
-		{"a digit outside ASCII", string(rune(0x0663)), string(rune(0x0663))},
+		{"a letter outside ASCII", string(rune(0xE9)), `"` + qesc(0xE9) + `"`},
+		{"a Hebrew letter", string(rune(0xFB33)), `"` + qesc(0xFB33) + `"`},
+		{"a digit outside ASCII", string(rune(0x0663)), `"` + qesc(0x0663) + `"`},
 		{"forty bytes", forty, forty},
-		{"forty bytes of two-byte letters", strings.Repeat(string(rune(0xE9)), 20), strings.Repeat(string(rune(0xE9)), 20)},
+		{"forty bytes of two-byte letters are quoted, and cut at the fortieth byte", strings.Repeat(string(rune(0xE9)), 21), `"` + strings.Repeat(qesc(0xE9), 20) + `..."`},
 		{"41 bytes are cut and quoted", forty + "n", `"` + forty + `..."`},
 		{"a long name that is not plain is cut and quoted", strings.Repeat("a b", 20), `"` + strings.Repeat("a b", 20)[:40] + `..."`},
 		{"empty", "", `""`},
@@ -134,15 +133,15 @@ func TestShown(t *testing.T) {
 		{"a space", "a b", `"a b"`},
 		{"a quote", `a"b`, `"a\"b"`},
 		{"a backslash", `a\b`, `"a\\b"`},
-		{"a line feed", "a\nb", `"a\nb"`},
-		{"a control", "a\x01b", `"a\x01b"`},
-		{"the delete character", "a\x7fb", `"a\x7fb"`},
-		{"an emoji", string(rune(0x1F600)), `"` + uesc(0x1F600) + `"`},
-		{"a symbol that is not a letter", string(rune(0x20AC)), `"` + uesc(0x20AC) + `"`},
-		{"a character that has no width", "a" + string(rune(0x200B)) + "b", `"a` + uesc(0x200B) + `b"`},
-		{"a combining mark", "e" + string(rune(0x0301)), `"e` + uesc(0x0301) + `"`},
-		{"the line separator", string(rune(0x2028)), `"` + uesc(0x2028) + `"`},
-		{"text that is not UTF-8", "a\xffb", `"a\xffb"`},
+		{"a line feed", "a\nb", `"a` + qesc(10) + `b"`},
+		{"a control", "a\x01b", `"a` + qesc(1) + `b"`},
+		{"the delete character", "a\x7fb", `"a` + qesc(0x7f) + `b"`},
+		{"an emoji", string(rune(0x1F600)), `"` + qesc(0x1F600) + `"`},
+		{"a symbol that is not a letter", string(rune(0x20AC)), `"` + qesc(0x20AC) + `"`},
+		{"a character that has no width", "a" + string(rune(0x200B)) + "b", `"a` + qesc(0x200B) + `b"`},
+		{"a combining mark", "e" + string(rune(0x0301)), `"e` + qesc(0x0301) + `"`},
+		{"the line separator", string(rune(0x2028)), `"` + qesc(0x2028) + `"`},
+		{"text that is not UTF-8", "a\xffb", `"a` + qesc(0xFFFD) + `b"`},
 		{"a punctuation mark", "a,b", `"a,b"`},
 		{"a slash", "a/b", `"a/b"`},
 	}
@@ -415,14 +414,17 @@ var rawType = reflect.TypeFor[rawLike]()
 
 func typeOf[T any]() reflect.Type { return reflect.TypeFor[T]() }
 
-// uesc is the six-byte escape that QuoteToASCII writes for a character of the BMP, and the ten-byte
-// one for a character above it, in lower case, built here so that no tool can turn it into the
-// character.
-func uesc(r rune) string {
+// qesc is the escape that Quote writes for a character that is not printable ASCII: a backslash, u
+// and four digits in lower case, and for a character above U+FFFF the escapes of its two surrogates
+// (worked out here by hand, not by unicode/utf16, which Quote uses). It is built from the
+// code point, so that no tool can turn it into the character on the way.
+func qesc(r rune) string {
+	bs := string(rune(92))
 	if r > 0xFFFF {
-		return string(rune(92)) + fmt.Sprintf("U%08x", r)
+		v := r - 0x10000
+		return bs + fmt.Sprintf("u%04x", 0xD800+(v>>10)) + bs + fmt.Sprintf("u%04x", 0xDC00+(v&0x3FF))
 	}
-	return string(rune(92)) + fmt.Sprintf("u%04x", r)
+	return bs + fmt.Sprintf("u%04x", r)
 }
 
 // wide is a name of a letter, a digit and a letter outside ASCII: E9, 663, FB33.
@@ -696,8 +698,6 @@ func TestErrOfARefusal(t *testing.T) {
 		{"through a field that is a list", typeOf[holder](), nil, "malformed JSON: $.L: a value of type float64 cannot be written (the elements of $.L): " + reasonFloat},
 		{"through a map in a map in a list", typeOf[map[string][][]float64](), nil, "malformed JSON: $: a value of type float64 cannot be written (the elements of the elements of the values of $): " + reasonFloat},
 		{"through fields after a list", typeOf[[]struct{ P struct{ G float64 } }](), nil, "malformed JSON: $: a value of type float64 cannot be written (the member G of the member P of the elements of $): " + reasonFloat},
-		{"a name that needs quotes", reflect.StructOf([]reflect.StructField{{Name: "F", Type: typeOf[float64](), Tag: `json:"a.b"`}}), nil, `malformed JSON: $."a.b": a value of type float64 cannot be written: ` + reasonFloat},
-		{"a name that needs quotes after a list", reflect.StructOf([]reflect.StructField{{Name: "F", Type: typeOf[[]struct{ G float64 }](), Tag: `json:"a b"`}}), nil, `malformed JSON: $."a b": a value of type float64 cannot be written (the member G of the elements of $."a b"): ` + reasonFloat},
 		{"a path of more than eight steps", typeOf[float64](), longPath(9), "malformed JSON: $....m2.m3.m4.m5.m6.m7.m8.m9: a value of type float64 cannot be written: " + reasonFloat},
 	}
 	for _, tc := range cases {
@@ -754,6 +754,33 @@ func TestErrOfARefusal(t *testing.T) {
 	})
 }
 
+// A name outside the rule of a struct is a name of a map's key or of a path, and a struct cannot
+// carry one, so a refusal that leads through such a field name is built by hand: what is tested
+// is how the text is written from a refusal.
+func TestErrOfARefusalWithOddNames(t *testing.T) {
+	hand := func(first Hop, rest ...Hop) *Refusal {
+		return &Refusal{Hops: append([]Hop{first}, rest...), Type: typeOf[float64](), Reason: reasonFloat}
+	}
+	cases := []struct {
+		name string
+		by   *Refusal
+		want string
+	}{
+		{"a name that needs quotes", hand(Hop{Kind: FieldHop, Field: "a.b"}), `malformed JSON: $."a.b": a value of type float64 cannot be written: ` + reasonFloat},
+		{"a name that needs quotes after a list", hand(Hop{Kind: FieldHop, Field: "a b"}, Hop{Kind: ElementsHop}, Hop{Kind: FieldHop, Field: "G"}), `malformed JSON: $."a b": a value of type float64 cannot be written (the member G of the elements of $."a b"): ` + reasonFloat},
+		{"a name that needs quotes inside the words", hand(Hop{Kind: ValuesHop}, Hop{Kind: FieldHop, Field: "a b"}), `malformed JSON: $: a value of type float64 cannot be written (the member "a b" of the values of $): ` + reasonFloat},
+		{"a name outside ASCII in the words is an escape", hand(Hop{Kind: ValuesHop}, Hop{Kind: FieldHop, Field: string(rune(0xE9))}), `malformed JSON: $: a value of type float64 cannot be written (the member "` + qesc(0xE9) + `" of the values of $): ` + reasonFloat},
+		{"a name outside ASCII in a path is quoted by the path", hand(Hop{Kind: FieldHop, Field: string(rune(0xE9))}), `malformed JSON: $."` + qesc(0xE9) + `": a value of type float64 cannot be written: ` + reasonFloat},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := NewChecker(Writing, rawType).Err(nil, tc.by).Error(); got != tc.want {
+				t.Errorf("got\n  %s\nwant\n  %s", got, tc.want)
+			}
+		})
+	}
+}
+
 func longPath(n int) Path {
 	p := Path{}
 	for i := 1; i <= n; i++ {
@@ -778,6 +805,15 @@ func fieldsOf(t *testing.T, typ reflect.Type) (names []string, reason string) {
 	return names, ""
 }
 
+// reasonName is the rule for the name of a member of a struct, as the errors say it.
+const reasonName = "a member name holds only ASCII letters, digits and underscores, and is not empty"
+
+// tagNameRefused is the reason for the field F0 of a built struct whose tag name is refused; shown
+// is the name as the error shows it (quoted, with an escape for what is not printable ASCII).
+func tagNameRefused(shown string) string {
+	return "field F0 has the tag name \"" + shown + "\"; " + reasonName
+}
+
 func TestStructTagRules(t *testing.T) {
 	// Field i of a built struct is named F<i> by Go; the tag decides what it is called in JSON.
 	cases := []struct {
@@ -794,8 +830,8 @@ func TestStructTagRules(t *testing.T) {
 		{"omitempty twice", []string{`json:"a,omitempty,omitempty"`}, []string{"a"}, ""},
 		{"a name and a comma", []string{`json:"a,"`}, []string{"a"}, ""},
 		{"dash leaves the field out", []string{`json:"-"`}, nil, ""},
-		{"dash and comma names it dash", []string{`json:"-,"`}, []string{"-"}, ""},
-		{"dash and omitempty names it dash", []string{`json:"-,omitempty"`}, []string{"-"}, ""},
+		{"dash and comma names it dash, which is refused", []string{`json:"-,"`}, nil, tagNameRefused("-")},
+		{"dash and omitempty names it dash, which is refused", []string{`json:"-,omitempty"`}, nil, tagNameRefused("-")},
 		{"another key is not looked at", []string{`xml:"a"`}, []string{"F0"}, ""},
 		{"another key before json", []string{`xml:"x" json:"n"`}, []string{"n"}, ""},
 		{"another key after json", []string{`json:"o" xml:"x"`}, []string{"o"}, ""},
@@ -803,7 +839,7 @@ func TestStructTagRules(t *testing.T) {
 		{"a tag name that is another field's Go name", []string{`json:"F1"`, ``}, nil, `two fields are named "F1"`},
 		{"two fields of one name", []string{`json:"x"`, `json:"x"`}, nil, `two fields are named "x"`},
 		{"two fields of one name, one with omitempty", []string{`json:"x"`, `json:"x,omitempty"`}, nil, `two fields are named "x"`},
-		{"two fields named dash", []string{`json:"-,"`, `json:"-,omitempty"`}, nil, `two fields are named "-"`},
+		{"two fields named dash are refused at the first name", []string{`json:"-,"`, `json:"-,omitempty"`}, nil, tagNameRefused("-")},
 		{"names that differ only by case are two fields", []string{`json:"a"`, `json:"A"`}, []string{"A", "a"}, ""},
 		{"the option string", []string{`json:",string"`}, nil, `field F0 has the tag option "string"; only omitempty is allowed`},
 		{"the option string after a name", []string{`json:"a,string"`}, nil, `field F0 has the tag option "string"; only omitempty is allowed`},
@@ -813,15 +849,15 @@ func TestStructTagRules(t *testing.T) {
 		{"an option in capitals", []string{`json:",OMITEMPTY"`}, nil, `field F0 has the tag option "OMITEMPTY"; only omitempty is allowed`},
 		{"an empty option", []string{`json:"a,,omitempty"`}, nil, `field F0 has the tag option ""; only omitempty is allowed`},
 		{"an option that is a space", []string{`json:"a, omitempty"`}, nil, `field F0 has the tag option " omitempty"; only omitempty is allowed`},
-		{"a name with a quote", []string{`json:"a'b"`}, nil, `field F0 has the tag name "a'b", which encoding/json would not use`},
-		{"a name with a backslash", []string{`json:"a\\b"`}, nil, `field F0 has the tag name "a\\b", which encoding/json would not use`},
-		{"a name with a control", []string{"json:\"a\\x01b\""}, nil, `field F0 has the tag name "a\x01b", which encoding/json would not use`},
-		{"a name with a symbol that is not a letter", []string{"json:\"a" + string(rune(0x20AC)) + "b\""}, nil, `field F0 has the tag name "a` + uesc(0x20AC) + `b", which encoding/json would not use`},
-		{"a name with a combining mark", []string{"json:\"e" + string(rune(0x0301)) + "\""}, nil, `field F0 has the tag name "e` + uesc(0x0301) + `", which encoding/json would not use`},
-		{"every punctuation mark that encoding/json allows", []string{`json:"!#$%&()*+-./:;<=>?@[]^_{|}~ "`}, []string{`!#$%&()*+-./:;<=>?@[]^_{|}~ `}, ""},
-		{"letters and digits outside ASCII", []string{"json:\"" + wide + "\""}, []string{wide}, ""},
+		{"a name with an apostrophe", []string{`json:"a'b"`}, nil, tagNameRefused("a'b")},
+		{"a name with a backslash", []string{`json:"a\\b"`}, nil, tagNameRefused(`a\\b`)},
+		{"a name with a control", []string{"json:\"a\\x01b\""}, nil, tagNameRefused("a" + qesc(1) + "b")},
+		{"a name with a symbol that is not a letter", []string{"json:\"a" + string(rune(0x20AC)) + "b\""}, nil, tagNameRefused("a" + qesc(0x20AC) + "b")},
+		{"a name with a combining mark", []string{"json:\"e" + string(rune(0x0301)) + "\""}, nil, tagNameRefused("e" + qesc(0x0301))},
+		{"every punctuation mark that encoding/json allows is refused", []string{`json:"!#$%&()*+-./:;<=>?@[]^_{|}~ "`}, nil, tagNameRefused(`!#$%&()*+-./:;<=>?@[]^_{|}~ `)},
+		{"letters and digits outside ASCII are refused", []string{"json:\"" + wide + "\""}, nil, tagNameRefused(qesc(0xE9) + qesc(0x0663) + qesc(0xFB33))},
 		{"a name that begins with a digit", []string{`json:"1a"`}, []string{"1a"}, ""},
-		{"a name of a single space", []string{`json:" "`}, []string{" "}, ""},
+		{"a name of a single space is refused", []string{`json:" "`}, nil, tagNameRefused(" ")},
 		{"a name that is a long one", []string{`json:"` + strings.Repeat("n", 500) + `"`}, []string{strings.Repeat("n", 500)}, ""},
 		{"the first refusal is the one that is told", []string{`json:",string"`, `json:"a'b"`}, nil, `field F0 has the tag option "string"; only omitempty is allowed`},
 		{"a field tagged dash is not looked at for its option", []string{`json:"-"`, `json:"b"`}, []string{"b"}, ""},
@@ -841,8 +877,6 @@ func TestStructTagRules(t *testing.T) {
 }
 
 func TestStructFieldsOrderAndFlags(t *testing.T) {
-	// U+1D400 (a mathematical bold capital A) is a letter and above the BMP: units D835 DC00.
-	bold, dalet := string(rune(0x1D400)), string(rune(0xFB33))
 	field := func(name, jsonTag string) reflect.StructField {
 		f := reflect.StructField{Name: name, Type: typeOf[int]()}
 		if jsonTag != "" {
@@ -860,8 +894,8 @@ func TestStructFieldsOrderAndFlags(t *testing.T) {
 		field("Under", "_"),               // 5
 		field("Upper", "B"),               // 6
 		field("Lower", "b,omitempty"),     // 7
-		field("Bold", bold),               // 8
-		field("Dalet", dalet),             // 9
+		field("Zed", "Z"),                 // 8
+		field("Lowest", "a_"),             // 9
 		field("Digit", "10"),              // 10
 		field("Digit2", "2"),              // 11
 	})
@@ -878,11 +912,13 @@ func TestStructFieldsOrderAndFlags(t *testing.T) {
 	for _, f := range c.Fields(typ) {
 		got = append(got, listed{f.Name, f.Index, f.OmitEmpty})
 	}
-	// By the UTF-16 units of the names: digits (and "10" before "2": a prefix is first), capitals,
-	// underscore, small letters, then U+1D400 (units D835 DC00) before U+FB33.
+	// By the code units of the names, which for names inside the rule are the ASCII bytes: digits
+	// (and "10" before "2": the first unit decides, and a prefix is first), capitals, underscore,
+	// small letters ("a_" before "alpha": '_' is 0x5F and 'l' is 0x6C). The order of names outside ASCII is tested through the keys of a map,
+	// which are not under the rule, and through CompareUTF16.
 	want := []listed{
-		{"10", 10, false}, {"2", 11, false}, {"B", 6, false}, {"Mid", 4, false}, {"_", 5, false},
-		{"alpha", 1, true}, {"b", 7, true}, {"zeta", 0, false}, {bold, 8, false}, {dalet, 9, false},
+		{"10", 10, false}, {"2", 11, false}, {"B", 6, false}, {"Mid", 4, false}, {"Z", 8, false}, {"_", 5, false},
+		{"a_", 9, false}, {"alpha", 1, true}, {"b", 7, true}, {"zeta", 0, false},
 	}
 	if !slices.Equal(got, want) {
 		t.Errorf("the fields are\n  %v\nwant\n  %v", got, want)
@@ -966,21 +1002,15 @@ func TestAnEmbeddedFieldIsRefusedWhateverItIs(t *testing.T) {
 }
 
 func TestValidNameRule(t *testing.T) {
-	// The rule is the one that encoding/json had for the name in a tag up to Go 1.26: letters,
-	// digits and the punctuation !#$%&()*+-./:;<=>?@[]^_{|}~ and the space, and nothing else. The
-	// encoding/json of Go 1.27 is built on the second version of the package and uses a name that
-	// is any text, so the standard encoder is not a witness for the rule here; the rule is written
-	// out again, for ASCII by its list and for the rest by the classes of Unicode, and tried one
-	// character at a time between two letters.
+	// The rule is ritueel's own: ASCII letters, digits and the underscore. The standard encoder is
+	// not a witness for it (it takes more, and the encoding/json of Go 1.27 takes any text), so the
+	// rule is written out again here and every character of the BMP up to U+3000 and some above is
+	// tried between two letters. The table of every ASCII byte, alone and inside a name, the
+	// forms with a dash, the Go names and the names of the formats are in names_test.go.
 	rule := func(c rune) bool {
-		switch {
-		case c < 0x80:
-			return c >= 'a' && c <= 'z' || c >= 'A' && c <= 'Z' || c >= '0' && c <= '9' || strings.ContainsRune("!#$%&()*+-./:;<=>?@[]^_{|}~ ", c)
-		default:
-			return unicode.IsLetter(c) || unicode.IsDigit(c)
-		}
+		return c >= 'a' && c <= 'z' || c >= 'A' && c <= 'Z' || c >= '0' && c <= '9' || c == '_'
 	}
-	chars := []rune{0x1D400, 0x1F600, 0xFB33, 0xFF21, 0x10FFFF}
+	chars := []rune{0x1D400, 0x1F600, 0xFB33, 0xFF21, 0xFF10, 0x10FFFF, 0x212A, 0x0430, 0x00E9}
 	for c := rune(1); c < 0x3000; c++ {
 		chars = append(chars, c)
 	}
