@@ -5,7 +5,7 @@ sidebar:
   order: 17
 ---
 
-**Revoking is the emergency exit.** It declares a key untrustworthy now, whatever date its certificate says. It is used when a key is compromised or lost, or when a key was retired and old signatures should still be believed.
+**Revoking is the emergency exit.** It declares a key untrustworthy now, whatever date its certificate says. It is used when a key is compromised or lost, or when a key was retired and old signatures should still be believed. This page assumes the [basics](/learn/what-is-a-root/#keys-from-zero) and [the custody chain](/learn/custody-chain/).
 
 ## Make it before you need it
 
@@ -13,6 +13,8 @@ A revocation made after a key is lost cannot be made at all, and one made in a h
 
 - **OpenPGP: a revocation signature** for the primary key, made at creation and stored apart from the card, in at least two places. With it the primary key can be revoked even if its card and PIN are gone.
 - **X.509: the means to publish a list that leaves the key out.** An intermediate is revoked by a *certificate revocation list* (CRL) signed by the root key that issued it. A root key is revoked by a root list without it, signed by the surviving keys with its removal authorisation attached, and a CA bundle without it.
+
+A root with more than one key has this material for each key. [Two roots in practice](/learn/two-roots/#moving-and-mixing) shows how a key is added, moved, retired and revoked.
 
 ## Reasons matter
 
