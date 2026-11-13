@@ -30,7 +30,7 @@ ritueel writes the three files together, in a numbered trust set of [the bundle]
 
 The root list holds the active root keys, each pinned by the SHA-256 of its SubjectPublicKeyInfo and, for OpenPGP, the primary's fingerprint, with the sequence, the signing time, the expiry and the digest of the end of the history. Its members keep the names `roots` and `label` ([record 0006](../decisions/0006-bundle-history-and-trust-files.md), rule 16).
 
-`root-list.json` is one UTF-8 object with no byte order mark and no more than 256 KiB. A member name appears once; a member this page does not define is an error. Numbers are integers. A time is `YYYY-MM-DDThh:mm:ssZ` in UTC (RFC 3339, whole seconds). A digest is SHA-256 in lower-case hexadecimal. The writer serialises it in the canonical form of RFC 8785, with no trailing newline, so the same bundle gives the same bytes.
+`root-list.json` is one UTF-8 object with no byte order mark and no more than 256 KiB. A member name appears once; a member this page does not define is an error. Numbers are integers. An integer is between −9007199254740991 and 9007199254740991, the range that the canonical form of RFC 8785 holds exactly. A time is `YYYY-MM-DDThh:mm:ssZ` in UTC (RFC 3339, whole seconds). A digest is SHA-256 in lower-case hexadecimal. The writer serialises it in the canonical form of RFC 8785, with no trailing newline, so the same bundle gives the same bytes.
 
 | Member | Required | Meaning |
 |---|---|---|
