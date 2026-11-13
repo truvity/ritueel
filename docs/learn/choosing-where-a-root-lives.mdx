@@ -93,6 +93,8 @@ Whoever has your key and what opens it can sign for you. For a software key that
 
 Two more limits apply when a root is used on the workstation. If you are tricked into one extra touch, one unknown signature exists, and a card keeps no log of it ([record 0005](../decisions/0005-a-ceremony-and-where-it-runs.md), rule 25). For a cloud root, nothing in AWS ties a signature to a person: anyone who can assume the ceremony role can sign any digest without ritueel, and its audit trail records it ([record 0004](../decisions/0004-the-cloud-root.md), rule 10).
 
+Public and government rules for CAs ask for things that a ritueel root does not do. They ask that two people act together to use a CA key (ETSI EN 319 411-1, GEN-6.4.3-02; US Federal PKI Common Policy 6.2.2), and to back one up or recover it (CA/Browser Forum Baseline Requirements 5.2.2). Here one root card and its PIN, or one cloud role, is enough. They ask for a witness or a video of the key's birth: ritueel needs neither. They ask for a certified module, FIPS 140 level 3 or Common Criteria EAL 4: no level is claimed for a root card. These rules bind public CAs, trust service providers and federal systems, not a private root. ritueel names the gaps and accepts them.
+
 ## Where to go next
 
 - The key stores in plain words: [where a key lives](/learn/key-stores/).
