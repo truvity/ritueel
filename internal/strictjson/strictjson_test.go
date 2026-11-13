@@ -45,8 +45,8 @@ var accepted = []rule{
 	{"members of every kind", `{"s":"x","n":-12,"t":true,"f":false,"o":{"k":[1,2,{"d":"v"}]},"e":[],"z":{}}`},
 	{"minus zero", `{"a":-0}`},
 	{"zero", `{"a":0}`},
-	{"largest int64", `{"a":9223372036854775807}`},
-	{"smallest int64", `{"a":-9223372036854775808}`},
+	{"largest integer of the range", `{"a":9007199254740991}`},
+	{"smallest integer of the range", `{"a":-9007199254740991}`},
 	{"empty string", `{"a":""}`},
 	{"non-ASCII text", `{"a":"é€😀"}`},
 	{"escapes", `{"a":"\"\\\/\b\f\n\r\t\u00e9\u0000"}`},
@@ -84,6 +84,12 @@ var refused = []rule{
 	{"minus zero with a fraction", `{"a":-0.0}`},
 	{"an integer one above int64", `{"a":9223372036854775808}`},
 	{"an integer one below int64", `{"a":-9223372036854775809}`},
+	{"the largest int64", `{"a":9223372036854775807}`},
+	{"the smallest int64", `{"a":-9223372036854775808}`},
+	{"the largest uint64", `{"a":18446744073709551615}`},
+	{"one above the range", `{"a":9007199254740992}`},
+	{"one below the range", `{"a":-9007199254740992}`},
+	{"the first integer that a float cannot hold", `{"a":9007199254740993}`},
 	{"a huge integer", `{"a":99999999999999999999999999999999}`},
 	{"null as a value", `{"a":null}`},
 	{"null in an array", `{"a":[1,null]}`},
@@ -219,7 +225,7 @@ func TestSizeLimit(t *testing.T) {
 		if len(v.A) != 262144-8 {
 			t.Errorf("the value has %d bytes", len(v.A))
 		}
-		if _, ok, err := PeekInt(data, "absent"); err != nil || ok {
+		if _, ok, err := PeekInt(data, "absent", 0); err != nil || ok {
 			t.Errorf("PeekInt on 262144 bytes = ok %v, err %v", ok, err)
 		}
 	})
@@ -272,7 +278,7 @@ func TestSizeLimit(t *testing.T) {
 }
 
 func peekErr(data []byte) error {
-	_, _, err := PeekInt(data, "absent")
+	_, _, err := PeekInt(data, "absent", 0)
 	return err
 }
 
@@ -719,8 +725,8 @@ func TestErrorsDoNotRepeatTheInput(t *testing.T) {
 }
 
 func TestPeekInt(t *testing.T) {
-	big := `{"version":9223372036854775807}`
-	small := `{"version":-9223372036854775808}`
+	big := `{"version":9007199254740991}`
+	small := `{"version":-9007199254740991}`
 	cases := []struct {
 		name string
 		in   string
@@ -738,8 +744,8 @@ func TestPeekInt(t *testing.T) {
 		{"zero", `{"version":0}`, 0, true},
 		{"minus zero", `{"version":-0}`, 0, true},
 		{"a negative number", `{"version":-5}`, -5, true},
-		{"the largest int64", big, 9223372036854775807, true},
-		{"the smallest int64", small, -9223372036854775808, true},
+		{"the largest integer of the range", big, 9007199254740991, true},
+		{"the smallest integer of the range", small, -9007199254740991, true},
 		{"white space around", " \n{ \"version\" : 4 }\n ", 4, true},
 		{"the name written with an escape", `{"vers\u0069on":8}`, 8, true},
 		{"absent", `{"other":1}`, 0, false},
@@ -750,7 +756,7 @@ func TestPeekInt(t *testing.T) {
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			n, ok, err := PeekInt([]byte(tc.in), "version")
+			n, ok, err := PeekInt([]byte(tc.in), "version", 0)
 			if err != nil {
 				t.Fatalf("error: %v", err)
 			}
@@ -777,6 +783,9 @@ func TestPeekIntRefuses(t *testing.T) {
 		{"an object", `{"version":{"x":1}}`},
 		{"an integer above int64", `{"version":9223372036854775808}`},
 		{"an integer below int64", `{"version":-9223372036854775809}`},
+		{"an integer one above the range", `{"version":9007199254740992}`},
+		{"an integer one below the range", `{"version":-9007199254740992}`},
+		{"the largest int64", `{"version":9223372036854775807}`},
 		{"empty input", ``},
 		{"an array at top level", `[1]`},
 		{"a number at top level", `1`},
@@ -794,7 +803,7 @@ func TestPeekIntRefuses(t *testing.T) {
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			n, ok, err := PeekInt([]byte(tc.in), "version")
+			n, ok, err := PeekInt([]byte(tc.in), "version", 0)
 			if !errors.Is(err, ErrMalformed) {
 				t.Fatalf("PeekInt = %d, %v, %v; want ErrMalformed", n, ok, err)
 			}
@@ -809,7 +818,7 @@ func TestPeekIntReadsNothingElseInAFileOfAnotherVersion(t *testing.T) {
 	// The reason PeekInt exists: a file of a version the reader does not know can hold anything
 	// a later version adds, and its version is still found.
 	in := `{"version":2,"later":{"ratio":1.5,"none":null,"list":[0.1,null]},"roots":[{"label":"A","extra":true}]}`
-	n, ok, err := PeekInt([]byte(in), "version")
+	n, ok, err := PeekInt([]byte(in), "version", 0)
 	if err != nil || !ok || n != 2 {
 		t.Fatalf("PeekInt = %d, %v, %v", n, ok, err)
 	}
@@ -829,7 +838,7 @@ func TestPeekIntReadsNothingElseInAFileOfAnotherVersion(t *testing.T) {
 // Unmarshal reads into a struct that takes anything, so that only the rules of the package refuse.
 func refusalOf(data string) map[string]error {
 	var v struct{}
-	_, _, peek := PeekInt([]byte(data), "version")
+	_, _, peek := PeekInt([]byte(data), "version", 0)
 	return map[string]error{
 		"Check":     Check([]byte(data), 0),
 		"Unmarshal": Unmarshal([]byte(data), &v, Options{AllowUnknown: true}),
@@ -915,8 +924,8 @@ func TestPeekIntMemberThatIsNotAnInteger(t *testing.T) {
 	// A member that is there but is not an integer that fits int64 is refused with the text that
 	// says which of the two it is: not an integer at all, or an integer too large.
 	const notInt = `malformed JSON: $.version: not an integer`
-	const tooBig = `malformed JSON: $.version: the integer does not fit 64 bits`
 	const twice = `malformed JSON: $.version: the member appears twice`
+	tooBig := func(digits string) string { return "malformed JSON: $.version: " + outside(digits) }
 	cases := []struct{ name, in, want string }{
 		{"a fraction", `{"version":1.5}`, notInt},
 		{"a fraction of zero", `{"version":1.0}`, notInt},
@@ -938,15 +947,19 @@ func TestPeekIntMemberThatIsNotAnInteger(t *testing.T) {
 		{"an object", `{"version":{"x":1}}`, notInt},
 		{"an empty object", `{"version":{}}`, notInt},
 		{"a fraction among other members", `{"a":1,"version":1.5,"b":2}`, notInt},
-		{"an integer one above int64", `{"version":9223372036854775808}`, tooBig},
-		{"an integer one below int64", `{"version":-9223372036854775809}`, tooBig},
-		{"a huge integer", `{"version":99999999999999999999999999999999}`, tooBig},
+		{"an integer one above int64", `{"version":9223372036854775808}`, tooBig("9223372036854775808")},
+		{"an integer one below int64", `{"version":-9223372036854775809}`, tooBig("-9223372036854775809")},
+		{"a huge integer", `{"version":99999999999999999999999999999999}`, tooBig("99999999999999999999999999999999")},
+		{"one above the range", `{"version":9007199254740992}`, tooBig("9007199254740992")},
+		{"one below the range", `{"version":-9007199254740992}`, tooBig("-9007199254740992")},
+		{"the largest int64", `{"version":9223372036854775807}`, tooBig("9223372036854775807")},
+		{"a number of 200000 digits", `{"version":` + repeat("9", 200000) + `}`, tooBig(repeat("9", 200000))},
 		{"a repeated member", `{"version":1,"version":2}`, twice},
 		{"a repeated member, a fraction the second time", `{"version":1,"version":1.5}`, twice},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			n, ok, err := PeekInt([]byte(tc.in), "version")
+			n, ok, err := PeekInt([]byte(tc.in), "version", 0)
 			if !errors.Is(err, ErrMalformed) {
 				t.Fatalf("PeekInt = %d, %v, %v; want ErrMalformed", n, ok, err)
 			}
@@ -959,14 +972,14 @@ func TestPeekIntMemberThatIsNotAnInteger(t *testing.T) {
 		})
 	}
 	t.Run("the name in the error is the one asked for", func(t *testing.T) {
-		_, _, err := PeekInt([]byte(`{"v2":1.5}`), "v2")
+		_, _, err := PeekInt([]byte(`{"v2":1.5}`), "v2", 0)
 		if want := `malformed JSON: $.v2: not an integer`; err == nil || err.Error() != want {
 			t.Errorf("err = %v, want %q", err, want)
 		}
 	})
 	t.Run("a member that is not asked for may be anything", func(t *testing.T) {
 		for _, in := range []string{`{"other":1.5,"version":1}`, `{"other":"1","version":1}`, `{"other":[1.5,null],"version":1}`} {
-			if n, ok, err := PeekInt([]byte(in), "version"); err != nil || !ok || n != 1 {
+			if n, ok, err := PeekInt([]byte(in), "version", 0); err != nil || !ok || n != 1 {
 				t.Errorf("%s: PeekInt = %d, %v, %v", in, n, ok, err)
 			}
 		}
@@ -1001,7 +1014,7 @@ func TestTextsOfTheRefusals(t *testing.T) {
 	strict := []struct{ name, in, want string }{
 		{"a fraction", `{"a":1.5}`, "malformed JSON: $.a: a number with a fraction or an exponent at byte 8"},
 		{"an exponent", `{"a":1e2}`, "malformed JSON: $.a: a number with a fraction or an exponent at byte 8"},
-		{"an integer above int64", `{"a":9223372036854775808}`, "malformed JSON: $.a: the integer does not fit 64 bits at byte 24"},
+		{"an integer above int64", `{"a":9223372036854775808}`, "malformed JSON: $.a: " + outside("9223372036854775808") + " at byte 24"},
 		{"null", `{"a":null}`, "malformed JSON: $.a: null at byte 9"},
 		{"a repeated member", `{"a":1,"a":2}`, "malformed JSON: $.a: the member appears twice at byte 10"},
 		{"a lone surrogate", `{"a":"` + `\` + `ud800"}`, "malformed JSON: $.a: a lone surrogate escape at byte 12"},

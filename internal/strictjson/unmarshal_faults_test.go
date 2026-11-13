@@ -326,24 +326,25 @@ func TestNoFloatAnywhere(t *testing.T) {
 		}
 	})
 	t.Run("an integer is never read through a float", func(t *testing.T) {
-		// 2^53+1 is the first integer that a float cannot hold; it is read exactly.
+		// 2^53-1 is the largest integer that a float holds with its neighbour: it is read exactly, and
+		// so is the smallest; 2^53+1, the first integer that a float cannot hold, is refused.
 		var v struct {
 			N int64 `json:"n"`
 			A any   `json:"a"`
 		}
-		if err := Unmarshal([]byte(`{"n":9007199254740993,"a":9007199254740993}`), &v, Options{}); err != nil {
+		if err := Unmarshal([]byte(`{"n":9007199254740991,"a":9007199254740991}`), &v, Options{}); err != nil {
 			t.Fatal(err)
 		}
-		if v.N != 9007199254740993 || v.A != int64(9007199254740993) {
+		if v.N != safeMax || v.A != safeMax {
 			t.Errorf("the integer was rounded: %v %v", v.N, v.A)
 		}
-		// The largest and the smallest int64 are read exactly in any.
-		if err := Unmarshal([]byte(`{"n":-9223372036854775808,"a":9223372036854775807}`), &v, Options{}); err != nil {
+		if err := Unmarshal([]byte(`{"n":-9007199254740991,"a":-9007199254740991}`), &v, Options{}); err != nil {
 			t.Fatal(err)
 		}
-		if v.N != -9223372036854775808 || v.A != int64(9223372036854775807) {
+		if v.N != safeMin || v.A != safeMin {
 			t.Errorf("v = %+v", v)
 		}
+		fail(t, Unmarshal([]byte(`{"n":9007199254740993,"a":0}`), &v, Options{}), mal("$.n", outside("9007199254740993")+" at byte 21"))
 	})
 	t.Run("no Go type with a float is read, whatever the document says", func(t *testing.T) {
 		for _, doc := range []string{`{}`, `{"F":1}`, `{"F":1.5}`, `{"F":"x"}`, `not json`} {
@@ -371,7 +372,7 @@ func TestNoFloatAnywhere(t *testing.T) {
 				{"an unknown member", &struct{}{}},
 			} {
 				doc := `{"a":` + n + `}`
-				fail(t, Unmarshal([]byte(doc), tc.v, Options{AllowUnknown: true}), mal("$.a", "the integer does not fit 64 bits"+byteAfter(doc, n)))
+				fail(t, Unmarshal([]byte(doc), tc.v, Options{AllowUnknown: true}), mal("$.a", outside(n)+byteAfter(doc, n)))
 			}
 		}
 	})

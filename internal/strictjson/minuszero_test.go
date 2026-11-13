@@ -155,7 +155,7 @@ func TestMinusZeroIsTheIntegerZeroInTheParser(t *testing.T) {
 			}
 		}
 	}
-	if n, ok, err := PeekInt([]byte(`{"version":-0}`), "version"); err != nil || !ok || n != 0 {
+	if n, ok, err := PeekInt([]byte(`{"version":-0}`), "version", 0); err != nil || !ok || n != 0 {
 		t.Errorf("PeekInt: %d, %v, %v", n, ok, err)
 	}
 }

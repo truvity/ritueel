@@ -50,7 +50,7 @@ func TestParseReturnsTheTreeWithItsPlaceInTheInput(t *testing.T) {
 		{"white space inside is part of the bytes of each node, but not around them", "{ \"a\" : [ 1 , 2 ] , \"b\" : { } }",
 			"obj{\"a\":list[int(1)<1>,int(2)<2>]<[ 1 , 2 ]>,\"b\":obj{}<{ }>}<{ \"a\" : [ 1 , 2 ] , \"b\" : { } }>"},
 		{"minus zero is the integer zero and keeps its bytes", `{"a":-0}`, `obj{"a":int(0)<-0>}<{"a":-0}>`},
-		{"the extremes of int64", `{"a":9223372036854775807,"b":-9223372036854775808}`, `obj{"a":int(9223372036854775807)<9223372036854775807>,"b":int(-9223372036854775808)<-9223372036854775808>}<{"a":9223372036854775807,"b":-9223372036854775808}>`},
+		{"the extremes of the range", `{"a":9007199254740991,"b":-9007199254740991}`, `obj{"a":int(9007199254740991)<9007199254740991>,"b":int(-9007199254740991)<-9007199254740991>}<{"a":9007199254740991,"b":-9007199254740991}>`},
 		{"escapes are read in the text and kept in the bytes", `{"a":"` + bs + `n` + uesc('A') + `"}`, `obj{"a":str("\nA")<"` + bs + `n` + uesc('A') + `">}<{"a":"` + bs + `n` + uesc('A') + `"}>`},
 		{"a name with an escape is read", `{"` + uesc('a') + `":1}`, `obj{"a":int(1)<1>}<{"` + uesc('a') + `":1}>`},
 		{"a surrogate pair is one character", `{"a":"` + bs + `ud83d` + bs + `ude00"}`, `obj{"a":str("` + string(rune(0x1F600)) + `")<"` + bs + `ud83d` + bs + `ude00">}<{"a":"` + bs + `ud83d` + bs + `ude00"}>`},
@@ -145,15 +145,15 @@ func TestTheErrorsOfTheGrammar(t *testing.T) {
 		})
 	}
 	t.Run("a lone low surrogate is text to PeekInt, which does not apply that rule", func(t *testing.T) {
-		n, ok, err := PeekInt([]byte(`{"version":4,"a":"`+bs+`udc00","`+bs+`ud800":1}`), "version")
+		n, ok, err := PeekInt([]byte(`{"version":4,"a":"`+bs+`udc00","`+bs+`ud800":1}`), "version", 0)
 		if err != nil || !ok || n != 4 {
 			t.Errorf("%d, %v, %v", n, ok, err)
 		}
 		// The name of a lone surrogate reads as U+FFFD, which is not the name that is asked for.
-		if _, ok, err := PeekInt([]byte(`{"`+bs+`ud800":4}`), "version"); err != nil || ok {
+		if _, ok, err := PeekInt([]byte(`{"`+bs+`ud800":4}`), "version", 0); err != nil || ok {
 			t.Errorf("%v, %v", ok, err)
 		}
-		if _, ok, err := PeekInt([]byte(`{"`+bs+`ud800":4}`), string(rune(0xFFFD))); err != nil || !ok {
+		if _, ok, err := PeekInt([]byte(`{"`+bs+`ud800":4}`), string(rune(0xFFFD)), 0); err != nil || !ok {
 			t.Errorf("a name that is a lone surrogate is read as U+FFFD: %v, %v", ok, err)
 		}
 	})

@@ -77,20 +77,20 @@ func TestPeekIntReportsARepeatedMemberAtItsOwnPath(t *testing.T) {
 		{"the second a fraction", `{"version":1,"version":1.5}`},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			n, ok, err := PeekInt([]byte(tc.doc), "version")
+			n, ok, err := PeekInt([]byte(tc.doc), "version", 0)
 			if want := "malformed JSON: $.version: the member appears twice"; err == nil || err.Error() != want || ok || n != 0 {
 				t.Errorf("PeekInt = %d, %v, %v; want %s", n, ok, err, want)
 			}
 		})
 	}
 	t.Run("a member that is repeated and is not the one asked for is not its business", func(t *testing.T) {
-		n, ok, err := PeekInt([]byte(`{"a":1,"a":2,"version":7}`), "version")
+		n, ok, err := PeekInt([]byte(`{"a":1,"a":2,"version":7}`), "version", 0)
 		if err != nil || !ok || n != 7 {
 			t.Errorf("%d, %v, %v", n, ok, err)
 		}
 	})
 	t.Run("the name asked for in a path that is not plain", func(t *testing.T) {
-		_, _, err := PeekInt([]byte(`{"a b":1,"a b":2}`), "a b")
+		_, _, err := PeekInt([]byte(`{"a b":1,"a b":2}`), "a b", 0)
 		if want := `malformed JSON: $."a b": the member appears twice`; err == nil || err.Error() != want {
 			t.Errorf("%v; want %s", err, want)
 		}
