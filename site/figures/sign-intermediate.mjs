@@ -1,108 +1,90 @@
-// How ritueel helps you sign an intermediate certificate with a root card on your own workstation: six
-// panels. The accent is the plan, the one sheet that carries the digest and the numbers of signatures
-// and touches. Rests on the hand-off contract (What travels, Messages and files, What the requester
-// checks) and on record 0005 (rules 23 and 24: a key that cannot be copied may be used on the holder's
-// workstation under four conditions: a touch for every signature, the number of signatures stated in
-// the plan, no retry of a failed touch, and the result checked against the plan on a second device).
-import { acc, arrow, bubble, card, check, circle, laptop, line, person, rect, server, sheet, text } from './draw.mjs';
-import { B, DIGEST, FP, bundle, note, plan, pnl, terminal, under } from './parts.mjs';
+// How ritueel helps you sign an intermediate certificate with a root card on your own workstation, told in
+// the three things of every ceremony, like the figure `ceremony`: what is wanted, the plan, apply. The
+// accent is the plan, the one sheet that carries the digest and the numbers of signatures and touches.
+// Rests on the hand-off contract (What travels, Messages and files) and on these records:
+// - record 0005, rule 7: the plan; record 0005, rule 9: the eight typed characters;
+// - record 0005, rules 10 and 12: the attempt first, the ceremony record last;
+// - record 0005, rule 23: a key that cannot be copied may be used on the holder's workstation with a
+//   touch for every signature, the number of signatures stated in the plan, no retry of a failed touch
+//   and the result checked against the plan on a second device.
+// The check on the second device and the hand-over come after the ceremony: the page says them in the
+// caption of the figure; they are not panels.
+import { acc, arrow, card, line, rect, server, sheet, text } from './draw.mjs';
+import { DIGEST, FP, bundle, moments, note, pnl, terminal, under } from './parts.mjs';
 
 function p1() {
   let b = '';
-  b += server(14, B, 52);
-  b += arrow(70, 86, 104, 86, 'prints', { lx: 87, ly: 78 });
-  b += rect(108, 44, 156, 58, 'paper', 5) + text(118, 66, 'key fingerprint', 't t-s t-dim') + text(118, 88, FP, 't t-d t-mono t-b');
-  b += arrow(70, 142, 104, 142, 'writes', { lx: 87, ly: 134 });
-  b += note(112, 118, 58, 46, 'request', false, false) + note(176, 118, 46, 46, 'proof', false, false);
-  b += under(40, 'server card');
-  return pnl(1, 'The requester’s server', b, 'A rack with two drawers and its server card in a slot. One arrow writes two sheets, the request and the proof, and another prints the key’s fingerprint on a small screen.');
+  // the requester's server prints the fingerprint of its key and writes the request and the proof
+  b += server(18, 150, 44);
+  b += under(40, 'server card', 170);
+  b += arrow(66, 66, 100, 66, 'prints', { lx: 83, ly: 58 });
+  b += rect(104, 36, 168, 38, 'paper', 5) + text(112, 53, 'key fingerprint', 't t-s t-dim') + text(112, 69, FP, 't t-d t-mono t-b');
+  b += arrow(66, 104, 100, 104, 'writes', { lx: 83, ly: 96 });
+  b += note(104, 82, 58, 42, 'request', false, false) + note(168, 82, 46, 42, 'proof', false, false);
+  // you put the files in the requests part of your bundle
+  b += arrow(114, 128, 114, 158, 'copies', { lx: 150, ly: 148 });
+  b += bundle(100, 212, 172, 52, 'bundle acme');
+  b += rect(108, 186, 156, 20, 'paper-t', 4) + text(116, 200, 'requests/', 't t-s t-mono');
+  return pnl(1, '', b, 'A rack with two drawers and its server card in a slot. One arrow prints the key’s fingerprint on a small screen, and another writes two sheets, the request and the proof. An arrow copies the sheets into the requests part of a bundle called acme.');
 }
 
 function p2() {
   let b = '';
-  b += note(6, 60, 58, 44, 'request', false, false) + note(68, 60, 40, 44, 'proof', false, false);
-  // the bundle: requests on top, its history below, and the plan written there
-  b += bundle(150, 214, 124, 160, 'bundle acme');
-  b += rect(158, 76, 108, 32, 'paper-t', 4) + text(166, 97, 'requests/', 't t-s t-mono');
-  b += rect(158, 116, 108, 90, 'paper-t', 4) + text(166, 132, 'history', 't t-s t-b');
-  b += plan(172, 142, 80, 54);
-  b += arrow(112, 82, 160, 90, 'copies', { lx: 124, ly: 114 });
-  b += terminal(6, 142, 82, 44) + text(14, 170, '$ apply', 't t-s t-mono');
-  b += arrow(96, 168, 170, 168, 'writes', { lx: 124, ly: 160, accent: 'plan' });
-  return pnl(2, 'Your workstation', b, 'Two sheets, request and proof, are copied into the requests part of the bundle acme. Then the terminal runs apply, which writes the plan sheet, with its digest, into the history part of the same bundle.');
+  b += terminal(6, 112, 92, 52) + text(12, 140, '$ apply', 't t-s t-mono') + text(12, 155, '--plan-only', 't t-s t-mono');
+  b += arrow(104, 138, 136, 138, 'writes', { lx: 120, ly: 130, accent: 'plan' });
+  // the plan: one sheet, with what this job fixes in it, and the digest written on it
+  const x = 142, y = 38, w = 132, h = 140;
+  let p = sheet(x, y, w, h, { accent: true, rows: 0 }) + text(x + 10, y + 24, 'plan', 't t-b t-acc');
+  ['request', 'serial', 'times'].forEach((s, i) => {
+    const yy = y + 46 + i * 15;
+    p += text(x + 10, yy, s, 't t-s t-acc') + line(x + 66, yy - 4, x + w - 12, yy - 4, 'ln ln-thin ln-acc');
+  });
+  ['signatures', 'touches'].forEach((s, i) => {
+    const yy = y + 91 + i * 15;
+    p += text(x + 10, yy, s, 't t-s t-acc') + text(x + w - 14, yy, '1', 't t-s t-mono t-acc t-b', 'e');
+  });
+  p += line(x + 10, y + 108, x + w - 12, y + 108, 'ln ln-thin ln-acc') + text(x + 10, y + 128, DIGEST, 't t-mono t-acc t-b');
+  b += acc('plan', p);
+  b += under(52, 'no card needed', 190);
+  b += under(208, 'in history/', 194);
+  return pnl(2, 'Anywhere', b, 'A terminal runs the command apply with the option that stops after the plan. It writes one sheet, the plan, with lines for the request, the serial and the times, the number of signatures and of touches, each 1, and the digest 7f3a 91c2 at its foot. A note says it goes into history. No card is in the picture.');
 }
 
 function p3() {
+  const cx = 14;
   let b = '';
-  b += terminal(6, 60, 128, 96);
-  b += text(14, 90, 'type to confirm', 't t-s t-dim');
-  b += acc('plan', text(14, 109, DIGEST, 't t-d t-mono t-acc t-b') + line(14, 114, 90, 114, 'ln ln-thin ln-acc'));
-  b += text(14, 131, `fp ${FP}`, 't t-s t-mono');
-  b += text(14, 147, 'same as printed?', 't t-s t-dim');
-  b += under(70, 'terminal');
-  b += person(232, B, [[-1, 168, 150]]);
-  b += bubble(172, 22, 96, 42, 232, 232, 76, []) + text(220, 42, DIGEST, 't t-s t-mono t-b', 'm') + text(220, 56, 'first eight', 't t-s t-dim', 'm');
-  b += under(232, 'you');
-  return pnl(3, 'Your workstation', b, 'A terminal shows the digest and the key fingerprint, with the question whether it is the one the requester printed. The holder types the digest’s first eight characters, shown in a speech bubble.');
-}
-
-function p4() {
-  let b = '';
-  b += terminal(6, 60, 108, 84);
-  b += text(14, 90, 'signature 1/1', 't t-s t-mono');
-  b += text(14, 110, 'touch the card', 't t-s t-dim');
-  b += text(14, 130, 'no retry', 't t-s t-dim');
-  b += under(60, 'terminal');
-  b += rect(126, 156, 62, 8, 'paper-t', 2) + card(134, 126, 46, 28);
-  b += under(157, 'root card');
-  b += arrow(148, 120, 148, 84, 'signs', { lx: 178, ly: 98 });
-  b += note(132, 44, 32, 40, 'cert');
-  b += text(178, 120, 'touch', 't t-s t-b', 'm');
-  b += person(232, B, [[-1, 190, 146]]);
-  b += under(232, 'you');
-  return pnl(4, 'Your workstation', b, 'The terminal says the signature is 1 of 1, asks for a touch and says there is no retry. The holder touches the root card in its reader; an arrow from the card to a certificate sheet shows what the card signs.');
-}
-
-function p5() {
-  let b = '';
-  b += note(8, 52, 54, 44, 'cert');
-  b += laptop(20, 112, 64, 44);
-  b += under(52, 'workstation');
-  // the second device: a tablet outline with a screen, a button below the screen
-  b += rect(146, 36, 128, 132, 'paper', 12) + rect(154, 44, 112, 104, 'paper-t', 4) + circle(210, 158, 3.5, 'fill-ink');
-  b += plan(160, 52, 100, 50);
-  b += check(160, 128, 1.2) + text(181, 132, 'same as plan', 't t-s t-b');
-  b += under(210, 'second device');
-  b += arrow(66, 74, 150, 74, 'compares', { lx: 108, ly: 66 });
-  return pnl(5, 'Second device', b, 'A certificate sheet lies next to a laptop. A second device, drawn as a tablet, shows the plan sheet and a tick. The tick says the certificate is the same as the plan. An arrow shows the certificate being compared.');
-}
-
-function p6() {
-  let b = '';
-  b += server(14, B, 52);
-  b += arrow(72, 86, 108, 86, 'checks', { lx: 90, ly: 78 });
-  b += rect(112, 44, 74, 56, 'paper', 5) + text(117, 64, 'chains to', 't t-s t-mono') + text(117, 80, 'root', 't t-s t-mono') + check(148, 76, 1);
-  // the record that ritueel wrote at the workstation: it says where the ceremony ran
-  b += sheet(194, 36, 78, 76, { rows: 0 }) + text(233, 56, 'ceremony', 't t-s t-b', 'm') + text(233, 70, 'record', 't t-s t-b', 'm') + text(233, 88, 'ran on', 't t-s t-dim', 'm') + text(233, 102, 'workstation', 't t-s t-dim', 'm');
-  b += arrow(204, 140, 72, 140, 'copies answer', { lx: 140, ly: 132 });
-  b += note(100, 146, 46, 30, 'cert');
-  b += laptop(206, 120, 52, 34);
-  b += under(232, 'workstation');
-  b += under(40, 'server card');
-  return pnl(6, 'The requester’s server', b, 'A laptop sends the certificate sheet to the rack with one arrow. A second arrow shows the rack’s small screen checking that the certificate chains to the root it trusts. The server card is still in its slot. Above the laptop, a sheet called ceremony record says it ran on the workstation.');
+  b += moments(
+    38,
+    [
+      {
+        h: 54,
+        icon: (cy) => acc('plan', rect(cx, cy - 16, 96, 32, 'acc-f', 6) + text(cx + 48, cy + 5, DIGEST, 't t-d t-mono t-acc t-b', 'm')),
+        lines: ['you type the first', 'eight characters'],
+      },
+      {
+        h: 54,
+        icon: (cy) => rect(cx - 4, cy + 14, 52, 6, 'paper-t', 2) + card(cx, cy - 14, 44, 28) + arrow(cx + 50, cy, cx + 82, cy, 'signs', { lx: cx + 66, ly: cy - 8 }) + note(cx + 86, cy - 17, 34, 34, 'cert'),
+        lines: [['one touch', 't t-s t-b'], 'for each signature'],
+      },
+      {
+        h: 54,
+        icon: (cy) => note(cx, cy - 19, 58, 38, 'record'),
+        lines: ['ceremony record', ['written last', 't t-s t-b']],
+      },
+    ],
+    { textX: 144, chevX: cx + 40 },
+  );
+  return pnl(3, 'Your workstation', b, 'Three moments one under another, with a small chevron between them. The digest 7f3a 91c2 in an accent box, with the words that you type its first eight characters. A root card in its reader, an arrow signs to a certificate sheet, and the words one touch for each signature. A sheet called record and the words ceremony record written last.');
 }
 
 export default {
   id: 'sign-intermediate',
   kind: 'strip',
-  label: 'Six panels: signing an intermediate certificate with a root card on a workstation',
+  label: 'Three panels: signing the intermediate of a requester with a root card on a workstation, from the request to apply',
   caption: 'Signing the intermediate of a requester with a root card, on your workstation. The accent follows the plan.',
   panels: [
-    { n: 1, title: 'Ask', caption: 'The requester writes a request, a proof and a fingerprint.', svg: p1() },
-    { n: 2, title: 'Plan', caption: 'You copy them into the bundle and run apply. The plan: one signature, one touch.', svg: p2() },
-    { n: 3, title: 'Confirm', caption: 'You type the digest’s start and compare the fingerprint.', svg: p3() },
-    { n: 4, title: 'Touch, sign', caption: 'One touch for each signature. A failed touch ends the ceremony.', svg: p4() },
-    { n: 5, title: 'Second check', caption: 'You check the certificate against the plan on a second device.', svg: p5() },
-    { n: 6, title: 'Hand over', caption: 'The ceremony record is written last. You hand the certificate over after the second check.', svg: p6() },
+    { n: 1, title: 'Wanted', caption: 'The requester asks with a request and a proof. You put both in requests/.', svg: p1() },
+    { n: 2, title: 'Plan', caption: 'ritueel writes the plan: one signature, one touch, and its digest. No card is needed.', svg: p2() },
+    { n: 3, title: 'Apply', caption: 'You type eight characters and touch the card for each signature. The ceremony record comes last.', svg: p3() },
   ],
 };
