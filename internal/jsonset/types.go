@@ -208,8 +208,13 @@ func through(r *Refusal, first Hop) *Refusal {
 
 // foreign says why a type that writes or reads its own JSON or text, or the json.Number that the
 // standard encoder writes as a bare number, is refused: what such a type does is not something
-// these packages can vouch for. It is empty for any other type.
+// these packages can vouch for. It is empty for any other type. A pointer type is not asked: the
+// method set of *T holds the methods of T, so *Raw would be refused for the methods of Raw; the
+// methods are asked of T when the walk reaches it, and a method on *T is found there too.
 func foreign(t reflect.Type) string {
+	if t.Kind() == reflect.Pointer {
+		return ""
+	}
 	if t.PkgPath() == "encoding/json" && t.Name() == "Number" {
 		return "encoding/json writes a json.Number as a bare number; use an integer type"
 	}

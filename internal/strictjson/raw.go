@@ -10,7 +10,9 @@ import (
 // are in the input, from its opening brace to its closing brace, so that a signature over them
 // can be checked. A Raw holds one JSON object, as the whole of a document does; a member that is
 // a list, a string, a number or a boolean cannot fill one. package canonjson writes a Raw in its
-// canonical form and names the type canonjson.Raw too: the two names are one type.
+// canonical form and names the type canonjson.Raw too: the two names are one type. A pointer to
+// a Raw is a pointer like any other: Unmarshal makes it for a member that is present, Marshal
+// writes what it points to, and a nil one is left out under omitempty.
 type Raw []byte
 
 // rawType is the one Go type that may have its own UnmarshalJSON and MarshalJSON methods.
