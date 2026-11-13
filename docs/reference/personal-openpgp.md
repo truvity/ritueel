@@ -11,7 +11,7 @@ There is no key the company issues to staff: every person uses OpenPGP as their 
 
 ## The bundle
 
-A person's own key is one trust domain, so it has a bundle of its own. A person who also runs a company keeps the personal bundle apart from the company's, and the same pair of root cards may serve both ([record 0003](../decisions/0003-root-cards.md)).
+A person's own key has a bundle of its own. A person who also runs a company keeps the personal bundle apart from the company's, and the same pair of root cards may serve both ([record 0003](../decisions/0003-root-cards.md)).
 
 ```yaml
 version: 1

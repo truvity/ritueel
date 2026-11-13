@@ -22,7 +22,7 @@ Every command is shown as text with a Copy control. The page reads when you open
 
 ## The demo
 
-[Open the demo](/demo/). It is the real page, built in a demo mode, shown with made-up data. A [bundle](/reference/bundle/) is the directory with a fixed structure that holds everything ritueel knows about one trust domain. The example bundles are:
+[Open the demo](/demo/). It is the real page, built in a demo mode, shown with made-up data. A [bundle](/reference/bundle/) is the directory with a fixed structure that holds everything ritueel knows about one organisation or one person. The example bundles are:
 
 - `acme`: a company with two root cards, three cloud keys (one for each root), a day-to-day card, three roots (X.509, OpenPGP and SSH CA), two delegations and thirteen trust sets. It follows the example of [the bundle page](/reference/bundle/) and has five scenes.
 - `globex`: another company, with three roots, each with one cloud key, and no card.

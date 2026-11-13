@@ -9,7 +9,7 @@ sidebar:
 
 Every ceremony changes what outsiders can trust, and in a year nobody remembers what was done. ritueel keeps the written memory in one **bundle**, a directory of plain files with a fixed structure, that says which roots exist, where each key lives, what was signed, and when. Its write-once part is the **history**, the folder `history/`. It has one ceremony folder per ceremony, with its plan, transcript and ceremony record. Each ceremony record names the one before ([ceremony files](/reference/ceremony-record/)). Nothing needs git. This page is about how to keep the bundle, because the history alone is not enough.
 
-One bundle is one trust domain: the roots, the history and the cards of one organisation or one person. A person who also runs a company keeps two bundles, in two repositories, and backs up and restores each of them on its own.
+One bundle holds the roots, the history and the cards of one organisation or one person. A person who also runs a company keeps two bundles, in two repositories, and backs up and restores each of them on its own.
 
 ## What is in it, and what must not be
 
