@@ -78,14 +78,15 @@ func (e *Error) Unwrap() error { return e.Err }
 var ErrNoReplaceUnsupported = errors.New("the file system does not support a rename that refuses to replace")
 
 // ErrInvalid is wrapped by the error returned for an argument the writer refuses before it
-// touches the file system: a path that is empty, ends with a separator, has a "." or ".."
-// element or an empty element ("a//b"), or a final element with the prefix of a temporary
-// name (compared without case); a name (any element of a path, and the name of a file of a set) that the exFAT file
-// system of a stick cannot hold or holds under another name, which is a control code or one of
-// the characters " * / : < > ? \ |, an end with a dot or a space, a length over 255 bytes, or
-// bytes that are not UTF-8; a name of a set that is not one plain name; a mode with bits
-// beyond the permission bits; a journal line with a newline. Such an error does not stop the
-// writer.
+// touches the file system. For a path: it is empty, ends with a separator, has a "." or ".."
+// element or an empty element ("a//b"), or its final element has the prefix of a temporary
+// name (compared without case). For a name (any element of a path, and the name of a file of
+// a set) that the exFAT file system of a stick cannot hold or holds under another name: a
+// control code or one of the characters " * / : < > ? \ |; an end with a dot or a space; a
+// length over 255 bytes; bytes that are not UTF-8; and, beyond exFAT's list, U+007F,
+// U+0080 to U+009F, U+FFFE and U+FFFF. A name of a set must also be one plain name; a mode
+// must have no bits beyond the permission bits; a journal line must hold no newline. Such an
+// error does not stop the writer.
 var ErrInvalid = errors.New("fsx: invalid argument")
 
 // ErrClosed is returned by a journal that was closed.
