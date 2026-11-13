@@ -42,6 +42,7 @@ package canonjson
 
 import (
 	"bytes"
+	"fmt"
 	"slices"
 	"strconv"
 
@@ -122,7 +123,8 @@ func write(out *bytes.Buffer, v *strictjson.Value) error {
 	case strictjson.Bool:
 		out.WriteString(strconv.FormatBool(v.Bool))
 	default:
-		return jsonset.Errorf(nil, "a value that is not JSON data")
+		// Parse is strict, so it gives no other kind (a fraction and null are refused by it).
+		panic(fmt.Sprintf("canonjson: Parse returned a value of kind %d, which the strict reader refuses", v.Kind))
 	}
 	return nil
 }
