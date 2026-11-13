@@ -253,6 +253,22 @@ func (inv *invocation) onUsageError(_ context.Context, _ *ucli.Command, err erro
 	return UsageError{Msg: err.Error()}
 }
 
+// escaped returns the reason codes with every character outside printable ASCII written as
+// \uXXXX, so that the "reasons" member holds nothing that could reach a terminal raw. A reason is
+// a code that the program chooses, not free text, and every code of docs/reference/cli.md and of
+// the pages it points to is lower-case words joined with hyphens; but no page states that shape
+// as a rule, so a reason that does not fit it is escaped, not refused, until a page decides.
+func escaped(reasons []string) []string {
+	if reasons == nil {
+		return nil
+	}
+	out := make([]string, len(reasons))
+	for i, r := range reasons {
+		out[i] = jsonset.Escape(r)
+	}
+	return out
+}
+
 // finish writes what the end of the run needs and returns the exit code.
 func (inv *invocation) finish(err error) ExitCode {
 	mode, known := outputMode(inv.output)
@@ -262,6 +278,7 @@ func (inv *invocation) finish(err error) ExitCode {
 			return ExitOK // help was shown; it is not a command
 		}
 		res := inv.result
+		res.Reasons = escaped(res.Reasons)
 		res.Output = FormatVersion
 		res.Command = inv.command
 		var werr error
@@ -291,7 +308,7 @@ func (inv *invocation) finish(err error) ExitCode {
 			Command:  inv.command,
 			ExitCode: code,
 			Outcome:  outcome,
-			Reasons:  reasonsOf(err),
+			Reasons:  escaped(reasonsOf(err)),
 			Error:    msg,
 		})
 	}
