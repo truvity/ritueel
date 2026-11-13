@@ -33,4 +33,14 @@ Your daily subkeys, put to work. Each of these uses the tools you have today; cr
 | [Sign software and releases](/guides/openpgp-sign-releases/) | You publish downloads that users should be able to verify. | [OpenPGP release keys](/learn/openpgp-release-keys/) |
 | [OpenPGP or Sigstore](/guides/openpgp-and-sigstore/) | You are choosing how to sign, or want both. | [Custody chains compared](/learn/custody-chains/) |
 
+## Keys under your intermediate and your SSH CA
+
+Advice for the team that runs the issuing system. ritueel makes none of these keys, and nothing in them binds anyone.
+
+| Guide | When | Learn first |
+|---|---|---|
+| [Leaf keys under your intermediate](/guides/leaf-keys/) | You issue server, service or client certificates under a ritueel intermediate and choose their key type and lifetime. | [Private PKI](/learn/chain-private-pki/) |
+| [SSH host and client keys under your SSH CA](/guides/ssh-host-and-client-keys/) | You sign host and user certificates with an SSH CA key and choose the keys they certify. | [SSH](/learn/chain-ssh/) |
+| [PostgreSQL with CloudNativePG under your private PKI](/guides/postgresql-with-cloudnativepg/) | You run PostgreSQL with CloudNativePG and want its certificates from your own issuing system. Read, not run. | [Private PKI](/learn/chain-private-pki/) |
+
 More guides follow, one for each transition between key stores ([issue #19](https://github.com/truvity/ritueel/issues/19)). The drills are tracked in [issue #20](https://github.com/truvity/ritueel/issues/20).

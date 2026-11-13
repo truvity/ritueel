@@ -132,6 +132,8 @@
 /guides/after-a-ceremony https://github.com/truvity/ritueel/blob/main/docs/guides/after-a-ceremony.md 302
 /guides/back-up-and-restore/ https://github.com/truvity/ritueel/blob/main/docs/guides/back-up-and-restore.md 302
 /guides/back-up-and-restore https://github.com/truvity/ritueel/blob/main/docs/guides/back-up-and-restore.md 302
+/guides/leaf-keys/ https://github.com/truvity/ritueel/blob/main/docs/guides/leaf-keys.md 302
+/guides/leaf-keys https://github.com/truvity/ritueel/blob/main/docs/guides/leaf-keys.md 302
 /guides/lost-root-card/ https://github.com/truvity/ritueel/blob/main/docs/guides/lost-root-card.md 302
 /guides/lost-root-card https://github.com/truvity/ritueel/blob/main/docs/guides/lost-root-card.md 302
 /guides/openpgp-and-sigstore/ https://github.com/truvity/ritueel/blob/main/docs/guides/openpgp-and-sigstore.md 302
@@ -144,6 +146,8 @@
 /guides/openpgp-ssh-authentication https://github.com/truvity/ritueel/blob/main/docs/guides/openpgp-ssh-authentication.md 302
 /guides/personal-openpgp/ https://github.com/truvity/ritueel/blob/main/docs/guides/personal-openpgp.md 302
 /guides/personal-openpgp https://github.com/truvity/ritueel/blob/main/docs/guides/personal-openpgp.md 302
+/guides/postgresql-with-cloudnativepg/ https://github.com/truvity/ritueel/blob/main/docs/guides/postgresql-with-cloudnativepg.md 302
+/guides/postgresql-with-cloudnativepg https://github.com/truvity/ritueel/blob/main/docs/guides/postgresql-with-cloudnativepg.md 302
 /guides/prepare-a-root-card/ https://github.com/truvity/ritueel/blob/main/docs/guides/prepare-a-root-card.md 302
 /guides/prepare-a-root-card https://github.com/truvity/ritueel/blob/main/docs/guides/prepare-a-root-card.md 302
 /guides/prepare-the-cloud-root/ https://github.com/truvity/ritueel/blob/main/docs/guides/prepare-the-cloud-root.md 302
@@ -158,6 +162,8 @@
 /guides/rotate-a-key https://github.com/truvity/ritueel/blob/main/docs/guides/rotate-a-key.md 302
 /guides/run-a-drill/ https://github.com/truvity/ritueel/blob/main/docs/guides/run-a-drill.md 302
 /guides/run-a-drill https://github.com/truvity/ritueel/blob/main/docs/guides/run-a-drill.md 302
+/guides/ssh-host-and-client-keys/ https://github.com/truvity/ritueel/blob/main/docs/guides/ssh-host-and-client-keys.md 302
+/guides/ssh-host-and-client-keys https://github.com/truvity/ritueel/blob/main/docs/guides/ssh-host-and-client-keys.md 302
 /learn/ceremonies/ https://github.com/truvity/ritueel/blob/main/docs/learn/ceremonies.md 302
 /learn/ceremonies https://github.com/truvity/ritueel/blob/main/docs/learn/ceremonies.md 302
 /learn/chain-public-pki/ https://github.com/truvity/ritueel/blob/main/docs/learn/chain-public-pki.md 302
