@@ -3,6 +3,7 @@ package strictjson
 import (
 	"errors"
 	"fmt"
+	"reflect"
 	"slices"
 	"strings"
 	"testing"
@@ -322,34 +323,41 @@ func TestMaxDepthIsTenThousand(t *testing.T) {
 
 func TestNestingDepth(t *testing.T) {
 	var v struct{}
-	// The text of every refusal below, without the byte at which the reader stopped.
-	wantText := fmt.Sprintf("%v: nesting deeper than %d levels at byte ", ErrMalformed, MaxDepth)
+	// A document that is too deep is refused at the path of the container that passes the limit,
+	// which is the one at level MaxDepth+1: MaxDepth steps lead to it, and the path shows the last
+	// eight. The text of every refusal below ends with the byte at which the reader stopped.
+	const dots = "$...."
+	const brackets = "$...[0][0][0][0][0][0][0][0]"
+	const members = dots + "a.a.a.a.a.a.a.a"
+	const alternate = dots + "a[0].a[0].a[0].a[0]"
 	cases := []struct {
 		name string
 		data []byte
 		ok   bool
+		path string
 	}{
-		{"objects at the limit", nested(MaxDepth), true},
-		{"objects one over", nested(MaxDepth + 1), false},
-		{"objects far over, within the size limit", nested(DefaultMaxBytes / 6), false},
-		{"arrays at the limit", nestedArrays(MaxDepth), true},
-		{"arrays one over", nestedArrays(MaxDepth + 1), false},
-		{"objects and arrays alternating, an object innermost, at the limit", nestedMixed(MaxDepth - 1), true},
-		{"objects and arrays alternating, an array innermost, at the limit", nestedMixed(MaxDepth), true},
-		{"objects and arrays alternating, an object innermost, one over", nestedMixed(MaxDepth + 1), false},
-		{"objects and arrays alternating, an array innermost, one over", nestedMixed(MaxDepth + 2), false},
-		{"two siblings that are each at the limit", siblings(MaxDepth, MaxDepth), true},
-		{"two sibling objects that are each at the limit", siblingObjects(MaxDepth, MaxDepth), true},
-		{"two sibling objects, the second one over", siblingObjects(2, MaxDepth+1), false},
-		{"two sibling objects, the first one over", siblingObjects(MaxDepth+1, 2), false},
-		{"two siblings, the second one over", siblings(2, MaxDepth+1), false},
-		{"two siblings, the first one over", siblings(MaxDepth+1, 2), false},
+		{"objects at the limit", nested(MaxDepth), true, ""},
+		{"objects one over", nested(MaxDepth + 1), false, members},
+		{"objects far over, within the size limit", nested(DefaultMaxBytes / 6), false, members},
+		{"arrays at the limit", nestedArrays(MaxDepth), true, ""},
+		{"arrays one over", nestedArrays(MaxDepth + 1), false, brackets},
+		{"objects and arrays alternating, an object innermost, at the limit", nestedMixed(MaxDepth - 1), true, ""},
+		{"objects and arrays alternating, an array innermost, at the limit", nestedMixed(MaxDepth), true, ""},
+		{"objects and arrays alternating, an object innermost, one over", nestedMixed(MaxDepth + 1), false, alternate},
+		{"objects and arrays alternating, an array innermost, one over", nestedMixed(MaxDepth + 2), false, alternate},
+		{"two siblings that are each at the limit", siblings(MaxDepth, MaxDepth), true, ""},
+		{"two sibling objects that are each at the limit", siblingObjects(MaxDepth, MaxDepth), true, ""},
+		{"two sibling objects, the second one over", siblingObjects(2, MaxDepth+1), false, members},
+		{"two sibling objects, the first one over", siblingObjects(MaxDepth+1, 2), false, members},
+		{"two siblings, the second one over", siblings(2, MaxDepth+1), false, brackets},
+		{"two siblings, the first one over", siblings(MaxDepth+1, 2), false, brackets},
 		// An input that is as deep as its size allows and never closes: no stack fault, an error.
-		{"256 KiB of open brackets", []byte(`{"a":` + strings.Repeat(`[`, DefaultMaxBytes-5)), false},
-		{"256 KiB of open objects", []byte(strings.Repeat(`{"a":`, DefaultMaxBytes/5)), false},
+		{"256 KiB of open brackets", []byte(`{"a":` + strings.Repeat(`[`, DefaultMaxBytes-5)), false, brackets},
+		{"256 KiB of open objects", []byte(strings.Repeat(`{"a":`, DefaultMaxBytes/5)), false, members},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
+			wantText := fmt.Sprintf("%v: %s: nesting deeper than %d levels at byte ", ErrMalformed, tc.path, MaxDepth)
 			checks := map[string]error{
 				"Check":     Check(tc.data, 0),
 				"Unmarshal": Unmarshal(tc.data, &v, Options{AllowUnknown: true}),
@@ -430,7 +438,7 @@ type withEmbedded struct {
 	Own int `json:"own"`
 }
 
-// Base is embedded without a name, so its members belong to the outer object.
+// Base is embedded without a name, which the reader refuses as a type.
 type Base struct {
 	B int `json:"base"`
 }
@@ -449,29 +457,32 @@ func TestUnmarshalFillsTheValue(t *testing.T) {
 	if len(v.Tags) != 2 || v.Tags["A"] != 1 || v.Tags["a"] != 2 {
 		t.Errorf("tags = %v", v.Tags)
 	}
-	// A missing member is the caller's to check: the field keeps its value.
-	pre := reading{Version: 9}
+	// A missing member is the caller's to check: its field is zero, whatever the value held before,
+	// because the value is replaced as a whole (the tests of the closed set check this further).
+	pre := reading{Version: 9, Name: "old", Plain: 4, Hidden: "h", Tags: map[string]int{"k": 1}, Items: []inner{{X: 1}}}
 	if err := Unmarshal([]byte(`{"name":"m"}`), &pre, Options{}); err != nil {
 		t.Fatal(err)
 	}
-	if pre.Version != 9 || pre.Name != "m" {
-		t.Errorf("a missing member changed the value: %+v", pre)
+	if !reflect.DeepEqual(pre, reading{Name: "m"}) {
+		t.Errorf("a missing member kept something of the old value: %+v", pre)
 	}
 }
 
-func TestUnmarshalFillsAnEmbeddedStruct(t *testing.T) {
-	var v withEmbedded
-	if err := Unmarshal([]byte(`{"base":1,"own":2}`), &v, Options{}); err != nil {
-		t.Fatal(err)
-	}
-	if v.B != 1 || v.Own != 2 {
-		t.Errorf("v = %+v", v)
-	}
-	if err := Unmarshal([]byte(`{"base":1,"own":2,"extra":3}`), &withEmbedded{}, Options{}); !errors.Is(err, ErrMalformed) {
-		t.Errorf("an unknown member next to an embedded struct: %v", err)
-	}
-	if err := Unmarshal([]byte(`{"Base":1}`), &withEmbedded{}, Options{}); !errors.Is(err, ErrMalformed) {
-		t.Errorf("the name of an embedded struct is not a member: %v", err)
+// An embedded struct is outside the closed set, because the rules of Go for promoted fields are not
+// ones a reader of signed files should depend on. (The standard decoder reads its members as the
+// members of the outer object; this reader did too before the closed set, and no longer does.)
+func TestUnmarshalRefusesAnEmbeddedStruct(t *testing.T) {
+	const want = "malformed JSON: $: a value of type strictjson.withEmbedded cannot be read: the embedded field Base is not part of ritueel's JSON; give it a name"
+	// It is refused as a type, before a byte of the document is looked at: whatever the document says.
+	for _, in := range []string{`{"base":1,"own":2}`, `{"Base":{"base":1},"own":2}`, `{}`, `not json`, ``} {
+		v := withEmbedded{Own: 7}
+		err := Unmarshal([]byte(in), &v, Options{})
+		if !errors.Is(err, ErrMalformed) || err.Error() != want {
+			t.Errorf("%q: %v, want %q", in, err, want)
+		}
+		if v != (withEmbedded{Own: 7}) {
+			t.Errorf("%q: the value changed: %+v", in, v)
+		}
 	}
 }
 
@@ -830,7 +841,7 @@ func TestTopLevelThatIsNotAnObject(t *testing.T) {
 	// "[}", "\"}" and "1}" end in the closing brace of an object, and the first byte is not its
 	// opening brace: the reader must not take that byte for the brace. The other inputs are the
 	// ordinary cases of the same check. Every reader gives the one text.
-	const want = "malformed JSON: not one JSON object"
+	const want = "malformed JSON: $: not one JSON object"
 	for _, in := range []string{
 		`[}`, `"}`, `1}`, `x}`, `}`, `]`, `[]`, `[{}]`, `"x"`, `1`, `-1`, `null`, `true`, `false`, ``, " \n\t",
 		` [}`, "\n\"}", "\t1}", `[}` + "\n",
@@ -861,7 +872,7 @@ func TestAnObjectAfterWhiteSpaceIsNotRefusedAsATopLevelMistake(t *testing.T) {
 
 func TestByteOrderMark(t *testing.T) {
 	const bom = "\xef\xbb\xbf"
-	const want = "malformed JSON: starts with a byte order mark"
+	const want = "malformed JSON: $: starts with a byte order mark"
 	for _, in := range []string{
 		bom + `{}`,
 		bom + `{"version":1}`,
@@ -903,8 +914,9 @@ func TestByteOrderMark(t *testing.T) {
 func TestPeekIntMemberThatIsNotAnInteger(t *testing.T) {
 	// A member that is there but is not an integer that fits int64 is refused with the text that
 	// says which of the two it is: not an integer at all, or an integer too large.
-	const notInt = `malformed JSON: member "version" is not an integer`
-	const tooBig = `malformed JSON: member "version": the integer does not fit 64 bits`
+	const notInt = `malformed JSON: $.version: not an integer`
+	const tooBig = `malformed JSON: $.version: the integer does not fit 64 bits`
+	const twice = `malformed JSON: $: member "version" appears twice`
 	cases := []struct{ name, in, want string }{
 		{"a fraction", `{"version":1.5}`, notInt},
 		{"a fraction of zero", `{"version":1.0}`, notInt},
@@ -929,8 +941,8 @@ func TestPeekIntMemberThatIsNotAnInteger(t *testing.T) {
 		{"an integer one above int64", `{"version":9223372036854775808}`, tooBig},
 		{"an integer one below int64", `{"version":-9223372036854775809}`, tooBig},
 		{"a huge integer", `{"version":99999999999999999999999999999999}`, tooBig},
-		{"a repeated member", `{"version":1,"version":2}`, `malformed JSON: member "version" appears twice`},
-		{"a repeated member, a fraction the second time", `{"version":1,"version":1.5}`, `malformed JSON: member "version" appears twice`},
+		{"a repeated member", `{"version":1,"version":2}`, twice},
+		{"a repeated member, a fraction the second time", `{"version":1,"version":1.5}`, twice},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -948,7 +960,7 @@ func TestPeekIntMemberThatIsNotAnInteger(t *testing.T) {
 	}
 	t.Run("the name in the error is the one asked for", func(t *testing.T) {
 		_, _, err := PeekInt([]byte(`{"v2":1.5}`), "v2")
-		if want := `malformed JSON: member "v2" is not an integer`; err == nil || err.Error() != want {
+		if want := `malformed JSON: $.v2: not an integer`; err == nil || err.Error() != want {
 			t.Errorf("err = %v, want %q", err, want)
 		}
 	})
@@ -968,14 +980,14 @@ func TestTextsOfTheRefusals(t *testing.T) {
 	// text after the object) are Check's and Unmarshal's.
 	big := string(padded(t, DefaultMaxBytes+1))
 	both := []struct{ name, in, want string }{
-		{"too long", big, "malformed JSON: longer than 262144 bytes"},
-		{"a byte order mark", "\xef\xbb\xbf{}", "malformed JSON: starts with a byte order mark"},
-		{"not UTF-8", "{\"a\":\"\xff\"}", "malformed JSON: not valid UTF-8"},
-		{"not an object", `[]`, "malformed JSON: not one JSON object"},
-		{"nesting", string(nested(MaxDepth + 1)), fmt.Sprintf("malformed JSON: nesting deeper than %d levels at byte %d", MaxDepth, 5*MaxDepth)},
-		{"a missing colon", `{"a" 1}`, "malformed JSON: a colon was expected at byte 5"},
-		{"text after the object", `{} x`, "malformed JSON: anything after the object at byte 3"},
-		{"the input ends in an object", `{"a":1`, "malformed JSON: the input ends inside an object at byte 6"},
+		{"too long", big, "malformed JSON: $: longer than 262144 bytes"},
+		{"a byte order mark", "\xef\xbb\xbf{}", "malformed JSON: $: starts with a byte order mark"},
+		{"not UTF-8", "{\"a\":\"\xff\"}", "malformed JSON: $: not valid UTF-8"},
+		{"not an object", `[]`, "malformed JSON: $: not one JSON object"},
+		{"nesting", string(nested(MaxDepth + 1)), fmt.Sprintf("malformed JSON: $....a.a.a.a.a.a.a.a: nesting deeper than %d levels at byte %d", MaxDepth, 5*MaxDepth)},
+		{"a missing colon", `{"a" 1}`, "malformed JSON: $: a colon was expected at byte 5"},
+		{"text after the object", `{} x`, "malformed JSON: $: anything after the object at byte 3"},
+		{"the input ends in an object", `{"a":1`, "malformed JSON: $: the input ends inside an object at byte 6"},
 	}
 	for _, tc := range both {
 		t.Run(tc.name, func(t *testing.T) {
@@ -987,12 +999,12 @@ func TestTextsOfTheRefusals(t *testing.T) {
 		})
 	}
 	strict := []struct{ name, in, want string }{
-		{"a fraction", `{"a":1.5}`, "malformed JSON: a number with a fraction or an exponent at byte 8"},
-		{"an exponent", `{"a":1e2}`, "malformed JSON: a number with a fraction or an exponent at byte 8"},
-		{"an integer above int64", `{"a":9223372036854775808}`, "malformed JSON: the integer does not fit 64 bits at byte 24"},
-		{"null", `{"a":null}`, "malformed JSON: null at byte 9"},
-		{"a repeated member", `{"a":1,"a":2}`, `malformed JSON: member "a" appears twice at byte 10`},
-		{"a lone surrogate", `{"a":"` + `\` + `ud800"}`, "malformed JSON: a lone surrogate escape at byte 12"},
+		{"a fraction", `{"a":1.5}`, "malformed JSON: $.a: a number with a fraction or an exponent at byte 8"},
+		{"an exponent", `{"a":1e2}`, "malformed JSON: $.a: a number with a fraction or an exponent at byte 8"},
+		{"an integer above int64", `{"a":9223372036854775808}`, "malformed JSON: $.a: the integer does not fit 64 bits at byte 24"},
+		{"null", `{"a":null}`, "malformed JSON: $.a: null at byte 9"},
+		{"a repeated member", `{"a":1,"a":2}`, `malformed JSON: $: member "a" appears twice at byte 10`},
+		{"a lone surrogate", `{"a":"` + `\` + `ud800"}`, "malformed JSON: $.a: a lone surrogate escape at byte 12"},
 	}
 	for _, tc := range strict {
 		t.Run(tc.name, func(t *testing.T) {
