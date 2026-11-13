@@ -659,3 +659,40 @@ func TestOSAFolderHandleClosedWhileOtherGoroutinesUseIt(t *testing.T) {
 		wg.Wait()
 	}
 }
+
+// A file written with 0o400 or 0o444 holds its whole content and is read back: the mode applies to
+// later opens, not to the handle that wrote it.
+func TestOSAFileOfAReadOnlyModeIsWrittenWholeAndRead(t *testing.T) {
+	w, dir := openIn(t)
+	data := bytes.Repeat([]byte("whole "), 700)
+	for _, perm := range []fs.FileMode{0o400, 0o444} {
+		name := fmt.Sprintf("ro-%o", perm)
+		if err := w.WriteFile(name, data, perm); err != nil {
+			t.Fatalf("mode %o: %v", perm, err)
+		}
+		if got := readFile(t, filepath.Join(dir, name)); !bytes.Equal(got, data) {
+			t.Fatalf("mode %o: %d bytes read back, want %d", perm, len(got), len(data))
+		}
+		if st, err := os.Stat(filepath.Join(dir, name)); err != nil || st.Mode().Perm() != perm {
+			t.Fatalf("mode %o: %v, %v", perm, st, err)
+		}
+		root := openFSIn(t, dir)
+		if got, err := fsx.ReadFile(root, name); err != nil || !bytes.Equal(got, data) {
+			t.Fatalf("mode %o: ReadFile: %d bytes, %v", perm, len(got), err)
+		}
+	}
+	if err := w.WriteSet("set", []fsx.NewFile{{Name: "a", Data: data, Perm: 0o400}, {Name: "b", Data: data, Perm: 0o444}}); err != nil {
+		t.Fatal(err)
+	}
+	for _, n := range []string{"a", "b"} {
+		if got := readFile(t, filepath.Join(dir, "set", n)); !bytes.Equal(got, data) {
+			t.Fatalf("set file %s holds %d bytes", n, len(got))
+		}
+	}
+	if err := w.Mkdir("d700", 0o700); err != nil {
+		t.Fatal(err)
+	}
+	if st, err := os.Stat(filepath.Join(dir, "d700")); err != nil || st.Mode().Perm() != 0o700 {
+		t.Fatalf("%v, %v", st, err)
+	}
+}
