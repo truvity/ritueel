@@ -103,11 +103,28 @@ func TestEverythingThatReachesTheTerminalIsPrintableASCII(t *testing.T) {
 			}
 			obj := object(t, js.stdout)
 			wantErr := strings.TrimSuffix(strings.TrimPrefix(strings.SplitN(tc.line, "\n", 2)[0], "ritueel: "), "\n")
-			if obj["error"] != wantErr || obj["outcome"] != tc.outcome || obj["exit_code"].(interface{ String() string }).String() != fmt.Sprint(int(tc.code)) {
+			if obj["outcome"] != tc.outcome || obj["exit_code"].(interface{ String() string }).String() != fmt.Sprint(int(tc.code)) {
 				t.Errorf("object = %v", obj)
 			}
-			if tc.reasons && obj["reasons"] == nil {
-				t.Errorf("no reasons in %v", obj)
+			if ws, ok := stringList(obj["warnings"]); !ok || len(ws) != 0 {
+				t.Errorf("warnings = %#v, want the empty list", obj["warnings"])
+			}
+			// "error" is for a failed command and a usage error only; a refusal has "reasons" and its
+			// message is on standard error alone.
+			if tc.reasons {
+				if _, has := obj["error"]; has {
+					t.Errorf("a refusal has an error member: %v", obj)
+				}
+				if obj["reasons"] == nil {
+					t.Errorf("no reasons in %v", obj)
+				}
+			} else {
+				if obj["error"] != wantErr {
+					t.Errorf("object = %v, want the error %q", obj, wantErr)
+				}
+				if _, has := obj["reasons"]; has {
+					t.Errorf("an object that is not refused has reasons: %v", obj)
+				}
 			}
 		})
 	}
@@ -321,12 +338,13 @@ func recoverText(t *testing.T, f func()) (msg string) {
 type oddCoded struct {
 	code    ExitCode
 	outcome Outcome
+	reasons []string
 }
 
 func (e oddCoded) Error() string         { return "odd" }
 func (e oddCoded) ExitCode() ExitCode    { return e.code }
 func (e oddCoded) Outcome() Outcome      { return e.outcome }
-func (e oddCoded) ReasonCodes() []string { return nil }
+func (e oddCoded) ReasonCodes() []string { return e.reasons }
 
 var outcomeOfCode = map[ExitCode]Outcome{
 	ExitOK: OutcomeDone, ExitFailure: OutcomeFailed, ExitUsage: OutcomeUsage,
@@ -337,17 +355,27 @@ func TestTheOutcomeFollowsTheExitCode(t *testing.T) {
 	all := []Outcome{OutcomeDone, OutcomeFailed, OutcomeUsage, OutcomeRefused, OutcomeNotConfirmed}
 	for code := ExitOK; code <= ExitNotConfirmed; code++ {
 		want := outcomeOfCode[code]
+		// A refusal names a reason code, and no other outcome does (docs/reference/cli.md: "reasons,
+		// when refused").
+		var reasons []string
+		if want == OutcomeRefused {
+			reasons = []string{"r"}
+		}
 		t.Run(fmt.Sprintf("a result with the code %d", int(code)), func(t *testing.T) {
 			// With no outcome given, and with the right one: the outcome of the code.
 			for _, given := range []Outcome{"", want} {
 				withSpecs(t, spec{name: "fake", usage: "u", run: func(context.Context, *Call) (*Result, error) {
-					return &Result{ExitCode: code, Outcome: given, Text: "t\n"}, nil
+					return &Result{ExitCode: code, Outcome: given, Reasons: reasons, Text: "t\n"}, nil
 				}})
 				js := run(t, "--output", "json", "fake")
 				if js.code != code || js.stderr != "" {
 					t.Errorf("given %q: json (%d, %q)", given, int(js.code), js.stderr)
 				}
-				wantObject(t, object(t, js.stdout), map[string]any{"output": 1, "command": "fake", "exit_code": int(code), "outcome": string(want)})
+				wantMembers := map[string]any{"output": 1, "command": "fake", "exit_code": int(code), "outcome": string(want)}
+				if reasons != nil {
+					wantMembers["reasons"] = reasons
+				}
+				wantObject(t, object(t, js.stdout), wantMembers)
 				text := run(t, "fake")
 				if text.code != code || text.stdout != "t\n" || text.stderr != "" {
 					t.Errorf("given %q: text (%d, %q, %q)", given, int(text.code), text.stdout, text.stderr)
@@ -375,13 +403,21 @@ func TestTheOutcomeFollowsTheExitCode(t *testing.T) {
 			}
 			// The error that agrees: the exit code and the outcome of the code.
 			withSpecs(t, spec{name: "fake", usage: "u", run: func(context.Context, *Call) (*Result, error) {
-				return nil, oddCoded{code: code, outcome: want}
+				return nil, oddCoded{code: code, outcome: want, reasons: reasons}
 			}})
 			js := run(t, "--output", "json", "fake")
 			if js.code != code || js.stderr != "ritueel: odd\n"+map[bool]string{true: helpLine, false: ""}[code == ExitUsage] {
 				t.Errorf("agreeing: (%d, %q)", int(js.code), js.stderr)
 			}
-			wantObject(t, object(t, js.stdout), map[string]any{"output": 1, "command": "fake", "exit_code": int(code), "outcome": string(want), "error": "odd"})
+			// "error" is for a failed command and a usage error only (codes 1 and 2).
+			wantMembers := map[string]any{"output": 1, "command": "fake", "exit_code": int(code), "outcome": string(want)}
+			if want == OutcomeFailed || want == OutcomeUsage {
+				wantMembers["error"] = "odd"
+			}
+			if reasons != nil {
+				wantMembers["reasons"] = reasons
+			}
+			wantObject(t, object(t, js.stdout), wantMembers)
 			// The error that disagrees.
 			for _, given := range all {
 				if given == want {

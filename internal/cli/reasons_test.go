@@ -48,22 +48,22 @@ func jsonList(ss []string) string {
 func TestTheReasonsAreEscapedForARefusalAndForAResult(t *testing.T) {
 	in, want := reasonsOdd()
 	cases := []struct {
-		name     string
-		run      commandFunc
-		code     ExitCode
-		outcome  string
-		stdout   string // in the text mode
-		stderr   string // in the text mode
-		jsonErr  string // the "error" member, "" when there is none
-		jsonTail string // what follows the reasons in the object
+		name    string
+		run     commandFunc
+		code    ExitCode
+		outcome string
+		stdout  string // in the text mode
+		stderr  string // in the text mode
 	}{
-		{"a refusal with a message", func(context.Context, *Call) (*Result, error) { return nil, Refusal{Reasons: in, Msg: "no"} }, ExitRefused, "refused", "", "ritueel: no\n", "no", ""},
-		{"a refusal with no message: the reasons stand in", func(context.Context, *Call) (*Result, error) { return nil, Refusal{Reasons: in} }, ExitRefused, "refused", "", "ritueel: refused: " + strings.Join(want, ", ") + "\n", "refused: " + strings.Join(want, ", "), ""},
-		{"a refusal by the backend", func(context.Context, *Call) (*Result, error) { return nil, BackendRefusal{Reasons: in, Msg: "no"} }, ExitBackend, "refused", "", "ritueel: no\n", "no", ""},
-		{"a result that ended well", func(context.Context, *Call) (*Result, error) { return &Result{Reasons: in, Text: "done\n"}, nil }, ExitOK, "done", "done\n", "", "", ""},
+		{"a refusal with a message", func(context.Context, *Call) (*Result, error) { return nil, Refusal{Reasons: in, Msg: "no"} }, ExitRefused, "refused", "", "ritueel: no\n"},
+		{"a refusal with no message: the reasons stand in", func(context.Context, *Call) (*Result, error) { return nil, Refusal{Reasons: in} }, ExitRefused, "refused", "", "ritueel: refused: " + strings.Join(want, ", ") + "\n"},
+		{"a refusal by the backend", func(context.Context, *Call) (*Result, error) { return nil, BackendRefusal{Reasons: in, Msg: "no"} }, ExitBackend, "refused", "", "ritueel: no\n"},
 		{"a result with the code 3", func(context.Context, *Call) (*Result, error) {
 			return &Result{ExitCode: ExitRefused, Reasons: in, Text: "no\n"}, nil
-		}, ExitRefused, "refused", "no\n", "", "", ""},
+		}, ExitRefused, "refused", "no\n", ""},
+		{"a result with the code 4", func(context.Context, *Call) (*Result, error) {
+			return &Result{ExitCode: ExitBackend, Reasons: in, Text: "no\n"}, nil
+		}, ExitBackend, "refused", "no\n", ""},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -88,19 +88,17 @@ func TestTheReasonsAreEscapedForARefusalAndForAResult(t *testing.T) {
 				if js.code != tc.code {
 					t.Errorf("json: exit code %d", int(js.code))
 				}
-				wantObj := fmt.Sprintf(`{"output":1,"command":"fake","exit_code":%d,"outcome":%q,"reasons":%s`, int(tc.code), tc.outcome, jsonList(want))
-				if tc.jsonErr != "" {
-					wantObj += `,"error":"` + strings.ReplaceAll(tc.jsonErr, `\`, `\\`) + `"`
-				}
-				wantObj += "}\n"
+				// A refusal has "reasons" and "warnings" and no "error": its message is for standard
+				// error alone.
+				wantObj := fmt.Sprintf(`{"output":1,"command":"fake","exit_code":%d,"outcome":%q,"reasons":%s,"warnings":[]}`+"\n", int(tc.code), tc.outcome, jsonList(want))
 				if js.stdout != wantObj {
 					t.Errorf("json stdout =\n  %q\nwant\n  %q", js.stdout, wantObj)
 				}
 				if !onlyPrintable(js.stdout) || strings.Count(js.stdout, "\n") != 1 {
 					t.Errorf("json stdout holds a byte that is not printable ASCII, or more than one line break: %q", js.stdout)
 				}
-				if !onlyPrintable(js.stderr) {
-					t.Errorf("json stderr: %q", js.stderr)
+				if js.stderr != tc.stderr {
+					t.Errorf("json stderr = %q, want the line of the text mode, %q", js.stderr, tc.stderr)
 				}
 				// The command's own list is not changed behind its back: a command that keeps it and
 				// runs again gets the same output.
@@ -117,28 +115,43 @@ func TestAPlainReasonCodeIsUnchangedAndAMissingListLeavesTheMemberOut(t *testing
 	for _, tc := range []struct {
 		name    string
 		reasons []string
-		member  string // what follows "outcome", or ""
+		member  string // what follows "outcome"
 	}{
-		{"one plain code", []string{"plan-stale"}, `,"reasons":["plan-stale"]`},
-		{"several plain codes", []string{"plan-stale", "key-mismatch", "version-unsupported"}, `,"reasons":["plan-stale","key-mismatch","version-unsupported"]`},
-		{"a code with a backslash is unchanged by the escape", []string{`a\b`}, `,"reasons":["a\\b"]`},
-		{"a nil list leaves the member out", nil, ``},
-		{"an empty list leaves the member out too", []string{}, ``},
+		{"one plain code", []string{"plan-stale"}, `"reasons":["plan-stale"]`},
+		{"several plain codes", []string{"plan-stale", "key-mismatch", "version-unsupported"}, `"reasons":["plan-stale","key-mismatch","version-unsupported"]`},
+		{"a code with a backslash is unchanged by the escape", []string{`a\b`}, `"reasons":["a\\b"]`},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			withSpecs(t, spec{name: "fake", usage: "u", run: func(context.Context, *Call) (*Result, error) { return &Result{Reasons: tc.reasons}, nil }})
+			withSpecs(t, spec{name: "fake", usage: "u", run: func(context.Context, *Call) (*Result, error) {
+				return &Result{ExitCode: ExitRefused, Reasons: tc.reasons}, nil
+			}})
 			js := run(t, "--output", "json", "fake")
-			want := `{"output":1,"command":"fake","exit_code":0,"outcome":"done"` + tc.member + "}\n"
-			if js.code != ExitOK || js.stdout != want || js.stderr != "" {
+			want := `{"output":1,"command":"fake","exit_code":3,"outcome":"refused",` + tc.member + `,"warnings":[]}` + "\n"
+			if js.code != ExitRefused || js.stdout != want || js.stderr != "" {
 				t.Errorf("result: (%d, %q, %q)\nwant %q", int(js.code), js.stdout, js.stderr, want)
 			}
 			withSpecs(t, spec{name: "fake", usage: "u", run: func(context.Context, *Call) (*Result, error) {
 				return nil, Refusal{Reasons: tc.reasons, Msg: "m"}
 			}})
 			js = run(t, "--output", "json", "fake")
-			want = `{"output":1,"command":"fake","exit_code":3,"outcome":"refused"` + tc.member + `,"error":"m"}` + "\n"
-			if js.code != ExitRefused || js.stdout != want {
-				t.Errorf("refusal: (%d, %q)\nwant %q", int(js.code), js.stdout, want)
+			want = `{"output":1,"command":"fake","exit_code":3,"outcome":"refused",` + tc.member + `,"warnings":[]}` + "\n"
+			if js.code != ExitRefused || js.stdout != want || js.stderr != "ritueel: m\n" {
+				t.Errorf("refusal: (%d, %q, %q)\nwant %q", int(js.code), js.stdout, js.stderr, want)
+			}
+		})
+	}
+	// A command that did not refuse has no list of reasons, nil or empty: the member is left out. (A
+	// refusal with no code, and a code with another outcome, are faults of the programmer: see
+	// TestARefusalWithNoReasonCodeIsAProgrammerError and TestReasonCodesWithAnotherOutcome...)
+	for _, reasons := range [][]string{nil, {}} {
+		t.Run(fmt.Sprintf("a result that ended well, with the list %#v, has no reasons member", reasons), func(t *testing.T) {
+			withSpecs(t, spec{name: "fake", usage: "u", run: func(context.Context, *Call) (*Result, error) {
+				return &Result{Reasons: reasons}, nil
+			}})
+			js := run(t, "--output", "json", "fake")
+			want := `{"output":1,"command":"fake","exit_code":0,"outcome":"done","warnings":[]}` + "\n"
+			if js.code != ExitOK || js.stdout != want || js.stderr != "" {
+				t.Errorf("(%d, %q, %q)\nwant %q", int(js.code), js.stdout, js.stderr, want)
 			}
 		})
 	}
