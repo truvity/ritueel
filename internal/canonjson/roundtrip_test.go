@@ -175,7 +175,7 @@ type exceptions struct {
 	omitEmpty  bool // an empty value under omitempty comes back zero
 	rawCanon   bool // a Raw comes back in its canonical form
 	anyFive    bool // an interface comes back as one of five types
-	notWritten bool // a field tagged "-" and an unexported field come back zero (not in the comment)
+	notWritten bool // the fourth exception: a field tagged "-" and an unexported field come back zero
 }
 
 var allExceptions = exceptions{omitEmpty: true, rawCanon: true, anyFive: true, notWritten: true}
@@ -482,7 +482,8 @@ func TestEachExceptionOfTheRoundTripByName(t *testing.T) {
 			}
 		}
 	})
-	t.Run("a field tagged dash and an unexported field come back zero (an exception that the comment does not list)", func(t *testing.T) {
+	// The fourth exception, which the comment of package canonjson lists with the other three.
+	t.Run("the fourth exception: a field tagged dash and an unexported field come back zero", func(t *testing.T) {
 		x := struct {
 			A      int
 			Skip   string `json:"-"`
@@ -490,6 +491,56 @@ func TestEachExceptionOfTheRoundTripByName(t *testing.T) {
 		}{A: 1, Skip: "x", hidden: 2}
 		_ = x.hidden
 		check(t, "not written", x, exceptions{notWritten: true}, true)
+	})
+	t.Run("the fourth exception, a field tagged dash alone", func(t *testing.T) {
+		type s struct {
+			A    int
+			Skip int `json:"-"`
+		}
+		check(t, "dash", s{A: 1, Skip: 5}, exceptions{notWritten: true}, true)
+		back, doc, err := roundTrip(s{A: 1, Skip: 5})
+		if want := `{"A":1}`; err != nil || string(doc) != want || back.Interface().(s) != (s{A: 1}) {
+			t.Errorf("%s, %v, %+v", doc, err, back)
+		}
+	})
+	t.Run("the fourth exception, an unexported field alone", func(t *testing.T) {
+		type s struct {
+			A int
+			h int
+		}
+		x := s{A: 1, h: 7}
+		_ = x.h
+		check(t, "unexported", x, exceptions{notWritten: true}, true)
+		back, doc, err := roundTrip(x)
+		if want := `{"A":1}`; err != nil || string(doc) != want || back.Interface().(s).h != 0 {
+			t.Errorf("%s, %v, %+v", doc, err, back)
+		}
+	})
+	t.Run("the fourth exception, in every place that a struct can stand", func(t *testing.T) {
+		type inner struct {
+			A    int
+			Skip int `json:"-"`
+		}
+		type outer struct {
+			S inner
+			P *inner
+			L []inner
+			M map[string]inner
+			R [1]inner
+		}
+		x := outer{S: inner{1, 2}, P: &inner{3, 4}, L: []inner{{5, 6}}, M: map[string]inner{"k": {7, 8}}, R: [1]inner{{9, 10}}}
+		check(t, "places", x, exceptions{notWritten: true}, true)
+		back, _, err := roundTrip(x)
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := back.Interface().(outer)
+		if got.S.Skip != 0 || got.P.Skip != 0 || got.L[0].Skip != 0 || got.M["k"].Skip != 0 || got.R[0].Skip != 0 {
+			t.Errorf("a field that is not written came back: %+v", got)
+		}
+	})
+	t.Run("a value with no field that is not written comes back equal, without the fourth exception", func(t *testing.T) {
+		check(t, "none", struct{ A, B int }{1, 2}, exceptions{}, false)
 	})
 }
 
