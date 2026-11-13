@@ -14,8 +14,9 @@ on:
 permissions:
   contents: read
 
+# The event is in the group, so a push to main never cancels the daily scan that is running.
 concurrency:
-  group: security-${{ github.ref }}
+  group: security-${{ github.event_name }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
