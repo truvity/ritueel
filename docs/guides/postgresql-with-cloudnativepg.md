@@ -52,6 +52,10 @@ Make the lifetime as short as your issuing system can renew without a restart; P
 
 CNPG's own key is ECDSA P-256 [1]. A review of published recommendations preferred P-384 for database certificates; the choice in [Leaf keys](/guides/leaf-keys/) is P-256 or P-384, and both stay open. PostgreSQL with P-384 was not tested. Avoid Ed25519 for the server ([Leaf keys](/guides/leaf-keys/)).
 
+## Key exchange
+
+A hybrid key exchange agrees the session key with a classical and a post-quantum method together, so a recording of today's traffic cannot be decrypted later by a quantum computer. In PostgreSQL 18 and later the default of `ssl_groups` has no hybrid group; add `X25519MLKEM768` to it only when the OpenSSL of your image is 3.5 or later, because a group name that OpenSSL does not know stops the server at start [6] (read, not run; CloudNativePG does not block the parameter [7]).
+
 ## Revocation does not reach the database
 
 CNPG manages no CRLs, and a user cannot set `ssl_crl_file` [1]. The project's CRLs list intermediates, and no certificate carries a CRL address ([the CRL page](/reference/crl/)). So the database never learns that a root revoked an intermediate. It accepts the client certificates under it until they expire, or until you act on the database (concluded). A CRL of your own would need an entry for every CA in a client chain, or logins fail (read in source, not tested) [4]. What stops a client, by conclusion and not by test: a short life; a changed or removed `pg_hba` or `pg_ident` line; a new client CA, which stops every certificate of the old one. Whether an open session ends is not stated.
@@ -80,3 +84,5 @@ The note lists eight; start with these.
 3. PostgreSQL 18.7, "Certificate Authentication", https://www.postgresql.org/docs/current/auth-cert.html.
 4. PostgreSQL 18.7, "Secure TCP/IP Connections with SSL", https://www.postgresql.org/docs/current/ssl-tcp.html, and `src/backend/libpq/be-secure-openssl.c`, branch REL_18_STABLE.
 5. The sister project, decision 0023, "Database client certificates", at commit 4fa7651 of `main`, read 2026-11-13 (the passage is the same on `main` that day), https://github.com/truvity/sluis/blob/4fa7651cd6d0c54369c9465fb11b80cda329cb17/docs/decisions/0023-certificate-authorities.md. Status "Accepted; amended by 0044"; the requirement for a database is marked planned. It is a plan and not a running system.
+6. PostgreSQL 18.7, "Connections and Authentication", parameter `ssl_groups`, https://www.postgresql.org/docs/18/runtime-config-connection.html; `src/backend/libpq/be-secure-openssl.c`, branch REL_18_STABLE, https://github.com/postgres/postgres; OpenSSL 3.5, `SSL_CTX_set1_groups_list(3)` (`doc/man3/SSL_CTX_set1_curves.pod`, branch openssl-3.5), https://github.com/openssl/openssl; read 2026-11-13.
+7. CloudNativePG 1.30, page "PostgreSQL Configuration", section "Fixed parameters", https://cloudnative-pg.io/docs/1.30/postgresql_conf/, and `pkg/postgres/configuration.go` at tag v1.30.1, https://github.com/cloudnative-pg/cloudnative-pg/tree/v1.30.1, read 2026-11-13.
