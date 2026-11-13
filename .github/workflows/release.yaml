@@ -272,7 +272,7 @@ jobs:
         with:
           name: release-files
           path: release
-      - name: Check the files, refuse an existing release, publish
+      - name: Check the files, refuse an existing release, create a draft, check the tag, publish
         env:
           TAG: ${{ github.ref_name }}
           GH_REPO: ${{ github.repository }}
@@ -282,7 +282,9 @@ jobs:
           FILES: ${{ needs.build.outputs.files }}
         run: |
           set -euo pipefail
-          fail() { echo "::error::$*"; exit 1; }
+          # `draft_note` is added to every failure once the draft exists (see below).
+          draft_note=""
+          fail() { echo "::error::$*${draft_note}"; exit 1; }
           # Before any other check: the folder is exactly what `build` made, NOTES.md included (no sum
           # covers it). The digest is a job output of `build`; the artifact store could have been written
           # by a job that ran a built binary.
@@ -297,8 +299,11 @@ jobs:
           b="ritueel_${TAG#v}_linux_arm64.tar.gz"
           [ "$(find . -mindepth 1 | LC_ALL=C sort | tr '\n' ' ')" = "./NOTES.md ./SHA256SUMS ./$a ./$b " ] || { echo "::error::the artifact does not hold exactly NOTES.md SHA256SUMS $a $b"; exit 1; }
           [ "$(awk '{print $2}' SHA256SUMS | LC_ALL=C sort | tr '\n' ' ')" = "$a $b " ] || { echo "::error::SHA256SUMS does not name exactly the two archives"; exit 1; }
-          if out=$(gh release view "$TAG" 2>&1); then echo "::error::a release for $TAG already exists"; exit 1; fi
-          case "$out" in *"release not found"*) ;; *) echo "::error::cannot tell whether a release for $TAG exists: $out"; exit 1 ;; esac
+          # No release of this name, draft or published. `gh release view` does not show a draft to every
+          # caller, so the list of the API is read instead: the documentation of "List releases" says
+          # that only users with push access get the drafts, which `contents: write` of this job is.
+          names=$(gh api --paginate "repos/${GH_REPO}/releases" --jq '.[].tag_name') || fail "cannot list the releases of the repository"
+          if grep -Fx -- "$TAG" <<<"$names" >/dev/null; then fail "a release (draft or published) for $TAG already exists"; fi
           # The tag must still point at the commit that `verify` and `build` checked out. This job has no
           # checkout, so it asks GitHub with `git ls-remote` over https, which needs no token for a public
           # repository (none is passed to git). The commit of an annotated tag is the peeled line
@@ -337,4 +342,11 @@ jobs:
           # above (no leading zeros), so `v0.*` is exactly major version 0. This is the only place that
           # decides it.
           case "$TAG" in *-*|v0.*) set -- --prerelease "$@" ;; esac
-          gh release create "$TAG" --verify-tag --title "$TAG" --notes-file NOTES.md "$@"
+          # A draft first: nothing is public until the tag has been looked at once more. The draft is
+          # published with `gh release edit --draft=false` only if the tag still points at the checked
+          # commit. This job deletes nothing: when the second look fails, the draft stays and a person
+          # deletes it by hand.
+          gh release create "$TAG" --draft --verify-tag --title "$TAG" --notes-file NOTES.md "$@" || fail "gh release create failed; a draft release for $TAG may have been left: look at the Releases page and delete it by hand"
+          draft_note=". A DRAFT release for $TAG was left on the Releases page and must be deleted by hand; this job deletes nothing."
+          check_tag
+          gh release edit "$TAG" --draft=false || fail "the draft could not be published"
