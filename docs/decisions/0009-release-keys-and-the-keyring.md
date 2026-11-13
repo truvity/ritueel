@@ -72,6 +72,6 @@ A release is trusted because its signature verifies against a key the user alrea
 
 ## Not yet proven or only proposed
 
-- **Not yet proven.** The release workflow, the small signer program, the binding of the temporary release subkey and the keyless signature are not built yet ([#10](https://github.com/truvity/ritueel/issues/10)).
+- **Not yet proven.** The release workflow, the small signer program, the binding of the temporary release subkey and the keyless signature are not built yet ([#202](https://github.com/truvity/ritueel/issues/202)).
 - **Proposed.** Whether a well-known package repository (Maven Central) accepts a signing subkey under a certify-only primary is not known; its page says it can only verify against a primary key. A test comes before the first signed release ([#25](https://github.com/truvity/ritueel/issues/25)).
 - **Proposed.** Which primary signs in a year, and so binds the subkey (rule 7), when the OpenPGP root has a key on a card and a key in the cloud: the card of the year ([record 0007](0007-changing-and-losing-a-root.md), rule 16) names cards, and a cloud key has none ([#137](https://github.com/truvity/ritueel/issues/137)).
