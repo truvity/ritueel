@@ -44,7 +44,7 @@ const STORES = [
     dim: 'cannot be copied out',
     planned: 'Planned: M2',
     rows: [
-      ['Holds', ['three keys in one account', 'used only for the roots']],
+      ['Holds', ['one key for each kind of root', 'in an account kept for them']],
       ['Runs on', ['your workstation, through', 'the ceremony role that signs']],
       ['Ends', ['on an event, not on a date']],
     ],
@@ -97,11 +97,11 @@ const Q2 = ['Can your organisation set up a', 'separate cloud account used', 'on
 const EXCEPTION = 'One exception: a person’s own primary.';
 
 const LABEL =
-  'Three panels and two questions. The panels show the three stores. ' +
+  'Three panels and two questions. The panels show the three key stores. ' +
   'The key file can be copied. It holds test roots, drills, development and a person’s own primary. It runs on the offline system. It is replaced at most every three years. ' +
   'Two root cards cannot be copied. They hold keys A and B of the roots, one key on each card. They run on the workstation under four conditions, or on the offline system. Their keys end on an event. ' +
-  'The cloud key cannot be copied out. It is three keys in one account used only for the roots. It runs on the workstation through the ceremony role that signs. Its keys end on an event. ' +
-  'Each panel is marked as planned for a milestone. Under the panels, two questions choose a store, and the first has a mark that says start. ' +
+  'The cloud key cannot be copied out. It is one key for each kind of root, in an account kept for them. It runs on the workstation through the ceremony role that signs. Its keys end on an event. ' +
+  'Each panel is marked as planned for a milestone. Under the panels, two questions choose a key store, and the first has a mark that says start. ' +
   'The first asks whether other people or systems rely on the root. No leads to the key file, with the note that a person’s own primary is the one exception. Yes leads to the second question. ' +
   'The second asks whether the organisation can set up a separate cloud account used only for the root. Yes leads to the cloud key. No leads to two root cards.';
 
@@ -160,8 +160,8 @@ function narrow() {
 export default {
   id: 'three-stores',
   kind: 'layout',
-  label: 'The three stores of a root, side by side, and two questions that choose one',
-  caption: 'Ask the two questions in order. The first answer that fits is your store.',
+  label: 'The three key stores of a root, side by side, and two questions that choose one',
+  caption: 'Ask the two questions in order. The first answer that fits is your key store.',
   wide: wide(),
   narrow: narrow(),
 };

@@ -2,8 +2,8 @@
 // parts, one entry to a line, with a small tag saying what kind of part it is. The tags are the marks of
 // reference/bundle: wanted (the only files a person writes), seen (what a check read), history (written
 // once, never changed) and request. The fifth mark, built, has no part here because it is never stored
-// (record 0005, rule 4). Only the names that record 0006 decides are printed as names: history/,
-// requests/ and trust/. The wanted files, the card maps and the roots are parts of the bundle but their
+// (record 0005, rule 4). Only the names that record 0006 decides are printed as names: history/ and
+// requests/. The wanted files, the card maps and the roots are parts of the bundle but their
 // folder names are only proposed (reference/bundle), so they are printed as plain words. The names of
 // the files inside the places are proposed too, so none is drawn. The accent marks the history, which
 // is never changed afterwards. Key files are not in the bundle: a dashed box outside it says so, and the
@@ -36,7 +36,7 @@ const PARTS = [
   { icon: 'dir', name: 'Roots', mono: false, tag: 'history', desc: ['the public facts of each root key,', 'written once'] },
   { icon: 'dir', name: 'requests/', mono: true, tag: 'request', desc: ['each request, with its answer beside it'] },
   { icon: 'dir', name: 'history/', mono: true, accent: true, tag: 'history', desc: ['one ceremony folder for each ceremony', 'Never changed; each links to the one before.'] },
-  { icon: 'dir', name: 'trust/', mono: true, tag: 'history', desc: ['one numbered set of trust files each time', 'they change: root list, CA bundle, lists, keyring'] },
+  { icon: 'dir', name: 'Trust sets', mono: false, tag: 'history', desc: ['one numbered set of trust files each time', 'they change: root list, CA bundle, lists, keyring'] },
 ];
 
 const rowH = (p) => 24 + p.desc.length * 16 + 8 + (p.accent ? 12 : 0);
