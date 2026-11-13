@@ -88,7 +88,7 @@ Every move is a transition ([moving from one root to another](/learn/transitions
 | From | To | What changes | What to check |
 |---|---|---|---|
 | Software | PIV card | The key stops being copyable. | The new key is attested, and the chain verifies against the maker's root. |
-| Software | AWS KMS | The key moves under cloud access control and audit. | The key's policy names one actor. |
+| Software | AWS KMS | The key moves under cloud access control and audit. | Only the ceremony role may sign. After the keys are created, only the break-glass principal may replicate a key ([record 0004](../decisions/0004-the-cloud-root.md), rule 5). |
 | PIV card | AWS KMS | A physical key becomes a permission. | The confirmation still needs a person. |
 | AWS KMS | PIV card | A permission becomes a physical key. | A second card exists in another place before the first is relied on. |
 | Same kind | Same kind | A replaced token, or a KMS key in another account. The key is new. | The overlap is long enough for slow clients. |

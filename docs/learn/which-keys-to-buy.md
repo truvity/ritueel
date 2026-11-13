@@ -15,7 +15,6 @@ You do not need hardware to learn the model: a drill runs on software test keys.
 |---|---|---|
 | **A YubiKey 5 series, firmware 5.7.4 or later for a root card: three of them** | The reference device. Two for the root cards, one for the daily card. It is the one ritueel supports first. 5.7.4 is ritueel's own floor for a root card, to be tried in M1 ([record 0003](../decisions/0003-root-cards.md)). | About 75 to 80 EUR each. Not re-checked on the live store; confirm before you buy. |
 | **One Nitrokey 3 NFC (3A NFC with USB-A or 3C NFC with USB-C; pick the one that matches your port)** | The second device to test: open firmware, an OpenPGP card with P-384 and touch confirmation, and a PIV applet with P-384. Read the gaps below first. | 3C NFC 65 EUR and 3A NFC 60 EUR on the maker's shop (2026-11-01). |
-| **A Nitrokey HSM 2: not needed** | The one device here built for key backup and a CA workflow through PKCS#11. | 109 EUR on the maker's shop (2026-11-01). |
 
 Leave on the shelf: OnlyKey, SoloKeys and Token2, for the reasons below.
 
