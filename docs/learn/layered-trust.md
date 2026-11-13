@@ -11,7 +11,7 @@ Trust in a well-run PKI is not one key. It is layers, each with a different job,
 
 | Layer | Job | Lifetime | How it is kept |
 |---|---|---|---|
-| **Root** | Authorises the layer below. Trusted by outsiders directly. | Years, extended at each use. | Offline, in a store only a ceremony reaches. |
+| **Root** | Authorises the layer below. Trusted by outsiders directly. | Years, extended at each use. | Offline, in a key store only a ceremony reaches. |
 | **Intermediate** | Does the daily signing: issues certificates, or signs releases. | Months to a year, renewed by re-signing. | In a system, born where it lives. |
 | **Leaf** | The certificate or signature that a person or machine presents. | Days to a year. | On the machine that uses it. |
 
@@ -32,7 +32,7 @@ There are two ways a root fails, and they need different answers.
 - **Loss.** The key is gone: a card breaks, an account is locked. The answer is *redundancy*: another key that can take over. A card cannot be copied, so redundancy means a second, independent card. A cloud key service can replicate its own key, so redundancy means a replica.
 - **Compromise.** Someone else has the key. A second copy makes it worse. The answer is *revocation*: declare the key untrustworthy and move to a new one.
 
-So ritueel never offers to export a key from a card or a cloud key to make a backup. For cards, backup means two cards. For a cloud key, it means a replica. For a key in a software store, the store's own replication is the backup, and the next page on [key stores](/learn/key-stores/) says what that costs.
+So ritueel never offers to export a key from a card or a cloud key to make a backup. For cards, backup means two cards. For a cloud key, it means a replica. For a key in a software store, the key store's own replication is the backup, and the next page on [key stores](/learn/key-stores/) says what that costs.
 
 Redundancy is not control. Any one root key can sign anything clients of this root accept. Two root keys do not mean that two people must agree. Protect each key as if it were the only one.
 

@@ -7,7 +7,7 @@ sidebar:
 
 *Design phase: this page teaches the model. The checks it describes are planned: the cloud store's for M2 ([issue #12](https://github.com/truvity/ritueel/issues/12)) and the card checks that gate a ceremony for M6 (the read-only check and the card files come with M2; [issue #11](https://github.com/truvity/ritueel/issues/11)); the rule they follow is in [record 0002](../decisions/0002-where-a-key-lives.md).*
 
-Someone tells you a root key is "safe on a hardware token", or "in the cloud, locked down". How would you know? A claim is not evidence, and a root is the one key where being wrong is expensive. This page is about what each kind of store can show, so you can tell a claim from a proof.
+Someone tells you a root key is "safe on a hardware token", or "in the cloud, locked down". How would you know? A claim is not evidence, and a root is the one key where being wrong is expensive. This page is about what each kind of key store can show, so you can tell a claim from a proof.
 
 It sits in the middle of [the custody chain](/learn/custody-chain/): the question "where does this key live?" is answered here, and the ceremony that asks it is in [What a ceremony is](/learn/ceremonies/).
 
@@ -15,7 +15,7 @@ It sits in the middle of [the custody chain](/learn/custody-chain/): the questio
 
 | Kind | Example | What it shows | What it does not show |
 |---|---|---|---|
-| **Attested** | A YubiKey's PIV or OpenPGP applet | A certificate chain, ending at the maker's published root, says: this key was made inside this device, this firmware, with this PIN and touch policy. | That the maker is honest, or that the computer in front of you is. |
+| **Attested** | A YubiKey's PIV or OpenPGP applet | A certificate chain, ending at the maker's published root, says: this key was made inside this device, with this firmware. For a PIV key it also gives the PIN and touch policy; for an OpenPGP card key the encoding is not yet measured, so ritueel enforces neither from it. | That the maker is honest, or that the computer in front of you is. |
 | **Read from the service** | AWS KMS | You ask the service for the key's description and its policy, and read who is allowed to sign. The audit trail records every use. | That the key was made in a hardware module: the service gives no such statement. |
 | **None** | A key file, a password manager, the system keyring, a token that cannot attest | Nothing. The key could have been made anywhere, and copied anywhere. | Everything. |
 
@@ -29,7 +29,7 @@ The chain is checked against the maker's root, which ritueel carries and refresh
 
 A cloud key service cannot attest where its key was made, but it can tell you, truthfully and every time you ask, who may use the key. For a root, ritueel reads three things from the service and compares them with what it expects: the key's description (its type, its Region, that it is enabled), its policy (that one role may sign anything new, and only digests), and its replica. If the policy changed since the last ceremony, you are shown the change before you confirm anything ([The cloud root](/reference/kms-root/)).
 
-## What the kind allows a store to hold
+## What the kind allows a key store to hold
 
 | Kind | May hold |
 |---|---|
