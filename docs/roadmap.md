@@ -41,21 +41,23 @@ The first signed release (M5) follows the adoption of the project's root and its
 
 ## After the first version
 
-None of these is planned in detail. Each starts as a decision proposal. The decisions behind them are the sections "Not yet proven or only proposed" of the [records](https://github.com/truvity/ritueel/tree/main/docs/decisions), and [the design in brief](/design/) lists them.
+None is planned in detail; each starts as a decision proposal. The sections "Not yet proven or only proposed" of the [records](https://github.com/truvity/ritueel/tree/main/docs/decisions) hold the decisions behind them, and [the design in brief](/design/) lists them.
 
 - A post-quantum root ([issue #32](https://github.com/truvity/ritueel/issues/32)).
 - More key stores, each arriving with its first real installation: Google Cloud KMS, Azure Key Vault ([issue #67](https://github.com/truvity/ritueel/issues/67)) and Nitrokey ([issue #66](https://github.com/truvity/ritueel/issues/66)) are planned, then other clouds, HSMs, TPMs and other cards. A new store passes an admission test first: a dated research page that measures P-384 over SHA-384, the evidence the store gives, access from a second process, and a replica or backup. The site compares the stores and says which to buy for testing.
 - A fallback driver for the `openpgp-card` store.
 - References and test vectors of the trust files, by milestone (M2, M4), and files for a key on one's own domain (WKD) and the DNS record text, as a later output with a guide.
-- The oldest rpm that imports per-primary key files, and a Go library for infrastructure code made from the same policy package.
-- Stage two of a person's key (two card-born primaries) and the build list of stage one (the M3 row).
+- The oldest rpm that imports per-primary key files.
+- Stage two of a person's key (two card-born primaries) and the build list of stage one.
 - How the first replica of a cloud root is made under the key policy.
-- The build and test list of the cards (the M6 row), and packing single-key roots into one card row.
+- The build and test list of the cards, and packing single-key roots into one card row.
 - The format of the wrapped key, fixed by the M1 proof.
-- The build of revocation signatures and `check material`, the restore check, the drill scripts and the adoption drill; adding, retiring and revoking root keys, with their vectors; an advisory review asked for in the plan (all in the M4 and M7 rows).
-- The guided mode and the program side of the page (the M2 and M7 rows).
-- Recipes for consumers that need a change of the hand-off contract (Vault and OpenBao, step-ca, AWS Private CA, Istio).
-- A check of the local trust store, a list of the next steps in the panel of the ceremony in History and a form in the page, and calling a code host's own tool (each needs the maintainer's word where record 0011 says so).
+- Revocation signatures and `check material`, the restore check, the drills, adding, retiring and revoking root keys with vectors, and an advisory review asked for in the plan (the M4 and M7 rows).
+- The guided mode and the program side of the page.
+- A change of the hand-off contract for consumers that send bare requests or keep the intermediate key in software, with recipes for Vault and OpenBao, step-ca, AWS Private CA and Istio.
+- A check of the local trust store, a list of next steps in the History panel and a form in the page, and calling a code host's own tool (each waits for the maintainer's word).
+- A sealed single-file form of a bundle for backups that reveals nothing.
+- A store of every old text of a wanted file, for undo without git.
 - Three teaching pages wait: user IDs, checking your cards, and renewing a delegated key.
 
 ### What is delivered
