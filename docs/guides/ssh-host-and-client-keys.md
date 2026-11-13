@@ -11,7 +11,7 @@ sidebar:
 
 A CA of one type can certify a key of another: "it is possible for a RSA certificate key to be signed by a Ed25519 or ECDSA CA key and vice-versa" (OpenSSH `PROTOCOL.certkeys`) [1]. OpenSSH has accepted an ECDSA CA key since 5.7 (2011) [2].
 
-One test on 2026-11-13, not yet written up as a research note: with a P-384 CA key, OpenSSH 10.2p1 `ssh-keygen -s` signed an Ed25519 user key and a P-384 host key, and Go 1.27.0 with `golang.org/x/crypto/ssh` v0.59.0 (`CertChecker`) accepted both certificates [3]. Not tested: a login to a running `sshd`. Five other clients were read in their documentation only, and it does not say which CA key types they check [3]. Test the clients you use.
+One test on 2026-11-13 ([the research note](../research/ssh-certificates-of-other-key-types-under-a-p384-ca-2026-11-13.md)): with a P-384 CA key, OpenSSH 10.2p1 `ssh-keygen -s` signed an Ed25519 user key and a P-384 host key, and Go 1.27.0 with `golang.org/x/crypto/ssh` v0.59.0 (`CertChecker`) accepted both certificates [3]. Not tested: a login to a running `sshd`. Five other clients were read in their documentation only, and it does not say which CA key types they check [3]. Test the clients you use.
 
 ## Host keys
 
