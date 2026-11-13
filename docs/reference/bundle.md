@@ -129,9 +129,9 @@ These parts of the steps are not decided and are fixed with the code ([issue #8]
 - The data of a file and of its folder are flushed (steps 2, 4 and 5). The attempt is made by an exclusive create. A journal grows by one flushed line at a time. A half line does not parse and counts as not written. A torn file that no ceremony record lists counts as not written, and is written again under the same name.
 - After a stop, ritueel does not delete a folder with a temporary name. `close` lists it with its digests. When the ceremony record is written and the rename has not happened, the next command finishes the rename first.
 - After a write to the stick, ritueel prints "flushed; the join on the workstation checks every file", and not "safe to remove". A removable stick can report a flush it did not do.
-
-The rename that refuses to replace is a Linux call (`renameat2` with the no-replace flag). Its manual page lists ext4, btrfs, xfs and vfat and does not list exFAT (read 2026-11-12). In a trial on 2026-11-12 in a virtual machine, the rename worked on exFAT with the kernel of the offline system. It is not tested on a real stick. The steps rest on digests and not on the rename, so they hold on any file system. The file system of the stick is exFAT ([record 0005](../decisions/0005-a-ceremony-and-where-it-runs.md), rule 31).
 :::
+
+The rename that refuses to replace is a Linux call (`renameat2` with the no-replace flag). On a file system that cannot refuse a rename over an existing file, ritueel stops with an error: it never replaces a file and has no second way to write one. Its manual page lists ext4, btrfs, xfs and vfat and does not list exFAT (read 2026-11-12). In a trial on 2026-11-12 in a virtual machine, the rename worked on exFAT with the kernel of the offline system. It is not tested on a real stick. The file system of the stick is exFAT ([record 0005](../decisions/0005-a-ceremony-and-where-it-runs.md), rule 31).
 
 ### How a name carries its identity
 
