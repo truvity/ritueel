@@ -97,8 +97,9 @@
 // equal to x, where equal is reflect.DeepEqual except that: a field tagged omitempty that is
 // empty is not written and so comes back zero, which makes an empty slice or map nil (a nil slice
 // or map that is not omitempty cannot be written at all, because Marshal takes it for null); a
-// Raw comes back in its canonical form, which is its own bytes when they were canonical; and an
-// interface comes back with the five types above, so an int in it comes back an int64. For every
+// Raw comes back in its canonical form, which is its own bytes when they were canonical; an
+// interface comes back with the five types above, so an int in it comes back an int64; and a
+// field tagged "-" and an unexported field are not written, so they come back zero. For every
 // canonical document d that fills a type T, Marshal of the filled value gives d again, when d
 // names every field of T that has no omitempty and none of the omitempty members that d holds
 // is empty, and when AllowUnknown did not skip a member. The tests check both.
