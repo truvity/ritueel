@@ -1,5 +1,11 @@
 // Package cli is the ritueel command line: the commands, the exit codes and the JSON output
 // of docs/reference/cli.md. It writes only to the streams it is given and never exits.
+//
+// A command that refuses returns a Refusal or a BackendRefusal error, which carries the reason
+// codes and the message for a person; Run prints the message on standard error. A command may also
+// return a Result with the exit code 3 or 4 and its Reasons, so that a later command can refuse and
+// still give data members (the checks of check request, the findings of status). Today such a Result
+// prints nothing on standard error, and who prints the line for a person in that case is not decided.
 package cli
 
 import (
@@ -122,7 +128,7 @@ func (UsageError) ReasonCodes() []string { return nil }
 
 // Refusal is a refusal by a check or by the policy: exit code 3.
 type Refusal struct {
-	// Reasons are the codes of the refusal.
+	// Reasons are the codes of the refusal: at least one, or Run panics.
 	Reasons []string
 	// Msg is the message for a person; when empty the codes stand in.
 	Msg string
@@ -142,7 +148,7 @@ func (e Refusal) ReasonCodes() []string { return e.Reasons }
 
 // BackendRefusal is a refusal by the card, its PIN state or the key store backend: exit code 4.
 type BackendRefusal struct {
-	// Reasons are the codes of the refusal.
+	// Reasons are the codes of the refusal: at least one, or Run panics.
 	Reasons []string
 	// Msg is the message for a person; when empty the codes stand in.
 	Msg string

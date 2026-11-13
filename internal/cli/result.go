@@ -35,7 +35,9 @@ type Result struct {
 	ExitCode ExitCode `json:"exit_code"`
 	// Outcome matches the exit code.
 	Outcome Outcome `json:"outcome"`
-	// Reasons are the codes of a refusal. The member is written when the list is not empty.
+	// Reasons are the codes of a refusal. The object of a refused command (the exit codes 3 and
+	// 4) always has at least one, and no other object has any: either is a mistake of the
+	// programmer, and Run panics (exit code 1) with a text that says so.
 	Reasons []string `json:"reasons,omitempty"`
 	// Warnings are the warnings of the command, one string for each, in the order given and with
 	// a repeated one repeated. A warning does not change the exit code. The member is always
