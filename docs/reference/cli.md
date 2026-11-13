@@ -196,19 +196,19 @@ Exit codes of these commands are fixed with the code.
 
 ## Machine-readable output
 
-With `--output json`, a command prints **one JSON object on standard output** when it ends, followed by a newline, whatever its outcome. Everything a person reads (the plan in words, prompts, progress, warnings) goes to standard error, and the transcript holds it. Only arguments so broken that `--output json` cannot be read print no object; the exit code is then 2.
+With `--output json`, a command prints **one JSON object on standard output** when it ends, followed by a newline, whatever its outcome. Everything a person reads (the plan in words, prompts, progress, warnings) goes to standard error, and the transcript holds it. Only arguments so broken that `--output json` cannot be read print no object; the exit code is then 2. A fault in the program's own table of words, which is found before any flag is read, prints none either: standard error holds one line and the exit code is 1.
 
-Every object has these members:
+Every object has `output`, `command`, `exit_code`, `outcome` and `warnings`. `reasons` is there exactly when the command was refused, and `error` exactly when it failed or was a usage error, so the object of a refusal or of a command that was not confirmed has no `error`:
 
 | Member | Meaning |
 |---|---|
 | `output` | The version of this format, `1`. |
-| `command` | The first word of the command, one of the thirteen command words: `apply`, `new`, `join`. For `verify root-list` it is `verify`, and for `check history` it is `check`. |
+| `command` | The first word of the command, one of the thirteen command words: `apply`, `new`, `join`. For `verify root-list` it is `verify`, and for `check history` it is `check`. When no command word was read (none given, an unknown word, or a flag the program does not know before the word) it is the empty string. |
 | `exit_code` | The exit code the command returns. |
 | `outcome` | The word of the exit code: `done` for 0, `failed` for 1, `usage` for 2, `refused` for 3 and 4, `not-confirmed` for 5. The codes 10, 11 and 12 of `status` get their word when `status` is built. |
 | `reasons` | When refused: the codes, as in the [hand-off contract](/reference/hand-off-contract/#the-answer) or the [root list](/reference/root-list/#how-a-host-reads-it) where they apply, the codes of [a card](/reference/cards/#what-is-checked-on-a-card) and of [a KMS root](/reference/kms-root/#the-checks), `plan-stale` for a plan that no longer matches the bundle, and the names of the [findings of `check history`](/reference/ceremony-record/#the-hash-chain). |
 | `error` | When failed or a usage error: a message for a person. Its wording is not part of the format. |
-| `warnings` | A list of strings, one for each warning, empty when there is none. A warning does not change the exit code. The warning of a held list that has expired is `held-expired`. The text output prints each warning on standard error. |
+| `warnings` | A list of strings, one for each warning, in the order the command gave them; a warning given twice is listed twice, and the list is `[]` when there is none. A warning does not change the exit code. The warning of a held list that has expired is `held-expired`. In both output modes each warning is also a line on standard error, `ritueel: warning: ` and the text, which is shown with escapes like every text on the terminal. The wording of the line is for a person. |
 
 And these where they apply:
 
