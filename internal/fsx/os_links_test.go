@@ -74,7 +74,9 @@ func (wd *world) open() *fsx.Writer {
 	if err != nil {
 		wd.t.Fatal(err)
 	}
-	wd.t.Cleanup(func() { _ = w.Close() })
+	// closed in the background: a call that hangs (a FIFO opened without care) holds the lock that
+	// Close waits for, and the test must fail by its deadline and not wait for that call
+	wd.t.Cleanup(func() { go func() { _ = w.Close() }() })
 	return w
 }
 
