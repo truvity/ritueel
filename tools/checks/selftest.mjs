@@ -156,6 +156,72 @@ expect('a default that names a missing record', 'record-refs', page('Rule number
 expect('no citation at all', 'record-refs', page('No rule is cited here.'), 'fail', { has: ['empty sweep'] });
 expect('no records', 'record-refs', { 'docs/a.md': 'See record 0005, rule 2.\n' }, 'fail', { has: ['empty sweep'] });
 
+// ---- tools/records-renumber.mjs: new records 0005 (4 rules) and 0006 (6 rules), and the tables that
+// say where the old rules went. Old 0005 had 6 rules: 1, 2 stay; 3 is dropped; 4 is now rule 3;
+// 5 moved to 0006 rule 6; 6 was split into 0005 rules 3 and 4. Old 0006 had 6 rules: 1 to 3 stay,
+// 4 is now rule 6, 5 is rule 4, 6 is rule 5.
+const tsv = (...rows) => `# map\n${['part', 'old_id', 'action', 'new_ref', 'issue', 'reason', 'old_text_start'].join('\t')}\n${rows.map((r) => r.join('\t')).join('\n')}\n`;
+const R = (id, action, ref, reason = '', start = `Old rule ${id} of the plan`) => ['rule', String(id), action, ref, '', reason, start];
+const MAP5 = tsv(R(1, 'keep', '0005.1'), R(2, 'keep', '0005.2'), R(3, 'dropped', '', 'six-steps'), R(4, 'keep', '0005.3'), R(5, 'moved', '0006.6', 'now a rule of the bundle'), R(6, 'split', '0005.3,0005.4'));
+const MAP6 = tsv(R(1, 'keep', '0006.1'), R(2, 'keep', '0006.2'), R(3, 'keep', '0006.3'), R(4, 'keep', '0006.6'), R(5, 'keep', '0006.4'), R(6, 'keep', '0006.5'));
+const renumberFiles = (files, maps = { 'map-0005.tsv': MAP5, 'map-0006.tsv': MAP6 }) => refs({
+  'docs/decisions/0005-a-ceremony.md': rec('0005', 4),
+  'docs/decisions/0006-a-bundle.md': rec('0006', 6),
+  ...Object.fromEntries(Object.entries(maps).map(([n, c]) => [`maps/${n}`, c])),
+  ...files,
+});
+function renumber(name, files, want, { args = [], has = [], lacks = [], after = {}, same = [], maps } = {}) {
+  cases++;
+  const dir = fixture(renumberFiles(files, maps));
+  const before = Object.fromEntries(Object.keys(files).map((k) => [k, readFileSync(join(dir, k), 'utf8')]));
+  const res = spawnSync(process.execPath, [join(here, '..', 'records-renumber.mjs'), dir, '--map', join(dir, 'maps'), ...args], { encoding: 'utf8' });
+  const out = `${res.stdout}${res.stderr}`;
+  const problems = [];
+  if ((res.status === 0 ? 'pass' : 'fail') !== want) problems.push(`expected ${want}, got ${res.status === 0 ? 'pass' : 'fail'}`);
+  for (const s of has) if (!out.toLowerCase().includes(s.toLowerCase())) problems.push(`output lacks "${s}"`);
+  for (const s of lacks) if (out.toLowerCase().includes(s.toLowerCase())) problems.push(`output contains "${s}"`);
+  for (const [path, text] of Object.entries(after)) {
+    const got = readFileSync(join(dir, path), 'utf8');
+    if (got !== text) problems.push(`${path} is ${JSON.stringify(got)}, expected ${JSON.stringify(text)}`);
+  }
+  for (const path of same) if (readFileSync(join(dir, path), 'utf8') !== before[path]) problems.push(`${path} was changed`);
+  if (problems.length) {
+    failures++;
+    console.error(`FAIL records-renumber: ${name}: ${problems.join('; ')}\n${out.replace(/^/gm, '  | ')}`);
+  } else console.log(`ok   records-renumber: ${name}`);
+}
+const aPage = (text, path = 'docs/a.md') => ({ [path]: `${text}\n` });
+renumber('a rule that is renumbered', aPage('See record 0005, rule 4.'), 'pass', { after: aPage('See record 0005, rule 3.'), has: ['1 of 1 citations changed in 1 files'] });
+renumber('a rule that moved to another record, and its link', aPage('See [record 0005](decisions/0005-a-ceremony.md), rule 5.'), 'pass', { after: aPage('See [record 0006](decisions/0006-a-bundle.md), rule 6.') });
+renumber('the rule before its record', aPage('Decided by rule 5 of [0005](0005-a-ceremony.md).'), 'pass', { after: aPage('Decided by rule 6 of [0006](0006-a-bundle.md).') });
+renumber('a split rule', aPage('See record 0005, rule 6.'), 'pass', { after: aPage('See record 0005, rules 3 and 4.') });
+renumber('a list that spreads over two records', aPage('See record 0005, rules 4 and 5.'), 'pass', { after: aPage('See record 0005, rule 3 and record 0006, rule 6.') });
+renumber('a range that still sits together', aPage('See record 0006, rules 4 to 6.'), 'pass', { after: aPage('See record 0006, rules 4 to 6.'), same: ['docs/a.md'] });
+renumber('a range whose rules no longer sit together becomes a list', aPage('See 0006 rules 3 to 5.'), 'pass', { after: aPage('See 0006 rules 3, 4 and 6.') });
+renumber('a list is sorted when it is written again', aPage('See record 0006, rules 5, 2 and 6.'), 'pass', { after: aPage('See record 0006, rules 2, 4 and 5.') });
+renumber('a list whose rules now sit together becomes a range', aPage('See record 0006, rules 6, 4 and 5.'), 'pass', { after: aPage('See record 0006, rules 4 to 6.') });
+renumber('a citation that does not change is left as written', aPage('See record 0006, rules 2 and 1.'), 'pass', { same: ['docs/a.md'], has: ['0 of 1 citations changed'] });
+renumber('the next clause of a run', aPage('See record 0005, rule 4 and rule 5.'), 'pass', { after: aPage('See record 0005, rule 3 and record 0006, rule 6.') });
+renumber('the default a page declares', aPage('Rule numbers without a record name are those of record 0005.\n\nSee rule 4 and rule 5.'), 'pass', { after: aPage('Rule numbers without a record name are those of record 0005.\n\nSee rule 3 and record 0006, rule 6.') });
+renumber('a comment of a source file', { 'proto/x/v1/a.proto': '// Decided: record 0005, rule 4]\nmessage A {}\n' }, 'pass', { after: { 'proto/x/v1/a.proto': '// Decided: record 0005, rule 3]\nmessage A {}\n' } });
+renumber('the rules of another file are not touched', aPage('A command is exact (proto/README.md, rule 7), as record 0005, rule 4, says.'), 'pass', { after: aPage('A command is exact (proto/README.md, rule 7), as record 0005, rule 3, says.') });
+renumber('a record is not a target unless asked', { 'docs/decisions/0006-a-bundle.md': `${rec('0006', 6)}\nSee (rule 5).\n` }, 'pass', { has: ['0 of 0 citations'] });
+renumber('a rule cited inside its own record, with --records', { 'docs/decisions/0006-a-bundle.md': `${rec('0006', 6)}\nSee (rule 5).\n` }, 'pass', { args: ['--records'], after: { 'docs/decisions/0006-a-bundle.md': `${rec('0006', 6)}\nSee (rule 4).\n` } });
+renumber('a rule cited inside its own record that moved', { 'docs/decisions/0005-a-ceremony.md': `${rec('0005', 4)}\nSee (rule 5).\n` }, 'pass', { args: ['--records'], after: { 'docs/decisions/0005-a-ceremony.md': `${rec('0005', 4)}\nSee (record 0006, rule 6).\n` } });
+renumber('a dry run writes nothing and prints the table', aPage('See record 0005, rule 4.'), 'pass', { args: ['--dry-run'], same: ['docs/a.md'], has: ['file\tline\told citation\tnew citation\told rule\tnew rule', 'docs/a.md\t1\trecord 0005, rule 4\trecord 0005, rule 3\tOld rule 4 of the plan\tWe decide the matter numbered 3.'] });
+renumber('the table in a file', aPage('See record 0005, rule 5.'), 'pass', { args: ['--out', join(scratch, 'refs-diff.tsv')], after: aPage('See record 0006, rule 6.') });
+renumber('a rule that was dropped', aPage('See record 0005, rule 3.'), 'fail', { same: ['docs/a.md'], has: ['a person decides', 'docs/a.md:1', 'dropped', 'six-steps', 'nothing written'] });
+renumber('a dropped rule in a list stops the whole run', { ...aPage('See record 0005, rule 4.', 'docs/a.md'), ...aPage('See record 0005, rules 1 and 3.', 'docs/b.md') }, 'fail', { same: ['docs/a.md', 'docs/b.md'], has: ['nothing written'] });
+renumber('a cited rule with no row', aPage('See record 0005, rule 9.'), 'fail', { same: ['docs/a.md'], has: ['no mapping row for record 0005, rule 9'] });
+renumber('a cited record with no table', aPage('See record 0006, rule 1.'), 'fail', { maps: { 'map-0005.tsv': MAP5 }, has: ['record 0006 has no mapping table'] });
+renumber('a row that points at a rule the new record does not have', aPage('See record 0005, rule 1.'), 'fail', { maps: { 'map-0005.tsv': tsv(R(1, 'keep', '0005.9')), 'map-0006.tsv': MAP6 }, has: ['record 0005 has no rule 9'] });
+renumber('a row that points at a record that does not exist', aPage('See record 0005, rule 1.'), 'fail', { maps: { 'map-0005.tsv': tsv(R(1, 'moved', '0042.1', 'moved')), 'map-0006.tsv': MAP6 }, has: ['record 0042 does not exist'] });
+renumber('a rule that became a proposed line', aPage('See record 0005, rule 1.'), 'fail', { maps: { 'map-0005.tsv': tsv(R(1, 'to-nyp', '0005.nyp.2', '')), 'map-0006.tsv': MAP6 }, has: ['a person decides'] });
+renumber('a dropped row without a reason', aPage('See record 0005, rule 1.'), 'fail', { maps: { 'map-0005.tsv': tsv(R(1, 'dropped', '', '')), 'map-0006.tsv': MAP6 }, has: ['a dropped row needs a reason'] });
+renumber('a table with the wrong header', aPage('See record 0005, rule 1.'), 'fail', { maps: { 'map-0005.tsv': 'part\told\n', 'map-0006.tsv': MAP6 }, has: ['the header is'] });
+renumber('a citation that names no record', aPage('See rule 4.'), 'fail', { same: ['docs/a.md'], has: ['cannot be resolved to a record'] });
+renumber('a citation split by a line break', { 'proto/x/v1/a.proto': '// See record 0005, rule\n// 4.\nmessage A {}\n' }, 'fail', { has: ['split by a line break'] });
+
 // ---- public content. The token-shaped strings are assembled here, not written out.
 const pub = (text) => ({ 'README.md': `# Example\n\n${text}\n` });
 const pem = `${'-'.repeat(5)}BEGIN EC PRIVATE KEY${'-'.repeat(5)}`;
