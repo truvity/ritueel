@@ -227,7 +227,13 @@ func (inv *invocation) newCommand(s spec, parents, inherited []string) *ucli.Com
 			flags:  append(slices.Clone(askable), "dir", "output"),
 		})
 		if err != nil {
+			// The panic of a code and an outcome that disagree must happen here, inside the run
+			// that turns a panic into exit code 1, and not in finish.
+			_, _ = ExitFor(err)
 			return err
+		}
+		if res != nil {
+			res.Outcome = agreed(res.ExitCode, res.Outcome)
 		}
 		inv.result = res
 		return nil
@@ -253,9 +259,6 @@ func (inv *invocation) finish(err error) ExitCode {
 		res := inv.result
 		res.Output = FormatVersion
 		res.Command = inv.command
-		if res.Outcome == "" {
-			res.Outcome = OutcomeDone
-		}
 		var werr error
 		if mode == OutputJSON {
 			werr = writeJSON(inv.env.Stdout, res)
