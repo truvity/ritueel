@@ -261,14 +261,27 @@ jobs:
           [[ "$names" =~ $re ]] || fail "SHA256SUMS does not name exactly the amd64 and the arm64 archive: $names"
           if [ "$ARCH" = amd64 ]; then archive="${BASH_REMATCH[1]}"; else archive="${BASH_REMATCH[2]}"; fi
           [ -f "$archive" ] && [ ! -L "$archive" ] || fail "$archive is not a regular file"
-          # A size cap before anything is listed or unpacked: 200 MiB (209715200 bytes) for the file and
-          # for what it unpacks to (the real archive is a few MiB), so that a bomb cannot fill the disk.
+          # Three size caps, all 200 MiB (209715200 bytes; the real archive is a few MiB), checked before
+          # anything is unpacked, and each limits one thing:
+          #   1. the size of the archive file: what was downloaded and is opened;
+          #   2. the size of the decompressed tar stream: the work `gzip` and `tar` do while they list
+          #      it, not the size of the files in it (a sparse member can be far larger than its stream);
+          #   3. the sum of the member sizes in the listing (`tar -tvzf`, the size column, a sparse
+          #      member counted at its full size): what unpacking writes or makes. A size that is not a
+          #      plain number refuses the archive.
           limit=209715200
           [ "$(stat -c %s "$archive")" -le "$limit" ] || fail "$archive is larger than $limit bytes"
-          [ "$(gzip -dc "$archive" | head -c "$((limit + 1))" | wc -c || true)" -le "$limit" ] || fail "$archive unpacks to more than $limit bytes"
+          [ "$(gzip -dc "$archive" | head -c "$((limit + 1))" | wc -c || true)" -le "$limit" ] || fail "$archive unpacks to a tar stream of more than $limit bytes"
+          listing=$(tar -tvzf "$archive") || fail "$archive cannot be listed"
+          sum=0
+          while read -r _ _ size _; do
+            [[ "$size" =~ ^[0-9]{1,15}$ ]] || fail "a member of $archive has a size that is not a plain number"
+            sum=$((sum + size))
+          done <<<"$listing"
+          [ "$sum" -le "$limit" ] || fail "the members of $archive add up to $sum bytes, more than $limit"
           # Only these three plain files, no link, no device, no path (so none can reach outside the folder).
           [ "$(tar -tzf "$archive" | LC_ALL=C sort | tr '\n' ' ')" = "LICENSE README.md ritueel " ] || fail "$archive does not hold exactly LICENSE README.md ritueel"
-          [ "$(tar -tvzf "$archive" | cut -c1 | sort -u | tr -d '\n')" = "-" ] || fail "$archive holds a member that is not a plain file"
+          [ "$(cut -c1 <<<"$listing" | sort -u | tr -d '\n')" = "-" ] || fail "$archive holds a member that is not a plain file"
           dir="$RUNNER_TEMP/unpacked"
           mkdir "$dir"
           tar -xzf "$archive" -C "$dir" --no-same-owner
