@@ -1,8 +1,8 @@
 // The USB stick of the offline system: vanilla AirgapOS, unchanged, and ONE extra partition whose
 // layout ritueel defines. The partition holds ritueel's binaries (one directory per version, then per
-// system and architecture), the bundles (without their wanted files: record 0005, rule 21) and the
+// system and architecture), the bundles (without their wanted files: record 0005, rule 30) and the
 // encrypted key files, beside the bundles and not inside them. The way back is a join
-// (record 0005, rule 26): an arrow from the bundles to the workstation says it adds the missing files. The directory names are PROPOSED: the figure says so
+// (record 0005, rule 28): an arrow from the bundles to the workstation says it adds the missing files. The directory names are PROPOSED: the figure says so
 // on the partition itself. That AirgapOS boots from such a stick and uses the partition is not yet
 // proven on hardware, and a dotted badge says so. The accent marks the one thing the figure is about:
 // the plan, which holds the digest of the copy of ritueel that made it. The wide and the narrow

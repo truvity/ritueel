@@ -11,19 +11,19 @@ sidebar:
 
 The command line, the guided mode and the local page are three faces of one binary and one ceremony engine. The command line and the page use one API of one ritueel process, written in Protobuf and served with ConnectRPC (`ritueel.local.v1alpha1`) ([record 0010](../decisions/0010-the-engine-the-process-and-the-page.md), rules 1 and 6; [the process](/reference/wizard/#the-ritueel-process)).
 
-"Wizard" means the guided mode of the command line only. The page is no wizard: it makes no plan and has no plan screen (rules 3 and 10).
+"Wizard" means the guided mode of the command line only. The page is no wizard: it makes no plan and has no plan screen (rules 3 and 11).
 
 Rule numbers without a record name are those of record 0010.
 
-The page is a read-only view. It changes no key, no ceremony and no wanted file, it never confirms a ceremony, and it never sees a secret (rule 10). The one write it can cause is an inert proposal, built later ([the proposal](#the-inert-proposal), rule 11).
+The page is a read-only view. It changes no key, no ceremony and no wanted file, it never confirms a ceremony, and it never sees a secret (rule 11). The one write it can cause is an inert proposal, built later ([the proposal](#the-inert-proposal), rule 12).
 
-A change ends in the terminal (rule 22):
+A change ends in the terminal (rule 13):
 
-1. The person writes the wanted files ([record 0006](../decisions/0006-bundle-history-and-trust-files.md), rule 11).
-2. `ritueel apply` makes the plan and shows it with its digest ([record 0005](../decisions/0005-a-ceremony-and-where-it-runs.md), rules 4 and 10).
-3. The person types the first eight characters of the digest, then gives the PIN and the touch where the store asks (0005, rule 6).
+1. The person writes the wanted files ([record 0006](../decisions/0006-bundle-history-and-trust-files.md), rule 5).
+2. `ritueel apply` makes the plan and shows it with its digest ([record 0005](../decisions/0005-a-ceremony-and-where-it-runs.md), rules 7 and 13).
+3. The person types the first eight characters of the digest, then gives the PIN and the touch where the store asks (0005, rule 9).
 
-A key that can be copied is used only in the offline system; a key that cannot be copied may also be used on the workstation; a cloud root always runs on the workstation, because the offline system has no network (0005, rules 17, 18 and 20). On the workstation the page shows the progress. In the offline system there is no page and no network, and the progress is in the terminal. The last step, the keyserver upload, is shown with its command and done in the terminal after a typed confirmation: the page has no button (0010, rules 5 and 22). For a key that can be copied, `apply --plan-only` writes the plan in the bundle, and the holder runs it in the offline system ([record 0006](../decisions/0006-bundle-history-and-trust-files.md), rule 7; 0005, rule 21). There is no full-screen terminal interface, and the process is not a service (0010, rules 2 and 9).
+A key that can be copied is used only in the offline system; a key that cannot be copied may also be used on the workstation; a cloud root always runs on the workstation, because the offline system has no network (0005, rules 22 to 24 and 29). On the workstation the page shows the progress. In the offline system there is no page and no network, and the progress is in the terminal. The last step, the keyserver upload, is shown with its command and done in the terminal after a typed confirmation: the page has no button (0010, rules 5 and 13). For a key that can be copied, `apply --plan-only` writes the plan in the bundle, and the holder runs it in the offline system ([record 0006](../decisions/0006-bundle-history-and-trust-files.md), rule 9; 0005, rule 30). There is no full-screen terminal interface, and the process is not a service (0010, rules 2 and 10).
 
 ```sh
 ritueel wizard            # the guided mode, in the terminal
@@ -31,7 +31,7 @@ ritueel wizard --web      # prints the address of the read-only page of this com
 ```
 
 :::note[Proposed]
-The flag `--web`, as the way to ask for the address of the page, is proposed and waits for the maintainer ([#17](https://github.com/truvity/ritueel/issues/17)). Record 0010 decides only that the program prints the address and does not start a browser (rule 12).
+The flag `--web`, as the way to ask for the address of the page, is proposed and waits for the maintainer ([#17](https://github.com/truvity/ritueel/issues/17)). Record 0010 decides only that the program prints the address and does not start a browser (rule 14).
 :::
 
 ### What the guided mode drives
@@ -40,16 +40,16 @@ The guided mode drives the ceremonies and the checks. It does not drive the prep
 
 | Task | The commands | Decided by |
 |---|---|---|
-| First set-up | `new`, `want`, then `apply` | 0005 rule 15; 0006 rule 11 |
-| A change of a wanted file | `want`, then `apply` | 0006 rule 11; 0005 rule 10 |
-| A renewal | `apply` | 0005 rule 11 |
-| A change of the keys of a root | `want` the keys and the dates, then `apply` | 0007 rules 5 and 12 |
-| Trust files | `apply` builds them; `verify` is the host's side | 0006 rules 12, 13 and 28 |
-| A drill | `check restore` | 0007 rule 23 |
+| First set-up | `new`, `want`, then `apply` | 0005 rule 20; 0006 rule 5 |
+| A change of a wanted file | `want`, then `apply` | 0006 rule 5; 0005 rule 13 |
+| A renewal | `apply` | 0005 rule 16 |
+| A change of the keys of a root | `want` the keys and the dates, then `apply` | 0007 rules 6 and 9 |
+| Trust files | `apply` builds them; `verify` is the host's side | 0006 rules 12, 13, 15 and 24 |
+| A drill | `check restore` | 0007 rule 24 |
 | A person's key | The wanted files of the person, then `apply` ([personal OpenPGP](/reference/personal-openpgp/)) | 0008 rules 1 and 4 |
-| A change of name or address | The wanted user IDs, then `apply` | 0008 rule 17 |
-| A revocation | `revoke` | 0007 rule 8 |
-| A stopped attempt | `close` | 0005 rule 7 |
+| A change of name or address | The wanted user IDs, then `apply` | 0008 rule 16 |
+| A revocation | `revoke` | 0007 rule 11 |
+| A stopped attempt | `close` | 0005 rule 10 |
 
 :::note[Proposed]
 Which of these tasks the guided mode drives, and that it shows the edit of a wanted file that follows and opens `want` for the person, who saves it, are proposed. The guided mode never writes a wanted file itself ([#16](https://github.com/truvity/ritueel/issues/16)).
@@ -57,7 +57,7 @@ Which of these tasks the guided mode drives, and that it shows the edit of a wan
 
 ## One engine
 
-The guided mode asks the engine for a plan with the same options the command line builds, shows the plan and its digest, and hands the confirmation to the terminal. The page does not ask for a plan: `apply` makes it, in the terminal (rule 10). Neither face has code that builds a request, a plan or a signature, and the calls of the page are the API below, nothing else.
+The guided mode asks the engine for a plan with the same options the command line builds, shows the plan and its digest, and hands the confirmation to the terminal. The page does not ask for a plan: `apply` makes it, in the terminal (rule 11). Neither face has code that builds a request, a plan or a signature, and the calls of the page are the API below, nothing else.
 
 - Every step of the guided mode prints the **equivalent command line**, complete, with the flags the choices produced (rule 3).
 - A test runs a guided-mode session with a fixed clock, collects the commands it printed, runs them (`apply` with `--confirm DIGEST`), and compares: the plan digests are equal, and so are the ceremony records but for the time of the run (rule 3).
@@ -65,16 +65,16 @@ The guided mode asks the engine for a plan with the same options the command lin
 
 ## The four entries
 
-The page has four entries: To do, Inventory, History and Trust set (rule 10). There is no wizard and no plan screen.
+The page has four entries: To do, Inventory, History and Trust set (rule 11). There is no wizard and no plan screen.
 
 | Entry | What it shows |
 |---|---|
-| **To do** (the home) | A to-do list with two tabs. "Not applied yet" lists the changes, each on its object, with what it needs and whether it is ready or waits (0005, rule 29). Above the list is the command `ritueel apply`, as text to copy. "Findings" lists what is wrong, each with the command that fixes it. When nothing waits, the page says so and shows the next date. |
+| **To do** (the home) | A to-do list with two tabs. "Not applied yet" lists the changes, each on its object, with what it needs and whether it is ready or waits (0005, rule 4). Above the list is the command `ritueel apply`, as text to copy. "Findings" lists what is wrong, each with the command that fixes it. When nothing waits, the page says so and shows the next date. |
 | **Inventory** | Where every key is and what it is for. One screen with three views and one panel (see below). |
 | **History** | The ceremonies, newest first, each in one of four states. For one ceremony: the plan and its digest in full, to compare; the changes in the plan, and the changes left out with the reason; the sentence "type the first eight characters in the terminal"; and, after the run, the keyserver step with its command. |
 | **Trust set** | The newest trust set: its number, its files, the check of each file and the command that verifies it. |
 
-Decided in rule 10: the four entries, the home with the findings as its second tab, the three views with one panel, and no wizard and no plan screen. The demo on the site has the same four entries (rule 17).
+Decided in rule 11: the four entries, the home with the findings as its second tab, the three views with one panel, and no wizard and no plan screen. The demo on the site has the same four entries (rule 19).
 
 :::note[Proposed]
 What each entry holds, the four states of a ceremony, the rules for every entry and the aims for width and height, as written in this section ([#17](https://github.com/truvity/ritueel/issues/17)). The page step may change them.
@@ -100,7 +100,7 @@ A ceremony panel also says, in one sentence from the catalogue of rule 4, what i
 
 - Every entry has four read states: loaded, empty, failed and waiting.
 - Every command is text with a control to copy it. No control is named apply, sign, run, confirm, revoke or publish.
-- An entry reads when it opens and when the window gets the focus. There is no timer, and every entry shows the time of its read. A page left open for longer than the process lives (rule 9) shows the state "failed" and says how to start again.
+- An entry reads when it opens and when the window gets the focus. There is no timer, and every entry shows the time of its read. A page left open for longer than the process lives (rule 10) shows the state "failed" and says how to start again.
 - Width and height are aims and are not measured: a list, a table and a panel from 1440 px; one screen for To do and at most one and a half for each other entry, at 1440 by 900 and at 1920 by 970.
 
 **Plans that were never run.** A plan is written before the confirmation, and no command withdraws a plan, so a plan that nobody runs stays in the history. A plan made for the offline system stays "planned" until `join` brings its ceremony record back. History folds the plans that were never run into one line with a count.
@@ -113,7 +113,7 @@ The folding of plans that were never run is a choice of the page build and not a
 
 The contract is in `proto/ritueel/local/v1alpha1/` and is not copied here. The version `v1alpha1` is a design and may change before a release. The contract in `proto/` has these five reads.
 
-All calls of the first build are reads. Each is marked `NO_SIDE_EFFECTS`, so that it may be a `GET`. No call has a field for a secret, a PIN or a passphrase, and the calls made with the page-rights token do not confirm, sign, create a key or run a ceremony (rules 7 and 10).
+All calls of the first build are reads. Each is marked `NO_SIDE_EFFECTS`, so that it may be a `GET`. No call has a field for a secret, a PIN or a passphrase, and the calls made with the page-rights token do not confirm, sign, create a key or run a ceremony (rules 7 and 11).
 
 | Call | Feeds |
 |---|---|
@@ -123,15 +123,15 @@ All calls of the first build are reads. Each is marked `NO_SIDE_EFFECTS`, so tha
 | `ListCeremonies` | History |
 | `ListTrustFiles` | Trust set |
 
-`GetInventory` is one read, and every call reads the bundle again (rule 9), so the three views cannot show two states of the bundle.
+`GetInventory` is one read, and every call reads the bundle again (rule 10), so the three views cannot show two states of the bundle.
 
 :::note[Proposed]
-The names and the shapes of these five calls ([#17](https://github.com/truvity/ritueel/issues/17)). Record 0010 decides that the calls are reads, in rule 7 and rule 10.
+The names and the shapes of these five calls ([#17](https://github.com/truvity/ritueel/issues/17)). Record 0010 decides that the calls are reads, in rule 7 and rule 11.
 :::
 
 ## The inert proposal
 
-The write of the page is one inert proposal. It is decided in rule 11 and rule 22 of [record 0010](../decisions/0010-the-engine-the-process-and-the-page.md), and it is built after the first build of the page:
+The write of the page is one inert proposal. It is decided in rule 12 and rule 13 of [record 0010](../decisions/0010-the-engine-the-process-and-the-page.md), and it is built after the first build of the page:
 
 1. The person fills a form in the page.
 2. The page leaves a proposal: a file that nothing acts on. It changes no wanted file and makes no plan.
@@ -143,18 +143,18 @@ A change that starts in the page is therefore typed twice: eight characters for 
 The first build of the page has no write and no text field. A person edits the wanted file in an editor, through `want`, and the page shows the changes that follow.
 
 :::note[Proposed]
-What a proposal may hold and where it waits: the fields the form allows (the page never sees a secret), the folder, the commands that accept or decline it (`want accept` and `want decline`, on the [commands page](/reference/cli/)), the calls that preview and leave it, a base digest, the caps on the number and the size of proposals, what accepting does (a wanted file is written by a person only, [record 0006](../decisions/0006-bundle-history-and-trust-files.md), rule 11), what it does with the text it replaces, and that a proposal is created and never replaced ([#147](https://github.com/truvity/ritueel/issues/147)).
+What a proposal may hold and where it waits: the fields the form allows (the page never sees a secret), the folder, the commands that accept or decline it (`want accept` and `want decline`, on the [commands page](/reference/cli/)), the calls that preview and leave it, a base digest, the caps on the number and the size of proposals, what accepting does (a wanted file is written by a person only, [record 0006](../decisions/0006-bundle-history-and-trust-files.md), rule 5), what it does with the text it replaces, and that a proposal is created and never replaced ([#147](https://github.com/truvity/ritueel/issues/147)).
 :::
 
 ## The ritueel process
 
-- **One process,** the same binary as the command line, started in the background by the first command that needs it. The command line then talks to it. It is not installed as a system service, is never started at login or boot, and never survives logout or a reboot ([record 0010](../decisions/0010-the-engine-the-process-and-the-page.md), rule 9).
+- **One process,** the same binary as the command line, started in the background by the first command that needs it. The command line then talks to it. It is not installed as a system service, is never started at login or boot, and never survives logout or a reboot ([record 0010](../decisions/0010-the-engine-the-process-and-the-page.md), rule 10).
 - **One door, one fixed loopback port.** The command line and the page call the same API on one fixed port of the loopback address, `127.0.0.1`: one number for ritueel. There is no Unix socket and no second listener. The port number is 7488 (rule 6); the IANA registry lists 7479 to 7490 as unassigned, checked on 2026-11-11.
-- **Two kinds of token.** A full-rights token, read from a file that only the user can read, is for the command line, which may call every method, including those that run a ceremony. A page-rights token is for the browser, is used once, and opens only the reads, and the one write of rule 11 once the form is built: no call that confirms, signs, creates a key or runs a ceremony is open to it (rule 7).
-- **Checks on every request.** Host and Origin are checked on every request. Before the command line sends a confirmation or a PIN, the listener proves that it knows the secret in the token file. There is one exclusive lock for each bundle (rule 8); the running process holds it (rule 23).
-- **A ceremony is confirmed in the terminal.** The digest typed there goes to the process with the full-rights token. The page's token cannot send it, because no such method is open to it (rule 7; [record 0005](../decisions/0005-a-ceremony-and-where-it-runs.md), rule 6).
-- **No ceremony state, nothing secret kept.** Every call reads the bundle again, so a killed process loses nothing. It keeps nothing secret between calls, never keeps a PIN, and holds no card between calls (rule 9). The process holds a card only during a call, so check 2 of the card checks (`card-held`) is not tripped by ritueel's own process between calls (rule 9).
-- **It ends by itself** after 15 minutes without a call, at once on a stop command, and at logout or reboot. A running ceremony is never cut by the timer (rule 9).
+- **Two kinds of token.** A full-rights token, read from a file that only the user can read, is for the command line, which may call every method, including those that run a ceremony. A page-rights token is for the browser, is used once, and opens only the reads, and the one write of rule 12 once the form is built: no call that confirms, signs, creates a key or runs a ceremony is open to it (rule 7).
+- **Checks on every request.** Host and Origin are checked on every request. Before the command line sends a confirmation or a PIN, the listener proves that it knows the secret in the token file. There is one exclusive lock for each bundle (rules 8 and 9); the running process holds it (rule 9).
+- **A ceremony is confirmed in the terminal.** The digest typed there goes to the process with the full-rights token. The page's token cannot send it, because no such method is open to it (rule 7; [record 0005](../decisions/0005-a-ceremony-and-where-it-runs.md), rule 9).
+- **No ceremony state, nothing secret kept.** Every call reads the bundle again, so a killed process loses nothing. It keeps nothing secret between calls, never keeps a PIN, and holds no card between calls (rule 10). The process holds a card only during a call, so check 2 of the card checks (`card-held`) is not tripped by ritueel's own process between calls (rule 10).
+- **It ends by itself** after 15 minutes without a call, at once on a stop command, and at logout or reboot. A running ceremony is never cut by the timer (rule 10).
 - **Costs.** A process that lives between commands is a longer-lived target than one that lives for a command, and a process of an older version can outlive an upgrade.
 
 :::note[Proposed]
@@ -174,7 +174,7 @@ Proposed, and waiting for the maintainer's word ([record 0010](../decisions/0010
 
 ## The web page: the security profile
 
-The page is served by the one ritueel process, on its one fixed loopback port, for a read-only view. The program prints the address and does not start a browser ([record 0010](../decisions/0010-the-engine-the-process-and-the-page.md), rule 12; the way to ask for the address is [proposed](#what-the-guided-mode-and-the-page-drive)). The rules are those of record 0010, rules 7, 8, 10, 11 and 12. Every row has a test in the pull request that builds it. A part of a row that the record has not decided is marked Proposed, and rule 12 does not bind it yet.
+The page is served by the one ritueel process, on its one fixed loopback port, for a read-only view. The program prints the address and does not start a browser ([record 0010](../decisions/0010-the-engine-the-process-and-the-page.md), rule 14; the way to ask for the address is [proposed](#what-the-guided-mode-and-the-page-drive)). The rules are those of record 0010, rules 7 to 9, 11, 12 and 14. Every row has a test in the pull request that builds it. A part of a row that the record has not decided is marked Proposed, and rule 14 does not bind it yet.
 
 | # | Rule | How | Test |
 |---|---|---|---|
@@ -184,7 +184,7 @@ The page is served by the one ritueel process, on its one fixed loopback port, f
 | 4 | Host and Origin | `Host` must be exactly `127.0.0.1:7488`, or the request is refused (403, no detail). For `POST`, `Origin` must match `Host` (Go's `http.CrossOriginProtection`). Proposed (#17): `Sec-Fetch-Site` must be `same-origin`. The two checks are separate: the second is no defence against rebinding. | Wrong `Host`, a rebinding-style name, wrong `Origin` and `Sec-Fetch-Site: cross-site` are each refused. |
 | 5 | No remote assets | The built files of the page (HTML, scripts, stylesheet) are embedded in the binary; no font, image, script or style from elsewhere, no inline script. The component library writes inline styles at run time (see row 6). | A headless browser with the network blocked loads the page with every asset; the page contains no `http` URL that it loads; the built JavaScript bundles contain no remote URL (`check:dist` checks this for the page; the program's own test is still to write). |
 | 6 | A strict policy | `Content-Security-Policy: default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self'; connect-src 'self'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'`. Proposed (#17), also: `Referrer-Policy: no-referrer`, `Cache-Control: no-store`, `X-Content-Type-Options: nosniff`, `Cross-Origin-Opener-Policy: same-origin`, `Cross-Origin-Resource-Policy: same-origin`. The earlier [research](/research/local-wizard-threats-2026-11-01/) lists `style-src 'self'`; the policy differs because the component library of the page writes styles at run time, and the page renders unstyled without it. | Every response carries the headers; `script-src` has no `unsafe-inline` and no host; `style-src` has `unsafe-inline` and no host. |
-| 7 | Nothing irreversible from the page | The page has no control that confirms a plan, signs, creates or deletes. History shows the plan and its digest and says to type the first eight characters in the terminal, where the confirmation of [record 0005](../decisions/0005-a-ceremony-and-where-it-runs.md) is asked. The page shows the command as text, without the digest in it; the flag `--confirm DIGEST` is for scripts. Reads are calls marked side-effect-free and may be `GET`. The only write the page can cause is the proposal of rule 11: one inert file, which nothing acts on. The first build has no write. A PIN, a passphrase or a key is never sent to or from the page. | The service descriptor lists no method that confirms, signs, creates or deletes (a test over the descriptor), and in the first build no method that writes; the page has no control named like an act (apply, sign, run, confirm, revoke or publish); a call with the page-rights token to a method that is not open to it is refused (404). |
+| 7 | Nothing irreversible from the page | The page has no control that confirms a plan, signs, creates or deletes. History shows the plan and its digest and says to type the first eight characters in the terminal, where the confirmation of [record 0005](../decisions/0005-a-ceremony-and-where-it-runs.md) is asked. The page shows the command as text, without the digest in it; the flag `--confirm DIGEST` is for scripts. Reads are calls marked side-effect-free and may be `GET`. The only write the page can cause is the proposal of rule 12: one inert file, which nothing acts on. The first build has no write. A PIN, a passphrase or a key is never sent to or from the page. | The service descriptor lists no method that confirms, signs, creates or deletes (a test over the descriptor), and in the first build no method that writes; the page has no control named like an act (apply, sign, run, confirm, revoke or publish); a call with the page-rights token to a method that is not open to it is refused (404). |
 | 8 | No telemetry | No call out except those a ceremony needs. The page's access log has no query string and no cookie. | With the network blocked, a full session runs; the log has no token. |
 | 9 | A short session | One browser session at a time. It ends when the ceremony is done or after 15 minutes without a request: the cookie stops working. The process itself ends after 15 minutes without a call ([the process](/reference/wizard/#the-ritueel-process)). | An idle session is refused after the time; a second browser is refused. |
 
@@ -204,7 +204,7 @@ A text field cannot tell a passphrase from a user ID. The form of the page could
 
 ### The page is usable
 
-Semantic HTML, reachable by keyboard alone, with text and contrast that follow the browser's settings, `prefers-color-scheme` and `prefers-reduced-motion` (rule 16). A table with a chosen line and a panel needs rules for the focus; they are the work of the page step. The page needs script, so a plan is read in the terminal (`apply --plan-only`, the guided mode) or in the plan file instead.
+Semantic HTML, reachable by keyboard alone, with text and contrast that follow the browser's settings, `prefers-color-scheme` and `prefers-reduced-motion` (rule 18). A table with a chosen line and a panel needs rules for the focus; they are the work of the page step. The page needs script, so a plan is read in the terminal (`apply --plan-only`, the guided mode) or in the plan file instead.
 
 ## Follow-ups
 
@@ -217,7 +217,7 @@ Semantic HTML, reachable by keyboard alone, with text and contrast that follow t
 
 These are named as later. None is a rule.
 
-- The form of the page and the one write, the inert proposal (record 0010, rule 11, and its Proposed line).
+- The form of the page and the one write, the inert proposal (record 0010, rule 12, and its Proposed line).
 - The commands that accept or decline a proposal.
 - A list of the next steps after a run, in the panel of the ceremony in History.
-- A store of the texts that accepting a proposal replaces. Until it is built, the copies of the wanted files in each ceremony folder keep the texts that a plan used ([record 0006](../decisions/0006-bundle-history-and-trust-files.md), rule 5).
+- A store of the texts that accepting a proposal replaces. Until it is built, the copies of the wanted files in each ceremony folder keep the texts that a plan used ([record 0006](../decisions/0006-bundle-history-and-trust-files.md), rule 7).

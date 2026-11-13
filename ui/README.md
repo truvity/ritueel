@@ -26,7 +26,7 @@ A root is one for each kind (an X.509 anchor, an OpenPGP identity, an SSH CA), b
 from keys in any place; "A" and "B" are keys of a root. The trust file of the
 CA is "the CA bundle". This README calls the built JavaScript "the build" and never a
 bundle. In this contract no call names a bundle; which bundle the process serves is not
-decided by the records (record 0010, rules 8 and 9). The demo has three example bundles,
+decided by the records (record 0010, rules 8 to 10). The demo has three example bundles,
 in the order `acme`, `globex`, `personal`, and a switch to choose between them (see
 "How the demo mode works").
 
@@ -37,7 +37,7 @@ Copy control, and no screen performs one. Confirmation happens in the terminal, 
 offline system or on your workstation: you type the first eight characters of the
 plan's digest there. A key that can be copied (a key file) is used only in the offline
 system. A key that cannot be copied (a root on cards or in the cloud) may be used on
-your workstation, under conditions that record 0005 (rules 17 and 18) lists. A test
+your workstation, under conditions that record 0005 (rules 22 to 24) lists. A test
 root may run on your workstation (wording only, no flag).
 
 The page reads when a screen opens and when its window gets the focus. It has no timer.
@@ -247,7 +247,7 @@ No router, no state library, no font package, no ESLint, no screenshot library.
 ## What the real program replaces
 
 Only the transport. The process is described by [record 0010](../docs/decisions/0010-the-engine-the-process-and-the-page.md),
-rules 6 to 12, in plain words:
+rules 6 to 12 and 14, in plain words:
 
 - There is one ritueel process, the same program as the command line. The first command
   that needs it starts it in the background, and the command line then talks to it. It is
@@ -266,7 +266,7 @@ rules 6 to 12, in plain words:
 - Every request is checked for its `Host` and, separately, its `Origin`. Before the
   command line sends a confirmation or a PIN, the listener proves that it knows the secret
   in the token file.
-- There is one exclusive lock per bundle (record 0010, rule 8). It keeps no
+- There is one exclusive lock per bundle (record 0010, rules 8 and 9). It keeps no
   ceremony state and no PIN.
 - It ends after 15 minutes without a call (never in the middle of a running ceremony),
   at once on a stop command, and at logout or reboot.
@@ -286,7 +286,7 @@ the shell quoting of every name inside a command it sends (`apply_command`,
 `verify_command`): the page shows a command as it is given and copies it only when it is
 plain, one line and short, but it cannot tell whether a user ID inside it is quoted. The
 one write the page may cause later, an inert proposal that is accepted in the terminal
-(record 0010, rule 11), is not built.
+(record 0010, rule 12), is not built.
 
 ## Known gaps
 
@@ -296,7 +296,7 @@ one write the page may cause later, an inert proposal that is accepted in the te
 - A started ceremony may be running or may have stopped. The page shows what the
   bundle holds at its last read and says what to do in both cases (the Attempt section
   of its panel).
-- The page does not say that a new name is a new key (record 0007, rule 28). Where
+- The page does not say that a new name is a new key (record 0007, rule 4). Where
   and in which words is open: issue #155.
 - The folding of the plans that were never run is a choice of the page build (a plan
   that is stale is folded; no record gives an age limit).

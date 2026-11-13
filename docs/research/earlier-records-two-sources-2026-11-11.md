@@ -15,7 +15,7 @@ Carried over on 2026-11-11 from the records at commit `d0ae12da2432d5ae95cf95d68
 
 ## Verdict
 
-The example on the Rotate page stands: it has these sources. The admission list below is the one the [roadmap](/roadmap/) summarises for planned stores, and it fits rules 1 and 16 of [record 0002](../decisions/0002-where-a-key-lives.md) and rule 11 of [record 0008](../decisions/0008-a-persons-own-key.md).
+The example on the Rotate page stands: it has these sources. The admission list below is the one the [roadmap](/roadmap/) summarises for planned stores, and it fits rules 1 and 16 of [record 0002](../decisions/0002-where-a-key-lives.md) and rule 8 of [record 0008](../decisions/0008-a-persons-own-key.md).
 
 ## The 2024 side channel in a card's signature code
 
@@ -23,7 +23,7 @@ In 2024 a side channel in the ECDSA implementation of a cryptographic library us
 
 - The vulnerability is CVE-2024-45678: [NVD](https://nvd.nist.gov/vuln/detail/CVE-2024-45678). The researchers' write-up is at [ninjalab.io/eucleak](https://ninjalab.io/eucleak/).
 - The devices already made accepted no firmware update, as the maker's advisory says: [YSA-2024-03](https://www.yubico.com/support/security-advisories/ysa-2024-03/).
-- So the remedy was a new device, and a key made in the old one had to be replaced. This is why a key on a card is replaced on an event and not by calendar: rule 16 of [record 0002](../decisions/0002-where-a-key-lives.md) and rule 11 of [record 0008](../decisions/0008-a-persons-own-key.md) list an advisory about the device or its firmware as the first event.
+- So the remedy was a new device, and a key made in the old one had to be replaced. This is why a key on a card is replaced on an event and not by calendar: rule 16 of [record 0002](../decisions/0002-where-a-key-lives.md) and rule 8 of [record 0008](../decisions/0008-a-persons-own-key.md) list an advisory about the device or its firmware as the first event.
 
 Sources read on 2026-11-02 and not read again on 2026-11-11 (UNVERIFIED today).
 

@@ -2,7 +2,7 @@
 // parts, one entry to a line, with a small tag saying what kind of part it is. The tags are the marks of
 // reference/bundle: wanted (the only files a person writes), seen (what a check read), history (written
 // once, never changed) and request. The fifth mark, built, has no part here because it is never stored
-// (record 0005, rule 29). Only the names that record 0006 decides are printed as names: history/,
+// (record 0005, rule 4). Only the names that record 0006 decides are printed as names: history/,
 // requests/ and trust/. The wanted files, the card maps and the roots are parts of the bundle but their
 // folder names are only proposed (reference/bundle), so they are printed as plain words. The names of
 // the files inside the places are proposed too, so none is drawn. The accent marks the history, which

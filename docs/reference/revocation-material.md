@@ -9,7 +9,7 @@ sidebar:
 
 A revocation made after a primary key is lost cannot be made at all. So ritueel makes the revocation signatures when the key is born, for every OpenPGP primary key it creates: the primary of each root key, and a person's own primary when personal OpenPGP is built (M3, [issue #18](https://github.com/truvity/ritueel/issues/18)). For the same reason every root key also makes its **removal authorisation** at birth, which lets it leave the root set without signing ([below](/reference/revocation-material/#the-removal-authorisation)).
 
-Revocation is covered with OpenPGP revocation signatures made in advance and kept apart, and with CRLs and root lists for X.509 ([record 0007](../decisions/0007-changing-and-losing-a-root.md), rule 27).
+Revocation is covered with OpenPGP revocation signatures made in advance and kept apart, and with CRLs and root lists for X.509 ([record 0007](../decisions/0007-changing-and-losing-a-root.md), rule 25).
 
 ## What is made
 
@@ -26,7 +26,7 @@ The reasons listed in the wanted root file are added to the two that are always 
 
 Each signature is version 4, SHA-384, over the primary's public key packet alone. Its hashed area holds the signature creation time (the ceremony time), the reason for revocation (the code and the word of the table), and the issuer fingerprint; its unhashed area holds the issuer key ID ([the packet rule](/reference/hand-off-contract/#issuer-key-id)). It is signed through the store that holds the primary, so a card key takes a touch: one for each reason, counted in the plan.
 
-There is no designated revoker ([record 0007](../decisions/0007-changing-and-losing-a-root.md), rule 20). RFC 9580 deprecates the mechanism.
+There is no designated revoker ([record 0007](../decisions/0007-changing-and-losing-a-root.md), rule 21). RFC 9580 deprecates the mechanism.
 
 ## Where it is written
 
@@ -75,7 +75,7 @@ The same refusals apply (`revocation-dir`, `revocation-exists`), it is never pri
 
 ## Using one
 
-`revoke` is the one command that uses stored material: it checks the revocation signature, and the removal authorisation when the root key does not sign, as `check material` does, and attaches the authorisation to the new root list ([root transitions](/reference/transitions/#revoking-a-root-key)); the revocation signature is published beside the keyring package (record 0009, rule 17). For a person's primary the guide is [Revoke a key](/guides/revoke-a-key/).
+`revoke` is the one command that uses stored material: it checks the revocation signature, and the removal authorisation when the root key does not sign, as `check material` does, and attaches the authorisation to the new root list ([root transitions](/reference/transitions/#revoking-a-root-key)); the revocation signature is published beside the keyring package (record 0009, rule 18). For a person's primary the guide is [Revoke a key](/guides/revoke-a-key/).
 
 ## Follow-ups
 

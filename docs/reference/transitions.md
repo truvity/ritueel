@@ -33,7 +33,7 @@ A key added with no key to replace grows the set, and a retirement with no repla
 
 ## The commands
 
-An X.509 root key is not renamed: its name is inside the certificate and every intermediate names it as issuer. A new name is a new key: add it to the wanted root file, overlap it, then retire the old key ([record 0007](../decisions/0007-changing-and-losing-a-root.md), rule 28).
+An X.509 root key is not renamed: its name is inside the certificate and every intermediate names it as issuer. A new name is a new key: add it to the wanted root file, overlap it, then retire the old key ([record 0007](../decisions/0007-changing-and-losing-a-root.md), rule 4).
 
 | Change | What you do | Needs | Writes |
 |---|---|---|---|
@@ -41,7 +41,7 @@ An X.509 root key is not renamed: its name is inside the certificate and every i
 | Retire a root key | Write the retirement date in the wanted root file. Then run `ritueel apply`. | The card or role of every active root key, the retired key included. | A ceremony record, and the next trust files without the key. |
 | Revoke a root key | Run `ritueel revoke KEY...` ([Commands](/reference/cli/)). | The card or role of every other active root key, the stored revocation signature, and the stored removal authorisation of the key unless it signs. | The next trust files without the key. |
 
-Changing the root keys requires every current root key, or a root key's stored removal authorisation ([the root list](/reference/root-list/#who-signs)). When a key is added or retired, each root key signs the new root list in the same ceremony, with a touch on a card, and the plan counts them. With two cards, adding and retiring a root key are two-card ceremonies; the yearly ceremony stays a one-card ceremony, because its list has the same root keys. `revoke` is no ceremony and reads no plan: the other root keys sign the new root list, which carries the removal authorisation of the revoked key ([record 0007](../decisions/0007-changing-and-losing-a-root.md), rules 8 and 9).
+Changing the root keys requires every current root key, or a root key's stored removal authorisation ([the root list](/reference/root-list/#who-signs)). When a key is added or retired, each root key signs the new root list in the same ceremony, with a touch on a card, and the plan counts them. With two cards, adding and retiring a root key are two-card ceremonies; the yearly ceremony stays a one-card ceremony, because its list has the same root keys. `revoke` is no ceremony and reads no plan: the other root keys sign the new root list, which carries the removal authorisation of the revoked key ([record 0007](../decisions/0007-changing-and-losing-a-root.md), rules 11 and 12).
 
 The end of the overlap is a wanted end date, a day in UTC, with no default: how long the overlap must last is the time that the slowest client you care about needs, and only the holder knows it ([Moving from one root to another](/learn/transitions/)). The vouching root key is the key on the card of the year unless the holder names another card, with the reason recorded, as for every ceremony.
 
@@ -79,7 +79,7 @@ It never waits for anything but the stored revocation material, because it is th
 | The file's digest equals the digest the bundle holds for this root key and reason, and its signature verifies over the root key's primary. | `revocation-mismatch`, `revocation-invalid` |
 | Unless the root key signs the new list itself, its stored removal authorisation has the digest the bundle holds and a signature that verifies over its pin ([revocation material](/reference/revocation-material/#the-removal-authorisation)). | `revocation-mismatch`, `revocation-invalid` |
 
-It then writes a root list without the root key, signed by the other root keys and carrying its removal authorisation, a CA bundle, a keyring and an SSH CA key list without it, and stops writing the root key's CRL. The revocation signature stays with the holder, outside the bundle, and is published beside the keyring package, not in it ([record 0009](../decisions/0009-release-keys-and-the-keyring.md), rule 17). What the root key alone had certified is **not** re-certified here: `status` reports each such intermediate as critical until a ceremony certifies it again, over the same keys ([A lost root card](/guides/lost-root-card/)).
+It then writes a root list without the root key, signed by the other root keys and carrying its removal authorisation, a CA bundle, a keyring and an SSH CA key list without it, and stops writing the root key's CRL. The revocation signature stays with the holder, outside the bundle, and is published beside the keyring package, not in it ([record 0009](../decisions/0009-release-keys-and-the-keyring.md), rule 18). What the root key alone had certified is **not** re-certified here: `status` reports each such intermediate as critical until a ceremony certifies it again, over the same keys ([A lost root card](/guides/lost-root-card/)).
 
 ## The vouch
 
@@ -132,7 +132,7 @@ It is **not in the keyring package**: that package holds only the primaries' own
 | `vouched_by` | The label of the root key that vouched. Absent for the keys the first `apply` made. |
 | `vouches` | `{ "x509_sha256", "openpgp_sha256" }`: the digests of the two vouch files as first made. |
 
-What a key replaces, until when, and when it is retired are in the wanted root file ([record 0007](../decisions/0007-changing-and-losing-a-root.md), rules 3 and 4).
+What a key replaces, until when, and when it is retired are in the wanted root file ([record 0007](../decisions/0007-changing-and-losing-a-root.md), rules 3 and 5).
 
 ## The root of the year after a transition
 
@@ -140,7 +140,7 @@ The card that signs a yearly ceremony is the **card of the year**: the card whos
 
 ## The five transitions
 
-Software to a PIV card, software to AWS KMS, a PIV card to AWS KMS, AWS KMS to a PIV card, and a card or a KMS key replaced by one of the same kind are one change of the wanted root file, with the new store's own checks ([cards](/reference/cards/#what-is-checked-on-a-card), [the cloud root](/reference/kms-root/#the-checks)). A store that gives no evidence cannot be the new root key's store unless it is the `software` store of a test root ([record 0007](../decisions/0007-changing-and-losing-a-root.md), rule 10, and [record 0002](../decisions/0002-where-a-key-lives.md), rule 6). The [guides](/guides/) walk through each one.
+Software to a PIV card, software to AWS KMS, a PIV card to AWS KMS, AWS KMS to a PIV card, and a card or a KMS key replaced by one of the same kind are one change of the wanted root file, with the new store's own checks ([cards](/reference/cards/#what-is-checked-on-a-card), [the cloud root](/reference/kms-root/#the-checks)). A store that gives no evidence cannot be the new root key's store unless it is the `software` store of a test root ([record 0007](../decisions/0007-changing-and-losing-a-root.md), rule 10, and [record 0002](../decisions/0002-where-a-key-lives.md), rules 7 and 8). The [guides](/guides/) walk through each one.
 
 ## Test vectors
 

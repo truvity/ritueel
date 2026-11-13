@@ -5,7 +5,7 @@
 // What is decided (decision records 0002 and 0003; the owner's words of 2026-11-11):
 //  - A root card is a YubiKey whose PIV application has 24 key slots, read as six rows of four.
 //  - Row 1 (9a 9c 9d 9e) is the card's own jobs and holds no root. All four are drawn empty: three stay
-//    empty, and 9d is tagged "spare key" because records 0002 (rule 24) and 0003 (rule 3) make a spare
+//    empty, and 9d is tagged "spare key" because records 0002 (rule 23) and 0003 (rule 3) make a spare
 //    key there only if the passkey way cannot be used (a fallback, never a held key in the picture).
 //  - Rows 2 to 6 each hold the keys of one bundle, the same kind of key in the same column: X.509 root key,
 //    OpenPGP primary, break-glass SSH CA key, empty. One row is kept free so that a replacement root
@@ -94,7 +94,7 @@ export const ROOT_CARD_NOTES = {
 /** The pill under the card: the key file opens with a passkey (record 0002). */
 export const ROOT_CARD_PASSKEY = ['FIDO2: a passkey opens key files', '(decided, not yet proven)'];
 
-/** The day-to-day card: three applications, one set of keys per card (record 0008, rule 7; owner decision of 2026-11-11). */
+/** The day-to-day card: three applications, one set of keys per card (record 0008, rule 9; owner decision of 2026-11-11). */
 export const DAY_CARD = {
   openpgp: [
     { name: 'signing', how: ['born on', 'the card'] },

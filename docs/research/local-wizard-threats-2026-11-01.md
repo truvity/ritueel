@@ -7,7 +7,7 @@ sidebar:
 
 ## Question
 
-What must the localhost web wizard of [ADR 0011](https://github.com/truvity/ritueel/blob/d0ae12da2432d5ae95cf95d68fb85ba3dda6cfee/docs/decisions/0011-the-wizards-one-engine-three-faces-and-a-web-page-that-cannot-confirm-anything.md) (now [record 0010](../decisions/0010-the-engine-the-process-and-the-page.md)) do so that no other web page, program or user on the same machine can make it act on a root key? It feeds the security profile in [The wizard](/reference/wizard/) and does not change the rules of [ADR 0007](https://github.com/truvity/ritueel/blob/d0ae12da2432d5ae95cf95d68fb85ba3dda6cfee/docs/decisions/0007-ritueel-teaches-and-its-tools-simplify-the-ceremonies.md#the-wizards-security-rules), which are now rules 7, 8 and 12 of [record 0010](../decisions/0010-the-engine-the-process-and-the-page.md).
+What must the localhost web wizard of [ADR 0011](https://github.com/truvity/ritueel/blob/d0ae12da2432d5ae95cf95d68fb85ba3dda6cfee/docs/decisions/0011-the-wizards-one-engine-three-faces-and-a-web-page-that-cannot-confirm-anything.md) (now [record 0010](../decisions/0010-the-engine-the-process-and-the-page.md)) do so that no other web page, program or user on the same machine can make it act on a root key? It feeds the security profile in [The wizard](/reference/wizard/) and does not change the rules of [ADR 0007](https://github.com/truvity/ritueel/blob/d0ae12da2432d5ae95cf95d68fb85ba3dda6cfee/docs/decisions/0007-ritueel-teaches-and-its-tools-simplify-the-ceremonies.md#the-wizards-security-rules), which are now rules 7 to 9 and 14 of [record 0010](../decisions/0010-the-engine-the-process-and-the-page.md).
 
 ## When
 

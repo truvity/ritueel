@@ -9,7 +9,7 @@ sidebar:
 
 ## What you start with
 
-- The reason, chosen honestly: a hard reason (`compromised`) or a soft one (`superseded`, and `cessation` for an X.509 intermediate only; [record 0007](../decisions/0007-changing-and-losing-a-root.md), rule 29).
+- The reason, chosen honestly: a hard reason (`compromised`) or a soft one (`superseded`, and `cessation` for an X.509 intermediate only; [record 0007](../decisions/0007-changing-and-losing-a-root.md), rule 13).
 - For an OpenPGP key: the revocation signature made at creation, from its place apart from the card.
 - For an X.509 intermediate: the card of each root key that issued one of its certificates which has not expired.
 

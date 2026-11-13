@@ -30,7 +30,7 @@ A revoked root key has no CRL in the new trust set. A relying party that still t
 
 ## The profile
 
-Version 2 (RFC 5280, section 5.1). A CRL is valid for 25 months and an entry lasts until the certificate it names expires ([record 0006](../decisions/0006-bundle-history-and-trust-files.md), rule 26). Its CRL number is the trust sequence (record 0006, rule 14). A relying party can check every row.
+Version 2 (RFC 5280, section 5.1). A CRL is valid for 25 months and an entry lasts until the certificate it names expires ([record 0006](../decisions/0006-bundle-history-and-trust-files.md), rule 24). Its CRL number is the trust sequence (record 0006, rule 14). A relying party can check every row.
 
 | Field | Value |
 |---|---|
@@ -41,7 +41,7 @@ Version 2 (RFC 5280, section 5.1). A CRL is valid for 25 months and an entry las
 | Authority key identifier | Not critical. The `keyIdentifier` of the root key, computed as in its certificate ([RFC 7093](https://datatracker.ietf.org/doc/html/rfc7093), method 1). |
 | CRL number | Not critical. The trust sequence of the ceremony that signed it. It grows with every signing of this CRL and is not consecutive: a root key that did not sign at a sequence keeps the number of its last CRL. |
 | Revoked entries | One for each unexpired certificate of a revoked intermediate: its serial number, the ceremony time as the revocation date, and a reason code (non-critical). |
-| Reason codes | `keyCompromise`, `superseded` or `cessationOfOperation`, from `revoke --reason compromised`, `superseded` or `cessation` ([record 0007](../decisions/0007-changing-and-losing-a-root.md), rule 29). A reason of `unspecified` is not written, as RFC 5280 asks. |
+| Reason codes | `keyCompromise`, `superseded` or `cessationOfOperation`, from `revoke --reason compromised`, `superseded` or `cessation` ([record 0007](../decisions/0007-changing-and-losing-a-root.md), rule 13). A reason of `unspecified` is not written, as RFC 5280 asks. |
 | Anything else | Absent: no issuing distribution point, no delta CRL, no freshest CRL. A critical extension a reader does not know makes the CRL unusable (RFC 5280, section 5.2), so ritueel writes none. |
 
 **Why 25 months.** The cards alternate by year, so a root key signs about every second year, and its CRL has to stay current until the next time it signs: two yearly ceremonies and a month for a late one. A CRL that lasted 13 months would be expired for most of every other year, and a client that checks CRLs refuses an expired one. The cost is that a CRL says less about how recently its issuer was used; the root list's 13 months still do that for the whole system, and a missed ceremony shows there first.

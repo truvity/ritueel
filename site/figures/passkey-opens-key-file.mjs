@@ -1,4 +1,4 @@
-// A passkey on a root card opens a key file, in six panels (record 0002, rules 20 to 24 and "Not yet
+// A passkey on a root card opens a key file, in six panels (record 0002, rules 19 to 23 and "Not yet
 // proven", and the page's section "A passkey that opens a key file"): a program
 // reads the key file, asks the card for the secret of its passkey, you give the PIN and the touch, the
 // secret unwraps the private half of the unlock key, and a recovery key is the other way in. The

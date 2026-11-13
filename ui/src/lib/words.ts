@@ -3,7 +3,7 @@
 // replace, trust set, wanted, not applied yet, apply. One item of "not applied
 // yet" is a change, never a row. A row is one row of four slots on a card.
 // Replace means making a new key. A key retires at its wanted date; revoke is
-// the separate act of `revoke` (record 0007, rules 3, 4 and 8). The bare word bundle means the directory of one trust
+// the separate act of `revoke` (record 0007, rules 3, 5 and 11). The bare word bundle means the directory of one trust
 // domain; the trust file keeps its full name, CA bundle.
 //
 // Every value of an enum of the contract has a word here. A value with no word
@@ -57,7 +57,7 @@ export const CLOUD_PROVIDER_WORD: Record<number, string> = {
   [CloudProvider.AWS]: 'AWS',
 };
 
-/** Where a ceremony runs, or ran (record 0005, rules 17 to 21), as a phrase: "on this workstation". */
+/** Where a ceremony runs, or ran (record 0005, rules 22 to 25, 29 and 30), as a phrase: "on this workstation". */
 export const RUN_PLACE_WORD: Record<number, string> = {
   [RunPlace.OFFLINE_SYSTEM]: 'in the offline system',
   [RunPlace.WORKSTATION]: 'on this workstation',

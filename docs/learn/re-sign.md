@@ -52,7 +52,7 @@ A renewal changes nothing about who is trusted, which is why it is routine work 
 | Revoke an intermediate, a subkey or a key | A person runs `revoke` | A person runs `revoke` | A revocation is a decision. |
 | Issue a leaf certificate, or an SSH user or host certificate | Never | Never | ritueel holds no online key ([record 0001](../decisions/0001-what-ritueel-is.md)). |
 
-A cloud root renews at a ceremony like every other root, with a person present ([record 0004](../decisions/0004-the-cloud-root.md), rule 14). A card root cannot be left to a machine: its PIN and touch are the protection, so its holder comes once a year, and the long warning is what keeps that from being forgotten.
+A cloud root renews at a ceremony like every other root, with a person present ([record 0004](../decisions/0004-the-cloud-root.md), rule 4). A card root cannot be left to a machine: its PIN and touch are the protection, so its holder comes once a year, and the long warning is what keeps that from being forgotten.
 
 ## In ritueel
 

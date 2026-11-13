@@ -1,10 +1,10 @@
 // Three layers of a key: where it lives, what it is for, when it ends. The same keys, seen three ways,
 // as three bands one under the other. They are the three views of the Inventory of the local page
-// (record 0010 rule 10; docs/reference/wizard.md): by card, by root, by date.
-//   Band 1, where it lives: a slot of a card, a cloud key, a key file (record 0002 rule 12, 0003 rule 3).
-//   Band 2, what it is for: a root, and a delegated key that the root certifies or binds (0001 rule 28).
-//   Band 3, when it ends: an intermediate or a subkey about 13 months and re-signed (0007 rule 15,
-//   0008 rule 10); a root key about 3 years, each use extends it (0007 rule 13, 0009 rule 1); a key
+// (record 0010 rule 11; docs/reference/wizard.md): by card, by root, by date.
+//   Band 1, where it lives: a slot of a card, a cloud key, a key file (record 0002 rule 9, 0003 rule 3).
+//   Band 2, what it is for: a root, and a delegated key that the root certifies or binds (0001 rules 28 to 31).
+//   Band 3, when it ends: an intermediate or a subkey about 13 months and re-signed (0007 rule 17,
+//   0008 rule 7); a root key about 3 years, each use extends it (0007 rule 15, 0009 rule 1); a key
 //   replaced on an event, a key file within 3 years (0002 rules 15 and 16).
 // The accent is the root, in all three bands: its slot, its box and its bar.
 // Wide (760 units, bands are rows) and narrow (360 units, the same bands with their parts stacked) are

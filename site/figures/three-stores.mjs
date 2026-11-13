@@ -1,9 +1,9 @@
 // The three stores of a root, side by side, and the two questions that choose one (the page "Choosing
 // where a root lives"). Three panels say what each store holds, where it runs and when its key ends;
 // under them the two questions of that page lead to a store. Words are the page's own and the records':
-//   Key file: record 0002 rules 5, 6 and 15; 0005 rules 17 and 28; 0008 rule 6.
-//   Two root cards: 0003 rules 1 and 3; 0005 rule 18; 0002 rule 16.
-//   Cloud key: 0004 rules 1, 2, 5 and 8; 0005 rule 18; 0002 rule 16.
+//   Key file: record 0002 rules 7, 8 and 15; 0005 rules 22 and 26; 0008 rule 6.
+//   Two root cards: 0003 rules 1 and 3; 0005 rules 23 and 24; 0002 rule 16.
+//   Cloud key: 0004 rules 1, 2, 5 and 8; 0005 rules 23 and 24; 0002 rule 16.
 //   "Planned: M2 / M6 / M2" is the page's row "Built in" and the roadmap (M2 the file and the cloud store,
 //   M6 the cards); it is in no record.
 // The accent marks the two stores that cannot be copied, in the panels and in the flow. A key file can
