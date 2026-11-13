@@ -287,3 +287,33 @@ func TestLongNamesAndLongStringsAreKeptWhole(t *testing.T) {
 		}
 	}
 }
+
+func TestAStructOfManyFieldsIsReadWhole(t *testing.T) {
+	for _, n := range []int{1, 8, 9, 30, 31, 32, 33, 64, 65, 129, 300} {
+		names := make([]string, n)
+		types := make([]reflect.Type, n)
+		var members []string
+		for i := range names {
+			names[i] = fmt.Sprintf("f%d", n-i)
+			types[i] = reflect.TypeFor[int]()
+			members = append(members, fmt.Sprintf(`"f%d":%d`, i+1, i))
+		}
+		typ := structOf(names, types, nil)
+		got, err := read(typ, "{"+strings.Join(members, ",")+"}", Options{})
+		if err != nil {
+			t.Fatalf("%d fields: %v", n, err)
+		}
+		for i := range n {
+			// Field i is named f<n-i>, and the member f<j> has the value j-1.
+			if want := int64(n - i - 1); got.Field(i).Int() != want {
+				t.Fatalf("%d fields: field %d is %d, want %d", n, i, got.Field(i).Int(), want)
+			}
+		}
+		// A name that is the right one in another case, and an unknown one, are refused at the last field as at the first.
+		for _, in := range []string{`{"F1":1}`, fmt.Sprintf(`{"F%d":1}`, n), `{"zzz":1}`} {
+			if _, err := read(typ, in, Options{}); err == nil {
+				t.Errorf("%d fields: %s was read", n, in)
+			}
+		}
+	}
+}
