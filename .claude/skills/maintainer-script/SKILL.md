@@ -1,9 +1,9 @@
 ---
 name: maintainer-script
-description: Use when issues or the board need more than a couple of writes (bulk create, edit, comment, label or close). The agent writes a dry-run-by-default script for the maintainer to run instead of writing itself.
+description: Use when issues or milestones need more than a couple of writes (bulk create, edit, comment, label or close). The agent writes a dry-run-by-default script for the maintainer to run instead of writing itself.
 ---
 
-Read "Issues and the board" in `docs/contributing/workflow.md` and follow it. An agent opens at most a couple of issues itself; everything else goes into a script that the maintainer runs. Keep the script and its body files in your scratch area, and hand them over in the pull request or the report; commit them only when the maintainer asks.
+Read "Issues and milestones" in `docs/contributing/workflow.md` and follow it. An agent opens at most a couple of issues itself; everything else goes into a script that the maintainer runs. Keep the script and its body files in your scratch area, and hand them over in the pull request or the report; commit them only when the maintainer asks.
 
 Checklist:
 

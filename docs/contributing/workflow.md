@@ -74,7 +74,7 @@ Green CI is the merge gate: a pull request with a red or a skipped required chec
 - Changes to key handling, signing, revocation, trust files or the hand-off contract get a security note in the pull request: what could go wrong, and which test shows it does not.
 - Review comments are about the change, not the person.
 
-## Issues and the board
+## Issues and milestones
 
 The places and their jobs are in [CONTRIBUTING.md](https://github.com/truvity/ritueel/blob/main/CONTRIBUTING.md#issues-milestones-and-labels). A pull request that closes the last open point of a record's line closes its issue.
 
