@@ -347,7 +347,7 @@ func TestOSANameSwappedBetweenTheLooksIsNeverFollowedOrWaitedOn(t *testing.T) {
 				}
 			}()
 			deadline := time.Now().Add(1500 * time.Millisecond)
-			reads, refused := 0, 0
+			reads, refused, bareLoop := 0, 0, 0
 			for time.Now().Before(deadline) {
 				r := readFileWithin(t, root, "name")
 				reads++
@@ -365,6 +365,9 @@ func TestOSANameSwappedBetweenTheLooksIsNeverFollowedOrWaitedOn(t *testing.T) {
 						t.Fatalf("ReadFile of a name that is swapped to %s: %v, want an error that wraps %v", swap.name, r.err, want)
 					}
 					refused++
+					if swap.kind == "link" && !errors.Is(r.err, fsx.ErrLink) {
+						bareLoop++
+					}
 					continue
 				}
 				if string(r.data) != "inside\n" {
@@ -378,7 +381,14 @@ func TestOSANameSwappedBetweenTheLooksIsNeverFollowedOrWaitedOn(t *testing.T) {
 			if reads < 1000 {
 				t.Fatalf("only %d reads in the time: too few to meet a swap", reads)
 			}
-			t.Logf("%d reads, %d refused", reads, refused)
+			t.Logf("%d reads, %d refused, %d with a bare ELOOP", reads, refused, bareLoop)
+			// A read that opens a name that is a link gets ELOOP and asks again what the name is: it
+			// is a link, and the error says so. A bare ELOOP is the rare swap back to a regular file
+			// between the two (a few in 400,000 refusals); without the second look every such open is
+			// bare (about 2% of the refusals).
+			if bareLoop*200 > refused {
+				t.Fatalf("%d of %d refusals have a bare ELOOP: the open that met a link did not name it", bareLoop, refused)
+			}
 		})
 	}
 }
