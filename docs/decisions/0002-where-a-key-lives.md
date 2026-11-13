@@ -68,7 +68,7 @@ A card or KMS key cannot be copied, so a calendar would force a new anchor on ev
 ## Not yet proven or only proposed
 
 - **Not yet proven.** The 1Password and keyring backends of rule 10 stay planned until both issues are done ([#59](https://github.com/truvity/ritueel/issues/59), [#60](https://github.com/truvity/ritueel/issues/60)).
-- **Not yet proven.** The passkey way of rule 19 is proven on a rehearsal card at milestone M1; until then it is decided, not proven. If the proof fails, the slot 9d fallback (rule 23) is the way and nothing else here changes ([#8](https://github.com/truvity/ritueel/issues/8)).
+- **Not yet proven.** The passkey way of rule 19 is proven on a rehearsal card at milestone M1; until then it is decided, not proven. If the proof fails, the slot 9d fallback (rule 23) is the way and nothing else here changes ([#200](https://github.com/truvity/ritueel/issues/200)).
 - **Not yet proven.** Opening a key file with a passkey in the static (no-cgo) build, rule 26 ([#8](https://github.com/truvity/ritueel/issues/8)).
 - **Proposed.** On a card shared by two bundles, the passkey way holds one credential for each bundle ([#8](https://github.com/truvity/ritueel/issues/8)).
 - **Proposed.** How the slot 9d fallback works for two bundles is open: the card has one 9d key and each bundle has its own unlock key ([#8](https://github.com/truvity/ritueel/issues/8)).
