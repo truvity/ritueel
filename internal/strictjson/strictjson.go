@@ -190,7 +190,7 @@ func PeekInt(data []byte, name string) (n int64, ok bool, err error) {
 			continue
 		}
 		if found != nil {
-			return 0, false, jsonset.Errorf(nil, "member %s appears twice", quote(name))
+			return 0, false, jsonset.Errorf(nil, "member %s appears twice", jsonset.Quote(name))
 		}
 		found = &root.Members[i]
 	}
@@ -247,15 +247,6 @@ type Value struct {
 type Member struct {
 	Name  string
 	Value Value
-}
-
-// quote shows a member name in an error: quoted, and cut short.
-func quote(s string) string {
-	const most = 40
-	if len(s) > most {
-		s = s[:most] + "..."
-	}
-	return strconv.QuoteToASCII(s)
 }
 
 func parseInt(text string) (int64, error) {
@@ -410,7 +401,7 @@ func (p *parser) parseObject() (Value, error) {
 		}
 		if p.strict {
 			if _, dup := seen[name]; dup {
-				return Value{}, p.errorf("member %s appears twice", quote(name))
+				return Value{}, p.errorf("member %s appears twice", jsonset.Quote(name))
 			}
 			seen[name] = struct{}{}
 		}
