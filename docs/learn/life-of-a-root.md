@@ -62,7 +62,7 @@ Re-signing is cheap, and it changes nothing for anyone who already trusts the ke
 Rotating is different: a **new key** replaces the old one. It is a larger event, because everything that trusted the old key must learn the new one, so it is done only when there is a reason:
 
 - **On an event.** An advisory that affects the card, its firmware or the service; the deprecation of the algorithm; a lost card or one at its end of life; a suspected compromise; a change of key store or of place. The yearly ceremony includes a review of the advisories, so that this kind of event is not missed.
-- **For a key in software, also after at most three years,** whatever else happened, because a file can be copied without a trace. Three years is the top of the usual lifetime for a private signing key, and a forced rotation keeps the rotate path exercised. A key on a card or in a cloud key service cannot be copied, and has no such limit.
+- **For a key in software, also after at most three years,** whatever else happened, because a file can be copied without a trace. Three years is the top of the usual lifetime for a private signing key, and a forced rotation keeps the rotate path exercised. A key on a card or in a cloud key service cannot be copied, and has no such limit; a root key there is replaced at the latest after 15 years.
 
 The rule: **re-sign yearly; rotate on an event, and a key in software after at most three years.** See [rotate](/learn/rotate/).
 
