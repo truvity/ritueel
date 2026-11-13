@@ -4,7 +4,7 @@ description: What ritueel decides, by area, in short sentences, with what is not
 flow: rows
 ---
 
-The program is not built. This page is the design as decided on 2026-11-11 and 2026-11-12, and it marks the main points that are not yet proven or only proposed; each record lists all of its own.
+Only `version` is built. This page is the design as decided on 2026-11-11 and 2026-11-12, and it marks the main points that are not yet proven or only proposed; each record lists all of its own.
 
 ## The five core ideas
 

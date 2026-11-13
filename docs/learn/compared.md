@@ -5,7 +5,7 @@ sidebar:
   order: 22
 ---
 
-*Design phase: the program has no code yet, so everything below that you could run today is somebody else's tool. Facts about other projects were read on 2026-11-02 at the link beside each; the quotations are in [the sources page](/research/private-root-alternatives-2026-11-02/). Projects change: check the link before you decide.*
+*Design phase: the program has only the command `version`, so everything below that you could run today is somebody else's tool. Facts about other projects were read on 2026-11-02 at the link beside each; the quotations are in [the sources page](/research/private-root-alternatives-2026-11-02/). Projects change: check the link before you decide.*
 
 **Today, use one of these. Read ritueel to know why you are doing each step.** The tools below are shipped and in use. ritueel is a design and a set of teaching pages, and it asks you to wait for a tool that does less copying and more recording. This page says when waiting is not worth it.
 

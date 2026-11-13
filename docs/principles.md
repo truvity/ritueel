@@ -14,7 +14,7 @@ sidebar:
 - **It owns roots, root ceremonies and root transitions** for X.509, OpenPGP and SSH CA roots, personal OpenPGP keys included. See [record 0001](decisions/0001-what-ritueel-is.md) and [record 0006](decisions/0006-bundle-history-and-trust-files.md).
 - **It never holds an intermediate's private key.** Systems like [sluis](https://sluis.id) hold intermediates, and meet ritueel only through the [hand-off contract](/reference/hand-off-contract/).
 - **Its records are files the holder keeps:** ceremony records, root lists, and the keyring file that ritueel makes and the user's own pipeline packages and publishes. See [record 0006](decisions/0006-bundle-history-and-trust-files.md) and [record 0009](decisions/0009-release-keys-and-the-keyring.md).
-- **One maintainer, no program code yet, no independent review yet.** ritueel is maintained by one person with AI agents and has had no independent security review. The program has no code yet; the local page exists as code and as a demo (`ui/`, `proto/`). ritueel is a design, a teaching site and a demo. [GOVERNANCE.md](https://github.com/truvity/ritueel/blob/main/GOVERNANCE.md) says how that changes.
+- **One maintainer, almost no program code yet, no independent review yet.** ritueel is maintained by one person with AI agents and has had no independent security review. The program has one command, `version`; the local page exists as code and as a demo (`ui/`, `proto/`). ritueel is a design, a teaching site and a demo. [GOVERNANCE.md](https://github.com/truvity/ritueel/blob/main/GOVERNANCE.md) says how that changes.
 
 ## The principles
 
