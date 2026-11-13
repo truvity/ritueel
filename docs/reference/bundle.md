@@ -108,7 +108,7 @@ The trust sequence is one integer for the bundle. It grows by one whenever any t
 
 ## How a file is written
 
-[Record 0006](../decisions/0006-bundle-history-and-trust-files.md), rule 31, decides: a ceremony only adds files, each named by its identity (a digest or a time) and written whole or not at all. These are the steps: under a temporary name, then one rename. The commands write in this order, so a stop leaves a file whole or leaves it unwritten. The package `internal/fsx` does these steps; the commands that use it are not built yet.
+[Record 0006](../decisions/0006-bundle-history-and-trust-files.md), rule 31, decides: a ceremony only adds files, each named by its identity (a digest or a time) and written whole or not at all. These are the steps: under a temporary name, then one rename. The commands write in this order, so a stop leaves a file whole or leaves it unwritten. The package `internal/fsx` does these steps; the commands that use it are not built yet. [The root folder of the writer](/reference/bundle/#the-root-folder-of-the-writer) and [Names](/reference/bundle/#names) say what else it promises.
 
 | # | Step | Source |
 |---|---|---|
@@ -123,11 +123,14 @@ The trust sequence is one integer for the bundle. It grows by one whenever any t
 
 - When a write or a flush returns an error, ritueel stops at once with an error. It does not retry, and it does not print the line that says the write was flushed ([0006](../decisions/0006-bundle-history-and-trust-files.md) rule 33).
 - A name that ritueel refuses before it touches the file system ([Names](/reference/bundle/#names)) is not an error of the file system, and it does not stop the writer.
+- A cut leaves what the step it fell in leaves. A cut before the rename (step 3) leaves the file under its temporary name and nothing at its final name. A cut after the rename leaves the whole file at its final name, as far as the data reached the disk before the rename. A cut while a set is built leaves a folder with a temporary name, and no trust set at the final name. Nothing is deleted, so these names stay.
+- A leftover temporary name is never read as a record. A reader of a bundle skips every name that starts with `.rt-`, in any case, because a temporary folder holds whole files under ordinary names. `fsx.ReadDir` lists every name and leaves the skipping to its caller.
 
 :::note[Proposed]
 These parts of the steps are not decided and are fixed with the code ([issue #8](https://github.com/truvity/ritueel/issues/8)).
 
 - The data of a file and of its folder are flushed (steps 2, 4 and 5). A journal is made empty at its final name by an exclusive create, and it grows by one line at a time: ritueel writes the line and its newline in one write, then flushes. A line that holds a newline is refused. A half line does not parse and counts as not written, and the reader returns it apart. This holds for a bundle that is not on the stick; on the stick the journal is the trace area. A torn file that no ceremony record lists counts as not written, and is written again under the same name.
+- An empty folder, such as a ceremony folder, is made at its final name by one call, and its parent folder is flushed. It needs no temporary name: it is whole when it is empty. It is never replaced, and it fails when the name exists.
 - The attempt is written like every other file: the rename refuses to replace, so the attempt exists once, and a second write of it fails because the name exists.
 - The first error stops the writer for good. Every later write of the same writer, and of its journals, returns that error and does not reach the file system.
 - After a stop, ritueel does not delete a file or a folder with a temporary name. `close` lists it with its digests. When the ceremony record is written and the rename has not happened, the next command finishes the rename first.
@@ -136,7 +139,11 @@ These parts of the steps are not decided and are fixed with the code ([issue #8]
 
 Not yet proven on a real stick: a cut during a write can break a bundle there. A folder's list of names was lost, and one sector kept the content of the write before it ([record 0005](../decisions/0005-a-ceremony-and-where-it-runs.md), [issue #181](https://github.com/truvity/ritueel/issues/181)). The order of the steps does not prevent that. A flush that returns without an error is only the report of the stick.
 
-The rename that refuses to replace is a call of the system: `renameat2` with the no-replace flag on Linux, and `renamex_np` with the exclusive flag on macOS. On a file system or a system that cannot refuse a rename over an existing file, ritueel stops with an error: it never replaces a file and has no second way to write one. Its manual page lists ext4, btrfs, xfs and vfat and does not list exFAT (read 2026-11-12). In a trial on 2026-11-12 in a virtual machine, the rename worked on exFAT with the kernel of the offline system. It is not tested on a real stick. The file system of the stick is exFAT ([record 0005](../decisions/0005-a-ceremony-and-where-it-runs.md), rule 31).
+The rename that refuses to replace is a call of the system: `renameat2` with the no-replace flag on Linux, and `renameatx_np` with the exclusive flag on macOS. On a file system or a system that cannot refuse a rename over an existing file, ritueel stops with an error: it never replaces a file and has no second way to write one. Its manual page lists ext4, btrfs, xfs and vfat and does not list exFAT (read 2026-11-12). In a trial on 2026-11-12 in a virtual machine, the rename worked on exFAT with the kernel of the offline system. It is not tested on a real stick. The file system of the stick is exFAT ([record 0005](../decisions/0005-a-ceremony-and-where-it-runs.md), rule 31).
+
+### The root folder of the writer
+
+The writer works from the bundle's root folder. `fsx.Open(root)` opens that folder once, and every path the writer is given is relative to it, with `/` as the separator. The writer walks each path from the root, one element at a time. It follows no symbolic link, in any element of a path and at the final name, for a write and for a read: a link, or an element that is not a folder, is an error that names the element. It replaces nothing: a file is made by an exclusive create, and the rename refuses an existing name. A read opens a file without following a link and without waiting, so a FIFO is not waited on, and it reads only a regular file of at most 8 MiB. Anything else is an error, and never a cut-off read. The writer cannot tell whether the root is the right folder, and it does not look at what the root is mounted on.
 
 ### How a name carries its identity
 
@@ -152,26 +159,25 @@ A name that does not carry its identity is a road not taken: two copies of a bun
 
 ## Names
 
-ritueel refuses a name before it touches the file system, so a refused name leaves nothing behind. The writer checks every element of a path, and every name of a file in a set. The table lists what it refuses.
+A name of a file or a folder in a bundle holds only the ASCII letters `A` to `Z` and `a` to `z`, the digits `0` to `9`, the dot, the hyphen and the underscore ([record 0006](../decisions/0006-bundle-history-and-trust-files.md), rule 38). A name of only these characters has one spelling on every system. No letter looks like another, no accented letter has two forms, and no system folds the case of a letter in another way.
 
-| Rule | Example | Reason |
+ritueel refuses any other name before it touches the file system, so a refused name leaves nothing behind. The writer checks every element of a path, and every name of a file in a set.
+
+| Refused | Example | Reason |
 |---|---|---|
-| The name is empty, or it is not one plain name: `.`, `..`, a doubled or a trailing separator. In a set, a separator in a name. | `..`, `a//b`, `dir/` | A workstation's file system gives these names another meaning. |
-| The bytes are not UTF-8. | A single byte `0xE9` | The stick's file system stores names as text (UTF-16), so bytes that are not UTF-8 have no name there. |
-| The name holds a control code (U+0000 to U+001F). | A tab inside a name | The stick's file system cannot hold it. |
-| The name holds one of the characters `"` `*` `/` `:` `<` `>` `?` `\` `\|`. | `plan:1`, `a\|b` | The stick's file system cannot hold them. A drive name such as `C:x` is refused by the colon. |
-| The name holds a character that is not printable: a no-break space, a zero-width space, a zero-width joiner or non-joiner, a byte order mark, U+007F, or a code point that is unassigned or for private use. | `a` U+00A0 `b`, `a` U+200B `b` | A person cannot tell such a name from another name that looks the same, and cannot type it. |
-| The name is longer than 255 bytes. | 128 times `é` (256 bytes) | A workstation's file system holds 255 bytes, and exFAT holds 255 UTF-16 code units. A name of at most 255 bytes is also at most 255 units. |
-| The name is a device name of Windows: `CON`, `PRN`, `AUX`, `NUL`, `COM1` to `COM9`, `LPT1` to `LPT9` (and the same with the digits `¹`, `²` and `³`), with or without an extension, in any case. | `aux`, `Nul.json`, `com1.txt` | A Windows system, a desktop system that must be able to open the bundle, cannot open a file with such a name. |
-| The name ends with a dot or a space. | `notes.` | Windows removes both, and the Linux driver of exFAT removes trailing dots by default, so the name on the stick is not the name asked for. |
-| The final name starts with the prefix of a temporary name (`.rt-`), in any case. | `.RT-abc` | exFAT compares names without case, so the name could meet a temporary name that is in use. |
-| Two names of one set differ only by case. | `Plan.json` and `plan.JSON` | exFAT holds them as one name, and a person cannot tell them apart. |
+| A byte that is not one of the characters above: a space, a control code, a separator, a character of another script, a byte that is not UTF-8. | `plan 1`, `plan:1`, `a\b`, `é` | A name stays plain ASCII, and the stick's file system cannot hold some of these characters. A drive name such as `C:x` is refused by the colon. |
+| An empty name, `.` or `..`. A path with an empty element, with a leading or a trailing separator is refused too. | `..`, `a//b`, `dir/` | A workstation's file system gives these names another meaning. |
+| A name longer than 255 bytes. | 256 times `a` | A workstation's file system and exFAT hold at most 255 characters in a name. |
+| A device name of Windows: `CON`, `PRN`, `AUX`, `NUL`, `COM1` to `COM9`, `LPT1` to `LPT9`. The part before the first dot is compared, in any case. | `aux`, `Nul.json`, `com1.txt` | A Windows system cannot open a file with such a name. |
+| A name that ends with a dot. | `notes.` | Windows removes the dot, and the Linux driver of exFAT removes it by default, so the name on the stick is not the name asked for. |
+| A name to be written that starts with the prefix of a temporary name (`.rt-`, Proposed), in any case. This is the last element of a path, or the name of a file in a set. | `.RT-abc` | exFAT compares names without case, so the name could meet a temporary name that is in use. |
+| Two names of one set that differ only by case. | `Plan.json` and `plan.JSON` | exFAT holds them as one name. |
 
-The writer does not check two spellings of one accented letter (a letter written whole, or as a letter and a combining mark): a file system of macOS holds them as one name, and the writer sees two. It also does not check the length of a whole path: the operating system refuses a path that is too long, and the writer stops with that error. It cannot see the names that exist already, so a second name that differs only by case from an existing one is refused by the file system of the stick, not by the writer.
+A path to be read may name a temporary name, so that a reader can list what a stop left behind. The other rules hold for a read as for a write.
 
-A name that the holder chooses, a label, can be refused by these rules. The label must be checked when the holder types it, and the refusal must say why. It must not be left to the write.
+The writer does not see the names that exist already, so a second name that differs only by case from an existing one, given in another call, is refused by the file system of the stick, and not by the writer. On a file system that tells the two names apart, both exist. The writer does not check the length of a whole path or the depth of the folders: the operating system refuses them, and the writer stops with that error.
 
-The list of printable characters follows the Unicode tables of the Go version that builds the program, so a character that a later version of Unicode assigns can be refused by an earlier build. A zero-width joiner and a zero-width non-joiner are refused. This excludes some spellings in Persian, Urdu and the Indic scripts, and every emoji that is joined from other emoji.
+A name that the holder chooses, a label, can be refused by these rules. The label must be checked when the holder types it, and the refusal must say why. It must not be left to the write. A label cannot hold a space or a letter of another script. The names of people and organisations live inside the files, not in the names of files.
 
 ## What join does
 
