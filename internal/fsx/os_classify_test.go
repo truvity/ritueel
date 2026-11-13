@@ -123,3 +123,26 @@ func TestOSAFailedOpenOfANameThatIsNotALinkIsLeftAsItCame(t *testing.T) {
 		t.Errorf("OpenFS of a missing root: %v, want fs.ErrNotExist", err)
 	}
 }
+
+// The two texts of the real file system that quote what the caller gave, with a character beyond
+// ASCII in it: the root, and an element that is not one plain element.
+func TestOSTheTextsThatQuoteTheCallersNameHoldNoRawCharacter(t *testing.T) {
+	base := t.TempDir()
+	_, err := fsx.OpenFS(filepath.Join(base, "no-such-\u00e9-\U0001f600"))
+	if err == nil {
+		t.Fatal("OpenFS of a missing root succeeded")
+	}
+	want := `fsx: open the root "` + base + `/no-such-\u00e9-\U0001f600": no such file or directory`
+	if err.Error() != want {
+		t.Fatalf("OpenFS: %s, want\n  %s", err.Error(), want)
+	}
+	if _, err := fsx.OpenFS(""); err == nil || err.Error() != "fsx: invalid argument: empty root" {
+		t.Fatalf("OpenFS(\"\"): %v", err)
+	}
+	root := openFSIn(t, base)
+	_, err = root.OpenDir("a/\u00e9\x07")
+	const wantElem = `fsx: invalid argument: "a/\u00e9\a" is not one plain element`
+	if err == nil || err.Error() != wantElem {
+		t.Fatalf("OpenDir: %v, want\n  %s", err, wantElem)
+	}
+}
