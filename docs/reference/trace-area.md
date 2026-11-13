@@ -32,7 +32,7 @@ The image of the offline system leaves one free entry in the partition table of 
 | Logical partition 6 | The files partition, exFAT: the program, the bundles, the key files (0005 rules 30 and 31). | 0x07 | The rest of the stick |
 
 - The start of the extended partition is the size of the image rounded up to 1 MiB, plus 1 MiB. For 2026.07.0 this is 322 MiB, sector 659456. The trace area comes first and has a fixed size, so its place does not depend on the size of the stick.
-- Writing the image to the stick again rewrites sector 0 and loses entry 4. The partitions behind the image stay. Writing entry 4 again with the same start brings them back.
+- Writing the image to the stick again rewrites sector 0 and loses entry 4. The partitions behind the image stay. They come back when entry 4 is written again with the same start and the first logical partition's header (the extended boot record at sector 659456) is left as it is: copy the 16 bytes of entry 4 back, or write all three lines of "Preparing a stick" again. Adding only the line for the extended partition blanks that header, and the logical partitions do not appear (measured with sfdisk 2.41.3 on an image file, 2026-11-13; [the note](../research/airgapos-with-added-partitions-2026-11-13.md)).
 - The kernel of the offline system lists the logical partitions and makes a device for each. A desktop system may show them in other ways; this is [not proven](/reference/trace-area/#what-is-decided-what-is-a-starting-value-and-what-is-not-proven). Type 0xDA is not recognised by Windows and is not hidden by a Linux desktop (read, 2026-11-13).
 - The types 0x0F, 0xDA and 0x07 are starting values: they are kept or changed after the tries on desktop systems.
 
@@ -267,7 +267,7 @@ EOF
 mkfs.exfat -L RITUEEL DEVICE-PART6
 ```
 
-After the image is written again, the first line alone brings the partitions back. ritueel then checks the table and that partition 6 holds an exFAT boot sector, and reads the whole area.
+After the image is written again, the first line alone does not bring the partitions back: it blanks the header of the first logical partition. Write all three `sfdisk --append` lines again (not the `mkfs.exfat` line), or copy the 16 bytes of entry 4 (bytes 494 to 509 of sector 0) back from a saved copy of sector 0. ritueel then checks the table and that partition 6 holds an exFAT boot sector, and reads the whole area.
 
 - If the area already holds a valid header, ritueel stops and changes nothing.
 - If it holds anything else that is not zero, ritueel shows the first offset that is not zero and a short hex dump, and asks the holder to type the exFAT volume serial to confirm that the 64 MiB are erased.
