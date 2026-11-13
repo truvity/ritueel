@@ -51,11 +51,11 @@
 
 37. Beside `ritueel.yaml`, the folders of a bundle are named `want/`, `seen/`, `sealed/`, `roots/`, `requests/`, `history/`, `trust/` and `drills/`, and the files of a ceremony folder `plan.json`, `attempt.json`, `births.jsonl`, `signatures.jsonl`, `transcript.txt` and `record.json`. Names are lower case and have no spaces.
 
-38. Before it touches the file system, ritueel refuses to write a name that the stick's file system, a workstation's file system or a desktop system cannot hold or open, or that a person cannot tell from another name. The list is on [the bundle page](/reference/bundle/#names).
+38. A name of a file or a folder in a bundle holds only the ASCII letters, the digits, the dot, the hyphen and the underscore. Before it touches the file system, ritueel also refuses a name that is empty, is `.` or `..`, is longer than 255 bytes, is a device name of Windows (`CON`, `PRN`, `AUX`, `NUL`, `COM1` to `COM9` and `LPT1` to `LPT9`: the part before the first dot, in any case), or ends with a dot; a name that stays and starts with the prefix of a temporary name (rule 32), in any case; and two names of one set that differ only by case. The table is on [the bundle page](/reference/bundle/#names).
 
 ## Why
 
-A holder must prove what was done, and outsiders must check the roots. One bundle for each organisation or person keeps a person's files apart from a company's. A write-once history shows a rewritten ceremony. One trust sequence and an expiry on every list let a host tell a current set from a stale one. On exFAT, a file or folder renamed from a long temporary name to a shorter final name kept a folder entry with a wrong checksum until the system wrote the entry again ([the trial](../research/exfat-power-cut-2026-11-12.md)); a name of at most 15 characters fits in one name entry, so the rename never shortens it (rule 32). A power cut between the rename of a trust set and the ceremony record leaves a trust set no record lists, and that is not tampering when the attempt is still open (rule 34). A failing stick is shown by its error and not hidden by a retry, and a line that says "flushed" must never follow a write that failed (rule 33); the lines on a real stick in [record 0005](0005-a-ceremony-and-where-it-runs.md) say what this does not cover.
+A holder must prove what was done, and outsiders must check the roots. One bundle for each organisation or person keeps a person's files apart from a company's. A write-once history shows a rewritten ceremony. One trust sequence and an expiry on every list let a host tell a current set from a stale one. On exFAT, a file or folder renamed from a long temporary name to a shorter final name kept a folder entry with a wrong checksum until the system wrote the entry again ([the trial](../research/exfat-power-cut-2026-11-12.md)); a name of at most 15 characters fits in one name entry, so the rename never shortens it (rule 32). A power cut between the rename of a trust set and the ceremony record leaves a trust set no record lists, and that is not tampering when the attempt is still open (rule 34). A failing stick is shown by its error and not hidden by a retry, and a line that says "flushed" must never follow a write that failed (rule 33); the lines on a real stick in [record 0005](0005-a-ceremony-and-where-it-runs.md) say what this does not cover. A name of only the characters of rule 38 has one spelling on every system: no letter looks like another, no accented letter has two forms, and no system folds the case of a letter in another way.
 
 ## What it costs
 
@@ -65,6 +65,7 @@ A holder must prove what was done, and outsiders must check the roots. One bundl
 - A temporary name says nothing about the file it holds, so a person reading a stopped write finds out from the digests that `close` lists (rule 32).
 - The check needs the attempt to tell an unfinished ceremony from a removed ceremony record (rule 34).
 - A short fault of the stick ends the ceremony, and the person starts the command again (rule 33).
+- A name cannot hold a space or a letter of another script, so the name of a person or an organisation lives inside the files, and the name of a file is plain ASCII (rule 38).
 
 ## Roads not taken
 
