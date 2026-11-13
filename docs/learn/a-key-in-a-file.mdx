@@ -25,7 +25,7 @@ A key file is the home of drills, tests and development, and of a person's own O
 
 ## How a key file is opened
 
-Three ways open it: a passkey on each root card named for the file, which is the default; a recovery key; and a passphrase, for a holder without cards ([record 0002](../decisions/0002-where-a-key-lives.md), rules 19, 21 and 22). [Question 4 of "Choosing where a root lives"](/learn/choosing-where-a-root-lives/#4-how-will-the-key-file-be-opened) says when to use which. The rest of this page follows the default.
+Two kinds of key file exist. A key file for a holder with root cards has two ways in: a passkey on each root card named for the file, any one of which is enough, and a recovery key kept apart from the cards ([record 0002](../decisions/0002-where-a-key-lives.md), rules 19, 20 and 21). A key file for a holder without cards is opened by a passphrase alone, and it holds only the passphrase recipient, because age v1 requires such a recipient to be the only one ([record 0002](../decisions/0002-where-a-key-lives.md), rule 22). So one file never has both a passkey and a passphrase. [Question 4 of "Choosing where a root lives"](/learn/choosing-where-a-root-lives/#4-how-will-the-key-file-be-opened) says when to use which. The rest of this page follows the file for root cards, which is the default.
 
 ## A passkey that opens a key file
 
