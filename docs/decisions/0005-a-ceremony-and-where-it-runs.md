@@ -53,6 +53,8 @@
 40. ritueel writes the trace area only after it has shown that the area belongs to the stick the bundle is on ([the checks](/reference/trace-area/#the-checks-before-the-first-write)). Otherwise it refuses, and a ceremony on the stick never falls back to files. It does not partition the stick, runs no `sudo` and changes no permission: the holder runs the commands it prints.
 41. The trace area is a ring, the one case in which a sector is written again (rule 37). ritueel writes a sector again only when the area holds the end record of the ceremony that wrote it and the files of that ceremony on the stick match that end record. Otherwise it refuses to start a ceremony.
 
+42. A ceremony needs no witness: ritueel does not ask for a second person or an auditor to be present. What it leaves is the ceremony record (rule 3).
+
 ## Why
 
 A root signs for everything below it, so the person must see what will be signed before it is signed. The machine is not trusted, so the rules rest on what stays in the key store and on what the person confirmed. A copyable key is the root itself and needs a clean machine; rule 23 bounds the rest. Windows and macOS read exFAT as well as Linux, so a holder can read the stick on any workstation (rule 31). On a real stick, a cut during a write left one sector with the content of the write before it, and that destroyed confirmed journal lines and a folder's list of names ([the measurement](../research/usb-stick-cut-during-a-write-2026-11-13.md)). A sector that holds a confirmed trace record is never written again, so the sector in flight never holds one (rules 36 and 37).
@@ -70,6 +72,7 @@ A root signs for everything below it, so the person must see what will be signed
 - A holder with no ritueel sees an exFAT partition and a partition with no file system; the attempt and the journals of a stopped ceremony are read only with ritueel (rule 39).
 - The table in sector 0 differs from the AirgapOS image, so the published hash of the first bytes of the media does not match (rule 33).
 - The writer and the reader of the trace area are the largest new piece of ritueel for the stick.
+- A ceremony has no witness (rule 42). Public CAs are asked for one: a qualified auditor witnesses the generation of a CA key pair, or a video records it (CA/Browser Forum Baseline Requirements 6.1.1.1), and for a root of an EU trust service provider the ceremony report is signed by a person independent of its management (ETSI EN 319 411-1, GEN-6.5.1-14). These rules bind public CAs and trust service providers, not a private root.
 
 ## Roads not taken
 
@@ -114,6 +117,7 @@ A root signs for everything below it, so the person must see what will be signed
 - **Two primary partitions, or two partitions in the GPT of the image.** No extended partition, but the table has one free entry, and the offline system reads the MBR and not the GPT, so the second partition would have no device.
 - **A record only after the act.** One record fewer for each act, but a cut between the act and its record leaves a key or a signature with no trace; the record before it shows an act that may have happened (rule 38).
 - **A trace record written once, with no second copy.** Half the writes, but one damaged sector, or harm wider than one sector, could lose a confirmed trace record (rule 37).
+- **A witnessed ceremony as a later, optional mode.** It would match what public CAs are asked, but those rules do not bind a private root, and it would need a second person or an auditor at every ceremony; a ceremony needs no witness (rule 42).
 - **Six named steps for every ceremony: plan, confirm, reserve, sign, verify, record.** They gave a short list to teach and a name for each rule, but they made one act look like six and had to be repeated on every page and picture; a ceremony is one act, `apply`, and an order is written only where a rule needs it (rules 9 to 12).
 
 ## Not yet proven or only proposed
