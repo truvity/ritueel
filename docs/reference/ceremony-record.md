@@ -55,7 +55,7 @@ The steps of a write (whole or not at all, under a temporary name, then one rena
 A wrong or missing confirmation writes nothing (0005 rule 9). Every artifact is checked against its request and the plan, with code that did not sign it, before it is written out (0005 rule 12).
 
 :::note[Proposed]
-Rule 10 of record 0005 decides that an attempt is written before the first key and that each key and each signature is appended to a journal. That the attempt is made by an exclusive create, and that a journal grows by one flushed line at a time, is Proposed for a ceremony that is not on the stick, and is fixed with the code ([#8](https://github.com/truvity/ritueel/issues/8)).
+Rule 10 of record 0005 decides that an attempt is written before the first key and that each key and each signature is appended to a journal. That the attempt is written like every other file (the rename refuses to replace, so it exists once), and that a journal is made by an exclusive create and grows by one flushed line at a time, is Proposed for a ceremony that is not on the stick, and is fixed with the code ([#8](https://github.com/truvity/ritueel/issues/8)).
 :::
 
 The ceremony record is the last file a ceremony writes, because it lists the others by digest. A ceremony folder with no ceremony record is a ceremony that has not ended.
@@ -282,7 +282,7 @@ These are later. They are not rules, and this page does not write them.
 
 ## Follow-ups
 
-- The code that writes and checks these files, with the tests of issue #9's done-when ([issue #9](https://github.com/truvity/ritueel/issues/9)): the steps of a write, the plan, the two journals and `check history`.
+- The code that writes and checks these files, with the tests of issue #9's done-when ([issue #9](https://github.com/truvity/ritueel/issues/9)): the plan, the lines of the two journals and `check history`. The steps of a write are built in the package `internal/fsx` ([the bundle page](/reference/bundle/#how-a-file-is-written)).
 - The `evidence` members of the `piv` and `aws-kms` stores ([issue #11](https://github.com/truvity/ritueel/issues/11), [issue #12](https://github.com/truvity/ritueel/issues/12)), and of `openpgp-card` ([issue #18](https://github.com/truvity/ritueel/issues/18)).
 
 ## Standards
