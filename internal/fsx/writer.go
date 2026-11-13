@@ -200,7 +200,7 @@ func (w *Writer) tempName() (string, error) {
 			return "", errors.New("fsx: the random source gave no usable bytes for a temporary name")
 		}
 		if _, err := io.ReadFull(w.rand(), buf); err != nil {
-			return "", fmt.Errorf("fsx: random part of a temporary name: %w", err)
+			return "", &safeError{fmt.Errorf("fsx: random part of a temporary name: %w", err)}
 		}
 		for _, b := range buf {
 			if b < tempSpan && len(out) < n {
@@ -533,29 +533,29 @@ func parsePath(path string, forWrite bool) ([]string, error) {
 		return nil, fmt.Errorf("%w: empty path", ErrInvalid)
 	}
 	if path[0] == '/' {
-		return nil, fmt.Errorf("%w: path %q is absolute; a path is relative to the root", ErrInvalid, path)
+		return nil, fmt.Errorf("%w: path %+q is absolute; a path is relative to the root", ErrInvalid, path)
 	}
 	elems := strings.Split(path, "/")
 	last := len(elems) - 1
 	if last > 0 && elems[last] == "" {
-		return nil, fmt.Errorf("%w: path %q ends with a separator", ErrInvalid, path)
+		return nil, fmt.Errorf("%w: path %+q ends with a separator", ErrInvalid, path)
 	}
 	for _, e := range elems {
 		switch e {
 		case "":
-			return nil, fmt.Errorf("%w: path %q has an empty element (a doubled separator)", ErrInvalid, path)
+			return nil, fmt.Errorf("%w: path %+q has an empty element (a doubled separator)", ErrInvalid, path)
 		case ".":
-			return nil, fmt.Errorf("%w: path %q has a \".\" element", ErrInvalid, path)
+			return nil, fmt.Errorf("%w: path %+q has a \".\" element", ErrInvalid, path)
 		case "..":
-			return nil, fmt.Errorf("%w: path %q has a \"..\" element", ErrInvalid, path)
+			return nil, fmt.Errorf("%w: path %+q has a \"..\" element", ErrInvalid, path)
 		default:
 			if why := nameProblem(e); why != "" {
-				return nil, fmt.Errorf("%w: path %q has an element that %s", ErrInvalid, path, why)
+				return nil, fmt.Errorf("%w: path %+q has an element that %s", ErrInvalid, path, why)
 			}
 		}
 	}
 	if forWrite && hasTempPrefix(elems[last]) {
-		return nil, fmt.Errorf("%w: path %q has the prefix of a temporary name", ErrInvalid, path)
+		return nil, fmt.Errorf("%w: path %+q has the prefix of a temporary name", ErrInvalid, path)
 	}
 	return elems, nil
 }
@@ -572,10 +572,10 @@ func checkFiles(files []NewFile) error {
 	for _, f := range files {
 		// "." and ".." end with a dot, but "not one plain name" says more than "ends with a dot".
 		if f.Name == "." || f.Name == ".." || hasTempPrefix(f.Name) {
-			return fmt.Errorf("%w: file name %q is not one plain name", ErrInvalid, f.Name)
+			return fmt.Errorf("%w: file name %+q is not one plain name", ErrInvalid, f.Name)
 		}
 		if why := nameProblem(f.Name); why != "" { // a separator in the name is outside the set
-			return fmt.Errorf("%w: file name %q %s", ErrInvalid, f.Name, why)
+			return fmt.Errorf("%w: file name %+q %s", ErrInvalid, f.Name, why)
 		}
 		// Up-cased, because exFAT and the default file systems of Windows and macOS compare
 		// names without case, and a name that differs only by case is one entry there. Folding
@@ -584,7 +584,7 @@ func checkFiles(files []NewFile) error {
 		// does.
 		key := strings.ToUpper(f.Name)
 		if seen[key] {
-			return fmt.Errorf("%w: file name %q is given twice", ErrInvalid, f.Name)
+			return fmt.Errorf("%w: file name %+q is given twice", ErrInvalid, f.Name)
 		}
 		seen[key] = true
 		if err := checkPerm(f.Perm); err != nil {

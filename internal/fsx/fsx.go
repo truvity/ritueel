@@ -7,7 +7,6 @@ import (
 	"io/fs"
 	"strconv"
 	"strings"
-	"unicode"
 	"unicode/utf8"
 )
 
@@ -129,12 +128,15 @@ const (
 // flush, the path up to the element that failed for a walk. Err is what the file system
 // returned; errors.Is(err, fs.ErrExist) works through Unwrap.
 //
-// The text of an Error is safe to print: Path is quoted (a control code in it shows as an
-// escape, as strconv.Quote writes it), and the text of Err, which may hold a path that a
-// system library or a model of the file system wrote, goes through the same escape: every
-// character that is not printable in the sense of unicode.IsPrint, and every byte that is not
-// UTF-8, is written as \xNN, \uNNNN or \UNNNNNNNN. Err itself is not changed, so errors.Is and
-// errors.As see through the Error as before.
+// The text of an Error is safe to print: it holds only printable ASCII (0x20 to 0x7E). Path is
+// quoted with strconv.QuoteToASCII (a control code shows as an escape, and so does every
+// character beyond ASCII, as \uXXXX or \UXXXXXXXX), and the text of Err, which may hold a path
+// that a system library or a model of the file system wrote, goes through [printable]: every
+// byte that is not printable ASCII is written as an escape, in one form: \xNN for an ASCII
+// control code and for a byte that is not valid UTF-8, \uXXXX for any other character up to
+// U+FFFF and \UXXXXXXXX above it (a letter that looks like a Latin one is shown by its code
+// point, never as itself). Err itself is not changed, so errors.Is and errors.As see through
+// the Error as before.
 type Error struct {
 	Step Step
 	Path string
@@ -143,15 +145,17 @@ type Error struct {
 
 // Error describes the failed step.
 func (e *Error) Error() string {
-	return "fsx: " + string(e.Step) + " " + strconv.Quote(e.Path) + ": " + printable(e.Err.Error())
+	return "fsx: " + string(e.Step) + " " + strconv.QuoteToASCII(e.Path) + ": " + printable(e.Err.Error())
 }
 
 // Unwrap returns Err.
 func (e *Error) Unwrap() error { return e.Err }
 
-// printable returns s with every character that is not printable (unicode.IsPrint) and every
-// byte that is not valid UTF-8 written as an escape, so that the text cannot carry a control
-// code, a terminal sequence or a character that reorders the text to a terminal.
+// printable returns s with every byte that is not printable ASCII written as an escape, so that
+// the text cannot carry a control code, a terminal sequence, a character that reorders the text
+// to a terminal or a letter that looks like another. One form: \xNN for an ASCII control code (and
+// 0x7F) and for a byte that is not valid UTF-8, \uXXXX for every other character up to U+FFFF,
+// \UXXXXXXXX above it, in lower case.
 func printable(s string) string {
 	var b strings.Builder
 	for i := 0; i < len(s); {
@@ -159,9 +163,9 @@ func printable(s string) string {
 		switch {
 		case r == utf8.RuneError && size == 1:
 			fmt.Fprintf(&b, `\x%02x`, s[i])
-		case unicode.IsPrint(r):
-			b.WriteRune(r)
-		case r < 0x100:
+		case r >= 0x20 && r < 0x7f:
+			b.WriteByte(byte(r))
+		case r < 0x80:
 			fmt.Fprintf(&b, `\x%02x`, r)
 		case r < 0x10000:
 			fmt.Fprintf(&b, `\u%04x`, r)
@@ -237,8 +241,9 @@ var ErrWriterClosed = errors.New("fsx: the writer is closed")
 // is longer than 255 bytes; it ends with a dot; or it is a device name of Windows, with or
 // without an extension ("aux", "Aux.json"). A name of a set must also be one plain name; a mode
 // must have no bits beyond the permission bits; a journal line must hold no newline. Such an
-// error does not stop the writer, and every text of it quotes the path or the name it names, so
-// that a control code in it cannot reach a terminal.
+// error does not stop the writer, and every text of it quotes the path or the name it names in
+// ASCII only (%+q: a control code, and every character beyond ASCII, shows as an escape), so that
+// neither a control code nor a look-alike letter reaches a terminal.
 var ErrInvalid = errors.New("fsx: invalid argument")
 
 // ErrClosed is returned by a journal that was closed.
