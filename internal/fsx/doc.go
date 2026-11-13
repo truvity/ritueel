@@ -28,6 +28,16 @@
 // proven"; issue 181). The code here does not claim to cure that, and a flush that
 // returns without an error is only the stick's report that it flushed.
 //
+// A name is checked against what the exFAT file system of a stick can hold: every element of
+// a path, and every name of a set, is refused (with [ErrInvalid]) when it has a control code or
+// one of the characters of the specification's table of invalid file name characters, ends
+// with a dot or a space (the Linux driver and Windows remove them), is longer than 255 UTF-16
+// code units, or is not valid UTF-8. exFAT keeps the case of a name and compares names
+// without it, and the writer cannot know which names exist, so it cannot refuse a second name
+// that differs only by case from an existing one: the file system's own refusal catches it on
+// the stick, the exclusive create or the rename that never replaces, and on a case-sensitive
+// file system both names would exist. Within one set the writer refuses such a pair itself.
+//
 // The package does not confine paths. The caller passes paths that it built under a
 // bundle it has opened, and a symlink inside the bundle is not looked at here.
 package fsx
