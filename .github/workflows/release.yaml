@@ -276,14 +276,18 @@ jobs:
           #      it, not the size of the files in it (a sparse member can be far larger than its stream);
           #   3. the sum of the member sizes in the listing (`tar -tvzf`, the size column, a sparse
           #      member counted at its full size): what unpacking writes or makes. A size that is not a
-          #      plain number refuses the archive.
+          #      plain number of at most 12 digits (so the sum cannot
+          #      overflow) refuses the archive.
           limit=209715200
           [ "$(stat -c %s "$archive")" -le "$limit" ] || fail "$archive is larger than $limit bytes"
           [ "$(gzip -dc "$archive" | head -c "$((limit + 1))" | wc -c || true)" -le "$limit" ] || fail "$archive unpacks to a tar stream of more than $limit bytes"
-          listing=$(tar -tvzf "$archive") || fail "$archive cannot be listed"
+          # `--numeric-owner`: an owner or group name with a space would move the size column (the owner
+          # `a` with the group `x 7` would make `read` take 7 as the size). With numbers the line is
+          # `mode uid/gid size date time name`. The same listing gives the type (its first character).
+          listing=$(tar --numeric-owner -tvzf "$archive") || fail "$archive cannot be listed"
           sum=0
           while read -r _ _ size _; do
-            [[ "$size" =~ ^[0-9]{1,15}$ ]] || fail "a member of $archive has a size that is not a plain number"
+            [[ "$size" =~ ^[0-9]{1,12}$ ]] || fail "a member of $archive has a size that is not a plain number"
             sum=$((sum + size))
           done <<<"$listing"
           [ "$sum" -le "$limit" ] || fail "the members of $archive add up to $sum bytes, more than $limit"
