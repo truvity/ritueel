@@ -45,7 +45,7 @@ The primary is the profile of [the OpenPGP primary](/reference/bundle/#the-openp
 
 The two subkeys are the subkeys of [the contract](/reference/hand-off-contract/#openpgp-subkey): ECDSA P-384, version 4, a back-signature made by the subkey, a binding of about 13 months. The signing subkey (`daily` above) has key flags `0x02`; the authentication subkey (`ssh` above) has `0x20` and serves SSH through `gpg-agent` ([the guide](/guides/openpgp-ssh-authentication/)). One set of signing and authentication subkeys is born on each day-to-day card.
 
-The encryption subkey is the exception: it is made in software, loaded onto each day-to-day card, and has a wrapped backup in the bundle, so that a lost card does not lose the mail it decrypted ([record 0008](../decisions/0008-a-persons-own-key.md)). The personal ceremony itself makes it and the primary binds it; it is not a capability of the hand-off contract. The wrapped backup's format and the command are fixed with stage one ([issue #18](https://github.com/truvity/ritueel/issues/18)). The touch setting of each key is the holder's choice, and [the guide](/guides/personal-openpgp/) says what each choice costs.
+The encryption subkey is the exception: it is X25519, made in software, loaded onto each day-to-day card, and has a wrapped backup in the bundle, so that a lost card does not lose the mail it decrypted ([record 0008](../decisions/0008-a-persons-own-key.md)). The personal ceremony itself makes it and the primary binds it; it is not a capability of the hand-off contract. The wrapped backup's format and the command are fixed with stage one ([issue #18](https://github.com/truvity/ritueel/issues/18)). The touch setting of each key is the holder's choice, and [the guide](/guides/personal-openpgp/) says what each choice costs.
 
 ## The commands
 
@@ -74,7 +74,7 @@ A lost card is answered with a wanted delegation file for a key on a new card, t
 A person who already has a primary, with years of certifications, may adopt it as it is, as a software key in a key file ([record 0008](../decisions/0008-a-persons-own-key.md)). This is one of the two stated exceptions to "nothing is imported" ([record 0002](../decisions/0002-where-a-key-lives.md), rule 2).
 
 - The key is marked `adopted` in its `root.json` ([the bundle](/reference/bundle/#rootjson)).
-- It may be RSA-4096 and without expiry on arrival, so it is outside the P-384 profile above until it is replaced.
+- It may be RSA-4096 or Ed25519 and without expiry on arrival, so it is outside the P-384 profile above until it is replaced.
 - It gets an expiry at adoption, and is replaced within three years of adoption, or moved to stage two.
 
 How a primary is adopted is fixed with the code ([issue #18](https://github.com/truvity/ritueel/issues/18)).
