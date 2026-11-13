@@ -44,6 +44,10 @@ So hours or less for user certificates, and days to weeks for host certificates 
 - **With a host certificate:** make a new key, have the host CA sign it, switch. A client that trusts the CA sees no failure: "You'll never see a host key verification failure again" (Smallstep) [9].
 - **With a plain key:** `UpdateHostKeys` in `ssh_config` lets a server send replacement keys before the old ones are removed. It works only when "the host was authenticated using a plain key and not a certificate", and is on by default only with the default `UserKnownHostsFile` and no `VerifyHostKeyDNS`. Add the new key, wait until clients have learned it, then remove the old one [12].
 
+## Key exchange
+
+A hybrid key exchange agrees the session key with a classical and a post-quantum method together, so a recording of today's traffic cannot be decrypted later by a quantum computer. Check that `mlkem768x25519-sha256` is offered by every client and server (OpenSSH 9.9 and later; `ssh -Q KexAlgorithms` lists it) [14]; a host in FIPS mode may offer other hybrid methods, so ask your vendor [15].
+
 ## Revocation
 
 A certificate of hours ends by itself. A whole SSH CA is withdrawn by the next signed SSH CA key list; there is no revocation signature ([record 0006](../decisions/0006-bundle-history-and-trust-files.md), rule 29). One key can be refused by a host with a key revocation list (`ssh-keygen -k`, `RevokedKeys` in `sshd_config`), or by an `@revoked` line in `known_hosts` [12]. See [SSH](/learn/chain-ssh/).
@@ -63,3 +67,5 @@ A certificate of hours ends by itself. A whole SSH CA is withdrawn by the next s
 11. Cloudflare, "Public keys are not enough for SSH security" (2019-10-25), https://blog.cloudflare.com/public-keys-are-not-enough-for-ssh-security/.
 12. OpenBSD manual pages `ssh-keygen(1)`, `sshd_config(5)`, `ssh_config(5)`, `sshd(8)`, OpenBSD-current of 2026-10-30, https://man.openbsd.org.
 13. NIST SP 800-57 Part 1 Rev. 5 (May 2020), 5.3.6, https://doi.org/10.6028/NIST.SP.800-57pt1r5.
+14. OpenSSH release notes, 9.9 (2024-09-19), https://www.openssh.com/releasenotes.html; `sshd_config(5)`, OpenBSD-current of 2026-10-30 (the command `ssh -Q KexAlgorithms`), https://man.openbsd.org/sshd_config; read 2026-11-13.
+15. Red Hat, "Advancing post-quantum capabilities of SSH in Red Hat Enterprise Linux" (2026-05-28), https://www.redhat.com/en/blog/advancing-post-quantum-capabilities-ssh-red-hat-enterprise-linux, read 2026-11-13.
