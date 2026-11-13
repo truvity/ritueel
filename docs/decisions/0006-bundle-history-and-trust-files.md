@@ -51,6 +51,8 @@
 
 37. Beside `ritueel.yaml`, the folders of a bundle are named `want/`, `seen/`, `sealed/`, `roots/`, `requests/`, `history/`, `trust/` and `drills/`, and the files of a ceremony folder `plan.json`, `attempt.json`, `births.jsonl`, `signatures.jsonl`, `transcript.txt` and `record.json`. Names are lower case and have no spaces.
 
+38. Before it touches the file system, ritueel refuses to write a name that the stick's file system, a workstation's file system or a desktop system cannot hold or open, or that a person cannot tell from another name. The list is on [the bundle page](/reference/bundle/#names).
+
 ## Why
 
 A holder must prove what was done, and outsiders must check the roots. One bundle for each organisation or person keeps a person's files apart from a company's. A write-once history shows a rewritten ceremony. One trust sequence and an expiry on every list let a host tell a current set from a stale one. On exFAT, a file or folder renamed from a long temporary name to a shorter final name kept a folder entry with a wrong checksum until the system wrote the entry again ([the trial](../research/exfat-power-cut-2026-11-12.md)); a name of at most 15 characters fits in one name entry, so the rename never shortens it (rule 32). A power cut between the rename of a trust set and the ceremony record leaves a trust set no record lists, and that is not tampering when the attempt is still open (rule 34). A failing stick is shown by its error and not hidden by a retry, and a line that says "flushed" must never follow a write that failed (rule 33); the lines on a real stick in [record 0005](0005-a-ceremony-and-where-it-runs.md) say what this does not cover.
