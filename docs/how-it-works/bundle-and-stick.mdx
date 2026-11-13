@@ -22,14 +22,14 @@ The bundle's folder names and ceremony file names are decided ([record 0006](../
 
 ## The USB stick
 
-A key file can be copied, so it is used only in the offline system, and the plan is carried there on a stick ([record 0005](../decisions/0005-a-ceremony-and-where-it-runs.md)). A key that cannot be copied, a root on cards or a cloud root, may run on your workstation and needs no stick. A cloud root always runs there, because the offline system has no network; you may choose the offline system for a root on cards.
+A key file can be copied, so it is used only in the offline system, where a stick carries the plan ([record 0005](../decisions/0005-a-ceremony-and-where-it-runs.md)). A key that cannot be copied may run on your workstation and needs no stick: a cloud root always does, because the offline system has no network; a root on cards may use either.
 
-The stick holds vanilla AirgapOS and one extra partition for ritueel: several versions of ritueel, several bundles and the encrypted key files. When you prepare a plan online, ritueel refreshes its copy on the stick and the plan records the digest of the program (a short fingerprint of it), so the run uses the version of the program that made the plan.
+The stick holds vanilla AirgapOS and one extended partition: the files partition (several versions of ritueel, several bundles and the encrypted key files) and the trace area (no file system; the attempt and the journals while a ceremony runs; the files are made from it at its end). When you prepare a plan online, ritueel refreshes the files partition and the plan records the program's digest, so the run uses the version that made the plan.
 
 <Figure name="usb-stick">
   Key files sit beside the bundles, not inside: a key file is the root itself, even though it is encrypted. The way back is a join: it adds the files the bundle lacks.
 </Figure>
 
 <Proposed>
-  The names inside `trust/<number>/` and `wanted/` ([record 0006](../decisions/0006-bundle-history-and-trust-files.md)), the directory names on the partition ([record 0005](../decisions/0005-a-ceremony-and-where-it-runs.md)), and the plan member for the digest, are proposals. That AirgapOS boots from such a stick and uses the extra partition is not yet proven.
+  The names inside `trust/<number>/` and `wanted/` ([record 0006](../decisions/0006-bundle-history-and-trust-files.md)), the directory names on the files partition and the plan member for the digest are proposals. Not yet proven: the layout on a real machine and on desktop systems, and that a trace record survives a cut on a real stick.
 </Proposed>
