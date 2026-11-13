@@ -153,6 +153,8 @@ func TestTheNamesInARefusalAreQuotedWithPlusQ(t *testing.T) {
 		{func() error { return w.WriteFile("b//\u00e9", nil, 0o600) }, `fsx: invalid argument: path "b//\u00e9" has an empty element (a doubled separator)`},
 		{func() error { return w.WriteFile("\u00e9/", nil, 0o600) }, `fsx: invalid argument: path "\u00e9/" ends with a separator`},
 		{func() error { return w.WriteFile("b/\u00e9/../x", nil, 0o600) }, `fsx: invalid argument: path "b/\u00e9/../x" has an element that has the character U+00E9, which is not a letter, a digit, a dot, a hyphen or an underscore`},
+		{func() error { return w.WriteFile("./\u00e9", nil, 0o600) }, `fsx: invalid argument: path "./\u00e9" has a "." element`},
+		{func() error { return w.WriteFile("../\u00e9", nil, 0o600) }, `fsx: invalid argument: path "../\u00e9" has a ".." element`},
 		{func() error { return w.WriteSet("b/s", []fsx.NewFile{{Name: "\u00e9"}}) }, `fsx: invalid argument: file name "\u00e9" has the character U+00E9, which is not a letter, a digit, a dot, a hyphen or an underscore`},
 		{func() error { return w.WriteSet("b/s", []fsx.NewFile{{Name: "a"}, {Name: "A"}, {Name: "\u00e9"}}) }, `fsx: invalid argument: file name "A" is given twice`},
 		{func() error { return w.WriteSet("b/s", []fsx.NewFile{{Name: ".rt-\u00e9"}}) }, `fsx: invalid argument: file name ".rt-\u00e9" is not one plain name`},
