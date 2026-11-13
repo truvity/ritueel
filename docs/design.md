@@ -11,7 +11,7 @@ Only `version` is built. This page is the design as decided. What is not yet pro
 1. One set of ceremonies over three kinds of key store: a key file, a pair of root cards, a cloud key service. Their guarantees differ, and ritueel says how.
 2. Prefer a key that cannot be copied. A root on cards or in the cloud cannot be copied, and it avoids the reboot into the offline system.
 3. One bundle keeps the roots of a PKI and of OpenPGP together, with what is known about the cards.
-4. Requests in, answers out. Other systems connect through files, and plans can travel.
+4. Requests in, answers out. Other systems connect through files.
 5. An opinionated, automated workflow: say what is wanted, read the plan of what is not applied yet, and apply it.
 
 Decided in [0001](decisions/0001-what-ritueel-is.md) and [0005](decisions/0005-a-ceremony-and-where-it-runs.md). [How it works](/how-it-works/) draws the key and the ceremony.
@@ -30,14 +30,14 @@ Decided in [0001](decisions/0001-what-ritueel-is.md) and [0011](decisions/0011-p
 
 - One act, `apply`, for every key store, with the same checks and ceremony records.
 - A person writes what is wanted. ritueel finds what is not applied yet each time, and `apply` plans it.
-- The plan fixes every byte to sign except the new keys. The person confirms by typing the first eight characters of its digest. The page makes no plan: `apply` makes it in the terminal, and the page shows that command as text.
+- The plan fixes every byte to sign except the new keys. The person confirms by typing the first eight characters of its digest. The page makes no plan: `apply` makes it in the terminal.
 - Plans and requests are detachable: they travel by any channel, run elsewhere, and the answer returns; coming back from the stick is a `join`.
 
 Decided in [0005](decisions/0005-a-ceremony-and-where-it-runs.md) and [0010](decisions/0010-the-engine-the-process-and-the-page.md).
 
 ## After a ceremony
 
-- After a ceremony ritueel prints what to do. For an OpenPGP key the optional last step is to publish it.
+- After a ceremony the optional last step for an OpenPGP key is to publish it.
 - Publishing is a separate command, run after a ceremony and never inside one, in a process that never opens a card and is left out of the offline build.
 - A web site, a JSON Web Key Set and the key file of your software get content and links only.
 - cert-manager in a company's clusters gets its certificates from the system that issues every day.
@@ -88,7 +88,7 @@ Decided in [0005](decisions/0005-a-ceremony-and-where-it-runs.md).
 
 ## The stick
 
-- The offline system is vanilla AirgapOS plus one partition that ritueel lays out, holding programs, bundles, and key files beside the bundles, never inside one. The bundles on the stick carry no wanted files.
+- The offline system is vanilla AirgapOS plus one extended partition that ritueel lays out: a files partition (programs, bundles, and key files beside the bundles, never inside one) and a trace area (no file system) for a running ceremony's attempt and journals. The bundles on the stick carry no wanted files.
 
 Decided in [0005](decisions/0005-a-ceremony-and-where-it-runs.md).
 
@@ -102,7 +102,7 @@ Decided in [0010](decisions/0010-the-engine-the-process-and-the-page.md).
 
 ## A person's key
 
-- Everyone uses OpenPGP as their own key. ritueel has no staff keys.
+- Everyone uses OpenPGP as their own key.
 - Stage one adopts an existing primary as a software key with an expiry. Card-born primaries come later.
 - Changing a name or address is a ceremony: a person edits the user IDs, and `apply` certifies the new one and revokes the old one as no longer valid; the key and its trust stay. For a person's own key it is part of M3.
 
@@ -144,9 +144,9 @@ Decided in [0009](decisions/0009-release-keys-and-the-keyring.md).
 
 - The passkey unlock on a root card ([0002](decisions/0002-where-a-key-lives.md#not-yet-proven-or-only-proposed)).
 - Deleting one card slot, and touch always across several signatures ([0003](decisions/0003-root-cards.md#not-yet-proven-or-only-proposed)).
-- That AirgapOS boots from the stick and runs a program from its partition ([0005](decisions/0005-a-ceremony-and-where-it-runs.md#not-yet-proven-or-only-proposed)).
+- That AirgapOS boots from the stick and runs a program from it ([0005](decisions/0005-a-ceremony-and-where-it-runs.md#not-yet-proven-or-only-proposed)).
 - Adopting an existing cloud key against a real account ([0004](decisions/0004-the-cloud-root.md#not-yet-proven-or-only-proposed)).
-- That a bundle on a real stick survives a cut during a write ([0005](decisions/0005-a-ceremony-and-where-it-runs.md#not-yet-proven-or-only-proposed), issue #181).
+- That a bundle and a trace record on a real stick survive a cut during a write ([0005](decisions/0005-a-ceremony-and-where-it-runs.md#not-yet-proven-or-only-proposed), issue #181).
 
 ## Proposed or open
 
