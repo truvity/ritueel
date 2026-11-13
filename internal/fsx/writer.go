@@ -35,7 +35,9 @@ const dirPerm fs.FileMode = 0o700
 // journalPerm is the mode of a journal: the owner only.
 const journalPerm fs.FileMode = 0o600
 
-// Writer adds files to a bundle inside one root folder, which it holds open for its whole life.
+// Writer adds files to a bundle inside one root folder, which it holds open for its whole life. It
+// stays inside that folder as long as no process that can write into it moves a folder that
+// the writer has open (see the package comment).
 // The first error stops it: the call that failed returns its *[Error], and every later
 // operation of the writer and of its journals returns an error that satisfies [ErrStopped], holds
 // that first *Error, and does not reach the file system (record 0006, rule 33; the reading that
@@ -293,9 +295,12 @@ func (w *Writer) WriteFile(path string, data []byte, perm fs.FileMode) error {
 // files are written at their own names inside the temporary folder; the folder becomes
 // visible under finalDir only after every file is whole. When finalDir exists the error
 // wraps fs.ErrExist (Step rename) and the temporary folder is left. The folder is made with
-// mode 0700. The parent is walked once, and the temporary folder is opened from it, so the
-// files, the rename and the flush of the parent all work through handles that the walk
-// opened.
+// mode 0700. The parent is walked once, and the temporary folder, which was just made, is opened
+// from the parent by its name, so the files, the rename and the flush of the parent all work
+// through handles that the walk opened. A process that can write into the root at the moment
+// between the make and the open could put a folder of its own under that name: nothing is
+// followed and nothing is replaced, but the set is then written into that folder (the same
+// condition as for a folder that is moved, see the package comment).
 func (w *Writer) WriteSet(finalDir string, files []NewFile) error {
 	w.mu.Lock()
 	defer w.mu.Unlock()
