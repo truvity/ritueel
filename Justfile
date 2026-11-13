@@ -222,10 +222,10 @@ go-vet:
     go vet {{ go_packages }}
 
 # The one linter. `config verify` first: `run` accepts a settings block in the wrong place silently.
-# GOTOOLCHAIN=local keeps the linter and the code on the Go that devbox.json pins.
+# GOTOOLCHAIN=local (set in devbox.json) keeps the linter and the code on the Go that devbox.json pins.
 go-lint:
     golangci-lint config verify
-    GOTOOLCHAIN=local golangci-lint run {{ go_packages }}
+    golangci-lint run {{ go_packages }}
 
 # go.mod and go.sum are what `go mod tidy` would write.
 go-tidy:
