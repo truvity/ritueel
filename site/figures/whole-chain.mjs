@@ -28,7 +28,7 @@ const panel = (w, a, b) => rect(1.25, 1.25, w - 2.5, PH - 2.5, 'p-frame', 9) + t
 
 // 1: your root, in three stores. Two cannot be copied (solid, accent); the key file can (dashed, grey).
 function stores(w) {
-  let s = panel(w, 'Your root,', 'in three stores');
+  let s = panel(w, 'Your root in', 'three key stores');
   const row = (i, shape, icon, name, state, long = false) => {
     const y = 60 + i * 56;
     const box = rect(12, y, w - 24, 50, shape === 'root' ? 'acc-f cell-held' : 'cell-empty', 6);
@@ -122,7 +122,7 @@ function timeline(W, y0, side) {
 }
 
 const LABEL =
-  'The chain of ritueel from the root to the keys of every day, with a four-year contrast under it. Your root in three stores: two root cards and a cloud key, drawn solid because they cannot be copied, and a key file, drawn dashed because it can be copied. ' +
+  'The chain of ritueel from the root to the keys of every day, with a four-year contrast under it. Your root in three key stores: two root cards and a cloud key, drawn solid because they cannot be copied, and a key file, drawn dashed because it can be copied. ' +
   'The ceremony: a holder with a root card, a calendar with one day marked, and the three things the holder does, as three boxes joined by arrows: wanted, which the holder writes, plan, which the holder reads, and apply, which the holder confirms, after which the key signs and a record is made. Only apply uses the root. ' +
   'Keys for every day: an intermediate in your certificate system and subkeys on your day-to-day card. An arrow labelled used in leads from the root to the ceremony and one labelled signs from the ceremony to the keys. ' +
   'Under the chain, over four years: a key file is replaced on a calendar, with a new key in year one and again in year four, three years at most; a key on a card or in a cloud key service is the same key all four years, replaced only on an event.';
