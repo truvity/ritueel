@@ -27,7 +27,7 @@
 17. Accepted limit: whoever holds one root card and its PIN, or the cloud root's role, can sign things outsiders trust until that root key is revoked and the update reaches them; standard tools cannot require m-of-n. A stolen card without its PIN locks after three tries.
 18. Succession is the holder's organisational duty; ritueel reminds and does not enforce.
 
-19. A software key file opens by default with a passkey on each root card named to open it: a CTAP2 hmac-secret credential that stores nothing on the card, with user verification required. It unwraps the private half of an age key, the unlock key. Any one is enough; a file may name more than two. No PIV slot is used.
+19. A software key file opens by default with a passkey on each root card named to open it: a CTAP2 hmac-secret credential that stores nothing on the card. The credential's algorithm is ES256 (COSE algorithm -7), and only its hmac-secret output is used, never its signature. User verification is always required: ritueel always asks for it, and opens no file if the card answers without it. The holder sets the card's PIN to at least six characters. The passkey unwraps the private half of an age key, the unlock key. Any one is enough; a file may name more than two. No PIV slot is used.
 20. A key file is an age file encrypted to two recipients, the unlock key's public half and a recovery recipient. Encrypting needs no card.
 21. Every card-opened key file has a recovery key: an age identity in a passphrase-protected file, apart from the cards. Its passphrase, the break-glass, may live in a password manager, never beside the file it protects. A password manager holds a backup of the encrypted key file and the recovery passphrase, never a usable key.
 22. A passphrase alone also opens a key file, for a holder without cards. It holds only the passphrase recipient, because age v1 requires an scrypt stanza to be the only stanza in the header.
@@ -37,15 +37,20 @@
 26. Opening a key file with a passkey must work in the static (no-cgo) build.
 27. Each bundle has its own unlock key and recovery key.
 
+28. A passphrase of a key file (rules 21 and 22) is generated and not chosen: six random words or more, or 15 characters or more. Its scrypt work factor is at least 2^18.
+
 ## Why
 
 - A card or KMS key cannot be copied, so a calendar would force a new anchor on every relying party for no gain.
 - P-384 with SHA-384 (rule 14) is chosen for the larger security margin: about 192 bits against about 128 for P-256 (NIST SP 800-57 Part 1 Rev 5, table 2), on the largest curve that a PIV slot, the OpenPGP applet and the cloud key store all hold. It is not a defence against a quantum computer.
+- age fixes scrypt and its parameters, so the work factor and the passphrase are the only knobs (rule 28). 2^18 is age's own default, above the OWASP minimum for scrypt (2^17). A password used alone needs at least 15 characters (NIST SP 800-63B, Revision 4).
+- A request to a card without user verification returns a different secret (FIDO CTAP 2.2, section 12.7), so the unlock must ask for it and must fail without it (rule 19). Only the hmac-secret output is used, so the credential's own algorithm does not matter; ES256 is the one every YubiKey supports. NIST SP 800-63B, Revision 4, says an activation secret should be six characters or more.
 - The outer limit of 15 years (rule 16) is what the root programs allow: Mozilla removes the websites trust bit when a root's key material is more than 15 years old, and Chrome removes a root whose key was generated more than 15 years ago (Mozilla Root Store Policy 3.1, section 7.4; Chrome Root Program Policy 1.8, section 1.3.1.2). NIST SP 800-57 Part 1 Rev 5, section 5.3.6, recommends about one to three years of use for a private signature key; a key that cannot be copied has no such calendar, so the limit is an outer one.
 
 ## What it costs
 
 - A root key made in 2026 reaches its outer limit in 2041, after 2035, the year from which NIST IR 8547 disallows ECDSA and EdDSA in its standards; the reviews of 2030 and 2035 ([record 0007](0007-changing-and-losing-a-root.md), rule 20) are how such a key is replaced sooner.
+- BSI TR-02102-1 (2026-01, B.1.2) prefers Argon2id to scrypt for a password, and age cannot use it: the format fixes scrypt (rule 28).
 - The bundle is not public material only: sealed files rest on the unlock key and the recovery key, and the unlock key's private half is in memory at each unlock.
 - A lost recovery key together with every card named as a way to open the file means the key files cannot be opened. The guides say where the recovery file and passphrase go.
 
@@ -62,6 +67,8 @@
 - **Importing a key into 1Password or the keyring.** It lets people bring an old key, but the key then existed outside its key store.
 - **The OS keyring as the default.** No setup, but the weakest option, so it is offered with a warning and not chosen for the user.
 - **Exporting a key from a card or KMS for backup.** An easy restore, but a key copied out can be stolen from the copy.
+- **Leave the work factor and the passphrase to the library's default.** Nothing to write, but the value would live in the library and not in a record, and the passphrase would have no stated strength (rule 28).
+- **Leave the passkey as the rule first stated it.** Less to write, but the algorithm, the PIN and the refusal without user verification would be written nowhere, and a card that answers without it returns a different secret (rule 19).
 - **A passphrase for every key file.** Nothing to build, but one typed secret on the machine at every use and no second recipient; kept for a holder without cards.
 - **The age key in PIV slot 9d as the default, or first with the passkey as a later step.** No second protocol, but it spends the slot and the PIV PIN that guard the root keys; kept as the fallback.
 - **A card secret that wraps each file directly, with no age key between.** No key in memory, but encrypting would need a card present, and there is no standard format.
