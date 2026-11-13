@@ -12,7 +12,7 @@ The program is not built. This page is the design as decided on 2026-11-11 and 2
 2. Prefer a key that cannot be copied. A root on cards or in the cloud cannot be copied, and it avoids the reboot into the offline system.
 3. One bundle keeps the roots of a PKI and of OpenPGP together, with what is known about the cards.
 4. Requests in, answers out. Other systems connect through files, and plans can travel.
-5. An opinionated, automated workflow: what is wanted and not applied yet, then plan, confirm, reserve, sign, verify, record.
+5. An opinionated, automated workflow: say what is wanted, read the plan of what is not applied yet, and apply it.
 
 Decided in [0001](decisions/0001-what-ritueel-is.md) and [0005](decisions/0005-a-ceremony-and-where-it-runs.md). [How it works](/how-it-works/) draws the key and the ceremony.
 
@@ -28,7 +28,7 @@ Decided in [0001](decisions/0001-what-ritueel-is.md) and [0011](decisions/0011-p
 
 ## A ceremony
 
-- Six steps for every store: plan, confirm, reserve, sign, verify, record.
+- One act, `apply`, for every store, with the same checks and ceremony records.
 - A person writes what is wanted. ritueel finds what is not applied yet each time, and `apply` plans it.
 - The plan fixes every byte to sign except the new keys. The person confirms by typing the first eight characters of its digest. The page makes no plan: `apply` makes it in the terminal, and the page shows that command as text.
 - Plans and requests are detachable: they travel by any channel, run elsewhere, and the answer returns; coming back from the stick is a `join`.

@@ -18,7 +18,7 @@
 
 ## Why
 
-Only keyservers take a public key from anyone without an account, so publishing there is the one send ritueel can do without anyone's rights. Everything else needs the holder's rights, and ritueel holds none: no token, no administrator rights. Publishing is not a seventh step of a ceremony: the offline system has no network. A published user ID cannot be withdrawn, so each send is typed in the terminal and the page only shows it. The sources are in the research note [after the ceremony](../research/after-the-ceremony-consumers-2026-11-11.md).
+Only keyservers take a public key from anyone without an account, so publishing there is the one send ritueel can do without anyone's rights. Everything else needs the holder's rights, and ritueel holds none: no token, no administrator rights. Publishing is no part of a ceremony: the offline system has no network. A published user ID cannot be withdrawn, so each send is typed in the terminal and the page only shows it. The sources are in the research note [after the ceremony](../research/after-the-ceremony-consumers-2026-11-11.md).
 
 ## What it costs
 
