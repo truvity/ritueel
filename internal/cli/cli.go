@@ -59,8 +59,20 @@ type invocation struct {
 // broken that the output mode is not known.
 func Run(ctx context.Context, args []string, env Env) ExitCode {
 	inv := &invocation{env: env.withDefaults()}
-	err := inv.newRoot().Run(ctx, append([]string{programName}, args...))
-	return inv.finish(err)
+	return inv.finish(inv.execute(ctx, args))
+}
+
+// execute runs the command line library. A panic in a command or in the library ends the run
+// like any other failure: it comes back as an error, so finish writes it through the same
+// path and the exit code is ExitFailure, not the code of a usage error. The stack trace is
+// not printed.
+func (inv *invocation) execute(ctx context.Context, args []string) (err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			err = fmt.Errorf("internal error: %v", r)
+		}
+	}()
+	return inv.newRoot().Run(ctx, append([]string{programName}, args...))
 }
 
 func (inv *invocation) newRoot() *ucli.Command {
