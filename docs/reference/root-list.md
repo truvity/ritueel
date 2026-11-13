@@ -121,7 +121,7 @@ The host verifies the bytes it received and does not re-serialise them. When eve
 
 **A host that missed a list** compares the next one it receives with the list it holds, not with the one before it. A change of the root keys it has not seen may then be refused (`unknown-signer` or `insufficient-signers`); it takes the lists in between, in order, from where the holder publishes them. ritueel keeps every list in its numbered trust set, so every list can be published.
 
-**When the list a host holds expires** and no newer one has arrived, it keeps the list, goes on trusting its root keys, and raises a warning. It does not drop its root keys ([record 0006](../decisions/0006-bundle-history-and-trust-files.md)).
+**When the list a host holds expires** and no newer one has arrived, it keeps the list, goes on trusting its root keys, and raises a warning. It does not drop its root keys ([record 0006](../decisions/0006-bundle-history-and-trust-files.md)). `ritueel verify root-list` reports it as the warning `held-expired` in the member `warnings` of its JSON output and prints it on standard error; the exit code does not change ([the output](/reference/cli/#machine-readable-output)).
 
 These codes belong to the host and are not sent anywhere. The vectors fix the outcome and the code, not the wording of a message.
 

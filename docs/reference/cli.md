@@ -135,7 +135,7 @@ M2 builds these, with the software store and the cloud store ([issue #8](https:/
 - **`check history`** checks the [hash chain](/reference/ceremony-record/#the-hash-chain), and that every file a ceremony record lists matches its digest. A break, or a file that fails its digest, is exit code 3. The file is an error, never "absent".
 - **`close`** shows the attempt and asks the person to type the first eight characters of its plan digest, or takes `--confirm DIGEST` (0005 rule 14). Its closing record says that signatures may exist from that plan.
 - **`join`** adds files and never changes one. It prints the end of the history. It stops when one name has two contents or one request has two answers, with exit code 3 (proposed), and shows a fork as a critical finding.
-- **`verify root-list`** is the host's side: it runs [the host's checks](/reference/root-list/#how-a-host-reads-it) on `FILE` (a `root-list.json`, with its `.jws` beside it) against `--held FILE`, the list the host holds, or `--pin`, its initial pins. `--ca-bundle FILE` also checks a CA bundle against the list. It exits 0 when the list is accepted and 3 with the code when it is refused; a held list that has expired is a warning in the output. It needs no bundle.
+- **`verify root-list`** is the host's side: it runs [the host's checks](/reference/root-list/#how-a-host-reads-it) on `FILE` (a `root-list.json`, with its `.jws` beside it) against `--held FILE`, the list the host holds, or `--pin`, its initial pins. `--ca-bundle FILE` also checks a CA bundle against the list. It exits 0 when the list is accepted and 3 with the code when it is refused; a held list that has expired is the warning `held-expired` ([the output](/reference/cli/#machine-readable-output)). It needs no bundle.
 
 The CA bundle is one of the files `apply` writes into the trust set. A command that prints it alone is proposed. `new`, `apply` and `status` come with M2; the milestone of `want` is not set. The thirteen command words are decided; the flags and the exit codes of `join` are proposed. `check cards` comes with M2 and `check restore` with M4, and the name of `check cards` is proposed. `revoke` comes with M4, `verify keyring` with M5, and the guided mode comes after the first signed release; the read-only page of `wizard --web` comes with M2. The commands of the trust files that come later are below.
 
@@ -202,6 +202,7 @@ Every object has these members:
 | `outcome` | `done`, `refused`, `not-confirmed`, `usage` or `failed`, matching the exit code. |
 | `reasons` | When refused: the codes, as in the [hand-off contract](/reference/hand-off-contract/#the-answer) or the [root list](/reference/root-list/#how-a-host-reads-it) where they apply, the codes of [a card](/reference/cards/#what-is-checked-on-a-card) and of [a KMS root](/reference/kms-root/#the-checks), and `plan-stale` for a plan that no longer matches the bundle. |
 | `error` | When failed or a usage error: a message for a person. Its wording is not part of the format. |
+| `warnings` | A list of strings, one for each warning, empty when there is none. A warning does not change the exit code. The warning of a held list that has expired is `held-expired`. The text output prints each warning on standard error. |
 
 And these where they apply:
 
