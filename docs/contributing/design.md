@@ -52,7 +52,7 @@ The [roadmap](/roadmap/) is an order, not a wish list: finish the design of a mi
 
 - Every requirement a record or page states names an open issue in the right milestone.
 - Every issue a page or record names exists.
-- The roadmap matches the board.
+- The roadmap rows match the GitHub milestones, title and description.
 
 `just check-decisions` holds what it can. The rest is a bookkeeping pass at the end of each design batch: read the records you changed, and open or fix the issue behind each.
 

@@ -33,6 +33,18 @@ body:
     attributes:
       label: Recommendation
       description: Which option, and why. Say which options you would not take.
+  - type: textarea
+    id: record-line
+    attributes:
+      label: Which line of which record does this back?
+      description: Name the record and the line of its last section, "Not yet proven or only proposed", that cites this question. Leave it empty for a new question.
+  - type: textarea
+    id: done-when
+    attributes:
+      label: Done when
+      description: What closes this issue? For example, the line is removed from the record, or becomes a numbered rule.
+    validations:
+      required: true
   - type: dropdown
     id: area
     attributes:
