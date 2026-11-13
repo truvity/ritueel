@@ -78,9 +78,11 @@ func (e *Error) Unwrap() error { return e.Err }
 var ErrNoReplaceUnsupported = errors.New("the file system does not support a rename that refuses to replace")
 
 // ErrInvalid is wrapped by the error returned for an argument the writer refuses before it
-// touches the file system: a path with a ".." element, a name that is not one plain name,
-// a mode with bits beyond the permission bits, a journal line with a newline. Such an
-// error does not stop the writer.
+// touches the file system: a path that is empty, ends with a separator, has a "." or ".."
+// element, an empty element ("a//b"), a backslash or a drive, a NUL byte or a final element
+// with the prefix of a temporary name; a name of a set that is not one plain name; a mode
+// with bits beyond the permission bits; a journal line with a newline. Such an error does
+// not stop the writer.
 var ErrInvalid = errors.New("fsx: invalid argument")
 
 // ErrClosed is returned by a journal that was closed.
