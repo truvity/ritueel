@@ -10,8 +10,10 @@
 #            publishing), checks that build, and keeps exactly the release files as a workflow artifact.
 #   publish  the only job with `contents: write`: it checks out nothing, installs no tool and runs no
 #            code of the repository. It downloads that artifact, checks it against SHA256SUMS, refuses a
-#            tag that already has a release, and uploads exactly those files with `gh`. What is
-#            published is the build that was checked; nothing is built twice.
+#            tag that already has a release, refuses a tag that no longer points at the commit that
+#            `verify` and `build` checked out (each gives its commit as a job output; the tag's commit
+#            is asked of the API), and uploads exactly those files with `gh`. What is published is the
+#            build that was checked; nothing is built twice.
 #
 # Only a push of a tag runs `build` and `publish`. A pull request cannot reach them: there is no
 # `pull_request`, `pull_request_target` or `workflow_run` trigger. `workflow_dispatch` is a dry run:
@@ -53,12 +55,21 @@ jobs:
     timeout-minutes: 30
     permissions:
       contents: read
+    outputs:
+      # The commit this job really checked out, for `publish` to compare with the tag's commit.
+      commit: ${{ steps.head.outputs.commit }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          # The commit the event named (for a tag push, the tag's commit when it was pushed), the same
+          # as `build` checks out, so that a tag moved since is seen by `publish` and not followed here.
+          ref: ${{ github.sha }}
           # The tag, the history (the release notes) and origin/main (the commit must be on it).
           fetch-depth: 0
           persist-credentials: false
+      - name: Say which commit is checked out
+        id: head
+        run: echo "commit=$(git rev-parse 'HEAD^{commit}')" >> "$GITHUB_OUTPUT"
       - name: The tag is vX.Y.Z or vX.Y.Z-suffix, and its commit is on main
         if: github.ref_type == 'tag'
         env:
@@ -98,12 +109,18 @@ jobs:
     timeout-minutes: 30
     permissions:
       contents: read
+    outputs:
+      # The commit this job really built, for `publish` to compare with the tag's commit.
+      commit: ${{ steps.head.outputs.commit }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ github.sha }}
           fetch-depth: 0
           persist-credentials: false
+      - name: Say which commit is checked out
+        id: head
+        run: echo "commit=$(git rev-parse 'HEAD^{commit}')" >> "$GITHUB_OUTPUT"
       - uses: jetify-com/devbox-install-action@8c6a66ed6273138b1915457069de78cb52fe3bd7 # v0.15.0
         with:
           devbox-version: "0.19.0"
@@ -124,7 +141,8 @@ jobs:
 
   # The only job that writes (`contents: write`). It checks out nothing, installs no tool and runs no
   # code of this repository: its only steps are the download of the artifact and `gh`, which the
-  # runner has. Nothing is built here. The tag and the repository reach the shell only through env.
+  # runner has. Nothing is built here. The tag, the repository, the token and the two commits reach the
+# shell only through env.
   publish:
     name: publish (gh, GitHub Releases, unsigned)
     needs: [verify, build]
@@ -143,6 +161,8 @@ jobs:
           TAG: ${{ github.ref_name }}
           GH_REPO: ${{ github.repository }}
           GH_TOKEN: ${{ github.token }}
+          VERIFIED_COMMIT: ${{ needs.verify.outputs.commit }}
+          BUILT_COMMIT: ${{ needs.build.outputs.commit }}
         run: |
           cd release
           sha256sum -c SHA256SUMS
@@ -152,6 +172,19 @@ jobs:
           [ "$(awk '{print $2}' SHA256SUMS | LC_ALL=C sort | tr '\n' ' ')" = "$a $b " ] || { echo "::error::SHA256SUMS does not name exactly the two archives"; exit 1; }
           if out=$(gh release view "$TAG" 2>&1); then echo "::error::a release for $TAG already exists"; exit 1; fi
           case "$out" in *"release not found"*) ;; *) echo "::error::cannot tell whether a release for $TAG exists: $out"; exit 1 ;; esac
+          # The tag must still point at the commit that `verify` and `build` checked out. This job has no
+          # checkout, so it asks the API (GET /repos/{owner}/{repo}/commits/tags/{TAG}, which answers with
+          # the commit of an annotated tag too; the sha media type returns only the 40 hex digits). A tag
+          # that was moved after the build would otherwise get a release page that points at the new
+          # commit and carries files built from the old one. This is the last check before the upload.
+          now=$(gh api -H "Accept: application/vnd.github.sha" "repos/${GH_REPO}/commits/tags/${TAG}") || { echo "::error::cannot ask GitHub which commit the tag $TAG points at"; exit 1; }
+          for c in "$now" "$VERIFIED_COMMIT" "$BUILT_COMMIT"; do
+            [[ "$c" =~ ^[0-9a-f]{40}$ ]] || { echo "::error::not a commit id: '$c' (the tag now, the verified commit or the built commit)"; exit 1; }
+          done
+          if [ "$now" != "$VERIFIED_COMMIT" ] || [ "$now" != "$BUILT_COMMIT" ]; then
+            echo "::error::the tag $TAG points at $now now; verify checked out $VERIFIED_COMMIT and build $BUILT_COMMIT; the tag was moved, refusing to publish"
+            exit 1
+          fi
           set -- "$a" "$b" SHA256SUMS
           case "$TAG" in *-*) set -- --prerelease "$@" ;; esac
           gh release create "$TAG" --verify-tag --title "$TAG" --notes-file NOTES.md "$@"
