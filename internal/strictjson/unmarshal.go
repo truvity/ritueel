@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/base64"
 	"errors"
+	"fmt"
 	"reflect"
 	"strings"
 
@@ -159,7 +160,7 @@ func (f *filler) fill(dst reflect.Value, n *Value) error {
 			return f.mismatch("a list", n)
 		}
 		if len(n.Elems) != t.Len() {
-			return jsonset.Errorf(f.path, "the list has %d elements, and the array of type %s holds exactly %d", len(n.Elems), t, t.Len())
+			return jsonset.Errorf(f.path, "the list has %s, and the array of type %s holds exactly %d", elements(len(n.Elems)), t, t.Len())
 		}
 		return f.fillElems(dst, n)
 	default:
@@ -285,4 +286,12 @@ func (f *filler) fillStruct(dst reflect.Value, n *Value) error {
 		f.path = f.path[:len(f.path)-1]
 	}
 	return nil
+}
+
+// elements says how many elements there are, with the right number for the word.
+func elements(n int) string {
+	if n == 1 {
+		return "1 element"
+	}
+	return fmt.Sprintf("%d elements", n)
 }

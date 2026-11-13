@@ -190,7 +190,7 @@ func PeekInt(data []byte, name string) (n int64, ok bool, err error) {
 			continue
 		}
 		if found != nil {
-			return 0, false, jsonset.Errorf(nil, "member %s appears twice", jsonset.Quote(name))
+			return 0, false, jsonset.Errorf(jsonset.Path{jsonset.Member(name)}, "the member appears twice")
 		}
 		found = &root.Members[i]
 	}
@@ -401,7 +401,9 @@ func (p *parser) parseObject() (Value, error) {
 		}
 		if p.strict {
 			if _, dup := seen[name]; dup {
-				return Value{}, p.errorf("member %s appears twice", jsonset.Quote(name))
+				// The parser knows the member at this point: its name is read, its value is not.
+				p.path = append(p.path, jsonset.Member(name))
+				return Value{}, p.errorf("the member appears twice")
 			}
 			seen[name] = struct{}{}
 		}

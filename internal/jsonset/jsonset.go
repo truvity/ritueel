@@ -17,6 +17,7 @@ import (
 	"slices"
 	"strings"
 	"unicode/utf16"
+	"unicode/utf8"
 )
 
 // ErrMalformed is wrapped by every error that the writer and the reader return for a value, a
@@ -92,7 +93,11 @@ func Shown(name string) string {
 func Quote(s string) string {
 	suffix := ""
 	if len(s) > most {
-		s, suffix = s[:most], "..."
+		cut := most
+		for cut > 0 && !utf8.RuneStart(s[cut]) { // not inside a character
+			cut--
+		}
+		s, suffix = s[:cut], "..."
 	}
 	var b strings.Builder
 	b.WriteByte('"')
