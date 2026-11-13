@@ -228,11 +228,13 @@ jobs:
           FILES: ${{ needs.build.outputs.files }}
         run: |
           set -euo pipefail
-          fail() { echo "::error::$*"; exit 1; }
+          export LC_ALL=C
+          # The message keeps only a safe set of characters (no line break, no `%`, no `$`), so that a
+          # name or a line taken from a file cannot add a workflow command to the log.
+          fail() { local m; m=$(printf '%s' "$*" | tr -c "A-Za-z0-9 ._+/=,;:()'-" '?'); echo "::error::${m}"; exit 1; }
           # Before anything else is read or unpacked: the folder is exactly what `build` made (its
           # digest is a job output). Without it a step of an earlier job could have replaced the artifact.
           [[ "$FILES" =~ ^[0-9a-f]{64}$ ]] || fail "the digest of the files from build is not 64 hex digits"
-          export LC_ALL=C
           shopt -s dotglob
           got=$(cd release && sha256sum -- * | sha256sum | cut -d' ' -f1)
           [ "$got" = "$FILES" ] || fail "the downloaded files are not the ones build made (digest $got, wanted $FILES)"
@@ -246,6 +248,11 @@ jobs:
           [[ "$names" =~ $re ]] || fail "SHA256SUMS does not name exactly the amd64 and the arm64 archive: $names"
           if [ "$ARCH" = amd64 ]; then archive="${BASH_REMATCH[1]}"; else archive="${BASH_REMATCH[2]}"; fi
           [ -f "$archive" ] && [ ! -L "$archive" ] || fail "$archive is not a regular file"
+          # A size cap before anything is listed or unpacked: 200 MiB (209715200 bytes) for the file and
+          # for what it unpacks to (the real archive is a few MiB), so that a bomb cannot fill the disk.
+          limit=209715200
+          [ "$(stat -c %s "$archive")" -le "$limit" ] || fail "$archive is larger than $limit bytes"
+          [ "$(gzip -dc "$archive" | head -c "$((limit + 1))" | wc -c || true)" -le "$limit" ] || fail "$archive unpacks to more than $limit bytes"
           # Only these three plain files, no link, no device, no path (so none can reach outside the folder).
           [ "$(tar -tzf "$archive" | LC_ALL=C sort | tr '\n' ' ')" = "LICENSE README.md ritueel " ] || fail "$archive does not hold exactly LICENSE README.md ritueel"
           [ "$(tar -tvzf "$archive" | cut -c1 | sort -u | tr -d '\n')" = "-" ] || fail "$archive holds a member that is not a plain file"
@@ -289,14 +296,16 @@ jobs:
           FILES: ${{ needs.build.outputs.files }}
         run: |
           set -euo pipefail
-          # `draft_note` is added to every failure once the draft exists (see below).
+          export LC_ALL=C
+          # `draft_note` is added to every failure once the draft exists (see below). The message keeps
+          # only a safe set of characters (no line break, no `%`, no `$`), so that text taken from a file
+          # or from the API cannot add a workflow command to the log.
           draft_note=""
-          fail() { echo "::error::$*${draft_note}"; exit 1; }
+          fail() { local m; m=$(printf '%s' "$*${draft_note}" | tr -c "A-Za-z0-9 ._+/=,;:()'-" '?'); echo "::error::${m}"; exit 1; }
           # Before any other check: the folder is exactly what `build` made, NOTES.md included (no sum
           # covers it). The digest is a job output of `build`; the artifact store could have been written
           # by a job that ran a built binary.
           [[ "$FILES" =~ ^[0-9a-f]{64}$ ]] || fail "the digest of the files from build is not 64 hex digits"
-          export LC_ALL=C
           shopt -s dotglob
           got=$(cd release && sha256sum -- * | sha256sum | cut -d' ' -f1)
           [ "$got" = "$FILES" ] || fail "the downloaded files are not the ones build made (digest $got, wanted $FILES)"
@@ -304,8 +313,8 @@ jobs:
           sha256sum -c SHA256SUMS
           a="ritueel_${TAG#v}_linux_amd64.tar.gz"
           b="ritueel_${TAG#v}_linux_arm64.tar.gz"
-          [ "$(find . -mindepth 1 | LC_ALL=C sort | tr '\n' ' ')" = "./NOTES.md ./SHA256SUMS ./$a ./$b " ] || { echo "::error::the artifact does not hold exactly NOTES.md SHA256SUMS $a $b"; exit 1; }
-          [ "$(awk '{print $2}' SHA256SUMS | LC_ALL=C sort | tr '\n' ' ')" = "$a $b " ] || { echo "::error::SHA256SUMS does not name exactly the two archives"; exit 1; }
+          [ "$(find . -mindepth 1 | LC_ALL=C sort | tr '\n' ' ')" = "./NOTES.md ./SHA256SUMS ./$a ./$b " ] || fail "the artifact does not hold exactly NOTES.md SHA256SUMS $a $b"
+          [ "$(awk '{print $2}' SHA256SUMS | LC_ALL=C sort | tr '\n' ' ')" = "$a $b " ] || fail "SHA256SUMS does not name exactly the two archives"
           # No release of this name, draft or published. `gh release view` does not show a draft to every
           # caller, so the list of the API is read instead: the documentation of "List releases" says
           # that only users with push access get the drafts, which `contents: write` of this job is.
