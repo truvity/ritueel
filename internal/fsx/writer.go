@@ -303,6 +303,26 @@ func nameProblem(name string) string {
 	return ""
 }
 
+// hasTempPrefix reports whether name starts with [TempPrefix], compared without case. exFAT
+// compares names without case, so a final name ".RT-abcdefghijk" would meet a live temporary
+// name. Folding the ASCII letters is enough: the prefix is ASCII, and no letter outside ASCII
+// has a case mapping to "r" or "t".
+func hasTempPrefix(name string) bool {
+	if len(name) < len(TempPrefix) {
+		return false
+	}
+	for i := 0; i < len(TempPrefix); i++ {
+		c := name[i]
+		if 'A' <= c && c <= 'Z' {
+			c += 'a' - 'A'
+		}
+		if c != TempPrefix[i] {
+			return false
+		}
+	}
+	return true
+}
+
 // checkPath refuses a path that can mean more than one thing, that something other than a
 // name the caller can point at, or that the stick's file system cannot hold. All forms are
 // refused with [ErrInvalid]: an empty path; a trailing separator (filepath.Dir and
@@ -344,7 +364,7 @@ func checkPath(path string) error {
 			}
 		}
 	}
-	if strings.HasPrefix(elems[last], TempPrefix) {
+	if hasTempPrefix(elems[last]) {
 		return fmt.Errorf("%w: path %q has the prefix of a temporary name", ErrInvalid, path)
 	}
 	return nil
@@ -361,7 +381,7 @@ func checkFiles(files []NewFile) error {
 	seen := make(map[string]bool, len(files))
 	for _, f := range files {
 		// "." and ".." end with a dot, but "not one plain name" says more than "ends with a dot".
-		if f.Name == "" || f.Name == "." || f.Name == ".." || strings.HasPrefix(f.Name, TempPrefix) {
+		if f.Name == "" || f.Name == "." || f.Name == ".." || hasTempPrefix(f.Name) {
 			return fmt.Errorf("%w: file name %q is not one plain name", ErrInvalid, f.Name)
 		}
 		if why := nameProblem(f.Name); why != "" { // a separator in the name is on exFAT's list
