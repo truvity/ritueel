@@ -147,42 +147,43 @@ mobile-starlight-toc .dropdown {
 /* The glossary has four wide columns, the last one ("Decided in") of links. On a phone the last
    column sat off the screen with nothing to say so. Below 50rem each row is a block instead: the
    word, its meaning, and the two other cells under it with the names of their columns. The
-   header row stays for screen readers. Only a table whose fourth column holds links is meant;
-   any other wide table keeps its own scroll. */
+   header row stays for screen readers. Only the table of the glossary page is meant: the rule is
+   scoped to the page whose own menu entry is the current one, `/glossary/`, and so needs nothing
+   written in the page. Any other wide table, on any other page, keeps its own scroll. */
 @media (max-width: 50rem) {
-  .sl-markdown-content > table:has(> tbody > tr > td:nth-child(4) a) {
+  :root:has(.sidebar-content a[aria-current='page'][href='/glossary/']) .sl-markdown-content > table {
     display: block;
     overflow-x: visible;
   }
-  .sl-markdown-content > table:has(> tbody > tr > td:nth-child(4) a) :is(tbody, tr, td) {
+  :root:has(.sidebar-content a[aria-current='page'][href='/glossary/']) .sl-markdown-content > table :is(tbody, tr, td) {
     display: block;
   }
-  .sl-markdown-content > table:has(> tbody > tr > td:nth-child(4) a) thead {
+  :root:has(.sidebar-content a[aria-current='page'][href='/glossary/']) .sl-markdown-content > table thead {
     position: absolute;
     width: 1px;
     height: 1px;
     overflow: hidden;
     clip-path: inset(50%);
   }
-  .sl-markdown-content > table:has(> tbody > tr > td:nth-child(4) a) tr {
+  :root:has(.sidebar-content a[aria-current='page'][href='/glossary/']) .sl-markdown-content > table tr {
     padding: 0.7rem 0.5rem;
     border-bottom: 1px solid var(--sl-color-gray-5);
   }
-  .sl-markdown-content > table:has(> tbody > tr > td:nth-child(4) a) td {
+  :root:has(.sidebar-content a[aria-current='page'][href='/glossary/']) .sl-markdown-content > table td {
     padding: 0.15rem 0;
     border: 0;
   }
-  .sl-markdown-content > table:has(> tbody > tr > td:nth-child(4) a) td:first-child {
+  :root:has(.sidebar-content a[aria-current='page'][href='/glossary/']) .sl-markdown-content > table td:first-child {
     font-size: var(--sl-text-lg);
   }
-  .sl-markdown-content > table:has(> tbody > tr > td:nth-child(4) a) td:nth-child(n + 3)::before {
+  :root:has(.sidebar-content a[aria-current='page'][href='/glossary/']) .sl-markdown-content > table td:nth-child(n + 3)::before {
     color: var(--sl-color-gray-3);
     font-size: var(--sl-text-sm);
   }
-  .sl-markdown-content > table:has(> tbody > tr > td:nth-child(4) a) td:nth-child(3)::before {
+  :root:has(.sidebar-content a[aria-current='page'][href='/glossary/']) .sl-markdown-content > table td:nth-child(3)::before {
     content: 'The page word: ';
   }
-  .sl-markdown-content > table:has(> tbody > tr > td:nth-child(4) a) td:nth-child(4)::before {
+  :root:has(.sidebar-content a[aria-current='page'][href='/glossary/']) .sl-markdown-content > table td:nth-child(4)::before {
     content: 'Decided in: ';
   }
 }
