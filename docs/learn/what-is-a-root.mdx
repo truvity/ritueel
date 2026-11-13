@@ -17,6 +17,20 @@ Trust has to start somewhere. Four things end at a root.
 
 A **root** is what outsiders trust without further proof. Other keys are trusted because it certifies or binds them.
 
+## Keys from zero
+
+This page assumes nothing. The other pages of Learn use five ideas without stopping to explain them, so they come first, each with one example.
+
+**Key pair.** A key pair is two keys made together: a *private* key that one holder keeps secret, and a *public* key that anyone may have. What the private key signs, anyone with the public key can check. Example: a root key is a key pair. The private key stays in a card or a cloud service, and the public key goes to everyone who must check what the root signed.
+
+**Signature.** A signature is made from some data and a private key. A signature proves that the key made it. It does not say whose key it is. Example: a project signs a release, and a user checks the signature with the public key the project published.
+
+**Digest and fingerprint.** A digest is a short number made from data. The same data always gives the same digest, and changed data gives another one. Programs usually sign the digest and not the data, so a card or a cloud key signs what it is given and cannot show what the digest stands for. A fingerprint is the digest of a public key, which people compare to know that they hold the right key. Example: an OpenPGP primary key is known by its fingerprint of 40 hexadecimal characters.
+
+**Certificate.** A certificate is a public key together with a name, signed by another key. The signature says: this key belongs to this name. Example: a root certificate carries the name of the root and is signed by the root's own key. The certificate of an intermediate is signed by the root.
+
+**Symmetric key.** A symmetric key is one secret, not a pair: the same key locks and unlocks. The keys of a root are key pairs, not symmetric keys. Example: a passphrase that locks a file and unlocks it again is used like a symmetric key. The only symmetric key that Learn mentions is on the [KMS page](/learn/how-a-kms-key-works/): KMS rotates only symmetric keys by itself.
+
 ## Two places a root shows up
 
 | | X.509 (certificates, TLS, code signing) | OpenPGP (signatures on software, mail, git) |
@@ -43,4 +57,4 @@ Three facts make a root unlike any other key.
 - **Used by mistake.** A person signs the wrong request, with a wrong lifetime or a wrong name. The signature is real, and cannot be taken back.
 - **Expired unnoticed.** A root with a fixed end date runs out on a bad day.
 
-Most of what the rest of Learn explains is a way to avoid one of these four. Next: [where a root is used](/learn/where-a-root-is-used/).
+Most of what the rest of Learn explains is a way to avoid one of these four. Next: [the custody chain](/learn/custody-chain/).
