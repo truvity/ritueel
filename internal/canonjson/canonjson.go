@@ -8,11 +8,13 @@
 // ritueel's JSON holds integers only, so this package does not write a number with a fraction or
 // an exponent, and it reads input under the rules of package strictjson (no null, no repeated
 // member, nesting of at most strictjson.MaxDepth levels). A value with a nil pointer, map or
-// slice marshals to null and is refused for that reason.
+// slice marshals to null and is refused for that reason. A string that is not valid UTF-8 is
+// refused too, where the standard encoder would write U+FFFD in its place.
 package canonjson
 
 import (
 	"bytes"
+	"encoding"
 	"encoding/json"
 	"fmt"
 	"reflect"
@@ -20,6 +22,7 @@ import (
 	"strconv"
 	"strings"
 	"unicode/utf16"
+	"unicode/utf8"
 
 	"ritueel.id/ritueel/internal/strictjson"
 )
@@ -32,8 +35,17 @@ import (
 const maxIntermediate = 6 * strictjson.DefaultMaxBytes
 
 // Marshal returns the RFC 8785 canonical form of v: any value that encoding/json can marshal
-// whose numbers are integers. There is no trailing newline. A float in v is an error, and so is
-// a null (a nil pointer, map or slice).
+// whose numbers are integers. There is no trailing newline.
+//
+// Marshal refuses, with an error that wraps strictjson.ErrMalformed and with nothing written: a
+// float; a null (a nil pointer, map or slice); a string or a member name that is not valid UTF-8,
+// at any depth (the standard encoder would write U+FFFD in its place); nesting deeper than
+// strictjson.MaxDepth levels. What a type that writes its own JSON (json.Marshaler) returns is
+// checked after it is written, under all the rules of package strictjson, so a float, a null, a
+// byte that is not UTF-8 or a lone surrogate escape such as "\ud800" in it is refused the same
+// way. What a type that writes its own text (encoding.TextMarshaler, also as a map key) returns
+// is checked for UTF-8 before the encoder uses it, and its method is called once more by the
+// encoder.
 //
 // The size limit, strictjson.DefaultMaxBytes, counts the bytes of the result: the canonical form
 // that Marshal returns, with no trailing newline. It does not count the longer text that the
@@ -42,7 +54,7 @@ const maxIntermediate = 6 * strictjson.DefaultMaxBytes
 // intermediate longer than six times the limit, which no value that fits can need; that bound
 // keeps the work of Marshal in proportion to the limit.
 func Marshal(v any) ([]byte, error) {
-	if err := refuseFloats(reflect.ValueOf(v), 0); err != nil {
+	if err := checkValue(reflect.ValueOf(v), 0, 0); err != nil {
 		return nil, err
 	}
 	var buf bytes.Buffer
@@ -184,46 +196,166 @@ func writeString(out *bytes.Buffer, s string) {
 	out.WriteByte('"')
 }
 
-// refuseFloats walks the value that Marshal was given and refuses a float. The standard encoder
-// writes the float 3.0 as 3, which would pass for an integer; a value of ritueel's formats is an
-// integer type. A field tagged "-" is not written and is not looked at. A type that writes its
-// own JSON is not looked into: its output is checked after it is written.
-func refuseFloats(v reflect.Value, depth int) error {
-	if !v.IsValid() || depth > strictjson.MaxDepth {
+var (
+	marshalerType     = reflect.TypeFor[json.Marshaler]()
+	textMarshalerType = reflect.TypeFor[encoding.TextMarshaler]()
+)
+
+// checkValue walks the value that Marshal was given, before the standard encoder sees it, and
+// refuses what the encoder would write without a word or would write wrongly: a float (the
+// encoder writes 3.0 as 3, which would pass for an integer; a value of ritueel's formats is an
+// integer type), a string or a member name that is not valid UTF-8 (the encoder writes U+FFFD in
+// its place), and nesting deeper than strictjson.MaxDepth. depth counts the objects and arrays
+// entered, as the JSON will have them; hops counts the pointers and interfaces passed since the
+// last of those, so that a value that points to itself ends in an error and a long chain of
+// pointers is not taken for nesting. A field tagged "-" is not written and is not looked at. A
+// type that writes its own JSON is not looked into: its output is checked after it is written,
+// by the rules of package strictjson. A type that writes its own text has that text checked
+// here.
+func checkValue(v reflect.Value, depth, hops int) error {
+	if !v.IsValid() {
 		return nil
+	}
+	if (v.Kind() == reflect.Pointer || v.Kind() == reflect.Interface) && v.IsNil() {
+		return nil
+	}
+	// The encoder asks in this order: its own JSON first, then its own text.
+	if writesItself(v, marshalerType) {
+		return nil
+	}
+	if writesItself(v, textMarshalerType) {
+		return checkText(v, "a text")
 	}
 	switch v.Kind() {
 	case reflect.Float32, reflect.Float64:
 		return fmt.Errorf("%w: a float cannot be written, ritueel's JSON holds integers only", strictjson.ErrMalformed)
+	case reflect.String:
+		if !utf8.ValidString(v.String()) {
+			return notUTF8("a string")
+		}
 	case reflect.Pointer, reflect.Interface:
-		if v.IsNil() {
+		if hops >= strictjson.MaxDepth {
+			return tooDeep()
+		}
+		return checkValue(v.Elem(), depth, hops+1)
+	case reflect.Slice, reflect.Array:
+		if writtenAsBase64(v.Type()) {
 			return nil
 		}
-		return refuseFloats(v.Elem(), depth+1)
-	case reflect.Slice, reflect.Array:
+		if depth >= strictjson.MaxDepth {
+			return tooDeep()
+		}
 		for i := range v.Len() {
-			if err := refuseFloats(v.Index(i), depth+1); err != nil {
+			if err := checkValue(v.Index(i), depth+1, 0); err != nil {
 				return err
 			}
 		}
 	case reflect.Map:
-		for _, k := range v.MapKeys() {
-			if err := refuseFloats(v.MapIndex(k), depth+1); err != nil {
+		if depth >= strictjson.MaxDepth {
+			return tooDeep()
+		}
+		for it := v.MapRange(); it.Next(); {
+			if err := checkKey(it.Key()); err != nil {
+				return err
+			}
+			if err := checkValue(it.Value(), depth+1, 0); err != nil {
 				return err
 			}
 		}
 	case reflect.Struct:
+		if depth >= strictjson.MaxDepth {
+			return tooDeep()
+		}
 		t := v.Type()
 		for i := range t.NumField() {
 			f := t.Field(i)
-			if tag, _, _ := strings.Cut(f.Tag.Get("json"), ","); tag == "-" || (!f.IsExported() && !f.Anonymous) {
+			if tag, _, _ := strings.Cut(f.Tag.Get("json"), ","); tag == "-" || !isWritten(f) {
 				continue
 			}
-			if err := refuseFloats(v.Field(i), depth+1); err != nil {
+			if err := checkValue(v.Field(i), depth+1, 0); err != nil {
 				return err
 			}
 		}
 	default:
 	}
 	return nil
+}
+
+// writtenAsBase64 reports whether the encoder writes a value of type t as one base64 string: a
+// slice of bytes whose element has no method of its own.
+func writtenAsBase64(t reflect.Type) bool {
+	if t.Kind() != reflect.Slice || t.Elem().Kind() != reflect.Uint8 {
+		return false
+	}
+	p := reflect.PointerTo(t.Elem())
+	return !p.Implements(marshalerType) && !p.Implements(textMarshalerType)
+}
+
+// isWritten reports whether the standard encoder looks at a struct field at all: an exported one,
+// or an embedded one of a struct type (its exported fields are written as the struct's own).
+func isWritten(f reflect.StructField) bool {
+	if f.IsExported() {
+		return true
+	}
+	if !f.Anonymous {
+		return false
+	}
+	t := f.Type
+	if t.Kind() == reflect.Pointer {
+		t = t.Elem()
+	}
+	return t.Kind() == reflect.Struct
+}
+
+// checkKey checks the name that the encoder writes for a map key: a key of a string kind is
+// written as it is, any other key that writes its own text is written as that text, and an
+// integer key is written as digits.
+func checkKey(k reflect.Value) error {
+	if k.Kind() == reflect.String {
+		if !utf8.ValidString(k.String()) {
+			return notUTF8("a member name")
+		}
+		return nil
+	}
+	if k.Kind() == reflect.Pointer && k.IsNil() {
+		return nil // the encoder reports it
+	}
+	if writesItself(k, textMarshalerType) {
+		return checkText(k, "a member name")
+	}
+	return nil
+}
+
+// writesItself reports whether the encoder writes v through the method of the interface t: the
+// type of v has the method, or v can be addressed and its pointer type has it.
+func writesItself(v reflect.Value, t reflect.Type) bool {
+	return v.Type().Implements(t) || (v.CanAddr() && reflect.PointerTo(v.Type()).Implements(t))
+}
+
+// checkText calls the MarshalText of v, as the encoder will, and refuses text that is not valid
+// UTF-8 (the encoder would write U+FFFD in its place). An error of the method is the encoder's
+// to report.
+func checkText(v reflect.Value, what string) error {
+	if !v.CanInterface() {
+		return nil
+	}
+	var m encoding.TextMarshaler
+	if v.Type().Implements(textMarshalerType) {
+		m, _ = v.Interface().(encoding.TextMarshaler)
+	} else {
+		m, _ = v.Addr().Interface().(encoding.TextMarshaler)
+	}
+	text, err := m.MarshalText()
+	if err == nil && !utf8.Valid(text) {
+		return notUTF8(what)
+	}
+	return nil
+}
+
+func notUTF8(what string) error {
+	return fmt.Errorf("%w: %s that is not valid UTF-8 cannot be written", strictjson.ErrMalformed, what)
+}
+
+func tooDeep() error {
+	return fmt.Errorf("%w: nesting deeper than %d levels", strictjson.ErrMalformed, strictjson.MaxDepth)
 }
