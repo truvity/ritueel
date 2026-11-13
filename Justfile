@@ -286,7 +286,8 @@ go-vuln:
 # are made too, not only the binaries. A snapshot has no tag, so the tag it stamps is fixed here (GORELEASER_CURRENT_TAG;
 # no git tag is made). Then `_go-release-verify` judges the result, and `_go-release-stage` puts the
 # archives and SHA256SUMS in dist/upload/ (the release workflow's dry run keeps those as an artifact and
-# runs each binary from it on a machine of its own architecture). It needs no token. Nothing is signed.
+# runs each binary from it on a machine of its own architecture). It needs no token from the caller.
+# Nothing is signed.
 # Linux only.
 go-release-check:
     #!/usr/bin/env bash
@@ -376,7 +377,8 @@ _go-release-stage:
 
 # The release build, for the workflow only (the `build` job of .github/workflows/release.yaml). It builds
 # the release for the tag in RELEASE_TAG and PUBLISHES NOTHING: it needs no token, and the job that
-# runs it has none. It refuses unless the tag is `vX.Y.Z` or `vX.Y.Z-suffix` (no leading zeros), points
+# runs it is read-only and passes none to any step that runs repository code (`checkout` and the
+# install action receive that read-only token inside the actions). It refuses unless the tag is `vX.Y.Z` or `vX.Y.Z-suffix` (no leading zeros), points
 # at the commit that is checked out, and that commit is an ancestor of origin/main. Then
 # `goreleaser release --skip=publish` builds the archives, SHA256SUMS and the release notes, and
 # `_go-release-verify` judges that very build (the one go-release-check judges as a snapshot). The
