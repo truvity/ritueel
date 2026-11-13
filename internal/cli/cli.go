@@ -128,7 +128,9 @@ type invocation struct {
 // TEXT", before the line of the error, in the order given and through the same escape, in both
 // output modes, and the exit code is not changed by them. The object holds the member "error" only
 // for a failed or a misused command (the outcomes failed and usage); a refusal has "reasons" and
-// no "error", and its message goes to standard error.
+// no "error", and its message goes to standard error. The member "reasons" is there exactly when the
+// command refused: a refusal with no reason code, and reason codes with any other outcome, are
+// mistakes of the programmer and end the run with a panic.
 func Run(ctx context.Context, args []string, env Env) ExitCode {
 	inv := &invocation{env: env.withDefaults()}
 	return inv.finish(inv.execute(ctx, args))
@@ -245,7 +247,8 @@ func (inv *invocation) newCommand(s spec, parents, inherited []string) *ucli.Com
 		if err != nil {
 			// The panic of a code and an outcome that disagree must happen here, inside the run
 			// that turns a panic into exit code 1, and not in finish.
-			_, _ = ExitFor(err)
+			code, outcome := ExitFor(err)
+			checkReasons(strings.Join(path, " "), code, outcome, reasonsOf(err))
 			return err
 		}
 		if res == nil {
@@ -259,10 +262,26 @@ func (inv *invocation) newCommand(s spec, parents, inherited []string) *ucli.Com
 			panic(fmt.Sprintf("cli: the command %q put a text in Result.Error; a command that failed returns an error, and the text of a refusal is the Msg of its error", strings.Join(path, " ")))
 		}
 		res.Outcome = agreed(res.ExitCode, res.Outcome)
+		checkReasons(strings.Join(path, " "), res.ExitCode, res.Outcome, res.Reasons)
 		inv.result = res
 		return nil
 	}
 	return cmd
+}
+
+// checkReasons makes the member "reasons" what the page says: "When refused: the codes". A
+// refused command (the outcome refused, the exit codes 3 and 4) names at least one reason code,
+// and a command with any other outcome names none. Either way it is a mistake of the programmer,
+// and checkReasons panics with a text that says what to do; it runs inside the run that turns a
+// panic into exit code 1. The check is on the number of codes: what a code looks like is not
+// decided (see escaped).
+func checkReasons(word string, code ExitCode, outcome Outcome, reasons []string) {
+	switch {
+	case outcome == OutcomeRefused && len(reasons) == 0:
+		panic(fmt.Sprintf("cli: the command %q refused (exit code %d) and gave no reason code; a refusal names at least one code, in the Reasons of its Refusal or BackendRefusal or of its Result", word, int(code)))
+	case outcome != OutcomeRefused && len(reasons) > 0:
+		panic(fmt.Sprintf("cli: the command %q gave reason codes with the outcome %q (exit code %d); only a refusal (exit code 3 or 4) has reasons, so a command that did not refuse leaves Reasons empty", word, string(outcome), int(code)))
+	}
 }
 
 // onUsageError turns a bad flag, a flag without its value or a bad flag value of the root into
