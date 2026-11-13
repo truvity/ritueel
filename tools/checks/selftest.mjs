@@ -119,6 +119,43 @@ expect('an index row without a file', 'decisions', adr({}, row('0001', 'we-use-t
 expect('a file name that is not kebab-case', 'decisions', adr({ 'docs/decisions/0004_Bad.md': record({ num: '0004' }) }), 'fail', { has: ['0004_Bad.md'] });
 expect('two records with one number', 'decisions', adr({ 'docs/decisions/0001-again.md': record() }), 'fail', { has: ['also used by'] });
 
+// ---- citations of a record's rules: two small records (0005 has three rules, 0006 has five)
+const rec = (n, rules, extra = '') => `# ${n} — A decision\n\n**Status:** Accepted\n**Date:** 2026-11-13\n\n## Decision\n\n${Array.from({ length: rules }, (_, i) => `${i + 1}. We decide the matter numbered ${i + 1}.`).join('\n')}${extra}\n\n## Why\n\nText.\n`;
+const refs = (files) => ({
+  'docs/decisions/0005-a-ceremony.md': rec('0005', 3),
+  'docs/decisions/0006-a-bundle.md': rec('0006', 5),
+  'docs/decisions/0000-template.md': '# NNNN — Title\n\n## Decision\n\n1. A rule.\n',
+  'docs/decisions/README.md': '# Decisions\n',
+  ...files,
+});
+const page = (text) => refs({ 'docs/a.md': `${text}\n` });
+expect('a record named before the rule', 'record-refs', page('See record 0005, rule 2.'), 'pass', { has: ['1 citations of 2 records', 'before 1'] });
+expect('a linked record, a list and a range', 'record-refs', page('See [record 0006](decisions/0006-a-bundle.md), rules 1 and 3, and 0005 (rules 1 to 3).'), 'pass', { has: ['2 clauses', '1 lists, 1 ranges'] });
+expect('a table cell with the number first', 'record-refs', page('| Wanted | 0006 rules 2, 4 and 5 |'), 'pass');
+expect('the rule before its record', 'record-refs', page('It is decided in rule 2 of [record 0006](decisions/0006-a-bundle.md).'), 'pass', { has: ['after 1'] });
+expect('the next clause of a run', 'record-refs', page('See record 0006, rule 5 and rule 2, and 0005 rule 3, rule 1.'), 'pass', { has: ['run 2'] });
+expect('a rule cited inside its own record', 'record-refs', refs({ 'docs/decisions/0006-a-bundle.md': rec('0006', 5, '\nSee also (rule 2).') }), 'pass', { has: ['own 1'] });
+expect('a record that wraps onto the next line of a page', 'record-refs', page('Decided in [record 0005](decisions/0005-a-ceremony.md),\nrules 1 to 3, in plain words.'), 'pass');
+expect('the default a page declares', 'record-refs', page('Rule numbers without a record name are those of record 0006.\n\nSee rule 4 and record 0005, rule 2.'), 'pass', { has: ['default 1'] });
+expect('the numbered rules of another file', 'record-refs', page('A command is exact (proto/README.md, rule 7), as record 0005, rule 1, says.'), 'pass', { has: ['foreign 1'] });
+expect('a comment that wraps before the record number', 'record-refs', refs({ 'proto/x/v1/a.proto': '// Nearest decided text: record\n// 0006, rule 2 (a card)]\nmessage A {}\n' }), 'pass');
+expect('the generated code is not read', 'record-refs', refs({ 'docs/a.md': 'See record 0005, rule 2.\n', 'ui/src/gen/a_pb.ts': '// record 0099, rule 77\n' }), 'pass');
+expect('a record that does not exist', 'record-refs', page('See record 0099, rule 1.'), 'fail', { has: ['docs/a.md:1', 'record 0099, which does not exist'] });
+expect('a rule the record does not have', 'record-refs', page('See record 0005, rule 4.'), 'fail', { has: ['docs/a.md:1', 'record 0005 has no rule 4', 'rules 1 to 3'] });
+expect('rule 0', 'record-refs', page('See record 0005, rule 0.'), 'fail', { has: ['no rule 0'] });
+expect('one bad number in a list', 'record-refs', page('See record 0006, rules 1 and 6.'), 'fail', { has: ['no rule 6'] });
+expect('a range that runs backwards', 'record-refs', page('See record 0006, rules 4 to 2.'), 'fail', { has: ['runs backwards'] });
+expect('a bare rule in a page', 'record-refs', page('The wanted file decides (rule 2).'), 'fail', { has: ['docs/a.md:1', 'names no record'] });
+expect('a record named farther back is no guess', 'record-refs', page('Record 0005 decides the plan. A saved plan is run later, as the next sentence says (rule 2).'), 'fail', { has: ['names no record'] });
+expect('a record number after a full stop', 'record-refs', page('It is in 0006. Rule 2 says more.'), 'fail', { has: ['names no record'] });
+expect('an old ADR number', 'record-refs', page('As ADR 0005 rule 2 said.'), 'fail', { has: ['as an ADR'] });
+expect('a rule too high inside its own record', 'record-refs', refs({ 'docs/decisions/0005-a-ceremony.md': rec('0005', 3, '\nSee (rule 9).') }), 'fail', { has: ['record 0005 has no rule 9'] });
+expect('a citation split by a comment line break', 'record-refs', refs({ 'proto/x/v1/a.proto': '// Nearest decided text: 0006 rule\n// 2 (a card)]\nmessage A {}\n' }), 'fail', { has: ['proto/x/v1/a.proto:1', 'split by a line break'] });
+expect('the rule on the line after the record number', 'record-refs', refs({ 'ui/src/a.ts': '// See record 0006,\n// rule 2.\nexport {};\n' }), 'fail', { has: ['split by a line break'] });
+expect('a default that names a missing record', 'record-refs', page('Rule numbers without a record name are those of record 0042.\n\nSee rule 1.'), 'fail', { has: ['record 0042, which does not exist'] });
+expect('no citation at all', 'record-refs', page('No rule is cited here.'), 'fail', { has: ['empty sweep'] });
+expect('no records', 'record-refs', { 'docs/a.md': 'See record 0005, rule 2.\n' }, 'fail', { has: ['empty sweep'] });
+
 // ---- public content. The token-shaped strings are assembled here, not written out.
 const pub = (text) => ({ 'README.md': `# Example\n\n${text}\n` });
 const pem = `${'-'.repeat(5)}BEGIN EC PRIVATE KEY${'-'.repeat(5)}`;

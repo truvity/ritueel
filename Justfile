@@ -90,6 +90,13 @@ site-deploy secrets='':
 check-decisions:
     tools/checks/decisions.mjs
 
+# Every citation of a rule of a decision record ("record 0004, rule 2", "rules 12 and 29") in the
+# pages, the records, the comments of proto/ and ui/src and the site figures names a record that
+# exists and a rule that it has. A bare "rule N" is resolved only inside its own record or by the
+# page's one declared default; anything else is an error.
+check-record-refs:
+    tools/checks/record-refs.mjs
+
 # Public content of every tracked text file: no account-id-shaped number other than
 # a documented placeholder, no private key block, no well-known token prefix, and no
 # term of the private deny-list (PUBLIC_CONTENT_DENYLIST, a repository secret; the
@@ -186,7 +193,7 @@ proto-check: proto-gen
     @test -z "$(git ls-files --others --exclude-standard -- ui/src/gen proto)" || { echo "proto-check: untracked generated files" >&2; exit 1; }
 
 # Every repository rule.
-check-rules: check-selftest check-decisions check-public check-yaml-ext check-mdx-pages check-agent-links check-vectors
+check-rules: check-selftest check-decisions check-record-refs check-public check-yaml-ext check-mdx-pages check-agent-links check-vectors
 
 # Everything a pull request must pass.
 check: check-rules site-check site-workers site-render proto-check ui-lint ui-test ui-e2e
