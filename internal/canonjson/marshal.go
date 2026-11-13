@@ -49,8 +49,9 @@ var rawType = reflect.TypeFor[Raw]()
 // when it is empty. Only an interface is judged by the value it holds. What can never be written:
 // a float, a complex number, a channel, a function, a json.Number, a map key that is not of kind
 // string, a type that has a MarshalJSON, MarshalText, UnmarshalJSON or UnmarshalText method (other
-// than Raw), an embedded field, a tag option other than omitempty, a tag name that encoding/json
-// would not use, two fields with one name, and a pointer to a pointer or to an interface. The
+// than Raw), an embedded field, a tag option other than omitempty, a member name (a tag name, or
+// the Go name of a field with no tag name) that is not made of ASCII letters, digits and
+// underscores, two fields with one name, and a pointer to a pointer or to an interface. The
 // value decides only what a type cannot: a nil pointer, interface, map or slice (JSON null,
 // unless omitempty leaves the field out), an integer above int64, a string that is not valid
 // UTF-8, an empty Raw, the nesting and the size. An interface with methods can be written, since
