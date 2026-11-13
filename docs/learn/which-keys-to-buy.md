@@ -7,7 +7,7 @@ sidebar:
 
 *Every fact on this page carries the date it was read, 2026-11-01 unless it says otherwise. Prices and firmware change; check the shop and the release notes before you buy. A device is called supported only after ritueel has been proven on it ([record 0002](../decisions/0002-where-a-key-lives.md)). Nothing here is built yet.*
 
-You do not need hardware to learn the model: a drill runs on software test keys. You need hardware to practise the card parts of a ceremony, and to test a store before it is called supported. This page says what to buy for that, and what to leave on the shelf. Buy test devices only; never put a real root on a device you bought to experiment with.
+You do not need hardware to learn the model: a drill runs on software test keys. You need hardware to practise the card parts of a ceremony, and to test a key store before it is called supported. This page says what to buy for that, and what to leave on the shelf. Buy test devices only; never put a real root on a device you bought to experiment with.
 
 ## The short list
 
@@ -39,7 +39,7 @@ Sources, read 2026-11-01: [YubiKey technical manual, PIV](https://docs.yubico.co
 
 A Nitrokey 3 cannot attest a key. A ceremony on a YubiKey checks a certificate that says "this key was made inside this token, with this policy", signed under the maker's published root. A Nitrokey 3 offers no such certificate, so a ceremony using it has no hardware evidence, and ritueel's history can only record "attestation unavailable". That is a real difference in what you can prove, not a detail. Its PIV applet is also young: the firmware notes since 1.8.0 do not call it beta, but fixes to the touch flag and a PIN retry counter were still unreleased on its main branch (read 2026-11-01), and its serial number and version are made up to look like a YubiKey's.
 
-So the Nitrokey 3 is a good second device to **test** and to **support with the gap stated**, and a poor first choice for a root where attestation is the evidence.
+So the Nitrokey 3 is a good second device to **test**. A token that cannot attest holds no root that others rely on ([record 0002](../decisions/0002-where-a-key-lives.md), rule 8).
 
 ## Why not the others
 
@@ -54,7 +54,7 @@ So the Nitrokey 3 is a good second device to **test** and to **support with the 
 
 ## Cloud keys: nothing to buy, a lot to read
 
-AWS KMS is the first cloud store. Google Cloud KMS and Azure Key Vault are planned ([Where a key lives](/learn/key-stores/#planned-stores)). All three sign a pre-computed SHA-384 digest with ECDSA P-384, which is all an X.509 certificate or an OpenPGP signature needs. **Nobody has run signing on Google Cloud or Azure for ritueel yet;** AWS has been measured. The differences that matter:
+AWS KMS is the first cloud store. Google Cloud KMS and Azure Key Vault are planned ([Where a key lives](/learn/key-stores/#planned-key-stores)). All three sign a pre-computed SHA-384 digest with ECDSA P-384, which is all an X.509 certificate or an OpenPGP signature needs. **Nobody has run signing on Google Cloud or Azure for ritueel yet;** AWS has been measured. The differences that matter:
 
 | | Google Cloud KMS | Azure Key Vault | AWS KMS |
 |---|---|---|---|

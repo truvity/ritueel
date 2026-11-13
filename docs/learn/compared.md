@@ -9,7 +9,7 @@ sidebar:
 
 **Today, use one of these. Read ritueel to know why you are doing each step.** The tools below are shipped and in use. ritueel is a design and a set of teaching pages, and it asks you to wait for a tool that does less copying and more recording. This page says when waiting is not worth it.
 
-It sits at the end of [Learn](/learn/): the question "which root custody should I choose?" has an answer here that depends on [where a key lives](/learn/key-stores/) and [what a store can prove](/learn/what-a-store-can-prove/).
+It sits at the end of [Learn](/learn/): the question "which root custody should I choose?" has an answer here that depends on [where a key lives](/learn/key-stores/) and [what a key store can prove](/learn/what-a-store-can-prove/).
 
 ## The options at a glance
 
@@ -30,7 +30,7 @@ Under each option below, "what ritueel adds" is designed or taught, not built, u
 ritueel adds three things. None of the options above, as read on 2026-11-02, does all three.
 
 1. **Teaching with measurements.** Which verifier honours a revocation ([What a revocation reaches](/learn/revoke/#what-a-revocation-reaches)), how Go and OpenSSL differ on name constraints ([Private PKI](/learn/chain-private-pki/)), why two certificates for one intermediate can break a path builder ([Two roots](/learn/two-roots/)), and what a custody chain is as distinct from a signature chain ([Custody chain](/learn/custody-chain/)). This is built: the pages exist.
-2. **Root keys born in their store, with attestation, a history and a trust sequence.** A root key is made inside its card or cloud key and never leaves, a token's attestation proves it ([What a store can prove](/learn/what-a-store-can-prove/)), every ceremony is written to a hash-chained record ([The history](/learn/the-history/)), and a signed root list carries a sequence number that a host can check ([record 0006](../decisions/0006-bundle-history-and-trust-files.md)). This is designed, not built.
+2. **Root keys born in their key store, with attestation, a history and a trust sequence.** A root key is made inside its card or cloud key and never leaves, a token's attestation proves it ([What a key store can prove](/learn/what-a-store-can-prove/)), every ceremony is written to a hash-chained record ([The history](/learn/the-history/)), and a signed root list carries a sequence number that a host can check ([record 0006](../decisions/0006-bundle-history-and-trust-files.md)). This is designed, not built.
 3. **A written hand-off with test vectors** between a root custodian and a system that holds intermediates ([the contract](/reference/hand-off-contract/#test-vectors)). The contract and its vectors exist; no tool implements either end yet.
 
 ritueel does not offer **M-of-N control**: any one active key signs alone, and [the accepted limit](../decisions/0002-where-a-key-lives.md) says so. It does not offer **Ed25519 roots**, because a PIV slot cannot sign with them ([record 0009](../decisions/0009-release-keys-and-the-keyring.md), Roads not taken). And it is **not the daily tool**: you will keep using `gpg` and `step` for daily work, and ritueel is the occasional ceremony, a single command-line program that is planned ([the roadmap](/roadmap/)).
