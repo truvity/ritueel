@@ -17,7 +17,7 @@ A ceremony happens about once a year, so nobody is practised, and the day you ne
 
 ## Steps: a walk-through
 
-1. **Pick the drill.** The list is in [the reference](/reference/drill/#walk-throughs): start with the lost-card drill.
+1. **Pick the drill.** The list is in [the reference](/reference/drill/#walk-throughs): start with the adoption drill (M4), the lost-card walk-through.
 2. **Set up.** `drills/lost-card/setup.sh` makes a scratch bundle with a test root of keys A and B and one intermediate. Result: the start state, and nothing real.
 3. **Run it.** `drills/lost-card/run.sh` runs the steps of [A lost root card](/guides/lost-root-card/). On rehearsal cards, add `--cards` and give the serials; it pauses at every PIN and every touch. Result: a card is out of use, a replacement root key is added, and the intermediate is certified again.
 4. **Check it.** `drills/lost-card/check.sh` checks the end state against the checks of the guide, and writes a report with how long each ceremony took, from the ceremony records. Result: pass or fail, and a time from loss to refusal.
@@ -42,4 +42,4 @@ A ceremony happens about once a year, so nobody is practised, and the day you ne
 
 ## Drill
 
-Run the lost-card walk-through twice: once in CI-style on test roots, and once on rehearsal cards. Then run the restore check on a copy of your bundle with one revocation file deleted, and read how it fails.
+Run the adoption drill twice: once in CI-style on test roots, and once on rehearsal cards. Then run the restore check on a copy of your bundle with one revocation file deleted, and read how it fails.
