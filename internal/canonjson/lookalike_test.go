@@ -27,6 +27,12 @@ type (
 	Ünjson struct{}
 	// Ключ2 is a map key with a method.
 	Ключ2 string
+	// The named types of values that only the value refuses: a nil map, a nil slice, a nil interface
+	// and an unsigned integer that is too large.
+	Карта      map[string]int
+	Список     []int
+	Ünterface0 interface{}
+	Ünsigned   uint64
 )
 
 func (Ünjson) MarshalJSON() ([]byte, error) { return nil, nil }
@@ -218,5 +224,40 @@ func TestNoRefusalOfADocumentShowsACharacterOutsidePrintableASCII(t *testing.T) 
 		if !printableASCII(err.Error()) {
 			t.Errorf("value %d: the text holds a byte that is not printable ASCII: %q", i, err)
 		}
+	}
+}
+
+// The refusals that only a value gives (a nil map, a nil slice, a nil pointer or interface, an integer
+// above int64) name the type of the value: with a look-alike in its name, as an escape.
+func TestTheRefusalOfAValueShowsItsTypeAsEscapes(t *testing.T) {
+	type holder struct {
+		M Карта      `json:"m"`
+		L Список     `json:"l"`
+		P *Ünit      `json:"p"`
+		I Ünterface0 `json:"i"`
+		U Ünsigned   `json:"u"`
+	}
+	good := holder{M: Карта{}, L: Список{}, P: &Ünit{}, I: 1, U: 1}
+	if _, err := Marshal(good); err != nil {
+		t.Fatal(err)
+	}
+	cases := []struct {
+		name   string
+		mutate func(*holder)
+		want   string
+	}{
+		{"a nil map", func(h *holder) { h.M = nil }, "malformed JSON: $.m: a value of type canonjson." + qesc(0x041A) + qesc(0x0430) + qesc(0x0440) + qesc(0x0442) + qesc(0x0430) + " cannot be written: a nil map is JSON null"},
+		{"a nil slice", func(h *holder) { h.L = nil }, "malformed JSON: $.l: a value of type canonjson." + qesc(0x0421) + qesc(0x043F) + qesc(0x0438) + qesc(0x0441) + qesc(0x043E) + qesc(0x043A) + " cannot be written: a nil slice is JSON null"},
+		{"a nil pointer", func(h *holder) { h.P = nil }, "malformed JSON: $.p: a value of type *canonjson." + qesc(0xDC) + "nit cannot be written: a nil pointer is JSON null"},
+		{"a nil interface", func(h *holder) { h.I = nil }, "malformed JSON: $.i: a value of type canonjson." + qesc(0xDC) + "nterface0 cannot be written: a nil interface is JSON null"},
+		{"an integer above int64", func(h *holder) { h.U = 1 << 63 }, "malformed JSON: $.u: a value of type canonjson." + qesc(0xDC) + "nsigned cannot be written: an integer above 9223372036854775807, which ritueel's JSON does not hold"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			h := good
+			tc.mutate(&h)
+			got, err := Marshal(h)
+			refused(t, got, err, tc.want)
+		})
 	}
 }
