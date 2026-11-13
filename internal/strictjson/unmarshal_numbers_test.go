@@ -308,7 +308,7 @@ func TestRawTakesTheExactBytesOfAnObject(t *testing.T) {
 	})
 	t.Run("the rules reach into the Raw", func(t *testing.T) {
 		for _, tc := range []struct{ in, what string }{
-			{`{"a":1,"a":2}`, `member "a" appears twice`},
+			{`{"a":1,"a":2}`, "the member appears twice"},
 			{`{"a":1.5}`, "a number with a fraction or an exponent"},
 			{`{"a":null}`, "null"},
 			{`{"a":"` + bs + `ud800"}`, "a lone surrogate escape"},
