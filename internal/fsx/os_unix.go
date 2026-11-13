@@ -8,8 +8,10 @@ import (
 	"io"
 	"io/fs"
 	"os"
+	"sort"
 	"strings"
 	"sync"
+	"time"
 
 	"golang.org/x/sys/unix"
 )
@@ -181,23 +183,146 @@ func (d *osDir) Sync() error {
 	return d.f.Sync()
 }
 
-// ReadFile reads the regular file name.
+// ReadFile reads the regular file name. It asks the folder what the name is before it opens it
+// (a link, a FIFO or a device is refused without being opened, so a FIFO is not waited on and
+// a device is not touched), opens it without following a link and without waiting, and asks
+// the open file again, because the name can be swapped between the two: only a regular file is
+// read, and at most [MaxReadSize] bytes of it.
 func (d *osDir) ReadFile(name string) ([]byte, error) {
 	if err := checkElem(name); err != nil {
 		return nil, err
 	}
 	var data []byte
 	err := d.with(func(fd int) error {
+		var st unix.Stat_t
+		if err := unix.Fstatat(fd, name, &st, unix.AT_SYMLINK_NOFOLLOW); err != nil {
+			return err
+		}
+		if err := regularOrRefuse(uint32(st.Mode)); err != nil {
+			return err
+		}
 		nfd, err := unix.Openat(fd, name, readFlags, 0)
 		if err != nil {
 			return classify(fd, name, err)
 		}
+		if err := unix.Fstat(nfd, &st); err != nil {
+			_ = unix.Close(nfd)
+			return err
+		}
+		if err := regularOrRefuse(uint32(st.Mode)); err != nil {
+			_ = unix.Close(nfd)
+			return err
+		}
+		if st.Size > MaxReadSize {
+			_ = unix.Close(nfd)
+			return fmt.Errorf("%w: %d bytes, more than %d", ErrTooLarge, st.Size, MaxReadSize)
+		}
+		// It is a regular file: the read does not wait, and the descriptor can be a plain one.
+		if err := unix.SetNonblock(nfd, false); err != nil {
+			_ = unix.Close(nfd)
+			return err
+		}
 		f := os.NewFile(uintptr(nfd), "file")
-		defer f.Close()
-		data, err = io.ReadAll(f)
-		return err
+		defer func() { _ = f.Close() }() // a read-only handle: its close says nothing the read did not
+		// The size can have grown since the stat: read one byte more than the limit to see it.
+		data, err = io.ReadAll(io.LimitReader(f, MaxReadSize+1))
+		if err != nil {
+			return err
+		}
+		if len(data) > MaxReadSize {
+			data = nil
+			return fmt.Errorf("%w: more than %d bytes", ErrTooLarge, MaxReadSize)
+		}
+		return nil
 	})
-	return data, err
+	if err != nil {
+		return nil, err
+	}
+	return data, nil
+}
+
+// regularOrRefuse says why a file of this mode is not read: a symbolic link, or not a regular
+// file.
+func regularOrRefuse(mode uint32) error {
+	switch mode & unix.S_IFMT {
+	case unix.S_IFREG:
+		return nil
+	case unix.S_IFLNK:
+		return ErrLink
+	default:
+		return ErrNotRegular
+	}
+}
+
+// ReadDir lists the folder. It reads the names through a second handle on the same folder (the
+// open of "." cannot be a link), so that a list never shares an offset with another one, and
+// describes each name with a stat of the folder that does not follow a link. A name that is
+// gone between the two is left out: a list shows what the folder held while it was read.
+func (d *osDir) ReadDir() ([]fs.DirEntry, error) {
+	var out []fs.DirEntry
+	err := d.with(func(fd int) error {
+		nfd, err := unix.Openat(fd, ".", openFolderFlags, 0)
+		if err != nil {
+			return err
+		}
+		f := os.NewFile(uintptr(nfd), "folder")
+		defer func() { _ = f.Close() }() // a read-only handle: its close says nothing the read did not
+		names, err := f.Readdirnames(-1)
+		if err != nil {
+			return err
+		}
+		sort.Strings(names)
+		for _, name := range names {
+			var st unix.Stat_t
+			if err := unix.Fstatat(fd, name, &st, unix.AT_SYMLINK_NOFOLLOW); err != nil {
+				if errors.Is(err, unix.ENOENT) {
+					continue
+				}
+				return err
+			}
+			out = append(out, fs.FileInfoToDirEntry(&entryInfo{name: name, size: st.Size, mode: modeOf(uint32(st.Mode))}))
+		}
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// entryInfo is the fs.FileInfo of an entry of a listing: what a stat that does not follow a link
+// said, without the time.
+type entryInfo struct {
+	name string
+	size int64
+	mode fs.FileMode
+}
+
+func (i *entryInfo) Name() string       { return i.name }
+func (i *entryInfo) Size() int64        { return i.size }
+func (i *entryInfo) Mode() fs.FileMode  { return i.mode }
+func (i *entryInfo) ModTime() time.Time { return time.Time{} }
+func (i *entryInfo) IsDir() bool        { return i.mode.IsDir() }
+func (i *entryInfo) Sys() any           { return nil }
+
+// modeOf maps the mode of a stat to the type and permission bits of an fs.FileMode.
+func modeOf(m uint32) fs.FileMode {
+	mode := fs.FileMode(m & 0o777)
+	switch m & unix.S_IFMT {
+	case unix.S_IFDIR:
+		mode |= fs.ModeDir
+	case unix.S_IFLNK:
+		mode |= fs.ModeSymlink
+	case unix.S_IFIFO:
+		mode |= fs.ModeNamedPipe
+	case unix.S_IFSOCK:
+		mode |= fs.ModeSocket
+	case unix.S_IFCHR:
+		mode |= fs.ModeDevice | fs.ModeCharDevice
+	case unix.S_IFBLK:
+		mode |= fs.ModeDevice
+	}
+	return mode
 }
 
 func (d *osDir) Close() error {

@@ -122,25 +122,13 @@ func (j *Journal) Close() error {
 // and, apart, the bytes after the last newline. A last line with no newline does not parse
 // and counts as not written; it is for a person to read. partial is nil when the file ends
 // with a newline or is empty. The slices alias one buffer. path is relative to the root of fsys
-// and is walked from it without following a link; the journal itself is read as [FS.ReadFile]
-// reads a file. ReadJournal reaches no writer, so it works after a stop.
+// and is read as [ReadFile] reads: walked from the root without following a link, and only a
+// regular file no longer than [MaxReadSize]. ReadJournal reaches no writer, so it works after a
+// stop.
 func ReadJournal(fsys FS, path string) (lines [][]byte, partial []byte, err error) {
-	if fsys == nil {
-		return nil, nil, ErrNoRoot
-	}
-	elems, err := parsePath(path, false)
+	data, err := ReadFile(fsys, path)
 	if err != nil {
 		return nil, nil, err
-	}
-	dir, name := elems[:len(elems)-1], elems[len(elems)-1]
-	d, upto, err := openFolder(fsys, dir)
-	if err != nil {
-		return nil, nil, &Error{Step: StepOpenDir, Path: upto, Err: err}
-	}
-	defer d.release()
-	data, err := d.fs.ReadFile(name)
-	if err != nil {
-		return nil, nil, &Error{Step: StepRead, Path: path, Err: err}
 	}
 	for {
 		i := bytes.IndexByte(data, '\n')
