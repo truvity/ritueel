@@ -27,7 +27,7 @@ Instructions for AI agents working in this repository. People follow the same ru
 | create or edit any other page under `docs/` | `docs/contributing/pages.md` (skill `docs-page`) |
 | change `site/`, the headers, the redirects or how a page looks | "Changing the site" in `docs/contributing/pages.md` (skill `site-change`); `just site-redirects` rewrites the generated redirect lines |
 | create a branch, commit, push, open a pull request or answer a review | `docs/contributing/workflow.md` (skill `open-pr`) |
-| write to issues or the board in bulk | "Issues and the board" in `docs/contributing/workflow.md` (skill `maintainer-script`) |
+| write to issues or milestones in bulk | "Issues and milestones" in `docs/contributing/workflow.md` (skill `maintainer-script`) |
 | run a build, a test or a check | `docs/contributing/tools.md` |
 | implement a protocol, a format or an algorithm | "Standards first" in `docs/contributing/tools.md` |
 | write a test that uses a hardware token or a cloud key | "Hardware tokens and cloud keys" in `docs/contributing/tools.md` |
