@@ -184,6 +184,7 @@ jobs:
       - name: One digest over every file that is kept
         id: files
         run: |
+          set -euo pipefail
           export LC_ALL=C
           shopt -s dotglob
           d=$(cd dist/upload && sha256sum -- * | sha256sum | cut -d' ' -f1)
