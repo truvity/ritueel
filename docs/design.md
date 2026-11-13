@@ -150,7 +150,7 @@ Decided in [0009](decisions/0009-release-keys-and-the-keyring.md).
 ## Proposed or open
 
 - How a cloud key takes its turn beside card keys ([0004](decisions/0004-the-cloud-root.md#not-yet-proven-or-only-proposed), [0007](decisions/0007-changing-and-losing-a-root.md#not-yet-proven-or-only-proposed), [0009](decisions/0009-release-keys-and-the-keyring.md#not-yet-proven-or-only-proposed)), and what a proposal from the page may hold ([0010](decisions/0010-the-engine-the-process-and-the-page.md#not-yet-proven-or-only-proposed)).
-- The exact file names in a bundle and the repair of a fork ([0006](decisions/0006-bundle-history-and-trust-files.md#not-yet-proven-or-only-proposed)).
+- The names of some files and folders in a bundle and the repair of a fork ([0006](decisions/0006-bundle-history-and-trust-files.md#not-yet-proven-or-only-proposed)).
 - Which conditions the program enforces, the age of a plan and a flag for scripts ([0005](decisions/0005-a-ceremony-and-where-it-runs.md#not-yet-proven-or-only-proposed)); revoke while a ceremony runs ([0007](decisions/0007-changing-and-losing-a-root.md#not-yet-proven-or-only-proposed)); the ceremony record of an adoption ([0003](decisions/0003-root-cards.md#not-yet-proven-or-only-proposed)).
 - One passkey credential for each bundle on a shared card ([0002](decisions/0002-where-a-key-lives.md#not-yet-proven-or-only-proposed)).
 - What the publish step shows and refuses, where the keyserver list lives, and the flag and form names of the new commands ([0011](decisions/0011-publishing-and-what-to-do-after-a-ceremony.md#not-yet-proven-or-only-proposed)).

@@ -27,8 +27,8 @@ A server card works like a small do-it-yourself HSM, but it is an ordinary card,
 | Path | Written by | Holds |
 |---|---|---|
 | `want/cards/NAME.yaml` | A person | The card file: one for each card this bundle uses, of any of the four kinds. It holds the card's serial and kind, and the rows of other bundles that the card declares. |
-| `cards/NAME.yaml` (proposed path; the bundle page has `seen/` and `sealed/`) | ritueel | The map of one card: every slot of its PIV, OpenPGP and FIDO2 applications and what it is used for. |
-| `cards/NAME.sealed.age` (proposed path; the bundle page has `seen/` and `sealed/`) | ritueel | This bundle's own copy of the card's secrets (management key, PUK and, on a day-to-day card, the Admin PIN of the OpenPGP application), sealed to the same recipients as the key files ([record 0003](../decisions/0003-root-cards.md)). One file for each card that ritueel adopted, root and day-to-day. |
+| `cards/NAME.yaml` (proposed path, under `seen/`; the folder name is decided, [record 0006](../decisions/0006-bundle-history-and-trust-files.md), rule 37) | ritueel | The map of one card: every slot of its PIV, OpenPGP and FIDO2 applications and what it is used for. |
+| `cards/NAME.sealed.age` (proposed path, under `sealed/`; the folder name is decided, record 0006, rule 37) | ritueel | This bundle's own copy of the card's secrets (management key, PUK and, on a day-to-day card, the Admin PIN of the OpenPGP application), sealed to the same recipients as the key files ([record 0003](../decisions/0003-root-cards.md)). One file for each card that ritueel adopted, root and day-to-day. |
 | `roots/<label>/attestation/slot-<slot>.pem` | ritueel | The attestation certificate of one key, as the card made it: one file for each key born for the root key, in the slots of this bundle's row. |
 | `roots/<label>/attestation/card.pem` | ritueel | The token's own certificate (slot `f9`), which signed the slot certificates. |
 | `roots/<label>/attestation/result.json` | ritueel | What ritueel read and checked, as below. |
