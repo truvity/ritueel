@@ -32,7 +32,10 @@ type (
 	Карта      map[string]int
 	Список     []int
 	Ünterface0 interface{}
-	Ünsigned   uint64
+	// Écart8 and Ūint8 are integer types that a document can overflow.
+	Écart8   int8
+	Ūint8    uint8
+	Ünsigned uint64
 )
 
 func (Ünjson) MarshalJSON() ([]byte, error) { return nil, nil }
@@ -163,10 +166,16 @@ func TestNoRefusalOfADocumentShowsACharacterOutsidePrintableASCII(t *testing.T) 
 			X int `json:"x"`
 		} `json:"l"`
 		R strictjson.Raw `json:"r"`
+		N Écart8         `json:"n"`
+		V Ūint8          `json:"v"`
 	}
 	docs := []string{
-		`{"` + kelvin + `":1}`,                             // folds to k
-		`{"m":{"` + e9 + `":"x"}}`,                         // a string for an integer, at a member of a map
+		`{"n":300}`,                // an integer that does not fit a signed type with a look-alike name
+		`{"n":-129}`,               // below it
+		`{"v":300}`,                // above an unsigned type with a look-alike name
+		`{"v":-1}`,                 // below it
+		`{"` + kelvin + `":1}`,     // folds to k
+		`{"m":{"` + e9 + `":"x"}}`, // a string for an integer, at a member of a map
 		`{"m":{"` + emoji + `":1,"` + emoji + `":2}}`,      // repeated, the same emoji
 		`{"l":[{"x":1,"` + e9 + `":2}]}`,                   // unknown member, inside a list
 		`{"` + e9 + `":1}`,                                 // unknown member
@@ -260,4 +269,36 @@ func TestTheRefusalOfAValueShowsItsTypeAsEscapes(t *testing.T) {
 			refused(t, got, err, tc.want)
 		})
 	}
+}
+
+// An integer that does not fit the type of its field names the type as TypeName writes it: a type
+// with a look-alike in its name is an escape, for a signed and for an unsigned kind.
+func TestTheIntegerThatDoesNotFitNamesItsTypeAsEscapes(t *testing.T) {
+	type holder struct {
+		A Écart8   `json:"a"`
+		B Ūint8    `json:"b"`
+		C Ünsigned `json:"c"`
+	}
+	cases := []struct{ name, doc, want string }{
+		{"a signed kind, above", `{"a":128}`, "malformed JSON: $.a: the integer 128 does not fit the type canonjson." + qesc(0xC9) + "cart8"},
+		{"a signed kind, below", `{"a":-129}`, "malformed JSON: $.a: the integer -129 does not fit the type canonjson." + qesc(0xC9) + "cart8"},
+		{"an unsigned kind, above", `{"b":256}`, "malformed JSON: $.b: the integer 256 does not fit the type canonjson." + qesc(0x016A) + "int8"},
+		{"an unsigned kind, below zero", `{"b":-1}`, "malformed JSON: $.b: the integer -1 does not fit the type canonjson." + qesc(0x016A) + "int8"},
+		{"a 64-bit unsigned kind, below zero", `{"c":-1}`, "malformed JSON: $.c: the integer -1 does not fit the type canonjson." + qesc(0xDC) + "nsigned"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			var h holder
+			err := strictjson.Unmarshal([]byte(tc.doc), &h, strictjson.Options{})
+			if err == nil || err.Error() != tc.want {
+				t.Errorf("%v\nwant %s", err, tc.want)
+			}
+		})
+	}
+	t.Run("the largest that fits is read", func(t *testing.T) {
+		var h holder
+		if err := strictjson.Unmarshal([]byte(`{"a":127,"b":255,"c":9223372036854775807}`), &h, strictjson.Options{}); err != nil || h.A != 127 || h.B != 255 || h.C != 1<<63-1 {
+			t.Errorf("%+v, %v", h, err)
+		}
+	})
 }
