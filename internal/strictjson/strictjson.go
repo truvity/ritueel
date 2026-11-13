@@ -197,11 +197,13 @@ func Parse(data []byte, maxBytes int) (*Value, error) {
 
 // PeekInt returns the integer member name of the top-level object; ok is false when it is
 // absent. maxBytes is the largest input in bytes, as for Check: 0 means DefaultMaxBytes, so a
-// version check refuses what Check and Unmarshal would refuse for size, and no more. It is for the version check that must come before the unknown-member rule: a message
-// of a version the reader does not know is refused reading nothing else in it. So it demands
-// only that the input is one JSON object within the size limit and within MaxDepth levels of
-// nesting, in UTF-8 with no byte order mark, and that the member, when present, is there once
-// and is an integer within MinSafeInt to MaxSafeInt. It does not apply the other rules (floats, null and
+// version check refuses what Check and Unmarshal would refuse for size, and no more.
+//
+// It is for the version check that must come before the unknown-member rule: a message of a
+// version the reader does not know is refused reading nothing else in it. So it demands only that
+// the input is one JSON object within the size limit and within MaxDepth levels of nesting, in
+// UTF-8 with no byte order mark, and that the member, when present, is there once and is an
+// integer within MinSafeInt to MaxSafeInt. It does not apply the other rules (floats, null and
 // repeated members elsewhere are not its business).
 func PeekInt(data []byte, name string, maxBytes int) (n int64, ok bool, err error) {
 	root, err := parseDocument(data, limit(maxBytes), false)
@@ -276,13 +278,17 @@ type Member struct {
 // parseInt reads the text of an integer, which the grammar has checked, and refuses one outside
 // MinSafeInt to MaxSafeInt. The text of a number is cut in the error, as a long name is.
 func parseInt(text string) (int64, error) {
-	n, err := strconv.ParseInt(text, 10, 64) // an error here means more than 64 bits
-	if err != nil || n < MinSafeInt || n > MaxSafeInt {
+	// The grammar has checked the text, so ParseInt fails only for more than 64 bits, and then it
+	// returns the int64 limit it saturated at, which is outside the range: the range test below
+	// refuses it, and the error of ParseInt needs no test of its own.
+	n, _ := strconv.ParseInt(text, 10, 64)
+	if n < MinSafeInt || n > MaxSafeInt {
 		shown := text
 		if len(shown) > 40 {
 			shown = shown[:40] + "..."
 		}
-		return 0, fmt.Errorf("the integer %s is outside the range %d to %d, which RFC 8785 can hold", shown, MinSafeInt, MaxSafeInt)
+		return 0, fmt.Errorf("the integer %s is outside the range %d to %d, which RFC 8785 can hold",
+			shown, MinSafeInt, MaxSafeInt)
 	}
 	return n, nil
 }
