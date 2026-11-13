@@ -273,14 +273,12 @@ func TestAFieldWithNoTagNameIsHeldToTheRuleByItsGoName(t *testing.T) {
 				if r == nil {
 					t.Fatalf("%q is accepted", tc.goName)
 				}
-				// The text says that the field has no tag name and that its Go name is no member
-				// name, then the rule. (It shows the Go name of the field as it is; that is a doubt
-				// that the report of the tests raises, so only the rest of the text is pinned.)
+				// The field is shown as Shown shows it, quoted and with escapes, and so is the type.
 				if r.Type != typ || len(r.Hops) != 0 {
 					t.Errorf("refusal at %s %v", r.Type, r.Hops)
 				}
-				if !strings.HasPrefix(r.Reason, "field ") || !strings.HasSuffix(r.Reason, " has no tag name, and its Go name is not a member name; "+reasonName) {
-					t.Errorf("the reason is %q", r.Reason)
+				if want := "field " + quoted(tc.goName) + " has no tag name, and its Go name is not a member name; " + reasonName; r.Reason != want {
+					t.Errorf("the reason is\n  %q\nwant\n  %q", r.Reason, want)
 				}
 			})
 		}

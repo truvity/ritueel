@@ -15,7 +15,7 @@ import (
 // from a code point, so that no tool can turn it into the character on the way.
 
 // reasonNameRule is the rule for the name of a member of a struct, as the errors say it.
-const reasonNameRule = "a member name holds only ASCII letters, digits and underscores, and is not empty"
+const reasonNameRule = "a member name holds only ASCII letters, digits and underscores"
 
 // qesc is the escape that jsonset.Quote writes for a character that is not printable ASCII: the
 // escape of its code point in lower case, and for a character above U+FFFF the escapes of its two
@@ -26,6 +26,20 @@ func qesc(r rune) string {
 		return fmt.Sprintf("%cu%04x%cu%04x", '\\', 0xD800+(v>>10), '\\', 0xDC00+(v&0x3FF))
 	}
 	return fmt.Sprintf("%cu%04x", '\\', r)
+}
+
+// typeText is the text of a Go type in an error: reflect's own text, with every character that is
+// not printable ASCII (a look-alike in the name of a type or of a field) written as qesc writes it.
+func typeText(t reflect.Type) string {
+	var b strings.Builder
+	for _, r := range t.String() {
+		if r >= 0x20 && r < 0x7f {
+			b.WriteRune(r)
+		} else {
+			b.WriteString(qesc(r))
+		}
+	}
+	return b.String()
 }
 
 // quotedName is a name as an error shows it when it is not plain: in quotes, a quote or a
@@ -88,7 +102,7 @@ func tagOf(name string) reflect.StructTag { return reflect.StructTag("json:" + s
 // oneField is a zero value of a struct with one int field F0 with the tag, and its type's text.
 func oneField(tag reflect.StructTag) (any, string) {
 	typ := reflect.StructOf([]reflect.StructField{{Name: "F0", Type: reflect.TypeFor[int](), Tag: tag}})
-	return reflect.New(typ).Elem().Interface(), typ.String()
+	return reflect.New(typ).Elem().Interface(), typeText(typ)
 }
 
 func isNameByte(c byte) bool {
@@ -191,13 +205,14 @@ func TestMarshalAGoNameWithNoTagIsHeldToTheRule(t *testing.T) {
 			t.Errorf("%s: %q, %v", name, got, err)
 		}
 	}
-	// A Go name may be any Unicode letter; a member name may not. The text names the field as Go
-	// does (which is raw, a doubt that the report raises), so only the rest is pinned.
-	for _, name := range []string{string(rune(0xC9)) + "cole", "A" + string(rune(0xE9)), string(rune(0x0410)) + "ge", string(rune(0x212A))} {
+	// A Go name may be any Unicode letter; a member name may not. The field is shown as Shown shows
+	// it, and the type with its escapes.
+	for _, name := range []string{string(rune(0xC9)) + "cole", "A" + string(rune(0xE9)), string(rune(0x0410)) + "ge", string(rune(0x212A)), string(rune(0x1D400))} {
 		got, err := Marshal(goNamed(t, name))
-		refusedWith(t, got, err, " has no tag name, and its Go name is not a member name; "+reasonNameRule)
-		if want := "a value of type " + goNamedType(t, name) + " cannot be written: field "; err == nil || !strings.Contains(err.Error(), want) {
-			t.Errorf("%q: %v", name, err)
+		want := malformedText("$: a value of type %s cannot be written: field %s has no tag name, and its Go name is not a member name; %s", goNamedType(t, name), quotedName(name), reasonNameRule)
+		refused(t, got, err, want)
+		if strings.ContainsFunc(err.Error(), func(r rune) bool { return r < 0x20 || r >= 0x7f }) {
+			t.Errorf("%q: the text holds a character that is not printable ASCII: %q", name, err)
 		}
 	}
 }

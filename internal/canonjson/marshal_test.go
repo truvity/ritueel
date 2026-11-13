@@ -307,12 +307,12 @@ func goNamed(t *testing.T, goName string) any {
 
 func goNamedType(t *testing.T, goName string) string {
 	t.Helper()
-	return reflect.TypeOf(goNamed(t, goName)).String()
+	return typeText(reflect.TypeOf(goNamed(t, goName)))
 }
 
 func tagType(t *testing.T, tag string) string {
 	t.Helper()
-	return reflect.TypeOf(withTag(t, tag)).String()
+	return typeText(reflect.TypeOf(withTag(t, tag)))
 }
 
 // tagged is a struct with one int field F0, F1, ... for each tag, written as the tag says (a tag
@@ -665,7 +665,7 @@ func TestMarshalRefusesEveryKindOutsideTheClosedSet(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			// own: the type at fault is the type of the value itself. Such a type behind a pointer is named
 			// as the caller wrote it, with its pointer.
-			own := reflect.TypeOf(tc.v).String() == tc.typ
+			own := typeText(reflect.TypeOf(tc.v)) == tc.typ
 			route := splitRoute(tc.inner)
 			for _, p := range places(tc.v, false, tc.noPtr) {
 				typ := tc.typ
