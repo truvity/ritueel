@@ -42,11 +42,16 @@ const journalPerm fs.FileMode = 0o600
 // an error of that kind and does not stop it. The writer never retries and never deletes
 // a temporary file or folder.
 //
-// A Writer is safe for use by several goroutines; its operations run one at a time.
+// A Writer is safe for use by several goroutines: every method, and every method of its
+// journals, takes the writer's lock, so the operations run one at a time and the stop is read
+// and set under it. The lock belongs to one Writer and covers the FS and the Rand it reads: a
+// Rand that is shared with another Writer or another goroutine needs a lock of its own, and FS
+// and Rand are set before the first call and are not changed after it.
 type Writer struct {
 	// FS is the file system; nil means [OS].
 	FS FS
-	// Rand supplies the random part of temporary names; nil means crypto/rand.
+	// Rand supplies the random part of temporary names; nil means crypto/rand. The writer reads
+	// it only while it holds its lock.
 	Rand io.Reader
 
 	mu  sync.Mutex
@@ -83,8 +88,16 @@ func (w *Writer) stop(step Step, path string, err error) error {
 
 // TempName draws one temporary name: TempPrefix and lower-case letters and digits, 15
 // characters in all. It does not carry any final name. It reads only the random source and
-// does not reach the file system.
+// does not reach the file system. Like every other method it takes the writer's lock, so a
+// call beside a write on the same writer does not read the random source at the same time.
 func (w *Writer) TempName() (string, error) {
+	w.mu.Lock()
+	defer w.mu.Unlock()
+	return w.tempName()
+}
+
+// tempName is TempName for a caller that holds the lock.
+func (w *Writer) tempName() (string, error) {
 	n := tempLen - len(TempPrefix)
 	out := make([]byte, 0, n)
 	buf := make([]byte, n)
@@ -210,7 +223,7 @@ func (w *Writer) Mkdir(path string, perm fs.FileMode) error {
 // tempPath draws a temporary name in dir. The error of the draw stops the writer. A final
 // name never starts with TempPrefix (checkPath), so the two cannot be equal.
 func (w *Writer) tempPath(dir string) (string, error) {
-	name, err := w.TempName()
+	name, err := w.tempName()
 	if err != nil {
 		return "", w.stop(StepCreate, filepath.Join(dir, TempPrefix), err)
 	}

@@ -53,6 +53,9 @@ func (w *Writer) CreateJournal(path string) (*Journal, error) {
 // made); the caller must not report the line as written. A returned nil means that the file
 // system took the flush, nothing more.
 func (j *Journal) Append(line []byte) error {
+	if j == nil || j.w == nil {
+		return ErrClosed // not made by CreateJournal: there is no writer and no file
+	}
 	w := j.w
 	w.mu.Lock()
 	defer w.mu.Unlock()
@@ -83,8 +86,12 @@ func (j *Journal) Append(line []byte) error {
 
 // Close releases the file. Every line was flushed by its Append, so Close flushes nothing
 // more. It closes the file even when the writer has stopped, and returns the stop in that
-// case; a second Close does nothing and returns nil.
+// case; a second Close does nothing and returns nil. A Journal that CreateJournal did not
+// make (a zero value) is closed already: Append returns [ErrClosed] and Close returns nil.
 func (j *Journal) Close() error {
+	if j == nil || j.w == nil {
+		return nil // not made by CreateJournal: nothing is open
+	}
 	w := j.w
 	w.mu.Lock()
 	defer w.mu.Unlock()
