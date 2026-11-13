@@ -27,6 +27,7 @@ The `Justfile` holds the recipes, and CI runs the same recipes. Run the recipe, 
 | `just check-rules` | The repository rules, below, after a self-test of the checks |
 | `just check-decisions` | The decision records: file names, the template's sections, the numbered decision, the size, the status, the index rows |
 | `just check-record-refs` | Every `rule N` that cites a decision record names a record and a rule that exist; a bare number resolves only inside its own record or by a page's declared default |
+| `just check-shared-terms` | The terms shared with sluis (`docs/shared-terms.yaml`) equal the pinned copy of sluis's file byte for byte, the pin's digest matches, and every page a ritueel term links to is published |
 | `just check-public` | Content that must not be public, in every tracked text file |
 | `just check-yaml-ext` | YAML files use `.yaml` |
 | `just check-vectors` | The test vectors in `testdata/`: the manifest names every tracked file, every file it names is tracked, and the digests match |
