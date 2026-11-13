@@ -79,7 +79,7 @@ The SSH CA key list has a file made for sshd, `ssh-user-ca-keys.pub` ([the forma
 TrustedUserCAKeys /etc/ssh/ssh-user-ca-keys.pub
 ```
 
-Reload sshd (send it `SIGHUP`, or use the service manager's reload). Undo: remove the `TrustedUserCAKeys` line and the file, then reload; not run. Host certificates need a line in each client's `known_hosts`. ritueel does not know your host names, so it prints the line with a placeholder:
+Reload sshd (send it `SIGHUP`, or use the service manager's reload). Undo: remove the `TrustedUserCAKeys` line and the file, then reload; not run. Host certificates need a line in each client's `known_hosts`. ritueel does not know your host names, so it prints the line with a placeholder (which keys hosts and people use under the CA: [SSH host and client keys](/guides/ssh-host-and-client-keys/)):
 
 ```text
 @cert-authority *.example.com ecdsa-sha2-nistp384 AAAA...placeholder-for-the-host-CA-key
@@ -87,7 +87,7 @@ Reload sshd (send it `SIGHUP`, or use the service manager's reload). Undo: remov
 
 ## Certificates for clusters come from the issuing system
 
-cert-manager in the company's clusters gets its certificates from the system that issues every day (sluis). It holds no intermediate of its own, so there is nothing to build ([record 0011](../decisions/0011-publishing-and-what-to-do-after-a-ceremony.md)).
+cert-manager in the company's clusters gets its certificates from the system that issues every day (sluis). It holds no intermediate of its own, so there is nothing to build ([record 0011](../decisions/0011-publishing-and-what-to-do-after-a-ceremony.md)). What a team may choose for those certificates: [Leaf keys under your intermediate](/guides/leaf-keys/) and, for a database, [PostgreSQL with CloudNativePG](/guides/postgresql-with-cloudnativepg/).
 
 Some other consumers send bare requests, without the limits the hand-off contract demands, or keep the intermediate key in software. Under the contract as it stands, ritueel refuses their requests ([record 0011](../decisions/0011-publishing-and-what-to-do-after-a-ceremony.md), rule 10). A change of the contract is on the roadmap, after the first version.
 
