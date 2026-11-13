@@ -60,7 +60,7 @@ A message is a set of files that share a **stem**, a name the requester chooses:
 - Every JSON file has the member `handoff`, an integer. This page is version `1`.
 - A receiver that does not know the version refuses the message with `version-unsupported` and reads nothing else in it.
 - The answer carries the version of the request it answers. A requester refuses an answer whose version is not the one it sent.
-- **The types.** `x509-intermediate`, `openpgp-subkey` and `ssh-ca-key` are all version 1. A receiver that does not know a type refuses it with `malformed`. While no certifier or requester has been released, version 1 is rewritten in place, as the third type was on 2026-11-01; from the first release, a new type is a new version.
+- **The types.** `x509-intermediate`, `openpgp-subkey` and `ssh-ca-key` are all version 1. A receiver that does not know a type refuses it with `malformed`. While no certifier or requester has been released, version 1 may be rewritten in place; from the first release, a new type is a new version.
 - Any change to a member, a rule, a profile or a reason code that can turn an accepted message into a refused one, or the reverse, is a new version. A rewording that changes no outcome in the test vectors is not.
 - **The compatibility window.** A release of the certifier states the versions it reads. It drops a version only in a major release, and not earlier than 24 months after the first release that read its successor. The reason is the yearly cadence: a requester installed a year ago must still be understood at its next ceremony, and a second year covers a missed one.
 - The test vectors are versioned with the contract (`testdata/hand-off/v1/`). A change to a vector that flips its outcome is a new contract version.
