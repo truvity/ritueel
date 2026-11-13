@@ -68,7 +68,7 @@ func (f *filler) checkRoot(t reflect.Type) error {
 	case u == rawType, u.Kind() == reflect.Struct, u.Kind() == reflect.Map, u.Kind() == reflect.Interface:
 		return nil
 	}
-	return jsonset.Errorf(nil, "a value of type %s cannot be read: the top of a document is one JSON object, which fills a struct, a map, a Raw or an interface with no methods", t)
+	return jsonset.Errorf(nil, "a value of type %s cannot be read: the top of a document is one JSON object, which fills a struct, a map, a Raw or an interface with no methods", jsonset.TypeName(t))
 }
 
 // kindName says what a kind of value is, for an error.
@@ -160,7 +160,7 @@ func (f *filler) fill(dst reflect.Value, n *Value) error {
 			return f.mismatch("a list", n)
 		}
 		if len(n.Elems) != t.Len() {
-			return jsonset.Errorf(f.path, "the list has %s, and the array of type %s holds exactly %d", elements(len(n.Elems)), t, t.Len())
+			return jsonset.Errorf(f.path, "the list has %s, and the array of type %s holds exactly %d", elements(len(n.Elems)), jsonset.TypeName(t), t.Len())
 		}
 		return f.fillElems(dst, n)
 	default:

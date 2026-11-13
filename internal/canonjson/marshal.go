@@ -73,7 +73,7 @@ func Marshal(v any) ([]byte, error) {
 	}
 	out := w.out.Bytes()
 	if out[0] != '{' {
-		return nil, jsonset.Errorf(nil, "a value of type %T cannot be written: the top of a document is one JSON object, which a struct, a map, a Raw, or a pointer or an interface that holds one, writes", v)
+		return nil, jsonset.Errorf(nil, "a value of type %s cannot be written: the top of a document is one JSON object, which a struct, a map, a Raw, or a pointer or an interface that holds one, writes", jsonset.TypeName(reflect.TypeOf(v)))
 	}
 	// A Raw is placed at some level and nests below it; only the reader's own count tells whether
 	// the whole stays within strictjson.MaxDepth.
@@ -96,7 +96,7 @@ func (w *writer) refuse(format string, args ...any) error {
 
 // refuseType is the error for a value of a Go type that cannot be written.
 func (w *writer) refuseType(t reflect.Type, reason string) error {
-	return w.refuse("a value of type %s cannot be written: %s", t, reason)
+	return w.refuse("a value of type %s cannot be written: %s", jsonset.TypeName(t), reason)
 }
 
 // tooDeep and tooLong are the errors of the two limits, at the value where the writer passed one.
