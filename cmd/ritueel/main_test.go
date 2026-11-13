@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"reflect"
 	"runtime"
 	"strings"
 	"testing"
@@ -137,6 +138,7 @@ func TestProgram(t *testing.T) {
 			"command":   "version",
 			"exit_code": float64(0),
 			"outcome":   "done",
+			"warnings":  []any{}, // every object has it, [] when there is none
 			"version":   stampedVersion,
 			"commit":    stampedCommit,
 		}
@@ -144,8 +146,8 @@ func TestProgram(t *testing.T) {
 			t.Errorf("object has %d members, want %d: %v", len(obj), len(want), obj)
 		}
 		for k, w := range want {
-			if obj[k] != w {
-				t.Errorf("member %q = %v, want %v", k, obj[k], w)
+			if !reflect.DeepEqual(obj[k], w) {
+				t.Errorf("member %q = %#v, want %#v", k, obj[k], w)
 			}
 		}
 	})
