@@ -25,7 +25,7 @@
 #            published, exists, and creates the release as a draft with the two archives and SHA256SUMS
 #            (NOTES.md is its text, not a file). It asks GitHub with `git ls-remote` which commit the
 #            tag points at (three tries), before the draft and once more after it, finds the draft by
-#            its id (exactly one release of that name, a draft, with exactly the three files), and
+#            its id (exactly one release of that name, a draft, named files exactly as uploaded, aimed at the built commit), and
 #            publishes that id only if the tag still points at the commit that `verify` and `build`
 #            checked out (each gives its commit as a job output). If the tag moved after the draft was
 #            made, the draft stays and a person deletes it by hand; the job deletes nothing. What is
@@ -414,16 +414,25 @@ jobs:
           draft_note=". A DRAFT release for $TAG was left on the Releases page and must be deleted by hand; this job deletes nothing."
           # Find that draft by its id, so that the publication below cannot reach another release of the
           # same name (`gh release edit TAG` picks one itself). Every release with exactly this tag name
-          # is collected: there must be exactly one, a draft, with exactly the files uploaded.
-          matches=0; id=""; isdraft=""; assets=""
-          list=$(gh api --paginate "repos/${GH_REPO}/releases" --jq '.[] | [.tag_name, .id, .draft, (.assets|length)] | @tsv') || fail "cannot list the releases of the repository"
-          while IFS=$'\t' read -r t i d n; do
-            if [ "$t" = "$TAG" ]; then matches=$((matches + 1)); id=$i; isdraft=$d; assets=$n; fi
+          # is collected: there must be exactly one, a draft, whose files are named exactly as the files
+          # uploaded and whose target is the built commit. The names are sorted and joined with commas on
+          # both sides: jq sorts strings by code point and `LC_ALL=C sort` by byte, which agree for these
+          # ASCII names (SHA256SUMS sorts before ritueel_*, as `S` is before `r`). The names are the last
+          # field, because `read` with a tab drops an empty field; an empty list of files then fails the
+          # comparison. `target_commitish` is documented as unused when the tag exists, so whether the
+          # draft keeps the `--target` as given is not known from the documentation: the first real run
+          # proves it, and a mismatch stops the job here, with the draft note.
+          matches=0; id=""; isdraft=""; target=""; assets=""
+          want_files=$(printf '%s\n' "${files[@]}" | sort | paste -sd, -)
+          list=$(gh api --paginate "repos/${GH_REPO}/releases" --jq '.[] | [.tag_name, .id, .draft, .target_commitish, (.assets | map(.name) | sort | join(","))] | @tsv') || fail "cannot list the releases of the repository"
+          while IFS=$'\t' read -r t i d g n; do
+            if [ "$t" = "$TAG" ]; then matches=$((matches + 1)); id=$i; isdraft=$d; target=$g; assets=$n; fi
           done <<<"$list"
           [ "$matches" -eq 1 ] || fail "found $matches releases named $TAG after the draft was created, wanted exactly one (so this token may not see drafts)"
           [ "$isdraft" = true ] || fail "the release named $TAG is not a draft"
           [[ "$id" =~ ^[0-9]+$ ]] || fail "the id of the draft is not a number"
-          [[ "$assets" =~ ^[0-9]+$ ]] && [ "$assets" -eq "${#files[@]}" ] || fail "the draft holds $assets files, wanted ${#files[@]} (the two archives and SHA256SUMS)"
+          [ "$assets" = "$want_files" ] || fail "the draft holds the files '$assets', wanted '$want_files'"
+          [ "$target" = "$BUILT_COMMIT" ] || fail "the draft targets '$target', wanted the built commit $BUILT_COMMIT"
           check_tag
           # Publish that id. If this call fails, the release may in fact be published (the answer may have
           # been lost), and a published version is never deleted (GOVERNANCE.md). So from here the note
