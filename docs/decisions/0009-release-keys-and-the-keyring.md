@@ -7,7 +7,7 @@
 
 1. The OpenPGP primaries of the release keys are the keys of the OpenPGP root: one primary for each key of the root, on a root card or in the cloud. Each is certify-only, version 4, ECDSA P-384 with SHA-384, valid about three years and extended at each use.
 2. Every release primary carries the project's release address and no person's name. No personal key certifies a primary.
-3. Version 6 keys come later, once the verifiers people use accept them.
+3. Version 6 keys come when `gpg` in Debian stable and in the oldest supported RHEL can read them. This is checked at each stable GnuPG release.
 4. A company root's user ID carries a release-root name and the release address. A user ID can be added and revoked; only published copies cannot be withdrawn.
 5. The release primary's user ID, the release address, is changed the same way as a person's: adding and retiring a user ID of an OpenPGP primary is a ceremony ([record 0008](0008-a-persons-own-key.md), rule 16). The primary stays, and so does the trust in it.
 
@@ -20,7 +20,7 @@
 12. The proof of a ritueel release is the checksum file `SHA256SUMS`, signed by a release subkey that the project's root binds, with a keyless cosign signature beside it. The release subkey is named `ritueel-release-<year-month>`.
 13. The release subkey signs the checksum file only, never a git tag. There is no personal signature of the maintainer.
 
-14. No release is signed before the gate. The first signed release (M5) follows the adoption of the project's root and its drill (M4): the root adopted and attested or read, the revocation signatures stored apart, the adoption drill passed.
+14. No release is signed before the gate. The first signed release (M5) follows the adoption of the project's root and its drill (M4): the root adopted and attested or read, the revocation signatures stored apart, the adoption drill passed, and the two checks of rule 29 run.
 15. There is no provisional software primary, no bootstrap key and no release signed by a person's key. Keys on cards are added to the root after the first release (M6), as a transition.
 16. The release chain is: an unsigned release candidate, then the personal key rebuilt, then the company's OpenPGP key, then the company's key signs ritueel's release.
 
@@ -38,9 +38,13 @@
 27. Sigstore and build provenance are a complement. ritueel neither issues nor verifies provenance for a user's releases.
 28. Nothing is done for old releases in the first version. A user keeps the keyring version of the time.
 
+29. Before the first signed release, two checks are run: `apt` with `gpgv` on the affected Ubuntu and Debian releases, and `rpm` on RHEL 8 and 9 with an ECDSA key. If a verifier that users need refuses the key, a second primary of RSA-4096 is added to the keyring: a key of the OpenPGP root like the others, and the one exception to rule 1 in its algorithm.
+
 ## Why
 
-A release is trusted because its signature verifies against a key the user already holds. The root primaries are used once a year, so a signer works with a subkey that a primary has bound, and any active primary can bind it. ritueel's scope ends at files: it makes the keyring file, and a pipeline packages it. Hard revocation must reach tools that cannot read a revocation signature, such as gpgv and apt, so the new package is the revocation.
+- A release is trusted because its signature verifies against a key the user already holds. The root primaries are used once a year, so a signer works with a subkey that a primary has bound, and any active primary can bind it. ritueel's scope ends at files: it makes the keyring file, and a pipeline packages it. Hard revocation must reach tools that cannot read a revocation signature, such as gpgv and apt, so the new package is the revocation.
+- Version 4 and ECDSA P-384 stay because the verifiers decide, and not the standard. RFC 9580 asks for version 6 keys and calls version 4 deprecated, but `gpg` 2.4.8 and `gpgv` refuse version 6, so a user of Debian 12 or Ubuntu 22.04 could not verify (rule 3). P-384 is the largest curve that a PIV slot, the OpenPGP applet and the cloud key store all hold, and the one tested with every verifier the project ran.
+- Two verifier gaps are not measured (rule 29). The upstream source of the `rpm` of RHEL 8 and 9 has no ECDSA verification (RHEL's own patches were not read). The `gpgv` path of `apt` 2.7.13 and later has a list of algorithms for the future (`>=rsa3072,ed25519,ed448`) that leaves out the NIST curves; as of 2026-11-13 it only logs a notice.
 
 ## What it costs
 
@@ -49,12 +53,15 @@ A release is trusted because its signature verifies against a key the user alrea
 - A late verifier has only the keyring version of the time: no historical package is built.
 - The pipeline must follow the name and version rule of the package.
 - The temporary key and its signer program must be built, then replaced by native signing.
+- Two checks come before the first signed release, and a second primary to make, hold and extend if one of them fails (rule 29).
 
 ## Roads not taken
 
 - **Sign releases with a primary, or with a person's key.** It needs nothing to bind, but a primary is used once a year, and a person's key puts a person in the chain.
 - **A keyring with only the primary of the year.** It is smaller, but a lost card breaks verification at once.
 - **Version 6 keys now.** It follows RFC 9580, but gpg cannot parse them, so apt users could not verify.
+- **A fixed date for version 6 keys.** Predictable, but the verifiers decide and not the standard, and a date would break users on Debian 12 or Ubuntu 22.04 (rule 3).
+- **RSA-4096 for the release keys now.** It is what the large distributions use and every verifier reads it, but it is slower and larger on a card and is a second algorithm next to P-384; it is the answer if a check of rule 29 fails.
 - **Ed25519 keys.** They are shorter and are the GnuPG default, but P-384 is the one algorithm that every key store holds and that was tested with every verifier the project ran. A PIV slot can sign Ed25519, over the whole message and not a digest (measured by sluis on one YubiKey 5 Nano with firmware 5.8.0, at most 3,061 bytes through ykcs11, restated in [the research note](../research/yubikey-piv-speed-and-sharing-2026-11-13.md) and not repeated here).
 - **A personal key certifies each primary.** It gives a path for people who trust the person, but release trust then rests on a key usually kept in software.
 - **A shorter expiry for primaries and subkeys.** It bounds an unrevoked key further, but costs more ceremonies and keyring updates for a gain the 13-month bindings already give.
@@ -73,5 +80,6 @@ A release is trusted because its signature verifies against a key the user alrea
 ## Not yet proven or only proposed
 
 - **Not yet proven.** The release workflow, the small signer program, the binding of the temporary release subkey and the keyless signature are not built yet ([#202](https://github.com/truvity/ritueel/issues/202)).
+- **Not yet proven.** The two checks of rule 29 are not run yet: `apt` with `gpgv` on the Ubuntu and Debian releases that carry `apt` 2.7.13 or later, and `rpm` on RHEL 8 and 9 with an ECDSA key ([#25](https://github.com/truvity/ritueel/issues/25)).
 - **Proposed.** Whether a well-known package repository (Maven Central) accepts a signing subkey under a certify-only primary is not known; its page says it can only verify against a primary key. A test comes before the first signed release ([#25](https://github.com/truvity/ritueel/issues/25)).
 - **Proposed.** Which primary signs in a year, and so binds the subkey (rule 7), when the OpenPGP root has a key on a card and a key in the cloud: the card of the year ([record 0007](0007-changing-and-losing-a-root.md), rule 16) names cards, and a cloud key has none ([#137](https://github.com/truvity/ritueel/issues/137)).
