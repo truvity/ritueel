@@ -1,7 +1,8 @@
 // Parts shared by the strips of the page "How it works" (ceremony, sign-intermediate, bind-subkeys) and
-// its other figures: the walking holder, the terminal, the plan sheet, the stick with chips, the bundle.
+// its other figures: the walking holder, the terminal, the plan sheet, the moments inside a panel, the
+// stick with chips, the bundle.
 // They are built from the primitives of draw.mjs and use only classes of figures.css.
-import { acc, arrowq, circle, f, line, path, person, rect, sheet, text, wifiOff } from './draw.mjs';
+import { acc, arrowq, circle, f, line, path, person, poly, rect, sheet, text, wifiOff } from './draw.mjs';
 import { svgBox } from './svg.mjs';
 
 export const B = 168; // the ground line of every panel
@@ -23,6 +24,30 @@ export function pnl(n, place, body, label) {
       (place ? text(38, 24.5, place, 't t-s t-dim t-b') : '') +
       body,
   );
+}
+
+const isNote = (l) => l.split(/\s+/).length > 3; // a line of more than three words is a note: t-long
+
+/**
+ * The moments inside one panel, drawn as a short sequence with no numbers: for each row an icon (`icon(cy)`
+ * draws it around the middle line cy) and a few short lines of text at textX, with a small chevron between
+ * two rows at chevX. A line is a string, or [string, classes]. A row is 44 units high unless it says `h`.
+ */
+export function moments(y0, rows, { textX = 134, chevX = 30 } = {}) {
+  let b = '';
+  let y = y0;
+  rows.forEach((r, i) => {
+    const h = r.h ?? 44;
+    const cy = y + h / 2;
+    b += r.icon(cy);
+    r.lines.forEach((l, k) => {
+      const [s, cls] = Array.isArray(l) ? l : [l, isNote(l) ? 't t-s t-long' : 't t-s'];
+      b += text(textX, cy - ((r.lines.length - 1) * 15) / 2 + 4 + k * 15, s, cls);
+    });
+    if (i < rows.length - 1) b += poly([[chevX - 5, y + h - 3], [chevX, y + h + 2], [chevX + 5, y + h - 3]], 'ln ln-thin');
+    y += h;
+  });
+  return b;
 }
 
 /** A terminal: a window with a title bar and three dots; the caller writes the lines from y+28. */
