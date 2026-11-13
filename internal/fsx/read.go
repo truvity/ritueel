@@ -1,6 +1,7 @@
 package fsx
 
 import (
+	"fmt"
 	"io/fs"
 )
 
@@ -36,7 +37,9 @@ func ReadFile(fsys FS, path string) ([]byte, error) {
 // [ReadFile] walks; the path "." is the root itself. The list holds every name in the folder,
 // the temporary names that a stop left too. The caller that reads a bundle skips every name
 // with the prefix [TempPrefix], compared without case, because a temporary folder holds whole
-// files under ordinary names. The error of a failed read is an *[Error] as for [ReadFile].
+// files under ordinary names. A folder with more than [MaxDirEntries] names is an error that wraps
+// [ErrTooMany], and nothing is returned in part. The error of a failed read is an *[Error] as for
+// [ReadFile].
 func ReadDir(fsys FS, path string) ([]fs.DirEntry, error) {
 	if fsys == nil {
 		return nil, ErrNoRoot
@@ -56,6 +59,9 @@ func ReadDir(fsys FS, path string) ([]fs.DirEntry, error) {
 	ents, err := d.fs.ReadDir()
 	if err != nil {
 		return nil, &Error{Step: StepRead, Path: path, Err: err}
+	}
+	if len(ents) > MaxDirEntries { // an FS that did not keep its promise
+		return nil, &Error{Step: StepRead, Path: path, Err: fmt.Errorf("%w: %d names, more than %d", ErrTooMany, len(ents), MaxDirEntries)}
 	}
 	return ents, nil
 }

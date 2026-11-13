@@ -178,6 +178,9 @@ func (d *osDir) Sync() error {
 	return d.f.Sync()
 }
 
+// dirChunk is the number of names that one read of a folder asks for.
+const dirChunk = 1024
+
 // ReadFile reads the regular file name. It asks the folder what the name is before it opens it
 // (a link, a FIFO or a device is refused without being opened, so a FIFO is not waited on and
 // a device is not touched), opens it without following a link and without waiting, and asks
@@ -252,7 +255,11 @@ func regularOrRefuse(mode uint32) error {
 // ReadDir lists the folder. It reads the names through a second handle on the same folder (the
 // open of "." cannot be a link), so that a list never shares an offset with another one, and
 // describes each name with a stat of the folder that does not follow a link. A name that is
-// gone between the two is left out: a list shows what the folder held while it was read.
+// gone between the two is left out: a list shows what the folder held while it was read. The names
+// are read in chunks of 1024 and the read stops, with an error that wraps [ErrTooMany] and no
+// part of the list, as soon as there are more than [MaxDirEntries] of them, so that a folder
+// that a hostile stick has filled costs at most about 25 MiB and a bounded number of calls (see
+// [MaxDirEntries]). The entries are in the order of their names, as before.
 func (d *osDir) ReadDir() ([]fs.DirEntry, error) {
 	var out []fs.DirEntry
 	err := d.with(func(fd int) error {
@@ -262,9 +269,23 @@ func (d *osDir) ReadDir() ([]fs.DirEntry, error) {
 		}
 		f := os.NewFile(uintptr(nfd), "folder")
 		defer func() { _ = f.Close() }() // a read-only handle: its close says nothing the read did not
-		names, err := f.Readdirnames(-1)
-		if err != nil {
-			return err
+		var names []string
+		for {
+			n := dirChunk
+			if rest := MaxDirEntries + 1 - len(names); rest < n {
+				n = rest
+			}
+			chunk, err := f.Readdirnames(n)
+			names = append(names, chunk...)
+			if len(names) > MaxDirEntries {
+				return fmt.Errorf("%w: more than %d names", ErrTooMany, MaxDirEntries)
+			}
+			if errors.Is(err, io.EOF) {
+				break
+			}
+			if err != nil {
+				return err
+			}
 		}
 		sort.Strings(names)
 		for _, name := range names {
