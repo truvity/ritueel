@@ -64,7 +64,7 @@ snapshot:
   version_template: "{{ .Version }}-{{ .ShortCommit }}"
 
 # There is no `release:` section: GoReleaser does not publish. Whether a release is a pre-release (a tag
-# with a suffix such as `-rc.1`) is decided by the `publish` job.
+# with a suffix such as `-rc.1`, or any `v0.x.y`: GOVERNANCE.md) is decided by the `publish` job only.
 
 # The notes come from the commit history (docs/contributing/workflow.md: the history feeds them).
 # The commit subjects are conventional (`docs(scope): ...`), so each filter also takes a scope.
