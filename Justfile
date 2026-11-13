@@ -244,9 +244,12 @@ go-verify:
     go mod download
     go mod verify
 
-# The unit tests. No network, no device, no cloud key.
+# The unit tests. No network, no device, no cloud key. RITUEEL_REQUIRE_TOOLS=1 is set: a test that needs
+# an outside tool (for example the `go` tool, which the elfcheck tests use to build a real binary) skips
+# without that variable when the tool is missing, and fails with it, so nothing is skipped silently here
+# or in CI.
 go-test:
-    go test {{ go_packages }}
+    RITUEEL_REQUIRE_TOOLS=1 go test {{ go_packages }}
 
 # The release build, as the release makes it: static, no cgo, paths trimmed, the version and the commit
 # stamped in (VERSION and COMMIT in the environment override git's answer). Both must be plain
