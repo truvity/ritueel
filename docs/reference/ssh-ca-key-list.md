@@ -87,7 +87,7 @@ A host holds one list: the last good one, beside the root list it holds. It chec
 
 A host takes a new root list **before** the SSH CA key list of the same sequence, so that check 2 reads the root keys of that sequence; a list signed by a root key the host's root list does not yet show is `unknown-signer`, and the host tries again after it has updated the root list. A host that holds no root list uses its initial pins for check 2, as for the root list. The host verifies the bytes it received and does not re-serialise them. When every check passes, the new list replaces the one it holds, and the keys of the old list that are not on the new one are no longer trusted. Receiving the current list again is not an error.
 
-**When the list a host holds expires** and no newer one has arrived, it keeps the list, goes on trusting its keys, and raises a warning, as for the root list ([record 0006](../decisions/0006-bundle-history-and-trust-files.md)). `status` warns 60, 30 and 14 days before the newest list expires.
+**When the list a host holds expires** and no newer one has arrived, it keeps the list, goes on trusting its keys, and raises a warning, as for the root list ([record 0006](../decisions/0006-bundle-history-and-trust-files.md)). `ritueel verify ssh-ca-keys` reports it as the warning `held-expired` in the member `warnings` of its JSON output and prints it on standard error; the exit code does not change ([the output](/reference/cli/#machine-readable-output)). `status` warns 60, 30 and 14 days before the newest list expires.
 
 These codes belong to the host and are not sent anywhere.
 

@@ -149,8 +149,8 @@ These are the arguments of the commands that check the CRLs (M4, [issue #30](htt
 | `ritueel verify ssh-ca-keys FILE (--held FILE \| --root-list FILE) [--user-keys FILE]` | An SSH CA key list, the list the host holds or the root list it holds (with its `.jws`), and the file for sshd. | Nothing. | 0, 1, 2, 3 |
 | `ritueel verify keyring FILE... --root-list FILE [--dir DIR]` | Packages or plain files, the root list, and the bundle. | Nothing. | 0, 1, 2, 3 |
 
-- **`verify crl`** exits 0 when the CRL is accepted and 3 with the code when it is refused; a held CRL that has expired is a warning in the output. With `--cert`, a certificate the CRL lists exits 3 with the code `revoked`. It needs no bundle.
-- **`verify ssh-ca-keys`** exits 0 when the list is accepted and 3 with the code, including `user-keys-mismatch` for the file for sshd; it needs no bundle.
+- **`verify crl`** exits 0 when the CRL is accepted and 3 with the code when it is refused; a held CRL that has expired is the warning `held-expired` ([the output](/reference/cli/#machine-readable-output)). With `--cert`, a certificate the CRL lists exits 3 with the code `revoked`. It needs no bundle.
+- **`verify ssh-ca-keys`** exits 0 when the list is accepted and 3 with the code, including `user-keys-mismatch` for the file for sshd; a held list that has expired is the warning `held-expired` ([the output](/reference/cli/#machine-readable-output)). It needs no bundle.
 - **`verify keyring`** exits 0 when every check passes and 3 with the code. Without `--dir` it cannot check what a revocation dropped.
 - **The keyring file** (the public certificates, binary and armoured) is written into the trust set by `apply`, once M5 builds it. It refuses to mix test and real roots, and is verified before it is written. The release pipeline builds the package from it ([record 0009](../decisions/0009-release-keys-and-the-keyring.md), rules 21 to 23).
 
