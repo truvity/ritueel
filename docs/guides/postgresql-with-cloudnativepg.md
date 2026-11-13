@@ -9,7 +9,7 @@ sidebar:
 
 ## Two modes, and the one this guide takes
 
-CloudNativePG (CNPG) is an operator, a program that looks after a database in the cluster. By default it makes a CA of its own for each cluster and issues 90-day certificates from it: a small PKI outside your chain [1]. In **user-provided mode** you fill four Secrets, and your issuing system makes and renews the certificates [1]. This guide takes the second, so that every certificate chains to your root and your intermediate's limits apply.
+CloudNativePG (CNPG) is an operator, a program that looks after a database in the cluster. By default it makes a CA of its own for each cluster and issues 90-day certificates from it: a small PKI outside your chain [1]. In **user-provided mode** your issuing system makes and renews the certificates of the Secrets that you fill [1]. This guide takes the second, so that every certificate except the one for replication chains to your root and your intermediate's limits apply.
 
 ## The four Secrets
 
@@ -18,7 +18,7 @@ CloudNativePG (CNPG) is an operator, a program that looks after a database in th
 | `serverCASecret` | `ca.crt`: the roots of your CA bundle (concluded). |
 | `serverTLSSecret` | `tls.crt`: the server leaf, then the intermediate; `tls.key`. |
 | `clientCASecret` | `ca.crt`: the CA that signs client certificates. |
-| `replicationTLSSecret` | A certificate with the common name `streaming_replica` (see below). |
+| `replicationTLSSecret` | Nothing. Replication stays on CloudNativePG's own CA (see below). |
 
 Label each Secret `cnpg.io/reload`, or run `kubectl cnpg reload`, so that the cluster reads a change [1]. Put in the names your clients connect to, all inside the intermediate's permitted DNS zone. CNPG's own checks "verify server certificates against the CA only, disregarding the DNS name" [1]; your clients should not (test 2 asks what the operator does with a name outside the zone).
 
@@ -38,7 +38,7 @@ PostgreSQL calls `cert` alone "effectively trust authentication with clientcert=
 
 ## The replication user
 
-A fixed rule lets the role `streaming_replica` in, to the databases `postgres` and `replication`, on a certificate with that common name [1]. The client CA file is one for all clients, so any such certificate this CA signs is accepted (concluded). The issuing system never signs this name for an application, a person or another cluster. Filling the fourth Secret from it would be the one exception; the sister project's plan avoids it with CNPG's own CA for replication, trusted beside yours (a plan, not a running system). The note does not choose.
+A fixed rule lets the role `streaming_replica` in, to the databases `postgres` and `replication`, on a certificate with that common name [1]. The client CA file is one for all clients, so any such certificate this CA signs is accepted (concluded). The issuing system never signs this name for an application, a person or another cluster. Replication stays on CloudNativePG's own CA, which is trusted beside yours, and the fourth Secret is not filled from your issuing system. The sister project plans the same (a plan, not a running system). None of this was run on a cluster.
 
 ## Lifetime and key type
 
