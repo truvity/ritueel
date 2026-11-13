@@ -3,10 +3,10 @@ import { CeremonyCommand } from '../gen/ritueel/local/v1alpha1/common_pb';
 // The usual steps of a ceremony, one catalogue for the page.
 //
 // Record 0005 (rules 3 to 9) gives the six steps of `apply` in this order, and
-// rule 7 says what `close` does. Record 0010 (rule 4) wants one catalogue that
-// the page and the guided mode both read. The guided mode does not exist yet,
-// so the catalogue is the page's own; the sentences below are short readings of
-// those rules and add no fact. The contract does not carry the steps of one
+// record 0005, rule 7, says what `close` does. Record 0010 (rule 4) wants one
+// catalogue that the page and the guided mode both read. The guided mode does
+// not exist yet, so the catalogue is the page's own; the sentences below are
+// short readings of those rules and add no fact. The contract does not carry the steps of one
 // ceremony, so the page shows the usual steps of its command.
 
 export interface UsualStep {
