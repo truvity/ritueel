@@ -148,10 +148,16 @@ func (inv *invocation) finish(err error) ExitCode {
 		if res.Outcome == "" {
 			res.Outcome = OutcomeDone
 		}
+		var werr error
 		if mode == OutputJSON {
-			_ = writeJSON(inv.env.Stdout, res)
+			werr = writeJSON(inv.env.Stdout, res)
 		} else if res.Text != "" {
-			_, _ = io.WriteString(inv.env.Stdout, res.Text)
+			_, werr = io.WriteString(inv.env.Stdout, res.Text)
+		}
+		if werr != nil {
+			// The result did not reach the caller, so the run did not succeed.
+			_, _ = fmt.Fprintf(inv.env.Stderr, "%s: write the result: %s\n", programName, werr)
+			return ExitFailure
 		}
 		return res.ExitCode
 	}
