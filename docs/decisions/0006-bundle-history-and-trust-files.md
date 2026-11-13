@@ -49,6 +49,8 @@
 35. Coming back from the stick is a join: ritueel adds the missing files and never merges text. Two ends of the history are a fork, a critical finding. Two answers to one request stop the join.
 36. A join writes no ceremony record; it only adds files, so the end of the history changes only when a ceremony happens.
 
+37. Beside `ritueel.yaml`, the folders of a bundle are named `want/`, `seen/`, `sealed/`, `roots/`, `requests/`, `history/`, `trust/` and `drills/`, and the files of a ceremony folder `plan.json`, `attempt.json`, `births.jsonl`, `signatures.jsonl`, `transcript.txt` and `record.json`. Names are lower case and have no spaces.
+
 ## Why
 
 A holder must prove what was done, and outsiders must check the roots. One bundle for each organisation or person keeps a person's files apart from a company's. A write-once history shows a rewritten ceremony. One trust sequence and an expiry on every list let a host tell a current set from a stale one. On exFAT, a file or folder renamed from a long temporary name to a shorter final name kept a folder entry with a wrong checksum until the system wrote the entry again ([the trial](../research/exfat-power-cut-2026-11-12.md)); a name of at most 15 characters fits in one name entry, so the rename never shortens it (rule 32). A power cut between the rename of a trust set and the ceremony record leaves a trust set no record lists, and that is not tampering when the attempt is still open (rule 34). A failing stick is shown by its error and not hidden by a retry, and a line that says "flushed" must never follow a write that failed (rule 33); the lines on a real stick in [record 0005](0005-a-ceremony-and-where-it-runs.md) say what this does not cover.
@@ -113,7 +115,7 @@ A holder must prove what was done, and outsiders must check the roots. One bundl
 
 ## Not yet proven or only proposed
 
-- **Proposed.** The other member names inside the folders (copies of the wanted files, attempt, birth journal, journal of signatures, transcript, ceremony record, card files, card maps, sealed card files) and the other names of wanted files and their folders are fixed with the code and the card proofs ([#8](https://github.com/truvity/ritueel/issues/8)).
+- **Proposed.** The other names are fixed with the code and the card proofs: the folders inside `want/` (`cards/`, `roots/` and `delegations/`), the file `want/openpgp.yaml`, the folder `wanted/` of a ceremony folder, the files under `roots/<label>/`, the names of the files in `seen/` and `sealed/`, the form of the name of a trust set, and the member names inside the files ([#8](https://github.com/truvity/ritueel/issues/8)).
 - **Proposed.** No file stores the bundle's name; `name` in `ritueel.yaml` is the name in the root keys' subjects, and whether it must differ between bundles is open ([#8](https://github.com/truvity/ritueel/issues/8)).
 - **Proposed.** Each bundle's card files list the cards for its own rows; the list of rows may be empty, and a card used only for the passkey is listed with applications `[fido2]` ([#8](https://github.com/truvity/ritueel/issues/8)).
 - **Proposed.** The rules a request is checked against are split: key store, firmware, PIN and validity in policy; name constraints and KMS read roles in each declared delegation's wanted file. Excluded DNS subtrees and excluded IP ranges are not decided ([#9](https://github.com/truvity/ritueel/issues/9)).
