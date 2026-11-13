@@ -22,6 +22,10 @@ const FormatVersion = 1
 // Result is the JSON object of --output json: the members of the section "Machine-readable
 // output" in docs/reference/cli.md. Members for later commands are added there and here
 // together, as pointers or slices with omitempty.
+//
+// A command returns a Result when it ended as it should, and sets Reasons, Warnings and its own
+// members. A command that ends with an error returns the error instead (see ExitFor and
+// WithWarnings).
 type Result struct {
 	// Output is the version of this format, FormatVersion.
 	Output int `json:"output"`
@@ -31,8 +35,16 @@ type Result struct {
 	ExitCode ExitCode `json:"exit_code"`
 	// Outcome matches the exit code.
 	Outcome Outcome `json:"outcome"`
-	// Reasons are the codes of a refusal.
+	// Reasons are the codes of a refusal. The member is written when the list is not empty.
 	Reasons []string `json:"reasons,omitempty"`
+	// Warnings are the warnings of the command, one string for each, in the order given and with
+	// a repeated one repeated. A warning does not change the exit code. The member is always
+	// written, as [] when there is none (the member "warnings" of docs/reference/cli.md); a
+	// command sets it only to give warnings, and never makes the empty list itself. Each warning
+	// is also printed on standard error, in both output modes. A command that ends with an error
+	// gives its warnings with WithWarnings instead: the Result of a command that returns an
+	// error is not used.
+	Warnings []string `json:"warnings"`
 	// Error is a message for a person when the command failed or was misused.
 	Error string `json:"error,omitempty"`
 	// Version is the release version (version only).

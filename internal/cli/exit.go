@@ -5,6 +5,7 @@ package cli
 import (
 	"errors"
 	"fmt"
+	"slices"
 	"strings"
 )
 
@@ -200,6 +201,44 @@ func reasonsOf(err error) []string {
 	var c Coded
 	if errors.As(err, &c) {
 		return c.ReasonCodes()
+	}
+	return nil
+}
+
+// warnedError is an error together with the warnings that were raised before it.
+type warnedError struct {
+	err      error
+	warnings []string
+}
+
+// Error returns the text of the error it wraps, unchanged.
+func (e *warnedError) Error() string { return e.err.Error() }
+
+// Unwrap returns the error it wraps, so ExitFor, errors.Is and errors.As see through it.
+func (e *warnedError) Unwrap() error { return e.err }
+
+// WithWarnings returns err with warnings attached, for a command that raised warnings and then
+// ended with an error: a refusal, a failure or a usage error. The exit code, the outcome, the
+// reasons and the text of the result are those of err; the warnings are the member "warnings" of
+// the JSON object and a line each on standard error, as the warnings of a Result are. They keep
+// the order given, after any that err carries already, so wrapping twice loses none. With no
+// warnings it returns err itself. A nil err is a mistake of the programmer (nil means success, and
+// then the warnings go in Result.Warnings), and WithWarnings panics.
+func WithWarnings(err error, warnings ...string) error {
+	if err == nil {
+		panic("cli: WithWarnings was given no error; a command that ended well gives its warnings in Result.Warnings")
+	}
+	if len(warnings) == 0 {
+		return err
+	}
+	return &warnedError{err: err, warnings: append(slices.Clone(warningsOf(err)), warnings...)}
+}
+
+// warningsOf returns the warnings the error carries (see WithWarnings), if it carries any.
+func warningsOf(err error) []string {
+	var w *warnedError
+	if errors.As(err, &w) {
+		return w.warnings
 	}
 	return nil
 }

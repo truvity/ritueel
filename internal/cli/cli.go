@@ -71,7 +71,9 @@ func (c *Call) declared(name string) *ucli.Command {
 // it should, or an error; ExitFor maps the error to an exit code. It never returns both nil: a
 // command that has nothing to say still returns a Result (help is shown by the library, before the
 // command runs). It writes nothing to
-// standard output itself in JSON mode: the object is written once, by Run.
+// standard output itself in JSON mode: the object is written once, by Run. A command that raised
+// warnings gives them in Result.Warnings when it returns a Result, and with WithWarnings when it
+// returns an error; it never prints one itself.
 type commandFunc func(ctx context.Context, c *Call) (*Result, error)
 
 // spec is one command word.
@@ -119,6 +121,12 @@ type invocation struct {
 // shown as \u000a); the newline that finish writes after the message stays. What a command puts
 // in Result.Text is written as it is on standard output, and is the command's own to escape when
 // it holds text from a document.
+//
+// Warnings. The object always has the member "warnings", [] when there is none. A command gives
+// warnings in Result.Warnings when it returns a Result, and with WithWarnings(err, ...) when it
+// returns an error of any kind; each is written once on standard error, as "ritueel: warning:
+// TEXT", before the line of the error, in the order given and through the same escape, in both
+// output modes, and the exit code is not changed by them.
 func Run(ctx context.Context, args []string, env Env) ExitCode {
 	inv := &invocation{env: env.withDefaults()}
 	return inv.finish(inv.execute(ctx, args))
@@ -257,20 +265,40 @@ func (inv *invocation) onUsageError(_ context.Context, _ *ucli.Command, err erro
 	return UsageError{Msg: err.Error()}
 }
 
-// escaped returns the reason codes with every character outside printable ASCII written as
-// \uXXXX, so that the "reasons" member holds nothing that could reach a terminal raw. A reason is
-// a code that the program chooses, not free text, and every code of docs/reference/cli.md and of
-// the pages it points to is lower-case words joined with hyphens; but no page states that shape
-// as a rule, so a reason that does not fit it is escaped, not refused, until a page decides.
-func escaped(reasons []string) []string {
-	if reasons == nil {
+// escaped returns the reason or warning codes with every character outside printable ASCII
+// written as \uXXXX, so that the "reasons" and "warnings" members, and the lines of standard error
+// that repeat them, hold nothing that could reach a terminal raw. A reason or a warning is a code
+// that the program chooses, not free text, and every code of docs/reference/cli.md and of the pages
+// it points to is lower-case words joined with hyphens; but no page states that shape as a rule, so
+// one that does not fit it is escaped, not refused, until a page decides. The result is a new list;
+// the list of the command is not changed.
+func escaped(codes []string) []string {
+	if codes == nil {
 		return nil
 	}
-	out := make([]string, len(reasons))
-	for i, r := range reasons {
-		out[i] = jsonset.Escape(r)
+	out := make([]string, len(codes))
+	for i, c := range codes {
+		out[i] = jsonset.Escape(c)
 	}
 	return out
+}
+
+// escapedWarnings is escaped for the "warnings" member, which is never absent: a list with no
+// warning is [], not nothing.
+func escapedWarnings(warnings []string) []string {
+	if out := escaped(warnings); out != nil {
+		return out
+	}
+	return []string{}
+}
+
+// writeWarnings writes each warning on a line of standard error, in both output modes: what a
+// person reads goes to standard error (docs/reference/cli.md, "Machine-readable output"). The
+// warnings are already escaped, and are written in the order given.
+func (inv *invocation) writeWarnings(warnings []string) {
+	for _, w := range warnings {
+		_, _ = fmt.Fprintf(inv.env.Stderr, "%s: warning: %s\n", programName, w)
+	}
 }
 
 // finish writes what the end of the run needs and returns the exit code.
@@ -283,6 +311,8 @@ func (inv *invocation) finish(err error) ExitCode {
 		}
 		res := inv.result
 		res.Reasons = escaped(res.Reasons)
+		res.Warnings = escapedWarnings(res.Warnings)
+		inv.writeWarnings(res.Warnings)
 		res.Output = FormatVersion
 		res.Command = inv.command
 		var werr error
@@ -301,20 +331,25 @@ func (inv *invocation) finish(err error) ExitCode {
 
 	code, outcome := ExitFor(err)
 	// The one place where the text of an error is written: standard error and the "error" member.
+	// The warnings come first on standard error, as they were raised before the error.
+	warnings := escapedWarnings(warningsOf(err))
+	inv.writeWarnings(warnings)
 	msg := jsonset.Escape(err.Error())
 	_, _ = fmt.Fprintf(inv.env.Stderr, "%s: %s\n", programName, msg)
 	if outcome == OutcomeUsage {
 		_, _ = fmt.Fprintf(inv.env.Stderr, "Run \"%s --help\" for the usage.\n", programName)
 	}
 	if known && mode == OutputJSON {
-		_ = writeJSON(inv.env.Stdout, &Result{
+		res := &Result{
 			Output:   FormatVersion,
 			Command:  inv.command,
 			ExitCode: code,
 			Outcome:  outcome,
 			Reasons:  escaped(reasonsOf(err)),
-			Error:    msg,
-		})
+			Warnings: warnings,
+		}
+		res.Error = msg
+		_ = writeJSON(inv.env.Stdout, res)
 	}
 	return code
 }
