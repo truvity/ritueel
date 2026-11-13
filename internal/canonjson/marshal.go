@@ -55,7 +55,8 @@ var rawType = reflect.TypeFor[Raw]()
 // value decides only what a type cannot: a nil pointer, interface, map or slice (JSON null,
 // unless omitempty leaves the field out), an integer above int64, a string that is not valid
 // UTF-8, an empty Raw, the nesting and the size. An interface with methods can be written, since
-// the value in it is judged; strictjson.Unmarshal refuses it as a type, since there is no value.
+// the value in it is judged, unless it declares one of the four methods above, which refuses it;
+// strictjson.Unmarshal refuses every interface with methods as a type, since there is no value.
 //
 // The error wraps strictjson.ErrMalformed and names the Go type and the path to the value, and
 // nothing is returned. A refusal of the element type of a list or the value type of a map says so
