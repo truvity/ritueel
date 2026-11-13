@@ -2,7 +2,7 @@
 title: Revoke
 description: Revoking declares a key untrustworthy now. Why the material is made in advance, how X.509 and OpenPGP differ, and what a revocation reaches and does not reach.
 sidebar:
-  order: 17
+  order: 13
 ---
 
 **Revoking is the emergency exit.** It declares a key untrustworthy now, whatever date its certificate says. It is used when a key is compromised or lost, or when a key was retired and old signatures should still be believed. This page assumes the [basics](/learn/what-is-a-root/#keys-from-zero) and [the custody chain](/learn/custody-chain/).

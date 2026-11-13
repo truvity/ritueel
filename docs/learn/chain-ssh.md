@@ -2,7 +2,7 @@
 title: SSH
 description: The custody chain of SSH, raw keys compared with an SSH certificate authority, user and host certificates, and how a CA key list tells hosts which CAs to trust.
 sidebar:
-  order: 11
+  order: 5
 ---
 
 This page assumes the [basics](/learn/what-is-a-root/#keys-from-zero) and [the custody chain](/learn/custody-chain/).
