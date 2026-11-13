@@ -315,7 +315,7 @@ func TestTheWalkOfAnErrorTree(t *testing.T) {
 			{"a wrapper around a join", WithWarnings(errors.Join(a, b), "o"), []string{"from-a", "from-b", "o"}},
 			{"a wrapper in front of a wrapper", WithWarnings(WithWarnings(errors.New("x"), "1"), "2"), []string{"1", "2"}},
 			{"a join in a join in a join", errors.Join(errors.Join(errors.Join(a), b), errors.Join(a)), []string{"from-a", "from-b", "from-a"}},
-			{"fmt.Errorf with %w and %v: only the %w part", fmt.Errorf("%w %v", a, b), []string{"from-a"}},
+			{"fmt.Errorf with %w and %v: only the %w part", fmt.Errorf("%w %v", a, b), []string{"from-a"}}, //nolint:errorlint // the %v is the point: b is text, not a part of the tree
 		} {
 			if got := warningsOf(tc.err); !slices.Equal(got, tc.want) {
 				t.Errorf("%s: warningsOf = %q, want %q", tc.name, got, tc.want)
