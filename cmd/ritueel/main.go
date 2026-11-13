@@ -5,6 +5,7 @@ package main
 import (
 	"context"
 	"os"
+	"time"
 
 	"ritueel.id/ritueel/internal/buildinfo"
 	"ritueel.id/ritueel/internal/cli"
@@ -16,6 +17,7 @@ func main() {
 		Stdout: os.Stdout,
 		Stderr: os.Stderr,
 		Build:  buildinfo.Read(),
+		Now:    time.Now,
 	}
 	os.Exit(int(cli.Run(context.Background(), os.Args[1:], env)))
 }

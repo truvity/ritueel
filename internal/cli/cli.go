@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"slices"
+	"strings"
 
 	ucli "github.com/urfave/cli/v3"
 )
@@ -22,9 +24,27 @@ type Global struct {
 type Call struct {
 	Env    Env
 	Global Global
-	// Args are the arguments after the command word that are not flags.
+	// Args are the arguments after the command word (after the second word, for a word with
+	// second words) that are not flags.
 	Args []string
+
+	cmd *ucli.Command // the library's command of the word that runs, for the flag accessors
 }
+
+// FlagString returns the value of the string flag name of the word that runs, or of a global
+// flag. It is "" when the flag was not given and has no default.
+func (c *Call) FlagString(name string) string { return c.cmd.String(name) }
+
+// FlagStrings returns the values of the repeatable string flag name in the order they were
+// given on the command line; a comma is part of a value, not a separator. It is empty when the
+// flag was not given.
+func (c *Call) FlagStrings(name string) []string { return c.cmd.StringSlice(name) }
+
+// FlagBool returns the value of the boolean flag name; false when it was not given.
+func (c *Call) FlagBool(name string) bool { return c.cmd.Bool(name) }
+
+// FlagSet reports whether the flag name was given on the command line.
+func (c *Call) FlagSet(name string) bool { return c.cmd.IsSet(name) }
 
 // commandFunc is the body of one command. It returns the Result of a command that ended as
 // it should, or an error; ExitFor maps the error to an exit code. It writes nothing to
@@ -33,9 +53,15 @@ type commandFunc func(ctx context.Context, c *Call) (*Result, error)
 
 // spec is one command word.
 type spec struct {
-	name  string
-	usage string
-	run   commandFunc
+	name      string
+	usage     string
+	argsUsage string // the usage line after the word, for help
+	// flags makes the flags of this word only. It is a function because a flag of the library
+	// keeps what it was given ("was set", its count) in the flag value itself, so every run
+	// needs flag values of its own, not the ones a run before it has used.
+	flags func() []ucli.Flag
+	subs  []spec      // second words ("verify root-list"); a word with subs has no run
+	run   commandFunc // a word without subs has one
 }
 
 // specs are the command words that exist. Usage lists only these.
@@ -48,7 +74,7 @@ type invocation struct {
 	env     Env
 	dir     string
 	output  string // the raw value of --output
-	command string // the word of the command being run, "" when none was named
+	command string // the first word of the command being run, "" when none was named
 	result  *Result
 }
 
@@ -103,34 +129,64 @@ func (inv *invocation) newRoot() *ucli.Command {
 	}
 }
 
-// newCommand builds the library's command for one word.
-func (inv *invocation) newCommand(s spec) *ucli.Command {
-	return &ucli.Command{
-		Name:         s.name,
-		Usage:        s.usage,
-		OnUsageError: inv.onUsageError,
-		Action: func(ctx context.Context, cmd *ucli.Command) error {
-			inv.command = s.name
-			res, err := s.run(ctx, &Call{
-				Env:    inv.env,
-				Global: Global{Dir: inv.dir, Output: OutputMode(inv.output)},
-				Args:   cmd.Args().Slice(),
-			})
-			if err != nil {
-				return err
-			}
-			inv.result = res
-			return nil
+// newCommand builds the library's command for one word and, recursively, for its second
+// words. parents are the words above it; the first of them, or its own name, is the word that
+// the JSON object calls "command" (a second word does not change it).
+func (inv *invocation) newCommand(s spec, parents ...string) *ucli.Command {
+	first := s.name
+	if len(parents) > 0 {
+		first = parents[0]
+	}
+	path := append(slices.Clone(parents), s.name)
+	cmd := &ucli.Command{
+		Name:      s.name,
+		Usage:     s.usage,
+		ArgsUsage: s.argsUsage,
+		// A repeated flag is one value for each use; a comma is part of a value.
+		DisableSliceFlagSeparator: true,
+		HideHelpCommand:           true, // --help is a flag; "help" is not a command word
+		OnUsageError: func(_ context.Context, _ *ucli.Command, err error, _ bool) error {
+			inv.command = first
+			return UsageError{Msg: err.Error()}
 		},
 	}
+	if s.flags != nil {
+		cmd.Flags = s.flags()
+	}
+	if len(s.subs) > 0 {
+		for _, sub := range s.subs {
+			cmd.Commands = append(cmd.Commands, inv.newCommand(sub, path...))
+		}
+		cmd.Action = func(_ context.Context, c *ucli.Command) error {
+			inv.command = first
+			if c.NArg() == 0 {
+				return UsageError{Msg: fmt.Sprintf("%s needs a second word", strings.Join(path, " "))}
+			}
+			return UsageError{Msg: fmt.Sprintf("%s: unknown command %q", strings.Join(path, " "), c.Args().First())}
+		}
+		return cmd
+	}
+	cmd.Action = func(ctx context.Context, c *ucli.Command) error {
+		inv.command = first
+		res, err := s.run(ctx, &Call{
+			Env:    inv.env,
+			Global: Global{Dir: inv.dir, Output: OutputMode(inv.output)},
+			Args:   c.Args().Slice(),
+			cmd:    c,
+		})
+		if err != nil {
+			return err
+		}
+		inv.result = res
+		return nil
+	}
+	return cmd
 }
 
-// onUsageError turns a bad flag, a flag without its value or a bad flag value into a usage
-// error. The library prints nothing for it; finish does.
-func (inv *invocation) onUsageError(_ context.Context, cmd *ucli.Command, err error, isSubcommand bool) error {
-	if isSubcommand {
-		inv.command = cmd.Name
-	}
+// onUsageError turns a bad flag, a flag without its value or a bad flag value of the root into
+// a usage error. The library prints nothing for it; finish does. The commands have their own,
+// which also names the command.
+func (inv *invocation) onUsageError(_ context.Context, _ *ucli.Command, err error, _ bool) error {
 	return UsageError{Msg: err.Error()}
 }
 
