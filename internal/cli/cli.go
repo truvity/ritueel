@@ -126,7 +126,9 @@ type invocation struct {
 // warnings in Result.Warnings when it returns a Result, and with WithWarnings(err, ...) when it
 // returns an error of any kind; each is written once on standard error, as "ritueel: warning:
 // TEXT", before the line of the error, in the order given and through the same escape, in both
-// output modes, and the exit code is not changed by them.
+// output modes, and the exit code is not changed by them. The object holds the member "error" only
+// for a failed or a misused command (the outcomes failed and usage); a refusal has "reasons" and
+// no "error", and its message goes to standard error.
 func Run(ctx context.Context, args []string, env Env) ExitCode {
 	inv := &invocation{env: env.withDefaults()}
 	return inv.finish(inv.execute(ctx, args))
@@ -251,6 +253,11 @@ func (inv *invocation) newCommand(s spec, parents, inherited []string) *ucli.Com
 			// on purpose; a command that does has forgotten its result.
 			panic(fmt.Sprintf("cli: the command %q returned neither a result nor an error", strings.Join(path, " ")))
 		}
+		if res.Error != "" {
+			// Only a failed or a misused command has an "error" member, and Run writes it from the
+			// error the command returns.
+			panic(fmt.Sprintf("cli: the command %q put a text in Result.Error; a command that failed returns an error, and the text of a refusal is the Msg of its error", strings.Join(path, " ")))
+		}
 		res.Outcome = agreed(res.ExitCode, res.Outcome)
 		inv.result = res
 		return nil
@@ -330,8 +337,9 @@ func (inv *invocation) finish(err error) ExitCode {
 	}
 
 	code, outcome := ExitFor(err)
-	// The one place where the text of an error is written: standard error and the "error" member.
-	// The warnings come first on standard error, as they were raised before the error.
+	// The one place where the text of an error is written: standard error and, for a failed or a
+	// misused command, the "error" member. The warnings come first on standard error, as they
+	// were raised before the error.
 	warnings := escapedWarnings(warningsOf(err))
 	inv.writeWarnings(warnings)
 	msg := jsonset.Escape(err.Error())
@@ -348,7 +356,11 @@ func (inv *invocation) finish(err error) ExitCode {
 			Reasons:  escaped(reasonsOf(err)),
 			Warnings: warnings,
 		}
-		res.Error = msg
+		// The page gives "error" to a failed or a misused command only; the text of a refusal or
+		// of a command that was not confirmed is for standard error.
+		if outcome == OutcomeFailed || outcome == OutcomeUsage {
+			res.Error = msg
+		}
 		_ = writeJSON(inv.env.Stdout, res)
 	}
 	return code

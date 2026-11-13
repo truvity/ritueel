@@ -24,8 +24,8 @@ const FormatVersion = 1
 // together, as pointers or slices with omitempty.
 //
 // A command returns a Result when it ended as it should, and sets Reasons, Warnings and its own
-// members. A command that ends with an error returns the error instead (see ExitFor and
-// WithWarnings).
+// members. A Result is never written with an "error" member: only a failed or a misused command
+// has one, and it comes from the error that the command returns (see ExitFor and WithWarnings).
 type Result struct {
 	// Output is the version of this format, FormatVersion.
 	Output int `json:"output"`
@@ -45,7 +45,9 @@ type Result struct {
 	// gives its warnings with WithWarnings instead: the Result of a command that returns an
 	// error is not used.
 	Warnings []string `json:"warnings"`
-	// Error is a message for a person when the command failed or was misused.
+	// Error is a message for a person when the command failed or was misused, and only then: the
+	// object of a refusal or of a command that was not confirmed has none (its message goes to
+	// standard error alone). Run sets it from the error; a command does not.
 	Error string `json:"error,omitempty"`
 	// Version is the release version (version only).
 	Version string `json:"version,omitempty"`
