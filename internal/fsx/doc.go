@@ -57,11 +57,10 @@
 //   - Choosing the root. The package keeps every write inside the folder it was given and cannot
 //     tell whether that folder is the right one: a folder of a workstation, a mounted stick, a
 //     copy that came from elsewhere.
-//   - A root on a file system that is not exFAT. The rules for names are those of an exFAT stick
-//     and the desktop systems that read it, and the order of the steps is what a cut is proved
-//     against in memory only. Another file system may hold a name that is refused here or refuse
-//     a name that is accepted (case, normalisation), and what a cut leaves there is that file
-//     system's own. The writer does not look at what the root is mounted on.
+//   - A root on a file system that is not exFAT. The rule for names fits any file system that
+//     holds ASCII, but the order of the steps is what a cut is proved against in memory only,
+//     and what a cut leaves on another file system is that file system's own. The writer does
+//     not look at what the root is mounted on.
 //   - Skipping every name that starts with [TempPrefix] when reading a folder, compared without
 //     case. A temporary folder that a stop left holds whole files under ordinary names, and a
 //     reader that lists it would take them for files of the bundle. [ReadDir] lists every name and
@@ -74,24 +73,17 @@
 // writer follow it or write through it, and it cannot make the writer replace a file: the only
 // ways in are an exclusive create and a rename that refuses an existing name.
 //
-// Names are checked against the stick and the desktop systems that read it. Every element of
-// a path, and every name of a set, is refused (with [ErrInvalid]) when the exFAT file system
-// cannot hold it or would hold it under another name: a control code or one of the characters
-// of the specification's table of invalid file name characters, an end with a dot or a space
-// (Windows removes both, and the Linux exFAT driver removes trailing dots unless the mount
-// option keep_last_dots is given), more than 255 bytes (which is also at most 255 UTF-16 code
-// units, the limit of exFAT), and bytes that are not UTF-8. It is also refused when it has a
-// character that is not printable in the sense of unicode.IsPrint (a letter, a mark, a
-// number, a punctuation mark, a symbol or the plain space are printable; a control code, a
-// format character such as U+200B or U+200D, a space such as U+00A0 and a code point that is
-// unassigned or for private use are not), so that a name does not hide a character that the
-// holder cannot see, and when it is a device name of Windows ("aux", "Aux.json"), which a
-// Windows system cannot open.
-//
-// A name that the holder chooses, a label, can be refused by these rules (a device name, a
-// name that ends with a dot or a space, a character that is not printable). The code that turns
-// a label into a name must check the label when the holder types it and say why it is refused,
-// and must not leave the refusal to the write.
+// A name holds only the ASCII letters, the digits, the dot, the hyphen and the underscore
+// (A-Z a-z 0-9 . - _): every element of a path, and every name of a set, is refused (with
+// [ErrInvalid]) when it holds any other byte, is empty, is longer than 255 bytes, ends with a dot,
+// or is a device name of Windows ("aux", "Aux.json"). One short rule, and a reason for it: a person
+// can tell any two names apart (nothing is invisible, nothing looks like another letter, nothing
+// folds or normalises into another name), and every file system the bundle meets, an exFAT stick
+// and the systems that read it, can hold them. It costs something: a label cannot be written in
+// another script or with a space, and the names of people and organisations live inside the
+// files, not in the names of files. The layer above that turns a label into a name must check the
+// label when the holder types it and say why it is refused, and must not leave the refusal to the
+// write.
 //
 // What the writer does not check:
 //
@@ -100,12 +92,7 @@
 //     name that differs only by case from an existing one: the file system's own refusal
 //     catches it on the stick, the exclusive create or the rename that never replaces, and on
 //     a case-sensitive file system both names would exist. Within one set the writer refuses
-//     such a pair itself.
-//   - The table that exFAT uses to compare names without case lives on the stick and may
-//     differ from the one in Go for rare letters; then the refusal of the stick catches the
-//     pair, not the writer.
-//   - Unicode normalisation. A file system of macOS treats two spellings of one accented
-//     letter as one name; the writer does not. The layer that chooses names keeps them simple.
+//     such a pair itself (folding the ASCII letters is enough, since a name holds nothing else).
 //   - The depth of the folders and the number of open files the operating system allows. The
 //     walk opens one element at a time, so the length of a whole path is no limit (each name is
 //     checked for its own 255 bytes); a limit of the system stops the writer with its error.

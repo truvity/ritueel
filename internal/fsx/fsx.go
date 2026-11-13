@@ -231,15 +231,14 @@ var ErrWriterClosed = errors.New("fsx: the writer is closed")
 // path: it is empty, it is absolute (it starts with a separator), ends with a separator, has a
 // "." or ".." element or an empty element ("a//b"), or its final element has the prefix of a
 // temporary name (compared without case; a path that is only read may have it). For a name (any
-// element of a path, and the name of a file of a set): the exFAT file system of a stick cannot
-// hold it or holds it under another name (a control code or one of the characters " * / : < > ?
-// \ |; an end with a dot or a space; a length over 255 bytes; bytes that are not UTF-8), or it
-// has a character that is not printable in the sense of unicode.IsPrint (U+007F, a format
-// character such as U+200B, a space such as U+00A0, a private use or unassigned code point), or
-// a desktop system cannot open it (a device name of Windows, "aux" or "Aux.json"). A name of a
-// set must also be one plain name; a mode must have no bits beyond the permission bits; a
-// journal line must hold no newline. Such an error does not stop the writer, and every text of
-// it quotes the path or the name it names, so that a control code in it cannot reach a terminal.
+// element of a path, and the name of a file of a set): it is empty; it holds a byte that is not
+// an ASCII letter, a digit, a dot, a hyphen or an underscore (a space, a control code, a
+// separator, a character of another script, and any byte that is not UTF-8 are such bytes); it
+// is longer than 255 bytes; it ends with a dot; or it is a device name of Windows, with or
+// without an extension ("aux", "Aux.json"). A name of a set must also be one plain name; a mode
+// must have no bits beyond the permission bits; a journal line must hold no newline. Such an
+// error does not stop the writer, and every text of it quotes the path or the name it names, so
+// that a control code in it cannot reach a terminal.
 var ErrInvalid = errors.New("fsx: invalid argument")
 
 // ErrClosed is returned by a journal that was closed.
