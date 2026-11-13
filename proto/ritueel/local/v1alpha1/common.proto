@@ -72,7 +72,7 @@ enum CloudProvider {
 }
 
 // Where a ceremony runs, or ran (record 0005, rules 17 to 21). Every ceremony
-// record says where its ceremony ran (rule 2).
+// record says where its ceremony ran (record 0005, rule 2).
 // [decided: the two places, record 0005; the spelling `ran_on`, `workstation`
 // and `offline-system` is proposed in ceremony-record.md]
 enum RunPlace {
@@ -148,9 +148,9 @@ message CeremonyRef {
 }
 
 // Whether the hash chain of the history checks out. [proposed: no record and
-// no reference page names these states. Nearest decided text: record 0006,
-// rule 6 (each ceremony record names the one before it) and cli.md (`check
-// history` walks the chain)]
+// no reference page names these states. Nearest decided text:
+// record 0006, rule 6 (each ceremony record names the one before it)
+// and cli.md (`check history` walks the chain)]
 enum ChainState {
   CHAIN_STATE_UNSPECIFIED = 0;
   // Not checked yet. What the page shows is then not authoritative.
@@ -164,7 +164,8 @@ enum ChainState {
 // The state of the history: the write-once folder history/ of the bundle.
 // [proposed as a whole: wizard.md lists neither the chain state nor the time
 // of the check for the summary. Decided: `record_count` and
-// `end_record_sha256` (record 0006, rule 9 prints them) and `ends` (rule 30)]
+// `end_record_sha256` (record 0006, rule 9 prints them) and `ends`
+// (record 0006, rule 30)]
 message HistoryStatus {
   // The count of ceremony records, the closing records included. [decided:
   // record 0006, rule 9 prints it]

@@ -229,11 +229,11 @@ message Place {
   // For a cloud key: the id of the account that holds the key (12 digits for
   // AWS), as a text. It is the `account` of the settings block when the key is
   // in the root account, and the account of the key's own ARN otherwise (a key
-  // in another account, read through a role its owner made: record 0004, rule
-  // 7). The page never reads it out of `key_ref`; the process reads it from
-  // the settings and checks it against the ARN. Unset for a key that is not in
-  // a cloud store. [decided: kms-root.md, `ritueel.yaml`, `account`; record
-  // 0004, rules 1 and 7]
+  // in another account, read through a role its owner made:
+  // record 0004, rule 7). The page never reads it out of `key_ref`; the process
+  // reads it from the settings and checks it against the ARN. Unset for a key
+  // that is not in a cloud store. [decided: kms-root.md, `ritueel.yaml`,
+  // `account`; record 0004, rules 1 and 7]
   string account = 10;
   // For a cloud key: the ceremony role, the only principal that may sign with
   // the key at a ceremony. The role as the settings give it: an ARN. Unset for
@@ -287,8 +287,8 @@ message Key {
   repeated CeremonyRef touched_by = 14;
 }
 
-// One root of one kind, built from keys in any place. [decided: record 0001,
-// rule 28; record 0006, rule 2]
+// One root of one kind, built from keys in any place. [decided:
+// record 0001, rule 28; record 0006, rule 2]
 message Root {
   // The name of the wanted file without .yaml, for example acme-tls.
   string name = 1;
@@ -420,10 +420,10 @@ message Request {
 // ---- changes ---------------------------------------------------------------
 
 // What a change does. [proposed: the kinds are in no record and no reference
-// page. Nearest decided text: 0003 rule 10 and 0004 rule 4 (adopt), 0005 rule
-// 15 (the first apply makes the keys), 0008 rule 17 and 0009 rule 4 (certify a
-// user ID), 0007 rules 3 and 4 (retire), 0005 rule 11 (renew), the request
-// answer `issued` (issue)]
+// page. Nearest decided text: 0003 rule 10 and 0004 rule 4 (adopt),
+// 0005 rule 15 (the first apply makes the keys), 0008 rule 17 and 0009 rule 4
+// (certify a user ID), 0007 rules 3 and 4 (retire), 0005 rule 11 (renew), the
+// request answer `issued` (issue)]
 enum ChangeKind {
   CHANGE_KIND_UNSPECIFIED = 0;
   CHANGE_KIND_ADOPT = 1;
@@ -454,8 +454,8 @@ enum ChangeSource {
 }
 
 // What a change needs. [proposed: cli.md says "what it needs" without a list.
-// Nearest decided text: 0007 rules 12 and 14 (a card), rule 17 (a request),
-// 0005 rule 17 (a key file in the offline system)]
+// Nearest decided text: 0007 rules 12 and 14 (a card), 0007 rule 17
+// (a request), 0005 rule 17 (a key file in the offline system)]
 enum NeedKind {
   NEED_KIND_UNSPECIFIED = 0;
   NEED_KIND_CARD = 1;
@@ -591,9 +591,9 @@ enum SlotState {
 // What a slot is for. [decided: X509_ROOT, OPENPGP_PRIMARY, SSH_CA and
 // UNLOCK_KEY (record 0003, rule 3); OPENPGP_SIGN, OPENPGP_DECRYPT and
 // OPENPGP_AUTHENTICATE (record 0008, rules 7 and 8). Proposed: PASSKEY_SIGN_IN,
-// PASSKEY_SSH, PASSKEY_UNLOCK and REHEARSAL (records 0003, rule 14, and 0008,
-// rule 15, name passkeys and the rehearsal card, not these uses) and
-// OTHER_BUNDLE (record 0003, issue 11)]
+// PASSKEY_SSH, PASSKEY_UNLOCK and REHEARSAL (record 0003, rule 14, and
+// record 0008, rule 15, name passkeys and the rehearsal card, not these uses)
+// and OTHER_BUNDLE (record 0003, issue 11)]
 enum SlotUse {
   SLOT_USE_UNSPECIFIED = 0;
   SLOT_USE_X509_ROOT = 1;
@@ -743,8 +743,8 @@ message Ceremony {
   // For a closing record: the reason the person gave.
   string close_reason = 24;
   // The command of the keyserver step, as text, for a recorded ceremony that
-  // changed an OpenPGP key. Empty if there is none. [decided: record 0011,
-  // rule 5; the flags are proposed]
+  // changed an OpenPGP key. Empty if there is none. [decided:
+  // record 0011, rule 5; the flags are proposed]
   string publish_command = 25;
   // The command that closes a started ceremony, as text. It holds the
   // placeholder TEXT. [decided: cli.md, `close CEREMONY --reason TEXT`]

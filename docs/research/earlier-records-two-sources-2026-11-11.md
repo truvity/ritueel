@@ -15,7 +15,7 @@ Carried over on 2026-11-11 from the records at commit `d0ae12da2432d5ae95cf95d68
 
 ## Verdict
 
-The example on the Rotate page stands: it has these sources. The admission list below is the one the [roadmap](/roadmap/) summarises for planned stores, and it fits rule 1 and rule 16 of [record 0002](../decisions/0002-where-a-key-lives.md) and rule 11 of [record 0008](../decisions/0008-a-persons-own-key.md).
+The example on the Rotate page stands: it has these sources. The admission list below is the one the [roadmap](/roadmap/) summarises for planned stores, and it fits rules 1 and 16 of [record 0002](../decisions/0002-where-a-key-lives.md) and rule 11 of [record 0008](../decisions/0008-a-persons-own-key.md).
 
 ## The 2024 side channel in a card's signature code
 

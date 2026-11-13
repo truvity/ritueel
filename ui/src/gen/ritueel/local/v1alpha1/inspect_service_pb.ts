@@ -512,11 +512,11 @@ export type Place = Message<"ritueel.local.v1alpha1.Place"> & {
    * For a cloud key: the id of the account that holds the key (12 digits for
    * AWS), as a text. It is the `account` of the settings block when the key is
    * in the root account, and the account of the key's own ARN otherwise (a key
-   * in another account, read through a role its owner made: record 0004, rule
-   * 7). The page never reads it out of `key_ref`; the process reads it from
-   * the settings and checks it against the ARN. Unset for a key that is not in
-   * a cloud store. [decided: kms-root.md, `ritueel.yaml`, `account`; record
-   * 0004, rules 1 and 7]
+   * in another account, read through a role its owner made:
+   * record 0004, rule 7). The page never reads it out of `key_ref`; the process
+   * reads it from the settings and checks it against the ARN. Unset for a key
+   * that is not in a cloud store. [decided: kms-root.md, `ritueel.yaml`,
+   * `account`; record 0004, rules 1 and 7]
    *
    * @generated from field: string account = 10;
    */
@@ -663,8 +663,8 @@ export const KeySchema: GenMessage<Key> = /*@__PURE__*/
   messageDesc(file_ritueel_local_v1alpha1_inspect_service, 12);
 
 /**
- * One root of one kind, built from keys in any place. [decided: record 0001,
- * rule 28; record 0006, rule 2]
+ * One root of one kind, built from keys in any place. [decided:
+ * record 0001, rule 28; record 0006, rule 2]
  *
  * @generated from message ritueel.local.v1alpha1.Root
  */
@@ -1688,8 +1688,8 @@ export type Ceremony = Message<"ritueel.local.v1alpha1.Ceremony"> & {
 
   /**
    * The command of the keyserver step, as text, for a recorded ceremony that
-   * changed an OpenPGP key. Empty if there is none. [decided: record 0011,
-   * rule 5; the flags are proposed]
+   * changed an OpenPGP key. Empty if there is none. [decided:
+   * record 0011, rule 5; the flags are proposed]
    *
    * @generated from field: string publish_command = 25;
    */
@@ -2087,10 +2087,10 @@ export const RequestOutcomeSchema: GenEnum<RequestOutcome> = /*@__PURE__*/
 
 /**
  * What a change does. [proposed: the kinds are in no record and no reference
- * page. Nearest decided text: 0003 rule 10 and 0004 rule 4 (adopt), 0005 rule
- * 15 (the first apply makes the keys), 0008 rule 17 and 0009 rule 4 (certify a
- * user ID), 0007 rules 3 and 4 (retire), 0005 rule 11 (renew), the request
- * answer `issued` (issue)]
+ * page. Nearest decided text: 0003 rule 10 and 0004 rule 4 (adopt),
+ * 0005 rule 15 (the first apply makes the keys), 0008 rule 17 and 0009 rule 4
+ * (certify a user ID), 0007 rules 3 and 4 (retire), 0005 rule 11 (renew), the
+ * request answer `issued` (issue)]
  *
  * @generated from enum ritueel.local.v1alpha1.ChangeKind
  */
@@ -2208,8 +2208,8 @@ export const ChangeSourceSchema: GenEnum<ChangeSource> = /*@__PURE__*/
 
 /**
  * What a change needs. [proposed: cli.md says "what it needs" without a list.
- * Nearest decided text: 0007 rules 12 and 14 (a card), rule 17 (a request),
- * 0005 rule 17 (a key file in the offline system)]
+ * Nearest decided text: 0007 rules 12 and 14 (a card), 0007 rule 17
+ * (a request), 0005 rule 17 (a key file in the offline system)]
  *
  * @generated from enum ritueel.local.v1alpha1.NeedKind
  */
@@ -2354,9 +2354,9 @@ export const SlotStateSchema: GenEnum<SlotState> = /*@__PURE__*/
  * What a slot is for. [decided: X509_ROOT, OPENPGP_PRIMARY, SSH_CA and
  * UNLOCK_KEY (record 0003, rule 3); OPENPGP_SIGN, OPENPGP_DECRYPT and
  * OPENPGP_AUTHENTICATE (record 0008, rules 7 and 8). Proposed: PASSKEY_SIGN_IN,
- * PASSKEY_SSH, PASSKEY_UNLOCK and REHEARSAL (records 0003, rule 14, and 0008,
- * rule 15, name passkeys and the rehearsal card, not these uses) and
- * OTHER_BUNDLE (record 0003, issue 11)]
+ * PASSKEY_SSH, PASSKEY_UNLOCK and REHEARSAL (record 0003, rule 14, and
+ * record 0008, rule 15, name passkeys and the rehearsal card, not these uses)
+ * and OTHER_BUNDLE (record 0003, issue 11)]
  *
  * @generated from enum ritueel.local.v1alpha1.SlotUse
  */

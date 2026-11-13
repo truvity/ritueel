@@ -30,7 +30,7 @@ A revoked root key has no CRL in the new trust set. A relying party that still t
 
 ## The profile
 
-Version 2 (RFC 5280, section 5.1). A CRL is valid for 25 months and an entry lasts until the certificate it names expires ([record 0006](../decisions/0006-bundle-history-and-trust-files.md), rule 26). Its CRL number is the trust sequence (rule 14). A relying party can check every row.
+Version 2 (RFC 5280, section 5.1). A CRL is valid for 25 months and an entry lasts until the certificate it names expires ([record 0006](../decisions/0006-bundle-history-and-trust-files.md), rule 26). Its CRL number is the trust sequence (record 0006, rule 14). A relying party can check every row.
 
 | Field | Value |
 |---|---|

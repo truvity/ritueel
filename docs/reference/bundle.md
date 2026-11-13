@@ -7,13 +7,13 @@ sidebar:
 
 *Not built yet. This is the layout the M2 code writes ([issue #8](https://github.com/truvity/ritueel/issues/8), [issue #9](https://github.com/truvity/ritueel/issues/9)); the rules it follows are in [record 0006](../decisions/0006-bundle-history-and-trust-files.md) and [record 0005](../decisions/0005-a-ceremony-and-where-it-runs.md).*
 
-ritueel keeps everything it knows about one trust domain in one **bundle**, a directory of plain files with a fixed structure ([record 0006](../decisions/0006-bundle-history-and-trust-files.md), rule 1). A person writes only the **wanted files**. ritueel writes the rest, and it only adds files: it never rewrites a file of the history (rule 29). [Learn](/learn/the-history/) advises on where to keep the bundle and how to back it up and restore it. ritueel needs no git (rule 5), and the holder is still advised to keep the bundle in version control (rule 9).
+ritueel keeps everything it knows about one trust domain in one **bundle**, a directory of plain files with a fixed structure ([record 0006](../decisions/0006-bundle-history-and-trust-files.md), rule 1). A person writes only the **wanted files**. ritueel writes the rest, and it only adds files: it never rewrites a file of the history (record 0006, rule 29). [Learn](/learn/the-history/) advises on where to keep the bundle and how to back it up and restore it. ritueel needs no git (record 0006, rule 5), and the holder is still advised to keep the bundle in version control (record 0006, rule 9).
 
-The bundle holds the wanted files, the history, the trust sets, the certificates, public keys and attestations of the root keys, the digests of the revocation signatures, the card files and slot maps, the sealed secrets of cards ([record 0003](../decisions/0003-root-cards.md), rule 10) and, in a personal bundle, the wrapped backup of the person's encryption subkey ([record 0008](../decisions/0008-a-persons-own-key.md), rule 8). It never holds a private key in clear, a PIN the holder types, a passphrase or a revocation signature (record 0006, rule 1). Losing it loses the card files, the attestations and the OpenPGP creation times, so it is part of every key's identity (rules 8 and 9). The private key of a software root key lives in a **key file outside it** ([record 0007](../decisions/0007-changing-and-losing-a-root.md), rule 26).
+The bundle holds the wanted files, the history, the trust sets, the certificates, public keys and attestations of the root keys, the digests of the revocation signatures, the card files and slot maps, the sealed secrets of cards ([record 0003](../decisions/0003-root-cards.md), rule 10) and, in a personal bundle, the wrapped backup of the person's encryption subkey ([record 0008](../decisions/0008-a-persons-own-key.md), rule 8). It never holds a private key in clear, a PIN the holder types, a passphrase or a revocation signature (record 0006, rule 1). Losing it loses the card files, the attestations and the OpenPGP creation times, so it is part of every key's identity (record 0006, rules 8 and 9). The private key of a software root key lives in a **key file outside it** ([record 0007](../decisions/0007-changing-and-losing-a-root.md), rule 26).
 
 ## One bundle, one trust domain
 
-A bundle has its own history, trust sequence and one root of each kind it uses (X.509, OpenPGP, SSH CA). A company bundle also has a root list; a personal bundle has none ([record 0006](../decisions/0006-bundle-history-and-trust-files.md), rule 2). The keys of a root are labelled `A` and `B`, then the next letter. A holder with a personal key and a company keeps two bundles, for example `personal/` and `acme/`. Across bundles a root key is written with the bundle's name, `acme/A` (rule 3). Two bundles may share a pair of root cards. Each keeps its own card files, its own sealed copy of the card secrets and its own rows ([the cards page](/reference/cards/), [record 0003](../decisions/0003-root-cards.md), rules 6 and 7).
+A bundle has its own history, trust sequence and one root of each kind it uses (X.509, OpenPGP, SSH CA). A company bundle also has a root list; a personal bundle has none ([record 0006](../decisions/0006-bundle-history-and-trust-files.md), rule 2). The keys of a root are labelled `A` and `B`, then the next letter. A holder with a personal key and a company keeps two bundles, for example `personal/` and `acme/`. Across bundles a root key is written with the bundle's name, `acme/A` (record 0006, rule 3). Two bundles may share a pair of root cards. Each keeps its own card files, its own sealed copy of the card secrets and its own rows ([the cards page](/reference/cards/), [record 0003](../decisions/0003-root-cards.md), rules 6 and 7).
 
 A **card** is a hardware token, such as a YubiKey. A **card file** is the wanted file of one card. A **row** is the four PIV slots that a card keeps for the keys of one bundle ([record 0003](../decisions/0003-root-cards.md), rules 3 and 18).
 
@@ -34,7 +34,7 @@ Every folder and file has one of five marks.
 | **WANTED** | A person says how it should be. | A person, on the workstation only ([record 0006](../decisions/0006-bundle-history-and-trust-files.md), rule 11). `new` writes the starter files once ([record 0005](../decisions/0005-a-ceremony-and-where-it-runs.md), rule 15). |
 | **SEEN** | What a check read from the world. | A read-only check. The next check replaces the file whole ([record 0003](../decisions/0003-root-cards.md), rules 12 and 18). |
 | **HISTORY** | What happened. | A ceremony, and only by adding files. Nothing is overwritten ([record 0006](../decisions/0006-bundle-history-and-trust-files.md), rule 29). |
-| **REQUEST** | A request in, an answer out. | The requester writes the request; a ceremony adds the answer beside it (rule 10). |
+| **REQUEST** | A request in, an answer out. | The requester writes the request; a ceremony adds the answer beside it (record 0006, rule 10). |
 | **BUILT** | Found each time from the wanted files, the history, the date and the requests. | Nothing is stored. What is not applied yet is of this kind ([record 0005](../decisions/0005-a-ceremony-and-where-it-runs.md), rule 29). |
 
 The tree of a bundle `acme`, with root keys on cards and in a cloud key service:
@@ -77,7 +77,7 @@ The names `ritueel.yaml`, `history/` and `requests/` are decided ([record 0006](
 | `roots/<label>/attestation/` | HISTORY | The same ceremony | For a root key on a card or in KMS: the attestation, or the key's description and policy, as read at the first `apply` ([cards](/reference/cards/#files), [KMS](/reference/kms-root/#evidence-files)). |
 | `roots/<label>/ssh-break-glass.pub` | HISTORY | The same ceremony, from M2 with the cloud store | The break-glass SSH CA key of the root key, one OpenSSH line ([record 0006](../decisions/0006-bundle-history-and-trust-files.md), rule 25; [the SSH CA key list](/reference/ssh-ca-key-list/#how-a-key-enters-the-list)). |
 | `requests/<name>/` | REQUEST | The requester writes the request; a ceremony adds the answer (requests in, answers out: [record 0001](../decisions/0001-what-ritueel-is.md), rule 3) | One folder for each request; `<name>` is the stem of the [hand-off contract](/reference/hand-off-contract/#messages-and-files). It holds the request files and, once given, the answer beside them: `<name>.result.json`, and `<name>.cert.pem` or `<name>.bound.pgp` ([record 0006](../decisions/0006-bundle-history-and-trust-files.md), rule 10). |
-| `history/<ceremony>/` | HISTORY | A ceremony; `close` writes a closing record | One ceremony folder for each ceremony, with the [ceremony files](/reference/ceremony-record/): the plan, exact copies of the wanted files the plan used, the attempt, the [birth journal](/reference/ceremony-record/#the-birth-journal), the journal of signatures, the transcript and the ceremony record ([record 0006](../decisions/0006-bundle-history-and-trust-files.md), rule 5). Each ceremony record names the one before it (rule 6). |
+| `history/<ceremony>/` | HISTORY | A ceremony; `close` writes a closing record | One ceremony folder for each ceremony, with the [ceremony files](/reference/ceremony-record/): the plan, exact copies of the wanted files the plan used, the attempt, the [birth journal](/reference/ceremony-record/#the-birth-journal), the journal of signatures, the transcript and the ceremony record ([record 0006](../decisions/0006-bundle-history-and-trust-files.md), rule 5). Each ceremony record names the one before it (record 0006, rule 6). |
 | `trust/<number>-<identity>/` | HISTORY | A ceremony, built beside and renamed into place; also `revoke`, which writes the trust set without the key ([record 0007](../decisions/0007-changing-and-losing-a-root.md), rule 8) | One trust set ([record 0006](../decisions/0006-bundle-history-and-trust-files.md), rule 12): `root-list.json`, `root-list.jws` and `ca-bundle.pem` ([the root list](/reference/root-list/#files)); from M4 `crl-<label>.pem` for each active root key ([the CRLs](/reference/crl/#files)); from M4 `ssh-ca-keys.json`, `ssh-ca-keys.jws` and `ssh-user-ca-keys.pub` ([the SSH CA key list](/reference/ssh-ca-key-list/#files)); from M5 `keyring/` ([the keyring package](/reference/keyring-package/#files)). |
 | `drills/` | SEEN | The restore check; the holder commits the reports | Reports of the restore check. They are not ceremony records and stay out of the hash chain ([record 0007](../decisions/0007-changing-and-losing-a-root.md), rule 25). |
 
@@ -86,11 +86,11 @@ An inert proposal of the page ([record 0010](../decisions/0010-the-engine-the-pr
 A personal bundle also holds the wrapped backup of the encryption subkey (record 0008, rule 8). Its path and format are fixed with the personal OpenPGP stage ([issue #18](https://github.com/truvity/ritueel/issues/18)).
 
 - A ceremony only adds files. Nothing under `history/`, `trust/`, `sealed/` or `requests/` is ever overwritten ([record 0006](../decisions/0006-bundle-history-and-trust-files.md), rule 29). `seen/` is the one place that is replaced: a check writes a new map whole over the old one.
-- The bundle keeps no second copy of a root key's certificate or public key. They are in the newest trust set that holds them (rule 12), because a copy that a ceremony replaced would break rule 29.
-- ritueel never changes a wanted file on its own, and never changes a request. It adds the answer beside it (rules 10 and 11). A person edits no other path than the wanted files and the requests.
-- ritueel refuses a request whose folder already has an answer (rule 10).
+- The bundle keeps no second copy of a root key's certificate or public key. They are in the newest trust set that holds them (record 0006, rule 12), because a copy that a ceremony replaced would break rule 29 of record 0006.
+- ritueel never changes a wanted file on its own, and never changes a request. It adds the answer beside it (record 0006, rules 10 and 11). A person edits no other path than the wanted files and the requests.
+- ritueel refuses a request whose folder already has an answer (record 0006, rule 10).
 - The bundle is found by `--dir DIR`, or is the current directory when it holds `ritueel.yaml` ([Commands](/reference/cli/#flags-every-ceremony-shares)).
-- Outside the bundle are the key files of a software root key ([record 0007](../decisions/0007-changing-and-losing-a-root.md), rule 26) and the revocation material (rule 22).
+- Outside the bundle are the key files of a software root key ([record 0007](../decisions/0007-changing-and-losing-a-root.md), rule 26) and the revocation material (record 0007, rule 22).
 
 ### Where the trust sequence is carried
 
@@ -148,12 +148,12 @@ A name that does not carry its identity is a road not taken: two copies of a bun
 `ritueel join SOURCE` is the thirteenth command word ([Commands](/reference/cli/)). Coming back from the stick is a join ([record 0006](../decisions/0006-bundle-history-and-trust-files.md), rule 30).
 
 - It adds the files that one copy of a bundle has and the other lacks. It never merges text.
-- It stops when one name has two contents, and when one request has two answers (rule 30).
-- Two ends of the history are a fork. A join adds both and shows the fork as a critical finding, in `status` and in `check history` (rules 6 and 30).
-- A join writes no ceremony record and changes no file. It only adds (rule 31).
-- After every join ritueel prints the end of the history ([below](/reference/bundle/#the-end-of-the-history)) (rule 9).
+- It stops when one name has two contents, and when one request has two answers (record 0006, rule 30).
+- Two ends of the history are a fork. A join adds both and shows the fork as a critical finding, in `status` and in `check history` (record 0006, rules 6 and 30).
+- A join writes no ceremony record and changes no file. It only adds (record 0006, rule 31).
+- After every join ritueel prints the end of the history ([below](/reference/bundle/#the-end-of-the-history)) (record 0006, rule 9).
 - The refresh of the stick before a plan is run there ([record 0005](../decisions/0005-a-ceremony-and-where-it-runs.md), rule 22) also only adds files, and skips the wanted files.
-- Wanted files never go to the stick and never come back from it ([record 0005](../decisions/0005-a-ceremony-and-where-it-runs.md), rule 21; [record 0006](../decisions/0006-bundle-history-and-trust-files.md), rule 11). The copies of the wanted files in a ceremony folder are copies and not wanted files; they travel with the plan (rule 5).
+- Wanted files never go to the stick and never come back from it ([record 0005](../decisions/0005-a-ceremony-and-where-it-runs.md), rule 21; [record 0006](../decisions/0006-bundle-history-and-trust-files.md), rule 11). The copies of the wanted files in a ceremony folder are copies and not wanted files; they travel with the plan (record 0006, rule 5).
 
 :::note[Proposed]
 These parts of a join are not decided and are fixed with the code ([issue #8](https://github.com/truvity/ritueel/issues/8)): the exit code of a join that stops (3); a join in both directions as one command, and a join that also refreshes the stick; the list of paths a join considers (the slot maps in `seen/` are not joined; the read-only check builds them again); that the unit of a join is the file path, and that the answer says "older", "newer" or "fork".
@@ -164,21 +164,21 @@ The repair of a fork is later ([issue #138](https://github.com/truvity/ritueel/i
 ## The end of the history
 
 - The end of the history is the ceremony record that no other ceremony record names ([record 0006](../decisions/0006-bundle-history-and-trust-files.md), rule 6).
-- After every ceremony and every join ritueel prints it: the first eight characters of its digest, and the count of ceremony records (rule 9).
-- The holder keeps that print apart from the repository. It is advice and is not enforced (rule 9). Ceremony records are not signed (rule 6), so the eight characters are a check for the holder's eye and not a defence against an attacker.
-- The rest of the advice of rule 9 is also not enforced: keep the bundle in a git repository of its own, and back it up to a second remote. [Learn](/learn/the-history/) adds signed commits and review.
-- The next signed root list carries the digest of the end of the history as `last_record_sha256`. It anchors the chain without another use of the root (rules 6 and 15; [the root list](/reference/root-list/)).
+- After every ceremony and every join ritueel prints it: the first eight characters of its digest, and the count of ceremony records (record 0006, rule 9).
+- The holder keeps that print apart from the repository. It is advice and is not enforced (record 0006, rule 9). Ceremony records are not signed (record 0006, rule 6), so the eight characters are a check for the holder's eye and not a defence against an attacker.
+- The rest of the advice of rule 9 of record 0006 is also not enforced: keep the bundle in a git repository of its own, and back it up to a second remote. [Learn](/learn/the-history/) adds signed commits and review.
+- The next signed root list carries the digest of the end of the history as `last_record_sha256`. It anchors the chain without another use of the root (record 0006, rules 6 and 15; [the root list](/reference/root-list/)).
 - Whether `revoke` leaves a ceremony record and prints the end of the history is open ([record 0007](../decisions/0007-changing-and-losing-a-root.md), Proposed; [issue #141](https://github.com/truvity/ritueel/issues/141)).
 
 ## On the stick
 
-A key that can be copied, such as a key file, is used only in the offline system, which boots from a USB stick; a test root is the exception. A root key on a card may also run there. A cloud root key always runs on the workstation, because the offline system has no network ([record 0005](../decisions/0005-a-ceremony-and-where-it-runs.md), rules 17, 18 and 20). The stick carries one extra partition, and ritueel defines its layout (rule 21). The picture is on [the bundle and the USB stick](/how-it-works/bundle-and-stick/#the-usb-stick).
+A key that can be copied, such as a key file, is used only in the offline system, which boots from a USB stick; a test root is the exception. A root key on a card may also run there. A cloud root key always runs on the workstation, because the offline system has no network ([record 0005](../decisions/0005-a-ceremony-and-where-it-runs.md), rules 17, 18 and 20). The stick carries one extra partition, and ritueel defines its layout (record 0005, rule 21). The picture is on [the bundle and the USB stick](/how-it-works/bundle-and-stick/#the-usb-stick).
 
-**The stick carries:** the ritueel program, in several versions and architectures; the bundles; the encrypted key files, beside the bundles and never inside one (rule 21). The stick's copy of a bundle carries no wanted files (rule 21). A saved plan travels inside the bundle with the exact copies of the wanted files it used (rules 21 and 4).
+**The stick carries:** the ritueel program, in several versions and architectures; the bundles; the encrypted key files, beside the bundles and never inside one (record 0005, rule 21). The stick's copy of a bundle carries no wanted files (record 0005, rule 21). A saved plan travels inside the bundle with the exact copies of the wanted files it used (record 0005, rules 21 and 4).
 
-**The stick does not carry:** wanted files, a plan made on the stick, or an adoption of a card (rule 14). The partitions of AirgapOS are not touched (rule 23).
+**The stick does not carry:** wanted files, a plan made on the stick, or an adoption of a card (record 0005, rule 14). The partitions of AirgapOS are not touched (record 0005, rule 23).
 
-**The run** is `ritueel apply PLAN`. It checks that the end of the history and the trust sequence still match those the plan was made against, and the person types the first eight characters of the plan's digest (rule 10). When a plan is prepared online and the stick is present, ritueel refreshes the partition first, and the plan records the digest of the program (rule 22).
+**The run** is `ritueel apply PLAN`. It checks that the end of the history and the trust sequence still match those the plan was made against, and the person types the first eight characters of the plan's digest (record 0005, rule 10). When a plan is prepared online and the stick is present, ritueel refreshes the partition first, and the plan records the digest of the program (record 0005, rule 22).
 
 :::note[Proposed]
 The names below are the smallest layout that serves the decision. They await the maintainer's word.
@@ -198,7 +198,7 @@ RITUEEL/                          the extra partition
 ```
 
 - **`RITUEEL/`** is the extra partition. AirgapOS's own partitions are not touched.
-- **`ritueel/<version>/<system>-<arch>/ritueel`** holds the program, and nothing else, because it is one static file. The version comes first, so that the run can use the exact version that made the plan (rule 25). The system and the architecture come second, so that several machines can use one stick.
+- **`ritueel/<version>/<system>-<arch>/ritueel`** holds the program, and nothing else, because it is one static file. The version comes first, so that the run can use the exact version that made the plan (record 0005, rule 25). The system and the architecture come second, so that several machines can use one stick.
 - **`bundles/<name>/`** is a bundle copied without its wanted files, so the plan in its history and the bundle the plan was made from arrive together. It is a bundle that your workstation uses with `--dir`, with no second format.
 - **`keys/<bundle>/`** holds the key files of that bundle. Key files are never inside a bundle, so a copy of a bundle cannot carry a key by accident. The folder has the name of the bundle.
 - **The plan records the copy that made it** in the member `ritueel`: `{ "version", "os_arch", "sha256" }` ([the ceremony files](/reference/ceremony-record/)). The run is then `<stick>/ritueel/<version>/<system>-<arch>/ritueel --dir <stick>/bundles/acme apply history/<ceremony>/plan.json`.
@@ -215,7 +215,7 @@ A person writes `ritueel.yaml` and one strict YAML file for each card, root and 
 - **Strict YAML** (record 0006, rule 11). What strict means is Proposed (below).
 - **The digest** of a wanted file is the SHA-256 of the bytes as stored, so `sha256sum` gives the same value. The plan lists the wanted files it used by digest ([record 0005](../decisions/0005-a-ceremony-and-where-it-runs.md), rule 4). Two files with one meaning have two digests. This is accepted (record 0005, rule 32).
 - **The name** of an object is the name of its file without `.yaml`. A card's file is named by a name the holder gives, not by its serial (record 0006, rule 11).
-- **A deleted line or file** retires, revokes and removes nothing, and `status` shows it as a finding. The history wins over a wanted file (record 0005, rule 30). The name of the finding is fixed with the code. A wanted file that fails its check stops `apply` before anything is written (rule 14).
+- **A deleted line or file** retires, revokes and removes nothing, and `status` shows it as a finding. The history wins over a wanted file (record 0005, rule 30). The name of the finding is fixed with the code. A wanted file that fails its check stops `apply` before anything is written (record 0005, rule 14).
 
 | File | One for each | Holds | Decided by |
 |---|---|---|---|
@@ -395,7 +395,7 @@ Five rules the schema cannot state: a delegation name is unique, which its file 
 
 `roots/<label>/root.json` is one canonical JSON object ([the common rules](/reference/ceremony-record/#common-rules)). The ceremony that makes the key writes it once, and nothing changes it after ([record 0006](../decisions/0006-bundle-history-and-trust-files.md), rule 29).
 
-A key is active, retired or revoked ([record 0007](../decisions/0007-changing-and-losing-a-root.md), rule 3); which one is read from the ceremony records and the newest root list, not from this file. What a key replaces, and until when, is a wanted field (rules 3 and 4). Root state as files is later.
+A key is active, retired or revoked ([record 0007](../decisions/0007-changing-and-losing-a-root.md), rule 3); which one is read from the ceremony records and the newest root list, not from this file. What a key replaces, and until when, is a wanted field (record 0007, rules 3 and 4). Root state as files is later.
 
 | Member | Meaning |
 |---|---|
@@ -438,7 +438,7 @@ Every X.509 root key's certificate has this profile. A relying party can check e
 
 ## The OpenPGP primary
 
-Every root key's OpenPGP primary has this profile, as [record 0009](../decisions/0009-release-keys-and-the-keyring.md) decides (rules 1, 2 and 4).
+Every root key's OpenPGP primary has this profile, as [record 0009](../decisions/0009-release-keys-and-the-keyring.md), rules 1, 2 and 4, decide.
 
 | Part | Value |
 |---|---|

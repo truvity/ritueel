@@ -114,7 +114,8 @@ export const CeremonyRefSchema: GenMessage<CeremonyRef> = /*@__PURE__*/
  * The state of the history: the write-once folder history/ of the bundle.
  * [proposed as a whole: wizard.md lists neither the chain state nor the time
  * of the check for the summary. Decided: `record_count` and
- * `end_record_sha256` (record 0006, rule 9 prints them) and `ends` (rule 30)]
+ * `end_record_sha256` (record 0006, rule 9 prints them) and `ends`
+ * (record 0006, rule 30)]
  *
  * @generated from message ritueel.local.v1alpha1.HistoryStatus
  */
@@ -307,7 +308,7 @@ export const CloudProviderSchema: GenEnum<CloudProvider> = /*@__PURE__*/
 
 /**
  * Where a ceremony runs, or ran (record 0005, rules 17 to 21). Every ceremony
- * record says where its ceremony ran (rule 2).
+ * record says where its ceremony ran (record 0005, rule 2).
  * [decided: the two places, record 0005; the spelling `ran_on`, `workstation`
  * and `offline-system` is proposed in ceremony-record.md]
  *
@@ -477,9 +478,9 @@ export const CeremonyCommandSchema: GenEnum<CeremonyCommand> = /*@__PURE__*/
 
 /**
  * Whether the hash chain of the history checks out. [proposed: no record and
- * no reference page names these states. Nearest decided text: record 0006,
- * rule 6 (each ceremony record names the one before it) and cli.md (`check
- * history` walks the chain)]
+ * no reference page names these states. Nearest decided text:
+ * record 0006, rule 6 (each ceremony record names the one before it)
+ * and cli.md (`check history` walks the chain)]
  *
  * @generated from enum ritueel.local.v1alpha1.ChainState
  */
