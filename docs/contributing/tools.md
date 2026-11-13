@@ -80,7 +80,7 @@ The Go code is the program `ritueel`. Only `ritueel version` is built. [The firs
 | Folder | What it holds |
 |---|---|
 | `cmd/ritueel/` | The program. `main.go` builds the environment from the real streams, calls `cli.Run` and exits. It does nothing else |
-| `internal/` | The packages: `cli` (the command line, the exit codes, the JSON output), `buildinfo` (the version and the commit) and `fsx` (the write steps of a bundle: [How a file is written](/reference/bundle/#how-a-file-is-written)) |
+| `internal/` | The packages: `cli` (the command line, the exit codes, the JSON output), `buildinfo` (the version and the commit) and `fsx` (the write steps of a bundle: [How a file is written](/reference/bundle/#how-a-file-is-written)). `fsx` uses `golang.org/x/sys/unix` for the rename that refuses to replace an existing file, which the standard library does not have. It writes on Linux and macOS only; on another system it opens nothing and returns an error |
 | `tools/` | Small programs that run beside the build. `tools/elfcheck --arch amd64\|arm64` checks that a file is a static Linux executable for that machine, 64-bit and little-endian, and that it loads something. They are not part of the release |
 
 The recipes name the Go folders (`./cmd/... ./internal/... ./tools/...`) and do not use `./...`. A bare `./...` would also walk the Go files that npm packages ship inside `ui/node_modules` and `site/node_modules`.
