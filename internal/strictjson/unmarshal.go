@@ -266,9 +266,11 @@ func (f *filler) fillStruct(dst reflect.Value, n *Value) error {
 			// The standard decoder takes a name in any letter case for a field, so a file with
 			// "Version" and "version" would be read by one that takes both; a name must be spelt as
 			// the field's JSON name, and one that is spelt otherwise is not an unknown member.
-			for name := range fields {
-				if strings.EqualFold(name, member.Name) {
-					return jsonset.Errorf(f.path, "the member must be spelt %s", jsonset.Shown(name))
+			// The fields are walked in the order of their names, so that two fields that fold to
+			// the name (k and K against the Kelvin sign) give the same error every time.
+			for _, field := range f.checker.Fields(t) {
+				if strings.EqualFold(field.Name, member.Name) {
+					return jsonset.Errorf(f.path, "the member must be spelt %s", jsonset.Shown(field.Name))
 				}
 			}
 			if !f.allowUnknown {

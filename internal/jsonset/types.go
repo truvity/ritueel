@@ -3,7 +3,6 @@ package jsonset
 import (
 	"reflect"
 	"slices"
-	"strconv"
 	"strings"
 )
 
@@ -253,7 +252,7 @@ func structFields(t reflect.Type) *structInfo {
 		if options != "" { // "-," names a field "-", and "a," is "a"
 			for _, option := range strings.Split(options, ",") {
 				if option != "omitempty" {
-					info.err = "field " + f.Name + " has the tag option " + strconv.Quote(option) + "; only omitempty is allowed"
+					info.err = "field " + f.Name + " has the tag option " + Quote(option) + "; only omitempty is allowed"
 					return info
 				}
 				omitEmpty = true
@@ -266,11 +265,11 @@ func structFields(t reflect.Type) *structInfo {
 				return info
 			}
 		} else if !validName(name) {
-			info.err = "field " + f.Name + " has the tag name " + strconv.QuoteToASCII(name) + "; " + nameRule
+			info.err = "field " + f.Name + " has the tag name " + Quote(name) + "; " + nameRule
 			return info
 		}
 		if seen[name] {
-			info.err = "two fields are named " + strconv.QuoteToASCII(name)
+			info.err = "two fields are named " + Quote(name)
 			return info
 		}
 		seen[name] = true
