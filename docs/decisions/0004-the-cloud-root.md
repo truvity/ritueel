@@ -10,17 +10,20 @@
 3. The first `apply` creates the cloud keys, born in KMS and each replicated to the declared Region, or adopts keys that already exist. Both ways leave the same checks, evidence files and ceremony records. The company's existing key may be confirmed as its OpenPGP primary.
 4. A cloud root signs every year at a ceremony. It has nothing to alternate with. A cloud root key signs only in a ceremony, with a person present who confirms the plan. Nothing renews under a policy with no person.
 
-5. The holder provides the account, an admin role, a ceremony role and a break-glass principal. The admin role creates the keys and their replicas before the key policy of rule 6 is set, and reads them; it can never sign. After that, only the break-glass principal may replicate a key or move its primary Region. The ceremony role may Sign digests and is the only principal that may sign anything new.
+5. The holder provides the account, an admin role, a ceremony role, a break-glass principal and a deletion principal (rule 14). The admin role creates the keys and their replicas before the key policy of rule 6 is set, and reads them; it can never sign. After that, only the break-glass principal may replicate a key or move its primary Region. The ceremony role may Sign digests and is the only principal that may sign anything new.
 6. The reference key policy refuses new replicas and moving the primary Region for every principal except the break-glass principal, and it allows digests only. ritueel renders one key policy from the wanted files for each key and each replica, and checks a replica's policy on its own. A lost Region is answered by the break-glass principal, a manual logged act.
 7. ritueel reads the key's description and policy back every time it signs. A changed policy is shown in the plan and confirmed by the person. A KMS key is read, never taken from a claim. A key in another account is read through a read-only role created by its owner, because GetKeyPolicy does not work across accounts. A key tag on a KMS key is read when present and is not required.
 8. The KMS confirmation is the typed plan digest plus a session of the ceremony role through the caller's standard credential chain. ritueel holds no credential. The record holds the key ARN, the digest of the key policy and the role session. The Sign statement keeps the conditions kms:SigningAlgorithm = ECDSA_SHA_384 and kms:MessageType = DIGEST, and has no session-tag condition and no aws:MultiFactorAuthPresent condition.
 
 9. ritueel neither sets, requires nor checks how the person signed in, and no hardware-key gate on a cloud root is written as a rule. The role's trust policy is the holder's, and ritueel never reads it.
 10. The limit is accepted: nothing in AWS ties a signature to a person. Anyone who can assume the ceremony role can call Sign on any SHA-384 digest without ritueel. The typed digest is ritueel's gate, not AWS's. This widens the accepted limit in [record 0002](0002-where-a-key-lives.md), rule 17. An alarm on Sign is taught in the guide and not checked, and where the alarm goes is the company's own setting. Hardware keys on the cloud management account are not part of ritueel; the holder may require them of their own account.
-11. A KMS key that was born and not recorded is left for the holder to schedule for deletion with the admin role. ritueel never deletes a key.
+11. A KMS key that was born and not recorded is left for the holder to schedule for deletion with the deletion principal (rule 14). ritueel never deletes a key.
 
 12. The aws-kms store uses the AWS SDK and holds a root key and an intermediate key, each in a KMS key. Its evidence is the key's description, policy and audit trail, read from the service every time. This is not proof that the key was made in an HSM. The software store gives no evidence at all.
 13. The aws-kms store, which adopts a key, is in M2, because the cloud root is the recommended path for a team with a cloud account.
+
+14. Only one narrow principal may schedule the deletion of a key. It is not the admin role, it may do nothing else, and it can never Sign. A deletion is scheduled with a waiting period of 30 days, which is the most that the service allows and its default.
+15. An alarm on scheduling a deletion and on disabling a key is taught in the guide and not checked, like the alarm on Sign (rule 10); where the alarm goes is the company's own setting.
 
 ## Why
 
@@ -28,6 +31,7 @@
 - A replica covers the loss of a Region. So a second account is not needed for that loss, and a copy of the root key cannot appear in a Region where no one watches.
 - A claim is verified, never trusted. So ritueel reads the key and its policy, and does not take them on a person's word.
 - AWS does not set the multi-factor flag for a federated sign-in, so most operators could never pass a gate on it. The gate is the typed digest, and the accepted limit says so.
+- A deleted root key is a lost root key. AWS asks to limit who can schedule a deletion, to set a waiting period of 7 to 30 days (30 by default) and to raise an alarm on deletion events (AWS Prescriptive Guidance, AWS Key Management Service best practices, published 2025-03-24); Google Cloud KMS and Azure Key Vault also hold a deleted key for a waiting period. The waiting period leaves time to notice a scheduled deletion and cancel it (rules 14 and 15).
 - The holder's own infrastructure code and roles stay the holder's. ritueel asks for no particular sign-in and reads no trust policy.
 
 ## What it costs
@@ -36,6 +40,7 @@
 - The alarm on Sign, the audit trail and any hardware key on the management account are the holder's to set up. ritueel teaches them and does not check them.
 - ritueel does not check the roles' permissions, only the key policy.
 - A lost Region needs a manual, logged act by the break-glass principal.
+- The deletion principal and the alarms of rules 14 and 15 are the holder's to set up. ritueel teaches them and does not check them.
 - A cloud root has nothing to alternate with, so it signs at a yearly ceremony.
 - The record needs one key policy for each key and each replica, and a read-back at every signing.
 - A company that wants a root independent of one provider must give it keys on cards too.
@@ -60,6 +65,8 @@
 - **Reach the ceremony role by role chaining.** It would reach the role from another one, but AssumeRole takes caller-supplied tags, so the tag proves nothing.
 - **A tag that holds an expiry checked against the clock.** It would limit a session in time, but AWS allows no policy variable in a date comparison.
 - **An organisation-policy lock on the keys.** It would be a second wall around the key policy, but it needs the holder's organisation to carry it, so it is not used.
+- **Multi-factor authentication for a deletion.** AWS asks for it as well as for a narrow principal, but ritueel neither sets, requires nor checks how a person signed in (rule 9), and a federated sign-in does not set the flag; the narrow principal is taken and the decision on a gate for cloud key operations is not reopened.
+- **The admin role may schedule a deletion.** One principal fewer, but whoever creates and reads the keys could also start the loss of a root key (rule 14).
 - **An unattended renewal role.** It would keep a cloud root alive without a yearly visit, but it would be the one act with no person present, against [record 0005](0005-a-ceremony-and-where-it-runs.md), rules 1, 9 and 17, and a second principal could sign with the root key.
 - **Always three keys, also for a bundle that uses one kind.** It would give one shape for every cloud account, but a bundle with an X.509 root only would hold, pay for and guard two keys it never signs with, and [record 0006](0006-bundle-history-and-trust-files.md), rule 2, already makes the kinds optional.
 - **A card gate, a passkey identity or a management account behind the cards for the cloud root.** It would add a hardware gate, but a gate is not used and not proposed again; hardware keys on the cloud management account are the holder's own choice.

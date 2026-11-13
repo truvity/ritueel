@@ -19,8 +19,9 @@ Before the first `apply`, with the holder's own infrastructure tools ([Prepare t
 | The admin role | Creates the keys and reads them. It replicates only before the policy that refuses replicas is in force, or through the break-glass principal. It can never `kms:Sign`. |
 | The ceremony role | The principal that may `kms:Sign` with a root key at a ceremony, and the only one that may sign anything new. ritueel asks for no particular sign-in to assume it ([record 0004](../decisions/0004-the-cloud-root.md)); how it is assumed is the holder's. |
 | The break-glass principal | The one principal that may still replicate a key or move its primary Region, for example after the loss of a Region. It is created like the admin role and is never named after a person. Using it is a manual, logged act ([record 0004](../decisions/0004-the-cloud-root.md)). It can never `kms:Sign`. |
+| The deletion principal | The one principal that may schedule the deletion of a key ([record 0004](../decisions/0004-the-cloud-root.md), rule 14). It is not the admin role, it may do nothing else, and it can never `kms:Sign`. It schedules a deletion with a waiting period of 30 days, the most that AWS allows and its default. |
 | The keys | Optional. An existing key that ritueel [adopts](/reference/kms-root/#adopting-an-existing-key), with its alias and policy owned by the holder's own infrastructure code. Without one, ritueel creates the keys. |
-| Controls around them | Optional and the holder's: an alarm on every `Sign`, retention of the audit trail. The guide teaches them; ritueel does not create or check them. |
+| Controls around them | Optional and the holder's: an alarm on every `Sign`, an alarm on scheduling a deletion and on disabling a key, retention of the audit trail. The guide teaches them; ritueel does not create or check them. |
 
 One person may be able to assume the admin and the ceremony role ([record 0004](../decisions/0004-the-cloud-root.md)). The roles separate the acts (creating, signing) so that each is a decision and leaves its own trail.
 
@@ -82,12 +83,13 @@ The reference key policy: the same text for every key, with the role ARNs and th
 |---|---|---|---|
 | Read | the admin role, the ceremony role | `DescribeKey`, `GetPublicKey`, `GetKeyPolicy`, `ListResourceTags`, `ListGrants` | none |
 | Sign | the ceremony role only | `Sign` | `kms:SigningAlgorithm` is `ECDSA_SHA_384`; `kms:MessageType` is `DIGEST` |
-| Manage | the admin role only | `PutKeyPolicy`, `TagResource`, `ScheduleKeyDeletion`, `DisableKey`, `EnableKey` | none |
+| Manage | the admin role only | `PutKeyPolicy`, `TagResource`, `DisableKey`, `EnableKey` | none |
+| Delete | the deletion principal only | `ScheduleKeyDeletion` | none |
 | Break glass | the break-glass principal only | `ReplicateKey`, `UpdatePrimaryRegion` | none |
 | Deny replicas | every principal except the break-glass principal | `ReplicateKey`, `UpdatePrimaryRegion` | none |
 | Deny grants | every principal | `CreateGrant`, `RetireGrant`, `RevokeGrant` | none |
 
-`PutKeyPolicy` stays with the admin role because AWS refuses a policy that would lock out its own caller. The policy refuses new replicas and moving the primary Region to everyone but the break-glass principal, so that an administrator cannot copy the key to a Region where no one watches; it allows digests only (the Sign row). The replicas are made before the refusal applies, or by the break-glass principal; the sequence for the keys that ritueel creates is written here when the store is built ([record 0004](../decisions/0004-the-cloud-root.md)). No statement names the account root, and none allows `Sign` to the admin role or the break-glass principal. The `kms:` condition keys are those of the KMS documentation (read 2026-11-02, [AWS KMS condition keys](https://docs.aws.amazon.com/kms/latest/developerguide/conditions-kms.html)). The digest of the policy text, as the service returns it, is `policy_sha256` in the ceremony record.
+`PutKeyPolicy` stays with the admin role because AWS refuses a policy that would lock out its own caller. `ScheduleKeyDeletion` is not the admin role's: only the deletion principal may call it, so that whoever creates and reads the keys cannot start the loss of a root key. The policy refuses new replicas and moving the primary Region to everyone but the break-glass principal, so that an administrator cannot copy the key to a Region where no one watches; it allows digests only (the Sign row). The replicas are made before the refusal applies, or by the break-glass principal; the sequence for the keys that ritueel creates is written here when the store is built ([record 0004](../decisions/0004-the-cloud-root.md)). No statement names the account root, and none allows `Sign` to the admin role or the break-glass principal. The `kms:` condition keys are those of the KMS documentation (read 2026-11-02, [AWS KMS condition keys](https://docs.aws.amazon.com/kms/latest/developerguide/conditions-kms.html)). The digest of the policy text, as the service returns it, is `policy_sha256` in the ceremony record.
 
 ## The checks
 
@@ -121,7 +123,7 @@ A ceremony that signs writes a new `result.json` into its ceremony record, not o
 
 ## Failure
 
-- **A key made and not recorded.** The birth journal ([record 0005](../decisions/0005-a-ceremony-and-where-it-runs.md)) lists every ARN as it is created. `close` prints them, and ritueel asks the holder to schedule their deletion with the admin role. It does not delete them.
+- **A key made and not recorded.** The birth journal ([record 0005](../decisions/0005-a-ceremony-and-where-it-runs.md)) lists every ARN as it is created. `close` prints them, and ritueel asks the holder to schedule their deletion with the deletion principal. It does not delete them.
 - **A replica that failed.** The root is not complete: the first `apply` stops before it signs anything, and `status` shows the attempt as critical until a person runs `close`.
 - **A deleted or disabled key** shows as check 1 at the next ceremony or drill. For a root key, that is a loss: answer it with `revoke`, then add a new key to the wanted root file and run `apply`.
 
@@ -135,5 +137,6 @@ A ceremony that signs writes a new `result.json` into its ceremony record, not o
 | Standard | Used for |
 |---|---|
 | [Control access to multi-Region keys](https://docs.aws.amazon.com/kms/latest/developerguide/multi-region-keys-auth.html), read 2026-11-11 | Replicating a key needs `kms:ReplicateKey` in the key policy of the primary key, and `kms:CreateKey` in the replica Region; updating the primary Region needs `kms:UpdatePrimaryRegion` in both Regions. So a policy that denies them to everyone but the break-glass principal stops a copy to another Region. |
+| AWS Prescriptive Guidance, *AWS Key Management Service best practices* (published 2025-03-24), read 2026-11-13 | Limit who can schedule a key for deletion; a waiting period of 7 to 30 days, 30 by default; alarms on deletion events. |
 | [AWS KMS developer guide](https://docs.aws.amazon.com/kms/latest/developerguide/), read 2026-11-02 | Multi-Region keys, key policies, condition keys, `ReplicateKey` (the key policy is not shared between the keys of a set) and the lockout check. |
 | [RFC 5480](https://datatracker.ietf.org/doc/html/rfc5480), [RFC 9580](https://datatracker.ietf.org/doc/html/rfc9580) | The P-384 public key in X.509 and in OpenPGP. |
