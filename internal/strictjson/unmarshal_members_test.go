@@ -1,6 +1,7 @@
 package strictjson
 
 import (
+	"encoding/json"
 	"fmt"
 	"reflect"
 	"strings"
@@ -552,8 +553,8 @@ func TestUnknownMembersAtEveryDepth(t *testing.T) {
 }
 
 func TestARepeatedMemberIsRefusedAtEveryDepth(t *testing.T) {
-	// Each document repeats a member in a place; the error is at the path of the object that
-	// holds it, and says which member and where the reader stopped (after the second name).
+	// Each document repeats a member in a place; the error is at the path of the member itself, and
+	// says where the reader stopped (after the second name).
 	a, esc := `"a"`, `"`+uesc('a')+`"`
 	pair := func(first, second string) string { return first + `:1,` + second + `:2` }
 	cases := []struct{ name, doc, tok, path string }{
@@ -584,10 +585,15 @@ func TestARepeatedMemberIsRefusedAtEveryDepth(t *testing.T) {
 				if err == nil {
 					t.Fatalf("%s was read", tc.doc)
 				}
-				// The text names the member as it is once its escapes are read, which the next test
-				// pins; here the place and the byte are checked, for a name of any spelling.
-				if got := err.Error(); !strings.HasPrefix(got, mal(tc.path, "member ")) || !strings.HasSuffix(got, fmt.Sprintf(" appears twice at byte %d", second)) {
-					t.Errorf("the error is %q, want the path %s and the byte %d", got, tc.path, second)
+				// The error is at the member's own path (the path of the object that holds it, then
+				// the name as it is once its escapes are read), with the byte after the second name.
+				var name string
+				if err := json.Unmarshal([]byte(tc.tok), &name); err != nil {
+					t.Fatalf("the token %s is not a string: %v", tc.tok, err)
+				}
+				want := mal(tc.path+pathStep(name), fmt.Sprintf("the member appears twice at byte %d", second))
+				if got := err.Error(); got != want {
+					t.Errorf("the error is\n  %q\nwant\n  %q", got, want)
 				}
 				var m map[string]any
 				if err := Unmarshal([]byte(tc.doc), &m, opts); err == nil {
@@ -602,7 +608,7 @@ func TestARepeatedMemberIsRefusedAtEveryDepth(t *testing.T) {
 	t.Run("the text names the member as it is, not as it was written", func(t *testing.T) {
 		var v deepT
 		err := Unmarshal([]byte(`{"a":1,"`+uesc('a')+`":2}`), &v, Options{})
-		fail(t, err, mal("$", `member "a" appears twice at byte 15`))
+		fail(t, err, mal("$.a", "the member appears twice at byte 15"))
 	})
 	t.Run("the same name in two different objects is not repeated", func(t *testing.T) {
 		var v deepT
@@ -654,9 +660,11 @@ func TestNullIsRefusedEverywhere(t *testing.T) {
 
 func TestMembersOfEveryKindOfNameAreRead(t *testing.T) {
 	// A name is matched exactly after its escapes are read: the same name written two ways is the
-	// same member. (A struct whose tags go through reflect, for names that go vet would not pass.)
-	typ := structOf([]string{"a", string(rune(0xe9)), "q.r", "a b"}, []reflect.Type{reflect.TypeFor[int](), reflect.TypeFor[int](), reflect.TypeFor[int](), reflect.TypeFor[int]()}, nil)
-	doc := `{"` + uesc('a') + `":1,"` + uesc(0xe9) + `":2,"q` + bs + `u002er":3,"a` + bs + `u0020b":4}`
+	// same member. A struct holds only names inside the rule (a tag name of letters, digits and
+	// underscores), so names of any other kind are read through the keys of a map, which take any
+	// text.
+	typ := structOf([]string{"a", "b_1", "C", "d9"}, []reflect.Type{reflect.TypeFor[int](), reflect.TypeFor[int](), reflect.TypeFor[int](), reflect.TypeFor[int]()}, nil)
+	doc := `{"` + uesc('a') + `":1,"b` + uesc('_') + `1":2,"` + uesc('C') + `":3,"d` + uesc('9') + `":4}`
 	got, err := read(typ, doc, Options{})
 	if err != nil {
 		t.Fatal(err)
@@ -665,6 +673,14 @@ func TestMembersOfEveryKindOfNameAreRead(t *testing.T) {
 		if got.Field(i).Int() != want {
 			t.Errorf("field %d = %d, want %d", i, got.Field(i).Int(), want)
 		}
+	}
+	var odd map[string]int
+	doc = `{"` + uesc('a') + `":1,"` + uesc(0xe9) + `":2,"q` + bs + `u002er":3,"a` + bs + `u0020b":4,"` + bs + `ud83d` + bs + `ude00":5}`
+	if err := Unmarshal([]byte(doc), &odd, Options{}); err != nil {
+		t.Fatal(err)
+	}
+	if want := map[string]int{"a": 1, string(rune(0xe9)): 2, "q.r": 3, "a b": 4, string(rune(0x1F600)): 5}; !reflect.DeepEqual(odd, want) {
+		t.Errorf("%v, want %v", odd, want)
 	}
 	// A member whose name is written with a slash escape.
 	var m map[string]int

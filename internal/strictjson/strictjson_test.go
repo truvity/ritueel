@@ -916,7 +916,7 @@ func TestPeekIntMemberThatIsNotAnInteger(t *testing.T) {
 	// says which of the two it is: not an integer at all, or an integer too large.
 	const notInt = `malformed JSON: $.version: not an integer`
 	const tooBig = `malformed JSON: $.version: the integer does not fit 64 bits`
-	const twice = `malformed JSON: $: member "version" appears twice`
+	const twice = `malformed JSON: $.version: the member appears twice`
 	cases := []struct{ name, in, want string }{
 		{"a fraction", `{"version":1.5}`, notInt},
 		{"a fraction of zero", `{"version":1.0}`, notInt},
@@ -1003,7 +1003,7 @@ func TestTextsOfTheRefusals(t *testing.T) {
 		{"an exponent", `{"a":1e2}`, "malformed JSON: $.a: a number with a fraction or an exponent at byte 8"},
 		{"an integer above int64", `{"a":9223372036854775808}`, "malformed JSON: $.a: the integer does not fit 64 bits at byte 24"},
 		{"null", `{"a":null}`, "malformed JSON: $.a: null at byte 9"},
-		{"a repeated member", `{"a":1,"a":2}`, `malformed JSON: $: member "a" appears twice at byte 10`},
+		{"a repeated member", `{"a":1,"a":2}`, "malformed JSON: $.a: the member appears twice at byte 10"},
 		{"a lone surrogate", `{"a":"` + `\` + `ud800"}`, "malformed JSON: $.a: a lone surrogate escape at byte 12"},
 	}
 	for _, tc := range strict {

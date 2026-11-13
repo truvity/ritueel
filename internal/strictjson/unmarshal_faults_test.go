@@ -211,7 +211,11 @@ func TestBytesTakeOnlyCanonicalBase64(t *testing.T) {
 
 func TestAnArrayTakesExactlyItsLength(t *testing.T) {
 	long := func(typ string, n, want int) string {
-		return fmt.Sprintf("the list has %d elements, and the array of type %s holds exactly %d", n, typ, want)
+		count := fmt.Sprintf("%d elements", n)
+		if n == 1 {
+			count = "1 element"
+		}
+		return fmt.Sprintf("the list has %s, and the array of type %s holds exactly %d", count, typ, want)
 	}
 	t.Run("the right length", func(t *testing.T) {
 		var v struct {
@@ -417,10 +421,9 @@ func TestTheTagOptionStringIsRefusedAsAType(t *testing.T) {
 			{Name: "A", Type: reflect.TypeFor[int](), Tag: `json:"-"`},
 			{Name: "b", PkgPath: "strictjson", Type: reflect.TypeFor[int](), Tag: `json:",string"`},
 			{Name: "C", Type: reflect.TypeFor[int](), Tag: `json:"c"`},
-			{Name: "D", Type: reflect.TypeFor[int](), Tag: `json:"-,omitempty"`},
 		})
 		v := reflect.New(typ)
-		if err := Unmarshal([]byte(`{"c":3,"-":4}`), v.Interface(), Options{}); err != nil || v.Elem().Field(2).Int() != 3 || v.Elem().Field(3).Int() != 4 {
+		if err := Unmarshal([]byte(`{"c":3}`), v.Interface(), Options{}); err != nil || v.Elem().Field(2).Int() != 3 {
 			t.Errorf("%+v, %v", v.Elem(), err)
 		}
 	})
@@ -608,8 +611,8 @@ func TestAMemberNameThatDiffersOnlyByCaseIsRefused(t *testing.T) {
 		{"behind a pointer", &struct {
 			P *lower `json:"p"`
 		}{}, `{"p":{"A":1}}`, "a", "$.p.A"},
-		{"the Kelvin sign for k", &folds{}, `{"` + kelvin + `":1}`, "k", "$." + kelvin},
-		{"the long s for s", &folds{}, `{"` + longS + `":1}`, "s", "$." + longS},
+		{"the Kelvin sign for k", &folds{}, `{"` + kelvin + `":1}`, "k", `$."` + uesc(0x212A) + `"`},
+		{"the long s for s", &folds{}, `{"` + longS + `":1}`, "s", `$."` + uesc(0x17F) + `"`},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			for _, opts := range []Options{{}, {AllowUnknown: true}} {
@@ -639,17 +642,15 @@ func TestAMemberNameThatDiffersOnlyByCaseIsRefused(t *testing.T) {
 			t.Errorf("an escaped capital A is the name A: %v", err)
 		}
 	})
-	t.Run("a name that folds to two fields is refused, naming one of them", func(t *testing.T) {
+	t.Run("a name that folds to two fields is refused, naming the first of them in the order of the names", func(t *testing.T) {
 		type twoK struct {
 			Lower int `json:"k"`
 			Upper int `json:"K"`
 		}
 		var v twoK
 		err := Unmarshal([]byte(`{"`+kelvin+`":1}`), &v, Options{})
-		lower, upper := mal("$."+kelvin, "the member must be spelt k"), mal("$."+kelvin, "the member must be spelt K")
-		if !errors.Is(err, ErrMalformed) || (err.Error() != lower && err.Error() != upper) {
-			t.Errorf("%v", err)
-		}
+		// The fields are walked in the order of their names, so "K" (0x4B) comes before "k" (0x6B), whatever the order in the struct.
+		fail(t, err, mal(`$."`+uesc(0x212A)+`"`, "the member must be spelt K"))
 	})
 	t.Run("a field that is left out is not a name that a member may fold into", func(t *testing.T) {
 		type skipped struct {
