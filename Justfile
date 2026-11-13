@@ -251,7 +251,8 @@ go-test:
 # The release build, as the release makes it: static, no cgo, paths trimmed, the version and the commit
 # stamped in (VERSION and COMMIT in the environment override git's answer). Both must be plain
 # (letters, digits and . _ + -), because they go into one quoted -ldflags string. Then: the file is a
-# static Linux executable (tools/elfcheck), `version` prints exactly what was stamped (so a renamed
+# static Linux executable for the machine it was built on (tools/elfcheck --arch "$(go env GOARCH)":
+# a file for the other machine fails), `version` prints exactly what was stamped (so a renamed
 # symbol or a broken -X fails here), and no arguments exit 2 (a usage error).
 go-build:
     #!/usr/bin/env bash
@@ -266,7 +267,7 @@ go-build:
     CGO_ENABLED=0 go build -trimpath \
       -ldflags "-s -w -X ${pkg}.version=${version} -X ${pkg}.commit=${commit}" \
       -o bin/ritueel ./cmd/ritueel
-    go run ./tools/elfcheck bin/ritueel
+    go run ./tools/elfcheck --arch "$(go env GOARCH)" bin/ritueel
     got=$(bin/ritueel version)
     want="ritueel ${version} (commit ${commit})"
     echo "$got"
@@ -295,8 +296,11 @@ go-release-check:
     "{{ just_executable() }}" --justfile "{{ justfile() }}" _go-release-verify "${tag}" "${commit}"
 
 # What a release build in dist/ must be: exactly one Linux binary for each of amd64 and arm64 (a check
-# that finds no binary fails), each a static Linux executable (tools/elfcheck) that was built without
-# cgo, with -trimpath, for the right architecture, and that carries the stamped tag and commit. A
+# that finds no binary fails), each a static Linux executable that was built without cgo, with
+# -trimpath, and that carries the stamped tag and commit. The architecture is checked twice, from the
+# same word (`goarch` in dist/artifacts.json, which the first check below limits to amd64 and arm64):
+# tools/elfcheck --arch reads the machine out of the ELF header, and the build settings in the file must
+# say GOARCH of that word. So a binary built for the other machine than its entry names fails. A
 # binary for this machine's architecture is also run: `version` must print exactly what was stamped and
 # no arguments must exit 2, as in go-build. A binary for the other architecture cannot run here (the
 # arm64 one on an amd64 runner), so it gets the file checks only, and the output says so. The binary
@@ -316,7 +320,7 @@ _go-release-verify $tag $commit:
     while IFS=$'\t' read -r arch path; do
       [ -f "${path}" ] || fail "${path} is missing"
       echo "== linux/${arch}: ${path}"
-      go run ./tools/elfcheck "${path}"
+      go run ./tools/elfcheck --arch "${arch}" "${path}"
       info="$(go version -m "${path}")"
       for setting in CGO_ENABLED=0 -trimpath=true GOOS=linux "GOARCH=${arch}"; do
         grep -qxF -- "$(printf '\tbuild\t%s' "${setting}")" <<<"${info}" || fail "${path}: build setting '${setting}' not found"
@@ -342,6 +346,7 @@ _go-release-verify $tag $commit:
       archive="$(jq -r --arg a "${arch}" '.[] | select(.type == "Archive" and .goarch == $a) | .name' dist/artifacts.json)"
       bin="$(jq -r --arg a "${arch}" '.[] | select(.type == "Binary" and .goarch == $a) | .path' dist/artifacts.json)"
       [ -n "${archive}" ] || fail "no archive for ${arch}"
+      case "${archive}" in *"_linux_${arch}.tar.gz") ;; *) fail "the archive '${archive}' of ${arch} does not end in _linux_${arch}.tar.gz" ;; esac
       listing="$(tar -tzf "dist/${archive}" | sort | tr '\n' ' ')"
       [ "${listing}" = "LICENSE README.md ritueel " ] || fail "${archive} holds '${listing}', wanted 'LICENSE README.md ritueel '"
       tar -xzOf "dist/${archive}" ritueel | cmp -s - "${bin}" || fail "the binary in ${archive} is not the one that was checked"
