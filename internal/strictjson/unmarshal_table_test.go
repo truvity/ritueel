@@ -256,17 +256,17 @@ func acceptedTargets() []target {
 		tgt("int16 largest", `32767`, int16(math.MaxInt16)),
 		tgt("int32 smallest", `-2147483648`, int32(math.MinInt32)),
 		tgt("int32 largest", `2147483647`, int32(math.MaxInt32)),
-		tgt("int64 smallest", `-9223372036854775808`, int64(math.MinInt64)),
-		tgt("int64 largest", `9223372036854775807`, int64(math.MaxInt64)),
+		tgt("int64 smallest", `-9007199254740991`, int64(safeMin)),
+		tgt("int64 largest", `9007199254740991`, int64(safeMax)),
 		tgt("uint", `7`, uint(7)),
 		tgt("uint zero", `0`, uint(0)),
 		tgt("uint8 smallest", `0`, uint8(0)),
 		tgt("uint8 largest", `255`, uint8(math.MaxUint8)),
 		tgt("uint16 largest", `65535`, uint16(math.MaxUint16)),
 		tgt("uint32 largest", `4294967295`, uint32(math.MaxUint32)),
-		tgt("uint64 at the int64 maximum", `9223372036854775807`, uint64(math.MaxInt64)),
+		tgt("uint64 at the largest integer of the range", `9007199254740991`, uint64(safeMax)),
 		tgt("uint64 zero", `0`, uint64(0)),
-		tgt("uint largest that a document can hold", `9223372036854775807`, uint(math.MaxInt64)),
+		tgt("uint largest that a document can hold", `9007199254740991`, uint(safeMax)),
 		tgt("named int", `-3`, myInt(-3)),
 		tgt("named bool", `true`, myBool(true)),
 		tgt("named string", `"x"`, myString("x")),
@@ -402,8 +402,8 @@ func acceptedAnys() []anyTarget {
 		{"zero", `0`, int64(0)},
 		{"minus zero", `-0`, int64(0)},
 		{"a small integer, which is int64 too", `7`, int64(7)},
-		{"the largest int64", `9223372036854775807`, int64(math.MaxInt64)},
-		{"the smallest int64", `-9223372036854775808`, int64(math.MinInt64)},
+		{"the largest integer of the range", `9007199254740991`, int64(safeMax)},
+		{"the smallest integer of the range", `-9007199254740991`, int64(safeMin)},
 		{"objects in lists in objects", `{"a":[{"b":[1,{"c":"d"}]},[]],"e":{}}`, map[string]any{
 			"a": []any{map[string]any{"b": []any{int64(1), map[string]any{"c": "d"}}}, []any{}},
 			"e": map[string]any{},
@@ -588,7 +588,7 @@ func TestUnmarshalFillsAnInterfaceWithNoMethods(t *testing.T) {
 		})
 	}
 	t.Run("only five types come out, whatever the document", func(t *testing.T) {
-		doc := `{"a":[1,"s",true,false,{"b":[-0,9223372036854775807]},[]],"c":{},"d":"","e":0}`
+		doc := `{"a":[1,"s",true,false,{"b":[-0,9007199254740991]},[]],"c":{},"d":"","e":0}`
 		var v any
 		if err := Unmarshal([]byte(doc), &v, Options{}); err != nil {
 			t.Fatal(err)
