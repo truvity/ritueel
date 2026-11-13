@@ -25,8 +25,8 @@
 }
 
 /* A strip of panels: one column on a phone (the panel is 280 units wide and never drawn narrower),
-   two, then three, as the column allows; never more than three, so that six panels fill 1x6, 2x3 or
-   3x2 and never leave a short last row. */
+   two, then three, as the column allows; never more than three, so that three panels fill 1x3 and six
+   fill 2x3 or 3x2. In two columns three panels would leave a gap beside the last, so it is centred. */
 .fig-panels {
   list-style: none;
   margin: 0;
@@ -38,6 +38,13 @@
 .fig-panels > li {
   margin: 0;
   padding: 0;
+}
+@container (min-width: 36rem) and (max-width: 54.49rem) {
+  .fig-panels > li:nth-child(3):last-child {
+    grid-column: 1 / -1;
+    justify-self: center;
+    width: calc((100% - 1rem) / 2);
+  }
 }
 .fig-cap {
   margin: 0.4rem 0.2rem 0;

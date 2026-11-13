@@ -87,7 +87,7 @@ function p6() {
   b += person(232, B, [[-1, 204, 124]]);
   b += card(196, 32, 26, 20) + text(246, 46, 'git, ssh', 't t-s', 'm');
   b += text(232, 76, 'you', 't t-s', 'm');
-  return pnl(6, 'Offline system', b, 'A terminal runs apply with the saved plan. It writes a record into the history part of the personal bundle and builds the certificate sheet again. You hold the unplugged card, marked for git and ssh.');
+  return pnl(6, 'Offline system', b, 'A terminal runs apply with the saved plan. It writes the ceremony record into the history part of the personal bundle and builds the certificate sheet again. You hold the unplugged card, marked for git and ssh.');
 }
 
 export default {
@@ -101,6 +101,6 @@ export default {
     { n: 3, title: 'Birth', caption: 'After your PIN, the card makes both subkeys. Back-sig: the subkey signs the primary.', svg: p4() },
     { n: 4, title: 'Unlock', caption: 'To bind, a root card opens the key file. The recovery key stays apart.', svg: p3() },
     { n: 5, title: 'Bind', caption: 'Your primary binds each subkey. Each fingerprint shows first.', svg: p5() },
-    { n: 6, title: 'Record', caption: 'The command apply records it and rebuilds your certificate.', svg: p6() },
+    { n: 6, title: 'Ceremony record', caption: 'The command apply writes the ceremony record last and rebuilds your certificate.', svg: p6() },
   ],
 };
