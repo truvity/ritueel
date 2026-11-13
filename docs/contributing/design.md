@@ -11,20 +11,20 @@ This page is the design paradigm: how a question is answered before it becomes a
 
 [record 0001](../decisions/0001-what-ritueel-is.md) sets the mission:
 
-> ritueel helps one person or a small team keep a private root and an OpenPGP primary key for years without losing it, leaking it, misusing it or letting it expire. It teaches the model first, and its tools run each ceremony with the person deciding.
+> The purpose is to help one person or a small team keep a private root and an OpenPGP primary key for years without losing, leaking, misusing or letting it expire. ritueel teaches the model first, then runs each ceremony with the person deciding.
 
 Judge every new page, tool or option against it. The first three questions are about the work; the fourth is about the site.
 
 1. **Does it teach first?** The reader meets the reason before the command, and a Learn page exists before a guide or a tool depends on it.
 2. **Does the tool only simplify a ritual** a careful person could do by hand? A tool that decides for the person, or hides a step they should understand, fails.
 3. **Does the person stay in charge?** Every irreversible step is confirmed by the person, in the terminal or by touch, never by a click alone.
-4. **Does a reader of the target need it on the site?** If not, write it under `docs/` and leave it out of `site/published.txt`; the site holds the path of six, [How it works](/how-it-works/) (three pages of pictures), the glossary, where it stands, the demo and the design in brief.
+4. **Does a reader of the target need it on the site?** If not, write it under `docs/` and leave it out of `site/published.txt`; the site holds the home page, the Learn path, [How it works](/how-it-works/) (an overview and two layout pages, in pictures), the demo, the glossary, where it stands (status and roadmap), the design in brief and the hand-off contract.
 
 A change that fails one of the first three is reworked or dropped, or it goes to the maintainer as a conflict ([below](#ask-only-real-conflicts)).
 
 ## Principles first
 
-Check each question against the [principles](/principles/) and the accepted records before anything else. If they settle it, write the answer and cite the principle or the record; do not ask. The custody vocabulary comes from them and is not restated here: a key is born in its store and never leaves it (principle 1), redundancy answers loss and not compromise (2), and a claim is verified and never trusted (4). Roots are ritueel's; a system like [sluis](https://sluis.id) holds intermediates only.
+Check each question against the [principles](/principles/) and the accepted records before anything else. If they settle it, write the answer and cite the principle or the record; do not ask. The custody vocabulary comes from them and is not restated here: a key is born in its key store and never leaves it (principle 1), redundancy answers loss and not compromise (2), and a claim is verified and never trusted (4). Roots are ritueel's; a system like [sluis](https://sluis.id) holds intermediates only.
 
 ## Ask only real conflicts
 
@@ -42,7 +42,7 @@ For a milestone or a large topic, first list the high-level questions: topology,
 
 ## Nothing without a consumer
 
-A store, a backend, a command or an option arrives with its first real installation or caller (principle 8). Until then it is a line marked "planned" and an issue, not code, and not a page that promises it ([What is built](/contributing/pages/#what-is-built)).
+A key store, a backend, a command or an option arrives with its first real installation or caller (principle 8). Until then it is a line marked "planned" and an issue, not code, and not a page that promises it ([What is built](/contributing/pages/#what-is-built)).
 
 ## Milestones are an order
 
