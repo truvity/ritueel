@@ -176,7 +176,8 @@ func (NotConfirmed) Outcome() Outcome { return OutcomeNotConfirmed }
 // ReasonCodes returns none.
 func (NotConfirmed) ReasonCodes() []string { return nil }
 
-// ExitFor maps the error a command returned to its exit code and outcome. No error is
+// ExitFor maps the error a command returned to its exit code and outcome. An error that carries
+// the exit code 0 reports success and is a mistake of the programmer: ExitFor panics. No error is
 // ExitOK and OutcomeDone; an error that carries a code (Coded) gives that code and the outcome
 // of that code (it panics when the error's own outcome disagrees, see agreed); any other error is
 // ExitFailure and OutcomeFailed.
@@ -186,6 +187,9 @@ func ExitFor(err error) (ExitCode, Outcome) {
 	}
 	var c Coded
 	if errors.As(err, &c) {
+		if c.ExitCode() == ExitOK {
+			panic(fmt.Sprintf("cli: the error %T carries the exit code 0, which reports success; an error ends a command with a code of 1 or more", c))
+		}
 		return c.ExitCode(), agreed(c.ExitCode(), c.Outcome())
 	}
 	return ExitFailure, OutcomeFailed
