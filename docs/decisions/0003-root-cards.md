@@ -33,6 +33,8 @@
 
 21. ritueel unblocks a card's blocked PIN with the sealed PUK. ritueel never shows the PUK.
 
+22. No certified hardware level is claimed for a root card. What ritueel checks is the card's attestation (rule 18) and its firmware (rule 13).
+
 ## Why
 
 Each card makes its own keys, so no copy exists and each key can be attested at birth.
@@ -42,12 +44,14 @@ Each card makes its own keys, so no copy exists and each key can be attested at 
 - The PIN, PUK and management key are the card's, so three wrong PINs lock the roots of every bundle on it.
 - A lost card is one revocation or transition in each bundle.
 - No bundle sees the whole card.
+- A root card has no certified hardware level (rule 22). The public rules for CAs ask for a module certified at FIPS 140 level 3 or Common Criteria EAL 4 (CA/Browser Forum Baseline Requirements 6.2.7; ETSI EN 319 411-1, OVR-6.5.2-01; US Federal PKI Common Policy 2.13, 6.2.1). They bind public CAs, trust service providers and federal systems, not a private root.
 
 ## Roads not taken
 
 - **One root, one card, a spare.** The spare is a copy or nothing a verifier trusts.
 - **Off-card key imported into both.** No card can attest its birth.
 - **Software key wrapped, or split 2-of-2.** In memory at each signing; a split stops signing if one card is lost.
+- **A certified module for the root key.** It would meet the public rules for CAs (see What it costs), but the design takes cards whose keys are attested at birth and claims no certified level (rule 22), and uses no hardware security module ([record 0002](0002-where-a-key-lives.md), rule 6).
 - **HSM pair with a wrapped export.** About EUR 786 a device ([the research note](../research/private-root-alternatives-2026-11-02.md)), and the key is copied.
 - **Two holders, or a remote one.** Either card alone signs, so separation is procedural, and each ceremony waits on a person.
 - **One pair per bundle, or one pair per bundle until a later milestone.** A holder with two bundles keeps four cards.
