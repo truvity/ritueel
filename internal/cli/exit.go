@@ -183,7 +183,9 @@ func (NotConfirmed) Outcome() Outcome { return OutcomeNotConfirmed }
 // ReasonCodes returns none.
 func (NotConfirmed) ReasonCodes() []string { return nil }
 
-// ExitFor maps the error a command returned to its exit code and outcome. An error that carries
+// ExitFor maps the error a command returned to its exit code and outcome. It takes the first error
+// of the tree that carries a code; Run refuses a tree that holds more than one (checkOneCode), so
+// no command sees that choice made. An error that carries
 // the exit code 0 reports success and is a mistake of the programmer: ExitFor panics. No error is
 // ExitOK and OutcomeDone; an error that carries a code (Coded) gives that code and the outcome
 // of that code (it panics when the error's own outcome disagrees, see agreed); any other error is
@@ -256,23 +258,64 @@ func warningsOf(err error) []string {
 	return out
 }
 
-// collectWarnings appends the warnings of err to out: first those of the errors inside it, in the
-// order Unwrap gives them, then its own.
-func collectWarnings(err error, out *[]string) {
+// walkTree calls visit on every error of the tree of err, an error inside before the error that
+// wraps it, depth first and left to right: it follows Unwrap() error and Unwrap() []error as
+// errors.Is does, and visits each node itself, not what errors.As would find. An error value that is
+// in the tree twice is visited twice.
+func walkTree(err error, visit func(error)) {
 	if err == nil {
 		return
 	}
 	switch u := err.(type) { //nolint:errorlint // the walk visits each node itself, as errors.Is does
 	case interface{ Unwrap() error }:
-		collectWarnings(u.Unwrap(), out)
+		walkTree(u.Unwrap(), visit)
 	case interface{ Unwrap() []error }:
 		for _, inner := range u.Unwrap() {
-			collectWarnings(inner, out)
+			walkTree(inner, visit)
 		}
 	}
-	if w, ok := err.(*warnedError); ok { //nolint:errorlint // this node, not one inside it
-		*out = append(*out, w.warnings...)
+	visit(err)
+}
+
+// collectWarnings appends the warnings of err to out: first those of the errors inside it, in the
+// order the walk gives them, then its own.
+func collectWarnings(err error, out *[]string) {
+	walkTree(err, func(e error) {
+		if w, ok := e.(*warnedError); ok { //nolint:errorlint // this node, not one inside it
+			*out = append(*out, w.warnings...)
+		}
+	})
+}
+
+// codedIn returns the errors of the tree of err that carry an exit code (implement Coded), in the
+// order of the walk. An error that wraps a Coded error without being one itself (fmt.Errorf with
+// %w, WithWarnings) is not counted, and the same value in the tree twice is counted twice.
+func codedIn(err error) []Coded {
+	var out []Coded
+	walkTree(err, func(e error) {
+		if c, ok := e.(Coded); ok { //nolint:errorlint // this node, not one inside it
+			out = append(out, c)
+		}
+	})
+	return out
+}
+
+// checkOneCode makes the exit code and the reasons of a returned error come from one error. What the
+// code and the reasons of two refusals should be (the first, the highest, the union) is decided by
+// no page, so a tree of err with more than one coded error is a mistake of the programmer, and
+// checkOneCode panics with a text that says what to do; it runs inside the run that turns a panic
+// into exit code 1. A type of this package that implements Coded and unwraps to another Coded error
+// would count as two; none does.
+func checkOneCode(word string, err error) {
+	coded := codedIn(err)
+	if len(coded) < 2 {
+		return
 	}
+	types := make([]string, len(coded))
+	for i, c := range coded {
+		types[i] = fmt.Sprintf("%T", c)
+	}
+	panic(fmt.Sprintf("cli: the command %q returned an error that holds %d errors with an exit code (%s), and no page says which code and which reasons win; a command that refuses for several reasons returns one Refusal that lists all the reason codes, and joins no other error that has an exit code", word, len(coded), strings.Join(types, ", ")))
 }
 
 func refusalText(prefix, msg string, reasons []string) string {
