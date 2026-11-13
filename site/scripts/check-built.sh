@@ -9,13 +9,14 @@ dist=${1:-site/dist}
 fail=0
 bad() { echo "check-built: $*" >&2; fail=1; }
 
-# The pages of site/published.txt (the eleven Learn pages, the three How it works pages, the glossary, the roadmap, the hand-off contract),
+# The pages of site/published.txt (the fourteen Learn pages, the three How it works pages, the glossary, the roadmap, the hand-off contract),
 # the pages made in src/pages, and the demo.
 for f in index.html 404.html sitemap-index.xml robots.txt \
-         learn/index.html learn/what-is-a-root/index.html learn/where-a-root-is-used/index.html \
+         learn/index.html learn/what-is-a-root/index.html learn/custody-chain/index.html \
+         learn/chain-private-pki/index.html learn/chain-openpgp/index.html learn/chain-ssh/index.html \
          learn/how-a-yubikey-holds-keys/index.html learn/how-passkeys-work/index.html learn/how-a-kms-key-works/index.html \
-         learn/choosing-where-a-root-lives/index.html learn/life-of-a-root/index.html learn/revoke/index.html \
-         learn/custody-chain/index.html learn/chain-openpgp/index.html \
+         learn/a-key-in-a-file/index.html learn/choosing-where-a-root-lives/index.html \
+         learn/two-roots/index.html learn/life-of-a-root/index.html learn/revoke/index.html \
          how-it-works/index.html how-it-works/cards/index.html how-it-works/bundle-and-stick/index.html \
          glossary/index.html roadmap/index.html reference/hand-off-contract/index.html \
          design/index.html status/index.html \
@@ -39,7 +40,7 @@ done <<< "$unpublished"
 # and drawings that are images with a label, and none of the drawings keeps its text in the search.
 # (Starlight's own icons are <svg> too, so the check names the drawings by role="img".)
 for f in index.html how-it-works/index.html how-it-works/cards/index.html how-it-works/bundle-and-stick/index.html \
-         learn/how-a-yubikey-holds-keys/index.html learn/how-passkeys-work/index.html \
+         learn/how-a-yubikey-holds-keys/index.html learn/how-passkeys-work/index.html learn/a-key-in-a-file/index.html \
          learn/what-is-a-root/index.html learn/choosing-where-a-root-lives/index.html; do
   [ -s "$dist/$f" ] || continue
   grep -q '<figure class="fig ' "$dist/$f" || bad "$f has no figure"
