@@ -52,16 +52,35 @@ type FS interface {
 	// those names, each on its own. After an error nothing is known about what reached the
 	// disk.
 	Sync() error
-	// ReadFile returns the whole content of the regular file name of this folder. It
-	// returns what the running system shows, flushed or not. It fails for a name that
-	// is a symbolic link (the error wraps [ErrLink]), for anything that is not a regular
-	// file, and for a file longer than [MaxReadSize]; it never returns a part of a file.
+	// ReadFile returns the whole content of the regular file name of this folder, as the
+	// running system shows it, flushed or not. It fails for a name that is a symbolic link (the
+	// error wraps [ErrLink]), for anything that is not a regular file (a folder, a FIFO, a
+	// device, a socket: the error wraps [ErrNotRegular], and a FIFO is not waited on), and for a
+	// file longer than [MaxReadSize] (the error wraps [ErrTooLarge]); it never returns a part
+	// of a file. A name that does not exist gives an error that wraps fs.ErrNotExist.
 	ReadFile(name string) ([]byte, error)
+	// ReadDir lists this folder: one entry for each name in it, ordered by name, without "."
+	// and "..", and including the names of temporary files and folders that a stop left. An
+	// entry is described as the folder holds it, never as what a link points at: a symbolic
+	// link is an entry with the type fs.ModeSymlink, a folder one with fs.ModeDir. The Info of
+	// an entry carries the name, the type and permission bits and the size at the time of the
+	// call; its ModTime is the zero time. It lists what the running system shows, flushed or
+	// not.
+	ReadDir() ([]fs.DirEntry, error)
 	// Close releases this handle. A method called after Close returns an error that wraps
 	// fs.ErrClosed, and a second Close returns nil. Closing a folder closes nothing that
 	// was opened from it.
 	Close() error
 }
+
+// MaxReadSize is the longest file that [FS.ReadFile], [ReadFile] and [ReadJournal] read: 8 MiB.
+// The files that the package reads are the journals of a ceremony, one line for each event, a
+// few hundred bytes a line and a few dozen lines for a whole ceremony, so some tens of
+// kilobytes. 8 MiB is hundreds of times that, and still small enough to hold in memory at once
+// on any machine that can run a ceremony. A file beyond it is not a journal of this program, a
+// longer file is an error and never a cut-off read, and the limit stops a file that grows
+// without end (a device, a file on a full-speed writer) from filling the memory.
+const MaxReadSize = 8 << 20
 
 // File is a file opened for writing by [FS.CreateExcl]. The file is empty when it is created,
 // and a Write adds to the end of it.
@@ -128,6 +147,13 @@ var ErrNoReplaceUnsupported = errors.New("the file system does not support a ren
 // needs a folder or a file. The package follows no symbolic link below the root, in any element
 // of a path and at the final name, for any operation.
 var ErrLink = errors.New("a symbolic link is not followed")
+
+// ErrNotRegular is wrapped by the error of a read of anything that is not a regular file: a
+// folder, a FIFO, a device, a socket. A symbolic link is [ErrLink].
+var ErrNotRegular = errors.New("not a regular file")
+
+// ErrTooLarge is wrapped by the error of a read of a file longer than [MaxReadSize].
+var ErrTooLarge = errors.New("the file is longer than the limit of a read")
 
 // ErrNoRoot is returned by a [Writer] that has no [FS], that is by a Writer that was not made
 // by [Open] and whose FS field is nil: there is no root to work in, and the writer does not
