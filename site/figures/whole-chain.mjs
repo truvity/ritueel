@@ -55,15 +55,19 @@ function ceremony(w) {
   const ox = (w - 208) / 2;
   // the holder is drawn in its own coordinates and moved, so that it stays inside the kit's limits
   s += at(ox, 0, person(44, 206, [[1, 80, 170]]) + acc(ACC, card(72, 144, 40, 26, 'acc-f')) + text(44, 226, 'you', 't t-s', 'm') + calendar(28, 66));
-  const x0 = ox + 126;
-  const ys = [74, 114, 154];
-  s += line(x0, ys[0], x0, ys[2], 'ln ln-thin ln-dim');
+  // three small boxes in a column, joined by arrows: wanted, plan, apply. Only the apply box is the accent.
+  const bx = ox + 128;
+  const bw = 80;
+  const tops = [52, 106, 160];
+  const hs = [38, 38, 68];
   DOES.forEach(([word, notes], i) => {
-    const y = ys[i];
+    const y = tops[i];
     const root = word === 'apply';
-    const num = `<text class="t t-s t-b ${root ? 't-acc' : 't-num'} t-mid" x="${f(x0)}" y="${f(y + 4.3)}">${i + 1}</text>`;
-    s += (root ? acc(ACC, circle(x0, y, 9.5, 'acc-f') + num) : circle(x0, y, 9, 'fill-ink') + num) + text(x0 + 17, y + 4.3, word, 't' + (root ? ' t-b t-acc' : ' t-b'));
-    notes.forEach((n, j) => (s += text(x0 + 17, y + 20 + j * 14, n, 't t-s ' + (root ? 't-acc' : 't-dim'))));
+    const box = rect(bx, y, bw, hs[i], root ? 'acc-f' : 'paper', 6);
+    let inner = text(bx + 8, y + 15, word, 't t-b' + (root ? ' t-acc' : ''));
+    notes.forEach((n, j) => (inner += text(bx + 8, y + 30 + j * 14, n, 't t-s ' + (root ? 't-acc' : 't-dim'))));
+    s += root ? acc(ACC, box + inner) : box + inner;
+    if (i > 0) s += arrow(bx + 14, tops[i - 1] + hs[i - 1] + 1, bx + 14, y - 1, 'then', { lx: bx + 46, ly: y - 4 });
   });
   return s;
 }
@@ -119,7 +123,7 @@ function timeline(W, y0, side) {
 
 const LABEL =
   'The chain of ritueel from the root to the keys of every day, with a four-year contrast under it. Your root in three stores: two root cards and a cloud key, drawn solid because they cannot be copied, and a key file, drawn dashed because it can be copied. ' +
-  'The ceremony: a holder with a root card, a calendar with one day marked, and the three things the holder does, numbered: wanted, which the holder writes, plan, which the holder reads, and apply, which the holder confirms, after which the key signs and a record is made. Only apply uses the root. ' +
+  'The ceremony: a holder with a root card, a calendar with one day marked, and the three things the holder does, as three boxes joined by arrows: wanted, which the holder writes, plan, which the holder reads, and apply, which the holder confirms, after which the key signs and a record is made. Only apply uses the root. ' +
   'Keys for every day: an intermediate in your certificate system and subkeys on your day-to-day card. An arrow labelled used in leads from the root to the ceremony and one labelled signs from the ceremony to the keys. ' +
   'Under the chain, over four years: a key file is replaced on a calendar, with a new key in year one and again in year four, three years at most; a key on a card or in a cloud key service is the same key all four years, replaced only on an event.';
 
