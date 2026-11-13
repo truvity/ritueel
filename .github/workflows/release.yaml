@@ -328,9 +328,12 @@ jobs:
           b="ritueel_${TAG#v}_linux_arm64.tar.gz"
           [ "$(find . -mindepth 1 | LC_ALL=C sort | tr '\n' ' ')" = "./NOTES.md ./SHA256SUMS ./$a ./$b " ] || fail "the artifact does not hold exactly NOTES.md SHA256SUMS $a $b"
           [ "$(awk '{print $2}' SHA256SUMS | LC_ALL=C sort | tr '\n' ' ')" = "$a $b " ] || fail "SHA256SUMS does not name exactly the two archives"
-          # No release of this name, draft or published. `gh release view` does not show a draft to every
-          # caller, so the list of the API is read instead: the documentation of "List releases" says
-          # that only users with push access get the drafts, which `contents: write` of this job is.
+          # No release of this name, draft or published. The list of the API is read (it shows every
+          # release with a tag name, drafts too, in one answer; `gh release view` does not show a draft
+          # to every caller). The documentation of "List releases" says "Only users with push access will
+          # receive listings for draft releases"; that the token of this job (`contents: write`) is one
+          # of them is not stated for a workflow token, and the first real run proves it: the list after
+          # `create` below must find the draft, or the job stops there.
           names=$(gh api --paginate "repos/${GH_REPO}/releases" --jq '.[].tag_name') || fail "cannot list the releases of the repository"
           if grep -Fx -- "$TAG" <<<"$names" >/dev/null; then fail "a release (draft or published) for $TAG already exists"; fi
           # The tag must still point at the commit that `verify` and `build` checked out. This job has no
@@ -364,18 +367,35 @@ jobs:
             fi
           }
           check_tag
-          set -- "$a" "$b" SHA256SUMS
+          # The files uploaded: the two archives and SHA256SUMS. NOTES.md is the text, not a file.
+          files=("$a" "$b" SHA256SUMS)
           # A pre-release is a tag with a suffix (`v1.0.0-rc.1`) or a tag of major version 0 (`v0.x.y`):
           # GOVERNANCE.md says that until the first stable release the versions are pre-releases named
           # `v0.x.y`. Only a plain `vN.x.y` with N at least 1 is a full release. The tag form was checked
           # above (no leading zeros), so `v0.*` is exactly major version 0. This is the only place that
           # decides it.
-          case "$TAG" in *-*|v0.*) set -- --prerelease "$@" ;; esac
-          # A draft first: nothing is public until the tag has been looked at once more. The draft is
-          # published with `gh release edit --draft=false` only if the tag still points at the checked
-          # commit. This job deletes nothing: when the second look fails, the draft stays and a person
-          # deletes it by hand.
-          gh release create "$TAG" --draft --verify-tag --title "$TAG" --notes-file NOTES.md "$@" || fail "gh release create failed; a draft release for $TAG may have been left: look at the Releases page and delete it by hand"
+          flags=()
+          case "$TAG" in *-*|v0.*) flags+=(--prerelease) ;; esac
+          # A draft first: nothing is public until the tag has been looked at once more. `--target` is
+          # the built commit: if the tag were deleted after the second look, the release must not make
+          # a tag at the head of the default branch. This job deletes nothing: when a check after the
+          # draft fails, the draft stays and a person deletes it by hand.
+          gh release create "$TAG" --draft --verify-tag --target "$BUILT_COMMIT" --title "$TAG" --notes-file NOTES.md "${flags[@]}" "${files[@]}" || fail "gh release create failed; a draft release for $TAG may have been left: look at the Releases page and delete it by hand"
           draft_note=". A DRAFT release for $TAG was left on the Releases page and must be deleted by hand; this job deletes nothing."
+          # Find that draft by its id, so that the publication below cannot reach another release of the
+          # same name (`gh release edit TAG` picks one itself). Every release with exactly this tag name
+          # is collected: there must be exactly one, a draft, with exactly the files uploaded.
+          matches=0; id=""; isdraft=""; assets=""
+          list=$(gh api --paginate "repos/${GH_REPO}/releases" --jq '.[] | [.tag_name, .id, .draft, (.assets|length)] | @tsv') || fail "cannot list the releases of the repository"
+          while IFS=$'\t' read -r t i d n; do
+            if [ "$t" = "$TAG" ]; then matches=$((matches + 1)); id=$i; isdraft=$d; assets=$n; fi
+          done <<<"$list"
+          [ "$matches" -eq 1 ] || fail "found $matches releases named $TAG after the draft was created, wanted exactly one (so this token may not see drafts)"
+          [ "$isdraft" = true ] || fail "the release named $TAG is not a draft"
+          [[ "$id" =~ ^[0-9]+$ ]] || fail "the id of the draft is not a number"
+          [[ "$assets" =~ ^[0-9]+$ ]] && [ "$assets" -eq "${#files[@]}" ] || fail "the draft holds $assets files, wanted ${#files[@]} (the two archives and SHA256SUMS)"
           check_tag
-          gh release edit "$TAG" --draft=false || fail "the draft could not be published"
+          # Publish that id. If this call fails, the release may in fact be published (the answer may have
+          # been lost), so the note differs: look first.
+          res=$(gh api -X PATCH "repos/${GH_REPO}/releases/${id}" -F draft=false --jq .draft) || fail "the draft could not be published"
+          [ "$res" = false ] || fail "the release is still a draft after the publish call"
