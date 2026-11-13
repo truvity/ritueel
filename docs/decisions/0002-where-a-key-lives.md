@@ -68,7 +68,7 @@
 - **The OS keyring as the default.** No setup, but the weakest option, so it is offered with a warning and not chosen for the user.
 - **Exporting a key from a card or KMS for backup.** An easy restore, but a key copied out can be stolen from the copy.
 - **Leave the work factor and the passphrase to the library's default.** Nothing to write, but the value would live in the library and not in a record, and the passphrase would have no stated strength (rule 28).
-- **Leave the passkey as the rule first stated it.** Less to write, but the algorithm, the PIN and the refusal without user verification would be written nowhere, and a card that answers without it returns a different secret (rule 19).
+- **Leave the passkey rule without the algorithm, the PIN and the refusal.** Less to write, but the algorithm, the PIN and the refusal without user verification would be written nowhere, and a card that answers without it returns a different secret (rule 19).
 - **A passphrase for every key file.** Nothing to build, but one typed secret on the machine at every use and no second recipient; kept for a holder without cards.
 - **The age key in PIV slot 9d as the default, or first with the passkey as a later step.** No second protocol, but it spends the slot and the PIV PIN that guard the root keys; kept as the fallback.
 - **A card secret that wraps each file directly, with no age key between.** No key in memory, but encrypting would need a card present, and there is no standard format.
