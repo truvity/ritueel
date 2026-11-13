@@ -23,8 +23,10 @@ Every ceremony leaves one **ceremony folder**, `history/<ceremony>/`, in the his
 | `transcript.txt` | At the end | What ritueel printed. | 0006 rule 9 |
 | `record.json` | Last | The ceremony record: what was checked, signed and written. | 0005 rule 12; 0006 rule 8 |
 
+The names of the six files are decided (0006 rule 37), and so is the path `history/<ceremony>/plan.json` (0006 rule 9).
+
 :::note[Proposed]
-Of these names only the path `history/<ceremony>/plan.json` is decided (0006 rule 9). The other file names and the folder `wanted/` are fixed with the code ([#8](https://github.com/truvity/ritueel/issues/8)). The copies keep the paths they have in the bundle, under `wanted/`.
+The folder name `wanted/` is fixed with the code ([#8](https://github.com/truvity/ritueel/issues/8)). The copies keep the paths they have in the bundle, under `wanted/`.
 :::
 
 `<ceremony>` is the name of the ceremony folder: its time as `YYYYMMDDThhmmssZ` in UTC, a hyphen, and the command, for example `20261120T100000Z-apply`. The time is the plan's `ceremony_time`, or for a closing record, which has no plan, the time it is written. The time is part of the identity of the name (0006 rule 31).
@@ -175,7 +177,7 @@ A ceremony that makes keys also creates `births.jsonl`, with the attempt and bef
 A ceremony that signs also creates `signatures.jsonl`, with the attempt and before the first signature (0005 rule 10). After each signature is made, and before the next begins, ritueel appends one line (0005 rule 10). The journal holds no secret. `close` prints it with the birth journal.
 
 :::note[Proposed]
-The name `signatures.jsonl` and the members of a line are fixed with the code ([#8](https://github.com/truvity/ritueel/issues/8)). The proposal: `{ "at", "n", "kind", "key", "signature_sha256" }`, where `n` is the place in the plan's `signatures`. Whether a line holds the signature itself is open. A line is whole when it ends with a newline. A last line without its newline does not parse and counts as not written, but it may mean that a key or a signature exists; so may a missing line, when the run stopped between making it and writing the line.
+The members of a line of `signatures.jsonl` are fixed with the code ([#8](https://github.com/truvity/ritueel/issues/8)). The proposal: `{ "at", "n", "kind", "key", "signature_sha256" }`, where `n` is the place in the plan's `signatures`. Whether a line holds the signature itself is open. A line is whole when it ends with a newline. A last line without its newline does not parse and counts as not written, but it may mean that a key or a signature exists; so may a missing line, when the run stopped between making it and writing the line.
 :::
 
 ## The record

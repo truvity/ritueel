@@ -63,8 +63,10 @@ acme/
 └── drills/                            SEEN     the reports of the restore check, which the holder commits
 ```
 
+The names `ritueel.yaml`, the eight folders `want/`, `seen/`, `sealed/`, `roots/`, `requests/`, `history/`, `trust/` and `drills/`, and the six files of a ceremony folder are decided, in lower case with no spaces ([record 0006](../decisions/0006-bundle-history-and-trust-files.md), rules 5 and 37).
+
 :::note[Proposed]
-The names `ritueel.yaml`, `history/` and `requests/` are decided ([record 0006](../decisions/0006-bundle-history-and-trust-files.md), rules 5 to 7). Every other folder name, among them `trust/`, the file names inside a ceremony folder and the spelling of the names that carry an identity await the maintainer's word and are fixed with the code ([issue #8](https://github.com/truvity/ritueel/issues/8)).
+The folders inside `want/`, the file `want/openpgp.yaml`, the folder `wanted/` of a ceremony folder, the files under `roots/<label>/`, the names of the files in `seen/` and `sealed/`, and the spelling of the names that carry an identity are fixed with the code ([issue #8](https://github.com/truvity/ritueel/issues/8)).
 :::
 
 | Path | Mark | Written by | Holds |
