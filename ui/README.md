@@ -290,9 +290,9 @@ one write the page may cause later, an inert proposal that is accepted in the te
 
 ## Known gaps
 
-- The steps of a ceremony are a small catalogue in `src/lib/steps.ts` (the guided mode,
-  which would share it with the page, does not exist). The panel of a ceremony lists
-  them under "The usual steps".
+- What `apply` and `close` do is one sentence each in `src/lib/commands.ts` (the guided
+  mode, which would share it with the page, does not exist). The panel of a ceremony
+  shows the sentence of its command under "What apply does" or "What close does".
 - A started ceremony may be running or may have stopped. The page shows what the
   bundle holds at its last read and says what to do in both cases (the Attempt section
   of its panel).

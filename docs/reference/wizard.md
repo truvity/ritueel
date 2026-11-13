@@ -94,7 +94,7 @@ What each entry holds, the four states of a ceremony, the rules for every entry 
 
 **The four states of a ceremony in History.** The states are planned, started, recorded and closed. Each is a fact on disk. The table is on [the ceremony files page](/reference/ceremony-record/#the-states-of-a-ceremony-folder).
 
-A ceremony panel also lists the steps from the catalogue of rule 4.
+A ceremony panel also says, in one sentence from the catalogue of rule 4, what its command does: `apply` or `close`.
 
 **Rules for every entry.**
 

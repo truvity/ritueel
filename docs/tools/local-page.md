@@ -46,7 +46,7 @@ Every name, fingerprint, serial and date in it is invented and looks it. Today i
 | Which bundle | Three example bundles and a switch | The bundle the page is opened on |
 | Where the answers come from | Fixtures in the page's build, through an in-memory transport | The ritueel process: one background process, started by the first command, that serves the command line and the page on one fixed loopback port (7488), with a full-rights token for the command line and a one-time page-rights token for the browser that opens only the reads. It is guarded as [the wizard's profile](/reference/wizard/#the-web-page-the-security-profile) says (127.0.0.1 only, an exact Host check and a separate Origin check, one lock for each bundle), and ends after 15 minutes without a call |
 | Time of the read | Fixed by the scene | The time of the read; a page left open longer than the process lives shows a failed read |
-| Steps of a ceremony in History | The usual steps of an apply, from a small catalogue in the page | The same catalogue as the guided mode |
+| What a command does, in History | One sentence for `apply` and one for `close`, from a small catalogue in the page | The same catalogue as the guided mode |
 
 ## How it is built
 

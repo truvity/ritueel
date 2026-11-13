@@ -2,10 +2,10 @@ import { Fragment, type ReactNode } from 'react';
 import { CeremonyCommand } from '../gen/ritueel/local/v1alpha1/common_pb';
 import { CeremonyState, type Ceremony, type CeremonyChange } from '../gen/ritueel/local/v1alpha1/inspect_service_pb';
 import { CAPS } from '../lib/caps';
+import { COMMAND_TEXT } from '../lib/commands';
 import { plural } from '../lib/format';
 import { domKey } from '../lib/inventory';
 import { href, hrefForObject } from '../lib/route';
-import { USUAL_STEPS } from '../lib/steps';
 import { RUN_PLACE_VALUE } from '../lib/words';
 import { Cmd } from './Cmd';
 import { Fp } from './Fp';
@@ -103,22 +103,16 @@ function CeremonyLink({ id }: { id: string }) {
 }
 
 /**
- * The usual steps of the command of a ceremony. Below 1440 px they stand in the
- * panel. From 1440 px the screen draws them under the list (`StepsBelow`), where
- * the free height is, so the panel stays short.
+ * What the command of a ceremony does, in one sentence. Below 1440 px it stands in the
+ * panel. From 1440 px the screen draws it under the list (`WhatItDoesBelow`), where the
+ * free height is, so the panel stays short.
  */
-export function UsualSteps({ c, columns = false }: { c: Ceremony; columns?: boolean }) {
-  const steps = USUAL_STEPS[c.command] ?? [];
-  if (steps.length === 0) return null;
+export function WhatItDoes({ c }: { c: Ceremony }) {
+  const t = COMMAND_TEXT[c.command];
+  if (!t) return null;
   return (
-    <PanelSection title="The usual steps">
-      <ol className={`m-0 list-none space-y-1 p-0 ${columns ? 'min-[1440px]:columns-2 min-[1440px]:gap-x-8 min-[1440px]:space-y-0 [&>li]:break-inside-avoid [&>li]:mb-1' : ''}`}>
-        {steps.map((st) => (
-          <li key={st.title}>
-            <span className="font-semibold">{st.title}.</span> {st.detail}
-          </li>
-        ))}
-      </ol>
+    <PanelSection title={t.title}>
+      <p className="max-w-[56ch]">{t.text}</p>
       {c.guidePath ? (
         <p>
           <LearnLink path={c.guidePath}>About a ceremony</LearnLink>
@@ -128,11 +122,11 @@ export function UsualSteps({ c, columns = false }: { c: Ceremony; columns?: bool
   );
 }
 
-/** From 1440 px: the usual steps of the ceremony that the panel shows, in two columns under the list. */
-export function StepsBelow({ c }: { c: Ceremony }) {
+/** From 1440 px: what the command of the ceremony that the panel shows does, under the list. */
+export function WhatItDoesBelow({ c }: { c: Ceremony }) {
   return (
     <div className="mt-6 hidden min-[1440px]:block">
-      <UsualSteps c={c} columns />
+      <WhatItDoes c={c} />
     </div>
   );
 }
@@ -143,7 +137,6 @@ export function CeremonyPanel({ c, all, trustSequence }: { c: Ceremony; all: Cer
   // The reason of a closed ceremony is written in the closing record that names it.
   const closer = c.closedBy ? all.find((x) => x.id === c.closedBy) : undefined;
   const reason = closingRecord ? c.closeReason : closer?.closeReason;
-  const steps = USUAL_STEPS[c.command] ?? [];
   const counts = c.signatureCount > 0 || c.touchCount > 0;
   return (
     <PanelFrame kind="ceremony" title={<T cap={CAPS['Ceremony.id']}>{c.id}</T>} backHref={href.history()} rowId={domKey(c.id)}>
@@ -284,9 +277,9 @@ export function CeremonyPanel({ c, all, trustSequence }: { c: Ceremony; all: Cer
         </PanelSection>
       ) : null}
 
-      {steps.length > 0 ? (
+      {COMMAND_TEXT[c.command] ? (
         <div className="min-[1440px]:hidden">
-          <UsualSteps c={c} />
+          <WhatItDoes c={c} />
         </div>
       ) : null}
     </PanelFrame>
