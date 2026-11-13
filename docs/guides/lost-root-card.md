@@ -5,7 +5,7 @@ sidebar:
   order: 2
 ---
 
-*Design phase: not built yet. The revocation behaviour of the verifiers was measured on 2026-11-01 (see [OpenPGP release keys](/learn/openpgp-release-keys/#revocation)); the drill has not run. This page is the plan that the commands `ritueel revoke` and `ritueel apply` will follow, and the drill that will rehearse it.*
+*Design phase: not built yet. The revocation behaviour of the verifiers was measured on 2026-11-01 (see [OpenPGP release keys](/learn/openpgp-release-keys/#revocation)); the drill has not run. This page is the plan that the commands `ritueel revoke` and `ritueel apply` will follow, and the adoption drill (M4) that will rehearse it.*
 
 Until the revocation reaches outsiders, whoever holds the card **and** its PIN can sign things they trust. A card without its PIN locks after three wrong tries, which limits the exposure. Act in this order.
 
@@ -30,4 +30,4 @@ If the pair of cards is shared by more than one bundle, run these steps in each 
 
 ## What the drill checks
 
-The drill runs on software roots in CI, then on rehearsal cards; it is part of [adopting the roots](/guides/root-adoption/). It starts with keys A and B of one root and one intermediate, takes a card out of use, and ends when the steps above have run and the checks pass. It records how long each step took, so the real time from loss to refusal is known.
+This walk-through is the adoption drill, in M4. It runs on software roots in CI, then on rehearsal cards; it is part of [adopting the roots](/guides/root-adoption/). It starts with keys A and B of one root and one intermediate, takes a card out of use, and ends when the steps above have run and the checks pass. It records how long each step took, so the real time from loss to refusal is known.
