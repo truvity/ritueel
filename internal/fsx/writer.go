@@ -490,6 +490,36 @@ func nameProblem(name string) string {
 	return ""
 }
 
+// nameRefusal is the rule for one final name, the name of a file or a folder that is to be
+// written: "." and ".." and a name with the prefix of a temporary name are not one plain name, and
+// [nameProblem] says the rest. It returns "" when the name is fine. [checkFiles] and [CheckName]
+// both apply it.
+func nameRefusal(name string) string {
+	if name == "." || name == ".." || hasTempPrefix(name) {
+		return "is not one plain name"
+	}
+	return nameProblem(name)
+}
+
+// CheckName reports whether name is a name that the writer accepts as one final name, the last
+// element of a path or the name of a file of a set: it returns nil when it is, and otherwise an
+// error that wraps [ErrInvalid] and says why. It is the rule of the writer and no other: a name
+// holds only the ASCII letters, the digits, the dot, the hyphen and the underscore, is not empty,
+// is at most 255 bytes, does not end with a dot, is not a device name of Windows, is neither
+// "." nor "..", and does not start with [TempPrefix] (compared without case). The text of the
+// error quotes the name in ASCII, so it is safe to print.
+//
+// A name that comes out of a listing ([ReadDir]) is data from the stick: it can break the rule,
+// and a caller checks it with CheckName before it shows the name or uses it in a path. CheckName
+// returns an error and not a reason so that it is used like every other refusal of the package,
+// with errors.Is(err, ErrInvalid), and so that the caller does not build a text of its own.
+func CheckName(name string) error {
+	if why := nameRefusal(name); why != "" {
+		return fmt.Errorf("%w: name %+q %s", ErrInvalid, name, why)
+	}
+	return nil
+}
+
 // hasTempPrefix reports whether name starts with [TempPrefix], compared without case. exFAT
 // compares names without case, so a final name ".RT-abcdefghijk" would meet a live temporary
 // name. Folding the ASCII letters is enough: a name holds nothing else, and the prefix is ASCII.
@@ -571,10 +601,7 @@ func checkFiles(files []NewFile) error {
 	seen := make(map[string]bool, len(files))
 	for _, f := range files {
 		// "." and ".." end with a dot, but "not one plain name" says more than "ends with a dot".
-		if f.Name == "." || f.Name == ".." || hasTempPrefix(f.Name) {
-			return fmt.Errorf("%w: file name %+q is not one plain name", ErrInvalid, f.Name)
-		}
-		if why := nameProblem(f.Name); why != "" { // a separator in the name is outside the set
+		if why := nameRefusal(f.Name); why != "" { // a separator in the name is outside the set
 			return fmt.Errorf("%w: file name %+q %s", ErrInvalid, f.Name, why)
 		}
 		// Up-cased, because exFAT and the default file systems of Windows and macOS compare
