@@ -1,16 +1,16 @@
 package fsx_test
 
 // The names and paths the writer refuses before it touches the file system, and the ones it
-// accepts and then really writes. The rules are those of the package comment ("A name is checked
-// against what the exFAT file system of a stick can hold") and of fsx.ErrInvalid. They apply to
-// every element of a path and to every name of a set, except the temporary-name prefix, which
-// only the last element of a path and any name of a set must not have.
+// accepts and then really writes. The rules are those of the package comment ("Names are
+// checked against the stick and the desktop systems that read it") and of fsx.ErrInvalid. They
+// apply to every element of a path and to every name of a set, except the temporary-name
+// prefix, which only the last element of a path and any name of a set must not have.
 //
 // Every refused row holds one fault only, so that removing one rule from the writer fails the
-// row of that rule and is not hidden by another rule that refuses the same name. The one pair
-// that cannot be told apart is the byte limit and the UTF-16 limit: a name that has more than
-// 255 UTF-16 code units has more than 255 bytes, so the UTF-16 rule never refuses a name that
-// the byte rule would let through (see TestLongNamesAreRefusedByTheByteLimit).
+// row of that rule and is not hidden by another rule that refuses the same name. Some rules
+// overlap (a trailing separator and an empty element; "." and ".." and a trailing dot; a
+// device name with a trailing dot): each stays for its own text, and the texts are pinned in
+// names_text_test.go, where a break of one rule of a pair changes a result.
 
 import (
 	"errors"
@@ -19,6 +19,7 @@ import (
 	"slices"
 	"strings"
 	"testing"
+	"unicode"
 	"unicode/utf16"
 
 	"ritueel.id/ritueel/internal/fsx"
@@ -56,19 +57,21 @@ func rep(s string, n int) string { return strings.Repeat(s, n) }
 // utf16Len counts UTF-16 code units, as exFAT does.
 func utf16Len(s string) int { return len(utf16.Encode([]rune(s))) }
 
-// Names with the same length in bytes and in UTF-16 code units, and names that have a
-// different one, at the edge of the 255 limit.
+// Names at the edge of the limit of 255 bytes, with one, two, three and four bytes to a
+// character. The limit is the one of a workstation's file system; a name of at most 255 bytes
+// has at most 255 UTF-16 code units, which is the limit of exFAT (see
+// TestLongNamesAreRefusedByTheByteLimit).
 var (
 	ascii255   = rep("a", 255)
 	ascii256   = rep("a", 256)
-	eAcute127a = rep("é", 127) + "a"  // 255 bytes, 128 UTF-16 code units
-	eAcute128  = rep("é", 128)        // 256 bytes, 128 units
-	euro85     = rep("€", 85)         // 255 bytes, 85 units
-	euro86     = rep("€", 86)         // 258 bytes
-	emoji63abc = rep("😀", 63) + "abc" // 255 bytes, 129 units
-	emoji63abd = rep("😀", 63) + "abcd"
-	emoji127a  = rep("😀", 127) + "a" // 255 UTF-16 code units, 509 bytes
-	emoji128   = rep("😀", 128)       // 256 UTF-16 code units, 512 bytes
+	eAcute127a = rep("é", 127) + "a"   // 255 bytes
+	eAcute128  = rep("é", 128)         // 256 bytes
+	euro85     = rep("€", 85)          // 255 bytes
+	euro86     = rep("€", 86)          // 258 bytes
+	emoji63abc = rep("😀", 63) + "abc"  // 255 bytes
+	emoji63abd = rep("😀", 63) + "abcd" // 256 bytes
+	emoji127a  = rep("😀", 127) + "a"   // 509 bytes
+	emoji128   = rep("😀", 128)         // 512 bytes
 )
 
 // refusedNames are single names (one element of a path, one name of a set) that the writer
@@ -111,7 +114,7 @@ var refusedNames = []nameRow{
 	{"space then dot at the end", "a ."},
 	{"only dots, three of them", "..."},
 
-	// length, in bytes (the 256th byte is refused) and in UTF-16 code units
+	// length, in bytes: the 256th byte is refused
 	{"256 ASCII bytes", ascii256},
 	{"1000 ASCII bytes", rep("a", 1000)},
 	{"128 times é, 256 bytes", eAcute128},
@@ -119,9 +122,29 @@ var refusedNames = []nameRow{
 	{"86 times €, 258 bytes", euro86},
 	{"63 times U+1F600 and abcd, 256 bytes", emoji63abd},
 	{"64 times U+1F600, 256 bytes", rep("😀", 64)},
-	{"100 times U+1F600, 400 bytes and 200 UTF-16 units", rep("😀", 100)},
-	{"127 times U+1F600 and a, 255 UTF-16 units and 509 bytes", emoji127a},
-	{"128 times U+1F600, 256 UTF-16 units and 512 bytes", emoji128},
+	{"100 times U+1F600, 400 bytes", rep("😀", 100)},
+	{"127 times U+1F600 and a, 509 bytes", emoji127a},
+	{"128 times U+1F600, 512 bytes", emoji128},
+
+	// characters that no person can see or type, beyond exFAT's table: U+007F, U+0080 to
+	// U+009F, U+FFFE and U+FFFF, the first and the last of each range, alone, inside and at
+	// the end of a name
+	{"U+007F alone", "\u007f"},
+	{"U+007F inside", "a\u007fb"},
+	{"U+007F at the end", "a\u007f"},
+	{"U+0080, the first C1 control, alone", "\u0080"},
+	{"U+0080 inside", "a\u0080b"},
+	{"U+0080 at the end", "a\u0080"},
+	{"U+0090, a C1 control in the middle of the range", "a\u0090b"},
+	{"U+009F, the last C1 control, alone", "\u009f"},
+	{"U+009F inside", "a\u009fb"},
+	{"U+009F at the end", "a\u009f"},
+	{"U+FFFE alone", "\ufffe"},
+	{"U+FFFE inside", "a\ufffeb"},
+	{"U+FFFE at the end", "a\ufffe"},
+	{"U+FFFF alone", "\uffff"},
+	{"U+FFFF inside", "a\uffffb"},
+	{"U+FFFF at the end", "a\uffff"},
 
 	// bytes that are not UTF-8
 	{"a lone 0xff byte", "\xff"},
@@ -133,6 +156,53 @@ var refusedNames = []nameRow{
 	{"a code point above U+10FFFF", "\xf4\x90\x80\x80"},
 	{"invalid UTF-8 at the end of an otherwise fine name", "abc.json\x80"},
 }
+
+// windowsDevices are the names that Windows reserves for a device (Microsoft, "Naming Files,
+// Paths, and Namespaces"): CON, PRN, AUX, NUL, COM1 to COM9, LPT1 to LPT9, and COM and LPT with
+// the superscript digits U+00B9, U+00B2 and U+00B3.
+var windowsDevices = func() []string {
+	out := []string{"CON", "PRN", "AUX", "NUL"}
+	for _, d := range []string{"1", "2", "3", "4", "5", "6", "7", "8", "9", "\u00b9", "\u00b2", "\u00b3"} {
+		out = append(out, "COM"+d, "LPT"+d)
+	}
+	return out
+}()
+
+// caseForms gives a name in upper case, lower case, with a capital first letter and in
+// alternating case (the first letter lower).
+func caseForms(s string) []string {
+	r := []rune(s)
+	title, alt := make([]rune, len(r)), make([]rune, len(r))
+	for i, c := range r {
+		title[i], alt[i] = unicode.ToLower(c), unicode.ToUpper(c)
+		if i == 0 {
+			title[i] = unicode.ToUpper(c)
+		}
+		if i%2 == 0 {
+			alt[i] = unicode.ToLower(c)
+		}
+	}
+	return []string{strings.ToUpper(s), strings.ToLower(s), string(title), string(alt)}
+}
+
+// refusedDeviceNames holds every device name in four spellings of case, alone, with one
+// extension, with two extensions and with a trailing dot (a name that the rule of the trailing
+// dot refuses as well; the device rule comes first, see names_text_test.go). No other rule
+// refuses the first three forms.
+var refusedDeviceNames = func() []nameRow {
+	var out []nameRow
+	for _, d := range windowsDevices {
+		for _, n := range caseForms(d) {
+			out = append(out,
+				nameRow{"device name " + n, n},
+				nameRow{"device name " + n + " with an extension", n + ".txt"},
+				nameRow{"device name " + n + " with two extensions", n + ".tar.gz"},
+				nameRow{"device name " + n + " with a trailing dot", n + "."},
+			)
+		}
+	}
+	return out
+}()
 
 // refusedPathForms are paths that are refused because of their shape and not because of one
 // name. Every one is refused by every method that takes a path.
@@ -161,6 +231,11 @@ var refusedPathForms = []nameRow{
 	{"a doubled leading separator and one name", "//x"},
 	{"the prefix of a temporary name, the last element", "/b/d/.rt-abcdefghijk"},
 	{"the prefix alone, the last element", "/b/d/.rt-"},
+	{"the prefix in capitals, the last element", "/b/d/.RT-x"},
+	{"the prefix with a capital R, the last element", "/b/d/.Rt-x"},
+	{"the prefix with a capital T, the last element", "/b/d/.rT-abcdefghijk"},
+	{"the prefix in capitals alone, the last element", "/b/d/.RT-"},
+	{"the prefix in capitals, relative", ".RT-x"},
 	{"the prefix, the last element of a relative path", ".rt-x"},
 }
 
@@ -320,7 +395,18 @@ func requireRefused(t *testing.T, f *memFS, w *fsx.Writer, err error) {
 // folder in the middle and in the first element of a relative path, for each method that takes
 // a path. The refusal is ErrInvalid, no file system call is made, and the writer goes on.
 func TestRefusedNamesInEveryElementOfEveryPath(t *testing.T) {
-	for _, row := range refusedNames {
+	refuseInEveryElementOfEveryPath(t, refusedNames)
+}
+
+// TestRefusedDeviceNamesInEveryElementOfEveryPath: the same for the device names of Windows,
+// in every case, alone and with one or two extensions.
+func TestRefusedDeviceNamesInEveryElementOfEveryPath(t *testing.T) {
+	refuseInEveryElementOfEveryPath(t, refusedDeviceNames)
+}
+
+func refuseInEveryElementOfEveryPath(t *testing.T, rows []nameRow) {
+	t.Helper()
+	for _, row := range rows {
 		for _, use := range pathUses {
 			for _, pl := range placements {
 				t.Run(row.why+"/"+use.label+"/"+pl.label, func(t *testing.T) {
@@ -351,24 +437,40 @@ func TestRefusedShapesOfAPath(t *testing.T) {
 // TestRefusedNamesOfASetFile: each refused name, and the names that are not one plain name,
 // as the name of a file of a set: alone, last after a good name, and first before one.
 func TestRefusedNamesOfASetFile(t *testing.T) {
-	notPlain := []nameRow{
-		{"empty", ""},
-		{"a dot", "."},
-		{"two dots", ".."},
-		{"a slash inside", "a/b"},
-		{"a leading slash", "/a"},
-		{"a trailing slash", "a/"},
-		{"a doubled slash", "a//b"},
-		{"a parent and a name", "../a"},
-		{"a current folder and a name", "./a"},
-		{"a name and the parent", "a/.."},
-		{"a slash alone", "/"},
-		{"the prefix of a temporary name", ".rt-abcdefghijk"},
-		{"the prefix of a temporary name, short", ".rt-x"},
-		{"the prefix alone", ".rt-"},
-	}
+	refuseAsSetFiles(t, slices.Concat(refusedNames, notPlainNames))
+}
+
+// TestRefusedDeviceNamesOfASetFile: the device names of Windows as the name of a file of a set.
+func TestRefusedDeviceNamesOfASetFile(t *testing.T) {
+	refuseAsSetFiles(t, refusedDeviceNames)
+}
+
+// notPlainNames are names of a file of a set that are not one plain name.
+var notPlainNames = []nameRow{
+	{"empty", ""},
+	{"a dot", "."},
+	{"two dots", ".."},
+	{"a slash inside", "a/b"},
+	{"a leading slash", "/a"},
+	{"a trailing slash", "a/"},
+	{"a doubled slash", "a//b"},
+	{"a parent and a name", "../a"},
+	{"a current folder and a name", "./a"},
+	{"a name and the parent", "a/.."},
+	{"a slash alone", "/"},
+	{"the prefix of a temporary name", ".rt-abcdefghijk"},
+	{"the prefix of a temporary name, short", ".rt-x"},
+	{"the prefix alone", ".rt-"},
+	{"the prefix in capitals", ".RT-x"},
+	{"the prefix with a capital R", ".Rt-x"},
+	{"the prefix with a capital T", ".rT-abcdefghijk"},
+	{"the prefix in capitals alone", ".RT-"},
+}
+
+func refuseAsSetFiles(t *testing.T, rows []nameRow) {
+	t.Helper()
 	good := fsx.NewFile{Name: "good.json", Data: []byte("x"), Perm: 0o600}
-	for _, row := range slices.Concat(refusedNames, notPlain) {
+	for _, row := range rows {
 		bad := fsx.NewFile{Name: row.name, Data: []byte("x"), Perm: 0o600}
 		for label, files := range map[string][]fsx.NewFile{
 			"alone":              {bad},
@@ -469,6 +571,8 @@ var acceptedNames = []nameRow{
 	{"the temporary prefix without its hyphen", ".rt"},
 	{"the temporary prefix with another character", ".rt_a"},
 	{"the temporary prefix not at the start", "x.rt-abcdefghijk"},
+	{"the temporary prefix in capitals without its hyphen", ".RT"},
+	{"the temporary prefix in capitals not at the start", "x.RT-abcdefghijk"},
 	{"rt with a hyphen and no dot", "rt-abc"},
 	{"a Latin letter with an accent", "é.json"},
 	{"a decomposed accent", "e\u0301.json"},
@@ -483,6 +587,36 @@ var acceptedNames = []nameRow{
 	{"85 times €, 255 bytes", euro85},
 	{"63 times U+1F600 and abc, 255 bytes", emoji63abc},
 	{"63 times U+1F600, 252 bytes", rep("😀", 63)},
+
+	// next to the characters that are refused (U+007F, U+0080 to U+009F, U+FFFE, U+FFFF)
+	{"U+007E, the tilde, just below U+007F", "a~b"},
+	{"U+00A0, just above U+009F", "a\u00a0b"},
+	{"U+FFFD, just below U+FFFE", "a\ufffdb"},
+
+	// names that contain a device name and are not one: Windows reserves the whole name, or the
+	// part before the first dot
+	{"auxiliary", "auxiliary"},
+	{"Auxiliary", "Auxiliary"},
+	{"com10, two digits", "com10"},
+	{"COM10 in capitals", "COM10"},
+	{"lpt0, the digit zero", "lpt0"},
+	{"com0, the digit zero", "com0"},
+	{"com alone", "com"},
+	{"lpt alone", "lpt"},
+	{"conn", "conn"},
+	{"console", "console"},
+	{"a dot file named con", ".con"},
+	{"a dot file named nul with an extension", ".nul.txt"},
+	{"a device name after the first dot", "a.con"},
+	{"a device name in the middle", "a.nul.txt"},
+	{"COM with a superscript two and a letter", "COM\u00b2x"},
+	{"COM with a superscript four, which Windows does not read as a digit", "COM\u2074"},
+	{"COM with a superscript one and a zero", "com\u00b90"},
+	{"nul with a hyphen and a digit", "nul-1"},
+	{"nul with a digit", "nul1"},
+	{"aux with a digit", "aux1"},
+	{"prn with an underscore", "prn_a"},
+	{"con with a hyphen", "con-1"},
 }
 
 // acceptedNotLast are names that are fine for a folder but not as the last element of a path
@@ -491,6 +625,10 @@ var acceptedNotLast = []nameRow{
 	{"the temporary prefix and 11 characters", ".rt-abcdefghijk"},
 	{"the temporary prefix and one character", ".rt-x"},
 	{"the temporary prefix alone", ".rt-"},
+	{"the temporary prefix in capitals", ".RT-x"},
+	{"the temporary prefix with a capital R", ".Rt-x"},
+	{"the temporary prefix with a capital T", ".rT-abcdefghijk"},
+	{"the temporary prefix in capitals alone", ".RT-"},
 }
 
 // TestAcceptedNamesAreWrittenAtExactlyThatName: each accepted name, in each place and for each
@@ -594,22 +732,12 @@ func TestThePlainFormsOfAPathAreAccepted(t *testing.T) {
 	}
 }
 
-// TestLongNamesAreRefusedByTheByteLimit pins how the two limits meet. A name of 127 times
-// U+1F600 and "a" is 255 UTF-16 code units, which exFAT holds, and 509 bytes, which a
-// workstation's file system does not: the writer refuses it, because a bundle must fit both.
-// 128 times U+1F600 is over both limits. A name over 255 UTF-16 code units is always over 255
-// bytes, so the UTF-16 limit adds nothing that the byte limit does not refuse already.
+// TestLongNamesAreRefusedByTheByteLimit pins the one length limit, 255 bytes, on both sides, for
+// one, two, three and four bytes to a character. A name that fits it also fits exFAT, whose
+// limit is 255 UTF-16 code units: the accepted names are checked for that. 127 times U+1F600 and
+// "a" is 255 UTF-16 code units, which exFAT holds, and 509 bytes, which a workstation's file
+// system does not: it is refused for its bytes, because a bundle must fit both.
 func TestLongNamesAreRefusedByTheByteLimit(t *testing.T) {
-	if got := utf16Len(emoji127a); got != 255 {
-		t.Fatalf("the test name has %d UTF-16 code units, want 255", got)
-	}
-	if got := utf16Len(emoji128); got != 256 {
-		t.Fatalf("the test name has %d UTF-16 code units, want 256", got)
-	}
-	if got := utf16Len(eAcute128); got != 128 {
-		t.Fatalf("the test name has %d UTF-16 code units, want 128", got)
-	}
-	// the edge on both sides, in bytes
 	for _, c := range []struct {
 		name   string
 		bytes  int
@@ -629,22 +757,25 @@ func TestLongNamesAreRefusedByTheByteLimit(t *testing.T) {
 		if len(c.name) != c.bytes {
 			t.Fatalf("a test name has %d bytes, want %d", len(c.name), c.bytes)
 		}
-		f := newMemFS("/b", "/b/d")
-		w := &fsx.Writer{FS: f, Rand: newDetRand(1)}
-		err := w.WriteFile("/b/d/"+c.name, []byte("x"), 0o600)
-		switch {
-		case c.accept && err != nil:
-			t.Errorf("a name of %d bytes and %d UTF-16 units: %v, want it accepted", len(c.name), utf16Len(c.name), err)
-		case !c.accept && !errors.Is(err, fsx.ErrInvalid):
-			t.Errorf("a name of %d bytes and %d UTF-16 units: %v, want ErrInvalid", len(c.name), utf16Len(c.name), err)
+		if c.accept && utf16Len(c.name) > 255 {
+			t.Fatalf("a name of %d bytes has %d UTF-16 code units: it would not fit exFAT", len(c.name), utf16Len(c.name))
 		}
-	}
-	// No name has more UTF-16 code units than bytes, so no name is over the UTF-16 limit and
-	// under the byte limit. Checked over every code point class at its edge.
-	for _, r := range []rune{'a', 'é', '€', '😀', 0x7f, 0x80, 0x7ff, 0x800, 0xffff, 0x10000, 0x10ffff} {
-		s := string(r)
-		if utf16Len(s) > len(s) {
-			t.Errorf("U+%04X has %d UTF-16 code units and %d bytes", r, utf16Len(s), len(s))
+		// as the last element, as a folder, and as the name of a file of a set
+		for what, do := range map[string]func(w *fsx.Writer) error{
+			"last element": func(w *fsx.Writer) error { return w.WriteFile("/b/d/"+c.name, []byte("x"), 0o600) },
+			"folder":       func(w *fsx.Writer) error { return w.WriteFile("/b/"+c.name+"/f", []byte("x"), 0o600) },
+			"set file": func(w *fsx.Writer) error {
+				return w.WriteSet("/b/d/s", []fsx.NewFile{{Name: c.name, Data: []byte("x"), Perm: 0o600}})
+			},
+		} {
+			f := newMemFS("/b", "/b/d", "/b/"+c.name)
+			err := do(&fsx.Writer{FS: f, Rand: newDetRand(1)})
+			switch {
+			case c.accept && err != nil:
+				t.Errorf("a name of %d bytes as a %s: %v, want it accepted", len(c.name), what, err)
+			case !c.accept && !errors.Is(err, fsx.ErrInvalid):
+				t.Errorf("a name of %d bytes as a %s: %v, want ErrInvalid", len(c.name), what, err)
+			}
 		}
 	}
 }
