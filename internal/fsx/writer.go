@@ -290,14 +290,19 @@ func charText(r rune) string {
 
 // windowsDevice reports a name that Windows reserves for a device, so that the holder of the
 // stick cannot open a file of that name on a Windows system. The list is that of Microsoft's
-// page "Naming Files, Paths, and Namespaces": CON, PRN, AUX, NUL, COM1 to COM9, LPT1 to
-// LPT9, and COM and LPT with the superscript digits U+00B9, U+00B2 and U+00B3 that Windows
-// reads as digits. The page says that the names followed immediately by an extension are the
-// same device ("NUL.txt" and "NUL.tar.gz" are NUL), so the part of the name before its first
-// dot is compared, without case. "auxiliary" and "com10" are names.
+// page "Naming Files, Paths, and Namespaces", which says: "Do not use the following reserved
+// names for the name of a file: CON, PRN, AUX, NUL, COM1, COM2, COM3, COM4, COM5, COM6, COM7,
+// COM8, COM9, COM¹, COM², COM³, LPT1, LPT2, LPT3, LPT4, LPT5, LPT6, LPT7, LPT8, LPT9, LPT¹,
+// LPT², and LPT³. Also avoid these names followed immediately by an extension; for example,
+// NUL.txt and NUL.tar.gz are both equivalent to NUL." The page does not list COM0, LPT0,
+// CONIN$ or CONOUT$, and so neither does this function. It says nothing about spaces before
+// the extension; that Windows removes the trailing spaces of a part of a name, so that
+// "nul .txt" is "nul.txt", is an inference, and the function refuses it because that only
+// narrows. So the part of the name before its first dot, with its trailing spaces removed, is
+// compared without case. "auxiliary" and "com10" are names.
 func windowsDevice(name string) bool {
 	stem, _, _ := strings.Cut(name, ".")
-	up := strings.ToUpper(stem)
+	up := strings.ToUpper(strings.TrimRight(stem, " "))
 	switch up {
 	case "CON", "PRN", "AUX", "NUL":
 		return true
