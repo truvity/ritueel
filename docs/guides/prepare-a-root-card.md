@@ -31,7 +31,7 @@ A new token ships with a PIN, a PUK and a management key that everyone knows. Wi
 ## When something goes wrong
 
 - **A wrong PIN is typed.** Stop. Do not guess: three wrong tries block the PIN, and then the PUK is needed (see the next item).
-- **The card is blocked.** After adoption, ritueel unblocks the PIN with the PUK it sealed in the bundle; you type no PUK, and ritueel never shows it. Before adoption the PUK is still the maker's value. If the PUK is also blocked, the PIV applet can only be reset, which destroys every key in it. On a card with no key yet that costs nothing.
+- **The card is blocked.** After adoption, ritueel unblocks the PIN with the PUK it sealed in the bundle; you type no PUK, and ritueel never shows it ([record 0003](../decisions/0003-root-cards.md), rule 21). Before adoption the PUK is still the maker's value. If the PUK is also blocked, the PIV applet can only be reset, which destroys every key in it. On a card with no key yet that costs nothing.
 - **ritueel says the card is held.** Another program has it. Close it, or stop `scdaemon`.
 - **ritueel says the management key is not the sealed one** (`management-key-unsealed`). The card was not adopted by ritueel, or a management key was set by hand. A card that holds no root key yet can be adopted again; a card that holds root keys is never reset.
 
