@@ -44,16 +44,16 @@ The effects below appear during an overlap and whenever a cross-certificate exis
 
 ## Moving and mixing
 
-A root is built from one or more keys, in any key store ([record 0001](../decisions/0001-what-ritueel-is.md), rule 29). Cards and a cloud key may belong to one root, so that a failure of one kind does not take out the other ([record 0004](../decisions/0004-the-cloud-root.md), rule 2). The keys of one root change by steps, which [moving from one root to another](/learn/transitions/) teaches in full.
+A root is built from one or more keys, in any key store ([record 0001](../decisions/0001-what-ritueel-is.md), rule 29). Cards and a cloud key may belong to one root: a company that wants a root independent of one provider gives it keys on cards too ([record 0004](../decisions/0004-the-cloud-root.md), rule 2). The keys of one root change by steps, which [moving from one root to another](/learn/transitions/) teaches in full.
 
 **From one kind of key store to another.** A transition never moves a key. It makes a new key in the new key store, and an old key vouches for it ([record 0007](../decisions/0007-changing-and-losing-a-root.md), rule 10). The new key store must give evidence for a root, so a key file cannot be the new home of a root that others rely on ([record 0002](../decisions/0002-where-a-key-lives.md), rules 7 and 8).
 
-| From | To | What changes |
+| From | To | What the records say |
 |---|---|---|
-| Key file | Card | The key stops being copyable. |
-| Key file | Cloud key | The key moves under cloud access control and audit. |
-| Card | Cloud key | A physical key becomes a permission. |
-| Cloud key | Card | A permission becomes a physical key. A second card exists in another place before the first is relied on. |
+| Key file | Card | A key file is a copy by nature ([record 0002](../decisions/0002-where-a-key-lives.md), rule 11). A root card key is born on its card and never leaves it ([record 0002](../decisions/0002-where-a-key-lives.md), rules 2 and 5). |
+| Key file | Cloud key | A cloud key is born in the service and is never exported ([record 0002](../decisions/0002-where-a-key-lives.md), rules 2 and 5). Its evidence is the key's description, policy and audit trail, read from the service ([record 0004](../decisions/0004-the-cloud-root.md), rule 12). |
+| Card | Cloud key | A root key on a card has a PIN rule and a touch rule ([record 0003](../decisions/0003-root-cards.md), rule 2). A cloud key is confirmed by the typed plan digest and a session of the ceremony role ([record 0004](../decisions/0004-the-cloud-root.md), rule 8). |
+| Cloud key | Card | A root on cards has two independent keys, A and B, one on each card. One holder keeps them in two places ([record 0003](../decisions/0003-root-cards.md), rule 1). |
 
 **Adding a key.** An active root key vouches for the new one: for X.509 with a cross-certificate, for OpenPGP with a certification of the new primary. Adding a root key is a two-card ceremony, and a change of the root keys runs alone ([record 0007](../decisions/0007-changing-and-losing-a-root.md), rules 7 and 9).
 
@@ -63,7 +63,7 @@ A root is built from one or more keys, in any key store ([record 0001](../decisi
 
 **Revoking a key.** `revoke` is an act of its own, for an emergency. A root key leaves by a new root list without it, signed by the surviving keys and carrying its removal authorisation ([record 0007](../decisions/0007-changing-and-losing-a-root.md), rules 11 and 12).
 
-**The revocation is prepared at birth.** When a key is born, ritueel makes its revocation material: for every OpenPGP primary, a revocation signature for each of two reasons, compromised and superseded, and for every root key, a removal authorisation. The holder keeps them apart from the cards, in at least two places. Each costs one more touch at a card ceremony ([record 0007](../decisions/0007-changing-and-losing-a-root.md), rules 21 to 23). Each key has its own: no key is the revoker of another, and the key of a lost card leaves with the material made for it. [Revoke](/learn/revoke/) says what a revocation reaches.
+**The revocation is prepared at birth.** When a key is born, ritueel makes its revocation material: for every OpenPGP primary, a revocation signature for each of two reasons, compromised and superseded, and for every root key, a removal authorisation. The holder keeps them apart from the cards, in at least two places. Each costs one more touch at a card ceremony ([record 0007](../decisions/0007-changing-and-losing-a-root.md), rules 21 to 23). Each key has its own: there is no designated revoker ([record 0007](../decisions/0007-changing-and-losing-a-root.md), rule 21), and the removal authorisation is made "so the key can leave the set when it can no longer sign" ([record 0007](../decisions/0007-changing-and-losing-a-root.md), rule 22). [Revoke](/learn/revoke/) says what a revocation reaches.
 
 :::caution[Open]
 How the card of the year is found when one root has a key on a card and a key in the cloud is not decided ([record 0007](../decisions/0007-changing-and-losing-a-root.md), "Proposed"; [issue #137](https://github.com/truvity/ritueel/issues/137)).
