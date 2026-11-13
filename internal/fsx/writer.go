@@ -257,20 +257,53 @@ func (w *Writer) writeNew(path string, data []byte, perm fs.FileMode) error {
 	return nil
 }
 
+// checkPath refuses a path that can mean more than one thing, or something other than a name
+// the caller can point at. The forms, all refused with [ErrInvalid]: an empty path; a NUL byte;
+// a trailing separator (filepath.Dir and filepath.Base of "dir/x/" both give "x", so the file
+// would be made inside x); an element that is "." or ".." ; an empty element between two
+// separators ("a//b", and a leading "//", which some systems read as a network name); on a
+// system whose separator is not a backslash, a backslash (a separator to Windows and to a
+// FAT or exFAT stick, a plain character here) and a leading drive ("C:", "C:x"); a final
+// element that starts with [TempPrefix]. One leading separator, an absolute path, is
+// accepted: the writer has no root (see the package comment). Other forms pass as they are,
+// among them a relative path with no folder ("x", whose folder is ".").
 func checkPath(path string) error {
 	if path == "" {
 		return fmt.Errorf("%w: empty path", ErrInvalid)
 	}
-	for _, e := range strings.Split(filepath.ToSlash(path), "/") {
-		if e == ".." {
+	if strings.IndexByte(path, 0) >= 0 {
+		return fmt.Errorf("%w: path %q has a NUL byte", ErrInvalid, path)
+	}
+	rest := path[len(filepath.VolumeName(path)):]
+	if filepath.Separator != '\\' {
+		if strings.IndexByte(rest, '\\') >= 0 {
+			return fmt.Errorf("%w: path %q has a backslash", ErrInvalid, path)
+		}
+		if len(rest) >= 2 && rest[1] == ':' && (rest[0]|0x20 >= 'a' && rest[0]|0x20 <= 'z') {
+			return fmt.Errorf("%w: path %q starts with a drive", ErrInvalid, path)
+		}
+	}
+	elems := strings.Split(filepath.ToSlash(rest), "/")
+	last := len(elems) - 1
+	if last == 0 && elems[0] == "" {
+		return fmt.Errorf("%w: path %q does not name a file or a folder", ErrInvalid, path)
+	}
+	if last > 0 && elems[last] == "" {
+		return fmt.Errorf("%w: path %q ends with a separator", ErrInvalid, path)
+	}
+	for i, e := range elems {
+		switch e {
+		case "":
+			if i != 0 { // a leading separator is the one empty element that is allowed
+				return fmt.Errorf("%w: path %q has an empty element (a doubled separator)", ErrInvalid, path)
+			}
+		case ".":
+			return fmt.Errorf("%w: path %q has a \".\" element", ErrInvalid, path)
+		case "..":
 			return fmt.Errorf("%w: path %q has a \"..\" element", ErrInvalid, path)
 		}
 	}
-	base := filepath.Base(path)
-	if base == "." || base == string(filepath.Separator) {
-		return fmt.Errorf("%w: path %q does not name a file or a folder", ErrInvalid, path)
-	}
-	if strings.HasPrefix(base, TempPrefix) {
+	if strings.HasPrefix(elems[last], TempPrefix) {
 		return fmt.Errorf("%w: path %q has the prefix of a temporary name", ErrInvalid, path)
 	}
 	return nil
