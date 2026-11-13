@@ -110,6 +110,11 @@ The other linters are the standard set (`errcheck`, `govet`, `ineffassign`, `sta
 - A command is tested in process: call `cli.Run` with buffers for the streams and a fixed build, and read the exit code and both buffers. `cmd/ritueel/main_test.go` also builds the program and runs it as a process, to check the real executable.
 - A new dependency is named in the pull request, with the reason for it.
 
+### Tests that need an outside tool or a device
+
+- **An outside tool,** such as `gpgv` or `sqv`. The test skips when the tool is missing, unless the variable `RITUEEL_REQUIRE_TOOLS=1` is set, and then it fails. The recipe `go-test` sets the variable, so nothing is skipped silently in CI. A skip outside the devbox is a check that did not run, and it is not a pass.
+- **A hardware token or a cloud key.** The test has a build tag, so the default run does not build it. It takes the serial of the token or the account of the key from the environment. The first step that needs one names its tag. The rules of [Hardware tokens and cloud keys](/contributing/tools/#hardware-tokens-and-cloud-keys) apply.
+
 ### In CI
 
 - The job `go` of `.github/workflows/checks.yaml` runs `just go-check`. It is one of the jobs that the single job `checks` waits for.
