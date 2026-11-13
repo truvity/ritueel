@@ -53,13 +53,11 @@ func OpenFS(root string) (FS, error) {
 	}
 	fd, err := unix.Open(clean, openFolderFlags, 0)
 	if err != nil {
-		if isLinkErrno(err) {
-			var st unix.Stat_t
-			if unix.Lstat(clean, &st) == nil && st.Mode&unix.S_IFMT == unix.S_IFLNK {
-				err = fmt.Errorf("%w: %w", ErrLink, err)
-			}
+		var st unix.Stat_t
+		if unix.Lstat(clean, &st) == nil && st.Mode&unix.S_IFMT == unix.S_IFLNK {
+			err = fmt.Errorf("%w: %w", ErrLink, err)
 		}
-		return nil, fmt.Errorf("fsx: open the root %q: %w", root, err)
+		return nil, fmt.Errorf("fsx: open the root %+q: %w", root, err)
 	}
 	return newDir(fd, "root"), nil
 }
@@ -93,23 +91,20 @@ func (d *osDir) with(fn func(fd int) error) error {
 // caller of an FS that skips the package must not be able to walk with one call.
 func checkElem(name string) error {
 	if name == "" || name == "." || name == ".." || strings.ContainsAny(name, "/\x00") {
-		return fmt.Errorf("%w: %q is not one plain element", ErrInvalid, name)
+		return fmt.Errorf("%w: %+q is not one plain element", ErrInvalid, name)
 	}
 	return nil
 }
 
-// isLinkErrno reports the errors that an open with O_NOFOLLOW (and O_DIRECTORY) gives for a
-// symbolic link: Linux answers ELOOP, or ENOTDIR when O_DIRECTORY is set too, and macOS ELOOP.
-func isLinkErrno(err error) bool {
-	return errors.Is(err, unix.ELOOP) || errors.Is(err, unix.ENOTDIR)
-}
-
-// classify says that an element is a link when the open failed in the way a link fails. It asks
-// the folder, without following, what the name is.
+// classify names a link as a link whatever error number the failed open gave: Linux answers ELOOP
+// or ENOTDIR for O_NOFOLLOW (with O_DIRECTORY), macOS ELOOP or ENOTDIR, and another system may
+// answer with another number. After every failed open of a folder element or of a file to read
+// it asks the folder, with a look that does not follow (fstatat with AT_SYMLINK_NOFOLLOW), what
+// the name is, and when it is a symbolic link the error wraps [ErrLink] and keeps the original
+// error number in the chain. A failed look changes nothing: the original error is returned. A
+// name that is swapped back to a regular file between the failed open and the look gives a
+// refusal without ErrLink; it is still a refusal, and nothing was followed.
 func classify(dirfd int, name string, err error) error {
-	if !isLinkErrno(err) {
-		return err
-	}
 	var st unix.Stat_t
 	if unix.Fstatat(dirfd, name, &st, unix.AT_SYMLINK_NOFOLLOW) == nil && st.Mode&unix.S_IFMT == unix.S_IFLNK {
 		return fmt.Errorf("%w: %w", ErrLink, err)
