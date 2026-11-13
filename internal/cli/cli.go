@@ -247,6 +247,7 @@ func (inv *invocation) newCommand(s spec, parents, inherited []string) *ucli.Com
 		if err != nil {
 			// The panic of a code and an outcome that disagree must happen here, inside the run
 			// that turns a panic into exit code 1, and not in finish.
+			checkOneCode(strings.Join(path, " "), err)
 			code, outcome := ExitFor(err)
 			checkReasons(strings.Join(path, " "), code, outcome, reasonsOf(err))
 			return err
