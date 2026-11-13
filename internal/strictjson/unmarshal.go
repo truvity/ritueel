@@ -85,7 +85,7 @@ func kindName(k Kind) string {
 	case Bool:
 		return "true or false"
 	default:
-		return "something else"
+		panic(fmt.Sprintf("strictjson: a value of kind %d reached the filler, and the strict parser refuses it", k))
 	}
 }
 
@@ -164,7 +164,9 @@ func (f *filler) fill(dst reflect.Value, n *Value) error {
 		}
 		return f.fillElems(dst, n)
 	default:
-		return jsonset.Errorf(f.path, "a value of type %s cannot be read: this kind of Go type is not part of ritueel's JSON", t)
+		// The judge of the types (jsonset) refuses every other kind before a byte is looked at, so
+		// this is not reached; if the judge and this switch ever drift apart, it must be loud.
+		panic(fmt.Sprintf("strictjson: the type judge passed the type %s of kind %s, which the reader cannot fill; it should have refused the type", t, t.Kind()))
 	}
 	return nil
 }
@@ -189,8 +191,10 @@ func anyOf(n *Value) any {
 		return n.Str
 	case Integer:
 		return n.Int
-	default:
+	case Bool:
 		return n.Bool
+	default:
+		panic(fmt.Sprintf("strictjson: a value of kind %d reached the filler, and the strict parser refuses it", n.Kind))
 	}
 }
 

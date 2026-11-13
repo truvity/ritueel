@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/base64"
 	"errors"
+	"fmt"
 	"math"
 	"reflect"
 	"slices"
@@ -164,9 +165,9 @@ func (w *writer) write(v reflect.Value, depth int) error {
 	case reflect.Slice, reflect.Array:
 		return w.list(v, depth)
 	default:
-		// The verdict of the type and this switch agree on the kinds that can be written, so
-		// this is not reached; if they ever drift apart nothing is written for the kind.
-		return w.refuseType(t, "this kind of Go type is not part of ritueel's JSON")
+		// The judge of the types (jsonset) refuses every other kind before a value is looked at, so
+		// this is not reached; if the judge and this switch ever drift apart, it must be loud.
+		panic(fmt.Sprintf("canonjson: the type judge passed the type %s of kind %s, which the writer cannot write; it should have refused the type", t, t.Kind()))
 	}
 	return nil
 }
@@ -192,10 +193,11 @@ func (w *writer) raw(v reflect.Value) error {
 	if err := canonicalizeInto(&w.out, doc); err != nil {
 		// The document was read on its own, so its path starts at its own top: it goes on from here.
 		var at *jsonset.Error
-		if errors.As(err, &at) {
-			return jsonset.Errorf(append(slices.Clone(w.path), at.Path...), "%s", at.What)
+		if !errors.As(err, &at) {
+			// Every error of canonicalizeInto is one of strictjson.Parse, and that is a *jsonset.Error.
+			panic(fmt.Sprintf("canonjson: canonicalizeInto returned an error that is not a *jsonset.Error: %v", err))
 		}
-		return err
+		return jsonset.Errorf(append(slices.Clone(w.path), at.Path...), "%s", at.What)
 	}
 	return nil
 }
@@ -237,10 +239,8 @@ func isEmpty(v reflect.Value) bool {
 		return !v.Bool()
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
 		return v.Int() == 0
-	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uintptr:
+	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
 		return v.Uint() == 0
-	case reflect.Float32, reflect.Float64:
-		return v.Float() == 0
 	case reflect.Interface, reflect.Pointer:
 		return v.IsNil()
 	default:
