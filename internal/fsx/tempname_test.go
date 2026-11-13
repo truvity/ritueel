@@ -41,14 +41,19 @@ func TestTempNameShapeOverTenThousandDraws(t *testing.T) {
 	}
 }
 
+// TestTempNameNeedsNoRoot: a writer with no FS can still draw a name (the draw does not reach a
+// file system), and it reads only the random source.
 func TestTempNameReadsOnlyTheRandomSource(t *testing.T) {
-	f := newMemFS("/b")
-	w := &fsx.Writer{FS: f, Rand: newDetRand(1)}
+	f := newMemFS("b")
+	w := newWriter(t, f, 1)
 	if _, err := w.TempName(); err != nil {
 		t.Fatal(err)
 	}
 	if f.opCount() != 0 {
 		t.Fatalf("TempName reached the file system: %v", f.opList())
+	}
+	if _, err := (&fsx.Writer{Rand: newDetRand(1)}).TempName(); err != nil {
+		t.Fatalf("TempName of a writer with no root: %v", err)
 	}
 }
 

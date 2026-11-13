@@ -42,6 +42,10 @@ type bundleWriter interface {
 
 type realWriter struct{ *fsx.Writer }
 
+// leakChecked says that the oracle of the open handles applies to this writer: it is the real
+// one, and the wrong writers open handles as they please.
+func (realWriter) leakChecked() bool { return true }
+
 func (r realWriter) CreateJournal(p string) (journal, error) {
 	j, err := r.Writer.CreateJournal(p)
 	if err != nil {
@@ -155,6 +159,25 @@ type run struct {
 	acks []ack
 }
 
+// rel is the path the writer is given for a path of the intent: relative to the root.
+func rel(p string) string { return strings.TrimPrefix(p, "/") }
+
+// checkOpen is the oracle of the handles, after a call of the real writer has returned: the
+// root, and the file of each journal that is still open, and nothing else.
+func (r *run) checkOpen(journals int) {
+	r.t.Helper()
+	if c, ok := r.w.(interface{ leakChecked() bool }); !ok || !c.leakChecked() {
+		return
+	}
+	d, f := r.fs.handles()
+	if d != 1 || f != journals {
+		r.t.Fatalf("after the call the writer holds %d folders and %d files open (%s), want the root and %d journals", d, f, r.fs.describeOpen(), journals)
+	}
+	if v := r.fs.violationList(); len(v) > 0 {
+		r.t.Fatalf("the writer made calls that no correct caller makes: %q", v)
+	}
+}
+
 var defaultOrder = []string{"mkdir", "plan", "attempt", "births", "sigs", "artifacts", "trust", "transcript", "record"}
 
 func (r *run) ack(kind, p string, lines int) {
@@ -162,36 +185,44 @@ func (r *run) ack(kind, p string, lines int) {
 }
 
 func (r *run) file(p string) error {
-	if err := r.w.WriteFile(p, r.in.files[p], 0o600); err != nil {
+	if err := r.w.WriteFile(rel(p), r.in.files[p], 0o600); err != nil {
 		return err
 	}
 	r.ack("file", p, 0)
+	r.checkOpen(0)
 	return nil
 }
 
 func (r *run) journal(p string) error {
-	j, err := r.w.CreateJournal(p)
+	j, err := r.w.CreateJournal(rel(p))
 	if err != nil {
 		return err
 	}
 	r.ack("journal", p, 0)
+	r.checkOpen(1)
 	for i, l := range r.in.journals[p] {
 		if err := j.Append(l); err != nil {
 			_ = j.Close()
 			return err
 		}
 		r.ack("line", p, i+1)
+		r.checkOpen(1)
 	}
-	return j.Close()
+	if err := j.Close(); err != nil {
+		return err
+	}
+	r.checkOpen(0)
+	return nil
 }
 
 func (r *run) step(name string) error {
 	switch name {
 	case "mkdir":
-		if err := r.w.Mkdir(cerDir, 0o700); err != nil {
+		if err := r.w.Mkdir(rel(cerDir), 0o700); err != nil {
 			return err
 		}
 		r.ack("dir", cerDir, 0)
+		r.checkOpen(0)
 		return nil
 	case "plan":
 		return r.file(cerDir + "/plan.json")
@@ -213,10 +244,11 @@ func (r *run) step(name string) error {
 		for _, n := range r.in.sets[trustSet] {
 			set = append(set, fsx.NewFile{Name: n, Data: r.in.files[trustSet+"/"+n], Perm: 0o600})
 		}
-		if err := r.w.WriteSet(trustSet, set); err != nil {
+		if err := r.w.WriteSet(rel(trustSet), set); err != nil {
 			return err
 		}
 		r.ack("set", trustSet, 0)
+		r.checkOpen(0)
 		return nil
 	case "transcript":
 		return r.file(cerDir + "/transcript.txt")
@@ -231,11 +263,19 @@ func (r *run) step(name string) error {
 // failing.
 func runCeremony(t testing.TB, mk func(*memFS) bundleWriter, order []string) *run {
 	t.Helper()
-	f := newMemFS("/b", "/b/history", "/b/sealed", "/b/trust")
+	f := newMemFS("b", "b/history", "b/sealed", "b/trust")
 	r := &run{t: t, fs: f, w: mk(f), in: newIntent()}
 	for _, name := range order {
 		if err := r.step(name); err != nil {
 			t.Fatalf("step %s: %v", name, err)
+		}
+	}
+	if c, ok := r.w.(interface{ Close() error }); ok {
+		if err := c.Close(); err != nil {
+			t.Fatalf("Close: %v", err)
+		}
+		if d, fl := f.handles(); d != 0 || fl != 0 {
+			t.Fatalf("after Close of the writer %d folders and %d files are open (%s)", d, fl, f.describeOpen())
 		}
 	}
 	return r
@@ -244,7 +284,7 @@ func runCeremony(t testing.TB, mk func(*memFS) bundleWriter, order []string) *ru
 // realMaker is the real writer over the file system, with random parts that repeat from run
 // to run.
 func realMaker(f *memFS) bundleWriter {
-	return realWriter{&fsx.Writer{FS: f, Rand: newDetRand(1)}}
+	return realWriter{&fsx.Writer{FS: f.Root(), Rand: newDetRand(1)}}
 }
 
 // ---- the oracle -------------------------------------------------------------------------
@@ -280,7 +320,7 @@ func oracle(img *image, in *intent, acks []ack, cut int, sawPartial *int) []stri
 			continue
 		}
 		nd := img.nodes[p]
-		if nd.dir {
+		if nd.dir() {
 			if !in.dirs[p] && in.sets[p] == nil {
 				add("%s: a folder at a name that is not a final name%s", p, leak(path.Base(p), in))
 			}
@@ -297,7 +337,7 @@ func oracle(img *image, in *intent, acks []ack, cut int, sawPartial *int) []stri
 			if !bytes.HasPrefix(want, nd.data) {
 				add("%s: a journal that is not a prefix of its intended content", p)
 			}
-			whole, partial, err := fsx.ReadJournal(img, p)
+			whole, partial, err := img.readJournal(p)
 			if err != nil {
 				add("%s: ReadJournal: %v", p, err)
 				continue
@@ -382,7 +422,7 @@ func oracle(img *image, in *intent, acks []ack, cut int, sawPartial *int) []stri
 				add("a call that returned (#%d) created journal %s, and it is not there", a.After, a.Path)
 			}
 		case "line":
-			whole, _, err := fsx.ReadJournal(img, a.Path)
+			whole, _, err := img.readJournal(a.Path)
 			if err != nil || len(whole) < a.Lines {
 				add("an Append that returned (#%d) made line %d of %s whole, and the journal has %d whole lines (%v)", a.After, a.Lines, a.Path, len(whole), err)
 				continue
@@ -496,4 +536,11 @@ func (s sweep) kinds() []string {
 	}
 	slices.Sort(out)
 	return out
+}
+
+// readJournal reads the journal at the "/"-rooted path p of the image through the package's reader.
+func (img *image) readJournal(p string) (lines [][]byte, partial []byte, err error) {
+	root := img.root()
+	defer func() { _ = root.Close() }()
+	return fsx.ReadJournal(root, rel(p))
 }

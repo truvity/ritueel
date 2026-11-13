@@ -1,6 +1,9 @@
 package fsx_test
 
 import (
+	"bytes"
+	"errors"
+	"io/fs"
 	"path"
 	"regexp"
 	"slices"
@@ -23,7 +26,7 @@ func TestCutRealWriterPassesTheOracleAtEveryCut(t *testing.T) {
 	s := sweepCuts(r)
 
 	// A check that finds nothing to check fails.
-	if s.Ops < 60 {
+	if s.Ops < 120 {
 		t.Fatalf("the ceremony made only %d file system calls; the cut test is not looking at it", s.Ops)
 	}
 	if want := (s.Ops + 1) * len(policiesUnderTest()); s.Images != want {
@@ -36,7 +39,7 @@ func TestCutRealWriterPassesTheOracleAtEveryCut(t *testing.T) {
 	for _, o := range r.fs.opList() {
 		kinds[o.Kind] = true
 	}
-	for _, k := range []opKind{kMkdir, kCreate, kWrite, kSync, kClose, kRename, kSyncDir} {
+	for _, k := range []opKind{kOpenDir, kCloseDir, kMkdir, kCreate, kWrite, kSync, kClose, kRename, kSyncDir} {
 		if !kinds[k] {
 			t.Errorf("the ceremony never made a %s call", k)
 		}
@@ -75,12 +78,12 @@ func TestCutTheFinalPlaceOfEveryFileIsReachedByARename(t *testing.T) {
 	for _, o := range r.fs.opList() {
 		switch o.Kind {
 		case kRename:
-			renamedTo[o.New] = true
+			renamedTo[abs(o.New)] = true
 			if !tempShape.MatchString(path.Base(o.Path)) {
 				t.Errorf("%v: a rename from a name that is not a temporary name", o)
 			}
 		case kCreate, kMkdir:
-			created = append(created, o.Path)
+			created = append(created, abs(o.Path))
 		}
 	}
 	for _, p := range created {
@@ -235,11 +238,65 @@ func TestCutControlsAreWrongOnlyByTheirOrder(t *testing.T) {
 func TestCutRealWriterAlsoPassesWithOtherRandomSources(t *testing.T) {
 	for seed := byte(10); seed < 14; seed++ {
 		mk := func(f *memFS) bundleWriter {
-			return realWriter{&fsx.Writer{FS: f, Rand: newDetRand(seed)}}
+			return realWriter{&fsx.Writer{FS: f.Root(), Rand: newDetRand(seed)}}
 		}
 		r := runCeremony(t, mk, defaultOrder)
 		if s := sweepCuts(r); len(s.Failures) > 0 {
 			t.Fatalf("random source %d: %s", seed, s.table(10))
+		}
+	}
+}
+
+// TestCutAFreshWriterOverEveryRecoveredImage: after a cut a new writer is opened over what the
+// stick holds (a fresh root handle of the recovered image: the old writer's root died with the
+// process), and it goes on. The attempt file is written again: the call succeeds when the image
+// has no such file, is refused with fs.ErrExist at the rename when it has one (and leaves the
+// first content), and stops at the walk with fs.ErrNotExist when the folder did not survive; the
+// leftover temporary names of the cut never get in the way (the new names are drawn again); and
+// nothing stays open after the writer's Close.
+func TestCutAFreshWriterOverEveryRecoveredImage(t *testing.T) {
+	r := runCeremony(t, realMaker, defaultOrder)
+	attempt := cerDir + "/attempt.json"
+	counts := map[string]int{}
+	for n := 0; n <= r.fs.opCount(); n++ {
+		for _, p := range policiesUnderTest() {
+			img := r.fs.CrashAfter(n, p)
+			before, had := img.file(attempt)
+			folder := img.isDir(cerDir)
+			w := &fsx.Writer{FS: img.root(), Rand: newDetRand(byte(n))}
+			err := w.WriteFile(rel(attempt), []byte("second try"), 0o600)
+			switch {
+			case !folder:
+				counts["no folder"]++
+				if fe := asError(t, err); fe.Step != fsx.StepOpenDir || !errors.Is(err, fs.ErrNotExist) {
+					t.Fatalf("cut %d, %v: no folder, got %v", n, p, err)
+				}
+			case had:
+				counts["file exists"]++
+				if fe := asError(t, err); fe.Step != fsx.StepRename || !errors.Is(err, fs.ErrExist) {
+					t.Fatalf("cut %d, %v: the file exists, got %v", n, p, err)
+				}
+				if now := mustFile(t, img.fsys.Live(), attempt); !bytes.Equal(now, before) {
+					t.Fatalf("cut %d, %v: the first content was replaced", n, p)
+				}
+			default:
+				counts["written"]++
+				if err != nil {
+					t.Fatalf("cut %d, %v: the folder is there and the file is not: %v", n, p, err)
+				}
+				if now := mustFile(t, img.fsys.Live(), attempt); string(now) != "second try" {
+					t.Fatalf("cut %d, %v: the file holds %q", n, p, now)
+				}
+			}
+			_ = w.Close()
+			if d, fl := img.fsys.handles(); d != 0 || fl != 0 {
+				t.Fatalf("cut %d, %v: %d folders and %d files open after Close (%s)", n, p, d, fl, img.fsys.describeOpen())
+			}
+		}
+	}
+	for _, k := range []string{"no folder", "file exists", "written"} {
+		if counts[k] == 0 {
+			t.Errorf("no cut gave the case %q: %v", k, counts)
 		}
 	}
 }
