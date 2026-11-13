@@ -1,0 +1,101 @@
+# The release: a tag `vX.Y.Z` (or `vX.Y.Z-suffix`) that the maintainer pushes makes GoReleaser build
+# `ritueel` for Linux on amd64 and arm64 (.goreleaser.yaml), one .tar.gz for each, and SHA256SUMS, and
+# puts them on the repository's GitHub Releases page. THE FILES ARE NOT SIGNED: the archives and
+# SHA256SUMS are plain, and a consumer's trust is the digest it pinned. No release is signed until the
+# project's root is adopted and drilled (record 0009, rules 12 to 14).
+#
+# Only a push of a tag runs the publishing job. A pull request cannot reach it: there is no
+# `pull_request`, `pull_request_target` or `workflow_run` trigger. `workflow_dispatch` is a dry run: it
+# runs the `verify` job (go-check, and a snapshot build with go-release-check) and never publishes.
+# No tag is made by this workflow and none is moved or deleted; a published version is never reused,
+# moved or deleted (GOVERNANCE.md), so a second run for a tag that has a release fails on the files
+# that are already there.
+#
+# The tools come from this repository's own devbox.json and devbox.lock (GoReleaser included), through
+# the same public action as the `go` job of checks.yaml. The only credential is the job's own
+# GITHUB_TOKEN, and only the `publish` job can write with it.
+name: Release
+
+on:
+  push:
+    tags:
+      - "v[0-9]+.[0-9]+.[0-9]+*"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# One run for each tag, never cancelled: a release that has started must end.
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  # Read-only. What the tagged commit must pass before anything is published, and the dry run on any
+  # branch. For a tag it also refuses a tag that is not `vX.Y.Z` or `vX.Y.Z-suffix`, and a commit
+  # that is not on main.
+  verify:
+    name: verify (tag, go-check, snapshot build)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # The tag, the history (the release notes) and origin/main (the commit must be on it).
+          fetch-depth: 0
+          persist-credentials: false
+      - name: The tag is vX.Y.Z or vX.Y.Z-suffix, and its commit is on main
+        if: github.ref_type == 'tag'
+        env:
+          TAG: ${{ github.ref_name }}
+          COMMIT: ${{ github.sha }}
+        run: |
+          if ! [[ "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z]+(\.[0-9A-Za-z]+)*)?$ ]]; then
+            echo "::error::the tag '$TAG' is not vX.Y.Z or vX.Y.Z-suffix"
+            exit 1
+          fi
+          if ! git merge-base --is-ancestor "$COMMIT" refs/remotes/origin/main; then
+            echo "::error::the commit of the tag $TAG is not on main"
+            exit 1
+          fi
+      - uses: jetify-com/devbox-install-action@8c6a66ed6273138b1915457069de78cb52fe3bd7 # v0.15.0
+        with:
+          devbox-version: "0.19.0"
+          # sha256 of the extracted devbox binary (linux-amd64), not of the release archive.
+          sha256-checksum: "828fb26b9bc2ac63eb3fbc09aea365123db1d2810d0870895f67b5bbffd5ecdb"
+          enable-cache: "false"
+          refresh-cli: "true"
+      # The same recipe as the `go` job of checks.yaml; it includes go-release-check, the snapshot build.
+      - run: devbox run -- just go-check
+
+  # The only job that writes. It runs for a pushed tag and for nothing else, after `verify` has passed,
+  # on the commit that the tag event named (not on whatever the tag points at by then). `go-release`
+  # refuses again unless the tag is well formed, points at that commit and the commit is on main; it
+  # builds once without publishing and checks that build like go-release-check does; then it publishes.
+  publish:
+    name: publish (GoReleaser, GitHub Releases, unsigned)
+    needs: verify
+    if: github.event_name == 'push' && github.ref_type == 'tag'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: jetify-com/devbox-install-action@8c6a66ed6273138b1915457069de78cb52fe3bd7 # v0.15.0
+        with:
+          devbox-version: "0.19.0"
+          # sha256 of the extracted devbox binary (linux-amd64), not of the release archive.
+          sha256-checksum: "828fb26b9bc2ac63eb3fbc09aea365123db1d2810d0870895f67b5bbffd5ecdb"
+          enable-cache: "false"
+          refresh-cli: "true"
+      - run: devbox run -- just go-release
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+          GITHUB_TOKEN: ${{ github.token }}

@@ -1,0 +1,81 @@
+# The release build, GoReleaser version 2. The workflow .github/workflows/release.yaml runs it on a
+# tag `vX.Y.Z` through `just go-release`; `just go-release-check` runs the same file as a snapshot,
+# which needs no tag and publishes nothing. The pinned GoReleaser is the one in devbox.json.
+#
+# NOTHING HERE IS SIGNED. The archives and SHA256SUMS are plain files, and a consumer's trust in a
+# release is the digest it pinned, not a signature. No release is signed until the project's root is
+# adopted and drilled (record 0009, rules 12 to 14; docs/contributing/tools.md). So this file has no
+# `signs` section, and no image, package, Homebrew tap or SBOM either.
+#
+# Linux only, on amd64 and arm64: ritueel delivers one statically linked Linux executable (record
+# 0010, rule 23). There is no macOS build.
+version: 2
+
+project_name: ritueel
+
+# The same build as the `go-build` recipe of the Justfile: static (CGO_ENABLED=0), paths trimmed, the
+# version and the commit stamped in. The version is the tag with its `v`, as `git describe` gives in
+# `go-build`, so `ritueel version` prints `ritueel v0.1.0 (commit <40 hex>)` from the archive too.
+builds:
+  - id: ritueel
+    main: ./cmd/ritueel
+    binary: ritueel
+    env:
+      - CGO_ENABLED=0
+    goos: [linux]
+    goarch: [amd64, arm64]
+    flags:
+      - -trimpath
+    ldflags:
+      - -s -w -X ritueel.id/ritueel/internal/buildinfo.version={{ .Tag }} -X ritueel.id/ritueel/internal/buildinfo.commit={{ .FullCommit }}
+    # The file times are the commit's, so that two builds of one commit give the same bytes.
+    mod_timestamp: "{{ .CommitTimestamp }}"
+
+# One .tar.gz for each platform: the binary, the licence and the README. The name is the GoReleaser
+# default and is proposed, not decided (consumers pin by name, so renaming is free only before the
+# first tag).
+archives:
+  - id: ritueel
+    ids: [ritueel]
+    formats: [tar.gz]
+    name_template: "ritueel_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    files:
+      - src: LICENSE
+        info:
+          mtime: "{{ .CommitDate }}"
+      - src: README.md
+        info:
+          mtime: "{{ .CommitDate }}"
+    builds_info:
+      mtime: "{{ .CommitDate }}"
+
+# Plain SHA-256 digests, unsigned.
+checksum:
+  name_template: SHA256SUMS
+  algorithm: sha256
+
+# What a snapshot (`go-release-check`) is called when it has no tag. The recipe sets the tag it
+# stamps, and the commit makes the name show which build it is.
+snapshot:
+  version_template: "{{ .Version }}-{{ .ShortCommit }}"
+
+# A published version is never reused, moved or deleted (GOVERNANCE.md): with no
+# replace_existing_artifacts and the keep-existing mode, a second run for a tag that has a release
+# fails on the files that are already there instead of overwriting them. A tag with a pre-release
+# suffix (`-rc.1`) is published as a pre-release; one without is a normal release.
+release:
+  prerelease: auto
+  mode: keep-existing
+  replace_existing_artifacts: false
+  draft: false
+
+# The notes come from the commit history (docs/contributing/workflow.md: the history feeds them).
+# The commit subjects are conventional (`docs(scope): ...`), so each filter also takes a scope.
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - "^docs(\\(.+\\))?!?:"
+      - "^test(\\(.+\\))?!?:"
+      - "^ci(\\(.+\\))?!?:"
+      - "^chore(\\(.+\\))?!?:"
