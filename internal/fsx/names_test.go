@@ -126,9 +126,9 @@ var refusedNames = []nameRow{
 	{"127 times U+1F600 and a, 509 bytes", emoji127a},
 	{"128 times U+1F600, 512 bytes", emoji128},
 
-	// characters that no person can see or type, beyond exFAT's table: U+007F, U+0080 to
-	// U+009F, U+FFFE and U+FFFF, the first and the last of each range, alone, inside and at
-	// the end of a name
+	// characters that are not printable (unicode.IsPrint), beyond exFAT's table: U+007F,
+	// U+0080 to U+009F, U+FFFE and U+FFFF, the first and the last of each range, alone, inside
+	// and at the end of a name (more of them in unprintableRows, below)
 	{"U+007F alone", "\u007f"},
 	{"U+007F inside", "a\u007fb"},
 	{"U+007F at the end", "a\u007f"},
@@ -185,6 +185,71 @@ func caseForms(s string) []string {
 	return []string{strings.ToUpper(s), strings.ToLower(s), string(title), string(alt)}
 }
 
+// unprintableChars are characters that the writer refuses because they are not printable in the
+// sense of unicode.IsPrint: spaces that are not U+0020, format characters, private use and
+// unassigned code points. A name with one cannot be told from a name without it, or from
+// another name that looks the same.
+var unprintableChars = []nameRow{
+	{"U+00A0, the no-break space", "\u00a0"},
+	{"U+00AD, the soft hyphen", "\u00ad"},
+	{"U+061C, the Arabic letter mark", "\u061c"},
+	{"U+1680, the Ogham space", "\u1680"},
+	{"U+180E, the Mongolian vowel separator", "\u180e"},
+	{"U+2000, the en quad", "\u2000"},
+	{"U+2003, the em space", "\u2003"},
+	{"U+200B, the zero-width space", "\u200b"},
+	{"U+200C, the zero-width non-joiner", "\u200c"},
+	{"U+200D, the zero-width joiner", "\u200d"},
+	{"U+200E, the left-to-right mark", "\u200e"},
+	{"U+200F, the right-to-left mark", "\u200f"},
+	{"U+2028, the line separator", "\u2028"},
+	{"U+2029, the paragraph separator", "\u2029"},
+	{"U+202E, the right-to-left override", "\u202e"},
+	{"U+202F, the narrow no-break space", "\u202f"},
+	{"U+205F, the medium mathematical space", "\u205f"},
+	{"U+2060, the word joiner", "\u2060"},
+	{"U+2066, the left-to-right isolate", "\u2066"},
+	{"U+3000, the ideographic space", "\u3000"},
+	{"U+FEFF, the byte order mark", "\ufeff"},
+	{"U+E000, the first private use code point", "\ue000"},
+	{"U+F8FF, the last private use code point of the BMP", "\uf8ff"},
+	{"U+F0000, a private use code point of plane 15", "\U000f0000"},
+	{"U+10FFFD, the last private use code point", "\U0010fffd"},
+	{"U+0378, an unassigned code point", "\u0378"},
+	{"U+10FFFF, a noncharacter beyond the BMP", "\U0010ffff"},
+	{"U+E0001, the language tag", "\U000e0001"},
+	{"an emoji sequence joined with U+200D", "\U0001f468\u200d\U0001f469\u200d\U0001f467"},
+}
+
+// unprintableRows gives each of them alone, inside a name and at the end of one.
+func unprintableRows() []nameRow {
+	var out []nameRow
+	for _, c := range unprintableChars {
+		out = append(out,
+			nameRow{c.why + " alone", c.name},
+			nameRow{c.why + " inside", "a" + c.name + "b"},
+			nameRow{c.why + " at the end", "ab" + c.name},
+			nameRow{c.why + " at the start", c.name + "ab"},
+		)
+	}
+	return out
+}
+
+// spacedDevices are device names with spaces before the extension or at the end: Windows removes
+// the trailing spaces of the part before the first dot, so "nul .txt" is "nul.txt". The rule of
+// the trailing space refuses "nul  " as well; the device rule comes first.
+var spacedDevices = func() []nameRow {
+	var out []nameRow
+	for _, d := range windowsDevices {
+		for _, n := range caseForms(d)[:2] {
+			for _, form := range []string{n + " .txt", n + "  .txt", n + " .tar.gz", n + " ", n + "  "} {
+				out = append(out, nameRow{"device name with spaces " + form, form})
+			}
+		}
+	}
+	return out
+}()
+
 // refusedDeviceNames holds every device name in four spellings of case, alone, with one
 // extension, with two extensions and with a trailing dot (a name that the rule of the trailing
 // dot refuses as well; the device rule comes first, see names_text_test.go). No other rule
@@ -201,7 +266,7 @@ var refusedDeviceNames = func() []nameRow {
 			)
 		}
 	}
-	return out
+	return append(out, spacedDevices...)
 }()
 
 // refusedPathForms are paths that are refused because of their shape and not because of one
@@ -398,6 +463,12 @@ func TestRefusedNamesInEveryElementOfEveryPath(t *testing.T) {
 	refuseInEveryElementOfEveryPath(t, refusedNames)
 }
 
+// TestRefusedUnprintableNamesInEveryElementOfEveryPath: the characters that are not printable,
+// in every position of every method.
+func TestRefusedUnprintableNamesInEveryElementOfEveryPath(t *testing.T) {
+	refuseInEveryElementOfEveryPath(t, unprintableRows())
+}
+
 // TestRefusedDeviceNamesInEveryElementOfEveryPath: the same for the device names of Windows,
 // in every case, alone and with one or two extensions.
 func TestRefusedDeviceNamesInEveryElementOfEveryPath(t *testing.T) {
@@ -438,6 +509,12 @@ func TestRefusedShapesOfAPath(t *testing.T) {
 // as the name of a file of a set: alone, last after a good name, and first before one.
 func TestRefusedNamesOfASetFile(t *testing.T) {
 	refuseAsSetFiles(t, slices.Concat(refusedNames, notPlainNames))
+}
+
+// TestRefusedUnprintableNamesOfASetFile: the characters that are not printable, as the name of
+// a file of a set.
+func TestRefusedUnprintableNamesOfASetFile(t *testing.T) {
+	refuseAsSetFiles(t, unprintableRows())
 }
 
 // TestRefusedDeviceNamesOfASetFile: the device names of Windows as the name of a file of a set.
@@ -588,10 +665,23 @@ var acceptedNames = []nameRow{
 	{"63 times U+1F600 and abc, 255 bytes", emoji63abc},
 	{"63 times U+1F600, 252 bytes", rep("😀", 63)},
 
-	// next to the characters that are refused (U+007F, U+0080 to U+009F, U+FFFE, U+FFFF)
+	// next to the characters that are refused (U+007F, U+0080 to U+009F, U+00A0, U+00AD,
+	// U+FFFE, U+FFFF), and characters that print though they are not letters
 	{"U+007E, the tilde, just below U+007F", "a~b"},
-	{"U+00A0, just above U+009F", "a\u00a0b"},
+	{"U+00A1, the inverted exclamation mark, just above the no-break space", "a\u00a1b"},
+	{"U+00AC, the not sign, just below the soft hyphen", "a\u00acb"},
+	{"U+00AE, the registered sign, just above the soft hyphen", "a\u00aeb"},
+	{"U+2010, the hyphen", "a\u2010b"},
 	{"U+FFFD, just below U+FFFE", "a\ufffdb"},
+	{"a plain space inside", "my file.json"},
+	{"two plain spaces inside", "a  b"},
+	{"a plain space in front", " a"},
+	{"Hiragana", "\u3042\u3044.json"},
+	{"Arabic, with letters that join", "\u0645\u0631\u062d\u0628\u0627.json"},
+	{"Devanagari, with a virama and vowel signs", "\u0939\u093f\u0928\u094d\u0926\u0940.json"},
+	{"a heart with the variation selector U+FE0F", "\u2764\ufe0f.json"},
+	{"a flag, two regional indicators", "\U0001f1f3\U0001f1f1.json"},
+	{"a thumbs-up with a skin tone modifier", "\U0001f44d\U0001f3fd.json"},
 
 	// names that contain a device name and are not one: Windows reserves the whole name, or the
 	// part before the first dot
@@ -599,8 +689,15 @@ var acceptedNames = []nameRow{
 	{"Auxiliary", "Auxiliary"},
 	{"com10, two digits", "com10"},
 	{"COM10 in capitals", "COM10"},
-	{"lpt0, the digit zero", "lpt0"},
-	{"com0, the digit zero", "com0"},
+	// COM0 and LPT0 are not on Microsoft's list (the page names COM1 to COM9 and LPT1 to LPT9
+	// and the superscript digits), and the writer follows the list exactly: they are accepted
+	{"lpt0, the digit zero, not on Microsoft's list", "lpt0"},
+	{"com0, the digit zero, not on Microsoft's list", "com0"},
+	{"a space in front of a device name", " nul"},
+	{"a space in front of a device name and an extension", " nul.txt"},
+	{"a device name, a space and more letters before the extension", "nul x.txt"},
+	{"a device name, a space and a letter", "com1 x"},
+	{"a device name with a space inside", "c on"},
 	{"com alone", "com"},
 	{"lpt alone", "lpt"},
 	{"conn", "conn"},
