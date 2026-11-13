@@ -244,10 +244,10 @@ func TestWithWarningsChangesOnlyTheWarnings(t *testing.T) {
 	})
 	t.Run("a nil error is a fault of the programmer", func(t *testing.T) {
 		want := "cli: WithWarnings was given no error; a command that ended well gives its warnings in Result.Warnings"
-		if got := recoverText(t, func() { WithWarnings(nil, "w") }); got != want {
+		if got := recoverText(t, func() { _ = WithWarnings(nil, "w") }); got != want {
 			t.Errorf("panic = %q, want %q", got, want)
 		}
-		if got := recoverText(t, func() { WithWarnings(nil) }); got != want {
+		if got := recoverText(t, func() { _ = WithWarnings(nil) }); got != want {
 			t.Errorf("panic with no warnings = %q, want %q", got, want)
 		}
 	})
