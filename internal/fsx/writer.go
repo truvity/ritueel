@@ -300,10 +300,16 @@ func (w *Writer) WriteFile(path string, data []byte, perm fs.FileMode) error {
 // wraps fs.ErrExist (Step rename) and the temporary folder is left. The folder is made with
 // mode 0700. The parent is walked once, and the temporary folder, which was just made, is opened
 // from the parent by its name, so the files, the rename and the flush of the parent all work
-// through handles that the walk opened. A process that can write into the root at the moment
-// between the make and the open could put a folder of its own under that name: nothing is
-// followed and nothing is replaced, but the set is then written into that folder (the same
-// condition as for a folder that is moved, see the package comment).
+// through handles that the walk opened. The folder that was opened is listed at once, through
+// the handle, and the writer stops with an error that wraps [ErrNotEmpty] (step open-dir) if it
+// holds anything: a folder that a process of the root put under that name between the make and
+// the open, with files in it, is refused. This closes the filling of the folder before the open.
+// It does not close the swap itself: a process that can write into the root at that moment
+// could still put an empty folder of its own under the name, and the set is then written into
+// that folder, which is as good as the writer's own while it is empty and the writer holds it
+// open; and a process that moves or fills the folder after the list is outside what the package
+// defends against (the same condition as for a folder that is moved, see the package comment).
+// Nothing is followed and nothing is replaced in any case.
 func (w *Writer) WriteSet(finalDir string, files []NewFile) error {
 	w.mu.Lock()
 	defer w.mu.Unlock()
@@ -338,6 +344,13 @@ func (w *Writer) WriteSet(finalDir string, files []NewFile) error {
 	}
 	td := &folder{fs: t, owned: true}
 	defer td.release()
+	ents, err := td.fs.ReadDir()
+	if err != nil {
+		return w.stop(StepOpenDir, tmpPath, err)
+	}
+	if len(ents) != 0 {
+		return w.stop(StepOpenDir, tmpPath, fmt.Errorf("%w: it holds %d entries", ErrNotEmpty, len(ents)))
+	}
 	for _, f := range files {
 		if err := w.writeNew(td.fs, tmpPath, f.Name, f.Data, f.Perm); err != nil {
 			return err
