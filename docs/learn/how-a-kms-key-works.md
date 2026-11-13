@@ -121,7 +121,7 @@ A key policy can also limit where a replica may go, with the condition keys `kms
 - **A thief.** For KMS: a session of a role the policy allows, or the right to rewrite the policy, make grants or edit tags and aliases.
 - **Cost of a KMS key.** USD 1 a key a month, prorated hourly; a replica is billed as a key (AWS KMS pricing, read 2026-11-10). AWS's own example, an ECC P-256 key signing 100,000 files, is USD 0.15 per 10,000 requests; AWS shows no separate figure for P-384. Asymmetric requests are outside the free tier.
 
-Next: [choosing where a root lives](/learn/choosing-where-a-root-lives/).
+Next: [a key in a file](/learn/a-key-in-a-file/).
 
 ## Sources
 
