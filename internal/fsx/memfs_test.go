@@ -450,6 +450,14 @@ type memFS struct {
 	failNth  int
 	kindSeen int
 	shortAt  int // the n-th call, if it is a write, takes half of its bytes
+
+	// ignoreDirLimit makes ReadDir list a folder of any size, as an FS that did not keep its promise.
+	ignoreDirLimit bool
+	// namesAsked counts the names that ReadDir had to read to answer, over every call.
+	namesAsked int
+	// afterMkdir is called, under the lock, after a Mkdir of this model succeeded, with the folder
+	// that was made: another actor that works in the same folder between two calls of the writer.
+	afterMkdir func(f *memFS, made *node)
 }
 
 // failOn makes the nth call of the kind from now on fail with err.
@@ -535,6 +543,33 @@ func (f *memFS) addLink(p, target string) {
 func (f *memFS) addFifo(p string) {
 	f.setupAdd(p, nodeFifo, 0o644)
 	f.snapshot()
+}
+
+// addNames makes n empty files in the folder p, with the names "n00000", "n00001", ... (sorted as
+// they are numbered), without a snapshot for each: for a folder with more names than a limit.
+func (f *memFS) addNames(p string, n int) {
+	d, ok := f.lookup(p)
+	if !ok || d.kind != nodeDir {
+		panic("memfs: addNames: no folder " + p)
+	}
+	for i := 0; i < n; i++ {
+		if _, err := f.m.add(d, fmt.Sprintf("n%06d", i), 0, nodeFile, 0o644); err != nil {
+			panic(err)
+		}
+	}
+	f.snapshot()
+}
+
+// plant puts one more entry of the kind in the live folder n, as another actor would, and records
+// no call (the replay does not know it: only Live() is looked at after it).
+func (f *memFS) plant(n *node, name string, kind nodeKind) {
+	c, err := f.m.add(n, name, 0, kind, 0o644)
+	if err != nil {
+		panic(err)
+	}
+	if kind == nodeDir {
+		_, _ = f.m.add(c, "inside", 0, nodeFile, 0o644)
+	}
 }
 
 // addVirtual makes a regular file that reads as size bytes long without holding them.
@@ -770,6 +805,9 @@ func (d *memDir) Mkdir(name string, perm fs.FileMode) error {
 		return d.fail(i, err)
 	}
 	f.ops[i].Node, f.ops[i].Mode = n.id, perm
+	if f.afterMkdir != nil {
+		f.afterMkdir(f, n)
+	}
 	return nil
 }
 
@@ -840,6 +878,11 @@ func (d *memDir) ReadDir() ([]fs.DirEntry, error) {
 	if _, err := d.enter(kReadDir, "", ""); err != nil {
 		return nil, err
 	}
+	if len(d.n.live) > fsx.MaxDirEntries && !f.ignoreDirLimit {
+		f.namesAsked += fsx.MaxDirEntries + 1 // the promise: it stops at the first name beyond the limit
+		return nil, d.fail(len(f.ops)-1, fmt.Errorf("%w: more than %d names", fsx.ErrTooMany, fsx.MaxDirEntries))
+	}
+	f.namesAsked += len(d.n.live)
 	var out []fs.DirEntry
 	for _, name := range slices.Sorted(maps.Keys(d.n.live)) {
 		out = append(out, fs.FileInfoToDirEntry(entryInfo(name, d.n.live[name])))
