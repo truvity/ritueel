@@ -26,7 +26,7 @@
 /concepts/principles/ https://github.com/truvity/ritueel/blob/main/docs/principles.md 302
 /concepts/roots-and-transitions/ https://github.com/truvity/ritueel/blob/main/docs/learn/root-and-intermediate.md 302
 /concepts/key-stores/ https://github.com/truvity/ritueel/blob/main/docs/learn/key-stores.md 302
-/concepts/two-roots/ https://github.com/truvity/ritueel/blob/main/docs/learn/two-roots.md 302
+/concepts/two-roots/ /learn/two-roots/ 301
 /concepts/openpgp-release-keys/ https://github.com/truvity/ritueel/blob/main/docs/learn/openpgp-release-keys.md 302
 /concepts/ceremonies/ https://github.com/truvity/ritueel/blob/main/docs/learn/ceremonies.md 302
 
@@ -37,7 +37,7 @@
 /learn/the-ledger/ https://github.com/truvity/ritueel/blob/main/docs/learn/the-history.md 302
 
 # The page "Why the root stays offline" was renamed "Where a root is used" on 2026-11-11 (the page answers where a root is used).
-/learn/why-the-root-stays-offline/ /learn/where-a-root-is-used/ 301
+/learn/why-the-root-stays-offline/ https://github.com/truvity/ritueel/blob/main/docs/learn/where-a-root-is-used.md 302
 
 # The staff-key reference page was deleted on 2026-11-11: staff keys are no longer part of ritueel (record 0008).
 # The design page says what happened to them. The old text is in the history of the repository.
@@ -51,12 +51,12 @@
 /concepts/principles https://github.com/truvity/ritueel/blob/main/docs/principles.md 302
 /concepts/roots-and-transitions https://github.com/truvity/ritueel/blob/main/docs/learn/root-and-intermediate.md 302
 /concepts/key-stores https://github.com/truvity/ritueel/blob/main/docs/learn/key-stores.md 302
-/concepts/two-roots https://github.com/truvity/ritueel/blob/main/docs/learn/two-roots.md 302
+/concepts/two-roots /learn/two-roots/ 301
 /concepts/openpgp-release-keys https://github.com/truvity/ritueel/blob/main/docs/learn/openpgp-release-keys.md 302
 /concepts/ceremonies https://github.com/truvity/ritueel/blob/main/docs/learn/ceremonies.md 302
 /reference/glossary /glossary/ 301
 /learn/the-ledger https://github.com/truvity/ritueel/blob/main/docs/learn/the-history.md 302
-/learn/why-the-root-stays-offline /learn/where-a-root-is-used/ 301
+/learn/why-the-root-stays-offline https://github.com/truvity/ritueel/blob/main/docs/learn/where-a-root-is-used.md 302
 /reference/staff-openpgp /design/ 301
 /decisions/0001-scope-roots-and-transitions-systems-like-sluis-hold-intermediates/ https://github.com/truvity/ritueel/blob/d0ae12da2432d5ae95cf95d68fb85ba3dda6cfee/docs/decisions/0001-scope-roots-and-transitions-systems-like-sluis-hold-intermediates.md 301
 /decisions/0001-scope-roots-and-transitions-systems-like-sluis-hold-intermediates https://github.com/truvity/ritueel/blob/d0ae12da2432d5ae95cf95d68fb85ba3dda6cfee/docs/decisions/0001-scope-roots-and-transitions-systems-like-sluis-hold-intermediates.md 301
@@ -160,12 +160,8 @@
 /guides/run-a-drill https://github.com/truvity/ritueel/blob/main/docs/guides/run-a-drill.md 302
 /learn/ceremonies/ https://github.com/truvity/ritueel/blob/main/docs/learn/ceremonies.md 302
 /learn/ceremonies https://github.com/truvity/ritueel/blob/main/docs/learn/ceremonies.md 302
-/learn/chain-private-pki/ https://github.com/truvity/ritueel/blob/main/docs/learn/chain-private-pki.md 302
-/learn/chain-private-pki https://github.com/truvity/ritueel/blob/main/docs/learn/chain-private-pki.md 302
 /learn/chain-public-pki/ https://github.com/truvity/ritueel/blob/main/docs/learn/chain-public-pki.md 302
 /learn/chain-public-pki https://github.com/truvity/ritueel/blob/main/docs/learn/chain-public-pki.md 302
-/learn/chain-ssh/ https://github.com/truvity/ritueel/blob/main/docs/learn/chain-ssh.md 302
-/learn/chain-ssh https://github.com/truvity/ritueel/blob/main/docs/learn/chain-ssh.md 302
 /learn/compared/ https://github.com/truvity/ritueel/blob/main/docs/learn/compared.md 302
 /learn/compared https://github.com/truvity/ritueel/blob/main/docs/learn/compared.md 302
 /learn/custody-chains/ https://github.com/truvity/ritueel/blob/main/docs/learn/custody-chains.md 302
@@ -188,10 +184,10 @@
 /learn/the-history https://github.com/truvity/ritueel/blob/main/docs/learn/the-history.md 302
 /learn/transitions/ https://github.com/truvity/ritueel/blob/main/docs/learn/transitions.md 302
 /learn/transitions https://github.com/truvity/ritueel/blob/main/docs/learn/transitions.md 302
-/learn/two-roots/ https://github.com/truvity/ritueel/blob/main/docs/learn/two-roots.md 302
-/learn/two-roots https://github.com/truvity/ritueel/blob/main/docs/learn/two-roots.md 302
 /learn/what-a-store-can-prove/ https://github.com/truvity/ritueel/blob/main/docs/learn/what-a-store-can-prove.md 302
 /learn/what-a-store-can-prove https://github.com/truvity/ritueel/blob/main/docs/learn/what-a-store-can-prove.md 302
+/learn/where-a-root-is-used/ https://github.com/truvity/ritueel/blob/main/docs/learn/where-a-root-is-used.md 302
+/learn/where-a-root-is-used https://github.com/truvity/ritueel/blob/main/docs/learn/where-a-root-is-used.md 302
 /learn/which-keys-to-buy/ https://github.com/truvity/ritueel/blob/main/docs/learn/which-keys-to-buy.md 302
 /learn/which-keys-to-buy https://github.com/truvity/ritueel/blob/main/docs/learn/which-keys-to-buy.md 302
 /principles/ https://github.com/truvity/ritueel/blob/main/docs/principles.md 302

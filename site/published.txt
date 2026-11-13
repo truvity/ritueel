@@ -18,15 +18,18 @@ design.md
 
 learn/index.md
 learn/what-is-a-root.mdx
-learn/where-a-root-is-used.md
+learn/custody-chain.md
+learn/chain-private-pki.md
+learn/chain-openpgp.md
+learn/chain-ssh.md
 learn/how-a-yubikey-holds-keys.mdx
 learn/how-passkeys-work.mdx
 learn/how-a-kms-key-works.md
+learn/a-key-in-a-file.mdx
 learn/choosing-where-a-root-lives.mdx
+learn/two-roots.md
 learn/life-of-a-root.md
 learn/revoke.md
-learn/custody-chain.md
-learn/chain-openpgp.md
 
 how-it-works/index.mdx
 how-it-works/cards.mdx
