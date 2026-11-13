@@ -61,17 +61,25 @@ const maxPathSteps = 8
 //     refused, so that only a struct, a map, a slice or an array can lead back to itself.
 //   - a Raw: the canonical form of the document.
 //
-// Everything else is refused: a float, a complex number, a channel, a function, a nil pointer,
-// interface, map or slice (JSON null), a json.Number, an integer above int64, a map key that is
-// not of kind string, a type that has a MarshalJSON or MarshalText method (other than Raw), an
-// embedded field, a tag option other than omitempty, a tag name that encoding/json would not
-// use, and two fields with one name. The error wraps strictjson.ErrMalformed and names the Go
-// type and the path to the value, and nothing is returned. For a value that is nested deeper
-// than strictjson.MaxDepth levels (the top-level object being level 1), and for a canonical form
-// longer than strictjson.DefaultMaxBytes, the error says so. The size is counted on the bytes
-// that Marshal returns, and writing stops as soon as it is passed.
+// A Go type is accepted or refused as a type, whatever the value. A struct with a field that
+// can never be written is refused whenever it is reached, even when omitempty would leave the
+// field out; so is a slice, an array or a map whose element type can never be written, even
+// when it is empty. Only an interface is judged by the value it holds. What can never be written:
+// a float, a complex number, a channel, a function, a json.Number, a map key that is not of kind
+// string, a type that has a MarshalJSON or MarshalText method (other than Raw), an embedded
+// field, a tag option other than omitempty, a tag name that encoding/json would not use, two
+// fields with one name, and a pointer to a pointer or to an interface. The value decides only
+// what a type cannot: a nil pointer, interface, map or slice (JSON null, unless omitempty leaves
+// the field out), an integer above int64, a string that is not valid UTF-8, an empty Raw, the
+// nesting and the size.
+//
+// The error wraps strictjson.ErrMalformed and names the Go type and the path to the value, and
+// nothing is returned. For a value that is nested deeper than strictjson.MaxDepth levels (the
+// top-level object being level 1), and for a canonical form longer than
+// strictjson.DefaultMaxBytes, the error says so. The size is counted on the bytes that Marshal
+// returns, and writing stops as soon as it is passed.
 func Marshal(v any) ([]byte, error) {
-	w := &writer{structs: map[reflect.Type]*structInfo{}, types: map[reflect.Type]string{}}
+	w := &writer{structs: map[reflect.Type]*structInfo{}, verdicts: map[reflect.Type]*refusal{}}
 	if err := w.value(reflect.ValueOf(v), 0); err != nil {
 		return nil, err
 	}
@@ -98,7 +106,17 @@ type writer struct {
 	out     bytes.Buffer
 	path    []step
 	structs map[reflect.Type]*structInfo
-	types   map[reflect.Type]string // for a type that may not be written, why
+	// verdicts holds, for each type that was asked about as a type, why it cannot be written, or
+	// nil when it can.
+	verdicts map[reflect.Type]*refusal
+}
+
+// refusal says why a Go type cannot be written: the type at fault, the reason, and the fields
+// that lead from the type that was asked about to it.
+type refusal struct {
+	path   []step
+	t      reflect.Type
+	reason string
 }
 
 // structInfo is what Marshal needs to know of a struct type: its fields in the order they are
@@ -196,8 +214,8 @@ func (w *writer) write(v reflect.Value, depth int) error {
 	if t == rawType {
 		return w.raw(v)
 	}
-	if err := w.checkType(t); err != nil {
-		return err
+	if r := w.verdict(t); r != nil {
+		return w.refuseAt(r)
 	}
 	switch v.Kind() {
 	case reflect.Bool:
@@ -216,9 +234,6 @@ func (w *writer) write(v reflect.Value, depth int) error {
 		if v.IsNil() {
 			return w.refuseType(t, "a nil pointer is JSON null")
 		}
-		if k := t.Elem().Kind(); k == reflect.Pointer || k == reflect.Interface {
-			return w.refuseType(t, "a pointer to a pointer or to an interface is not written")
-		}
 		return w.write(v.Elem(), depth)
 	case reflect.Interface:
 		if v.IsNil() {
@@ -231,9 +246,9 @@ func (w *writer) write(v reflect.Value, depth int) error {
 		return w.mapObject(v, depth)
 	case reflect.Slice, reflect.Array:
 		return w.list(v, depth)
-	case reflect.Float32, reflect.Float64:
-		return w.refuseType(t, "a float; ritueel's JSON holds integers only")
 	default:
+		// The verdict of the type and this switch agree on the kinds that can be written, so
+		// this is not reached; if they ever drift apart nothing is written for the kind.
 		return w.refuseType(t, "this kind of Go type is not part of ritueel's JSON")
 	}
 	return nil
@@ -263,21 +278,90 @@ func (w *writer) raw(v reflect.Value) error {
 	return nil
 }
 
-// checkType refuses a type that writes its own JSON or text, and the json.Number that the
-// standard encoder writes as a bare number: what such a type writes is not something this
-// package can vouch for.
-func (w *writer) checkType(t reflect.Type) error {
-	reason, seen := w.types[t]
-	if !seen {
-		reason = unwritable(t)
-		w.types[t] = reason
+// verdict says whether the Go type t can be written, whatever the value: nil when it can, else
+// the reason. The answer follows the type into its fields, elements, map values and what a
+// pointer points to; only an interface is left to the value it holds.
+func (w *writer) verdict(t reflect.Type) *refusal {
+	if r, seen := w.verdicts[t]; seen {
+		return r
 	}
-	if reason != "" {
-		return w.refuseType(t, reason)
-	}
-	return nil
+	r := w.walkType(t, map[reflect.Type]bool{})
+	w.verdicts[t] = r
+	return r
 }
 
+// refuseAt is the error for a refusal reached from the value at the current path.
+func (w *writer) refuseAt(r *refusal) error {
+	here := len(w.path)
+	w.path = append(w.path, r.path...)
+	err := w.refuseType(r.t, r.reason)
+	w.path = w.path[:here]
+	return err
+}
+
+// walkType looks for a part of t that cannot be written and returns the first it finds. seen
+// holds the types looked at in this walk, so that a type that refers to itself, or one that
+// turns up twice, is looked at once; the first look finds any refusal inside it.
+func (w *writer) walkType(t reflect.Type, seen map[reflect.Type]bool) *refusal {
+	if seen[t] || t == rawType {
+		return nil
+	}
+	seen[t] = true
+	if reason := unwritable(t); reason != "" {
+		return &refusal{t: t, reason: reason}
+	}
+	switch t.Kind() {
+	case reflect.Bool, reflect.String, reflect.Interface,
+		reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64,
+		reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+		return nil
+	case reflect.Pointer:
+		if k := t.Elem().Kind(); k == reflect.Pointer || k == reflect.Interface {
+			return &refusal{t: t, reason: "a pointer to a pointer or to an interface is not written"}
+		}
+		return w.walkType(t.Elem(), seen)
+	case reflect.Slice, reflect.Array:
+		return w.walkType(t.Elem(), seen)
+	case reflect.Map:
+		if t.Key().Kind() != reflect.String {
+			return &refusal{t: t, reason: "only a map with a key of kind string is written"}
+		}
+		if reason := unwritable(t.Key()); reason != "" {
+			return &refusal{t: t.Key(), reason: reason}
+		}
+		return w.walkType(t.Elem(), seen)
+	case reflect.Struct:
+		info := w.structInfo(t)
+		if info.err != "" {
+			return &refusal{t: t, reason: info.err}
+		}
+		for _, f := range info.fields {
+			if r := w.walkType(t.Field(f.index).Type, seen); r != nil {
+				r.path = append([]step{{name: f.name}}, r.path...)
+				return r
+			}
+		}
+		return nil
+	case reflect.Float32, reflect.Float64:
+		return &refusal{t: t, reason: "a float; ritueel's JSON holds integers only"}
+	default:
+		return &refusal{t: t, reason: "this kind of Go type is not part of ritueel's JSON"}
+	}
+}
+
+// structInfo lists the fields of a struct type, once for each type.
+func (w *writer) structInfo(t reflect.Type) *structInfo {
+	info := w.structs[t]
+	if info == nil {
+		info = structFields(t)
+		w.structs[t] = info
+	}
+	return info
+}
+
+// unwritable says why a type that writes its own JSON or text, or the json.Number that the
+// standard encoder writes as a bare number, is refused: what such a type writes is not something
+// this package can vouch for. It is empty for any other type.
 func unwritable(t reflect.Type) string {
 	if t.PkgPath() == "encoding/json" && t.Name() == "Number" {
 		return "encoding/json writes a json.Number as a bare number; use an integer type"
@@ -294,21 +378,12 @@ func unwritable(t reflect.Type) string {
 
 // object writes a struct.
 func (w *writer) object(v reflect.Value, depth int) error {
-	t := v.Type()
-	info := w.structs[t]
-	if info == nil {
-		info = structFields(t)
-		w.structs[t] = info
-	}
-	if info.err != "" {
-		return w.refuseType(t, info.err)
-	}
 	if depth >= strictjson.MaxDepth {
 		return tooDeep()
 	}
 	w.out.WriteByte('{')
 	first := true
-	for _, f := range info.fields {
+	for _, f := range w.structInfo(v.Type()).fields {
 		fv := v.Field(f.index)
 		if f.omitEmpty && isEmpty(fv) {
 			continue
@@ -410,15 +485,8 @@ func isEmpty(v reflect.Value) bool {
 
 // mapObject writes a map whose keys are strings.
 func (w *writer) mapObject(v reflect.Value, depth int) error {
-	t := v.Type()
-	if t.Key().Kind() != reflect.String {
-		return w.refuseType(t, "only a map with a key of kind string is written")
-	}
-	if err := w.checkType(t.Key()); err != nil {
-		return err
-	}
 	if v.IsNil() {
-		return w.refuseType(t, "a nil map is JSON null")
+		return w.refuseType(v.Type(), "a nil map is JSON null")
 	}
 	if depth >= strictjson.MaxDepth {
 		return tooDeep()
@@ -451,9 +519,6 @@ func (w *writer) list(v reflect.Value, depth int) error {
 		return w.refuseType(t, "a nil slice is JSON null")
 	}
 	if t.Kind() == reflect.Slice && t.Elem().Kind() == reflect.Uint8 {
-		if err := w.checkType(t.Elem()); err != nil {
-			return err
-		}
 		encoded := base64.StdEncoding.EncodedLen(v.Len())
 		if err := w.fits(encoded + 2); err != nil {
 			return err
