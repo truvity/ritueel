@@ -104,8 +104,12 @@ type invocation struct {
 // Run runs ritueel with the arguments that follow the program name and returns the exit
 // code. It writes only to env's streams and never exits. With --output json it writes
 // exactly one JSON object to env.Stdout when the command ends; text for people goes to
-// env.Stderr. The one exception is that no object is written when the arguments are so
-// broken that the output mode is not known.
+// env.Stderr. There are two exceptions, and no object is written in either. One is arguments
+// so broken that the output mode is not known. The other is a fault in the table of words (a flag
+// name that clashes with a global flag or is declared twice): it panics when the command line
+// is built, before the flags are read, so even with --output json the run writes the line on
+// standard error and ends with exit code 1. It is a mistake of the programmer, and it shows in
+// every run, the tests included.
 //
 // What a command may rely on. Every error text that reaches a person or a script goes through
 // jsonset.Escape in finish, the one place where it is written: the line on standard error and the
