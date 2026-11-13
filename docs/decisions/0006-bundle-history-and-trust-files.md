@@ -123,3 +123,4 @@ A holder must prove what was done, and outsiders must check the roots. One bundl
 - **Proposed.** What a host does when it is several root lists behind is not said ([#139](https://github.com/truvity/ritueel/issues/139)).
 - **Proposed.** What `acme/A` names when one letter labels the keys of several roots in a bundle ([#137](https://github.com/truvity/ritueel/issues/137)).
 - **Not yet proven.** That the temporary names of rule 32 leave no wrong folder entry on a real stick; what other operating systems do with such an entry was not tested ([the trial](../research/exfat-power-cut-2026-11-12.md), [#181](https://github.com/truvity/ritueel/issues/181)).
+- **Proposed.** Whether break-glass SSH can work without a root-card ceremony is open: rules 25 to 29 do not say how break-glass is used, no time-to-login target is stated, and the drill for it does not exist yet ([#91](https://github.com/truvity/ritueel/issues/91)).
