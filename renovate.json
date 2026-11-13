@@ -31,6 +31,14 @@
       "automerge": false
     },
     {
+      "description": "Do not copy the release notes of the shared CI actions into a pull request: the notes name the repositories where a fault was seen, and the pull request body is public text that the repository's own message check scans.",
+      "matchPackageNames": [
+        "truvity/ci-actions",
+        "truvity/ci-actions/**"
+      ],
+      "fetchChangeLogs": "off"
+    },
+    {
       "description": "A person reviews every update of a Go module or of a devbox pin (the compiler, the linter, the scanner and the other tools), so none of them is merged by itself.",
       "matchManagers": [
         "gomod",
