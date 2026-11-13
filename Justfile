@@ -281,9 +281,10 @@ go-vuln:
 
 # The release configuration (.goreleaser.yaml), proved without a tag and without publishing: a snapshot
 # build with `goreleaser release --snapshot`, which does everything the real release does except
-# publish (it skips validate, announce and publish), so the archives and SHA256SUMS are made too, not
-# only the binaries. A snapshot has no tag, so the tag it stamps is fixed here (GORELEASER_CURRENT_TAG;
-# no git tag is made). Then `_go-release-verify` judges the result. Nothing is signed. Linux only.
+# publish (it skips validate, announce, publish and the release notes), so the archives and SHA256SUMS
+# are made too, not only the binaries. A snapshot has no tag, so the tag it stamps is fixed here (GORELEASER_CURRENT_TAG;
+# no git tag is made). Then `_go-release-verify` judges the result. It needs no token. Nothing is signed.
+# Linux only.
 go-release-check:
     #!/usr/bin/env bash
     set -euo pipefail
@@ -351,33 +352,36 @@ _go-release-verify $tag $commit:
     (cd dist && sha256sum -c SHA256SUMS)
     echo "go-release-verify: two Linux builds, ${ran} run here, two archives, SHA256SUMS matches (nothing is signed)"
 
-# The release, for the workflow only (.github/workflows/release.yaml); it needs GITHUB_TOKEN and
-# RELEASE_TAG, and fails without a tag. It publishes the archives and SHA256SUMS to the repository's
-# GitHub Releases page, unsigned. It refuses unless the tag is `vX.Y.Z` or `vX.Y.Z-suffix`, points at
-# the commit that is checked out, and that commit is on origin/main. It builds once without publishing,
-# judges the build like go-release-check does (with the real tag), and only then publishes; the publish
-# run builds again, and its SHA256SUMS must be the same as the checked build's (builds of one commit are
-# byte-identical). The check runs without the token. GoReleaser does not replace the files of an
-# existing release: a second run for a tag that has a release fails.
-go-release:
+# The release build, for the workflow only (the `build` job of .github/workflows/release.yaml). It builds
+# the release for the tag in RELEASE_TAG and PUBLISHES NOTHING: it needs no token, and the job that
+# runs it has none. It refuses unless the tag is `vX.Y.Z` or `vX.Y.Z-suffix` (no leading zeros), points
+# at the commit that is checked out, and that commit is an ancestor of origin/main. Then
+# `goreleaser release --skip=publish` builds the archives, SHA256SUMS and the release notes, and
+# `_go-release-verify` judges that very build (the one go-release-check judges as a snapshot). The
+# files it leaves in dist/upload/ are the whole release: the two archives, SHA256SUMS and NOTES.md.
+# The `publish` job uploads exactly those files, after it has checked them against SHA256SUMS; nothing
+# is built again. All of it is unsigned.
+go-release-build:
     #!/usr/bin/env bash
     set -euo pipefail
-    fail() { echo "go-release: $*" >&2; exit 1; }
+    fail() { echo "go-release-build: $*" >&2; exit 1; }
     tag="${RELEASE_TAG:-}"
     [ -n "${tag}" ] || fail "RELEASE_TAG is not set: a release needs a tag"
-    [[ "${tag}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z]+(\.[0-9A-Za-z]+)*)?$ ]] || fail "'${tag}' is not vX.Y.Z or vX.Y.Z-suffix"
-    [ -n "${GITHUB_TOKEN:-}" ] || fail "GITHUB_TOKEN is not set"
+    [[ "${tag}" =~ ^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-[0-9A-Za-z]+(\.[0-9A-Za-z]+)*)?$ ]] || fail "'${tag}' is not vX.Y.Z or vX.Y.Z-suffix"
     commit="$(git rev-parse HEAD)"
     [ "$(git rev-parse --verify "refs/tags/${tag}^{commit}")" = "${commit}" ] || fail "tag ${tag} does not point at the checked-out commit ${commit}"
     git merge-base --is-ancestor "${commit}" refs/remotes/origin/main || fail "commit ${commit} is not on origin/main"
     export GORELEASER_CURRENT_TAG="${tag}"
     goreleaser check
     goreleaser release --clean --skip=publish
-    # The check runs this repository's own code (tools/elfcheck, the built binary): without the token.
-    env -u GITHUB_TOKEN "{{ just_executable() }}" --justfile "{{ justfile() }}" _go-release-verify "${tag}" "${commit}"
-    checked="$(sha256sum dist/SHA256SUMS | cut -d' ' -f1)"
-    goreleaser release --clean
-    [ "$(sha256sum dist/SHA256SUMS | cut -d' ' -f1)" = "${checked}" ] || fail "the published build's SHA256SUMS differs from the checked build's"
+    "{{ just_executable() }}" --justfile "{{ justfile() }}" _go-release-verify "${tag}" "${commit}"
+    [ -s dist/CHANGELOG.md ] || fail "dist/CHANGELOG.md (the release notes) is missing or empty"
+    rm -rf dist/upload
+    mkdir dist/upload
+    while IFS= read -r name; do cp "dist/${name}" dist/upload/; done < <(jq -r '.[] | select(.type == "Archive") | .name' dist/artifacts.json)
+    cp dist/SHA256SUMS dist/upload/SHA256SUMS
+    cp dist/CHANGELOG.md dist/upload/NOTES.md
+    (cd dist/upload && sha256sum -c SHA256SUMS && ls -l)
 
 # Everything a pull request must pass.
 check: check-rules site-check site-workers site-render proto-check ui-lint ui-test ui-e2e go-check
