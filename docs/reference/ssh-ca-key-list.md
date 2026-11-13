@@ -61,12 +61,12 @@ An example, wrapped here for reading; the file is one line:
 ## How a key enters the list
 
 - **A system's key** enters by the [hand-off](/reference/hand-off-contract/#ssh-ca-key): a request of type `ssh-ca-key` with a proof of where the key lives, answered at a ceremony. The key is listed under the name of the delegation whose wanted file has the type `ssh-ca-key` and the `use` the request asks for. An SSH CA key is withdrawn by the next list ([record 0006](../decisions/0006-bundle-history-and-trust-files.md), rule 29).
-- **A break-glass key** is made by ritueel, in the store of the root key it belongs to, when that key is born (the first `apply`, or an `apply` that adds a root key): a retired PIV slot recorded in the slot map for a card ([record 0003](../decisions/0003-root-cards.md)), a key of its own in the root account for a cloud root, a file for a software root ([record 0006](../decisions/0006-bundle-history-and-trust-files.md), rule 29). The key is listed as `break-glass-<label>`, use `user`, and leaves the list with its root key.
+- **A break-glass key** is made by ritueel, in the key store of the root key it belongs to, when that key is born (the first `apply`, or an `apply` that adds a root key): a retired PIV slot recorded in the slot map for a card ([record 0003](../decisions/0003-root-cards.md)), a key of its own in the root account for a cloud root, a file for a software root ([record 0006](../decisions/0006-bundle-history-and-trust-files.md), rule 29). The key is listed as `break-glass-<label>`, use `user`, and leaves the list with its root key.
 - **Nothing else** enters. Nobody edits the list, and no wanted file lists an SSH CA key; a delegation only declares that a key of its type may enter.
 
 ## The signature
 
-`ssh-ca-keys.jws` is a detached JWS in compact serialisation (RFC 7515, appendix F: `<header>..<signature>`), made by the X.509 key of one active root key over the bytes of `ssh-ca-keys.json`, with the four header members of a [root list](/reference/root-list/#the-signature) signature. One signature is enough, because the list does not change the root set. Only `typ` differs: it is `ssh-ca-keys+json`, so that a signature by the same key over the root list is not taken for this list, nor the reverse ([RFC 8725](https://datatracker.ietf.org/doc/html/rfc8725), section 3.11).
+`ssh-ca-keys.jws` is a detached JWS in compact serialisation (RFC 7515, appendix F: `<header>..<signature>`), made by the X.509 key of one active root key over the bytes of `ssh-ca-keys.json`, with the four header members of a [root list](/reference/root-list/#the-signature) signature. One signature is enough, because the list does not change the root keys. Only `typ` differs: it is `ssh-ca-keys+json`, so that a signature by the same key over the root list is not taken for this list, nor the reverse ([RFC 8725](https://datatracker.ietf.org/doc/html/rfc8725), section 3.11).
 
 **Who signs and when.** A root key that signs the ceremony's root list signs this list in the same ceremony, one signature, counted in the plan's touches. A ceremony that writes a new trust sequence writes both, even when no key changed; that is what makes the list expire and be renewed with the root list.
 
@@ -135,7 +135,7 @@ CI checks that the manifest names every file of the set, that the pins match the
 ## Follow-ups
 
 - The code: writing, signing and reading the list and the file for sshd, with the host rules, and a test that the same inputs give the same bytes ([issue #55](https://github.com/truvity/ritueel/issues/55)).
-- The break-glass key in each store: the retired slot of the slot map, the cloud root account's key and the file of a software root ([issue #55](https://github.com/truvity/ritueel/issues/55)).
+- The break-glass key in each key store: the retired slot of the slot map, the cloud root account's key and the file of a software root ([issue #55](https://github.com/truvity/ritueel/issues/55)).
 
 ## Standards
 
