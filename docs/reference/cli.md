@@ -1,11 +1,11 @@
 ---
 title: Commands
-description: The thirteen ritueel commands, their forms, the shared flags, the exit codes and the JSON output. Only `version` is built.
+description: The thirteen ritueel commands, their forms, the shared flags, the exit codes and the JSON output. The built ones are listed under Built so far.
 sidebar:
   order: 2
 ---
 
-*Only `version` is built; the other commands are not. This is the command set of [record 0005](../decisions/0005-a-ceremony-and-where-it-runs.md) and [record 0006](../decisions/0006-bundle-history-and-trust-files.md), with the commands of [record 0007](../decisions/0007-changing-and-losing-a-root.md), [record 0010](../decisions/0010-the-engine-the-process-and-the-page.md) and [record 0011](../decisions/0011-publishing-and-what-to-do-after-a-ceremony.md); the code is [issue #10](https://github.com/truvity/ritueel/issues/10) and [issue #30](https://github.com/truvity/ritueel/issues/30). The commands of M2, with their files, are in [The first version's commands](/reference/cli/#the-first-versions-commands).*
+*The commands that are built are listed under [Built so far](/reference/cli/#built-so-far); the other commands are not built. This is the command set of [record 0005](../decisions/0005-a-ceremony-and-where-it-runs.md) and [record 0006](../decisions/0006-bundle-history-and-trust-files.md), with the commands of [record 0007](../decisions/0007-changing-and-losing-a-root.md), [record 0010](../decisions/0010-the-engine-the-process-and-the-page.md) and [record 0011](../decisions/0011-publishing-and-what-to-do-after-a-ceremony.md); the code is [issue #10](https://github.com/truvity/ritueel/issues/10) and [issue #30](https://github.com/truvity/ritueel/issues/30). The commands of M2, with their files, are in [The first version's commands](/reference/cli/#the-first-versions-commands).*
 
 You write what you want in wanted files. ritueel finds what is not applied yet, and `apply` does it in one ceremony. There are thirteen command words: `new`, `status`, `want`, `apply`, `revoke`, `check`, `publish`, `close`, `verify`, `wizard`, `stop`, `version` and `join`.
 
@@ -93,6 +93,8 @@ There is no command that renames an X.509 root key. Its name is inside its certi
 
 The card of a root key is named in its wanted card file, so there is no flag that names a card by serial.
 
+*Where a flag goes.* `--dir` and `--output` belong to the program: write them before the first command word, between the words or after the last word. Any other flag belongs to one command word, and is written after that word. A command with a second word (`verify root-list`) has its own flags after the second word: `ritueel verify root-list FILE --held FILE`. A flag that another word defines, a missing second word and an unknown second word are usage errors (exit code 2). `--help` after a word prints the usage of that word on standard output and exits with 0. `--output` takes `text` or `json`; another value is a usage error, and then no JSON object is written because the mode is not known. A usage error message shows a character that is not printable ASCII as an escape (`\u0435`, `\x1b`), so a look-alike of a letter cannot pass for it.
+
 *Earlier flags.* `--root` is now `--with` and a reason. `--roots`, `--kind`, `--reasons`, `--intermediate`, `--request` and `--out` are now the wanted files, or are gone.
 
 Proposed. The text output writes a root key across bundles as `acme/A`. What `acme/A` names when one letter labels the keys of several roots is open ([#137](https://github.com/truvity/ritueel/issues/137)). The JSON output is unchanged.
@@ -136,6 +138,10 @@ M2 builds these, with the software store and the cloud store ([issue #8](https:/
 - **`close`** shows the attempt and asks the person to type the first eight characters of its plan digest, or takes `--confirm DIGEST` (0005 rule 14). Its closing record says that signatures may exist from that plan.
 - **`join`** adds files and never changes one. It prints the end of the history. It stops when one name has two contents or one request has two answers, with exit code 3 (proposed), and shows a fork as a critical finding.
 - **`verify root-list`** is the host's side: it runs [the host's checks](/reference/root-list/#how-a-host-reads-it) on `FILE` (a `root-list.json`, with its `.jws` beside it) against `--held FILE`, the list the host holds, or `--pin`, its initial pins. `--ca-bundle FILE` also checks a CA bundle against the list. It exits 0 when the list is accepted and 3 with the code when it is refused; a held list that has expired is the warning `held-expired` ([the output](/reference/cli/#machine-readable-output)). It needs no bundle.
+
+### Built so far
+
+- `version`: prints the version and the commit it was built from (exit code 0).
 
 The CA bundle is one of the files `apply` writes into the trust set. A command that prints it alone is proposed. `new`, `apply` and `status` come with M2; the milestone of `want` is not set. The thirteen command words are decided; the flags and the exit codes of `join` are proposed. `check cards` comes with M2 and `check restore` with M4, and the name of `check cards` is proposed. `revoke` comes with M4, `verify keyring` with M5, and the guided mode comes after the first signed release; the read-only page of `wizard --web` comes with M2. The commands of the trust files that come later are below.
 
