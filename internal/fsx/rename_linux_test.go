@@ -4,9 +4,9 @@ package fsx_test
 
 import (
 	"errors"
-	"io/fs"
 	"os"
 	"path/filepath"
+	"syscall"
 	"testing"
 
 	"ritueel.id/ritueel/internal/fsx"
@@ -17,11 +17,11 @@ import (
 // refuse to replace.
 func TestLinuxRenameatTwoIsSupportedOnTheTestFilesystem(t *testing.T) {
 	dir := t.TempDir()
-	a, b := filepath.Join(dir, "a"), filepath.Join(dir, "b")
-	if err := os.WriteFile(a, []byte("x"), 0o600); err != nil {
+	root := openFSIn(t, dir)
+	if err := os.WriteFile(filepath.Join(dir, "a"), []byte("x"), 0o600); err != nil {
 		t.Skipf("cannot write a file: %v", err)
 	}
-	err := fsx.OS.RenameNoReplace(a, b)
+	err := root.RenameNoReplace("a", "b")
 	if errors.Is(err, fsx.ErrNoReplaceUnsupported) {
 		t.Skipf("renameat2 with RENAME_NOREPLACE is not supported on the file system of %s: %v", dir, err)
 	}
@@ -29,33 +29,33 @@ func TestLinuxRenameatTwoIsSupportedOnTheTestFilesystem(t *testing.T) {
 		t.Fatal(err)
 	}
 	// And the refusal, through the same call.
-	if err := os.WriteFile(a, []byte("y"), 0o600); err != nil {
+	if err := os.WriteFile(filepath.Join(dir, "a"), []byte("y"), 0o600); err != nil {
 		t.Fatal(err)
 	}
-	var le *os.LinkError
-	err = fsx.OS.RenameNoReplace(a, b)
-	if !errors.As(err, &le) || le.Op != "rename" || le.Old != a || le.New != b || !errors.Is(err, fs.ErrExist) {
-		t.Fatalf("got %v, want an *os.LinkError for a rename of %s to %s wrapping fs.ErrExist", err, a, b)
+	err = root.RenameNoReplace("a", "b")
+	var errno syscall.Errno
+	if !errors.As(err, &errno) || errno != syscall.EEXIST {
+		t.Fatalf("got %v, want the errno EEXIST", err)
 	}
-	if got := readFile(t, b); string(got) != "x" {
+	if got := readFile(t, filepath.Join(dir, "b")); string(got) != "x" {
 		t.Fatalf("the target was replaced: %q", got)
 	}
 }
 
 func TestLinuxRenameNoReplaceDoesNotFallBackToAReplacingRename(t *testing.T) {
-	// The target is a file that a plain os.Rename would replace silently.
+	// The target is a file that a plain rename would replace silently.
 	dir := t.TempDir()
-	a, b := filepath.Join(dir, "a"), filepath.Join(dir, "b")
-	_ = os.WriteFile(a, []byte("new"), 0o600)
-	_ = os.WriteFile(b, []byte("old"), 0o600)
-	err := fsx.OS.RenameNoReplace(a, b)
+	root := openFSIn(t, dir)
+	_ = os.WriteFile(filepath.Join(dir, "a"), []byte("new"), 0o600)
+	_ = os.WriteFile(filepath.Join(dir, "b"), []byte("old"), 0o600)
+	err := root.RenameNoReplace("a", "b")
 	if errors.Is(err, fsx.ErrNoReplaceUnsupported) {
 		t.Skipf("unsupported here: %v", err)
 	}
 	if err == nil {
 		t.Fatal("RenameNoReplace replaced an existing file")
 	}
-	if got := readFile(t, b); string(got) != "old" {
+	if got := readFile(t, filepath.Join(dir, "b")); string(got) != "old" {
 		t.Fatalf("the target holds %q", got)
 	}
 }

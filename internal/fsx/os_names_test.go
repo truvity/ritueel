@@ -1,3 +1,5 @@
+//go:build linux || darwin
+
 package fsx_test
 
 // Names on the real file system of the test machine (t.TempDir()). The in-memory file system
@@ -11,26 +13,11 @@ import (
 	"os"
 	"path/filepath"
 	"slices"
+	"strings"
 	"testing"
 
 	"ritueel.id/ritueel/internal/fsx"
 )
-
-// osNames are names the writer accepts and a workstation's file system must hold as they are:
-// not ASCII, composed and decomposed, and at the edge of 255 bytes with one, two, three and four
-// bytes to a character.
-var osNames = []nameRow{
-	{"Latin with accents", "é-ü-ñ.json"},
-	{"Cyrillic and Chinese and an emoji", "ключ-鍵-😀.json"},
-	{"a decomposed accent", "e\u0301.json"},
-	{"the Kelvin sign", "\u212a.json"},
-	{"an emoji with the variation selector U+FE0F", "\u2764\ufe0f.json"},
-	{"a plain space inside", "my file.json"},
-	{"255 ASCII bytes", ascii255},
-	{"127 times é and a, 255 bytes", eAcute127a},
-	{"85 times €, 255 bytes", euro85},
-	{"63 times U+1F600 and abc, 255 bytes", emoji63abc},
-}
 
 // readBack lists dir and requires exactly the names in want (sorted), byte for byte.
 func readBack(t *testing.T, dir string, want ...string) {
@@ -43,11 +30,13 @@ func readBack(t *testing.T, dir string, want ...string) {
 	}
 }
 
+// TestOSAcceptedNamesAreCreatedUnderExactlyThatName: every accepted name of the table, with each
+// method, in the last place, in the middle and as a file of a set.
 func TestOSAcceptedNamesAreCreatedUnderExactlyThatName(t *testing.T) {
-	for _, row := range osNames {
+	for _, row := range acceptedNames {
 		t.Run(row.why+"/WriteFile", func(t *testing.T) {
-			dir := t.TempDir()
-			if err := (&fsx.Writer{}).WriteFile(filepath.Join(dir, row.name), []byte("data"), 0o600); err != nil {
+			w, dir := openIn(t)
+			if err := w.WriteFile(row.name, []byte("data"), 0o600); err != nil {
 				t.Fatal(err)
 			}
 			readBack(t, dir, row.name)
@@ -56,8 +45,8 @@ func TestOSAcceptedNamesAreCreatedUnderExactlyThatName(t *testing.T) {
 			}
 		})
 		t.Run(row.why+"/Mkdir", func(t *testing.T) {
-			dir := t.TempDir()
-			if err := (&fsx.Writer{}).Mkdir(filepath.Join(dir, row.name), 0o700); err != nil {
+			w, dir := openIn(t)
+			if err := w.Mkdir(row.name, 0o700); err != nil {
 				t.Fatal(err)
 			}
 			readBack(t, dir, row.name)
@@ -66,8 +55,8 @@ func TestOSAcceptedNamesAreCreatedUnderExactlyThatName(t *testing.T) {
 			}
 		})
 		t.Run(row.why+"/CreateJournal", func(t *testing.T) {
-			dir := t.TempDir()
-			j, err := (&fsx.Writer{}).CreateJournal(filepath.Join(dir, row.name))
+			w, dir := openIn(t)
+			j, err := w.CreateJournal(row.name)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -83,145 +72,137 @@ func TestOSAcceptedNamesAreCreatedUnderExactlyThatName(t *testing.T) {
 			}
 		})
 		t.Run(row.why+"/WriteSet folder and file", func(t *testing.T) {
-			dir := t.TempDir()
-			set := filepath.Join(dir, row.name)
-			err := (&fsx.Writer{}).WriteSet(set, []fsx.NewFile{{Name: row.name, Data: []byte("data"), Perm: 0o600}})
+			w, dir := openIn(t)
+			err := w.WriteSet(row.name, []fsx.NewFile{{Name: row.name, Data: []byte("data"), Perm: 0o600}})
 			if err != nil {
 				t.Fatal(err)
 			}
 			readBack(t, dir, row.name)
-			readBack(t, set, row.name)
-			if got := readFile(t, filepath.Join(set, row.name)); string(got) != "data" {
+			readBack(t, filepath.Join(dir, row.name), row.name)
+			if got := readFile(t, filepath.Join(dir, row.name, row.name)); string(got) != "data" {
 				t.Fatalf("the file holds %q", got)
 			}
 		})
 		t.Run(row.why+"/a folder in the middle", func(t *testing.T) {
-			dir := t.TempDir()
-			mid := filepath.Join(dir, row.name)
-			if err := os.Mkdir(mid, 0o700); err != nil {
+			w, dir := openIn(t)
+			if err := os.Mkdir(filepath.Join(dir, row.name), 0o700); err != nil {
 				t.Fatal(err)
 			}
-			if err := (&fsx.Writer{}).WriteFile(filepath.Join(mid, "f.json"), []byte("data"), 0o600); err != nil {
+			if err := w.WriteFile(row.name+"/f.json", []byte("data"), 0o600); err != nil {
 				t.Fatal(err)
 			}
 			readBack(t, dir, row.name)
-			readBack(t, mid, "f.json")
+			readBack(t, filepath.Join(dir, row.name), "f.json")
 		})
 	}
 }
 
-// TestOSSetWithTheKelvinSignAndKIsWrittenWhole: the Kelvin sign and "k" are
-// two names that the writer lets into one set; a file system that cannot hold both would fail
-// here and not on a stick.
-func TestOSSetWithTheKelvinSignAndKIsWrittenWhole(t *testing.T) {
-	dir := t.TempDir()
-	set := filepath.Join(dir, "s")
-	err := (&fsx.Writer{}).WriteSet(set, []fsx.NewFile{
-		{Name: "\u212a.json", Data: []byte("kelvin"), Perm: 0o600},
-		{Name: "k.json", Data: []byte("k"), Perm: 0o600},
-	})
-	if err != nil {
-		t.Fatal(err)
-	}
-	readBack(t, set, "\u212a.json", "k.json")
-	if got := readFile(t, filepath.Join(set, "\u212a.json")); string(got) != "kelvin" {
-		t.Fatalf("the Kelvin file holds %q", got)
-	}
-}
-
-// TestOSRelativePathsWithAndWithoutAFolder: the paths that have no folder ("x", whose folder is
-// ".") or a relative one, relative to the working directory of the process.
-func TestOSRelativePathsWithAndWithoutAFolder(t *testing.T) {
-	dir := t.TempDir()
-	t.Chdir(dir)
-	if err := os.Mkdir("d", 0o700); err != nil {
-		t.Fatal(err)
-	}
-	w := &fsx.Writer{}
-	for _, p := range []string{"x.json", "d/y.json", "é.json"} {
-		if err := w.WriteFile(p, []byte(p), 0o600); err != nil {
-			t.Fatalf("WriteFile %q: %v", p, err)
+// TestOSEveryAllowedCharacterIsCreatedUnderExactlyThatName: a real write of each of the 65, in the
+// first, an inner and the last place, read back byte for byte.
+func TestOSEveryAllowedCharacterIsCreatedUnderExactlyThatName(t *testing.T) {
+	w, dir := openIn(t)
+	var want []string
+	seen := map[string]bool{}
+	for _, c := range allowedChars() {
+		ch := string(rune(c))
+		for _, name := range []string{ch + "x1", "x" + ch + "1", "x1" + ch, ch} {
+			if (c == '.' && (strings.HasSuffix(name, ".") || name == ".")) || seen[name] {
+				continue
+			}
+			seen[name] = true
+			if err := w.WriteFile(name, []byte("v"+name), 0o600); err != nil {
+				t.Fatalf("WriteFile %q: %v", name, err)
+			}
+			want = append(want, name)
 		}
 	}
-	readBack(t, dir, "d", "x.json", "é.json")
-	readBack(t, filepath.Join(dir, "d"), "y.json")
-	if err := w.Mkdir("m", 0o700); err != nil {
-		t.Fatal(err)
+	slices.Sort(want)
+	want = slices.Compact(want)
+	readBack(t, dir, want...)
+	for _, name := range want {
+		if got := readFile(t, filepath.Join(dir, name)); string(got) != "v"+name {
+			t.Fatalf("%q holds %q", name, got)
+		}
 	}
-	j, err := w.CreateJournal("j.jsonl")
-	if err != nil {
-		t.Fatal(err)
-	}
-	_ = j.Close()
-	if err := w.WriteSet("s", []fsx.NewFile{{Name: "a", Data: []byte("a"), Perm: 0o600}}); err != nil {
-		t.Fatal(err)
-	}
-	readBack(t, dir, "d", "j.jsonl", "m", "s", "x.json", "é.json")
 }
 
 // TestOSRefusedNamesCreateNothing: a refused name does not reach the real file system, which
 // would answer a name of 256 bytes with its own error, and the writer goes on.
 func TestOSRefusedNamesCreateNothing(t *testing.T) {
-	dir := t.TempDir()
-	w := &fsx.Writer{}
-	for _, name := range []string{ascii256, eAcute128, emoji127a, "a.", "a ", "a:b", `a\b`, "a\x01b", "a\xffb", "a|b"} {
-		p := filepath.Join(dir, name)
+	w, dir := openIn(t)
+	for _, name := range []string{
+		rep("a", 256), rep("é", 128), "a.", "a ", "a:b", `a\b`, "a\x01b", "a\xffb", "a|b", "é", "ключ", "a😀",
+		"aux", "Nul.txt", "COM1", "lpt².tar.gz", ".RT-x", "nul .txt", "com1 ", "a\u00a0b", "a\u200bb",
+		"\U0001f468\u200d\U0001f469", "a b", "a*b", "a?b", `a"b`, "a<b", "a>b", "a\tb", "a\nb", "a\x7fb", "..." + rep(".", 3) + "x.",
+	} {
 		for what, err := range map[string]error{
-			"WriteFile": w.WriteFile(p, []byte("x"), 0o600),
-			"Mkdir":     w.Mkdir(p, 0o700),
-			"WriteSet":  w.WriteSet(p, []fsx.NewFile{{Name: "a", Data: []byte("x"), Perm: 0o600}}),
+			"WriteFile": w.WriteFile(name, []byte("x"), 0o600),
+			"Mkdir":     w.Mkdir(name, 0o700),
+			"WriteSet":  w.WriteSet(name, []fsx.NewFile{{Name: "a", Data: []byte("x"), Perm: 0o600}}),
 		} {
 			if !errors.Is(err, fsx.ErrInvalid) {
 				t.Errorf("%s %q = %v, want ErrInvalid", what, name, err)
 			}
 		}
-		if _, err := w.CreateJournal(p); !errors.Is(err, fsx.ErrInvalid) {
+		if _, err := w.CreateJournal(name); !errors.Is(err, fsx.ErrInvalid) {
 			t.Errorf("CreateJournal %q = %v, want ErrInvalid", name, err)
 		}
-		err := w.WriteSet(filepath.Join(dir, "s"), []fsx.NewFile{{Name: name, Data: []byte("x"), Perm: 0o600}})
+		err := w.WriteSet("s", []fsx.NewFile{{Name: name, Data: []byte("x"), Perm: 0o600}})
 		if !errors.Is(err, fsx.ErrInvalid) {
 			t.Errorf("WriteSet with the file %q = %v, want ErrInvalid", name, err)
 		}
 	}
 	readBack(t, dir)
-	if err := w.WriteFile(filepath.Join(dir, "ok.json"), []byte("ok"), 0o600); err != nil {
+	if err := w.WriteFile("ok.json", []byte("ok"), 0o600); err != nil {
 		t.Fatalf("the writer stopped after refusing names: %v", err)
 	}
 	readBack(t, dir, "ok.json")
 }
 
-// TestOSDeviceNameIsRefusedAndCreatesNothing: a device name of Windows (also with spaces before
-// the extension), a name with a character that is not printable (a no-break space, a
-// zero-width space, an emoji sequence joined with U+200D), and the temporary prefix in
-// capitals, are refused for every method before the real file system is touched. Linux
-// would have created "aux"; the writer refuses it because the stick goes to Windows machines.
-func TestOSDeviceNameIsRefusedAndCreatesNothing(t *testing.T) {
-	dir := t.TempDir()
-	w := &fsx.Writer{}
-	for _, name := range []string{"aux", "Nul.txt", "COM1", "lpt\u00b2.tar.gz", ".RT-x", "nul .txt", "com1 ", "a\u00a0b", "a\u200bb", "\U0001f468\u200d\U0001f469"} {
-		p := filepath.Join(dir, name)
-		for what, err := range map[string]error{
-			"WriteFile": w.WriteFile(p, []byte("x"), 0o600),
-			"Mkdir":     w.Mkdir(p, 0o700),
-			"WriteSet":  w.WriteSet(p, []fsx.NewFile{{Name: "a", Data: []byte("x"), Perm: 0o600}}),
-		} {
-			if !errors.Is(err, fsx.ErrInvalid) {
-				t.Errorf("%s %q = %v, want ErrInvalid", what, name, err)
-			}
-		}
-		if _, err := w.CreateJournal(p); !errors.Is(err, fsx.ErrInvalid) {
-			t.Errorf("CreateJournal %q = %v, want ErrInvalid", name, err)
-		}
-		if err := w.WriteSet(filepath.Join(dir, "s"), []fsx.NewFile{{Name: name, Data: []byte("x"), Perm: 0o600}}); !errors.Is(err, fsx.ErrInvalid) {
-			t.Errorf("WriteSet with the file %q = %v, want ErrInvalid", name, err)
-		}
-	}
-	readBack(t, dir)
-	// a name that only looks like a device name is created as it is
-	for _, name := range []string{"auxiliary", "com10", ".con", "a.con", "COM\u00b2x", "com0", "lpt0", " nul", "nul x.txt"} {
-		if err := w.WriteFile(filepath.Join(dir, name), []byte(name), 0o600); err != nil {
+// TestOSNamesThatOnlyLookLikeADeviceNameAreCreatedAsTheyAre: a device name of Windows is refused,
+// and a name that only looks like one is written.
+func TestOSNamesThatOnlyLookLikeADeviceNameAreCreatedAsTheyAre(t *testing.T) {
+	w, dir := openIn(t)
+	var want []string
+	for _, name := range []string{"auxiliary", "com10", ".con", "a.con", "com0", "lpt0", "con1", "nul-x.txt", "COM10"} {
+		if err := w.WriteFile(name, []byte(name), 0o600); err != nil {
 			t.Errorf("WriteFile %q: %v", name, err)
 		}
+		want = append(want, name)
 	}
-	readBack(t, dir, "auxiliary", "com10", ".con", "a.con", "COM\u00b2x", "com0", "lpt0", " nul", "nul x.txt")
+	readBack(t, dir, want...)
+}
+
+// TestOSLongestNameIsCreated: 255 bytes, the limit of the file system of a workstation, is
+// written whole, and 256 is refused by the writer and not by the file system.
+func TestOSLongestNameIsCreated(t *testing.T) {
+	w, dir := openIn(t)
+	long := rep("a", 255)
+	if err := w.WriteFile(long, []byte("x"), 0o600); err != nil {
+		t.Skipf("this file system does not hold a name of 255 bytes: %v", err)
+	}
+	if err := w.Mkdir(rep("b", 255), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	readBack(t, dir, long, rep("b", 255))
+	err := w.WriteFile(rep("a", 256), []byte("x"), 0o600)
+	if !errors.Is(err, fsx.ErrInvalid) || errors.Is(err, fsx.ErrStopped) {
+		t.Fatalf("a name of 256 bytes: %v, want ErrInvalid from the writer", err)
+	}
+}
+
+// TestOSTemporaryNameOfAFileIsShortEnoughToLeaveNothingLongerThanItself: the temporary name of a
+// write that failed is left, and it is the 15 characters of the rule.
+func TestOSTheTemporaryNameThatIsLeftHasTheRightShape(t *testing.T) {
+	w, dir := openIn(t)
+	if err := w.WriteFile("f", []byte("a"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := w.WriteFile("f", []byte("b"), 0o600); err == nil {
+		t.Fatal("a second write of one name succeeded")
+	}
+	left := tempNamed(names(t, dir))
+	if len(left) != 1 || !tempShape.MatchString(left[0]) {
+		t.Fatalf("temporary names: %v, want one of the shape .rt- and 11 of [a-z0-9]", left)
+	}
 }
