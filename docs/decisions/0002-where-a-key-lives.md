@@ -39,7 +39,8 @@
 
 ## Why
 
-A card or KMS key cannot be copied, so a calendar would force a new anchor on every relying party for no gain.
+- A card or KMS key cannot be copied, so a calendar would force a new anchor on every relying party for no gain.
+- P-384 with SHA-384 (rule 14) is chosen for the larger security margin: about 192 bits against about 128 for P-256 (NIST SP 800-57 Part 1 Rev 5, table 2), on the largest curve that a PIV slot, the OpenPGP applet and the cloud key store all hold. It is not a defence against a quantum computer.
 
 ## What it costs
 
@@ -51,6 +52,7 @@ A card or KMS key cannot be copied, so a calendar would force a new anchor on ev
 - **More key stores in the first version.** Wider reach, but every key store multiplies tests and guides, and four already cover every transition shape.
 - **A separate classic passphrase mode and a separate wrapped-to-cards mode.** Two named modes, but the same idea (a password against a hardware key); there is one software mode.
 - **One age file with a passphrase stanza and card recipients.** One file for both ways, but the age spec forbids mixing a passphrase (scrypt) stanza with other recipients.
+- **P-256 for every key.** Faster (a signature about 15 times, measured with OpenSSL 3.5.5) and read by the widest set of verifiers, but it gives up the 192-bit level, and a root signs only a few times a year, so the speed gains nothing.
 - **Replace every root key at most every three years, whatever its key store.** One rule, but a card or KMS key cannot be copied, so the calendar forces a new anchor on every relying party for no gain.
 - **Only the encrypted file for software keys.** The simplest, but one copy on one disk, so a lost laptop loses the key.
 - **1Password as the home of a production root or a person's master key.** It survives a lost laptop, but whoever unlocks the vault has the key, and removing a vault member does not change its keys.
