@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
-	"path/filepath"
 	"strings"
 	"sync"
 	"unicode"
@@ -37,12 +36,21 @@ const dirPerm fs.FileMode = 0o700
 // journalPerm is the mode of a journal: the owner only.
 const journalPerm fs.FileMode = 0o600
 
-// Writer adds files to a bundle. The first error stops it: every later operation of the
-// writer and of its journals returns that same error and does not reach the file system
-// (record 0006, rule 33; the reading that nothing may follow a failed write is proposed).
-// An argument that the writer refuses before any file system call (see [ErrInvalid]) is not
-// an error of that kind and does not stop it. The writer never retries and never deletes
-// a temporary file or folder.
+// Writer adds files to a bundle inside one root folder, which it holds open for its whole life.
+// The first error stops it: every later operation of the writer and of its journals returns an
+// error and does not reach the file system (record 0006, rule 33; the reading that nothing may
+// follow a failed write is proposed). An argument that the writer refuses before any file system
+// call (see [ErrInvalid]) is not an error of that kind and does not stop it. The writer never
+// retries and never deletes a temporary file or folder.
+//
+// Every path given to a method is relative to the root, with "/" as its separator, and the
+// writer walks it from the root, one element at a time, without following a symbolic link. A
+// walk is made once for each operation, and the folder handles it opens are closed when the
+// operation ends, on every path out of it (see the package comment).
+//
+// [Open] makes a Writer for a folder of the real file system. A test, or a caller that has an
+// [FS] of its own, sets the FS field of a Writer before the first call. [Writer.Close] releases
+// the root, and the writer owns its FS from the first call to that Close.
 //
 // A Writer is safe for use by several goroutines: every method, and every method of its
 // journals, takes the writer's lock, so the operations run one at a time and the stop is read
@@ -50,14 +58,16 @@ const journalPerm fs.FileMode = 0o600
 // Rand that is shared with another Writer or another goroutine needs a lock of its own, and FS
 // and Rand are set before the first call and are not changed after it.
 type Writer struct {
-	// FS is the file system; nil means [OS].
+	// FS is the root folder. [Open] sets it; a nil FS makes every method that needs the file
+	// system return [ErrNoRoot].
 	FS FS
 	// Rand supplies the random part of temporary names; nil means crypto/rand. The writer reads
 	// it only while it holds its lock.
 	Rand io.Reader
 
-	mu  sync.Mutex
-	err error // the stop; set once
+	mu     sync.Mutex
+	err    error // the stop; set once
+	closed bool
 }
 
 // NewFile is one file of a set written by [Writer.WriteSet]. Name is one plain name.
@@ -67,11 +77,41 @@ type NewFile struct {
 	Perm fs.FileMode
 }
 
-func (w *Writer) fsys() FS {
-	if w.FS == nil {
-		return OS
+// Open opens the folder root and returns a Writer that works inside it. root is resolved by the
+// operating system as the caller gives it, and its last element must be a folder and must not
+// be a symbolic link (see [OpenFS]). There is one constructor for the real file system and the
+// FS field for any other, so that a test can stand an in-memory file system in for the root
+// without a second way to make a Writer. The caller closes the Writer with [Writer.Close].
+func Open(root string) (*Writer, error) {
+	fsys, err := OpenFS(root)
+	if err != nil {
+		return nil, err
 	}
-	return w.FS
+	return &Writer{FS: fsys}, nil
+}
+
+// Close releases the root folder. Every call of the writer after it, and of its journals, returns
+// [ErrWriterClosed] (or the stop, when the writer had stopped: the stop comes first). A second
+// Close does nothing and returns nil. It returns the stop when the writer had stopped, as
+// [Journal.Close] does, and otherwise the error of the release of the root, if any.
+func (w *Writer) Close() error {
+	w.mu.Lock()
+	defer w.mu.Unlock()
+	if w.closed {
+		return nil
+	}
+	w.closed = true
+	var err error
+	if w.FS != nil {
+		err = w.FS.Close()
+	}
+	if w.err != nil {
+		return w.err
+	}
+	if err != nil {
+		return fmt.Errorf("fsx: close the root folder: %w", err)
+	}
+	return nil
 }
 
 func (w *Writer) rand() io.Reader {
@@ -88,6 +128,40 @@ func (w *Writer) stop(step Step, path string, err error) error {
 	return e
 }
 
+// begin is the start of every operation that reaches the file system, made under the lock: a
+// writer that has stopped, then a writer that is closed, then a writer with no root answer
+// before anything else, and so before the check of the arguments.
+func (w *Writer) begin() error {
+	if err := w.beginNoFS(); err != nil {
+		return err
+	}
+	if w.FS == nil {
+		return ErrNoRoot
+	}
+	return nil
+}
+
+// beginNoFS is begin for an operation that does not reach the file system.
+func (w *Writer) beginNoFS() error {
+	if w.err != nil {
+		return w.err
+	}
+	if w.closed {
+		return ErrWriterClosed
+	}
+	return nil
+}
+
+// enter walks to the folder dir. A failed walk stops the writer: the file system, or a link
+// where a folder should be, refused the step.
+func (w *Writer) enter(dir []string) (*folder, error) {
+	f, upto, err := openFolder(w.FS, dir)
+	if err != nil {
+		return nil, w.stop(StepOpenDir, upto, err)
+	}
+	return f, nil
+}
+
 // TempName draws one temporary name: TempPrefix and lower-case letters and digits, 15
 // characters in all. It does not carry any final name. It reads only the random source and
 // does not reach the file system. Like every other method it takes the writer's lock, so a
@@ -97,8 +171,8 @@ func (w *Writer) stop(step Step, path string, err error) error {
 func (w *Writer) TempName() (string, error) {
 	w.mu.Lock()
 	defer w.mu.Unlock()
-	if w.err != nil {
-		return "", w.err
+	if err := w.beginNoFS(); err != nil {
+		return "", err
 	}
 	return w.tempName()
 }
@@ -124,36 +198,45 @@ func (w *Writer) tempName() (string, error) {
 	return TempPrefix + string(out), nil
 }
 
-// WriteFile adds one file (steps 1 to 4 of "How a file is written"): the whole content under
-// a temporary name in the same folder, a flush of the file, a rename to path that refuses to
+// WriteFile adds one file (steps 1 to 4 of "How a file is written"): the whole content under a
+// temporary name in the same folder, a flush of the file, a rename to path that refuses to
 // replace, a flush of the folder. path must not exist: when it does, the error wraps
 // fs.ErrExist (Step rename), the file at path is unchanged and the temporary file is left.
 // A cut before the rename leaves nothing at path; a cut after it leaves the whole content.
+// The folder of path is walked once, and the create, the rename and the flush work through
+// that one handle.
 func (w *Writer) WriteFile(path string, data []byte, perm fs.FileMode) error {
 	w.mu.Lock()
 	defer w.mu.Unlock()
-	if w.err != nil {
-		return w.err
+	if err := w.begin(); err != nil {
+		return err
 	}
-	if err := checkPath(path); err != nil {
+	elems, err := parsePath(path, true)
+	if err != nil {
 		return err
 	}
 	if err := checkPerm(perm); err != nil {
 		return err
 	}
-	dir := filepath.Dir(path)
-	tmp, err := w.tempPath(dir)
+	dir, name := elems[:len(elems)-1], elems[len(elems)-1]
+	dp := dirPath(dir)
+	d, err := w.enter(dir)
 	if err != nil {
 		return err
 	}
-	if err := w.writeNew(tmp, data, perm); err != nil {
+	defer d.release()
+	tmp, err := w.tempIn(dp)
+	if err != nil {
 		return err
 	}
-	if err := w.fsys().RenameNoReplace(tmp, path); err != nil {
-		return w.stop(StepRename, path, err)
+	if err := w.writeNew(d.fs, dp, tmp, data, perm); err != nil {
+		return err
 	}
-	if err := w.fsys().SyncDir(dir); err != nil {
-		return w.stop(StepSyncDir, dir, err)
+	if err := d.fs.RenameNoReplace(tmp, name); err != nil {
+		return w.stop(StepRename, joinPath(dp, name), err)
+	}
+	if err := d.fs.Sync(); err != nil {
+		return w.stop(StepSyncDir, dp, err)
 	}
 	return nil
 }
@@ -164,40 +247,57 @@ func (w *Writer) WriteFile(path string, data []byte, perm fs.FileMode) error {
 // files are written at their own names inside the temporary folder; the folder becomes
 // visible under finalDir only after every file is whole. When finalDir exists the error
 // wraps fs.ErrExist (Step rename) and the temporary folder is left. The folder is made with
-// mode 0700.
+// mode 0700. The parent is walked once, and the temporary folder is opened from it, so the
+// files, the rename and the flush of the parent all work through handles that the walk
+// opened.
 func (w *Writer) WriteSet(finalDir string, files []NewFile) error {
 	w.mu.Lock()
 	defer w.mu.Unlock()
-	if w.err != nil {
-		return w.err
+	if err := w.begin(); err != nil {
+		return err
 	}
-	if err := checkPath(finalDir); err != nil {
+	elems, err := parsePath(finalDir, true)
+	if err != nil {
 		return err
 	}
 	if err := checkFiles(files); err != nil {
 		return err
 	}
-	parent := filepath.Dir(finalDir)
-	tmp, err := w.tempPath(parent)
+	parent, name := elems[:len(elems)-1], elems[len(elems)-1]
+	pp := dirPath(parent)
+	p, err := w.enter(parent)
 	if err != nil {
 		return err
 	}
-	if err := w.fsys().Mkdir(tmp, dirPerm); err != nil {
-		return w.stop(StepMkdir, tmp, err)
+	defer p.release()
+	tmp, err := w.tempIn(pp)
+	if err != nil {
+		return err
 	}
+	tmpPath := joinPath(pp, tmp)
+	if err := p.fs.Mkdir(tmp, dirPerm); err != nil {
+		return w.stop(StepMkdir, tmpPath, err)
+	}
+	t, err := p.fs.OpenDir(tmp)
+	if err != nil {
+		return w.stop(StepOpenDir, tmpPath, err)
+	}
+	td := &folder{fs: t, owned: true}
+	defer td.release()
 	for _, f := range files {
-		if err := w.writeNew(filepath.Join(tmp, f.Name), f.Data, f.Perm); err != nil {
+		if err := w.writeNew(td.fs, tmpPath, f.Name, f.Data, f.Perm); err != nil {
 			return err
 		}
 	}
-	if err := w.fsys().SyncDir(tmp); err != nil {
-		return w.stop(StepSyncDir, tmp, err)
+	if err := td.fs.Sync(); err != nil {
+		return w.stop(StepSyncDir, tmpPath, err)
 	}
-	if err := w.fsys().RenameNoReplace(tmp, finalDir); err != nil {
-		return w.stop(StepRename, finalDir, err)
+	td.release()
+	if err := p.fs.RenameNoReplace(tmp, name); err != nil {
+		return w.stop(StepRename, joinPath(pp, name), err)
 	}
-	if err := w.fsys().SyncDir(parent); err != nil {
-		return w.stop(StepSyncDir, parent, err)
+	if err := p.fs.Sync(); err != nil {
+		return w.stop(StepSyncDir, pp, err)
 	}
 	return nil
 }
@@ -208,39 +308,49 @@ func (w *Writer) WriteSet(finalDir string, files []NewFile) error {
 func (w *Writer) Mkdir(path string, perm fs.FileMode) error {
 	w.mu.Lock()
 	defer w.mu.Unlock()
-	if w.err != nil {
-		return w.err
+	if err := w.begin(); err != nil {
+		return err
 	}
-	if err := checkPath(path); err != nil {
+	elems, err := parsePath(path, true)
+	if err != nil {
 		return err
 	}
 	if err := checkPerm(perm); err != nil {
 		return err
 	}
-	if err := w.fsys().Mkdir(path, perm); err != nil {
-		return w.stop(StepMkdir, path, err)
+	parent, name := elems[:len(elems)-1], elems[len(elems)-1]
+	pp := dirPath(parent)
+	p, err := w.enter(parent)
+	if err != nil {
+		return err
 	}
-	parent := filepath.Dir(path)
-	if err := w.fsys().SyncDir(parent); err != nil {
-		return w.stop(StepSyncDir, parent, err)
+	defer p.release()
+	if err := p.fs.Mkdir(name, perm); err != nil {
+		return w.stop(StepMkdir, joinPath(pp, name), err)
+	}
+	if err := p.fs.Sync(); err != nil {
+		return w.stop(StepSyncDir, pp, err)
 	}
 	return nil
 }
 
-// tempPath draws a temporary name in dir. The error of the draw stops the writer. A final
-// name never starts with TempPrefix (checkPath), so the two cannot be equal.
-func (w *Writer) tempPath(dir string) (string, error) {
+// tempIn draws a temporary name for the folder at dir (as dirPath gives it). The error of the
+// draw stops the writer. A final name never starts with TempPrefix (parsePath), so the two
+// cannot be equal.
+func (w *Writer) tempIn(dir string) (string, error) {
 	name, err := w.tempName()
 	if err != nil {
-		return "", w.stop(StepCreate, filepath.Join(dir, TempPrefix), err)
+		return "", w.stop(StepCreate, joinPath(dir, TempPrefix), err)
 	}
-	return filepath.Join(dir, name), nil
+	return name, nil
 }
 
-// writeNew creates path exclusively, writes data, flushes and closes it. Each failure
-// stops the writer. After a failure the open file is closed without a further flush.
-func (w *Writer) writeNew(path string, data []byte, perm fs.FileMode) error {
-	f, err := w.fsys().CreateExcl(path, perm)
+// writeNew creates name in d exclusively, writes data, flushes and closes it. dir is the path of
+// d, for the errors. Each failure stops the writer. After a failure the open file is closed
+// without a further flush.
+func (w *Writer) writeNew(d FS, dir, name string, data []byte, perm fs.FileMode) error {
+	path := joinPath(dir, name)
+	f, err := d.CreateExcl(name, perm)
 	if err != nil {
 		return w.stop(StepCreate, path, err)
 	}
@@ -319,7 +429,7 @@ func windowsDevice(name string) bool {
 // nameProblem says why one name (one element of a path, or the name of a file of a set) cannot
 // be used on the stick (exFAT) and on the desktop systems that read it, or is held there under
 // another name; it returns "" when the name is fine. The reasons: it is empty (checkFiles
-// relies on this answer for the name of a file of a set; checkPath refuses an empty element
+// relies on this answer for the name of a file of a set; parsePath refuses an empty element
 // itself); it is not valid UTF-8; it has a control code or a character of exFAT's list of
 // invalid characters (the colon is on that list, so a drive, "C:x", is refused by it and needs
 // no rule of its own); it has a character that is not printable; it is longer than 255 bytes (see [maxNameBytes]); it
@@ -384,51 +494,55 @@ func hasTempPrefix(name string) bool {
 	return true
 }
 
-// checkPath refuses a path that can mean more than one thing, that something other than a
-// name the caller can point at, or that the stick's file system cannot hold. All forms are
-// refused with [ErrInvalid]: an empty path; a trailing separator (filepath.Dir and
-// filepath.Base of "dir/x/" both give "x", so the file would be made inside x); an element
-// that is "." or ".."; an empty element between two separators ("a//b", and a leading "//",
-// which some systems read as a network name); and, for every element and not only the last,
-// whatever [nameProblem] finds (control codes, the characters of exFAT's invalid list
-// including the backslash and the colon, a trailing dot or space, a length over 255 bytes,
-// bytes that are not UTF-8). The final element must not start with [TempPrefix]. One leading
-// separator, an absolute path, is accepted: the writer has no root (see the package
-// comment). A relative path with no folder ("x", whose folder is ".") passes. A path with a
-// drive or a volume ("C:x", "\\host\share") has a colon or a doubled separator and is refused
-// by those rules, so no code looks at a volume name.
+// parsePath splits a path that is relative to the root into its elements, or refuses it with
+// [ErrInvalid]. The separator is "/" and no other character, so a backslash is not a separator
+// on any system: it is a character of exFAT's invalid list and [nameProblem] refuses it. All
+// forms are refused: an empty path; an absolute path (a leading separator, which is also what a
+// leading "//" is: some systems read it as a network name; the writer works inside its root
+// and a path says where below it); a trailing separator (the file would be made inside the
+// folder the last element names); an element that is "." or ".."; an empty element between two
+// separators ("a//b"); and, for every element and not only the last, whatever [nameProblem]
+// finds (control codes, the characters of exFAT's invalid list including the backslash and the
+// colon, a trailing dot or space, a length over 255 bytes, bytes that are not UTF-8). When
+// forWrite is set, the final element must not start with [TempPrefix] either: a name to be
+// written is never a temporary one. A path that is only read may name one, because the caller
+// lists the temporary folders a stop left behind. A relative path with no folder ("x", whose
+// folder is the root) passes. A path with a drive or a volume ("C:x", "\\host\share") has a
+// colon or a backslash and is refused by those rules, so no code looks at a volume name. Every
+// text quotes the path.
 //
 // Some rules overlap, and each stays because it gives the caller the clearer text for its own
 // case: the trailing separator and the empty element, and "." and ".." and the trailing dot.
-func checkPath(path string) error {
+func parsePath(path string, forWrite bool) ([]string, error) {
 	if path == "" {
-		return fmt.Errorf("%w: empty path", ErrInvalid)
+		return nil, fmt.Errorf("%w: empty path", ErrInvalid)
 	}
-	elems := strings.Split(filepath.ToSlash(path), "/")
+	if path[0] == '/' {
+		return nil, fmt.Errorf("%w: path %q is absolute; a path is relative to the root", ErrInvalid, path)
+	}
+	elems := strings.Split(path, "/")
 	last := len(elems) - 1
 	if last > 0 && elems[last] == "" {
-		return fmt.Errorf("%w: path %q ends with a separator", ErrInvalid, path)
+		return nil, fmt.Errorf("%w: path %q ends with a separator", ErrInvalid, path)
 	}
-	for i, e := range elems {
+	for _, e := range elems {
 		switch e {
 		case "":
-			if i != 0 { // a leading separator is the one empty element that is allowed
-				return fmt.Errorf("%w: path %q has an empty element (a doubled separator)", ErrInvalid, path)
-			}
+			return nil, fmt.Errorf("%w: path %q has an empty element (a doubled separator)", ErrInvalid, path)
 		case ".":
-			return fmt.Errorf("%w: path %q has a \".\" element", ErrInvalid, path)
+			return nil, fmt.Errorf("%w: path %q has a \".\" element", ErrInvalid, path)
 		case "..":
-			return fmt.Errorf("%w: path %q has a \"..\" element", ErrInvalid, path)
+			return nil, fmt.Errorf("%w: path %q has a \"..\" element", ErrInvalid, path)
 		default:
 			if why := nameProblem(e); why != "" {
-				return fmt.Errorf("%w: path %q has an element that %s", ErrInvalid, path, why)
+				return nil, fmt.Errorf("%w: path %q has an element that %s", ErrInvalid, path, why)
 			}
 		}
 	}
-	if hasTempPrefix(elems[last]) {
-		return fmt.Errorf("%w: path %q has the prefix of a temporary name", ErrInvalid, path)
+	if forWrite && hasTempPrefix(elems[last]) {
+		return nil, fmt.Errorf("%w: path %q has the prefix of a temporary name", ErrInvalid, path)
 	}
-	return nil
+	return elems, nil
 }
 
 func checkPerm(perm fs.FileMode) error {
