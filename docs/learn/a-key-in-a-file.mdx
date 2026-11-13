@@ -15,17 +15,17 @@ This page assumes you know what a key pair is ([keys from zero](/learn/what-is-a
 
 ## What a key file is
 
-A key file is a file that holds a private key, encrypted with age, a small file-encryption format ([record 0002](../decisions/0002-where-a-key-lives.md), rule 9). The key is generated in memory and written straight into the file, never to a plain file on disk (rule 4). The encrypted file is the default home of a software key (rule 11).
+A key file is a file that holds a private key, encrypted with age, a small file-encryption format. The key is generated in memory and written straight into the file, never to a plain file on disk. The encrypted file is the default home of a software key ([record 0002](../decisions/0002-where-a-key-lives.md), rules 4, 9 and 11).
 
 A key file is a copy by nature. It can be copied and read without a trace, it gives no evidence of where it lives, and a backup of it is another copy, which is exactly the danger.
 
 ## What it is for
 
-A key file is the home of drills, tests and development, and of a person's own OpenPGP primary, kept offline (rules 7, 8 and 11). No root that others rely on lives in a key file, and a software root never anchors a signed release (rule 8). A key that can be copied is replaced after three years at the latest (rule 15).
+A key file is the home of drills, tests and development, and of a person's own OpenPGP primary, kept offline. No root that others rely on lives in a key file, and a software root never anchors a signed release. A key that can be copied is replaced after three years at the latest ([record 0002](../decisions/0002-where-a-key-lives.md), rules 7, 8, 11 and 15).
 
 ## How a key file is opened
 
-Three ways open it: a passkey on each root card named for the file, which is the default; a recovery key; and a passphrase, for a holder without cards (rules 19, 21 and 22). [Question 4 of "Choosing where a root lives"](/learn/choosing-where-a-root-lives/#4-how-will-the-key-file-be-opened) says when to use which. The rest of this page follows the default.
+Three ways open it: a passkey on each root card named for the file, which is the default; a recovery key; and a passphrase, for a holder without cards ([record 0002](../decisions/0002-where-a-key-lives.md), rules 19, 21 and 22). [Question 4 of "Choosing where a root lives"](/learn/choosing-where-a-root-lives/#4-how-will-the-key-file-be-opened) says when to use which. The rest of this page follows the default.
 
 ## A passkey that opens a key file
 
