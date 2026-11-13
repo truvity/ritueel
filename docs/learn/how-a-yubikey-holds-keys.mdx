@@ -7,7 +7,7 @@ slug: learn/how-a-yubikey-holds-keys
 
 import Figure from '../../site/src/components/Figure.astro';
 
-*Design phase: ritueel is in design and has no release. Its OpenPGP-card store is planned for M3 and its PIV store for M6 ([roadmap](/roadmap/)); nothing on this page is built. The facts were read on 2026-11-10 in Yubico's documentation, in the FIDO and WebAuthn standards and in tool source, and nothing was measured on a card. The pictures show what Yubico documents about a YubiKey 5, not a ritueel tool. Firmware numbers matter: a YubiKey 5 with older firmware does less.*
+*Design phase: ritueel has no release. Its OpenPGP-card store is planned for M3 and its PIV store for M6 ([roadmap](/roadmap/)); nothing on this page is built. The facts were read on 2026-11-10 in Yubico's documentation, in the FIDO and WebAuthn standards and in tool source; measurements on cards are in the [research notes](../research/index.md). The pictures show what Yubico documents, not a ritueel tool. Firmware numbers matter: older firmware does less.*
 
 You are told the root is "on a YubiKey". What is in that card, what can wipe it, and what can it prove? This page opens a YubiKey 5 and shows what it holds, what limits it and how a signature happens.
 
@@ -52,7 +52,7 @@ A slot is a numbered place for one private key. Four things belong to it.
 - **The private key** is generated on the card or imported, and can never be read out. A key born on a card has no copy.
 - **Certificates:** all of them share about 50,000 bytes.
 - **The PIN rule and the touch rule** are chosen when the key is made or loaded and can never be changed after. "Once" means once per session: until the card is unplugged or another application is used. "Always" means the PIN is asked right before every use. "Cached" touch means a touch counts for 15 seconds.
-- **The kind of key:** it says what it can do: sign, or agree on a shared secret, which is how decryption works. P-256, P-384 and RSA-2048 are on every YubiKey 5. RSA-3072, RSA-4096, Ed25519 and X25519 need firmware 5.7.4 in Yubico's tech manual (ykman checks 5.7.0).
+- **The kind of key:** it says what it can do: sign, or agree on a shared secret, which is how decryption works. P-256, P-384 and RSA-2048 are on every YubiKey 5. RSA-3072, RSA-4096, Ed25519 and X25519 need firmware 5.7 or later (ykman checks 5.7.0).
 
 | Slot | Standard name | Asks for the PIN by default | Note |
 |---|---|---|---|
@@ -85,7 +85,7 @@ Three things follow:
 - **No key leaves the card.** So two cards, each with a key born on it, hold two different keys.
 - **The card can vouch for a key.** For a key generated on it, the card issues a certificate that states: made on this card, with this serial, this firmware, this PIN rule and touch rule. Anyone can ask for it without the PIN. An imported key cannot get one.
 - **The card can describe itself.** From firmware 5.3 it reports, per slot, the kind of key, the rules, whether it was generated or imported, and the public key.
-- **One key can be deleted or moved** to another slot from firmware 5.7.4 in Yubico's tech manual (ykman checks 5.7.0). Before that, a slot could only be overwritten with a new key, or wiped by a PIV reset.
+- **One key can be deleted or moved** to another slot from firmware 5.7 (ykman checks 5.7.0). Before that, a slot could only be overwritten, or wiped by a PIV reset.
 
 ## The other two applications
 
@@ -110,7 +110,7 @@ Next: [how passkeys work](/learn/how-passkeys-work/).
 Read 2026-11-10.
 
 - Yubico, [YubiKey 5 applications](https://docs.yubico.com/hardware/yubikey/yk-tech-manual/yk5-apps-index.html): applications are separate, with separate storage for keys.
-- Yubico, [YubiKey 5 PIV](https://docs.yubico.com/hardware/yubikey/yk-tech-manual/yk5-apps-piv.html), [YubiKey 5 firmware 5.7](https://docs.yubico.com/hardware/yubikey/yk-tech-manual/yk5-firmware-5.7.html) (key kinds, move and delete from 5.7.4, 100 passkeys from 5.7.4), [PIV certificate slots](https://developers.yubico.com/PIV/Introduction/Certificate_slots.html), [PIV admin access](https://developers.yubico.com/PIV/Introduction/Admin_access.html), [PIV PIN, PUK and management key](https://docs.yubico.com/yesdk/users-manual/application-piv/pin-puk-mgmt-key.html), [PIV PIN and touch policies](https://docs.yubico.com/yesdk/users-manual/application-piv/pin-touch-policies.html), [PIV attestation](https://docs.yubico.com/yesdk/users-manual/application-piv/attestation.html) and [keeping track of keys](https://docs.yubico.com/yesdk/users-manual/application-piv/keeping-track.html) (the 5.3 metadata).
+- Yubico, [YubiKey 5 PIV](https://docs.yubico.com/hardware/yubikey/yk-tech-manual/yk5-apps-piv.html), [YubiKey 5 firmware 5.7](https://docs.yubico.com/hardware/yubikey/yk-tech-manual/yk5-firmware-5.7.html) (key kinds, move and delete: "5.7.x and later" in its summary, "As of 5.7.4" in its command tables; 100 passkeys from 5.7.4), [PIV certificate slots](https://developers.yubico.com/PIV/Introduction/Certificate_slots.html), [PIV admin access](https://developers.yubico.com/PIV/Introduction/Admin_access.html), [PIV PIN, PUK and management key](https://docs.yubico.com/yesdk/users-manual/application-piv/pin-puk-mgmt-key.html), [PIV PIN and touch policies](https://docs.yubico.com/yesdk/users-manual/application-piv/pin-touch-policies.html), [PIV attestation](https://docs.yubico.com/yesdk/users-manual/application-piv/attestation.html) and [keeping track of keys](https://docs.yubico.com/yesdk/users-manual/application-piv/keeping-track.html) (the 5.3 metadata).
 - Yubico, [YSA-2024-03](https://www.yubico.com/support/security-advisories/ysa-2024-03/): the ECDSA weakness (CVE-2024-45678).
 - Yubico, [YubiKey 5 OpenPGP](https://docs.yubico.com/hardware/yubikey/yk-tech-manual/yk5-apps-openpgp.html): the three keys and their kinds; [OpenPGP attestation](https://developers.yubico.com/PGP/Attestation.html).
 - Yubico, [YubiKey 5 FIDO](https://docs.yubico.com/hardware/yubikey/yk-tech-manual/yk5-apps-fido.html): PIN, tries and reset. The page still says "up to 25 resident keys" (older text); the firmware 5.7 page gives 100 from firmware 5.7.4.
