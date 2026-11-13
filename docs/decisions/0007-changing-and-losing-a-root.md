@@ -27,7 +27,7 @@
 17. An intermediate lasts about 13 months and is renewed by re-signing: a new certificate over the same key and a new binding extending the same subkey. No key is made at a yearly ceremony.
 18. The yearly ceremony is held in month 12 of the 13. `status` warns about an intermediate at 60, 30 and 14 days and about a root key at 6 months, 3 months and 30 days, as notice, alert and critical.
 19. The renewal plan needs a request for every declared delegation and stops when one is missing, unless the holder allows a missing request by name and it is recorded.
-20. At every yearly ceremony the holder reviews the advisories for the devices, services and algorithms in use, and the ceremony record says so. The review is part of the yearly ceremony.
+20. At every yearly ceremony the holder reviews the advisories for the devices, services and algorithms in use, and the ceremony record says so. The review is part of the yearly ceremony. The yearly reviews of 2030 and 2035 are fixed dates: at each, the review also asks whether a trigger of rule 28 has come.
 
 21. At birth ritueel makes a revocation signature for each of two reasons, compromised and superseded, for every OpenPGP primary it creates (a root key's and a person's own); the holder may add retired or no reason in the wanted root file. It is stored apart from the card. There is no designated revoker. The signature is not a revocation: for apt users the new keyring package is; the signature serves gpg and Sequoia users.
 22. At birth every root key also makes a removal authorisation: its X.509 root key signs a statement over its own pin, so the key can leave the set when it can no longer sign. It is kept like revocation material. Each signature and the authorisation take one more touch at a card ceremony: three more on each card.
@@ -38,14 +38,24 @@
 26. A drill is due once a year with the yearly ceremony; `status` notes a newest report older than 13 months. ritueel teaches the rhythm and does not enforce it. Cards are checked every six months (a read-only check of the cards, proof of life), per bundle for its own rows; the restore drill is yearly. Drill reports are files the holder commits, not records, and stay out of the hash chain.
 27. Signed commits are checked against the holder's own signers file, never a key in the bundle; without the file the check is not run.
 
+28. Roots and intermediates stay classical, P-384 with SHA-384 ([record 0002](0002-where-a-key-lives.md), rule 14), until a trigger comes. The trigger is one of two: (1) the key store of a root holds a post-quantum key in production, and the formats and verifiers that the root serves can carry and check it; or (2) a recommending body names a date.
+29. The first post-quantum key of a root is hybrid, P-384 with ML-DSA-87: two signatures, one classical and one post-quantum, and both must verify. It joins the root by add and overlap, like any other key (rules 1 and 5 to 9).
+30. Every format of ritueel names its algorithm and has a version.
+
 ## Why
 
-A root must change, and may be lost, without the trust files failing. So each change is a planned step with a checked end, and the way back is made at birth. A signature never tried is a hope, so a drill tries it.
+- A root must change, and may be lost, without the trust files failing. So each change is a planned step with a checked end, and the way back is made at birth. A signature never tried is a hope, so a drill tries it.
+- A root made to live for years needs a plan for post-quantum algorithms now, and not a post-quantum key now: that is what BSI, ANSSI and ETSI ask for. NIST IR 8547 (final, October 2026) deprecates ECDSA and EdDSA after 2030 and disallows them after 2035 at every key size, so a larger curve changes none of these dates; BSI recommends classical signatures alone only until the end of 2035. For long-lived signing keys the bodies ask for a hybrid, and ETSI lists ECDSA P-384 with ML-DSA-87 as its pair for high security over a long time (rules 28 and 29).
+- As of 2026-11-13 the cloud key store lists ML-DSA and the cards do not, and the verifiers are not ready: for X.509 there are RFC 9881 and the composite RFC 10073, but Chrome has no plan to add post-quantum certificates to its root store; OpenPGP needs version 6 keys, which `gpg` cannot read; SSH has no standard. Add and overlap already carry a new key, so the process is ready and the formats and the places to hold the key are not (rule 30).
+- A root certificate and an OpenPGP primary last about three years (rule 15) because the cards alternate by year (rule 16): one card signs about every second year, so a life of two years or less would end before the card signs again, and a much longer life would let a dead card stay silent for years (the road "A fixed ten-year root, or no expiry").
 
 ## What it costs
 
 - The holder chooses the overlap length, the target and each early step.
 - A longer overlap costs a ceremony each year.
+- A client's copy of a root certificate ends at most about three years after the last ceremony that client saw. The root list, which lasts 13 months, shows a missed ceremony sooner to every host that reads it; a plain TLS library does not read it.
+- A root made now stays classical until a trigger. NIST disallows classical signatures in its standards after 2035 and BSI stops recommending them then, so a root that lives past 2035 has to move by then (rule 28).
+- Each format carries one algorithm, P-384, today: another algorithm, a hybrid one included, needs a new version of the contract, the root list and the SSH CA key list (rule 30).
 - Revocation material costs extra touches.
 - A lost revocation signature cannot be replaced once the card and PIN are gone.
 
@@ -60,6 +70,9 @@ A root must change, and may be lost, without the trust files failing. So each ch
 - **Put the OpenPGP vouch in the keyring package.** One file for users, but it breaks the package's rule of its own packets only.
 - **Make `revoke` wait for re-certification.** Tidier, but an hour of re-certifying is an hour a stolen root still signs.
 - **Run `new` again to replace a root.** Fewer commands, but it drops the old root and its history in one stroke and gives no overlap.
+- **No written post-quantum position.** Nothing to write, but a root meant to last for years would have no stated plan, and BSI and ETSI ask for one now.
+- **A hybrid root now.** The earliest start, but no card holds a post-quantum key, no verifier for X.509 or OpenPGP is ready, a software key is a copy, and NIST says hybrids add complexity (rule 28).
+- **A hash-based root alone, SLH-DSA or LMS.** BSI and ANSSI accept it without a hybrid, but no key store of the project holds SLH-DSA, and LMS keeps a state whose loss or repeat breaks the key.
 - **A fixed ten-year root, or no expiry.** No yearly change, but a dead card stays silent for years.
 - **Replace every intermediate key every year.** Short-lived keys, but a key ceremony per holder per year moves a sound key for no gain.
 - **Each intermediate certified by both roots.** Survives either loss, but some path builders skip the second certificate and every renewal needs both cards.

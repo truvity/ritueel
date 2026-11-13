@@ -56,7 +56,7 @@ Decided in [0006](decisions/0006-bundle-history-and-trust-files.md).
 ## Where a root lives
 
 - A key is born in its key store and never leaves it. The default algorithm is P-384.
-- Backup means two independent cards or a replica. A copyable key is replaced within three years.
+- Backup means two independent cards or a replica. A copyable key is replaced within three years, and a root key on a card or in the cloud within 15.
 - The accepted limit: whoever holds a root card and its PIN, or the cloud role, can sign until that root key is revoked.
 
 Decided in [0002](decisions/0002-where-a-key-lives.md).
@@ -121,6 +121,7 @@ Decided in [0007](decisions/0007-changing-and-losing-a-root.md), [0006](decision
 
 - A test root is marked at birth, as a key file with no passphrase or on a rehearsal card; its ceremony records are marked as test.
 - A root key is valid about three years; an intermediate about 13 months, renewed by re-signing.
+- Roots stay classical, P-384, until a trigger; the first post-quantum key is hybrid and joins by add and overlap. The yearly reviews of 2030 and 2035 are fixed.
 
 Decided in [0005](decisions/0005-a-ceremony-and-where-it-runs.md) and [0007](decisions/0007-changing-and-losing-a-root.md).
 
