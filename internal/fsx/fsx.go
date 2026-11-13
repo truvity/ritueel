@@ -2,8 +2,13 @@ package fsx
 
 import (
 	"errors"
+	"fmt"
 	"io"
 	"io/fs"
+	"strconv"
+	"strings"
+	"unicode"
+	"unicode/utf8"
 )
 
 // FS is an open folder of a file system. The root of a [Writer] is one, and so is every folder
@@ -118,11 +123,18 @@ const (
 	StepRead Step = "read"
 )
 
-// Error is the error of a failed step. Path is the path given to the failed call: the
-// temporary name for a create, a write and a flush of a file, the final name for a rename
-// (the temporary name is then the path that was left behind), the folder for a folder
-// flush. Err is what the file system returned; errors.Is(err, fs.ErrExist) works through
-// Unwrap.
+// Error is the error of a failed step. Path is the path given to the failed call, relative to
+// the root: the temporary name for a create, a write and a flush of a file, the final name for
+// a rename (the temporary name is then the path that was left behind), the folder for a folder
+// flush, the path up to the element that failed for a walk. Err is what the file system
+// returned; errors.Is(err, fs.ErrExist) works through Unwrap.
+//
+// The text of an Error is safe to print: Path is quoted (a control code in it shows as an
+// escape, as strconv.Quote writes it), and the text of Err, which may hold a path that a
+// system library or a model of the file system wrote, goes through the same escape: every
+// character that is not printable in the sense of unicode.IsPrint, and every byte that is not
+// UTF-8, is written as \xNN, \uNNNN or \UNNNNNNNN. Err itself is not changed, so errors.Is and
+// errors.As see through the Error as before.
 type Error struct {
 	Step Step
 	Path string
@@ -131,11 +143,62 @@ type Error struct {
 
 // Error describes the failed step.
 func (e *Error) Error() string {
-	return "fsx: " + string(e.Step) + " " + e.Path + ": " + e.Err.Error()
+	return "fsx: " + string(e.Step) + " " + strconv.Quote(e.Path) + ": " + printable(e.Err.Error())
 }
 
 // Unwrap returns Err.
 func (e *Error) Unwrap() error { return e.Err }
+
+// printable returns s with every character that is not printable (unicode.IsPrint) and every
+// byte that is not valid UTF-8 written as an escape, so that the text cannot carry a control
+// code, a terminal sequence or a character that reorders the text to a terminal.
+func printable(s string) string {
+	var b strings.Builder
+	for i := 0; i < len(s); {
+		r, size := utf8.DecodeRuneInString(s[i:])
+		switch {
+		case r == utf8.RuneError && size == 1:
+			fmt.Fprintf(&b, `\x%02x`, s[i])
+		case unicode.IsPrint(r):
+			b.WriteRune(r)
+		case r < 0x100:
+			fmt.Fprintf(&b, `\x%02x`, r)
+		case r < 0x10000:
+			fmt.Fprintf(&b, `\u%04x`, r)
+		default:
+			fmt.Fprintf(&b, `\U%08x`, r)
+		}
+		i += size
+	}
+	return b.String()
+}
+
+// safeError is an error whose text has every character that is not printable escaped, as
+// [printable] does; Unwrap returns the error it holds, so errors.Is and errors.As see through it.
+type safeError struct{ err error }
+
+func (e *safeError) Error() string { return printable(e.err.Error()) }
+func (e *safeError) Unwrap() error { return e.err }
+
+// stoppedError is what every call after a stop returns. It says that the writer stopped on an
+// earlier call, and it holds the *Error of that call: errors.Is(err, ErrStopped) is true, and
+// errors.As gives the first *Error (so does errors.Is for an error that the first one wraps,
+// fs.ErrExist for instance). The call that failed returns the *Error itself, which is not a
+// stoppedError: that is how a caller tells "this call failed" from "stopped earlier" without
+// comparing pointers. The one value is made at the stop and returned by every later call.
+type stoppedError struct{ first *Error }
+
+func (e *stoppedError) Error() string { return "fsx: the writer stopped earlier: " + e.first.Error() }
+
+// Unwrap returns ErrStopped and the first error.
+func (e *stoppedError) Unwrap() []error { return []error{ErrStopped, e.first} }
+
+// ErrStopped is satisfied (errors.Is) by the error of every call that is made after the writer
+// stopped, and not by the error of the call that stopped it. errors.As gives the first *[Error]
+// from either. After a stop every call returns this error, whatever its arguments are, an
+// invalid one included: the writer is done, and the stop is the answer. The same holds for a
+// journal of the writer and for [Writer.TempName].
+var ErrStopped = errors.New("fsx: the writer stopped earlier")
 
 // ErrNoReplaceUnsupported is returned by a rename that refuses to replace when the system
 // or the file system cannot refuse. There is no fallback to a rename that replaces. On a

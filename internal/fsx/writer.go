@@ -37,11 +37,14 @@ const dirPerm fs.FileMode = 0o700
 const journalPerm fs.FileMode = 0o600
 
 // Writer adds files to a bundle inside one root folder, which it holds open for its whole life.
-// The first error stops it: every later operation of the writer and of its journals returns an
-// error and does not reach the file system (record 0006, rule 33; the reading that nothing may
-// follow a failed write is proposed). An argument that the writer refuses before any file system
-// call (see [ErrInvalid]) is not an error of that kind and does not stop it. The writer never
-// retries and never deletes a temporary file or folder.
+// The first error stops it: the call that failed returns its *[Error], and every later
+// operation of the writer and of its journals returns an error that satisfies [ErrStopped], holds
+// that first *Error, and does not reach the file system (record 0006, rule 33; the reading that
+// nothing may follow a failed write is proposed). The stop is the answer to any call after it,
+// also to one with an invalid argument: the writer is done, and the caller learns that first.
+// Before a stop, an argument that the writer refuses before any file system call (see
+// [ErrInvalid]) is not an error of that kind and does not stop it. The writer never retries and
+// never deletes a temporary file or folder.
 //
 // Every path given to a method is relative to the root, with "/" as its separator, and the
 // writer walks it from the root, one element at a time, without following a symbolic link. A
@@ -114,7 +117,7 @@ func (w *Writer) Close() error {
 	}
 	if w.FS != nil {
 		if err := w.FS.Close(); err != nil && first == nil {
-			first = fmt.Errorf("fsx: close the root folder: %w", err)
+			first = &safeError{fmt.Errorf("fsx: close the root folder: %w", err)}
 		}
 	}
 	if w.err != nil {
@@ -130,10 +133,12 @@ func (w *Writer) rand() io.Reader {
 	return w.Rand
 }
 
-// stop records the first error and returns it.
+// stop records the first error and returns it. The error that the later calls return is a
+// [stoppedError] that holds it, made once, so that a later call can be told from the call that
+// failed.
 func (w *Writer) stop(step Step, path string, err error) error {
 	e := &Error{Step: step, Path: path, Err: err}
-	w.err = e
+	w.err = &stoppedError{first: e}
 	return e
 }
 
