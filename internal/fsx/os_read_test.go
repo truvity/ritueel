@@ -122,6 +122,9 @@ func TestOSReadFileOfEachKindOfName(t *testing.T) {
 			if fe.Step != fsx.StepRead || fe.Path != "d/"+c.name {
 				t.Fatalf("%v, want a read error at d/%s", r.err, c.name)
 			}
+			if c.name == "over" && !strings.Contains(r.err.Error(), "8388609 bytes, more than 8388608") {
+				t.Fatalf("%v: a file that is already too long at the look says how long it is", r.err)
+			}
 			requirePrintableASCII(t, r.err.Error()) // the text of the system's own error holds nothing raw
 		})
 	}
@@ -307,8 +310,17 @@ func TestOSANameSwappedBetweenTheLooksIsNeverFollowedOrWaitedOn(t *testing.T) {
 			if err := os.WriteFile(target, []byte("inside\n"), 0o600); err != nil {
 				t.Fatal(err)
 			}
-			root := openFSIn(t, wd.root)
+			// the handle is closed in the background: a read that hangs holds the lock that Close
+			// waits for, and the test must fail by its deadline, not wait for that read
+			root, err := fsx.OpenFS(wd.root)
+			if err != nil {
+				t.Fatal(err)
+			}
+			t.Cleanup(func() { go func() { _ = root.Close() }() })
 			stop := make(chan struct{})
+			var once sync.Once
+			stopAll := func() { once.Do(func() { close(stop) }) }
+			t.Cleanup(stopAll)
 			var wg sync.WaitGroup
 			wg.Add(1)
 			go func() {
@@ -348,7 +360,7 @@ func TestOSANameSwappedBetweenTheLooksIsNeverFollowedOrWaitedOn(t *testing.T) {
 					// a link that is a regular file again by the time the open is classified is
 					// still refused, with the bare ELOOP of the open
 					if !errors.Is(r.err, want) && !(swap.kind == "link" && errors.Is(r.err, syscall.ELOOP)) {
-						close(stop)
+						stopAll()
 						wg.Wait()
 						t.Fatalf("ReadFile of a name that is swapped to %s: %v, want an error that wraps %v", swap.name, r.err, want)
 					}
@@ -356,12 +368,12 @@ func TestOSANameSwappedBetweenTheLooksIsNeverFollowedOrWaitedOn(t *testing.T) {
 					continue
 				}
 				if string(r.data) != "inside\n" {
-					close(stop)
+					stopAll()
 					wg.Wait()
 					t.Fatalf("ReadFile returned %q: what stands behind the link, or something that is not the regular file", r.data)
 				}
 			}
-			close(stop)
+			stopAll()
 			wg.Wait()
 			if reads < 1000 {
 				t.Fatalf("only %d reads in the time: too few to meet a swap", reads)
