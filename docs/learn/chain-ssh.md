@@ -5,6 +5,8 @@ sidebar:
   order: 11
 ---
 
+This page assumes the [basics](/learn/what-is-a-root/#keys-from-zero) and [the custody chain](/learn/custody-chain/).
+
 SSH has two ways to answer "may this key log in?". The first is a list of keys. The second is a certificate authority. They are different custody chains.
 
 ## Raw keys

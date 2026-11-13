@@ -5,6 +5,8 @@ sidebar:
   order: 9
 ---
 
+This page assumes the [basics](/learn/what-is-a-root/#keys-from-zero) and [the custody chain](/learn/custody-chain/).
+
 A private PKI is a chain you run end to end. Nobody includes your root in a browser; you put it in every trust store that needs it. In exchange you decide everything else.
 
 ## The chain

@@ -5,6 +5,8 @@ sidebar:
   order: 10
 ---
 
+This page assumes the [basics](/learn/what-is-a-root/#keys-from-zero) and [the custody chain](/learn/custody-chain/).
+
 OpenPGP has no certificate authorities. It has one identity, one primary key and several subkeys, and the question of how anyone learns that this identity is yours.
 
 ## The chain
