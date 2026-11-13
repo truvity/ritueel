@@ -10,7 +10,7 @@
 #            release for the tag (GoReleaser, without publishing), checks that build, and keeps the
 #            release files (the two archives and SHA256SUMS) and the release text (NOTES.md) as a
 #            workflow artifact. It gives one digest over all four as a job output.
-#   test     no permissions, no checkout, no tool: takes that artifact, checks it against the digest,
+#   test     no permissions, no checkout, no devbox, no Go: takes that artifact, checks it against the digest,
 #            and on a runner of each machine (amd64 and arm64) unpacks the archive of that machine and
 #            runs the binary in it, which must print exactly the stamped version and commit. No step
 #            that runs a built binary is given a token.
@@ -36,7 +36,11 @@
 # a snapshot `build` (the version `v0.0.0-snapshot`, a name that a real tag may not have) and `test`
 # on both machines, and never publishes. It starts from the Actions tab or
 # `gh workflow run release.yaml --ref <branch>`, and only once this file is on the default branch.
-# No tag is made by this workflow and none is moved or deleted.
+# No tag is made by this workflow on purpose and none is moved or deleted. One case: if the tag were
+# deleted after the second look at it, publishing the draft would create the tag at the draft's target
+# (the built commit, `--target`). What prevents that is the tag ruleset of the repository, which says
+# who may delete a tag; the workflow only narrows the window (the draft is published at once after
+# the second look) and makes the tag point at the built commit.
 #
 # WHAT THE CHECKS ARE. The tag form (no leading zeros), and "the commit is on main", guard against a
 # mistake, such as a tag on the wrong commit or a mistyped name. They are not a boundary against a
