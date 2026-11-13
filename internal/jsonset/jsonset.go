@@ -2,6 +2,21 @@
 // (package strictjson) must agree on, so that they cannot drift apart: the closed set of Go types
 // that both accept, the way a struct names its members, and the path that their errors show.
 //
+// The name of a member of a struct is the tag name or else the Go name of the field, and holds
+// only ASCII letters, digits and underscores. The set is small on purpose: a name is part of a
+// signed format, and a person must be able to tell two names apart, which no one can for a letter
+// that looks like another one (a Cyrillic "a", the Kelvin sign for "K") or for a name with a space
+// or a quote in it. Every member name of the decided formats (the pages of docs/reference) is
+// lower-case ASCII, digits and underscores, so nothing they need is left out. The rule is about
+// the fields of a struct; the keys of a map and the members of an interface are whatever a
+// document has. A field with no tag has its Go name for a member name, which starts with an
+// upper-case letter because the field is exported; that is allowed, and a format struct whose
+// field lacks its tag writes or expects "Version" where the page says "version", which the
+// reader's exact match refuses at the first real file. A tag is therefore not required. A name
+// is never empty when the rule is asked: a tag without a name takes the Go name of the field.
+// Every text of this package that shows a name, a field name or a type shows a character outside
+// printable ASCII as \uXXXX, so that a look-alike cannot pass for the letter it resembles.
+//
 // A Checker answers, for a Go type, whether it is in the set. The answer is the same for writing
 // and for reading but for one thing, an interface with methods, which can be written (the value
 // it holds is judged) and cannot be read (there is no value to judge). An interface that declares
@@ -14,6 +29,7 @@ package jsonset
 import (
 	"errors"
 	"fmt"
+	"reflect"
 	"slices"
 	"strings"
 	"unicode/utf16"
@@ -86,10 +102,9 @@ func Shown(name string) string {
 
 // Quote writes a text for an error: in double quotes, cut short with "..." when it is long, with
 // the quote and the backslash escaped by a backslash and every character that is not printable
-// ASCII written as \uXXXX (a
-// character above U+FFFF as the pair of escapes of its surrogates), so that a look-alike of an
-// ASCII letter, a control character or bytes that are not UTF-8 cannot pass for what they are
-// not. Bytes that are not UTF-8 are shown as \ufffd.
+// ASCII written as \uXXXX (a character above U+FFFF as the pair of escapes of its surrogates), so
+// that a look-alike of an ASCII letter, a control character or bytes that are not UTF-8 cannot
+// pass for what they are not. Bytes that are not UTF-8 are shown as \ufffd.
 func Quote(s string) string {
 	suffix := ""
 	if len(s) > most {
@@ -147,4 +162,23 @@ func (e *Error) Unwrap() error { return ErrMalformed }
 // Errorf returns an *Error for the value at the path. The error keeps a copy of the path.
 func Errorf(path Path, format string, args ...any) error {
 	return &Error{Path: slices.Clone(path), What: fmt.Sprintf(format, args...)}
+}
+
+// TypeName writes the name of a Go type for an error, as reflect.Type.String does, with every
+// character outside printable ASCII (a look-alike in the name of a type or of a field of a
+// struct type) written as \uXXXX.
+func TypeName(t reflect.Type) string {
+	var b strings.Builder
+	for _, r := range t.String() {
+		switch {
+		case r >= 0x20 && r < 0x7f:
+			b.WriteRune(r)
+		case r >= 0x10000:
+			hi, lo := utf16.EncodeRune(r)
+			fmt.Fprintf(&b, "\\u%04x\\u%04x", hi, lo)
+		default:
+			fmt.Fprintf(&b, "\\u%04x", r)
+		}
+	}
+	return b.String()
 }

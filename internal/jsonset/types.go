@@ -120,11 +120,11 @@ func (c *Checker) Err(at Path, r *Refusal) error {
 		}
 		where = " (" + phrase + ")"
 	}
-	return Errorf(p, "a value of type %s cannot be %s%s: %s", r.Type, verb, where, r.Reason)
+	return Errorf(p, "a value of type %s cannot be %s%s: %s", TypeName(r.Type), verb, where, r.Reason)
 }
 
 // Fields lists the members of the struct type t in the order of their names as UTF-16 code
-// units, which is the order the writer writes them in. The type must have passed Verdict.
+// units, which is the order the writer writes them in (for ASCII names, the byte order). The type must have passed Verdict.
 func (c *Checker) Fields(t reflect.Type) []Field {
 	return c.structInfo(t).fields
 }
@@ -240,7 +240,7 @@ func structFields(t reflect.Type) *structInfo {
 	for i := range t.NumField() {
 		f := t.Field(i)
 		if f.Anonymous {
-			info.err = "the embedded field " + f.Name + " is not part of ritueel's JSON; give it a name"
+			info.err = "the embedded field " + Shown(f.Name) + " is not part of ritueel's JSON; give it a name"
 			return info
 		}
 		tag := f.Tag.Get("json")
@@ -252,7 +252,7 @@ func structFields(t reflect.Type) *structInfo {
 		if options != "" { // "-," names a field "-", and "a," is "a"
 			for _, option := range strings.Split(options, ",") {
 				if option != "omitempty" {
-					info.err = "field " + f.Name + " has the tag option " + Quote(option) + "; only omitempty is allowed"
+					info.err = "field " + Shown(f.Name) + " has the tag option " + Quote(option) + "; only omitempty is allowed"
 					return info
 				}
 				omitEmpty = true
@@ -261,11 +261,11 @@ func structFields(t reflect.Type) *structInfo {
 		if name == "" {
 			name = f.Name
 			if !validName(name) {
-				info.err = "field " + f.Name + " has no tag name, and its Go name is not a member name; " + nameRule
+				info.err = "field " + Shown(f.Name) + " has no tag name, and its Go name is not a member name; " + nameRule
 				return info
 			}
 		} else if !validName(name) {
-			info.err = "field " + f.Name + " has the tag name " + Quote(name) + "; " + nameRule
+			info.err = "field " + Shown(f.Name) + " has the tag name " + Quote(name) + "; " + nameRule
 			return info
 		}
 		if seen[name] {
@@ -280,11 +280,11 @@ func structFields(t reflect.Type) *structInfo {
 }
 
 // nameRule is the text of the rule for the name of a member of a struct, for the errors.
-const nameRule = "a member name holds only ASCII letters, digits and underscores, and is not empty"
+const nameRule = "a member name holds only ASCII letters, digits and underscores"
 
 // validName reports whether s is a member name that a struct may have: ASCII letters, digits and
 // underscores. It is never called with an empty name: a tag without a name takes the Go name of
-// the field, which is not empty.
+// the field, which is not empty, so the rule does not need to say so.
 func validName(s string) bool {
 	for _, c := range s {
 		if c != '_' && (c < '0' || c > '9') && (c < 'a' || c > 'z') && (c < 'A' || c > 'Z') {
