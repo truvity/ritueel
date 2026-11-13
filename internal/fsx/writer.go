@@ -277,21 +277,34 @@ const maxNameBytes = 255
 // mark, the back slash and the vertical bar.
 const exfatBad = "\"*/:<>?\\|"
 
+// notSeen reports a character that is not in the table of exFAT and that no person can see or
+// type in a name: U+007F (delete), the C1 control codes U+0080 to U+009F, and the noncharacters
+// U+FFFE and U+FFFF. The writer refuses them beyond the table, as it refuses the control codes
+// of the table, because a name with one of them cannot be read back, told from another name or
+// typed by the holder of the stick.
+func notSeen(r rune) bool {
+	return r == 0x7f || (0x80 <= r && r <= 0x9f) || r == 0xfffe || r == 0xffff
+}
+
 // nameProblem says why one name (one element of a path, or the name of a file of a set) cannot
 // be held by the exFAT file system of a stick, or is held under another name; it returns ""
 // when the name is fine. name is not empty. The reasons: it is not valid UTF-8; it is longer
 // than 255 bytes (see [maxNameBytes]); it ends with a dot or a space (Windows removes both, and the Linux exFAT
 // driver removes trailing dots unless the mount option keep_last_dots is given, so the name on
 // the stick would not be the name asked for); it has a character of exFAT's list of invalid
-// characters or a control code. The colon is on that list, so a drive ("C:x") is refused by it
-// and needs no rule of its own.
+// characters or a control code; it has a character that is not on exFAT's list and that no
+// person can see or type, see [notSeen]. The colon is on exFAT's list, so a drive ("C:x") is
+// refused by it and needs no rule of its own.
 func nameProblem(name string) string {
 	if !utf8.ValidString(name) {
 		return "is not valid UTF-8"
 	}
 	for _, r := range name {
-		if r < 0x20 || strings.ContainsRune(exfatBad, r) {
+		switch {
+		case r < 0x20 || strings.ContainsRune(exfatBad, r):
 			return fmt.Sprintf("has the character %q, which the stick's file system cannot hold", r)
+		case notSeen(r):
+			return fmt.Sprintf("has the character %q, which a person cannot see or type", r)
 		}
 	}
 	if len(name) > maxNameBytes {
