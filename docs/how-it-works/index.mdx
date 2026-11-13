@@ -10,11 +10,11 @@ sidebar:
 
 import Figure from '../../site/src/components/Figure.astro';
 
-ritueel guides each use of a root key (the top key of your certificates, or your OpenPGP primary key) and keeps a record of it. A root is what others trust without further proof; it is built from one or more keys. A ceremony is the planned, recorded occasion on which a root is used. Below: three layers of a key, then the ceremony and two real jobs drawn as comics. Jump to [sign an intermediate](#sign-an-intermediate) or [bind the subkeys](#bind-the-subkeys-of-your-card).
+ritueel guides each use of a root key (the top key of your certificates, or your OpenPGP primary key) and keeps a record of it. A root is what others trust without further proof; it is built from one or more keys. A ceremony is the planned, recorded occasion on which a root is used. Below: three layers of a key, the ceremony and two real jobs, each in three panels. Jump to [sign an intermediate](#sign-an-intermediate) or [bind the subkeys](#bind-the-subkeys-of-your-card).
 
 A plan is the sheet that fixes what will be signed, except new keys; its digest is a short fingerprint of it. The offline system is a computer started from a USB stick, with no network. A key file is an encrypted file that holds a software key.
 
-ritueel is in its design phase: only `version` is built. These pictures show how it is designed to work.
+ritueel is in its design phase: only `version` is built. The pictures show the design.
 
 ## Three layers
 
@@ -32,7 +32,7 @@ Every use of a root is a ceremony. Only the signing uses the root.
 
 ## Sign an intermediate
 
-A requester is a system that asks for a certificate, such as sluis (a system that issues certificates every day and holds intermediate keys). It needs a certificate for its intermediate key. A root that cannot be copied, on cards or in a cloud key service, may sign on your workstation ([record 0005](../decisions/0005-a-ceremony-and-where-it-runs.md)). The conditions:
+A requester is a system that holds an intermediate key and asks for a certificate for it, such as sluis (it issues certificates every day). A root that cannot be copied, on cards or in a cloud key service, may sign on your workstation ([record 0005](../decisions/0005-a-ceremony-and-where-it-runs.md)). The conditions:
 
 - A touch for every signature. This is for a root on cards. A cloud key has no touch: for a cloud root the typed digest and the role session stand, and its audit trail records every signature.
 - The number of signatures stated in the plan.
@@ -42,7 +42,7 @@ A requester is a system that asks for a certificate, such as sluis (a system tha
 The last three hold for both kinds. A key in a file is used only in the offline system, which is an option for a root on cards; a cloud root always runs on the workstation ([the stick](/how-it-works/bundle-and-stick/)).
 
 <Figure name="sign-intermediate">
-  Signing a requester’s intermediate with a root card.
+  Signing a requester’s intermediate with a root card. Then you check it on a second device and hand it over.
 </Figure>
 
 ## Bind the subkeys of your card
@@ -50,7 +50,7 @@ The last three hold for both kinds. A key in a file is used only in the offline 
 ritueel binds the subkeys of your day-to-day card to your own OpenPGP primary, kept in a key file. A key file can be copied, so this ceremony runs in the offline system. The signing and the authentication subkey are made in one ceremony.
 
 <Figure name="bind-subkeys">
-  Six panels to bind your card’s subkeys. Panel 4 is decided, not yet proven.
+  Binding your card’s subkeys. A passkey opening the key file is decided, not yet proven.
 </Figure>
 
 ## Where to go next
