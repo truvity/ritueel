@@ -344,10 +344,19 @@ jobs:
           # used.) A pattern of ls-remote also matches the tail of a longer ref, so only lines whose ref
           # is exactly `refs/tags/TAG` or `refs/tags/TAG^{}` are kept. A tag that was moved after the
           # build would otherwise get a release page that points at the new commit and carries files
-          # built from the old one.
+          # built from the old one. The command runs without a token, so GitHub treats it as anonymous,
+          # and the address of a shared runner can be slowed down or refused for a moment: the command
+          # gets three tries, five seconds apart, and only a failure of the command itself is tried
+          # again (an answer with the wrong number of lines is never tried again). For a private
+          # repository an anonymous request is refused for good, so this lookup fails closed: the job
+          # stops at the first look, before any draft exists.
           tag_commit() {
-            local out sha ref plain="" peeled="" nplain=0 npeeled=0
-            out=$(GIT_TERMINAL_PROMPT=0 git ls-remote "https://github.com/${GH_REPO}.git" "refs/tags/${TAG}" "refs/tags/${TAG}^{}") || fail "cannot ask GitHub which commit the tag $TAG points at"
+            local out sha ref try plain="" peeled="" nplain=0 npeeled=0
+            for try in 1 2 3; do
+              if out=$(GIT_TERMINAL_PROMPT=0 git ls-remote "https://github.com/${GH_REPO}.git" "refs/tags/${TAG}" "refs/tags/${TAG}^{}"); then break; fi
+              [ "$try" -lt 3 ] || fail "cannot ask GitHub which commit the tag $TAG points at (3 tries)"
+              sleep 5
+            done
             while read -r sha ref; do
               if [ "$ref" = "refs/tags/${TAG}" ]; then plain=$sha; nplain=$((nplain + 1))
               elif [ "$ref" = "refs/tags/${TAG}^{}" ]; then peeled=$sha; npeeled=$((npeeled + 1)); fi
