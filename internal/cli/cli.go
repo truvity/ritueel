@@ -30,23 +30,42 @@ type Call struct {
 	// second words) that are not flags.
 	Args []string
 
-	cmd *ucli.Command // the library's command of the word that runs, for the flag accessors
+	cmd   *ucli.Command // the library's command of the word that runs, for the flag accessors
+	word  string        // the words that ran, for the text of a programmer error
+	flags []string      // the flag names the word may read: its own, those of the words above it, and the global ones
 }
+
+// The accessors below are for the flags that the word that runs declares, those of the words
+// above it, and the two global flags (dir and output). A name that none of them declares, and a
+// Call that holds no command (one that was not made by Run), are a mistake of the programmer, so
+// they panic with a text that says which; Run then ends with the exit code 1 and the text. A
+// silent "" or false for a misspelt name would read as "no pin" or "not given".
 
 // FlagString returns the value of the string flag name of the word that runs, or of a global
 // flag. It is "" when the flag was not given and has no default.
-func (c *Call) FlagString(name string) string { return c.cmd.String(name) }
+func (c *Call) FlagString(name string) string { return c.declared(name).String(name) }
 
 // FlagStrings returns the values of the repeatable string flag name in the order they were
 // given on the command line; a comma is part of a value, not a separator. It is empty when the
 // flag was not given.
-func (c *Call) FlagStrings(name string) []string { return c.cmd.StringSlice(name) }
+func (c *Call) FlagStrings(name string) []string { return c.declared(name).StringSlice(name) }
 
 // FlagBool returns the value of the boolean flag name; false when it was not given.
-func (c *Call) FlagBool(name string) bool { return c.cmd.Bool(name) }
+func (c *Call) FlagBool(name string) bool { return c.declared(name).Bool(name) }
 
 // FlagSet reports whether the flag name was given on the command line.
-func (c *Call) FlagSet(name string) bool { return c.cmd.IsSet(name) }
+func (c *Call) FlagSet(name string) bool { return c.declared(name).IsSet(name) }
+
+// declared returns the library's command for the accessors, after it has checked the name.
+func (c *Call) declared(name string) *ucli.Command {
+	if c.cmd == nil {
+		panic(fmt.Sprintf("cli: the flag %q was asked of a Call that holds no command; only the Call that Run gives to a command has flags", name))
+	}
+	if !slices.Contains(c.flags, name) {
+		panic(fmt.Sprintf("cli: the word %q has no flag %q; the flags that can be asked are %q", c.word, name, c.flags))
+	}
+	return c.cmd
+}
 
 // commandFunc is the body of one command. It returns the Result of a command that ended as
 // it should, or an error; ExitFor maps the error to an exit code. It writes nothing to
@@ -115,7 +134,7 @@ func (inv *invocation) execute(ctx context.Context, args []string) (err error) {
 func (inv *invocation) newRoot() *ucli.Command {
 	cmds := make([]*ucli.Command, 0, len(specs))
 	for _, s := range specs {
-		cmds = append(cmds, inv.newCommand(s))
+		cmds = append(cmds, inv.newCommand(s, nil, nil))
 	}
 	return &ucli.Command{
 		Name:            programName,
@@ -140,10 +159,18 @@ func (inv *invocation) newRoot() *ucli.Command {
 	}
 }
 
+// reservedFlags are the flag names that no word may declare: the two global flags, which a word
+// would shadow (Call.Global would then stay empty and --output json would be ignored), and the
+// help flags of the library.
+var reservedFlags = []string{"dir", "output", "help", "h"}
+
 // newCommand builds the library's command for one word and, recursively, for its second
 // words. parents are the words above it; the first of them, or its own name, is the word that
-// the JSON object calls "command" (a second word does not change it).
-func (inv *invocation) newCommand(s spec, parents ...string) *ucli.Command {
+// the JSON object calls "command" (a second word does not change it). inherited are the flag
+// names of the words above it. A flag name that is reserved, or that the word or a word above it
+// declares already, is a mistake in the table of words, and newCommand panics with a text that
+// says which; the first run of the program shows it, and a test that builds the table finds it.
+func (inv *invocation) newCommand(s spec, parents, inherited []string) *ucli.Command {
 	first := s.name
 	if len(parents) > 0 {
 		first = parents[0]
@@ -161,12 +188,24 @@ func (inv *invocation) newCommand(s spec, parents ...string) *ucli.Command {
 			return UsageError{Msg: err.Error()}
 		},
 	}
+	askable := slices.Clone(inherited)
 	if s.flags != nil {
 		cmd.Flags = s.flags()
+		for _, f := range cmd.Flags {
+			for _, name := range f.Names() {
+				switch {
+				case slices.Contains(reservedFlags, name):
+					panic(fmt.Sprintf("cli: the word %q declares the flag %q, which is reserved for the program (dir, output) and for help (help, h); choose another name", strings.Join(path, " "), name))
+				case slices.Contains(askable, name):
+					panic(fmt.Sprintf("cli: the word %q declares the flag %q twice, or a word above it declares it already; choose another name", strings.Join(path, " "), name))
+				}
+				askable = append(askable, name)
+			}
+		}
 	}
 	if len(s.subs) > 0 {
 		for _, sub := range s.subs {
-			cmd.Commands = append(cmd.Commands, inv.newCommand(sub, path...))
+			cmd.Commands = append(cmd.Commands, inv.newCommand(sub, path, askable))
 		}
 		cmd.Action = func(_ context.Context, c *ucli.Command) error {
 			inv.command = first
@@ -184,6 +223,8 @@ func (inv *invocation) newCommand(s spec, parents ...string) *ucli.Command {
 			Global: Global{Dir: inv.dir, Output: OutputMode(inv.output)},
 			Args:   c.Args().Slice(),
 			cmd:    c,
+			word:   strings.Join(path, " "),
+			flags:  append(slices.Clone(askable), "dir", "output"),
 		})
 		if err != nil {
 			return err
