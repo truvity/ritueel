@@ -167,9 +167,15 @@ func Errorf(path Path, format string, args ...any) error {
 // TypeName writes the name of a Go type for an error, as reflect.Type.String does, with every
 // character outside printable ASCII (a look-alike in the name of a type or of a field of a
 // struct type) written as \uXXXX.
-func TypeName(t reflect.Type) string {
+func TypeName(t reflect.Type) string { return Escape(t.String()) }
+
+// Escape writes s with every character outside printable ASCII as \uXXXX (a character above
+// U+FFFF as the pair of escapes of its surrogates, bytes that are not UTF-8 as \ufffd) and
+// nothing else changed: no quotes, and a backslash stays one. It is for a text that comes from a
+// caller or a document and is shown inside a sentence.
+func Escape(s string) string {
 	var b strings.Builder
-	for _, r := range t.String() {
+	for _, r := range s {
 		switch {
 		case r >= 0x20 && r < 0x7f:
 			b.WriteRune(r)

@@ -167,7 +167,7 @@ func (w *writer) write(v reflect.Value, depth int) error {
 	default:
 		// The judge of the types (jsonset) refuses every other kind before a value is looked at, so
 		// this is not reached; if the judge and this switch ever drift apart, it must be loud.
-		panic(fmt.Sprintf("canonjson: the type judge passed the type %s of kind %s, which the writer cannot write; it should have refused the type", t, t.Kind()))
+		panic(fmt.Sprintf("canonjson: the type judge passed the type %s of kind %s, which the writer cannot write; it should have refused the type", jsonset.TypeName(t), t.Kind()))
 	}
 	return nil
 }

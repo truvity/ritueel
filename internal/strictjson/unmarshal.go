@@ -115,7 +115,7 @@ func (f *filler) fill(dst reflect.Value, n *Value) error {
 			return f.mismatch("an integer", n)
 		}
 		if dst.OverflowInt(n.Int) {
-			return jsonset.Errorf(f.path, "the integer %d does not fit the type %s", n.Int, t)
+			return jsonset.Errorf(f.path, "the integer %d does not fit the type %s", n.Int, jsonset.TypeName(t))
 		}
 		dst.SetInt(n.Int)
 	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
@@ -123,7 +123,7 @@ func (f *filler) fill(dst reflect.Value, n *Value) error {
 			return f.mismatch("an integer", n)
 		}
 		if n.Int < 0 || dst.OverflowUint(uint64(n.Int)) {
-			return jsonset.Errorf(f.path, "the integer %d does not fit the type %s", n.Int, t)
+			return jsonset.Errorf(f.path, "the integer %d does not fit the type %s", n.Int, jsonset.TypeName(t))
 		}
 		dst.SetUint(uint64(n.Int))
 	case reflect.String:
@@ -166,7 +166,7 @@ func (f *filler) fill(dst reflect.Value, n *Value) error {
 	default:
 		// The judge of the types (jsonset) refuses every other kind before a byte is looked at, so
 		// this is not reached; if the judge and this switch ever drift apart, it must be loud.
-		panic(fmt.Sprintf("strictjson: the type judge passed the type %s of kind %s, which the reader cannot fill; it should have refused the type", t, t.Kind()))
+		panic(fmt.Sprintf("strictjson: the type judge passed the type %s of kind %s, which the reader cannot fill; it should have refused the type", jsonset.TypeName(t), t.Kind()))
 	}
 	return nil
 }
