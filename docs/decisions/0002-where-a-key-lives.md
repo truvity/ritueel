@@ -85,3 +85,4 @@
 - **Not yet proven.** Opening a key file with a passkey in the static (no-cgo) build, rule 26 ([#8](https://github.com/truvity/ritueel/issues/8)).
 - **Proposed.** On a card shared by two bundles, the passkey way holds one credential for each bundle ([#8](https://github.com/truvity/ritueel/issues/8)).
 - **Proposed.** How the slot 9d fallback works for two bundles is open: the card has one 9d key and each bundle has its own unlock key ([#8](https://github.com/truvity/ritueel/issues/8)).
+- **Proposed.** How a card is made to enforce a PIN of at least six characters for the passkey (rule 19) is not decided; in the first version it is the holder's duty ([#8](https://github.com/truvity/ritueel/issues/8)).
