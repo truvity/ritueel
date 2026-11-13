@@ -217,3 +217,38 @@ func TestPeekIntTakesTheSizeLimit(t *testing.T) {
 		}
 	})
 }
+
+// A number that overflows 64 bits is refused by the range, with no test of its own for the
+// overflow: ParseInt saturates at the int64 limit, which is outside the range. The cases are the
+// ones that overflow by one digit and by many, and by exactly one, in both signs, in every reader.
+func TestANumberThatOverflowsSixtyFourBitsIsRefusedAsOutsideTheRange(t *testing.T) {
+	for _, n := range []string{
+		"9223372036854775808",                  // 2^63, one above int64
+		"-9223372036854775809",                 // one below
+		"9223372036854775807" + "0",            // one digit more than int64 holds
+		"-9223372036854775808" + "0",           // the same, negative
+		"92233720368547758070",                 // 20 digits
+		"18446744073709551616",                 // 2^64
+		"-18446744073709551616",                // -2^64
+		"1" + repeat("0", 19),                  // 10^19, one digit more than 2^63
+		"1" + repeat("0", 25),                  // many digits more
+		repeat("9", 64), "-" + repeat("9", 64), // two words of digits
+		repeat("9", 1000), "-" + repeat("9", 1000), // many
+	} {
+		want := outside(n)
+		doc := `{"a":` + n + `}`
+		fail(t, Check([]byte(doc), 0), mal("$.a", want+byteAfter(doc, n)))
+		var v struct {
+			A int64 `json:"a"`
+		}
+		fail(t, Unmarshal([]byte(doc), &v, Options{}), mal("$.a", want+byteAfter(doc, n)))
+		var u struct {
+			A uint64 `json:"a"`
+		}
+		fail(t, Unmarshal([]byte(doc), &u, Options{}), mal("$.a", want+byteAfter(doc, n)))
+		var m map[string]any
+		fail(t, Unmarshal([]byte(doc), &m, Options{}), mal("$.a", want+byteAfter(doc, n)))
+		_, _, perr := PeekInt([]byte(`{"version":`+n+`}`), "version", 0)
+		fail(t, perr, mal("$.version", want))
+	}
+}
