@@ -15,7 +15,7 @@ When the power goes during the write of one ceremony to the stick, does the bund
 
 ## Verdict
 
-**With the write steps of [record 0006](../decisions/0006-bundle-history-and-trust-files.md), no cut left a broken bundle, on either file system. On exFAT, a file renamed from a long temporary name kept a wrong checksum in its folder entry after a cut. A temporary name of at most 15 characters, or one more flush after each rename, removed it.**
+**With the write steps of [record 0006](../decisions/0006-bundle-history-and-trust-files.md), rule 31, no cut left a broken bundle, on either file system. On exFAT, a file renamed from a long temporary name kept a wrong checksum in its folder entry after a cut. A temporary name of at most 15 characters, or one more flush after each rename, removed it.**
 
 ## Method
 
@@ -48,4 +48,4 @@ An exFAT folder entry has a checksum over its parts. A long temporary name needs
 
 ## What this decides, and what blocks
 
-It supports the short temporary name of record 0006, which costs no extra write. It does not show that a real stick keeps a bundle whole: that stays open in [#30](https://github.com/truvity/ritueel/issues/30) and [#8](https://github.com/truvity/ritueel/issues/8), and the measurement on a real stick, made later, shows damage that this trial could not.
+It supports the short temporary name of [record 0006](../decisions/0006-bundle-history-and-trust-files.md), rule 32, which costs no extra write. It does not show that a real stick keeps a bundle whole: that stays open in [record 0005](../decisions/0005-a-ceremony-and-where-it-runs.md), line 8 of "Not yet proven or only proposed" ([#30](https://github.com/truvity/ritueel/issues/30)), and [record 0006](../decisions/0006-bundle-history-and-trust-files.md), line 8 of the same section ([#8](https://github.com/truvity/ritueel/issues/8)), and the measurement on a real stick, made later, shows damage that this trial could not.
