@@ -5,7 +5,7 @@ sidebar:
   order: 17
 ---
 
-These words carry the design. The pages and the records use each only in the sense below. Where a page keeps an older or narrower word, the third column says so: the glossary does not rename a page's word. It defines words from the records; it decides nothing new.
+These words carry the design. The pages and the records use each only as below. Where a page keeps an older or narrower word, the third column says so: the glossary does not rename a page's word. It defines words from the records; it decides nothing new.
 
 | Word | Meaning | The page word | Decided in |
 |---|---|---|---|
@@ -15,7 +15,7 @@ These words carry the design. The pages and the records use each only in the sen
 | **requester** | The system that holds delegated keys and asks a root for a certificate or a binding. [sluis](https://sluis.id) is one. | `requester`; ritueel is the `certifier` | [hand-off contract](/reference/hand-off-contract/) |
 | **key store** | The kind of place where a key is born and kept: key file, PIV card, OpenPGP card or cloud key service. A key's **place** is its one slot, cloud key or file. | `store` | [0002](decisions/0002-where-a-key-lives.md) |
 | **ceremony** | One act that uses a root key: `apply`. A person confirms it. | `ceremony`; the yearly one is a practice, not a command | [0005](decisions/0005-a-ceremony-and-where-it-runs.md) |
-| **bundle** | The directory with a fixed structure that holds everything ritueel knows about one organisation or one person. A root key is written `acme/A` across bundles. | `bundle`, never `directory`; the trust file is `the CA bundle` | [0006](decisions/0006-bundle-history-and-trust-files.md) |
+| **bundle** | The directory with a fixed structure holding everything ritueel knows about one organisation or one person. A root key is written `acme/A` across bundles. | `bundle`, never `directory`; the trust file is `the CA bundle` | [0006](decisions/0006-bundle-history-and-trust-files.md) |
 | **history** | The folder `history/` is write-once, with one ceremony folder per ceremony. The end of the history is the ceremony record no other names; two ends are a fork. | `history` | [0006](decisions/0006-bundle-history-and-trust-files.md) |
 | **record** | The JSON file that ends a ceremony, written last in its ceremony folder. It names the ceremony record before it by digest, so they form a hash chain. | `ceremony record`, in full | [0006](decisions/0006-bundle-history-and-trust-files.md) |
 | **renew** | Extend the same key with a new certification; no new key. A **certification** is a certificate or binding one key makes for a subject, for a period. | `renew`, `re-sign` | [0007](decisions/0007-changing-and-losing-a-root.md) |
