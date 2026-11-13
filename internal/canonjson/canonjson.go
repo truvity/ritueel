@@ -21,9 +21,14 @@
 // from its own parse of the bytes (the package jsonset keeps the one answer to "is this type in
 // the set" for both), and what Marshal writes it reads back. For every value x of the set,
 // Unmarshal(Marshal(x)) gives a value equal to x; for every canonical document d that fills a
-// type T, Marshal of the filled value gives d again. The doc of package strictjson says what
-// "equal" means for a nil and an empty slice or map and for omitempty, and when the second
-// property holds; the tests of both packages check the two.
+// type T, Marshal of the filled value gives d again. "Equal" is reflect.DeepEqual with four
+// exceptions: a field tagged omitempty that is empty is not written and comes back zero, so an
+// empty slice or map comes back nil (a nil one that is not omitempty is not written at all, as
+// Marshal takes it for null); a Raw comes back in its canonical form; an interface comes back
+// with the types that a read gives (map[string]any, []any, string, bool and int64, so an int in
+// it comes back an int64); and a field tagged "-" and an unexported field are not written, so
+// they come back zero. The doc of package strictjson says when the second property holds; the
+// tests of both packages check the two.
 //
 // ritueel's JSON holds integers only, so this package does not write a number with a fraction or
 // an exponent, and it reads input under the rules of package strictjson (no null, no repeated
