@@ -11,11 +11,11 @@ The rule is short: ritueel changes only your bundle. The one thing it may send o
 
 ## What ritueel prints
 
-After every ceremony ritueel prints a list of next steps. Each line says what changed, who needs it and how. For an OpenPGP key the list ends with an optional last step, publishing it. The list is called "next steps" in the research; the name is proposed.
+After every ceremony ritueel prints a list of next steps. Each line says what changed, who needs it and how. For an OpenPGP key the list ends with an optional last step, publishing it. Its name, NEXT STEPS, is proposed.
 
 ## Your public OpenPGP key to the keyservers
 
-This is the one step ritueel does itself, and it is a separate command run after a ceremony, never inside one: the offline system has no network. The command word is `ritueel publish`; its flags are proposed. It runs as a separate process that never opens a card and never reads a token, and it is left out of the offline build.
+This is the one step ritueel does itself, and it is a separate command run after a ceremony, never inside one: the offline system has no network. The command word is `ritueel publish`; its flags, and the details of the steps below (the preview, the read-back, the refusals and the stricter confirmation for a revocation), are proposed. It runs as a separate process that never opens a card and never reads a token, and it is left out of the offline build.
 
 1. **List your keyservers** in `ritueel.yaml`, one of the wanted files you write (a `keyservers` block, proposed). There is no default that sends; the examples in the file are commented out.
 2. **Read the preview.** It shows every user ID (a user ID without an address is marked: keys.openpgp.org drops it, the older kind of server keeps it), the subkeys, the fingerprint, the bundle and each server address. It says that what is published cannot be withdrawn.
@@ -50,7 +50,7 @@ The host has no update call. To replace a key, delete the old key and add the ne
 
 ## A trust-manager Bundle with the roots inline
 
-If a cluster runs trust-manager, a `Bundle` can carry your roots inline. The CA bundle is public, so the file is safe to commit. Use the root-only CA bundle, `ca-bundle.pem` under `trust/` in the bundle, never a chain.
+If a cluster runs trust-manager, a `Bundle` can carry your roots inline. The CA bundle is public, so the file is safe to commit. Use the root-only CA bundle, `ca-bundle.pem`, from the newest trust set of the bundle, never a chain.
 
 ```yaml
 apiVersion: trust.cert-manager.io/v1alpha1
@@ -89,11 +89,11 @@ Reload sshd (send it `SIGHUP`, or use the service manager's reload). Undo: remov
 
 cert-manager in the company's clusters gets its certificates from the system that issues every day (sluis). It holds no intermediate of its own, so there is nothing to build ([record 0011](../decisions/0011-publishing-and-what-to-do-after-a-ceremony.md)).
 
-Some other consumers send bare requests, without the limits the hand-off contract demands, or keep the intermediate key in software. Today ritueel would refuse them. They need a change of the contract: later, not now.
+Some other consumers send bare requests, without the limits the hand-off contract demands, or keep the intermediate key in software. Under the contract as it stands, ritueel refuses their requests ([record 0011](../decisions/0011-publishing-and-what-to-do-after-a-ceremony.md), rule 10). A change of the contract is on the roadmap, after the first version.
 
 ## The trust store of one machine
 
-For one computer ritueel writes one certificate file per active root key and prints the add and undo commands for that system. It never runs them, and never runs with administrator rights. It refuses a test root, a retired root key, an expired root list and a root list with a lower sequence than this machine has seen (proposed). The commands below are examples with example names; the Debian and Ubuntu commands follow the [manual page of `update-ca-certificates`](https://manpages.debian.org/trixie/ca-certificates/update-ca-certificates.8.en.html), and the macOS commands were read on 2026-11-11 from a mirror of the `security(1)` man page (keith.github.io/xcode-man-pages/security.1.html) and not run. The macOS undo removes the trust setting and may leave the certificate in the keychain; it was not run.
+This section is proposed, not decided. For one computer ritueel writes one certificate file per active root key and prints the add and undo commands for that system. It never runs them, and never runs with administrator rights. It refuses a test root, a retired root key, an expired root list and a root list with a lower sequence than this machine has seen (proposed). The commands below are examples with example names; the Debian and Ubuntu commands follow the [manual page of `update-ca-certificates`](https://manpages.debian.org/trixie/ca-certificates/update-ca-certificates.8.en.html), and the macOS commands were read on 2026-11-11 from a mirror of the `security(1)` man page (keith.github.io/xcode-man-pages/security.1.html) and not run. The macOS undo removes the trust setting and may leave the certificate in the keychain; it was not run.
 
 **Debian and Ubuntu.** One certificate in each file.
 

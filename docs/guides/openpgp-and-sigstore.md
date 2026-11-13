@@ -47,10 +47,10 @@ Date any claim about it, and check the project's current plans before you build 
 
 ## Both together
 
-They compose. A release can carry an OpenPGP signature made with a release key held in a store, and a keyless attestation of how it was built. The first answers *who stands behind this file*, and the second *what built it*. Neither replaces the other: a keyless signature does not give a package manager a key it can pin, and an OpenPGP signature does not tell you the build was clean.
+They compose. A release can carry an OpenPGP signature made with a release key held in a key store, and a keyless attestation of how it was built. The first answers *who stands behind this file*, and the second *what built it*. Neither replaces the other: a keyless signature does not give a package manager a key it can pin, and an OpenPGP signature does not tell you the build was clean.
 
 If you add keyless signing, remember it moves the custody chain. The question is no longer where a key lives, but who can run, change or approve the workflow that signs. Protect the branch, the workflow file and the identity provider's settings as you would a key.
 
 ## How ritueel relates
 
-ritueel keeps the long-lived roots and the OpenPGP primary keys. It does not run Sigstore. A release process can use ritueel's keys for the OpenPGP side and a keyless flow for provenance, and the two do not need to know about each other.
+ritueel is planned to keep the long-lived roots and the OpenPGP primary keys; only `ritueel version` is built. It does not run Sigstore. A release process can use ritueel's keys for the OpenPGP side and a keyless flow for provenance, and the two do not need to know about each other.
