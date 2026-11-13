@@ -386,9 +386,9 @@ func TestAReadMayNameALeftoverTemporaryNameAndAWriteMayNot(t *testing.T) {
 	if err := w.WriteSet("b/s", []fsx.NewFile{{Name: ".rt-x"}}); !errors.Is(err, fsx.ErrInvalid) {
 		t.Errorf("a set file with the temporary prefix: %v", err)
 	}
-	// a write through a leftover folder is fine: the prefix is refused for the final name only
-	if err := w.WriteFile("b/.rt-abcdefghijk/new", []byte("x"), 0o600); err != nil {
-		t.Errorf("a write into a folder that has the prefix: %v", err)
+	// a write into a leftover folder is refused too: the prefix is refused in every element
+	if err := w.WriteFile("b/.rt-abcdefghijk/new", []byte("x"), 0o600); !errors.Is(err, fsx.ErrInvalid) {
+		t.Errorf("a write into a folder that has the prefix: %v, want ErrInvalid", err)
 	}
 }
 

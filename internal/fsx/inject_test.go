@@ -134,7 +134,7 @@ var scenarios = []scenario{
 
 func stepOf(k opKind) fsx.Step {
 	switch k {
-	case kOpenDir:
+	case kOpenDir, kReadDir: // the listing of a temporary folder that was just opened is a step of the walk
 		return fsx.StepOpenDir
 	case kMkdir:
 		return fsx.StepMkdir
@@ -696,7 +696,7 @@ func TestTheCallsEachStepMakesAreTheStepsOfThePage(t *testing.T) {
 	t2 := name()
 	want = []string{
 		"opendir b", "opendir b/d", "closedir b",
-		"mkdir b/d/" + t2, "opendir b/d/" + t2,
+		"mkdir b/d/" + t2, "opendir b/d/" + t2, "readdir b/d/" + t2,
 		"create b/d/" + t2 + "/a", "write b/d/" + t2 + "/a", "sync b/d/" + t2 + "/a", "close b/d/" + t2 + "/a",
 		"create b/d/" + t2 + "/b", "write b/d/" + t2 + "/b", "sync b/d/" + t2 + "/b", "close b/d/" + t2 + "/b",
 		"syncdir b/d/" + t2, "closedir b/d/" + t2,

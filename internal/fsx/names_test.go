@@ -685,9 +685,10 @@ var acceptedNames = []struct{ why, name string }{
 	{"a device name before a hyphen", "nul-x.txt"},
 }
 
-// acceptedNotLast are names that are fine for a folder but not as the last element of a path
-// nor as the name of a file of a set: the prefix of a temporary name.
-var acceptedNotLast = []struct{ why, name string }{
+// prefixNames are the names that start with the prefix of a temporary name, in every case form:
+// refused in every element of a path that is written, and as the name of a file of a set, and
+// readable as a path that is only read.
+var prefixNames = []struct{ why, name string }{
 	{"the temporary prefix and 11 characters", ".rt-abcdefghijk"},
 	{"the temporary prefix and one character", ".rt-x"},
 	{"the temporary prefix alone", ".rt-"},
@@ -701,25 +702,67 @@ var acceptedNotLast = []struct{ why, name string }{
 // method, makes a write that succeeds and leaves the file or the folder at exactly that name,
 // and nothing else but the folders that were there before: no temporary name is left.
 func TestAcceptedNamesAreWrittenAtExactlyThatName(t *testing.T) {
-	for _, group := range []struct {
-		rows    []struct{ why, name string }
-		lastToo bool
-	}{
-		{rows: acceptedNames, lastToo: true},
-		{rows: acceptedNotLast, lastToo: false},
-	} {
-		for _, row := range group.rows {
-			for _, use := range pathUses {
-				for _, pl := range placements {
-					if pl.last && !group.lastToo {
-						continue
-					}
-					t.Run(row.why+"/"+use.label+"/"+pl.label, func(t *testing.T) {
-						acceptedAt(t, use, pl, row.name)
-					})
-				}
+	for _, row := range acceptedNames {
+		for _, use := range pathUses {
+			for _, pl := range placements {
+				t.Run(row.why+"/"+use.label+"/"+pl.label, func(t *testing.T) {
+					acceptedAt(t, use, pl, row.name)
+				})
 			}
 		}
+	}
+}
+
+// TestThePrefixOfATemporaryNameIsRefusedInEveryElementOfAWrittenPath: in the first, a middle and
+// the last element, for every method that writes, in every case form, with the one text of the
+// prefix; and the same paths are read as before (a leftover of a stop is read by its name).
+func TestThePrefixOfATemporaryNameIsRefusedInEveryElementOfAWrittenPath(t *testing.T) {
+	for _, row := range prefixNames {
+		for _, use := range pathUses {
+			for _, pl := range placements {
+				t.Run(row.why+"/"+use.label+"/"+pl.label, func(t *testing.T) {
+					f := newMemFS(pl.dirs(row.name)...)
+					w := newWriter(t, f, 1)
+					p := pl.path(row.name)
+					err := use.do(t, w, p)
+					if !errors.Is(err, fsx.ErrInvalid) || errors.Is(err, fsx.ErrStopped) {
+						t.Fatalf("%s %q = %v, want ErrInvalid and no stop", use.label, p, err)
+					}
+					if want := pathText(p, tailPrefix); err.Error() != want {
+						t.Fatalf("the text is\n  %s\nwant\n  %s", err.Error(), want)
+					}
+					if f.opCount() != 0 {
+						t.Fatalf("a refused path reached the file system: %v", f.opList())
+					}
+				})
+			}
+		}
+	}
+}
+
+// TestAPathWithThePrefixIsStillReadAndListed: the reads of the same paths work, so that the leftover
+// of a stop can be looked at.
+func TestAPathWithThePrefixIsStillReadAndListed(t *testing.T) {
+	for _, row := range prefixNames {
+		f := newMemFS("b", "b/"+row.name, row.name)
+		f.addFile("b/"+row.name+"/f", []byte("in\n"))
+		f.addFile(row.name+"/f", []byte("in\n"))
+		f.addFile("b/"+row.name+"-file", []byte("x"))
+		root := f.Root()
+		for _, p := range []string{"b/" + row.name + "/f", row.name + "/f"} {
+			if got, err := fsx.ReadFile(root, p); err != nil || string(got) != "in\n" {
+				t.Errorf("ReadFile(%q) = %q, %v", p, got, err)
+			}
+			if lines, _, err := fsx.ReadJournal(root, p); err != nil || len(lines) != 1 {
+				t.Errorf("ReadJournal(%q) = %q, %v", p, lines, err)
+			}
+		}
+		for _, p := range []string{"b/" + row.name, row.name} {
+			if ents, err := fsx.ReadDir(root, p); err != nil || len(ents) != 1 {
+				t.Errorf("ReadDir(%q) = %v, %v", p, ents, err)
+			}
+		}
+		_ = root.Close()
 	}
 }
 
@@ -826,12 +869,11 @@ func TestEveryAllowedCharacterIsWrittenInTheFirstInnerAndLastPlace(t *testing.T)
 }
 
 // TestThePlainFormsOfAPathAreAccepted pins the forms that look like the refused ones but are
-// not: a path with no folder, the prefix of a temporary name in a folder that is not the last
-// element, a dot file.
+// not: a path with no folder, a dot file, a name that holds the prefix but does not start with it.
 func TestThePlainFormsOfAPathAreAccepted(t *testing.T) {
-	f := newMemFS("b", "b/d", "b/.rt-dir", "b/.hidden")
+	f := newMemFS("b", "b/d", "b/x.rt-dir", "b/.hidden")
 	w := newWriter(t, f, 1)
-	paths := []string{"b/d/x.json", "z.json", "b/.rt-dir/q.json", "b/.hidden/.s", "z"}
+	paths := []string{"b/d/x.json", "z.json", "b/x.rt-dir/q.json", "b/.hidden/.s", "z"}
 	for _, p := range paths {
 		if err := w.WriteFile(p, []byte(p), 0o600); err != nil {
 			t.Errorf("WriteFile %q: %v", p, err)
