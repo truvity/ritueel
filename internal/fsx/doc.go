@@ -35,8 +35,12 @@
 // (Windows removes both, and the Linux exFAT driver removes trailing dots unless the mount
 // option keep_last_dots is given), more than 255 bytes (which is also at most 255 UTF-16 code
 // units, the limit of exFAT), and bytes that are not UTF-8. It is also refused when it has a
-// character that no person can see or type (U+007F, U+0080 to U+009F, U+FFFE, U+FFFF), and
-// when it is a device name of Windows ("aux", "Aux.json"), which a Windows system cannot open.
+// character that is not printable in the sense of unicode.IsPrint (a letter, a mark, a
+// number, a punctuation mark, a symbol or the plain space are printable; a control code, a
+// format character such as U+200B or U+200D, a space such as U+00A0 and a code point that is
+// unassigned or for private use are not), so that a name does not hide a character that the
+// holder cannot see, and when it is a device name of Windows ("aux", "Aux.json"), which a
+// Windows system cannot open.
 //
 // What the writer does not check:
 //
