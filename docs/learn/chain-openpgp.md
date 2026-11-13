@@ -11,12 +11,12 @@ OpenPGP has no certificate authorities. It has one identity, one primary key and
 
 | Link | Key | Held by | Lives in | Authority came from |
 |---|---|---|---|---|
-| Primary key | The primary key, set to *certify only*. | You. | Offline, in a store only a ceremony reaches. | Self-certified when created. Its fingerprint is what people record. |
+| Primary key | The primary key, set to *certify only*. | You. | Offline, in a key store only a ceremony reaches. | Self-certified when created. Its fingerprint is what people record. |
 | Signing subkey | Signs commits, tags, releases, documents. | You. | A card used every day. | A binding signature from the primary key; renewed by re-signing the binding. |
 | Encryption subkey | Decrypts what people send you. | You. | Made in software and loaded onto the card, with a wrapped backup. | The same. |
 | Authentication subkey | Logs you in, for example to SSH servers. | You. | The same card. | The same. |
 
-The primary key carries no daily duties: it certifies identities, binds subkeys, extends expiry, and revokes. Setting it to *certify only* means that even a program that wanted to use it for signing a document could not. Each subkey does one job, so a break in one is limited to that job. The subkeys live on a card, so the daily key cannot be copied; the primary key lives where only a ceremony reaches it.
+The primary key carries no daily duties: it certifies identities, binds subkeys, extends expiry, and revokes. Setting it to *certify only* means no program can use it to sign a document. Each subkey does one job, so a break in one is limited to that job. The subkeys live on a card, so the daily key cannot be copied; the primary key lives where only a ceremony reaches it.
 
 See [root and intermediate](/learn/root-and-intermediate/) for the split, and [OpenPGP release keys](/learn/openpgp-release-keys/) for the case of a project that signs releases.
 
@@ -43,4 +43,4 @@ The primary key's revocation signature is made when the key is born and kept apa
 
 ## Where ritueel fits
 
-ritueel creates the primary key in its store (or, in stage one, adopts an existing one), makes the revocation signature, binds the subkeys, including onto a card, extends the expiry each year and writes the keyring file; the release pipeline builds the package from it ([record 0009](../decisions/0009-release-keys-and-the-keyring.md)). How to use the subkeys day to day is in the guides: [SSH login](/guides/openpgp-ssh-authentication/), [signing git commits and tags](/guides/openpgp-sign-git/), [signing releases](/guides/openpgp-sign-releases/), and [OpenPGP or Sigstore](/guides/openpgp-and-sigstore/).
+ritueel creates the primary key in its key store (or, in stage one, adopts an existing one), makes the revocation signature, binds the subkeys, including onto a card, extends the expiry each year and writes the keyring file; the release pipeline builds the package from it ([record 0009](../decisions/0009-release-keys-and-the-keyring.md)). How to use the subkeys day to day is in the guides: [SSH login](/guides/openpgp-ssh-authentication/), [signing git commits and tags](/guides/openpgp-sign-git/), [signing releases](/guides/openpgp-sign-releases/), and [OpenPGP or Sigstore](/guides/openpgp-and-sigstore/).
