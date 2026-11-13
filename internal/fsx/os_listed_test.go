@@ -17,7 +17,7 @@ import (
 func TestAListedHostileNameIsRefusedByCheckName(t *testing.T) {
 	wd := newWorld(t)
 	wd.mkdir("d")
-	hostile := []string{"\x1b[31mred\x1b[0m", "a\nb", "a\xffb", "a‮b", "a\x07b", "é", "a b", "COM1", "nul.txt", "ok.json", ".rt-x", "trailing."}
+	hostile := []string{"\x1b[31mred\x1b[0m", "a\nb", "a\xffb", "a\u202eb", "a\x07b", "\u00e9", "a b", "COM1", "nul.txt", "ok.json", ".rt-x", "trailing."}
 	for _, n := range hostile {
 		if err := os.WriteFile(filepath.Join(wd.root, "d", n), nil, 0o600); err != nil {
 			t.Skipf("this file system does not take the name %q: %v", n, err)
