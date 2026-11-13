@@ -27,11 +27,11 @@ You want to sign commits and releases, and maybe log in, with a key that cannot 
 
 ## If you already have a primary
 
-Planned for stage one (M3): an existing primary may be adopted as it is, with its history, as a software key in a key file. It is marked adopted, may be RSA-4096 and without expiry on arrival, gets an expiry at adoption, and is replaced within three years of adoption or moved to stage two, where card-born primaries replace it ([record 0008](../decisions/0008-a-persons-own-key.md), rule 5).
+Planned for stage one (M3): an existing primary may be adopted as it is, with its history, as a software key in a key file. It is marked adopted, may be RSA-4096 or Ed25519 and without expiry on arrival, gets an expiry at adoption, and is replaced within three years of adoption or moved to stage two, where card-born primaries replace it ([record 0008](../decisions/0008-a-persons-own-key.md), rule 5).
 
 ## Day-to-day subkeys
 
-Planned: a signing subkey and an authentication subkey are born on each day-to-day card, one set per card. An encryption subkey is made in software and loaded onto each card, with a wrapped backup in the bundle, so that a lost card does not lose the mail it decrypted. The touch setting of each key is your choice; what each choice costs is written here when stage one is built ([issue #18](https://github.com/truvity/ritueel/issues/18)).
+Planned: a signing subkey and an authentication subkey are born on each day-to-day card, one set per card. An encryption subkey is made in software (X25519; the test with mail tools is not done yet) and loaded onto each card, with a wrapped backup in the bundle, so that a lost card does not lose the mail it decrypted. The touch setting of each key is your choice; what each choice costs is written here when stage one is built ([issue #18](https://github.com/truvity/ritueel/issues/18)).
 
 ## Every year
 
