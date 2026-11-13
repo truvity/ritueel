@@ -65,13 +65,13 @@ Root custody is rare and costly to get wrong; daily issuing is busy, so the two 
 - **ritueel also sets the PIN.** One tool from box to root, but the holder must type the PIN and ritueel would have to hold it.
 - **ritueel creates the account and the roles.** One command for a cloud root, but it needs account-creating rights, differs for every organisation and becomes an infrastructure tool.
 - **Tools first, teaching as an appendix.** Faster to build, but a reader who does not know why a root is kept apart and guarded makes the expensive mistake faster.
-- **Staff keys for a company: a handing over of signing to an online certifier, a card helper and a staff proof bundle.** It would cover staff, but staff keys are out of scope (rule 10); what the requester system automates later is its own work.
+- **Staff keys for a company: a handing over of signing to an online certifier, a card helper and a staff proof format.** It would cover staff, but staff keys are out of scope (rule 10); what the requester system automates later is its own work.
 - **Publish every page and put the working material behind a Design entry.** Nothing lost, but the overload stays and pages for what is not built keep contradicting the target.
 - **Hold back only the unbuilt pages.** A smaller cut, but many pages remain to drift apart.
 - **Mermaid or image files for the pictures.** Simple to write, but an image file cannot follow the light and the dark theme, and Mermaid needs a script that the Content-Security-Policy would have to list.
 - **A root as one card's row of three keys.** Fewer rules to change, but outsiders see one trust anchor with two keys and not "two roots"; a root is built from keys (rule 29).
 - **One root for each organisation or person, with three faces.** One name, but it brings A and B back as a grid and cannot say a root of one kind with a key on a card and a key in the cloud; one root of each kind was chosen.
-- **Place, slot and holder as words of their own.** Complete, but a place is one fact about a key; one sentence in the glossary row "key store" does the work.
+- **Place and slot as words of their own.** Complete, but a place is one fact about a key; one sentence in the glossary row "key store" does the work.
 - **A glossary of sixteen words.** "Place" and "certification" would have entries and "delegation" would rename "delegated key", but the list grows by a third and one sentence in a row that exists does the same; the list has fifteen words (rule 28).
 
 ## Not yet proven or only proposed
