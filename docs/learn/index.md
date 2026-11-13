@@ -16,7 +16,7 @@ ritueel teaches first. These pages explain how to keep a root key safe, whatever
 
 - [The custody chain](/learn/custody-chain/): who or what holds each key from the root to the leaf, and four chains side by side.
 - [Private PKI](/learn/chain-private-pki/): your own root, an intermediate for each environment, and how the root reaches every client.
-- [OpenPGP: one identity, many keys](/learn/chain-openpgp/): the primary key, its subkeys, and how a verifier learns your fingerprint.
+- [OpenPGP](/learn/chain-openpgp/): the primary key, its subkeys, and how a verifier learns your fingerprint.
 - [SSH](/learn/chain-ssh/): raw keys, an SSH certificate authority, and the list of CA keys that hosts trust.
 
 ## Where a key lives
