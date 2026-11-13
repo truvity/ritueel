@@ -5,6 +5,10 @@
     "github>truvity/ci-workflows"
   ],
   "osvVulnerabilityAlerts": true,
+  "vulnerabilityAlerts": {
+    "description": "A person reviews every security fix too: the shared preset turns automerge on for vulnerability alerts, and this turns it off again for this repository.",
+    "automerge": false
+  },
   "labels": [
     "dependencies"
   ],
