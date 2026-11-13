@@ -63,7 +63,7 @@ In the tables, p50 is the median. p95 and p99 are the values that 95 and 99 perc
 | Ed25519, 1 KiB message (20 operations) | 186.1 / 188.8 / 188.8 | 5.4 a second | not given | |
 | RSA-3072 PS256, slot 82 | 715.5 / 719.9 / 723.1 | 1.4 a second | 717.9 / 723.3 / 724.8 (50 operations) | 1.4 a second |
 
-ECDH is key agreement: the card combines its private key with a public key from outside and returns a shared secret. Ed25519 in PIV needs firmware 5.7 or newer, as the sluis record says. Ed25519 and X25519 worked on 5.8.0, with attestation (the card's signed statement about a key it made).
+ECDH is key agreement: the card combines its private key with a public key from outside and returns a shared secret. Ed25519 in PIV needs firmware 5.7 or newer, as the sluis record says (Yubico's tables say 5.7.4; nothing below 5.8.0 was tried). Ed25519 and X25519 worked on 5.8.0, with attestation (the card's signed statement about a key it made).
 
 ### Other timings
 

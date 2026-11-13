@@ -129,7 +129,7 @@ CI checks that the manifest names every file of the set, that the pins match the
 | Which root keys check 2 reads | The root list the host holds, with the one exception of a signer of the root list of the same sequence. | Only the held root list; any root key of the new root list. | A retiring root key signs the ceremony that removes it, so a strict rule would refuse the list of that very ceremony. Reading the new root list would let a list vouch for its own signer. |
 | Break-glass key in the list | Listed like any other key, by name. | A separate file; not published, kept by the holder. | Hosts need it to accept an emergency login, and one list is one place to look. The key leaves with its root key. |
 | A file for sshd | Derived, with the sequence in a comment, and checked against the list. | Only the JSON; a `known_hosts` file as well. | `TrustedUserCAKeys` is the file sshd reads, and a comment line is allowed in it. A `known_hosts` line needs host patterns that only the consumer knows. |
-| Key type | `ecdsa-sha2-nistp384` only. | Ed25519 as well. | A PIV slot and a KMS key cannot sign with Ed25519, and one algorithm is one code path, as for the rest of the contract. |
+| Key type | `ecdsa-sha2-nistp384` only. | Ed25519 as well. | BSI, the German federal office for information security, lists only ECDSA for SSH signatures (TR-02102-4, 2026-01); a host in FIPS mode refuses Ed25519 (Red Hat documentation); and one algorithm is one code path, as for the rest of the contract. |
 | Empty list | Allowed, and written once any key has been listed. | The list vanishes with its last key. | A host that is not told its last key is withdrawn would go on trusting it. |
 
 ## Follow-ups
