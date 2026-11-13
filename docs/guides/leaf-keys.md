@@ -24,6 +24,7 @@ A **leaf** is the end of the chain: the certificate of a server, a service or a 
 4. **A new key at each issue.** cert-manager does this by default since v1.18.0 (`rotationPolicy: Always`) [10].
 5. **A subject alternative name (SAN) always.** Under a DNS name constraint, Go 1.27 accepted a leaf that had only a common name, and OpenSSL 3.5 rejected it ([measured 2026-11-01](/learn/chain-private-pki/#why-one-intermediate-per-environment)). Put every name in the SAN.
 6. **Server and client use apart.** Give a leaf `serverAuth` or `clientAuth`, not both. Public CAs are moving this way: Chrome's root program asks that TLS certificates issued from 2027-03-15 state only `serverAuth` [11].
+7. **Key exchange, apart from the certificate.** A hybrid key exchange agrees the session key with a classical and a post-quantum method together, so a recording of today's traffic cannot be decrypted later by a quantum computer; it changes nothing in the certificate. Check that your TLS software offers the group `X25519MLKEM768` (OpenSSL 3.5, Go 1.24 and JDK 27, and later) [12]; a host in FIPS mode may offer other hybrid groups, so ask your vendor [13].
 
 | Tool, version or date read | Default leaf lifetime | Default leaf key |
 |---|---|---|
@@ -51,3 +52,5 @@ Nothing here was run against a ritueel intermediate. The name constraint that al
 9. CA/Browser Forum, Baseline Requirements for TLS Server Certificates v2.3.1 (2026-10-04), sections 1.1 and 6.3.2 (ballot SC-081), https://raw.githubusercontent.com/cabforum/servercert/main/docs/BR.md.
 10. cert-manager v1.21.3, `types_certificate.go`; Smallstep step-ca production considerations (updated 2026-02-03), https://smallstep.com/docs/step-ca/certificate-authority-server-production/; SPIRE v1.16.0, `doc/spire_server.md`, https://github.com/spiffe/spire; HashiCorp Vault PKI considerations, https://developer.hashicorp.com/vault/docs/secrets/pki/considerations.
 11. Chrome Root Program Policy v1.8 (2026-02-05), 1.3.2, https://raw.githubusercontent.com/GoogleChrome/chromerootprogram/main/content/crp/policy.md.
+12. IANA, "TLS Supported Groups" (updated 2026-11-05), https://www.iana.org/assignments/tls-parameters/tls-parameters.xhtml#tls-parameters-8; OpenSSL 3.5.0 (2025-04-08), `NEWS.md` and `CHANGES.md`, https://github.com/openssl/openssl; Go 1.24 release notes (`crypto/tls`), https://go.dev/doc/go1.24; JEP 527 (delivered in JDK 27, 2026-09-15), https://openjdk.org/jeps/527; read 2026-11-13.
+13. RFC 10024 (August 2026, Standards Track), section 2, https://www.rfc-editor.org/rfc/rfc10024.txt, read 2026-11-13.
