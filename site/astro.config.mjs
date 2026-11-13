@@ -142,7 +142,7 @@ export default defineConfig({
           collapsed: false,
           items: [
             { slug: 'how-it-works', label: 'Overview' },
-            { slug: 'how-it-works/cards', label: 'The three cards' },
+            { slug: 'how-it-works/cards', label: 'The kinds of card' },
             { slug: 'how-it-works/bundle-and-stick', label: 'The bundle and the USB stick' },
           ],
         },
