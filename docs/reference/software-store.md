@@ -36,7 +36,7 @@ Decided, not yet proven: the passkey proof is M1 ([record 0002](../decisions/000
 | Always kept | A recovery key | An age identity in a passphrase-protected file, kept apart from the cards. Its file and its passphrase never sit in the same place. Its passphrase is the break-glass and may live in a password manager; the file it protects never sits beside it. |
 | Supported | A passphrase alone | For a holder without cards. A passphrase file holds only that recipient, because the age v1 specification says "An scrypt stanza, if present, MUST be the only stanza in the header" (read 2026-11-11, [age v1](https://age-encryption.org/v1)). |
 | Fallback | A key-agreement key in PIV slot 9d of each root card | Made only if passkey unlocking cannot be used. It is in row 1 of the card ([record 0003](../decisions/0003-root-cards.md)). |
-| Not supported | A synced passkey, for now a password-manager passkey or unlock item; unlocking inside the local page; a day-to-day card unlocking a root-level key file | The reasons are the roads not taken of record 0002. |
+| Not supported | A synced passkey (a password-manager passkey is one); a password-manager unlock item; unlocking inside the local page; a day-to-day card unlocking a root-level key file | The reasons are the roads not taken of record 0002. |
 
 ## Revocation signatures
 

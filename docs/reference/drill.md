@@ -5,7 +5,7 @@ sidebar:
   order: 13
 ---
 
-*Not built yet. This is the page that [record 0007](../decisions/0007-changing-and-losing-a-root.md) leaves for the command, the report and the scripts; the code is [issue #68](https://github.com/truvity/ritueel/issues/68) for the restore check, in M4, and [issue #20](https://github.com/truvity/ritueel/issues/20) for the scripts: the adoption drill ([issue #48](https://github.com/truvity/ritueel/issues/48)) is part of M4, the lost-card drill of M6, and the others come in M7. The ideas are taught in [The history](/learn/the-history/) and the guides [Back up and restore](/guides/back-up-and-restore/) and [Run a drill](/guides/run-a-drill/).*
+*Not built yet. This is the page that [record 0007](../decisions/0007-changing-and-losing-a-root.md) leaves for the command, the report and the scripts; the code is [issue #68](https://github.com/truvity/ritueel/issues/68) for the restore check, in M4, and [issue #20](https://github.com/truvity/ritueel/issues/20) for the scripts: the adoption drill ([issue #48](https://github.com/truvity/ritueel/issues/48)), which is the lost-card drill, is part of M4, and the others come in M7. The ideas are taught in [The history](/learn/the-history/) and the guides [Back up and restore](/guides/back-up-and-restore/) and [Run a drill](/guides/run-a-drill/).*
 
 A restore you have never practised is a hope. A drill is a practice run with a known start and a known end, on test keys, so that the first real run is not the first run. There are two kinds: a **check** that reads the real state and signs nothing, and a **walk-through** that runs ceremonies on test roots.
 
@@ -55,7 +55,7 @@ A walk-through is a guide that can also be run as a script ([record 0007](../dec
 | `run.sh` | Runs the steps of the guide. With `--cards` it pauses at each prompt and each touch, on rehearsal cards named in the environment by serial. |
 | `check.sh` | Checks the end state, and writes `drills/<time>-<name>.json` with the duration of every ceremony, taken from the `started_at` and `finished_at` of the ceremony records. |
 
-The drills, in the order they are built: the lost-card drill (two root keys and an intermediate, a card out of use, `revoke`, a key added to the wanted root file, a yearly re-certification), a routine yearly renewal, an expiring root key with an overlap, a stale root list, the adoption drill ([issue #48](https://github.com/truvity/ritueel/issues/48)), and one for each transition guide ([issue #19](https://github.com/truvity/ritueel/issues/19)).
+The drills, in the order they are built: the lost-card drill, which is the adoption drill ([issue #48](https://github.com/truvity/ritueel/issues/48)) (two root keys and an intermediate, a card out of use, `revoke`, a key added to the wanted root file, a yearly re-certification), a routine yearly renewal, an expiring root key with an overlap, a stale root list, and one for each transition guide ([issue #19](https://github.com/truvity/ritueel/issues/19)).
 
 - **CI runs every drill with test roots** (`--test-root`) and fails when a drill's check fails. The restore check runs there with `--accept-not-run 5` and `--accept-not-run 3`, because a software root has no holder to compare and the CI bundle has no signer.
 - **A drill never needs a real key or a real account.** The scripts use test roots, or rehearsal cards (the `rehearsal` kind) chosen by serial from the environment; a card that is not registered as a rehearsal card in the drill's own bundle is refused.
