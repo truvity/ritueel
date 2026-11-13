@@ -5,7 +5,7 @@
 //   collection as src/lib-decisions.ts, with the status each record states (the records have no page);
 // - reference pages are docs/reference/*.md without the index;
 // - code is the lines of every Go file outside site/ and node_modules (the product is Go; the
-//   scripts under tools/ are repository checks and are not counted). Zero Go files is zero
+//   small programs under tools/, such as tools/elfcheck, are counted). Zero Go files is zero
 //   lines, and the line says so;
 // - the milestones are the rows of the table in docs/roadmap.md, which names M0 to M7, what
 //   each delivers and, for the page, the order. GitHub (src/lib-github.ts) adds the issues.
