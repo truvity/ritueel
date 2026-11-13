@@ -29,6 +29,28 @@
         "major"
       ],
       "automerge": false
+    },
+    {
+      "description": "A person reviews every update of a Go module or of a devbox pin (the compiler, the linter, the scanner and the other tools), so none of them is merged by itself.",
+      "matchManagers": [
+        "gomod",
+        "devbox"
+      ],
+      "automerge": false
+    },
+    {
+      "description": "These updates get a group of their own: one that needs a person must not hold back the other non-major updates, which still merge by themselves.",
+      "matchManagers": [
+        "gomod",
+        "devbox"
+      ],
+      "matchUpdateTypes": [
+        "minor",
+        "patch",
+        "digest"
+      ],
+      "groupName": "go modules and devbox pins",
+      "groupSlug": "go-devbox"
     }
   ],
   "constraintsFiltering": "strict"
