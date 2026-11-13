@@ -14,6 +14,10 @@ A format (slot table, file members, byte layout, flag list) is only named and li
 to its page under docs/reference/; measurements are cited from docs/research/.
 Not yet proven or only proposed is outside the numbered sentences: a rule whose
 answer could change a numbered sentence moves there.
+A record states the design as it is, with no history: no "now", "no longer" or "instead of".
+A record that changes an earlier decision says so in its own rule, and the earlier record
+is edited to the current state (after the first release: its status becomes Superseded by NNNN).
+A rule keeps its number: a new rule goes at the end, a removed rule stays as "N. Removed."
 -->
 
 ## Decision
@@ -38,7 +42,3 @@ What gets harder, and what must follow (migration, pages, tests, standards regis
 
 - **Not yet proven.** A decided rule that waits for a test on a card or an account, with its issue ([#1](https://github.com/truvity/ritueel/issues/1)).
 - **Proposed.** A point that is not decided, with its issue ([#1](https://github.com/truvity/ritueel/issues/1)).
-
-## Replaces
-
-The records of the first eighteen that flow into this one (their numbers, read at the commit named in the README), or `Nothing; new in the rewrite.`

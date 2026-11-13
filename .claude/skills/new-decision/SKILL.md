@@ -9,7 +9,7 @@ Checklist, each step as the pages describe it:
 
 - [ ] The proposal issue exists and is linked.
 - [ ] The record is a copy of `docs/decisions/0000-template.md` with the next free number.
-- [ ] Every section is filled: *Decision* as numbered sentences (formats only named and linked), *Why*, *What it costs*, the roads not taken each with the reason it lost (git does not keep that part), *Not yet proven or only proposed* and *Replaces*. The aim is 900 words for the first three together.
+- [ ] Every section is filled: *Decision* as numbered sentences (formats only named and linked), *Why*, *What it costs*, the roads not taken each with the reason it lost (git does not keep that part), and *Not yet proven or only proposed*. The aim is 900 words for the first three together.
 - [ ] It passes the mission test of `docs/contributing/design.md`: it teaches first, and the person stays in charge.
 - [ ] Each rule is stated once, here or in a reference page it links. A rule that another record or page already states is linked, not repeated.
 - [ ] Before the first release the record may be rewritten, merged or renumbered; records have no site address, so there is no redirect line; the design page (`docs/design.md`) and the glossary links are kept in step in the same pull request. After the first release it is append-only: supersede, never edit the decision.
