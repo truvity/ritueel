@@ -212,7 +212,7 @@ go_packages := "./cmd/... ./internal/... ./tools/..."
 
 # Everything a pull request must pass for the Go code. Needs the module download; no credential, no
 # device. Cheap checks first. `go-vuln` is not part of it (security.yaml runs it).
-go-check: go-fmt go-tidy go-verify go-vet go-lint go-test go-build
+go-check: go-fmt go-tidy go-verify go-vet go-lint go-test go-build go-release-check
 
 # gofmt -s finds nothing to change in the module's own Go files (tracked or new, never ignored ones,
 # so not node_modules; testdata/ is skipped as the go tool skips it). The linter's gofmt and goimports
@@ -278,6 +278,106 @@ go-build:
 # a new advisory is news about the world, not about the change.
 go-vuln:
     govulncheck {{ go_packages }}
+
+# The release configuration (.goreleaser.yaml), proved without a tag and without publishing: a snapshot
+# build with `goreleaser release --snapshot`, which does everything the real release does except
+# publish (it skips validate, announce and publish), so the archives and SHA256SUMS are made too, not
+# only the binaries. A snapshot has no tag, so the tag it stamps is fixed here (GORELEASER_CURRENT_TAG;
+# no git tag is made). Then `_go-release-verify` judges the result. Nothing is signed. Linux only.
+go-release-check:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    tag="v0.0.0-snapshot"
+    commit="$(git rev-parse HEAD)"
+    goreleaser check
+    GORELEASER_CURRENT_TAG="${tag}" goreleaser release --snapshot --clean
+    "{{ just_executable() }}" --justfile "{{ justfile() }}" _go-release-verify "${tag}" "${commit}"
+
+# What a release build in dist/ must be: exactly one Linux binary for each of amd64 and arm64 (a check
+# that finds no binary fails), each a static Linux executable (tools/elfcheck) that was built without
+# cgo, with -trimpath, for the right architecture, and that carries the stamped tag and commit. A
+# binary for this machine's architecture is also run: `version` must print exactly what was stamped and
+# no arguments must exit 2, as in go-build. A binary for the other architecture cannot run here (the
+# arm64 one on an amd64 runner), so it gets the file checks only, and the output says so. The binary
+# in each archive must be the one that was checked, the archives must hold the licence and the README,
+# and SHA256SUMS must name exactly the archives and match them.
+[private]
+_go-release-verify $tag $commit:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    fail() { echo "go-release-verify: $*" >&2; exit 1; }
+    [ -f dist/artifacts.json ] || fail "dist/artifacts.json is missing: no build was made"
+    pkg=ritueel.id/ritueel/internal/buildinfo
+    host="$(go env GOHOSTARCH)"
+    got_targets="$(jq -r '[.[] | select(.type == "Binary") | "\(.goos)/\(.goarch)"] | sort | join(" ")' dist/artifacts.json)"
+    [ "${got_targets}" = "linux/amd64 linux/arm64" ] || fail "binaries made: '${got_targets}', wanted 'linux/amd64 linux/arm64'"
+    ran=0
+    while IFS=$'\t' read -r arch path; do
+      [ -f "${path}" ] || fail "${path} is missing"
+      echo "== linux/${arch}: ${path}"
+      go run ./tools/elfcheck "${path}"
+      info="$(go version -m "${path}")"
+      for setting in CGO_ENABLED=0 -trimpath=true GOOS=linux "GOARCH=${arch}"; do
+        grep -qxF -- "$(printf '\tbuild\t%s' "${setting}")" <<<"${info}" || fail "${path}: build setting '${setting}' not found"
+      done
+      grep -aqF -- "${tag}" "${path}" || fail "${path}: the stamped tag ${tag} is not in the file"
+      grep -aqF -- "${commit}" "${path}" || fail "${path}: the stamped commit ${commit} is not in the file"
+      if [ "${arch}" = "${host}" ]; then
+        got="$("${path}" version)"
+        want="ritueel ${tag} (commit ${commit})"
+        echo "${got}"
+        [ "${got}" = "${want}" ] || fail "'ritueel version' printed '${got}', wanted '${want}'"
+        rc=0; "${path}" > /dev/null 2>&1 || rc=$?
+        [ "${rc}" -eq 2 ] || fail "no arguments should exit 2, got ${rc}"
+        ran=$((ran + 1))
+      else
+        echo "not run: built for ${arch}, this machine is ${host}; checked by elfcheck, its build settings and the stamped strings"
+      fi
+    done < <(jq -r '.[] | select(.type == "Binary") | [.goarch, .path] | @tsv' dist/artifacts.json)
+    [ "${ran}" -ge 1 ] || fail "no binary could be run on this machine (${host})"
+    archives="$(jq -r '.[] | select(.type == "Archive") | .name' dist/artifacts.json | sort)"
+    [ "$(wc -l <<<"${archives}")" -eq 2 ] || fail "wanted two archives, got: ${archives}"
+    for arch in amd64 arm64; do
+      archive="$(jq -r --arg a "${arch}" '.[] | select(.type == "Archive" and .goarch == $a) | .name' dist/artifacts.json)"
+      bin="$(jq -r --arg a "${arch}" '.[] | select(.type == "Binary" and .goarch == $a) | .path' dist/artifacts.json)"
+      [ -n "${archive}" ] || fail "no archive for ${arch}"
+      listing="$(tar -tzf "dist/${archive}" | sort | tr '\n' ' ')"
+      [ "${listing}" = "LICENSE README.md ritueel " ] || fail "${archive} holds '${listing}', wanted 'LICENSE README.md ritueel '"
+      tar -xzOf "dist/${archive}" ritueel | cmp -s - "${bin}" || fail "the binary in ${archive} is not the one that was checked"
+    done
+    [ -f dist/SHA256SUMS ] || fail "dist/SHA256SUMS is missing"
+    names="$(awk '{print $2}' dist/SHA256SUMS | sort)"
+    [ "${names}" = "${archives}" ] || fail "SHA256SUMS names '${names}', wanted the two archives"
+    (cd dist && sha256sum -c SHA256SUMS)
+    echo "go-release-verify: two Linux builds, ${ran} run here, two archives, SHA256SUMS matches (nothing is signed)"
+
+# The release, for the workflow only (.github/workflows/release.yaml); it needs GITHUB_TOKEN and
+# RELEASE_TAG, and fails without a tag. It publishes the archives and SHA256SUMS to the repository's
+# GitHub Releases page, unsigned. It refuses unless the tag is `vX.Y.Z` or `vX.Y.Z-suffix`, points at
+# the commit that is checked out, and that commit is on origin/main. It builds once without publishing,
+# judges the build like go-release-check does (with the real tag), and only then publishes; the publish
+# run builds again, and its SHA256SUMS must be the same as the checked build's (builds of one commit are
+# byte-identical). The check runs without the token. GoReleaser does not replace the files of an
+# existing release: a second run for a tag that has a release fails.
+go-release:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    fail() { echo "go-release: $*" >&2; exit 1; }
+    tag="${RELEASE_TAG:-}"
+    [ -n "${tag}" ] || fail "RELEASE_TAG is not set: a release needs a tag"
+    [[ "${tag}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z]+(\.[0-9A-Za-z]+)*)?$ ]] || fail "'${tag}' is not vX.Y.Z or vX.Y.Z-suffix"
+    [ -n "${GITHUB_TOKEN:-}" ] || fail "GITHUB_TOKEN is not set"
+    commit="$(git rev-parse HEAD)"
+    [ "$(git rev-parse --verify "refs/tags/${tag}^{commit}")" = "${commit}" ] || fail "tag ${tag} does not point at the checked-out commit ${commit}"
+    git merge-base --is-ancestor "${commit}" refs/remotes/origin/main || fail "commit ${commit} is not on origin/main"
+    export GORELEASER_CURRENT_TAG="${tag}"
+    goreleaser check
+    goreleaser release --clean --skip=publish
+    # The check runs this repository's own code (tools/elfcheck, the built binary): without the token.
+    env -u GITHUB_TOKEN "{{ just_executable() }}" --justfile "{{ justfile() }}" _go-release-verify "${tag}" "${commit}"
+    checked="$(sha256sum dist/SHA256SUMS | cut -d' ' -f1)"
+    goreleaser release --clean
+    [ "$(sha256sum dist/SHA256SUMS | cut -d' ' -f1)" = "${checked}" ] || fail "the published build's SHA256SUMS differs from the checked build's"
 
 # Everything a pull request must pass.
 check: check-rules site-check site-workers site-render proto-check ui-lint ui-test ui-e2e go-check
