@@ -614,7 +614,14 @@ func TestMarshalOfUnmarshalIsTheCanonicalDocument(t *testing.T) {
 // generator makes random types of the closed set and random values of them.
 type generator struct{ r *rand.Rand }
 
-var generatorNames = []string{"a", "B", "c1", "Dd", "x y", "a.b", "K", "k", "e_f", "g-h", "Z", "z", "0", "10", "2", "q:r", "$s", "~t"}
+// structNames are the names that the generator gives to the fields of a struct: all inside the rule
+// for a member name of a struct (ASCII letters, digits and underscores), and among them names that
+// fold to one another (K and k) and that begin with a digit. docNames are the names of the members of
+// a Raw document, which is not under the rule, so they hold any text, as the keys of a map do.
+var (
+	structNames = []string{"a", "B", "c1", "Dd", "x_y", "a_b", "K", "k", "e_f", "g_h", "Z", "z", "0", "10", "2", "q_r", "S_s", "T_t"}
+	docNames    = []string{"a", "B", "c1", "Dd", "x y", "a.b", "K", "k", "e_f", "g-h", "Z", "z", "0", "10", "2", "q:r", "$s", "~t"}
+)
 
 func (g *generator) text() string {
 	pool := []rune{'a', 'b', 'Z', '0', '\r', 0, 0x1f, '~', 0x7f, 0x80, 0xe9, 0x7ff, 0x800, '<', '>', '&', '\'',
@@ -674,7 +681,7 @@ func (g *generator) structType(depth int) reflect.Type {
 	var fields []reflect.StructField
 	used := map[string]bool{}
 	for i := range g.r.Intn(5) {
-		name := generatorNames[g.r.Intn(len(generatorNames))]
+		name := structNames[g.r.Intn(len(structNames))]
 		if used[name] {
 			continue
 		}
@@ -795,7 +802,7 @@ func (g *generator) doc(depth int) string {
 	ws := func() string { return []string{"", "", " ", "\n", "\t ", "\r\n"}[g.r.Intn(6)] }
 	var members []string
 	for range g.r.Intn(4) {
-		name := generatorNames[g.r.Intn(len(generatorNames))]
+		name := docNames[g.r.Intn(len(docNames))]
 		if g.r.Intn(4) == 0 {
 			name = fmt.Sprintf("%s%s", name, string(rune(0xFB33)))
 		}
@@ -848,6 +855,14 @@ func (g *generator) top() any {
 }
 
 func TestTheGeneratorMakesWhatItShould(t *testing.T) {
+	for _, name := range structNames {
+		if strings.Trim(name, "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_") != "" {
+			t.Errorf("the generator's name %q for a field is outside the rule", name)
+		}
+	}
+	if len(structNames) != len(docNames) {
+		t.Errorf("%d names for fields and %d for documents", len(structNames), len(docNames))
+	}
 	g := &generator{r: rand.New(rand.NewSource(1))}
 	kinds := map[reflect.Kind]int{}
 	var omitted, raws, anys int

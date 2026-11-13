@@ -299,6 +299,17 @@ func withTag(t *testing.T, tag string) any {
 	return reflect.New(st).Elem().Interface()
 }
 
+// goNamed is a value of a struct with one exported field of the Go name given and no tag.
+func goNamed(t *testing.T, goName string) any {
+	t.Helper()
+	return reflect.New(reflect.StructOf([]reflect.StructField{{Name: goName, Type: reflect.TypeFor[int]()}})).Elem().Interface()
+}
+
+func goNamedType(t *testing.T, goName string) string {
+	t.Helper()
+	return reflect.TypeOf(goNamed(t, goName)).String()
+}
+
 func tagType(t *testing.T, tag string) string {
 	t.Helper()
 	return reflect.TypeOf(withTag(t, tag)).String()
@@ -611,12 +622,19 @@ func refusedTypes(t *testing.T) []refusedType {
 		{name: "the tag option omitzero", v: optOmitZero{}, typ: "canonjson.optOmitZero", reason: `field F has the tag option "omitzero"; only omitempty is allowed`},
 		{name: "an empty tag option", v: withTag(t, `json:"f,,omitempty"`), typ: tagType(t, `json:"f,,omitempty"`), reason: `field F has the tag option ""; only omitempty is allowed`},
 		{name: "a refused option after omitempty", v: optSecond{}, typ: "canonjson.optSecond", reason: `field F has the tag option "string"; only omitempty is allowed`},
-		{name: "a tag name with a quote", v: withTag(t, `json:"a'b"`), typ: tagType(t, `json:"a'b"`), reason: `field F has the tag name "a'b", which encoding/json would not use`},
-		{name: "a tag name with a backslash", v: withTag(t, `json:"a\\b"`), typ: tagType(t, `json:"a\\b"`), reason: `field F has the tag name "a\\b", which encoding/json would not use`},
-		{name: "a tag name with a symbol that is not a letter", v: withTag(t, "json:\"a"+string(rune(0x20ac))+"b\""), typ: tagType(t, "json:\"a"+string(rune(0x20ac))+"b\""), reason: `field F has the tag name "a` + bsl + `u20acb", which encoding/json would not use`},
+		{name: "a tag name with an apostrophe", v: withTag(t, `json:"a'b"`), typ: tagType(t, `json:"a'b"`), reason: nameRefused("F", "a'b")},
+		{name: "a tag name with a backslash", v: withTag(t, `json:"a\\b"`), typ: tagType(t, `json:"a\\b"`), reason: nameRefused("F", `a\b`)},
+		{name: "a tag name with a symbol that is not a letter", v: withTag(t, "json:\"a"+string(rune(0x20ac))+"b\""), typ: tagType(t, "json:\"a"+string(rune(0x20ac))+"b\""), reason: nameRefused("F", "a"+string(rune(0x20ac))+"b")},
+		{name: "a tag name with a dot", v: withTag(t, `json:"a.b"`), typ: tagType(t, `json:"a.b"`), reason: nameRefused("F", "a.b")},
+		{name: "a tag name with a hyphen", v: withTag(t, `json:"a-b"`), typ: tagType(t, `json:"a-b"`), reason: nameRefused("F", "a-b")},
+		{name: "a tag name with a space", v: withTag(t, `json:"a b"`), typ: tagType(t, `json:"a b"`), reason: nameRefused("F", "a b")},
+		{name: "a tag name with a non-ASCII letter", v: withTag(t, "json:\""+string(rune(0xe9))+"\""), typ: tagType(t, "json:\""+string(rune(0xe9))+"\""), reason: nameRefused("F", string(rune(0xe9)))},
+		{name: "a tag name that is a Cyrillic look-alike", v: withTag(t, "json:\"v"+string(rune(0x0435))+"rsion\""), typ: tagType(t, "json:\"v"+string(rune(0x0435))+"rsion\""), reason: nameRefused("F", "v"+string(rune(0x0435))+"rsion")},
+		{name: "a tag name that is a dash and a comma", v: withTag(t, `json:"-,"`), typ: tagType(t, `json:"-,"`), reason: nameRefused("F", "-")},
+		{name: "a tag name that is a dash and omitempty", v: withTag(t, `json:"-,omitempty"`), typ: tagType(t, `json:"-,omitempty"`), reason: nameRefused("F", "-")},
 		{name: "two fields of one name", v: twice, typ: twiceType, reason: `two fields are named "x"`},
 		{name: "a tag name that is another field's name", v: nameAsField{}, typ: "canonjson.nameAsField", reason: `two fields are named "A"`},
-		{name: "two fields named dash", v: dashes, typ: dashesType, reason: `two fields are named "-"`},
+		{name: "two fields named dash, refused at the first name", v: dashes, typ: dashesType, reason: nameRefused("F0", "-")},
 		{name: "a float field", v: floatField{}, typ: "float64", reason: reasonFloat, inner: ".G"},
 		{name: "a float field with omitempty, zero", v: floatFieldOmit{}, typ: "float64", reason: reasonFloat, inner: ".G"},
 		{name: "a nil pointer to a float with omitempty", v: floatPtrOmit{}, typ: "*float64", reason: reasonFloat, inner: ".P"},
@@ -854,16 +872,20 @@ func TestMarshalNeedsAnObjectAtTheTop(t *testing.T) {
 // ---- paths -------------------------------------------------------------------------------
 
 func TestPathsOfAMemberName(t *testing.T) {
-	// A name is shown as it is when it is a non-empty run of letters, digits, underscores and
-	// dashes of at most 40 bytes; any other name is quoted with ASCII escapes, and cut when long.
-	// A list index is [n] and is told from a name that is digits ($.0) by the missing dot.
+	// A name is shown as it is when it is a non-empty run of ASCII letters, digits, underscores and
+	// dashes of at most 40 bytes; any other name is quoted with ASCII escapes (a character that is
+	// not printable ASCII as an escape, one above U+FFFF as the pair of its surrogates), and cut
+	// when long. A list index is [n] and is told from a name that is digits ($.0) by the missing
+	// dot. The names are the keys of a map, which take any text.
 	long := strings.Repeat("n", 41)
 	cases := []struct{ name, key, shown string }{
 		{"letters", "abc", `abc`},
 		{"digits", "0", `0`},
 		{"underscore and dash", "a_b-c", `a_b-c`},
-		{"a non-ASCII letter", "é", "é"},
-		{"a Hebrew letter", string(rune(0xFB33)), string(rune(0xFB33))},
+		{"a non-ASCII letter", "é", `"` + qesc(0xe9) + `"`},
+		{"a Hebrew letter", string(rune(0xFB33)), `"` + qesc(0xFB33) + `"`},
+		{"a Cyrillic letter that looks like a Latin one", string(rune(0x0430)), `"` + qesc(0x0430) + `"`},
+		{"the Kelvin sign", string(rune(0x212A)), `"` + qesc(0x212A) + `"`},
 		{"a dot", "a.b", `"a.b"`},
 		{"a bracket", "a[0]", `"a[0]"`},
 		{"a bracket that looks like an index", "l[1]", `"l[1]"`},
@@ -872,11 +894,13 @@ func TestPathsOfAMemberName(t *testing.T) {
 		{"a space", "a b", `"a b"`},
 		{"empty", "", `""`},
 		{"a dollar", "$", `"$"`},
-		{"an emoji", string(rune(0x1F600)), `"\U0001f600"`},
-		{"a symbol that is not a letter", "€", `"` + bsl + `u20ac"`},
-		{"a control", "a\nb", `"a\nb"`},
+		{"an emoji, a pair of surrogates", string(rune(0x1F600)), `"` + qesc(0x1F600) + `"`},
+		{"a symbol that is not a letter", "€", `"` + qesc(0x20ac) + `"`},
+		{"a control", "a\nb", `"a` + qesc('\n') + `b"`},
 		{"40 bytes", strings.Repeat("n", 40), strings.Repeat("n", 40)},
 		{"41 bytes are cut and quoted", long, `"` + strings.Repeat("n", 40) + `..."`},
+		{"a cut inside a two-byte character", strings.Repeat("n", 39) + "é", `"` + strings.Repeat("n", 39) + `..."`},
+		{"a cut inside a four-byte character", strings.Repeat("n", 38) + string(rune(0x1F600)), `"` + strings.Repeat("n", 38) + `..."`},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -889,10 +913,12 @@ func TestPathsOfAMemberName(t *testing.T) {
 		})
 	}
 	t.Run("a field named by a tag", func(t *testing.T) {
-		for _, name := range []string{"a.b", "a b", "é", "a[0]", "a-b"} {
+		// A struct holds only names inside the rule, so these are the names that a path can show
+		// for a field; the odd names above are those of a map.
+		for _, name := range []string{"a", "a_b", "A1", "_", "x9", "Z_Z"} {
 			st := reflect.StructOf([]reflect.StructField{{Name: "F", Type: reflect.TypeFor[float64](), Tag: reflect.StructTag(`json:"` + name + `"`)}})
 			got, err := Marshal(reflect.New(st).Elem().Interface())
-			refused(t, got, err, cannotWrite("$."+jsonset.Shown(name), "float64", reasonFloat))
+			refused(t, got, err, cannotWrite("$."+name, "float64", reasonFloat))
 		}
 	})
 	t.Run("a name that is digits is told from an index", func(t *testing.T) {
@@ -986,25 +1012,46 @@ func TestStructFieldsAreSortedByNameAsUTF16(t *testing.T) {
 		}
 	})
 	t.Run("a character above the BMP sorts before U+FB33 although its UTF-8 bytes are after", func(t *testing.T) {
-		// U+1D400 (mathematical bold capital A) is the surrogate pair D835 DC00 in UTF-16, which is
-		// below FB33; in UTF-8 it is F0 9D 90 80, which is above EF AC B3.
+		// A name of a struct is inside the rule (ASCII), so the order of names outside ASCII is
+		// that of the keys of a map, which take any text. U+1D400 (mathematical bold capital A) is
+		// the surrogate pair D835 DC00 in UTF-16, which is below FB33; in UTF-8 it is F0 9D 90 80,
+		// which is above EF AC B3.
 		high, dalet := string(rune(0x1D400)), string(rune(0xFB33))
 		if high <= dalet {
 			t.Fatal("the test names do not differ in the two orders")
 		}
-		got, err := Marshal(structOf(t, []string{dalet, high, "z"}, []any{1, 2, 3}, nil))
+		got, err := Marshal(map[string]int{dalet: 1, high: 2, "z": 3})
 		want := `{"z":3,"` + high + `":2,"` + dalet + `":1}`
 		if err != nil || string(got) != want {
 			t.Errorf("got %q, %v; want %q", got, err, want)
 		}
-		// The same names in a map are in the same order.
-		gotMap, err := Marshal(map[string]int{dalet: 1, high: 2, "z": 3})
-		if err != nil || !bytes.Equal(gotMap, got) {
-			t.Errorf("a map of the same names: %q, %v", gotMap, err)
+		// A map of any holds the same, and so does a map inside a struct.
+		gotAny, err := Marshal(map[string]any{dalet: 1, high: 2, "z": 3})
+		if err != nil || !bytes.Equal(gotAny, got) {
+			t.Errorf("a map of any: %q, %v", gotAny, err)
+		}
+		gotIn, err := Marshal(struct {
+			M map[string]int `json:"m"`
+		}{map[string]int{dalet: 1, high: 2, "z": 3}})
+		if want := `{"m":` + want + `}`; err != nil || string(gotIn) != want {
+			t.Errorf("a map in a struct: %q, %v; want %q", gotIn, err, want)
+		}
+	})
+	t.Run("the order of names inside the rule is the order of ASCII", func(t *testing.T) {
+		// Digits, then capitals, then the underscore, then small letters; a prefix first.
+		names := []string{"b", "B", "a10", "a2", "a", "1", "_", "Z", "a_", "0", "A9", "z"}
+		values := make([]any, len(names))
+		for i := range values {
+			values[i] = i
+		}
+		got, err := Marshal(structOf(t, names, values, nil))
+		if want := `{"0":9,"1":5,"A9":10,"B":1,"Z":7,"_":6,"a":4,"a10":2,"a2":3,"a_":8,"b":0,"z":11}`; err != nil || string(got) != want {
+			t.Errorf("got %q, %v; want %s", got, err, want)
 		}
 	})
 	t.Run("the same order as the standard encoder canonicalized", func(t *testing.T) {
-		names := []string{"b", "é", "a", string(rune(0x1D400)), string(rune(0xFB33)), "A", "1", string(rune(0xFF21)), "~"}
+		// For a struct of names inside the rule, and for a map of any text.
+		names := []string{"b", "a", "A", "1", "_", "B2", "a_b", "Zz"}
 		values := make([]any, len(names))
 		for i := range values {
 			values[i] = i
@@ -1019,6 +1066,19 @@ func TestStructFieldsAreSortedByNameAsUTF16(t *testing.T) {
 		if err != nil || !bytes.Equal(got, want) {
 			t.Errorf("got %q, want %q (%v)", got, want, err)
 		}
+		m := map[string]int{}
+		for i, name := range []string{"b", "é", "a", string(rune(0x1D400)), string(rune(0xFB33)), "A", "1", string(rune(0xFF21)), "~", "a.b", "a b", ""} {
+			m[name] = i
+		}
+		got, err = Marshal(m)
+		if err != nil {
+			t.Fatal(err)
+		}
+		std, _ = json.Marshal(m)
+		want, err = Canonicalize(std)
+		if err != nil || !bytes.Equal(got, want) {
+			t.Errorf("a map: got %q, want %q (%v)", got, want, err)
+		}
 	})
 }
 
@@ -1030,29 +1090,24 @@ func TestStructTagForms(t *testing.T) {
 		name string // the name written, or "" when the field is left out
 	}{
 		{`json:"-"`, ""},
-		{`json:"-,"`, "-"},
-		{`json:",omitempty"`, "F2"},
+		{`json:",omitempty"`, "F1"},
 		{`json:"d,omitempty"`, "d"},
-		{`json:""`, "F4"},
-		{``, "F5"},
+		{`json:""`, "F3"},
+		{``, "F4"},
 		{`json:"h,omitempty,omitempty"`, "h"},
-		{`xml:"i"`, "F7"},
+		{`xml:"i"`, "F6"},
 		{`json:"k"`, "k"},
 		{`json:"l,omitempty"`, "l"},
-		{`json:"-,omitempty"`, "-"}, // the same name as the second form: it goes in a struct of its own
 		{`json:"M"`, "M"},
 		{`xml:"x" json:"n"`, "n"},
 		{`json:"o" xml:"x"`, "o"},
 	}
-	// "-," and "-,omitempty" both name "-": two fields of one name. Keep the second out of the
-	// every-form struct and test it alone.
+	// "-," and "-,omitempty" would name a field "-", which is no member name: they are refused, and
+	// are tested below.
 	var tags []string
 	var names []string
 	var values []int
 	for i, f := range forms {
-		if f.tag == `json:"-,omitempty"` {
-			continue
-		}
 		tags = append(tags, f.tag)
 		names = append(names, f.name)
 		values = append(values, i+1)
@@ -1077,8 +1132,8 @@ func TestStructTagForms(t *testing.T) {
 		if canon, err := Canonicalize(std); err != nil || !bytes.Equal(canon, got) {
 			t.Errorf("the standard encoder's form is %q (%v)", canon, err)
 		}
-		if !bytes.Contains(got, []byte(`"-":2`)) || bytes.Contains(got, []byte(`"F0"`)) {
-			t.Errorf("the dash forms are wrong in %q", got)
+		if bytes.Contains(got, []byte(`"F0"`)) || bytes.Contains(got, []byte(`"-"`)) {
+			t.Errorf("the field tagged dash is in %q", got)
 		}
 		for _, p := range places(v, false, false) {
 			if _, err := Marshal(p.doc); err != nil {
@@ -1086,15 +1141,10 @@ func TestStructTagForms(t *testing.T) {
 			}
 		}
 	})
-	t.Run("-,omitempty names a field dash", func(t *testing.T) {
-		v := tagged(t, []string{`json:"-,omitempty"`, ``}, []int{10, 1})
-		got, err := Marshal(v)
-		if want := `{"-":10,"F1":1}`; err != nil || string(got) != want {
-			t.Errorf("got %q, %v; want %s", got, err, want)
-		}
-		got, err = Marshal(tagged(t, []string{`json:"-,omitempty"`}, []int{0}))
-		if want := `{}`; err != nil || string(got) != want {
-			t.Errorf("a zero one: got %q, %v; want %s", got, err, want)
+	t.Run("-, and -,omitempty name a field dash, which is no member name, and are refused", func(t *testing.T) {
+		for _, tag := range []string{`json:"-,"`, `json:"-,omitempty"`} {
+			got, err := Marshal(tagged(t, []string{tag, ``}, []int{10, 1}))
+			refusedWith(t, got, err, nameRefused("F0", "-"))
 		}
 	})
 	t.Run("a field tagged dash is not looked at, whatever its type", func(t *testing.T) {
@@ -1119,8 +1169,8 @@ func TestStructTagForms(t *testing.T) {
 			t.Errorf("got %q, %v; want %s", got, err, want)
 		}
 	})
-	t.Run("names that a tag may carry", func(t *testing.T) {
-		names := []string{"a.b", "a b", "a-b", "a_b", "$x", "a/b", "a:b", "a;b", "a<b", "a=b", "a>b", "a?b", "a@b", "a[b]", "a^b", "a{b}", "a|b", "a~b", "a!b", "a#b", "a%b", "a&b", "a(b)", "a*b", "a+b", "é", "1", " ", "-,"}
+	t.Run("names that a tag may carry are those of letters, digits and underscores", func(t *testing.T) {
+		names := []string{"a_b", "A", "a1", "1", "_", "__", "A_1_b", "ab9", "9ab"}
 		for _, name := range names {
 			v := structOf(t, []string{name}, []any{7}, nil)
 			got, err := Marshal(v)
@@ -1129,6 +1179,24 @@ func TestStructTagForms(t *testing.T) {
 			if err != nil || !bytes.Equal(got, canon) {
 				t.Errorf("the name %q: got %q, %v; the standard encoder gives %q", name, got, err, canon)
 			}
+		}
+	})
+	t.Run("names that the standard encoder takes and ritueel does not", func(t *testing.T) {
+		names := []string{"a.b", "a b", "a-b", "$x", "a/b", "a:b", "a;b", "a<b", "a=b", "a>b", "a?b", "a@b", "a[b]", "a^b", "a{b}", "a|b", "a~b", "a!b", "a#b", "a%b", "a&b", "a(b)", "a*b", "a+b", "é", " ", "-", "--"}
+		for _, name := range names {
+			v := structOf(t, []string{name}, []any{7}, nil)
+			if _, err := json.Marshal(v); err != nil {
+				t.Fatalf("the standard encoder refuses %q: %v", name, err)
+			}
+			got, err := Marshal(v)
+			if name == "-" {
+				// A tag that is the dash alone leaves the field out, in both.
+				if err != nil || string(got) != "{}" {
+					t.Errorf("the name -: got %q, %v", got, err)
+				}
+				continue
+			}
+			refusedWith(t, got, err, nameRefused("F0", name))
 		}
 	})
 }
@@ -1488,9 +1556,9 @@ func TestRawRefusals(t *testing.T) {
 		{"white space only", " \n", "", `not one JSON object`},
 		{"text after the object", `{} x`, "", `anything after the object at byte 3`},
 		{"a second object", `{}{}`, "", `anything after the object at byte 2`},
-		{"a repeated member", `{"a":1,"a":2}`, "", `member "a" appears twice at byte 10`},
-		{"a repeated member, one written as an escape", `{"a":1,"` + bs + `u0061":2}`, "", `member "a" appears twice at byte 15`},
-		{"a repeated member one level down", `{"b":{"a":1,"a":2}}`, ".b", `member "a" appears twice at byte 15`},
+		{"a repeated member", `{"a":1,"a":2}`, ".a", `the member appears twice at byte 10`},
+		{"a repeated member, one written as an escape", `{"a":1,"` + bs + `u0061":2}`, ".a", `the member appears twice at byte 15`},
+		{"a repeated member one level down", `{"b":{"a":1,"a":2}}`, ".b.a", `the member appears twice at byte 15`},
 		{"a float", `{"a":1.5}`, ".a", `a number with a fraction or an exponent at byte 8`},
 		{"an exponent", `{"a":1e2}`, ".a", `a number with a fraction or an exponent at byte 8`},
 		{"an integer above int64", `{"a":9223372036854775808}`, ".a", `the integer does not fit 64 bits at byte 24`},
