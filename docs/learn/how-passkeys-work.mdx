@@ -1,6 +1,6 @@
 ---
 title: How passkeys work
-description: What a passkey is, how a sign-in goes, what the PIN and the touch protect, and how a passkey on a card can open a key file.
+description: What a passkey is, how a sign-in goes, and what the PIN and the touch protect. It is a sub-page of how a YubiKey holds keys.
 # The link validator reads an MDX page by its real path under docs/, so the page names its own address.
 slug: learn/how-passkeys-work
 ---
@@ -9,7 +9,7 @@ import Figure from '../../site/src/components/Figure.astro';
 
 *Design phase: ritueel is in design and has no release ([roadmap](/roadmap/)); nothing on this page is built, and the pictures show the design and what the standards document, not a program. The facts were read on 2026-11-10 and again on 2026-11-11 in Yubico's documentation, in the FIDO and WebAuthn standards and in tool source, and nothing was measured on a card. Firmware numbers matter: a YubiKey 5 with older firmware does less.*
 
-This page is the FIDO2 side of a YubiKey 5. Read [How a YubiKey holds keys](/learn/how-a-yubikey-holds-keys/) first: it shows what the card holds and how PIV and OpenPGP work. This page teaches what a passkey is, how a sign-in goes, what the PIN and the touch protect, and how a passkey on a card can open a key file. To see where passkeys sit among the places a root can live, read [choosing where a root lives](/learn/choosing-where-a-root-lives/).
+This page is the FIDO2 side of a YubiKey 5. Read [How a YubiKey holds keys](/learn/how-a-yubikey-holds-keys/) first: it shows what the card holds and how PIV and OpenPGP work, and it assumes the [basics](/learn/what-is-a-root/#keys-from-zero). This page teaches what a passkey is, how a sign-in goes, and what the PIN and the touch protect. How a passkey on a card can open a key file is on [a key in a file](/learn/a-key-in-a-file/). To see where passkeys sit among the places a root can live, read [choosing where a root lives](/learn/choosing-where-a-root-lives/).
 
 ## Passkeys in brief
 
@@ -41,7 +41,7 @@ A passkey not kept on the card is rebuilt from a **key handle** (the standards c
 
 ## Passkeys up close
 
-The brief section says what a passkey is. This one follows a passkey through its life: what one holds, why a hundred do not get in each other's way, what the PIN and the touch guard, how a sign-in goes, and how the same passkey can open a key file. The facts in this part were read on 2026-11-11 in the WebAuthn standard, in Yubico's documentation, in OpenSSH's notes and in two other public notes; all are listed under Sources.
+The brief section says what a passkey is. This one follows a passkey through its life: what one holds, why a hundred do not get in each other's way, what the PIN and the touch guard, and how a sign-in goes. The facts in this part were read on 2026-11-11 in the WebAuthn standard, in Yubico's documentation and in OpenSSH's notes; all are listed under Sources.
 
 ### One passkey, and why a hundred do not collide
 
@@ -93,26 +93,6 @@ Two things follow.
 - **What crossed the network is useless later,** because the next challenge is different.
 - **A fake site at another address** would get a signature that the real site refuses.
 
-### A passkey that opens a key file
-
-This is the use that ritueel's design rests on ([record 0002](../decisions/0002-where-a-key-lives.md)). There is no site and no signature. A program, not a browser, talks to the card over USB, and asks it for the secret of a passkey (see "A secret from a passkey" under Passkeys in brief).
-
-ritueel locks key files with age, a small file-encryption format. A file can be locked to several recipients, each of which can open it alone. The key file has two: an **unlock key** and a recovery key. The private half of the unlock key is wrapped, and a passkey on each card named as a way to open the file unwraps it. Any one of those cards is enough, and a file may name more than two. The secret is not used on the file itself. It unwraps a second key, the unlock key, so that locking a new file needs no card.
-
-<Figure name="passkey-opens-key-file">
-  A passkey on a root card opens a key file. There is no site and no signature. Decided in [record 0002](../decisions/0002-where-a-key-lives.md), not yet proven.
-</Figure>
-
-The passkey is of the second kind, so a key handle has to be given to the card; where it is kept is not decided. The record says the unlock key's private half is in memory at each unlock.
-
-Writing a new key file needs no card, because the public half of the unlock key is a recipient. Browsers can do the same with the same standard, which they call PRF. ritueel does not unlock in its browser page, which runs on your own machine, because the browser would hand the secret to the page's script.
-
-Other programs already use the extension this way. `systemd-cryptenroll` accepts FIDO2 tokens "that implement the ‘hmac-secret’ extension" to unlock a disk volume (systemd documentation). The age project's note describes a plug-in that reuses a passkey on a hardware token outside the browser, and a stanza that holds the file key wrapped with a key derived from the PRF output (published 2025-07-14). ritueel's own way (PIN and touch over USB from a static binary) is the part still to be proven.
-
-**Decided, not yet proven.** [record 0002](../decisions/0002-where-a-key-lives.md) and [record 0007](../decisions/0007-changing-and-losing-a-root.md) word it so: a passkey secret with PIN and touch over USB from a static binary, and the offline system reaching the card's passkey side, are tried on a rehearsal card before anything is built (milestone M1). If the proof fails, a key-agreement key in PIV slot 9d of each root card opens the file instead, and nothing else in record 0002 changes. This page does not give the format of the wrapped key.
-
-**What the passkey does not remove.** A reset ends every passkey on the card, so the key file must also open another way. The record keeps a recovery key for this. If you lose the recovery key and every card named to open the file, the key files cannot be opened. Without its key handle a card cannot rebuild the passkey, so the key handle is as important as the card; where it is kept is not decided.
-
 Next: [how a KMS key works](/learn/how-a-kms-key-works/).
 
 ## Sources
@@ -126,5 +106,3 @@ Read 2026-11-10, except the lines that say 2026-11-11.
 - W3C, [WebAuthn Level 3](https://www.w3.org/TR/webauthn-3/): the site name (relying party ID) and the credential. Read again 2026-11-11 for the public key credential source (its items, including otherUI), the server-side credential and "Relying Party Identifier" (section 4), authenticator data and its flags (section 6.1) and verifying an assertion (section 7.2: the UV flag is checked if user verification is required, and otherwise ignored).
 - NIST, [SP 800-63B-4](https://pages.nist.gov/800-63-4/sp800-63b.html): syncable authenticators at the highest assurance level.
 - OpenSSH, [PROTOCOL.u2f](https://raw.githubusercontent.com/openssh/openssh-portable/master/PROTOCOL.u2f), read 2026-11-11: U2F hardware derives a private key from the key handle and a small secret of the device.
-- The age project, [Encrypting Files with Passkeys and age](https://words.filippo.io/passkey-encryption/) (published 2025-07-14), read 2026-11-11: a token that returns the credential's state in the credential id, and an age plug-in that reuses a passkey on a hardware token outside the browser.
-- systemd, [systemd-cryptenroll](https://www.freedesktop.org/software/systemd/man/latest/systemd-cryptenroll.html), read 2026-11-11: FIDO2 tokens with the hmac-secret extension.
