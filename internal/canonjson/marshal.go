@@ -140,7 +140,7 @@ func (w *writer) write(v reflect.Value, depth int) error {
 	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
 		u := v.Uint()
 		if u > math.MaxInt64 {
-			return w.refuseType(t, "an integer above 9223372036854775807, which the readers refuse")
+			return w.refuseType(t, "an integer above 9223372036854775807, which ritueel's JSON does not hold")
 		}
 		w.out.WriteString(strconv.FormatUint(u, 10))
 	case reflect.String:
