@@ -31,7 +31,10 @@
 // returns without an error is only the stick's report that it flushed.
 //
 // The writer is rooted. It works inside one folder, the root, that [Open] opens once and the
-// writer holds open until [Writer.Close]. Every path that the writer or a read helper
+// writer holds open until [Writer.Close]. Every statement below that something stays inside the
+// root, or cannot reach outside it, holds on one condition, stated once in the paragraph on "a
+// process that can write into the root" below: that no such process moves a folder that the
+// writer has open. Every path that the writer or a read helper
 // ([ReadFile], [ReadDir], [ReadJournal]) is given is relative to the root, with "/" as the
 // separator; an absolute path is refused with [ErrInvalid]. Each operation walks its path from
 // the root's handle, one element at a time, with openat and O_NOFOLLOW|O_DIRECTORY, and works in
@@ -54,8 +57,8 @@
 //
 // What is still the caller's part:
 //
-//   - Choosing the root. The package keeps every write inside the folder it was given and cannot
-//     tell whether that folder is the right one: a folder of a workstation, a mounted stick, a
+//   - Choosing the root. The package keeps every write inside the folder it was given (on the
+//     condition stated below) and cannot tell whether that folder is the right one: a folder of a workstation, a mounted stick, a
 //     copy that came from elsewhere.
 //   - A root on a file system that is not exFAT. The rule for names fits any file system that
 //     holds ASCII, but the order of the steps is what a cut is proved against in memory only,
@@ -72,11 +75,16 @@
 //     checks each listed name with it, and never prints a name as it is (%+q shows it safely).
 //
 // A process that can write into the root while the writer runs is outside what this package
-// defends against. It can move a folder that the writer has open (the writer's next steps in
-// this operation then work in the folder where it went), swap a name between two steps, and add
-// or remove names. What it cannot do by planting a link, a "..", or an absolute path is make the
-// writer follow it or write through it, and it cannot make the writer replace a file: the only
-// ways in are an exclusive create and a rename that refuses an existing name.
+// defends against. It can move a folder that the writer has open, the root included: the writer's
+// next steps in this operation then work in the folder where it went, which can be outside the
+// root. It can swap a name between two steps, and add or remove names. [Writer.WriteSet] makes
+// its temporary folder and then opens it by name, and a process that can write into the root
+// at that moment can put a folder of its own under that name: the files of the set are then
+// written into that folder, and it is renamed into place with whatever else it holds. What such
+// a process cannot do, by planting a link, a "..", or an absolute path, is make the writer follow
+// it or write through it, and it cannot make the writer replace a file: the only ways in are an
+// exclusive create and a rename that refuses an existing name. Nothing in the next paragraphs
+// holds against the move of a folder that the writer has open.
 //
 // A name holds only the ASCII letters, the digits, the dot, the hyphen and the underscore
 // (A-Z a-z 0-9 . - _): every element of a path, and every name of a set, is refused (with
@@ -102,7 +110,8 @@
 //     walk opens one element at a time, so the length of a whole path is no limit (each name is
 //     checked for its own 255 bytes); a limit of the system stops the writer with its error.
 //
-// The package confines every path to the root (see above) and cannot be given a path outside it:
-// there is no way to name one. Whether a bundle folder inside the root is the right one is the
+// Every path is confined to the root, and the package cannot be given a path outside it: there
+// is no way to name one, as long as no process moves a folder that the writer has open (see
+// above). Whether a bundle folder inside the root is the right one is the
 // caller's to say.
 package fsx
