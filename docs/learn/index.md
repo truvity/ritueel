@@ -6,7 +6,7 @@ sidebar:
   order: 0
 ---
 
-ritueel teaches first. These pages explain how to keep a root key safe, whatever tool you use; ritueel's own tools are not built yet. Read the first six in order. Each one assumes the one before.
+ritueel teaches first. These pages explain how to keep a root key safe, whatever tool you use; of ritueel, only `version` is built. Read the first six in order. Each one assumes the one before.
 
 1. [What is a root?](/learn/what-is-a-root/): the key everything else hangs from, and what goes wrong when it is lost or stolen.
 2. [Where a root is used](/learn/where-a-root-is-used/): who can use a root at all, which machine a ceremony runs on, and what offline protects against.
