@@ -16,16 +16,20 @@
 #            that runs a built binary is given a token.
 #   publish  the only job with `contents: write`: it checks out nothing, installs no tool and runs no
 #            code of the repository. It needs `test` to have passed on both machines. It downloads the
-#            artifact and, before any other check, compares it with the digest from `build` (a job of
-#            this run that ran a built binary could have replaced the artifact; a job output it cannot
-#            rewrite). It then checks the files against SHA256SUMS, refuses a tag for which any release,
-#            draft or published, exists, and creates the release as a draft with the two archives and
-#            SHA256SUMS, and NOTES.md as its text. It asks GitHub with `git ls-remote` which commit the
-#            tag points at, before the draft and once more after it, and publishes the draft only if it
-#            is the commit that `verify` and `build` checked out (each gives its commit as a job
-#            output). If the tag moved after the draft was made, the draft stays and a person deletes it
-#            by hand; the job deletes nothing. What is published is the build that was checked; nothing
-#            is built twice.
+#            artifact and, before any other check, compares it with the digest from `build`. A job of
+#            this run that ran a built binary could have replaced the artifact in the store; the digest
+#            is a job output of `build`. Job outputs are evaluated when the job ends and are read
+#            through `needs` (documented); that no other job can write them is not stated in so many
+#            words in the documentation, but no workflow syntax or artifact action does it. It then
+#            checks the files against SHA256SUMS, refuses a tag for which any release, draft or
+#            published, exists, and creates the release as a draft with the two archives and SHA256SUMS
+#            (NOTES.md is its text, not a file). It asks GitHub with `git ls-remote` which commit the
+#            tag points at (three tries), before the draft and once more after it, finds the draft by
+#            its id (exactly one release of that name, a draft, with exactly the three files), and
+#            publishes that id only if the tag still points at the commit that `verify` and `build`
+#            checked out (each gives its commit as a job output). If the tag moved after the draft was
+#            made, the draft stays and a person deletes it by hand; the job deletes nothing. What is
+#            published is the build that was checked; nothing is built twice.
 #
 # Only a push of a tag runs `publish`. A pull request cannot reach any job: there is no `pull_request`,
 # `pull_request_target` or `workflow_run` trigger. `workflow_dispatch` is a dry run: it runs `verify`,
@@ -205,8 +209,11 @@ jobs:
   # `permissions: {}`: nothing in this job reads or writes the repository. The artifact belongs to this
   # run, and download-artifact takes it with the runner's own credentials; its `github-token` input has
   # no default and is only for an artifact of another run, so no step here receives a token. No
-  # checkout, no devbox, no Go; the step that runs the binary has nothing but the values below in its
-  # environment.
+  # checkout, no devbox, no Go. The step that runs the binary is given no token and no secret: it has
+  # the ordinary `GITHUB_*` and `RUNNER_*` variables of a runner and the values below, and the binary
+  # runs as the runner's user, which on a hosted runner can use `sudo`. What protects the release from
+  # this job is not the job: it is the digest check in `publish` (the artifact is compared with the
+  # digest `build` gave before anything is uploaded), and that `publish` runs no built code.
   test:
     name: test (${{ matrix.arch }} binary on a ${{ matrix.arch }} runner)
     needs: build
