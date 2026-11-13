@@ -30,9 +30,12 @@
 // they come back zero. The doc of package strictjson says when the second property holds; the
 // tests of both packages check the two.
 //
-// ritueel's JSON holds integers only, so this package does not write a number with a fraction or
-// an exponent, and it reads input under the rules of package strictjson (no null, no repeated
-// member, nesting of at most strictjson.MaxDepth levels). Every error wraps
+// ritueel's JSON holds integers only, and only those from strictjson.MinSafeInt to
+// strictjson.MaxSafeInt (-(2^53-1) to 2^53-1), because RFC 8785 writes a number as JavaScript does
+// and cannot hold a larger one exactly, so two tools would give two digests for one record. This
+// package does not write a number with a fraction or an exponent or outside that range, and it
+// reads input under the rules of package strictjson (no null, no repeated member, an integer
+// within the range, nesting of at most strictjson.MaxDepth levels). Every error wraps
 // strictjson.ErrMalformed and has the one form of both packages, "malformed JSON: <path>: <what>",
 // with the path to the value at fault as the doc of package strictjson describes it; an error
 // about a Raw continues the path of the Raw into the Raw. Neither writing nor reading calls
