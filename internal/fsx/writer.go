@@ -89,10 +89,15 @@ func (w *Writer) stop(step Step, path string, err error) error {
 // TempName draws one temporary name: TempPrefix and lower-case letters and digits, 15
 // characters in all. It does not carry any final name. It reads only the random source and
 // does not reach the file system. Like every other method it takes the writer's lock, so a
-// call beside a write on the same writer does not read the random source at the same time.
+// call beside a write on the same writer does not read the random source at the same time,
+// and after a stop it returns the stop error and draws nothing. A failure of the random
+// source is returned as it is and does not stop the writer: no step of a write has failed.
 func (w *Writer) TempName() (string, error) {
 	w.mu.Lock()
 	defer w.mu.Unlock()
+	if w.err != nil {
+		return "", w.err
+	}
 	return w.tempName()
 }
 
