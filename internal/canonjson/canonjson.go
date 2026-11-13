@@ -11,11 +11,19 @@
 // structs (exported fields; the tags `json:"name"` and `json:"-"` and the option omitempty, no
 // other), maps with a string key, slices, arrays, strings, bools, integers, slices of bytes (as
 // standard Base64) and pointers and interfaces to these, and Raw, a document that is already JSON.
-// It refuses floats, nil, embedded fields, types with a MarshalJSON or MarshalText method, and
-// the rest, as the doc of Marshal lists. A type is accepted or refused as a type; the value
-// decides only the size, the nesting and the validity of its text. For every value that Marshal
-// accepts and the standard json.Marshal writes, Marshal(x) equals
+// It refuses floats, nil, embedded fields, types with a MarshalJSON, MarshalText, UnmarshalJSON or
+// UnmarshalText method, and the rest, as the doc of Marshal lists. A type is accepted or refused
+// as a type; the value decides only the size, the nesting and the validity of its text. For every
+// value that Marshal accepts and the standard json.Marshal writes, Marshal(x) equals
 // Canonicalize(json.Marshal(x)); the tests check this.
+//
+// Writing and reading are mirrors. strictjson.Unmarshal fills the same closed set of Go types
+// from its own parse of the bytes (the package jsonset keeps the one answer to "is this type in
+// the set" for both), and what Marshal writes it reads back. For every value x of the set,
+// Unmarshal(Marshal(x)) gives a value equal to x; for every canonical document d that fills a
+// type T, Marshal of the filled value gives d again. The doc of package strictjson says what
+// "equal" means for a nil and an empty slice or map and for omitempty, and when the second
+// property holds; the tests of both packages check the two.
 //
 // ritueel's JSON holds integers only, so this package does not write a number with a fraction or
 // an exponent, and it reads input under the rules of package strictjson (no null, no repeated
@@ -30,8 +38,8 @@ import (
 	"fmt"
 	"slices"
 	"strconv"
-	"unicode/utf16"
 
+	"ritueel.id/ritueel/internal/jsonset"
 	"ritueel.id/ritueel/internal/strictjson"
 )
 
@@ -80,7 +88,7 @@ func write(out *bytes.Buffer, v any) error {
 		for k := range x {
 			keys = append(keys, k)
 		}
-		slices.SortFunc(keys, compareUTF16)
+		slices.SortFunc(keys, jsonset.CompareUTF16)
 		out.WriteByte('{')
 		for i, k := range keys {
 			if i > 0 {
@@ -118,13 +126,6 @@ func write(out *bytes.Buffer, v any) error {
 		return fmt.Errorf("%w: a value that is not JSON data", strictjson.ErrMalformed)
 	}
 	return nil
-}
-
-// compareUTF16 orders two strings by their UTF-16 code units, as RFC 8785 section 3.2.3
-// sorts member names. It differs from the byte order of UTF-8 for characters above U+FFFF
-// against U+E000 to U+FFFF.
-func compareUTF16(a, b string) int {
-	return slices.Compare(utf16.Encode([]rune(a)), utf16.Encode([]rune(b)))
 }
 
 // writeString appends s as RFC 8785 section 3.2.2.2 writes it: a quote, a backslash and the
