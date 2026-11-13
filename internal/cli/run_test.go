@@ -95,15 +95,47 @@ func keysOf(m map[string]any) []string {
 	return slices.Sorted(maps.Keys(m))
 }
 
-// wantObject checks the exact set of members and the values of the members given.
+// stringList returns the strings of a decoded JSON list, and false when v is not a list of
+// strings (a null, for one, is not a list).
+func stringList(v any) ([]string, bool) {
+	list, ok := v.([]any)
+	if !ok {
+		return nil, false
+	}
+	out := make([]string, 0, len(list))
+	for _, e := range list {
+		s, isString := e.(string)
+		if !isString {
+			return nil, false
+		}
+		out = append(out, s)
+	}
+	return out, true
+}
+
+// wantObject checks the exact set of members and the values of the members given. Every object has
+// the member "warnings" (docs/reference/cli.md, "Machine-readable output"): [] when there is none.
+// A want without it means []; a want that has it, as a []string, is compared as a list of strings,
+// in order, and a null or an absent member never matches.
 func wantObject(t *testing.T, obj map[string]any, want map[string]any) {
 	t.Helper()
+	want = maps.Clone(want)
+	if _, ok := want["warnings"]; !ok {
+		want["warnings"] = []string{}
+	}
 	if got, wantKeys := keysOf(obj), keysOf(want); !slices.Equal(got, wantKeys) {
 		t.Errorf("members = %v, want %v (object %v)", got, wantKeys, obj)
 	}
 	for k, w := range want {
 		g, ok := obj[k]
 		if !ok {
+			continue
+		}
+		if ws, isList := w.([]string); isList {
+			got, isStrings := stringList(g)
+			if !isStrings || !slices.Equal(got, ws) {
+				t.Errorf("member %q = %#v, want the list %q", k, g, ws)
+			}
 			continue
 		}
 		if s, isString := w.(string); isString && s == "<any>" {
@@ -595,21 +627,22 @@ func TestCommandResults(t *testing.T) {
 		reasons     []string
 		errorText   string
 		wantReasons bool
+		// wantError: the object has "error" (a failed or a usage error, and no other outcome).
+		wantError bool
 	}{
-		{"usage error", UsageError{Msg: "wrong form"}, 2, "usage", nil, "wrong form", false},
-		{"usage error pointer", &UsageError{Msg: "wrong form"}, 2, "usage", nil, "wrong form", false},
-		{"refusal", Refusal{Reasons: []string{"policy", "plan-stale"}, Msg: "no"}, 3, "refused", []string{"policy", "plan-stale"}, "no", true},
-		{"refusal pointer", &Refusal{Reasons: []string{"policy"}, Msg: "no"}, 3, "refused", []string{"policy"}, "no", true},
-		{"refusal with reasons only", Refusal{Reasons: []string{"declined"}}, 3, "refused", []string{"declined"}, "refused: declined", true},
-		{"refusal with no reasons", Refusal{Msg: "no"}, 3, "refused", nil, "no", false},
-		{"backend refusal", BackendRefusal{Reasons: []string{"pin-locked"}, Msg: "the card said no"}, 4, "refused", []string{"pin-locked"}, "the card said no", true},
-		{"backend refusal pointer", &BackendRefusal{Reasons: []string{"kms-session"}}, 4, "refused", []string{"kms-session"}, "refused by the card or the backend: kms-session", true},
-		{"not confirmed", NotConfirmed{}, 5, "not-confirmed", nil, "not confirmed", false},
-		{"not confirmed pointer", &NotConfirmed{}, 5, "not-confirmed", nil, "not confirmed", false},
-		{"plain error", plain, 1, "failed", nil, "disk on fire", false},
-		{"wrapped plain error", fmt.Errorf("while writing: %w", plain), 1, "failed", nil, "while writing: disk on fire", false},
-		{"wrapped refusal", fmt.Errorf("apply: %w", Refusal{Reasons: []string{"policy"}, Msg: "no"}), 3, "refused", []string{"policy"}, "apply: no", true},
-		{"wrapped backend refusal", fmt.Errorf("sign: %w", BackendRefusal{Reasons: []string{"pin-locked"}, Msg: "locked"}), 4, "refused", []string{"pin-locked"}, "sign: locked", true},
+		{"usage error", UsageError{Msg: "wrong form"}, 2, "usage", nil, "wrong form", false, true},
+		{"usage error pointer", &UsageError{Msg: "wrong form"}, 2, "usage", nil, "wrong form", false, true},
+		{"refusal", Refusal{Reasons: []string{"policy", "plan-stale"}, Msg: "no"}, 3, "refused", []string{"policy", "plan-stale"}, "no", true, false},
+		{"refusal pointer", &Refusal{Reasons: []string{"policy"}, Msg: "no"}, 3, "refused", []string{"policy"}, "no", true, false},
+		{"refusal with reasons only", Refusal{Reasons: []string{"declined"}}, 3, "refused", []string{"declined"}, "refused: declined", true, false},
+		{"backend refusal", BackendRefusal{Reasons: []string{"pin-locked"}, Msg: "the card said no"}, 4, "refused", []string{"pin-locked"}, "the card said no", true, false},
+		{"backend refusal pointer", &BackendRefusal{Reasons: []string{"kms-session"}}, 4, "refused", []string{"kms-session"}, "refused by the card or the backend: kms-session", true, false},
+		{"not confirmed", NotConfirmed{}, 5, "not-confirmed", nil, "not confirmed", false, false},
+		{"not confirmed pointer", &NotConfirmed{}, 5, "not-confirmed", nil, "not confirmed", false, false},
+		{"plain error", plain, 1, "failed", nil, "disk on fire", false, true},
+		{"wrapped plain error", fmt.Errorf("while writing: %w", plain), 1, "failed", nil, "while writing: disk on fire", false, true},
+		{"wrapped refusal", fmt.Errorf("apply: %w", Refusal{Reasons: []string{"policy"}, Msg: "no"}), 3, "refused", []string{"policy"}, "apply: no", true, false},
+		{"wrapped backend refusal", fmt.Errorf("sign: %w", BackendRefusal{Reasons: []string{"pin-locked"}, Msg: "locked"}), 4, "refused", []string{"pin-locked"}, "sign: locked", true, false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -640,13 +673,16 @@ func TestCommandResults(t *testing.T) {
 					}
 					delete(obj, "reasons")
 				}
-				wantObject(t, obj, map[string]any{
+				wantMembers := map[string]any{
 					"output":    1,
 					"command":   "fake",
 					"exit_code": int(tt.code),
 					"outcome":   tt.outcome,
-					"error":     tt.errorText,
-				})
+				}
+				if tt.wantError {
+					wantMembers["error"] = tt.errorText
+				}
+				wantObject(t, obj, wantMembers)
 				if !strings.HasPrefix(r.stderr, wantStderr) {
 					t.Errorf("stderr = %q, want it to start with %q", r.stderr, wantStderr)
 				}
