@@ -28,14 +28,15 @@
 // ritueel's JSON holds integers only, so this package does not write a number with a fraction or
 // an exponent, and it reads input under the rules of package strictjson (no null, no repeated
 // member, nesting of at most strictjson.MaxDepth levels). Every error wraps
-// strictjson.ErrMalformed. Neither writing nor reading calls encoding/json: Canonicalize writes
-// the canonical form from the tree that strictjson parsed, so the one parser that checked the
-// bytes is the one that supplies the values.
+// strictjson.ErrMalformed and has the one form of both packages, "malformed JSON: <path>: <what>",
+// with the path to the value at fault as the doc of package strictjson describes it; an error
+// about a Raw continues the path of the Raw into the Raw. Neither writing nor reading calls
+// encoding/json: Canonicalize writes the canonical form from the tree that strictjson parsed, so
+// the one parser that checked the bytes is the one that supplies the values.
 package canonjson
 
 import (
 	"bytes"
-	"fmt"
 	"slices"
 	"strconv"
 
@@ -115,7 +116,7 @@ func write(out *bytes.Buffer, v *strictjson.Value) error {
 	case strictjson.Bool:
 		out.WriteString(strconv.FormatBool(v.Bool))
 	default:
-		return fmt.Errorf("%w: a value that is not JSON data", strictjson.ErrMalformed)
+		return jsonset.Errorf(nil, "a value that is not JSON data")
 	}
 	return nil
 }

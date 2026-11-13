@@ -98,8 +98,14 @@
 // # Errors
 //
 // Every error that this package returns for input that breaks a rule, or for a Go type that is
-// refused, wraps ErrMalformed. An error that does not wrap it is a mistake of the caller (a value
-// that is not a pointer). An error never repeats the input, which may be untrusted and large.
+// refused, wraps ErrMalformed and has one form, the same in package canonjson: the text
+// "malformed JSON: ", the path to the value at fault, ": " and what is wrong. The path is $ for
+// the top of the document, then .name for a member and [3] for a list element, and shows its last
+// eight steps when it is longer ("$...[2].a"). A rule that is about the whole document (the size,
+// the encoding, the byte order mark) has the path $; the text of an error about the bytes ends
+// with the byte position where the parser stopped. An error that does not wrap ErrMalformed is a
+// mistake of the caller (a value that is not a pointer). An error never repeats the input, which
+// may be untrusted and large.
 package strictjson
 
 import (
@@ -131,10 +137,6 @@ type Options struct {
 	// AllowUnknown skips the unknown-member rule, for a reader that wants one member of a
 	// larger file. A member that matches a field in another letter case is still refused.
 	AllowUnknown bool
-}
-
-func malformed(format string, args ...any) error {
-	return fmt.Errorf("%w: %s", ErrMalformed, fmt.Sprintf(format, args...))
 }
 
 func limit(maxBytes int) int {
@@ -178,7 +180,7 @@ func PeekInt(data []byte, name string) (n int64, ok bool, err error) {
 			continue
 		}
 		if found != nil {
-			return 0, false, malformed("member %s appears twice", quote(name))
+			return 0, false, jsonset.Errorf(nil, "member %s appears twice", quote(name))
 		}
 		found = &root.Members[i]
 	}
@@ -186,11 +188,11 @@ func PeekInt(data []byte, name string) (n int64, ok bool, err error) {
 		return 0, false, nil
 	}
 	if found.Value.Kind != Integer {
-		return 0, false, malformed("member %s is not an integer", quote(name))
+		return 0, false, jsonset.Errorf(jsonset.Path{jsonset.Member(name)}, "not an integer")
 	}
 	n, err = parseInt(found.Value.text)
 	if err != nil {
-		return 0, false, malformed("member %s: %s", quote(name), err)
+		return 0, false, jsonset.Errorf(jsonset.Path{jsonset.Member(name)}, "%s", err)
 	}
 	return n, true, nil
 }
@@ -258,21 +260,21 @@ func parseInt(text string) (int64, error) {
 // object. In strict mode it also applies the rules about members, numbers, null and escapes.
 func parseDocument(data []byte, maxBytes int, strict bool) (*Value, error) {
 	if len(data) > maxBytes {
-		return nil, malformed("longer than %d bytes", maxBytes)
+		return nil, jsonset.Errorf(nil, "longer than %d bytes", maxBytes)
 	}
 	// The grammar below would refuse these bytes as "not one JSON object"; this says what they are.
 	if bytes.HasPrefix(data, []byte{0xEF, 0xBB, 0xBF}) {
-		return nil, malformed("starts with a byte order mark")
+		return nil, jsonset.Errorf(nil, "starts with a byte order mark")
 	}
 	if !utf8.Valid(data) {
-		return nil, malformed("not valid UTF-8")
+		return nil, jsonset.Errorf(nil, "not valid UTF-8")
 	}
 	p := &parser{data: data, strict: strict}
 	p.skipSpace()
 	// Needed, not only clearer: parseObject takes its first byte for the brace without looking, so
 	// without this check "[}" would be read as an empty object.
 	if p.pos >= len(p.data) || p.data[p.pos] != '{' {
-		return nil, malformed("not one JSON object")
+		return nil, jsonset.Errorf(nil, "not one JSON object")
 	}
 	start := p.pos
 	root, err := p.parseObject()
@@ -292,10 +294,14 @@ type parser struct {
 	pos    int
 	depth  int
 	strict bool
+	// path is the way from the top to the value being read, for the errors.
+	path jsonset.Path
 }
 
+// errorf is the error for what is wrong at the position of the parser, with the path to the value
+// that is being read.
 func (p *parser) errorf(format string, args ...any) error {
-	return malformed("%s at byte %d", fmt.Sprintf(format, args...), p.pos)
+	return jsonset.Errorf(p.path, "%s at byte %d", fmt.Sprintf(format, args...), p.pos)
 }
 
 func (p *parser) skipSpace() {
@@ -404,11 +410,13 @@ func (p *parser) parseObject() (Value, error) {
 		}
 		p.pos++
 		p.skipSpace()
+		p.path = append(p.path, jsonset.Member(name))
 		v, err := p.parseValue()
 		if err != nil {
 			return Value{}, err
 		}
 		n.Members = append(n.Members, Member{Name: name, Value: v})
+		p.path = p.path[:len(p.path)-1]
 		p.skipSpace()
 		if p.pos >= len(p.data) {
 			return Value{}, p.errorf("the input ends inside an object")
@@ -439,10 +447,12 @@ func (p *parser) parseArray() (Value, error) {
 	}
 	for {
 		p.skipSpace()
+		p.path = append(p.path, jsonset.Element(len(n.Elems)))
 		v, err := p.parseValue()
 		if err != nil {
 			return Value{}, err
 		}
+		p.path = p.path[:len(p.path)-1]
 		n.Elems = append(n.Elems, v)
 		p.skipSpace()
 		if p.pos >= len(p.data) {
