@@ -23,7 +23,7 @@ The `Justfile` holds the recipes, and CI runs the same recipes. Run the recipe, 
 
 | Recipe | What it checks |
 |---|---|
-| `just check` | Everything a pull request must pass: `check-rules`, `site-check`, `site-workers`, `site-render`, `proto-check`, `ui-lint`, `ui-test` and `ui-e2e` |
+| `just check` | Everything a pull request must pass: `check-rules`, `site-check`, `site-workers`, `site-render`, `proto-check`, `ui-lint`, `ui-test`, `ui-e2e` and `go-check` |
 | `just check-rules` | The repository rules, below, after a self-test of the checks |
 | `just check-decisions` | The decision records: file names, the template's sections, the numbered decision, the size, the status, the index rows |
 | `just check-record-refs` | Every `rule N` that cites a decision record names a record and a rule that exist; a bare number resolves only inside its own record or by a page's declared default |
@@ -49,8 +49,76 @@ The `Justfile` holds the recipes, and CI runs the same recipes. Run the recipe, 
 | `just proto-lint` | `buf lint` of `proto/`, the page's API |
 | `just proto-gen` | Lints, then regenerates the TypeScript in `ui/src/gen/` |
 | `just proto-check` | `proto-gen` must leave no difference: the committed `ui/src/gen/` is what the generator makes |
+| `just go-check` | Everything a pull request must pass for the Go code: `go-fmt`, `go-tidy`, `go-verify`, `go-vet`, `go-lint`, `go-test` and `go-build`, the cheap checks first. It does not run `go-vuln` |
+| `just go-fmt` | `gofmt -s` finds nothing to change in the Go files of `cmd/`, `internal/` and `tools/`. It fails when it finds no Go file |
+| `just go-vet` | `go vet` on the Go packages, built without cgo |
+| `just go-lint` | `golangci-lint config verify`, then `golangci-lint run`, with the rules of `.golangci.yaml` |
+| `just go-tidy` | `go.mod` and `go.sum` are what `go mod tidy` would write |
+| `just go-verify` | Downloads the modules, then `go mod verify` checks each one against `go.sum` |
+| `just go-test` | The unit tests. No network, no device, no cloud key |
+| `just go-build` | The release build into `bin/ritueel`, then three checks: the file is a static Linux executable (`tools/elfcheck`), `ritueel version` exits 0, and no arguments exit 2 |
+| `just go-vuln` | `govulncheck`: known vulnerabilities in what the module imports. Run by `security.yaml`, not by `go-check` |
 
-Read the recipe, and the workflow in `.github/workflows/` that calls it, to know what CI really runs. Build and test recipes for the code arrive with the code, and this table grows with them.
+Read the recipe, and the workflow in `.github/workflows/` that calls it, to know what CI really runs. The release workflow is not built yet, and this table grows with it.
+
+## The Go code
+
+The Go code is the program `ritueel`. [The first version's commands](/reference/cli/#the-first-versions-commands) say what it must do. Run the recipes of the table above inside the devbox environment. Start with `just go-check`.
+
+### Pins and the module
+
+- `devbox.json` pins Go (`go`), the linter (`golangci-lint`) and the vulnerability scanner (`govulncheck`) at exact versions. It also sets `CGO_ENABLED=0`, so the program is a static executable.
+- `go.mod` has a `go` line that is the pinned Go version, and it has no `toolchain` line. Another version there would make the `go` command fetch a second Go. The build and the tests use only the Go that devbox pins. `go-lint` also sets `GOTOOLCHAIN=local`.
+- The module path is `ritueel.id/ritueel`.
+- There is no `vendor/` folder. `go.sum` is committed. `go-verify` checks the downloaded modules against it, and `go-tidy` fails when `go.mod` or `go.sum` is not what `go mod tidy` writes.
+
+### The layout
+
+| Folder | What it holds |
+|---|---|
+| `cmd/ritueel/` | The program. `main.go` builds the environment from the real streams, calls `cli.Run` and exits. It does nothing else |
+| `internal/` | The packages: `cli` (the command line, the exit codes, the JSON output) and `buildinfo` (the version and the commit) |
+| `tools/` | Small programs that run beside the build. `tools/elfcheck` checks that a file is a static Linux executable. They are not part of the release |
+
+The recipes name the Go folders (`./cmd/... ./internal/... ./tools/...`) and do not use `./...`. A bare `./...` would also walk the Go files that npm packages ship inside `ui/node_modules` and `site/node_modules`.
+
+### What the linter enforces
+
+`.golangci.yaml` holds the rules, and `go-lint` runs them on every pull request. You meet these first:
+
+- **Only `cmd/ritueel/main.go` exits and holds the real output streams.** `os.Exit`, `fmt.Print`, `fmt.Printf`, `fmt.Println`, `os.Stdout` and `os.Stderr` are refused in all other code. Write to the stdout or stderr writer you were given. Test files and the programs of `tools/` are exempt.
+- **A command returns an error that carries its exit code.** The linter does not check this; the code follows it. A command returns an error of the types in `internal/cli/exit.go` (`UsageError`, `Refusal`, `BackendRefusal`, `NotConfirmed`) or any other error, which ends with code 1.
+- **No `net/http` in code that is not a test.** Most commands run offline. A command that needs the network lives in its own package, and that package replaces this rule with one that is limited to its path, in the same pull request.
+- **Some libraries are not used.** The linter refuses them and names what to use in their place (table below).
+- **An exported name has a comment** (`revive`, rule `exported`).
+
+| Instead of | Use |
+|---|---|
+| `github.com/spf13/cobra`, `github.com/urfave/cli/v2` | `github.com/urfave/cli/v3` |
+| `github.com/spf13/viper`, `github.com/knadh/koanf` | Flags and named files, no configuration mapper |
+| `github.com/samber/do`, `go.uber.org/fx`, `github.com/google/wire` | Build the parts in `main` and pass them as arguments |
+| `gopkg.in/yaml.v2`, `gopkg.in/yaml.v3` | `go.yaml.in/yaml/v3` |
+| `github.com/pkg/errors` | The standard library, with `%w` |
+
+The other linters are the standard set (`errcheck`, `govet`, `ineffassign`, `staticcheck`, `unused`) with `depguard`, `errorlint`, `forbidigo`, `gocritic`, `misspell`, `revive` and `usetesting`. `gofmt` and `goimports` format the files.
+
+### The command line
+
+- The command line is built with `github.com/urfave/cli/v3`, at one exact version in `go.mod`.
+- The exit codes and the JSON object are those of [the command reference](/reference/cli/#exit-codes). The code and the reference change together, in one pull request.
+- A command is tested in process: call `cli.Run` with buffers for the streams and a fixed build, and read the exit code and both buffers. `cmd/ritueel/main_test.go` also builds the program and runs it as a process, to check the real executable.
+- A new dependency is named in the pull request, with the reason for it.
+
+### In CI
+
+- The job `go` of `.github/workflows/checks.yaml` runs `just go-check`. It is one of the jobs that the single job `checks` waits for.
+- The job installs the tools from this repository's own `devbox.json` and `devbox.lock`, with `jetify-com/devbox-install-action`. The other jobs use the shared setup action.
+- A pull request only reads the Go caches (the build cache and the module cache). It never saves them. `.github/workflows/go-cache.yaml` is the only workflow that saves them. It runs on `main`, after a change to a Go file, `go.mod`, `go.sum`, `devbox.json`, `devbox.lock` or the `Justfile`, and on demand. The build cache is not checked when it is read, so code that is not reviewed must not write it.
+- The vulnerability scan is its own workflow, `.github/workflows/security.yaml`, which runs `just go-vuln` on `main`, on pull requests, every day and on demand. It is not part of `checks` and does not block a merge: a new advisory is news about the world, not about your change.
+
+### A new top-level Go folder
+
+Add the folder in two places of the `Justfile`: the variable `go_packages`, and the file list of `go-fmt` (`git ls-files ... -- cmd internal tools`). Then check that `go-check` still sees the new files. If the folder holds a program that exits or prints by design, add a path exception for it to the `forbidigo` rule in `.golangci.yaml`, as `tools/` has.
 
 ## The site
 
@@ -69,7 +137,7 @@ The site is built from `docs/` and `site/` with Astro Starlight, and every page 
 
 ## How a consumer gets ritueel
 
-The first consumer is the test harness of a system that holds intermediates, such as [sluis](https://sluis.id), which runs ritueel's software-root mode in its CI ([principle 8](/principles/#the-principles)). It needs a build it can pin. Not built yet: the release workflow comes with the Go module ([issue #10](https://github.com/truvity/ritueel/issues/10)).
+The first consumer is the test harness of a system that holds intermediates, such as [sluis](https://sluis.id), which runs ritueel's software-root mode in its CI ([principle 8](/principles/#the-principles)). It needs a build it can pin. Not built yet: the release workflow ([issue #10](https://github.com/truvity/ritueel/issues/10)).
 
 - **What a release is.** A tag `vX.Y.Z` on `main`. GoReleaser (version 2) builds the binary for Linux and macOS, on amd64 and arm64, into one `.tar.gz` for each platform, and writes `SHA256SUMS` with the digest of each. The files go on the repository's GitHub Releases page.
 - **Checksums only, before the gate.** No release is signed until the project's root is adopted and drilled ([record 0009](../decisions/0009-release-keys-and-the-keyring.md)). Until the first signed release (M5) a consumer's trust in a build is the digest it pinned, not a signature. From M5 the proof is `SHA256SUMS` signed by a release subkey that the project's root binds, with a keyless signature beside it ([record 0009](../decisions/0009-release-keys-and-the-keyring.md)).
@@ -88,7 +156,7 @@ Never run `go mod init` or `go get` outside the repository: in the wrong directo
 ## Local work
 
 - **Work in your own place.** Use a fresh clone or a worktree under your scratch area ([Branches and pull requests](/contributing/workflow/#one-change-one-worktree-one-branch)). Never work inside someone else's checkout, and do not `cd` into it.
-- **Run the narrow recipes,** `just check-rules`, `just site-lint` and `just site-build`, and leave the rest to GitHub CI, which runs the full gate on every pull request. Say which you ran.
+- **Run the narrow recipes,** `just check-rules`, `just site-lint` and `just site-build`, and `just go-check` for a change to Go code. Leave the rest to GitHub CI, which runs the full gate on every pull request. Say which you ran.
 - **If `just` is not on `PATH`,** run `devbox run -c <dir> -- just <recipe>`, with `<dir>` the absolute path of the clone.
 - **If `yarn` fails with `EXDEV`** in a scratch area, set `YARN_GLOBAL_FOLDER` to a folder on the same filesystem as the clone.
 - **Do not print a token, a password or a secret.** Read a credential file when the command runs; do not echo it, and do not paste its value into a command line you show.
