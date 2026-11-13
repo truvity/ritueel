@@ -5,7 +5,6 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
-	"math"
 	"reflect"
 	"slices"
 	"strconv"
@@ -39,7 +38,9 @@ var rawType = reflect.TypeFor[Raw]()
 //   - a slice or an array: a list. A slice of bytes is the exception: a string of standard
 //     Base64 with padding (RFC 4648, section 4), as the hand-off contract writes a certificate or
 //     a key.
-//   - a string that is valid UTF-8, a bool, and an integer of any kind that fits int64.
+//   - a string that is valid UTF-8, a bool, and an integer of any kind within
+//     strictjson.MinSafeInt to strictjson.MaxSafeInt (-(2^53-1) to 2^53-1), the integers that
+//     RFC 8785 can hold exactly: an int64 or a uint64 above that range is refused.
 //   - a pointer or an interface: the value it holds. A pointer to a pointer or to an interface is
 //     refused, so that only a struct, a map, a slice or an array can lead back to itself.
 //   - a Raw: the canonical form of the document.
@@ -54,8 +55,8 @@ var rawType = reflect.TypeFor[Raw]()
 // the Go name of a field with no tag name) that is not made of ASCII letters, digits and
 // underscores, two fields with one name, and a pointer to a pointer or to an interface. The
 // value decides only what a type cannot: a nil pointer, interface, map or slice (JSON null,
-// unless omitempty leaves the field out), an integer above int64, a string that is not valid
-// UTF-8, an empty Raw, the nesting and the size. An interface with methods can be written, since
+// unless omitempty leaves the field out), an integer outside that range, a string that is not
+// valid UTF-8, an empty Raw, the nesting and the size. An interface with methods can be written, since
 // the value in it is judged, unless it declares one of the four methods above, which refuses it;
 // strictjson.Unmarshal refuses every interface with methods as a type, since there is no value.
 //
@@ -139,11 +140,15 @@ func (w *writer) write(v reflect.Value, depth int) error {
 	case reflect.Bool:
 		w.out.WriteString(strconv.FormatBool(v.Bool()))
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-		w.out.WriteString(strconv.FormatInt(v.Int(), 10))
+		n := v.Int()
+		if n < strictjson.MinSafeInt || n > strictjson.MaxSafeInt {
+			return w.outsideRange(t, strconv.FormatInt(n, 10))
+		}
+		w.out.WriteString(strconv.FormatInt(n, 10))
 	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
 		u := v.Uint()
-		if u > math.MaxInt64 {
-			return w.refuseType(t, "an integer above 9223372036854775807, which ritueel's JSON does not hold")
+		if u > strictjson.MaxSafeInt {
+			return w.outsideRange(t, strconv.FormatUint(u, 10))
 		}
 		w.out.WriteString(strconv.FormatUint(u, 10))
 	case reflect.String:
@@ -170,6 +175,12 @@ func (w *writer) write(v reflect.Value, depth int) error {
 		panic(fmt.Sprintf("canonjson: the type judge passed the type %s of kind %s, which the writer cannot write; it should have refused the type", jsonset.TypeName(t), t.Kind()))
 	}
 	return nil
+}
+
+// outsideRange is the error for an integer that RFC 8785 cannot hold exactly; digits is the
+// integer, which has at most 20 of them.
+func (w *writer) outsideRange(t reflect.Type, digits string) error {
+	return w.refuseType(t, "the integer "+digits+" is outside the range "+strconv.FormatInt(strictjson.MinSafeInt, 10)+" to "+strconv.FormatInt(strictjson.MaxSafeInt, 10)+", which RFC 8785 can hold")
 }
 
 // str writes a string, which must be valid UTF-8 (what is the name of the thing in an error).

@@ -1,6 +1,7 @@
 // Package strictjson reads the JSON files of ritueel under one set of rules: one object, UTF-8
 // with no byte order mark, no member name twice in one object, no member that the reader does
-// not define, integers only, no null, nesting of at most MaxDepth levels, and at most 256 KiB.
+// not define, integers only and within MinSafeInt to MaxSafeInt (-(2^53-1) to 2^53-1), no null,
+// nesting of at most MaxDepth levels, and at most 256 KiB.
 // The rules are those of docs/reference/hand-off-contract.md ("Messages and files") and
 // docs/reference/root-list.md ("The list"). The standard decoder breaks several of them silently
 // (a repeated member keeps the last value, a lone surrogate escape becomes U+FFFD, a member name
@@ -42,7 +43,8 @@
 //     alphabet of URL-safe Base64 and a list of numbers are all refused.
 //   - An array: from a list of exactly its length. A list that is longer or shorter is refused.
 //   - A string, a bool, and an integer of every kind: from a string, true or false, and an
-//     integer. An integer must fit the kind of the field, so that 300 into a uint8 and -1 into
+//     integer. An integer is within MinSafeInt to MaxSafeInt for every kind, a uint64 and an
+//     int64 too, and must fit the kind of the field besides, so that 300 into a uint8 and -1 into
 //     a uint are refused. A number is never read through a float. The text -0 is the integer
 //     zero: the grammar accepts it and every integer kind, the unsigned ones too, takes it as 0
 //     (the standard decoder refuses it for an unsigned kind). The canonical form writes it 0, so
@@ -120,7 +122,6 @@ package strictjson
 
 import (
 	"bytes"
-	"errors"
 	"fmt"
 	"strconv"
 	"unicode/utf8"
@@ -136,6 +137,20 @@ const DefaultMaxBytes = 256 << 10
 // the limit of the standard decoder, stated here so that the reader of this package does not
 // depend on the stack.
 const MaxDepth = 10000
+
+// MaxSafeInt and MinSafeInt are the largest and the smallest integer that a document of ritueel
+// may hold: 2^53 - 1 and its negative, the range of RFC 7493 (I-JSON), section 2.2. The documents
+// promise the canonical form of RFC 8785, which writes a number as JavaScript does, and a number
+// above 2^53 cannot be held exactly by it: 9007199254740993 becomes 9007199254740992 in a
+// standard tool, so two tools would give two digests for one record. The reader refuses an
+// integer outside the range, whatever the Go type that would take it (int64, uint64 and any
+// too), and canonjson.Marshal refuses to write one. The constants are here, with the other limits
+// of the reader (DefaultMaxBytes, MaxDepth), because this package is the reader and canonjson
+// imports it.
+const (
+	MaxSafeInt = 1<<53 - 1
+	MinSafeInt = -(1<<53 - 1)
+)
 
 // ErrMalformed is wrapped by every error this package returns for input that breaks a rule.
 var ErrMalformed = jsonset.ErrMalformed
@@ -177,7 +192,7 @@ func Parse(data []byte, maxBytes int) (*Value, error) {
 // of a version the reader does not know is refused reading nothing else in it. So it demands
 // only that the input is one JSON object within the size limit and within MaxDepth levels of
 // nesting, in UTF-8 with no byte order mark, and that the member, when present, is there once
-// and is an integer that fits int64. It does not apply the other rules (floats, null and
+// and is an integer within MinSafeInt to MaxSafeInt. It does not apply the other rules (floats, null and
 // repeated members elsewhere are not its business).
 func PeekInt(data []byte, name string) (n int64, ok bool, err error) {
 	root, err := parseDocument(data, DefaultMaxBytes, false)
@@ -232,7 +247,7 @@ type Value struct {
 	Elems []Value
 	// Str is the text of a String, with its escapes read; it is valid UTF-8.
 	Str string
-	// Int is the number of an Integer, which fits int64.
+	// Int is the number of an Integer, which is within MinSafeInt to MaxSafeInt.
 	Int int64
 	// Bool is the value of a Bool.
 	Bool bool
@@ -240,7 +255,7 @@ type Value struct {
 	// byte after its last, so that the input from Start to End is the value exactly as written.
 	Start, End int
 
-	text string // Integer: its text, which has not been checked to fit int64 unless the rules apply
+	text string // Integer: its text, which has not been checked against the range unless the rules apply
 }
 
 // Member is one member of an Object.
@@ -249,10 +264,16 @@ type Member struct {
 	Value Value
 }
 
+// parseInt reads the text of an integer, which the grammar has checked, and refuses one outside
+// MinSafeInt to MaxSafeInt. The text of a number is cut in the error, as a long name is.
 func parseInt(text string) (int64, error) {
-	n, err := strconv.ParseInt(text, 10, 64)
-	if err != nil {
-		return 0, errors.New("the integer does not fit 64 bits")
+	n, err := strconv.ParseInt(text, 10, 64) // an error here means more than 64 bits
+	if err != nil || n < MinSafeInt || n > MaxSafeInt {
+		shown := text
+		if len(shown) > 40 {
+			shown = shown[:40] + "..."
+		}
+		return 0, fmt.Errorf("the integer %s is outside the range %d to %d, which RFC 8785 can hold", shown, MinSafeInt, MaxSafeInt)
 	}
 	return n, nil
 }
@@ -474,7 +495,7 @@ func (p *parser) parseArray() (Value, error) {
 }
 
 // parseNumber reads a number. The grammar is JSON's; in strict mode a fraction or an exponent
-// is refused and the integer must fit int64.
+// is refused and the integer must be within MinSafeInt to MaxSafeInt.
 func (p *parser) parseNumber() (Value, error) {
 	start := p.pos
 	if p.data[p.pos] == '-' {
