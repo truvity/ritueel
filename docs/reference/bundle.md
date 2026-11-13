@@ -108,30 +108,35 @@ The trust sequence is one integer for the bundle. It grows by one whenever any t
 
 ## How a file is written
 
-[Record 0006](../decisions/0006-bundle-history-and-trust-files.md), rule 31, decides: a ceremony only adds files, each named by its identity (a digest or a time) and written whole or not at all. These are the steps: under a temporary name, then one rename. The commands write in this order, so a stop leaves a file whole or leaves it unwritten.
+[Record 0006](../decisions/0006-bundle-history-and-trust-files.md), rule 31, decides: a ceremony only adds files, each named by its identity (a digest or a time) and written whole or not at all. These are the steps: under a temporary name, then one rename. The commands write in this order, so a stop leaves a file whole or leaves it unwritten. The package `internal/fsx` does these steps; the commands that use it are not built yet.
 
 | # | Step | Source |
 |---|---|---|
-| 1 | Write the whole content under a new name in the same folder (a temporary name: at most 15 characters, a fixed prefix and a random part, not the final name). | [0006](../decisions/0006-bundle-history-and-trust-files.md) rules 31 and 32 |
+| 1 | Write the whole content under a new name in the same folder (a temporary name: at most 15 characters, a fixed prefix and a random part, never the final name). The name is `.rt-` and 11 random lower-case letters and digits. | [0006](../decisions/0006-bundle-history-and-trust-files.md) rules 31 and 32. The prefix `.rt-` is Proposed. |
 | 2 | Flush the file, so that the data reaches the disk. | Proposed |
-| 3 | Rename it to its final name. A name in `history/`, `trust/`, `sealed/` or `requests/` is never replaced, so the rename refuses to replace. Every name carries its identity, so two writers do not meet on one name. | 0006 rule 31 |
+| 3 | Rename it to its final name. A name in `history/`, `trust/`, `sealed/` or `requests/` is never replaced, so the rename refuses to replace. When the final name exists, the write fails and the file at that name is unchanged. Every name carries its identity, so two writers do not meet on one name. | 0006 rule 31 |
 | 4 | Flush the folder. | Proposed |
-| 5 | A set of files, such as a trust set, is built beside under one temporary name (step 1). Then the folder is renamed into place. Its final name carries its number and its identity. The flush of each file is Proposed. | 0006 rules 12, 31 and 32 |
+| 5 | A set of files, such as a trust set, is built in a folder beside its final name, under one temporary name (step 1). The files in it have their own names. Each file is flushed, then the folder is flushed, then the folder is renamed into place by a rename that refuses to replace, and its parent folder is flushed. Its final name carries its number and its identity. The flushes are Proposed. | 0006 rules 12, 31 and 32 |
 | 6 | The ceremony record is written last, after the transcript and the artifacts. It lists them by digest and ends the ceremony. A ceremony folder with no ceremony record has not ended. If it holds an attempt, `status` shows it as critical until a person closes it. | [0005](../decisions/0005-a-ceremony-and-where-it-runs.md) rules 10 and 12; 0006 rule 8 |
-| 7 | The attempt is written before the first key is born. Each key goes into the birth journal as soon as it exists, and each signature into the journal of signatures. The journals are files of the finished bundle. On the stick, while the ceremony runs, the attempt and the journals are trace records in the [trace area](/reference/trace-area/), and the files are made from it when the ceremony ends. | 0005 rules 10, 36 and 39 |
+| 7 | The attempt is written before the first key is born. Each key goes into the birth journal as soon as it exists, and each signature into the journal of signatures. A journal is the one kind of file that stands at its final name while it grows. The journals are files of the finished bundle. On the stick, while the ceremony runs, the attempt and the journals are trace records in the [trace area](/reference/trace-area/), and the files are made from it when the ceremony ends. | 0005 rules 10, 36 and 39 |
 | 8 | A file that a ceremony record lists and that fails its digest is an error for every reader. It is never "absent". | 0006 rule 31 |
 
 - When a write or a flush returns an error, ritueel stops at once with an error. It does not retry, and it does not print the line that says the write was flushed ([0006](../decisions/0006-bundle-history-and-trust-files.md) rule 33).
+- A name that ritueel refuses before it touches the file system ([Names](/reference/bundle/#names)) is not an error of the file system, and it does not stop the writer.
 
 :::note[Proposed]
 These parts of the steps are not decided and are fixed with the code ([issue #8](https://github.com/truvity/ritueel/issues/8)).
 
-- The data of a file and of its folder are flushed (steps 2, 4 and 5). The attempt is made by an exclusive create. A journal grows by one flushed line at a time. A half line does not parse and counts as not written. This holds for a bundle that is not on the stick; on the stick the journal is the trace area. A torn file that no ceremony record lists counts as not written, and is written again under the same name.
-- After a stop, ritueel does not delete a folder with a temporary name. `close` lists it with its digests. When the ceremony record is written and the rename has not happened, the next command finishes the rename first.
+- The data of a file and of its folder are flushed (steps 2, 4 and 5). A journal is made empty at its final name by an exclusive create, and it grows by one line at a time: ritueel writes the line and its newline in one write, then flushes. A line that holds a newline is refused. A half line does not parse and counts as not written, and the reader returns it apart. This holds for a bundle that is not on the stick; on the stick the journal is the trace area. A torn file that no ceremony record lists counts as not written, and is written again under the same name.
+- The attempt is written like every other file: the rename refuses to replace, so the attempt exists once, and a second write of it fails because the name exists.
+- The first error stops the writer for good. Every later write of the same writer, and of its journals, returns that error and does not reach the file system.
+- After a stop, ritueel does not delete a file or a folder with a temporary name. `close` lists it with its digests. When the ceremony record is written and the rename has not happened, the next command finishes the rename first.
 - After a write to the stick, ritueel prints "flushed; the join on the workstation checks every file", and not "safe to remove". A removable stick can report a flush it did not do.
 :::
 
-The rename that refuses to replace is a Linux call (`renameat2` with the no-replace flag). On a file system that cannot refuse a rename over an existing file, ritueel stops with an error: it never replaces a file and has no second way to write one. Its manual page lists ext4, btrfs, xfs and vfat and does not list exFAT (read 2026-11-12). In a trial on 2026-11-12 in a virtual machine, the rename worked on exFAT with the kernel of the offline system. It is not tested on a real stick. The file system of the stick is exFAT ([record 0005](../decisions/0005-a-ceremony-and-where-it-runs.md), rule 31).
+Not yet proven on a real stick: a cut during a write can break a bundle there. A folder's list of names was lost, and one sector kept the content of the write before it ([record 0005](../decisions/0005-a-ceremony-and-where-it-runs.md), [issue #181](https://github.com/truvity/ritueel/issues/181)). The order of the steps does not prevent that. A flush that returns without an error is only the report of the stick.
+
+The rename that refuses to replace is a call of the system: `renameat2` with the no-replace flag on Linux, and `renamex_np` with the exclusive flag on macOS. On a file system or a system that cannot refuse a rename over an existing file, ritueel stops with an error: it never replaces a file and has no second way to write one. Its manual page lists ext4, btrfs, xfs and vfat and does not list exFAT (read 2026-11-12). In a trial on 2026-11-12 in a virtual machine, the rename worked on exFAT with the kernel of the offline system. It is not tested on a real stick. The file system of the stick is exFAT ([record 0005](../decisions/0005-a-ceremony-and-where-it-runs.md), rule 31).
 
 ### How a name carries its identity
 
@@ -144,6 +149,29 @@ The rename that refuses to replace is a Linux call (`renameat2` with the no-repl
 | A sealed file | A digest. Which file is current is open ([issue #144](https://github.com/truvity/ritueel/issues/144)). | 0006 rule 31 |
 
 A name that does not carry its identity is a road not taken: two copies of a bundle could then hold two contents under one name, and a join could no longer only add files ([record 0006](../decisions/0006-bundle-history-and-trust-files.md), roads not taken).
+
+## Names
+
+ritueel refuses a name before it touches the file system, so a refused name leaves nothing behind. The writer checks every element of a path, and every name of a file in a set. The table lists what it refuses.
+
+| Rule | Example | Reason |
+|---|---|---|
+| The name is empty, or it is not one plain name: `.`, `..`, a doubled or a trailing separator. In a set, a separator in a name. | `..`, `a//b`, `dir/` | A workstation's file system gives these names another meaning. |
+| The bytes are not UTF-8. | A single byte `0xE9` | The stick's file system stores names as text (UTF-16), so bytes that are not UTF-8 have no name there. |
+| The name holds a control code (U+0000 to U+001F). | A tab inside a name | The stick's file system cannot hold it. |
+| The name holds one of the characters `"` `*` `/` `:` `<` `>` `?` `\` `\|`. | `plan:1`, `a\|b` | The stick's file system cannot hold them. A drive name such as `C:x` is refused by the colon. |
+| The name holds a character that is not printable: a no-break space, a zero-width space, a zero-width joiner or non-joiner, a byte order mark, U+007F, or a code point that is unassigned or for private use. | `a` U+00A0 `b`, `a` U+200B `b` | A person cannot tell such a name from another name that looks the same, and cannot type it. |
+| The name is longer than 255 bytes. | 128 times `é` (256 bytes) | A workstation's file system holds 255 bytes, and exFAT holds 255 UTF-16 code units. A name of at most 255 bytes is also at most 255 units. |
+| The name is a device name of Windows: `CON`, `PRN`, `AUX`, `NUL`, `COM1` to `COM9`, `LPT1` to `LPT9` (and the same with the digits `¹`, `²` and `³`), with or without an extension, in any case. | `aux`, `Nul.json`, `com1.txt` | A Windows system, a desktop system that must be able to open the bundle, cannot open a file with such a name. |
+| The name ends with a dot or a space. | `notes.` | Windows removes both, and the Linux driver of exFAT removes trailing dots by default, so the name on the stick is not the name asked for. |
+| The final name starts with the prefix of a temporary name (`.rt-`), in any case. | `.RT-abc` | exFAT compares names without case, so the name could meet a temporary name that is in use. |
+| Two names of one set differ only by case. | `Plan.json` and `plan.JSON` | exFAT holds them as one name, and a person cannot tell them apart. |
+
+The writer does not check two spellings of one accented letter (a letter written whole, or as a letter and a combining mark): a file system of macOS holds them as one name, and the writer sees two. It also does not check the length of a whole path: the operating system refuses a path that is too long, and the writer stops with that error. It cannot see the names that exist already, so a second name that differs only by case from an existing one is refused by the file system of the stick, not by the writer.
+
+A name that the holder chooses, a label, can be refused by these rules. The label must be checked when the holder types it, and the refusal must say why. It must not be left to the write.
+
+The list of printable characters follows the Unicode tables of the Go version that builds the program, so a character that a later version of Unicode assigns can be refused by an earlier build. A zero-width joiner and a zero-width non-joiner are refused. This excludes some spellings in Persian, Urdu and the Indic scripts, and every emoji that is joined from other emoji.
 
 ## What join does
 
@@ -477,7 +505,7 @@ A software root key ([the `software` store](../decisions/0002-where-a-key-lives.
 ## Follow-ups
 
 - The code that writes the wanted files, the card maps, the sealed files, the `attestation/` files and the `aws_kms` block ([issue #8](https://github.com/truvity/ritueel/issues/8), [issue #11](https://github.com/truvity/ritueel/issues/11), [issue #12](https://github.com/truvity/ritueel/issues/12)); their formats are on [the cards page](/reference/cards/) and [the cloud root page](/reference/kms-root/).
-- The steps of a write and the ceremony folder ([issue #9](https://github.com/truvity/ritueel/issues/9)).
+- The ceremony folder, and the commands that use the steps of a write ([issue #9](https://github.com/truvity/ritueel/issues/9)).
 - The CRLs, the SSH CA key list and the keyring files in a trust set come with their builders ([issue #30](https://github.com/truvity/ritueel/issues/30), [issue #55](https://github.com/truvity/ritueel/issues/55), [issue #15](https://github.com/truvity/ritueel/issues/15)), in M4 (the CRLs and the SSH CA key list) and M5 (the keyring).
 
 ## Later
