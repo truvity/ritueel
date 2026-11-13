@@ -12,7 +12,7 @@ sidebar:
 | Lost | What it means | The answer | Needs |
 |---|---|---|---|
 | **One of two root cards** | The key on it can no longer sign. If the card was stolen with its PIN, it can sign for someone else. A pair shared by two bundles is lost for both: each bundle needs its own transition. | [Revoke](/learn/revoke/) it, publish trust files without it, add a replacement key, re-sign what chained only to it. | The other card; the stored revocation signature. |
-| **A card whose PIN is forgotten** | After three wrong tries it blocks; the PUK, which ritueel made and sealed in the bundle, unblocks it, and a full reset destroys the keys. | Treat it as a lost card. | The same. |
+| **A card whose PIN is forgotten** | After three wrong tries it blocks; ritueel unblocks it with the PUK that it made and sealed in the bundle ([record 0003](../decisions/0003-root-cards.md), rule 21), and a full reset destroys the keys. | Treat it as a lost card. | The same. |
 | **Both root cards** | No key can sign. | Start again with a new root, and persuade every client to trust it. A disaster you prepared for by keeping the cards in two places. | The backup of the bundle; a plan for the clients. |
 | **The bundle** | The card files, attestations and the OpenPGP creation times, and the sealed secrets of the cards. | Restore it from its backup. | The [backup](/learn/the-history/). Without one, rebuild what the published certificates carry and accept the rest as lost. |
 | **A revocation signature** | The way to revoke a primary key for gpg and Sequoia users when its card is gone. For apt users the new keyring package is the revocation. | Make a new one now, while the card is still there. | The card and its PIN. |
