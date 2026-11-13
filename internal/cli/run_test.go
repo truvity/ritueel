@@ -349,22 +349,16 @@ func TestUsageListsOnlyTheCommands(t *testing.T) {
 	if r.code != ExitOK {
 		t.Fatalf("exit code = %d, want 0", int(r.code))
 	}
-	inCommands := false
-	var commands []string
-	for line := range strings.SplitSeq(r.stdout, "\n") {
-		trimmed := strings.TrimSpace(line)
-		switch {
-		case strings.HasSuffix(trimmed, ":") && strings.ToUpper(trimmed) == trimmed:
-			inCommands = trimmed == "COMMANDS:"
-		case trimmed == "":
-			// A blank line does not end the section: the library puts one under the title.
-		case inCommands:
-			word, _, _ := strings.Cut(trimmed, " ")
-			commands = append(commands, strings.TrimSuffix(word, ","))
-		}
+	commands := usageCommands(t, r.stdout)
+	var want []string
+	for _, s := range specs {
+		want = append(want, s.name)
 	}
-	if !slices.Equal(commands, []string{"version"}) {
-		t.Errorf("commands in the usage = %v, want [version]\n%s", commands, r.stdout)
+	if len(want) == 0 {
+		t.Fatal("the command table is empty: nothing to compare the usage with")
+	}
+	if !slices.Equal(commands, want) {
+		t.Errorf("commands in the usage = %v, want the names in the command table, %v\n%s", commands, want, r.stdout)
 	}
 	if strings.Contains(r.stdout, "Shows a list of commands") {
 		t.Errorf("the usage lists a help command:\n%s", r.stdout)
