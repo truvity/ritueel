@@ -5,21 +5,12 @@ package fsx_test
 // the cut test: the oracle must fail for every one of them.
 
 import (
-	"io"
 	"io/fs"
-	"math/rand/v2"
 	"path"
-	"path/filepath"
+	"strings"
 
 	"ritueel.id/ritueel/internal/fsx"
 )
-
-// newDetRand is a random source that repeats from run to run.
-func newDetRand(seed byte) io.Reader {
-	var k [32]byte
-	k[0] = seed
-	return rand.NewChaCha8(k)
-}
 
 type wrongMode int
 
@@ -43,53 +34,79 @@ const (
 )
 
 type wrongWriter struct {
-	fsys fsx.FS
-	good *fsx.Writer
+	root fsx.FS      // its own root handle: the wrong steps are done through folder handles
+	good *fsx.Writer // the real writer, over another root handle of the same file system
 	mode wrongMode
 }
 
 func newWrongMaker(mode wrongMode) func(*memFS) bundleWriter {
 	return func(f *memFS) bundleWriter {
-		return &wrongWriter{fsys: f, good: &fsx.Writer{FS: f, Rand: newDetRand(2)}, mode: mode}
+		return &wrongWriter{root: f.Root(), good: &fsx.Writer{FS: f.Root(), Rand: newDetRand(2)}, mode: mode}
 	}
+}
+
+// in walks to the folder dir of the root, one element at a time, and leaves the handles open
+// (a wrong writer is allowed to).
+func (w *wrongWriter) in(dir string) fsx.FS {
+	d := w.root
+	if dir == "." || dir == "" {
+		return d
+	}
+	for _, e := range strings.Split(dir, "/") {
+		n, err := d.OpenDir(e)
+		if err != nil {
+			panic(err)
+		}
+		d = n
+	}
+	return d
+}
+
+func splitPath(p string) (dir, base string) {
+	dir, base = path.Split(p)
+	dir = strings.TrimSuffix(dir, "/")
+	if dir == "" {
+		dir = "."
+	}
+	return dir, base
 }
 
 func (w *wrongWriter) Mkdir(p string, perm fs.FileMode) error { return w.good.Mkdir(p, perm) }
 
 func (w *wrongWriter) WriteFile(p string, data []byte, perm fs.FileMode) error {
-	dir := filepath.Dir(p)
+	dir, base := splitPath(p)
+	d := w.in(dir)
 	temp := func() string {
 		n, err := w.good.TempName()
 		if err != nil {
 			panic(err)
 		}
-		return path.Join(dir, n)
+		return n
 	}
 	switch w.mode {
 	case wrongRenameBeforeFileSync:
-		return w.exec(temp(), p, data, perm, "write", "rename", "sync", "close", "syncdir")
+		return w.exec(d, temp(), base, data, perm, "write", "rename", "sync", "close", "syncdir")
 	case wrongFolderFlushBeforeFileFlush:
-		return w.exec(temp(), p, data, perm, "write", "rename", "syncdir", "sync", "close")
+		return w.exec(d, temp(), base, data, perm, "write", "rename", "syncdir", "sync", "close")
 	case wrongNoFolderFlush:
-		return w.exec(temp(), p, data, perm, "write", "sync", "close", "rename")
+		return w.exec(d, temp(), base, data, perm, "write", "sync", "close", "rename")
 	case wrongDirectFinal:
-		return w.exec(p, p, data, perm, "write", "sync", "close", "syncdir")
+		return w.exec(d, base, base, data, perm, "write", "sync", "close", "syncdir")
 	case wrongDirectAttempt:
-		if path.Base(p) == "attempt.json" {
-			return w.exec(p, p, data, perm, "write", "sync", "close", "syncdir")
+		if base == "attempt.json" {
+			return w.exec(d, base, base, data, perm, "write", "sync", "close", "syncdir")
 		}
 		return w.good.WriteFile(p, data, perm)
 	case wrongTempIsFinalPlusSuffix:
-		suffix := temp()
-		suffix = "." + path.Base(suffix)[len(fsx.TempPrefix):] // eleven characters
-		return w.exec(p+suffix, p, data, perm, "write", "sync", "close", "rename", "syncdir")
+		suffix := "." + temp()[len(fsx.TempPrefix):] // eleven characters
+		return w.exec(d, base+suffix, base, data, perm, "write", "sync", "close", "rename", "syncdir")
 	}
 	return w.good.WriteFile(p, data, perm)
 }
 
 // exec creates first, then does the listed steps in that order. A rename moves first to final.
-func (w *wrongWriter) exec(first, final string, data []byte, perm fs.FileMode, steps ...string) error {
-	f, err := w.fsys.CreateExcl(first, perm)
+func (w *wrongWriter) exec(d fsx.FS, first, final string, data []byte, perm fs.FileMode, steps ...string) error {
+	f, err := d.CreateExcl(first, perm)
 	if err != nil {
 		return err
 	}
@@ -102,9 +119,9 @@ func (w *wrongWriter) exec(first, final string, data []byte, perm fs.FileMode, s
 		case "close":
 			err = f.Close()
 		case "rename":
-			err = w.fsys.RenameNoReplace(first, final)
+			err = d.RenameNoReplace(first, final)
 		case "syncdir":
-			err = w.fsys.SyncDir(filepath.Dir(final))
+			err = d.Sync()
 		}
 		if err != nil {
 			return err
@@ -130,16 +147,22 @@ func (w *wrongWriter) WriteSet(finalDir string, files []fsx.NewFile) error {
 
 func (w *wrongWriter) CreateJournal(p string) (journal, error) {
 	if w.mode != wrongJournalNoFlush {
-		return realWriter{w.good}.CreateJournal(p)
+		j, err := w.good.CreateJournal(p)
+		if err != nil {
+			return nil, err
+		}
+		return j, nil
 	}
-	f, err := w.fsys.CreateExcl(p, 0o600)
+	dir, base := splitPath(p)
+	d := w.in(dir)
+	f, err := d.CreateExcl(base, 0o600)
 	if err != nil {
 		return nil, err
 	}
 	if err := f.Sync(); err != nil {
 		return nil, err
 	}
-	if err := w.fsys.SyncDir(filepath.Dir(p)); err != nil {
+	if err := d.Sync(); err != nil {
 		return nil, err
 	}
 	return &unflushedJournal{f: f}, nil
