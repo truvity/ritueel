@@ -89,20 +89,50 @@ export default defineConfig({
           label: 'Learn',
           items: [
             { slug: 'learn', label: 'Overview' },
-            { slug: 'learn/what-is-a-root', label: '1. What is a root?' },
-            { slug: 'learn/where-a-root-is-used', label: '2. Where a root is used' },
-            { slug: 'learn/how-a-yubikey-holds-keys', label: '3. How a YubiKey holds keys' },
-            { slug: 'learn/how-passkeys-work', label: '4. How passkeys work' },
-            { slug: 'learn/how-a-kms-key-works', label: '5. How a KMS key works' },
-            { slug: 'learn/choosing-where-a-root-lives', label: '6. Choosing where a root lives' },
+            // Four groups, in the order of a reader: the basics, down one chain, where a key lives,
+            // side by side. Only the basics start from zero; every other page says in its first
+            // lines what it assumes. The goals are a table on the overview, not pages.
             {
-              label: 'Going further',
+              label: 'Basics',
+              collapsed: false,
+              items: [{ slug: 'learn/what-is-a-root', label: 'What is a root?' }],
+            },
+            {
+              label: 'Down the chain',
               collapsed: false,
               items: [
-                { slug: 'learn/life-of-a-root' },
-                { slug: 'learn/revoke' },
-                { slug: 'learn/custody-chain' },
-                { slug: 'learn/chain-openpgp', label: 'OpenPGP: one identity, many keys' },
+                { slug: 'learn/custody-chain', label: 'The custody chain' },
+                { slug: 'learn/chain-private-pki', label: 'Private PKI' },
+                { slug: 'learn/chain-openpgp', label: 'OpenPGP' },
+                { slug: 'learn/chain-ssh', label: 'SSH' },
+              ],
+            },
+            {
+              label: 'Where a key lives',
+              collapsed: false,
+              items: [
+                // The passkey page belongs to the YubiKey page: a Starlight group is not a link, so
+                // the pair is a group of its own.
+                {
+                  label: 'A key on a YubiKey',
+                  collapsed: false,
+                  items: [
+                    { slug: 'learn/how-a-yubikey-holds-keys', label: 'How a YubiKey holds keys' },
+                    { slug: 'learn/how-passkeys-work', label: 'How passkeys work' },
+                  ],
+                },
+                { slug: 'learn/how-a-kms-key-works', label: 'How a KMS key works' },
+                { slug: 'learn/a-key-in-a-file', label: 'A key in a file' },
+                { slug: 'learn/choosing-where-a-root-lives', label: 'Choosing where a root lives' },
+              ],
+            },
+            {
+              label: 'Side by side',
+              collapsed: false,
+              items: [
+                { slug: 'learn/two-roots', label: 'Several keys, one root' },
+                { slug: 'learn/life-of-a-root', label: 'The life of a root' },
+                { slug: 'learn/revoke', label: 'Revoke' },
               ],
             },
           ],
