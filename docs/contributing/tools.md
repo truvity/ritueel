@@ -64,7 +64,7 @@ Read the recipe, and the workflow in `.github/workflows/` that calls it, to know
 
 ## The Go code
 
-The Go code is the program `ritueel`. [The first version's commands](/reference/cli/#the-first-versions-commands) say what it must do. Run the recipes of the table above inside the devbox environment. Start with `just go-check`.
+The Go code is the program `ritueel`. Only `ritueel version` is built. [The first version's commands](/reference/cli/#the-first-versions-commands) say what it must do. Run the recipes of the table above inside the devbox environment. Start with `just go-check`.
 
 ### Pins and the module
 
@@ -140,10 +140,10 @@ The site is built from `docs/` and `site/` with Astro Starlight, and every page 
 
 The first consumer is the test harness of a system that holds intermediates, such as [sluis](https://sluis.id), which runs ritueel's software-root mode in its CI ([principle 8](/principles/#the-principles)). It needs a build it can pin. Not built yet: the release workflow ([issue #10](https://github.com/truvity/ritueel/issues/10)).
 
-- **What a release is.** A tag `vX.Y.Z` on `main`. GoReleaser (version 2) builds the binary for Linux and macOS, on amd64 and arm64, into one `.tar.gz` for each platform, and writes `SHA256SUMS` with the digest of each. The files go on the repository's GitHub Releases page.
+- **What a release is.** A tag `vX.Y.Z` on `main`. GoReleaser (version 2) builds the binary for Linux, on amd64 and arm64, into one `.tar.gz` for each platform, and writes `SHA256SUMS` with the digest of each. The files go on the repository's GitHub Releases page.
 - **Checksums only, before the gate.** No release is signed until the project's root is adopted and drilled ([record 0009](../decisions/0009-release-keys-and-the-keyring.md)). Until the first signed release (M5) a consumer's trust in a build is the digest it pinned, not a signature. From M5 the proof is `SHA256SUMS` signed by a release subkey that the project's root binds, with a keyless signature beside it ([record 0009](../decisions/0009-release-keys-and-the-keyring.md)).
 - **How a consumer pins it.** It records the version and the SHA-256 of the archive for each platform it runs on in its own repository, downloads the archive from the release, compares the digest before it unpacks, and refuses a mismatch. A new version is a reviewed change of both. `ritueel version` prints the version and the commit, so a log shows which build ran.
-- **No container image and no packages yet.** A `.deb` or `.rpm` of ritueel waits for a user beyond the test harness, and will be signed once the gate is passed.
+- **No container image and no packages.** ritueel is one statically linked executable for Linux that you copy and run, with no installer ([record 0010](../decisions/0010-the-engine-the-process-and-the-page.md), rule 23).
 
 ## Commands from an agent shell
 

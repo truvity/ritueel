@@ -2,7 +2,7 @@
 
 One record per decision that shapes ritueel from the outside: what a user must do, what a key store must provide, what the hand-off with another system carries.
 A record says why the thing is shaped the way it is, what else was weighed, and what follows.
-Explanation pages describe the target state and carry a status badge. When a page and a record disagree, the record is the reasoning and the page is fixed.
+Explanation pages describe the target state and say what is built. When a page and a record disagree, the record is the reasoning and the page is fixed.
 
 How a decision is made is in [GOVERNANCE.md](../../GOVERNANCE.md).
 
