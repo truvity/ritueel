@@ -3,7 +3,7 @@
 // THE RULE OF THIS WHOLE PACKAGE: no call takes or returns a secret, and no
 // call writes. There is no field for a PIN, a passphrase, a recovery key, a
 // private key, a key file, a management key or a revocation signature, and
-// none will be added. Every call is a read (record 0010, rules 7 and 10; the
+// none will be added. Every call is a read (record 0010, rules 7 and 11; the
 // first build of the page has no write). The page is a view. It never
 // confirms a ceremony; confirmation, PINs, passphrases and touches happen in
 // the terminal, in the offline system or on the workstation. What the page
@@ -18,7 +18,7 @@
 // The words are the glossary's: root, delegated key, delegation, holder,
 // requester, store, ceremony, bundle, history, record, renew, replace, trust
 // files, wanted, not applied yet, apply. One item of "not applied yet" is a
-// change (record 0005, rule 29), never a row. A row is one row of four slots
+// change (record 0005, rule 4), never a row. A row is one row of four slots
 // on a card (record 0003, rule 3).
 //
 // Each enum value and each word below ends in a tag. [decided: X] means a
@@ -38,7 +38,7 @@ enum Severity {
   // The old level "info" is gone: cli.md has three levels only.
   reserved 1;
   reserved "SEVERITY_INFO";
-  // [decided: cli.md exit code 10; record 0007, rule 16]
+  // [decided: cli.md exit code 10; record 0007, rule 18]
   SEVERITY_NOTICE = 2;
   // [decided: cli.md exit code 11]
   SEVERITY_ALERT = 3;
@@ -56,7 +56,7 @@ enum Store {
   STORE_OPENPGP_CARD = 2;
   // A cloud KMS key with a replica. [decided: bundle.md, `aws-kms`; record 0004]
   STORE_AWS_KMS = 3;
-  // A key file outside the bundle. [decided: bundle.md, `software`; record 0002, rule 6]
+  // A key file outside the bundle. [decided: bundle.md, `software`; record 0002, rules 7 and 8]
   STORE_SOFTWARE = 4;
 }
 
@@ -71,8 +71,8 @@ enum CloudProvider {
   CLOUD_PROVIDER_AWS = 1;
 }
 
-// Where a ceremony runs, or ran (record 0005, rules 17 to 21). Every ceremony
-// record says where its ceremony ran (record 0005, rule 2).
+// Where a ceremony runs, or ran (record 0005, rules 22 to 25, 29 and 30). Every ceremony
+// record says where its ceremony ran (record 0005, rule 3).
 // [decided: the two places, record 0005; the spelling `ran_on`, `workstation`
 // and `offline-system` is proposed in ceremony-record.md]
 enum RunPlace {
@@ -82,7 +82,7 @@ enum RunPlace {
   // be copied, such as a key file.
   RUN_PLACE_OFFLINE_SYSTEM = 1;
   // The holder's own computer. Allowed for a key that cannot be copied (a root
-  // on cards, a cloud root). A cloud key has no touch (record 0005, rule 18).
+  // on cards, a cloud root). A cloud key has no touch (record 0005, rules 23 and 24).
   RUN_PLACE_WORKSTATION = 2;
 }
 
@@ -99,13 +99,13 @@ enum ObjectKind {
   OBJECT_KIND_ROOT = 3;
   // A root key or a delegated key. [decided: glossary]
   OBJECT_KIND_KEY = 4;
-  // [decided: record 0008, rule 17; record 0009, rule 4]
+  // [decided: record 0008, rule 16; record 0009, rule 4]
   OBJECT_KIND_USER_ID = 5;
   // [decided: glossary]
   OBJECT_KIND_DELEGATION = 6;
   // [decided: glossary, under "renew"]
   OBJECT_KIND_CERTIFICATION = 7;
-  // [decided: record 0006, rule 10]
+  // [decided: record 0006, rule 6]
   OBJECT_KIND_REQUEST = 8;
   // [decided: glossary]
   OBJECT_KIND_CEREMONY = 9;
@@ -133,9 +133,9 @@ message ObjectRef {
 // (issue 141), so it has no value here.
 enum CeremonyCommand {
   CEREMONY_COMMAND_UNSPECIFIED = 0;
-  // [decided: record 0005, rule 10; cli.md]
+  // [decided: record 0005, rule 13; cli.md]
   CEREMONY_COMMAND_APPLY = 1;
-  // [decided: record 0005, rule 7; cli.md]
+  // [decided: record 0005, rule 10; cli.md]
   CEREMONY_COMMAND_CLOSE = 2;
 }
 
@@ -149,7 +149,7 @@ message CeremonyRef {
 
 // Whether the hash chain of the history checks out. [proposed: no record and
 // no reference page names these states. Nearest decided text:
-// record 0006, rule 6 (each ceremony record names the one before it)
+// record 0006, rule 8 (each ceremony record names the one before it)
 // and cli.md (`check history` walks the chain)]
 enum ChainState {
   CHAIN_STATE_UNSPECIFIED = 0;
@@ -164,17 +164,17 @@ enum ChainState {
 // The state of the history: the write-once folder history/ of the bundle.
 // [proposed as a whole: wizard.md lists neither the chain state nor the time
 // of the check for the summary. Decided: `record_count` and
-// `end_record_sha256` (record 0006, rule 9 prints them) and `ends`
-// (record 0006, rule 30)]
+// `end_record_sha256` (record 0006, rule 11 prints them) and `ends`
+// (record 0006, rule 35)]
 message HistoryStatus {
   // The count of ceremony records, the closing records included. [decided:
-  // record 0006, rule 9 prints it]
+  // record 0006, rule 11 prints it]
   int32 record_count = 1;
   // [proposed: see ChainState]
   ChainState chain_state = 2;
   // The digest of the end of the history: the ceremony record that no other
   // record names, in hexadecimal. The page shows its first eight characters.
-  // [decided: record 0006, rules 6 and 9]
+  // [decided: record 0006, rules 8 and 11]
   string end_record_sha256 = 3;
   // The name and the title of the newest record. [proposed]
   string last_record_id = 4;
@@ -185,6 +185,6 @@ message HistoryStatus {
   // A sentence for people, for example "All 14 records check out." [proposed]
   string message = 8;
   // The number of ends of the history. More than one is a fork, a critical
-  // finding. [decided: record 0006, rule 30]
+  // finding. [decided: record 0006, rule 35]
   int32 ends = 9;
 }

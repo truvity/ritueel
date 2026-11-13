@@ -55,7 +55,7 @@ The guide teaches these; each is checked against the matrix before it goes in.
 ## Roads not taken
 
 - **Running each service to measure it.** Would turn documentation claims into measurements, but ritueel has no key to publish and no consumer asking, so the measurement would be of nothing it ships.
-- **Recommending a provenance tool.** The names are known, but none was read or run here, and provenance is a complement ([ADR 0006](https://github.com/truvity/ritueel/blob/d0ae12da2432d5ae95cf95d68fb85ba3dda6cfee/docs/decisions/0006-release-keys-and-the-keyring-package.md#sigstore-and-old-releases), now rule 26 of [record 0009](../decisions/0009-release-keys-and-the-keyring.md)).
+- **Recommending a provenance tool.** The names are known, but none was read or run here, and provenance is a complement ([ADR 0006](https://github.com/truvity/ritueel/blob/d0ae12da2432d5ae95cf95d68fb85ba3dda6cfee/docs/decisions/0006-release-keys-and-the-keyring-package.md#sigstore-and-old-releases), now rule 27 of [record 0009](../decisions/0009-release-keys-and-the-keyring.md)).
 
 ## Open questions
 

@@ -1,8 +1,8 @@
-// The reads of the local page (record 0010, rules 6, 7 and 10).
+// The reads of the local page (record 0010, rules 6, 7 and 11).
 //
 // Five calls, all reads, all marked NO_SIDE_EFFECTS so that each may be a GET.
 // The names and the shapes of the five calls are proposed (wizard.md, One API,
-// issue 17); that they are reads is decided (record 0010, rules 7 and 10).
+// issue 17); that they are reads is decided (record 0010, rules 7 and 11).
 // There is no call that confirms, signs, creates a key, runs a ceremony or
 // writes, and no field that carries text typed in the page. The only request
 // field is a level to filter by, a choice from a fixed list.
@@ -73,7 +73,7 @@ message GetSummaryResponse {
   int32 trust_sequence = 9;
   // The command that applies the changes that are ready, as text: for example
   // `ritueel apply`. Empty when no change is ready. It never holds a digest
-  // (record 0010, rule 10). [decided: cli.md, `apply`, `--allow-missing`,
+  // (record 0010, rule 11). [decided: cli.md, `apply`, `--allow-missing`,
   // `--plan-only`; the field is proposed]
   string apply_command = 10;
   // Set when no change waits or is ready: the nearest end date. wizard.md:
@@ -116,7 +116,7 @@ message NextDate {
   ObjectRef object = 1;
   google.protobuf.Timestamp ends_at = 2;
   // The day from which `apply` renews it: 60 days before the end
-  // (record 0005, rule 11).
+  // (record 0005, rule 16).
   google.protobuf.Timestamp due_from = 3;
 }
 
@@ -174,7 +174,7 @@ message GetInventoryResponse {
   repeated Certification certifications = 7;
   repeated Request requests = 8;
   // What is not applied yet, found from the wanted files, the history, the
-  // date and the requests; never stored. [decided: record 0005, rule 29]
+  // date and the requests; never stored. [decided: record 0005, rule 4]
   repeated Change changes = 9;
 }
 
@@ -200,7 +200,7 @@ enum KeyRole {
 // (record 0007, rule 3). An overlap is a period, not a state; an end date is a
 // finding, not a state. For a delegated key the same three words are used.
 // [decided for a root key: record 0007, rule 3; for a delegated key: proposed,
-// nearest text 0007 rule 3 and 0008 rule 13]
+// nearest text 0007 rule 3 and 0008 rule 15]
 enum KeyState {
   KEY_STATE_UNSPECIFIED = 0;
   KEY_STATE_ACTIVE = 1;
@@ -274,7 +274,7 @@ message Key {
   // certificate (X.509 root key), the end of the intermediate certificate
   // (X.509 delegated key) or the key's expiry (OpenPGP key). Unset for an SSH
   // CA key, which has no certificate: it ends when the next list leaves it
-  // out (record 0006, rule 25). Unset never means "no expiry".
+  // out (record 0006, rule 29). Unset never means "no expiry".
   google.protobuf.Timestamp expires_at = 11;
   // The wanted retire date, if the wanted file has one. [decided: bundle.md,
   // want/roots/NAME.yaml]
@@ -288,14 +288,14 @@ message Key {
 }
 
 // One root of one kind, built from keys in any place. [decided:
-// record 0001, rule 28; record 0006, rule 2]
+// record 0001, rules 28 to 31; record 0006, rule 2]
 message Root {
   // The name of the wanted file without .yaml, for example acme-tls.
   string name = 1;
   KeyKind kind = 2;
   // The fingerprints of its keys, in label order.
   repeated string key_ids = 3;
-  // True for a test root. [decided: record 0005, rule 28]
+  // True for a test root. [decided: record 0005, rule 26]
   bool test = 4;
   // True when ritueel adopted an existing key. [decided: bundle.md, root.json]
   bool adopted = 5;
@@ -317,9 +317,9 @@ message UserId {
   // Unset until the user ID is certified.
   google.protobuf.Timestamp created_at = 5;
   // True once a self-certification exists. False for a wanted user ID that is
-  // not applied yet. [decided: record 0008, rule 17; record 0009, rule 28]
+  // not applied yet. [decided: record 0008, rule 16; record 0009, rule 5]
   bool certified = 6;
-  // True once the user ID has a revocation. [decided: record 0008, rule 17]
+  // True once the user ID has a revocation. [decided: record 0008, rule 16]
   bool revoked = 7;
   repeated CeremonyRef touched_by = 8;
 }
@@ -333,7 +333,7 @@ enum DelegationType {
 }
 
 // A declared name under a root for a key that does daily work. [decided:
-// glossary; record 0006, rule 23]
+// glossary; record 0006, rule 27]
 message Delegation {
   // The name of the wanted file without .yaml, for example acme-ca.
   string name = 1;
@@ -394,7 +394,7 @@ enum RequestOutcome {
   REQUEST_OUTCOME_REFUSED = 2;
 }
 
-// A request in requests/<stem>/. [decided: record 0006, rule 10]
+// A request in requests/<stem>/. [decided: record 0006, rule 6]
 message Request {
   string stem = 1;
   // The name of the delegation it is for.
@@ -420,9 +420,9 @@ message Request {
 // ---- changes ---------------------------------------------------------------
 
 // What a change does. [proposed: the kinds are in no record and no reference
-// page. Nearest decided text: 0003 rule 10 and 0004 rule 4 (adopt),
-// 0005 rule 15 (the first apply makes the keys), 0008 rule 17 and 0009 rule 4
-// (certify a user ID), 0007 rules 3 and 4 (retire), 0005 rule 11 (renew), the
+// page. Nearest decided text: 0003 rule 15 and 0004 rule 3 (adopt),
+// 0005 rule 20 (the first apply makes the keys), 0008 rule 16 and 0009 rule 4
+// (certify a user ID), 0007 rules 3 and 5 (retire), 0005 rule 16 (renew), the
 // request answer `issued` (issue)]
 enum ChangeKind {
   CHANGE_KIND_UNSPECIFIED = 0;
@@ -435,7 +435,7 @@ enum ChangeKind {
 }
 
 // Whether `apply` can do a change now. [proposed: wizard.md says "whether it is
-// ready or waits" under a Proposed note. Nearest decided text: 0007 rule 17, a
+// ready or waits" under a Proposed note. Nearest decided text: 0007 rule 19, a
 // renewal plan stops when a request is missing]
 enum ChangeState {
   CHANGE_STATE_UNSPECIFIED = 0;
@@ -443,7 +443,7 @@ enum ChangeState {
   CHANGE_STATE_WAITS = 2;
 }
 
-// Where a change comes from. [decided: record 0005, rule 29: "from the wanted
+// Where a change comes from. [decided: record 0005, rule 4: "from the wanted
 // files, the history, the date and the requests"]
 enum ChangeSource {
   CHANGE_SOURCE_UNSPECIFIED = 0;
@@ -454,8 +454,8 @@ enum ChangeSource {
 }
 
 // What a change needs. [proposed: cli.md says "what it needs" without a list.
-// Nearest decided text: 0007 rules 12 and 14 (a card), 0007 rule 17
-// (a request), 0005 rule 17 (a key file in the offline system)]
+// Nearest decided text: 0007 rules 9 and 16 (a card), 0007 rule 19
+// (a request), 0005 rule 22 (a key file in the offline system)]
 enum NeedKind {
   NEED_KIND_UNSPECIFIED = 0;
   NEED_KIND_CARD = 1;
@@ -472,7 +472,7 @@ message Need {
   bool met = 3;
 }
 
-// One item of "not applied yet". [decided: record 0005, rule 29; glossary]
+// One item of "not applied yet". [decided: record 0005, rule 4; glossary]
 message Change {
   string id = 1;
   // The object it is on: the thing the person reads in the list.
@@ -500,7 +500,7 @@ message Change {
 
 // ---- cards -----------------------------------------------------------------
 
-// The four kinds of card. [decided: record 0003, rule 14]
+// The four kinds of card. [decided: record 0003, rule 11]
 enum CardKind {
   CARD_KIND_UNSPECIFIED = 0;
   CARD_KIND_ROOT = 1;
@@ -542,7 +542,7 @@ message Card {
 
 // Whether an application of a card holds anything of the bundle. [proposed:
 // no record names an application as in use. Nearest decided text: record
-// 0003, rule 16 and rule 14 (what a card of each kind holds)]
+// 0003, rule 16 and rule 11 (what a card of each kind holds)]
 enum ApplicationUse {
   APPLICATION_USE_UNSPECIFIED = 0;
   APPLICATION_USE_IN_USE = 1;
@@ -590,9 +590,9 @@ enum SlotState {
 
 // What a slot is for. [decided: X509_ROOT, OPENPGP_PRIMARY, SSH_CA and
 // UNLOCK_KEY (record 0003, rule 3); OPENPGP_SIGN, OPENPGP_DECRYPT and
-// OPENPGP_AUTHENTICATE (record 0008, rules 7 and 8). Proposed: PASSKEY_SIGN_IN,
-// PASSKEY_SSH, PASSKEY_UNLOCK and REHEARSAL (record 0003, rule 14, and
-// record 0008, rule 15, name passkeys and the rehearsal card, not these uses)
+// OPENPGP_AUTHENTICATE (record 0008, rules 9 and 10). Proposed: PASSKEY_SIGN_IN,
+// PASSKEY_SSH, PASSKEY_UNLOCK and REHEARSAL (record 0003, rule 11, and
+// record 0008, rule 12, name passkeys and the rehearsal card, not these uses)
 // and OTHER_BUNDLE (record 0003, issue 11)]
 enum SlotUse {
   SLOT_USE_UNSPECIFIED = 0;
@@ -653,7 +653,7 @@ message ListCeremoniesResponse {
 }
 
 // The four states of a ceremony folder. [decided as facts: ceremony-record.md
-// and record 0005, rules 7 and 9. The four NAMES are proposed there, issue 17]
+// and record 0005, rules 10 and 12. The four NAMES are proposed there, issue 17]
 enum CeremonyState {
   CEREMONY_STATE_UNSPECIFIED = 0;
   // A plan and no attempt. Nothing was signed.
@@ -678,7 +678,7 @@ enum CeremonyOutcome {
   CEREMONY_OUTCOME_CLOSED = 3;
 }
 
-// One change in a plan or a record. [decided: record 0005, rule 4: the plan
+// One change in a plan or a record. [decided: record 0005, rule 7: the plan
 // lists what it applies and what it leaves out with the reason; the members are
 // proposed, ceremony-record.md, issue 8]
 message CeremonyChange {
@@ -695,7 +695,7 @@ message CeremonyChange {
 message Ceremony {
   // The name of the folder: the time in UTC, the command and the first eight
   // characters of the plan's digest, for example
-  // 20261120T100000Z-apply-3fa9c1d2. [decided: record 0006, rule 29; the
+  // 20261120T100000Z-apply-3fa9c1d2. [decided: record 0006, rule 31; the
   // spelling is proposed in bundle.md]
   string id = 1;
   CeremonyCommand command = 2;

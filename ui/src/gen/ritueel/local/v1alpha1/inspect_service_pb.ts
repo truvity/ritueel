@@ -1,8 +1,8 @@
-// The reads of the local page (record 0010, rules 6, 7 and 10).
+// The reads of the local page (record 0010, rules 6, 7 and 11).
 //
 // Five calls, all reads, all marked NO_SIDE_EFFECTS so that each may be a GET.
 // The names and the shapes of the five calls are proposed (wizard.md, One API,
-// issue 17); that they are reads is decided (record 0010, rules 7 and 10).
+// issue 17); that they are reads is decided (record 0010, rules 7 and 11).
 // There is no call that confirms, signs, creates a key, runs a ceremony or
 // writes, and no field that carries text typed in the page. The only request
 // field is a level to filter by, a choice from a fixed list.
@@ -116,7 +116,7 @@ export type GetSummaryResponse = Message<"ritueel.local.v1alpha1.GetSummaryRespo
   /**
    * The command that applies the changes that are ready, as text: for example
    * `ritueel apply`. Empty when no change is ready. It never holds a digest
-   * (record 0010, rule 10). [decided: cli.md, `apply`, `--allow-missing`,
+   * (record 0010, rule 11). [decided: cli.md, `apply`, `--allow-missing`,
    * `--plan-only`; the field is proposed]
    *
    * @generated from field: string apply_command = 10;
@@ -242,7 +242,7 @@ export type NextDate = Message<"ritueel.local.v1alpha1.NextDate"> & {
 
   /**
    * The day from which `apply` renews it: 60 days before the end
-   * (record 0005, rule 11).
+   * (record 0005, rule 16).
    *
    * @generated from field: google.protobuf.Timestamp due_from = 3;
    */
@@ -431,7 +431,7 @@ export type GetInventoryResponse = Message<"ritueel.local.v1alpha1.GetInventoryR
 
   /**
    * What is not applied yet, found from the wanted files, the history, the
-   * date and the requests; never stored. [decided: record 0005, rule 29]
+   * date and the requests; never stored. [decided: record 0005, rule 4]
    *
    * @generated from field: repeated ritueel.local.v1alpha1.Change changes = 9;
    */
@@ -625,7 +625,7 @@ export type Key = Message<"ritueel.local.v1alpha1.Key"> & {
    * certificate (X.509 root key), the end of the intermediate certificate
    * (X.509 delegated key) or the key's expiry (OpenPGP key). Unset for an SSH
    * CA key, which has no certificate: it ends when the next list leaves it
-   * out (record 0006, rule 25). Unset never means "no expiry".
+   * out (record 0006, rule 29). Unset never means "no expiry".
    *
    * @generated from field: google.protobuf.Timestamp expires_at = 11;
    */
@@ -664,7 +664,7 @@ export const KeySchema: GenMessage<Key> = /*@__PURE__*/
 
 /**
  * One root of one kind, built from keys in any place. [decided:
- * record 0001, rule 28; record 0006, rule 2]
+ * record 0001, rules 28 to 31; record 0006, rule 2]
  *
  * @generated from message ritueel.local.v1alpha1.Root
  */
@@ -689,7 +689,7 @@ export type Root = Message<"ritueel.local.v1alpha1.Root"> & {
   keyIds: string[];
 
   /**
-   * True for a test root. [decided: record 0005, rule 28]
+   * True for a test root. [decided: record 0005, rule 26]
    *
    * @generated from field: bool test = 4;
    */
@@ -770,14 +770,14 @@ export type UserId = Message<"ritueel.local.v1alpha1.UserId"> & {
 
   /**
    * True once a self-certification exists. False for a wanted user ID that is
-   * not applied yet. [decided: record 0008, rule 17; record 0009, rule 28]
+   * not applied yet. [decided: record 0008, rule 16; record 0009, rule 5]
    *
    * @generated from field: bool certified = 6;
    */
   certified: boolean;
 
   /**
-   * True once the user ID has a revocation. [decided: record 0008, rule 17]
+   * True once the user ID has a revocation. [decided: record 0008, rule 16]
    *
    * @generated from field: bool revoked = 7;
    */
@@ -798,7 +798,7 @@ export const UserIdSchema: GenMessage<UserId> = /*@__PURE__*/
 
 /**
  * A declared name under a root for a key that does daily work. [decided:
- * glossary; record 0006, rule 23]
+ * glossary; record 0006, rule 27]
  *
  * @generated from message ritueel.local.v1alpha1.Delegation
  */
@@ -940,7 +940,7 @@ export const CertificationSchema: GenMessage<Certification> = /*@__PURE__*/
   messageDesc(file_ritueel_local_v1alpha1_inspect_service, 16);
 
 /**
- * A request in requests/<stem>/. [decided: record 0006, rule 10]
+ * A request in requests/<stem>/. [decided: record 0006, rule 6]
  *
  * @generated from message ritueel.local.v1alpha1.Request
  */
@@ -1055,7 +1055,7 @@ export const NeedSchema: GenMessage<Need> = /*@__PURE__*/
   messageDesc(file_ritueel_local_v1alpha1_inspect_service, 18);
 
 /**
- * One item of "not applied yet". [decided: record 0005, rule 29; glossary]
+ * One item of "not applied yet". [decided: record 0005, rule 4; glossary]
  *
  * @generated from message ritueel.local.v1alpha1.Change
  */
@@ -1482,7 +1482,7 @@ export const ListCeremoniesResponseSchema: GenMessage<ListCeremoniesResponse> = 
   messageDesc(file_ritueel_local_v1alpha1_inspect_service, 27);
 
 /**
- * One change in a plan or a record. [decided: record 0005, rule 4: the plan
+ * One change in a plan or a record. [decided: record 0005, rule 7: the plan
  * lists what it applies and what it leaves out with the reason; the members are
  * proposed, ceremony-record.md, issue 8]
  *
@@ -1529,7 +1529,7 @@ export type Ceremony = Message<"ritueel.local.v1alpha1.Ceremony"> & {
   /**
    * The name of the folder: the time in UTC, the command and the first eight
    * characters of the plan's digest, for example
-   * 20261120T100000Z-apply-3fa9c1d2. [decided: record 0006, rule 29; the
+   * 20261120T100000Z-apply-3fa9c1d2. [decided: record 0006, rule 31; the
    * spelling is proposed in bundle.md]
    *
    * @generated from field: string id = 1;
@@ -1948,7 +1948,7 @@ export const KeyRoleSchema: GenEnum<KeyRole> = /*@__PURE__*/
  * (record 0007, rule 3). An overlap is a period, not a state; an end date is a
  * finding, not a state. For a delegated key the same three words are used.
  * [decided for a root key: record 0007, rule 3; for a delegated key: proposed,
- * nearest text 0007 rule 3 and 0008 rule 13]
+ * nearest text 0007 rule 3 and 0008 rule 15]
  *
  * @generated from enum ritueel.local.v1alpha1.KeyState
  */
@@ -2087,9 +2087,9 @@ export const RequestOutcomeSchema: GenEnum<RequestOutcome> = /*@__PURE__*/
 
 /**
  * What a change does. [proposed: the kinds are in no record and no reference
- * page. Nearest decided text: 0003 rule 10 and 0004 rule 4 (adopt),
- * 0005 rule 15 (the first apply makes the keys), 0008 rule 17 and 0009 rule 4
- * (certify a user ID), 0007 rules 3 and 4 (retire), 0005 rule 11 (renew), the
+ * page. Nearest decided text: 0003 rule 15 and 0004 rule 3 (adopt),
+ * 0005 rule 20 (the first apply makes the keys), 0008 rule 16 and 0009 rule 4
+ * (certify a user ID), 0007 rules 3 and 5 (retire), 0005 rule 16 (renew), the
  * request answer `issued` (issue)]
  *
  * @generated from enum ritueel.local.v1alpha1.ChangeKind
@@ -2139,7 +2139,7 @@ export const ChangeKindSchema: GenEnum<ChangeKind> = /*@__PURE__*/
 
 /**
  * Whether `apply` can do a change now. [proposed: wizard.md says "whether it is
- * ready or waits" under a Proposed note. Nearest decided text: 0007 rule 17, a
+ * ready or waits" under a Proposed note. Nearest decided text: 0007 rule 19, a
  * renewal plan stops when a request is missing]
  *
  * @generated from enum ritueel.local.v1alpha1.ChangeState
@@ -2168,7 +2168,7 @@ export const ChangeStateSchema: GenEnum<ChangeState> = /*@__PURE__*/
   enumDesc(file_ritueel_local_v1alpha1_inspect_service, 8);
 
 /**
- * Where a change comes from. [decided: record 0005, rule 29: "from the wanted
+ * Where a change comes from. [decided: record 0005, rule 4: "from the wanted
  * files, the history, the date and the requests"]
  *
  * @generated from enum ritueel.local.v1alpha1.ChangeSource
@@ -2208,8 +2208,8 @@ export const ChangeSourceSchema: GenEnum<ChangeSource> = /*@__PURE__*/
 
 /**
  * What a change needs. [proposed: cli.md says "what it needs" without a list.
- * Nearest decided text: 0007 rules 12 and 14 (a card), 0007 rule 17
- * (a request), 0005 rule 17 (a key file in the offline system)]
+ * Nearest decided text: 0007 rules 9 and 16 (a card), 0007 rule 19
+ * (a request), 0005 rule 22 (a key file in the offline system)]
  *
  * @generated from enum ritueel.local.v1alpha1.NeedKind
  */
@@ -2242,7 +2242,7 @@ export const NeedKindSchema: GenEnum<NeedKind> = /*@__PURE__*/
   enumDesc(file_ritueel_local_v1alpha1_inspect_service, 10);
 
 /**
- * The four kinds of card. [decided: record 0003, rule 14]
+ * The four kinds of card. [decided: record 0003, rule 11]
  *
  * @generated from enum ritueel.local.v1alpha1.CardKind
  */
@@ -2282,7 +2282,7 @@ export const CardKindSchema: GenEnum<CardKind> = /*@__PURE__*/
 /**
  * Whether an application of a card holds anything of the bundle. [proposed:
  * no record names an application as in use. Nearest decided text: record
- * 0003, rule 16 and rule 14 (what a card of each kind holds)]
+ * 0003, rule 16 and rule 11 (what a card of each kind holds)]
  *
  * @generated from enum ritueel.local.v1alpha1.ApplicationUse
  */
@@ -2353,9 +2353,9 @@ export const SlotStateSchema: GenEnum<SlotState> = /*@__PURE__*/
 /**
  * What a slot is for. [decided: X509_ROOT, OPENPGP_PRIMARY, SSH_CA and
  * UNLOCK_KEY (record 0003, rule 3); OPENPGP_SIGN, OPENPGP_DECRYPT and
- * OPENPGP_AUTHENTICATE (record 0008, rules 7 and 8). Proposed: PASSKEY_SIGN_IN,
- * PASSKEY_SSH, PASSKEY_UNLOCK and REHEARSAL (record 0003, rule 14, and
- * record 0008, rule 15, name passkeys and the rehearsal card, not these uses)
+ * OPENPGP_AUTHENTICATE (record 0008, rules 9 and 10). Proposed: PASSKEY_SIGN_IN,
+ * PASSKEY_SSH, PASSKEY_UNLOCK and REHEARSAL (record 0003, rule 11, and
+ * record 0008, rule 12, name passkeys and the rehearsal card, not these uses)
  * and OTHER_BUNDLE (record 0003, issue 11)]
  *
  * @generated from enum ritueel.local.v1alpha1.SlotUse
@@ -2499,7 +2499,7 @@ export const TouchRuleSchema: GenEnum<TouchRule> = /*@__PURE__*/
 
 /**
  * The four states of a ceremony folder. [decided as facts: ceremony-record.md
- * and record 0005, rules 7 and 9. The four NAMES are proposed there, issue 17]
+ * and record 0005, rules 10 and 12. The four NAMES are proposed there, issue 17]
  *
  * @generated from enum ritueel.local.v1alpha1.CeremonyState
  */

@@ -1,7 +1,7 @@
 // How ritueel helps you bind the subkeys of your day-to-day card to your own OpenPGP primary: six panels.
 // Rests on the personal reference ("The ceremony of personal subkey add"), record 0008 (a person's own
 // key: the primary is a software key in a key file, used only in the offline system because it can be
-// copied, record 0005 rule 17) and record 0002 (the key file opens with a passkey on each root card:
+// copied, record 0005 rule 22) and record 0002 (the key file opens with a passkey on each root card:
 // decided, not yet proven). The accent is the plan, as in the other strips.
 import { acc, arrow, bubble, card, key, line, person, rect, sheet, text } from './draw.mjs';
 import { B, DIGEST, FP, bundle, carryBody, lock, plan, pnl, terminal, under } from './parts.mjs';

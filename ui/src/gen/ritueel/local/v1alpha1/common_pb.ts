@@ -3,7 +3,7 @@
 // THE RULE OF THIS WHOLE PACKAGE: no call takes or returns a secret, and no
 // call writes. There is no field for a PIN, a passphrase, a recovery key, a
 // private key, a key file, a management key or a revocation signature, and
-// none will be added. Every call is a read (record 0010, rules 7 and 10; the
+// none will be added. Every call is a read (record 0010, rules 7 and 11; the
 // first build of the page has no write). The page is a view. It never
 // confirms a ceremony; confirmation, PINs, passphrases and touches happen in
 // the terminal, in the offline system or on the workstation. What the page
@@ -18,7 +18,7 @@
 // The words are the glossary's: root, delegated key, delegation, holder,
 // requester, store, ceremony, bundle, history, record, renew, replace, trust
 // files, wanted, not applied yet, apply. One item of "not applied yet" is a
-// change (record 0005, rule 29), never a row. A row is one row of four slots
+// change (record 0005, rule 4), never a row. A row is one row of four slots
 // on a card (record 0003, rule 3).
 //
 // Each enum value and each word below ends in a tag. [decided: X] means a
@@ -114,15 +114,15 @@ export const CeremonyRefSchema: GenMessage<CeremonyRef> = /*@__PURE__*/
  * The state of the history: the write-once folder history/ of the bundle.
  * [proposed as a whole: wizard.md lists neither the chain state nor the time
  * of the check for the summary. Decided: `record_count` and
- * `end_record_sha256` (record 0006, rule 9 prints them) and `ends`
- * (record 0006, rule 30)]
+ * `end_record_sha256` (record 0006, rule 11 prints them) and `ends`
+ * (record 0006, rule 35)]
  *
  * @generated from message ritueel.local.v1alpha1.HistoryStatus
  */
 export type HistoryStatus = Message<"ritueel.local.v1alpha1.HistoryStatus"> & {
   /**
    * The count of ceremony records, the closing records included. [decided:
-   * record 0006, rule 9 prints it]
+   * record 0006, rule 11 prints it]
    *
    * @generated from field: int32 record_count = 1;
    */
@@ -138,7 +138,7 @@ export type HistoryStatus = Message<"ritueel.local.v1alpha1.HistoryStatus"> & {
   /**
    * The digest of the end of the history: the ceremony record that no other
    * record names, in hexadecimal. The page shows its first eight characters.
-   * [decided: record 0006, rules 6 and 9]
+   * [decided: record 0006, rules 8 and 11]
    *
    * @generated from field: string end_record_sha256 = 3;
    */
@@ -177,7 +177,7 @@ export type HistoryStatus = Message<"ritueel.local.v1alpha1.HistoryStatus"> & {
 
   /**
    * The number of ends of the history. More than one is a fork, a critical
-   * finding. [decided: record 0006, rule 30]
+   * finding. [decided: record 0006, rule 35]
    *
    * @generated from field: int32 ends = 9;
    */
@@ -203,7 +203,7 @@ export enum Severity {
   UNSPECIFIED = 0,
 
   /**
-   * [decided: cli.md exit code 10; record 0007, rule 16]
+   * [decided: cli.md exit code 10; record 0007, rule 18]
    *
    * @generated from enum value: SEVERITY_NOTICE = 2;
    */
@@ -264,7 +264,7 @@ export enum Store {
   AWS_KMS = 3,
 
   /**
-   * A key file outside the bundle. [decided: bundle.md, `software`; record 0002, rule 6]
+   * A key file outside the bundle. [decided: bundle.md, `software`; record 0002, rules 7 and 8]
    *
    * @generated from enum value: STORE_SOFTWARE = 4;
    */
@@ -307,8 +307,8 @@ export const CloudProviderSchema: GenEnum<CloudProvider> = /*@__PURE__*/
   enumDesc(file_ritueel_local_v1alpha1_common, 2);
 
 /**
- * Where a ceremony runs, or ran (record 0005, rules 17 to 21). Every ceremony
- * record says where its ceremony ran (record 0005, rule 2).
+ * Where a ceremony runs, or ran (record 0005, rules 22 to 25, 29 and 30). Every ceremony
+ * record says where its ceremony ran (record 0005, rule 3).
  * [decided: the two places, record 0005; the spelling `ran_on`, `workstation`
  * and `offline-system` is proposed in ceremony-record.md]
  *
@@ -332,7 +332,7 @@ export enum RunPlace {
 
   /**
    * The holder's own computer. Allowed for a key that cannot be copied (a root
-   * on cards, a cloud root). A cloud key has no touch (record 0005, rule 18).
+   * on cards, a cloud root). A cloud key has no touch (record 0005, rules 23 and 24).
    *
    * @generated from enum value: RUN_PLACE_WORKSTATION = 2;
    */
@@ -387,7 +387,7 @@ export enum ObjectKind {
   KEY = 4,
 
   /**
-   * [decided: record 0008, rule 17; record 0009, rule 4]
+   * [decided: record 0008, rule 16; record 0009, rule 4]
    *
    * @generated from enum value: OBJECT_KIND_USER_ID = 5;
    */
@@ -408,7 +408,7 @@ export enum ObjectKind {
   CERTIFICATION = 7,
 
   /**
-   * [decided: record 0006, rule 10]
+   * [decided: record 0006, rule 6]
    *
    * @generated from enum value: OBJECT_KIND_REQUEST = 8;
    */
@@ -456,14 +456,14 @@ export enum CeremonyCommand {
   UNSPECIFIED = 0,
 
   /**
-   * [decided: record 0005, rule 10; cli.md]
+   * [decided: record 0005, rule 13; cli.md]
    *
    * @generated from enum value: CEREMONY_COMMAND_APPLY = 1;
    */
   APPLY = 1,
 
   /**
-   * [decided: record 0005, rule 7; cli.md]
+   * [decided: record 0005, rule 10; cli.md]
    *
    * @generated from enum value: CEREMONY_COMMAND_CLOSE = 2;
    */
@@ -479,7 +479,7 @@ export const CeremonyCommandSchema: GenEnum<CeremonyCommand> = /*@__PURE__*/
 /**
  * Whether the hash chain of the history checks out. [proposed: no record and
  * no reference page names these states. Nearest decided text:
- * record 0006, rule 6 (each ceremony record names the one before it)
+ * record 0006, rule 8 (each ceremony record names the one before it)
  * and cli.md (`check history` walks the chain)]
  *
  * @generated from enum ritueel.local.v1alpha1.ChainState

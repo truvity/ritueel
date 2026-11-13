@@ -7,7 +7,7 @@ sidebar:
 
 *Not built yet. The keyring file and the package are decided in [record 0009](../decisions/0009-release-keys-and-the-keyring.md); the code is [issue #15](https://github.com/truvity/ritueel/issues/15), in M5. This page is the specification of the package and of the file it is built from: what is in them, how the package is built and checked, and which installers it is tested on. What it says was measured carries a date.*
 
-The keyring package carries the public certificates of every active primary to apt, rpm and `gpg` users, so that a signature by any subkey a primary bound verifies. ritueel makes the keyring file, which holds those certificates. The release pipeline builds the package from the file (`.deb`, `.rpm` and plain files) and publishes it. ritueel does not build, sign or publish the package: the user's repository signs it with its current subkey ([record 0009](../decisions/0009-release-keys-and-the-keyring.md), rules 20 to 22).
+The keyring package carries the public certificates of every active primary to apt, rpm and `gpg` users, so that a signature by any subkey a primary bound verifies. ritueel makes the keyring file, which holds those certificates. The release pipeline builds the package from the file (`.deb`, `.rpm` and plain files) and publishes it. ritueel does not build, sign or publish the package: the user's repository signs it with its current subkey ([record 0009](../decisions/0009-release-keys-and-the-keyring.md), rules 21 to 23).
 
 :::note[Proposed]
 The records fix the content of the keyring file and the name and version of the package. They do not fix the file set of the package, the maintainer field, the file names of the revocation signatures, the build steps, the byte-identical rule, `ritueel verify keyring` or the installer matrix below, which are the proposed specification for the pipeline's builder and its checks, awaiting the maintainer. Below, "the builder" is the pipeline's builder.
@@ -49,7 +49,7 @@ The binary form is the packets, concatenated; the armoured form is a single bloc
 
 ## Build
 
-Record 0009, rule 21, gives the package build to the release pipeline; who writes the archive writer and the verifier is not decided (proposed). Proposed: the build needs neither `dpkg-deb` nor `rpmbuild`, and the same bundle gives the same bytes. In order:
+Record 0009, rule 22, gives the package build to the release pipeline; who writes the archive writer and the verifier is not decided (proposed). Proposed: the build needs neither `dpkg-deb` nor `rpmbuild`, and the same bundle gives the same bytes. In order:
 
 1. **Read** the newest root list of the bundle ([the root list](/reference/root-list/)) and the certificates of the primaries it pins. The list's `sequence` and the year of its `signed_at` give the version. A test root and a real root are never mixed, as for the CA bundle.
 2. **Assemble** the certificates as above, drop what is revoked hard, and write the binary and armoured forms and one armoured file for each primary.
@@ -65,7 +65,7 @@ ritueel does not sign the package. The user's repository signs the `.deb` and th
 
 ## Verify
 
-Record 0009, rule 21, gives the package build to the release pipeline; who writes the verifier is not decided (proposed). `ritueel verify keyring FILE... --root-list FILE [--dir DIR]` is a proposed command that reads packages and plain files and checks them with code that did not build them. The pipeline may run the same checks on its output. The first check that fails gives the reason code.
+Record 0009, rule 22, gives the package build to the release pipeline; who writes the verifier is not decided (proposed). `ritueel verify keyring FILE... --root-list FILE [--dir DIR]` is a proposed command that reads packages and plain files and checks them with code that did not build them. The pipeline may run the same checks on its output. The first check that fails gives the reason code.
 
 | # | Check | Code |
 |---|---|---|

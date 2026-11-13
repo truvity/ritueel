@@ -22,7 +22,7 @@ A subkey that is replaced has to end. What do the verifiers that people have do 
 - After expiry, `sqv` and `gpgv` accept signatures made before it.
 - `git verify-tag` fails for a revoked key and for an expired key alike.
 
-So a replaced subkey is retired by a "superseded" revocation dated on the day of the switch, or by expiry; "compromised" is for compromise only. [ADR 0017](https://github.com/truvity/ritueel/blob/d0ae12da2432d5ae95cf95d68fb85ba3dda6cfee/docs/decisions/0017-a-persons-openpgp-key-in-two-stages-an-adopted-primary-first-then-card-born-primaries.md#retiring-a-subkey) decides that; it is now rule 13 of [record 0008](../decisions/0008-a-persons-own-key.md).
+So a replaced subkey is retired by a "superseded" revocation dated on the day of the switch, or by expiry; "compromised" is for compromise only. [ADR 0017](https://github.com/truvity/ritueel/blob/d0ae12da2432d5ae95cf95d68fb85ba3dda6cfee/docs/decisions/0017-a-persons-openpgp-key-in-two-stages-an-adopted-primary-first-then-card-born-primaries.md#retiring-a-subkey) decides that; it is now rule 15 of [record 0008](../decisions/0008-a-persons-own-key.md).
 
 ## Method
 

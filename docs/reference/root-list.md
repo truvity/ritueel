@@ -28,7 +28,7 @@ ritueel writes the three files together, in a numbered trust set of [the bundle]
 
 ## The list
 
-The root list holds the active root keys, each pinned by the SHA-256 of its SubjectPublicKeyInfo and, for OpenPGP, the primary's fingerprint, with the sequence, the signing time, the expiry and the digest of the end of the history. Its members keep the names `roots` and `label` ([record 0006](../decisions/0006-bundle-history-and-trust-files.md), rule 15).
+The root list holds the active root keys, each pinned by the SHA-256 of its SubjectPublicKeyInfo and, for OpenPGP, the primary's fingerprint, with the sequence, the signing time, the expiry and the digest of the end of the history. Its members keep the names `roots` and `label` ([record 0006](../decisions/0006-bundle-history-and-trust-files.md), rule 16).
 
 `root-list.json` is one UTF-8 object with no byte order mark and no more than 256 KiB. A member name appears once; a member this page does not define is an error. Numbers are integers. A time is `YYYY-MM-DDThh:mm:ssZ` in UTC (RFC 3339, whole seconds). A digest is SHA-256 in lower-case hexadecimal. The writer serialises it in the canonical form of RFC 8785, with no trailing newline, so the same bundle gives the same bytes.
 
@@ -50,9 +50,9 @@ Each member of `roots`:
 | `x509_spki_sha256` | yes | The SHA-256 of the DER `SubjectPublicKeyInfo` of the X.509 root key: the pin. It is the `issuer` member of a hand-off answer for X.509. |
 | `openpgp_fingerprint` | when the bundle has an OpenPGP root | The fingerprint of the OpenPGP primary, 40 hexadecimal digits (version 4). It is a member of `primaries` in a hand-off request. |
 
-**What an entry means.** An entry of `roots` is one key label with its pins. It is not a root in the sense of [record 0001](../decisions/0001-what-ritueel-is.md), rule 28: there a root is one thing of one kind, built from keys, and a bundle has one root of each kind it uses ([record 0006](../decisions/0006-bundle-history-and-trust-files.md), rule 2). Each entry pins the key of the X.509 root and, when the bundle has an OpenPGP root, the primary of that root with the same label, for example the two keys of one row of a card ([record 0003](../decisions/0003-root-cards.md), rule 3). The SSH CA keys are in [the SSH CA key list](/reference/ssh-ca-key-list/). A host installs each `x509_spki_sha256` as a trust anchor, so a host installs one anchor for each key. The member keeps the name `roots`, `label` keeps its name, and no test vector changes ([record 0006](../decisions/0006-bundle-history-and-trust-files.md), rule 15). On this page, "root key" is written in full wherever one key is meant. The member keeps the name `roots`.
+**What an entry means.** An entry of `roots` is one key label with its pins. It is not a root in the sense of [record 0001](../decisions/0001-what-ritueel-is.md), rules 28 to 31: there a root is one thing of one kind, built from keys, and a bundle has one root of each kind it uses ([record 0006](../decisions/0006-bundle-history-and-trust-files.md), rule 2). Each entry pins the key of the X.509 root and, when the bundle has an OpenPGP root, the primary of that root with the same label, for example the two keys of one row of a card ([record 0003](../decisions/0003-root-cards.md), rule 3). The SSH CA keys are in [the SSH CA key list](/reference/ssh-ca-key-list/). A host installs each `x509_spki_sha256` as a trust anchor, so a host installs one anchor for each key. The member keeps the name `roots`, `label` keeps its name, and no test vector changes ([record 0006](../decisions/0006-bundle-history-and-trust-files.md), rule 16). On this page, "root key" is written in full wherever one key is meant. The member keeps the name `roots`.
 
-A bundle that has no OpenPGP root writes entries without `openpgp_fingerprint` ([record 0006](../decisions/0006-bundle-history-and-trust-files.md), rule 33). A host takes such an entry as a key with no OpenPGP primary, and check 5 below does not refuse it. No test vector has such an entry yet.
+A bundle that has no OpenPGP root writes entries without `openpgp_fingerprint` ([record 0006](../decisions/0006-bundle-history-and-trust-files.md), rule 17). A host takes such an entry as a key with no OpenPGP primary, and check 5 below does not refuse it. No test vector has such an entry yet.
 
 The list pins keys, never certificates: a root certificate re-issued over the same key keeps its pin ([record 0006](../decisions/0006-bundle-history-and-trust-files.md)). A list never mixes test roots and real roots.
 
@@ -95,7 +95,7 @@ It is a JWS in **compact serialisation with the payload attached**: `<header>.<p
 
 ### When
 
-A ceremony that changes any trust file writes a new list with the next sequence, signed in the same ceremony. The yearly ceremony and every transition always do, so the list is re-signed at least once a year ([record 0006](../decisions/0006-bundle-history-and-trust-files.md)); so does any other ceremony that signs with a root key, because each use re-issues that root key's certificate and so changes the CA bundle ([record 0007](../decisions/0007-changing-and-losing-a-root.md), rule 13). The list's bytes are fixed in the ceremony's plan, so each signature is one of the plan's signatures and its touch is counted. `status` warns 60, 30 and 14 days before the newest list expires ([commands](/reference/cli/#exit-codes)).
+A ceremony that changes any trust file writes a new list with the next sequence, signed in the same ceremony. The yearly ceremony and every transition always do, so the list is re-signed at least once a year ([record 0006](../decisions/0006-bundle-history-and-trust-files.md)); so does any other ceremony that signs with a root key, because each use re-issues that root key's certificate and so changes the CA bundle ([record 0007](../decisions/0007-changing-and-losing-a-root.md), rule 15). The list's bytes are fixed in the ceremony's plan, so each signature is one of the plan's signatures and its touch is counted. `status` warns 60, 30 and 14 days before the newest list expires ([commands](/reference/cli/#exit-codes)).
 
 **Adding or retiring a root key** is a ceremony, and `revoke` is an act of its own. All three change the root set ([root transitions](/reference/transitions/#the-commands)). A revoked root key, or a key that can no longer sign, is left out of the new list, with its removal authorisation attached when it cannot sign, and with a CA bundle and a keyring without it beside it, and its break-glass SSH CA key off the SSH CA key list. The root key stops publishing its [CRL](/reference/crl/).
 
@@ -129,13 +129,13 @@ These codes belong to the host and are not sent anywhere. The vectors fix the ou
 
 ## The CA bundle
 
-`ca-bundle.pem` is text, with LF line endings. It is the certificates of the active X.509 root keys in one PEM file, with the trust sequence in a comment line ([record 0006](../decisions/0006-bundle-history-and-trust-files.md), rule 27):
+`ca-bundle.pem` is text, with LF line endings. It is the certificates of the active X.509 root keys in one PEM file, with the trust sequence in a comment line ([record 0006](../decisions/0006-bundle-history-and-trust-files.md), rule 23):
 
 1. The first line is `# trust-sequence: <sequence>`, the sequence of the root list it was built with.
 2. Then the current certificate of each root key on that list, in the order of `roots`, each PEM-armoured with the label `CERTIFICATE` (RFC 7468), Base64 in lines of 64 characters.
 3. Nothing else.
 
-It is deterministic (0006 rules 27 and 28): the same certificates in the same order give the same bytes. A PEM parser skips the text outside the armour (RFC 7468, section 2), so OpenSSL reads the file as a list of trust anchors (checked with OpenSSL 3.5.5 on 2026-11-01: `openssl verify -CAfile` with the vectors' CA bundles accepts the hand-off answers of the root keys in the CA bundle and refuses the others). The root certificates follow the [root profile](/reference/bundle/#the-root-certificate).
+It is deterministic (0006 rules 15 and 23): the same certificates in the same order give the same bytes. A PEM parser skips the text outside the armour (RFC 7468, section 2), so OpenSSL reads the file as a list of trust anchors (checked with OpenSSL 3.5.5 on 2026-11-01: `openssl verify -CAfile` with the vectors' CA bundles accepts the hand-off answers of the root keys in the CA bundle and refuses the others). The root certificates follow the [root profile](/reference/bundle/#the-root-certificate).
 
 The CA bundle is not signed: a TLS client trusts the file it was given. A system that also holds the signed root list uses a certificate from the CA bundle as an anchor only when its key is on the list it holds, and its sequence is the list's.
 

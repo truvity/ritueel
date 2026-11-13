@@ -188,7 +188,7 @@ describe('the user IDs and the certifications', () => {
     expect(added).toHaveLength(3);
     for (const u of added) expect(u.certified, u.id).toBe(true);
     const fresh = s5.certifications.filter((c) => !base.certifications.some((b) => b.id === c.id));
-    // Three certifications of the new user ID, and four from the extension of keys A and B (record 0007, rule 13).
+    // Three certifications of the new user ID, and four from the extension of keys A and B (record 0007, rule 15).
     expect(fresh).toHaveLength(7);
     for (const c of fresh) expect(c.ceremonyId, c.id).toBe(NEW);
     const ofUserId = fresh.filter((c) => added.some((u) => u.id === c.subject?.id));
@@ -208,7 +208,7 @@ describe('the user IDs and the certifications', () => {
     const s5 = loadWorld('acme', 5).inventory.keys;
     expect(strip(s5 as never)).toEqual(strip(base as never));
     const day = (k: { expiresAt?: { seconds: bigint } }) => (k.expiresAt ? new Date(Number(k.expiresAt.seconds) * 1000).toISOString().slice(0, 10) : '');
-    // Record 0007, rule 13: the signing card extends its own key by 36 months from the ceremony; the cloud key is no card and does not.
+    // Record 0007, rule 15: the signing card extends its own key by 36 months from the ceremony; the cloud key is no card and does not.
     const moved = s5.filter((k, i) => day(k) !== day(base[i]));
     expect(moved.map((k) => `${k.root}/${k.label}`).sort()).toEqual(['acme-release/A', 'acme-release/B', 'acme-tls/A', 'acme-tls/B']);
     for (const k of moved) expect(day(k), k.fingerprint).toBe('2029-11-24');

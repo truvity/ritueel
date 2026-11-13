@@ -7,7 +7,7 @@
 // The accent is the root that cannot be copied: its two stores, the one step that uses it (sign), and
 // the one key that stays. Rests on the records 0001 (three stores), 0002 (cannot be copied; a card or
 // cloud key replaced only on an event, a copy within three years), 0005 (a person says what is wanted,
-// looks at the plan of what is not applied yet, and runs apply; only apply uses the root), 0007 (rules 13 to 19: the same key is re-signed, not replaced) and 0008 (subkeys on the card).
+// looks at the plan of what is not applied yet, and runs apply; only apply uses the root), 0007 (rules 15 to 20: the same key is re-signed, not replaced) and 0008 (subkeys on the card).
 import { acc, arrow, card, circle, f, key, line, person, rect, sheet, text } from './draw.mjs';
 import { svgBox } from './svg.mjs';
 import { cloud } from './parts.mjs';

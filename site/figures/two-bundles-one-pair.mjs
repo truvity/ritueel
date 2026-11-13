@@ -1,8 +1,8 @@
 // Two bundles of one holder on one pair of root cards: each bundle keeps its own card files and its own
 // sealed copy of the card's secrets; a second bundle gets its copy by a request to the first, which
-// wraps the secrets for it. Rests on record 0003, rules 6 to 8 (and record 0005, rule 26, for the way
+// wraps the secrets for it. Rests on record 0003, rules 8 to 10 (and record 0005, rule 28, for the way
 // request and answer travel). The pair is two cards, and each card has its own PIN, PUK and management
-// key for all its bundles (record 0003, rule 6). The accent is the wrapped copy that travels in the
+// key for all its bundles (record 0003, rule 8). The accent is the wrapped copy that travels in the
 // answer. The drawing is 360 units wide and tall, the two bundles stacked, so that on a phone it is
 // drawn at about 1:1 and its text stays at 12px. The bundle names are made up.
 import { acc, arrow, card, line, rect, text } from './draw.mjs';

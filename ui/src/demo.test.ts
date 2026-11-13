@@ -337,7 +337,7 @@ describe('the fixtures tell the made-up world, one bundle at a time', () => {
     expect(daysApart(read0, day(ending?.validUntil))).toBe(60);
     for (const c of certs.filter((x) => x.kind === inspectPb.CertificationKind.ROOT_CERTIFICATE)) expect(monthsApart(day(c.validFrom), day(c.validUntil)), c.id).toBe(36);
     for (const c of certs.filter((x) => x.kind === inspectPb.CertificationKind.INTERMEDIATE_CERTIFICATE)) expect(monthsApart(day(c.validFrom), day(c.validUntil)), c.id).toBe(13);
-    // A CRL stays current 25 months from the day it was built (record 0006, rule 26).
+    // A CRL stays current 25 months from the day it was built (record 0006, rule 24).
     const crls = w.trust.files.filter((f) => f.kind === TrustFileKind.CRL);
     expect(crls.length).toBeGreaterThan(0);
     for (const f of crls) expect(monthsApart(day(f.builtAt), day(f.validUntil)), f.name).toBe(25);
@@ -552,7 +552,7 @@ describe('the words of the maintainer stay', () => {
     expect(hits).toEqual([]);
   });
 
-  // The words the ten records replaced (0006 rule 5, 0001, 0008, glossary): the history, not the ledger; trust files in
+  // The words the ten records replaced (0006 rule 7, 0001, 0008, glossary): the history, not the ledger; trust files in
   // trust/<number>/, not products; requests/<name>/, not answers/; no staff key, certifier, card helper, board card or
   // yearly command (0008, 0003, 0005); no Unix socket, random port, hardware-key rule, old ADR number or unpublished page.
   const OLD_WORDS_OF_THE_RECORDS = /ledger|trust products?|\bproducts\b|\banswers\/|staff|certifier|card helper|board card|yearly (command|intention)|unix socket|random port|hardware.key|ADR[ -]?00|ritueel\.id\/(reference|decisions|tools)\//i;

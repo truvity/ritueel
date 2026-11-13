@@ -1,7 +1,7 @@
 // How ritueel helps you sign an intermediate certificate with a root card on your own workstation: six
 // panels. The accent is the plan, the one sheet that carries the digest and the numbers of signatures
 // and touches. Rests on the hand-off contract (What travels, Messages and files, What the requester
-// checks) and on record 0005 (rule 18: a key that cannot be copied may be used on the holder's
+// checks) and on record 0005 (rules 23 and 24: a key that cannot be copied may be used on the holder's
 // workstation under four conditions: a touch for every signature, the number of signatures stated in
 // the plan, no retry of a failed touch, and the result checked against the plan on a second device).
 import { acc, arrow, bubble, card, check, circle, laptop, line, person, rect, server, sheet, text } from './draw.mjs';

@@ -7,7 +7,7 @@ import { feed, noStyle, plain, WORLDS, type World } from './testkit';
 
 vi.mock('./api/hooks', async (orig) => (await import('./testkit')).hooksMock(await orig()));
 
-// A ceremony is one act, `apply` (record 0005, rule 3). The page names no steps of it: no list
+// A ceremony is one act, `apply` (record 0005, rule 2). The page names no steps of it: no list
 // of plan, confirm, reserve, sign, verify and record, and no numbered list of six. The panel of a
 // ceremony says in one sentence what its command does. This test draws every screen that can
 // carry such a list, for every example bundle and scene, and fails when a step list comes back.
@@ -84,7 +84,7 @@ describe('the panel of a ceremony says what its command does', () => {
     expect(Object.keys(COMMAND_TEXT).sort()).toEqual([String(CeremonyCommand.APPLY), String(CeremonyCommand.CLOSE)].sort());
     expect(COMMAND_TEXT[CeremonyCommand.APPLY]?.title).toBe('What apply does');
     expect(COMMAND_TEXT[CeremonyCommand.CLOSE]?.title).toBe('What close does');
-    // One sentence of the plan to the record for apply; close says only what record 0005, rules 7 and 31, say.
+    // One sentence of the plan to the record for apply; close says only what record 0005, rules 10 and 14, say.
     expect(COMMAND_TEXT[CeremonyCommand.CLOSE]?.text).not.toMatch(/closing record|reason/i);
   });
   it('every ceremony panel shows the sentence of its command, and the state words stay', async () => {

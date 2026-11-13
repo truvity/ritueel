@@ -7,7 +7,7 @@ sidebar:
 
 ## Question
 
-Where may a software key live between ceremonies, if not in a file on one disk: in 1Password, or in the operating system's keyring? What does each protect against, what does each cost, and what must ritueel do about it? It feeds [ADR 0003](https://github.com/truvity/ritueel/blob/d0ae12da2432d5ae95cf95d68fb85ba3dda6cfee/docs/decisions/0003-key-stores-and-the-card-layer.md#the-software-store) (now [record 0002](../decisions/0002-where-a-key-lives.md), rules 6 to 10) and [the software store](/reference/software-store/).
+Where may a software key live between ceremonies, if not in a file on one disk: in 1Password, or in the operating system's keyring? What does each protect against, what does each cost, and what must ritueel do about it? It feeds [ADR 0003](https://github.com/truvity/ritueel/blob/d0ae12da2432d5ae95cf95d68fb85ba3dda6cfee/docs/decisions/0003-key-stores-and-the-card-layer.md#the-software-store) (now [record 0002](../decisions/0002-where-a-key-lives.md), rules 7, 8 and 10 to 13) and [the software store](/reference/software-store/).
 
 ## When
 
@@ -60,7 +60,7 @@ An armoured OpenPGP secret key is about 1 KB and a P-384 PKCS#8 key under 200 by
 - **An SSH Key item for the key.** The native type, but it refuses P-384.
 - **A Document item with the key as a file.** Fits any key, but `op` attaches a file by path, so the key would be written to disk first.
 - **The Connect server.** Self-hosted, but it cannot create the item types needed and its file endpoints only read.
-- **The keyring as the default.** No account, but it is the weakest store, so it is offered with a warning and not chosen for the person ([ADR 0007](https://github.com/truvity/ritueel/blob/d0ae12da2432d5ae95cf95d68fb85ba3dda6cfee/docs/decisions/0007-ritueel-teaches-and-its-tools-simplify-the-ceremonies.md#software-keys-three-backends-all-born-in-the-store), now rule 10 of [record 0002](../decisions/0002-where-a-key-lives.md)).
+- **The keyring as the default.** No account, but it is the weakest store, so it is offered with a warning and not chosen for the person ([ADR 0007](https://github.com/truvity/ritueel/blob/d0ae12da2432d5ae95cf95d68fb85ba3dda6cfee/docs/decisions/0007-ritueel-teaches-and-its-tools-simplify-the-ceremonies.md#software-keys-three-backends-all-born-in-the-store), now rule 13 of [record 0002](../decisions/0002-where-a-key-lives.md)).
 
 ## Open questions
 

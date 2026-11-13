@@ -3,16 +3,16 @@
 // thing ends at a root; the bar under the panels says that each has its own and how a root is used.
 // The words are the page's own and the records':
 //   Web page: the page "What is a root?" (a browser follows signatures to a root it already holds);
-//     record 0006 rule 27 (the CA bundle holds the certificates of the active X.509 roots).
-//   Signed tag: record 0008 rule 7 (a signing subkey on the card, bound by the primary key).
-//   Release file: record 0009 rules 13, 23 and 24 (users check a signature with a keyring or a published fingerprint).
-//   Server login: record 0006 rules 15, 21 and 23 (a host trusts a signed list of SSH CA keys; the list is
+//     record 0006 rule 23 (the CA bundle holds the certificates of the active X.509 roots).
+//   Signed tag: record 0008 rule 9 (a signing subkey on the card, bound by the primary key).
+//   Release file: record 0009 rules 12, 24 and 25 (users check a signature with a keyring or a published fingerprint).
+//   Server login: record 0006 rules 16, 25 and 27 (a host trusts a signed list of SSH CA keys; the list is
 //     signed with an X.509 root key; an SSH CA key is a delegated key) and docs/learn/chain-ssh.md (an SSH CA
-//     key signs user certificates). Not the OpenPGP authentication subkey (0008 rule 7): a host that lists
+//     key signs user certificates). Not the OpenPGP authentication subkey (0008 rule 9): a host that lists
 //     that subkey in authorized_keys trusts it on its own and never follows its binding to a root.
 //   Bar: the page "What is a root?", "It is used rarely".
 // The four things end at several roots, not one: a web page at an X.509 root, the tag and the release file
-// at OpenPGP roots, the server login at the X.509 root that signs the SSH CA key list (record 0001 rule 28:
+// at OpenPGP roots, the server login at the X.509 root that signs the SSH CA key list (record 0001 rules 28 to 31:
 // a root is of one kind). The figure says "a root", never "one key", and the bar says each has its own.
 // The accent marks the bar, which is the one object. Wide (760 units) and narrow (360 units) are made from the same table, so their
 // words cannot drift.
