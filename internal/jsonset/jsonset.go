@@ -4,7 +4,9 @@
 //
 // A Checker answers, for a Go type, whether it is in the set. The answer is the same for writing
 // and for reading but for one thing, an interface with methods, which can be written (the value
-// it holds is judged) and cannot be read (there is no value to judge). Both packages call the
+// it holds is judged) and cannot be read (there is no value to judge). An interface that declares
+// MarshalJSON, MarshalText, UnmarshalJSON or UnmarshalText (a field of type json.Marshaler) is
+// refused in both directions, as a type with one of those methods is. Both packages call the
 // Checker before they look at a value or at a byte, so a type that is outside the set is refused
 // whatever the data, and the error names the Go type and the path to it.
 package jsonset
