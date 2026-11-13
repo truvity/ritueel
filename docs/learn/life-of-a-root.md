@@ -5,11 +5,11 @@ sidebar:
   order: 14
 ---
 
-A root lives for years, and most of what happens to it is waiting. This page follows one root through every ritual it will meet, in the order it meets them, and says when each is done. The steps are the same for an X.509 root and an OpenPGP primary key; where they differ, the page says so.
+A root lives for years, and most of what happens to it is waiting. This page follows one root through every ritual, in order, and says when each is done. The steps are the same for an X.509 root and an OpenPGP primary key; where they differ, the page says so.
 
 | Ritual | When | What changes |
 |---|---|---|
-| [Create](#create) | Once | A new key exists in its store. |
+| [Create](#create) | Once | A new key exists in its key store. |
 | [Sign intermediates or subkeys](#sign-intermediates-or-subkeys) | When one is needed, then every year | A key below the root gets authority. |
 | [Record](#record) | After every ceremony | The history says what was done. |
 | [Back up](#back-up) | Right after creating, and after every change | Loss becomes survivable. |
@@ -20,7 +20,7 @@ A root lives for years, and most of what happens to it is waiting. This page fol
 
 ## Create
 
-A root key is created at a ceremony, in the store where it will live: a card, a cloud key service or a key file. On a card or in a cloud service the key never leaves. First you decide the store ([where a key lives](/learn/key-stores/)), the name, the algorithm and the lifetime.
+A root key is created at a ceremony, in the key store where it will live: a card, a cloud key service or a key file. On a card or in a cloud service the key never leaves. First you decide the key store ([where a key lives](/learn/key-stores/)), the name, the algorithm and the lifetime.
 
 Three things are made at birth:
 
@@ -38,7 +38,7 @@ For a person's OpenPGP key the same step puts subkeys onto a card: the card make
 
 ## Record
 
-A ceremony without a ceremony record cannot be audited. The [history](/learn/the-history/) gets one ceremony record for each ceremony: what was signed, by which key, in which store, and what outsiders now see. It holds no secret and is chained to the one before.
+A ceremony without a ceremony record cannot be audited. The [history](/learn/the-history/) gets one ceremony record for each ceremony: what was signed, by which key, in which key store, and what outsiders now see. It holds no secret and is chained to the one before.
 
 ## Back up
 
@@ -61,7 +61,7 @@ Re-signing is cheap, and it changes nothing for anyone who already trusts the ke
 
 Rotating is different: a **new key** replaces the old one. It is a larger event, because everything that trusted the old key must learn the new one, so it is done only when there is a reason:
 
-- **On an event.** An advisory that affects the card, its firmware or the service; the deprecation of the algorithm; a lost card or one at its end of life; a suspected compromise; a change of store or of place. The yearly ceremony includes a review of the advisories, so that this kind of event is not missed.
+- **On an event.** An advisory that affects the card, its firmware or the service; the deprecation of the algorithm; a lost card or one at its end of life; a suspected compromise; a change of key store or of place. The yearly ceremony includes a review of the advisories, so that this kind of event is not missed.
 - **For a key in software, also after at most three years,** whatever else happened, because a file can be copied without a trace. Three years is the top of the usual lifetime for a private signing key, and a forced rotation keeps the rotate path exercised. A key on a card or in a cloud key service cannot be copied, and has no such limit.
 
 The rule: **re-sign yearly; rotate on an event, and a key in software after at most three years.** See [rotate](/learn/rotate/).

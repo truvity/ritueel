@@ -37,7 +37,7 @@ A passkey not kept on the card is rebuilt from a **key handle** (the standards c
 
 **One loss ends every passkey.** One FIDO reset wipes every passkey on a card. Yubico's guide to PRF says a lost authenticator means lost data, and recommends wrapping a key for several authenticators.
 
-**A synced passkey is a different thing.** Its private key is copied, encrypted, to your other devices through a cloud account, and can be recovered through the account. The card's guarantee that the key stays in one place is gone. NIST bars syncable keys at its highest assurance level for that reason (SP 800-63B-4). So a synced passkey is not a root-level store.
+**A synced passkey is a different thing.** Its private key is copied, encrypted, to your other devices through a cloud account, and can be recovered through the account. The card's guarantee that the key stays in one place is gone. NIST bars syncable keys at its highest assurance level for that reason (SP 800-63B-4). So a synced passkey is not a root-level key store.
 
 ## Passkeys up close
 
@@ -63,7 +63,7 @@ Two results follow.
 - **The key handle is useless alone, and the card is useless without it.** The handle is no key. The card cannot find a passkey whose handle it is not given.
 - **The site must know who you are first.** The standard says the site must manage the handle's storage and discovery, and be able to first identify the user in order to find the handle to supply (WebAuthn Level 3, "Server-side Public Key Credential Source").
 
-The passkey that [record 0002](../decisions/0002-where-a-key-lives.md) uses is this second kind (the record: "the kind that stores nothing on the card"). The record does not say where the key handle is kept. The format of the wrapped key is fixed by the proof on a rehearsal card, and this page does not say where the key handle lives.
+The passkey that [record 0002](../decisions/0002-where-a-key-lives.md) uses is this second kind (the record: "the kind that stores nothing on the card"). The record does not say where the key handle is kept, and neither does this page.
 
 ### What the PIN and the touch protect
 
@@ -109,9 +109,9 @@ Writing a new key file needs no card, because the public half of the unlock key 
 
 Other programs already use the extension this way. `systemd-cryptenroll` accepts FIDO2 tokens "that implement the ‘hmac-secret’ extension" to unlock a disk volume (systemd documentation). The age project's note describes a plug-in that reuses a passkey on a hardware token outside the browser, and a stanza that holds the file key wrapped with a key derived from the PRF output (published 2025-07-14). ritueel's own way (PIN and touch over USB from a static binary) is the part still to be proven.
 
-**Decided, not yet proven.** [record 0002](../decisions/0002-where-a-key-lives.md) and [record 0007](../decisions/0007-changing-and-losing-a-root.md) word it so: a passkey secret with PIN and touch over USB from a static binary, and the offline system reaching the card's passkey side, are tried on a rehearsal card before anything is built (milestone M1). If the proof fails, a key-agreement key in PIV slot 9d of each root card opens the file instead, and nothing else in record 0002 changes. The format of the wrapped key is fixed by the proof, so this page does not invent one.
+**Decided, not yet proven.** [record 0002](../decisions/0002-where-a-key-lives.md) and [record 0007](../decisions/0007-changing-and-losing-a-root.md) word it so: a passkey secret with PIN and touch over USB from a static binary, and the offline system reaching the card's passkey side, are tried on a rehearsal card before anything is built (milestone M1). If the proof fails, a key-agreement key in PIV slot 9d of each root card opens the file instead, and nothing else in record 0002 changes. This page does not give the format of the wrapped key.
 
-**What the passkey does not remove.** A reset ends every passkey on the card, so the key file must also open another way. The record keeps a recovery key for this. If you lose the recovery key and every card named to open the file, the key files cannot be opened. Without its key handle a card cannot rebuild the passkey, so the key handle is as important as the card; where it is kept is fixed by the proof.
+**What the passkey does not remove.** A reset ends every passkey on the card, so the key file must also open another way. The record keeps a recovery key for this. If you lose the recovery key and every card named to open the file, the key files cannot be opened. Without its key handle a card cannot rebuild the passkey, so the key handle is as important as the card; where it is kept is not decided.
 
 Next: [how a KMS key works](/learn/how-a-kms-key-works/).
 
@@ -122,7 +122,7 @@ Read 2026-11-10, except the lines that say 2026-11-11.
 - Yubico, [YubiKey 5 firmware 5.7](https://docs.yubico.com/hardware/yubikey/yk-tech-manual/yk5-firmware-5.7.html): 100 passkeys from firmware 5.7.4.
 - Yubico, [YubiKey 5 FIDO](https://docs.yubico.com/hardware/yubikey/yk-tech-manual/yk5-apps-fido.html): PIN, tries, reset, deleting a passkey, nothing stored for a passkey not kept on the card, enterprise attestation from firmware 5.7. Read again 2026-11-11 for sign-in with no user name, and for registering again with every site after a reset. The page still says "up to 25 resident keys" (older text); the firmware 5.7 page gives 100 from firmware 5.7.4.
 - Yubico, [hmac-secret deep dive](https://developers.yubico.com/WebAuthn/Concepts/PRF_Extension/CTAP2_HMAC_Secret_Deep_Dive.html), [Developer's Guide to PRF](https://developers.yubico.com/WebAuthn/Concepts/PRF_Extension/Developers_Guide_to_PRF.html) (a lost authenticator means lost data) and [Securing WebAuthn with Attestation](https://developers.yubico.com/WebAuthn/Concepts/Securing_WebAuthn_with_Attestation.html).
-- FIDO Alliance, [CTAP 2.2](https://fidoalliance.org/specs/fido-v2.2-ps-20250714/fido-client-to-authenticator-protocol-v2.2-ps-20250714.html): section 12.7 (hmac-secret) and section 6.6 (reset). An earlier version of the design cited CTAP 2.1, section 12.5, for the same extension.
+- FIDO Alliance, [CTAP 2.2](https://fidoalliance.org/specs/fido-v2.2-ps-20250714/fido-client-to-authenticator-protocol-v2.2-ps-20250714.html): section 12.7 (hmac-secret) and section 6.6 (reset).
 - W3C, [WebAuthn Level 3](https://www.w3.org/TR/webauthn-3/): the site name (relying party ID) and the credential. Read again 2026-11-11 for the public key credential source (its items, including otherUI), the server-side credential and "Relying Party Identifier" (section 4), authenticator data and its flags (section 6.1) and verifying an assertion (section 7.2: the UV flag is checked if user verification is required, and otherwise ignored).
 - NIST, [SP 800-63B-4](https://pages.nist.gov/800-63-4/sp800-63b.html): syncable authenticators at the highest assurance level.
 - OpenSSH, [PROTOCOL.u2f](https://raw.githubusercontent.com/openssh/openssh-portable/master/PROTOCOL.u2f), read 2026-11-11: U2F hardware derives a private key from the key handle and a small secret of the device.
