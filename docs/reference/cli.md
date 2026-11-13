@@ -107,9 +107,9 @@ A PIN is never a flag or an environment variable; the holder types it at the ter
 | 1 | Failure. |
 | 2 | Usage error. |
 | 3 | Refused by a check or by the policy. `join` also stops with this code (proposed). |
-| 4 | Refused by the card or its PIN state, or by the key store backend: a locked store, or a KMS session that is not a session of the ceremony role, or has expired (`kms-session`). |
+| 4 | Refused by the card or its PIN state, or by the key store backend: a locked key store, or a KMS session that is not a session of the ceremony role, or has expired (`kms-session`). |
 | 5 | Not confirmed. |
-| 10, 11, 12 | `status` only: notice, alert and critical. Delegations warn at 60, 30 and 14 days, the root list, the SSH CA key list and each CRL at 60, 30 and 14 days, root keys at 6 months, 3 months and 30 days. An unresolved attempt is critical, because it may mean a signature that was made and never recorded. A fork is critical. A short root set is an alert (finding `root-set`), an overdue overlap an alert and a running one a notice (finding `root-overlap`) (0007 rule 6; [root transitions](/reference/transitions/#the-target)); a restore check older than 13 months is a notice ([drills](/reference/drill/#when-it-is-due)). The highest finding wins. |
+| 10, 11, 12 | `status` only: notice, alert and critical. Delegations warn at 60, 30 and 14 days, the root list, the SSH CA key list and each CRL at 60, 30 and 14 days, root keys at 6 months, 3 months and 30 days. An unresolved attempt is critical, because it may mean a signature that was made and never recorded. A fork is critical. A short set of root keys is an alert (finding `root-set`), an overdue overlap an alert and a running one a notice (finding `root-overlap`) (0007 rule 6; [root transitions](/reference/transitions/#the-target)); a restore check older than 13 months is a notice ([drills](/reference/drill/#when-it-is-due)). The highest finding wins. |
 
 ## The first version's commands
 
@@ -154,7 +154,7 @@ These are the arguments of the commands that check the CRLs (M4, [issue #30](htt
 - **`verify keyring`** exits 0 when every check passes and 3 with the code. Without `--dir` it cannot check what a revocation dropped.
 - **The keyring file** (the public certificates, binary and armoured) is written into the trust set by `apply`, once M5 builds it. It refuses to mix test and real roots, and is verified before it is written. The release pipeline builds the package from it ([record 0009](../decisions/0009-release-keys-and-the-keyring.md), rules 21 to 23).
 
-The codes of the new objects are in the output as `reasons`, like the others; `trust_sequence` and `artifacts` are written by the commands that write trust files.
+The codes of these files are in the output as `reasons`, like the others; `trust_sequence` and `artifacts` are written by the commands that write trust files.
 
 :::note[Proposed]
 `new` makes the wanted files, and ritueel never rewrites a wanted file on its own ([record 0006](../decisions/0006-bundle-history-and-trust-files.md), rules 5 and 31). `--with`, `--key-dir`, `check request --delegation`, `close --reason`, `--decline` and the arguments of `verify root-list` are the arguments this page adds to the commands of record 0005.

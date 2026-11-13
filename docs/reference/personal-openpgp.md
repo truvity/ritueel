@@ -7,7 +7,7 @@ sidebar:
 
 *Not built yet. This is the page that [record 0008](../decisions/0008-a-persons-own-key.md) leaves for the details, and that record is `Accepted`. It decides the profile, how long a person's primary lives, the two stages of the key, the day-to-day subkeys and how a subkey is retired. The [hand-off contract](/reference/hand-off-contract/#openpgp-subkey) carries the signing and the authentication capability, with their test vectors. The code is [issue #18](https://github.com/truvity/ritueel/issues/18): stage one is M3, and stage two is M6. How to use the result is in [Sign git commits and tags](/guides/openpgp-sign-git/) and [Your own OpenPGP key](/guides/personal-openpgp/).*
 
-There is no key the company issues to staff: every person uses OpenPGP as their own key ([record 0008](../decisions/0008-a-persons-own-key.md)). A person's own OpenPGP key is the same ritual as a service's subkey: a key is made in a store and bound under a primary. Here the primary is the person's, offline in a key file, and the subkeys are born on the person's cards. ritueel runs it with the engine of the company case, with the X.509 half switched off.
+There is no key the company issues to staff: every person uses OpenPGP as their own key ([record 0008](../decisions/0008-a-persons-own-key.md)). A person's own OpenPGP key is the same ritual as a service's subkey: a key is made in a key store and bound under a primary. Here the primary is the person's, offline in a key file, and the subkeys are born on the person's cards. ritueel runs it with the engine of the company case, with the X.509 half switched off.
 
 ## The bundle
 
@@ -27,7 +27,7 @@ policy:
   validity_months: 13
 ```
 
-`kind: personal` replaces `name` and `release_address` with `person` (a name of 1 to 64 characters and an address) and is otherwise [the same file](/reference/bundle/#ritueelyaml). It is additive: a file without `kind` is a company bundle, as before. Its two delegations, `daily` (`capability: sign`) and `ssh` (`capability: authenticate`), are wanted delegation files under the OpenPGP root ([a delegation file](/reference/bundle/#a-delegation-file)).
+`kind: personal` replaces `name` and `release_address` with `person` (a name of 1 to 64 characters and an address) and is otherwise [the same file](/reference/bundle/#ritueelyaml). It is additive: a file without `kind` is a company bundle. Its two delegations, `daily` (`capability: sign`) and `ssh` (`capability: authenticate`), are wanted delegation files under the OpenPGP root ([a delegation file](/reference/bundle/#a-delegation-file)).
 
 | Part | In a company bundle | In a personal bundle |
 |---|---|---|
@@ -35,7 +35,7 @@ policy:
 | `root.json` | Has `x509_spki_sha256`. | Has no X.509 member. |
 | Trust files | Root list, CA bundle, CRLs, SSH CA key list, keyring file. | The person's public certificate in the trust set, `<fingerprint>.pgp` and `.asc`. |
 | Hand-off check 3 | The primaries equal those on the root list. | They equal the bundle's one primary ([the contract](/reference/hand-off-contract/#what-the-certifier-checks-1)). |
-| Target of the root set | 2 or 1. | 1; `status` raises no `root-set` finding for it. |
+| Target number of root keys | 2 or 1. | 1; `status` raises no `root-set` finding for it. |
 | Adding, retiring or revoking a root key | [As the transitions page says](/reference/transitions/). | The same, with the OpenPGP half only: no cross-certificate. |
 | The software root | A test root only for a company. | The real primary, in the encrypted file backend ([the software store](/reference/software-store/)). |
 

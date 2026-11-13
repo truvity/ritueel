@@ -5,7 +5,7 @@ sidebar:
   order: 9
 ---
 
-*Not built yet. This is the page that [record 0003](../decisions/0003-root-cards.md) leaves for the formats of the `piv` store; the code is [issue #11](https://github.com/truvity/ritueel/issues/11): the card files and the card maps come with M2, and the `piv` store and the card adoption with M6. The rows of slots are in that record and are not repeated here. The commands, words and file names on this page are from before the decisions of 2026-11-12; the design is at https://ritueel.id/design/.*
+*Not built yet. This is the page that [record 0003](../decisions/0003-root-cards.md) leaves for the formats of the `piv` store; the code is [issue #11](https://github.com/truvity/ritueel/issues/11): the card files and the card maps come with M2, and the `piv` store and the card adoption with M6. The rows of slots are in that record and are not repeated here.*
 
 A root card is a hardware token that is used for root keys only: the root keys of the holder's bundles, each bundle in its own row, and the card's own jobs in row 1 ([record 0003](../decisions/0003-root-cards.md), rules 3 and 12). It is never also a day-to-day card, a server card or a rehearsal card. Before it holds anything, the holder sets its PIN with the maker's tool ([Prepare a root card](/guides/prepare-a-root-card/)). ritueel then adopts it, which replaces the PUK and the management key with random ones sealed in the bundle ([record 0003](../decisions/0003-root-cards.md)); it registers the card, checks it before every ceremony, and keeps the evidence that a key was born on it. A root card is used on the holder's workstation, under the four conditions of [record 0005](../decisions/0005-a-ceremony-and-where-it-runs.md) (a touch for every signature, the number of signatures stated in the plan, no retry of a failed touch, and a check on a second device), or in the offline system, by the rules of the ceremony record ([record 0003](../decisions/0003-root-cards.md)).
 
@@ -20,7 +20,7 @@ A server card works like a small do-it-yourself HSM, but it is an ordinary card,
 | `root` | Holds root keys by row. | Adopts it, seals its secrets, checks its layout; used on the workstation or in the offline system, by the rules of the ceremony record. |
 | `day-to-day` | A person's signing and authentication subkeys, and passkeys. | Adopts it; the Admin PIN is sealed. |
 | `server` | Stays plugged into a server of a requester system and signs for its services. | Lists it and only ever reads it. Its slots follow the requester's layout. No adoption, no sealed file, no layout check. |
-| `rehearsal` | Practice and tests (earlier pages and dated research call it a "test card"). It never holds a real key, may be reset, and serves only a test root. | Lists it. The M1 proofs and the drills use it. |
+| `rehearsal` | Practice and tests. It never holds a real key, may be reset, and serves only a test root. | Lists it. The M1 proofs and the drills use it. |
 
 ## Files
 
@@ -38,7 +38,7 @@ The sealed file is not public material: it is safe only because the recipients' 
 ## The card file and the card map
 
 :::note[Proposed]
-The maintainer decided what the bundle holds for cards: one wanted card file for each card, which a person writes, and one card map for each card, which ritueel writes. The file names, the members and the values below are the proposed shape, awaiting his word, and are fixed with the card proofs (M1).
+[Record 0003](../decisions/0003-root-cards.md), rule 5, and [record 0006](../decisions/0006-bundle-history-and-trust-files.md), rule 5, decide what the bundle holds for cards: one wanted card file for each card, which a person writes, and one card map for each card, which ritueel writes. The file names, the members and the values below are the proposed shape, and are fixed with the card proofs (M1).
 :::
 
 A person writes the card file ([record 0006](../decisions/0006-bundle-history-and-trust-files.md), rule 5). ritueel writes the card map from the read-only check, and nobody edits it ([record 0003](../decisions/0003-root-cards.md), rule 5). The plan names a card that the ceremony adopts, so that the person confirms it.
@@ -183,7 +183,7 @@ A test with no hardware verifies a recorded chain for every firmware family the 
 
 ## Other makers
 
-A maker joins the attestation bundle ([record 0003](../decisions/0003-root-cards.md)) when a store for it is admitted, and a store is supported only after it is proven ([record 0002](../decisions/0002-where-a-key-lives.md)). A token that offers no attestation has no attestation bundle and cannot hold a root key that others rely on ([record 0002](../decisions/0002-where-a-key-lives.md)).
+A maker joins the attestation bundle ([record 0003](../decisions/0003-root-cards.md)) when a key store for it is admitted, and a key store is supported only after it is proven ([record 0002](../decisions/0002-where-a-key-lives.md)). A token that offers no attestation has no attestation bundle and cannot hold a root key that others rely on ([record 0002](../decisions/0002-where-a-key-lives.md)).
 
 ## Follow-ups
 
