@@ -23,14 +23,15 @@ func intKinds() []intKind {
 		{"int8", reflect.TypeFor[int8](), "-128", "127"},
 		{"int16", reflect.TypeFor[int16](), "-32768", "32767"},
 		{"int32", reflect.TypeFor[int32](), "-2147483648", "2147483647"},
-		{"int64", reflect.TypeFor[int64](), "-9223372036854775808", "9223372036854775807"},
-		{"int", reflect.TypeFor[int](), "-9223372036854775808", "9223372036854775807"},
+		{"int64", reflect.TypeFor[int64](), safeMinText, safeMaxText},
+		{"int", reflect.TypeFor[int](), safeMinText, safeMaxText},
 		{"uint8", reflect.TypeFor[uint8](), "0", "255"},
 		{"uint16", reflect.TypeFor[uint16](), "0", "65535"},
 		{"uint32", reflect.TypeFor[uint32](), "0", "4294967295"},
-		// A document holds an integer of at most int64, so the largest that can be read is that.
-		{"uint64", reflect.TypeFor[uint64](), "0", "9223372036854775807"},
-		{"uint", reflect.TypeFor[uint](), "0", "9223372036854775807"},
+		// A document holds an integer of at most 2^53-1, so the largest that can be read is that,
+		// for a 64-bit kind of any sign.
+		{"uint64", reflect.TypeFor[uint64](), "0", safeMaxText},
+		{"uint", reflect.TypeFor[uint](), "0", safeMaxText},
 		{"a named int8", reflect.TypeFor[myInt8](), "-128", "127"},
 		{"a named uint8", reflect.TypeFor[myUint8](), "0", "255"},
 	}
@@ -168,13 +169,13 @@ func TestEveryKindOfIntegerAtItsEdges(t *testing.T) {
 					t.Errorf("%s was read as %s", in, text)
 				}
 			}
-			// One beyond on each side. An integer that does not fit 64 bits is refused by the parser,
-			// before it is a value of any kind; any other by the kind of the field.
+			// One beyond on each side. An integer outside the range of a record is refused by the
+			// parser, before it is a value of any kind; any other by the kind of the field.
 			for _, in := range []string{minusOne(k.min), plusOne(k.max)} {
 				_, err := read(in)
 				doc := `{"n":` + in + `}`
-				if _, perr := strconv.ParseInt(in, 10, 64); perr != nil {
-					fail(t, err, mal("$.n", "the integer does not fit 64 bits"+byteAfter(doc, in)))
+				if isOutside(in) {
+					fail(t, err, mal("$.n", outside(in)+byteAfter(doc, in)))
 				} else {
 					fail(t, err, mal("$.n", fmt.Sprintf("the integer %s does not fit the type %s", in, k.typ)))
 				}
@@ -242,7 +243,7 @@ func TestNumbersThatAreNotIntegers(t *testing.T) {
 		for _, in := range []string{strings.Repeat("9", 20), strings.Repeat("1", 100), "-" + strings.Repeat("9", 20), "1" + strings.Repeat("0", 1000)} {
 			doc := `{"n":` + in + `}`
 			_, err := read(typ, doc, Options{})
-			fail(t, err, mal("$.n", "the integer does not fit 64 bits"+byteAfter(doc, in)))
+			fail(t, err, mal("$.n", outside(in)+byteAfter(doc, in)))
 		}
 	})
 	t.Run("minus zero is zero, for a signed kind and for any", func(t *testing.T) {
@@ -312,7 +313,7 @@ func TestRawTakesTheExactBytesOfAnObject(t *testing.T) {
 			{`{"a":1.5}`, "a number with a fraction or an exponent"},
 			{`{"a":null}`, "null"},
 			{`{"a":"` + bs + `ud800"}`, "a lone surrogate escape"},
-			{`{"a":99999999999999999999}`, "the integer does not fit 64 bits"},
+			{`{"a":99999999999999999999}`, outside("99999999999999999999")},
 		} {
 			var d doc
 			err := Unmarshal([]byte(`{"r":`+tc.in+`}`), &d, Options{})
