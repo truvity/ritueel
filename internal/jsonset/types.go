@@ -11,8 +11,8 @@ import (
 type Mode uint8
 
 const (
-	// Writing asks whether a Go type can be written. An interface of any method set can: only
-	// the value it holds is judged.
+	// Writing asks whether a Go type can be written. An interface can, unless it declares one of
+	// the four marshal or unmarshal methods: the value it holds is judged.
 	Writing Mode = iota
 	// Reading asks whether a Go type can be filled from a document. An interface can only when it
 	// has no methods.
@@ -207,9 +207,13 @@ func through(r *Refusal, first Hop) *Refusal {
 
 // foreign says why a type that writes or reads its own JSON or text, or the json.Number that the
 // standard encoder writes as a bare number, is refused: what such a type does is not something
-// these packages can vouch for. It is empty for any other type. A pointer type is not asked: the
+// these packages can vouch for. An interface type that declares one of the four methods is
+// refused the same way, in both directions: the set is closed, and a value that brings its own
+// encoding is what it keeps out. It is empty for any other type. A pointer type is not asked: the
 // method set of *T holds the methods of T, so *Raw would be refused for the methods of Raw; the
-// methods are asked of T when the walk reaches it, and a method on *T is found there too.
+// methods are asked of T when the walk reaches it. The method set of *T holds those of T, so for
+// a type that is not an interface *T is the one to ask; for an interface type it is the type
+// itself, since a pointer to an interface has no methods.
 func foreign(t reflect.Type) string {
 	if t.Kind() == reflect.Pointer {
 		return ""
@@ -217,10 +221,12 @@ func foreign(t reflect.Type) string {
 	if t.PkgPath() == "encoding/json" && t.Name() == "Number" {
 		return "a json.Number is not part of ritueel's JSON; use an integer type"
 	}
+	methods := reflect.PointerTo(t)
+	if t.Kind() == reflect.Interface {
+		methods = t
+	}
 	for _, name := range []string{"MarshalJSON", "MarshalText", "UnmarshalJSON", "UnmarshalText"} {
-		_, onType := t.MethodByName(name)
-		_, onPointer := reflect.PointerTo(t).MethodByName(name)
-		if onType || onPointer {
+		if _, found := methods.MethodByName(name); found {
 			return "the type has a " + name + " method; only Raw carries JSON of its own"
 		}
 	}

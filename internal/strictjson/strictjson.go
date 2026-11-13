@@ -65,8 +65,9 @@
 // Refused as a type, whatever the document says: a float, a complex number, a channel, a
 // function, a uintptr, an unsafe pointer, a json.Number, a type that has a MarshalJSON, MarshalText,
 // UnmarshalJSON or UnmarshalText method (other than Raw), a map whose key is not of kind string
-// or has a method, a pointer to a pointer or to an interface, an interface with methods, and a
-// struct that breaks the rules above. A type that refers to itself is judged once. The refusal
+// or has a method, a pointer to a pointer or to an interface, an interface with methods (one that
+// declares MarshalJSON, MarshalText, UnmarshalJSON or UnmarshalText is refused by the writer
+// too), and a struct that breaks the rules above. A type that refers to itself is judged once. The refusal
 // of the element type of a list or the value type of a map says so in words ("the elements of
 // $.l", "the values of $.m"), because no index or name belongs to a type; the refusal of a type
 // behind a pointer names the type that the caller wrote.
