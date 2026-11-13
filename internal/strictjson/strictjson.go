@@ -23,8 +23,13 @@
 //   - A struct: from an object, its exported fields, matched to the members by name. The name of
 //     a field is its tag `json:"name"` or else its Go name. The tag `json:"-"` and an unexported
 //     field are not filled. The option omitempty is accepted and changes nothing on reading.
-//     Any other tag option, an embedded field, a tag name that encoding/json would not use and two
-//     fields of one name refuse the type, with the texts that the writer uses.
+//     A member name holds only ASCII letters, digits and underscores: the names of the decided
+//     formats do, and the set is kept small because a name is part of a signed format and a
+//     person must be able to tell two names apart. A field with no tag has its Go name, with the
+//     upper-case first letter of an exported name; that is allowed, since the exact match refuses
+//     a format struct that forgot a tag at the first real file. Any other tag option, an embedded
+//     field, a member name outside that set and two fields of one name refuse the type, with the
+//     texts that the writer uses.
 //   - A map whose key is of kind string and has no method of its own: from an object, one entry
 //     for each member. A map is always made, so an empty object gives an empty map that is not
 //     nil.

@@ -5,7 +5,6 @@ import (
 	"slices"
 	"strconv"
 	"strings"
-	"unicode"
 )
 
 // Mode says what the Checker's answers are for.
@@ -256,8 +255,12 @@ func structFields(t reflect.Type) *structInfo {
 		}
 		if name == "" {
 			name = f.Name
+			if !validName(name) {
+				info.err = "field " + f.Name + " has no tag name, and its Go name is not a member name; " + nameRule
+				return info
+			}
 		} else if !validName(name) {
-			info.err = "field " + f.Name + " has the tag name " + strconv.QuoteToASCII(name) + ", which encoding/json would not use"
+			info.err = "field " + f.Name + " has the tag name " + strconv.QuoteToASCII(name) + "; " + nameRule
 			return info
 		}
 		if seen[name] {
@@ -271,16 +274,15 @@ func structFields(t reflect.Type) *structInfo {
 	return info
 }
 
-// validName reports whether encoding/json would use s as the name of a field: letters, digits and
-// the punctuation that it allows, but not a quote or a backslash.
+// nameRule is the text of the rule for the name of a member of a struct, for the errors.
+const nameRule = "a member name holds only ASCII letters, digits and underscores, and is not empty"
+
+// validName reports whether s is a member name that a struct may have: ASCII letters, digits and
+// underscores. It is never called with an empty name: a tag without a name takes the Go name of
+// the field, which is not empty.
 func validName(s string) bool {
-	if s == "" {
-		return false
-	}
 	for _, c := range s {
-		switch {
-		case strings.ContainsRune("!#$%&()*+-./:;<=>?@[]^_{|}~ ", c):
-		case !unicode.IsLetter(c) && !unicode.IsDigit(c):
+		if c != '_' && (c < '0' || c > '9') && (c < 'a' || c > 'z') && (c < 'A' || c > 'Z') {
 			return false
 		}
 	}
