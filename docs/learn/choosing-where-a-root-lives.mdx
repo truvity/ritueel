@@ -13,7 +13,7 @@ import Figure from '../../site/src/components/Figure.astro';
 
 You are about to make a root, and the first question is where it will live. The answer is hard to undo: a key never moves from one key store to another. A new key in the new key store is made, an old key vouches for it, and the two overlap ([moving from one root to another](/learn/transitions/)). So choose with some care.
 
-This page sits at the first link of [the custody chain](/learn/custody-chain/): the key store that holds the root. It helps you choose; the pages under "Where to go next" explain the key stores.
+This page assumes the [basics](/learn/what-is-a-root/#keys-from-zero). It sits at the first link of [the custody chain](/learn/custody-chain/): the key store that holds the root. It helps you choose; the pages under "Where to go next" explain the key stores.
 
 ritueel has three key stores for a root ([record 0002](../decisions/0002-where-a-key-lives.md), [record 0003](../decisions/0003-root-cards.md), [record 0004](../decisions/0004-the-cloud-root.md)). They arrive in different milestones, as the picture below shows:
 
@@ -55,11 +55,11 @@ ritueel keeps the key of a software root in a file encrypted with age, a small f
 
 ## How a passkey opens the file
 
-The file is locked to an unlock key and a recovery key. A secret from the passkey on any card named for the file opens the unlock key, and the unlock key opens the file. Each such card has its own passkey and all open the same unlock key, so any one card is enough. Opening needs the card, the card's PIN for the passkey and a touch. Locking a new file needs only the public part of the unlock key, so it needs no card. ([How a passkey opens a key file](/learn/how-passkeys-work/#a-passkey-that-opens-a-key-file) shows the steps.)
+The file is locked to an unlock key and a recovery key. A secret from the passkey on any card named for the file opens the unlock key, and the unlock key opens the file. Each such card has its own passkey and all open the same unlock key, so any one card is enough. Opening needs the card, the card's PIN for the passkey and a touch. Locking a new file needs only the public part of the unlock key, so it needs no card. ([How a passkey opens a key file](/learn/a-key-in-a-file/#a-passkey-that-opens-a-key-file) shows the steps.)
 
 Three ways are not supported, each with its reason in [record 0002](../decisions/0002-where-a-key-lives.md): a **synced passkey** (it puts a root-level file behind a cloud account), **unlocking in ritueel's browser page, which runs on your own machine** (the browser would hand the secret to the page, and the offline system has no browser), and **a day-to-day card as the unlocker** (it is carried and used every day). A password-manager passkey or unlock item is not offered either; the recovery passphrase kept in the manager gives the same.
 
-**Decided, not yet proven.** Whether this works with PIN and touch over USB is tried first on a rehearsal card (milestone M1 in the [roadmap](/roadmap/)). If it fails, a key in a slot of the card's PIV application (slot 9d) opens the file instead. Both outcomes are decided, so only the result is waited for; [how passkeys work](/learn/how-passkeys-work/#a-passkey-that-opens-a-key-file) has the full account.
+**Decided, not yet proven.** Whether this works with PIN and touch over USB is tried first on a rehearsal card (milestone M1 in the [roadmap](/roadmap/)). If it fails, a key in a slot of the card's PIV application (slot 9d) opens the file instead. Both outcomes are decided, so only the result is waited for; [how passkeys work](/learn/a-key-in-a-file/#a-passkey-that-opens-a-key-file) has the full account.
 
 ## The three key stores side by side
 

@@ -9,7 +9,7 @@ sidebar:
 
 A cloud root has no card, no PIN and no touch. What keeps it from being used by the wrong person, and what happens if it is deleted? AWS KMS (Key Management Service) keeps keys that can sign but cannot be taken out. A program asks it to sign a digest, and it answers with the signature. The rules about who may ask are the whole protection, so this page spends most of its words on them.
 
-A cloud root is link 1 of [the custody chain](/learn/custody-chain/), the way a root card is. The rare, manual use of it is [a ceremony](/glossary/), and the steps to set one up are [Prepare the cloud root](/guides/prepare-the-cloud-root/). A deleted key or a locked account is a case for [Recover](/learn/recover/). This page is the cloud counterpart of [how a YubiKey holds keys](/learn/how-a-yubikey-holds-keys/), and it explains the "read from the service" kind of evidence in [what a key store can prove](/learn/what-a-store-can-prove/).
+This page assumes the [basics](/learn/what-is-a-root/#keys-from-zero) and [the custody chain](/learn/custody-chain/). A cloud root is link 1 of that chain, the way a root card is. The rare, manual use of it is [a ceremony](/glossary/), and the steps to set one up are [Prepare the cloud root](/guides/prepare-the-cloud-root/). A deleted key or a locked account is a case for [Recover](/learn/recover/). This page is the cloud counterpart of [how a YubiKey holds keys](/learn/how-a-yubikey-holds-keys/), and it explains the "read from the service" kind of evidence in [what a key store can prove](/learn/what-a-store-can-prove/).
 
 ## What it is made of
 
