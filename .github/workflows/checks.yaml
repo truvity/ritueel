@@ -1,8 +1,9 @@
 # Judges pull requests: the site (description lint, a strict build that includes the demo of the local
 # page, a link check, the Worker's tests and dry-run deploy, the status page in a browser), the local
 # page and its API (the Protobuf lint and generated code, the page's lint and tests, both builds, the page
-# in a browser under the site's policy), the workflows themselves (actionlint) and the repository rules
-# (`just check-rules`). It never publishes (site.yaml does), and it is not path-filtered, so
+# in a browser under the site's policy), the workflows themselves (actionlint), the repository rules
+# (`just check-rules`) and the Go code (formatting, vet, the linter, the module checks, the tests, the
+# static build). It never publishes (site.yaml does), and it is not path-filtered, so
 # it can be made a required check on `main`.
 name: Checks
 
@@ -68,6 +69,36 @@ jobs:
       - uses: truvity/ci-actions/setup-devbox@20ac3b00eb467df81a8288192feda853d8e7085d # v3.12.0
       - run: devbox run -- actionlint
 
+  # The Go code (cmd/, internal/, tools/): formatting, go vet, the linter, the module checks, the
+  # tests and the static build (`just go-check`). The tools come from this repository's own
+  # devbox.json and devbox.lock, installed by a public action (not the shared setup action of the
+  # other jobs). A pull request only restores the Go caches; go-cache.yaml saves them from `main`.
+  # refresh-cli keeps the install action from saving its own cache from a pull request.
+  go:
+    name: go (format, vet, lint, modules, tests, static build)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: jetify-com/devbox-install-action@8c6a66ed6273138b1915457069de78cb52fe3bd7 # v0.15.0
+        with:
+          devbox-version: "0.19.0"
+          enable-cache: "false"
+          refresh-cli: "true"
+      - name: Restore the Go caches (this job never saves them)
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            ~/.cache/go-build
+            ~/go/pkg/mod
+          key: go-${{ runner.os }}-${{ hashFiles('go.sum', 'devbox.lock') }}-${{ github.sha }}
+          restore-keys: |
+            go-${{ runner.os }}-${{ hashFiles('go.sum', 'devbox.lock') }}-
+            go-${{ runner.os }}-
+      - run: devbox run -- just go-check
+
   # The repository rules (tools/checks/, `just check-rules`), and the same public-content scan
   # over the commit messages and the pull request's title and body (`just check-messages`).
   # PUBLIC_CONTENT_DENYLIST is a repository secret: the private names that must never appear
@@ -98,16 +129,16 @@ jobs:
 
   # One name to require. A job that was skipped or cancelled is not a pass.
   checks:
-    needs: [site, ui, workflows, rules]
+    needs: [site, ui, workflows, rules, go]
     if: ${{ !cancelled() }}
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
       - name: Every check succeeded
         env:
-          RESULTS: ${{ needs.site.result }} ${{ needs.ui.result }} ${{ needs.workflows.result }} ${{ needs.rules.result }}
+          RESULTS: ${{ needs.site.result }} ${{ needs.ui.result }} ${{ needs.workflows.result }} ${{ needs.rules.result }} ${{ needs.go.result }}
         run: |
-          echo "site ui workflows rules: $RESULTS"
+          echo "site ui workflows rules go: $RESULTS"
           for r in $RESULTS; do
             [ "$r" = "success" ] || { echo "::error::a check did not succeed"; exit 1; }
           done

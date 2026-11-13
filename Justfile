@@ -195,5 +195,73 @@ proto-check: proto-gen
 # Every repository rule.
 check-rules: check-selftest check-decisions check-record-refs check-public check-yaml-ext check-mdx-pages check-agent-links check-vectors
 
+# The Go code (cmd/, internal/, tools/). Run the recipes inside the devbox shell like the rest.
+
+# The packages the Go recipes look at. Spelled out, because `./...` would also walk Go files that npm
+# packages ship inside ui/node_modules or site/node_modules. A new top-level Go directory is added here
+# and to `go-fmt`.
+go_packages := "./cmd/... ./internal/... ./tools/..."
+
+# Everything a pull request must pass for the Go code. Needs the module download; no credential, no
+# device. Cheap checks first. `go-vuln` is not part of it (security.yaml runs it).
+go-check: go-fmt go-tidy go-verify go-vet go-lint go-test go-build
+
+# gofmt -s finds nothing to change in the module's own Go files (tracked or new, never ignored ones,
+# so not node_modules; testdata/ is skipped as the go tool skips it). The linter's gofmt and goimports
+# formatters check the same again. Fails when there is no Go file: a check that finds nothing fails.
+go-fmt:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    mapfile -t files < <(git ls-files --cached --others --exclude-standard -- cmd internal tools | grep -E '\.go$' | grep -v '/testdata/' || true)
+    [ "${#files[@]}" -gt 0 ] || { echo "go-fmt: no Go file found" >&2; exit 1; }
+    out=$(gofmt -l -s "${files[@]}")
+    [ -z "$out" ] || { echo "go-fmt: run gofmt -s -w on:" >&2; echo "$out" >&2; exit 1; }
+
+# go vet on every package, built the way the release is built (no cgo, from the environment).
+go-vet:
+    go vet {{ go_packages }}
+
+# The one linter. `config verify` first: `run` accepts a settings block in the wrong place silently.
+# GOTOOLCHAIN=local keeps the linter and the code on the Go that devbox.json pins.
+go-lint:
+    golangci-lint config verify
+    GOTOOLCHAIN=local golangci-lint run {{ go_packages }}
+
+# go.mod and go.sum are what `go mod tidy` would write.
+go-tidy:
+    go mod tidy -diff
+
+# Download the modules, then check each one against go.sum. It downloads, which is why the Go job has network.
+go-verify:
+    go mod download
+    go mod verify
+
+# The unit tests. No network, no device, no cloud key.
+go-test:
+    go test {{ go_packages }}
+
+# The release build, as the release makes it: static, no cgo, paths trimmed, the version and the commit
+# stamped in (VERSION and COMMIT in the environment override git's answer). Then: the file is a static
+# Linux executable (tools/elfcheck), `version` exits 0, and no arguments exit 2 (a usage error).
+go-build:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    version="${VERSION:-$(git describe --tags --match 'v[0-9]*' --dirty --always 2>/dev/null || echo dev)}"
+    commit="${COMMIT:-$(git rev-parse HEAD 2>/dev/null || echo unknown)}"
+    pkg=ritueel.id/ritueel/internal/buildinfo
+    mkdir -p bin
+    CGO_ENABLED=0 go build -trimpath \
+      -ldflags "-s -w -X ${pkg}.version=${version} -X ${pkg}.commit=${commit}" \
+      -o bin/ritueel ./cmd/ritueel
+    go run ./tools/elfcheck bin/ritueel
+    bin/ritueel version
+    rc=0; bin/ritueel > /dev/null 2>&1 || rc=$?
+    [ "$rc" -eq 2 ] || { echo "go-build: no arguments should exit 2, got $rc" >&2; exit 1; }
+
+# Known vulnerabilities in what this module imports. Its own workflow (security.yaml), never in `check`:
+# a new advisory is news about the world, not about the change.
+go-vuln:
+    govulncheck {{ go_packages }}
+
 # Everything a pull request must pass.
-check: check-rules site-check site-workers site-render proto-check ui-lint ui-test ui-e2e
+check: check-rules site-check site-workers site-render proto-check ui-lint ui-test ui-e2e go-check

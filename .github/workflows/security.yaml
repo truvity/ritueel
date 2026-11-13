@@ -1,0 +1,35 @@
+# Known vulnerabilities in what the Go module imports (`just go-vuln`, govulncheck). It is not part of
+# `checks` and not a required check: a new advisory is news about the world, not about the change under
+# review, so it must not block a merge. It runs on `main`, on pull requests, every day and on demand.
+name: Security
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    - cron: "0 6 * * *" # every day at 06:00 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: security-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  govulncheck:
+    name: govulncheck (vulnerabilities in the imported modules)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: jetify-com/devbox-install-action@8c6a66ed6273138b1915457069de78cb52fe3bd7 # v0.15.0
+        with:
+          devbox-version: "0.19.0"
+          enable-cache: "false"
+          refresh-cli: "true"
+      - run: devbox run -- just go-vuln
