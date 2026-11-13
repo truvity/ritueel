@@ -42,6 +42,11 @@
 // holder cannot see, and when it is a device name of Windows ("aux", "Aux.json"), which a
 // Windows system cannot open.
 //
+// A name that the holder chooses, a label, can be refused by these rules (a device name, a
+// name that ends with a dot or a space, a character that is not printable). The code that turns
+// a label into a name must check the label when the holder types it and say why it is refused,
+// and must not leave the refusal to the write.
+//
 // What the writer does not check:
 //
 //   - Case between two separate calls. exFAT keeps the case of a name and compares names
