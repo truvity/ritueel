@@ -68,7 +68,9 @@ func (c *Call) declared(name string) *ucli.Command {
 }
 
 // commandFunc is the body of one command. It returns the Result of a command that ended as
-// it should, or an error; ExitFor maps the error to an exit code. It writes nothing to
+// it should, or an error; ExitFor maps the error to an exit code. It never returns both nil: a
+// command that has nothing to say still returns a Result (help is shown by the library, before the
+// command runs). It writes nothing to
 // standard output itself in JSON mode: the object is written once, by Run.
 type commandFunc func(ctx context.Context, c *Call) (*Result, error)
 
@@ -232,9 +234,12 @@ func (inv *invocation) newCommand(s spec, parents, inherited []string) *ucli.Com
 			_, _ = ExitFor(err)
 			return err
 		}
-		if res != nil {
-			res.Outcome = agreed(res.ExitCode, res.Outcome)
+		if res == nil {
+			// Help is shown by the library before the action runs, so no command returns nothing
+			// on purpose; a command that does has forgotten its result.
+			panic(fmt.Sprintf("cli: the command %q returned neither a result nor an error", strings.Join(path, " ")))
 		}
+		res.Outcome = agreed(res.ExitCode, res.Outcome)
 		inv.result = res
 		return nil
 	}
