@@ -221,7 +221,7 @@ const (
 	reasonOption = "field %s has the tag option %q; only omitempty is allowed"
 	reasonTwice  = "two fields are named %q"
 	// reasonNameRule is the rule for the name of a member of a struct, as the errors say it.
-	reasonNameRule = "a member name holds only ASCII letters, digits and underscores, and is not empty"
+	reasonNameRule = "a member name holds only ASCII letters, digits and underscores"
 	reasonTopKind  = "the top of a document is one JSON object, which fills a struct, a map, a Raw or an interface with no methods"
 )
 
@@ -646,7 +646,7 @@ func refusedTargets() []refusedTarget {
 	}
 	badName := func(name, tag, shown string) refusedTarget {
 		r := tagged(tag)
-		r.name, r.fault = name, withTag(tag).String()
+		r.name, r.fault = name, typeText(withTag(tag))
 		r.reason = "field F has the tag name " + shown + "; " + reasonNameRule
 		return r
 	}
@@ -741,7 +741,7 @@ func TestUnmarshalRefusesEveryKindOutsideTheClosedSet(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			// own: the type at fault is the type itself. Such a type behind a pointer is named as the
 			// caller wrote it, with its pointer.
-			own := tc.typ.String() == tc.fault
+			own := typeText(tc.typ) == tc.fault
 			route := splitRoute(tc.route)
 			// The document is not looked at: not JSON at all, or fine, the refusal is the same.
 			for _, doc := range []string{`not json`, `{}`, ``, `{"F":1.5}`} {

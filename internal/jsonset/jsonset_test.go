@@ -806,7 +806,7 @@ func fieldsOf(t *testing.T, typ reflect.Type) (names []string, reason string) {
 }
 
 // reasonName is the rule for the name of a member of a struct, as the errors say it.
-const reasonName = "a member name holds only ASCII letters, digits and underscores, and is not empty"
+const reasonName = "a member name holds only ASCII letters, digits and underscores"
 
 // tagNameRefused is the reason for the field F0 of a built struct whose tag name is refused; shown
 // is the name as the error shows it (quoted, with an escape for what is not printable ASCII).

@@ -1,7 +1,6 @@
 package strictjson
 
 import (
-	"errors"
 	"fmt"
 	"reflect"
 	"slices"
@@ -23,6 +22,20 @@ func qesc(r rune) string {
 		return fmt.Sprintf("%cu%04x%cu%04x", '\\', 0xD800+(v>>10), '\\', 0xDC00+(v&0x3FF))
 	}
 	return fmt.Sprintf("%cu%04x", '\\', r)
+}
+
+// typeText is the text of a Go type in an error: reflect's own text, with every character that is
+// not printable ASCII (a look-alike in the name of a type or of a field) written as qesc writes it.
+func typeText(t reflect.Type) string {
+	var b strings.Builder
+	for _, r := range t.String() {
+		if r >= 0x20 && r < 0x7f {
+			b.WriteRune(r)
+		} else {
+			b.WriteString(qesc(r))
+		}
+	}
+	return b.String()
 }
 
 // quotedName is a name as an error shows it when it is not plain: in quotes, a quote or a
@@ -140,7 +153,7 @@ func TestUnmarshalTakesAStructNameOfLettersDigitsAndUnderscoresOnly(t *testing.T
 						t.Errorf("a comma alone: %v, %v", v, err)
 					}
 				case c == ',':
-					fail(t, err, mal("$", fmt.Sprintf("a value of type %s cannot be read: field F0 has the tag option \"b\"; only omitempty is allowed", typ)))
+					fail(t, err, mal("$", fmt.Sprintf("a value of type %s cannot be read: field F0 has the tag option \"b\"; only omitempty is allowed", typeText(typ))))
 				case c == '-' && form.what == "alone":
 					// A dash alone leaves the field out: the member is unknown.
 					v, err = readInto(typ, `{}`)
@@ -153,7 +166,7 @@ func TestUnmarshalTakesAStructNameOfLettersDigitsAndUnderscoresOnly(t *testing.T
 						t.Errorf("%q: %v, %v", form.name, v, err)
 					}
 				default:
-					fail(t, err, mal("$", fmt.Sprintf("a value of type %s cannot be read: %s", typ, nameRefused("F0", form.name))))
+					fail(t, err, mal("$", fmt.Sprintf("a value of type %s cannot be read: %s", typeText(typ), nameRefused("F0", form.name))))
 					// Whatever the document says, even `{}`: the type is refused before a byte is read.
 					if _, err := readInto(typ, `{}`); err == nil {
 						t.Error("the type was accepted for an empty document")
@@ -178,7 +191,7 @@ func TestUnmarshalRefusesStructNamesOutsideASCIIWithEscapes(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			typ := oneFieldType(tagOf(tc.in))
 			_, err := readInto(typ, `{}`)
-			fail(t, err, mal("$", fmt.Sprintf("a value of type %s cannot be read: %s", typ, nameRefused("F0", tc.in))))
+			fail(t, err, mal("$", fmt.Sprintf("a value of type %s cannot be read: %s", typeText(typ), nameRefused("F0", tc.in))))
 		})
 	}
 }
@@ -191,7 +204,7 @@ func TestUnmarshalOfTheDashForms(t *testing.T) {
 	for _, tc := range []struct{ tag, at string }{{`json:"-,"`, "-"}, {`json:"-,omitempty"`, "-"}, {`json:"--"`, "--"}, {`json:"a-b"`, "a-b"}} {
 		typ := oneFieldType(reflect.StructTag(tc.tag))
 		_, err := readInto(typ, `{}`)
-		fail(t, err, mal("$", fmt.Sprintf("a value of type %s cannot be read: %s", typ, nameRefused("F0", tc.at))))
+		fail(t, err, mal("$", fmt.Sprintf("a value of type %s cannot be read: %s", typeText(typ), nameRefused("F0", tc.at))))
 	}
 }
 
@@ -202,14 +215,14 @@ func TestUnmarshalAGoNameWithNoTagIsHeldToTheRule(t *testing.T) {
 			t.Errorf("%s: %v, %v", name, v, err)
 		}
 	}
-	// The text names the field as Go does (which is raw, a doubt that the report raises), so only
-	// the rest of the text is pinned.
-	for _, name := range []string{string(rune(0xC9)) + "cole", "A" + string(rune(0xE9)), string(rune(0x0410)) + "ge", string(rune(0x212A))} {
+	// The Go name of the field is shown as Shown shows it (quoted, with escapes), and so is the type.
+	for _, name := range []string{string(rune(0xC9)) + "cole", "A" + string(rune(0xE9)), string(rune(0x0410)) + "ge", string(rune(0x212A)), string(rune(0x1D400))} {
 		typ := reflect.StructOf([]reflect.StructField{{Name: name, Type: reflect.TypeFor[int]()}})
 		_, err := readInto(typ, `{}`)
-		if !errors.Is(err, ErrMalformed) || !strings.HasSuffix(err.Error(), " has no tag name, and its Go name is not a member name; "+reasonNameRule) ||
-			!strings.HasPrefix(err.Error(), "malformed JSON: $: a value of type "+typ.String()+" cannot be read: field ") {
-			t.Errorf("%q: %v", name, err)
+		want := mal("$", fmt.Sprintf("a value of type %s cannot be read: field %s has no tag name, and its Go name is not a member name; %s", typeText(typ), quotedName(name), reasonNameRule))
+		fail(t, err, want)
+		if strings.ContainsFunc(err.Error(), func(r rune) bool { return r < 0x20 || r >= 0x7f }) {
+			t.Errorf("%q: the text holds a character that is not printable ASCII: %q", name, err)
 		}
 	}
 }
