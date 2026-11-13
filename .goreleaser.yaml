@@ -1,6 +1,10 @@
-# The release build, GoReleaser version 2. The workflow .github/workflows/release.yaml runs it on a
-# tag `vX.Y.Z` through `just go-release`; `just go-release-check` runs the same file as a snapshot,
-# which needs no tag and publishes nothing. The pinned GoReleaser is the one in devbox.json.
+# The release build, GoReleaser version 2. The `build` job of .github/workflows/release.yaml runs it
+# on a tag `vX.Y.Z` through `just go-release-build`; `just go-release-check` runs the same file as a
+# snapshot, which needs no tag. The pinned GoReleaser is the one in devbox.json. GoReleaser only
+# BUILDS here (`--skip=publish`): it makes the archives, SHA256SUMS and the release notes
+# (dist/CHANGELOG.md). It never publishes. The `publish` job of the workflow uploads those files
+# with `gh`, and refuses a tag that already has a release, so nothing is replaced (GOVERNANCE.md: a
+# published version is never reused, moved or deleted).
 #
 # NOTHING HERE IS SIGNED. The archives and SHA256SUMS are plain files, and a consumer's trust in a
 # release is the digest it pinned, not a signature. No release is signed until the project's root is
@@ -59,15 +63,8 @@ checksum:
 snapshot:
   version_template: "{{ .Version }}-{{ .ShortCommit }}"
 
-# A published version is never reused, moved or deleted (GOVERNANCE.md): with no
-# replace_existing_artifacts and the keep-existing mode, a second run for a tag that has a release
-# fails on the files that are already there instead of overwriting them. A tag with a pre-release
-# suffix (`-rc.1`) is published as a pre-release; one without is a normal release.
-release:
-  prerelease: auto
-  mode: keep-existing
-  replace_existing_artifacts: false
-  draft: false
+# There is no `release:` section: GoReleaser does not publish. Whether a release is a pre-release (a tag
+# with a suffix such as `-rc.1`) is decided by the `publish` job.
 
 # The notes come from the commit history (docs/contributing/workflow.md: the history feeds them).
 # The commit subjects are conventional (`docs(scope): ...`), so each filter also takes a scope.

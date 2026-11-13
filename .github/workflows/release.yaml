@@ -4,16 +4,28 @@
 # SHA256SUMS are plain, and a consumer's trust is the digest it pinned. No release is signed until the
 # project's root is adopted and drilled (record 0009, rules 12 to 14).
 #
-# Only a push of a tag runs the publishing job. A pull request cannot reach it: there is no
-# `pull_request`, `pull_request_target` or `workflow_run` trigger. `workflow_dispatch` is a dry run: it
-# runs the `verify` job (go-check, and a snapshot build with go-release-check) and never publishes.
-# No tag is made by this workflow and none is moved or deleted; a published version is never reused,
-# moved or deleted (GOVERNANCE.md), so a second run for a tag that has a release fails on the files
-# that are already there.
+# Three jobs, and the one that writes runs no code of this repository:
+#   verify   read-only: go-check on the tagged commit, which includes the snapshot build.
+#   build    read-only, no token in any step: builds the release for the tag (GoReleaser, without
+#            publishing), checks that build, and keeps exactly the release files as a workflow artifact.
+#   publish  the only job with `contents: write`: it checks out nothing, installs no tool and runs no
+#            code of the repository. It downloads that artifact, checks it against SHA256SUMS, refuses a
+#            tag that already has a release, and uploads exactly those files with `gh`. What is
+#            published is the build that was checked; nothing is built twice.
+#
+# Only a push of a tag runs `build` and `publish`. A pull request cannot reach them: there is no
+# `pull_request`, `pull_request_target` or `workflow_run` trigger. `workflow_dispatch` is a dry run:
+# it runs `verify` and never publishes. No tag is made by this workflow and none is moved or deleted.
+#
+# WHAT THE CHECKS ARE. The tag form (no leading zeros), and "the commit is on main", guard against a
+# mistake, such as a tag on the wrong commit or a mistyped name. They are not a boundary against a
+# person who may push to this repository: a tag runs the workflow file of its own commit, so such a
+# person can push a tag whose file has no check. The boundary is who may push tags (a tag ruleset, which
+# is a repository setting) and who has write access to the repository.
 #
 # The tools come from this repository's own devbox.json and devbox.lock (GoReleaser included), through
-# the same public action as the `go` job of checks.yaml. The only credential is the job's own
-# GITHUB_TOKEN, and only the `publish` job can write with it.
+# the same public action as the `go` job of checks.yaml, with `disable-nix-access-token` so that the
+# job's token is not written into the Nix configuration.
 name: Release
 
 on:
@@ -25,15 +37,16 @@ on:
 permissions:
   contents: read
 
-# One run for each tag, never cancelled: a release that has started must end.
+# One run for each tag, never cancelled: a release that has started must end. The event is in the
+# group, as in security.yaml.
 concurrency:
-  group: release-${{ github.ref }}
+  group: release-${{ github.event_name }}-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
-  # Read-only. What the tagged commit must pass before anything is published, and the dry run on any
-  # branch. For a tag it also refuses a tag that is not `vX.Y.Z` or `vX.Y.Z-suffix`, and a commit
-  # that is not on main.
+  # Read-only. What the tagged commit must pass before anything is built for release, and the dry run
+  # on any branch. For a tag it also refuses a tag that is not `vX.Y.Z` or `vX.Y.Z-suffix` and a commit
+  # that is not on main (a guard against mistakes, see above).
   verify:
     name: verify (tag, go-check, snapshot build)
     runs-on: ubuntu-latest
@@ -52,7 +65,7 @@ jobs:
           TAG: ${{ github.ref_name }}
           COMMIT: ${{ github.sha }}
         run: |
-          if ! [[ "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z]+(\.[0-9A-Za-z]+)*)?$ ]]; then
+          if ! [[ "$TAG" =~ ^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-[0-9A-Za-z]+(\.[0-9A-Za-z]+)*)?$ ]]; then
             echo "::error::the tag '$TAG' is not vX.Y.Z or vX.Y.Z-suffix"
             exit 1
           fi
@@ -65,23 +78,26 @@ jobs:
           devbox-version: "0.19.0"
           # sha256 of the extracted devbox binary (linux-amd64), not of the release archive.
           sha256-checksum: "828fb26b9bc2ac63eb3fbc09aea365123db1d2810d0870895f67b5bbffd5ecdb"
+          disable-nix-access-token: "true"
           enable-cache: "false"
           refresh-cli: "true"
       # The same recipe as the `go` job of checks.yaml; it includes go-release-check, the snapshot build.
       - run: devbox run -- just go-check
 
-  # The only job that writes. It runs for a pushed tag and for nothing else, after `verify` has passed,
-  # on the commit that the tag event named (not on whatever the tag points at by then). `go-release`
-  # refuses again unless the tag is well formed, points at that commit and the commit is on main; it
-  # builds once without publishing and checks that build like go-release-check does; then it publishes.
-  publish:
-    name: publish (GoReleaser, GitHub Releases, unsigned)
+  # Read-only, and no step sees a token: the checkout does not keep one, the install action does not
+  # write one to the Nix configuration, and none is passed to a step. It builds the release for the
+  # tag without publishing, runs the whole check on that build (`go-release-build` refuses a tag that
+  # is badly formed, not at this commit or not on main, then `_go-release-verify`), and keeps exactly
+  # the release files: the two archives, SHA256SUMS and the release notes. It runs on the commit that
+  # the tag event named, not on whatever the tag points at by then.
+  build:
+    name: build (GoReleaser, no publishing, checked)
     needs: verify
     if: github.event_name == 'push' && github.ref_type == 'tag'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
-      contents: write
+      contents: read
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -93,9 +109,49 @@ jobs:
           devbox-version: "0.19.0"
           # sha256 of the extracted devbox binary (linux-amd64), not of the release archive.
           sha256-checksum: "828fb26b9bc2ac63eb3fbc09aea365123db1d2810d0870895f67b5bbffd5ecdb"
+          disable-nix-access-token: "true"
           enable-cache: "false"
           refresh-cli: "true"
-      - run: devbox run -- just go-release
+      - run: devbox run -- just go-release-build
         env:
           RELEASE_TAG: ${{ github.ref_name }}
-          GITHUB_TOKEN: ${{ github.token }}
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: release-files
+          path: dist/upload/
+          if-no-files-found: error
+          retention-days: 7
+
+  # The only job that writes (`contents: write`). It checks out nothing, installs no tool and runs no
+  # code of this repository: its only steps are the download of the artifact and `gh`, which the
+  # runner has. Nothing is built here. The tag and the repository reach the shell only through env.
+  publish:
+    name: publish (gh, GitHub Releases, unsigned)
+    needs: [verify, build]
+    if: github.event_name == 'push' && github.ref_type == 'tag'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: release-files
+          path: release
+      - name: Check the files, refuse an existing release, publish
+        env:
+          TAG: ${{ github.ref_name }}
+          GH_REPO: ${{ github.repository }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cd release
+          sha256sum -c SHA256SUMS
+          a="ritueel_${TAG#v}_linux_amd64.tar.gz"
+          b="ritueel_${TAG#v}_linux_arm64.tar.gz"
+          [ "$(find . -mindepth 1 | LC_ALL=C sort | tr '\n' ' ')" = "./NOTES.md ./SHA256SUMS ./$a ./$b " ] || { echo "::error::the artifact does not hold exactly NOTES.md SHA256SUMS $a $b"; exit 1; }
+          [ "$(awk '{print $2}' SHA256SUMS | LC_ALL=C sort | tr '\n' ' ')" = "$a $b " ] || { echo "::error::SHA256SUMS does not name exactly the two archives"; exit 1; }
+          if out=$(gh release view "$TAG" 2>&1); then echo "::error::a release for $TAG already exists"; exit 1; fi
+          case "$out" in *"release not found"*) ;; *) echo "::error::cannot tell whether a release for $TAG exists: $out"; exit 1 ;; esac
+          set -- "$a" "$b" SHA256SUMS
+          case "$TAG" in *-*) set -- --prerelease "$@" ;; esac
+          gh release create "$TAG" --verify-tag --title "$TAG" --notes-file NOTES.md "$@"
