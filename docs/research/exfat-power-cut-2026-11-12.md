@@ -1,6 +1,6 @@
 ---
 title: A power cut during a ceremony write, on a stick image (2026-11-12)
-description: What a cut of the power does to a bundle written on ext4 and on exFAT, tried in a virtual machine on a stick image, and what a long temporary name costs on exFAT.
+description: What a cut of the power does to a bundle on ext4 and on exFAT, tried in a virtual machine on a stick image, and what a long temporary name costs on exFAT.
 sidebar:
   order: 10
 ---
