@@ -32,6 +32,7 @@ concurrency:
 jobs:
   save:
     name: save (build, test, save the Go caches)
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
