@@ -284,7 +284,9 @@ go-vuln:
 # build with `goreleaser release --snapshot`, which does everything the real release does except
 # publish (it skips validate, announce, publish and the release notes), so the archives and SHA256SUMS
 # are made too, not only the binaries. A snapshot has no tag, so the tag it stamps is fixed here (GORELEASER_CURRENT_TAG;
-# no git tag is made). Then `_go-release-verify` judges the result. It needs no token. Nothing is signed.
+# no git tag is made). Then `_go-release-verify` judges the result, and `_go-release-stage` puts the
+# archives and SHA256SUMS in dist/upload/ (the release workflow's dry run keeps those as an artifact and
+# runs each binary from it on a machine of its own architecture). It needs no token. Nothing is signed.
 # Linux only.
 go-release-check:
     #!/usr/bin/env bash
@@ -294,6 +296,7 @@ go-release-check:
     goreleaser check
     GORELEASER_CURRENT_TAG="${tag}" goreleaser release --snapshot --clean
     "{{ just_executable() }}" --justfile "{{ justfile() }}" _go-release-verify "${tag}" "${commit}"
+    "{{ just_executable() }}" --justfile "{{ justfile() }}" _go-release-stage
 
 # What a release build in dist/ must be: exactly one Linux binary for each of amd64 and arm64 (a check
 # that finds no binary fails), each a static Linux executable that was built without cgo, with
@@ -357,6 +360,20 @@ _go-release-verify $tag $commit:
     (cd dist && sha256sum -c SHA256SUMS)
     echo "go-release-verify: two Linux builds, ${ran} run here, two archives, SHA256SUMS matches (nothing is signed)"
 
+# Put the archives and SHA256SUMS of the build in dist/ into a new, empty dist/upload/, and check them
+# against each other there. `go-release-check` and `go-release-build` both end with it, so that the
+# dry run and the real release hand the same kind of folder to the jobs that follow.
+[private]
+_go-release-stage:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    rm -rf dist/upload
+    mkdir dist/upload
+    while IFS= read -r name; do cp "dist/${name}" dist/upload/; done < <(jq -r '.[] | select(.type == "Archive") | .name' dist/artifacts.json)
+    cp dist/SHA256SUMS dist/upload/SHA256SUMS
+    [ "$(find dist/upload -type f | wc -l)" -eq 3 ] || { echo "go-release-stage: dist/upload must hold two archives and SHA256SUMS" >&2; exit 1; }
+    (cd dist/upload && sha256sum -c SHA256SUMS)
+
 # The release build, for the workflow only (the `build` job of .github/workflows/release.yaml). It builds
 # the release for the tag in RELEASE_TAG and PUBLISHES NOTHING: it needs no token, and the job that
 # runs it has none. It refuses unless the tag is `vX.Y.Z` or `vX.Y.Z-suffix` (no leading zeros), points
@@ -381,10 +398,7 @@ go-release-build:
     goreleaser release --clean --skip=publish
     "{{ just_executable() }}" --justfile "{{ justfile() }}" _go-release-verify "${tag}" "${commit}"
     [ -s dist/CHANGELOG.md ] || fail "dist/CHANGELOG.md (the release notes) is missing or empty"
-    rm -rf dist/upload
-    mkdir dist/upload
-    while IFS= read -r name; do cp "dist/${name}" dist/upload/; done < <(jq -r '.[] | select(.type == "Archive") | .name' dist/artifacts.json)
-    cp dist/SHA256SUMS dist/upload/SHA256SUMS
+    "{{ just_executable() }}" --justfile "{{ justfile() }}" _go-release-stage
     cp dist/CHANGELOG.md dist/upload/NOTES.md
     (cd dist/upload && sha256sum -c SHA256SUMS && ls -l)
 

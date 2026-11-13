@@ -4,20 +4,25 @@
 # SHA256SUMS are plain, and a consumer's trust is the digest it pinned. No release is signed until the
 # project's root is adopted and drilled (record 0009, rules 12 to 14).
 #
-# Three jobs, and the one that writes runs no code of this repository:
+# Four jobs, and the one that writes runs no code of this repository:
 #   verify   read-only: go-check on the tagged commit, which includes the snapshot build.
 #   build    read-only, no token in any step: builds the release for the tag (GoReleaser, without
 #            publishing), checks that build, and keeps exactly the release files as a workflow artifact.
+#   test     no permissions, no checkout, no tool: takes that artifact, and on a runner of each machine
+#            (amd64 and arm64) unpacks the archive of that machine and runs the binary in it, which must
+#            print exactly the stamped version and commit. Nothing that runs there has a token.
 #   publish  the only job with `contents: write`: it checks out nothing, installs no tool and runs no
-#            code of the repository. It downloads that artifact, checks it against SHA256SUMS, refuses a
+#            code of the repository. It needs `test` to have passed on both machines. It downloads that artifact, checks it against SHA256SUMS, refuses a
 #            tag that already has a release, refuses a tag that no longer points at the commit that
 #            `verify` and `build` checked out (each gives its commit as a job output; the tag's commit
 #            is asked of the API), and uploads exactly those files with `gh`. What is published is the
 #            build that was checked; nothing is built twice.
 #
-# Only a push of a tag runs `build` and `publish`. A pull request cannot reach them: there is no
-# `pull_request`, `pull_request_target` or `workflow_run` trigger. `workflow_dispatch` is a dry run:
-# it runs `verify` and never publishes. No tag is made by this workflow and none is moved or deleted.
+# Only a push of a tag runs `publish`. A pull request cannot reach any job: there is no `pull_request`,
+# `pull_request_target` or `workflow_run` trigger. `workflow_dispatch` is a dry run: it runs `verify`,
+# a snapshot `build` (the version `v0.0.0-snapshot`) and `test` on both machines, and never publishes.
+# It starts from the Actions tab or `gh workflow run release.yaml --ref <branch>`, and only once this
+# file is on the default branch. No tag is made by this workflow and none is moved or deleted.
 #
 # WHAT THE CHECKS ARE. The tag form (no leading zeros), and "the commit is on main", guard against a
 # mistake, such as a tag on the wrong commit or a mistyped name. They are not a boundary against a
@@ -104,7 +109,6 @@ jobs:
   build:
     name: build (GoReleaser, no publishing, checked)
     needs: verify
-    if: github.event_name == 'push' && github.ref_type == 'tag'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
@@ -129,9 +133,17 @@ jobs:
           disable-nix-access-token: "true"
           enable-cache: "false"
           refresh-cli: "true"
-      - run: devbox run -- just go-release-build
+      # A push is always a tag (the trigger lists tags only). The dry run builds a snapshot, which needs
+      # no tag, so that `test` below is proven before the first real tag; it stamps `v0.0.0-snapshot`
+      # (the tag of go-release-check, which `test` expects), and leaves the archives and SHA256SUMS.
+      - name: Build the release for the tag, and check it
+        if: github.event_name == 'push'
+        run: devbox run -- just go-release-build
         env:
           RELEASE_TAG: ${{ github.ref_name }}
+      - name: Dry run, build a snapshot, and check it
+        if: github.event_name == 'workflow_dispatch'
+        run: devbox run -- just go-release-check
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: release-files
@@ -139,13 +151,80 @@ jobs:
           if-no-files-found: error
           retention-days: 7
 
+  # Each built binary is run on a machine of its own architecture, from the artifact `release-files`
+  # that `publish` will publish, not from a second build. The arm64 binary is never run on the build
+  # runner (amd64), so this is where it is first run. `ubuntu-24.04-arm` is GitHub's hosted Linux arm64
+  # runner, free and unlimited for a public repository (the page "GitHub-hosted runners").
+  #
+  # `permissions: {}`: nothing in this job reads or writes the repository. The artifact belongs to this
+  # run, and download-artifact takes it with the runner's own credentials; `github-token` is only for an
+  # artifact of another run. No checkout, no devbox, no Go, and no step gets a token: the step that
+  # runs the binary has nothing but the three values below in its environment.
+  test:
+    name: test (${{ matrix.arch }} binary on a ${{ matrix.arch }} runner)
+    needs: build
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 10
+    permissions: {}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: amd64
+            runner: ubuntu-24.04
+            machine: x86_64
+          - arch: arm64
+            runner: ubuntu-24.04-arm
+            machine: aarch64
+    steps:
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: release-files
+          path: release
+      - name: Unpack the archive of this machine and run the binary in it
+        env:
+          ARCH: ${{ matrix.arch }}
+          MACHINE: ${{ matrix.machine }}
+          # What was stamped: the tag, and the commit that `build` checked out. The dry run stamps
+          # `v0.0.0-snapshot` (the tag in `go-release-check`).
+          TAG: ${{ github.event_name == 'push' && github.ref_name || 'v0.0.0-snapshot' }}
+          COMMIT: ${{ needs.build.outputs.commit }}
+        run: |
+          set -euo pipefail
+          fail() { echo "::error::$*"; exit 1; }
+          [[ "$COMMIT" =~ ^[0-9a-f]{40}$ ]] || fail "the commit from build is not 40 hex digits: '$COMMIT'"
+          [ "$(uname -m)" = "$MACHINE" ] || fail "this runner is $(uname -m), wanted $MACHINE for $ARCH"
+          cd release
+          sha256sum -c SHA256SUMS
+          # SHA256SUMS names exactly the two archives, one for each machine, with the same version.
+          names="$(awk '{print $2}' SHA256SUMS | LC_ALL=C sort | tr '\n' ' ')"
+          re='^(ritueel_[A-Za-z0-9._+-]+_linux_amd64\.tar\.gz) (ritueel_[A-Za-z0-9._+-]+_linux_arm64\.tar\.gz) $'
+          [[ "$names" =~ $re ]] || fail "SHA256SUMS does not name exactly the amd64 and the arm64 archive: $names"
+          if [ "$ARCH" = amd64 ]; then archive="${BASH_REMATCH[1]}"; else archive="${BASH_REMATCH[2]}"; fi
+          [ -f "$archive" ] && [ ! -L "$archive" ] || fail "$archive is not a regular file"
+          # Only these three plain files, no link, no device, no path (so none can reach outside the folder).
+          [ "$(tar -tzf "$archive" | LC_ALL=C sort | tr '\n' ' ')" = "LICENSE README.md ritueel " ] || fail "$archive does not hold exactly LICENSE README.md ritueel"
+          [ "$(tar -tvzf "$archive" | cut -c1 | sort -u | tr -d '\n')" = "-" ] || fail "$archive holds a member that is not a plain file"
+          dir="$RUNNER_TEMP/unpacked"
+          mkdir "$dir"
+          tar -xzf "$archive" -C "$dir" --no-same-owner
+          [ "$(find "$dir" -mindepth 1 | LC_ALL=C sort | tr '\n' ' ')" = "$dir/LICENSE $dir/README.md $dir/ritueel " ] || fail "the unpacked folder does not hold exactly the three files"
+          [ -f "$dir/ritueel" ] && [ ! -L "$dir/ritueel" ] && [ -x "$dir/ritueel" ] || fail "ritueel is not a regular executable file"
+          printf 'ritueel %s (commit %s)\n' "$TAG" "$COMMIT" > "$RUNNER_TEMP/want"
+          "$dir/ritueel" version > "$RUNNER_TEMP/got"
+          cat "$RUNNER_TEMP/got"
+          cmp "$RUNNER_TEMP/got" "$RUNNER_TEMP/want" || fail "'ritueel version' did not print exactly what was stamped"
+          rc=0; "$dir/ritueel" > /dev/null 2>&1 || rc=$?
+          [ "$rc" -eq 2 ] || fail "no arguments should exit 2, got $rc"
+          echo "$archive: ran on $(uname -m), printed the stamped version and commit"
+
   # The only job that writes (`contents: write`). It checks out nothing, installs no tool and runs no
   # code of this repository: its only steps are the download of the artifact and `gh`, which the
   # runner has. Nothing is built here. The tag, the repository, the token and the two commits reach the
 # shell only through env.
   publish:
     name: publish (gh, GitHub Releases, unsigned)
-    needs: [verify, build]
+    needs: [verify, build, test]
     if: github.event_name == 'push' && github.ref_type == 'tag'
     runs-on: ubuntu-latest
     timeout-minutes: 10
