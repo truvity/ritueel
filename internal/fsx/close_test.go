@@ -406,7 +406,30 @@ func TestWriterCloseAppendAndStopAtTheSameTime(t *testing.T) {
 				}
 			}()
 		}
-		wg.Add(3)
+		wg.Add(6)
+		for k := 0; k < 3; k++ { // the other methods that take the lock and read the stop
+			go func() {
+				defer wg.Done()
+				for i := 0; i < 20; i++ {
+					var err error
+					switch k {
+					case 0:
+						err = w.Mkdir(fmt.Sprintf("b/d/m%d", i), 0o700)
+					case 1:
+						err = w.WriteSet(fmt.Sprintf("b/d/s%d", i), []fsx.NewFile{{Name: "a", Perm: 0o600}})
+					default:
+						var j *fsx.Journal
+						if j, err = w.CreateJournal(fmt.Sprintf("b/d/cj%d", i)); err == nil {
+							err = j.Close()
+						}
+					}
+					if !allowed(err) {
+						bad <- err
+						return
+					}
+				}
+			}()
+		}
 		go func() { // the stop: the second write of one path is refused
 			defer wg.Done()
 			for k := 0; k < 2; k++ {
