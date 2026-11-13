@@ -1,0 +1,85 @@
+version: "2"
+
+# Settings live under `linters:`, not at the top level. `golangci-lint run`
+# accepts a misplaced block silently; `golangci-lint config verify` rejects it,
+# so the go-lint recipe runs verify first.
+linters:
+  default: standard # errcheck, govet, ineffassign, staticcheck, unused
+  enable:
+    - depguard
+    - errorlint
+    - forbidigo
+    - gocritic
+    - misspell
+    - revive
+    - usetesting
+  settings:
+    depguard:
+      rules:
+        main:
+          deny:
+            # Wiring: construct dependencies in main and pass them as arguments.
+            - pkg: github.com/samber/do
+              desc: "construct dependencies in main and pass them as arguments"
+            - pkg: go.uber.org/fx
+              desc: "construct dependencies in main and pass them as arguments"
+            - pkg: github.com/google/wire
+              desc: "construct dependencies in main and pass them as arguments"
+            # Command line and configuration: one library for the job.
+            - pkg: github.com/spf13/cobra
+              desc: "github.com/urfave/cli/v3"
+            - pkg: github.com/urfave/cli/v2
+              desc: "github.com/urfave/cli/v3"
+            - pkg: github.com/spf13/viper
+              desc: "flags and named files, no configuration mapper"
+            - pkg: github.com/knadh/koanf
+              desc: "flags and named files, no configuration mapper"
+            # Libraries that are retired or have a standard replacement.
+            - pkg: gopkg.in/yaml.v2
+              desc: "go.yaml.in/yaml/v3"
+            - pkg: gopkg.in/yaml.v3
+              desc: "go.yaml.in/yaml/v3"
+            - pkg: github.com/pkg/errors
+              desc: "stdlib error wrapping with %w"
+        # No network client in the base build. Most commands run offline. A
+        # command that needs one lives in its own package, and that package
+        # replaces this rule with a path-scoped one in the same pull request.
+        # Test files are left out so that httptest and the like stay possible.
+        offline:
+          files:
+            - $all
+            - "!$test"
+          deny:
+            - pkg: net/http
+              desc: "most commands run offline; discuss before the first import"
+    forbidigo:
+      # Match the package a name comes from, so `import o "os"; o.Exit(1)` is caught too.
+      analyze-types: true
+      forbid:
+        - pattern: ^os\.Exit$
+          msg: "only cmd/ritueel/main.go exits; return an error that carries the exit code"
+        - pattern: ^fmt\.Print(f|ln)?$
+          msg: "write to the stdout or stderr writer you were given"
+        - pattern: ^os\.(Stdout|Stderr)$
+          msg: "write to the stdout or stderr writer you were given"
+    revive:
+      rules:
+        - name: exported
+  exclusions:
+    rules:
+      # The one place that exits and holds the real standard streams.
+      - path: ^cmd/ritueel/main\.go$
+        linters:
+          - forbidigo
+      # Small programs that run beside the build (tools/elfcheck) print and exit by design.
+      - path: ^tools/
+        linters:
+          - forbidigo
+      # Tests may set up a process (TestMain) and print.
+      - path: _test\.go$
+        linters:
+          - forbidigo
+formatters:
+  enable:
+    - gofmt
+    - goimports
