@@ -23,7 +23,7 @@
 14. The default key algorithm is P-384, always with SHA-384 on every backend. RSA-4096 is allowed per key.
 
 15. A key that can be copied (a test root's key, a person's primary, any software key) is replaced at the latest after three years (NIST SP 800-57 cryptoperiod).
-16. Key material on a card or in a cloud KMS, a root key included, is replaced only on an event, with no calendar: an advisory about the device, firmware or cloud service; deprecation of its algorithm; loss or end of life of a card; a suspected compromise; a change of key store or of place.
+16. Key material on a card or in a cloud KMS, a root key included, is replaced only on an event, with no calendar: an advisory about the device, firmware or cloud service; deprecation of its algorithm; loss or end of life of a card; a suspected compromise; a change of key store or of place. The one other date is an outer limit for a root key: it is replaced at the latest 15 years after it was born. The yearly review of [record 0007](0007-changing-and-losing-a-root.md), rule 20, holds the fixed reviews of 2030 and 2035.
 17. Accepted limit: whoever holds one root card and its PIN, or the cloud root's role, can sign things outsiders trust until that root key is revoked and the update reaches them; standard tools cannot require m-of-n. A stolen card without its PIN locks after three tries.
 18. Succession is the holder's organisational duty; ritueel reminds and does not enforce.
 
@@ -41,9 +41,11 @@
 
 - A card or KMS key cannot be copied, so a calendar would force a new anchor on every relying party for no gain.
 - P-384 with SHA-384 (rule 14) is chosen for the larger security margin: about 192 bits against about 128 for P-256 (NIST SP 800-57 Part 1 Rev 5, table 2), on the largest curve that a PIV slot, the OpenPGP applet and the cloud key store all hold. It is not a defence against a quantum computer.
+- The outer limit of 15 years (rule 16) is what the root programs allow: Mozilla removes the websites trust bit when a root's key material is more than 15 years old, and Chrome removes a root whose key was generated more than 15 years ago (Mozilla Root Store Policy 3.1, section 7.4; Chrome Root Program Policy 1.8, section 1.3.1.2). NIST SP 800-57 Part 1 Rev 5, section 5.3.6, recommends about one to three years of use for a private signature key; a key that cannot be copied has no such calendar, so the limit is an outer one.
 
 ## What it costs
 
+- A root key made in 2026 reaches its outer limit in 2041, after 2035, the year from which NIST IR 8547 disallows ECDSA and EdDSA in its standards; the reviews of 2030 and 2035 ([record 0007](0007-changing-and-losing-a-root.md), rule 20) are how such a key is replaced sooner.
 - The bundle is not public material only: sealed files rest on the unlock key and the recovery key, and the unlock key's private half is in memory at each unlock.
 - A lost recovery key together with every card named as a way to open the file means the key files cannot be opened. The guides say where the recovery file and passphrase go.
 
@@ -52,6 +54,7 @@
 - **More key stores in the first version.** Wider reach, but every key store multiplies tests and guides, and four already cover every transition shape.
 - **A separate classic passphrase mode and a separate wrapped-to-cards mode.** Two named modes, but the same idea (a password against a hardware key); there is one software mode.
 - **One age file with a passphrase stanza and card recipients.** One file for both ways, but the age spec forbids mixing a passphrase (scrypt) stanza with other recipients.
+- **No outer limit.** The simplest rule, but nothing would ever call for the replacement of a root key that no event touched, and the root programs end a root at 15 years.
 - **P-256 for every key.** Faster (a signature about 15 times, measured with OpenSSL 3.5.5) and read by the widest set of verifiers, but it gives up the 192-bit level, and a root signs only a few times a year, so the speed gains nothing.
 - **Replace every root key at most every three years, whatever its key store.** One rule, but a card or KMS key cannot be copied, so the calendar forces a new anchor on every relying party for no gain.
 - **Only the encrypted file for software keys.** The simplest, but one copy on one disk, so a lost laptop loses the key.
