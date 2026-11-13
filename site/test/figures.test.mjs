@@ -37,9 +37,9 @@ test('there are figures, each with an id that is its registry key and a known ki
   }
 });
 
-test('a strip has exactly six panels, numbered 1 to 6, each with a title and a short caption', () => {
+test('a strip has three or six panels, numbered from 1, each with a title and a short caption', () => {
   for (const fig of all.filter((f) => f.kind === 'strip')) {
-    assert.equal(fig.panels.length, 6, fig.id);
+    assert.ok([3, 6].includes(fig.panels.length), `${fig.id}: three or six panels`);
     fig.panels.forEach((p, i) => {
       assert.equal(p.n, i + 1, `${fig.id}: panel number`);
       assert.ok(p.title && p.title.split(/\s+/).length <= 2, `${fig.id} panel ${p.n}: title is one or two words`);
@@ -232,15 +232,15 @@ test('an MDX page names its own address in `slug:`, because the link validator r
   }
 });
 
-test('the figure markup: a figure has its caption, a strip is a list of six, a layout holds both drawings', () => {
+test('the figure markup: a figure has its caption, a strip is a list of its panels, a layout holds both drawings', () => {
   for (const fig of all) {
     const html = renderFigure(fig, 'The caption.');
     assert.ok(html.startsWith('<figure class="fig '), fig.id);
     assert.ok(html.includes('<figcaption>The caption.</figcaption>'), fig.id);
     assert.ok(html.includes('not-content'), fig.id);
     const n = (html.match(/<svg /g) ?? []).length;
-    assert.equal(n, fig.kind === 'strip' ? 6 : fig.kind === 'layout' ? (fig.id === 'whole-chain' ? 3 : 2) : 1, `${fig.id}: svg count`);
-    if (fig.kind === 'strip') assert.equal((html.match(/<li>/g) ?? []).length, 6);
+    assert.equal(n, fig.kind === 'strip' ? fig.panels.length : fig.kind === 'layout' ? (fig.id === 'whole-chain' ? 3 : 2) : 1, `${fig.id}: svg count`);
+    if (fig.kind === 'strip') assert.equal((html.match(/<li>/g) ?? []).length, fig.panels.length);
   }
   assert.throws(() => renderFigure({ id: 'x', kind: 'nope' }), /unknown kind/);
 });
