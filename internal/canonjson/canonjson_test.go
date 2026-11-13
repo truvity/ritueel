@@ -612,16 +612,26 @@ func TestCanonicalizeNestingDepth(t *testing.T) {
 	deep := func(n int) []byte {
 		return []byte(strings.Repeat(`{"a":`, n-1) + `{}` + strings.Repeat(`}`, n-1))
 	}
-	at := deep(10000)
+	wantText := malformedText("nesting deeper than %d levels at byte ", strictjson.MaxDepth)
+	at := deep(strictjson.MaxDepth)
 	got, err := Canonicalize(at)
 	if err != nil || !bytes.Equal(got, at) {
-		t.Errorf("10000 levels: err %v", err)
+		t.Errorf("%d levels: err %v", strictjson.MaxDepth, err)
 	}
-	if _, err := Canonicalize(deep(10001)); !errors.Is(err, strictjson.ErrMalformed) {
-		t.Errorf("10001 levels: %v, want ErrMalformed", err)
+	if is, err := IsCanonical(at); err != nil || !is {
+		t.Errorf("IsCanonical at %d levels = %v, %v", strictjson.MaxDepth, is, err)
 	}
-	if _, err := Canonicalize([]byte(strings.Repeat(`{"a":[`, 20000))); !errors.Is(err, strictjson.ErrMalformed) {
-		t.Errorf("a very deep input: %v, want ErrMalformed", err)
+	for name, in := range map[string][]byte{
+		"one level over":  deep(strictjson.MaxDepth + 1),
+		"a very deep one": []byte(strings.Repeat(`{"a":[`, 2*strictjson.MaxDepth)),
+	} {
+		got, err := Canonicalize(in)
+		if !errors.Is(err, strictjson.ErrMalformed) || !strings.HasPrefix(err.Error(), wantText) || got != nil {
+			t.Errorf("%s: %q, %v, want %q and a byte", name, got, err, wantText)
+		}
+		if is, err := IsCanonical(in); is || !errors.Is(err, strictjson.ErrMalformed) {
+			t.Errorf("%s: IsCanonical = %v, %v", name, is, err)
+		}
 	}
 }
 
@@ -632,6 +642,9 @@ var brokenRules = []struct{ name, in string }{
 	{"a string at top level", `"x"`},
 	{"a number at top level", `1`},
 	{"null at top level", `null`},
+	{"an array that is closed as an object", `[}`},
+	{"a string that is closed as an object", `"}`},
+	{"a number that is closed as an object", `1}`},
 	{"a byte order mark", "\xef\xbb\xbf{}"},
 	{"invalid UTF-8", "{\"a\":\"\xff\"}"},
 	{"a float", `{"a":1.0}`},
@@ -983,4 +996,942 @@ type emptyTB struct {
 func (e *emptyTB) Fatalf(string, ...any) {
 	e.failed = true
 	runtime.Goexit()
+}
+
+// The tests below pin what Marshal measures and what it refuses: the size of the canonical bytes,
+// text that is not UTF-8, and nesting. A JSON escape of the form backslash, u and four digits is
+// never written out in them: where a test needs one it is built from a backslash (bs, uesc), so
+// that no tool can turn it into the character on the way.
+
+// malformedText is the error text of a refusal, as strictjson.ErrMalformed starts it.
+func malformedText(format string, args ...any) string {
+	return strictjson.ErrMalformed.Error() + ": " + fmt.Sprintf(format, args...)
+}
+
+// uesc is the six-byte escape of a character of the BMP, in lower case.
+func uesc(r rune) string { return fmt.Sprintf("\\u%04x", r) }
+
+// sameBytes compares two large results without printing them.
+func sameBytes(t *testing.T, what string, got []byte, want string) {
+	t.Helper()
+	if string(got) == want {
+		return
+	}
+	i := 0
+	for i < len(got) && i < len(want) && got[i] == want[i] {
+		i++
+	}
+	t.Errorf("%s: %d bytes, want %d; they differ at byte %d", what, len(got), len(want), i)
+}
+
+// refused checks one refusal of Marshal: the error wraps ErrMalformed, its text is the one given,
+// and nothing is returned.
+func refused(t *testing.T, got []byte, err error, wantText string) {
+	t.Helper()
+	if err == nil {
+		t.Fatalf("Marshal wrote %.100s (%d bytes)", got, len(got))
+	}
+	if !errors.Is(err, strictjson.ErrMalformed) {
+		t.Errorf("the error does not wrap ErrMalformed: %v", err)
+	}
+	if err.Error() != wantText {
+		t.Errorf("the error is %q, want %q", err, wantText)
+	}
+	if got != nil {
+		t.Errorf("Marshal returned %d bytes next to an error, want nil", len(got))
+	}
+}
+
+// ownJSON is a type that writes the JSON it holds, whatever it is.
+type ownJSON string
+
+func (o ownJSON) MarshalJSON() ([]byte, error) { return []byte(o), nil }
+
+func TestMaxIntermediateIsSixTimesTheLimit(t *testing.T) {
+	if maxIntermediate != 6*strictjson.DefaultMaxBytes {
+		t.Errorf("maxIntermediate = %d, want six times %d", maxIntermediate, strictjson.DefaultMaxBytes)
+	}
+	if maxIntermediate != 1572864 {
+		t.Errorf("maxIntermediate = %d, want 1572864", maxIntermediate)
+	}
+}
+
+func TestMarshalMeasuresTheLimitOnTheCanonicalBytes(t *testing.T) {
+	const tooLong = "malformed JSON: the canonical form is longer than 262144 bytes"
+	const frame = len(`{"a":""}`)
+	ls, ps := string(rune(0x2028)), string(rune(0x2029))
+	cases := []struct {
+		name string
+		unit string // what the value repeats
+		n    int
+		// ok is true when the canonical form fits; its length is then n * len(unit) + frame.
+		ok bool
+		// text is the refusal when it does not: the canonical form is over the limit, unless what
+		// the encoder wrote on the way is over its own bound.
+		text string
+	}{
+		// Characters that the standard encoder spells as six bytes (< > & with HTML escaping on,
+		// U+2028 and U+2029 always): the canonical form writes them as they are.
+		{"100000 less-than signs", "<", 100000, true, ""},
+		{"100000 greater-than signs", ">", 100000, true, ""},
+		{"100000 ampersands", "&", 100000, true, ""},
+		{"100000 of less-than sign and ampersand", "<&", 100000, true, ""},
+		{"80000 line separators", ls, 80000, true, ""},
+		{"80000 paragraph separators", ps, 80000, true, ""},
+		{"line and paragraph separators together", ls + ps, 40000, true, ""},
+		{"markup of every kind", `<a href='x'>&amp;</a>`, 10000, true, ""},
+		// The limit itself and the byte after it, with a one-byte character and a six-byte spelling.
+		{"less-than signs up to the limit", "<", strictjson.DefaultMaxBytes - frame, true, ""},
+		{"less-than signs one over", "<", strictjson.DefaultMaxBytes - frame + 1, false, tooLong},
+		{"ampersands up to the limit", "&", strictjson.DefaultMaxBytes - frame, true, ""},
+		{"line separators up to the limit", ls, (strictjson.DefaultMaxBytes - frame) / 3, true, ""},
+		{"line separators one over", ls, (strictjson.DefaultMaxBytes-frame)/3 + 1, false, tooLong},
+		// Over the limit in canonical bytes, and far over in what the encoder writes.
+		{"90000 line separators", ls, 90000, false, tooLong},
+		{"90000 paragraph separators", ps, 90000, false, tooLong},
+		{"300000 less-than signs", "<", 300000, false, tooLong},
+		{"1000000 line separators", ls, 1000000, false, malformedText("longer than %d bytes", maxIntermediate)},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			// The same text in a value, and in a member name.
+			value := strings.Repeat(tc.unit, tc.n)
+			got, err := Marshal(map[string]string{"a": value})
+			if !tc.ok {
+				refused(t, got, err, tc.text)
+			} else {
+				if err != nil {
+					t.Fatalf("Marshal refused %d bytes of canonical form: %v", tc.n*len(tc.unit)+frame, err)
+				}
+				if len(got) != tc.n*len(tc.unit)+frame {
+					t.Errorf("Marshal wrote %d bytes, want %d", len(got), tc.n*len(tc.unit)+frame)
+				}
+				sameBytes(t, "a value", got, `{"a":"`+value+`"}`)
+			}
+			got, err = Marshal(map[string]int{value: 1})
+			nameFrame := len(`{"":1}`)
+			if tc.n*len(tc.unit)+nameFrame > strictjson.DefaultMaxBytes {
+				refused(t, got, err, tc.text)
+			} else {
+				if err != nil {
+					t.Fatalf("Marshal refused a name of %d bytes: %v", tc.n*len(tc.unit), err)
+				}
+				sameBytes(t, "a name", got, `{"`+value+`":1}`)
+			}
+		})
+	}
+}
+
+func TestMarshalOfARefusedSizeReturnsNothing(t *testing.T) {
+	// Many small members that add up to more than the limit, in a map and in a slice.
+	big := map[string]int{}
+	for i := range 40000 {
+		big[fmt.Sprintf("m%06d", i)] = i
+	}
+	got, err := Marshal(big)
+	refused(t, got, err, "malformed JSON: the canonical form is longer than 262144 bytes")
+	got, err = Marshal(map[string][]int{"a": make([]int, 140000)})
+	refused(t, got, err, "malformed JSON: the canonical form is longer than 262144 bytes")
+}
+
+func TestMarshalBoundsWhatTheEncoderWritesOnTheWay(t *testing.T) {
+	// A type that writes its own JSON may spell any character as a six-byte escape. A canonical
+	// form that fits the limit comes from at most six times its size, and a longer intermediate
+	// cannot fit: it is refused at once, with the text of strictjson's size rule.
+	const tooLong = "malformed JSON: the canonical form is longer than 262144 bytes"
+	const frame = len(`{"a":""}`)
+	atLimit := strictjson.DefaultMaxBytes - frame // letters that make the canonical form 262144 bytes
+	spelt := func(n int) ownJSON { return ownJSON(`{"a":"` + strings.Repeat(uesc('A'), n) + `"}`) }
+	t.Run("spelt as escapes, the canonical form at the limit", func(t *testing.T) {
+		v := spelt(atLimit)
+		if len(v) != 6*atLimit+frame || len(v) > maxIntermediate {
+			t.Fatalf("the test value has %d bytes", len(v))
+		}
+		got, err := Marshal(v)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if len(got) != strictjson.DefaultMaxBytes {
+			t.Errorf("Marshal wrote %d bytes, want %d", len(got), strictjson.DefaultMaxBytes)
+		}
+		sameBytes(t, "the letters", got, `{"a":"`+strings.Repeat("A", atLimit)+`"}`)
+		// The same as an escape that the encoder would have written for a character it spells long.
+		got, err = Marshal(map[string]ownJSON{"k": ownJSON(`"` + strings.Repeat(uesc('<'), 100000) + `"`)})
+		if err != nil {
+			t.Fatal(err)
+		}
+		sameBytes(t, "less-than signs", got, `{"k":"`+strings.Repeat("<", 100000)+`"}`)
+	})
+	t.Run("spelt as escapes, the canonical form over the limit but the intermediate within its bound", func(t *testing.T) {
+		for _, n := range []int{atLimit + 1, atLimit + 2, atLimit + 5} {
+			v := spelt(n)
+			if len(v) > maxIntermediate {
+				t.Fatalf("the test value of %d letters has %d bytes, over the bound", n, len(v))
+			}
+			got, err := Marshal(v)
+			refused(t, got, err, tooLong)
+		}
+	})
+	t.Run("the intermediate over its bound", func(t *testing.T) {
+		wantText := malformedText("longer than %d bytes", maxIntermediate)
+		for _, n := range []int{maxIntermediate/6 - 1, maxIntermediate / 6, 2 * atLimit, 10 * atLimit} {
+			v := spelt(n)
+			if len(v) <= maxIntermediate {
+				continue // not over the bound: the case above
+			}
+			got, err := Marshal(v)
+			refused(t, got, err, wantText)
+		}
+		// The first length that is over the bound, so that the bound is not a byte too large.
+		first := (maxIntermediate-frame)/6 + 1
+		if len(spelt(first)) <= maxIntermediate || len(spelt(first-1)) > maxIntermediate {
+			t.Fatalf("%d letters is not the first length over the bound", first)
+		}
+		got, err := Marshal(spelt(first))
+		refused(t, got, err, wantText)
+		got, err = Marshal(spelt(first - 1))
+		refused(t, got, err, tooLong)
+	})
+	t.Run("plain bytes, one over the limit", func(t *testing.T) {
+		got, err := Marshal(ownJSON(`{"a":"` + strings.Repeat("A", atLimit) + `"}`))
+		if err != nil || len(got) != strictjson.DefaultMaxBytes {
+			t.Fatalf("at the limit: %d bytes, %v", len(got), err)
+		}
+		got, err = Marshal(ownJSON(`{"a":"` + strings.Repeat("A", atLimit+1) + `"}`))
+		refused(t, got, err, tooLong)
+	})
+}
+
+// The values below hold text that is not valid UTF-8, and the text that the walk must give for
+// each kind of place it can stand in.
+type (
+	namedString string
+	namedKey    string
+	inEmbedded  struct{ S string }
+	embedsValue struct {
+		inEmbedded
+		N int
+	}
+	embedsPointer struct {
+		*inEmbedded
+		N int
+	}
+	embedsExported struct {
+		Exported
+		N int
+	}
+	// Exported is an embedded struct whose type name is exported.
+	Exported struct{ S string }
+	// field holds one value of each kind of place.
+	field struct {
+		S  string
+		P  *string
+		PP **string
+		L  []string
+		A  [2]string
+		M  map[string]string
+		I  any
+		N  namedString
+		St struct{ S string }
+	}
+	hasTagged struct {
+		S string `json:"renamed"`
+	}
+	hasOmitted struct {
+		S string `json:"s,omitempty"`
+	}
+	hasHidden struct {
+		N      int
+		Hidden string `json:"-"`
+		hidden string
+	}
+	hasHiddenEmbedded struct {
+		hiddenEmbed
+	}
+	hiddenEmbed struct{ S string }
+)
+
+func TestMarshalRefusesStringsThatAreNotUTF8(t *testing.T) {
+	const str = "malformed JSON: a string that is not valid UTF-8 cannot be written"
+	const name = "malformed JSON: a member name that is not valid UTF-8 cannot be written"
+	bad := "a\xffb"
+	pbad := &bad
+	// Every way the bytes can be wrong, as a value of a map of strings.
+	for what, text := range map[string]string{
+		"a lone 0xff":                           "\xff",
+		"a lone continuation byte":              "\x80",
+		"a leading byte cut short":              "\xe2\x82",
+		"an overlong slash":                     "\xc0\xaf",
+		"a UTF-8 encoded surrogate":             "\xed\xa0\x80",
+		"a code point above U+10FFFF":           "\xf4\x90\x80\x80",
+		"the bad byte first":                    "\xffabc",
+		"the bad byte last":                     "abc\xff",
+		"the bad byte after multi-byte text":    "\u00e9\u20ac\xff",
+		"the bad byte before multi-byte text":   "\xff\u00e9\u20ac",
+		"one bad byte among a very long string": strings.Repeat("x", 100000) + "\xff" + strings.Repeat("y", 100000),
+	} {
+		t.Run("a value that is "+what, func(t *testing.T) {
+			got, err := Marshal(map[string]string{"k": text})
+			refused(t, got, err, str)
+		})
+		t.Run("a name that is "+what, func(t *testing.T) {
+			got, err := Marshal(map[string]int{text: 1})
+			refused(t, got, err, name)
+		})
+	}
+	cases := []struct {
+		name string
+		v    any
+		want string
+	}{
+		{"a struct field", struct{ S string }{bad}, str},
+		{"a struct field with another name", hasTagged{bad}, str},
+		{"a struct field that omitempty keeps", hasOmitted{bad}, str},
+		{"a struct field of a named string type", struct{ N namedString }{namedString(bad)}, str},
+		{"a struct value at the top", field{S: bad}, str},
+		{"a pointer to a struct at the top", &struct{ S string }{bad}, str},
+		{"a pointer to a string in a field", struct{ P *string }{pbad}, str},
+		{"a pointer to a pointer to a string", struct{ PP **string }{&pbad}, str},
+		{"a pointer in a map", map[string]*string{"k": pbad}, str},
+		{"a slice of strings", struct{ L []string }{[]string{"a", "b", bad}}, str},
+		{"the first of a slice", struct{ L []string }{[]string{bad, "b", "c"}}, str},
+		{"an array of strings", struct{ A [2]string }{[2]string{"a", bad}}, str},
+		{"an interface in a field", struct{ I any }{bad}, str},
+		{"an interface holding a slice", struct{ I any }{[]string{bad}}, str},
+		{"an interface in a map", map[string]any{"k": bad}, str},
+		{"a slice of interfaces", map[string]any{"k": []any{1, "x", bad}}, str},
+		{"a map in a field", struct{ M map[string]string }{map[string]string{"k": bad}}, str},
+		{"a nested struct", struct{ St struct{ S string } }{struct{ S string }{bad}}, str},
+		{"a slice of structs", map[string][]inEmbedded{"k": {{"fine"}, {bad}}}, str},
+		{"a slice of pointers to structs", map[string][]*inEmbedded{"k": {{"fine"}, {bad}}}, str},
+		{"a map of slices of maps", map[string][]map[string]string{"k": {{"a": "fine"}, {"b": bad}}}, str},
+		{"deep down in any", map[string]any{"a": []any{map[string]any{"b": &field{L: []string{bad}}}}}, str},
+		{"an embedded struct", embedsValue{inEmbedded{bad}, 1}, str},
+		{"an embedded pointer to a struct", embedsPointer{&inEmbedded{bad}, 1}, str},
+		{"an embedded struct with an exported type name", embedsExported{Exported{bad}, 1}, str},
+		{"an embedded struct that is not exported", hasHiddenEmbedded{hiddenEmbed{bad}}, str},
+		{"a name from a map of strings", map[string]int{bad: 1}, name},
+		{"a name from a map of a named string type", map[namedKey]int{namedKey(bad): 1}, name},
+		{"a name among valid ones", map[string]int{"a": 1, bad: 2, "c": 3}, name},
+		{"a name in a nested map", map[string]any{"a": map[string]int{bad: 1}}, name},
+		{"a name in a field", struct{ M map[string]int }{map[string]int{bad: 1}}, name},
+		{"a name in a map in a slice", map[string]any{"a": []map[string]int{{bad: 1}}}, name},
+		{"a valid value with a bad name", map[string]string{bad: "fine"}, name},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			got, err := Marshal(tc.v)
+			refused(t, got, err, tc.want)
+		})
+	}
+	t.Run("text that is not written is not looked at", func(t *testing.T) {
+		// A field tagged "-", one that is not exported, and a nil pointer that omitempty leaves out.
+		got, err := Marshal(hasHidden{N: 1, Hidden: bad, hidden: bad})
+		if err != nil {
+			t.Fatalf("Marshal refused text that it does not write: %v", err)
+		}
+		if want := `{"N":1}`; string(got) != want {
+			t.Errorf("got %s, want %s", got, want)
+		}
+	})
+}
+
+func TestMarshalWritesValidTextAsItIs(t *testing.T) {
+	// The twins of the refusals above: text that is valid, in the same places. U+FFFD itself is
+	// valid text and stays; text that a type has not changed is not changed here either.
+	repl := string(rune(0xFFFD))
+	for _, text := range []string{
+		"", "plain", "\u00e9", "\u20ac", string(rune(0x1F600)), string(rune(0x10FFFF)), string(rune(0xFEFF)), repl, "a" + repl + "b",
+		string(rune(0xD7FF)), string(rune(0xE000)), "\x00", "\x7f",
+	} {
+		t.Run(fmt.Sprintf("%+q", text), func(t *testing.T) {
+			got, err := Marshal(map[string]string{text: text})
+			if err != nil {
+				t.Fatal(err)
+			}
+			want := `{"` + canonicalControls(text) + `":"` + canonicalControls(text) + `"}`
+			if string(got) != want {
+				t.Errorf("got %q, want %q", got, want)
+			}
+		})
+	}
+	t.Run("a struct, an embedded struct, a slice and a pointer of valid text", func(t *testing.T) {
+		s := "\u00e9"
+		got, err := Marshal(embedsPointer{&inEmbedded{s}, 1})
+		if err != nil || string(got) != "{\"N\":1,\"S\":\"\u00e9\"}" {
+			t.Errorf("embedded pointer: %q, %v", got, err)
+		}
+		got, err = Marshal(struct {
+			P *string
+			L []string
+			I any
+		}{&s, []string{s}, s})
+		if err != nil || string(got) != "{\"I\":\"\u00e9\",\"L\":[\"\u00e9\"],\"P\":\"\u00e9\"}" {
+			t.Errorf("fields: %q, %v", got, err)
+		}
+	})
+}
+
+// canonicalControls writes the controls of s as the canonical form does and leaves the rest.
+func canonicalControls(s string) string {
+	var out strings.Builder
+	for _, r := range s {
+		switch {
+		case r < 0x20:
+			fmt.Fprintf(&out, "\\u%04x", r)
+		default:
+			out.WriteRune(r)
+		}
+	}
+	return out.String()
+}
+
+func TestMarshalChecksWhatATypeWritesAsJSON(t *testing.T) {
+	bs := string(rune(92)) // a backslash: no escape of this file is written out
+	lone := bs + "u" + "d800"
+	cases := []struct {
+		name string
+		json string
+		want string // the text of the refusal
+	}{
+		{"a byte that is not UTF-8 in a value", "{\"a\":\"\xff\"}", "malformed JSON: not valid UTF-8"},
+		{"a byte that is not UTF-8 in a name", "{\"\xff\":1}", "malformed JSON: not valid UTF-8"},
+		{"a byte that is not UTF-8 deep down", "{\"a\":[{\"b\":[\"\xc0\xaf\"]}]}", "malformed JSON: not valid UTF-8"},
+		{"a lone high surrogate escape", `{"a":"` + lone + `"}`, "malformed JSON: a lone surrogate escape at byte 12"},
+		{"a lone low surrogate escape", `{"a":"` + bs + "u" + `dc00"}`, "malformed JSON: a lone surrogate escape at byte 12"},
+		{"a high surrogate and a letter", `{"a":"` + lone + `x"}`, "malformed JSON: a lone surrogate escape at byte 12"},
+		{"a lone surrogate escape in a name", `{"` + lone + `":1}`, "malformed JSON: a lone surrogate escape at byte 8"},
+		{"a float", `{"a":1.5}`, "malformed JSON: a number with a fraction or an exponent at byte 8"},
+		{"a float with an integer value", `{"a":1.0}`, "malformed JSON: a number with a fraction or an exponent at byte 8"},
+		{"an exponent", `{"a":1e3}`, "malformed JSON: a number with a fraction or an exponent at byte 8"},
+		{"a null", `{"a":null}`, "malformed JSON: null at byte 9"},
+		{"a null in an array", `{"a":[1,null]}`, "malformed JSON: null at byte 12"},
+		{"a repeated member", `{"a":1,"a":2}`, `malformed JSON: member "a" appears twice at byte 10`},
+		{"a repeated member written with an escape", `{"a":1,"` + bs + `u0061":2}`, `malformed JSON: member "a" appears twice at byte 15`},
+		{"an integer above int64", `{"a":9223372036854775808}`, "malformed JSON: the integer does not fit 64 bits at byte 24"},
+		{"a value that is not an object", `[1]`, "malformed JSON: not one JSON object"},
+		{"a string where an object is wanted", `"x"`, "malformed JSON: not one JSON object"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name+" at the top", func(t *testing.T) {
+			got, err := Marshal(ownJSON(tc.json))
+			refused(t, got, err, tc.want)
+		})
+	}
+	// The same JSON as a member value: the byte of the refusal moves, the kind of it does not.
+	members := []struct {
+		name string
+		json string
+		want string
+	}{
+		{"a byte that is not UTF-8", "{\"a\":\"\xff\"}", "malformed JSON: not valid UTF-8"},
+		{"a lone surrogate escape", `{"a":"` + lone + `"}`, "malformed JSON: a lone surrogate escape at byte 17"},
+		{"a float", `{"a":1.5}`, "malformed JSON: a number with a fraction or an exponent at byte 13"},
+		{"a null", `{"a":null}`, "malformed JSON: null at byte 14"},
+		{"a repeated member", `{"a":1,"a":2}`, `malformed JSON: member "a" appears twice at byte 15`},
+	}
+	for _, tc := range members {
+		t.Run(tc.name+" in a map value", func(t *testing.T) {
+			got, err := Marshal(map[string]ownJSON{"x": ownJSON(tc.json)})
+			refused(t, got, err, tc.want)
+		})
+		t.Run(tc.name+" in a struct field", func(t *testing.T) {
+			got, err := Marshal(struct{ X ownJSON }{ownJSON(tc.json)})
+			refused(t, got, err, tc.want)
+		})
+		t.Run(tc.name+" in a slice element", func(t *testing.T) {
+			got, err := Marshal(map[string][]ownJSON{"x": {ownJSON(`{}`), ownJSON(tc.json)}})
+			if err == nil || !errors.Is(err, strictjson.ErrMalformed) || got != nil {
+				t.Errorf("got %q, %v", got, err)
+			}
+		})
+		t.Run(tc.name+" in raw JSON", func(t *testing.T) {
+			got, err := Marshal(map[string]json.RawMessage{"x": json.RawMessage(tc.json)})
+			refused(t, got, err, tc.want)
+		})
+	}
+	t.Run("a valid surrogate pair is accepted and written as the character", func(t *testing.T) {
+		for _, in := range []string{
+			`{"a":"` + bs + "ud83d" + bs + "ude00" + `"}`,
+			`{"a":"` + bs + "uD83D" + bs + "uDE00" + `"}`,
+			"{\"a\":\"\U0001F600\"}",
+		} {
+			got, err := Marshal(ownJSON(in))
+			if err != nil {
+				t.Errorf("%s: %v", in, err)
+				continue
+			}
+			if want := "{\"a\":\"\U0001F600\"}"; string(got) != want {
+				t.Errorf("%s: got %q, want %q", in, got, want)
+			}
+		}
+		// And as a name, sorted among others by UTF-16 units.
+		got, err := Marshal(ownJSON(`{"` + bs + "ud83d" + bs + "ude00" + `":1,"` + bs + "ufb33" + `":2}`))
+		if err != nil || string(got) != "{\"\U0001F600\":1,\"\ufb33\":2}" {
+			t.Errorf("a pair as a name: %q, %v", got, err)
+		}
+	})
+	t.Run("escapes of the JSON are written as the canonical form writes them", func(t *testing.T) {
+		in := `{"b":"` + bs + "u00e9" + bs + "/" + bs + "u0009" + bs + "u001F" + `","a":1}`
+		got, err := Marshal(ownJSON(in))
+		if err != nil {
+			t.Fatal(err)
+		}
+		if want := "{\"a\":1,\"b\":\"\u00e9/\\t\\u001f\"}"; string(got) != want {
+			t.Errorf("got %q, want %q", got, want)
+		}
+	})
+	t.Run("the nesting of the JSON a type writes counts with the rest", func(t *testing.T) {
+		deep := func(n int) ownJSON { // n levels in all
+			return ownJSON(strings.Repeat(`{"a":`, n-1) + `{}` + strings.Repeat(`}`, n-1))
+		}
+		// Alone, a document of the limit is written. Inside one map it is one level lower than
+		// it stands alone, inside two maps two.
+		got, err := Marshal(deep(strictjson.MaxDepth))
+		if err != nil || len(got) != 5*(strictjson.MaxDepth-1)+len(`{}`)+strictjson.MaxDepth-1 {
+			t.Errorf("%d levels alone: %d bytes, %v", strictjson.MaxDepth, len(got), err)
+		}
+		got, err = Marshal(map[string]ownJSON{"x": deep(strictjson.MaxDepth - 1)})
+		if err != nil {
+			t.Fatalf("%d levels in all: %v", strictjson.MaxDepth, err)
+		}
+		if is, err := IsCanonical(got); err != nil || !is {
+			t.Errorf("the output is not canonical: %v, %v", is, err)
+		}
+		// One level over is refused and nothing is written. Which package says so, and in what
+		// words, is not pinned here: the standard encoder also stops at this depth.
+		got, err = Marshal(map[string]map[string]ownJSON{"x": {"y": deep(strictjson.MaxDepth - 1)}})
+		if err == nil || got != nil {
+			t.Errorf("%d levels in all: %q, %v, want an error and nothing", strictjson.MaxDepth+1, got, err)
+		}
+	})
+}
+
+// The types below write their own text.
+type (
+	textValue   struct{ out string } // MarshalText on the value
+	textPointer struct{ out string } // MarshalText on the pointer
+	textInt     int                  // a key that writes its own text: 1 is bad
+	textKeyPtr  struct{ out string } // a key through a pointer
+	textString  string               // a string kind that writes text of its own
+	jsonAndText struct{ json, text string }
+	failing     struct{}
+)
+
+var errBoom = errors.New("boom")
+
+func (x textValue) MarshalText() ([]byte, error) { return []byte(x.out), nil }
+
+func (x *textPointer) MarshalText() ([]byte, error) { return []byte(x.out), nil }
+
+func (k textInt) MarshalText() ([]byte, error) {
+	if k == 1 {
+		return []byte("\xff"), nil
+	}
+	return []byte(fmt.Sprintf("key%d", int(k))), nil
+}
+
+func (k *textKeyPtr) MarshalText() ([]byte, error) { return []byte(k.out), nil }
+
+// MarshalText of a string kind: the encoder writes the text, not the string.
+func (s textString) MarshalText() ([]byte, error) { return []byte("ok"), nil }
+
+func (x jsonAndText) MarshalJSON() ([]byte, error) { return []byte(x.json), nil }
+
+func (x jsonAndText) MarshalText() ([]byte, error) { return []byte(x.text), nil }
+
+func (failing) MarshalText() ([]byte, error) { return nil, errBoom }
+
+func TestMarshalChecksWhatATypeWritesAsText(t *testing.T) {
+	const text = "malformed JSON: a text that is not valid UTF-8 cannot be written"
+	const key = "malformed JSON: a member name that is not valid UTF-8 cannot be written"
+	bad := "\xff"
+	ptr := &textValue{bad}
+	cases := []struct {
+		name string
+		v    any
+		want string
+	}{
+		{"a value in a map", map[string]textValue{"k": {bad}}, text},
+		{"a value in an interface", map[string]any{"k": textValue{bad}}, text},
+		{"a value in a field", struct{ T textValue }{textValue{bad}}, text},
+		{"a value in a slice", map[string][]textValue{"k": {{"fine"}, {bad}}}, text},
+		{"a value in an array", struct{ A [1]textValue }{[1]textValue{{bad}}}, text},
+		{"a value behind a pointer field", struct{ P *textValue }{ptr}, text},
+		{"a value behind a pointer in a map", map[string]*textValue{"k": ptr}, text},
+		{"a value behind two pointers", struct{ P **textValue }{&ptr}, text},
+		{"a value in a nested struct", struct{ S struct{ T textValue } }{struct{ T textValue }{textValue{bad}}}, text},
+		{"a method on the pointer, for a slice element", map[string][]textPointer{"k": {{bad}}}, text},
+		{"a method on the pointer, for a field of an addressable struct", map[string]*struct{ T textPointer }{"k": {textPointer{bad}}}, text},
+		{"a key of an integer kind", map[textInt]int{1: 1}, key},
+		{"a key of an integer kind among valid ones", map[textInt]int{0: 1, 1: 1, 2: 1}, key},
+		{"a key through a pointer", map[*textKeyPtr]int{{bad}: 1}, key},
+		{"a key in a nested map", map[string]any{"a": map[textInt]int{1: 1}}, key},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			got, err := Marshal(tc.v)
+			refused(t, got, err, tc.want)
+		})
+	}
+	t.Run("valid text is written, as a value and as a key", func(t *testing.T) {
+		got, err := Marshal(map[string]any{"v": textValue{"\u00e9<"}, "p": &textValue{"x"}, "s": []textPointer{{"y"}}})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if want := "{\"p\":\"x\",\"s\":[\"y\"],\"v\":\"\u00e9<\"}"; string(got) != want {
+			t.Errorf("got %q, want %q", got, want)
+		}
+		got, err = Marshal(map[textInt]int{0: 1, 2: 3, 12: 4})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if want := `{"key0":1,"key12":4,"key2":3}`; string(got) != want {
+			t.Errorf("got %q, want %q", got, want)
+		}
+	})
+	t.Run("a method that the encoder does not call is not called here", func(t *testing.T) {
+		// A map value cannot be addressed, so the encoder does not use a method of the pointer
+		// and writes the struct as an object; the walk must not refuse the text of that method.
+		got, err := Marshal(map[string]struct{ T textPointer }{"k": {textPointer{bad}}})
+		if err != nil {
+			t.Fatalf("Marshal refused: %v", err)
+		}
+		if want := `{"k":{"T":{}}}`; string(got) != want {
+			t.Errorf("got %s, want %s", got, want)
+		}
+	})
+	t.Run("the encoder uses the text of a value, not the string under it", func(t *testing.T) {
+		// textString holds an invalid string and writes valid text: what is written is the text.
+		got, err := Marshal(map[string]textString{"k": textString("\xff")})
+		if err != nil {
+			t.Fatalf("Marshal refused: %v", err)
+		}
+		if want := `{"k":"ok"}`; string(got) != want {
+			t.Errorf("got %s, want %s", got, want)
+		}
+	})
+	t.Run("the encoder asks for the JSON first", func(t *testing.T) {
+		got, err := Marshal(map[string]jsonAndText{"k": {json: `{"a":1}`, text: "\xff"}})
+		if err != nil {
+			t.Fatalf("Marshal refused: %v", err)
+		}
+		if want := `{"k":{"a":1}}`; string(got) != want {
+			t.Errorf("got %s, want %s", got, want)
+		}
+		// And the JSON is what is checked when it is the one that is bad.
+		got, err = Marshal(map[string]jsonAndText{"k": {json: `{"a":1.5}`, text: "fine"}})
+		if !errors.Is(err, strictjson.ErrMalformed) || got != nil {
+			t.Errorf("got %q, %v", got, err)
+		}
+	})
+	t.Run("an error of the method is the encoder's to report", func(t *testing.T) {
+		for name, v := range map[string]any{
+			"a value":     map[string]failing{"k": {}},
+			"a field":     struct{ F failing }{},
+			"a slice":     map[string][]failing{"k": {{}}},
+			"a map key":   map[textFailingKey]int{1: 1},
+			"the top one": failing{},
+		} {
+			got, err := Marshal(v)
+			if !errors.Is(err, errBoom) {
+				t.Errorf("%s: err = %v, want boom", name, err)
+			}
+			if got != nil {
+				t.Errorf("%s: Marshal returned %q next to an error", name, got)
+			}
+		}
+	})
+}
+
+type textFailingKey int
+
+func (textFailingKey) MarshalText() ([]byte, error) { return nil, errBoom }
+
+// nestedSlices is a map that holds n slices one inside the other: n+1 levels in all.
+func nestedSlices(n int) (map[string]any, string) {
+	inner := []any{}
+	for range n - 1 {
+		inner = []any{inner}
+	}
+	return map[string]any{"a": inner}, `{"a":` + strings.Repeat("[", n) + strings.Repeat("]", n) + `}`
+}
+
+// nestedMaps is a map that holds maps: levels objects in all.
+func nestedMaps(levels int) (map[string]any, string) {
+	inner := map[string]any{}
+	for range levels - 1 {
+		inner = map[string]any{"a": inner}
+	}
+	return inner, strings.Repeat(`{"a":`, levels-1) + `{}` + strings.Repeat(`}`, levels-1)
+}
+
+// listNode is a linked list: each node is one level of nesting, the link is not written at the end.
+type listNode struct {
+	Next *listNode `json:",omitempty"`
+}
+
+// nestedList is a list of n nodes: n levels in all.
+func nestedList(n int) (*listNode, string) {
+	head := &listNode{}
+	for range n - 1 {
+		head = &listNode{Next: head}
+	}
+	return head, strings.Repeat(`{"Next":`, n-1) + `{}` + strings.Repeat(`}`, n-1)
+}
+
+// pointerSlice is a slice of pointers to slices of pointers to slices: each pointer is a hop, not a level.
+type pointerSlice []*pointerSlice
+
+// nestedPointerSlices is a pointerSlice n slices deep, inside a map: n+1 levels in all.
+func nestedPointerSlices(n int) (map[string]any, string) {
+	inner := pointerSlice{}
+	for range n - 1 {
+		prev := inner // a variable of its own for each level: &inner would point to itself
+		inner = pointerSlice{&prev}
+	}
+	return map[string]any{"a": inner}, `{"a":` + strings.Repeat("[", n) + strings.Repeat("]", n) + `}`
+}
+
+// hopSlice, hopMap and hopStruct hold the next level behind a pointer to an interface: two hops
+// for every level, so that hops that were not counted from the last level would add up to the
+// limit long before the levels do.
+type (
+	hopSlice  []*any
+	hopMap    map[string]*any
+	hopStruct struct {
+		N *any `json:",omitempty"`
+	}
+)
+
+// nestedHops is a value of levels levels of one kind of container with two hops between every two
+// of them, as the walk and the JSON see it. The first level is an object, so a slice goes in a map.
+func nestedHops(kind string, levels int) (any, string) {
+	var inner any
+	var opens, closes []string
+	for level := levels; level >= 1; level-- {
+		prev := inner
+		last := level == levels // the innermost level is empty
+		switch kind {
+		case "slices":
+			inner = hopSlice{}
+			if !last {
+				inner = hopSlice{&prev}
+			}
+			opens, closes = append(opens, `[`), append(closes, `]`)
+		case "maps":
+			inner = hopMap{}
+			if !last {
+				inner = hopMap{"a": &prev}
+			}
+			opens, closes = append(opens, `{"a":`), append(closes, `}`)
+		default:
+			inner = hopStruct{}
+			if !last {
+				inner = hopStruct{&prev}
+			}
+			opens, closes = append(opens, `{"N":`), append(closes, `}`)
+		}
+	}
+	// The innermost level has no member, so its opener is the bracket alone; the openers and the
+	// closers were collected from the innermost level out.
+	opens[0] = opens[0][:1]
+	slices.Reverse(opens)
+	want := strings.Join(opens, "") + strings.Join(closes, "")
+	if kind == "slices" {
+		return map[string]any{"a": inner}, `{"a":` + want + `}`
+	}
+	return inner, want
+}
+
+// nestedMixedValue is levels levels of maps, slices and structs in turn, the first a map.
+func nestedMixedValue(levels int) (any, string) {
+	var inner any
+	var opens, closes []string
+	for level := levels; level >= 1; level-- {
+		switch {
+		case level == levels && level%2 == 1:
+			inner = map[string]any{}
+			opens, closes = append(opens, `{`), append(closes, `}`)
+		case level == levels:
+			inner = []any{}
+			opens, closes = append(opens, `[`), append(closes, `]`)
+		case level%3 == 1:
+			inner = map[string]any{"a": inner}
+			opens, closes = append(opens, `{"a":`), append(closes, `}`)
+		case level%3 == 2:
+			inner = []any{inner}
+			opens, closes = append(opens, `[`), append(closes, `]`)
+		default:
+			inner = struct{ A any }{inner}
+			opens, closes = append(opens, `{"A":`), append(closes, `}`)
+		}
+	}
+	slices.Reverse(opens)
+	return inner, strings.Join(opens, "") + strings.Join(closes, "")
+}
+
+func TestMarshalNestingDepth(t *testing.T) {
+	tooDeep := malformedText("nesting deeper than %d levels", strictjson.MaxDepth)
+	limit := strictjson.MaxDepth
+	cases := []struct {
+		name  string
+		build func(levels int) (any, string)
+	}{
+		{"slices in a map", func(n int) (any, string) { return nestedSlices(n - 1) }},
+		{"maps in maps", func(n int) (any, string) { return nestedMaps(n) }},
+		{"a linked list of structs behind pointers", func(n int) (any, string) { return nestedList(n) }},
+		{"slices that hold pointers to slices", func(n int) (any, string) { return nestedPointerSlices(n - 1) }},
+		{"maps, slices and structs in turn", nestedMixedValue},
+		{"slices with two hops to every level", func(n int) (any, string) { return nestedHops("slices", n-1) }},
+		{"maps with two hops to every level", func(n int) (any, string) { return nestedHops("maps", n) }},
+		{"structs with two hops to every level", func(n int) (any, string) { return nestedHops("structs", n) }},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			// The levels the JSON has: exactly the limit is written and is canonical, one more is refused.
+			for _, levels := range []int{3, 4, 5, 1000, 4000, limit - 1, limit} {
+				v, want := tc.build(levels)
+				got, err := Marshal(v)
+				if err != nil {
+					t.Fatalf("%d levels: %v", levels, err)
+				}
+				sameBytes(t, fmt.Sprintf("%d levels", levels), got, want)
+				if is, err := IsCanonical(got); err != nil || !is {
+					t.Errorf("%d levels: the output is not canonical: %v, %v", levels, is, err)
+				}
+			}
+			v, _ := tc.build(limit + 1)
+			got, err := Marshal(v)
+			refused(t, got, err, tooDeep)
+			v, _ = tc.build(2 * limit)
+			got, err = Marshal(v)
+			refused(t, got, err, tooDeep)
+		})
+	}
+	t.Run("a byte slice is a string, not a level", func(t *testing.T) {
+		// maps in maps to the limit, the innermost holding bytes: the base64 string is not a level.
+		inner, want := nestedMaps(limit)
+		deepest := inner
+		for len(deepest) > 0 {
+			deepest = deepest["a"].(map[string]any)
+		}
+		deepest["b"] = []byte("hi")
+		want = strings.Replace(want, `{}`, `{"b":"aGk="}`, 1)
+		got, err := Marshal(inner)
+		if err != nil {
+			t.Fatal(err)
+		}
+		sameBytes(t, "bytes at the limit", got, want)
+	})
+}
+
+// hopsChain is a map behind a chain of pointers and interfaces: k hops in all, which are not levels.
+func hopsChain(k int) any {
+	var v any = map[string]int{"a": 1}
+	if k%2 == 1 {
+		m := map[string]int{"a": 1}
+		v = &m
+	}
+	for range k / 2 {
+		cur := v
+		v = &cur
+	}
+	return v
+}
+
+func TestMarshalChainOfPointers(t *testing.T) {
+	// A pointer or an interface is not a level of nesting, but a chain of them must end: a chain
+	// of the length of the limit is written, a longer one is refused as too deep.
+	tooDeep := malformedText("nesting deeper than %d levels", strictjson.MaxDepth)
+	for _, k := range []int{1, 2, 3, 100, 1001, strictjson.MaxDepth - 1, strictjson.MaxDepth} {
+		got, err := Marshal(hopsChain(k))
+		if err != nil {
+			t.Errorf("a chain of %d: %v", k, err)
+			continue
+		}
+		if want := `{"a":1}`; string(got) != want {
+			t.Errorf("a chain of %d: got %s, want %s", k, got, want)
+		}
+	}
+	for _, k := range []int{strictjson.MaxDepth + 1, strictjson.MaxDepth + 2, 20000, 100000} {
+		got, err := Marshal(hopsChain(k))
+		refused(t, got, err, tooDeep)
+	}
+}
+
+func TestMarshalOfAValueThatPointsToItselfEndsInAnError(t *testing.T) {
+	tooDeep := malformedText("nesting deeper than %d levels", strictjson.MaxDepth)
+	type loop struct{ Next *loop }
+	l := &loop{}
+	l.Next = l
+	m := map[string]any{}
+	m["self"] = m
+	s := make([]any, 1)
+	s[0] = s
+	var p any
+	p = &p
+	a := &loop{}
+	b := &loop{Next: a}
+	a.Next = b
+	for name, v := range map[string]any{
+		"a struct with a pointer to itself":                l,
+		"a struct value that holds it":                     *l,
+		"two structs that point to each other":             a,
+		"a map that holds itself":                          m,
+		"a map that holds itself, in a map":                map[string]any{"m": m},
+		"a slice that holds itself":                        map[string]any{"s": s},
+		"a pointer to an interface that holds the pointer": p,
+	} {
+		t.Run(name, func(t *testing.T) {
+			got, err := Marshal(v)
+			refused(t, got, err, tooDeep)
+		})
+	}
+}
+
+func TestMarshalNestingDepthIsCountedAsTheJSONHasIt(t *testing.T) {
+	// Levels that are not in the JSON must not count: a pointer or an interface is a hop, and
+	// hops are counted from the last level, so that a list of 4000 nodes whose links are
+	// pointers is 4000 levels and not 8000 or 12000.
+	list, want := nestedList(4000)
+	got, err := Marshal(list)
+	if err != nil {
+		t.Fatalf("a list of 4000: %v", err)
+	}
+	sameBytes(t, "a list of 4000", got, want)
+	// Pointer and interface between every two levels, to the limit.
+	inner, wantSlices := nestedPointerSlices(strictjson.MaxDepth - 1)
+	got, err = Marshal(inner)
+	if err != nil {
+		t.Fatalf("slices of pointers: %v", err)
+	}
+	sameBytes(t, "slices of pointers", got, wantSlices)
+}
+
+// ambiguousA and ambiguousB each write text of their own and are embedded in one struct, so the
+// struct has no method of that name (two at one depth cancel each other) and is written as an object.
+type (
+	ambiguousA struct{ X string }
+	ambiguousB struct{ Y string }
+	ambiguous  struct {
+		ambiguousA
+		ambiguousB
+	}
+)
+
+func (ambiguousA) MarshalText() ([]byte, error) { return []byte("\xff"), nil }
+
+func (ambiguousB) MarshalText() ([]byte, error) { return []byte("\xff"), nil }
+
+func TestMarshalOfEmbeddedStructsThatWriteTextOfTheirOwn(t *testing.T) {
+	// The embedded types are not exported, so their fields cannot be read through the interface
+	// of the value; the walk must neither panic nor take their text for the struct's.
+	got, err := Marshal(ambiguous{ambiguousA{"a"}, ambiguousB{"b"}})
+	if err != nil {
+		t.Fatalf("Marshal refused: %v", err)
+	}
+	if want := `{"X":"a","Y":"b"}`; string(got) != want {
+		t.Errorf("got %s, want %s", got, want)
+	}
 }
