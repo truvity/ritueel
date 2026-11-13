@@ -116,6 +116,7 @@ func PeekInt(data []byte, name string) (n int64, ok bool, err error) {
 	if found == nil {
 		return 0, false, nil
 	}
+	// An empty text is a fraction or an exponent; parseInt would call it "does not fit 64 bits".
 	if found.value.kind != kindNumber || found.value.text == "" {
 		return 0, false, malformed("member %s is not an integer", quote(name))
 	}
@@ -173,6 +174,7 @@ func parseDocument(data []byte, maxBytes int, strict bool) (*node, error) {
 	if len(data) > maxBytes {
 		return nil, malformed("longer than %d bytes", maxBytes)
 	}
+	// The grammar below would refuse these bytes as "not one JSON object"; this says what they are.
 	if bytes.HasPrefix(data, []byte{0xEF, 0xBB, 0xBF}) {
 		return nil, malformed("starts with a byte order mark")
 	}
@@ -181,6 +183,8 @@ func parseDocument(data []byte, maxBytes int, strict bool) (*node, error) {
 	}
 	p := &parser{data: data, strict: strict}
 	p.skipSpace()
+	// Needed, not only clearer: parseObject takes its first byte for the brace without looking, so
+	// without this check "[}" would be read as an empty object.
 	if p.pos >= len(p.data) || p.data[p.pos] != '{' {
 		return nil, malformed("not one JSON object")
 	}
@@ -372,7 +376,6 @@ func (p *parser) parseNumber() (node, error) {
 	default:
 		return node{}, p.errorf("not a number")
 	}
-	intEnd := p.pos
 	isInt := true
 	if p.pos < len(p.data) && p.data[p.pos] == '.' {
 		isInt = false
@@ -391,15 +394,14 @@ func (p *parser) parseNumber() (node, error) {
 			return node{}, p.errorf("a digit was expected in the exponent")
 		}
 	}
-	n := node{kind: kindNumber, text: string(p.data[start:p.pos])}
+	n := node{kind: kindNumber} // text stays empty for a fraction or an exponent: PeekInt must refuse it
 	if !isInt {
-		n.text = "" // not an integer: PeekInt must refuse it, so it must not parse as one
 		if p.strict {
 			return node{}, p.errorf("a number with a fraction or an exponent")
 		}
 		return n, nil
 	}
-	n.text = string(p.data[start:intEnd])
+	n.text = string(p.data[start:p.pos])
 	if p.strict {
 		if _, err := parseInt(n.text); err != nil {
 			return node{}, p.errorf("%s", err)
