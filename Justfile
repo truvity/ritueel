@@ -295,6 +295,8 @@ go-vuln:
 go-release-check:
     #!/usr/bin/env bash
     set -euo pipefail
+    # The name of the dry run. A real release refuses it (`go-release-build`, and `verify` in release.yaml);
+    # `test` in release.yaml expects the same name. Keep the three identical.
     tag="v0.0.0-snapshot"
     commit="$(git rev-parse HEAD)"
     goreleaser check
@@ -381,13 +383,15 @@ _go-release-stage:
 # The release build, for the workflow only (the `build` job of .github/workflows/release.yaml). It builds
 # the release for the tag in RELEASE_TAG and PUBLISHES NOTHING: it needs no token, and the job that
 # runs it is read-only and passes none to any step that runs repository code (`checkout` and the
-# install action receive that read-only token inside the actions). It refuses unless the tag is `vX.Y.Z` or `vX.Y.Z-suffix` (no leading zeros), points
-# at the commit that is checked out, and that commit is an ancestor of origin/main. Then
+# install action receive that read-only token inside the actions). It refuses unless the tag is
+# `vX.Y.Z` or `vX.Y.Z-suffix` (no leading zeros) and is not `v0.0.0-snapshot` (the name of the dry run),
+# points at the commit that is checked out, and that commit is an ancestor of origin/main. Then
 # `goreleaser release --skip=publish` builds the archives, SHA256SUMS and the release notes, and
-# `_go-release-verify` judges that very build (the one go-release-check judges as a snapshot). The
-# files it leaves in dist/upload/ are the whole release: the two archives, SHA256SUMS and NOTES.md.
-# The `publish` job uploads exactly those files, after it has checked them against SHA256SUMS; nothing
-# is built again. All of it is unsigned.
+# `_go-release-verify` judges that very build (the one go-release-check judges as a snapshot). What it
+# leaves in dist/upload/ is the two archives, SHA256SUMS (the files of the release) and NOTES.md (the
+# text of the release page). The `publish` job uploads the archives and SHA256SUMS and uses NOTES.md as
+# the text, after it has checked all four against the digest that `build` gave; nothing is built again.
+# All of it is unsigned.
 go-release-build:
     #!/usr/bin/env bash
     set -euo pipefail
@@ -395,6 +399,8 @@ go-release-build:
     tag="${RELEASE_TAG:-}"
     [ -n "${tag}" ] || fail "RELEASE_TAG is not set: a release needs a tag"
     [[ "${tag}" =~ ^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-[0-9A-Za-z]+(\.[0-9A-Za-z]+)*)?$ ]] || fail "'${tag}' is not vX.Y.Z or vX.Y.Z-suffix"
+    # The name of the dry run (go-release-check) is not a release. Keep it identical to the one there.
+    [ "${tag}" != "v0.0.0-snapshot" ] || fail "the tag '${tag}' is the name of the dry run and cannot be a release"
     commit="$(git rev-parse HEAD)"
     [ "$(git rev-parse --verify "refs/tags/${tag}^{commit}")" = "${commit}" ] || fail "tag ${tag} does not point at the checked-out commit ${commit}"
     git merge-base --is-ancestor "${commit}" refs/remotes/origin/main || fail "commit ${commit} is not on origin/main"

@@ -95,6 +95,12 @@ jobs:
             echo "::error::the tag '$TAG' is not vX.Y.Z or vX.Y.Z-suffix"
             exit 1
           fi
+          # The name of the dry run (the snapshot of `go-release-check`, which `build` and `test` use
+          # below) is not a release. Keep this name identical to the one in the Justfile and in `test`.
+          if [ "$TAG" = "v0.0.0-snapshot" ]; then
+            echo "::error::the tag '$TAG' is the name of the dry run and cannot be a release"
+            exit 1
+          fi
           if ! git merge-base --is-ancestor "$COMMIT" refs/remotes/origin/main; then
             echo "::error::the commit of the tag $TAG is not on main"
             exit 1
@@ -215,7 +221,8 @@ jobs:
           ARCH: ${{ matrix.arch }}
           MACHINE: ${{ matrix.machine }}
           # What was stamped: the tag, and the commit that `build` checked out. The dry run stamps
-          # `v0.0.0-snapshot` (the tag in `go-release-check`).
+          # `v0.0.0-snapshot` (the tag in `go-release-check`; the name is refused as a real tag by
+          # `verify` and by `go-release-build`, so a release can never be mistaken for the dry run).
           TAG: ${{ github.event_name == 'push' && github.ref_name || 'v0.0.0-snapshot' }}
           COMMIT: ${{ needs.build.outputs.commit }}
           FILES: ${{ needs.build.outputs.files }}
