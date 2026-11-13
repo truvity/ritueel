@@ -32,7 +32,7 @@ What follows:
 
 - **Constrain DNS and IP, and always issue with SANs.** A name type you do not constrain is open, and a client that reads only the common name can be led past a constraint.
 - **A constrained root is still a root.** If its key leaks, the constraint is only as good as each client's enforcement.
-- **The constraint is set at the ceremony.** ritueel's policy can require name constraints on every X.509 intermediate it signs ([the policy](/reference/bundle/#ritueelyaml)), and refuse a request that is wider than the allowed hosts. A delegation may declare one permitted DNS zone, which ritueel writes into the intermediate certificate as a name constraint ([record 0006](../decisions/0006-bundle-history-and-trust-files.md), rule 30, with M2). Excluded DNS subtrees and excluded IP ranges are not decided.
+- **The constraint is set at the ceremony.** ritueel's policy can require name constraints on every X.509 intermediate it signs ([the policy](/reference/bundle/#ritueelyaml)), and refuse a request that is wider than the allowed hosts. A delegation may declare one permitted DNS zone, which ritueel writes into the intermediate certificate as a name constraint ([record 0006](../decisions/0006-bundle-history-and-trust-files.md), rule 30, with M2). Excluded DNS subtrees and excluded IP ranges are not decided, except that a request may exclude every IP address ([the contract](/reference/hand-off-contract/#what-the-certifier-checks)).
 
 Other limits worth setting: a path length of zero below the intermediate, and extended key usage so that a server-authentication intermediate cannot sign client certificates.
 
