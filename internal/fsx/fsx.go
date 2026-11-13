@@ -83,9 +83,10 @@ var ErrNoReplaceUnsupported = errors.New("the file system does not support a ren
 // name (compared without case). For a name (any element of a path, and the name of a file of
 // a set): the exFAT file system of a stick cannot hold it or holds it under another name (a
 // control code or one of the characters " * / : < > ? \ |; an end with a dot or a space; a
-// length over 255 bytes; bytes that are not UTF-8), or no person can see or type a
-// character of it (U+007F, U+0080 to U+009F, U+FFFE, U+FFFF), or a desktop system cannot open
-// it (a device name of Windows, "aux" or "Aux.json"). A name of a set must also be one plain
+// length over 255 bytes; bytes that are not UTF-8), or it has a character that is not
+// printable in the sense of unicode.IsPrint (U+007F, a format character such as U+200B, a
+// space such as U+00A0, a private use or unassigned code point), or a desktop system cannot
+// open it (a device name of Windows, "aux" or "Aux.json"). A name of a set must also be one plain
 // name; a mode must have no bits beyond the permission bits; a journal line must hold no
 // newline. Such an error does not stop the writer.
 var ErrInvalid = errors.New("fsx: invalid argument")
