@@ -37,7 +37,7 @@ Throwaway P-384 keys, made for this test. The signatures of a subkey that had be
 ## What the setup over- and under-counts
 
 - Two verifiers and git only. apt and rpm were not tried, so the table says nothing about how a package manager reacts.
-- `sqv` 1.3.0 is not the 1.5.0 of the [verifier matrix](/research/openpgp-verifier-matrix-2026-11/), so a newer `sqv` may differ.
+- `sqv` 1.3.0 is not the 1.5.0 of the [verifier matrix](./openpgp-verifier-matrix-2026-11.md), so a newer `sqv` may differ.
 - The result for `gpgv` after a "compromised" revocation was not recorded.
 - Throwaway keys have no history of certifications, so the run says nothing about a key that others have certified.
 
@@ -55,7 +55,7 @@ What each verifier did with a signature, for each way the subkey ended.
 
 `git verify-tag` (git 2.47.3) failed for a tag signed by a revoked key and for a tag signed by an expired key. The reason of the revocation and the date of the signature were not recorded for git.
 
-Consistent with the [verifier matrix](/research/openpgp-verifier-matrix-2026-11/): there `gpgv` also ignored a revocation, and `sqv` rejected a soft-reason revocation for later signatures only.
+Consistent with the [verifier matrix](./openpgp-verifier-matrix-2026-11.md): there `gpgv` also ignored a revocation, and `sqv` rejected a soft-reason revocation for later signatures only.
 
 ## Roads not taken
 

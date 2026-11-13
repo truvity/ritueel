@@ -7,7 +7,7 @@ sidebar:
 
 ## Question
 
-What does a reader who wants a private root today, or an OpenPGP primary key, have besides ritueel, and what does each option do and not do? It feeds [ritueel compared with what you can use today](/learn/compared/).
+What does a reader who wants a private root today, or an OpenPGP primary key, have besides ritueel, and what does each option do and not do? It feeds [ritueel compared with what you can use today](../learn/compared.md).
 
 ## When
 
@@ -100,7 +100,7 @@ Fetched each page or file with `curl` (or the GitHub API), read the text, and co
 - **Running each tool.** The strongest evidence, but it needs a device, an account and days, and the page only reports what each project says.
 - **Smallstep's product documentation.** The recipe is in the discussion above; the product pages describe the online CA, which is not what is compared.
 - **Vault.** OpenBao is the open fork the page cites; Vault's own page was not read, so the comparison page names OpenBao only.
-- **Prices of cards and KMS.** They change monthly; [Which keys to buy](/learn/which-keys-to-buy/) holds the card prices with their dates.
+- **Prices of cards and KMS.** They change monthly; [Which keys to buy](../learn/which-keys-to-buy.md) holds the card prices with their dates.
 
 ## Open questions
 

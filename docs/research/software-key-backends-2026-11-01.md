@@ -7,7 +7,7 @@ sidebar:
 
 ## Question
 
-Where may a software key live between ceremonies, if not in a file on one disk: in 1Password, or in the operating system's keyring? What does each protect against, what does each cost, and what must ritueel do about it? It feeds [ADR 0003](https://github.com/truvity/ritueel/blob/d0ae12da2432d5ae95cf95d68fb85ba3dda6cfee/docs/decisions/0003-key-stores-and-the-card-layer.md#the-software-store) (now [record 0002](../decisions/0002-where-a-key-lives.md), rules 7, 8 and 10 to 13) and [the software store](/reference/software-store/).
+Where may a software key live between ceremonies, if not in a file on one disk: in 1Password, or in the operating system's keyring? What does each protect against, what does each cost, and what must ritueel do about it? It feeds [ADR 0003](https://github.com/truvity/ritueel/blob/d0ae12da2432d5ae95cf95d68fb85ba3dda6cfee/docs/decisions/0003-key-stores-and-the-card-layer.md#the-software-store) (now [record 0002](../decisions/0002-where-a-key-lives.md), rules 7, 8 and 10 to 13) and [the software store](../reference/software-store.md).
 
 ## When
 

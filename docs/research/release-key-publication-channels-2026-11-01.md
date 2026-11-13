@@ -17,7 +17,7 @@ Beyond the first version, which channels should publish the release keys and the
 
 **Keep the first version's channels and add none now.** Each further channel serves a consumer that does not exist yet, and each is one more place to keep current at every yearly ceremony, because the keyring changes every year. If a consumer asks, the order is: GitHub releases (no new trust, it carries the files already published), then the WKD direct method (static files, a standard consumers already speak), then the keyserver; DNS `OPENPGPKEY` last, because it needs DNSSEC and serves mail clients, not package managers. What users verify with does not change: the keyring and `gpgv`, `sqv` or `gpg --status-fd`. Provenance tools are an optional second check.
 
-Update of 2026-11-11: the maintainer decided that ritueel publishes the public OpenPGP key to the keyservers the holder lists ([record 0011](../decisions/0011-publishing-and-what-to-do-after-a-ceremony.md); [the research](/research/after-the-ceremony-consumers-2026-11-11/)). The order above predates this decision for the keyserver channel; the other channels are unchanged.
+Update of 2026-11-11: the maintainer decided that ritueel publishes the public OpenPGP key to the keyservers the holder lists ([record 0011](../decisions/0011-publishing-and-what-to-do-after-a-ceremony.md); [the research](./after-the-ceremony-consumers-2026-11-11.md)). The order above predates this decision for the keyserver channel; the other channels are unchanged.
 
 ## Method
 
@@ -27,7 +27,7 @@ Read: the keys.openpgp.org about and FAQ pages; the Internet-Draft for the Web K
 
 - Nothing was run. A claim about how a tool behaves is the documentation's, not a measurement, and is marked so.
 - `cosign` and `slsa-verifier` were not read; they appear only as names of tools to try, not as recommendations.
-- The verifiers' behaviour on revocations and on the keyring is measured, in [the verifier matrix](/research/openpgp-verifier-matrix-2026-11/), and is not repeated here.
+- The verifiers' behaviour on revocations and on the keyring is measured, in [the verifier matrix](./openpgp-verifier-matrix-2026-11.md), and is not repeated here.
 
 ## Numbers
 

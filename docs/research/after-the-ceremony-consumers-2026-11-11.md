@@ -25,7 +25,7 @@ Read the pages and sources named in the table below. Each claim is labelled:
 - **SOURCE**: the source code of the service or its documentation source was read, and not run.
 - **UNVERIFIED**: seen in a search result, taken from a second-hand page, or reasoned from a standard. No UNVERIFIED claim is a fact of a record.
 
-Earlier results are not repeated: the facts about keyservers, the web key directory and the other channels for the release keys are in [release key publication channels](/research/release-key-publication-channels-2026-11-01/), and what the verifiers do with a revocation is in [the verifier matrix](/research/openpgp-verifier-matrix-2026-11/).
+Earlier results are not repeated: the facts about keyservers, the web key directory and the other channels for the release keys are in [release key publication channels](./release-key-publication-channels-2026-11-01.md), and what the verifiers do with a revocation is in [the verifier matrix](./openpgp-verifier-matrix-2026-11.md).
 
 ## What the setup over- and under-counts
 

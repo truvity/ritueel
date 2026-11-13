@@ -7,7 +7,7 @@ sidebar:
 
 ## Question
 
-Two points were held only by the first eighteen records and are in none of the ten records that replaced them: what is the source of the 2024 side channel in some security keys, which the [Rotate page](/learn/rotate/) gives as an example, and which tests does a planned key store pass before it is called supported?
+Two points were held only by the first eighteen records and are in none of the ten records that replaced them: what is the source of the 2024 side channel in some security keys, which the [Rotate page](../learn/rotate.md) gives as an example, and which tests does a planned key store pass before it is called supported?
 
 ## When
 
@@ -15,7 +15,7 @@ Carried over on 2026-11-11 from the records at commit `d0ae12da2432d5ae95cf95d68
 
 ## Verdict
 
-The example on the Rotate page stands: it has these sources. The admission list below is the one the [roadmap](/roadmap/) summarises for planned stores, and it fits rules 1 and 16 of [record 0002](../decisions/0002-where-a-key-lives.md) and rule 8 of [record 0008](../decisions/0008-a-persons-own-key.md).
+The example on the Rotate page stands: it has these sources. The admission list below is the one the [roadmap](../roadmap.md) summarises for planned stores, and it fits rules 1 and 16 of [record 0002](../decisions/0002-where-a-key-lives.md) and rule 8 of [record 0008](../decisions/0008-a-persons-own-key.md).
 
 ## The 2024 side channel in a card's signature code
 
@@ -31,11 +31,11 @@ Sources read on 2026-11-02 and not read again on 2026-11-11 (UNVERIFIED today).
 
 Google Cloud KMS, Azure Key Vault ([issue #67](https://github.com/truvity/ritueel/issues/67)) and other hardware such as Nitrokey ([issue #66](https://github.com/truvity/ritueel/issues/66)) are planned. A store is admitted, and called supported, when all of these hold, and not before:
 
-1. **A real installation needs it** ([principle 8](/principles/)): a real account or a real device, not an imagined one.
+1. **A real installation needs it** ([principle 8](../principles.md)): a real account or a real device, not an imagined one.
 2. **A dated research page measures it:** a P-384 signature over a SHA-384 digest, the evidence it gives and how it is checked, how a second process or machine reaches it, what a replica or a backup is, and what a reset or a deletion does.
 3. **Its evidence kind is stated,** which fixes what it may hold. A token that cannot attest holds no root.
 4. **It passes the tagged tests of its kind** on a real device or account, selected by serial number or by test account.
-5. **The site compares it** on [Where a key lives](/learn/key-stores/) and a guide walks the transition into it.
+5. **The site compares it** on [Where a key lives](../learn/key-stores.md) and a guide walks the transition into it.
 
 Whether a new token joins `piv` or `openpgp-card` or stands alone is decided after step 2.
 

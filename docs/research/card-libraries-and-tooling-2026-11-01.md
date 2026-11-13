@@ -19,7 +19,7 @@ Which code should ritueel use to drive the cards: for the root keys, and for a p
 
 ## Method
 
-- **Root keys in PIV.** piv-go v2.6.0 generated P-384 keys in slot 9c and in retired slots. ritueel's prototype built the OpenPGP packets with ProtonMail/go-crypto v1.5.2 and had the card sign the digests: a direct-key signature (`0x1F`), a user ID certification (`0x13`), a subkey binding (`0x18`) with the subkey's back-signature (`0x19`), and revocations (`0x20`, `0x28`). The certificates went through the [verifier matrix](/research/openpgp-verifier-matrix-2026-11/).
+- **Root keys in PIV.** piv-go v2.6.0 generated P-384 keys in slot 9c and in retired slots. ritueel's prototype built the OpenPGP packets with ProtonMail/go-crypto v1.5.2 and had the card sign the digests: a direct-key signature (`0x1F`), a user ID certification (`0x13`), a subkey binding (`0x18`) with the subkey's back-signature (`0x19`), and revocations (`0x20`, `0x28`). The certificates went through the [verifier matrix](./openpgp-verifier-matrix-2026-11.md).
 - **KMS keys.** The same packets with an `ECC_NIST_P384` key as primary and as subkey, through the AWS SDK.
 - **The OpenPGP applet.** cunicu's go-openpgp-card (latest release v0.3.11, on Codeberg) generated a P-384 signing key on the applet and made its back-signature; a software primary made the binding.
 - **The other ways to reach a card** (2026-10-31): a Go program driving `gpg` 2.2.27 and `gpg-agent`, and a Rust helper on openpgp-card 0.7.0, openpgp-card-rpgp 0.8.1 and rPGP 0.20.0.
