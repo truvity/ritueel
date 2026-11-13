@@ -18,7 +18,7 @@ it writes nothing. Built in **demo mode** it is the demo that is served under `/
 on the site: the real interface, answering from made-up fixtures.
 
 The page shows **one bundle** at a time. A bundle is the directory with a fixed
-structure that holds everything ritueel knows about one trust domain (for example
+structure that holds everything ritueel knows about one organisation or one person (for example
 `personal` or `acme`): its own history, trust sequence and roots, and, for a company, its
 own root list. It is named by its directory. A key is written with the bundle's name
 across bundles, `bundle/label`, for example `acme/A`; inside the page it is "key A".
@@ -114,7 +114,7 @@ no library (they drive headless Chrome over the DevTools protocol).
   the generated schema, so a wrong field is an error). There is no manifest and no shared
   directory. `ListFindings` applies `min_severity` in the transport. The Empty state is
   built by code from the loaded answers (an empty bundle that keeps its name and path).
-- The three example bundles are trust domains of their own, each with its own history,
+- Each of the three example bundles is for a different organisation or person, with its own history,
   roots, cards, findings and trust files. The example company is the one of the
   [bundle reference](../docs/reference/bundle.md); the fixtures copy it. `acme` is a
   company with two root cards (`root-a`, `root-b`) and one cloud key service, a
