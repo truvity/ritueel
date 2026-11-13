@@ -668,23 +668,27 @@ func TestCommandResults(t *testing.T) {
 	}
 }
 
-// A command that ends well may still return a status code (10, 11, 12): the outcome is done.
+// The exit codes 10, 11 and 12 belong to status, and docs/reference/cli.md decides no outcome for
+// them yet: a command that returns one has made a mistake of the programmer, and the run ends with
+// the exit code 1 and the text of the panic, in text and in JSON mode. When the page decides their
+// outcome, this test is the one to change with the table of outcomeOf.
 func TestCommandReturningAStatusCode(t *testing.T) {
 	for _, code := range []ExitCode{ExitNotice, ExitAlert, ExitCritical} {
 		t.Run(fmt.Sprint(int(code)), func(t *testing.T) {
 			withSpecs(t, spec{name: "fake", usage: "a test command", run: func(context.Context, *Call) (*Result, error) {
 				return &Result{ExitCode: code, Text: "findings\n"}, nil
 			}})
+			msg := fmt.Sprintf("internal error: cli: the exit code %d has no decided outcome: docs/reference/cli.md must decide its outcome before a command returns it", int(code))
 			text := run(t, "fake")
-			if text.code != code || text.stdout != "findings\n" || text.stderr != "" {
+			if text.code != ExitFailure || text.stdout != "" || text.stderr != "ritueel: "+msg+"\n" {
 				t.Errorf("text: (%d, %q, %q)", int(text.code), text.stdout, text.stderr)
 			}
 			js := run(t, "--output", "json", "fake")
-			if js.code != code || js.stderr != "" {
+			if js.code != ExitFailure || js.stderr != "ritueel: "+msg+"\n" {
 				t.Errorf("json: (%d, %q)", int(js.code), js.stderr)
 			}
 			wantObject(t, object(t, js.stdout), map[string]any{
-				"output": 1, "command": "fake", "exit_code": int(code), "outcome": "done",
+				"output": 1, "command": "fake", "exit_code": 1, "outcome": "failed", "error": msg,
 			})
 		})
 	}
