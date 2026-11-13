@@ -7,9 +7,9 @@ sidebar:
 
 *Not built yet. This is the page that [record 0007](../decisions/0007-changing-and-losing-a-root.md) leaves for the format and the commands; the code is [issue #69](https://github.com/truvity/ritueel/issues/69), in M2, with the roots of [issue #48](https://github.com/truvity/ritueel/issues/48). The ideas are taught in [Revoke](/learn/revoke/).*
 
-A revocation made after a primary key is lost cannot be made at all. So ritueel makes the revocation signatures when the key is born, for every OpenPGP primary key it creates: the primary of each root key, and a person's own primary when personal OpenPGP is built (M3, [issue #18](https://github.com/truvity/ritueel/issues/18)). For the same reason every root key also makes its **removal authorisation** at birth, which lets it leave the root set without signing ([below](/reference/revocation-material/#the-removal-authorisation)).
+A revocation made after a primary key is lost cannot be made at all. So ritueel makes the revocation signatures when the key is born, for every OpenPGP primary key it creates: the primary of each root key, and a person's own primary when personal OpenPGP is built (M3, [issue #18](https://github.com/truvity/ritueel/issues/18)). For the same reason every root key also makes its **removal authorisation** at birth, which lets it leave the set of root keys without signing ([below](/reference/revocation-material/#the-removal-authorisation)).
 
-Revocation is covered with OpenPGP revocation signatures made in advance and kept apart, and with CRLs and root lists for X.509 ([record 0007](../decisions/0007-changing-and-losing-a-root.md), rule 25).
+Revocation is covered with OpenPGP revocation signatures made in advance and kept apart, and with CRLs and root lists for X.509 ([record 0007](../decisions/0007-changing-and-losing-a-root.md), rules 21 to 23; [record 0006](../decisions/0006-bundle-history-and-trust-files.md), rule 24).
 
 ## What is made
 
@@ -24,13 +24,13 @@ For each primary key, one **key revocation signature** (RFC 9580, section 5.2.1.
 
 The reasons listed in the wanted root file are added to the two that are always made. The default set is two reasons because the event cannot be known at birth: a card that is lost and may be locked is not the same as a card that is stolen with its PIN, and a soft reason on a stolen key tells verifiers to believe a thief's backdated signatures ([Revoke](/learn/revoke/#reasons-matter)).
 
-Each signature is version 4, SHA-384, over the primary's public key packet alone. Its hashed area holds the signature creation time (the ceremony time), the reason for revocation (the code and the word of the table), and the issuer fingerprint; its unhashed area holds the issuer key ID ([the packet rule](/reference/hand-off-contract/#issuer-key-id)). It is signed through the store that holds the primary, so a card key takes a touch: one for each reason, counted in the plan.
+Each signature is version 4, SHA-384, over the primary's public key packet alone. Its hashed area holds the signature creation time (the ceremony time), the reason for revocation (the code and the word of the table), and the issuer fingerprint; its unhashed area holds the issuer key ID ([the packet rule](/reference/hand-off-contract/#issuer-key-id)). It is signed through the key store that holds the primary, so a card key takes a touch: one for each reason, counted in the plan.
 
 There is no designated revoker ([record 0007](../decisions/0007-changing-and-losing-a-root.md), rule 21). RFC 9580 deprecates the mechanism.
 
 ## Where it is written
 
-| Store of the root key | Where | Form |
+| Key store of the root key | Where | Form |
 |---|---|---|
 | `piv`, `aws-kms`, and the `software` backends `onepassword` and `keyring` | The directory named by `--revocation-dir DIR`, required by every command that makes one. | One file for each reason, `<fingerprint>.<reason>.asc`: the signature packet, ASCII-armoured (RFC 9580, section 6.2), so it can be printed. Mode `0600`. |
 | `software`, backend `file` | The key directory, with the key files ([the bundle](/reference/bundle/#the-software-roots-key-files)). | `<label>.revocation.<reason>.pgp.age`, encrypted like the key files; a test root writes `<label>.revocation.<reason>.asc`. |
@@ -47,15 +47,13 @@ It never prints a revocation signature to the terminal, the transcript, a log or
 
 The **digest** of each signature: the SHA-256 of the binary signature packet, so that the armoured file, the encrypted file and the binary packet all check against it. At birth the digests are in `root.json` as `revocations`, an object from reason to digest, and in the ceremony record as a list of `{ "label", "reason", "sha256" }`. A signature made later by `apply` adds its entry to the ceremony record of that ceremony, and `status` and the restore check read the full set from `root.json` and the ceremony records together.
 
-`revocation_sha256` of the first version of [`root.json`](/reference/bundle/#rootjson) is replaced by `revocations`.
-
 ## The removal authorisation
 
-Changing the root set requires every current root key, or a root key's stored removal authorisation ([the root list](/reference/root-list/#who-signs)). A root key that is lost or destroyed cannot sign the list that removes it, so it signs its consent in advance: when it is born, at the first `apply` or at the `apply` that adds it, its X.509 root key signs a statement over its own pin, in [the format of the root list page](/reference/root-list/#the-removal-authorisation). It has no reason, no sequence and no expiry. A personal bundle, which has no X.509 key and no root list, makes none.
+Changing the root keys requires every current root key, or a root key's stored removal authorisation ([the root list](/reference/root-list/#who-signs)). A root key that is lost or destroyed cannot sign the list that removes it, so it signs its consent in advance: when it is born, at the first `apply` or at the `apply` that adds it, its X.509 root key signs a statement over its own pin, in [the format of the root list page](/reference/root-list/#the-removal-authorisation). It has no reason, no sequence and no expiry. A personal bundle, which has no X.509 key and no root list, makes none.
 
 It is revocation material, and is handled like a revocation signature:
 
-| Store of the root key | Where | Form |
+| Key store of the root key | Where | Form |
 |---|---|---|
 | `piv`, `aws-kms`, and the `software` backends `onepassword` and `keyring` | `--revocation-dir DIR`, with the revocation signatures. | `<x509_spki_sha256>.removal.jws`, the compact JWS as text. Mode `0600`. |
 | `software`, backend `file` | The key directory. | `<label>.removal.jws.age`, encrypted like the key files; a test root writes `<label>.removal.jws`. |

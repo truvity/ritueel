@@ -5,7 +5,7 @@ sidebar:
   order: 10
 ---
 
-*Not built yet. This is the page that [record 0004](../decisions/0004-the-cloud-root.md) leaves for the details of the `aws-kms` store; the code is [issue #12](https://github.com/truvity/ritueel/issues/12), in M2. The custody model is in that record: an account the holder chooses, with one key for each kind of root the bundle uses, and a multi-Region replica that is never counted as a second key. The commands, words and file names on this page are from before the decisions of 2026-11-12; the design is at https://ritueel.id/design/.*
+*Not built yet. This is the page that [record 0004](../decisions/0004-the-cloud-root.md) leaves for the details of the `aws-kms` store; the code is [issue #12](https://github.com/truvity/ritueel/issues/12), in M2. The custody model is in that record: an account the holder chooses, with one key for each kind of root the bundle uses, and a multi-Region replica that is never counted as a second key.*
 
 A KMS key has no attestation. The evidence that it is the root it should be is the key itself, its policy and its audit trail, read from the service every time ([principle 4](/principles/)). This page says what ritueel creates or adopts, what it reads, and what makes it refuse.
 
@@ -26,7 +26,7 @@ One person may be able to assume the admin and the ceremony role ([record 0004](
 
 ## `ritueel.yaml`
 
-An optional block, required when a root key's store is `aws-kms`. An unknown member is an error.
+An optional block, required when a root key's key store is `aws-kms`. An unknown member is an error.
 
 ```yaml
 aws_kms:
@@ -62,7 +62,7 @@ At the first `apply`, and at an `apply` that adds a root key in `aws-kms`, for e
 ## Adopting an existing key
 
 :::note[Proposed]
-Four details on this page go beyond what the maintainer decided, and await the maintainer's word: that the identity of an adopted key is its ARN and not its alias; that ritueel never edits the policy of an adopted key; that the break-glass principal can never `kms:Sign`; and the check `kms-policy-replica` (3b) with its reason code.
+Four details on this page are proposed: that the identity of an adopted key is its ARN and not its alias; that ritueel never edits the policy of an adopted key; that the break-glass principal can never `kms:Sign`; and the check `kms-policy-replica` (3b) with its reason code.
 :::
 
 A cloud root may be a key that already exists in the service ([record 0004](../decisions/0004-the-cloud-root.md)). The holder's own infrastructure code may own the key, its alias and its policy. ritueel then does not create the key. At the first `apply`, and at an `apply` that adds a root key, it:
@@ -128,7 +128,7 @@ A ceremony that signs writes a new `result.json` into its ceremony record, not o
 ## Follow-ups
 
 - The `aws-kms` store, the block, the policy, the checks and their tests against a test account ([issue #12](https://github.com/truvity/ritueel/issues/12)).
-- The adoption path, the reworded checks, and the replica and primary-Region refusal in the reference policy, with tests against a test account ([issue #12](https://github.com/truvity/ritueel/issues/12)).
+- The adoption path, the checks, and the replica and primary-Region refusal in the reference policy, with tests against a test account ([issue #12](https://github.com/truvity/ritueel/issues/12)).
 
 ## Standards
 

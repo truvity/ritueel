@@ -5,9 +5,9 @@ sidebar:
   order: 11
 ---
 
-*Not built yet. This is the page that [record 0007](../decisions/0007-changing-and-losing-a-root.md) leaves for the rules and profiles; the code is [issue #13](https://github.com/truvity/ritueel/issues/13), in M4. The ideas are taught in [Moving from one root to another](/learn/transitions/). The commands, words and file names on this page are from before the decisions of 2026-11-12; the design is at https://ritueel.id/design/.*
+*Not built yet. This is the page that [record 0007](../decisions/0007-changing-and-losing-a-root.md) leaves for the rules and profiles; the code is [issue #13](https://github.com/truvity/ritueel/issues/13), in M4. The ideas are taught in [Moving from one root to another](/learn/transitions/).*
 
-A transition moves trust from one root key to another without breaking a client that has not learned of the change. It never moves a key: the new root key is born in its store, and an active root key vouches for it ([principle 1](/principles/)).
+A transition moves trust from one root key to another without breaking a client that has not learned of the change. It never moves a key: the new root key is born in its key store, and an active root key vouches for it ([principle 1](/principles/)).
 
 ## The state of a root
 
@@ -140,7 +140,7 @@ The card that signs a yearly ceremony is the **card of the year**: the card whos
 
 ## The five transitions
 
-Software to a PIV card, software to AWS KMS, a PIV card to AWS KMS, AWS KMS to a PIV card, and a card or a KMS key replaced by one of the same kind are one change of the wanted root file, with the new store's own checks ([cards](/reference/cards/#what-is-checked-on-a-card), [the cloud root](/reference/kms-root/#the-checks)). A store that gives no evidence cannot be the new root key's store unless it is the `software` store of a test root ([record 0007](../decisions/0007-changing-and-losing-a-root.md), rule 10, and [record 0002](../decisions/0002-where-a-key-lives.md), rules 7 and 8). The [guides](/guides/) walk through each one.
+Software to a PIV card, software to AWS KMS, a PIV card to AWS KMS, AWS KMS to a PIV card, and a card or a KMS key replaced by one of the same kind are one change of the wanted root file, with the new key store's own checks ([cards](/reference/cards/#what-is-checked-on-a-card), [the cloud root](/reference/kms-root/#the-checks)). A key store that gives no evidence cannot be the new root key's key store unless it is the `software` store of a test root ([record 0007](../decisions/0007-changing-and-losing-a-root.md), rule 10, and [record 0002](../decisions/0002-where-a-key-lives.md), rules 7 and 8). The [guides](/guides/) walk through each one.
 
 ## Test vectors
 
