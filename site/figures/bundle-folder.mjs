@@ -2,18 +2,18 @@
 // parts, one entry to a line, with a small tag saying what kind of part it is. The tags are the marks of
 // reference/bundle: wanted (the only files a person writes), seen (what a check read), history (written
 // once, never changed) and request. The fifth mark, built, has no part here because it is never stored
-// (record 0005, rule 4). Only the names that record 0006 decides are printed as names: history/ and
-// requests/. The wanted files, the card maps and the roots are parts of the bundle but their
-// folder names are only proposed (reference/bundle), so they are printed as plain words. The names of
-// the files inside the places are proposed too, so none is drawn. The accent marks the history, which
+// (record 0005, rule 4). Every row is printed with the real folder name that record 0006, rule 37,
+// decides: want/, seen/, roots/, requests/, history/ and trust/ (sealed/ and drills/ have no row).
+// ritueel.yaml stands beside the folders, not inside want/. The names of the files inside the
+// places are not all decided, so none is drawn. The accent marks the history, which
 // is never changed afterwards. Key files are not in the bundle: a dashed box outside it says so, and the
 // stick figure shows where they sit.
 import { acc, circle, f, line, path, rect, sheet, text } from './draw.mjs';
 import { svgBox } from './svg.mjs';
 
 const LABEL =
-  'A bundle drawn as an open directory named acme. It holds six labelled parts in a tree. They are the wanted files, the card maps, the roots, the requests with their answers, ' +
-  'the history in the accent colour, and the numbered trust sets. A small tag on each part says what kind it is: wanted, seen, history or request. ' +
+  'A bundle drawn as an open directory named acme. It holds six labelled folders in a tree, each shown by its name. They are want, with the wanted files, seen, with the card maps, roots, requests, with the answers, ' +
+  'history, in the accent colour, and trust, with the numbered trust sets. A small tag on each part says what kind it is: wanted, seen, history or request. ' +
   'Under the bundle sits a second, closed bundle named personal, and a dashed box that says key files stay outside the bundle.';
 
 const W = 376;
@@ -29,14 +29,14 @@ function tag(y, word, inset = 0) {
   return rect(x, y, w, 19, 'paper-t', 9.5) + text(x + w / 2, y + 13.5, word, 't t-s' + (word === 'wanted' ? ' t-b' : ''), 'm');
 }
 
-// The parts of a bundle, top to bottom. `name` is printed in mono only where record 0006 settles it.
+// The parts of a bundle, top to bottom. `name` is the folder name that record 0006, rule 37, decides.
 const PARTS = [
-  { icon: 'sheet', name: 'Wanted files', mono: false, tag: 'wanted', desc: ['ritueel.yaml, and one file for each', 'card, root, delegation and the user IDs'] },
-  { icon: 'dir', name: 'Card maps', mono: false, tag: 'seen', desc: ['what a check read from each card'] },
-  { icon: 'dir', name: 'Roots', mono: false, tag: 'history', desc: ['the public facts of each root key,', 'written once'] },
+  { icon: 'dir', name: 'want/', mono: true, tag: 'wanted', desc: ['one file for each card, root, delegation', 'and user IDs. ritueel.yaml is not in it'] },
+  { icon: 'dir', name: 'seen/', mono: true, tag: 'seen', desc: ['what a check read from each card'] },
+  { icon: 'dir', name: 'roots/', mono: true, tag: 'history', desc: ['the public facts of each root key,', 'written once'] },
   { icon: 'dir', name: 'requests/', mono: true, tag: 'request', desc: ['each request, with its answer beside it'] },
   { icon: 'dir', name: 'history/', mono: true, accent: true, tag: 'history', desc: ['one ceremony folder for each ceremony', 'Never changed; each links to the one before.'] },
-  { icon: 'dir', name: 'Trust sets', mono: false, tag: 'history', desc: ['one numbered set of trust files each time', 'they change: root list, CA bundle, lists, keyring'] },
+  { icon: 'dir', name: 'trust/', mono: true, tag: 'history', desc: ['one numbered set of trust files each time', 'they change: root list, CA bundle, lists, keyring'] },
 ];
 
 const rowH = (p) => 24 + p.desc.length * 16 + 8 + (p.accent ? 12 : 0);
@@ -86,6 +86,6 @@ export default {
   kind: 'single',
   label: 'The parts of a bundle and what kind each is',
   caption:
-    'A bundle is one directory of plain files for one organisation or one person. Its history is never changed afterwards. Key files are never inside.',
+    'A bundle is one directory of plain files for one organisation or one person, with its folders by their real names. Its history is never changed afterwards. Key files are never inside.',
   svg: drawing(),
 };
