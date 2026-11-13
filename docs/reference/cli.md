@@ -197,7 +197,7 @@ Every object has these members:
 | Member | Meaning |
 |---|---|
 | `output` | The version of this format, `1`. |
-| `command` | The command word, as in the plan: `apply`, `new`, `join`. |
+| `command` | The first word of the command, one of the thirteen command words: `apply`, `new`, `join`. For `verify root-list` it is `verify`, and for `check history` it is `check`. |
 | `exit_code` | The exit code the command returns. |
 | `outcome` | `done`, `refused`, `not-confirmed`, `usage` or `failed`, matching the exit code. |
 | `reasons` | When refused: the codes, as in the [hand-off contract](/reference/hand-off-contract/#the-answer) or the [root list](/reference/root-list/#how-a-host-reads-it) where they apply, the codes of [a card](/reference/cards/#what-is-checked-on-a-card) and of [a KMS root](/reference/kms-root/#the-checks), and `plan-stale` for a plan that no longer matches the bundle. |
