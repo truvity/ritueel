@@ -4,11 +4,11 @@ description: What ritueel decides, by area, in short sentences, with what is not
 flow: rows
 ---
 
-Only `version` is built. This page is the design as decided on 2026-11-11 and 2026-11-12, and it marks the main points that are not yet proven or only proposed; each record lists all of its own.
+Only `version` is built. This page is the design as decided. It marks the main points that are not yet proven or only proposed; each record lists all of its own.
 
 ## The five core ideas
 
-1. One set of ceremonies over three kinds of store: a key file, a pair of root cards, a cloud key service. Their guarantees differ, and ritueel says how.
+1. One set of ceremonies over three kinds of key store: a key file, a pair of root cards, a cloud key service. Their guarantees differ, and ritueel says how.
 2. Prefer a key that cannot be copied. A root on cards or in the cloud cannot be copied, and it avoids the reboot into the offline system.
 3. One bundle keeps the roots of a PKI and of OpenPGP together, with what is known about the cards.
 4. Requests in, answers out. Other systems connect through files, and plans can travel.
@@ -28,7 +28,7 @@ Decided in [0001](decisions/0001-what-ritueel-is.md) and [0011](decisions/0011-p
 
 ## A ceremony
 
-- One act, `apply`, for every store, with the same checks and ceremony records.
+- One act, `apply`, for every key store, with the same checks and ceremony records.
 - A person writes what is wanted. ritueel finds what is not applied yet each time, and `apply` plans it.
 - The plan fixes every byte to sign except the new keys. The person confirms by typing the first eight characters of its digest. The page makes no plan: `apply` makes it in the terminal, and the page shows that command as text.
 - Plans and requests are detachable: they travel by any channel, run elsewhere, and the answer returns; coming back from the stick is a `join`.
@@ -55,7 +55,7 @@ Decided in [0006](decisions/0006-bundle-history-and-trust-files.md).
 
 ## Where a root lives
 
-- A key is born in its store and never leaves it. The default algorithm is P-384.
+- A key is born in its key store and never leaves it. The default algorithm is P-384.
 - Backup means two independent cards or a replica. A copyable key is replaced within three years.
 - The accepted limit: whoever holds a root card and its PIN, or the cloud role, can sign until that root key is revoked.
 
@@ -158,6 +158,6 @@ Decided in [0009](decisions/0009-release-keys-and-the-keyring.md).
 
 ## What comes later
 
-More stores, a person's card-born primaries (stage two), a post-quantum root and a Go library. Recipes for consumers that need a change of the hand-off contract, a check of the local trust store, and calling a code host's own tool.
+More key stores, a person's card-born primaries (stage two), a post-quantum root and a Go library. Recipes for consumers that need a change of the hand-off contract, a check of the local trust store, and calling a code host's own tool.
 
 Listed in [the roadmap](/roadmap/#after-the-first-version).
