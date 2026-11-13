@@ -167,8 +167,13 @@ func (d *osDir) RenameNoReplace(oldName, newName string) error {
 	return d.with(func(fd int) error { return renameNoReplace(fd, oldName, newName) })
 }
 
-// Sync flushes the folder through its handle (on macOS the Go runtime asks for a full flush of
-// the device).
+// Sync flushes the folder through its handle. On Linux that is fsync. On macOS the Go runtime's
+// Sync of a file or a folder asks for a full flush of the device with fcntl F_FULLFSYNC, and
+// falls back to a plain fsync only when the file system answers that it does not support that
+// request (ENOTSUP); any other error of either call is the error of the step, and the writer
+// stops. So on macOS a flush that returns without an error is a full flush, except on a file
+// system that cannot do one, where it is the plain fsync of that system, and the package cannot
+// tell the two apart. The same holds for the Sync of a file made by CreateExcl.
 func (d *osDir) Sync() error {
 	d.mu.RLock()
 	defer d.mu.RUnlock()

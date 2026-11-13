@@ -64,6 +64,8 @@
 //     holds ASCII, but the order of the steps is what a cut is proved against in memory only,
 //     and what a cut leaves on another file system is that file system's own. The writer does
 //     not look at what the root is mounted on.
+//   - A mount point inside the root. It is crossed like any folder: the walk does not look at
+//     what a folder is mounted on, so the root should hold no other file system.
 //   - Skipping every name that starts with [TempPrefix] when reading a folder, compared without
 //     case. A temporary folder that a stop left holds whole files under ordinary names, and a
 //     reader that lists it would take them for files of the bundle. [ReadDir] lists every name and
