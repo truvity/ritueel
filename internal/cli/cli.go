@@ -8,6 +8,8 @@ import (
 	"strings"
 
 	ucli "github.com/urfave/cli/v3"
+
+	"ritueel.id/ritueel/internal/jsonset"
 )
 
 const programName = "ritueel"
@@ -124,7 +126,7 @@ func (inv *invocation) newRoot() *ucli.Command {
 			if cmd.NArg() == 0 {
 				return UsageError{Msg: "no command given"}
 			}
-			return UsageError{Msg: fmt.Sprintf("unknown command %q", cmd.Args().First())}
+			return UsageError{Msg: fmt.Sprintf("unknown command %+q", cmd.Args().First())}
 		},
 	}
 }
@@ -147,7 +149,7 @@ func (inv *invocation) newCommand(s spec, parents ...string) *ucli.Command {
 		HideHelpCommand:           true, // --help is a flag; "help" is not a command word
 		OnUsageError: func(_ context.Context, _ *ucli.Command, err error, _ bool) error {
 			inv.command = first
-			return UsageError{Msg: err.Error()}
+			return UsageError{Msg: jsonset.Escape(err.Error())}
 		},
 	}
 	if s.flags != nil {
@@ -162,7 +164,7 @@ func (inv *invocation) newCommand(s spec, parents ...string) *ucli.Command {
 			if c.NArg() == 0 {
 				return UsageError{Msg: fmt.Sprintf("%s needs a second word", strings.Join(path, " "))}
 			}
-			return UsageError{Msg: fmt.Sprintf("%s: unknown command %q", strings.Join(path, " "), c.Args().First())}
+			return UsageError{Msg: fmt.Sprintf("%s: unknown command %+q", strings.Join(path, " "), c.Args().First())}
 		}
 		return cmd
 	}
@@ -187,7 +189,7 @@ func (inv *invocation) newCommand(s spec, parents ...string) *ucli.Command {
 // a usage error. The library prints nothing for it; finish does. The commands have their own,
 // which also names the command.
 func (inv *invocation) onUsageError(_ context.Context, _ *ucli.Command, err error, _ bool) error {
-	return UsageError{Msg: err.Error()}
+	return UsageError{Msg: jsonset.Escape(err.Error())}
 }
 
 // finish writes what the end of the run needs and returns the exit code.

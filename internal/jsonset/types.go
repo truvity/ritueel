@@ -124,7 +124,8 @@ func (c *Checker) Err(at Path, r *Refusal) error {
 }
 
 // Fields lists the members of the struct type t in the order of their names as UTF-16 code
-// units, which is the order the writer writes them in (for ASCII names, the byte order). The type must have passed Verdict.
+// units, which is the order the writer writes them in (for ASCII names, the byte order). The type
+// must have passed Verdict.
 func (c *Checker) Fields(t reflect.Type) []Field {
 	return c.structInfo(t).fields
 }
