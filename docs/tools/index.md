@@ -25,7 +25,7 @@ The command line, the guided mode and the local page are three faces of the **sa
 
 ## What the tools never do
 
-- Hold a private key outside the store that made it (a person's own key has two stated exceptions, an adopted primary and an encryption subkey: [record 0008](../decisions/0008-a-persons-own-key.md) and rule 2 of [record 0002](../decisions/0002-where-a-key-lives.md)), or keep a PIN or a passphrase that a person types.
+- Hold a private key outside the key store that made it (a person's own key has two stated exceptions, an adopted primary and an encryption subkey: [record 0008](../decisions/0008-a-persons-own-key.md) and rule 2 of [record 0002](../decisions/0002-where-a-key-lives.md)), or keep a PIN or a passphrase that a person types.
 - Confirm an irreversible step for you.
 - Sign online, or issue the certificates of servers and people. That belongs to a system that holds intermediates.
 - Send anything out except a public OpenPGP key, to the keyservers you list. For everything else they print what to do ([record 0011](../decisions/0011-publishing-and-what-to-do-after-a-ceremony.md)).
