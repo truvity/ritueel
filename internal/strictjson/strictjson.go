@@ -4,23 +4,112 @@
 // The rules are those of docs/reference/hand-off-contract.md ("Messages and files") and
 // docs/reference/root-list.md ("The list"). The standard decoder breaks several of them silently
 // (a repeated member keeps the last value, a lone surrogate escape becomes U+FFFD, a member name
-// matches a field in any letter case), so this package reads the bytes itself before it lets the
-// standard decoder fill a value.
+// matches a field in any letter case), and it changes input after every rule has passed (a list
+// of numbers fills a slice of bytes, a list that is too long is cut to an array, an integer is
+// rounded into a float, a tag option reads "12" as a number, two member names fold into one map
+// key). So this package does not call it: Unmarshal fills the caller's value itself, from its own
+// parse of the bytes.
 //
-// Every error that this package returns for input that breaks a rule wraps ErrMalformed. An
-// error that does not wrap it is a mistake of the caller (a value that is not a pointer). An
-// error never repeats the input, which may be untrusted and large.
+// Unmarshal is the mirror of canonjson.Marshal. It fills the closed set of Go types that Marshal
+// writes, with one more rule for each type, and a Go type outside the set is refused as a type,
+// before a byte of the input is looked at, with an error that names the Go type and the path to
+// it. The package jsonset holds the answer for both, so that the two cannot drift apart.
+//
+// # Targets
+//
+// The top of a document is one object, so v is a pointer to a struct, a map, a Raw, an interface
+// with no methods, or a pointer to a struct, a map or a Raw. Inside the document, each Go type is
+// filled as follows.
+//   - A struct: from an object, its exported fields, matched to the members by name. The name of
+//     a field is its tag `json:"name"` or else its Go name. The tag `json:"-"` and an unexported
+//     field are not filled. The option omitempty is accepted and changes nothing on reading.
+//     Any other tag option, an embedded field, a tag name that encoding/json would not use and two
+//     fields of one name refuse the type, with the texts that the writer uses.
+//   - A map whose key is of kind string and has no method of its own: from an object, one entry
+//     for each member. A map is always made, so an empty object gives an empty map that is not
+//     nil.
+//   - A slice: from a list, one element for each element of the list. The slice is a new one;
+//     nothing is appended to a slice that was there. An empty list gives an empty slice that is
+//     not nil. A slice of bytes is the exception, below.
+//   - A slice of bytes: from one string of standard Base64 with padding (RFC 4648, section 4),
+//     the only spelling that Marshal writes. The string is decoded and encoded again, and must be
+//     the same text: a missing padding, a padding bit that is not zero, a line break, the
+//     alphabet of URL-safe Base64 and a list of numbers are all refused.
+//   - An array: from a list of exactly its length. A list that is longer or shorter is refused.
+//   - A string, a bool, and an integer of every kind: from a string, true or false, and an
+//     integer. An integer must fit the kind of the field, so that 300 into a uint8 and -1 into
+//     a uint are refused. A number is never read through a float.
+//   - A pointer: made, and filled, for a member that is present. A pointer to a pointer or to an
+//     interface is refused.
+//   - Raw: the bytes of the member exactly as they are in the input, from its opening brace to its
+//     closing brace, so that a signed sub-document keeps its bytes. The member must be one JSON
+//     object, as Marshal needs it. A Raw at the top of a document takes the bytes of the object,
+//     without the white space around it. A Raw is the one type that has its own MarshalJSON and
+//     UnmarshalJSON methods in the set, and they agree with Unmarshal and Marshal: both refuse
+//     what is not one JSON object. The type is defined here, because canonjson imports this
+//     package; canonjson.Raw is another name for it and not another type.
+//   - An interface with no methods (any): from the value of the member, as a map[string]any for
+//     an object, a []any for a list, a string, a bool, or an int64 for a number, and nothing
+//     else. Whatever the interface held before is replaced and never filled into. The later
+//     readers of ritueel need it for the members whose shape a page leaves open or that are
+//     lists of objects the page does not fix. An interface with methods is refused as a type.
+//
+// Refused as a type, whatever the document says: a float, a complex number, a channel, a
+// function, a uintptr, an unsafe pointer, a json.Number, a type that has a MarshalJSON, MarshalText,
+// UnmarshalJSON or UnmarshalText method (other than Raw), a map whose key is not of kind string
+// or has a method, a pointer to a pointer or to an interface, an interface with methods, and a
+// struct that breaks the rules above. A type that refers to itself is judged once. The refusal
+// of the element type of a list or the value type of a map says so in words ("the elements of
+// $.l", "the values of $.m"), because no index or name belongs to a type; the refusal of a type
+// behind a pointer names the type that the caller wrote.
+//
+// # Members
+//
+// A member name must be spelt exactly as the name of the field: "Version" does not fill the field
+// "version", and it is refused even when unknown members are allowed. A member that names no
+// field is refused unless Options.AllowUnknown is set, at any depth. A member that is repeated or
+// is null is refused, as the rules above say. A member that is missing is not an error: its field stays
+// zero. The members that a format needs are the format's, and the caller checks for them after
+// the call, because only the caller knows which of a zero and an absent member is wrong.
+//
+// # What happens to the value
+//
+// Unmarshal fills a fresh zero value of the target's type and assigns it to the target at the end.
+// So the value is replaced as a whole, and nothing of an old one survives. A field that the
+// document does not name, a field tagged "-" and an unexported field are zero afterwards. A map
+// that the target held is not merged into and not emptied: the target holds a new map, and the
+// old one is as the caller left it. A slice is new, a pointer is new, an interface is replaced.
+// When Unmarshal returns an error, nothing is assigned and the target is as it was before the
+// call.
+//
+// # The round trip
+//
+// What Marshal writes, Unmarshal reads back to an equal value. For every value x of the closed
+// set for which Marshal(x) succeeds, Unmarshal of the result into a new value gives a value
+// equal to x, where equal is reflect.DeepEqual except that: a field tagged omitempty that is
+// empty is not written and so comes back zero, which makes an empty slice or map nil (a nil slice
+// or map that is not omitempty cannot be written at all, because Marshal takes it for null); a
+// Raw comes back in its canonical form, which is its own bytes when they were canonical; and an
+// interface comes back with the five types above, so an int in it comes back an int64. For every
+// canonical document d that fills a type T, Marshal of the filled value gives d again, when d
+// names every field of T that has no omitempty and none of the omitempty members that d holds
+// is empty, and when AllowUnknown did not skip a member. The tests check both.
+//
+// # Errors
+//
+// Every error that this package returns for input that breaks a rule, or for a Go type that is
+// refused, wraps ErrMalformed. An error that does not wrap it is a mistake of the caller (a value
+// that is not a pointer). An error never repeats the input, which may be untrusted and large.
 package strictjson
 
 import (
 	"bytes"
-	"encoding/json"
 	"errors"
 	"fmt"
-	"reflect"
 	"strconv"
-	"strings"
 	"unicode/utf8"
+
+	"ritueel.id/ritueel/internal/jsonset"
 )
 
 // DefaultMaxBytes is the largest input the readers accept unless the caller says otherwise: 256 KiB.
@@ -33,7 +122,7 @@ const DefaultMaxBytes = 256 << 10
 const MaxDepth = 10000
 
 // ErrMalformed is wrapped by every error this package returns for input that breaks a rule.
-var ErrMalformed = errors.New("malformed JSON")
+var ErrMalformed = jsonset.ErrMalformed
 
 // Options changes how Unmarshal reads.
 type Options struct {
@@ -53,33 +142,6 @@ func limit(maxBytes int) int {
 		return DefaultMaxBytes
 	}
 	return maxBytes
-}
-
-// Unmarshal decodes data into v (a non-nil pointer, in practice to a struct) under the rules
-// of the package comment. A member of the file must be spelt exactly as the field's JSON name;
-// unless opts.AllowUnknown is set, a member that names no field is an error, at any depth.
-// Members the caller needs are the caller's to check: a missing one leaves the field as it was.
-func Unmarshal(data []byte, v any, opts Options) error {
-	rv := reflect.ValueOf(v)
-	if rv.Kind() != reflect.Pointer || rv.IsNil() {
-		return errors.New("strictjson: Unmarshal needs a non-nil pointer")
-	}
-	root, err := parseDocument(data, limit(opts.MaxBytes), true)
-	if err != nil {
-		return err
-	}
-	if err := matchType(root, rv.Type().Elem(), opts.AllowUnknown); err != nil {
-		return err
-	}
-	dec := json.NewDecoder(bytes.NewReader(data))
-	dec.UseNumber()
-	if !opts.AllowUnknown {
-		dec.DisallowUnknownFields()
-	}
-	if err := dec.Decode(v); err != nil {
-		return malformed("%s", err)
-	}
-	return nil
 }
 
 // Check applies the rules that need no type: size (maxBytes, 0 means DefaultMaxBytes), UTF-8,
@@ -103,53 +165,69 @@ func PeekInt(data []byte, name string) (n int64, ok bool, err error) {
 	if err != nil {
 		return 0, false, err
 	}
-	var found *member
-	for i := range root.members {
-		if root.members[i].name != name {
+	var found *Member
+	for i := range root.Members {
+		if root.Members[i].Name != name {
 			continue
 		}
 		if found != nil {
 			return 0, false, malformed("member %s appears twice", quote(name))
 		}
-		found = &root.members[i]
+		found = &root.Members[i]
 	}
 	if found == nil {
 		return 0, false, nil
 	}
-	// Only an integer has a text, so an empty one is a string, a literal, a list, an object, a
-	// fraction or an exponent; parseInt would call it "does not fit 64 bits".
-	if found.value.text == "" {
+	if found.Value.Kind != Integer {
 		return 0, false, malformed("member %s is not an integer", quote(name))
 	}
-	n, err = parseInt(found.value.text)
+	n, err = parseInt(found.Value.text)
 	if err != nil {
 		return 0, false, malformed("member %s: %s", quote(name), err)
 	}
 	return n, true, nil
 }
 
-// The parsed form of a document: just enough to check member names against a type and to find
-// one member of the top-level object.
-type kind uint8
+// Kind is what a Value is.
+type Kind uint8
 
+// The kinds of a Value. Fraction and Null are produced only when the rules about numbers and
+// null are not applied (PeekInt).
 const (
-	kindObject kind = iota + 1
-	kindArray
-	kindString
-	kindNumber
-	kindLiteral // true or false
+	Object Kind = iota + 1
+	List
+	String
+	Integer
+	Bool
+	Fraction
+	Null
 )
 
-type node struct {
-	kind    kind
-	members []member // object
-	elems   []node   // array
-	text    string   // number: its text when it is an integer, "" when it has a fraction or an exponent
+// Value is a JSON value as the parser read it: its kind, the part that belongs to the kind, and
+// where its bytes lie in the input.
+type Value struct {
+	Kind Kind
+	// Members are the members of an Object in the order of the input; no name is there twice.
+	Members []Member
+	// Elems are the elements of a List.
+	Elems []Value
+	// Str is the text of a String, with its escapes read; it is valid UTF-8.
+	Str string
+	// Int is the number of an Integer, which fits int64.
+	Int int64
+	// Bool is the value of a Bool.
+	Bool bool
+	// Start and End are the byte positions in the input of the first byte of the value and of the
+	// byte after its last, so that the input from Start to End is the value exactly as written.
+	Start, End int
+
+	text string // Integer: its text, which has not been checked to fit int64 unless the rules apply
 }
 
-type member struct {
-	name  string
-	value node
+// Member is one member of an Object.
+type Member struct {
+	Name  string
+	Value Value
 }
 
 // quote shows a member name in an error: quoted, and cut short.
@@ -171,7 +249,7 @@ func parseInt(text string) (int64, error) {
 
 // parseDocument checks the size, the encoding and the grammar and returns the top-level
 // object. In strict mode it also applies the rules about members, numbers, null and escapes.
-func parseDocument(data []byte, maxBytes int, strict bool) (*node, error) {
+func parseDocument(data []byte, maxBytes int, strict bool) (*Value, error) {
 	if len(data) > maxBytes {
 		return nil, malformed("longer than %d bytes", maxBytes)
 	}
@@ -189,10 +267,12 @@ func parseDocument(data []byte, maxBytes int, strict bool) (*node, error) {
 	if p.pos >= len(p.data) || p.data[p.pos] != '{' {
 		return nil, malformed("not one JSON object")
 	}
+	start := p.pos
 	root, err := p.parseObject()
 	if err != nil {
 		return nil, err
 	}
+	root.Start, root.End = start, p.pos
 	p.skipSpace()
 	if p.pos != len(p.data) {
 		return nil, p.errorf("anything after the object")
@@ -222,31 +302,44 @@ func (p *parser) skipSpace() {
 	}
 }
 
-func (p *parser) parseValue() (node, error) {
+func (p *parser) parseValue() (Value, error) {
 	if p.pos >= len(p.data) {
-		return node{}, p.errorf("the input ends inside a value")
+		return Value{}, p.errorf("the input ends inside a value")
 	}
+	start := p.pos
+	v, err := p.value()
+	if err != nil {
+		return Value{}, err
+	}
+	v.Start, v.End = start, p.pos
+	return v, nil
+}
+
+func (p *parser) value() (Value, error) {
 	switch c := p.data[p.pos]; {
 	case c == '{':
 		return p.parseObject()
 	case c == '[':
 		return p.parseArray()
 	case c == '"':
-		if _, err := p.parseString(false); err != nil {
-			return node{}, err
+		s, err := p.parseString(p.strict)
+		if err != nil {
+			return Value{}, err
 		}
-		return node{kind: kindString}, nil
+		return Value{Kind: String, Str: s}, nil
 	case c == '-' || (c >= '0' && c <= '9'):
 		return p.parseNumber()
-	case p.literal("true"), p.literal("false"):
-		return node{kind: kindLiteral}, nil
+	case p.literal("true"):
+		return Value{Kind: Bool, Bool: true}, nil
+	case p.literal("false"):
+		return Value{Kind: Bool}, nil
 	case p.literal("null"):
 		if p.strict {
-			return node{}, p.errorf("null")
+			return Value{}, p.errorf("null")
 		}
-		return node{kind: kindLiteral}, nil
+		return Value{Kind: Null}, nil
 	default:
-		return node{}, p.errorf("not a JSON value")
+		return Value{}, p.errorf("not a JSON value")
 	}
 }
 
@@ -267,13 +360,13 @@ func (p *parser) enter() error {
 	return nil
 }
 
-func (p *parser) parseObject() (node, error) {
+func (p *parser) parseObject() (Value, error) {
 	if err := p.enter(); err != nil {
-		return node{}, err
+		return Value{}, err
 	}
 	defer func() { p.depth-- }()
 	p.pos++ // {
-	n := node{kind: kindObject}
+	n := Value{Kind: Object}
 	var seen map[string]struct{}
 	if p.strict {
 		seen = map[string]struct{}{}
@@ -286,32 +379,32 @@ func (p *parser) parseObject() (node, error) {
 	for {
 		p.skipSpace()
 		if p.pos >= len(p.data) || p.data[p.pos] != '"' {
-			return node{}, p.errorf("a member name was expected")
+			return Value{}, p.errorf("a member name was expected")
 		}
 		name, err := p.parseString(true)
 		if err != nil {
-			return node{}, err
+			return Value{}, err
 		}
 		if p.strict {
 			if _, dup := seen[name]; dup {
-				return node{}, p.errorf("member %s appears twice", quote(name))
+				return Value{}, p.errorf("member %s appears twice", quote(name))
 			}
 			seen[name] = struct{}{}
 		}
 		p.skipSpace()
 		if p.pos >= len(p.data) || p.data[p.pos] != ':' {
-			return node{}, p.errorf("a colon was expected")
+			return Value{}, p.errorf("a colon was expected")
 		}
 		p.pos++
 		p.skipSpace()
 		v, err := p.parseValue()
 		if err != nil {
-			return node{}, err
+			return Value{}, err
 		}
-		n.members = append(n.members, member{name: name, value: v})
+		n.Members = append(n.Members, Member{Name: name, Value: v})
 		p.skipSpace()
 		if p.pos >= len(p.data) {
-			return node{}, p.errorf("the input ends inside an object")
+			return Value{}, p.errorf("the input ends inside an object")
 		}
 		switch p.data[p.pos] {
 		case ',':
@@ -320,18 +413,18 @@ func (p *parser) parseObject() (node, error) {
 			p.pos++
 			return n, nil
 		default:
-			return node{}, p.errorf("a comma or a closing brace was expected")
+			return Value{}, p.errorf("a comma or a closing brace was expected")
 		}
 	}
 }
 
-func (p *parser) parseArray() (node, error) {
+func (p *parser) parseArray() (Value, error) {
 	if err := p.enter(); err != nil {
-		return node{}, err
+		return Value{}, err
 	}
 	defer func() { p.depth-- }()
 	p.pos++ // [
-	n := node{kind: kindArray}
+	n := Value{Kind: List}
 	p.skipSpace()
 	if p.pos < len(p.data) && p.data[p.pos] == ']' {
 		p.pos++
@@ -341,12 +434,12 @@ func (p *parser) parseArray() (node, error) {
 		p.skipSpace()
 		v, err := p.parseValue()
 		if err != nil {
-			return node{}, err
+			return Value{}, err
 		}
-		n.elems = append(n.elems, v)
+		n.Elems = append(n.Elems, v)
 		p.skipSpace()
 		if p.pos >= len(p.data) {
-			return node{}, p.errorf("the input ends inside an array")
+			return Value{}, p.errorf("the input ends inside an array")
 		}
 		switch p.data[p.pos] {
 		case ',':
@@ -355,34 +448,34 @@ func (p *parser) parseArray() (node, error) {
 			p.pos++
 			return n, nil
 		default:
-			return node{}, p.errorf("a comma or a closing bracket was expected")
+			return Value{}, p.errorf("a comma or a closing bracket was expected")
 		}
 	}
 }
 
 // parseNumber reads a number. The grammar is JSON's; in strict mode a fraction or an exponent
 // is refused and the integer must fit int64.
-func (p *parser) parseNumber() (node, error) {
+func (p *parser) parseNumber() (Value, error) {
 	start := p.pos
 	if p.data[p.pos] == '-' {
 		p.pos++
 	}
 	switch {
 	case p.pos >= len(p.data):
-		return node{}, p.errorf("the input ends inside a number")
+		return Value{}, p.errorf("the input ends inside a number")
 	case p.data[p.pos] == '0':
 		p.pos++
 	case p.data[p.pos] >= '1' && p.data[p.pos] <= '9':
 		p.digits()
 	default:
-		return node{}, p.errorf("not a number")
+		return Value{}, p.errorf("not a number")
 	}
 	isInt := true
 	if p.pos < len(p.data) && p.data[p.pos] == '.' {
 		isInt = false
 		p.pos++
 		if !p.digits() {
-			return node{}, p.errorf("a digit was expected after the point")
+			return Value{}, p.errorf("a digit was expected after the point")
 		}
 	}
 	if p.pos < len(p.data) && (p.data[p.pos] == 'e' || p.data[p.pos] == 'E') {
@@ -392,21 +485,22 @@ func (p *parser) parseNumber() (node, error) {
 			p.pos++
 		}
 		if !p.digits() {
-			return node{}, p.errorf("a digit was expected in the exponent")
+			return Value{}, p.errorf("a digit was expected in the exponent")
 		}
 	}
-	n := node{kind: kindNumber} // text stays empty for a fraction or an exponent: PeekInt must refuse it
 	if !isInt {
 		if p.strict {
-			return node{}, p.errorf("a number with a fraction or an exponent")
+			return Value{}, p.errorf("a number with a fraction or an exponent")
 		}
-		return n, nil
+		return Value{Kind: Fraction}, nil
 	}
-	n.text = string(p.data[start:p.pos])
+	n := Value{Kind: Integer, text: string(p.data[start:p.pos])}
 	if p.strict {
-		if _, err := parseInt(n.text); err != nil {
-			return node{}, p.errorf("%s", err)
+		v, err := parseInt(n.text)
+		if err != nil {
+			return Value{}, p.errorf("%s", err)
 		}
+		n.Int = v
 	}
 	return n, nil
 }
@@ -529,107 +623,4 @@ func (p *parser) lowSurrogate() (rune, bool) {
 		return 0, false
 	}
 	return u, true
-}
-
-// matchType checks the member names of an object against the struct it will fill. The standard
-// decoder takes a name in any letter case for a field, so a file with "Version" and "version"
-// would fill one field twice without a word; here a name must be spelt exactly as the field's
-// JSON name. A name that matches no field is an error unless unknown members are allowed.
-func matchType(n *node, t reflect.Type, allowUnknown bool) error {
-	for t.Kind() == reflect.Pointer {
-		t = t.Elem()
-	}
-	if t.Implements(unmarshalerType) || reflect.PointerTo(t).Implements(unmarshalerType) ||
-		reflect.PointerTo(t).Implements(textUnmarshalerType) {
-		return nil // the type reads its own input
-	}
-	switch t.Kind() {
-	case reflect.Struct:
-		if n.kind != kindObject {
-			return nil // the decoder reports the type mismatch
-		}
-		fields := jsonFields(t, 0)
-		for _, m := range n.members {
-			ft, ok := fields[m.name]
-			if !ok {
-				for name := range fields {
-					if strings.EqualFold(name, m.name) {
-						return malformed("member %s must be spelt %s", quote(m.name), quote(name))
-					}
-				}
-				if allowUnknown {
-					continue
-				}
-				return malformed("unknown member %s", quote(m.name))
-			}
-			if err := matchType(&m.value, ft, allowUnknown); err != nil {
-				return err
-			}
-		}
-	case reflect.Map:
-		if n.kind != kindObject {
-			return nil
-		}
-		for i := range n.members {
-			if err := matchType(&n.members[i].value, t.Elem(), allowUnknown); err != nil {
-				return err
-			}
-		}
-	case reflect.Slice, reflect.Array:
-		if n.kind != kindArray {
-			return nil
-		}
-		for i := range n.elems {
-			if err := matchType(&n.elems[i], t.Elem(), allowUnknown); err != nil {
-				return err
-			}
-		}
-	default:
-	}
-	return nil
-}
-
-var (
-	unmarshalerType     = reflect.TypeFor[json.Unmarshaler]()
-	textUnmarshalerType = reflect.TypeFor[interface{ UnmarshalText([]byte) error }]()
-)
-
-// jsonFields lists the JSON names of the fields of a struct type, as the standard decoder
-// reads them: a tag name or the field name, an embedded struct without a name flattened, a field
-// tagged "-" and an unexported field left out.
-func jsonFields(t reflect.Type, depth int) map[string]reflect.Type {
-	out := map[string]reflect.Type{}
-	if depth > 16 {
-		return out
-	}
-	for f := range t.Fields() {
-		tag := f.Tag.Get("json")
-		if tag == "-" {
-			continue
-		}
-		name, _, _ := strings.Cut(tag, ",")
-		ft := f.Type
-		if f.Anonymous && name == "" {
-			inner := ft
-			for inner.Kind() == reflect.Pointer {
-				inner = inner.Elem()
-			}
-			if inner.Kind() == reflect.Struct {
-				for k, v := range jsonFields(inner, depth+1) {
-					if _, exists := out[k]; !exists {
-						out[k] = v
-					}
-				}
-				continue
-			}
-		}
-		if !f.IsExported() {
-			continue
-		}
-		if name == "" {
-			name = f.Name
-		}
-		out[name] = ft
-	}
-	return out
 }
