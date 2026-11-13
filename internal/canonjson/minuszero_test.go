@@ -30,7 +30,7 @@ func TestCanonicalizeWritesMinusZeroAsZeroEverywhere(t *testing.T) {
 		{"a name that holds -0 is a name", `{"a-0":1,"-0b":-0}`, `{"-0b":0,"a-0":1}`},
 		{"a string that holds -0 is a string", `{"a":"-0","b":-0}`, `{"a":"-0","b":0}`},
 		{"a string with an escape and -0", `{"a":"x\n-0","b":[-0]}`, `{"a":"x\n-0","b":[0]}`},
-		{"with minus zero and every other kind of value", `{"a":-0,"b":"s","c":true,"d":false,"e":[],"f":{},"g":9223372036854775807,"h":-9223372036854775808}`, `{"a":0,"b":"s","c":true,"d":false,"e":[],"f":{},"g":9223372036854775807,"h":-9223372036854775808}`},
+		{"with minus zero and every other kind of value", `{"a":-0,"b":"s","c":true,"d":false,"e":[],"f":{},"g":9007199254740991,"h":-9007199254740991}`, `{"a":0,"b":"s","c":true,"d":false,"e":[],"f":{},"g":9007199254740991,"h":-9007199254740991}`},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {

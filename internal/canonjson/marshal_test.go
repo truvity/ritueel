@@ -29,7 +29,6 @@ import (
 const (
 	reasonFloat    = "a float; ritueel's JSON holds integers only"
 	reasonKind     = "this kind of Go type is not part of ritueel's JSON"
-	reasonBigUint  = "an integer above 9223372036854775807, which ritueel's JSON does not hold"
 	reasonNumber   = "a json.Number is not part of ritueel's JSON; use an integer type"
 	reasonJSON     = "the type has a MarshalJSON method; only Raw carries JSON of its own"
 	reasonText     = "the type has a MarshalText method; only Raw carries JSON of its own"
@@ -353,13 +352,13 @@ func acceptedValues() []struct {
 		{"int8 largest", int8(math.MaxInt8), `127`},
 		{"int16", int16(math.MinInt16), `-32768`},
 		{"int32", int32(math.MinInt32), `-2147483648`},
-		{"int64 smallest", int64(math.MinInt64), `-9223372036854775808`},
-		{"int64 largest", int64(math.MaxInt64), `9223372036854775807`},
+		{"int64 smallest of the range", safeMin, `-9007199254740991`},
+		{"int64 largest of the range", safeMax, `9007199254740991`},
 		{"uint", uint(7), `7`},
 		{"uint8 largest", uint8(math.MaxUint8), `255`},
 		{"uint16 largest", uint16(math.MaxUint16), `65535`},
 		{"uint32 largest", uint32(math.MaxUint32), `4294967295`},
-		{"uint64 at the int64 maximum", uint64(math.MaxInt64), `9223372036854775807`},
+		{"uint64 at the largest of the range", uint64(safeMax), `9007199254740991`},
 		{"uint64 zero", uint64(0), `0`},
 		{"named int", myInt(-3), `-3`},
 		{"named bool", myBool(true), `true`},
@@ -747,10 +746,20 @@ func TestMarshalRefusesWhatOnlyTheValueTellsApart(t *testing.T) {
 		{"a nil slice", []int(nil), "[]int", reasonNilSlice, false},
 		{"a nil slice of bytes", []byte(nil), "[]uint8", reasonNilSlice, false},
 		{"a nil slice of strings", []string(nil), "[]string", reasonNilSlice, false},
-		{"uint64 above the maximum", uint64(math.MaxInt64) + 1, "uint64", reasonBigUint, false},
-		{"uint64 largest", uint64(math.MaxUint64), "uint64", reasonBigUint, false},
-		{"uint above the maximum", uint(math.MaxUint64), "uint", reasonBigUint, false},
-		{"a named unsigned above the maximum", myUint(math.MaxUint64), "canonjson.myUint", reasonBigUint, false},
+		{"uint64 one above the range", uint64(safeMax) + 1, "uint64", outside("9007199254740992"), false},
+		{"uint64 above int64", uint64(math.MaxInt64) + 1, "uint64", outside("9223372036854775808"), false},
+		{"uint64 largest", uint64(math.MaxUint64), "uint64", outside("18446744073709551615"), false},
+		{"uint above the range", uint(safeMax) + 1, "uint", outside("9007199254740992"), false},
+		{"uint largest", uint(math.MaxUint64), "uint", outside("18446744073709551615"), false},
+		{"a named unsigned above the range", myUint(safeMax) + 1, "canonjson.myUint", outside("9007199254740992"), false},
+		{"a named unsigned largest", myUint(math.MaxUint64), "canonjson.myUint", outside("18446744073709551615"), false},
+		{"int64 one above the range", int64(safeMax) + 1, "int64", outside("9007199254740992"), false},
+		{"int64 one below the range", int64(safeMin) - 1, "int64", outside("-9007199254740992"), false},
+		{"int64 largest", int64(math.MaxInt64), "int64", outside("9223372036854775807"), false},
+		{"int64 smallest", int64(math.MinInt64), "int64", outside("-9223372036854775808"), false},
+		{"int one above the range", int(safeMax) + 1, "int", outside("9007199254740992"), false},
+		{"int one below the range", int(safeMin) - 1, "int", outside("-9007199254740992"), false},
+		{"a named signed above the range", myInt64(safeMax + 1), "canonjson.myInt64", outside("9007199254740992"), false},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -783,15 +792,17 @@ func TestMarshalRefusesWhatOnlyTheValueTellsApart(t *testing.T) {
 		got, err := Marshal(nil)
 		refused(t, got, err, malformedText("$: a value of type nil cannot be written: an untyped nil is JSON null"))
 	})
-	t.Run("an uint64 at the maximum is written, one above is not", func(t *testing.T) {
-		got, err := Marshal(map[string]uint64{"a": math.MaxInt64})
-		if err != nil || string(got) != `{"a":9223372036854775807}` {
+	t.Run("an uint64 at the largest of the range is written, one above is not", func(t *testing.T) {
+		got, err := Marshal(map[string]uint64{"a": uint64(safeMax)})
+		if err != nil || string(got) != `{"a":9007199254740991}` {
 			t.Errorf("got %q, %v", got, err)
 		}
 	})
 }
 
 type myUint uint64
+
+type myInt64 int64
 
 func TestMarshalRefusesTextThatIsNotUTF8(t *testing.T) {
 	bad := []string{"\xff", "a\xffb", "\x80", "\xe2\x82", "\xc0\xaf", "\xed\xa0\x80", "\xf4\x90\x80\x80", "abc\xff", "\xffabc", "é\xff"}
@@ -1561,7 +1572,9 @@ func TestRawRefusals(t *testing.T) {
 		{"a repeated member one level down", `{"b":{"a":1,"a":2}}`, ".b.a", `the member appears twice at byte 15`},
 		{"a float", `{"a":1.5}`, ".a", `a number with a fraction or an exponent at byte 8`},
 		{"an exponent", `{"a":1e2}`, ".a", `a number with a fraction or an exponent at byte 8`},
-		{"an integer above int64", `{"a":9223372036854775808}`, ".a", `the integer does not fit 64 bits at byte 24`},
+		{"an integer above int64", `{"a":9223372036854775808}`, ".a", outside("9223372036854775808") + ` at byte 24`},
+		{"one above the range", `{"a":9007199254740992}`, ".a", outside("9007199254740992") + ` at byte 21`},
+		{"one below the range", `{"a":-9007199254740992}`, ".a", outside("-9007199254740992") + ` at byte 22`},
 		{"null in a member", `{"a":null}`, ".a", `null at byte 9`},
 		{"null deep down", `{"a":[{"b":null}]}`, ".a[0].b", `null at byte 15`},
 		{"invalid UTF-8", "{\"a\":\"\xff\"}", "", `not valid UTF-8`},
@@ -2306,9 +2319,9 @@ func randomInt(r *rand.Rand) int64 {
 	case 0:
 		return int64(r.Intn(21) - 10)
 	case 1:
-		return r.Int63()
+		return r.Int63n(safeMax + 1)
 	case 2:
-		return -r.Int63()
+		return -r.Int63n(safeMax + 1)
 	default:
 		return int64(r.Intn(2000) - 1000)
 	}
@@ -2371,7 +2384,7 @@ func randomShape(r *rand.Rand) shape {
 	}
 	v.Small = uint8(r.Intn(256))
 	if r.Intn(2) == 0 {
-		v.Big = uint64(r.Int63())
+		v.Big = uint64(r.Int63n(safeMax + 1))
 	}
 	return v
 }
