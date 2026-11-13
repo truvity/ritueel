@@ -85,6 +85,15 @@ type invocation struct {
 // exactly one JSON object to env.Stdout when the command ends; text for people goes to
 // env.Stderr. The one exception is that no object is written when the arguments are so
 // broken that the output mode is not known.
+//
+// What a command may rely on. Every error text that reaches a person or a script goes through
+// jsonset.Escape in finish, the one place where it is written: the line on standard error and the
+// "error" member of the JSON object hold printable ASCII only, a character outside it shown as
+// \uXXXX. So a command may put a file name, a member name or a piece of a document into an error
+// or a panic without escaping it, and may not rely on a line break inside the message (it is
+// shown as \u000a); the newline that finish writes after the message stays. What a command puts
+// in Result.Text is written as it is on standard output, and is the command's own to escape when
+// it holds text from a document.
 func Run(ctx context.Context, args []string, env Env) ExitCode {
 	inv := &invocation{env: env.withDefaults()}
 	return inv.finish(inv.execute(ctx, args))
@@ -149,7 +158,7 @@ func (inv *invocation) newCommand(s spec, parents ...string) *ucli.Command {
 		HideHelpCommand:           true, // --help is a flag; "help" is not a command word
 		OnUsageError: func(_ context.Context, _ *ucli.Command, err error, _ bool) error {
 			inv.command = first
-			return UsageError{Msg: jsonset.Escape(err.Error())}
+			return UsageError{Msg: err.Error()}
 		},
 	}
 	if s.flags != nil {
@@ -189,7 +198,7 @@ func (inv *invocation) newCommand(s spec, parents ...string) *ucli.Command {
 // a usage error. The library prints nothing for it; finish does. The commands have their own,
 // which also names the command.
 func (inv *invocation) onUsageError(_ context.Context, _ *ucli.Command, err error, _ bool) error {
-	return UsageError{Msg: jsonset.Escape(err.Error())}
+	return UsageError{Msg: err.Error()}
 }
 
 // finish writes what the end of the run needs and returns the exit code.
@@ -214,14 +223,16 @@ func (inv *invocation) finish(err error) ExitCode {
 		}
 		if werr != nil {
 			// The result did not reach the caller, so the run did not succeed.
-			_, _ = fmt.Fprintf(inv.env.Stderr, "%s: write the result: %s\n", programName, werr)
+			_, _ = fmt.Fprintf(inv.env.Stderr, "%s: write the result: %s\n", programName, jsonset.Escape(werr.Error()))
 			return ExitFailure
 		}
 		return res.ExitCode
 	}
 
 	code, outcome := ExitFor(err)
-	_, _ = fmt.Fprintf(inv.env.Stderr, "%s: %s\n", programName, err)
+	// The one place where the text of an error is written: standard error and the "error" member.
+	msg := jsonset.Escape(err.Error())
+	_, _ = fmt.Fprintf(inv.env.Stderr, "%s: %s\n", programName, msg)
 	if outcome == OutcomeUsage {
 		_, _ = fmt.Fprintf(inv.env.Stderr, "Run \"%s --help\" for the usage.\n", programName)
 	}
@@ -232,7 +243,7 @@ func (inv *invocation) finish(err error) ExitCode {
 			ExitCode: code,
 			Outcome:  outcome,
 			Reasons:  reasonsOf(err),
-			Error:    err.Error(),
+			Error:    msg,
 		})
 	}
 	return code
