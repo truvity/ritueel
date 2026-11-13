@@ -1,6 +1,6 @@
 ---
 title: The command line
-description: What the ritueel command line will do at a ceremony, the six steps it runs, the checks it makes before each touch, and how it handles PINs, touches and expiry.
+description: What the ritueel command line will do at a ceremony, the one act it runs, the checks it makes before each touch, and how it handles PINs, touches and expiry.
 sidebar:
   order: 1
 ---
@@ -9,9 +9,9 @@ sidebar:
 
 The command line is the first of three faces of the ceremony engine; the others are the guided mode and the read-only local page ([the wizard](/tools/wizard/)). A ceremony is a scripted, reviewable use of a root key. A key that can be copied, a key file, is used only in a machine booted from a read-only system made for the purpose (the offline system), never in the everyday system (ritueel teaches this and does not check it). A key that cannot be copied, a root on cards or a cloud root, may be used on your workstation. A cloud root always runs there, because the offline system has no network; the offline system is an option for a root on cards. A root on cards needs four conditions: a touch for every signature, the number of signatures stated in the plan, no retry of a failed touch, and the result checked on a second device. A cloud key has no touch: for a cloud root the typed digest and the role session stand, its audit trail records every signature, and the other three conditions apply ([record 0005](../decisions/0005-a-ceremony-and-where-it-runs.md), rule 18). The program checks nothing about the machine, so the check on a second device is taught, not checked. A test root may be used on the workstation or on a rehearsal card. The machine is not trusted: the root keys never leave their store, so a compromised machine cannot copy a key it never holds. It can still try to trick the holder, which is why the checks below exist.
 
-## Six steps
+## One act
 
-Every ceremony runs the same steps: **plan** every byte that will be signed, **confirm** by typing the first eight characters of the plan's digest, **reserve** an attempt before the first signature, **sign**, **verify** each result with code that did not sign it, and **record**. The plan can be written on one machine and reviewed on another before a card is touched.
+Every ceremony is one `apply`. Its plan fixes every byte that will be signed, and can be written on one machine and reviewed on another before a card is touched. A person confirms by typing the first eight characters of the plan's digest. An attempt is written before the first key is born, ritueel checks each result with code that did not sign it, and the ceremony record is written last.
 
 ## What the tool checks
 

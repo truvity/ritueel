@@ -5,7 +5,7 @@ sidebar:
   order: 5
 ---
 
-*Not built yet. This is version 1 of the files that the six steps of [record 0005](../decisions/0005-a-ceremony-and-where-it-runs.md) write into a ceremony folder, under the rules of [record 0006](../decisions/0006-bundle-history-and-trust-files.md). Nothing reads them yet, so version 1 changes in place until the code does. The code is [issue #9](https://github.com/truvity/ritueel/issues/9), in M2; it follows this page.*
+*Not built yet. This is version 1 of the files that a ceremony of [record 0005](../decisions/0005-a-ceremony-and-where-it-runs.md) write into a ceremony folder, under the rules of [record 0006](../decisions/0006-bundle-history-and-trust-files.md). Nothing reads them yet, so version 1 changes in place until the code does. The code is [issue #9](https://github.com/truvity/ritueel/issues/9), in M2; it follows this page.*
 
 A cite such as (0005 rule 9) names the rule that decides the statement. A statement marked Proposed is not decided and names its open issue. What is later is listed at the end.
 
@@ -15,13 +15,13 @@ Every ceremony leaves one **ceremony folder**, `history/<ceremony>/`, in the his
 
 | File | Written at | Holds | Decided by |
 |---|---|---|---|
-| `plan.json` | Step 1, plan | Every byte that will be signed, fixed in advance; what the plan applies and what it leaves out; the wanted files it used, by digest. | 0005 rule 4; 0006 rule 7 |
-| `wanted/` | Step 1, plan | Exact copies of the wanted files the plan used. They are copies, not wanted files. | 0005 rules 4 and 21; 0006 rule 5 |
-| `attempt.json` | Step 3, reserve | That keys or signatures may exist from this plan. | 0005 rule 7 |
-| `births.jsonl` | Step 3, reserve | The birth journal. Only in a ceremony that makes keys. | 0005 rule 7 |
-| `signatures.jsonl` | Step 3, reserve | The journal of signatures. | 0005 rule 7 |
-| `transcript.txt` | Step 6, record | What ritueel printed. | 0006 rule 7 |
-| `record.json` | Step 6, record, last | The ceremony record: what was checked, signed and written. | 0005 rule 9; 0006 rule 6 |
+| `plan.json` | With the plan | Every byte that will be signed, fixed in advance; what the plan applies and what it leaves out; the wanted files it used, by digest. | 0005 rule 4; 0006 rule 7 |
+| `wanted/` | With the plan | Exact copies of the wanted files the plan used. They are copies, not wanted files. | 0005 rules 4 and 21; 0006 rule 5 |
+| `attempt.json` | Before the first key is born | That keys or signatures may exist from this plan. | 0005 rule 7 |
+| `births.jsonl` | With the attempt | The birth journal. Only in a ceremony that makes keys. | 0005 rule 7 |
+| `signatures.jsonl` | With the attempt | The journal of signatures. | 0005 rule 7 |
+| `transcript.txt` | At the end | What ritueel printed. | 0006 rule 7 |
+| `record.json` | Last | The ceremony record: what was checked, signed and written. | 0005 rule 9; 0006 rule 6 |
 
 :::note[Proposed]
 Of these names only the path `history/<ceremony>/plan.json` is decided (0006 rule 7). The other file names and the folder `wanted/` are fixed with the code ([#8](https://github.com/truvity/ritueel/issues/8)). The copies keep the paths they have in the bundle, under `wanted/`.
@@ -43,14 +43,14 @@ Whether `revoke` leaves a ceremony folder, a ceremony record and a printed end o
 
 The steps of a write (whole or not at all, under a temporary name, then one rename) are on [the bundle page](/reference/bundle/#how-a-file-is-written) (0006 rule 29). A ceremony writes in this order:
 
-| Step | Writes | Decided by |
+| When | Writes | Decided by |
 |---|---|---|
-| 1. Plan | The ceremony folder, `plan.json` and the copies in `wanted/`. With `--plan-only` ritueel stops here. | 0005 rules 4 and 10; 0006 rule 7 |
-| 2. Confirm | Nothing. A wrong or missing confirmation writes nothing. | 0005 rule 6 |
-| 3. Reserve | `attempt.json`, before the first key is born. The journals are created with it. | 0005 rule 7 |
-| 4. Sign | One line in `births.jsonl` after each key exists and one line in `signatures.jsonl` after each signature is made. | 0005 rule 7 |
-| 5. Verify | Nothing. Every artifact is checked against its request and the plan, with code that did not sign it, before it is written out. | 0005 rule 9 |
-| 6. Record | `transcript.txt`, then the artifacts under names of their own (the trust set, the answers in `requests/`), and last `record.json`. | 0005 rule 9; 0006 rule 29 |
+| First | The ceremony folder, `plan.json` and the copies in `wanted/`. With `--plan-only` ritueel stops here. | 0005 rules 4 and 10; 0006 rule 7 |
+| Before the first key is born | `attempt.json`. The journals are created with it. | 0005 rule 7 |
+| While keys are born and signatures made | One line in `births.jsonl` after each key exists and one line in `signatures.jsonl` after each signature is made. | 0005 rule 7 |
+| At the end | `transcript.txt`, then the artifacts under names of their own (the trust set, the answers in `requests/`), and last `record.json`. | 0005 rule 9; 0006 rule 29 |
+
+A wrong or missing confirmation writes nothing (0005 rule 6). Every artifact is checked against its request and the plan, with code that did not sign it, before it is written out (0005 rule 9).
 
 :::note[Proposed]
 Rule 7 of record 0005 decides that an attempt is written before the first key and that each key and each signature is appended to a journal. That the attempt is made by an exclusive create, and that a journal grows by one flushed line at a time, is Proposed and is fixed with the code ([#8](https://github.com/truvity/ritueel/issues/8)).
@@ -128,9 +128,9 @@ Each member of `signatures`:
 | `tbs_sha256` | The SHA-256 of the exact bytes the key signs: the DER `TBSCertificate`, the OpenPGP data hashed for the signature (RFC 9580, section 5.2.4), the JWS signing input of the root list (one for each root key that signs it) or of the SSH CA key list, or the DER `TBSCertList` of a CRL. |
 | `derived` | True for a signature that covers a key born in this ceremony; it has no `tbs_sha256`, and no `key` when the new key signs itself ([below](/reference/ceremony-record/#the-plan)). Absent otherwise. |
 
-`tbs_sha256` is what makes the plan exact: two machines that build the same plan from the same bundle compute the same bytes to sign, and the verify step compares each artifact with it.
+`tbs_sha256` is what makes the plan exact: two machines that build the same plan from the same bundle compute the same bytes to sign, and the check of 0005 rule 9 compares each artifact with it.
 
-**A key that is born in the ceremony is the exception** (0005 rule 5). The first `apply` and each added root key make keys, and a signature that covers a new key (its root certificate, its primary's self-signature and revocation signatures, a vouching signature, a cross-certificate) cannot have its bytes fixed before the key exists. The plan lists such a signature with `derived` set to true and without `tbs_sha256` (and without `key` when the new key signs itself), and lists the keys to be born in `births`: for each, `{ "label", "purpose", "store", "place", "creation_time" }`, where `place` is the card's serial and slot, or the Region, and `creation_time` is the OpenPGP creation time drawn here. The verify step checks every derived artifact against the profile and the key that was born, with code that did not sign it, and the ceremony record carries the digests that the plan could not. For such a key the plan fixes everything else (0005 rule 5): the store, the serial and slot or the Region, the algorithm, the OpenPGP creation time, the serials, the validity and the touches.
+**A key that is born in the ceremony is the exception** (0005 rule 5). The first `apply` and each added root key make keys, and a signature that covers a new key (its root certificate, its primary's self-signature and revocation signatures, a vouching signature, a cross-certificate) cannot have its bytes fixed before the key exists. The plan lists such a signature with `derived` set to true and without `tbs_sha256` (and without `key` when the new key signs itself), and lists the keys to be born in `births`: for each, `{ "label", "purpose", "store", "place", "creation_time" }`, where `place` is the card's serial and slot, or the Region, and `creation_time` is the OpenPGP creation time drawn here. The check of 0005 rule 9 tests every derived artifact against the profile and the key that was born, with code that did not sign it, and the ceremony record carries the digests that the plan could not. For such a key the plan fixes everything else (0005 rule 5): the store, the serial and slot or the Region, the algorithm, the OpenPGP creation time, the serials, the validity and the touches.
 
 ### The plan digest and the confirmation
 
@@ -138,7 +138,7 @@ The **plan digest** is the SHA-256 of the bytes of the plan file, shown as 64 lo
 
 - **A person** sees the plan in words and its digest, and types **the first eight characters** of the digest, and nothing more. ritueel compares them with the digest's first eight, without regard to case. A key press is not accepted (0005 rule 6).
 - **A script** passes `--confirm DIGEST` with all 64 digits, which it can only have by reading the plan ritueel wrote (`--plan-only --output json` prints it, see [Commands](/reference/cli/#machine-readable-output)).
-- **A wrong or missing confirmation is refused before the attempt is written** (exit code 5). Nothing is signed and nothing is reserved.
+- **A wrong or missing confirmation is refused before the attempt is written** (exit code 5). Nothing is signed and no attempt is written.
 
 `ritueel apply PLAN` executes a plan made earlier (it asks for the first eight characters of the digest; `--confirm DIGEST` is the flag for scripts: 0005 rule 10). **A plan is bound to the state it was made against:** ritueel refuses it with the reason code `plan-stale` (exit code 3) when the newest trust sequence is no longer `base_sequence`, the end of the history is no longer `last_record_sha256`, or any file of `inputs` has another digest. The stick carries no wanted files (0005 rule 21), so on a stick only the end of the history and the trust sequence can be compared. A confirmation never replaces a touch.
 
@@ -160,7 +160,7 @@ A person who has read the plan may **decline** a request instead of confirming: 
 | `root` | The label of the root key that signs. |
 | `started_at` | When the attempt was written. |
 
-ritueel writes the file first, and only then makes the first birth or signature (0005 rule 7). An existing attempt for a plan means its serials may be used: ritueel refuses to run that plan again. An attempt is **resolved** when a ceremony record names its ceremony: the ceremony's own record, or a closing record from `close`. `status` reports every unresolved attempt as **critical** (exit code 12): a reserved but unrecorded attempt may mean a signature that was made and never recorded.
+ritueel writes the file first, and only then makes the first birth or signature (0005 rule 7). An existing attempt for a plan means its serials may be used: ritueel refuses to run that plan again. An attempt is **resolved** when a ceremony record names its ceremony: the ceremony's own record, or a closing record from `close`. `status` reports every unresolved attempt as **critical** (exit code 12): an attempt with no ceremony record may mean a signature that was made and never recorded.
 
 :::note[Proposed]
 Whether `apply` refuses to make a new plan while an attempt is open, or only refuses to run the plan that has the attempt, is not decided ([#140](https://github.com/truvity/ritueel/issues/140)). This page says the second.

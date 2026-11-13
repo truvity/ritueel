@@ -103,7 +103,7 @@ A ceremony panel also lists the steps from the catalogue of rule 4.
 - An entry reads when it opens and when the window gets the focus. There is no timer, and every entry shows the time of its read. A page left open for longer than the process lives (rule 9) shows the state "failed" and says how to start again.
 - Width and height are aims and are not measured: a list, a table and a panel from 1440 px; one screen for To do and at most one and a half for each other entry, at 1440 by 900 and at 1920 by 970.
 
-**Plans that were never run.** A plan is written at step 1, before the confirmation, and no command withdraws a plan, so a plan that nobody runs stays in the history. A plan made for the offline system stays "planned" until `join` brings its ceremony record back. History folds the plans that were never run into one line with a count.
+**Plans that were never run.** A plan is written before the confirmation, and no command withdraws a plan, so a plan that nobody runs stays in the history. A plan made for the offline system stays "planned" until `join` brings its ceremony record back. History folds the plans that were never run into one line with a count.
 
 :::note[Proposed]
 The folding of plans that were never run is a choice of the page build and not a rule of a record ([#17](https://github.com/truvity/ritueel/issues/17)).

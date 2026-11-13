@@ -59,12 +59,13 @@ Everything else is planned: `ritueel apply` renews the binding when it is due, 6
 
 ### The ceremony of a day-to-day subkey
 
-1. **Plan.** The card's serial and slot, the creation time of the subkey, the validity of the binding and the number of touches. The subkey is a birth, so the binding is a derived signature ([record 0005](../decisions/0005-a-ceremony-and-where-it-runs.md)).
-2. **Confirm** by typing the first eight characters of the plan digest, as always.
-3. **Reserve, and birth.** The attempt is written; the card makes the key on its OpenPGP applet and the back-signature, after the user PIN is verified at the terminal.
-4. **Attest.** The card's attestation of the key is read with the maker's command (`80 FB 01 00` on a YubiKey) and checked against the attestation bundle ([cards](/reference/cards/#the-attestation-bundle)). Until the encoding of the extensions under `1.3.6.1.4.1.41482.5` is measured, the key is recorded as attested and no PIN or touch policy is enforced from it.
-5. **Sign.** The primary's key file is opened as [record 0002](../decisions/0002-where-a-key-lives.md) says, and the primary binds the subkey. The fingerprint is shown first.
-6. **Verify and record,** and write the certificate.
+`apply` does this in one ceremony, in this order:
+
+- **The plan** holds the card's serial and slot, the creation time of the subkey, the validity of the binding and the number of touches. The subkey is a birth, so the binding is a derived signature ([record 0005](../decisions/0005-a-ceremony-and-where-it-runs.md)). The person confirms by typing the first eight characters of the plan digest, as always.
+- **The birth.** The attempt is written; the card makes the key on its OpenPGP applet and the back-signature, after the user PIN is verified at the terminal.
+- **The attestation.** The card's attestation of the key is read with the maker's command (`80 FB 01 00` on a YubiKey) and checked against the attestation bundle ([cards](/reference/cards/#the-attestation-bundle)). Until the encoding of the extensions under `1.3.6.1.4.1.41482.5` is measured, the key is recorded as attested and no PIN or touch policy is enforced from it.
+- **The binding.** The primary's key file is opened as [record 0002](../decisions/0002-where-a-key-lives.md) says, and the primary binds the subkey. The fingerprint is shown first.
+- **The end.** ritueel checks the result, writes the certificate, and writes the ceremony record last.
 
 A lost card is answered with a wanted delegation file for a key on a new card, then `ritueel apply`, after the primary has revoked the old subkey (a subkey revocation, type `0x28`, made by the primary at that ceremony). No pre-made file is needed, because the primary is a file.
 
