@@ -26,4 +26,5 @@ Reference pages say exactly what a file, a message or a command is. The reasons 
 | [Root-signed CRLs](/reference/crl/) | The CRL each root key signs to revoke an intermediate: profile, cadence, how a relying party reads it, with test vectors. |
 | [Cards](/reference/cards/) | The four kinds of card, the wanted card file and the card map, the rows of slots, the checks made on a card, the attestation files and the attestation bundle with its refresh step. |
 | [The cloud root in AWS KMS](/reference/kms-root/) | The holder's roles, the `ritueel.yaml` block, the keys ritueel creates or adopts, the key policy, and the checks it makes. |
+| [The trace area](/reference/trace-area/) | The partition with no file system that keeps the attempt and the journals of a ceremony on the stick: its layout, the trace record, how it is written and read after a cut, and the checks before the first write. |
 | [Glossary](/glossary/) | The fixed words of the design, the word a page uses where it differs, and the record that decides each. |
