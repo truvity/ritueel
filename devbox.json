@@ -10,7 +10,8 @@
     "buf":           "1.75.0",
     "go":            "1.27.0",
     "golangci-lint": "2.13.1",
-    "govulncheck":   "1.7.0"
+    "govulncheck":   "1.7.0",
+    "goreleaser":    "2.20.0"
   },
   "env": {
     "CGO_ENABLED": "0",
