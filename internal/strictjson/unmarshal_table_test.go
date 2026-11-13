@@ -207,20 +207,22 @@ func cannotRead(base string, route []string, typ, reason string) string {
 
 // The reasons of the refusals, as jsonset words them.
 const (
-	reasonFloat   = "a float; ritueel's JSON holds integers only"
-	reasonKind    = "this kind of Go type is not part of ritueel's JSON"
-	reasonNumber  = "a json.Number is not part of ritueel's JSON; use an integer type"
-	reasonJSON    = "the type has a MarshalJSON method; only Raw carries JSON of its own"
-	reasonText    = "the type has a MarshalText method; only Raw carries JSON of its own"
-	reasonUJSON   = "the type has a UnmarshalJSON method; only Raw carries JSON of its own"
-	reasonUText   = "the type has a UnmarshalText method; only Raw carries JSON of its own"
-	reasonPtrPtr  = "a pointer to a pointer or to an interface is not part of ritueel's JSON"
-	reasonMapKey  = "only a map with a key of kind string is part of ritueel's JSON"
-	reasonIface   = "an interface with methods is not part of ritueel's JSON; only one with no methods is"
-	reasonEmbed   = "the embedded field %s is not part of ritueel's JSON; give it a name"
-	reasonOption  = "field %s has the tag option %q; only omitempty is allowed"
-	reasonTwice   = "two fields are named %q"
-	reasonTopKind = "the top of a document is one JSON object, which fills a struct, a map, a Raw or an interface with no methods"
+	reasonFloat  = "a float; ritueel's JSON holds integers only"
+	reasonKind   = "this kind of Go type is not part of ritueel's JSON"
+	reasonNumber = "a json.Number is not part of ritueel's JSON; use an integer type"
+	reasonJSON   = "the type has a MarshalJSON method; only Raw carries JSON of its own"
+	reasonText   = "the type has a MarshalText method; only Raw carries JSON of its own"
+	reasonUJSON  = "the type has a UnmarshalJSON method; only Raw carries JSON of its own"
+	reasonUText  = "the type has a UnmarshalText method; only Raw carries JSON of its own"
+	reasonPtrPtr = "a pointer to a pointer or to an interface is not part of ritueel's JSON"
+	reasonMapKey = "only a map with a key of kind string is part of ritueel's JSON"
+	reasonIface  = "an interface with methods is not part of ritueel's JSON; only one with no methods is"
+	reasonEmbed  = "the embedded field %s is not part of ritueel's JSON; give it a name"
+	reasonOption = "field %s has the tag option %q; only omitempty is allowed"
+	reasonTwice  = "two fields are named %q"
+	// reasonNameRule is the rule for the name of a member of a struct, as the errors say it.
+	reasonNameRule = "a member name holds only ASCII letters, digits and underscores, and is not empty"
+	reasonTopKind  = "the top of a document is one JSON object, which fills a struct, a map, a Raw or an interface with no methods"
 )
 
 // ---- the closed set, one table ------------------------------------------------------------
@@ -645,7 +647,7 @@ func refusedTargets() []refusedTarget {
 	badName := func(name, tag, shown string) refusedTarget {
 		r := tagged(tag)
 		r.name, r.fault = name, withTag(tag).String()
-		r.reason = "field F has the tag name " + shown + ", which encoding/json would not use"
+		r.reason = "field F has the tag name " + shown + "; " + reasonNameRule
 		return r
 	}
 	return []refusedTarget{
@@ -693,12 +695,18 @@ func refusedTargets() []refusedTarget {
 		rt[optOmitZero]("the tag option omitzero", "strictjson.optOmitZero", fmt.Sprintf(reasonOption, "F", "omitzero"), ""),
 		rt[optSecond]("a refused option after omitempty", "strictjson.optSecond", fmt.Sprintf(reasonOption, "F", "string"), ""),
 		badOption("an empty tag option", `json:"f,,omitempty"`, ""),
-		badName("a tag name with a quote", `json:"a'b"`, `"a'b"`),
+		badName("a tag name with an apostrophe", `json:"a'b"`, `"a'b"`),
 		badName("a tag name with a backslash", `json:"a\\b"`, `"a\\b"`),
 		badName("a tag name with a symbol that is not a letter", "json:\"a"+string(rune(0x20ac))+"b\"", `"a`+uesc(0x20ac)+`b"`),
+		badName("a tag name with a dot", `json:"a.b"`, `"a.b"`),
+		badName("a tag name with a hyphen", `json:"a-b"`, `"a-b"`),
+		badName("a tag name with a space", `json:"a b"`, `"a b"`),
+		badName("a tag name that is a dash and a comma", `json:"-,"`, `"-"`),
+		badName("a tag name that is a dash and omitempty", `json:"-,omitempty"`, `"-"`),
 		{name: "two fields of one name", typ: twice, fault: twice.String(), reason: fmt.Sprintf(reasonTwice, "x")},
 		{name: "a tag name that is another field's name", typ: reflect.TypeFor[nameAsField](), fault: "strictjson.nameAsField", reason: fmt.Sprintf(reasonTwice, "A")},
-		{name: "two fields named dash", typ: dashes, fault: dashes.String(), reason: fmt.Sprintf(reasonTwice, "-")},
+		// Both are refused at the first, as a name: the dash is no name of a member.
+		{name: "two fields named dash", typ: dashes, fault: dashes.String(), reason: "field F0 has the tag name \"-\"; " + reasonNameRule},
 		rt[floatField]("a float field", "float64", reasonFloat, ".G"),
 		rt[floatFieldOmit]("a float field with omitempty", "float64", reasonFloat, ".G"),
 		rt[floatPtrOmit]("a pointer to a float with omitempty", "*float64", reasonFloat, ".P"),
