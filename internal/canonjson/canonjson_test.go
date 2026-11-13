@@ -271,7 +271,11 @@ func TestCanonicalizeNestingDepth(t *testing.T) {
 	deep := func(n int) []byte {
 		return []byte(strings.Repeat(`{"a":`, n-1) + `{}` + strings.Repeat(`}`, n-1))
 	}
-	wantText := malformedText("nesting deeper than %d levels at byte ", strictjson.MaxDepth)
+	// The path shows the last eight steps of the way to the container that passes the limit.
+	wantText := map[string]string{
+		"one level over":  malformedText("$....a.a.a.a.a.a.a.a: nesting deeper than %d levels at byte ", strictjson.MaxDepth),
+		"a very deep one": malformedText("$....a[0].a[0].a[0].a[0]: nesting deeper than %d levels at byte ", strictjson.MaxDepth),
+	}
 	at := deep(strictjson.MaxDepth)
 	got, err := Canonicalize(at)
 	if err != nil || !bytes.Equal(got, at) {
@@ -285,8 +289,8 @@ func TestCanonicalizeNestingDepth(t *testing.T) {
 		"a very deep one": []byte(strings.Repeat(`{"a":[`, 2*strictjson.MaxDepth)),
 	} {
 		got, err := Canonicalize(in)
-		if !errors.Is(err, strictjson.ErrMalformed) || !strings.HasPrefix(err.Error(), wantText) || got != nil {
-			t.Errorf("%s: %q, %v, want %q and a byte", name, got, err, wantText)
+		if !errors.Is(err, strictjson.ErrMalformed) || !strings.HasPrefix(err.Error(), wantText[name]) || got != nil {
+			t.Errorf("%s: %q, %v, want %q and a byte", name, got, err, wantText[name])
 		}
 		if is, err := IsCanonical(in); is || !errors.Is(err, strictjson.ErrMalformed) {
 			t.Errorf("%s: IsCanonical = %v, %v", name, is, err)
