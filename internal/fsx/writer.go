@@ -318,7 +318,8 @@ func windowsDevice(name string) bool {
 
 // nameProblem says why one name (one element of a path, or the name of a file of a set) cannot
 // be used on the stick (exFAT) and on the desktop systems that read it, or is held there under
-// another name; it returns "" when the name is fine. name is not empty. The reasons: it is not
+// another name; it returns "" when the name is fine. The reasons: it is empty (the callers
+// refuse an empty name before they call it, so this is a guard that no caller reaches); it is not
 // valid UTF-8; it has a control code or a character of exFAT's list of invalid characters (the
 // colon is on that list, so a drive, "C:x", is refused by it and needs no rule of its own); it
 // has a character that is not printable; it is longer than 255 bytes (see [maxNameBytes]); it
@@ -337,6 +338,9 @@ func windowsDevice(name string) bool {
 // follows the Unicode tables of the Go version that the program is built with, so a code point
 // that a later version assigns may be refused by an earlier build.
 func nameProblem(name string) string {
+	if name == "" {
+		return "is not one plain name"
+	}
 	if !utf8.ValidString(name) {
 		return "is not valid UTF-8"
 	}
