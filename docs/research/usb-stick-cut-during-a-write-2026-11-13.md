@@ -34,7 +34,7 @@ One cheap 32 GB USB stick with one exFAT partition ([record 0005](../decisions/0
 | Repeat | none, the same plan | 20 | 2 |
 | Pause | 1 second after every flush | 20 | 2 |
 
-The three tries used 30 different moments. The same two moments broke the bundle again in the repeat and in the pause try. 4 of 30 is 13 percent; the true share may be 4 to 30 percent. The stick rejects the cache-flush command: a try that turned it on stopped before its first cut ([record 0006](../decisions/0006-bundle-history-and-trust-files.md), rule 33).
+The three tries used 30 different moments. The same two moments broke the bundle again in the repeat and in the pause try. 4 of 30 is 13 percent; the true share may be 4 to 31 percent (exact interval 3.8 to 30.7). The stick answered the one cache-flush command it was sent with an error, and the try that turned the command on stopped before its first cut, in the step that prepares the stick. Rule 33 of [record 0006](../decisions/0006-bundle-history-and-trust-files.md) is the rule for such an error: ritueel stops at once.
 
 | What the sector held | What was lost |
 |---|---|
