@@ -88,8 +88,8 @@ type Writer struct {
 
 // NewFile is one file of a set written by [Writer.WriteSet]. Name is one plain name. Perm is the
 // permission bits of the file, less the umask, and follows the rule of [Writer.WriteFile]: no bit
-// beyond the permission bits, and the owner's read and write bits set (a Perm that is left at 0 is
-// refused).
+// beyond the permission bits, and the owner's read bit set (a Perm that is left at 0 is refused).
+// A Perm of 0o400 or 0o444 is fine: the file is written through the handle that created it.
 type NewFile struct {
 	Name string
 	Data []byte
@@ -251,8 +251,11 @@ func (w *Writer) tempName() (string, error) {
 // A cut before the rename leaves nothing at path; a cut after it leaves the whole content.
 // The folder of path is walked once, and the create, the rename and the flush work through
 // that one handle. perm is the permission bits of the new file, less the umask, and must have no
-// bit beyond the permission bits and both the owner's read and write bits (0o600): a file that
-// its owner cannot read back is refused with [ErrInvalid], as is a mode of 0.
+// bit beyond the permission bits and the owner's read bit (0o400): a file that its owner cannot
+// read back is refused with [ErrInvalid], as is a mode of 0. The owner's write bit is not needed,
+// and a file that ends read-only for its owner (0o400, 0o444) is fine: the mode is checked
+// when a file is opened, not when it is written through the handle that created it, and the
+// create is the only open for writing the package makes.
 func (w *Writer) WriteFile(path string, data []byte, perm fs.FileMode) error {
 	w.mu.Lock()
 	defer w.mu.Unlock()
@@ -636,14 +639,17 @@ func parsePath(path string, forWrite bool) ([]string, error) {
 }
 
 // checkPerm refuses a mode with a bit beyond the permission bits, and a mode with which the owner
-// cannot use what is made: a file needs the owner's read and write bits (0o600), a folder the
-// owner's read, write and search bits (0o700). The writer made the file or the folder, so the
-// owner is its own user; a mode of 0 (an unset Perm) would make a file that nobody can read back.
+// cannot use what is made: a file needs the owner's read bit (0o400), a folder the owner's read,
+// write and search bits (0o700). The writer made the file or the folder, so the owner is its own
+// user. A file needs no write bit in its mode: it is written through the handle of the exclusive
+// create that made it, and the mode applies only to later opens, so a file of 0o400 or 0o444 is
+// whole and read-only when the write ends. A mode of 0 (an unset Perm) would make a file that
+// nobody can read back.
 func checkPerm(perm fs.FileMode, folder bool) error {
 	if perm&^fs.ModePerm != 0 {
 		return fmt.Errorf("%w: mode %v has bits beyond the permission bits", ErrInvalid, perm)
 	}
-	need, what := fs.FileMode(0o600), "a file needs the owner's read and write bits"
+	need, what := fs.FileMode(0o400), "a file needs the owner's read bit"
 	if folder {
 		need, what = 0o700, "a folder needs the owner's read, write and search bits"
 	}
