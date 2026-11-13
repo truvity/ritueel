@@ -21,7 +21,7 @@ Docs live in `docs/`, next to the thing they describe. When the thing changes, i
 
 | Kind | Where | For | Published? |
 |---|---|---|---|
-| Learn | `docs/learn/` | The teaching: what a root is, where a root is used, the custody chain, the key stores compared, the life of a root. Written before any tool exists, and kept true after. It comes first on the site. | The Learn index and thirteen pages of the list |
+| Learn | `docs/learn/` | The teaching, in four groups: the basics, down the chain, where a key lives, and the keys of one root side by side. Written before any tool exists, and kept true after. It comes first on the site. | The Learn index and thirteen pages of the list |
 | How it works | `docs/how-it-works/` | ritueel in pictures: three layers of a key, the ceremony, the three cards, the bundle and the USB stick. Few words, each picture with its caption. Only the command `version` is built, so each page says once that the pictures show the design. | Yes: the overview and two pages |
 | Guides | `docs/guides/` | One guide per ritual, ceremony or transition, step by step, with its drill on test keys. A guide says how; the matching Learn page says why and when. | No |
 | Tools | `docs/tools/` | What the command line and the wizard do, and whether each is built. | No |
@@ -89,7 +89,7 @@ A home page says what the project is, what exists today, who it is for and where
 
 ## Teaching pages
 
-A Learn or Guides page is written for a reader who is new to PKI and OpenPGP but technically capable. Do not explain what a hash is; do explain what a root is. The `teaching-page` skill is the checklist. Judge the page against the mission first ([How we design](/contributing/design/#the-mission-is-the-test)).
+A Learn or Guides page is written for a reader who is new to PKI and OpenPGP but technically capable. Only the Basics group of Learn explains terms such as a key pair, a digest, a signature and a certificate; every other page links to the basics and does not explain them again. Do explain what a root is. The `teaching-page` skill is the checklist. Judge the page against the mission first ([How we design](/contributing/design/#the-mission-is-the-test)).
 
 - **Start from the reader's question or pain,** not from the feature: what goes wrong in the real world, then the rule. Name the key store or the format before you use its short name.
 - **Why before how.** A Learn page gives the reason; a guide gives the steps and links the Learn page that holds the reason.
