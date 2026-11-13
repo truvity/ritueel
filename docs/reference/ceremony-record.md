@@ -218,16 +218,24 @@ Each member of `requests` holds what the [hand-off contract records](/reference/
 
 ### The hash chain
 
-Ceremony records form one chain (0006 rule 8). The first ceremony record of a bundle has no `prev_record_sha256`; every other names the one before it, so each ceremony folder names the one before it. `check history` walks the chain from the first ceremony record and reports:
+Ceremony records form one chain (0006 rule 8). The first ceremony record of a bundle has no `prev_record_sha256`; every other names the one before it, so each ceremony folder names the one before it. `check history` walks the chain from the first ceremony record and reports each finding under one name:
 
-- a ceremony record's `prev_record_sha256` that is not the digest of a ceremony record;
-- two ceremony records that name the same one. That is a fork, a critical finding (0006 rule 35). Its repair is not decided ([#138](https://github.com/truvity/ritueel/issues/138));
-- a `record.json` in a ceremony folder of `history/` that is not on the chain;
-- a ceremony record that is not in canonical form, or whose version is unknown;
-- a transcript whose digest is not the `transcript_sha256` of its ceremony record;
-- a trust set in `trust/` that is not an artifact of a ceremony record. With an open attempt of that ceremony it is an unfinished ceremony, and the next command finishes it; with no such attempt it shows that the newest ceremony record was removed (0006 rule 34);
-- the `last_record_sha256` of a root list in `trust/` that is not on the chain;
-- **a file that a ceremony record lists and that fails its digest.** It is an error, never "absent" (0006 rule 31). The files checked are the copies in `wanted/` and the artifacts. A wanted file in `want/` may have changed since, because a person writes it.
+| Finding | What it says |
+|---|---|
+| `chain-broken` | A ceremony record's `prev_record_sha256` is not the digest of a ceremony record. |
+| `fork` | Two ceremony records name the same one. It is a critical finding (0006 rule 35). Its repair is not decided ([#138](https://github.com/truvity/ritueel/issues/138)). |
+| `record-off-chain` | A `record.json` in a ceremony folder of `history/` is not on the chain. |
+| `record-not-canonical` | A ceremony record is not in canonical form. |
+| `record-version-unknown` | The version of a ceremony record is not known. |
+| `record-invalid` | A ceremony record of a known version breaks the rules of this page: a member is missing, repeated or unknown, or has the wrong type. |
+| `transcript-digest` | A transcript's digest is not the `transcript_sha256` of its ceremony record. |
+| `file-digest` | A file that a ceremony record lists fails its digest. The files checked are the copies in `wanted/` and the artifacts. A wanted file in `want/` may have changed since, because a person writes it. |
+| `file-missing` | A file that a ceremony record lists is not there. It is an error, never "absent" (0006 rule 31). |
+| `trust-set-unlisted` | A trust set in `trust/` is not an artifact of a ceremony record, and no attempt of that ceremony is open. It shows that the newest ceremony record was removed (0006 rule 34). |
+| `unfinished-ceremony` | A trust set in `trust/` is not an artifact of a ceremony record, and an attempt of that ceremony is open. The next command finishes the ceremony. |
+| `anchor-unknown` | The `last_record_sha256` of a root list in `trust/` is not on the chain. |
+
+Every finding ends the command with exit code 3, except `unfinished-ceremony`: it is a notice, and the exit code stays 0. A history with no ceremony record has no finding and exits 0.
 
 The ceremony records are not signed by a root. The digest of the end of the history goes into the next signed root list ([the root list](/reference/root-list/#the-list)), which anchors the chain up to that ceremony without another use of the root (0006 rule 8). After every ceremony and every join, ritueel prints the first eight characters of that digest and the count of ceremony records (0006 rule 11; [the end of the history](/reference/bundle/#the-end-of-the-history)).
 
