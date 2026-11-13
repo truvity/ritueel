@@ -211,7 +211,8 @@ func reasonsOf(err error) []string {
 	return nil
 }
 
-// warnedError is an error together with the warnings that were raised before it.
+// warnedError is an error together with the warnings that its caller added to it. It holds only
+// its own warnings; those of the errors inside it are found by warningsOf.
 type warnedError struct {
 	err      error
 	warnings []string
@@ -226,10 +227,17 @@ func (e *warnedError) Unwrap() error { return e.err }
 // WithWarnings returns err with warnings attached, for a command that raised warnings and then
 // ended with an error: a refusal, a failure or a usage error. The exit code, the outcome, the
 // reasons and the text of the result are those of err; the warnings are the member "warnings" of
-// the JSON object and a line each on standard error, as the warnings of a Result are. They keep
-// the order given, after any that err carries already, so wrapping twice loses none. With no
-// warnings it returns err itself. A nil err is a mistake of the programmer (nil means success, and
-// then the warnings go in Result.Warnings), and WithWarnings panics.
+// the JSON object and a line each on standard error, as the warnings of a Result are.
+//
+// The warnings of an error are all that its tree holds: the tree is walked as errors.Is walks it
+// (an error with Unwrap() error, and one with Unwrap() []error such as the result of errors.Join or
+// of fmt.Errorf with two %w), depth first and left to right, and what an error inside carries comes
+// before what a wrapper around it adds. So wrapping twice gives the inner warnings first, and two
+// joined errors that both carry warnings give those of the left one, then those of the right one.
+// Nothing is removed: an error value that the caller put into the tree twice gives its warnings
+// twice, as a warning given twice is shown twice. With no warnings WithWarnings returns err itself.
+// A nil err is a mistake of the programmer (nil means success, and then the warnings go in
+// Result.Warnings), and WithWarnings panics.
 func WithWarnings(err error, warnings ...string) error {
 	if err == nil {
 		panic("cli: WithWarnings was given no error; a command that ended well gives its warnings in Result.Warnings")
@@ -237,16 +245,34 @@ func WithWarnings(err error, warnings ...string) error {
 	if len(warnings) == 0 {
 		return err
 	}
-	return &warnedError{err: err, warnings: append(slices.Clone(warningsOf(err)), warnings...)}
+	return &warnedError{err: err, warnings: slices.Clone(warnings)}
 }
 
-// warningsOf returns the warnings the error carries (see WithWarnings), if it carries any.
+// warningsOf returns the warnings that the tree of err carries (see WithWarnings), in the order
+// of the walk described there; nil when there is none.
 func warningsOf(err error) []string {
-	var w *warnedError
-	if errors.As(err, &w) {
-		return w.warnings
+	var out []string
+	collectWarnings(err, &out)
+	return out
+}
+
+// collectWarnings appends the warnings of err to out: first those of the errors inside it, in the
+// order Unwrap gives them, then its own.
+func collectWarnings(err error, out *[]string) {
+	if err == nil {
+		return
 	}
-	return nil
+	switch u := err.(type) { //nolint:errorlint // the walk visits each node itself, as errors.Is does
+	case interface{ Unwrap() error }:
+		collectWarnings(u.Unwrap(), out)
+	case interface{ Unwrap() []error }:
+		for _, inner := range u.Unwrap() {
+			collectWarnings(inner, out)
+		}
+	}
+	if w, ok := err.(*warnedError); ok { //nolint:errorlint // this node, not one inside it
+		*out = append(*out, w.warnings...)
+	}
 }
 
 func refusalText(prefix, msg string, reasons []string) string {
