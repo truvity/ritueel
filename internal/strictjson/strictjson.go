@@ -153,6 +153,13 @@ func Check(data []byte, maxBytes int) error {
 	return err
 }
 
+// Parse applies the same rules as Check and returns the document as a tree, for a package that
+// writes it in another form (canonjson.Canonicalize). Every Start and End in the tree is a
+// position in data.
+func Parse(data []byte, maxBytes int) (*Value, error) {
+	return parseDocument(data, limit(maxBytes), true)
+}
+
 // PeekInt returns the integer member name of the top-level object; ok is false when it is
 // absent. It is for the version check that must come before the unknown-member rule: a message
 // of a version the reader does not know is refused reading nothing else in it. So it demands

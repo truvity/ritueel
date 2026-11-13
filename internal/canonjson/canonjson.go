@@ -28,13 +28,13 @@
 // ritueel's JSON holds integers only, so this package does not write a number with a fraction or
 // an exponent, and it reads input under the rules of package strictjson (no null, no repeated
 // member, nesting of at most strictjson.MaxDepth levels). Every error wraps
-// strictjson.ErrMalformed. Reading uses encoding/json in Canonicalize, after strictjson has
-// checked the bytes; writing does not.
+// strictjson.ErrMalformed. Neither writing nor reading calls encoding/json: Canonicalize writes
+// the canonical form from the tree that strictjson parsed, so the one parser that checked the
+// bytes is the one that supplies the values.
 package canonjson
 
 import (
 	"bytes"
-	"encoding/json"
 	"fmt"
 	"slices"
 	"strconv"
@@ -67,61 +67,53 @@ func IsCanonical(data []byte) (bool, error) {
 }
 
 // canonicalizeInto reads data under the rules of strictjson and appends its canonical form to out.
+// It writes from the tree that strictjson parsed, so that no other reader sees the bytes.
 func canonicalizeInto(out *bytes.Buffer, data []byte) error {
-	if err := strictjson.Check(data, strictjson.DefaultMaxBytes); err != nil {
+	root, err := strictjson.Parse(data, strictjson.DefaultMaxBytes)
+	if err != nil {
 		return err
 	}
-	dec := json.NewDecoder(bytes.NewReader(data))
-	dec.UseNumber()
-	var v any
-	if err := dec.Decode(&v); err != nil {
-		return fmt.Errorf("%w: %w", strictjson.ErrMalformed, err)
-	}
-	return write(out, v)
+	return write(out, root)
 }
 
-// write appends the canonical form of a value that the standard decoder produced with UseNumber.
-func write(out *bytes.Buffer, v any) error {
-	switch x := v.(type) {
-	case map[string]any:
-		keys := make([]string, 0, len(x))
-		for k := range x {
-			keys = append(keys, k)
+// write appends the canonical form of a value of the tree.
+func write(out *bytes.Buffer, v *strictjson.Value) error {
+	switch v.Kind {
+	case strictjson.Object:
+		members := make([]*strictjson.Member, len(v.Members))
+		for i := range v.Members {
+			members[i] = &v.Members[i]
 		}
-		slices.SortFunc(keys, jsonset.CompareUTF16)
+		slices.SortFunc(members, func(a, b *strictjson.Member) int { return jsonset.CompareUTF16(a.Name, b.Name) })
 		out.WriteByte('{')
-		for i, k := range keys {
+		for i, m := range members {
 			if i > 0 {
 				out.WriteByte(',')
 			}
-			writeString(out, k)
+			writeString(out, m.Name)
 			out.WriteByte(':')
-			if err := write(out, x[k]); err != nil {
+			if err := write(out, &m.Value); err != nil {
 				return err
 			}
 		}
 		out.WriteByte('}')
-	case []any:
+	case strictjson.List:
 		out.WriteByte('[')
-		for i, e := range x {
+		for i := range v.Elems {
 			if i > 0 {
 				out.WriteByte(',')
 			}
-			if err := write(out, e); err != nil {
+			if err := write(out, &v.Elems[i]); err != nil {
 				return err
 			}
 		}
 		out.WriteByte(']')
-	case string:
-		writeString(out, x)
-	case json.Number:
-		n, err := strconv.ParseInt(x.String(), 10, 64)
-		if err != nil {
-			return fmt.Errorf("%w: a number that is not an integer of 64 bits", strictjson.ErrMalformed)
-		}
-		out.WriteString(strconv.FormatInt(n, 10)) // -0 is written 0
-	case bool:
-		out.WriteString(strconv.FormatBool(x))
+	case strictjson.String:
+		writeString(out, v.Str)
+	case strictjson.Integer:
+		out.WriteString(strconv.FormatInt(v.Int, 10)) // -0 is written 0
+	case strictjson.Bool:
+		out.WriteString(strconv.FormatBool(v.Bool))
 	default:
 		return fmt.Errorf("%w: a value that is not JSON data", strictjson.ErrMalformed)
 	}
