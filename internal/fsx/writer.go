@@ -8,7 +8,6 @@ import (
 	"io/fs"
 	"strings"
 	"sync"
-	"unicode"
 	"unicode/utf8"
 )
 
@@ -388,92 +387,95 @@ func (w *Writer) writeNew(d FS, dir, name string, data []byte, perm fs.FileMode)
 	return nil
 }
 
-// maxNameBytes is the longest name, in bytes, that the file system of a workstation holds
-// (NAME_MAX, 255, on Linux and macOS). It is also enough for exFAT, which holds at most 255
-// UTF-16 code units: in UTF-8 a character takes at least as many bytes as it takes UTF-16
-// code units (one byte for one unit, two or three bytes for one unit, four bytes for two
-// units), so a name of at most 255 bytes has at most 255 units. 128 times "é" is 128 units
-// and 256 bytes, and is refused for its bytes.
+// maxNameBytes is the longest name, in bytes, that the file systems of a workstation hold
+// (NAME_MAX, 255, on Linux and macOS). A name holds only ASCII characters (see [nameProblem]),
+// so a byte is a character and a UTF-16 code unit, and 255 bytes are also the 255 UTF-16 code
+// units that exFAT holds.
 const maxNameBytes = 255
 
-// exfatBad holds the characters of Table 35, "Invalid FileName Characters", of the exFAT
-// specification, besides the control codes U+0000 to U+001F: the quotation mark, the
-// asterisk, the forward slash, the colon, the less-than and greater-than signs, the question
-// mark, the back slash and the vertical bar.
-const exfatBad = "\"*/:<>?\\|"
+// nameRule is what a name may hold, said in the text of the refusal.
+const nameRule = "which is not a letter, a digit, a dot, a hyphen or an underscore"
 
-// charText names a character of a name for an error text: the code point as U+XXXX, and, for
-// a printable ASCII character, the character itself. A character that a terminal may not draw
-// is never put into a text as itself.
-func charText(r rune) string {
-	if r > 0x20 && r < 0x7f {
-		return fmt.Sprintf("U+%04X (%c)", r, r)
+// nameByteOK reports whether b is one of the bytes a name may hold: A-Z a-z 0-9 . - _
+func nameByteOK(b byte) bool {
+	switch {
+	case 'a' <= b && b <= 'z', 'A' <= b && b <= 'Z', '0' <= b && b <= '9':
+		return true
 	}
-	return fmt.Sprintf("U+%04X", r)
+	return b == '.' || b == '-' || b == '_'
+}
+
+// badByteText names the first byte of a name that the name may not hold, for an error text. A
+// byte of ASCII is named by its code point as U+XXXX, with the character itself in parentheses
+// when it is a printable ASCII character other than the space. The first byte of a longer
+// UTF-8 sequence names the whole character, as U+XXXX and never as itself, so that the text
+// holds nothing that a terminal may draw or reorder. A byte that does not begin a valid UTF-8
+// sequence is named as "the byte 0xNN".
+func badByteText(name string, i int) string {
+	b := name[i]
+	if b >= utf8.RuneSelf {
+		r, size := utf8.DecodeRuneInString(name[i:])
+		if r == utf8.RuneError && size == 1 {
+			return fmt.Sprintf("the byte 0x%02X", b)
+		}
+		return fmt.Sprintf("the character U+%04X", r)
+	}
+	if b > 0x20 && b < 0x7f {
+		return fmt.Sprintf("the character U+%04X (%c)", b, b)
+	}
+	return fmt.Sprintf("the character U+%04X", b)
 }
 
 // windowsDevice reports a name that Windows reserves for a device, so that the holder of the
-// stick cannot open a file of that name on a Windows system. The list is that of Microsoft's
+// bundle cannot open a file of that name on a Windows system. The list is that of Microsoft's
 // page "Naming Files, Paths, and Namespaces", which says: "Do not use the following reserved
 // names for the name of a file: CON, PRN, AUX, NUL, COM1, COM2, COM3, COM4, COM5, COM6, COM7,
 // COM8, COM9, COM¹, COM², COM³, LPT1, LPT2, LPT3, LPT4, LPT5, LPT6, LPT7, LPT8, LPT9, LPT¹,
 // LPT², and LPT³. Also avoid these names followed immediately by an extension; for example,
-// NUL.txt and NUL.tar.gz are both equivalent to NUL." The page does not list COM0, LPT0,
-// CONIN$ or CONOUT$, and so neither does this function. It says nothing about spaces before
-// the extension; that Windows removes the trailing spaces of a part of a name, so that
-// "nul .txt" is "nul.txt", is an inference, and the function refuses it because that only
-// narrows. So the part of the name before its first dot, with its trailing spaces removed, is
+// NUL.txt and NUL.tar.gz are both equivalent to NUL." The superscript digits are not ASCII and
+// a name cannot hold them, and neither can it hold a space before the extension, so the names
+// that can still occur are CON, PRN, AUX, NUL, COM1 to COM9 and LPT1 to LPT9. The page does not
+// list COM0, LPT0, CONIN$ or CONOUT$, and so neither does this function (the last two hold a
+// character that a name cannot hold anyway). The part of the name before its first dot is
 // compared without case. "auxiliary" and "com10" are names.
 func windowsDevice(name string) bool {
 	stem, _, _ := strings.Cut(name, ".")
-	up := strings.ToUpper(strings.TrimRight(stem, " "))
+	up := strings.ToUpper(stem)
 	switch up {
 	case "CON", "PRN", "AUX", "NUL":
 		return true
 	}
-	if len(up) > 3 && (up[:3] == "COM" || up[:3] == "LPT") {
-		switch up[3:] {
-		case "1", "2", "3", "4", "5", "6", "7", "8", "9", "\u00b9", "\u00b2", "\u00b3":
-			return true
-		}
+	if len(up) == 4 && (up[:3] == "COM" || up[:3] == "LPT") {
+		return '1' <= up[3] && up[3] <= '9'
 	}
 	return false
 }
 
 // nameProblem says why one name (one element of a path, or the name of a file of a set) cannot
-// be used on the stick (exFAT) and on the desktop systems that read it, or is held there under
-// another name; it returns "" when the name is fine. The reasons: it is empty (checkFiles
-// relies on this answer for the name of a file of a set; parsePath refuses an empty element
-// itself); it is not valid UTF-8; it has a control code or a character of exFAT's list of
-// invalid characters (the colon is on that list, so a drive, "C:x", is refused by it and needs
-// no rule of its own); it has a character that is not printable; it is longer than 255 bytes (see [maxNameBytes]); it
-// is a device name of Windows, see [windowsDevice]; it ends with a dot or a space (Windows
-// removes both, and the Linux exFAT driver removes trailing dots unless the mount option
-// keep_last_dots is given, so the name on the stick would not be the name asked for).
+// be used in a bundle; it returns "" when the name is fine. A name holds only the ASCII letters,
+// the digits, the dot, the hyphen and the underscore (A-Z a-z 0-9 . - _). That one rule stands
+// for everything else a name could hold, because no other byte can occur: a control code, a
+// space, a character that exFAT cannot hold (" * / : < > ? \ |, so a separator, a backslash
+// and a drive such as "C:x" are refused by it too), a character that cannot be seen or that
+// looks like another, and any byte that is not ASCII, valid UTF-8 or not. The reasons:
+//   - it is empty (checkFiles relies on this answer for the name of a file of a set; parsePath
+//     refuses an empty element itself);
+//   - it holds a byte outside that set (the first one is named in the text, see [badByteText]);
+//   - it is longer than 255 bytes (see [maxNameBytes]);
+//   - it is a device name of Windows, with or without an extension, see [windowsDevice];
+//   - it ends with a dot (Windows removes it, and the Linux exFAT driver removes trailing dots
+//     unless the mount option keep_last_dots is given, so the name on the stick would not be
+//     the name asked for; "." and ".." end with a dot too, and the callers name them first).
 //
-// Printable is the sense of [unicode.IsPrint]: a letter, a mark, a number, a punctuation mark,
-// a symbol, or the plain space U+0020. A control code, a format character (U+00AD, U+200B,
-// U+200D, U+200E, U+200F, U+FEFF), a space of another kind (U+00A0, U+2028, U+2029), a private
-// use or unassigned code point and a noncharacter (U+FFFE, U+FFFF) are not. The rule goes beyond
-// the table of exFAT because a name with such a character cannot be told from another name that
-// looks the same, or cannot be typed by the holder of the stick. A combining mark is a mark and
-// prints, so an accented letter is accepted composed and decomposed. An emoji joined with the
-// format character U+200D is refused, and so is every emoji sequence that needs it. The rule
-// follows the Unicode tables of the Go version that the program is built with, so a code point
-// that a later version assigns may be refused by an earlier build.
+// There is no rule for a trailing space (a name cannot hold a space), for the Unicode forms of a
+// name, for what is printable, or for the UTF-8 coding, because no input can reach them.
 func nameProblem(name string) string {
 	if name == "" {
 		return "is not one plain name"
 	}
-	if !utf8.ValidString(name) {
-		return "is not valid UTF-8"
-	}
-	for _, r := range name {
-		switch {
-		case r < 0x20 || strings.ContainsRune(exfatBad, r):
-			return fmt.Sprintf("has the character %s, which the stick's file system cannot hold", charText(r))
-		case !unicode.IsPrint(r):
-			return fmt.Sprintf("has the character %s, which is not a printable character", charText(r))
+	for i := 0; i < len(name); i++ {
+		if !nameByteOK(name[i]) {
+			return fmt.Sprintf("has %s, %s", badByteText(name, i), nameRule)
 		}
 	}
 	if len(name) > maxNameBytes {
@@ -482,16 +484,15 @@ func nameProblem(name string) string {
 	if windowsDevice(name) {
 		return "is a device name that Windows reserves"
 	}
-	if last := name[len(name)-1]; last == '.' || last == ' ' {
-		return "ends with a dot or a space, which the stick's file system can remove"
+	if name[len(name)-1] == '.' {
+		return "ends with a dot, which the stick's file system can remove"
 	}
 	return ""
 }
 
 // hasTempPrefix reports whether name starts with [TempPrefix], compared without case. exFAT
 // compares names without case, so a final name ".RT-abcdefghijk" would meet a live temporary
-// name. Folding the ASCII letters is enough: the prefix is ASCII, and no letter outside ASCII
-// has a case mapping to "r" or "t".
+// name. Folding the ASCII letters is enough: a name holds nothing else, and the prefix is ASCII.
 func hasTempPrefix(name string) bool {
 	if len(name) < len(TempPrefix) {
 		return false
@@ -510,14 +511,14 @@ func hasTempPrefix(name string) bool {
 
 // parsePath splits a path that is relative to the root into its elements, or refuses it with
 // [ErrInvalid]. The separator is "/" and no other character, so a backslash is not a separator
-// on any system: it is a character of exFAT's invalid list and [nameProblem] refuses it. All
+// on any system: [nameProblem] refuses it like every character outside its set. All
 // forms are refused: an empty path; an absolute path (a leading separator, which is also what a
 // leading "//" is: some systems read it as a network name; the writer works inside its root
 // and a path says where below it); a trailing separator (the file would be made inside the
 // folder the last element names); an element that is "." or ".."; an empty element between two
 // separators ("a//b"); and, for every element and not only the last, whatever [nameProblem]
-// finds (control codes, the characters of exFAT's invalid list including the backslash and the
-// colon, a trailing dot or space, a length over 255 bytes, bytes that are not UTF-8). When
+// finds (a byte outside A-Z a-z 0-9 . - _, a trailing dot, a length over 255 bytes, a device
+// name of Windows). When
 // forWrite is set, the final element must not start with [TempPrefix] either: a name to be
 // written is never a temporary one. A path that is only read may name one, because the caller
 // lists the temporary folders a stop left behind. A relative path with no folder ("x", whose
@@ -573,11 +574,14 @@ func checkFiles(files []NewFile) error {
 		if f.Name == "." || f.Name == ".." || hasTempPrefix(f.Name) {
 			return fmt.Errorf("%w: file name %q is not one plain name", ErrInvalid, f.Name)
 		}
-		if why := nameProblem(f.Name); why != "" { // a separator in the name is on exFAT's list
+		if why := nameProblem(f.Name); why != "" { // a separator in the name is outside the set
 			return fmt.Errorf("%w: file name %q %s", ErrInvalid, f.Name, why)
 		}
-		// Up-cased, because exFAT compares names after up-casing, and a name that differs only
-		// by case is one entry there.
+		// Up-cased, because exFAT and the default file systems of Windows and macOS compare
+		// names without case, and a name that differs only by case is one entry there. Folding
+		// the ASCII letters is enough, because a name holds nothing else (it was checked just
+		// above), and for ASCII the up-case table of exFAT maps a-z to A-Z, as strings.ToUpper
+		// does.
 		key := strings.ToUpper(f.Name)
 		if seen[key] {
 			return fmt.Errorf("%w: file name %q is given twice", ErrInvalid, f.Name)
