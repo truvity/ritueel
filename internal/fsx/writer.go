@@ -65,9 +65,10 @@ type Writer struct {
 	// it only while it holds its lock.
 	Rand io.Reader
 
-	mu     sync.Mutex
-	err    error // the stop; set once
-	closed bool
+	mu       sync.Mutex
+	err      error // the stop; set once
+	closed   bool
+	journals map[*journalState]struct{} // the journals that are open
 }
 
 // NewFile is one file of a set written by [Writer.WriteSet]. Name is one plain name.
@@ -90,10 +91,14 @@ func Open(root string) (*Writer, error) {
 	return &Writer{FS: fsys}, nil
 }
 
-// Close releases the root folder. Every call of the writer after it, and of its journals, returns
-// [ErrWriterClosed] (or the stop, when the writer had stopped: the stop comes first). A second
-// Close does nothing and returns nil. It returns the stop when the writer had stopped, as
-// [Journal.Close] does, and otherwise the error of the release of the root, if any.
+// Close closes every journal that is still open, as [Journal.Close] does, and releases the root
+// folder, so that no handle outlives the writer. Every call of the writer after it, and of its
+// journals, returns [ErrWriterClosed] (a journal returns [ErrClosed]), or the stop when the writer
+// had stopped: the stop comes first. A second Close does nothing and returns nil. Close returns
+// the stop when the writer had stopped, as [Journal.Close] does, and otherwise the first error
+// of the close of a journal or of the release of the root, if any; it does not stop the writer
+// for such an error, because the writer is done. A call of [ReadFile], [ReadDir] or
+// [ReadJournal] with the FS of a closed writer fails with an error that wraps fs.ErrClosed.
 func (w *Writer) Close() error {
 	w.mu.Lock()
 	defer w.mu.Unlock()
@@ -101,17 +106,21 @@ func (w *Writer) Close() error {
 		return nil
 	}
 	w.closed = true
-	var err error
+	var first error
+	for s := range w.journals {
+		if err := w.closeJournal(s); err != nil && first == nil {
+			first = &Error{Step: StepSyncFile, Path: s.path, Err: err}
+		}
+	}
 	if w.FS != nil {
-		err = w.FS.Close()
+		if err := w.FS.Close(); err != nil && first == nil {
+			first = fmt.Errorf("fsx: close the root folder: %w", err)
+		}
 	}
 	if w.err != nil {
 		return w.err
 	}
-	if err != nil {
-		return fmt.Errorf("fsx: close the root folder: %w", err)
-	}
-	return nil
+	return first
 }
 
 func (w *Writer) rand() io.Reader {
