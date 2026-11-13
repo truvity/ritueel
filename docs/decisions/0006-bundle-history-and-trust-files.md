@@ -41,10 +41,10 @@
 29. A break-glass SSH CA key is made by ritueel in the key store of its root key when that key is born, and leaves the list with it. An SSH CA key is withdrawn by the next list. There is no revocation signature for it, and the list may be empty.
 30. A delegation may declare one permitted DNS zone. ritueel writes it into the intermediate certificate as a name constraint and refuses a request for a name outside it. This comes with M2.
 
-31. A ceremony only adds files, each named by its identity (a digest or a time) and written whole or not at all ([how a file is written](/reference/bundle/)). A listed file that fails its digest is an error, never absent.
+31. A ceremony only adds files, each named by its identity (a digest or a time) and written whole or not at all ([how a file is written](/reference/bundle/)). A listed file that fails its digest is an error, never absent. On the stick, while a ceremony runs, its attempt and journals are trace records in the trace area; ritueel makes the files from them when the ceremony ends ([record 0005](0005-a-ceremony-and-where-it-runs.md), rules 36 and 39).
 32. A temporary name is at most 15 characters long: a fixed prefix and a random part. It does not carry the final name.
-33. When a write or a flush returns an error, ritueel stops at once with an error. It does not retry, and it does not print the line that says the write was flushed.
-34. A trust set that no ceremony record lists is an unfinished ceremony when an open attempt of that ceremony exists, and the next command finishes it. With no such attempt, the check reports it as a sign that the newest ceremony record was removed.
+33. When a write or a flush returns an error, ritueel stops at once with an error. It does not retry, and it does not print the line that says the write was flushed. The same holds for a write to the trace area, and the line that says a trace record is confirmed is not printed.
+34. A trust set that no ceremony record lists is an unfinished ceremony when an open attempt of that ceremony exists, as a file or as an open ceremony in the trace area, and the next command finishes it. With no such attempt, the check reports it as a sign that the newest ceremony record was removed.
 
 35. Coming back from the stick is a join: ritueel adds the missing files and never merges text. Two ends of the history are a fork, a critical finding. Two answers to one request stop the join.
 36. A join writes no ceremony record; it only adds files, so the end of the history changes only when a ceremony happens.
