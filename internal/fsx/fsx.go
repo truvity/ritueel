@@ -125,7 +125,8 @@ type Step string
 // with one before them, the walk to the folder, and one beside them, the read.
 const (
 	// StepOpenDir is the walk from the root to the folder of a path, one element at a
-	// time. Path is the path up to and including the element that failed.
+	// time, and, for [Writer.WriteSet], the check that the temporary folder it opened holds
+	// nothing. Path is the path up to and including the element that failed.
 	StepOpenDir Step = "open-dir"
 	// StepMkdir is the making of a folder.
 	StepMkdir Step = "mkdir"
@@ -252,6 +253,10 @@ var ErrTooMany = errors.New("the file or folder holds more lines or names than t
 // the copy has a stop and a lock of its own and would ignore the stop of the original, so it does
 // nothing. Use the Writer that [Open] returned, through its pointer.
 var ErrCopied = errors.New("fsx: the Writer was copied; use the original through its pointer")
+
+// ErrNotEmpty is wrapped by the error of [Writer.WriteSet] when the temporary folder that it has
+// just made holds something when it is opened: it is not the folder the writer made.
+var ErrNotEmpty = errors.New("fsx: the temporary folder is not empty when it is opened")
 
 // ErrNoRoot is returned by a [Writer] that has no [FS], that is by a Writer that was not made
 // by [Open] and whose FS field is nil: there is no root to work in, and the writer does not
