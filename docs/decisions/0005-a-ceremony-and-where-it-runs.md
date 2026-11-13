@@ -1,21 +1,21 @@
-# 0005 — A ceremony applies what is wanted and not applied yet, in six steps; a key that cannot be copied may be used on the workstation
+# 0005 — A ceremony applies what is wanted and not applied yet, in one act; a key that cannot be copied may be used on the workstation
 
 **Status:** Accepted
-**Date:** 2026-11-12
+**Date:** 2026-11-13
 
 ## Decision
 
 1. A ceremony is interactive, with a person present, and is one or two commands. Routine work is automated.
 2. Every ceremony leaves a ceremony record: what was done and where it ran (workstation or offline system). The format is the [ceremony record](/reference/ceremony-record/) page.
-3. Every ceremony has six steps in this order: plan, confirm, reserve, sign, verify, record. The steps, the checks and the ceremony records are the same for every store.
-4. Plan: ritueel finds what is not applied yet (rule 29) and writes a plan of it, with every byte to be signed fixed in advance ([its members](/reference/ceremony-record/#the-plan)). It lists what it applies, what it leaves out with the reason, and the wanted files it used, by digest. Serials and times are drawn once, here. The plan holds public information only, needs no card, can be made anywhere, and can be carried to the offline system as a saved plan file.
-5. A key born in a ceremony is not in the plan; the plan fixes everything else ([its members](/reference/ceremony-record/#the-plan)). A signature that covers a new key is listed as derived, and verify checks it against the profile and the born key. So the plan is not byte-exact for new keys, software roots included.
-6. Confirm: ritueel shows the plan in words with its digest, and the person types the first eight characters of it. A key press is not accepted. A script confirms with `--confirm DIGEST`, so it cannot confirm a plan it has not computed. A confirmation never replaces a touch.
-7. Reserve: before the first key is born, not only before the first signature, ritueel writes an attempt, and appends each key to a birth journal as soon as it exists and each signature to a journal of signatures beside it. If a run stops, `status` shows the attempt as critical until a person closes it, and `close` prints the journals. ritueel does not resume a birth and does not undo one.
-8. Sign: the root key is used and each fingerprint is shown before its touch, so a new key is seen before any root key signs for it.
-9. Verify: every artifact is checked against its request and the plan, with code that did not sign it, before it is written out. Record: the transcript, then the artifacts, and last the ceremony record (0006 rules 6 and 29).
-10. `apply` runs all six steps and can stop after the plan; a saved plan is executed after checking that it still matches the bundle (at least the end of the history and the trust sequence), and asks for the first eight characters of its digest.
-11. Renewals are separate actions of one ceremony, not commands, and there is no "yearly" command. `apply` renews what is due, 60 days before its end date (0007 rule 16, 0006 rules 18, 22); a CRL follows 0006 rule 26. A plan is like the confirmation step of a bank transfer: the fixed order ritueel executes, not a script.
+3. A ceremony is one act, `apply`. The order inside it, the checks and the ceremony records are the same for every store. The rules below say where the order matters.
+4. `apply` first finds what is not applied yet (rule 29) and writes a plan of it, with every byte to be signed fixed in advance ([its members](/reference/ceremony-record/#the-plan)). The plan lists what it applies, what it leaves out with the reason, and the wanted files it used, by digest. Serials and times are drawn once, when the plan is made. The plan holds public information only, needs no card, can be made anywhere, and can be carried to the offline system as a saved plan file.
+5. A key born in a ceremony is not in the plan; the plan fixes everything else ([its members](/reference/ceremony-record/#the-plan)). A signature that covers a new key is listed as derived, and the check of rule 9 tests it against the profile and the born key. So the plan is not byte-exact for new keys, software roots included.
+6. A person confirms `apply`: ritueel shows the plan in words with its digest, and the person types the first eight characters of it. A key press is not accepted. A script confirms with `--confirm DIGEST`, so it cannot confirm a plan it has not computed. A wrong or missing confirmation writes nothing. A confirmation never replaces a touch.
+7. Before the first key is born, not only before the first signature, ritueel writes an attempt, and appends each key to a birth journal as soon as it exists and each signature to a journal of signatures beside it. If a run stops, `status` shows the attempt as critical until a person closes it, and `close` prints the journals. ritueel does not resume a birth and does not undo one.
+8. When the root key signs, each fingerprint is shown before its touch, so a new key is seen before any root key signs for it.
+9. Every artifact is checked against its request and the plan, with code that did not sign it, before it is written out. Then ritueel writes the transcript, then the artifacts, and last the ceremony record (0006 rules 6 and 29).
+10. `apply` does the whole ceremony and can write the plan and stop; a saved plan is executed after checking that it still matches the bundle (at least the end of the history and the trust sequence), and asks for the first eight characters of its digest.
+11. Renewals are separate actions of one ceremony, not commands, and there is no "yearly" command. `apply` renews what is due, 60 days before its end date (0007 rule 16, 0006 rules 18, 22); a CRL follows 0006 rule 26. A plan is like the confirmation page of a bank transfer: the fixed order ritueel executes, not a script.
 12. Nothing happens without the user's confirmation, and the PIN and the touch stay on the card.
 13. ritueel verifies where an intermediate key lives, signs an intermediate's PKCS#10 request into an intermediate CA certificate, and binds an OpenPGP subkey after checking the back-signatures.
 14. ritueel refuses, before anything is written: a card whose serial is not registered or is wrong for the role; a wanted file that fails its check; a fingerprint that differs from the plan or from the one the requester printed; a key that cannot be attested where policy asks for it; a slot collision or a purpose with no slot; a card with fewer than three PIN tries left; a request that fails a check of the hand-off contract or is under no declared delegation; an adoption in a plan that runs in the offline system; and, when a root key is to be born, a card that is not adopted here or has a default PIN. The first `apply` and each added root key also refuse a hardware or cloud root key that cannot be attested or read.
@@ -30,8 +30,8 @@
 23. The partitions of AirgapOS on the stick are not touched, and the holder trusts AirgapOS as published.
 24. There is no second stick for ritueel.
 25. The run uses the version of the program that made the plan, the copy refreshed on the stick.
-26. Plans and requests are detachable. An operation that needs another holder's bundle or cards is a request or a plan that can travel by any channel, be run elsewhere, and have its answer return; coming back from the stick is a join (0006 rule 30). The same steps run at one desk or in two places; with the bundles and cards at hand, ritueel chains the steps in one run.
-27. Software mode runs the same commands and steps. Its root is a key file opened as the key-file rule says, and the first `apply`, every confirmation and every ceremony record say that a software root key can be copied. A script root that is not a test root uses a passphrase through a file descriptor.
+26. Plans and requests are detachable. An operation that needs another holder's bundle or cards is a request or a plan that can travel by any channel, be run elsewhere, and have its answer return; coming back from the stick is a join (0006 rule 30). The same ceremony runs at one desk or in two places; with the bundles and cards at hand, ritueel does it all in one run.
+27. Software mode runs the same commands and the same ceremony. Its root is a key file opened as the key-file rule says, and the first `apply`, every confirmation and every ceremony record say that a software root key can be copied. A script root that is not a test root uses a passphrase through a file descriptor.
 28. A test root is marked at birth, has no passphrase, and is a key file or lives on a rehearsal card. The normal first `apply` makes it. It is marked TEST ONLY in its certificate name and every ceremony record, and `apply` refuses to put it in one trust set with a real root. A real root never becomes a test root, because test is set at birth. A test root may run its ceremonies on the workstation or on a rehearsal card. The relaxed mode for tests is wording only; no flag turns the offline rule off.
 29. What is not applied yet is found each time from the wanted files, the history, the date and the requests, and never stored. Each item is called a change.
 30. A wanted line or file that is deleted retires, revokes and removes nothing, and it is shown as a finding. The history wins over a wanted file.
@@ -54,7 +54,7 @@ A root signs for everything below it, so the person must see what will be signed
 
 ## Roads not taken
 
-- **One command with no plan step.** Simpler, but nothing to review before the touch and no trace of what a crash may have signed.
+- **One command with no plan to read first.** Simpler, but nothing to review before the touch and no trace of what a crash may have signed.
 - **A different ceremony for each store.** Each keeps its own shape, but plan, confirmation, records and refusals would be written and taught four times.
 - **Generate the keys before the plan.** Every byte is fixed, but the key would exist, and a slot be overwritten, before the person confirmed anything.
 - **Confirm by pressing a key.** Fast, but pressed without reading, and a script could confirm a plan it never read.
@@ -71,7 +71,7 @@ A root signs for everything below it, so the person must see what will be signed
 - **Knoppix or other purpose-built distributions.** Researched; Debian Live is kept as the fallback.
 - **A read-only boot partition made by ritueel (two partitions of its own design).** The maintainer chose vanilla AirgapOS; ritueel only defines the layout of the extra partition.
 - **Key files inside the bundle.** A bundle is made to be copied and shared, and a copy would carry the root.
-- **One way at one desk and another for two places.** Two procedures to build, test and teach; the same steps under the hood in both are wanted.
+- **One way at one desk and another for two places.** Two procedures to build, test and teach; the same ceremony in both is wanted.
 - **A flag that turns the offline rule off.** Faster tests, but the program checks nothing about the machine, so a flag would relax a rule nothing enforces, and `--test-root` already marks everything TEST ONLY.
 - **An AirgapOS fork or an image built by ritueel.** The stick would hold one system of ritueel's own, but ritueel would maintain an operating system, and the holder would trust that build instead of AirgapOS as published.
 - **A second stick for ritueel.** The boot stick stays untouched, but there are two sticks to carry and lose, and the plan, the program and the key files no longer travel together.
@@ -89,6 +89,7 @@ A root signs for everything below it, so the person must see what will be signed
 - **A fixed normalisation of line ends before the digest.** The most common differences between machines and editors would go, but ritueel would digest bytes that are not in the file, and a copy in `wanted/` would no longer be an exact copy (rule 32).
 - **ext4 for the stick's partition.** It has a journal and the trial found no fault in it, but Windows and macOS do not read it, so only a Linux workstation could read the stick (rule 33).
 - **Both file systems, the holder chooses.** Each holder gets the file system wanted, but there are two paths to test and to keep working (rule 33).
+- **Six named steps for every ceremony: plan, confirm, reserve, sign, verify, record.** They gave a short list to teach and a name for each rule, but they made one act look like six and had to be repeated on every page and picture; a ceremony is one act, `apply`, and an order is written only where a rule needs it (rules 6 to 9).
 
 ## Not yet proven or only proposed
 
