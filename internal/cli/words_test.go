@@ -35,12 +35,21 @@ func (s *seen) record(leaf string, c *Call) {
 	s.leaf = leaf
 	s.args = slices.Clone(c.Args)
 	s.global = c.Global
-	s.held = c.FlagString("held")
-	s.pins = c.FlagStrings("pin")
-	s.strict = c.FlagBool("strict")
-	s.heldSet = c.FlagSet("held")
-	s.pinSet = c.FlagSet("pin")
-	s.strictSet = c.FlagSet("strict")
+	// Only what the word declares is read: an accessor panics on a name that the word does not
+	// declare, and the words of this table declare held, pin and strict only in two places.
+	declares := func(name string) bool { return slices.Contains(c.flags, name) }
+	if declares("held") {
+		s.held = c.FlagString("held")
+		s.heldSet = c.FlagSet("held")
+	}
+	if declares("pin") {
+		s.pins = c.FlagStrings("pin")
+		s.pinSet = c.FlagSet("pin")
+	}
+	if declares("strict") {
+		s.strict = c.FlagBool("strict")
+		s.strictSet = c.FlagSet("strict")
+	}
 }
 
 // words is a command table with two words that have second words and flags of their own, and one
