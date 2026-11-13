@@ -16,7 +16,7 @@ One rule holds for every key store ([principle 1](/principles/)): **a key is bor
 Two paths lead to a root that others rely on. Pick the first unless you cannot.
 
 - **The cloud root** is the recommended path for a team with a cloud account. It is an account you choose, with a key for each kind of root you use, each with a replica that the service keeps in a second Region, an audit trail of every use, and no cards to alternate. You pay in an account to secure, a provider to trust, and a key that cannot attest where it was made: you read its policy from the service instead ([what a key store can prove](/learn/what-a-store-can-prove/)). The first guide is [Prepare the cloud root](/guides/prepare-the-cloud-root/).
-- **Two cards** is the path for a person or a lab with no cloud account, and it is the more demanding one: two independent keys on two cards, each made on its card, kept in two places, alternating by year ([Two roots in practice](/learn/two-roots/)).
+- **Two cards** is the path for a person or a lab with no cloud account, and it is the more demanding one: two independent keys on two cards, each made on its card, kept in two places, alternating by year ([Several keys, one root](/learn/two-roots/)).
 
 To walk the questions in order, read [Choosing where a root lives](/learn/choosing-where-a-root-lives/).
 
