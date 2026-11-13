@@ -72,7 +72,12 @@ func TestMinusZeroIsTheIntegerZeroForEveryKindInEveryPlace(t *testing.T) {
 		for _, p := range places {
 			t.Run(k.name+"/"+p.name, func(t *testing.T) {
 				if k.typ.Kind() == reflect.Uint8 && (p.name == "an element of a list" || p.name == "in a list in a map") {
-					t.Skip("a slice of uint8 is a byte string, read from Base64, not from a list of integers: an array of uint8 is the place for it")
+					// A slice of uint8 is a byte string, read from Base64 and not from a list of integers, so
+					// -0 in a list is a list where a string is wanted: refused, whatever the integer is.
+					if _, err := read(p.typ, p.doc, Options{}); err == nil || !errors.Is(err, ErrMalformed) || !strings.Contains(err.Error(), "expected a string of standard Base64, for a slice of bytes, found a list") {
+						t.Errorf("%s: %v", p.doc, err)
+					}
+					return
 				}
 				for _, opts := range []Options{{}, {AllowUnknown: true}} {
 					v, err := read(p.typ, p.doc, opts)
