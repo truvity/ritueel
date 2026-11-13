@@ -22,7 +22,7 @@
 12. The aws-kms store uses the AWS SDK and holds a root key and an intermediate key, each in a KMS key. Its evidence is the key's description, policy and audit trail, read from the service every time. This is not proof that the key was made in an HSM. The software store gives no evidence at all.
 13. The aws-kms store, which adopts a key, is in M2, because the cloud root is the recommended path for a team with a cloud account.
 
-14. Only one narrow principal may schedule the deletion of a key. It is not the admin role, it may do nothing else, and it can never Sign. A deletion is scheduled with a waiting period of 30 days, which is the most that the service allows and its default.
+14. Only one narrow principal may schedule the deletion of a key. It is not the admin role, it may do nothing else, and it can never Sign. A deletion is scheduled with a waiting period of 30 days, which is the most that the service allows and its default. The admin role may cancel a scheduled deletion; the principal that schedules a deletion still can do nothing else.
 15. An alarm on scheduling a deletion and on disabling a key is taught in the guide and not checked, like the alarm on Sign (rule 10); where the alarm goes is the company's own setting.
 
 ## Why
