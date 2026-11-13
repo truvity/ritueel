@@ -11,7 +11,7 @@ The pages on this site teach first: the logic of handling roots and intermediate
 
 What ritueel.id publishes is the list in `site/published.txt`, and nothing else. A new page is added to the list only if a reader of the target needs it: the home page, the Learn path, the demo, the glossary, where it stands (status and roadmap), the design in brief, the three pages of How it works and the hand-off contract. Everything else is written under `docs/` at its usual path and read on GitHub: it is working material of the design. Do not add a page to the list to make a link work; link it as usual, and the build turns a link to an unpublished page into a link to the file on GitHub.
 
-Today the site publishes the Learn index and its thirteen pages, the three How it works pages (the overview, the three cards, the bundle and the USB stick), the demo (`/demo/`, a build product of `ui/`), the glossary, the roadmap, the status page (`/status/`), the design in brief at `/design/`, the hand-off contract and the 404 page. Guides, Tools, Reference (apart from the hand-off contract), Principles, Research and Contributing are not on the site.
+Today the site publishes the Learn index and its thirteen pages, the three How it works pages (the overview, the kinds of card, the bundle and the USB stick), the demo (`/demo/`, a build product of `ui/`), the glossary, the roadmap, the status page (`/status/`), the design in brief at `/design/`, the hand-off contract and the 404 page. Guides, Tools, Reference (apart from the hand-off contract), Principles, Research and Contributing are not on the site.
 
 The menu has six entries, Learn, How it works, Demo, Glossary, Where it stands and The design, written in `site/astro.config.mjs`. A page is added to the menu there, and its slug must also be a line of `site/published.txt`. The hand-off contract is not in the menu; the design page links it.
 
@@ -22,7 +22,7 @@ Docs live in `docs/`, next to the thing they describe. When the thing changes, i
 | Kind | Where | For | Published? |
 |---|---|---|---|
 | Learn | `docs/learn/` | The teaching, in four groups: the basics, down the chain, where a key lives, and the keys of one root side by side. Written before any tool exists, and kept true after. It comes first on the site. | The Learn index and thirteen pages of the list |
-| How it works | `docs/how-it-works/` | ritueel in pictures: three layers of a key, the ceremony, the three cards, the bundle and the USB stick. Few words, each picture with its caption. Only the command `version` is built, so each page says once that the pictures show the design. | Yes: the overview and two pages |
+| How it works | `docs/how-it-works/` | ritueel in pictures: three layers of a key, the ceremony, the kinds of card, the bundle and the USB stick. Few words, each picture with its caption. Only the command `version` is built, so each page says once that the pictures show the design. | Yes: the overview and two pages |
 | Guides | `docs/guides/` | One guide per ritual, ceremony or transition, step by step, with its drill on test keys. A guide says how; the matching Learn page says why and when. | No |
 | Tools | `docs/tools/` | What the command line and the wizard do, and whether each is built. | No |
 | Principles | `docs/principles.md` | The rules the design follows, each linked to the record that decides it. | No |
