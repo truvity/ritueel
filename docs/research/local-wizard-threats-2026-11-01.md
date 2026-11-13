@@ -7,7 +7,7 @@ sidebar:
 
 ## Question
 
-What must the localhost web wizard of [ADR 0011](https://github.com/truvity/ritueel/blob/d0ae12da2432d5ae95cf95d68fb85ba3dda6cfee/docs/decisions/0011-the-wizards-one-engine-three-faces-and-a-web-page-that-cannot-confirm-anything.md) (now [record 0010](../decisions/0010-the-engine-the-process-and-the-page.md)) do so that no other web page, program or user on the same machine can make it act on a root key? It feeds the security profile in [The wizard](/reference/wizard/) and does not change the rules of [ADR 0007](https://github.com/truvity/ritueel/blob/d0ae12da2432d5ae95cf95d68fb85ba3dda6cfee/docs/decisions/0007-ritueel-teaches-and-its-tools-simplify-the-ceremonies.md#the-wizards-security-rules), which are now rules 7 to 9 and 14 of [record 0010](../decisions/0010-the-engine-the-process-and-the-page.md).
+What must the localhost web wizard of [ADR 0011](https://github.com/truvity/ritueel/blob/d0ae12da2432d5ae95cf95d68fb85ba3dda6cfee/docs/decisions/0011-the-wizards-one-engine-three-faces-and-a-web-page-that-cannot-confirm-anything.md) (now [record 0010](../decisions/0010-the-engine-the-process-and-the-page.md)) do so that no other web page, program or user on the same machine can make it act on a root key? It feeds the security profile in [The wizard](../reference/wizard.md) and does not change the rules of [ADR 0007](https://github.com/truvity/ritueel/blob/d0ae12da2432d5ae95cf95d68fb85ba3dda6cfee/docs/decisions/0007-ritueel-teaches-and-its-tools-simplify-the-ceremonies.md#the-wizards-security-rules), which are now rules 7 to 9 and 14 of [record 0010](../decisions/0010-the-engine-the-process-and-the-page.md).
 
 ## When
 
@@ -47,7 +47,7 @@ Read the standards, the Go standard library source and the documents or advisori
 
 ## Roads not taken
 
-- **`localhost` in the address.** Friendlier, but it may bind one family and be reached on another ([above](/research/local-wizard-threats-2026-11-01/#numbers)).
+- **`localhost` in the address.** Friendlier, but it may bind one family and be reached on another ([above](./local-wizard-threats-2026-11-01.md#numbers)).
 - **A Unix socket with a browser.** The only per-user transport, but a browser cannot open one.
 - **A token that stays in the address.** Simple, but it lands in history and referrers; it is swapped for a cookie and the address is redirected.
 - **CSRF protection as the rebinding defence.** One check fewer, but after a rebind it passes.

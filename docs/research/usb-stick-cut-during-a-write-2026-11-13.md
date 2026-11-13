@@ -19,7 +19,7 @@ When the connection of a real USB stick is cut during the write of a ceremony, d
 
 ## Method
 
-One cheap 32 GB USB stick with one exFAT partition ([record 0005](../decisions/0005-a-ceremony-and-where-it-runs.md), rule 31). The writer and the virtual machine of [the trial on a stick image](/research/exfat-power-cut-2026-11-12/), with the stick passed to the machine. The stick's data connection was switched off at a chosen step, plus 0 to 20 ms. Each cut was followed by a check of the bundle.
+One cheap 32 GB USB stick with one exFAT partition ([record 0005](../decisions/0005-a-ceremony-and-where-it-runs.md), rule 31). The writer and the virtual machine of [the trial on a stick image](./exfat-power-cut-2026-11-12.md), with the stick passed to the machine. The stick's data connection was switched off at a chosen step, plus 0 to 20 ms. Each cut was followed by a check of the bundle.
 
 ## What the setup over- and under-counts
 

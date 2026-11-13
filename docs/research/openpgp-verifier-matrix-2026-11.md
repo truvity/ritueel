@@ -7,7 +7,7 @@ sidebar:
 
 ## Question
 
-Which OpenPGP keys, signatures and revocations do the verifiers that users have accept? The answers shape [ADR 0006](https://github.com/truvity/ritueel/blob/d0ae12da2432d5ae95cf95d68fb85ba3dda6cfee/docs/decisions/0006-release-keys-and-the-keyring-package.md) (now [record 0009](../decisions/0009-release-keys-and-the-keyring.md)) and the [revocation table](/learn/openpgp-release-keys/#revocation).
+Which OpenPGP keys, signatures and revocations do the verifiers that users have accept? The answers shape [ADR 0006](https://github.com/truvity/ritueel/blob/d0ae12da2432d5ae95cf95d68fb85ba3dda6cfee/docs/decisions/0006-release-keys-and-the-keyring-package.md) (now [record 0009](../decisions/0009-release-keys-and-the-keyring.md)) and the [revocation table](../learn/openpgp-release-keys.md#revocation).
 
 ## When
 
@@ -55,7 +55,7 @@ None for the decisions. The rpm column (a signed `.rpm`, and revocations) belong
 
 ## Changes made
 
-Test keys and test cards only. The cards of 2026-10-31 were reset to factory state after the run ([card libraries and tooling](/research/card-libraries-and-tooling-2026-11-01/#changes-made)).
+Test keys and test cards only. The cards of 2026-10-31 were reset to factory state after the run ([card libraries and tooling](./card-libraries-and-tooling-2026-11-01.md#changes-made)).
 
 ## Raw logs
 

@@ -23,7 +23,7 @@ A virtual machine (QEMU) with AirgapOS 2026.07.0 and a stick image. The writer w
 
 ## What the setup over- and under-counts
 
-- A sector in the image is written whole or not at all. A real stick does not promise that, so the trial under-counts the damage. [The measurement on a real stick](/research/usb-stick-cut-during-a-write-2026-11-13/) shows it.
+- A sector in the image is written whole or not at all. A real stick does not promise that, so the trial under-counts the damage. [The measurement on a real stick](./usb-stick-cut-during-a-write-2026-11-13.md) shows it.
 - The cut is the end of a process, not a loss of power. One kernel, one image.
 
 ## Numbers
