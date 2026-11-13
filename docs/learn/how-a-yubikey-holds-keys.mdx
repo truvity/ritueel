@@ -54,7 +54,7 @@ A slot is a numbered place for one private key. Four things belong to it.
 - **The private key** is generated on the card or imported, and can never be read out. A key born on a card has no copy.
 - **Certificates:** all of them share about 50,000 bytes.
 - **The PIN rule and the touch rule** are chosen when the key is made or loaded and can never be changed after. "Once" means once per session: until the card is unplugged or another application is used. "Always" means the PIN is asked right before every use. "Cached" touch means a touch counts for 15 seconds.
-- **The kind of key:** it says what it can do: sign, or agree on a shared secret, which is how decryption works. P-256, P-384 and RSA-2048 are on every YubiKey 5. RSA-3072, RSA-4096, Ed25519 and X25519 need firmware 5.7 or later (ykman checks 5.7.0).
+- **The kind of key:** sign, or agree on a shared secret (for decryption). P-256, P-384 and RSA-2048 are on every YubiKey 5. RSA-3072, RSA-4096, Ed25519 and X25519 need firmware 5.7 or later (ykman checks 5.7.0). Ed25519 signs the whole message.
 
 | Slot | Standard name | Asks for the PIN by default | Note |
 |---|---|---|---|
@@ -75,7 +75,7 @@ The default only applies when a key is made without stating a rule. The numbers 
 
 Three things follow:
 
-- The card sees only a digest. It cannot show you what it is signing, so the program that builds the digest must be trusted.
+- The card sees a digest (Ed25519: the whole message). It cannot show what it signs, so trust the program that builds it.
 - A touch says that someone is at the card. It does not say which slot, or what for.
 - Only one program can hold the smart-card side at a time. A card that `gpg` is using is closed to a PIV tool, and the other way round.
 
