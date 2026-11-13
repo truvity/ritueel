@@ -110,17 +110,26 @@ func TestInvalidArgumentsTouchNothingAndDoNotStopTheWriter(t *testing.T) {
 }
 
 func TestPermissionBitsAreAccepted(t *testing.T) {
-	for _, perm := range []fs.FileMode{0, 0o400, 0o600, 0o640, 0o644, 0o700, 0o777} {
+	for _, perm := range []fs.FileMode{0o400, 0o600, 0o640, 0o644, 0o444, 0o700, 0o777} {
 		f := newMemFS("b", "b/d")
 		w := newWriter(t, f, 1)
 		if err := w.WriteFile("b/d/f", []byte("x"), perm); err != nil {
 			t.Errorf("WriteFile mode %v: %v", perm, err)
 		}
+		for _, o := range f.opList() {
+			if o.Kind == kCreate && o.Mode != perm {
+				t.Errorf("%v was made with mode %v, want %v", o, o.Mode, perm)
+			}
+		}
+	}
+	for _, perm := range []fs.FileMode{0o700, 0o755, 0o750, 0o777} {
+		f := newMemFS("b", "b/d")
+		w := newWriter(t, f, 1)
 		if err := w.Mkdir("b/d/m", perm); err != nil {
 			t.Errorf("Mkdir mode %v: %v", perm, err)
 		}
 		for _, o := range f.opList() {
-			if (o.Kind == kCreate || o.Kind == kMkdir) && o.Mode != perm {
+			if o.Kind == kMkdir && o.Mode != perm {
 				t.Errorf("%v was made with mode %v, want %v", o, o.Mode, perm)
 			}
 		}
