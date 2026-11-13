@@ -107,6 +107,14 @@
 // names every field of T that has no omitempty and none of the omitempty members that d holds
 // is empty, and when AllowUnknown did not skip a member. The tests check both.
 //
+// # What the caller does first
+//
+// The functions of this package take the bytes of a document, so a caller that reads a file reads
+// it whole before any limit here is looked at. A caller must bound what it reads from disk before
+// it calls the package: read at most the limit plus one byte, and refuse a file that is longer
+// (the file-reading slice has MaxReadSize for this). The limit of Options.MaxBytes then holds for
+// the memory too, which the tree of a document costs about 350 times over its size.
+//
 // # Errors
 //
 // Every error that this package returns for input that breaks a rule, or for a Go type that is
@@ -188,14 +196,15 @@ func Parse(data []byte, maxBytes int) (*Value, error) {
 }
 
 // PeekInt returns the integer member name of the top-level object; ok is false when it is
-// absent. It is for the version check that must come before the unknown-member rule: a message
+// absent. maxBytes is the largest input in bytes, as for Check: 0 means DefaultMaxBytes, so a
+// version check refuses what Check and Unmarshal would refuse for size, and no more. It is for the version check that must come before the unknown-member rule: a message
 // of a version the reader does not know is refused reading nothing else in it. So it demands
 // only that the input is one JSON object within the size limit and within MaxDepth levels of
 // nesting, in UTF-8 with no byte order mark, and that the member, when present, is there once
 // and is an integer within MinSafeInt to MaxSafeInt. It does not apply the other rules (floats, null and
 // repeated members elsewhere are not its business).
-func PeekInt(data []byte, name string) (n int64, ok bool, err error) {
-	root, err := parseDocument(data, DefaultMaxBytes, false)
+func PeekInt(data []byte, name string, maxBytes int) (n int64, ok bool, err error) {
+	root, err := parseDocument(data, limit(maxBytes), false)
 	if err != nil {
 		return 0, false, err
 	}
