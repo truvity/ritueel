@@ -158,12 +158,12 @@ func (c *Checker) walk(t reflect.Type, seen map[reflect.Type]bool) *Refusal {
 		return nil
 	case reflect.Interface:
 		if c.mode == Reading && t.NumMethod() != 0 {
-			return &Refusal{Type: t, Reason: "only an interface with no methods can be filled, with the value of the document"}
+			return &Refusal{Type: t, Reason: "an interface with methods is not part of ritueel's JSON; only one with no methods is"}
 		}
 		return nil
 	case reflect.Pointer:
 		if k := t.Elem().Kind(); k == reflect.Pointer || k == reflect.Interface {
-			return &Refusal{Type: t, Reason: "a pointer to a pointer or to an interface is not written"}
+			return &Refusal{Type: t, Reason: "a pointer to a pointer or to an interface is not part of ritueel's JSON"}
 		}
 		r := c.walk(t.Elem(), seen)
 		if r != nil && len(r.Hops) == 0 && r.Type == t.Elem() {
@@ -174,7 +174,7 @@ func (c *Checker) walk(t reflect.Type, seen map[reflect.Type]bool) *Refusal {
 		return through(c.walk(t.Elem(), seen), Hop{Kind: ElementsHop})
 	case reflect.Map:
 		if t.Key().Kind() != reflect.String {
-			return &Refusal{Type: t, Reason: "only a map with a key of kind string is written"}
+			return &Refusal{Type: t, Reason: "only a map with a key of kind string is part of ritueel's JSON"}
 		}
 		if reason := foreign(t.Key()); reason != "" {
 			return &Refusal{Type: t.Key(), Reason: reason}
@@ -216,13 +216,13 @@ func foreign(t reflect.Type) string {
 		return ""
 	}
 	if t.PkgPath() == "encoding/json" && t.Name() == "Number" {
-		return "encoding/json writes a json.Number as a bare number; use an integer type"
+		return "a json.Number is not part of ritueel's JSON; use an integer type"
 	}
 	for _, name := range []string{"MarshalJSON", "MarshalText", "UnmarshalJSON", "UnmarshalText"} {
 		_, onType := t.MethodByName(name)
 		_, onPointer := reflect.PointerTo(t).MethodByName(name)
 		if onType || onPointer {
-			return "the type has a " + name + " method, and only Raw may write its own JSON"
+			return "the type has a " + name + " method; only Raw carries JSON of its own"
 		}
 	}
 	return ""
@@ -236,7 +236,7 @@ func structFields(t reflect.Type) *structInfo {
 	for i := range t.NumField() {
 		f := t.Field(i)
 		if f.Anonymous {
-			info.err = "the embedded field " + f.Name + " is not written; give it a name"
+			info.err = "the embedded field " + f.Name + " is not part of ritueel's JSON; give it a name"
 			return info
 		}
 		tag := f.Tag.Get("json")
@@ -248,7 +248,7 @@ func structFields(t reflect.Type) *structInfo {
 		if options != "" { // "-," names a field "-", and "a," is "a"
 			for _, option := range strings.Split(options, ",") {
 				if option != "omitempty" {
-					info.err = "field " + f.Name + " has the tag option " + strconv.Quote(option) + "; only omitempty is written"
+					info.err = "field " + f.Name + " has the tag option " + strconv.Quote(option) + "; only omitempty is allowed"
 					return info
 				}
 				omitEmpty = true
