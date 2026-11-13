@@ -116,8 +116,9 @@ func PeekInt(data []byte, name string) (n int64, ok bool, err error) {
 	if found == nil {
 		return 0, false, nil
 	}
-	// An empty text is a fraction or an exponent; parseInt would call it "does not fit 64 bits".
-	if found.value.kind != kindNumber || found.value.text == "" {
+	// Only an integer has a text, so an empty one is a string, a literal, a list, an object, a
+	// fraction or an exponent; parseInt would call it "does not fit 64 bits".
+	if found.value.text == "" {
 		return 0, false, malformed("member %s is not an integer", quote(name))
 	}
 	n, err = parseInt(found.value.text)
