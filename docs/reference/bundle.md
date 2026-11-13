@@ -118,7 +118,7 @@ The trust sequence is one integer for the bundle. It grows by one whenever any t
 | 4 | Flush the folder. | Proposed |
 | 5 | A set of files, such as a trust set, is built beside under one temporary name (step 1). Then the folder is renamed into place. Its final name carries its number and its identity. The flush of each file is Proposed. | 0006 rules 12, 31 and 32 |
 | 6 | The ceremony record is written last, after the transcript and the artifacts. It lists them by digest and ends the ceremony. A ceremony folder with no ceremony record has not ended. If it holds an attempt, `status` shows it as critical until a person closes it. | [0005](../decisions/0005-a-ceremony-and-where-it-runs.md) rules 10 and 12; 0006 rule 8 |
-| 7 | The attempt is written before the first key is born. Each key goes into the birth journal as soon as it exists, and each signature into the journal of signatures. | 0005 rule 10 |
+| 7 | The attempt is written before the first key is born. Each key goes into the birth journal as soon as it exists, and each signature into the journal of signatures. The journals are files of the finished bundle. On the stick, while the ceremony runs, the attempt and the journals are trace records in the [trace area](/reference/trace-area/), and the files are made from it when the ceremony ends. | 0005 rules 10, 36 and 39 |
 | 8 | A file that a ceremony record lists and that fails its digest is an error for every reader. It is never "absent". | 0006 rule 31 |
 
 - When a write or a flush returns an error, ritueel stops at once with an error. It does not retry, and it does not print the line that says the write was flushed ([0006](../decisions/0006-bundle-history-and-trust-files.md) rule 33).
@@ -126,7 +126,7 @@ The trust sequence is one integer for the bundle. It grows by one whenever any t
 :::note[Proposed]
 These parts of the steps are not decided and are fixed with the code ([issue #8](https://github.com/truvity/ritueel/issues/8)).
 
-- The data of a file and of its folder are flushed (steps 2, 4 and 5). The attempt is made by an exclusive create. A journal grows by one flushed line at a time. A half line does not parse and counts as not written. A torn file that no ceremony record lists counts as not written, and is written again under the same name.
+- The data of a file and of its folder are flushed (steps 2, 4 and 5). The attempt is made by an exclusive create. A journal grows by one flushed line at a time. A half line does not parse and counts as not written. This holds for a bundle that is not on the stick; on the stick the journal is the trace area. A torn file that no ceremony record lists counts as not written, and is written again under the same name.
 - After a stop, ritueel does not delete a folder with a temporary name. `close` lists it with its digests. When the ceremony record is written and the rename has not happened, the next command finishes the rename first.
 - After a write to the stick, ritueel prints "flushed; the join on the workstation checks every file", and not "safe to remove". A removable stick can report a flush it did not do.
 :::
@@ -174,19 +174,19 @@ The repair of a fork is later ([issue #138](https://github.com/truvity/ritueel/i
 
 ## On the stick
 
-A key that can be copied, such as a key file, is used only in the offline system, which boots from a USB stick; a test root is the exception. A root key on a card may also run there. A cloud root key always runs on the workstation, because the offline system has no network ([record 0005](../decisions/0005-a-ceremony-and-where-it-runs.md), rules 22 to 24 and 29). The stick carries one extra partition, and ritueel defines its layout (record 0005, rule 30). The picture is on [the bundle and the USB stick](/how-it-works/bundle-and-stick/#the-usb-stick).
+A key that can be copied, such as a key file, is used only in the offline system, which boots from a USB stick; a test root is the exception. A root key on a card may also run there. A cloud root key always runs on the workstation, because the offline system has no network ([record 0005](../decisions/0005-a-ceremony-and-where-it-runs.md), rules 22 to 24 and 29). The stick carries two extra partitions, the files partition and the [trace area](/reference/trace-area/), inside one extended partition, and ritueel defines their layout (record 0005, rules 30 and 36). The picture is on [the bundle and the USB stick](/how-it-works/bundle-and-stick/#the-usb-stick).
 
 **The stick carries:** the ritueel program, in several versions and architectures; the bundles; the encrypted key files, beside the bundles and never inside one (record 0005, rule 30). The stick's copy of a bundle carries no wanted files (record 0005, rule 30). A saved plan travels inside the bundle with the exact copies of the wanted files it used (record 0005, rules 7 and 30).
 
-**The stick does not carry:** wanted files, a plan made on the stick, or an adoption of a card (record 0005, rule 19). The partitions of AirgapOS are not touched (record 0005, rule 33).
+**The stick does not carry:** wanted files, a plan made on the stick, or an adoption of a card (record 0005, rule 19). The partitions of AirgapOS are not touched; sector 0 of the stick gains the table entry of the extended partition (record 0005, rule 33).
 
-**The run** is `ritueel apply PLAN`. It checks that the end of the history and the trust sequence still match those the plan was made against, and the person types the first eight characters of the plan's digest (record 0005, rule 13). When a plan is prepared online and the stick is present, ritueel refreshes the partition first, and the plan records the digest of the program (record 0005, rule 32).
+**The run** is `ritueel apply PLAN`. It checks that the end of the history and the trust sequence still match those the plan was made against, and the person types the first eight characters of the plan's digest (record 0005, rule 13). When a plan is prepared online and the stick is present, ritueel refreshes the files partition first, and the plan records the digest of the program (record 0005, rule 32).
 
 :::note[Proposed]
 The names below are the smallest layout that serves the decision. They await the maintainer's word.
 
 ```text
-RITUEEL/                          the extra partition
+RITUEEL/                          the files partition
 ├── ritueel/                      the program
 │   ├── 0.1.0/
 │   │   ├── linux-amd64/ritueel
@@ -199,7 +199,7 @@ RITUEEL/                          the extra partition
     └── personal/A.openpgp.key.age
 ```
 
-- **`RITUEEL/`** is the extra partition. AirgapOS's own partitions are not touched.
+- **`RITUEEL/`** is the files partition. AirgapOS's own partitions are not touched.
 - **`ritueel/<version>/<system>-<arch>/ritueel`** holds the program, and nothing else, because it is one static file. The version comes first, so that the run can use the exact version that made the plan (record 0005, rule 35). The system and the architecture come second, so that several machines can use one stick.
 - **`bundles/<name>/`** is a bundle copied without its wanted files, so the plan in its history and the bundle the plan was made from arrive together. It is a bundle that your workstation uses with `--dir`, with no second format.
 - **`keys/<bundle>/`** holds the key files of that bundle. Key files are never inside a bundle, so a copy of a bundle cannot carry a key by accident. The folder has the name of the bundle.
@@ -208,7 +208,11 @@ RITUEEL/                          the extra partition
 The file system of the partition is exFAT ([record 0005](../decisions/0005-a-ceremony-and-where-it-runs.md), rule 31). Not decided: the label of the partition, whether a checksum file sits beside each binary, and whether the `keys/` folder of a bundle may sit inside the parent of the bundle ([issue #30](https://github.com/truvity/ritueel/issues/30)).
 :::
 
-Not yet proven on hardware: that AirgapOS boots from a stick with such a partition and mounts it ([record 0005](../decisions/0005-a-ceremony-and-where-it-runs.md)).
+Not yet proven on hardware ([record 0005](../decisions/0005-a-ceremony-and-where-it-runs.md); [issue #181](https://github.com/truvity/ritueel/issues/181) for the last two):
+
+- that AirgapOS boots from a stick with such partitions and mounts the files partition;
+- that a session of the offline system on real hardware makes the device nodes of both partitions and lets ritueel open the trace area as root (a virtual machine showed it);
+- what Windows, macOS and a Linux desktop show for an extended partition that holds a partition with no file system.
 
 ## The wanted files
 
