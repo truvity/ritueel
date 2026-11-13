@@ -24,6 +24,11 @@ body:
     id: alternatives
     attributes:
       label: Alternatives considered
+  - type: textarea
+    id: done-when
+    attributes:
+      label: Done when
+      description: What shows that it is finished? Leave it empty if you are not sure. The maintainer fills it before the issue gets a milestone.
   - type: dropdown
     id: area
     attributes:

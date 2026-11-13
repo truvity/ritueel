@@ -76,7 +76,9 @@ Green CI is the merge gate: a pull request with a red or a skipped required chec
 
 ## Issues and the board
 
-An agent may open at most a couple of issues itself, and only for a defect or a follow-up it found. Every other write to the board (a bulk create, an edit, a comment, a label, a close) goes into a script that the maintainer runs, written as the `maintainer-script` skill says. The script's contract:
+The places and their jobs are in [CONTRIBUTING.md](https://github.com/truvity/ritueel/blob/main/CONTRIBUTING.md#issues-milestones-and-labels). A pull request that closes the last open point of a record's line closes its issue.
+
+An agent may open at most a couple of issues itself, and only for a defect or a follow-up it found. Every other write to the issues (a bulk create, an edit, a comment, a label, a close) goes into a script that the maintainer runs, written as the `maintainer-script` skill says. The script's contract:
 
 - **Dry run by default,** and `--apply` to write.
 - **Idempotent:** create an issue only when no issue has the exact title; add a comment only when the same text is absent; replace a body only while it still equals the reviewed copy.

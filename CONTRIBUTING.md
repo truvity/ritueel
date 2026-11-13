@@ -4,7 +4,7 @@ Thank you for helping. This file is the entry point for work on ritueel.
 The working rules are written once, in [docs/contributing/](docs/contributing.md), and published on [ritueel.id/contributing](https://ritueel.id/contributing/). People and AI agents follow the same pages.
 Who decides what is in [GOVERNANCE.md](GOVERNANCE.md). Security reports go through [SECURITY.md](SECURITY.md), not through issues.
 
-ritueel has no release yet. The first version is planned in the [roadmap](docs/roadmap.md), and its work items are the open [issues](https://github.com/truvity/ritueel/issues).
+ritueel has no release yet. The first version is planned in the [roadmap](docs/roadmap.md), and its work items are the open [issues](https://github.com/truvity/ritueel/issues) of its milestones.
 
 ## Before you start
 
@@ -23,6 +23,14 @@ The maintainer replies with one of: accepted, needs a decision, out of scope. Ne
 1. Open an issue with the *Decision proposal* form.
 2. When the direction is clear, open a pull request that adds an ADR from [the template](docs/decisions/0000-template.md). The steps are in [Decision records](docs/contributing/decisions.md), the format in [docs/decisions/README.md](docs/decisions/README.md).
 3. The maintainer accepts the decision by merging the ADR.
+
+## Issues, milestones and labels
+
+1. An issue is a work item of a roadmap row, with a "Done when", or an open decision that a line in the last section of a record cites.
+2. An issue has one milestone: the roadmap row that needs it first. An issue with no milestone belongs to "After the first version".
+3. A milestone is a roadmap row, with the same title and the same text.
+4. The labels `area:*` and `type:*` only filter. The label `status:needs-decision` marks an open decision; remove it when the decision is closed.
+5. There is no project board. The plan is the roadmap and its milestones.
 
 ## How we work
 
