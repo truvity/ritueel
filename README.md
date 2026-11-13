@@ -6,7 +6,7 @@ The site at [ritueel.id](https://ritueel.id) teaches first: the logic of keeping
 
 The guides, tool pages, specifications and research are written under `docs/` and read here on GitHub: the site publishes only the Learn path, a demo, the glossary, where the project stands and the design in brief.
 
-> **Status as of 2026-11-11: design phase. The program has no code yet; the local page exists as code and as a demo (`ui/`, `proto/`).** The eleven decision records are accepted, M0 is done and M1 is the proofs on a rehearsal card, as the [roadmap](docs/roadmap.md) says.
+> **Status as of 2026-11-11: design phase. The program has one command, `version`; the others are not built. The local page exists as code and as a demo (`ui/`, `proto/`).** The eleven decision records are accepted, M0 is done and M1 is the proofs on a rehearsal card, as the [roadmap](docs/roadmap.md) says.
 
 ## What ritueel does
 

@@ -1,11 +1,11 @@
 ---
 title: Commands
-description: The thirteen ritueel commands, their forms, the shared flags, the exit codes and the JSON output. Not built yet.
+description: The thirteen ritueel commands, their forms, the shared flags, the exit codes and the JSON output. Only `version` is built.
 sidebar:
   order: 2
 ---
 
-*Not built yet. This is the command set of [record 0005](../decisions/0005-a-ceremony-and-where-it-runs.md) and [record 0006](../decisions/0006-bundle-history-and-trust-files.md), with the commands of [record 0007](../decisions/0007-changing-and-losing-a-root.md), [record 0010](../decisions/0010-the-engine-the-process-and-the-page.md) and [record 0011](../decisions/0011-publishing-and-what-to-do-after-a-ceremony.md); the code is [issue #10](https://github.com/truvity/ritueel/issues/10) and [issue #30](https://github.com/truvity/ritueel/issues/30). The commands of M2, with their files, are in [The first version's commands](/reference/cli/#the-first-versions-commands).*
+*Only `version` is built; the other commands are not. This is the command set of [record 0005](../decisions/0005-a-ceremony-and-where-it-runs.md) and [record 0006](../decisions/0006-bundle-history-and-trust-files.md), with the commands of [record 0007](../decisions/0007-changing-and-losing-a-root.md), [record 0010](../decisions/0010-the-engine-the-process-and-the-page.md) and [record 0011](../decisions/0011-publishing-and-what-to-do-after-a-ceremony.md); the code is [issue #10](https://github.com/truvity/ritueel/issues/10) and [issue #30](https://github.com/truvity/ritueel/issues/30). The commands of M2, with their files, are in [The first version's commands](/reference/cli/#the-first-versions-commands).*
 
 You write what you want in wanted files. ritueel finds what is not applied yet, and `apply` does it in one ceremony. There are thirteen command words: `new`, `status`, `want`, `apply`, `revoke`, `check`, `publish`, `close`, `verify`, `wizard`, `stop`, `version` and `join`.
 
