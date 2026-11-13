@@ -300,3 +300,33 @@ func TestCutAFreshWriterOverEveryRecoveredImage(t *testing.T) {
 		}
 	}
 }
+
+// TestCutAtACallWithNoDurableEffectGivesTheImageOfTheCutBefore: a walk, the listing of the
+// temporary folder of a set and the close of a folder change nothing on the stick, under every
+// policy (the seeds draw the same survivors, because the state is the same).
+func TestCutAtACallWithNoDurableEffectGivesTheImageOfTheCutBefore(t *testing.T) {
+	r := runCeremony(t, realMaker, defaultOrder)
+	counts := map[opKind]int{}
+	for _, o := range r.fs.opList() {
+		if o.Kind != kOpenDir && o.Kind != kCloseDir && o.Kind != kReadDir {
+			continue
+		}
+		counts[o.Kind]++
+		for _, p := range policiesUnderTest() {
+			before, after := r.fs.CrashAfter(o.N-1, p), r.fs.CrashAfter(o.N, p)
+			if !slices.Equal(before.paths(), after.paths()) {
+				t.Fatalf("%v under %v: the paths differ: %v and %v", o, p, before.paths(), after.paths())
+			}
+			for _, q := range before.paths() {
+				if !bytes.Equal(before.nodes[q].data, after.nodes[q].data) {
+					t.Fatalf("%v under %v: %s differs", o, p, q)
+				}
+			}
+		}
+	}
+	for _, k := range []opKind{kOpenDir, kCloseDir, kReadDir} {
+		if counts[k] == 0 {
+			t.Errorf("the ceremony made no %s call", k)
+		}
+	}
+}
