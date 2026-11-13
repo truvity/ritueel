@@ -55,7 +55,7 @@ A release is trusted because its signature verifies against a key the user alrea
 - **Sign releases with a primary, or with a person's key.** It needs nothing to bind, but a primary is used once a year, and a person's key puts a person in the chain.
 - **A keyring with only the primary of the year.** It is smaller, but a lost card breaks verification at once.
 - **Version 6 keys now.** It follows RFC 9580, but gpg cannot parse them, so apt users could not verify.
-- **Ed25519 keys.** They are shorter, but a PIV slot cannot sign an artifact with them.
+- **Ed25519 keys.** They are shorter and are the GnuPG default, but P-384 is the one algorithm that every key store holds and that was tested with every verifier the project ran. A PIV slot can sign Ed25519, over the whole message and not a digest (measured by sluis on one YubiKey 5 Nano with firmware 5.8.0, at most 3,061 bytes through ykcs11, restated in [the research note](../research/yubikey-piv-speed-and-sharing-2026-11-13.md) and not repeated here).
 - **A personal key certifies each primary.** It gives a path for people who trust the person, but release trust then rests on a key usually kept in software.
 - **A shorter expiry for primaries and subkeys.** It bounds an unrevoked key further, but costs more ceremonies and keyring updates for a gain the 13-month bindings already give.
 - **Keep a compromised subkey, with its revocation.** Old signatures stay checkable, but gpgv and apt would keep accepting the compromised key.
