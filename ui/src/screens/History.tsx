@@ -9,7 +9,7 @@ import { domKey } from '../lib/inventory';
 import { href } from '../lib/route';
 import { safeString } from '../lib/safe';
 import { CEREMONY_COMMAND_WORD, CEREMONY_STATE_WORD } from '../lib/words';
-import { CeremonyPanel, StepsBelow } from '../ui/CeremonyPanel';
+import { CeremonyPanel, WhatItDoesBelow } from '../ui/CeremonyPanel';
 import { DataTable, type Column } from '../ui/DataTable';
 import { Glyph, type SevKey } from '../ui/Glyph';
 import { Page, Parts } from '../ui/Page';
@@ -201,7 +201,7 @@ export function History({ id }: { id?: string }) {
               <GoToPanel />
               <CeremonyTable rows={rows} caption="Ceremonies, newest first." selectedKey={selectedKey} />
               {folded.length > 0 ? <Folded rows={folded} selectedKey={selectedKey} /> : null}
-              {shown ? <StepsBelow c={shown} /> : null}
+              {shown ? <WhatItDoesBelow c={shown} /> : null}
             </>
           );
           const panel = shown ? (
