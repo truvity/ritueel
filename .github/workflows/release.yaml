@@ -405,6 +405,8 @@ jobs:
           [[ "$assets" =~ ^[0-9]+$ ]] && [ "$assets" -eq "${#files[@]}" ] || fail "the draft holds $assets files, wanted ${#files[@]} (the two archives and SHA256SUMS)"
           check_tag
           # Publish that id. If this call fails, the release may in fact be published (the answer may have
-          # been lost), so the note differs: look first.
+          # been lost), and a published version is never deleted (GOVERNANCE.md). So from here the note
+          # does not say that a draft was left: it says to look at the Releases page first.
+          draft_note=". Look at the Releases page first: if the release for $TAG is a draft, delete it by hand; if it is published, it stays (GOVERNANCE.md: a published version is never deleted). This job deletes nothing."
           res=$(gh api -X PATCH "repos/${GH_REPO}/releases/${id}" -F draft=false --jq .draft) || fail "the draft could not be published"
           [ "$res" = false ] || fail "the release is still a draft after the publish call"
