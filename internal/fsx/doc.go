@@ -28,17 +28,31 @@
 // proven"; issue 181). The code here does not claim to cure that, and a flush that
 // returns without an error is only the stick's report that it flushed.
 //
-// A name is checked against what the exFAT file system of a stick can hold: every element of
-// a path, and every name of a set, is refused (with [ErrInvalid]) when it has a control code or
-// one of the characters of the specification's table of invalid file name characters, ends
-// with a dot or a space (Windows removes both, and the Linux exFAT driver removes trailing
-// dots unless the mount option keep_last_dots is given), is longer than 255 bytes (which is
-// also at most 255 UTF-16 code units, the limit of exFAT), or is not valid UTF-8. exFAT keeps
-// the case of a name and compares names without it, and the writer cannot know which names
-// exist, so it cannot refuse a second name that differs only by case from an existing one:
-// the file system's own refusal catches it on the stick, the exclusive create or the rename
-// that never replaces, and on a case-sensitive file system both names would exist. Within one
-// set the writer refuses such a pair itself.
+// Names are checked against the stick and the desktop systems that read it. Every element of
+// a path, and every name of a set, is refused (with [ErrInvalid]) when the exFAT file system
+// cannot hold it or would hold it under another name: a control code or one of the characters
+// of the specification's table of invalid file name characters, an end with a dot or a space
+// (Windows removes both, and the Linux exFAT driver removes trailing dots unless the mount
+// option keep_last_dots is given), more than 255 bytes (which is also at most 255 UTF-16 code
+// units, the limit of exFAT), and bytes that are not UTF-8. It is also refused when it has a
+// character that no person can see or type (U+007F, U+0080 to U+009F, U+FFFE, U+FFFF), and
+// when it is a device name of Windows ("aux", "Aux.json"), which a Windows system cannot open.
+//
+// What the writer does not check:
+//
+//   - Case between two separate calls. exFAT keeps the case of a name and compares names
+//     without it, and the writer cannot know which names exist, so it cannot refuse a second
+//     name that differs only by case from an existing one: the file system's own refusal
+//     catches it on the stick, the exclusive create or the rename that never replaces, and on
+//     a case-sensitive file system both names would exist. Within one set the writer refuses
+//     such a pair itself.
+//   - The table that exFAT uses to compare names without case lives on the stick and may
+//     differ from the one in Go for rare letters; then the refusal of the stick catches the
+//     pair, not the writer.
+//   - Unicode normalisation. A file system of macOS treats two spellings of one accented
+//     letter as one name; the writer does not. The layer that chooses names keeps them simple.
+//   - The length of a whole path. The operating system refuses a path that is too long, and
+//     the writer stops with its error.
 //
 // The package does not confine paths. The caller passes paths that it built under a
 // bundle it has opened, and a symlink inside the bundle is not looked at here.
