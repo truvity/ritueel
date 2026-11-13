@@ -54,6 +54,16 @@ const journalPerm fs.FileMode = 0o600
 // [FS] of its own, sets the FS field of a Writer before the first call. [Writer.Close] releases
 // the root, and the writer owns its FS from the first call to that Close.
 //
+// A Writer is not copied once it is in use: the stop, the closed state and the lock belong to the
+// value that the first call ran on. Two things catch a copy. The lock inside it makes go vet
+// (copylocks) report a copy by value. And the first call records the address of its Writer, so a
+// call on a copy that was made after that returns [ErrCopied] and reaches nothing: not the file
+// system, and not the root, which the copy's Close does not release. The alternative, to share the
+// state of all copies through a pointer as a [Journal] does, is not possible here: a Writer is
+// made by a literal with the FS and Rand fields set by the caller (a test, a caller with an FS of
+// its own), and a literal has no pointer to share until its first call. A copy made before the
+// first call is two writers over one FS, which only vet sees.
+//
 // A Writer is safe for use by several goroutines: every method, and every method of its
 // journals, takes the writer's lock, so the operations run one at a time and the stop is read
 // and set under it. The lock belongs to one Writer and covers the FS and the Rand it reads: a
@@ -68,7 +78,8 @@ type Writer struct {
 	Rand io.Reader
 
 	mu       sync.Mutex
-	err      error // the stop; set once
+	self     *Writer // the Writer that the first call found: a copy made after it sees another
+	err      error   // the stop; set once
 	closed   bool
 	journals map[*journalState]struct{} // the journals that are open
 }
@@ -104,6 +115,9 @@ func Open(root string) (*Writer, error) {
 func (w *Writer) Close() error {
 	w.mu.Lock()
 	defer w.mu.Unlock()
+	if err := w.checkSelf(); err != nil {
+		return err
+	}
 	if w.closed {
 		return nil
 	}
@@ -154,8 +168,22 @@ func (w *Writer) begin() error {
 	return nil
 }
 
+// checkSelf records the Writer that is in use at the first call and returns [ErrCopied] to a copy
+// of it that is used afterwards.
+func (w *Writer) checkSelf() error {
+	if w.self == nil {
+		w.self = w
+	} else if w.self != w {
+		return ErrCopied
+	}
+	return nil
+}
+
 // beginNoFS is begin for an operation that does not reach the file system.
 func (w *Writer) beginNoFS() error {
+	if err := w.checkSelf(); err != nil {
+		return err
+	}
 	if w.err != nil {
 		return w.err
 	}

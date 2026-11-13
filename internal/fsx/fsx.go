@@ -248,6 +248,11 @@ var ErrTooLarge = errors.New("the file is longer than the limit of a read")
 // [MaxJournalLines], or more names in a folder than [MaxDirEntries].
 var ErrTooMany = errors.New("the file or folder holds more lines or names than the limit of a read")
 
+// ErrCopied is returned by a call on a [Writer] that was copied by value after it was first used:
+// the copy has a stop and a lock of its own and would ignore the stop of the original, so it does
+// nothing. Use the Writer that [Open] returned, through its pointer.
+var ErrCopied = errors.New("fsx: the Writer was copied; use the original through its pointer")
+
 // ErrNoRoot is returned by a [Writer] that has no [FS], that is by a Writer that was not made
 // by [Open] and whose FS field is nil: there is no root to work in, and the writer does not
 // reach for another one.
