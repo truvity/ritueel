@@ -46,10 +46,10 @@ Decided in [0011](decisions/0011-publishing-and-what-to-do-after-a-ceremony.md).
 
 ## The bundle and its parts
 
-- A bundle is a directory of plain files for one trust domain. A root key is written with the bundle name, such as acme/A.
+- A bundle is a directory of plain files for one organisation or one person. A root key is written with the bundle name, as in acme/A.
 - A person writes only wanted files: `ritueel.yaml` and one file for each card, root, delegation and the user IDs.
-- `history/` is write-once, one ceremony folder for each ceremony. A numbered trust set holds the root list, CA bundle, revocation lists, SSH CA key list and public OpenPGP keyring. `requests/<name>/` holds a request and its answer.
-- A bundle never holds a private key in the clear, a PIN or a passphrase.
+- `history/` is write-once, one folder for each ceremony. A numbered trust set holds the root list, CA bundle, revocation lists, SSH CA key list and public OpenPGP keyring. `requests/<name>/` holds a request and its answer.
+- A bundle never holds a private key in clear, a PIN or a passphrase.
 
 Decided in [0006](decisions/0006-bundle-history-and-trust-files.md).
 
