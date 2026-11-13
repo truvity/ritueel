@@ -548,10 +548,11 @@ func hasTempPrefix(name string) bool {
 // folder the last element names); an element that is "." or ".."; an empty element between two
 // separators ("a//b"); and, for every element and not only the last, whatever [nameProblem]
 // finds (a byte outside A-Z a-z 0-9 . - _, a trailing dot, a length over 255 bytes, a device
-// name of Windows). When
-// forWrite is set, the final element must not start with [TempPrefix] either: a name to be
-// written is never a temporary one. A path that is only read may name one, because the caller
-// lists the temporary folders a stop left behind. A relative path with no folder ("x", whose
+// name of Windows). When forWrite is set, no element, the last or a folder on the way, may start
+// with [TempPrefix] (compared without case) either: a name to be written is never a temporary
+// one, and no file is written into a temporary folder that a stop left behind. A path that is only
+// read may name one in any element, because a leftover is readable for diagnosis (the caller
+// lists the temporary folders a stop left) and is never a record. A relative path with no folder ("x", whose
 // folder is the root) passes. A path with a drive or a volume ("C:x", "\\host\share") has a
 // colon or a backslash and is refused by those rules, so no code looks at a volume name. Every
 // text quotes the path.
@@ -584,8 +585,12 @@ func parsePath(path string, forWrite bool) ([]string, error) {
 			}
 		}
 	}
-	if forWrite && hasTempPrefix(elems[last]) {
-		return nil, fmt.Errorf("%w: path %+q has the prefix of a temporary name", ErrInvalid, path)
+	if forWrite {
+		for _, e := range elems {
+			if hasTempPrefix(e) {
+				return nil, fmt.Errorf("%w: path %+q has the prefix of a temporary name", ErrInvalid, path)
+			}
+		}
 	}
 	return elems, nil
 }

@@ -259,8 +259,9 @@ var ErrWriterClosed = errors.New("fsx: the writer is closed")
 // ErrInvalid is wrapped by the error returned for an argument the writer refuses before it
 // touches the file system. A path is relative to the root and has "/" as its separator. For a
 // path: it is empty, it is absolute (it starts with a separator), ends with a separator, has a
-// "." or ".." element or an empty element ("a//b"), or its final element has the prefix of a
-// temporary name (compared without case; a path that is only read may have it). For a name (any
+// "." or ".." element or an empty element ("a//b"), or, for a path that is written, an element
+// has the prefix of a temporary name (compared without case, in every element, a folder on the
+// way included; a path that is only read may have it). For a name (any
 // element of a path, and the name of a file of a set): it is empty; it holds a byte that is not
 // an ASCII letter, a digit, a dot, a hyphen or an underscore (a space, a control code, a
 // separator, a character of another script, and any byte that is not UTF-8 are such bytes); it
