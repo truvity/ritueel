@@ -16,8 +16,8 @@ sidebar:
 ## Revoke an OpenPGP key
 
 1. **Fetch the revocation signature** for your reason from its stored place, and run `ritueel check material FILE`. Result: you hold the right file, and ritueel has printed nothing of it. Use the *compromised* file if the key may be in another's hands, and the *superseded* file if it was safe and has been replaced ([Revoke](/learn/revoke/#reasons-matter)).
-2. **Publish it:** to your key directory or website, and to the places people look for your key. To the keyservers you list, `ritueel publish --revocation FILE` (proposed) sends it, to a second kind of server too, after a stricter typed confirmation; it is never sent from a scheduler.
-3. **Publish a keyring package without the key.** `ritueel revoke KEY --reason REASON --material FILE` (`--reason` and `--material` are proposed) writes the keyring file without the key; then your pipeline builds the package. Result: apt users, whose `gpgv` ignores revocation signatures, are protected when the package arrives.
+2. **Publish it:** to your key directory or website, and to the places people look for your key. To the keyservers you list, `ritueel publish --revocation FILE` sends it; all of this is proposed: the flag, the second kind of server, the stricter typed confirmation, and that it is never sent from a scheduler.
+3. **For a primary, or a subkey revoked as *compromised*, publish a keyring package without the key.** `ritueel revoke KEY --reason REASON --material FILE` (`--reason` and `--material` are proposed) writes the keyring file without the key; then your pipeline builds the package. Result: apt users, whose `gpgv` ignores revocation signatures, are protected when the package arrives. A subkey retired as *superseded* stays in the package with its revocation inside ([record 0009](../decisions/0009-release-keys-and-the-keyring.md), rules 18 and 19).
 4. **Tell people** which fingerprint to stop trusting, and which to trust.
 
 ## Revoke an X.509 intermediate

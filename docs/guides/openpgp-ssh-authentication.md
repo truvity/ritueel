@@ -7,7 +7,7 @@ sidebar:
 
 *These steps use `gpg` and `ssh`, which exist today. Making the subkey with ritueel, so that an offline primary key binds a subkey born on the card, is planned ([issue #18](https://github.com/truvity/ritueel/issues/18)). Try everything on a test key first. To learn how the primary key and the subkeys fit, read [the OpenPGP custody chain](/learn/chain-openpgp/).*
 
-An OpenPGP key can log you in to SSH servers. The key is a subkey with the *authentication* flag (`A`), kept on a card, so it cannot be copied off your computer and each use needs the PIN and, if the card asks, a touch. The primary key stays offline.
+An OpenPGP key can log you in to SSH servers. The key is a subkey with the *authentication* flag (`A`), kept on a card, so it cannot be copied off your computer. The PIN is typed once for each insertion of the card, and a touch is needed where the key's touch setting asks for one ([record 0008](../decisions/0008-a-persons-own-key.md), rule 11). The primary key stays offline.
 
 ## What you start with
 

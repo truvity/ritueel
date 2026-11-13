@@ -7,7 +7,7 @@ sidebar:
 
 *Design phase: not built yet. This page is the plan that `ritueel status` and `ritueel apply` will follow (M2, [issue #30](https://github.com/truvity/ritueel/issues/30)); there is no `yearly` command. To learn why you re-sign and why yearly, and which acts may run unattended, read [Re-sign](/learn/re-sign/) first.*
 
-There are two paths. **Card roots and software roots** take the steps below once a year, with the card or the key file of the year; nothing renews them without you. A key file is used only in the offline system, a machine booted from a read-only system. A root on cards may also use your workstation, under the four conditions of [record 0005](../decisions/0005-a-ceremony-and-where-it-runs.md). **A cloud root** takes the same steps ([record 0004](../decisions/0004-the-cloud-root.md), rule 4). Nothing renews a cloud root with no person present.
+There are two paths. **Card roots and software roots** take the steps below once a year, with the card of the year, or with the key file; nothing renews them without you. A key file is used only in the offline system, a machine booted from a read-only system. A root on cards may also use your workstation, under the four conditions of [record 0005](../decisions/0005-a-ceremony-and-where-it-runs.md). **A cloud root** takes the same steps ([record 0004](../decisions/0004-the-cloud-root.md), rule 4). Nothing renews a cloud root with no person present.
 
 ## What you start with
 
@@ -35,4 +35,4 @@ There are two paths. **Card roots and software roots** take the steps below once
 
 ## Drill
 
-Run the same steps on a software test root in a scratch bundle made by `ritueel new --test-root`, then once on rehearsal cards. A drill starts with keys A and B of one root and one intermediate and ends when `status` is clean. The drill report shows how long each step took.
+Run the same steps on a software test root in a scratch bundle made by `ritueel new --test-root` (the spelling of `--test-root` is proposed), then once on rehearsal cards. A drill starts with keys A and B of one root and one intermediate and ends when `status` is clean. The drill report shows how long each step took.

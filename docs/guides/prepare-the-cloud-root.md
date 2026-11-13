@@ -5,7 +5,7 @@ sidebar:
   order: 0.6
 ---
 
-*Design phase: not built yet. The roles and the checks are specified in [The cloud root in AWS KMS](/reference/kms-root/); the code is [issue #12](https://github.com/truvity/ritueel/issues/12), in M2. ritueel creates the keys and their policy, or adopts a key that already exists ([record 0004](../decisions/0004-the-cloud-root.md)); it does not create the account or the roles ([record 0001](../decisions/0001-what-ritueel-is.md)). Try everything in a test account first. The commands, words and file names on this page are from before the decisions of 2026-11-12; the design is at https://ritueel.id/design/.*
+*Design phase: not built yet. The roles and the checks are specified in [The cloud root in AWS KMS](/reference/kms-root/); the code is [issue #12](https://github.com/truvity/ritueel/issues/12), in M2. ritueel creates the keys and their policy, or adopts a key that already exists ([record 0004](../decisions/0004-the-cloud-root.md)); it does not create the account or the roles ([record 0001](../decisions/0001-what-ritueel-is.md)). Try everything in a test account first.*
 
 A cloud root is the recommended path for a team with a cloud account ([which path is yours](/learn/key-stores/#which-path-is-yours)), and this guide is its first step. It is a permission: the key never leaves the service, so the root is as safe as the rules about who may use it. Those rules are yours to set up, once, before ritueel makes or adopts the key. This guide says what to make, in words; use whatever infrastructure tool your organisation already uses, and review the result as you would any change to who can sign for you.
 
@@ -28,7 +28,7 @@ A cloud root is the recommended path for a team with a cloud account ([which pat
 
 ## If the key already exists
 
-If your own infrastructure code already owns a key, with its alias and its policy, ritueel can adopt it instead of creating one ([adopting an existing key](/reference/kms-root/#adopting-an-existing-key)). The key must have been born in the service, and its policy must pass the same checks as one ritueel renders, the refusal of new replicas and of moving the primary Region included. ritueel reads the policy at every ceremony and never edits it: a change to the policy is yours to make in your code. The key is known by its ARN, not by its alias.
+If your own infrastructure code already owns a key, with its alias and its policy, ritueel can adopt it instead of creating one ([adopting an existing key](/reference/kms-root/#adopting-an-existing-key)). The key must have been born in the service, and its policy must pass the same checks as one ritueel renders, the refusal of new replicas and of moving the primary Region included. ritueel reads the policy at every ceremony ([record 0004](../decisions/0004-the-cloud-root.md), rule 7). Adopting a key is not yet proven: it waits for a test against a real account. Proposed, not decided: ritueel never edits the policy of an adopted key (a change is yours to make in your code), and the key is known by its ARN, not by its alias.
 
 ## How you know it worked
 
@@ -41,6 +41,6 @@ If your own infrastructure code already owns a key, with its alias and its polic
 - **ritueel says the policy has a principal that can sign that it does not expect** (`extra-sign-principal`). A role or user was added to the key policy. Find out why before anything else: this is the check doing its job.
 - **ritueel says the session is not a session of the ceremony role, or has expired** (`kms-session`, exit code 4). Take a new session of the ceremony role and run the ceremony again.
 - **The replica is refused.** The two Regions must differ, and the admin role needs the right to create keys in the second one. Once the key policy is in force, only the break-glass principal may replicate.
-- **ritueel says the policy does not refuse replicas** (`kms-policy-replica`). A statement allows `ReplicateKey` or `UpdatePrimaryRegion` to a principal other than the break-glass principal. Remove it in your code.
+- **ritueel says the policy does not refuse replicas** (the reason code `kms-policy-replica` is proposed). A statement allows `ReplicateKey` or `UpdatePrimaryRegion` to a principal other than the break-glass principal. Remove it in your code.
 
 Next: [Adopting the roots](/guides/root-adoption/).

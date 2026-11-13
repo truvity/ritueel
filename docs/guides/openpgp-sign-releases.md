@@ -1,6 +1,6 @@
 ---
 title: Sign software and releases
-description: Sign release files with a detached OpenPGP signature from a key held in a store, publish the public key and its fingerprint, and verify downloads the safe way.
+description: Sign release files with a detached OpenPGP signature from a key held in a key store, publish the public key and its fingerprint, and verify downloads safely.
 sidebar:
   order: 12
 ---
@@ -11,7 +11,7 @@ A release signature lets a user check that the file they downloaded is the one y
 
 ## What you start with
 
-- A release signing subkey held in a store (a card, or a cloud key service), bound by a primary key that stays in its root store, a root card or a cloud key ([the OpenPGP chain](/learn/chain-openpgp/)).
+- A release signing subkey held in a key store (a card, or a cloud key service), bound by a primary key that stays in its root key store, a root card or a cloud key ([the OpenPGP chain](/learn/chain-openpgp/)).
 - The release files, built reproducibly if you can.
 - A place to publish: your site, your repository's releases, a package repository.
 
@@ -56,7 +56,7 @@ Read from the projects' pages on 2026-11-01. Publish **version 4** certificates,
 
 A release key that sits in a file on a build server can be copied. Prefer a subkey held in a card or a cloud key service, so that signing is a call that CI makes with its own identity and audit trail, and the private key cannot be taken. The key is replaced, not copied, when custody changes ([Rotate](/learn/rotate/)). Compare the options in [Where a key lives](/learn/key-stores/).
 
-ritueel's own releases follow the same rule. The proof of a release of ritueel is a checksum file signed by a release subkey that the project's root binds, with a keyless signature beside it, and there is no personal signature of the maintainer ([record 0009](../decisions/0009-release-keys-and-the-keyring.md)).
+ritueel's own releases are planned to follow the same rule. The proof of a release of ritueel will be a checksum file signed by a release subkey that the project's root binds, with a keyless signature beside it, and there will be no personal signature of the maintainer ([record 0009](../decisions/0009-release-keys-and-the-keyring.md)).
 
 ## How you know it worked
 

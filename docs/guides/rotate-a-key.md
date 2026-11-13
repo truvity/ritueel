@@ -23,9 +23,9 @@ sidebar:
 
 ## Rotate a root
 
-A root key rotation is a transition. It is planned, because a root key has an expiry for this reason.
+A root key rotation is a transition. It is planned: the wanted root file says what the new key replaces and until when ([record 0007](../decisions/0007-changing-and-losing-a-root.md), rules 3 and 5).
 
-1. Write the new key in the wanted root file, with what it replaces and until when, and run `ritueel apply`: the new key is made in its store, and an existing root key vouches for it. Result: an overlap starts.
+1. Write the new key in the wanted root file, with what it replaces and until when, and run `ritueel apply`: the new key is made in its key store, and an existing root key vouches for it. Result: an overlap starts.
 2. Publish the trust files with both root keys. Wait until your slowest client has had time to learn the new one.
 3. When the date you wrote has come, run `ritueel apply`: it leaves the old root key out of the next trust files. Result: only the new root key is shipped.
 

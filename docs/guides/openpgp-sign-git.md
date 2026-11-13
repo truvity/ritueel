@@ -21,7 +21,7 @@ A signed commit says that the holder of a key made it. A signed tag says that th
 2. **Sign by default.** `git config --global commit.gpgsign true` and `git config --global tag.gpgsign true`. Without these, use `git commit -S` and `git tag -s`.
 3. **Make a commit and a tag in the scratch repository.** `gpg-agent` asks for the PIN, and the card may ask for a touch.
 4. **Check them.** `git log --show-signature -1`, `git verify-commit HEAD` and `git verify-tag <tag>`. Both commands read `gpg`'s verdict; they need the public key in your keyring.
-5. **Upload the public key to your platform** (below) and push. ritueel will print the key file, the link and the platform tool's command (`gh gpg-key add FILE` for GitHub); it holds no token ([After a ceremony](/guides/after-a-ceremony/)).
+5. **Upload the public key to your platform** (below) and push. ritueel is planned to print the key file, the link and the platform tool's command (`gh gpg-key add FILE` for GitHub; the text it prints is proposed); it holds no token ([After a ceremony](/guides/after-a-ceremony/)).
 
 ## How platforms decide a signature is verified
 
@@ -47,7 +47,7 @@ Some platforms offer *vigilant mode*, which marks unsigned commits as unverified
 
 ## SSH signing as an alternative
 
-Git 2.34 and later can sign with an SSH key (`gpg.format ssh`). Both platforms show it as verified once the SSH public key is registered as a signing key; an authentication-only key does not verify on GitLab, which wants a key whose usage includes signing. Locally, `ssh-keygen -Y verify` with an `allowed_signers` file checks a signature, and its options can limit a key to a namespace and a time window, which the platforms do not document. It is simpler, and it ties the signature to the key and not to an OpenPGP identity. Prefer OpenPGP when you also sign releases with the same identity; prefer SSH signing when git is all you sign.
+Git 2.34 and later can sign with an SSH key (`gpg.format ssh`). Both platforms show it as verified once the SSH public key is registered as a signing key; an authentication-only key does not verify on GitLab, which wants a key whose usage includes signing. Locally, `ssh-keygen -Y verify` with an `allowed_signers` file checks a signature, and its options can limit a key to a namespace and a time window, which the platforms do not document. It is simpler, and it ties the signature to the key and not to an OpenPGP identity. Prefer OpenPGP when you use the same personal key for other work, such as SSH login ([record 0008](../decisions/0008-a-persons-own-key.md), rule 9); prefer SSH signing when git is all you sign.
 
 ## How you know it worked
 
