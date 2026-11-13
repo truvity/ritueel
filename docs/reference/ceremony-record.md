@@ -83,7 +83,7 @@ A **key fingerprint** in these files is the SHA-256 of the DER `SubjectPublicKey
 
 ## The plan
 
-The plan fixes every byte to be signed in advance: the root keys, each key's fingerprint and store, serials, times, the numbers of signatures and touches (0005 rule 7).
+The plan fixes every byte to be signed in advance: the root keys, each key's fingerprint and key store, serials, times, the numbers of signatures and touches (0005 rule 7).
 
 | Member | Meaning |
 |---|---|
@@ -98,8 +98,8 @@ The plan fixes every byte to be signed in advance: the root keys, each key's fin
 | `inputs` | A list of `{ "path", "sha256" }`: every other file the plan was made from, the request files among them, in path order. |
 | `applies` | The changes the plan applies, each with its object. |
 | `leaves_out` | The changes the plan leaves out, each with its object and the reason (0005 rule 7; 0007 rules 8 and 9). |
-| `last_record_sha256` | The SHA-256 of the end of the history when the plan was made: the ceremony record that no other ceremony record names. Absent when there is none (0006 rule 8). The member name stays. |
-| `root` | The root key that signs: `{ "label", "store", "x509", "openpgp", "test", "copyable" }`, with the two key fingerprints, `test` true for a test root (0005 rule 26) and `copyable` true for a key file (0005 rule 27). It is the key chosen to sign: the card of the year, or the card a person named. A signature by another key has its own `key`. The member name stays. |
+| `last_record_sha256` | The SHA-256 of the end of the history when the plan was made: the ceremony record that no other ceremony record names. Absent when there is none (0006 rule 8). |
+| `root` | The root key that signs: `{ "label", "store", "x509", "openpgp", "test", "copyable" }`, with the two key fingerprints, `test` true for a test root (0005 rule 26) and `copyable` true for a key file (0005 rule 27). It is the key chosen to sign: the card of the year, or the card a person named. A signature by another key has its own `key`. |
 | `root_reason` | Present only when a person named a card other than the card of the year: the reason given (0007 rule 16). |
 | `requests` | A list, one for each request the ceremony answers: `{ "stem", "type", "request_sha256", "proof_sha256", "store", "key" }`, where `key` is the fingerprint of the requester's key. |
 | `signatures` | The ordered list of every signature the ceremony makes, below. |
@@ -112,7 +112,7 @@ The plan fixes every byte to be signed in advance: the root keys, each key's fin
 The member `ritueel` holds the version of the program that made the plan, its system and architecture as `os_arch`, and the SHA-256 of that copy. The run uses that version, and ritueel refuses to run the plan with another one. This is what lets the offline system keep several versions on the [USB stick](/reference/bundle/#on-the-stick). The names are a proposal, awaiting the maintainer's word.
 :::
 
-The members `wanted`, `applies` and `leaves_out` are new. That the plan lists the wanted files it used by digest, what it applies and what it leaves out with the reason is decided (0005 rule 7). The names of the three members, and of the members inside `applies` and `leaves_out` (an object and a change; a reason as text), are Proposed ([#8](https://github.com/truvity/ritueel/issues/8)).
+That the plan lists the wanted files it used by digest, what it applies and what it leaves out with the reason is decided (0005 rule 7). The names of the three members, and of the members inside `applies` and `leaves_out` (an object and a change; a reason as text), are Proposed ([#8](https://github.com/truvity/ritueel/issues/8)).
 
 Each member of `signatures`:
 
@@ -130,7 +130,7 @@ Each member of `signatures`:
 
 `tbs_sha256` is what makes the plan exact: two machines that build the same plan from the same bundle compute the same bytes to sign, and the check of 0005 rule 12 compares each artifact with it.
 
-**A key that is born in the ceremony is the exception** (0005 rule 8). The first `apply` and each added root key make keys, and a signature that covers a new key (its root certificate, its primary's self-signature and revocation signatures, a vouching signature, a cross-certificate) cannot have its bytes fixed before the key exists. The plan lists such a signature with `derived` set to true and without `tbs_sha256` (and without `key` when the new key signs itself), and lists the keys to be born in `births`: for each, `{ "label", "purpose", "store", "place", "creation_time" }`, where `place` is the card's serial and slot, or the Region, and `creation_time` is the OpenPGP creation time drawn here. The check of 0005 rule 12 tests every derived artifact against the profile and the key that was born, with code that did not sign it, and the ceremony record carries the digests that the plan could not. For such a key the plan fixes everything else (0005 rule 8): the store, the serial and slot or the Region, the algorithm, the OpenPGP creation time, the serials, the validity and the touches.
+**A key that is born in the ceremony is the exception** (0005 rule 8). The first `apply` and each added root key make keys, and a signature that covers a new key (its root certificate, its primary's self-signature and revocation signatures, a vouching signature, a cross-certificate) cannot have its bytes fixed before the key exists. The plan lists such a signature with `derived` set to true and without `tbs_sha256` (and without `key` when the new key signs itself), and lists the keys to be born in `births`: for each, `{ "label", "purpose", "store", "place", "creation_time" }`, where `place` is the card's serial and slot, or the Region, and `creation_time` is the OpenPGP creation time drawn here. The check of 0005 rule 12 tests every derived artifact against the profile and the key that was born, with code that did not sign it, and the ceremony record carries the digests that the plan could not. For such a key the plan fixes everything else (0005 rule 8): the key store, the serial and slot or the Region, the algorithm, the OpenPGP creation time, the serials, the validity and the touches.
 
 ### The plan digest and the confirmation
 
@@ -180,7 +180,7 @@ The name `signatures.jsonl` and the members of a line are fixed with the code ([
 
 ## The record
 
-The ceremony record is the file `record.json`, written last in its ceremony folder (0006 rule 8). It holds no secret. It says what was done, with which keys, on which store, what outsiders see and where it ran (0005 rule 3). Its members are the time in UTC, the command, the plan digest, the wanted files and the artifacts with their digests, the keys and stores, the evidence checked, the policy applied, the slot map version and the confirmation (0006 rule 8). The table gives each.
+The ceremony record is the file `record.json`, written last in its ceremony folder (0006 rule 8). It holds no secret. It says what was done, with which keys, on which key store, what outsiders see and where it ran (0005 rule 3). Its members are the time in UTC, the command, the plan digest, the wanted files and the artifacts with their digests, the keys and key stores, the evidence checked, the policy applied, the slot map version and the confirmation (0006 rule 8). The table gives each.
 
 | Member | Meaning |
 |---|---|
@@ -208,11 +208,11 @@ The ceremony record is the file `record.json`, written last in its ceremony fold
 | `closes` | A closing record only: `{ "ceremony", "attempt_sha256", "reason" }`, the attempt it resolves, its digest, and the reason the person gave. |
 | `revocations` | A ceremony that made revocation material: a list of `{ "label", "reason", "sha256" }`, the digest of each signature packet, and of each removal authorisation with the reason `root-removal`. The material itself is never in the ceremony record (0007 rule 23; [revocation material](/reference/revocation-material/)). |
 
-The members `wanted`, `applied` and `left_out` are new. That the ceremony record lists the wanted files and the artifacts by digest is decided (0006 rule 8; 0005 rule 7). The names of the three members are Proposed ([#8](https://github.com/truvity/ritueel/issues/8)). A key's state (active, retired or revoked: 0007 rule 3) is read from the ceremony records and the newest root list; no member holds it. The member `roots_target` is not in version 1: the number of keys wanted is the number in the wanted root file (0007 rule 6).
+That the ceremony record lists the wanted files and the artifacts by digest is decided (0006 rule 8; 0005 rule 7). The names of the three members are Proposed ([#8](https://github.com/truvity/ritueel/issues/8)). A key's state (active, retired or revoked: 0007 rule 3) is read from the ceremony records and the newest root list; no member holds it. The member `roots_target` is not in version 1: the number of keys wanted is the number in the wanted root file (0007 rule 6).
 
 Each member of `requests` holds what the [hand-off contract records](/reference/hand-off-contract/#what-the-certifier-records): `stem`, `type`, `request_sha256`, `proof_sha256`, `store`, `key`, `evidence`, `policy`, `outcome` and `artifacts`.
 
-- `evidence` holds what was read from the proof and checked. For a key file it is `{ "unprotected": true }`: the key proves nothing about where it lives. The members for `piv` (serial, firmware, PIN and touch policy, form factor, slot), `aws-kms` (the ARN, the key's description and the digest of its policy) and `openpgp-card` are fixed with those stores: `aws-kms` in M2, `openpgp-card` in M3 and `piv` in M6.
+- `evidence` holds what was read from the proof and checked. For a key file it is `{ "unprotected": true }`: the key proves nothing about where it lives. The members for `piv` (serial, firmware, PIN and touch policy, form factor, slot), `aws-kms` (the ARN, the key's description and the digest of its policy) and `openpgp-card` are fixed with those key stores: `aws-kms` in M2, `openpgp-card` in M3 and `piv` in M6.
 - `policy` is a copy of the policy applied to the request: the `policy` block of `ritueel.yaml` and the wanted file of the delegation ([the bundle](/reference/bundle/#ritueelyaml)).
 - `outcome` is `issued`, and `artifacts` the answer's files with their digests, as in `result.json`; in a declining record, `outcome` is `refused` with the code `declined`.
 
@@ -243,7 +243,7 @@ A record that decides a field of the ceremony record is named here. A list of fi
 |---|---|---|
 | 0002 rules 7 and 8; 0005 rule 27; 0008 rule 6 | That a key file can be copied. | `root.copyable` |
 | 0003 rule 4 | The version of the slot map. | `slot_map_version` |
-| 0003 rule 9 | The serial of a card, never the name of another bundle. | `evidence`, fixed with the stores |
+| 0003 rule 9 | The serial of a card, never the name of another bundle. | `evidence`, fixed with the key stores |
 | 0004 rule 8 | The key ARN and the digest of the key policy of a cloud key. The role session of the ceremony role is also in the ceremony record. | `evidence`; the member for the role session is fixed with the cloud store ([#12](https://github.com/truvity/ritueel/issues/12)) |
 | 0005 rule 3 | Where the ceremony ran. | `ran_on` (proposed) |
 | 0005 rule 20 | That the accepted limit was shown. | `limit_shown` |

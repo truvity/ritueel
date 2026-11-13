@@ -9,7 +9,7 @@ sidebar:
 
 ritueel keeps everything it knows about one organisation or one person in one **bundle**, a directory of plain files with a fixed structure ([record 0006](../decisions/0006-bundle-history-and-trust-files.md), rule 1). A person writes only the **wanted files**. ritueel writes the rest, and it only adds files: it never rewrites a file of the history (record 0006, rule 31). [Learn](/learn/the-history/) advises on where to keep the bundle and how to back it up and restore it. ritueel needs no git (record 0006, rule 7), and the holder is still advised to keep the bundle in version control (record 0006, rule 11).
 
-The bundle holds the wanted files, the history, the trust sets, the certificates, public keys and attestations of the root keys, the digests of the revocation signatures, the card files and slot maps, the sealed secrets of cards ([record 0003](../decisions/0003-root-cards.md), rule 15) and, in a personal bundle, the wrapped backup of the person's encryption subkey ([record 0008](../decisions/0008-a-persons-own-key.md), rule 10). It never holds a private key in clear, a PIN the holder types, a passphrase or a revocation signature (record 0006, rule 1). Losing it loses the card files, the attestations and the OpenPGP creation times, so it is part of every key's identity (record 0006, rules 10 and 11). The private key of a software root key lives in a **key file outside it** ([record 0005](../decisions/0005-a-ceremony-and-where-it-runs.md), rule 30).
+The bundle holds the wanted files, the history, the trust sets, the certificates, public keys and attestations of the root keys, the digests of the revocation signatures, the card files and card maps, the sealed secrets of cards ([record 0003](../decisions/0003-root-cards.md), rule 15) and, in a personal bundle, the wrapped backup of the person's encryption subkey ([record 0008](../decisions/0008-a-persons-own-key.md), rule 10). It never holds a private key in clear, a PIN the holder types, a passphrase or a revocation signature (record 0006, rule 1). Losing it loses the card files, the attestations and the OpenPGP creation times, so it is part of every key's identity (record 0006, rules 10 and 11). The private key of a software root key lives in a **key file outside it** ([record 0005](../decisions/0005-a-ceremony-and-where-it-runs.md), rule 30).
 
 ## One bundle for one organisation or one person
 
@@ -47,7 +47,7 @@ acme/
 │   ├── roots/                         one for each root: acme-tls.yaml, acme-release.yaml, acme-ssh.yaml
 │   ├── delegations/                   one for each delegation: acme-ca.yaml, acme-release.yaml, …
 │   └── openpgp.yaml                   the user IDs of the OpenPGP root (one file, Proposed)
-├── seen/                              SEEN     one slot map for each card
+├── seen/                              SEEN     one card map for each card
 ├── sealed/                            HISTORY  the sealed card secrets
 ├── roots/A/                           HISTORY  root.json and attestation/, written once
 ├── requests/acme-ca-2027/             REQUEST  the request, and once given the answer
@@ -156,7 +156,7 @@ A name that does not carry its identity is a road not taken: two copies of a bun
 - Wanted files never go to the stick and never come back from it ([record 0005](../decisions/0005-a-ceremony-and-where-it-runs.md), rule 30; [record 0006](../decisions/0006-bundle-history-and-trust-files.md), rule 5). The copies of the wanted files in a ceremony folder are copies and not wanted files; they travel with the plan (record 0006, rule 7).
 
 :::note[Proposed]
-These parts of a join are not decided and are fixed with the code ([issue #8](https://github.com/truvity/ritueel/issues/8)): the exit code of a join that stops (3); a join in both directions as one command, and a join that also refreshes the stick; the list of paths a join considers (the slot maps in `seen/` are not joined; the read-only check builds them again); that the unit of a join is the file path, and that the answer says "older", "newer" or "fork".
+These parts of a join are not decided and are fixed with the code ([issue #8](https://github.com/truvity/ritueel/issues/8)): the exit code of a join that stops (3); a join in both directions as one command, and a join that also refreshes the stick; the list of paths a join considers (the card maps in `seen/` are not joined; the read-only check builds them again); that the unit of a join is the file path, and that the answer says "older", "newer" or "fork".
 :::
 
 The repair of a fork is later ([issue #138](https://github.com/truvity/ritueel/issues/138)).
@@ -261,7 +261,7 @@ keyring:
 | `policy` | The rules every request is checked against: `stores`, `min_firmware`, `pin_policy`, `require_name_constraints` and `validity_months`, with the meanings of the [reference policy](/reference/hand-off-contract/#what-the-certifier-checks). All five are required. |
 | `kind` | Optional. `personal` for a person's own OpenPGP key; absent for a company bundle. A personal bundle has `person` instead of `name` and `release_address` ([personal OpenPGP](/reference/personal-openpgp/)). |
 | `person` | Only with `kind: personal`: `name` (1 to 64 characters) and `address`. |
-| `aws_kms` | Optional, from M2; required when a root key's store is `aws-kms`. The root account, the two Regions and the two roles ([the block](/reference/kms-root/#ritueelyaml)). |
+| `aws_kms` | Optional, from M2; required when a root key's key store is `aws-kms`. The root account, the two Regions and the two roles ([the block](/reference/kms-root/#ritueelyaml)). |
 | `keyring` | Proposed; no record has this member. `license` would be the SPDX identifier written into the `.rpm`, which the release pipeline builds ([record 0009](../decisions/0009-release-keys-and-the-keyring.md), rule 22): the holder's choice, which ritueel does not default ([the keyring package](/reference/keyring-package/)). |
 | `keyservers` | Proposed in record 0011 (rule 4 decides a managed list; the block and its member names are proposed). The keyservers `ritueel publish` may send the public OpenPGP key to, one entry for each server (an address and the kind, the keys.openpgp.org interface or HKP). The holder lists them; `new` ships no default that sends, and keys.openpgp.org and keyserver.ubuntu.com are commented examples ([record 0011](../decisions/0011-publishing-and-what-to-do-after-a-ceremony.md)). It is not in the schema below until it is decided. |
 
@@ -361,7 +361,7 @@ use: user
 | `version` | `1`. |
 | `type` | `x509-intermediate`, `openpgp-subkey` or `ssh-ca-key`. |
 | `root` | The name of the root the delegation is under: a file in `want/roots/`, of the kind the type needs. |
-| `permitted_uri_hosts` | For `x509-intermediate`: the hosts a request's name constraints must stay inside. Required when `require_name_constraints` is true. Only URI hosts are expressible in version 1. **Decided for M2:** one permitted DNS zone ([record 0006](../decisions/0006-bundle-history-and-trust-files.md), rule 30). **Planned:** excluded DNS subtrees and excluded IP ranges, for per-environment limits; the schema will grow for them. |
+| `permitted_uri_hosts` | For `x509-intermediate`: the hosts a request's name constraints must stay inside. Required when `require_name_constraints` is true. Only URI hosts are expressible in version 1. **Decided for M2:** one permitted DNS zone ([record 0006](../decisions/0006-bundle-history-and-trust-files.md), rule 30). **Not decided:** excluded DNS subtrees and excluded IP ranges ([issue #9](https://github.com/truvity/ritueel/issues/9)). |
 | `capability` | For `openpgp-subkey`: `sign` or `authenticate`, required. A request for another capability is refused with `policy`; the subkey is bound with this one's key flag ([the contract](/reference/hand-off-contract/#openpgp-subkey)). |
 | `use` | For `ssh-ca-key`: `user` or `host`, required. A request for another `use` is refused with `policy`; the key is listed with this use ([the contract](/reference/hand-off-contract/#ssh-ca-key)). |
 | `kms_read_roles` | For a requester's KMS key in another account: the read-only role to assume, by account ([the contract](/reference/hand-off-contract/#aws-kms)). The role is never taken from a request. |
@@ -400,7 +400,7 @@ A key is active, retired or revoked ([record 0007](../decisions/0007-changing-an
 | Member | Meaning |
 |---|---|
 | `version` | `1`. |
-| `label` | The label of the root key: one upper-case letter, `A` for the first key and `B` for the second key when the first `apply` makes two keys, then the next free letter for each key added, whatever its key store. It never names the store, is unique inside its bundle and is never reused. What a label names across roots is open ([issue #137](https://github.com/truvity/ritueel/issues/137)). |
+| `label` | The label of the root key: one upper-case letter, `A` for the first key and `B` for the second key when the first `apply` makes two keys, then the next free letter for each key added, whatever its key store. It never names the key store, is unique inside its bundle and is never reused. What a label names across roots is open ([issue #137](https://github.com/truvity/ritueel/issues/137)). |
 | `store` | `software`, `piv` or `aws-kms`. |
 | `test` | True for a test root key. Set at birth and never changed; a real root never becomes a test root ([record 0005](../decisions/0005-a-ceremony-and-where-it-runs.md), rule 26). |
 | `created_at` | When the key was made: the time of its ceremony. |
