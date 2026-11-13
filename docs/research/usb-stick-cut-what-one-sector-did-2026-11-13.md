@@ -111,7 +111,7 @@ The 6 broken cuts are all the long ones, and none of the 44 others is long. This
 
 ### The trials on a stick image
 
-Run 1 (756 cuts) and run 2 (792 cuts) wrote to an image of the stick's partition and are described in [the earlier note](./exfat-power-cut-2026-11-12.md). The right writer left no broken bundle in either run.
+Run 1 (756 cuts) and run 2 (792 cuts) wrote to an image of the stick's partition and are described in [the earlier note](./exfat-power-cut-2026-11-12.md), which gives the counts of every writer in its table "The image trials by writer". The right writer left no broken bundle in either run.
 
 ## How to read it
 

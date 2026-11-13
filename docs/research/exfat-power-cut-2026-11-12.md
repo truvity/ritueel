@@ -36,7 +36,23 @@ Run 2, exFAT, as cut. "Not clean" means that `fsck.exfat` calls an entry corrupt
 | Temporary names of at most 15 characters | 126 | 0 | 0 |
 | One more flush after each rename | 144 | 0 | 0 |
 
-On ext4, the same three writers had 0 broken bundles in 396 cuts, and the check was clean after the journal was replayed. In run 1, the correct writer had 0 broken bundles in 252 cuts. The three wrong writers were found.
+On ext4, the same three writers had 0 broken bundles in 396 cuts, and the check was clean after the journal was replayed. The next table gives run 1 and run 2 by writer.
+
+### The image trials by writer
+
+Both runs used both file systems (ext4 and exFAT) with the same plan, so the counts are per file system, and the last column adds the two. A bundle is broken when the checker puts it in the class BROKEN. A wrong writer is written on purpose to break a rule of a good write, to show that the checker finds the break.
+
+| Run | Writer and what it does | Cuts on each file system | Broken on each file system | Cuts and broken on both |
+|---|---|---|---|---|
+| 1 | The correct writer: the write steps of [record 0006](../decisions/0006-bundle-history-and-trust-files.md), rule 31 | 126 | 0 | 252 and 0 |
+| 1 | Wrong: no flush. It never flushes a file or a folder, but keeps the temporary name and the rename | 126 | 82 | 252 and 164 |
+| 1 | Wrong: record first. It writes the ceremony record before the transcript and the other files | 63 | 21 | 126 and 42 |
+| 1 | Wrong: attempt late. It writes the attempt file after the first signature | 63 | 17 | 126 and 34 |
+| 2 | The correct writer as it was: temporary names that carry the final name | 126 | 0 | 252 and 0 |
+| 2 | As the first row of run 2, with temporary names of at most 15 characters | 126 | 0 | 252 and 0 |
+| 2 | As the first row of run 2, with one more flush after each rename | 144 | 0 | 288 and 0 |
+
+Run 1 had 756 cuts: 252 of the correct writer with 0 broken, and 504 of the three wrong writers with 240 broken (164 + 42 + 34). Run 2 had 792 cuts (252 + 252 + 288) and no broken bundle. All three wrong writers were found. The no-flush writer broke the bundle in 82 of 126 cuts on each file system. For the other two, every cut after the wrong step broke the bundle (21 of 21 and 17 of 17 on each file system), and no other cut did.
 
 ## How to read it
 
