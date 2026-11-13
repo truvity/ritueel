@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"strings"
 	"sync"
+	"unicode/utf8"
 )
 
 // TempPrefix starts every temporary name. The records say "a fixed prefix" and not which
@@ -262,33 +263,63 @@ func (w *Writer) writeNew(path string, data []byte, perm fs.FileMode) error {
 	return nil
 }
 
-// checkPath refuses a path that can mean more than one thing, or something other than a name
-// the caller can point at. The forms, all refused with [ErrInvalid]: an empty path; a NUL byte;
-// a trailing separator (filepath.Dir and filepath.Base of "dir/x/" both give "x", so the file
-// would be made inside x); an element that is "." or ".." ; an empty element between two
-// separators ("a//b", and a leading "//", which some systems read as a network name); on a
-// system whose separator is not a backslash, a backslash (a separator to Windows and to a
-// FAT or exFAT stick, a plain character here) and a leading drive ("C:", "C:x"); a final
-// element that starts with [TempPrefix]. One leading separator, an absolute path, is
-// accepted: the writer has no root (see the package comment). Other forms pass as they are,
-// among them a relative path with no folder ("x", whose folder is ".").
+// maxNameUnits is the longest name exFAT holds, in UTF-16 code units (the NameLength field of
+// its Stream Extension entry, at most 255).
+const maxNameUnits = 255
+
+// exfatBad holds the characters of Table 35, "Invalid FileName Characters", of the exFAT
+// specification, besides the control codes U+0000 to U+001F: the quotation mark, the
+// asterisk, the forward slash, the colon, the less-than and greater-than signs, the question
+// mark, the back slash and the vertical bar.
+const exfatBad = "\"*/:<>?\\|"
+
+// nameProblem says why one name (one element of a path, or the name of a file of a set) cannot
+// be held by the exFAT file system of a stick, or is held under another name; it returns ""
+// when the name is fine. name is not empty. The reasons: it is not valid UTF-8; it is longer
+// than 255 UTF-16 code units; it ends with a dot or a space (the Linux driver removes the
+// trailing dots, Windows removes dots and spaces, so "a." and "a" would be one file); it has
+// a character of exFAT's list of invalid characters or a control code. The colon is on that
+// list, so a drive ("C:x") is refused by it and needs no rule of its own.
+func nameProblem(name string) string {
+	if !utf8.ValidString(name) {
+		return "is not valid UTF-8"
+	}
+	units := 0
+	for _, r := range name {
+		if r >= 0x10000 {
+			units += 2
+		} else {
+			units++
+		}
+		if r < 0x20 || strings.ContainsRune(exfatBad, r) {
+			return fmt.Sprintf("has the character %q, which the stick's file system cannot hold", r)
+		}
+	}
+	if units > maxNameUnits {
+		return fmt.Sprintf("is %d UTF-16 code units long, more than the %d the stick's file system holds", units, maxNameUnits)
+	}
+	if last := name[len(name)-1]; last == '.' || last == ' ' {
+		return "ends with a dot or a space, which the stick's file system removes"
+	}
+	return ""
+}
+
+// checkPath refuses a path that can mean more than one thing, that something other than a
+// name the caller can point at, or that the stick's file system cannot hold. All forms are
+// refused with [ErrInvalid]: an empty path; a trailing separator (filepath.Dir and
+// filepath.Base of "dir/x/" both give "x", so the file would be made inside x); an element
+// that is "." or ".."; an empty element between two separators ("a//b", and a leading "//",
+// which some systems read as a network name); and, for every element and not only the last,
+// whatever [nameProblem] finds (control codes, the characters of exFAT's invalid list
+// including the backslash and the colon, a trailing dot or space, a length over 255 UTF-16
+// code units, bytes that are not UTF-8). The final element must not start with [TempPrefix].
+// One leading separator, an absolute path, is accepted: the writer has no root (see the
+// package comment). A relative path with no folder ("x", whose folder is ".") passes.
 func checkPath(path string) error {
 	if path == "" {
 		return fmt.Errorf("%w: empty path", ErrInvalid)
 	}
-	if strings.IndexByte(path, 0) >= 0 {
-		return fmt.Errorf("%w: path %q has a NUL byte", ErrInvalid, path)
-	}
-	rest := path[len(filepath.VolumeName(path)):]
-	if filepath.Separator != '\\' {
-		if strings.IndexByte(rest, '\\') >= 0 {
-			return fmt.Errorf("%w: path %q has a backslash", ErrInvalid, path)
-		}
-		if len(rest) >= 2 && rest[1] == ':' && (rest[0]|0x20 >= 'a' && rest[0]|0x20 <= 'z') {
-			return fmt.Errorf("%w: path %q starts with a drive", ErrInvalid, path)
-		}
-	}
-	elems := strings.Split(filepath.ToSlash(rest), "/")
+	elems := strings.Split(filepath.ToSlash(path[len(filepath.VolumeName(path)):]), "/")
 	last := len(elems) - 1
 	if last == 0 && elems[0] == "" {
 		return fmt.Errorf("%w: path %q does not name a file or a folder", ErrInvalid, path)
@@ -306,6 +337,10 @@ func checkPath(path string) error {
 			return fmt.Errorf("%w: path %q has a \".\" element", ErrInvalid, path)
 		case "..":
 			return fmt.Errorf("%w: path %q has a \"..\" element", ErrInvalid, path)
+		default:
+			if why := nameProblem(e); why != "" {
+				return fmt.Errorf("%w: path %q has an element that %s", ErrInvalid, path, why)
+			}
 		}
 	}
 	if strings.HasPrefix(elems[last], TempPrefix) {
@@ -324,12 +359,15 @@ func checkPerm(perm fs.FileMode) error {
 func checkFiles(files []NewFile) error {
 	seen := make(map[string]bool, len(files))
 	for _, f := range files {
-		if f.Name == "" || f.Name == "." || f.Name == ".." ||
-			strings.ContainsAny(f.Name, "/\\\x00") || strings.HasPrefix(f.Name, TempPrefix) {
+		if f.Name == "" || f.Name == "." || f.Name == ".." || strings.HasPrefix(f.Name, TempPrefix) {
 			return fmt.Errorf("%w: file name %q is not one plain name", ErrInvalid, f.Name)
 		}
-		// Case-folded, because a name that differs only by case is one entry on exFAT.
-		key := strings.ToLower(f.Name)
+		if why := nameProblem(f.Name); why != "" { // a separator in the name is on exFAT's list
+			return fmt.Errorf("%w: file name %q %s", ErrInvalid, f.Name, why)
+		}
+		// Up-cased, because exFAT compares names after up-casing, and a name that differs only
+		// by case is one entry there.
+		key := strings.ToUpper(f.Name)
 		if seen[key] {
 			return fmt.Errorf("%w: file name %q is given twice", ErrInvalid, f.Name)
 		}
