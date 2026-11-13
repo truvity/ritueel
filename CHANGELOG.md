@@ -15,3 +15,5 @@ This file is written by hand, for the person who uses a release. It is not a lis
 
 - Nothing is released yet. The first docs, the scope decision and the roadmap are in `docs/`.
 - The site has a demo of the local page, the browser view of a ritueel bundle, at `/demo/`: the real page over made-up data, with three example bundles (`acme`, `globex`, `personal`), a switch between them and five scenes for `acme`. It has four entries, To do, Inventory, History and Trust set, and writes nothing. Its commands follow the command reference. The program that serves it is not built.
+- The Go module `ritueel.id/ritueel` and the first command, `ritueel version`, which prints the version and the commit of the build. With `--output json` it prints one JSON object, as the command reference says. The exit codes are those of the command reference, and a command line that is not valid exits with 2. The other twelve commands are not built.
+- The program is built as one static Linux executable, without cgo, and the build checks that the file has no interpreter and no shared library.
