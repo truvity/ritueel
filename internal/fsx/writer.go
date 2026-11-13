@@ -267,6 +267,13 @@ func (w *Writer) writeNew(path string, data []byte, perm fs.FileMode) error {
 // its Stream Extension entry, at most 255).
 const maxNameUnits = 255
 
+// maxNameBytes is the longest name that the file system of a workstation holds, in bytes
+// (NAME_MAX, 255, on Linux and macOS). A bundle lives on the stick and in the repository of
+// the workstation, so a name must fit both limits, and neither implies the other: 128 times
+// "é" is 128 UTF-16 code units (it fits the stick) and 256 bytes (it does not fit the
+// workstation), and 100 times U+1F600 is 200 UTF-16 code units and 400 bytes.
+const maxNameBytes = 255
+
 // exfatBad holds the characters of Table 35, "Invalid FileName Characters", of the exFAT
 // specification, besides the control codes U+0000 to U+001F: the quotation mark, the
 // asterisk, the forward slash, the colon, the less-than and greater-than signs, the question
@@ -276,10 +283,12 @@ const exfatBad = "\"*/:<>?\\|"
 // nameProblem says why one name (one element of a path, or the name of a file of a set) cannot
 // be held by the exFAT file system of a stick, or is held under another name; it returns ""
 // when the name is fine. name is not empty. The reasons: it is not valid UTF-8; it is longer
-// than 255 UTF-16 code units; it ends with a dot or a space (the Linux driver removes the
-// trailing dots, Windows removes dots and spaces, so "a." and "a" would be one file); it has
-// a character of exFAT's list of invalid characters or a control code. The colon is on that
-// list, so a drive ("C:x") is refused by it and needs no rule of its own.
+// than 255 UTF-16 code units (exFAT) or than 255 bytes (the workstation; see [maxNameBytes],
+// both limits apply); it ends with a dot or a space (Windows removes both, and the Linux exFAT
+// driver removes trailing dots unless the mount option keep_last_dots is given, so the name on
+// the stick would not be the name asked for); it has a character of exFAT's list of invalid
+// characters or a control code. The colon is on that list, so a drive ("C:x") is refused by it
+// and needs no rule of its own.
 func nameProblem(name string) string {
 	if !utf8.ValidString(name) {
 		return "is not valid UTF-8"
@@ -295,11 +304,14 @@ func nameProblem(name string) string {
 			return fmt.Sprintf("has the character %q, which the stick's file system cannot hold", r)
 		}
 	}
+	if len(name) > maxNameBytes {
+		return fmt.Sprintf("is %d bytes long, more than the %d a workstation file system holds", len(name), maxNameBytes)
+	}
 	if units > maxNameUnits {
 		return fmt.Sprintf("is %d UTF-16 code units long, more than the %d the stick's file system holds", units, maxNameUnits)
 	}
 	if last := name[len(name)-1]; last == '.' || last == ' ' {
-		return "ends with a dot or a space, which the stick's file system removes"
+		return "ends with a dot or a space, which the stick's file system can remove"
 	}
 	return ""
 }
@@ -312,8 +324,8 @@ func nameProblem(name string) string {
 // which some systems read as a network name); and, for every element and not only the last,
 // whatever [nameProblem] finds (control codes, the characters of exFAT's invalid list
 // including the backslash and the colon, a trailing dot or space, a length over 255 UTF-16
-// code units, bytes that are not UTF-8). The final element must not start with [TempPrefix].
-// One leading separator, an absolute path, is accepted: the writer has no root (see the
+// code units or 255 bytes, bytes that are not UTF-8). The final element must not start with
+// [TempPrefix]. One leading separator, an absolute path, is accepted: the writer has no root (see the
 // package comment). A relative path with no folder ("x", whose folder is ".") passes.
 func checkPath(path string) error {
 	if path == "" {
