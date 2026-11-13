@@ -1,0 +1,66 @@
+# The only writer of the Go build and module caches. checks.yaml restores them; a pull request and
+# the merge queue never save one. This workflow runs reviewed code on `main`, holds no secret and has
+# read-only permissions, so a cache it saves was made from code that has been merged. The build cache
+# is not checked when it is read (the module cache is, against go.sum), which is why untrusted code
+# must not write it. No `pull_request_target`, no `workflow_run`.
+#
+# The key holds the commit, so every run that gets this far saves a fresh cache; the restore falls back
+# to the newest cache of the same go.sum and tool pins, then to the newest one at all, and Go reuses
+# what still fits.
+name: Go cache
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "**/*.go"
+      - go.mod
+      - go.sum
+      - devbox.json
+      - devbox.lock
+      - Justfile
+      - .github/workflows/go-cache.yaml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: go-cache-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  save:
+    name: save (build, test, save the Go caches)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: jetify-com/devbox-install-action@8c6a66ed6273138b1915457069de78cb52fe3bd7 # v0.15.0
+        with:
+          devbox-version: "0.19.0"
+          enable-cache: "false"
+          refresh-cli: "true"
+      - id: restore
+        name: Restore the newest Go caches
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            ~/.cache/go-build
+            ~/go/pkg/mod
+          key: go-${{ runner.os }}-${{ hashFiles('go.sum', 'devbox.lock') }}-${{ github.sha }}
+          restore-keys: |
+            go-${{ runner.os }}-${{ hashFiles('go.sum', 'devbox.lock') }}-
+            go-${{ runner.os }}-
+      - name: Build and test, which fills the caches
+        run: devbox run -- just go-build go-test
+      - name: Save the Go caches
+        if: steps.restore.outputs.cache-hit != 'true'
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            ~/.cache/go-build
+            ~/go/pkg/mod
+          key: go-${{ runner.os }}-${{ hashFiles('go.sum', 'devbox.lock') }}-${{ github.sha }}
