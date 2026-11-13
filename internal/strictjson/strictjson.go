@@ -43,7 +43,10 @@
 //   - An array: from a list of exactly its length. A list that is longer or shorter is refused.
 //   - A string, a bool, and an integer of every kind: from a string, true or false, and an
 //     integer. An integer must fit the kind of the field, so that 300 into a uint8 and -1 into
-//     a uint are refused. A number is never read through a float.
+//     a uint are refused. A number is never read through a float. The text -0 is the integer
+//     zero: the grammar accepts it and every integer kind, the unsigned ones too, takes it as 0
+//     (the standard decoder refuses it for an unsigned kind). The canonical form writes it 0, so
+//     a document with -0 is read and is not canonical.
 //   - A pointer: made, and filled, for a member that is present. A pointer to a pointer or to an
 //     interface is refused.
 //   - Raw: the bytes of the member exactly as they are in the input, from its opening brace to its

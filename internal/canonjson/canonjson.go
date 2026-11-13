@@ -47,8 +47,8 @@ import (
 // Canonicalize reads data under the rules of package strictjson (one object, UTF-8, no repeated
 // member, integers only, no null, nesting of at most strictjson.MaxDepth levels, at most
 // strictjson.DefaultMaxBytes) and returns its canonical form. White space around the tokens, the
-// order of the members and the spelling of the escapes are the only things that change, so the
-// result is never longer than data.
+// order of the members, the spelling of the escapes and the text -0, which is the integer zero and
+// is written 0, are the only things that change, so the result is never longer than data.
 func Canonicalize(data []byte) ([]byte, error) {
 	var out bytes.Buffer
 	if err := canonicalizeInto(&out, data); err != nil {
@@ -57,8 +57,9 @@ func Canonicalize(data []byte) ([]byte, error) {
 	return out.Bytes(), nil
 }
 
-// IsCanonical reports whether data is byte for byte its own canonical form. It returns an error
-// when data breaks the rules of package strictjson, and then the answer is false.
+// IsCanonical reports whether data is byte for byte its own canonical form; a document with -0 in
+// it, which is read as zero, is not. It returns an error when data breaks the rules of package
+// strictjson, and then the answer is false.
 func IsCanonical(data []byte) (bool, error) {
 	canon, err := Canonicalize(data)
 	if err != nil {
