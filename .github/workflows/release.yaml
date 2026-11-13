@@ -7,24 +7,32 @@
 # Four jobs, and the one that writes runs no code of this repository:
 #   verify   read-only: go-check on the tagged commit, which includes the snapshot build.
 #   build    read-only, and no step that runs repository code is given a write token: builds the
-#            release for the tag (GoReleaser, without publishing), checks that build, and keeps exactly
-#            the release files as a workflow artifact.
-#   test     no permissions, no checkout, no tool: takes that artifact, and on a runner of each machine
-#            (amd64 and arm64) unpacks the archive of that machine and runs the binary in it, which must
-#            print exactly the stamped version and commit. No step that runs a built binary is given a
-#            token.
+#            release for the tag (GoReleaser, without publishing), checks that build, and keeps the
+#            release files (the two archives and SHA256SUMS) and the release text (NOTES.md) as a
+#            workflow artifact. It gives one digest over all four as a job output.
+#   test     no permissions, no checkout, no tool: takes that artifact, checks it against the digest,
+#            and on a runner of each machine (amd64 and arm64) unpacks the archive of that machine and
+#            runs the binary in it, which must print exactly the stamped version and commit. No step
+#            that runs a built binary is given a token.
 #   publish  the only job with `contents: write`: it checks out nothing, installs no tool and runs no
-#            code of the repository. It needs `test` to have passed on both machines. It downloads that artifact, checks it against SHA256SUMS, refuses a
-#            tag that already has a release, refuses a tag that no longer points at the commit that
-#            `verify` and `build` checked out (each gives its commit as a job output; the tag's commit
-#            is asked of GitHub with `git ls-remote`), and uploads exactly those files with `gh`. What is published is the
-#            build that was checked; nothing is built twice.
+#            code of the repository. It needs `test` to have passed on both machines. It downloads the
+#            artifact and, before any other check, compares it with the digest from `build` (a job of
+#            this run that ran a built binary could have replaced the artifact; a job output it cannot
+#            rewrite). It then checks the files against SHA256SUMS, refuses a tag for which any release,
+#            draft or published, exists, and creates the release as a draft with the two archives and
+#            SHA256SUMS, and NOTES.md as its text. It asks GitHub with `git ls-remote` which commit the
+#            tag points at, before the draft and once more after it, and publishes the draft only if it
+#            is the commit that `verify` and `build` checked out (each gives its commit as a job
+#            output). If the tag moved after the draft was made, the draft stays and a person deletes it
+#            by hand; the job deletes nothing. What is published is the build that was checked; nothing
+#            is built twice.
 #
 # Only a push of a tag runs `publish`. A pull request cannot reach any job: there is no `pull_request`,
 # `pull_request_target` or `workflow_run` trigger. `workflow_dispatch` is a dry run: it runs `verify`,
-# a snapshot `build` (the version `v0.0.0-snapshot`) and `test` on both machines, and never publishes.
-# It starts from the Actions tab or `gh workflow run release.yaml --ref <branch>`, and only once this
-# file is on the default branch. No tag is made by this workflow and none is moved or deleted.
+# a snapshot `build` (the version `v0.0.0-snapshot`, a name that a real tag may not have) and `test`
+# on both machines, and never publishes. It starts from the Actions tab or
+# `gh workflow run release.yaml --ref <branch>`, and only once this file is on the default branch.
+# No tag is made by this workflow and none is moved or deleted.
 #
 # WHAT THE CHECKS ARE. The tag form (no leading zeros), and "the commit is on main", guard against a
 # mistake, such as a tag on the wrong commit or a mistyped name. They are not a boundary against a
@@ -35,14 +43,16 @@
 # ABOUT TOKENS. Only `publish` has a write token. The token of every other job is read-only (`verify`
 # and `build`: `contents: read`) or has no permission at all (`test`). No step that runs code of this
 # repository, or a binary built from it, is given a write token, and none is given a token through
-# `env`. The actions receive the job's own token as an input and use it inside themselves: `checkout`
-# and the devbox install action get the read-only one (`persist-credentials: false` and
-# `disable-nix-access-token` stop them from leaving it on disk or in the Nix configuration), and
-# `download-artifact` gets the one without permissions.
+# `env`. Two actions of the jobs that run repository code use the job's read-only token on their own:
+#   - `checkout` has a `token` input that defaults to the job's token. It uses it to fetch, and
+#     `persist-credentials: false` removes it from the git configuration afterwards.
+#   - the devbox install action has no token input. Two of its own steps read `github.token`: one writes
+#     it into the Nix configuration (`disable-nix-access-token` skips that step), the other runs only
+#     when the action has failed, and uses it for `gh cache list`.
+# `download-artifact` has no default token and receives none here (a token is for another run).
 #
 # The tools come from this repository's own devbox.json and devbox.lock (GoReleaser included), through
-# the same public action as the `go` job of checks.yaml, with `disable-nix-access-token` so that the
-# job's token is not written into the Nix configuration.
+# the same public action as the `go` job of checks.yaml, with `disable-nix-access-token`.
 name: Release
 
 on:
@@ -54,8 +64,9 @@ on:
 permissions:
   contents: read
 
-# One run for each tag, never cancelled: a release that has started must end. The event is in the
-# group, as in security.yaml.
+# One group for each tag. A run that has started is never cancelled (`cancel-in-progress: false`); a run
+# that is still waiting for the group can be dropped when a newer one queues in it, which for a tag is
+# a push of the same tag again. The event is in the group, as in security.yaml.
 concurrency:
   group: release-${{ github.event_name }}-${{ github.ref }}
   cancel-in-progress: false
@@ -117,13 +128,13 @@ jobs:
       - run: devbox run -- just go-check
 
   # Read-only: the job's own token is `contents: read`, and no step that runs repository code is given
-  # a write token or any token through `env`. `checkout` and the install action receive the read-only
-  # token inside the actions; the checkout does not keep it on disk and the install action does not
-  # write it to the Nix configuration. It builds the release for the
-  # tag without publishing, runs the whole check on that build (`go-release-build` refuses a tag that
-  # is badly formed, not at this commit or not on main, then `_go-release-verify`), and keeps exactly
-  # the release files: the two archives, SHA256SUMS and the release notes. It runs on the commit that
-  # the tag event named, not on whatever the tag points at by then.
+  # a write token or any token through `env`. `checkout` (a token input) and the devbox install action
+  # (two steps of its own) use the read-only token inside the actions; see "ABOUT TOKENS" above. It
+  # builds the release for the tag without publishing, runs the whole check on that build
+  # (`go-release-build` refuses a tag that is badly formed, the dry run's name, not at this commit or
+  # not on main, then `_go-release-verify`), and keeps the two archives, SHA256SUMS and the release
+  # notes (NOTES.md, the text of the release page). It runs on the commit that the tag event named, not
+  # on whatever the tag points at by then.
   build:
     name: build (GoReleaser, no publishing, checked)
     needs: verify
@@ -191,10 +202,10 @@ jobs:
   # runner, free and unlimited for a public repository (the page "GitHub-hosted runners").
   #
   # `permissions: {}`: nothing in this job reads or writes the repository. The artifact belongs to this
-  # run, and download-artifact takes it with the runner's own credentials; `github-token` is only for an
-  # artifact of another run (the action still receives the job's own token, which has no permission, as
-  # its input). No checkout, no devbox, no Go, and no step that runs a built binary is given a token:
-  # the step that runs it has nothing but the values below in its environment.
+  # run, and download-artifact takes it with the runner's own credentials; its `github-token` input has
+  # no default and is only for an artifact of another run, so no step here receives a token. No
+  # checkout, no devbox, no Go; the step that runs the binary has nothing but the values below in its
+  # environment.
   test:
     name: test (${{ matrix.arch }} binary on a ${{ matrix.arch }} runner)
     needs: build
@@ -242,7 +253,9 @@ jobs:
           [ "$(uname -m)" = "$MACHINE" ] || fail "this runner is $(uname -m), wanted $MACHINE for $ARCH"
           cd release
           sha256sum -c SHA256SUMS
-          # SHA256SUMS names exactly the two archives, one for each machine, with the same version.
+          # SHA256SUMS names exactly two files: an amd64 archive and an arm64 archive, each
+          # `ritueel_<characters of a version>_linux_<arch>.tar.gz`. This pattern does not make the two
+          # versions equal; `publish` does that, it requires the exact names for the tag.
           names="$(awk '{print $2}' SHA256SUMS | LC_ALL=C sort | tr '\n' ' ')"
           re='^(ritueel_[A-Za-z0-9._+-]+_linux_amd64\.tar\.gz) (ritueel_[A-Za-z0-9._+-]+_linux_arm64\.tar\.gz) $'
           [[ "$names" =~ $re ]] || fail "SHA256SUMS does not name exactly the amd64 and the arm64 archive: $names"
@@ -270,9 +283,9 @@ jobs:
           echo "$archive: ran on $(uname -m), printed the stamped version and commit"
 
   # The only job that writes (`contents: write`). It checks out nothing, installs no tool and runs no
-  # code of this repository: its only steps are the download of the artifact and `gh`, which the
-  # runner has. Nothing is built here. The tag, the repository, the token and the two commits reach the
-# shell only through env.
+  # code of this repository: its only steps are the download of the artifact, `gh` and `git ls-remote`,
+  # which the runner has. Nothing is built here. The tag, the repository, the token, the two commits and
+  # the digest reach the shell only through env.
   publish:
     name: publish (gh, GitHub Releases, unsigned)
     needs: [verify, build, test]
