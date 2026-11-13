@@ -19,16 +19,16 @@ So the rule is: **a person only where a person adds safety.** Reading the facts,
 
 ## What a good ceremony does
 
-Whatever the tool, a good ceremony has the same six steps:
+Whatever the tool, a good ceremony does these things, in an order that keeps the person in charge:
 
-1. **Plan.** Fix in advance every byte that will be signed: which key, which name, which lifetime, which serial number. A plan that cannot change during the ceremony cannot be swapped during it.
-2. **Confirm.** The person compares the plan with what they expected and confirms it. A confirmation that is just a key press becomes a habit; a confirmation that needs typing a short digest of the plan does not.
-3. **Reserve.** Write down that an attempt began, before any key is born or signed. If the run stops, the attempt shows signatures may exist.
-4. **Sign.** The key signs. With a card, the PIN stays on the card and a touch is the proof that someone is there.
-5. **Verify.** Check each result with code that did not sign it.
-6. **Record.** Write what was done, with which keys, in which store, and what outsiders now see. The record holds no secret.
+- Every byte that will be signed is fixed in advance, in a plan: which key, which name, which lifetime, which serial number. A plan that cannot change during the ceremony cannot be swapped during it.
+- The person compares the plan with what they expected and confirms it. A confirmation that is just a key press becomes a habit; a confirmation that needs typing a short digest of the plan does not.
+- An attempt is written down before any key is born or signed. If the run stops, the attempt shows signatures may exist.
+- The key signs. With a card, the PIN stays on the card and a touch is the proof that someone is there.
+- Each result is checked with code that did not sign it.
+- What was done is recorded: with which keys, in which store, and what outsiders now see. The record holds no secret.
 
-These steps are the same in every key store and in every tool. ritueel's engine is built around them ([the tools](/tools/cli/), [record 0005](../decisions/0005-a-ceremony-and-where-it-runs.md)).
+ritueel does all of this in one command, `apply`, and it is the same in every key store ([the tools](/tools/cli/), [record 0005](../decisions/0005-a-ceremony-and-where-it-runs.md)).
 
 ## What a tool may do, and what it may not
 

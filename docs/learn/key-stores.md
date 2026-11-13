@@ -89,7 +89,7 @@ Every move is a transition ([moving from one root to another](/learn/transitions
 |---|---|---|---|
 | Software | PIV card | The key stops being copyable. | The new key is attested, and the chain verifies against the maker's root. |
 | Software | AWS KMS | The key moves under cloud access control and audit. | The key's policy names one actor. |
-| PIV card | AWS KMS | A physical key becomes a permission. | The confirmation step still needs a person. |
+| PIV card | AWS KMS | A physical key becomes a permission. | The confirmation still needs a person. |
 | AWS KMS | PIV card | A permission becomes a physical key. | A second card exists in another place before the first is relied on. |
 | Same kind | Same kind | A replaced token, or a KMS key in another account. The key is new. | The overlap is long enough for slow clients. |
 

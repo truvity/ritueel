@@ -21,7 +21,7 @@ ritueel is in the design phase and has no release. The program is planned, and s
 
 ## One engine, three faces
 
-The command line, the guided mode and the local page are three faces of the **same** ceremony engine: plan, confirm, reserve, sign, verify, record ([record 0005](../decisions/0005-a-ceremony-and-where-it-runs.md)). The guided mode fills in flags and the page shows the plan; neither implements a ceremony of its own, and the page never confirms one. The command line and the page also call the same API of one ritueel process. What the command line refuses, they refuse.
+The command line, the guided mode and the local page are three faces of the **same** ceremony engine ([record 0005](../decisions/0005-a-ceremony-and-where-it-runs.md)). The guided mode fills in flags and the page shows the plan; neither implements a ceremony of its own, and the page never confirms one. The command line and the page also call the same API of one ritueel process. What the command line refuses, they refuse.
 
 ## What the tools never do
 
