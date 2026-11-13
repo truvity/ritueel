@@ -68,7 +68,7 @@ The Go code is the program `ritueel`. [The first version's commands](/reference/
 ### Pins and the module
 
 - `devbox.json` pins Go (`go`), the linter (`golangci-lint`) and the vulnerability scanner (`govulncheck`) at exact versions. It also sets `CGO_ENABLED=0`, so the program is a static executable.
-- `go.mod` has a `go` line that is the pinned Go version, and it has no `toolchain` line. Another version there would make the `go` command fetch a second Go. The build and the tests use only the Go that devbox pins: `devbox.json` sets `GOTOOLCHAIN=local`, so a `go` line in a `go.mod` cannot make the tools download another Go, and it sets `GOFLAGS=-mod=readonly`. `go-lint` also sets `GOTOOLCHAIN=local`.
+- `go.mod` has a `go` line that is the pinned Go version, and it has no `toolchain` line. The build and the tests use only the Go that devbox pins: `devbox.json` sets `GOTOOLCHAIN=local`, so a newer `go` line in a `go.mod` makes the `go` command stop, and it does not download another Go. `devbox.json` also sets `GOFLAGS=-mod=readonly`, so a build never changes `go.mod`.
 - The module path is `ritueel.id/ritueel`.
 - There is no `vendor/` folder. `go.sum` is committed. `go-verify` checks the downloaded modules against it, and `go-tidy` fails when `go.mod` or `go.sum` is not what `go mod tidy` writes.
 
@@ -112,7 +112,7 @@ The other linters are the standard set (`errcheck`, `govet`, `ineffassign`, `sta
 ### In CI
 
 - The job `go` of `.github/workflows/checks.yaml` runs `just go-check`. It is one of the jobs that the single job `checks` waits for.
-- The job installs the tools from this repository's own `devbox.json` and `devbox.lock`, with `jetify-com/devbox-install-action`. At run time CI fetches the devbox installer, and the Nix installer that the action runs, and trusts both. The other jobs use the shared setup action.
+- The job installs the tools from this repository's own `devbox.json` and `devbox.lock`, with `jetify-com/devbox-install-action`. At run time the action fetches the devbox installer, and the job checks the devbox program it installs against a pinned checksum. The action also runs the Nix installer, which CI trusts. The other jobs use the shared setup action.
 - A pull request only reads the Go caches (the build cache and the module cache). It never saves them. `.github/workflows/go-cache.yaml` is the only workflow that saves them. It runs on `main`, after a change to a Go file, `go.mod`, `go.sum`, `devbox.json`, `devbox.lock` or the `Justfile`, and on demand. The build cache is not checked when it is read, so code that is not reviewed must not write it.
 - The vulnerability scan is its own workflow, `.github/workflows/security.yaml`, which runs `just go-vuln` on `main`, on pull requests, every day and on demand. It is not part of `checks` and does not block a merge: a new advisory is news about the world, not about your change.
 
