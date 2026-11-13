@@ -48,15 +48,11 @@ The steps of a write (whole or not at all, under a temporary name, then one rena
 | When | Writes | Decided by |
 |---|---|---|
 | First | The ceremony folder, `plan.json` and the copies in `wanted/`. With `--plan-only` ritueel stops here. | 0005 rules 7 and 13; 0006 rule 9 |
-| Before the first key is born | On the stick: the attempt, as the first record of the trace area. Elsewhere: `attempt.json`; the journals are created with it. | 0005 rules 10, 36 and 37 |
+| Before the first key is born | On the stick: the attempt, as the first record of the trace area. Elsewhere: `attempt.json`; the journals are created with it. | 0005 rules 10, 36 and 37; 0006 rule 43 |
 | While keys are born and signatures made | One line in `births.jsonl` after each key exists and one line in `signatures.jsonl` after each signature is made. On the stick, each line is a record in the trace area, and a record that says what is about to be done comes before each act. | 0005 rules 10 and 38 |
 | At the end | On the stick: `attempt.json` and the journals, made from the trace area. Then `transcript.txt`, then the artifacts under names of their own (the trust set, the answers in `requests/`), and last `record.json`. On the stick, the end record in the trace area follows. | 0005 rules 12 and 39; 0006 rule 31 |
 
 A wrong or missing confirmation writes nothing (0005 rule 9). Every artifact is checked against its request and the plan, with code that did not sign it, before it is written out (0005 rule 12).
-
-:::note[Proposed]
-Rule 10 of record 0005 decides that an attempt is written before the first key and that each key and each signature is appended to a journal. That the attempt is written like every other file (the rename refuses to replace, so it exists once), and that a journal is made by an exclusive create and grows by one flushed line at a time, is Proposed for a ceremony that is not on the stick, and is fixed with the code ([#8](https://github.com/truvity/ritueel/issues/8)).
-:::
 
 The ceremony record is the last file a ceremony writes, because it lists the others by digest. A ceremony folder with no ceremony record is a ceremony that has not ended.
 
