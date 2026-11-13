@@ -286,15 +286,39 @@ func notSeen(r rune) bool {
 	return r == 0x7f || (0x80 <= r && r <= 0x9f) || r == 0xfffe || r == 0xffff
 }
 
+// windowsDevice reports a name that Windows reserves for a device, so that the holder of the
+// stick cannot open a file of that name on a Windows system. The list is that of Microsoft's
+// page "Naming Files, Paths, and Namespaces": CON, PRN, AUX, NUL, COM1 to COM9, LPT1 to
+// LPT9, and COM and LPT with the superscript digits U+00B9, U+00B2 and U+00B3 that Windows
+// reads as digits. The page says that the names followed immediately by an extension are the
+// same device ("NUL.txt" and "NUL.tar.gz" are NUL), so the part of the name before its first
+// dot is compared, without case. "auxiliary" and "com10" are names.
+func windowsDevice(name string) bool {
+	stem, _, _ := strings.Cut(name, ".")
+	up := strings.ToUpper(stem)
+	switch up {
+	case "CON", "PRN", "AUX", "NUL":
+		return true
+	}
+	if len(up) > 3 && (up[:3] == "COM" || up[:3] == "LPT") {
+		switch up[3:] {
+		case "1", "2", "3", "4", "5", "6", "7", "8", "9", "\u00b9", "\u00b2", "\u00b3":
+			return true
+		}
+	}
+	return false
+}
+
 // nameProblem says why one name (one element of a path, or the name of a file of a set) cannot
-// be held by the exFAT file system of a stick, or is held under another name; it returns ""
-// when the name is fine. name is not empty. The reasons: it is not valid UTF-8; it is longer
-// than 255 bytes (see [maxNameBytes]); it ends with a dot or a space (Windows removes both, and the Linux exFAT
-// driver removes trailing dots unless the mount option keep_last_dots is given, so the name on
-// the stick would not be the name asked for); it has a character of exFAT's list of invalid
-// characters or a control code; it has a character that is not on exFAT's list and that no
-// person can see or type, see [notSeen]. The colon is on exFAT's list, so a drive ("C:x") is
-// refused by it and needs no rule of its own.
+// be used on the stick (exFAT) and on the desktop systems that read it, or is held there under
+// another name; it returns "" when the name is fine. name is not empty. The reasons: it is not
+// valid UTF-8; it is longer than 255 bytes (see [maxNameBytes]); it has a character of exFAT's
+// list of invalid characters or a control code (the colon is on that list, so a drive, "C:x",
+// is refused by it and needs no rule of its own); it has a character that no person can see or
+// type, see [notSeen]; it is a device name of Windows, see [windowsDevice]; it ends with a dot
+// or a space (Windows removes both, and the Linux exFAT driver removes trailing dots unless
+// the mount option keep_last_dots is given, so the name on the stick would not be the name
+// asked for).
 func nameProblem(name string) string {
 	if !utf8.ValidString(name) {
 		return "is not valid UTF-8"
@@ -309,6 +333,9 @@ func nameProblem(name string) string {
 	}
 	if len(name) > maxNameBytes {
 		return fmt.Sprintf("is %d bytes long, more than the %d a workstation file system holds", len(name), maxNameBytes)
+	}
+	if windowsDevice(name) {
+		return "is a device name that Windows reserves"
 	}
 	if last := name[len(name)-1]; last == '.' || last == ' ' {
 		return "ends with a dot or a space, which the stick's file system can remove"
