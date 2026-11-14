@@ -243,7 +243,7 @@ Ceremony records form one chain (0006 rule 8). The first ceremony record of a bu
 
 Every finding ends the command with exit code 3, except `unfinished-ceremony` and `unexpected-file`: they are notices, the exit code stays 0, and their names are in `warnings` ([the output](/reference/cli/#machine-readable-output)). A history with no ceremony record has no finding and exits 0.
 
-`unexpected-name` fails and `unexpected-file` does not, because ritueel never writes a name that rule 38 refuses. Such a name came from damage or from outside. A stray file with an ordinary name, for example one that a desktop system leaves, is common on a workstation, and a notice is enough for it.
+`unexpected-name` fails and `unexpected-file` does not, because ritueel never writes a name that the rule for names refuses (0006 rule 38). Such a name came from damage or from outside. A stray file with an ordinary name, for example one that a desktop system leaves, is common on a workstation, and a notice is enough for it.
 
 A listed file that cannot be read is not a finding when the cause is something other than "does not exist", for example a refused permission: the command ends with exit code 1. Only "does not exist" is `file-missing`.
 
