@@ -132,7 +132,7 @@ func TestACheckerThatNewDidNotMakeRefusesEveryRequest(t *testing.T) {
 		"a copy of a zero": func() *handoff.Checker { var z handoff.Checker; c := z; return &c }(),
 	} {
 		for rname, r := range map[string]*handoff.Request{
-			"a good software request": soft, "a good piv request": piv, "an openpgp request": pgpRequest(nil), "an ssh request": sshRequest(nil),
+			"a good software request": soft, "a good piv request": piv, "an openpgp request": func() *handoff.Request { r, _ := pgpCase(t, nil); return r }(), "an ssh request": sshRequest(nil),
 			"a request with no files": {Stem: testStem},
 		} {
 			t.Run(name+"/"+rname, func(t *testing.T) {

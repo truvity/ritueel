@@ -7,9 +7,11 @@
 // checks. A request of type x509-intermediate whose key is in a card or in a cloud service is judged by
 // all nine checks too, with the evidence verifier of its store, which the caller supplies in
 // [Config.Evidence] (check 7); with none registered the verdict stops at check 7 and the error is
-// [ErrNoVerifier]. A request of type openpgp-subkey or ssh-ca-key is judged by checks 1 to 3 (for an
-// openpgp-subkey only the digest part of check 3) and then the error is [ErrTypeNotBuilt]: the rest of
-// those types is not built.
+// [ErrNoVerifier]. A request of type openpgp-subkey is judged by all nine checks too, on the primaries of the
+// root list that the caller gives in [Config.Primaries]; its subkey file is read by package openpgp, the same
+// reader that the ceremony's binding uses, so that the request that is checked is the request that is bound.
+// Only a request of type ssh-ca-key is judged by checks 1 to 3 and then gets the error [ErrTypeNotBuilt]: the
+// rest of that type is not built.
 //
 // A [Checker] is made by [New] from a [Config], and a Checker that was not made by New refuses every
 // request with [ErrConfig]. New refuses a configuration with no policy (stores, a minimum firmware, the PIN

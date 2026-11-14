@@ -67,9 +67,13 @@ func TestAcceptedIsFalseForEveryCallThatReturnedAnErrorWithAVerdictThatIsNotRefu
 		run  func() (handoff.Verdict, error)
 		want error
 	}{
-		"a request of a type that is not built": {func() (handoff.Verdict, error) { return newChecker(t).Check(t.Context(), pgpRequest(nil)) }, handoff.ErrTypeNotBuilt},
-		"an ssh request":                        {func() (handoff.Verdict, error) { return newChecker(t).Check(t.Context(), sshRequest(nil)) }, handoff.ErrTypeNotBuilt},
-		"a store with no verifier":              {func() (handoff.Verdict, error) { return newChecker(t).Check(t.Context(), f.request()) }, handoff.ErrNoVerifier},
+		"a request of a type that is not built": {func() (handoff.Verdict, error) { return newChecker(t).Check(t.Context(), sshRequest(nil)) }, handoff.ErrTypeNotBuilt},
+		"an openpgp request on a checker with no primaries": {func() (handoff.Verdict, error) {
+			r, _ := pgpCase(t, nil)
+			return newChecker(t).Check(t.Context(), r)
+		}, handoff.ErrConfig},
+		"an ssh request":           {func() (handoff.Verdict, error) { return newChecker(t).Check(t.Context(), sshRequest(nil)) }, handoff.ErrTypeNotBuilt},
+		"a store with no verifier": {func() (handoff.Verdict, error) { return newChecker(t).Check(t.Context(), f.request()) }, handoff.ErrNoVerifier},
 		"a verifier that could not decide": {func() (handoff.Verdict, error) {
 			return checkerWith(t, handoff.StorePIV, failing(errCannotDecide)).Check(t.Context(), f.request())
 		}, errCannotDecide},

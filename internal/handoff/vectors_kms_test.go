@@ -265,8 +265,12 @@ func TestTheFiveKMSVectorsAreDecidedByTheRealVerifier(t *testing.T) {
 			}
 		})
 	}
-	// The four stubs of the cases that wait for another part are read by the verifier too, and decided by none.
-	for _, id := range []string{"pgp-kms-valid", "ssh-kms-valid", "ssh-kms-key-mismatch", "ssh-kms-two-actors"} {
+	// The three stubs of the SSH cases that wait for another part are read by the verifier too, and decided by
+	// none. The OpenPGP case of a KMS key is decided now, by the checks of its type and this verifier.
+	if _, ok := pending["pgp-kms-valid"]; ok {
+		t.Error("pgp-kms-valid is still in the pending map")
+	}
+	for _, id := range []string{"ssh-kms-valid", "ssh-kms-key-mismatch", "ssh-kms-two-actors"} {
 		if _, ok := pending[id]; !ok {
 			t.Errorf("%s is not in the pending map", id)
 		}

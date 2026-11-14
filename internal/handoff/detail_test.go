@@ -47,19 +47,20 @@ func TestTheSizeOfAFileIsRefusedBeforeItIsReadAndTheDetailSaysSo(t *testing.T) {
 	if !strings.Contains(v.Detail, "no proof file") {
 		t.Errorf("the detail of a request with no proof file is %q", v.Detail)
 	}
-	for name, mk := range map[string]func() *handoff.Request{
-		"subkey": func() *handoff.Request {
-			r := pgpRequest(nil)
+	for name, mk := range map[string]func() (*handoff.Request, *handoff.Checker){
+		"subkey": func() (*handoff.Request, *handoff.Checker) {
+			r, chk := pgpCase(t, nil)
 			r.Files[handoff.FileSubkey] = make([]byte, handoff.MaxFileSize+1)
-			return r
+			return r, chk
 		},
-		"ssh key": func() *handoff.Request {
+		"ssh key": func() (*handoff.Request, *handoff.Checker) {
 			r := sshRequest(nil)
 			r.Files[handoff.FileSSHKey] = make([]byte, handoff.MaxFileSize+1)
-			return r
+			return r, newChecker(t)
 		},
 	} {
-		v, err := newChecker(t).Check(t.Context(), mk())
+		r, chk := mk()
+		v, err := chk.Check(t.Context(), r)
 		wantRefusal(t, v, err, handoff.CodeMalformed, 2)
 		if !strings.Contains(v.Detail, "longer than") {
 			t.Errorf("%s: the detail of a file one byte over the limit is %q", name, v.Detail)

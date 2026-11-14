@@ -25,8 +25,9 @@ type RootRef = pki.RootRef
 // and stops at the first that fails: the checks before it are passed and the checks after it are
 // not-run (when the version cannot be read, check 2 fails and check 1 is not-run, because the page gives
 // that fault to check 2). A refusal is in the verdict ([Verdict.Code]); the error is non-nil only when the
-// checker cannot decide (see the package comment): [ErrTypeNotBuilt] for an openpgp-subkey or ssh-ca-key
-// request that passed the checks that are built for it, [ErrNoVerifier] for a store with no verifier,
+// checker cannot decide (see the package comment): [ErrTypeNotBuilt] for an ssh-ca-key request that passed
+// the checks that are built for it, [ErrConfig] (beside checks 1 and 2 passed) for an openpgp-subkey request on
+// a checker that holds no primaries, [ErrNoVerifier] for a store with no verifier,
 // the error of a verifier that failed without refusing or that panicked, [ErrConfig] for a Checker that
 // [New] did not make, and [ErrInternal]. The verdict is returned with every error, with the checks that
 // did not run marked not-run.
@@ -88,15 +89,15 @@ func (c *Checker) Check(ctx context.Context, r *Request) (Verdict, error) {
 	case TypeX509:
 		return c.s.checkX509(ctx, v, req, p)
 	case TypeOpenPGP:
-		return checkFileType(v, req, p, FileSubkey)
+		return c.s.checkOpenPGP(ctx, v, req, p)
 	default:
 		return checkFileType(v, req, p, FileSSHKey, FileSSHSig)
 	}
 }
 
-// checkFileType runs checks 2 and 3 for the types of which only those are built: the files of the page's
-// table are there and within the limit, and request_sha256 is the digest of the one file that the page
-// names. It then stops with ErrTypeNotBuilt.
+// checkFileType runs checks 2 and 3 for the one type of which only those are built (ssh-ca-key): the files
+// of the page's table are there and within the limit, and request_sha256 is the digest of the one file that
+// the page names. It then stops with ErrTypeNotBuilt.
 func checkFileType(v Verdict, req *Request, p *Proof, files ...string) (Verdict, error) {
 	for _, name := range files {
 		f, ok := req.Files[name]
@@ -110,18 +111,12 @@ func checkFileType(v Verdict, req *Request, p *Proof, files ...string) (Verdict,
 		}
 	}
 	v.pass(2)
-	// The digest is of the bytes of the first file: the subkey file, or the OpenSSH public key line.
+	// The digest is of the bytes of the first file: the OpenSSH public key line.
 	if sum := sha256.Sum256(req.Files[files[0]]); hex.EncodeToString(sum[:]) != p.RequestSHA256 {
 		v.fail(3, CodeRequestMismatch, "request_sha256 is not the digest of the file "+files[0])
 		return v, nil
 	}
-	if p.Type == TypeOpenPGP {
-		// The rest of check 3 is that primaries is the set of active primaries on the root list: it needs
-		// the list, and is not built. The check did not fully run, so it is not passed.
-		v.partial(3, []string{"primaries"})
-	} else {
-		v.pass(3)
-	}
+	v.pass(3)
 	return v, fmt.Errorf("%w: type %s", ErrTypeNotBuilt, p.Type)
 }
 
@@ -192,29 +187,11 @@ func (s *settings) checkX509(ctx context.Context, v Verdict, req *Request, p *Pr
 		return v, fmt.Errorf("%w: reading the content of the request: %w", ErrInternal, parseErr)
 	}
 
-	// Check 6: the store.
-	if !slices.Contains(s.stores, p.Store) {
-		v.fail(6, CodeStoreNotAllowed, fmt.Sprintf("the policy does not allow the store %s", p.Store))
-		return v, nil
-	}
-	v.pass(6)
-
-	// Check 7: the evidence.
-	ev, err := s.verifyEvidence(ctx, &v, req, p)
+	// Checks 6 to 8: the store, the evidence, the key match.
+	ev, err := s.checkStoreEvidenceKey(ctx, &v, req, p, key, s.clock)
 	if err != nil || v.Refused() {
 		return v, err
 	}
-	v.pass(7)
-
-	// Check 8: the key in the evidence, and the public_key of a KMS proof, are the key in the request. A
-	// software key has no evidence key to compare.
-	if fault, err := compareKeys(key, p, ev); err != nil {
-		return v, err
-	} else if fault != "" {
-		v.fail(8, CodeKeyMismatch, fault)
-		return v, nil
-	}
-	v.pass(8)
 
 	// Check 9: the content, then the policy.
 	if parseErr != nil {
@@ -235,6 +212,38 @@ func (s *settings) checkX509(ctx context.Context, v Verdict, req *Request, p *Pr
 	v.pass(9)
 	v.accept(key, ev)
 	return v, nil
+}
+
+// checkStoreEvidenceKey runs checks 6 to 8, which are the same for every type that is built: the store is
+// allowed by the policy, the evidence is valid, and the key in the evidence (and the public_key of a KMS proof)
+// is the key of the request. key is the key of the request; now gives the time that a verifier is called with.
+// A refusal is in v, with the checks before it passed; the caller stops when it returns an error or v is
+// refused, and goes on with the evidence it returns otherwise.
+func (s *settings) checkStoreEvidenceKey(ctx context.Context, v *Verdict, req *Request, p *Proof, key *ecdsa.PublicKey, now func() (time.Time, error)) (*Evidence, error) {
+	// Check 6: the store.
+	if !slices.Contains(s.stores, p.Store) {
+		v.fail(6, CodeStoreNotAllowed, fmt.Sprintf("the policy does not allow the store %s", p.Store))
+		return nil, nil
+	}
+	v.pass(6)
+
+	// Check 7: the evidence.
+	ev, err := s.verifyEvidence(ctx, v, req, p, now)
+	if err != nil || v.Refused() {
+		return nil, err
+	}
+	v.pass(7)
+
+	// Check 8: the key in the evidence, and the public_key of a KMS proof, are the key in the request. A
+	// software key has no evidence key to compare.
+	if fault, err := compareKeys(key, p, ev); err != nil {
+		return nil, err
+	} else if fault != "" {
+		v.fail(8, CodeKeyMismatch, fault)
+		return nil, nil
+	}
+	v.pass(8)
+	return ev, nil
 }
 
 // compareKeys is check 8: every key that the proof and its evidence give is the key of the request. It
@@ -270,7 +279,7 @@ func compareKeys(key *ecdsa.PublicKey, p *Proof, ev *Evidence) (fault string, er
 
 // verifyEvidence is check 7. It returns a copy of the evidence; a refusal is in v (and the error is nil), a
 // failure to decide is the error, and in both the check stays not-run unless it failed.
-func (s *settings) verifyEvidence(ctx context.Context, v *Verdict, req *Request, p *Proof) (*Evidence, error) {
+func (s *settings) verifyEvidence(ctx context.Context, v *Verdict, req *Request, p *Proof, clock func() (time.Time, error)) (*Evidence, error) {
 	if p.Store == StoreSoftware {
 		return &Evidence{Unprotected: true}, nil
 	}
@@ -281,7 +290,7 @@ func (s *settings) verifyEvidence(ctx context.Context, v *Verdict, req *Request,
 	if err := ctx.Err(); err != nil {
 		return nil, fmt.Errorf("handoff: the check was stopped before the evidence was read: %w", err)
 	}
-	now, err := s.clock()
+	now, err := clock()
 	if err != nil {
 		return nil, err
 	}

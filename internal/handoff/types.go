@@ -82,8 +82,9 @@ const (
 // The errors that [Checker.Check] returns beside a verdict, when it cannot decide. Each is wrapped with
 // words that say where; test with errors.Is.
 var (
-	// ErrTypeNotBuilt is returned for a request of type openpgp-subkey or ssh-ca-key that passed the
-	// checks that are built for it (1 to 3): the rest of the checks for those types is not built.
+	// ErrTypeNotBuilt is returned for a request of type ssh-ca-key that passed the checks that are built
+	// for it (1 to 3): the rest of the checks for that type is not built. A request of type openpgp-subkey
+	// is judged by all nine checks and never gets this error.
 	ErrTypeNotBuilt = errors.New("handoff: the checks 4 to 9 are not built for this type of request")
 	// ErrNoVerifier is returned for a request whose store has no entry in [Config.Evidence]: check 7
 	// could not run.
@@ -93,7 +94,9 @@ var (
 	// has a policy (stores, a minimum firmware and the PIN policies that are allowed), a list of roots and
 	// a clock, and every verifier in it is a verifier: a rule is never switched off by a field that was
 	// left empty. A delegation may be left out, on purpose, and then the rules that belong to a
-	// delegation are not run and are said so ([Config.Delegation]). It says nothing about a request.
+	// delegation are not run and are said so ([Config.Delegation]). It is also returned by [Checker.Check]
+	// for a request of type openpgp-subkey on a checker that holds no primaries ([Config.Primaries]): that
+	// request is neither accepted nor refused. It says nothing else about a request.
 	ErrConfig = errors.New("handoff: invalid checker configuration")
 	// ErrInternal is returned when two readers of one request disagree, or a verifier breaks its
 	// contract: it returns no key for a store that has one, or an error that is neither a refusal of the
@@ -254,6 +257,17 @@ type Config struct {
 	// request is not for the key or the name of a root needs them. The list is the caller's to build from
 	// the bundle, whole; it is read as package pki reads it.
 	Roots []RootRef
+	// Primaries are the active primaries of the root list, in the order of the list: the fingerprint, the
+	// public key and the creation time of each (at most [MaxPrimaries]). A request of type openpgp-subkey
+	// must list exactly these, in this order (check 3), and its back-signatures are checked over these keys
+	// (check 5). They are required when Delegation is of type openpgp-subkey, and must be empty when it is
+	// of any other type. With no Delegation they may be given or left out, and are checked when given. A
+	// request of type openpgp-subkey on a checker that holds none is not judged: [Checker.Check] returns an
+	// error that wraps [ErrConfig], with checks 1 and 2 passed and the rest not-run. Each entry is checked by
+	// [New]: a key that is nil or not ECDSA on P-384, a creation time that is not whole seconds in the years
+	// 1970 to 2106, a fingerprint that is not the one that the key and the time give, and two entries with
+	// one fingerprint or one point are an [ErrConfig].
+	Primaries []PrimaryRef
 	// Evidence maps a store to the verifier of its evidence (check 7). A software key needs none, and a
 	// verifier given for it is never called. A store with no verifier is not an error of the
 	// configuration: a request of that store stops at check 7 with [ErrNoVerifier]. An entry that is nil,
@@ -262,6 +276,32 @@ type Config struct {
 	// Now is the clock, given to the verifiers. Required. It is called under the same protection as a
 	// verifier: a clock that panics gives [ErrInternal] and no acceptance.
 	Now func() time.Time
+}
+
+// PrimaryRef is one active primary of the certifier's signed root list, as a request for an openpgp-subkey
+// is checked against it: the fingerprint that the list holds and what a back-signature covers, which is the
+// primary's public key and its creation time. The root list holds the fingerprint only, so where the key
+// and the time come from is the caller's to decide.
+type PrimaryRef struct {
+	// Fingerprint is the openpgp_fingerprint of the root list: the version 4 fingerprint, 40 lower-case
+	// hexadecimal digits. It must be the fingerprint that Key and Created give.
+	Fingerprint string
+	// Key is the public key of the primary, ECDSA on P-384.
+	Key *ecdsa.PublicKey
+	// Created is the creation time of the primary's key packet (openpgp_created of its root.json), in
+	// whole seconds in the years 1970 to 2106.
+	Created time.Time
+}
+
+// SubkeyInfo is what the ceremony records about the subkey of an accepted openpgp-subkey request.
+type SubkeyInfo struct {
+	// Fingerprint is the version 4 fingerprint of the subkey, 40 lower-case hexadecimal digits.
+	Fingerprint string
+	// Created is the creation time in the subkey packet, in UTC (for a KMS key it is the one that the
+	// requester kept).
+	Created time.Time
+	// Capability is sign or authenticate, as the proof and the delegation agree.
+	Capability string
 }
 
 // Checker runs the checks of the contract. It is made by [New], holds its own copy of everything in the

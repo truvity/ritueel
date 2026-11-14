@@ -145,7 +145,7 @@ func TestTheTypesAndTheStoresAreTheWordsOfTheProofFile(t *testing.T) {
 	}
 }
 
-func TestNoCheckGivesTheCodeDeclinedOrUnknownPrimary(t *testing.T) {
+func TestNoCheckOfAnotherTypeGivesTheCodeDeclinedOrUnknownPrimary(t *testing.T) {
 	// The code that every request of the tests so far could give, found by running a wide set of them.
 	var reqs []*handoff.Request
 	for _, store := range []handoff.Store{handoff.StoreSoftware, handoff.StorePIV, handoff.StoreKMS, handoff.StoreOpenPGPCard} {
@@ -156,12 +156,30 @@ func TestNoCheckGivesTheCodeDeclinedOrUnknownPrimary(t *testing.T) {
 		h := newFixture(t, store, csrSpec{exts: goodExtensions(uriName("example.net"))})
 		reqs = append(reqs, h.request())
 	}
-	reqs = append(reqs, pgpRequest(nil), pgpRequest(func(m map[string]any) { m["request_sha256"] = digestHex(nil) }), sshRequest(nil))
+	reqs = append(reqs, sshRequest(nil), sshRequest(func(m map[string]any) { m["request_sha256"] = digestHex(nil) }))
 	c := newChecker(t)
 	for i, r := range reqs {
 		v, _ := c.Check(t.Context(), r)
 		if v.Code == handoff.CodeDeclined || v.Code == handoff.CodeUnknownPrimary {
-			t.Errorf("request %d is given the code %q, which no check of this package gives", i, v.Code)
+			t.Errorf("request %d is given the code %q, which no check of this package gives for its type", i, v.Code)
+		}
+	}
+	// An OpenPGP request is never declined either, and the code unknown-primary is its alone.
+	for name, change := range map[string]func(f *pgpFixture){
+		"good":              func(f *pgpFixture) {},
+		"a wrong digest":    func(f *pgpFixture) { f.digest = digestHex(nil) },
+		"a wrong primary":   func(f *pgpFixture) { f.listed = fingerprints(2) },
+		"a missing sig":     func(f *pgpFixture) { f.sigs = f.sigs[:1] },
+		"another algorithm": func(f *pgpFixture) { f.proof["store"] = "piv" },
+	} {
+		f := newPGPFixture(t, 2, handoff.StoreSoftware)
+		change(f)
+		v, _ := f.checker(nil).Check(t.Context(), f.request())
+		if v.Code == handoff.CodeDeclined {
+			t.Errorf("%s: the code %q is no check's", name, v.Code)
+		}
+		if v.Code == handoff.CodeUnknownPrimary && statuses(v) != "ppfnnnnnn" {
+			t.Errorf("%s: unknown-primary at statuses %s, want check 3", name, statuses(v))
 		}
 	}
 }
