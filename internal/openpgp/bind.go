@@ -80,7 +80,7 @@ func BindSubkey(rnd io.Reader, b BindParams) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	backBody, err := checkBackSig(backRaw, g, sub, b.Primary.CeremonyTime)
+	backBody, err := checkBackSig(ErrRequest, backRaw, g.key, sub, b.Primary.CeremonyTime)
 	if err != nil {
 		return nil, err
 	}
@@ -132,17 +132,15 @@ func BindSubkey(rnd io.Reader, b BindParams) ([]byte, error) {
 	return append(out, pkt...), nil
 }
 
-// parseSubkey checks that raw is exactly one Public-Subkey packet of the profile: version 4, ECDSA
-// on P-384 with a point on the curve, written in the form that go-crypto writes it again (so that
-// what is hashed here is what a verifier hashes), created at or before the ceremony, and not the
-// primary's own key (the same point, whatever the creation time).
+// parseSubkey checks that raw is exactly one Public-Subkey packet of the profile, as [ReadSubkey]
+// reads it (version 4, ECDSA on P-384 with a point on the curve, written in the form that go-crypto
+// writes it again, so that what is hashed here is what a verifier hashes), created at or before the
+// ceremony, and not the primary's own key (the same point, whatever the creation time). The two
+// last rules need the ceremony and the primary, which the reader does not have.
 func parseSubkey(raw []byte, primary *signer, ceremony time.Time) (*key, error) {
-	k, err := readKey(raw, tagSubkey)
+	k, err := readSubkey(raw)
 	if err != nil {
-		return nil, fail(ErrRequest, "the subkey is not one Public-Subkey packet of the profile: %v", err)
-	}
-	if err := checkTime("the creation time of the subkey", k.created); err != nil {
-		return nil, fail(ErrRequest, "%v", err)
+		return nil, err
 	}
 	if k.created.After(ceremony) {
 		return nil, fail(ErrRequest, "the subkey was created after the ceremony time")
@@ -154,7 +152,10 @@ func parseSubkey(raw []byte, primary *signer, ceremony time.Time) (*key, error) 
 }
 
 // checkBackSig checks the request's back-signature for this primary and returns its body, which is
-// what the binding embeds. It must be one signature packet of type 0x19 made by the subkey, with
+// what the binding embeds. It is the one function that decides whether a back-signature is the
+// one the page gives: BindSubkey calls it with ErrRequest and [VerifyBackSignature] calls it with
+// ErrBackSignature (which is an ErrRequest too), so a request that the check accepts is a request
+// that the ceremony binds. The kind only names the fault; it never changes what is refused. It must be one signature packet of type 0x19 made by the subkey, with
 // ECDSA and SHA-384, and it must verify with the subkey over the primary and the subkey. Its shape
 // is the one the contract page gives (docs/reference/hand-off-contract.md, "The request"): "Its
 // hashed area has the signature creation time and the issuer fingerprint of the subkey. Its
@@ -165,47 +166,47 @@ func parseSubkey(raw []byte, primary *signer, ceremony time.Time) (*key, error) 
 // inside, and gpgv or sqv refuse the binding for a subpacket that go-crypto passes over. The
 // packet also ends exactly after the two numbers of the signature, and the two bytes of the hash
 // tag are the first two bytes of the digest.
-func checkBackSig(raw []byte, primary *signer, sub *key, ceremony time.Time) ([]byte, error) {
+func checkBackSig(kind error, raw []byte, primary, sub *key, ceremony time.Time) ([]byte, error) {
 	tag, body, rest, err := splitPacket(raw)
 	if err != nil || tag != tagSignature || len(rest) != 0 {
-		return nil, fail(ErrRequest, "the back-signature is not one signature packet")
+		return nil, fail(kind, "the back-signature is not one signature packet")
 	}
 	a, err := splitSig(body)
 	if err != nil {
-		return nil, fail(ErrRequest, "the back-signature does not parse")
+		return nil, fail(kind, "the back-signature does not parse")
 	}
 	if a.sigType != sigPrimaryKeyBinding || a.algo != algoECDSA || a.hash != hashSHA384 {
-		return nil, fail(ErrRequest, "the back-signature is not a type 0x19 signature with ECDSA and SHA-384")
+		return nil, fail(kind, "the back-signature is not a type 0x19 signature with ECDSA and SHA-384")
 	}
-	if err := checkIssuers(ErrRequest, body, sub); err != nil {
+	if err := checkIssuers(kind, body, sub); err != nil {
 		return nil, err
 	}
-	if err := checkBackSigTimes(a, sub.created, ceremony); err != nil {
+	if err := checkBackSigTimes(kind, a, sub.created, ceremony); err != nil {
 		return nil, err
 	}
-	if err := checkBackSigEnd(a, primary.body, sub.body); err != nil {
+	if err := checkBackSigEnd(kind, a, primary.body, sub.body); err != nil {
 		return nil, err
 	}
 	p, err := packet.Read(bytes.NewReader(raw))
 	if err != nil {
-		return nil, fail(ErrRequest, "the back-signature does not parse: %v", err)
+		return nil, fail(kind, "the back-signature does not parse: %v", err)
 	}
 	sig, ok := p.(*packet.Signature)
 	if !ok {
-		return nil, fail(ErrRequest, "the back-signature does not parse as a signature")
+		return nil, fail(kind, "the back-signature does not parse as a signature")
 	}
 	h, err := sig.PrepareVerify()
 	if err != nil {
-		return nil, fail(ErrRequest, "the back-signature cannot be checked: %v", err)
+		return nil, fail(kind, "the back-signature cannot be checked: %v", err)
 	}
 	if err := primary.pk.SerializeForHash(h); err != nil {
-		return nil, fail(ErrRequest, "the back-signature cannot be checked: %v", err)
+		return nil, fail(kind, "the back-signature cannot be checked: %v", err)
 	}
 	if err := sub.pk.SerializeForHash(h); err != nil {
-		return nil, fail(ErrRequest, "the back-signature cannot be checked: %v", err)
+		return nil, fail(kind, "the back-signature cannot be checked: %v", err)
 	}
 	if err := sub.pk.VerifySignature(h, sig); err != nil {
-		return nil, fail(ErrRequest, "the back-signature does not verify over this primary and the subkey: %v", err)
+		return nil, fail(kind, "the back-signature does not verify over this primary and the subkey: %v", err)
 	}
 	return bytes.Clone(body), nil
 }
@@ -217,14 +218,14 @@ func checkBackSig(raw []byte, primary *signer, sub *key, ceremony time.Time) ([]
 // bit or without, in either area. The creation time must not be before the creation of the subkey
 // (sqv and gpgv both refuse the binding then) and not after the ceremony (sqv takes the signature
 // as not live before its creation time). The issuers have been checked by checkIssuers.
-func checkBackSigTimes(a sigAreas, subCreated, ceremony time.Time) error {
+func checkBackSigTimes(kind error, a sigAreas, subCreated, ceremony time.Time) error {
 	if len(a.hashed) != 2 || len(a.unhashed) != 1 {
-		return fail(ErrRequest, "the back-signature has not exactly the creation time and the issuer fingerprint in its hashed area and the issuer key ID in its unhashed area")
+		return fail(kind, "the back-signature has not exactly the creation time and the issuer fingerprint in its hashed area and the issuer key ID in its unhashed area")
 	}
 	for _, area := range [][]subpacket{a.hashed, a.unhashed} {
 		for _, sp := range area {
 			if sp.critical {
-				return fail(ErrRequest, "the back-signature has a subpacket marked critical (type %d)", sp.typ)
+				return fail(kind, "the back-signature has a subpacket marked critical (type %d)", sp.typ)
 			}
 		}
 	}
@@ -232,14 +233,14 @@ func checkBackSigTimes(a sigAreas, subCreated, ceremony time.Time) error {
 	// values by checkIssuers; the creation time is held to its 4 bytes here.
 	created, ok := find(a.hashed, spCreationTime)
 	if !ok || len(created) != 4 {
-		return fail(ErrRequest, "the back-signature has no one creation time of 4 bytes in its hashed area")
+		return fail(kind, "the back-signature has no one creation time of 4 bytes in its hashed area")
 	}
 	at := time.Unix(int64(binary.BigEndian.Uint32(created)), 0)
 	if at.Before(subCreated) {
-		return fail(ErrRequest, "the back-signature was created before the subkey")
+		return fail(kind, "the back-signature was created before the subkey")
 	}
 	if at.After(ceremony) {
-		return fail(ErrRequest, "the back-signature was created after the ceremony time")
+		return fail(kind, "the back-signature was created after the ceremony time")
 	}
 	return nil
 }
@@ -247,19 +248,19 @@ func checkBackSigTimes(a sigAreas, subCreated, ceremony time.Time) error {
 // checkBackSigEnd requires the packet to end exactly after the hash tag and the two numbers of the
 // signature, and the hash tag to be the first two bytes of the digest that the signature covers:
 // the primary, the subkey, the fields of the signature and its trailer.
-func checkBackSigEnd(a sigAreas, primaryBody, subBody []byte) error {
+func checkBackSigEnd(kind error, a sigAreas, primaryBody, subBody []byte) error {
 	if len(a.rest) < 2 {
-		return fail(ErrRequest, "the back-signature has no hash tag")
+		return fail(kind, "the back-signature has no hash tag")
 	}
 	_, tail, err := readMPI(a.rest[2:])
 	if err != nil {
-		return fail(ErrRequest, "the back-signature has no first number")
+		return fail(kind, "the back-signature has no first number")
 	}
 	if _, tail, err = readMPI(tail); err != nil {
-		return fail(ErrRequest, "the back-signature has no second number")
+		return fail(kind, "the back-signature has no second number")
 	}
 	if len(tail) != 0 {
-		return fail(ErrRequest, "the back-signature has bytes after its two numbers")
+		return fail(kind, "the back-signature has bytes after its two numbers")
 	}
 	trailer := []byte{4, 0xFF, 0, 0, 0, 0}
 	binary.BigEndian.PutUint32(trailer[2:], uint32(len(a.fields)))
@@ -269,7 +270,7 @@ func checkBackSigEnd(a sigAreas, primaryBody, subBody []byte) error {
 	h.Write(a.fields)
 	h.Write(trailer)
 	if !bytes.Equal(a.rest[:2], h.Sum(nil)[:2]) {
-		return fail(ErrRequest, "the hash tag of the back-signature is not the start of its digest")
+		return fail(kind, "the hash tag of the back-signature is not the start of its digest")
 	}
 	return nil
 }

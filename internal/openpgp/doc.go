@@ -19,6 +19,13 @@
 // with go-crypto and verifies the signature with the public key, so no signature that does not
 // verify, and no packet that another reader does not read as built, is ever returned.
 //
+// The package also reads a subkey request, the file `<stem>.subkey.pgp` of the hand-off: it splits
+// the file into packets ([SplitSubkeyFile]), reads the Public-Subkey packet ([ReadSubkey]), makes
+// the key of a primary ([NewPrimaryKey]) and checks one back-signature ([VerifyBackSignature]).
+// BindSubkey uses the same functions, so a request that passes these checks is a request that the
+// ceremony binds. The faults of a request are [ErrForm], [ErrAlgorithm] and [ErrBackSignature],
+// each of them also an [ErrRequest]. The reader opens no file and starts no program.
+//
 // A user ID has the one shape of the page, and each part of it follows the rule of its key in
 // ritueel.yaml, so that no text of a caller can add a character that a person cannot read or an
 // address that the user ID does not show.

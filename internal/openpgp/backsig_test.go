@@ -34,12 +34,17 @@ func addUnhashed(s sub) func(*sigSpec) {
 	return func(sp *sigSpec) { sp.Unhashed = append(sp.Unhashed, s) }
 }
 
-func TestABackSignatureThatAStrictReaderRefusesIsRefusedAsARequestAndTheSignerIsNeverAsked(t *testing.T) {
+// tweakCase is a back-signature made with one change to the usual spec.
+type tweakCase struct {
+	name  string
+	tweak func(*sigSpec)
+}
+
+// strictRefusals is the list of back-signatures that a strict reader refuses. One list serves the
+// tests of BindSubkey and the tests of VerifyBackSignature, so that the two cannot drift apart.
+func strictRefusals() []tweakCase {
 	far := time.Unix(1<<32-1, 0).UTC()
-	cases := []struct {
-		name  string
-		tweak func(*sigSpec)
-	}{
+	return []tweakCase{
 		// Bytes after the two numbers of the signature.
 		{"one byte after the two numbers", func(sp *sigSpec) { sp.Trailing = []byte{0xAA} }},
 		{"three bytes after the two numbers", func(sp *sigSpec) { sp.Trailing = []byte{0xAA, 0xBB, 0xCC} }},
@@ -91,7 +96,10 @@ func TestABackSignatureThatAStrictReaderRefusesIsRefusedAsARequestAndTheSignerIs
 		{"a hash tag with both bytes changed", func(sp *sigSpec) { sp.TagXOR = [2]byte{0xFF, 0xFF} }},
 		{"a hash tag with one bit changed", func(sp *sigSpec) { sp.TagXOR = [2]byte{0, 0x01} }},
 	}
-	for _, c := range cases {
+}
+
+func TestABackSignatureThatAStrictReaderRefusesIsRefusedAsARequestAndTheSignerIsNeverAsked(t *testing.T) {
+	for _, c := range strictRefusals() {
 		t.Run(c.name, func(t *testing.T) {
 			s, b, m := bindFixture(t)
 			if out := bind(t, b); len(out) == 0 {
@@ -109,11 +117,10 @@ func TestABackSignatureThatAStrictReaderRefusesIsRefusedAsARequestAndTheSignerIs
 
 // A refusal for a stated reason must come from that reason: the same back-signature with only the
 // one thing put right is accepted.
-func TestTheSameBackSignaturesWithTheFaultPutRightAreAccepted(t *testing.T) {
-	for _, c := range []struct {
-		name  string
-		tweak func(*sigSpec)
-	}{
+// faultsPutRight is the list of back-signatures that a strict reader accepts: the faults of the
+// list above, each put right.
+func faultsPutRight() []tweakCase {
+	return []tweakCase{
 		{"no bytes after the two numbers", func(sp *sigSpec) { sp.Trailing = nil }},
 		{"a creation time at the ceremony", creationAt(ceremony)},
 		{"a creation time one second before the ceremony", creationAt(ceremony.Add(-time.Second))},
@@ -123,7 +130,11 @@ func TestTheSameBackSignaturesWithTheFaultPutRightAreAccepted(t *testing.T) {
 		{"a hash tag that is the start of the digest", func(sp *sigSpec) { sp.TagXOR = [2]byte{} }},
 		{"the same subpackets with five-octet lengths", func(sp *sigSpec) { sp.LongLengths = true }},
 		{"the packet with an old-format header", func(sp *sigSpec) { sp.OldHeader = true }},
-	} {
+	}
+}
+
+func TestTheSameBackSignaturesWithTheFaultPutRightAreAccepted(t *testing.T) {
+	for _, c := range faultsPutRight() {
 		t.Run(c.name, func(t *testing.T) {
 			s, b, m := bindFixture(t)
 			b.BackSig = backSig(t, m.Key, m.Created, m.Primary, m.PrimaryAt, c.tweak)
@@ -476,6 +487,41 @@ func TestAcceptedShapesOfTheBackSignatureAreEmbeddedUnchangedAndAllOthersAreRefu
 	}
 }
 
+// subpacketTypeFaults is the list of back-signatures with a subpacket of any type from 0 to 127 more
+// than the page gives, in either area, critical or not, of one byte or of eight; and each of the
+// three subpackets of the page made into any other type.
+func subpacketTypeFaults() []tweakCase {
+	var out []tweakCase
+	add := func(name string, tweak func(*sigSpec)) { out = append(out, tweakCase{name, tweak}) }
+	for typ := 0; typ < 128; typ++ {
+		for _, crit := range []bool{false, true} {
+			for _, n := range []int{1, 8} {
+				x := sub{Type: byte(typ), Critical: crit, Data: bytes.Repeat([]byte{1}, n)}
+				name := fmt.Sprintf("type %d, critical %v, %d bytes", typ, crit, n)
+				add("hashed, "+name, func(sp *sigSpec) { sp.Hashed = append(sp.Hashed, x) })
+				add("unhashed, "+name, func(sp *sigSpec) { sp.Unhashed = append(sp.Unhashed, x) })
+			}
+		}
+		if typ == 2 {
+			continue
+		}
+		add(fmt.Sprintf("the creation time as type %d", typ), func(sp *sigSpec) { sp.Hashed[0].Type = byte(typ) })
+	}
+	for typ := 0; typ < 128; typ++ {
+		if typ == 33 {
+			continue
+		}
+		add(fmt.Sprintf("the issuer fingerprint as type %d", typ), func(sp *sigSpec) { sp.Hashed[1].Type = byte(typ) })
+	}
+	for typ := 0; typ < 128; typ++ {
+		if typ == 16 {
+			continue
+		}
+		add(fmt.Sprintf("the issuer key ID as type %d", typ), func(sp *sigSpec) { sp.Unhashed[0].Type = byte(typ) })
+	}
+	return out
+}
+
 // A subpacket of any type from 0 to 127 more than the page gives, in either area, critical or not,
 // of one byte or of eight: every one is refused, and the signer is never asked. The same for each
 // of the three subpackets of the page made into any other type.
@@ -485,40 +531,13 @@ func TestAnySubpacketTypeBeyondThePageIsRefusedWhateverItsAreaBitAndLength(t *te
 		t.Fatal("the control does not start from an acceptance")
 	}
 	s.calls = 0
-	check := func(what string, tweak func(*sigSpec)) {
-		t.Helper()
+	for _, c := range subpacketTypeFaults() {
 		p := b
-		p.BackSig = backSig(t, m.Key, m.Created, m.Primary, m.PrimaryAt, tweak)
+		p.BackSig = backSig(t, m.Key, m.Created, m.Primary, m.PrimaryAt, c.tweak)
 		out, err := openpgp.BindSubkey(rand.Reader, p)
 		if !errors.Is(err, openpgp.ErrRequest) || out != nil {
-			t.Errorf("%s: %d bytes and error %v, want a refusal of the request", what, len(out), err)
+			t.Errorf("%s: %d bytes and error %v, want a refusal of the request", c.name, len(out), err)
 		}
-	}
-	for typ := 0; typ < 128; typ++ {
-		for _, crit := range []bool{false, true} {
-			for _, n := range []int{1, 8} {
-				x := sub{Type: byte(typ), Critical: crit, Data: bytes.Repeat([]byte{1}, n)}
-				name := fmt.Sprintf("type %d, critical %v, %d bytes", typ, crit, n)
-				check("hashed, "+name, func(sp *sigSpec) { sp.Hashed = append(sp.Hashed, x) })
-				check("unhashed, "+name, func(sp *sigSpec) { sp.Unhashed = append(sp.Unhashed, x) })
-			}
-		}
-		if typ == 2 {
-			continue
-		}
-		check(fmt.Sprintf("the creation time as type %d", typ), func(sp *sigSpec) { sp.Hashed[0].Type = byte(typ) })
-	}
-	for typ := 0; typ < 128; typ++ {
-		if typ == 33 {
-			continue
-		}
-		check(fmt.Sprintf("the issuer fingerprint as type %d", typ), func(sp *sigSpec) { sp.Hashed[1].Type = byte(typ) })
-	}
-	for typ := 0; typ < 128; typ++ {
-		if typ == 16 {
-			continue
-		}
-		check(fmt.Sprintf("the issuer key ID as type %d", typ), func(sp *sigSpec) { sp.Unhashed[0].Type = byte(typ) })
 	}
 	if s.calls != 0 {
 		t.Errorf("the signer was asked %d times", s.calls)
@@ -527,11 +546,10 @@ func TestAnySubpacketTypeBeyondThePageIsRefusedWhateverItsAreaBitAndLength(t *te
 
 // Each of the subpackets of the page, with a length that is not its own, is refused. The two issuers
 // are held to their exact values and the creation time to four bytes.
-func TestTheSubpacketsOfThePageWithAnotherLengthAreRefused(t *testing.T) {
-	for _, c := range []struct {
-		name  string
-		tweak func(*sigSpec)
-	}{
+// pageLengthFaults is the list of back-signatures whose subpackets of the page have a length or a
+// value that is not their own.
+func pageLengthFaults() []tweakCase {
+	return []tweakCase{
 		{"a creation time of no bytes", func(sp *sigSpec) { sp.Hashed[0].Data = nil }},
 		{"a creation time of three bytes", func(sp *sigSpec) { sp.Hashed[0].Data = sp.Hashed[0].Data[:3] }},
 		{"a creation time of five bytes", func(sp *sigSpec) { sp.Hashed[0].Data = append(sp.Hashed[0].Data, 0) }},
@@ -553,7 +571,11 @@ func TestTheSubpacketsOfThePageWithAnotherLengthAreRefused(t *testing.T) {
 			sp.Hashed[1].Data = bytes.Clone(sp.Hashed[1].Data)
 			sp.Hashed[1].Data[20] ^= 1
 		}},
-	} {
+	}
+}
+
+func TestTheSubpacketsOfThePageWithAnotherLengthAreRefused(t *testing.T) {
+	for _, c := range pageLengthFaults() {
 		t.Run(c.name, func(t *testing.T) {
 			s, b, m := bindFixture(t)
 			b.BackSig = backSig(t, m.Key, m.Created, m.Primary, m.PrimaryAt, c.tweak)
