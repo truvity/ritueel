@@ -39,7 +39,7 @@ An X.509 root key is not renamed: its name is inside the certificate and every i
 |---|---|---|---|
 | Add a root key | Write the key in the wanted root file. To replace a key, name it and give the day the overlap ends. Then run `ritueel apply`. | The card, or the KMS roles, of the new key, and the card or role of every active root key. A root key that cannot come is revoked first. | The new root key; its vouches; the next trust files. |
 | Retire a root key | Write the retirement date in the wanted root file. Then run `ritueel apply`. | The card or role of every active root key, the retired key included. | A ceremony record, and the next trust files without the key. |
-| Revoke a root key | Run `ritueel revoke KEY...` ([Commands](/reference/cli/)). | The card or role of every other active root key, the stored revocation signature, and the stored removal authorisation of the key unless it signs. | The next trust files without the key. |
+| Revoke a root key | Run `ritueel revoke KEY...` ([Commands](/reference/cli/)). | The card or role of every other active root key, the stored revocation signature, and the stored removal authorisation of the key, also when the key can sign (when it is lost and the key can sign, the key signs the list itself and `revoke` warns). | The next trust files without the key. |
 
 Changing the root keys requires every current root key, or a root key's stored removal authorisation ([the root list](/reference/root-list/#who-signs)). When a key is added or retired, each root key signs the new root list in the same ceremony, with a touch on a card, and the plan counts them. With two cards, adding and retiring a root key are two-card ceremonies; the yearly ceremony stays a one-card ceremony, because its list has the same root keys. `revoke` is no ceremony and reads no plan: the other root keys sign the new root list, which carries the removal authorisation of the revoked key ([record 0007](../decisions/0007-changing-and-losing-a-root.md), rules 11 and 12).
 
@@ -47,7 +47,7 @@ The end of the overlap is a wanted end date, a day in UTC, with no default: how 
 
 ### Adding a root key
 
-Refused with `root-absent` unless every active root key can sign the next root list.
+Refused with `root-absent` unless every active root key can sign the next root list, and with `root-returns` when the pin of the new key, or its OpenPGP fingerprint under another pin, is one that an earlier root list of the bundle held ([record 0006](../decisions/0006-bundle-history-and-trust-files.md), rule 54): a key that left never returns, so a holder who wants its place makes a new key with a new label.
 
 1. The plan names the births ([record 0005](../decisions/0005-a-ceremony-and-where-it-runs.md)): the new root's X.509 root key, OpenPGP primary and break-glass SSH CA key, with their revocation signatures and the removal authorisation ([Revocation material](/reference/revocation-material/)).
 2. The new root's own certificate, self-signature and CRL are signed by the new keys.
@@ -66,7 +66,7 @@ The plan leaves the retirement out, with the reason, unless all of these hold:
 | The overlap has ended (the wanted end date has passed). A key is retired earlier only when the holder moves the date and records a reason. | `overlap-open` |
 | Nothing depends on this root key alone: every declared delegation has a certificate, or a binding, from another active root key over the same key, valid for at least 30 more days. | `still-needed` |
 
-`still-needed` lists what is missing. The fix is the next `apply`, with a fresh request for each delegation over its same key, which an OpenPGP subkey also needs when a new primary joined after the subkey's request ([the contract](/reference/hand-off-contract/#the-request-1): a request back-signs for every active primary). The retired root key's certificate is no longer in the CA bundle, its CRL is no longer written, and its primary leaves the keyring package.
+`still-needed` lists what is missing. The fix is the next `apply`, with a fresh request for each delegation over its same key, which an OpenPGP subkey also needs when a new primary joined after the subkey's request ([the contract](/reference/hand-off-contract/#the-request-1): a request back-signs for every active primary). The retired root key's certificate is no longer in the CA bundle, its CRL is no longer written, and its primary leaves the keyring package. The list that retires the key is signed by the retired key too and carries no removal authorisation for it and names no key, so it is not a way back for a host that took a thief's list. A retired root key is no longer on the list, so no list can remove it again; a host that is behind and took a thief's list signed with a copy of it needs the operator's way back ([the root list](/reference/root-list/#how-a-host-reads-it)).
 
 ### Revoking a root key
 
@@ -77,9 +77,11 @@ It never waits for anything but the stored revocation material, because it is th
 | At least one other root key stays active, and it can sign. | `last-root` |
 | Every other active root key can sign the next root list. | `root-absent` |
 | The file's digest equals the digest the bundle holds for this root key and reason, and its signature verifies over the root key's primary. | `revocation-mismatch`, `revocation-invalid` |
-| Unless the root key signs the new list itself, its stored removal authorisation has the digest the bundle holds and a signature that verifies over its pin ([revocation material](/reference/revocation-material/#the-removal-authorisation)). | `revocation-mismatch`, `revocation-invalid` |
+| Its stored removal authorisation has the digest the bundle holds and a signature that verifies over its pin ([revocation material](/reference/revocation-material/#the-removal-authorisation)). It is needed also when the root key can sign the new list: a host that took a thief's list takes the revoke list only if the list names the key in `removals` ([the way back](/reference/root-list/#how-a-host-reads-it)). When the authorisation is lost and the root key can sign the new list, `revoke` goes on without it: the key signs the list itself, the list names no key, and `revoke` warns that a host that took a thief's list will not take it. | `revocation-mismatch`, `revocation-invalid` |
 
-It then writes a root list without the root key, signed by the other root keys and carrying its removal authorisation, a CA bundle, a keyring and an SSH CA key list without it, and stops writing the root key's CRL. The revocation signature stays with the holder, outside the bundle, and is published beside the keyring package, not in it ([record 0009](../decisions/0009-release-keys-and-the-keyring.md), rule 18). What the root key alone had certified is **not** re-certified here: `status` reports each such intermediate as critical until a ceremony certifies it again, over the same keys ([A lost root card](/guides/lost-root-card/)).
+It then writes a root list without the root key, signed by the other root keys, and by the revoked key only when its authorisation is lost, and carrying its removal authorisation, a CA bundle, a keyring and an SSH CA key list without it, and stops writing the root key's CRL. The revocation signature stays with the holder, outside the bundle, and is published beside the keyring package, not in it ([record 0009](../decisions/0009-release-keys-and-the-keyring.md), rule 18). What the root key alone had certified is **not** re-certified here: `status` reports each such intermediate as critical until a ceremony certifies it again, over the same keys ([A lost root card](/guides/lost-root-card/)).
+
+When `revoke` is given several keys, each key needs its stored removal authorisation or, when that is lost, must be able to sign the list itself, and `revoke` warns for that key. If one key has neither, `revoke` refuses and writes nothing.
 
 ## The vouch
 
