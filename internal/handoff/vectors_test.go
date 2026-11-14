@@ -16,7 +16,6 @@ import (
 
 	"ritueel.id/ritueel/internal/fsx"
 	"ritueel.id/ritueel/internal/handoff"
-	"ritueel.id/ritueel/internal/pki"
 	"ritueel.id/ritueel/internal/testrepo"
 )
 
@@ -53,7 +52,9 @@ type vectorCase struct {
 type vectorManifest struct {
 	Clock  string `json:"clock"`
 	Pinned struct {
-		RootList struct{ X509 []string } `json:"root_list"`
+		RootList                 struct{ X509 []string } `json:"root_list"`
+		AttestationRoots         []string                `json:"attestation_roots"`
+		AttestationIntermediates []string                `json:"attestation_intermediates"`
 	}
 	Configs map[string]vectorConfig `json:"configs"`
 	Cases   []vectorCase            `json:"requests"`
@@ -212,21 +213,11 @@ func matches(c vectorCase, v handoff.Verdict, err error) bool {
 
 // pending names, for each case that this package cannot decide yet, the work that will decide it.
 const (
-	laterPIV     = "the evidence verifier of PIV keys"
 	laterOpenPGP = "the checks 3 to 9 of an OpenPGP subkey request"
 	laterSSH     = "the checks 4 to 9 of an SSH CA key request"
 )
 
 var pending = map[string]string{
-	// X.509: the verifier of the store is check 7 and is not built.
-	"x509-piv-valid":               laterPIV,
-	"x509-piv-key-mismatch":        laterPIV,
-	"x509-piv-pin-never":           laterPIV,
-	"x509-piv-old-firmware":        laterPIV,
-	"x509-piv-untrusted-chain":     laterPIV,
-	"x509-no-name-constraints":     laterPIV,
-	"x509-name-constraint-outside": laterPIV,
-
 	// OpenPGP: the back-signatures, the root list and the evidence.
 	"pgp-backsig-missing":              laterOpenPGP,
 	"pgp-backsig-missing-one":          laterOpenPGP,
@@ -342,97 +333,21 @@ func TestAnUndecidedVectorStopsWhereTheMissingPartIs(t *testing.T) {
 	m := readManifest(t)
 	roots := rootsOfManifest(t, m)
 	for _, c := range m.Cases {
-		later, ok := pending[c.ID]
-		if !ok {
+		if _, ok := pending[c.ID]; !ok {
 			continue
 		}
 		t.Run(c.ID, func(t *testing.T) {
 			v, err := checkerOfCase(t, m, c, roots, testNow).Check(t.Context(), loadCase(t, c))
-			switch later {
-			case laterPIV:
-				if !errors.Is(err, handoff.ErrNoVerifier) {
-					t.Fatalf("error %v, want ErrNoVerifier", err)
-				}
-				if got := statuses(v); got != "ppppppnnn" {
-					t.Errorf("statuses %s, want checks 1 to 6 passed and 7 to 9 not run", got)
-				}
-			default:
-				if !errors.Is(err, handoff.ErrTypeNotBuilt) {
-					t.Fatalf("error %v, want ErrTypeNotBuilt", err)
-				}
-				if v.Refused() {
-					t.Errorf("the code %q was given for a type whose later checks are not built", v.Code)
-				}
-				if v.Checks[8].Status != handoff.StatusNotRun || v.Checks[3].Status != handoff.StatusNotRun {
-					t.Errorf("a check after 3 ran: %s", statuses(v))
-				}
+			if !errors.Is(err, handoff.ErrTypeNotBuilt) {
+				t.Fatalf("error %v, want ErrTypeNotBuilt", err)
+			}
+			if v.Refused() {
+				t.Errorf("the code %q was given for a type whose later checks are not built", v.Code)
+			}
+			if v.Checks[8].Status != handoff.StatusNotRun || v.Checks[3].Status != handoff.StatusNotRun {
+				t.Errorf("a check after 3 ran: %s", statuses(v))
 			}
 		})
-	}
-}
-
-// A stub verifier reads what the case says about its evidence, and the code decides the X.509 cases that
-// wait for the verifier of a card. The stub knows nothing of the proof: it gives the key of the request
-// unless the case is about the key, a recent firmware and a PIN that is allowed unless the case is about
-// them.
-func TestVectorsThatNeedAVerifierAreDecidedWithAStubbedOne(t *testing.T) {
-	m := readManifest(t)
-	roots := rootsOfManifest(t, m)
-	other := newP384(t)
-	var seen []string
-	for _, c := range m.Cases {
-		later, ok := pending[c.ID]
-		if !ok || later != laterPIV {
-			continue
-		}
-		seen = append(seen, c.ID)
-		t.Run(c.ID, func(t *testing.T) {
-			req := loadCase(t, c)
-			key, err := pki.RequestKeyFile(req.Files[handoff.FileCSR])
-			if err != nil {
-				t.Fatal(err)
-			}
-			ev := &handoff.Evidence{Key: key, Firmware: "5.8.0", PINPolicy: handoff.PINOnce, TouchPolicy: "always"}
-			var verifyErr error
-			switch {
-			case strings.HasSuffix(c.ID, "key-mismatch"):
-				ev.Key = &other.PublicKey
-			case strings.HasSuffix(c.ID, "pin-never"):
-				ev.PINPolicy = handoff.PINNever
-			case strings.HasSuffix(c.ID, "old-firmware"):
-				ev.Firmware = "5.6.9"
-			case strings.HasSuffix(c.ID, "untrusted-chain"):
-				verifyErr = &handoff.CodeError{Code: handoff.CodeProofInvalid, Detail: "the chain does not lead to a pinned root"}
-			}
-			var sv *stub
-			if verifyErr != nil {
-				sv = failing(verifyErr)
-			} else {
-				sv = returning(ev)
-			}
-			chk := checkerOfCase(t, m, c, roots, testNow, map[handoff.Store]handoff.EvidenceVerifier{handoff.StorePIV: sv})
-			v, err := chk.Check(t.Context(), req)
-			if !matches(c, v, err) {
-				t.Errorf("the manifest says %s %s, and the verdict is code %q (%s), error %v", c.Expect, c.Reason, v.Code, v.Detail, err)
-			}
-			if sv.calls.Load() != 1 {
-				t.Errorf("the verifier was called %d times, want once", sv.calls.Load())
-			}
-		})
-	}
-	// The number is read from the pending map, never fixed: the test fails when a case that waits for a
-	// verifier is not run, and when no case waits and the test is still here.
-	want := 0
-	for _, later := range pending {
-		if later == laterPIV {
-			want++
-		}
-	}
-	if want == 0 {
-		t.Error("no case waits for a verifier of X.509 evidence: delete this test")
-	}
-	if len(seen) != want {
-		t.Errorf("%d cases wait for a verifier of X.509 evidence and %d were run: %v", want, len(seen), seen)
 	}
 }
 
