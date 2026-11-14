@@ -53,4 +53,4 @@ If you add keyless signing, remember it moves the custody chain. The question is
 
 ## How ritueel relates
 
-ritueel is planned to keep the long-lived roots and the OpenPGP primary keys; only `ritueel version` is built. It does not run Sigstore. A release process can use ritueel's keys for the OpenPGP side and a keyless flow for provenance, and the two do not need to know about each other.
+ritueel is planned to keep the long-lived roots and the OpenPGP primary keys; only [part of ritueel is built](/reference/cli/#built-so-far). It does not run Sigstore. A release process can use ritueel's keys for the OpenPGP side and a keyless flow for provenance, and the two do not need to know about each other.
