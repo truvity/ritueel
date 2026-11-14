@@ -245,7 +245,7 @@ func readRoots(refs []RootRef, issuerSubject, issuerPoint []byte) ([]bundleRoot,
 			continue // the same root listed again
 		}
 		if sameK {
-			return nil, fail(ErrParams, "two roots of the bundle have the same key and are not the same entry: one key stands under two names")
+			return nil, fail(ErrParams, "two roots of the bundle have the same key and are not the same entry: one key stands under two names or under two forms of one name")
 		}
 		if sameN {
 			return nil, fail(ErrParams, "two roots of the bundle have the same name, as OpenSSL compares names, and different keys")

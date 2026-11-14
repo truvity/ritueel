@@ -262,7 +262,9 @@ func readSigned(der []byte) (*signedRequest, error) {
 
 // ParseRequestFile reads a request file, `<stem>.csr.pem` of the hand-off contract: "a PKCS#10
 // certificate request (RFC 2986), PEM-armoured with the label `CERTIFICATE REQUEST`. The file holds
-// one such block and nothing else." The file is refused as malformed unless
+// one such block and nothing else." The file is refused unless every rule of the list holds; the
+// refusal is [CheckMalformed] for every rule but the last, and the last rule can give the other
+// checks of [ParseRequest]:
 //
 //   - it is at most [MaxRequestSize] octets, checked before it is decoded (the contract gives no
 //     size for this file; the number is the one that this package uses for a request, and a file
@@ -272,11 +274,13 @@ func readSigned(der []byte) (*signedRequest, error) {
 //     -----END CERTIFICATE REQUEST-----, then at most one line end;
 //   - a line end is LF or CRLF, and it is the same in the whole file (a file that mixes the two is
 //     refused);
-//   - a line of base64 has 1 to 76 characters, so no line is empty; the last line may be shorter than
-//     the others (OpenSSL and Go's pem.Encode write 64 characters, some tools write 76, which is the
+//   - a line of base64 has 1 to 76 characters, so no line is empty; the lines need not be of equal
+//     length (OpenSSL and Go's pem.Encode write 64 characters, some tools write 76, which is the
 //     limit of MIME, RFC 2045). The lines together are the standard base64 text of the DER of the
 //     request (RFC 4648, section 4, with its padding) and nothing else: no space, no tab, no padding
-//     left out and no bits after the end of the data, so that one request has one text;
+//     left out and no bits after the end of the data, so that the joined base64 of one request has
+//     one text (the file has not: its line end, its line lengths and its last line end can differ,
+//     so a hash of the file is not stable);
 //   - the two marker lines are exactly the text above: nothing before the first one (not a line end,
 //     not a comment, which PEM decoders skip), no space after either, no header line (a line with a
 //     colon) between them, and no second block after the first (OpenSSL reads only the first block,
