@@ -39,8 +39,10 @@
 //     is there and is not a regular file of at most 8 MiB (a folder, a link, a FIFO) is
 //     file-digest; only a name that does not exist is file-missing (record 0006, rule 31).
 //   - file-unlisted: a file inside a trust set that a record lists, which no record lists. A name
-//     that a desktop system writes (.DS_Store, Thumbs.db, desktop.ini, ._*) is the notice
-//     unexpected-file instead.
+//     that a desktop system writes (.DS_Store, Thumbs.db, desktop.ini, ._*) is this finding too,
+//     for a regular file as for any other entry: a consumer may read the whole folder, and
+//     nobody has checked the bytes of such a file. Outside a trust set such a name is a name like
+//     any other, and the notice unexpected-file stays.
 //   - trust-set-unlisted, unfinished-ceremony: a trust set that no record lists. With an open
 //     attempt linked to it, it is an unfinished ceremony. An attempt is linked when its plan is
 //     the plan of this history: the plan's trust_sequence is the set's number, and its

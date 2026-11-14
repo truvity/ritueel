@@ -1,12 +1,13 @@
 package history
 
-import "strings"
-
 // Choices of the check that the pages do not settle yet. Each is one name in this file, so that
 // another answer is a small change here and not a search through the walk.
 
 // codeUnlistedInSet is the code of a file inside a trust set that no ceremony record lists: a
-// file that a consumer of the set reads and that no digest covers. It fails.
+// file that a consumer of the set reads and that no digest covers. It fails, whatever the name:
+// a name that a desktop system writes (.DS_Store, Thumbs.db, desktop.ini, ._*) is no exception,
+// because a consumer may read the whole folder and nobody has checked the bytes of such a file.
+// Outside a trust set such a name is a name like any other, and the notice for it stays.
 const codeUnlistedInSet = FileUnlisted
 
 // codeUnlistedInWanted is the code of a file inside the folder of copies (wanted/) of a ceremony
@@ -19,12 +20,6 @@ const codeUnlistedInWanted = UnexpectedFile
 // In history/, in trust/ itself, in a ceremony folder and in a wanted/ folder such a name stays a
 // notice.
 const codeTempInSet = FileUnlisted
-
-// codeDropping is the code of a regular file that a desktop system writes when a person opens a
-// folder (see [isDropping]) and that is found inside a trust set. It is a notice, and not the
-// failing finding of [codeUnlistedInSet]. A link, a FIFO, a socket, a device or a folder with
-// one of those names is not a dropping: it is [codeUnlistedInSet] like any other entry.
-const codeDropping = UnexpectedFile
 
 // codeOddEntry is the code of a link, a FIFO, a socket or a device where a ceremony folder or a
 // trust set belongs: ritueel never writes one, and the entry hides what a folder would hold. It
@@ -43,13 +38,3 @@ const codeOddFile = UnexpectedName
 // recordCeremonyMustMatchFolder says that the "ceremony" member of a record must be the name of
 // the folder that holds it; a record that is found in another folder is record-invalid.
 const recordCeremonyMustMatchFolder = true
-
-// isDropping reports whether name is one of the names that a desktop system writes beside the
-// files of a folder: .DS_Store, Thumbs.db, desktop.ini, and any name that starts with "._".
-func isDropping(name string) bool {
-	switch name {
-	case ".DS_Store", "Thumbs.db", "desktop.ini":
-		return true
-	}
-	return strings.HasPrefix(name, "._")
-}

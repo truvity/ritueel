@@ -9,11 +9,11 @@ import (
 )
 
 // unlistedFiles looks for what the records do not cover. For each trust set that a record lists
-// it lists the whole set, and a file that no record lists is [codeUnlistedInSet] (a desktop
-// system's dropping is [codeDropping]). For each ceremony folder with a record that was read it
-// lists wanted/, and a file that the record does not list is [codeUnlistedInWanted]. A set that
-// no record lists is not listed: it is reported as unlisted, or as an unfinished ceremony, and
-// its files would only say it again.
+// it lists the whole set, and a file that no record lists is [codeUnlistedInSet], also a regular
+// file with a name that a desktop system writes. For each ceremony folder with a record that was
+// read it lists wanted/, and a file that the record does not list is [codeUnlistedInWanted]. A
+// set that no record lists is not listed: it is reported as unlisted, or as an unfinished
+// ceremony, and its files would only say it again.
 func (ck *checker) unlistedFiles() error {
 	for _, name := range ck.setNames {
 		if ck.listed[name] == nil {
@@ -23,8 +23,6 @@ func (ck *checker) unlistedFiles() error {
 		err := ck.listTree("trust/"+name, 1, files.MaxPathElements-2, tempInSet, func(path string, e fs.DirEntry) {
 			switch {
 			case ck.rd.isListed(path):
-			case isDropping(e.Name()) && e.Type().IsRegular():
-				ck.col.add(codeDropping, path, "a file that a desktop system writes; no record lists it")
 			case e.IsDir():
 				ck.col.add(codeUnlistedInSet, path, "a folder deeper than the check looks into; no record lists it")
 			default:
