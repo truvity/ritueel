@@ -28,7 +28,7 @@ Whatever the tool, a good ceremony does these things. The rules say where the or
 - Each result is checked with code that did not sign it.
 - What was done is recorded: with which keys, in which key store, and what outsiders see. The record holds no secret.
 
-ritueel is to do all of this in one command, `apply`, the same in every key store (planned; only `version` is built) ([the tools](/tools/cli/), [record 0005](../decisions/0005-a-ceremony-and-where-it-runs.md)).
+ritueel is to do all of this in one command, `apply`, the same in every key store (planned; only [a part is built](/reference/cli/#built-so-far)) ([the tools](/tools/cli/), [record 0005](../decisions/0005-a-ceremony-and-where-it-runs.md)).
 
 ## What a tool may do, and what it may not
 

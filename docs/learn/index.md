@@ -6,7 +6,7 @@ sidebar:
   order: 0
 ---
 
-ritueel teaches first. These pages explain how to keep a root key safe, whatever tool you use; of ritueel, only `version` is built. Only the first group, Basics, starts from zero. Every other page says in its first lines what it assumes, and links to the basics. If you come with a goal, the [table of goals](#goals) says which pages to read.
+ritueel teaches first. These pages explain how to keep a root key safe, whatever tool you use; of ritueel, only [a part is built](/reference/cli/#built-so-far). Only the first group, Basics, starts from zero. Every other page says in its first lines what it assumes, and links to the basics. If you come with a goal, the [table of goals](#goals) says which pages to read.
 
 ## Basics
 

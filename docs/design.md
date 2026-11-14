@@ -4,7 +4,7 @@ description: What ritueel decides, by area, in short sentences, with what is not
 flow: rows
 ---
 
-Only `version` is built. This page is the design as decided. What is not yet proven or only proposed is in the last section of each record, with its issue.
+Only [a part is built](/reference/cli/#built-so-far). This page is the design as decided. What is not yet proven or only proposed is in the last section of each record, with its issue.
 
 ## The five core ideas
 

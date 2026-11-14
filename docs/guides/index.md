@@ -6,7 +6,7 @@ sidebar:
   order: 0
 ---
 
-A guide walks through one procedure step by step, with the result of each step and a drill on test keys. Only `ritueel version` is built; the ritueel commands in the guides are planned. The guides say *how*; the pages under [Learn](/learn/) say *why* and *when*, so read the matching Learn page first if a step is not clear.
+A guide walks through one procedure step by step, with the result of each step and a drill on test keys. Only [part of ritueel is built](/reference/cli/#built-so-far); the ritueel commands in the guides are planned. The guides say *how*; the pages under [Learn](/learn/) say *why* and *when*, so read the matching Learn page first if a step is not clear.
 
 | Guide | When | Learn first |
 |---|---|---|
