@@ -5,7 +5,7 @@ sidebar:
   order: 7
 ---
 
-*Not built yet. This is version 1 of the format that [record 0006](../decisions/0006-bundle-history-and-trust-files.md) leaves to a reference page; the code is [issue #55](https://github.com/truvity/ritueel/issues/55), in M4, and its [test vectors](/reference/ssh-ca-key-list/#test-vectors) match this page. It has the shape of the [root list](/reference/root-list/), which it follows wherever it can.*
+*Not built yet. This is version 1 of the format that [record 0006](../decisions/0006-bundle-history-and-trust-files.md) leaves to a reference page; the code is [issue #55](https://github.com/truvity/ritueel/issues/55), in M4, and its [test vectors](/reference/ssh-ca-key-list/#test-vectors) follow this page; the README of the set lists the rules that have no vector yet. It has the shape of the [root list](/reference/root-list/), which it follows wherever it can.*
 
 SSH hosts trust a CA by holding its public key. The **SSH CA key list** tells a host which SSH CA keys are current: the keys of the systems that hold delegations, which keep their private halves, and the break-glass SSH CA key of each root key that keeps one, which ritueel holds offline. It carries the [trust sequence](../decisions/0006-bundle-history-and-trust-files.md) and is signed by one active root key, the X.509 root key that signs the root list, so a host that already trusts the root list needs nothing new to trust this one.
 
@@ -80,16 +80,24 @@ A host holds one list: the last good one, beside the root list it holds. It chec
 | 2 | `kid` is the pin of an active root key of the root list the host holds; or, when that root list has the same `sequence` as this list, it is the pin of a root key that signed it, which may have left the list in that very ceremony. | `unknown-signer` |
 | 3 | The signature verifies with the key in `x5c` over the bytes of `ssh-ca-keys.json` as read. | `signature-invalid` |
 | 4 | `version` is known. | `version-unsupported` |
-| 5 | The members and rules above hold: no unknown or repeated member, names unique and in order, no key twice, each key `ecdsa-sha2-nistp384` with the `fingerprint` it should have, `root` exactly on the break-glass names. | `malformed` |
+| 5 | The members and rules above hold: no unknown or repeated member, names unique and in order, no key twice, each key `ecdsa-sha2-nistp384` with the `fingerprint` it should have, `root` exactly on the break-glass names. `expires_at` is exactly 13 calendar months after `signed_at`, and `signed_at` is not later than the host's clock ([record 0006](../decisions/0006-bundle-history-and-trust-files.md), rule 49). | `malformed` |
 | 6 | `sequence` is not lower than the `sequence` of the list the host holds. | `rollback` |
 | 7 | When `sequence` equals the held list's, `ssh-ca-keys.json` is byte for byte the held one. | `sequence-conflict` |
 | 8 | The host's clock is before `expires_at`. | `expired` |
 
-A host takes a new root list **before** the SSH CA key list of the same sequence, so that check 2 reads the root keys of that sequence; a list signed by a root key the host's root list does not yet show is `unknown-signer`, and the host tries again after it has updated the root list. A host that holds no root list uses its initial pins for check 2, as for the root list. The host verifies the bytes it received and does not re-serialise them. When every check passes, the new list replaces the one it holds, and the keys of the old list that are not on the new one are no longer trusted. Receiving the current list again is not an error.
+A host takes a new root list **before** the SSH CA key list of the same sequence, so that check 2 reads the root keys of that sequence; a list signed by a root key the host's root list does not yet show is `unknown-signer`, and the host tries again after it has updated the root list. A host that holds no root list uses its initial pins for check 2, as for the root list. The host verifies the bytes it received and does not re-serialise them. When every check passes, the new list replaces the one it holds, and the keys of the old list that are not on the new one are no longer trusted.
+
+**The held list again.** Receiving the current list again is not an error. A list at the same sequence whose `ssh-ca-keys.json` is byte for byte the held one changes nothing: a host installs nothing and keeps the files it holds, also its `.jws`, and the `.jws` of a list that comes again is not evidence of who signed the list ([record 0006](../decisions/0006-bundle-history-and-trust-files.md), rule 50). It still has to pass the checks of its own form: a signer that check 2 accepts, a signature that verifies, the members and the dates, and the expiry. The root key that signed the root list of the same sequence (check 2) is read from the `.jws` of that root list which the host holds, the one it installed when it first took that sequence, and not from a `.jws` that came again.
+
+**What of the other rules of record 0006 applies.** The dates and the same list again apply, as written above and in check 5 ([record 0006](../decisions/0006-bundle-history-and-trust-files.md), rules 49 and 50). The lowest sequence and the CA bundle do not apply ([record 0006](../decisions/0006-bundle-history-and-trust-files.md), rules 51 and 52): this list has no initial pins of its own, because check 2 reads the root keys of the root list the host holds, and it has no CA bundle.
 
 **When the list a host holds expires** and no newer one has arrived, it keeps the list, goes on trusting its keys, and raises a warning, as for the root list ([record 0006](../decisions/0006-bundle-history-and-trust-files.md)). `ritueel verify ssh-ca-keys` reports it as the warning `held-expired` in the member `warnings` of its JSON output and prints it on standard error; the exit code does not change ([the output](/reference/cli/#machine-readable-output)). `status` warns 60, 30 and 14 days before the newest list expires.
 
 These codes belong to the host and are not sent anywhere.
+
+:::caution[Open]
+One stolen root key can sign this list with a far higher `sequence`, because it needs one signature. A host that takes it refuses every honest list afterwards (`rollback`), and so keeps trusting the keys of the thief's list. This is the same weakness as that of [the root list](/reference/root-list/), and it is decided before the first release ([issue #228](https://github.com/truvity/ritueel/issues/228); [what other systems do](/research/root-list-sequence-and-a-stolen-key-2026-11-14/)). Until then the way back is that the operator of the host removes the SSH CA key list it holds, after the host has taken the honest root list that no longer lists the stolen key.
+:::
 
 ## The file for sshd
 
@@ -113,8 +121,8 @@ The vectors are in [`testdata/ssh-ca-keys/v1/`](https://github.com/truvity/ritue
 
 | Group | Cases |
 |---|---|
-| Accepted | A first list; an update; the same list signed by the other root key; a list that removes a revoked root key's break-glass key, signed by the surviving root key; the same, signed by the retiring root key in the ceremony that removes it; a list with no key left; the same list again; the file for sshd. |
-| Refused | A lower sequence (`rollback`); another list at the same sequence (`sequence-conflict`); a list signed by a root key that left the list in an earlier ceremony, and one signed by Z (`unknown-signer`); a list changed after signing (`signature-invalid`); an expired list (`expired`); version 2 (`version-unsupported`); an unknown member, a key listed twice, a list signed with the root list's `typ` (`malformed`); a file for sshd that holds a host key (`user-keys-mismatch`). |
+| Accepted | A first list; an update; the same list signed by the other root key; a list that removes a revoked root key's break-glass key, signed by the surviving root key; the same, signed by the retiring root key in the ceremony that removes it; a list with no key left; the same list again, also after a root key left; the file for sshd. |
+| Refused | A lower sequence (`rollback`); another list at the same sequence (`sequence-conflict`); a list signed by a root key that left the list in an earlier ceremony, and one signed by Z (`unknown-signer`); a list changed after signing (`signature-invalid`); an expired list (`expired`); version 2 (`version-unsupported`); an unknown member, a key listed twice, a list signed with the root list's `typ`, an `expires_at` that is 13 calendar months and a second, or 12 months, after `signed_at`, and a list signed after the clock (`malformed`); a file for sshd that holds a host key (`user-keys-mismatch`). |
 | Warned | The held list expired and no newer one came. |
 
 CI checks that the manifest names every file of the set, that the pins match the root files, that every list's signature verifies except the one a case expects to fail, that every other list follows the rules above, and that each file for sshd holds the user keys of its list (`just check-vectors`). The requests of type `ssh-ca-key` are in [the hand-off vectors](/reference/hand-off-contract/#test-vectors).
