@@ -57,10 +57,16 @@ if (modulePath !== null) {
   } else {
     const file = join(dist, ...rest.split('/'), 'index.html');
     const label = `${rest}/index.html`;
-    if (!existsSync(file) || !statSync(file).isFile()) {
+    // Read the file once and treat a failed read as "not there": no check of the path before the read.
+    let html = null;
+    try {
+      html = readFileSync(file, 'utf8');
+    } catch {
+      html = null;
+    }
+    if (html === null) {
       E(`${label} is not in the built site, so https://${modulePath}?go-get=1 would answer 404`);
     } else {
-      const html = readFileSync(file, 'utf8');
       const head = /<head\b[^>]*>([\s\S]*?)<\/head\s*>/i.exec(html)?.[1];
       if (head === undefined) {
         E(`${label} has no <head>`);
