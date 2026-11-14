@@ -990,9 +990,6 @@ func TestAStrayFileIsANotice(t *testing.T) {
 		"history/.rt-abcdefghijk":                      "a leftover temporary name",
 		"history/.rt-ABCDEFGHIJK":                      "a leftover temporary name in upper case",
 		"trust/.rt-abcdefghijk":                        "a leftover temporary name in trust",
-		"trust/" + hbSet(1) + "/.DS_Store":             "a name a desktop system writes in a trust set",
-		"trust/" + hbSet(1) + "/Thumbs.db":             "a name a desktop system writes in a trust set",
-		"trust/" + hbSet(1) + "/._keys":                "a name a desktop system writes in a trust set",
 		"history/" + hbFolder(1) + "/wanted/extra.txt": "a copy that the record does not list",
 		"history/" + hbFolder(1) + "/notes.txt":        "a file in a ceremony folder that no record lists",
 	}
@@ -1017,6 +1014,60 @@ func TestAStrayFileIsANotice(t *testing.T) {
 			j := chJSON(t, b.dir)
 			chWantDone(t, j, []string{"unexpected-file"})
 		})
+	}
+}
+
+// A name that a desktop system writes is the finding file-unlisted inside a trust set that a record
+// lists, for a regular file as for any entry: exit code 3, a line for the finding, the refusal line, and
+// no end line. Outside a trust set it is a notice, exit code 0, and the end line.
+func TestDesktopNameInATrustSetIsRefusedAndElsewhereIsANotice(t *testing.T) {
+	names := []string{".DS_Store", "Thumbs.db", "desktop.ini", "._keys", "._keys.gpg"}
+	for _, name := range names {
+		for _, where := range []string{"", "keyring/"} {
+			t.Run("in a trust set/"+where+name, func(t *testing.T) {
+				b := newHB(t, 3)
+				rel := "trust/" + hbSet(2) + "/" + where + name
+				hbWrite(t, b.dir, rel, "x")
+				rep := chReport(t, b.dir)
+				if !slices.Equal(chCodes(rep.Reasons()), []string{"file-unlisted"}) || len(rep.Warnings()) != 0 || len(rep.Findings) != 1 {
+					t.Fatalf("the library gives reasons %v and warnings %v with %d findings; the test expects one finding", rep.Reasons(), rep.Warnings(), len(rep.Findings))
+				}
+				text := chHist(t, b.dir)
+				if text.code != ExitRefused || text.stdout != "" {
+					t.Fatalf("exit %d, stdout %q, stderr %q; want exit 3 and nothing on standard output", text.code, text.stdout, text.stderr)
+				}
+				want := []string{rep.Findings[0].Line(), "ritueel: refused: file-unlisted"}
+				if rep.Findings[0].Path != rel || !strings.HasPrefix(want[0], "file-unlisted "+rel+": ") {
+					t.Fatalf("the finding is %q, want one for %s", want[0], rel)
+				}
+				if got := chLines(text.stderr); !slices.Equal(got, want) {
+					t.Errorf("standard error:\n got %q\nwant %q", got, want)
+				}
+				js := chJSON(t, b.dir)
+				if js.code != ExitRefused || js.stderr != text.stderr {
+					t.Errorf("JSON: exit %d; standard error %q and %q", js.code, js.stderr, text.stderr)
+				}
+				chWantRefused(t, js, []string{"file-unlisted"}, []string{})
+			})
+		}
+		for _, rel := range []string{"history/" + hbFolder(2) + "/", "history/" + hbFolder(2) + "/wanted/", "history/", "trust/"} {
+			t.Run("outside a trust set/"+rel+name, func(t *testing.T) {
+				b := newHB(t, 3)
+				hbWrite(t, b.dir, rel+name, "x")
+				rep := chReport(t, b.dir)
+				if !slices.Equal(chCodes(rep.Warnings()), []string{"unexpected-file"}) || len(rep.Reasons()) != 0 {
+					t.Fatalf("the library gives warnings %v and reasons %v; the test expects one notice", rep.Warnings(), rep.Reasons())
+				}
+				r := chHist(t, b.dir)
+				if r.code != ExitOK || r.stdout != chEnd(3, b.end()) {
+					t.Errorf("exit %d, stdout %q", r.code, r.stdout)
+				}
+				if got, want := chLines(r.stderr), chWantLines(rep); !slices.Equal(got, want) {
+					t.Errorf("standard error:\n got %q\nwant %q", got, want)
+				}
+				chWantDone(t, chJSON(t, b.dir), []string{"unexpected-file"})
+			})
+		}
 	}
 }
 
