@@ -91,6 +91,106 @@
       "last_modified": "2026-11-06T15:06:19Z",
       "resolved": "github:NixOS/nixpkgs/4fe25e12eb9f4c744966dd3de5a05246cf098601?lastModified=1793977579"
     },
+    "gnupg@2.4.9": {
+      "last_modified": "2026-11-12T14:50:34Z",
+      "resolved": "github:NixOS/nixpkgs/2074cc672349f14240fb7ea90d509e0b643e9dd4#gnupg",
+      "source": "devbox-search",
+      "version": "2.4.9",
+      "systems": {
+        "aarch64-darwin": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/kjpb0cciamap2mvkixs230gv1s9c5p6l-gnupg-2.4.9",
+              "default": true
+            },
+            {
+              "name": "man",
+              "path": "/nix/store/39sic1y0w3gwdmqydi15fm6qgpcvmbnl-gnupg-2.4.9-man",
+              "default": true
+            },
+            {
+              "name": "doc",
+              "path": "/nix/store/apppj2lz5gcgxxfimfaa3sj81xil1m5x-gnupg-2.4.9-doc"
+            },
+            {
+              "name": "info",
+              "path": "/nix/store/bjyv349s7ijg1kx0kbbar900wfsnj458-gnupg-2.4.9-info"
+            }
+          ],
+          "store_path": "/nix/store/kjpb0cciamap2mvkixs230gv1s9c5p6l-gnupg-2.4.9"
+        },
+        "aarch64-linux": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/ifc8zhbh7gl81qs462f72m1r23513af0-gnupg-2.4.9",
+              "default": true
+            },
+            {
+              "name": "man",
+              "path": "/nix/store/7qxyqssjzia8gcpcm72iypk3mdbcxymh-gnupg-2.4.9-man",
+              "default": true
+            },
+            {
+              "name": "doc",
+              "path": "/nix/store/cjnigrn40b0imhcydjp0j5hmr48rng6f-gnupg-2.4.9-doc"
+            },
+            {
+              "name": "info",
+              "path": "/nix/store/4fqpfmg1z7m2rahi3gr0jn0k1ic56mm2-gnupg-2.4.9-info"
+            }
+          ],
+          "store_path": "/nix/store/ifc8zhbh7gl81qs462f72m1r23513af0-gnupg-2.4.9"
+        },
+        "x86_64-darwin": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/n3md9y3mqg5n7ics64chfjfzhn45qby3-gnupg-2.4.9",
+              "default": true
+            },
+            {
+              "name": "man",
+              "path": "/nix/store/401dixxj0zdpsky85pkig64hi4ah79yv-gnupg-2.4.9-man",
+              "default": true
+            },
+            {
+              "name": "doc",
+              "path": "/nix/store/jdkh6plqi5s2s5cqbckfwcd8lnwyx50g-gnupg-2.4.9-doc"
+            },
+            {
+              "name": "info",
+              "path": "/nix/store/7hz218wdccp4nz41xmdwsjpx57ilwihm-gnupg-2.4.9-info"
+            }
+          ],
+          "store_path": "/nix/store/n3md9y3mqg5n7ics64chfjfzhn45qby3-gnupg-2.4.9"
+        },
+        "x86_64-linux": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/4flxcqwjv24a6vn0aw3kijqp6l8y89lw-gnupg-2.4.9",
+              "default": true
+            },
+            {
+              "name": "man",
+              "path": "/nix/store/64v783lip1344s6zf5nl13w79dhp88k2-gnupg-2.4.9-man",
+              "default": true
+            },
+            {
+              "name": "doc",
+              "path": "/nix/store/m0mixyz3mxjpn11sf44g5y1h78d20a0w-gnupg-2.4.9-doc"
+            },
+            {
+              "name": "info",
+              "path": "/nix/store/pxb7c7fz9gb4rgczwsl8b6lk960hlag2-gnupg-2.4.9-info"
+            }
+          ],
+          "store_path": "/nix/store/4flxcqwjv24a6vn0aw3kijqp6l8y89lw-gnupg-2.4.9"
+        }
+      }
+    },
     "go@1.27.0": {
       "last_modified": "2026-09-04T02:50:00Z",
       "resolved": "github:NixOS/nixpkgs/e5ead30d0824debba629dcf0720abeddee57b7d6#go_1_27",
@@ -481,6 +581,141 @@
             }
           ],
           "store_path": "/nix/store/rlkgsb80gq0fj00qraxnxa2mkh8xcq3k-nodejs-26.11.1"
+        }
+      }
+    },
+    "openssl@3.6.4": {
+      "last_modified": "2026-09-28T13:04:38Z",
+      "resolved": "github:NixOS/nixpkgs/f45c6f04c2f013f004bf94e284e95d72898d9393#openssl",
+      "source": "devbox-search",
+      "version": "3.6.4",
+      "systems": {
+        "aarch64-darwin": {
+          "outputs": [
+            {
+              "name": "bin",
+              "path": "/nix/store/52kzqfra19rffn23ykqw4ls4xp9hhmw3-openssl-3.6.4-bin",
+              "default": true
+            },
+            {
+              "name": "man",
+              "path": "/nix/store/lwmrq8gj3flb7fxb7v8vdbzr0b4kbk13-openssl-3.6.4-man",
+              "default": true
+            },
+            {
+              "name": "dev",
+              "path": "/nix/store/j98cg87pb9fyp25qc55qyxy6gc7z723v-openssl-3.6.4-dev"
+            },
+            {
+              "name": "doc",
+              "path": "/nix/store/n5ssqaiz22z052ik9lwk9zrxcip1kah7-openssl-3.6.4-doc"
+            },
+            {
+              "name": "out",
+              "path": "/nix/store/w2nw8isfr6vaqw8yyg5kznpx1npd35ps-openssl-3.6.4"
+            }
+          ],
+          "store_path": "/nix/store/52kzqfra19rffn23ykqw4ls4xp9hhmw3-openssl-3.6.4-bin"
+        },
+        "aarch64-linux": {
+          "outputs": [
+            {
+              "name": "bin",
+              "path": "/nix/store/ai0jh6nymysikgd4liv2k8iv9kmipcva-openssl-3.6.4-bin",
+              "default": true
+            },
+            {
+              "name": "man",
+              "path": "/nix/store/wih3wiqs1zkv6bjx1avwgqn6s9ks744n-openssl-3.6.4-man",
+              "default": true
+            },
+            {
+              "name": "debug",
+              "path": "/nix/store/3wl47mnky5x8mlgp6zhf6vlizq54wl5z-openssl-3.6.4-debug"
+            },
+            {
+              "name": "dev",
+              "path": "/nix/store/ik15agzk82h1sbazhalg11y8zw1xvl8n-openssl-3.6.4-dev"
+            },
+            {
+              "name": "doc",
+              "path": "/nix/store/1vmid1hplmhp65nhyq583k7yz4lin59w-openssl-3.6.4-doc"
+            },
+            {
+              "name": "out",
+              "path": "/nix/store/v89yca35zsb13k51ibz0mcz2rrzjwwrj-openssl-3.6.4"
+            }
+          ],
+          "store_path": "/nix/store/ai0jh6nymysikgd4liv2k8iv9kmipcva-openssl-3.6.4-bin"
+        },
+        "x86_64-linux": {
+          "outputs": [
+            {
+              "name": "bin",
+              "path": "/nix/store/44gxi8li8y8wrxrb93sya9hljkpigsqw-openssl-3.6.4-bin",
+              "default": true
+            },
+            {
+              "name": "man",
+              "path": "/nix/store/iajmgb4jycq2h6qgz27r2lswvh5i7rnb-openssl-3.6.4-man",
+              "default": true
+            },
+            {
+              "name": "debug",
+              "path": "/nix/store/3iaqlw9k0awz6sb5ms2xvzy8w5lhhnk7-openssl-3.6.4-debug"
+            },
+            {
+              "name": "dev",
+              "path": "/nix/store/mij14pdz6mld0xqg5c6s07mrhglwrz7r-openssl-3.6.4-dev"
+            },
+            {
+              "name": "doc",
+              "path": "/nix/store/1h6blr2br08x6v1sl745wr9b4d6lw14x-openssl-3.6.4-doc"
+            },
+            {
+              "name": "out",
+              "path": "/nix/store/yj34vymbqf7mf4lmffipy8jqc4kwr1mc-openssl-3.6.4"
+            }
+          ],
+          "store_path": "/nix/store/44gxi8li8y8wrxrb93sya9hljkpigsqw-openssl-3.6.4-bin"
+        }
+      }
+    },
+    "sequoia-sqv@1.5.0": {
+      "last_modified": "2026-11-12T14:50:34Z",
+      "resolved": "github:NixOS/nixpkgs/2074cc672349f14240fb7ea90d509e0b643e9dd4#sequoia-sqv",
+      "source": "devbox-search",
+      "version": "1.5.0",
+      "systems": {
+        "aarch64-darwin": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/h0a0ky6fa3gqj9l4pbf172ar0g4y3f8p-sequoia-sqv-1.5.0",
+              "default": true
+            }
+          ],
+          "store_path": "/nix/store/h0a0ky6fa3gqj9l4pbf172ar0g4y3f8p-sequoia-sqv-1.5.0"
+        },
+        "aarch64-linux": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/zqykjy5aanrn6vlzc9rl0dnn0al1smqh-sequoia-sqv-1.5.0",
+              "default": true
+            }
+          ],
+          "store_path": "/nix/store/zqykjy5aanrn6vlzc9rl0dnn0al1smqh-sequoia-sqv-1.5.0"
+        },
+        "x86_64-linux": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/mbgkg6wz76j0p1h6scdgcb0shi0ifkha-sequoia-sqv-1.5.0",
+              "default": true
+            }
+          ],
+          "store_path": "/nix/store/mbgkg6wz76j0p1h6scdgcb0shi0ifkha-sequoia-sqv-1.5.0"
         }
       }
     },
