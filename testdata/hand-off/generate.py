@@ -1333,6 +1333,12 @@ def removal_authorisation(lbl):
 
 
 RECORDS = {n: sha(f"example ceremony record {n}\n".encode()) for n in range(1, 10)}   # made-up record digests
+SEQ_MAX = 9007199254740991   # 2^53 - 1, the highest sequence a list may carry
+
+
+def record_digest(n):
+    """The made-up digest of ceremony record n; a list of sequence s carries the digest of record s - 1."""
+    return RECORDS.get(n) or sha(f"example ceremony record {n}\n".encode())
 lists = []
 
 
@@ -1349,7 +1355,7 @@ def root_list(stem, signers, sequence, roots, signed_at, version=1, last_record=
     doc = {"version": version, "sequence": sequence, "signed_at": ts(signed_at), "expires_at": ts(expires_at or months13(signed_at)),
            "roots": [entry(r) for r in roots]}
     if last_record:
-        doc["last_record_sha256"] = RECORDS[sequence - 1]
+        doc["last_record_sha256"] = record_digest(sequence - 1)
     if removals:
         doc["removals"] = list(removals)
     if extra:
@@ -1449,6 +1455,67 @@ root_list("seq8-b-without-a-empty-authorisation", "B", 8, "B", T_SEQ8, removals=
 # the list of seq7-a again, with a second signature by a root key that is on no list (the same bytes of root-list.json)
 root_list("seq7-a-and-z", "AZ", 7, "AB", CLOCK)
 
+
+# The way back (record 0006, rule 53): lists for a host that holds a list at a higher sequence, or at the same one with other content,
+# than the candidate. Every list here is signed on the ceremony time of the set, and a case gives its own clock where it needs one. A name starts
+# with the sequence of the list, and `max` is the highest sequence a list may carry (2^53 - 1).
+
+
+def relabel_b_as_d(doc):
+    """The entry of root B under the label D, as the writer would list a key it gave a new label (the entries stay in label order)."""
+    for r in doc["roots"]:
+        if r["x509_spki_sha256"] == spki_hex("B"):
+            r["label"] = "D"
+    doc["roots"].sort(key=lambda r: r["label"])
+
+
+def another_fingerprint_for_b(doc):
+    """Root B's entry with an OpenPGP fingerprint that is not its primary's (40 lower-case hexadecimal digits, as check 5 wants)."""
+    for r in doc["roots"]:
+        if r["x509_spki_sha256"] == spki_hex("B"):
+            r["openpgp_fingerprint"] = hashlib.sha1(b"example fingerprint that is no primary's").hexdigest()
+
+
+def one_digit_changed(doc):
+    """The list after signing: the last digit of last_record_sha256 changed, so one byte of root-list.json differs from what was signed."""
+    doc = json.loads(json.dumps(doc))
+    d = doc["last_record_sha256"]
+    doc["last_record_sha256"] = d[:-1] + ("0" if d[-1] != "0" else "1")
+    return doc
+
+
+root_list("seqmax-ab-by-a", "A", SEQ_MAX, "AB", CLOCK)                  # a thief's list: one signature, the highest sequence
+root_list("seqmax-abc-by-a", "A", SEQ_MAX, "ABC", CLOCK)
+root_list("seq8-ab-by-a", "A", 8, "AB", CLOCK)
+root_list("seq5-ab", "A", 5, "AB", CLOCK)
+root_list("seq5-ac", "AC", 5, "AC", CLOCK)                              # A came back, with C (the writer refuses this; a host cannot see it)
+root_list("h4-bcz", "BCZ", 4, "BCZ", CLOCK)                             # the newest of a history: Z was added after h2, h3
+root_list("h3-bc", "ABC", 3, "BC", CLOCK)                               # A retired: the retired root signs
+root_list("h2-abc", "ABC", 2, "ABC", CLOCK)
+root_list("h2-abc-with-z", "ABCZ", 2, "ABC", CLOCK)                     # the same list with a signature of a root that was added later
+root_list("h2-b-without-a", "BC", 2, "B", CLOCK)
+root_list("seq1-az-without-b", "AZ", 1, "AZ", CLOCK, last_record=False, removals=[removal_entry("B")])
+root_list("seq6-az-without-b", "AZ", 6, "AZ", CLOCK, removals=[removal_entry("B")])
+root_list("seq1-b-without-c", "B", 1, "B", CLOCK, last_record=False, removals=[removal_entry("C")])
+root_list("seq3-bc-revoke-a", "BC", 3, "BC", CLOCK, removals=[removal_entry("A")])
+root_list("seq8-bc-without-a-by-b", "B", 8, "BC", CLOCK, removals=[removal_entry("A")])
+root_list("seq8-bc-without-a-adds-c", "BC", 8, "BC", CLOCK, removals=[removal_entry("A")])
+root_list("seq8-ac-without-b-named", "ABC", 8, "AC", CLOCK, removals=[removal_entry("B")])
+root_list("seq8-c-without-ab-a-named", "BC", 8, "C", CLOCK, removals=[removal_entry("A")])
+root_list("seq8-c-without-ab-named", "C", 8, "C", CLOCK, removals=[removal_entry("A"), removal_entry("B")])
+root_list("seq8-b-without-a-and-c-named", "B", 8, "B", CLOCK, removals=[removal_entry("A"), removal_entry("C")])
+root_list("seq8-bc-with-b-named", "BC", 8, "BC", CLOCK, removals=[removal_entry("A"), removal_entry("B")])
+root_list("seq8-z-without-ab", "Z", 8, "Z", CLOCK, removals=[removal_entry("A"), removal_entry("B")])
+root_list("seq8-b-without-a-signed-by-a-and-named", "AB", 8, "B", CLOCK, removals=[removal_entry("A")])
+root_list("seq8-bc-new-label-without-a", "BC", 8, "BC", CLOCK, removals=[removal_entry("A")], edit=relabel_b_as_d)
+root_list("seq8-bc-new-label-without-a-by-c", "C", 8, "BC", CLOCK, removals=[removal_entry("A")], edit=relabel_b_as_d)
+root_list("seq8-b-without-a-entry-labelled-d", "B", 8, "B", CLOCK, removals=[dict(removal_entry("A"), label="D")])
+root_list("seq8-b-without-a-changed-after-signing", "B", 8, "B", CLOCK, removals=[removal_entry("A")], tamper=one_digit_changed)
+root_list("seq8-ab-new-label", "AB", 8, "AB", CLOCK, edit=relabel_b_as_d)
+root_list("seq8-bc-new-fingerprint-without-a", "BC", 8, "BC", CLOCK, removals=[removal_entry("A")], edit=another_fingerprint_for_b)
+root_list("seq8-z-without-ab-by-a-and-z", "AZ", 8, "Z", CLOCK, removals=[removal_entry("A"), removal_entry("B")])
+root_list("seq8-b-without-a-signed-by-b-and-z", "BZ", 8, "B", CLOCK, removals=[removal_entry("A")])
+
 # the removal authorisations as the holder stores them, one file for each root
 removal_files = []
 for lbl in "ABC":
@@ -1459,7 +1526,10 @@ for lbl in "ABC":
 rl_cases = []
 
 
-def rl_case(cid, held, candidate, expect, reason=None, clock=None, warning=None, bundle=None, min_sequence=None):
+def rl_case(cid, held, candidate, expect, reason=None, clock=None, warning=None, bundle=None, min_sequence=None, wayback=False, flaw=None):
+    """wayback: the list was accepted although check 6 or check 7 would have refused it (record 0006, rule 53).
+    flaw: names the one thing about the case itself that a check refuses it for (`signed_at-after-clock`: the clock is before
+    the candidate's `signed_at`, in a list that other cases use at a later clock)."""
     c = {"id": cid, "held": held, "candidate": candidate}
     if bundle:
         c["bundle"] = bundle
@@ -1467,11 +1537,15 @@ def rl_case(cid, held, candidate, expect, reason=None, clock=None, warning=None,
         c["min_sequence"] = min_sequence
     if clock:
         c["clock"] = ts(clock)
+    if flaw:
+        c["flaw"] = flaw
     c["expect"] = expect
     if reason:
         c["reason"] = reason
     if warning:
         c["warning"] = warning
+    if wayback:
+        c["wayback"] = True
     rl_cases.append(c)
 
 
@@ -1523,6 +1597,45 @@ rl_case("empty-authorisation", "seq7-a", "seq8-b-without-a-empty-authorisation",
 rl_case("same-list-again-with-an-unknown-signer-beside-a-trusted-one", "seq7-a", "seq7-a-and-z", "accept")
 rl_case("same-list-again-after-its-expiry", "seq7-a", "seq7-a", "refuse", "expired", clock=dt.datetime(2028, 1, 1, tzinfo=UTC))
 rl_case("held-list-expired", "seq7-a", None, "warn", clock=dt.datetime(2028, 1, 1, tzinfo=UTC), warning="held-expired")
+
+# The way back (record 0006, rule 53). The clock of a case is that of `seq8-b-without-a`, which is signed on 2026-12-01 (T_SEQ8), unless it gives another.
+# `wayback` is true only when the list is accepted although check 6 or check 7 would have refused it.
+wb = dict(clock=T_SEQ8)
+rl_case("way-back-from-the-highest-sequence", "seqmax-ab-by-a", "seq8-b-without-a", "accept", wayback=True, **wb)
+rl_case("way-back-at-the-sequence-of-the-thief", "seq8-ab-by-a", "seq8-b-without-a", "accept", wayback=True, **wb)
+rl_case("way-back-with-a-signature-missing", "seqmax-abc-by-a", "seq8-bc-without-a-by-b", "refuse", "insufficient-signers", **wb)
+rl_case("way-back-with-another-keys-authorisation", "seqmax-ab-by-a", "seq8-b-without-a-wrong-removal", "refuse", "removal-invalid", **wb)
+rl_case("no-entry-is-not-the-way-back", "seqmax-ab-by-a", "seq8-ab-without-a", "refuse", "rollback", **wb)
+rl_case("lower-sequence-removes-nothing", "seqmax-ab-by-a", "seq7-a", "refuse", "rollback", **wb)
+rl_case("way-back-after-its-expiry", "seqmax-ab-by-a", "seq8-b-without-a", "refuse", "expired", clock=dt.datetime(2028, 1, 2, 12, tzinfo=UTC))
+rl_case("way-back-signed-after-the-clock", "seqmax-ab-by-a", "seq8-b-without-a", "refuse", "malformed", clock=dt.datetime(2026, 11, 30, 12, tzinfo=UTC), flaw="signed_at-after-clock")
+rl_case("old-list-as-published", "h4-bcz", "h2-abc", "refuse", "rollback", **wb)
+rl_case("old-list-with-the-signature-of-a-later-key", "h4-bcz", "h2-abc-with-z", "refuse", "rollback", **wb)
+rl_case("old-list-that-removes-a-later-key", "h3-bc", "h2-b-without-a", "refuse", "rollback", **wb)
+rl_case("pins-keep-their-lowest-sequence", None, "h3-bc", "refuse", "rollback", min_sequence=4, **wb)
+rl_case("pins-keep-their-lowest-sequence-for-a-named-removal", None, "seq8-b-without-a", "refuse", "rollback", min_sequence=9, **wb)
+rl_case("one-key-and-one-authorisation-by-design", "seq5-ab", "seq1-az-without-b", "accept", wayback=True, **wb)
+rl_case("the-same-takeover-at-the-next-sequence", "seq5-ab", "seq6-az-without-b", "accept", **wb)
+rl_case("retire-with-the-authorisation", "seqmax-abc-by-a", "seq8-ac-without-b-named", "accept", wayback=True, **wb)
+rl_case("two-removed-one-named", "seqmax-abc-by-a", "seq8-c-without-ab-a-named", "refuse", "rollback", **wb)
+rl_case("two-removed-both-named", "seqmax-abc-by-a", "seq8-c-without-ab-named", "accept", wayback=True, **wb)
+rl_case("extra-entry-for-a-key-not-held", "seqmax-ab-by-a", "seq8-b-without-a-and-c-named", "refuse", "removal-invalid", **wb)
+rl_case("entry-for-a-key-that-stays", "seqmax-abc-by-a", "seq8-bc-with-b-named", "refuse", "removal-invalid", **wb)
+rl_case("removal-list-signed-only-by-a-new-key", "seqmax-ab-by-a", "seq8-z-without-ab", "refuse", "unknown-signer", **wb)
+rl_case("way-back-over-an-expired-held-list", "seqmax-ab-by-a", "seq8-b-without-a", "accept", wayback=True, clock=dt.datetime(2027, 12, 20, 12, tzinfo=UTC))
+rl_case("way-back-chain-lowers-the-sequence-step-1", "h3-bc", "seq1-b-without-c", "accept", wayback=True, **wb)
+rl_case("way-back-chain-lowers-the-sequence-step-2", "seq1-b-without-c", "h2-abc", "accept", **wb)
+rl_case("way-back-with-a-new-label", "seqmax-abc-by-a", "seq8-bc-new-label-without-a", "accept", wayback=True, **wb)
+rl_case("way-back-entry-with-another-label", "seqmax-ab-by-a", "seq8-b-without-a-entry-labelled-d", "accept", wayback=True, **wb)
+rl_case("way-back-list-changed-after-signing", "seqmax-ab-by-a", "seq8-b-without-a-changed-after-signing", "refuse", "signature-invalid", **wb)
+rl_case("way-back-with-a-new-label-the-kept-key-not-signing", "seqmax-abc-by-a", "seq8-bc-new-label-without-a-by-c", "refuse", "insufficient-signers", **wb)
+rl_case("revoke-signed-by-the-key-with-its-entry", "seqmax-ab-by-a", "seq8-b-without-a-signed-by-a-and-named", "accept", wayback=True, **wb)
+rl_case("way-back-that-also-adds-a-key", "seqmax-ab-by-a", "seq8-bc-without-a-adds-c", "accept", wayback=True, **wb)
+rl_case("old-revoke-list-after-its-key-came-back", "seq5-ac", "seq3-bc-revoke-a", "accept", wayback=True, **wb)
+rl_case("lower-sequence-with-a-new-label-removes-nothing", "seqmax-ab-by-a", "seq8-ab-new-label", "refuse", "rollback", **wb)
+rl_case("way-back-with-a-new-fingerprint", "seqmax-abc-by-a", "seq8-bc-new-fingerprint-without-a", "accept", wayback=True, **wb)
+rl_case("way-back-removing-every-held-key", "seqmax-ab-by-a", "seq8-z-without-ab-by-a-and-z", "accept", wayback=True, **wb)
+rl_case("way-back-with-a-second-signer-on-no-list", "seqmax-ab-by-a", "seq8-b-without-a-signed-by-b-and-z", "refuse", "unknown-signer", **wb)
 
 # CA bundles: the trust sequence in the first line, then each root's certificate in the order of the root list
 bundles = []

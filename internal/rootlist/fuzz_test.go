@@ -224,7 +224,7 @@ func FuzzVerify(f *testing.F) {
 			t.Fatalf("two runs differ")
 		}
 		if !got.Accepted {
-			if got.List != nil || got.Again || got.Check < 1 || got.Check > 11 || !slices.Contains(knownReasons, got.Reason) || rootlist.Checks()[got.Check-1].Reason != got.Reason {
+			if got.List != nil || got.Again || got.Wayback || got.Check < 1 || got.Check > 11 || !slices.Contains(knownReasons, got.Reason) || rootlist.Checks()[got.Check-1].Reason != got.Reason {
 				t.Fatalf("a refusal that is not of the form: %+v", got)
 			}
 			mustBeASCII(t, "Detail", got.Detail)
@@ -234,14 +234,23 @@ func FuzzVerify(f *testing.F) {
 			t.Fatalf("an acceptance that is not of the form: %+v", got)
 		}
 		// Again says that the host received the list it holds: the same bytes, the same sequence. A
-		// list that is new has a higher sequence than the held one.
+		// list that is new has a higher sequence than the held one, except by the way back (record
+		// 0006, rule 53), which Wayback says: then the sequence is lower, or the same with other
+		// content. The test works the answer out again from the lists, with no code of the package.
 		if h := v.heldAt(heldSel); h != nil {
 			same := bytes.Equal(jsonData, h.JSON)
-			if got.Again != same || (same && got.List.Sequence != h.List.Sequence) || (!same && got.List.Sequence <= h.List.Sequence) {
+			lower := got.List.Sequence < h.List.Sequence || (got.List.Sequence == h.List.Sequence && !same)
+			if got.Again != same || (same && got.List.Sequence != h.List.Sequence) {
 				t.Fatalf("Again = %v for bytes that are the held list's = %v: %+v", got.Again, same, got)
 			}
-		} else if got.Again {
-			t.Fatalf("Again with no held list")
+			if got.Wayback != lower {
+				t.Fatalf("Wayback = %v for a list that is lower than the held one or equal with other content = %v: %+v", got.Wayback, lower, got)
+			}
+			if got.Wayback && !removesAndNamesEveryKey(h.List, got.List) {
+				t.Fatalf("a way back that does not remove a key of the held list and name every key it removes: %+v", got)
+			}
+		} else if got.Again || got.Wayback {
+			t.Fatalf("Again or Wayback with no held list: %+v", got)
 		}
 		signedByTheVectors := false
 		for _, p := range v.pairs {
@@ -299,13 +308,13 @@ func FuzzVerifySigned(f *testing.F) {
 		got := rootlist.Verify(cand, trust, now)
 		if !got.Accepted {
 			mustBeASCII(t, "Detail", got.Detail)
-			if got.Check < 1 || got.Check > 11 || rootlist.Checks()[got.Check-1].Reason != got.Reason {
+			if got.Wayback || got.Check < 1 || got.Check > 11 || rootlist.Checks()[got.Check-1].Reason != got.Reason {
 				t.Fatalf("a refusal that is not of the form: %+v", got)
 			}
 			return
 		}
-		if got.Again {
-			t.Fatalf("Again against initial pins")
+		if got.Again || got.Wayback {
+			t.Fatalf("Again or Wayback against initial pins: %+v", got)
 		}
 		l, err := rootlist.ParseList(data)
 		if err != nil || !reflect.DeepEqual(l, got.List) {
@@ -440,5 +449,87 @@ func FuzzPinTrust(f *testing.F) {
 			t.Fatalf("accepted the pin %q", pin)
 		}
 		_ = tr
+	})
+}
+
+// removesAndNamesEveryKey is the test's own reading of record 0006, rule 53: the list removes at
+// least one root key of the held list (a pin on the held roots and not on its roots), and has an
+// entry in removals with that pin for every root key it removes.
+func removesAndNamesEveryKey(held, l *rootlist.List) bool {
+	kept := l.Pins()
+	var named []string
+	for _, r := range l.Removals {
+		named = append(named, r.X509SPKISHA256)
+	}
+	removed := 0
+	for _, p := range held.Pins() {
+		if slices.Contains(kept, p) {
+			continue
+		}
+		if !slices.Contains(named, p) {
+			return false
+		}
+		removed++
+	}
+	return removed > 0
+}
+
+// FuzzVerifyWayBack signs the bytes it is given with the key A, which a host that holds a list of A
+// and B trusts, so that the list is read whatever it holds, and has the host hold one of three lists.
+// What is accepted is judged by a reading of rule 53 that the test makes for itself: Wayback is true
+// exactly when the list is lower than the held one, or equal to it with other content; a list that is
+// lower, or equal with other content, is accepted only when it removes a root key of the held list
+// and names every key it removes; and no list accepted is a way back when it is the held one again.
+func FuzzVerifyWayBack(f *testing.F) {
+	w := newWorld(f)
+	a, b := w.a, w.b
+	seed := func(s spec, sel uint8) { f.Add(s.json(), sel) }
+	seed(listOf(3, b).withRemovals(removalOf(f, a)), 0)
+	seed(listOf(3, b).withRemovals(removalOf(f, a)), 1)
+	seed(atSequence(listOf(1, b).withRemovals(removalOf(f, a)), highestSequence), 2)
+	seed(listOf(8, b).withRemovals(removalOf(f, a)), 0)
+	seed(listOf(7, b).withRemovals(removalOf(f, a)), 0)
+	seed(listOf(3, b, w.c).withRemovals(removalOf(f, a)), 0)
+	seed(listOf(3, a, b).withRemovals(removalOf(f, a)), 0)
+	seed(listOf(3, b).withRemovals(removalOf(f, a), removalOf(f, w.z)), 0)
+	seed(listOf(3, b), 0)
+	seed(listOf(7, a, b), 0)
+	f.Add([]byte{}, uint8(0))
+	helds := []spec{
+		listOf(7, a, b),
+		listOf(7, a, b, w.c),
+		atSequence(listOf(1, a, b), highestSequence),
+	}
+	f.Fuzz(func(t *testing.T, data []byte, sel uint8) {
+		w := newWorld(t)
+		spec := helds[int(sel)%len(helds)]
+		held, err := rootlist.ParseHeld(spec.json())
+		if err != nil {
+			t.Fatal(err)
+		}
+		cand := rootlist.Signed{JSON: bytes.Clone(data), JWS: sign(t, data, w.a)}
+		got := rootlist.Verify(cand, rootlist.HeldTrust(held), now)
+		if !got.Accepted {
+			if got.Wayback || got.Again || got.List != nil || got.Check < 1 || got.Check > 11 || rootlist.Checks()[got.Check-1].Reason != got.Reason {
+				t.Fatalf("a refusal that is not of the form: %+v", got)
+			}
+			mustBeASCII(t, "Detail", got.Detail)
+			return
+		}
+		l, err := rootlist.ParseList(data)
+		if err != nil || !reflect.DeepEqual(l, got.List) {
+			t.Fatalf("accepted a list that ParseList does not read: %v", err)
+		}
+		same := bytes.Equal(data, held.JSON)
+		lower := l.Sequence < held.List.Sequence || (l.Sequence == held.List.Sequence && !same)
+		if got.Again != same || got.Wayback != lower || (got.Again && got.Wayback) {
+			t.Fatalf("Again = %v, Wayback = %v for the same bytes = %v and lower or equal with other content = %v: %+v", got.Again, got.Wayback, same, lower, got)
+		}
+		if lower && !removesAndNamesEveryKey(held.List, l) {
+			t.Fatalf("ACCEPTED a list below the held sequence, or equal with other content, that does not remove a key and name every key it removes: %q", data)
+		}
+		if !now.Before(l.ExpiresAt) {
+			t.Fatalf("accepted a list that has expired")
+		}
 	})
 }

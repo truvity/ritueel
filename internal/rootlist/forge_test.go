@@ -370,6 +370,21 @@ func accepts(t testing.TB, v rootlist.Verdict) {
 	if v.Again {
 		t.Errorf("a list that is new is not the held list again: %+v", v)
 	}
+	if v.Wayback {
+		t.Errorf("a list that was not taken by the way back says it was (record 0006, rule 53): %+v", v)
+	}
+}
+
+// acceptsWayback fails the test unless the verdict accepts a list by the way back (record 0006,
+// rule 53): accepted with no reason, check or detail, the list, Wayback, and not Again.
+func acceptsWayback(t testing.TB, v rootlist.Verdict) {
+	t.Helper()
+	if !v.Accepted {
+		t.Fatalf("refused with %s at check %d: %s", v.Reason, v.Check, v.Detail)
+	}
+	if v.Reason != "" || v.Check != 0 || v.Detail != "" || v.List == nil || !v.Wayback || v.Again {
+		t.Errorf("a list taken by the way back is accepted with no reason, check or detail, the list and Wayback, and is not Again: %+v", v)
+	}
 }
 
 // acceptsAgain fails the test unless the verdict accepts the held list received again.
@@ -378,8 +393,8 @@ func acceptsAgain(t testing.TB, v rootlist.Verdict) {
 	if !v.Accepted {
 		t.Fatalf("refused with %s at check %d: %s", v.Reason, v.Check, v.Detail)
 	}
-	if v.Reason != "" || v.Check != 0 || v.Detail != "" || v.List == nil || !v.Again {
-		t.Errorf("the held list again is accepted with no reason, check or detail, the list, and Again: %+v", v)
+	if v.Reason != "" || v.Check != 0 || v.Detail != "" || v.List == nil || !v.Again || v.Wayback {
+		t.Errorf("the held list again is accepted with no reason, check or detail, the list, and Again, and no Wayback: %+v", v)
 	}
 }
 
@@ -395,6 +410,9 @@ func refuses(t testing.TB, v rootlist.Verdict, reason rootlist.Reason, check int
 	}
 	if v.List != nil || v.Again {
 		t.Errorf("a refusal carries a list or says Again: %+v", v)
+	}
+	if v.Wayback {
+		t.Errorf("a refusal says Wayback: %+v", v)
 	}
 	if v.Detail == "" {
 		t.Errorf("a refusal has no detail")

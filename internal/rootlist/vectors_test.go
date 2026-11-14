@@ -58,6 +58,13 @@ type manifestCase struct {
 	// MinSequence is the lowest sequence given with the initial pins (--min-sequence); a case that has
 	// it has no held list.
 	MinSequence *int64 `json:"min_sequence"`
+	// Wayback is true for a list that is accepted although check 6 or check 7 would have refused it:
+	// its sequence is lower than the held list's, or equal to it with other content (record 0006,
+	// rule 53). Absent means false.
+	Wayback bool `json:"wayback"`
+	// Flaw names the one thing about the case itself that a check refuses it for: signed_at-after-clock,
+	// a clock before the candidate's signing time, in a list that other cases use at a later clock.
+	Flaw string `json:"flaw"`
 }
 
 const vectorDir = "testdata/root-list/v1"
@@ -88,7 +95,7 @@ var knownMembers = map[string][]string{
 	"root":     {"label", "certificate", "openpgp", "x509_spki_sha256", "openpgp_fingerprint"},
 	"removal":  {"label", "file"},
 	"list":     {"id", "signers", "files", "flaw"},
-	"case":     {"id", "held", "candidate", "clock", "expect", "reason", "warning", "bundle", "min_sequence"},
+	"case":     {"id", "held", "candidate", "clock", "expect", "reason", "warning", "bundle", "min_sequence", "wayback", "flaw"},
 	"bundle":   {"id", "file", "sequence", "roots", "flaw"},
 }
 
@@ -284,6 +291,26 @@ var checkOfCase = map[string]int{
 	"empty-authorisation":                5,
 	"initial-pins-lowest-sequence-above": 6,
 	"same-list-again-after-its-expiry":   11,
+	// The way back (record 0006, rule 53): a list that is not one, with the check that refuses it.
+	"way-back-signed-after-the-clock":                     5,
+	"no-entry-is-not-the-way-back":                        6,
+	"lower-sequence-removes-nothing":                      6,
+	"old-list-as-published":                               6,
+	"old-list-with-the-signature-of-a-later-key":          6,
+	"old-list-that-removes-a-later-key":                   6,
+	"pins-keep-their-lowest-sequence":                     6,
+	"pins-keep-their-lowest-sequence-for-a-named-removal": 6,
+	"two-removed-one-named":                               6,
+	"lower-sequence-with-a-new-label-removes-nothing":     6,
+	"removal-list-signed-only-by-a-new-key":               2,
+	"way-back-list-changed-after-signing":                 3,
+	"way-back-with-a-second-signer-on-no-list":            8,
+	"way-back-with-another-keys-authorisation":            9,
+	"extra-entry-for-a-key-not-held":                      9,
+	"entry-for-a-key-that-stays":                          9,
+	"way-back-with-a-signature-missing":                   10,
+	"way-back-with-a-new-label-the-kept-key-not-signing":  10,
+	"way-back-after-its-expiry":                           11,
 }
 
 func TestManifestCases(t *testing.T) {
@@ -302,10 +329,14 @@ func TestManifestCases(t *testing.T) {
 				}
 				cand := m.listFiles(t, *c.Candidate)
 				v := rootlist.Verify(cand, m.trustOfCase(t, c), clock)
-				// The held list again (the same bytes as the held list) says so; a new list does not.
-				if c.Held != nil && bytes.Equal(m.listFiles(t, *c.Held).JSON, cand.JSON) {
+				// The held list again (the same bytes as the held list) says so; a list taken by the way back
+				// says so (the member wayback of the case); a new list says neither.
+				switch {
+				case c.Held != nil && bytes.Equal(m.listFiles(t, *c.Held).JSON, cand.JSON):
 					acceptsAgain(t, v)
-				} else {
+				case c.Wayback:
+					acceptsWayback(t, v)
+				default:
 					accepts(t, v)
 				}
 				if c.Bundle != "" {
@@ -386,6 +417,71 @@ func TestManifestCases(t *testing.T) {
 		}) {
 			t.Errorf("checkOfCase names %q, which is not a case of the manifest", id)
 		}
+	}
+}
+
+// TestManifestWayback holds the manifest to the page on which cases are a way back. A case has
+// wayback exactly when it accepts a list that is lower than the held list, or equal to it with other
+// content; such a list removes a root key of the held list and has an entry in removals for every
+// root key it removes. A case that is refused or warns never has it, and a host that holds only
+// pins has no held list to be lower than.
+func TestManifestWayback(t *testing.T) {
+	m := loadManifest(t)
+	wayback := 0
+	for _, c := range m.Cases {
+		t.Run(c.ID, func(t *testing.T) {
+			lower := false
+			var removed, named []string
+			if c.Held != nil && c.Candidate != nil {
+				held, err := rootlist.ParseList(m.listFiles(t, *c.Held).JSON)
+				if err != nil {
+					t.Fatalf("held list: %v", err)
+				}
+				cand := m.listFiles(t, *c.Candidate)
+				list, err := rootlist.ParseList(cand.JSON)
+				if err != nil {
+					return // a list that is not a list (an unknown member, version 2)
+				}
+				lower = list.Sequence < held.Sequence || (list.Sequence == held.Sequence && !bytes.Equal(cand.JSON, m.listFiles(t, *c.Held).JSON))
+				kept := map[string]bool{}
+				for _, p := range list.Pins() {
+					kept[p] = true
+				}
+				for _, p := range held.Pins() {
+					if !kept[p] {
+						removed = append(removed, p)
+					}
+				}
+				for _, r := range list.Removals {
+					named = append(named, r.X509SPKISHA256)
+				}
+			}
+			if c.Wayback {
+				wayback++
+				switch {
+				case c.Expect != "accept":
+					t.Errorf("wayback on a case that expects %q", c.Expect)
+				case !lower:
+					t.Errorf("wayback, and the candidate is not lower than the held list, nor equal to it with other content")
+				case len(removed) == 0:
+					t.Errorf("wayback, and the candidate removes no root key of the held list")
+				default:
+					for _, p := range removed {
+						if !slices.Contains(named, p) {
+							t.Errorf("wayback, and the removed key %s has no entry in removals", p)
+						}
+					}
+				}
+			} else if lower && c.Expect == "accept" {
+				t.Errorf("a lower list is accepted and the case has no wayback")
+			}
+			if c.Flaw != "" && c.Flaw != "signed_at-after-clock" {
+				t.Errorf("unknown flaw %q of a case", c.Flaw)
+			}
+		})
+	}
+	if wayback == 0 {
+		t.Error("no case is a way back")
 	}
 }
 
