@@ -5,7 +5,7 @@ sidebar:
   order: 4
 ---
 
-*Not built yet. The arguments of `ritueel verify root-list` are decided on this page and in [the command reference](/reference/cli/#the-first-versions-commands); the command is not built, and nor is the writing of a list ([issue #14](https://github.com/truvity/ritueel/issues/14), in M2). This is version 1 of the format that [record 0006](../decisions/0006-bundle-history-and-trust-files.md) leaves to a reference page. Its [test vectors](/reference/root-list/#test-vectors) follow this page, and the README of the set lists the rules that have no vector yet. The SSH CA key list follows the same shape in M4 ([its page](/reference/ssh-ca-key-list/)), and the CRLs of the root keys are on [their page](/reference/crl/).*
+*The host's side is built: `ritueel verify root-list` runs the checks of this page and the CA bundle check ([the command reference](/reference/cli/#the-first-versions-commands)). Writing and signing a list is not built ([issue #14](https://github.com/truvity/ritueel/issues/14), in M2). This is version 1 of the format that [record 0006](../decisions/0006-bundle-history-and-trust-files.md) leaves to a reference page. Its [test vectors](/reference/root-list/#test-vectors) follow this page, and the README of the set lists the rules that have no vector yet. The SSH CA key list follows the same shape in M4 ([its page](/reference/ssh-ca-key-list/)), and the CRLs of the root keys are on [their page](/reference/crl/).*
 
 A system that updates its own trust, such as a system that holds delegated keys, needs to know which root keys are active today. The **signed root list** tells it: the active root keys, pinned by their public keys, with the [trust sequence](../decisions/0006-bundle-history-and-trust-files.md), signed by one active root key when the root keys stay the same, and by every current root key or its stored removal authorisation when they change ([who signs](/reference/root-list/#who-signs)). The **CA bundle** carries the same root keys' certificates, for a TLS client and for chain building. A requester of the [hand-off contract](/reference/hand-off-contract/) reads the root list to fill `primaries` and to check an answer's issuer and `trust_sequence`.
 
@@ -226,7 +226,7 @@ CI checks that the manifest names every file of the set, that the pins match the
 
 ## Follow-ups
 
-- The code: writing, signing and reading the list and the CA bundle, with the host rules, and a test that the same inputs give the same bytes ([issue #14](https://github.com/truvity/ritueel/issues/14)).
+- The code that writes and signs the list and the CA bundle, with a test that the same inputs give the same bytes ([issue #14](https://github.com/truvity/ritueel/issues/14)). The host's side, reading and checking them, is built.
 - The SSH CA key list in the same shape, with its own `typ` and vectors, is specified on [its page](/reference/ssh-ca-key-list/) ([issue #55](https://github.com/truvity/ritueel/issues/55)).
 
 ## Standards

@@ -1,6 +1,6 @@
 ---
 title: Tools
-description: "The ritueel tools: a command line, a guided mode and a read-only page on localhost. Only `version` is built; the page exists as code. All drive one engine."
+description: "The ritueel tools: a command line, a guided mode and a read-only page on localhost. Two commands are built; the page is code. All drive one engine."
 sidebar:
   label: Overview
   order: 0
@@ -9,7 +9,7 @@ sidebar:
 The tools exist to simplify the rituals you learn about in [Learn](/learn/). They are not a reason to skip learning: a tool that signs the wrong thing signs it quickly.
 
 :::caution[Not built yet]
-ritueel is in the design phase and has no release. Only the command `version` is built; every other command is planned. The local page exists as code and a demo (`ui/`, `proto/`), as a design to look at and click through; the program that serves it does not. The [roadmap](/roadmap/) has the order; each page says what is built.
+ritueel is in the design phase and has no release. Only the commands `version` and `verify root-list` are built; every other command is planned. The local page exists as code and a demo (`ui/`, `proto/`), as a design to look at and click through; the program that serves it does not. The [roadmap](/roadmap/) has the order; each page says what is built.
 :::
 
 | Tool | What it is | Status |
