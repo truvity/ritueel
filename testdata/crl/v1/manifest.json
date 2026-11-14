@@ -5,17 +5,17 @@
     {
       "label": "A",
       "certificate": "pki/test-root-a.pem",
-      "x509_spki_sha256": "d844e95f003650f277de29e90253669f8a851fdbfef18b5155993947321de1eb"
+      "x509_spki_sha256": "9b3c23d6e22e9dc1adb0a52a2322f700e39c731dfb8a33bdb4ecc58efff89382"
     },
     {
       "label": "B",
       "certificate": "pki/test-root-b.pem",
-      "x509_spki_sha256": "ba2e9e6b373acd8f3fea245c80fc2785d6fb26ff3b9ee35ca044588deb837093"
+      "x509_spki_sha256": "3a5017e666b0bfc297d87d555310bd93d201e4d3b9c3ae26dd5f85fceb322f79"
     },
     {
       "label": "Z",
       "certificate": "pki/test-root-z.pem",
-      "x509_spki_sha256": "b886352a5621fae8b95264c94f79e7bdb93b35827d6d03c7bd9062b35d1f9dfb"
+      "x509_spki_sha256": "a1df12d42d16b34e6cb5ed5d932fd683e49ed3445037f5e5ca4c35c6cf8958e7"
     }
   ],
   "certs": [
@@ -23,13 +23,13 @@
       "id": "ca-a-1",
       "file": "certs/ca-a-1.pem",
       "issuer": "A",
-      "serial": "464b20f86429596ec1bc3d0a8beff0825840e0"
+      "serial": "65b97c7fc8c65909bfc3cc30affe65da81b36c"
     },
     {
       "id": "ca-b-1",
       "file": "certs/ca-b-1.pem",
       "issuer": "B",
-      "serial": "e33a2c92517d4250b51599c77c858c821065c6"
+      "serial": "6853f05ced40ca137ff0c801749fa07608630c"
     }
   ],
   "crls": [
@@ -60,7 +60,7 @@
       "next_update": "2029-01-01T12:00:00Z",
       "revoked": [
         {
-          "serial": "464b20f86429596ec1bc3d0a8beff0825840e0",
+          "serial": "65b97c7fc8c65909bfc3cc30affe65da81b36c",
           "reason": "keyCompromise"
         }
       ]
@@ -74,7 +74,7 @@
       "next_update": "2028-12-15T12:00:00Z",
       "revoked": [
         {
-          "serial": "464b20f86429596ec1bc3d0a8beff0825840e0",
+          "serial": "65b97c7fc8c65909bfc3cc30affe65da81b36c",
           "reason": "keyCompromise"
         }
       ]
@@ -97,7 +97,7 @@
       "next_update": "2029-01-01T12:00:00Z",
       "revoked": [
         {
-          "serial": "464b20f86429596ec1bc3d0a8beff0825840e0",
+          "serial": "65b97c7fc8c65909bfc3cc30affe65da81b36c",
           "reason": "keyCompromise"
         }
       ]
@@ -306,7 +306,7 @@
       ],
       "clock": "2029-01-01T00:00:00Z",
       "expect": "warn",
-      "warning": "expired"
+      "warning": "held-expired"
     }
   ],
   "revocation": [

@@ -9,7 +9,7 @@
 // below. For every other tracked testdata/<set>/v<N>/manifest.json, a hand-off set
 // (docs/reference/hand-off-contract.md):
 //   - every file it names (in `pinned`, in each case's `files` and `kms_stub`, in each response's
-//     `files`) is tracked by git;
+//     `files`) is tracked by git, and the `config` of a case is one of the manifest's `configs`;
 //   - every tracked file under v<N>/ other than the manifest is named by it;
 //   - case ids are unique, and each response's `request` is the id of a request case;
 //   - a refused case or response has a `reason`, an accepted or installed one has none;
@@ -48,6 +48,8 @@ function sshLists() {
   return sshListIds;
 }
 
+// The content faults of a root list that a manifest may name as a list's `flaw`.
+const contentFlaws = ['label-twice', 'pin-twice', 'pin-twice-in-removals', 'fingerprint-wrong-form', 'last-record-digest-wrong-form', 'empty-authorisation', 'sequence-0'];
 let files = 0;
 const manifests = [...tracked].filter((p) => /^testdata\/[^/]+\/v\d+\/manifest\.json$/.test(p));
 for (const mpath of manifests) {
@@ -76,6 +78,7 @@ for (const mpath of manifests) {
       requestFiles.set(c.id, c.files ?? []);
       for (const p of c.files ?? []) need(p, `request ${c.id}`);
       if (c.kms_stub) need(c.kms_stub, `request ${c.id}`);
+      if (c.config !== undefined && !Object.hasOwn(m.configs ?? {}, c.config)) E(`${mpath}: request ${c.id}: config ${c.config} is no configuration of the manifest`);
       if ((c.expect === 'refuse') !== Boolean(c.reason)) E(`${mpath}: request ${c.id} expects ${c.expect} ${c.reason ? 'with' : 'without'} a reason`);
       const proof = (c.files ?? []).find((p) => p.endsWith('.proof.json'));
       const req = (c.files ?? []).find((p) => !p.endsWith('.json'));
@@ -131,6 +134,44 @@ function checkFloor(mpath, m, s, read, reqFiles) {
   } catch (e) { E(`${mpath}: floor response ${s.id}: ${e.message}`); }
 }
 
+// 13 calendar months later: the same day and time, or the last day of the month if it has none.
+function months13(iso) {
+  const t = new Date(iso);
+  const mo = t.getUTCMonth() + 13;
+  const last = new Date(Date.UTC(t.getUTCFullYear(), mo + 1, 0)).getUTCDate();
+  return new Date(Date.UTC(t.getUTCFullYear(), mo, Math.min(t.getUTCDate(), last), t.getUTCHours(), t.getUTCMinutes(), t.getUTCSeconds()))
+    .toISOString().replace('.000Z', 'Z');
+}
+
+// The dates of a list, root list or SSH CA key list: `expires_at` is exactly 13 calendar months after `signed_at`, unless the
+// manifest names the flaw `expires_at-not-13-months`, in which case it is not.
+function checkDates(where, doc, flaw) {
+  const ok = doc.expires_at === months13(doc.signed_at);
+  if (ok === (flaw === 'expires_at-not-13-months')) E(`${where}: expires_at ${doc.expires_at} is ${ok ? '' : 'not '}13 calendar months after signed_at ${doc.signed_at}${ok ? ', but the manifest names the flaw expires_at-not-13-months' : ''}`);
+}
+
+// The signing time of a candidate against the clock of the case: after it exactly when the manifest names the flaw `signed_at-after-clock`.
+function checkSigningTime(where, candidate, doc, flaw, clock) {
+  const late = Date.parse(doc.signed_at) > Date.parse(clock);
+  if (late !== (flaw === 'signed_at-after-clock')) E(`${where}: ${candidate} is signed ${late ? 'after' : 'before'} the clock of the case, ${late ? 'but the list has no flaw signed_at-after-clock' : 'but the list has the flaw signed_at-after-clock'}`);
+}
+
+// What a root list's content may not hold (check 5 of docs/reference/root-list.md): the faults that the manifest names as a `flaw`.
+// (`contentFlaws` is declared above the loop over the manifests.)
+function contentFaults(doc) {
+  const out = [];
+  const roots = doc.roots ?? [];
+  if (new Set(roots.map((r) => r.label)).size !== roots.length) out.push('label-twice');
+  if (new Set(roots.map((r) => r.x509_spki_sha256)).size !== roots.length) out.push('pin-twice');
+  const removals = doc.removals ?? [];
+  if (new Set(removals.map((r) => r.x509_spki_sha256)).size !== removals.length) out.push('pin-twice-in-removals');
+  if (roots.some((r) => r.openpgp_fingerprint !== undefined && !/^[0-9a-f]{40}$/.test(r.openpgp_fingerprint))) out.push('fingerprint-wrong-form');
+  if (doc.last_record_sha256 !== undefined && !/^[0-9a-f]{64}$/.test(doc.last_record_sha256)) out.push('last-record-digest-wrong-form');
+  if (removals.some((r) => r.authorisation === '')) out.push('empty-authorisation');
+  if (!(Number.isInteger(doc.sequence) && doc.sequence >= 1)) out.push('sequence-0');
+  return out;
+}
+
 // A root list set:
 //   - every file it names (each root's `certificate` and `openpgp`, each list's `files`, each
 //     removal authorisation's `file`, each bundle's `file`) is tracked, and every tracked file under
@@ -150,9 +191,25 @@ function checkFloor(mpath, m, s, read, reqFiles) {
 //   - case ids are unique, `held` and `candidate` name lists (or are null), a refused case has a
 //     `reason`, a warned one a `warning`, an accepted one neither;
 //   - each bundle starts with `# trust-sequence: N` for its `sequence`, and holds the certificates of
-//     its `roots`, in that order.
+//     its `roots`, in that order; each certificate verifies with its own key and is a CA
+//     certificate, and names itself as its issuer, except in a bundle with a `flaw` (`not-signed-by-its-own-key`, `not-a-ca`, `issuer-not-subject`, ...),
+//     which a case refuses with `ca-bundle-mismatch`, and which has that flaw only;
+//   - a list's `expires_at` is exactly 13 calendar months after its `signed_at`, and its `signed_at`
+//     is not after the clock of a case that has it as the candidate, except in a list with a `flaw`
+//     (`expires_at-not-13-months`, `signed_at-after-clock`), which has that flaw only;
+//   - a list's content has none of the faults of check 5 that the manifest does not name as its `flaw`
+//     (`label-twice`, `pin-twice`, `pin-twice-in-removals`, `fingerprint-wrong-form`,
+//     `last-record-digest-wrong-form`, `empty-authorisation`, `sequence-0`), and the one it names;
+//   - a case that accepts a list at the held list's sequence has the held list's bytes, and a case
+//     refused with `sequence-conflict` has other bytes;
+//   - a case with `bundle` names a bundle of the manifest that has the candidate's sequence and
+//     roots, except for the flaws `wrong-sequence`, `extra-certificate`, `missing-certificate` and
+//     `wrong-order`, which differ in the sequence or in the roots; a case with `min_sequence` (the host's lowest sequence for its initial pins) has no
+//     held list, and is refused with `rollback` when the number is above the candidate's sequence
+//     and accepted when it is not.
 function checkRootList(mpath, m, read, need) {
   const b64u = (s) => Buffer.from(s, 'base64url');
+  const listDocs = new Map();
   const spkiHash = (cert) => sha(cert.publicKey.export({ type: 'spki', format: 'der' }));
   const roots = new Map();
   for (const root of m.roots ?? []) {
@@ -205,8 +262,14 @@ function checkRootList(mpath, m, read, need) {
       });
       if (allOk === badSig.has(l.id)) E(`${mpath}: list ${l.id}: the signature ${allOk ? 'verifies, but a case expects signature-invalid' : 'does not verify'}`);
       const doc = JSON.parse(read(json).toString('utf8'));
+      listDocs.set(l.id, { doc, flaw: l.flaw, json: read(json) });
+      if (![undefined, 'expires_at-not-13-months', 'signed_at-after-clock', ...contentFlaws].includes(l.flaw)) E(`${mpath}: list ${l.id}: unknown flaw ${l.flaw}`);
+      checkDates(`${mpath}: list ${l.id}`, doc, l.flaw);
+      const faults = contentFaults(doc);
+      const named = contentFlaws.includes(l.flaw) ? [l.flaw] : [];
+      if (faults.join() !== named.join()) E(`${mpath}: list ${l.id}: its content has the faults [${faults.join(', ')}], and the manifest names [${named.join(', ')}]`);
       const removalsOk = (doc.removals ?? []).every((rm) => removalValid(rm.authorisation, rm.x509_spki_sha256));
-      if (removalsOk === badRemoval.has(l.id)) E(`${mpath}: list ${l.id}: the removal authorisations ${removalsOk ? 'are valid, but a case expects removal-invalid' : 'are not valid'}`);
+      if (removalsOk === (badRemoval.has(l.id) || l.flaw === 'empty-authorisation')) E(`${mpath}: list ${l.id}: the removal authorisations ${removalsOk ? 'are valid, but a case expects removal-invalid or the flaw is empty-authorisation' : 'are not valid'}`);
     } catch (e) { E(`${mpath}: list ${l.id}: ${e.message}`); }
   }
   for (const rm of m.removals ?? []) {
@@ -224,6 +287,34 @@ function checkRootList(mpath, m, read, need) {
     if (!['accept', 'refuse', 'warn'].includes(c.expect)) E(`${mpath}: case ${c.id}: expect is ${c.expect}`);
     if ((c.expect === 'refuse') !== Boolean(c.reason)) E(`${mpath}: case ${c.id} expects ${c.expect} ${c.reason ? 'with' : 'without'} a reason`);
     if ((c.expect === 'warn') !== Boolean(c.warning)) E(`${mpath}: case ${c.id} expects ${c.expect} ${c.warning ? 'with' : 'without'} a warning`);
+    const cand = c.candidate ? listDocs.get(c.candidate) : undefined;
+    if (cand) {
+      checkSigningTime(`${mpath}: case ${c.id}`, c.candidate, cand.doc, cand.flaw, c.clock ?? m.clock);
+      // one sequence names one set of root keys: at the held list's sequence a list passes only as the same bytes, and differing bytes are `sequence-conflict`
+      const held = c.held ? listDocs.get(c.held) : undefined;
+      if (held && held.doc.sequence === cand.doc.sequence) {
+        const same = held.json.equals(cand.json);
+        if (c.expect === 'accept' && !same) E(`${mpath}: case ${c.id}: accepted at the held list's sequence, and root-list.json of ${c.candidate} is not the bytes of ${c.held}`);
+        if (c.reason === 'sequence-conflict' && same) E(`${mpath}: case ${c.id}: sequence-conflict, and root-list.json of ${c.candidate} is the bytes of ${c.held}`);
+      }
+    }
+    if (c.bundle !== undefined) {
+      const b = (m.bundles ?? []).find((x) => x.id === c.bundle);
+      if (!b) E(`${mpath}: case ${c.id}: bundle ${c.bundle} is no bundle`);
+      else if (cand) {
+        // the flaws that make a bundle not the list's: another first line, or other certificates (one too many, one missing, another order)
+        const otherSequence = b.sequence !== cand.doc.sequence;
+        const otherRoots = (b.roots ?? []).join() !== cand.doc.roots.map((x) => x.label).join();
+        if (otherSequence !== (b.flaw === 'wrong-sequence')) E(`${mpath}: case ${c.id}: bundle ${c.bundle} has sequence ${b.sequence}, the list ${cand.doc.sequence}${b.flaw === 'wrong-sequence' ? ', which the flaw wrong-sequence needs to differ' : ''}`);
+        if (otherRoots !== ['extra-certificate', 'missing-certificate', 'wrong-order'].includes(b.flaw)) E(`${mpath}: case ${c.id}: the roots of bundle ${c.bundle} (${(b.roots ?? []).join('')}) ${otherRoots ? 'are not' : 'are'} those of the list, and the bundle's flaw is ${b.flaw}`);
+      }
+      if (Boolean(b?.flaw) !== (c.reason === 'ca-bundle-mismatch')) E(`${mpath}: case ${c.id}: bundle ${c.bundle} ${b?.flaw ? 'has' : 'has no'} a flaw, and the case ${c.reason === 'ca-bundle-mismatch' ? 'refuses' : 'does not refuse'} it with ca-bundle-mismatch`);
+    } else if (c.reason === 'ca-bundle-mismatch') E(`${mpath}: case ${c.id}: ca-bundle-mismatch with no bundle`);
+    if (c.min_sequence !== undefined) {
+      if (!Number.isInteger(c.min_sequence) || c.min_sequence < 1) E(`${mpath}: case ${c.id}: min_sequence is not a positive integer`);
+      else if (c.held !== null) E(`${mpath}: case ${c.id}: min_sequence is for initial pins, and the case has a held list`);
+      else if (cand && (c.min_sequence > cand.doc.sequence) !== (c.reason === 'rollback')) E(`${mpath}: case ${c.id}: min_sequence ${c.min_sequence} against sequence ${cand.doc.sequence} ${c.reason === 'rollback' ? 'is refused with rollback' : 'is accepted'}, which it should not be`);
+    }
   }
   if (!ids.size) E(`${mpath}: no root list cases`);
   for (const b of m.bundles ?? []) {
@@ -235,6 +326,16 @@ function checkRootList(mpath, m, read, need) {
     const got = certs.map((pem) => spkiHash(new X509Certificate(pem)));
     const want = (b.roots ?? []).map((label) => roots.get(label)?.x509_spki_sha256);
     if (got.join() !== want.join()) E(`${mpath}: bundle ${b.id}: the certificates are not those of ${(b.roots ?? []).join(', ')}, in that order`);
+    if (![undefined, 'not-signed-by-its-own-key', 'not-a-ca', 'extra-certificate', 'missing-certificate', 'wrong-order', 'wrong-sequence', 'issuer-not-subject'].includes(b.flaw)) E(`${mpath}: bundle ${b.id}: unknown flaw ${b.flaw}`);
+    // a root certificate signs itself and is a CA certificate: its text is what the root key signed
+    const parsed = certs.map((pem) => new X509Certificate(pem));
+    const selfOk = parsed.every((c) => c.verify(c.publicKey));
+    const allCa = parsed.every((c) => c.ca);
+    if (selfOk === (b.flaw === 'not-signed-by-its-own-key')) E(`${mpath}: bundle ${b.id}: ${selfOk ? 'every certificate verifies with its own key, but the manifest names the flaw not-signed-by-its-own-key' : 'a certificate does not verify with its own key'}`);
+    // and names itself as its issuer: the issuer name is the subject name
+    const selfNamed = parsed.every((c) => c.issuer === c.subject);
+    if (selfNamed === (b.flaw === 'issuer-not-subject')) E(`${mpath}: bundle ${b.id}: ${selfNamed ? 'every certificate names itself as its issuer, but the manifest names the flaw issuer-not-subject' : 'a certificate names another issuer than its subject'}`);
+    if (allCa === (b.flaw === 'not-a-ca')) E(`${mpath}: bundle ${b.id}: ${allCa ? 'every certificate is a CA certificate, but the manifest names the flaw not-a-ca' : 'a certificate is not a CA certificate'}`);
   }
 }
 
@@ -286,6 +387,7 @@ function checkSshCaKeys(mpath, m, read, need) {
   const malformed = refusedWith('malformed');
   const unchecked = new Set([...malformed, ...badSig, ...refusedWith('version-unsupported')]);   // content a case refuses on purpose
   const lists = new Map();
+  const flaws = new Map();
   for (const l of m.lists ?? []) {
     if (lists.has(l.id)) E(`${mpath}: list id ${l.id} is used twice`);
     for (const p of l.files ?? []) need(p, `list ${l.id}`);
@@ -306,6 +408,9 @@ function checkSshCaKeys(mpath, m, read, need) {
       if (ok === badSig.has(l.id)) E(`${mpath}: list ${l.id}: the signature ${ok ? 'verifies, but a case expects signature-invalid' : 'does not verify'}`);
       const doc = JSON.parse(read(json).toString('utf8'));
       lists.set(l.id, doc);
+      flaws.set(l.id, l.flaw);
+      if (![undefined, 'expires_at-not-13-months', 'signed_at-after-clock'].includes(l.flaw)) E(`${mpath}: list ${l.id}: unknown flaw ${l.flaw}`);
+      checkDates(`${mpath}: list ${l.id}`, doc, l.flaw);
       if (!unchecked.has(l.id)) checkSshList(mpath, l.id, doc);
     } catch (e) { E(`${mpath}: list ${l.id}: ${e.message}`); }
   }
@@ -315,6 +420,7 @@ function checkSshCaKeys(mpath, m, read, need) {
     ids.add(c.id);
     for (const k of ['held', 'candidate']) if (c[k] !== null && !(m.lists ?? []).some((l) => l.id === c[k])) E(`${mpath}: case ${c.id}: ${k} ${c[k]} is no list`);
     for (const label of c.root_list?.roots ?? []) if (!roots.has(label)) E(`${mpath}: case ${c.id}: root ${label} is no root`);
+    if (c.candidate && lists.has(c.candidate)) checkSigningTime(`${mpath}: case ${c.id}`, c.candidate, lists.get(c.candidate), flaws.get(c.candidate), c.clock ?? m.clock);
     if (!['accept', 'refuse', 'warn'].includes(c.expect)) E(`${mpath}: case ${c.id}: expect is ${c.expect}`);
     if ((c.expect === 'refuse') !== Boolean(c.reason)) E(`${mpath}: case ${c.id} expects ${c.expect} ${c.reason ? 'with' : 'without'} a reason`);
     if ((c.expect === 'warn') !== Boolean(c.warning)) E(`${mpath}: case ${c.id} expects ${c.expect} ${c.warning ? 'with' : 'without'} a warning`);
