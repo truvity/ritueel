@@ -31,8 +31,8 @@ var verifySpec = spec{
 	}},
 }
 
-// The names of the flags of verify root-list. "ca-bundle" is the proposed spelling of docs/reference/cli.md
-// (the arguments of verify root-list are marked Proposed there) and is written in this one place.
+// The names of the flags of verify root-list, as docs/reference/cli.md and docs/reference/root-list.md
+// give them. Each is written in this one place.
 const (
 	flagHeld     = "held"
 	flagPin      = "pin"
