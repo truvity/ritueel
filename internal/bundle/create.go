@@ -47,12 +47,30 @@ func (e *CreateError) Error() string {
 	}
 	state := "the folder was not made"
 	if e.Made {
-		state = fmt.Sprintf("the folder was made and %d things were written in it", len(e.Written))
+		state = writtenText(e.Written)
 	}
 	if e.whole {
 		state = "the bundle is whole on disk but was not flushed: it may not survive a power cut"
 	}
 	return fmt.Sprintf("bundle: cannot make the bundle %s: %s: %v", jsonset.Escape(e.Dir), state, e.Err)
+}
+
+// writtenText says how many things the stopped call made inside the folder and names each one, as the paths of
+// [CreateError.Written] through the escape of every text of a person: "1 thing was", "N things were".
+func writtenText(written []string) string {
+	count := fmt.Sprintf("%d things were", len(written))
+	if len(written) == 1 {
+		count = "1 thing was"
+	}
+	text := "the folder was made and " + count + " written in it"
+	if len(written) == 0 {
+		return text
+	}
+	names := make([]string, len(written))
+	for i, w := range written {
+		names[i] = jsonset.Escape(w)
+	}
+	return text + " (" + strings.Join(names, ", ") + ")"
 }
 
 // Unwrap returns the cause.
@@ -75,7 +93,8 @@ func (e *CreateError) Unwrap() error {
 // not made: the code that writes into each makes it. The first error of the writer stops it for good, and
 // the error is a [*CreateError] that lists what was made.
 //
-// The starter files are made and read back before any write ([Starter]); an error there writes nothing.
+// A folder above dir that holds a name ritueel.yaml refuses it: a bundle is not made inside a bundle. The
+// starter files are made and read back before any write ([Starter]); an error there writes nothing.
 func Create(dir string, opt StarterOptions) ([]wanted.File, error) {
 	parent, last, err := splitDir(dir)
 	if err != nil {
@@ -91,10 +110,52 @@ func Create(dir string, opt StarterOptions) ([]wanted.File, error) {
 	}
 	w := &fsx.Writer{FS: parentFS}
 	defer func() { _ = w.Close() }()
+	above, err := bundleAbove(parent)
+	if err != nil {
+		return nil, &CreateError{Dir: dir, Err: err}
+	}
+	if above != "" {
+		return nil, &CreateError{Dir: dir, Err: fmt.Errorf("the folder %s holds %s: a bundle is not made inside a bundle", jsonset.Escape(above), wanted.SettingsPath)}
+	}
 	if err := create(w, dir, last, files); err != nil {
 		return nil, err
 	}
 	return files, nil
+}
+
+// bundleAbove returns the nearest folder from parent up to the root of the file system that holds a name
+// ritueel.yaml (of any kind: a file, a folder, a link), or "" when none does. parent is made absolute, and its
+// links are followed, so that the folders above it are the ones on the disk. A folder that cannot be opened
+// is passed over: nothing can be told about it, and the folders above it are still read. An error is only a
+// path that cannot be made absolute.
+func bundleAbove(parent string) (string, error) {
+	abs, err := filepath.Abs(parent)
+	if err != nil {
+		return "", fmt.Errorf("the parent folder cannot be made absolute: %w", err)
+	}
+	if real, err := filepath.EvalSymlinks(abs); err == nil {
+		abs = real
+	}
+	for p := abs; ; p = filepath.Dir(p) {
+		if holdsSettings(p) {
+			return p, nil
+		}
+		if filepath.Dir(p) == p {
+			return "", nil
+		}
+	}
+}
+
+// holdsSettings tells whether the folder p holds the name ritueel.yaml. Only a name that does not exist
+// counts as absent: a file, a folder, a link, a pipe or a file that cannot be read all hold the name.
+func holdsSettings(p string) bool {
+	dir, err := fsx.OpenFS(p)
+	if err != nil {
+		return false
+	}
+	defer func() { _ = dir.Close() }()
+	_, err = dir.ReadFile(wanted.SettingsPath)
+	return !errors.Is(err, fs.ErrNotExist)
 }
 
 // create makes the folder last in the root of w and writes the files into it. It is the part of Create that a
