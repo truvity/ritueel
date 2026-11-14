@@ -221,9 +221,17 @@ That the ceremony record lists the wanted files and the artifacts by digest is d
 
 Each member of `requests` holds what the [hand-off contract records](/reference/hand-off-contract/#what-the-certifier-records): `stem`, `type`, `request_sha256`, `proof_sha256`, `store`, `key`, `evidence`, `policy`, `outcome` and `artifacts`.
 
-- `evidence` holds what was read from the proof and checked. For a key file it is `{ "unprotected": true }`: the key proves nothing about where it lives. The members for `piv` (serial, firmware, PIN and touch policy, form factor, slot), `aws-kms` (the ARN, the key's description and the digest of its policy) and `openpgp-card` are fixed with those key stores: `aws-kms` in M2, `openpgp-card` in M3 and `piv` in M6.
+- `evidence` holds what was read from the proof and checked. For a key file it is `{ "unprotected": true }`: the key proves nothing about where it lives. The members for each key store are in the table below. The members of `aws-kms` are fixed with that key store in M2. The members that the verifiers of `piv` and `openpgp-card` return are Proposed, and are built in M2.
 - `policy` is a copy of the policy applied to the request: the `policy` block of `ritueel.yaml` and the wanted file of the delegation ([the bundle](/reference/bundle/#ritueelyaml)).
 - `outcome` is `issued`, and `artifacts` the answer's files with their digests, as in `result.json`; in a declining record, `outcome` is `refused` with the code `declined`.
+
+The members of `evidence` for each key store:
+
+| Store | Members | State |
+|---|---|---|
+| `piv` | `slot`, `serial`, `form_factor` (only when the slot certificate has it), `policy_read` (`true`), `attestation_bundle_version` and `attestation_bundle_sha256`, with the firmware, the PIN policy and the touch policy | Proposed ([#11](https://github.com/truvity/ritueel/issues/11)) |
+| `openpgp-card` | `policy_read` (`false`), `attestation_bundle_version` and `attestation_bundle_sha256`; no firmware and no policy, because the encoding of the OpenPGP attestation extensions is not measured | Proposed ([#18](https://github.com/truvity/ritueel/issues/18)) |
+| `aws-kms` | the ARN, the key's description and the digest of its policy | fixed with the key store ([#12](https://github.com/truvity/ritueel/issues/12)) |
 
 ### The hash chain
 
@@ -312,7 +320,7 @@ These are later. They are not rules, and this page does not write them.
 ## Follow-ups
 
 - The code that writes and checks these files, with the tests of issue #9's done-when ([issue #9](https://github.com/truvity/ritueel/issues/9)): the plan, the lines of the two journals. `check history` is built; the writers of the files are not. The steps of a write are built in the package `internal/fsx` ([the bundle page](/reference/bundle/#how-a-file-is-written)).
-- The `evidence` members of the `piv` and `aws-kms` stores ([issue #11](https://github.com/truvity/ritueel/issues/11), [issue #12](https://github.com/truvity/ritueel/issues/12)), and of `openpgp-card` ([issue #18](https://github.com/truvity/ritueel/issues/18)).
+- The `evidence` members of the `aws-kms` store ([issue #12](https://github.com/truvity/ritueel/issues/12)), and the final names of the members of `piv` and `openpgp-card` ([issue #11](https://github.com/truvity/ritueel/issues/11), [issue #18](https://github.com/truvity/ritueel/issues/18)).
 
 ## Standards
 
