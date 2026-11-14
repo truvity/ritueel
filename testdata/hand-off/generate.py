@@ -450,14 +450,15 @@ def extension_request(*value_lists):
     return der(0x30, der(0x06, OID_EXTENSION_REQUEST) + der(0x31, b"".join(der(0x30, b"".join(v)) for v in value_lists)))
 
 
-def csr_rebuild(csr, key, version=0, subject=None, attributes=None, extra_attributes=()):
+def csr_rebuild(csr, key, version=0, subject=None, attributes=None, extra_attributes=(), sigalg=None):
     """The DER of a request made of the parts of csr, signed again by key with ecdsa-with-SHA384. subject: the DER of another
-    name; attributes: the attributes to carry (DER elements) in place of the request's own; extra_attributes: beside them."""
+    name; attributes: the attributes to carry (DER elements) in place of the request's own; extra_attributes: beside them;
+    sigalg: the DER of the signature algorithm element, when it is not ecdsa-with-SHA384 (the signature is still made with SHA-384)."""
     info = der_parts(der_parts(der_parts(csr.public_bytes(DER))[0][2])[0][2])
     attrs = list(attributes) if attributes is not None else [a[1] for a in der_parts(info[3][2])]
     body = der(0x02, bytes([version])) + (info[1][1] if subject is None else subject) + info[2][1] + der(0xA0, b"".join(sorted(attrs + list(extra_attributes))))
     cri = der(0x30, body)
-    sigalg = der(0x30, der(0x06, bytes.fromhex("2a8648ce3d040303")))
+    sigalg = sigalg if sigalg is not None else der(0x30, der(0x06, bytes.fromhex("2a8648ce3d040303")))
     sig = key.sign(cri, ecdsa(hashes.SHA384()))
     return der(0x30, cri + sigalg + der(0x03, b"\x00" + sig))
 
@@ -921,6 +922,26 @@ with stream("x509-request-form-more"):
     x509_case("x509-request-two-pem-blocks", key=k, csr=c, store="software", cfg="development", reason="malformed", pem_extra=pem_csr(c.public_bytes(DER)))
     k = ec384(); c = make_csr(k)
     x509_case("x509-request-text-after-the-pem-block", key=k, csr=c, store="software", cfg="development", reason="malformed", pem_extra=b"# a note\n")
+
+
+# ---- the rest of the rules that had no case (round 4): own streams again
+with stream("x509-subject-round-4"):
+    # an organisational unit and a domain component may stand any number of times, each in a relative name of its own
+    sw_case("x509-subject-domain-component-three-times", expect="accept",
+            form=with_subject(*(rdn_of(attr(OID_DC, IA5, d)) for d in (b"corp", b"example", b"org")), BASE_O, BASE_CN))
+    sw_case("x509-subject-empty-value", form=with_subject(BASE_O, rdn_of(attr(OID_CN, UTF8, b""))))
+    sw_case("x509-subject-organization-65-characters", form=with_subject(rdn_of(attr(OID_O, UTF8, b"a" * 65)), BASE_CN))
+    sw_case("x509-subject-empty-relative-name", reason="malformed", form=with_subject(der(0x31, b""), BASE_O, BASE_CN))
+    sw_case("x509-subject-printable-string-at-sign", form=with_subject(BASE_O, rdn_of(attr(OID_CN, PRINTABLE, b"ops@acme"))))
+    # a fault of content (a PrintableString with `@`) in the first relative name, a fault of form (not in DER order) in the second:
+    # the fault of form is told
+    sw_case("x509-subject-content-fault-before-form-fault", reason="malformed", form=with_subject(
+        rdn_of(attr(OID_CN, PRINTABLE, b"a@b")), rdn_of(*reversed(sorted([attr(OID_O, UTF8, b"acme"), attr(OID_OU, UTF8, b"ops")])), in_order=True)))
+
+with stream("x509-request-round-4"):
+    sw_case("x509-request-extension-request-empty", reason="malformed", form=lambda c, k: csr_rebuild(c, k, attributes=[extension_request([])]))
+    sw_case("x509-request-signature-algorithm-not-well-formed", reason="malformed", form=lambda c, k: csr_rebuild(c, k, sigalg=der(0x04, b"\x00")))
+    sw_case("x509-nc-subtree-minimum-0", raw_subtrees=[der(0x30, der(0x82, HOST.encode()) + der(0x80, b"\x00"))])
 
 
 k = ec384(); c = make_csr(k)
@@ -1533,6 +1554,14 @@ with stream("ca-bundle-bad"):
         .add_extension(x509.SubjectKeyIdentifier(ski(ROOT_A_KEY.public_key())), critical=False), ROOT_A_KEY, hashes.SHA384())
     ca_bundle(7, "AB", certs=[foreign, ROOT_B], suffix="-signed-by-another-key", flaw="not-signed-by-its-own-key")
     ca_bundle(7, "AB", certs=[not_ca, ROOT_B], suffix="-not-a-ca", flaw="not-a-ca")
+    # the right key, signed by it, a CA certificate, and an issuer name that is not its subject name
+    other_issuer = sign_builder(
+        x509.CertificateBuilder().subject_name(ROOT_A.subject).issuer_name(x509.Name([x509.NameAttribute(NameOID.COMMON_NAME, "Example Other Issuer (TEST ONLY)")]))
+        .public_key(ROOT_A_KEY.public_key()).serial_number(serial160()).not_valid_before(T_ROOTS).not_valid_after(T_ROOTS_UNTIL)
+        .add_extension(x509.BasicConstraints(ca=True, path_length=None), critical=True)
+        .add_extension(KU_CA, critical=True)
+        .add_extension(x509.SubjectKeyIdentifier(ski(ROOT_A_KEY.public_key())), critical=False), ROOT_A_KEY, hashes.SHA384())
+    ca_bundle(7, "AB", certs=[other_issuer, ROOT_B], suffix="-issuer-is-another-name", flaw="issuer-not-subject")
 
 # a CA bundle that is not the certificates of the list, in the order of the list, under the list's sequence
 ca_bundle(7, "ABC", suffix="-extra-certificate", flaw="extra-certificate")
@@ -1546,6 +1575,7 @@ rl_case("ca-bundle-of-the-list", None, "seq7-a", "accept", bundle="ca-bundle-7")
 rl_case("ca-bundle-after-a-revoke", "seq7-a", "seq8-b-without-a", "accept", clock=T_SEQ8, bundle="ca-bundle-8")
 rl_case("ca-bundle-certificate-signed-by-another-key", None, "seq7-a", "refuse", "ca-bundle-mismatch", bundle="ca-bundle-7-signed-by-another-key")
 rl_case("ca-bundle-certificate-not-a-ca", None, "seq7-a", "refuse", "ca-bundle-mismatch", bundle="ca-bundle-7-not-a-ca")
+rl_case("ca-bundle-certificate-names-another-issuer", None, "seq7-a", "refuse", "ca-bundle-mismatch", bundle="ca-bundle-7-issuer-is-another-name")
 rl_case("ca-bundle-with-a-certificate-too-many", None, "seq7-a", "refuse", "ca-bundle-mismatch", bundle="ca-bundle-7-extra-certificate")
 rl_case("ca-bundle-with-a-certificate-missing", None, "seq7-a", "refuse", "ca-bundle-mismatch", bundle="ca-bundle-7-missing-certificate")
 rl_case("ca-bundle-in-the-wrong-order", None, "seq7-a", "refuse", "ca-bundle-mismatch", bundle="ca-bundle-7-wrong-order")
