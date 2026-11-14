@@ -72,6 +72,9 @@ type Verdict struct {
 	// same reason as Key. It is a copy of what the verifier returned, so a later write by the verifier
 	// changes nothing here. A software key has the evidence {Unprotected: true}.
 	Evidence *Evidence
+	// Subkey is what the ceremony records about the subkey of an openpgp-subkey request, and it is set only
+	// in an accepted verdict of such a request. It is nil for every other verdict and every other type.
+	Subkey *SubkeyInfo
 
 	// accepted is set by Checker.Check and by nothing else, when it returned no error and every check
 	// passed. No other package can set it, so a Verdict that was made or changed by hand is never accepted.

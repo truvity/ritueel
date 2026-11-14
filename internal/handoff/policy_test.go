@@ -445,9 +445,18 @@ func TestASubjectThatThePageAllowsIsAccepted(t *testing.T) {
 // The delegation and the roots
 
 func TestARequestOfAnotherTypeThanTheDelegationsIsRefusedWithPolicy(t *testing.T) {
+	// A delegation of another type has no capability, and only an openpgp-subkey delegation has primaries and
+	// a capability, so each is made as New asks for it.
+	pgp := newPGPFixture(t, 1, handoff.StoreSoftware)
 	for _, other := range []handoff.Type{handoff.TypeOpenPGP, handoff.TypeSSH} {
 		t.Run(string(other), func(t *testing.T) {
-			chk := newCheckerWith(t, func(c *handoff.Config) { c.Delegation.Type = other })
+			chk := newCheckerWith(t, func(c *handoff.Config) {
+				c.Delegation.Type = other
+				if other == handoff.TypeOpenPGP {
+					c.Delegation.Capability = "sign"
+					c.Primaries = pgp.refs()
+				}
+			})
 			v, err := chk.Check(t.Context(), newFixture(t, handoff.StoreSoftware, csrSpec{}).request())
 			wantRefusal(t, v, err, handoff.CodePolicy, 9)
 		})

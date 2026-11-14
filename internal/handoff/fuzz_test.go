@@ -139,6 +139,7 @@ func checkVerdictLaws(t *testing.T, r *handoff.Request, v handoff.Verdict, err e
 	if v.Refused() {
 		wantCheck := map[handoff.Code][]int{
 			handoff.CodeVersionUnsupported: {0}, handoff.CodeMalformed: {1, 6}, handoff.CodeRequestMismatch: {2},
+			handoff.CodeUnknownPrimary:       {2},
 			handoff.CodeAlgorithmUnsupported: {3}, handoff.CodePossessionInvalid: {4}, handoff.CodeStoreNotAllowed: {5},
 			handoff.CodeProofInvalid: {6}, handoff.CodeKeyMismatch: {7}, handoff.CodePolicy: {8},
 		}[v.Code]
@@ -161,7 +162,7 @@ func checkVerdictLaws(t *testing.T, r *handoff.Request, v handoff.Verdict, err e
 	if v.Accepted() != (err == nil && !v.Refused() && v.Complete()) {
 		t.Fatalf("Accepted() is %v, with error %v, code %q, statuses %s", v.Accepted(), err, v.Code, statuses(v))
 	}
-	if !v.Accepted() && (v.Key != nil || v.Evidence != nil) {
+	if !v.Accepted() && (v.Key != nil || v.Evidence != nil || v.Subkey != nil) {
 		t.Fatalf("a verdict that is not accepted holds a key or evidence: %v %v", v.Key, v.Evidence)
 	}
 	if v.Accepted() {
@@ -180,8 +181,13 @@ func checkVerdictLaws(t *testing.T, r *handoff.Request, v handoff.Verdict, err e
 	if errors.Is(err, handoff.ErrInternal) {
 		t.Fatalf("two readers disagree: %v", err)
 	}
-	if errors.Is(err, handoff.ErrConfig) {
-		t.Fatalf("the configuration is read as wrong: %v", err)
+	// The one request that a configuration made by New can leave undecided with ErrConfig is an openpgp-subkey
+	// request on a checker that holds no primaries: checks 1 and 2 passed, and nothing else ran.
+	if errors.Is(err, handoff.ErrConfig) && statuses(v) != "ppnnnnnnn" {
+		t.Fatalf("the configuration is read as wrong: %v, statuses %s", err, statuses(v))
+	}
+	if v.Subkey != nil && !v.Accepted() {
+		t.Fatalf("a verdict that is not accepted holds a subkey: %+v", v.Subkey)
 	}
 }
 

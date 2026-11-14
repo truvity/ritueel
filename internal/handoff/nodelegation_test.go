@@ -273,8 +273,8 @@ func TestEveryRefusalBeforeCheckNineIsTheSameWithNoDelegation(t *testing.T) {
 	}
 }
 
-func TestARequestOfAnotherTypeStopsWhereItDidWithNoDelegation(t *testing.T) {
-	for name, req := range map[string]*handoff.Request{"openpgp-subkey": pgpRequest(nil), "ssh-ca-key": sshRequest(nil)} {
+func TestAnSSHRequestStopsWhereItDidWithNoDelegation(t *testing.T) {
+	for name, req := range map[string]*handoff.Request{"ssh-ca-key": sshRequest(nil)} {
 		t.Run(name, func(t *testing.T) {
 			with, werr := newChecker(t).Check(t.Context(), req)
 			without, nerr := newCheckerWith(t, noDelegation).Check(t.Context(), req)

@@ -328,7 +328,7 @@ func TestNoVerdictIsAnAcceptanceUnlessEveryCheckPassed(t *testing.T) {
 		"a stopped context": func() (handoff.Verdict, error) {
 			return checkerWith(t, handoff.StorePIV, returning(good)).Check(cancelled, f.request())
 		},
-		"a request of a type that is not built": func() (handoff.Verdict, error) { return newChecker(t).Check(t.Context(), pgpRequest(nil)) },
+		"a request of a type that is not built": func() (handoff.Verdict, error) { return newChecker(t).Check(t.Context(), sshRequest(nil)) },
 		"a checker that was not made by New":    func() (handoff.Verdict, error) { return (&handoff.Checker{}).Check(t.Context(), f.request()) },
 	} {
 		t.Run(name, func(t *testing.T) {

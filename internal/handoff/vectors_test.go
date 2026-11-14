@@ -1,8 +1,11 @@
 package handoff_test
 
 import (
+	"bytes"
 	"crypto/ecdsa"
+	"crypto/elliptic"
 	"crypto/x509"
+	"encoding/hex"
 	"encoding/json"
 	"encoding/pem"
 	"errors"
@@ -13,6 +16,9 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	goecdsa "github.com/ProtonMail/go-crypto/openpgp/ecdsa"
+	gopacket "github.com/ProtonMail/go-crypto/openpgp/packet"
 
 	"ritueel.id/ritueel/internal/fsx"
 	"ritueel.id/ritueel/internal/handoff"
@@ -52,9 +58,15 @@ type vectorCase struct {
 type vectorManifest struct {
 	Clock  string `json:"clock"`
 	Pinned struct {
-		RootList                 struct{ X509 []string } `json:"root_list"`
-		AttestationRoots         []string                `json:"attestation_roots"`
-		AttestationIntermediates []string                `json:"attestation_intermediates"`
+		RootList struct {
+			X509    []string `json:"x509"`
+			OpenPGP []string `json:"openpgp"`
+		} `json:"root_list"`
+		NotListed struct {
+			OpenPGP []string `json:"openpgp"`
+		} `json:"not_listed"`
+		AttestationRoots         []string `json:"attestation_roots"`
+		AttestationIntermediates []string `json:"attestation_intermediates"`
 	}
 	Configs map[string]vectorConfig `json:"configs"`
 	Cases   []vectorCase            `json:"requests"`
@@ -97,6 +109,52 @@ func rootsOfManifest(t testing.TB, m vectorManifest) []handoff.RootRef {
 	return roots
 }
 
+// primariesOfManifest are the active primaries of the pinned root list of the manifest, read with go-crypto
+// (the reader of the tests, not the reader under test): the key, the creation time and the fingerprint that
+// go-crypto reports, from the first packet of each file.
+func primariesOfManifest(t testing.TB, m vectorManifest) []handoff.PrimaryRef {
+	t.Helper()
+	if len(m.Pinned.RootList.OpenPGP) < 2 {
+		t.Fatalf("the pinned root list holds %d OpenPGP primaries, want at least 2", len(m.Pinned.RootList.OpenPGP))
+	}
+	var out []handoff.PrimaryRef
+	for _, f := range m.Pinned.RootList.OpenPGP {
+		out = append(out, primaryOfFile(t, testrepo.Read(t, vectorsDir, f)))
+	}
+	return out
+}
+
+// primaryOfFile reads the first packet of a primary's certificate with go-crypto.
+func primaryOfFile(t testing.TB, file []byte) handoff.PrimaryRef {
+	t.Helper()
+	p, err := gopacket.Read(bytes.NewReader(file))
+	if err != nil {
+		t.Fatalf("reading a primary: %v", err)
+	}
+	pk, ok := p.(*gopacket.PublicKey)
+	if !ok {
+		t.Fatalf("the first packet of a primary is %T, want a public key", p)
+	}
+	raw, ok := pk.PublicKey.(*goecdsa.PublicKey)
+	if !ok {
+		t.Fatalf("the key of a primary is %T, want ECDSA", pk.PublicKey)
+	}
+	key, err := ecdsa.ParseUncompressedPublicKey(elliptic.P384(), raw.MarshalPoint())
+	if err != nil {
+		t.Fatalf("the point of a primary: %v", err)
+	}
+	return handoff.PrimaryRef{Fingerprint: hex.EncodeToString(pk.Fingerprint), Key: key, Created: pk.CreationTime.UTC()}
+}
+
+// capabilityOfCase is the capability of the delegation that a case is made for: sign, and authenticate for
+// the one case of the vectors that asks for it.
+func capabilityOfCase(c vectorCase) string {
+	if c.ID == "pgp-openpgp-card-authenticate" {
+		return "authenticate"
+	}
+	return "sign"
+}
+
 // configOfCase is the configuration of a checker for a case: the policy and the delegation that the case's
 // named configuration holds, the roots of the pinned root list and the clock of the manifest.
 func configOfCase(t testing.TB, m vectorManifest, c vectorCase, roots []handoff.RootRef, clock time.Time) handoff.Config {
@@ -123,7 +181,12 @@ func configOfCase(t testing.TB, m vectorManifest, c vectorCase, roots []handoff.
 		PermittedDNSNames: cfg.PermittedDNSNames,
 		KMSReadRoles:      cfg.KMSReadRoles,
 	}
-	return handoff.Config{Policy: p, Delegation: d, Roots: roots, Now: func() time.Time { return clock }}
+	cfgOut := handoff.Config{Policy: p, Delegation: d, Roots: roots, Now: func() time.Time { return clock }}
+	if c.Type == string(handoff.TypeOpenPGP) {
+		d.Capability = capabilityOfCase(c)
+		cfgOut.Primaries = primariesOfManifest(t, m)
+	}
+	return cfgOut
 }
 
 // vectorVerifiers are the verifiers that the vector tests register, one function for each key store whose
@@ -213,30 +276,10 @@ func matches(c vectorCase, v handoff.Verdict, err error) bool {
 
 // pending names, for each case that this package cannot decide yet, the work that will decide it.
 const (
-	laterOpenPGP = "the checks 3 to 9 of an OpenPGP subkey request"
-	laterSSH     = "the checks 4 to 9 of an SSH CA key request"
+	laterSSH = "the checks 4 to 9 of an SSH CA key request"
 )
 
 var pending = map[string]string{
-	// OpenPGP: the back-signatures, the root list and the evidence.
-	"pgp-backsig-missing":              laterOpenPGP,
-	"pgp-backsig-missing-one":          laterOpenPGP,
-	"pgp-backsig-wrong-primary":        laterOpenPGP,
-	"pgp-backsig-wrong-type":           laterOpenPGP,
-	"pgp-backsig-tampered":             laterOpenPGP,
-	"pgp-backsig-no-key-id":            laterOpenPGP,
-	"pgp-ed25519":                      laterOpenPGP,
-	"pgp-unknown-primary":              laterOpenPGP,
-	"pgp-primaries-incomplete":         laterOpenPGP,
-	"pgp-piv-valid":                    laterOpenPGP,
-	"pgp-kms-valid":                    laterOpenPGP,
-	"pgp-openpgp-card-valid":           laterOpenPGP,
-	"pgp-software-valid":               laterOpenPGP,
-	"pgp-response-request":             laterOpenPGP,
-	"pgp-openpgp-card-authenticate":    laterOpenPGP,
-	"pgp-piv-key-mismatch":             laterOpenPGP,
-	"pgp-openpgp-card-untrusted-chain": laterOpenPGP,
-
 	// SSH CA key: the key, the signature, the store and the evidence.
 	"ssh-bad-signature":          laterSSH,
 	"ssh-wrong-namespace":        laterSSH,

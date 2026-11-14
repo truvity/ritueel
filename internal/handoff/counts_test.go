@@ -3,7 +3,6 @@ package handoff_test
 import (
 	"crypto/sha256"
 	"encoding/hex"
-	"errors"
 	"fmt"
 	"strings"
 	"testing"
@@ -84,18 +83,19 @@ func fingerprints(n int) []string {
 }
 
 func TestPrimariesUpToTheBoundAreReadAndOneOverIsMalformedAtCheckTwo(t *testing.T) {
-	for _, n := range []int{1, 2, 3, handoff.MaxPrimaries - 1, handoff.MaxPrimaries, handoff.MaxPrimaries + 1, handoff.MaxPrimaries + 2, 100, 5000} {
+	for _, n := range []int{1, 2, 3, handoff.MaxPrimaries - 1, handoff.MaxPrimaries} {
 		t.Run(fmt.Sprint(n), func(t *testing.T) {
-			v, err := newChecker(t).Check(t.Context(), pgpRequest(func(m map[string]any) { m["primaries"] = fingerprints(n) }))
-			if n <= handoff.MaxPrimaries {
-				if !errors.Is(err, handoff.ErrTypeNotBuilt) || v.Refused() || v.Accepted() {
-					t.Fatalf("code %q, error %v", v.Code, err)
-				}
-				if got := statuses(v); got != "ppnnnnnnn" {
-					t.Errorf("statuses %s", got)
-				}
-				return
-			}
+			f := newPGPFixture(t, n, handoff.StoreSoftware)
+			v, err := f.checker(nil).Check(t.Context(), f.request())
+			wantAccepted(t, v, err)
+		})
+	}
+	// More than the bound is malformed at check 2, before the file is read and whatever the checker holds.
+	for _, n := range []int{handoff.MaxPrimaries + 1, handoff.MaxPrimaries + 2, 100, 5000} {
+		t.Run(fmt.Sprint(n), func(t *testing.T) {
+			f := newPGPFixture(t, 2, handoff.StoreSoftware)
+			f.listed = fingerprints(n)
+			v, err := f.checker(nil).Check(t.Context(), f.request())
 			wantRefusal(t, v, err, handoff.CodeMalformed, 2)
 		})
 	}
@@ -108,11 +108,13 @@ func TestPrimariesThatFillTheWholeFileAreMalformed(t *testing.T) {
 	for i := range list {
 		list[i] = fmt.Sprintf("%040x", i)
 	}
-	r := pgpRequest(func(m map[string]any) { m["primaries"] = list })
+	f := newPGPFixture(t, 2, handoff.StoreSoftware)
+	f.listed = list
+	r := f.request()
 	if len(r.Files[handoff.FileProof]) > handoff.MaxFileSize {
 		t.Fatalf("test setup: %d bytes", len(r.Files[handoff.FileProof]))
 	}
-	v, err := newChecker(t).Check(t.Context(), r)
+	v, err := f.checker(nil).Check(t.Context(), r)
 	wantRefusal(t, v, err, handoff.CodeMalformed, 2)
 }
 
@@ -129,20 +131,24 @@ func TestAFingerprintTwiceInPrimariesIsMalformedWhereverItStands(t *testing.T) {
 		"the same digits, other letters": {strings.Repeat("ab", 20), strings.Repeat("ab", 20)},
 	} {
 		t.Run(name, func(t *testing.T) {
-			v, err := newChecker(t).Check(t.Context(), pgpRequest(func(m map[string]any) { m["primaries"] = list }))
+			f := newPGPFixture(t, 2, handoff.StoreSoftware)
+			f.listed = list
+			v, err := f.checker(nil).Check(t.Context(), f.request())
 			wantRefusal(t, v, err, handoff.CodeMalformed, 2)
 		})
 	}
-	// Fingerprints that differ in one digit are two, and so are the same ones in another order.
+	// Fingerprints that differ in one digit are two, and so are the same ones in another order: the proof
+	// is of the form of the page, and it is check 3 that finds they are not the primaries of the list.
 	for name, list := range map[string][]string{
 		"one digit apart":    {strings.Repeat("a", 40), strings.Repeat("a", 39) + "b"},
 		"in the other order": {fp[1], fp[0]},
 		"at the first digit": {"0" + strings.Repeat("a", 39), "1" + strings.Repeat("a", 39)},
 	} {
-		v, err := newChecker(t).Check(t.Context(), pgpRequest(func(m map[string]any) { m["primaries"] = list }))
-		if !errors.Is(err, handoff.ErrTypeNotBuilt) || v.Refused() {
-			t.Errorf("%s: code %q, error %v", name, v.Code, err)
-		}
+		f := newPGPFixture(t, 2, handoff.StoreSoftware)
+		f.listed = list
+		v, err := f.checker(nil).Check(t.Context(), f.request())
+		wantRefusal(t, v, err, handoff.CodeUnknownPrimary, 3)
+		_ = name
 	}
 }
 
@@ -161,18 +167,29 @@ func TestAFingerprintIsLowerCaseHexadecimalOnly(t *testing.T) {
 		"empty":                     "",
 	} {
 		t.Run(name, func(t *testing.T) {
-			v, err := newChecker(t).Check(t.Context(), pgpRequest(func(m map[string]any) { m["primaries"] = []string{fp} }))
+			f := newPGPFixture(t, 1, handoff.StoreSoftware)
+			f.listed = []string{fp}
+			v, err := f.checker(nil).Check(t.Context(), f.request())
 			wantRefusal(t, v, err, handoff.CodeMalformed, 2)
 		})
 	}
-	v, err := newChecker(t).Check(t.Context(), pgpRequest(func(m map[string]any) { m["primaries"] = []string{lower} }))
-	if !errors.Is(err, handoff.ErrTypeNotBuilt) || v.Refused() {
-		t.Errorf("code %q, error %v", v.Code, err)
+	// A list of lower-case digits is read, and the one that is the fingerprint of the primary is accepted.
+	g := newPGPFixture(t, 1, handoff.StoreSoftware)
+	if g.fingerprints()[0] != strings.ToLower(g.fingerprints()[0]) {
+		t.Fatal("test setup: the fingerprint of a key is not lower case")
 	}
+	v, err := g.checker(nil).Check(t.Context(), g.request())
+	wantAccepted(t, v, err)
+	// The same digits in capitals are another string, and are malformed: no case folding.
+	g.listed = []string{strings.ToUpper(g.fingerprints()[0])}
+	v, err = g.checker(nil).Check(t.Context(), g.request())
+	wantRefusal(t, v, err, handoff.CodeMalformed, 2)
 	// The digest of the request is lower-case hexadecimal too.
-	d := digestHex(subkeyBytes)
+	d := digestHex(g.fileBytes())
 	for _, bad := range []string{strings.ToUpper(d), d[:63] + "G", d[:63], d + "0"} {
-		v, err := newChecker(t).Check(t.Context(), pgpRequest(func(m map[string]any) { m["request_sha256"] = bad }))
+		h := newPGPFixture(t, 1, handoff.StoreSoftware)
+		h.digest = bad
+		v, err := h.checker(nil).Check(t.Context(), h.request())
 		wantRefusal(t, v, err, handoff.CodeMalformed, 2)
 	}
 }

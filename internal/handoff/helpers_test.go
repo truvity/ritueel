@@ -472,8 +472,8 @@ func wantRefusal(t testing.TB, v handoff.Verdict, err error, code handoff.Code, 
 	if v.Accepted() {
 		t.Fatal("a refusal that Accepted() reports as an acceptance")
 	}
-	if v.Key != nil || v.Evidence != nil {
-		t.Fatalf("a refused verdict holds a key or evidence: %+v %+v", v.Key, v.Evidence)
+	if v.Key != nil || v.Evidence != nil || v.Subkey != nil {
+		t.Fatalf("a refused verdict holds a key, evidence or a subkey: %+v %+v %+v", v.Key, v.Evidence, v.Subkey)
 	}
 	// A refusal by check 9 is the one refusal that leaves no check unrun: every check ran, and the last
 	// one refused. Any earlier refusal leaves the later checks unrun.
@@ -546,8 +546,8 @@ func wantUndecided(t testing.TB, v handoff.Verdict, err, want error, wantStatuse
 	if wantStatuses != "" && statuses(v) != wantStatuses {
 		t.Fatalf("statuses %s, want %s", statuses(v), wantStatuses)
 	}
-	if v.Key != nil || v.Evidence != nil {
-		t.Fatalf("a verdict beside an error holds a key or evidence: %+v %+v", v.Key, v.Evidence)
+	if v.Key != nil || v.Evidence != nil || v.Subkey != nil {
+		t.Fatalf("a verdict beside an error holds a key, evidence or a subkey: %+v %+v %+v", v.Key, v.Evidence, v.Subkey)
 	}
 }
 
