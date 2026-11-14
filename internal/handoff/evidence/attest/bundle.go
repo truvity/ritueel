@@ -84,7 +84,11 @@ type Bundle struct {
 // than [MaxPinned] certificates; a certificate that is empty, larger than [MaxCertificateSize], does not
 // parse or has bytes after its DER; a root that is not a CA that is self-signed and verifies its own
 // signature; an intermediate that is not a CA; and a version outside 1 to 32 printable ASCII characters.
-// The same certificate may be in both intermediate groups. The error wraps [ErrBundle].
+// It also keeps the two applets apart: it refuses the same certificate, or two certificates with the same
+// public key, in the piv group and in the openpgp group, because a chain that ends in such an
+// intermediate would pass for both. ([Bundle.Verify] in turn accepts only a chain that passes through a
+// pinned intermediate of its own applet, so a token's certificate that a root signed directly serves
+// neither.) The error wraps [ErrBundle].
 func NewBundle(s BundleSpec) (*Bundle, error) {
 	if !validVersion(s.Version) {
 		return nil, fmt.Errorf("%w: the version is not 1 to 32 printable ASCII characters", ErrBundle)
@@ -102,6 +106,9 @@ func NewBundle(s BundleSpec) (*Bundle, error) {
 	}
 	opgp, opgpDER, err := parseGroup("openpgp intermediate", s.OpenPGPIntermediates, false)
 	if err != nil {
+		return nil, err
+	}
+	if err := disjoint(piv, opgp); err != nil {
 		return nil, err
 	}
 	return &Bundle{
@@ -155,6 +162,20 @@ func parseGroup(name string, group [][]byte, root bool) ([]*x509.Certificate, []
 	return certs, ders, nil
 }
 
+// disjoint refuses a certificate, or a public key, that stands in both intermediate groups. A key is
+// compared by the DER of its SubjectPublicKeyInfo, so a second certificate of the same key (a
+// re-issue or a cross-signature) is found as well.
+func disjoint(piv, opgp []*x509.Certificate) error {
+	for _, p := range piv {
+		for _, o := range opgp {
+			if bytes.Equal(p.Raw, o.Raw) || bytes.Equal(p.RawSubjectPublicKeyInfo, o.RawSubjectPublicKeyInfo) {
+				return fmt.Errorf("%w: a piv intermediate and an openpgp intermediate are the same certificate or have the same public key", ErrBundle)
+			}
+		}
+	}
+	return nil
+}
+
 // digestOf is the digest of [Bundle.SHA256].
 func digestOf(groups ...[][]byte) string {
 	h := sha256.New()
@@ -198,30 +219,50 @@ func (b *Bundle) SHA256() string {
 // usable reports whether the bundle was made by [NewBundle].
 func (b *Bundle) usable() bool { return b != nil && len(b.roots) > 0 }
 
-// CertificatesFromPEM returns the DER of every block of a PEM text. Only blocks labelled CERTIFICATE with
-// no headers are read, and only white space may stand between them and around them. A text that holds no
-// block, any other text, a block of another label or with a header, more than [MaxPinned] blocks, and a
-// text longer than 1 MiB is an error. It is for tests and for the code that loads a bundle from a file.
+// CertificatesFromPEM returns the DER of every certificate of a PEM text. The text is one or more blocks
+// labelled CERTIFICATE and nothing else: no text before, between or after the blocks except line ends
+// (CR and LF), no block of another label, no header inside a block, and every block must decode from
+// Base64 and parse as exactly one DER certificate with nothing after it. The reader compares the lines of
+// a block byte for byte. The BEGIN line and the END line are exactly the marker
+// ("-----BEGIN CERTIFICATE-----", "-----END CERTIFICATE-----") and a line end (LF or CRLF; the END line of
+// the last block may also end the text), with no space or tab before or after the marker, and a line
+// inside a block holds no space, tab or lone CR. A text that holds no block, a damaged block (also when
+// a good block follows it), more than [MaxPinned] blocks and a text longer than 1 MiB is an error. It is
+// for tests and for the code that loads a bundle from a file.
 func CertificatesFromPEM(data []byte) ([][]byte, error) {
 	if len(data) > maxPEMSize {
 		return nil, errors.New("attest: the PEM text is longer than 1 MiB")
 	}
+	const begin = "-----BEGIN "
 	var out [][]byte
 	rest := data
 	for {
-		rest = bytes.TrimLeft(rest, " \t\r\n")
+		rest = bytes.TrimLeft(rest, "\r\n")
 		if len(rest) == 0 {
 			break
 		}
-		if !bytes.HasPrefix(rest, []byte("-----BEGIN ")) {
-			return nil, errors.New("attest: the PEM text holds something that is not a block")
+		if !bytes.HasPrefix(rest, []byte(begin+"CERTIFICATE-----")) {
+			return nil, errors.New("attest: the PEM text holds something that is not a CERTIFICATE block")
 		}
-		block, next := pem.Decode(rest)
-		if block == nil {
+		span, next, err := blockSpan(rest)
+		if err != nil {
+			return nil, err
+		}
+		block, tail := pem.Decode(span)
+		if block == nil || len(tail) != 0 {
+			return nil, errors.New("attest: the PEM text holds a block that does not decode")
+		}
+		// pem.Decode skips a damaged block and returns the next good one, so the bytes it consumed must
+		// hold the one block that was looked at and no other start line.
+		if bytes.Count(span, []byte(begin)) != 1 {
 			return nil, errors.New("attest: the PEM text holds a block that does not decode")
 		}
 		if block.Type != "CERTIFICATE" || len(block.Headers) != 0 {
 			return nil, errors.New("attest: the PEM text holds a block that is not a bare CERTIFICATE")
+		}
+		cert, err := x509.ParseCertificate(block.Bytes)
+		if err != nil || len(cert.Raw) != len(block.Bytes) {
+			return nil, errors.New("attest: the PEM text holds a block that is not one DER certificate")
 		}
 		if len(out) == MaxPinned {
 			return nil, fmt.Errorf("attest: the PEM text holds more than %d blocks", MaxPinned)
@@ -233,4 +274,52 @@ func CertificatesFromPEM(data []byte) ([][]byte, error) {
 		return nil, errors.New("attest: the PEM text holds no block")
 	}
 	return out, nil
+}
+
+// blockSpan cuts the first block off a text that starts with its BEGIN marker. It compares every line byte
+// for byte, because pem.Decode trims blanks at the end of a marker line and ignores them in the body. The
+// span runs from the first byte of the BEGIN line to the last byte of the END marker, with no line end
+// after it; next is what follows that line end. A line that is not as strict as the doc comment of
+// [CertificatesFromPEM] says is an error.
+func blockSpan(text []byte) (span, next []byte, err error) {
+	const (
+		beginLine = "-----BEGIN CERTIFICATE-----"
+		endLine   = "-----END CERTIFICATE-----"
+	)
+	errLine := errors.New("attest: the PEM text holds a block with a line that is not exact")
+	rest := text
+	for first := true; ; first = false {
+		line, after, terminated := nextLine(rest)
+		if first {
+			// The caller has seen the marker; what follows it must be the line end.
+			if string(line) != beginLine || !terminated {
+				return nil, nil, errLine
+			}
+			rest = after
+			continue
+		}
+		switch {
+		case string(line) == endLine:
+			return text[:len(text)-len(rest)+len(endLine)], after, nil
+		case bytes.ContainsAny(line, " \t\r"):
+			return nil, nil, errLine
+		case !terminated:
+			// The text ends inside the block.
+			return nil, nil, errors.New("attest: the PEM text holds a block that does not decode")
+		}
+		rest = after
+	}
+}
+
+// nextLine splits the first line off text. line has no line end; after is the text behind the line end;
+// terminated is false when the line ends the text with no LF. A CR directly before the LF belongs to the
+// line end. A line that ends in a CR with no LF keeps it, so that the caller sees it.
+func nextLine(text []byte) (line, after []byte, terminated bool) {
+	i := bytes.IndexByte(text, '\n')
+	if i < 0 {
+		return text, nil, false
+	}
+	line, after = text[:i], text[i+1:]
+	line = bytes.TrimSuffix(line, []byte("\r"))
+	return line, after, true
 }

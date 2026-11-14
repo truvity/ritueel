@@ -86,7 +86,8 @@ type MakerOptions struct {
 	// (Tweak for the hierarchy, [Slot.TokenTweak] and [Slot.Tweak] for the evidence) and call at Now.
 	Now time.Time
 	// SharedIntermediate makes one intermediate serve both applets, and puts it in both groups of the
-	// bundle, for the test of a PIV chain that is offered as an OpenPGP-card chain.
+	// spec. [attest.NewBundle] refuses such a spec, so [Maker.Bundle] stops the test; it is for the test
+	// of that refusal.
 	SharedIntermediate bool
 	// Tweak, when it is not nil, is called with the role and the template of each certificate of the
 	// hierarchy before it is signed. It may change the template, for example to add an extension.

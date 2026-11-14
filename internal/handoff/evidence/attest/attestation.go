@@ -180,8 +180,12 @@ func (b *Bundle) Attest(ctx context.Context, a Applet, p *handoff.Proof, now tim
 // the pinned intermediates of this applet and no others, must end in a pinned root, with every
 // certificate valid at now, the pinned ones included (a certificate is valid at its notBefore and at its
 // notAfter, as the standard library has it). At least one chain that is built has the token's certificate
-// as its second element. The pools are made again at each call, a root that came with the evidence is
-// never put in one, and a certificate of the evidence from the third entry on is not read.
+// as its second element and a pinned intermediate of this applet as its third, so it has at least four
+// certificates. A token's certificate that a pinned root signed directly is refused: the roots are shared
+// by both applets, so such a chain does not tell which applet it belongs to. The page says the chain runs
+// "through the token's certificate and the maker's intermediates" for piv and "through the maker's
+// OpenPGP intermediates" for openpgp-card. The pools are made again at each call, a root that came with
+// the evidence is never put in one, and a certificate of the evidence from the third entry on is not read.
 //
 // A refusal is a *[handoff.CodeError] with proof-invalid and fixed words. A zero now, a nil Attestation
 // (or one with a nil member), an unknown applet and a bundle that was not made by [NewBundle] are errors
@@ -230,10 +234,19 @@ func (b *Bundle) Verify(a Applet, att *Attestation, now time.Time) error {
 	if err != nil {
 		return chainRefusal(err)
 	}
+	viaToken := false
 	for _, chain := range chains {
 		if len(chain) >= 2 && bytes.Equal(chain[1].Raw, att.Token.Raw) {
-			return nil
+			viaToken = true
+			// The pool of intermediates holds the token's certificate and this applet's group only, so
+			// every certificate between the token's and the root is a pinned intermediate of this applet.
+			if len(chain) >= 4 {
+				return nil
+			}
 		}
+	}
+	if viaToken {
+		return refuse("the chain does not pass through a pinned intermediate of the applet")
 	}
 	return refuse("the chain does not pass through the token's certificate")
 }
