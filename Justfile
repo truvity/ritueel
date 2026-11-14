@@ -16,12 +16,14 @@ site-dev: site-install ui-demo
     cd site && yarn dev
 
 # A strict build into site/dist: no warnings, no broken internal link, and the built
-# output has what it must (search index, headers, the pages, the demo, no page for a decision record).
+# output has what it must (search index, headers, the pages, the demo, no page for a decision record),
+# and the page that lets the Go tool find the module of go.mod (site/public/ritueel/index.html).
 # The demo of the local page is built first (`just ui-demo`) into site/public/demo, where Astro
 # copies it into site/dist/demo/.
 site-build: site-install ui-demo
     site/scripts/strict-build.sh
     site/scripts/check-built.sh site/dist
+    site/scripts/check-go-import.mjs site/dist
 
 # Front-matter descriptions of 40 to 160 characters on every page in docs/, the redirect block
 # of site/public/_redirects against site/published.txt, and the tests of the allowlist, the link
