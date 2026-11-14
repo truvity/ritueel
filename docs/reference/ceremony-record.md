@@ -5,7 +5,7 @@ sidebar:
   order: 5
 ---
 
-*Not built yet. This is version 1 of the files that a ceremony of [record 0005](../decisions/0005-a-ceremony-and-where-it-runs.md) write into a ceremony folder, under the rules of [record 0006](../decisions/0006-bundle-history-and-trust-files.md). Only library code reads them so far, and no command does, so version 1 changes in place until a command does. The code is [issue #9](https://github.com/truvity/ritueel/issues/9), in M2; it follows this page.*
+*Not built yet. This is version 1 of the files that a ceremony of [record 0005](../decisions/0005-a-ceremony-and-where-it-runs.md) write into a ceremony folder, under the rules of [record 0006](../decisions/0006-bundle-history-and-trust-files.md). The command `ritueel check history` reads them; nothing writes them yet. The code is [issue #9](https://github.com/truvity/ritueel/issues/9), in M2; it follows this page.*
 
 A cite such as (0005 rule 12) names the rule that decides the statement. A statement marked Proposed is not decided and names its open issue. What is later is listed at the end.
 
@@ -229,7 +229,7 @@ Each member of `requests` holds what the [hand-off contract records](/reference/
 
 Ceremony records form one chain (0006 rule 8). The first ceremony record of a bundle has no `prev_record_sha256`; every other names the one before it, so each ceremony folder names the one before it.
 
-The checks of this part are built as library code (`internal/history`, with the readers in `internal/ceremony/files`). The command `ritueel check history` is not built yet. Its findings and exit codes are as written here.
+The checks of this part are built as library code (`internal/history`, with the readers in `internal/ceremony/files`), and the command `ritueel check history` is built on it. Its findings and exit codes are as written here.
 
 `check history` walks the chain from the first ceremony record and reports each finding under one name:
 
@@ -310,7 +310,7 @@ These are later. They are not rules, and this page does not write them.
 
 ## Follow-ups
 
-- The code that writes and checks these files, with the tests of issue #9's done-when ([issue #9](https://github.com/truvity/ritueel/issues/9)): the plan, the lines of the two journals and `check history`. The steps of a write are built in the package `internal/fsx` ([the bundle page](/reference/bundle/#how-a-file-is-written)).
+- The code that writes and checks these files, with the tests of issue #9's done-when ([issue #9](https://github.com/truvity/ritueel/issues/9)): the plan, the lines of the two journals. `check history` is built; the writers of the files are not. The steps of a write are built in the package `internal/fsx` ([the bundle page](/reference/bundle/#how-a-file-is-written)).
 - The `evidence` members of the `piv` and `aws-kms` stores ([issue #11](https://github.com/truvity/ritueel/issues/11), [issue #12](https://github.com/truvity/ritueel/issues/12)), and of `openpgp-card` ([issue #18](https://github.com/truvity/ritueel/issues/18)).
 
 ## Standards
