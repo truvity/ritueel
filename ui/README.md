@@ -172,6 +172,9 @@ no library (they drive headless Chrome over the DevTools protocol).
   icon through `%BASE_URL%`, so they follow the base path (`/demo/`, or `./` in the
   real build). `/demo` without the slash is redirected to `/demo/` by the site's
   static host.
+- **The icon is the site's icon.** `public/favicon.svg` is a copy of
+  `site/public/favicon.svg`; `site/test/favicon.test.mjs` (run by `just site-lint`)
+  fails when the two differ.
 - **Licences travel with the code.** The minified build carries no notices, so
   Vite writes the licence of every bundled package into `THIRD-PARTY-LICENSES.md`
   next to `index.html` (`build.license` in `vite.config.ts`), and the footer links
