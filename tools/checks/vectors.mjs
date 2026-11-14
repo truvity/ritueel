@@ -151,9 +151,12 @@ function checkDates(where, doc, flaw) {
 }
 
 // The signing time of a candidate against the clock of the case: after it exactly when the manifest names the flaw `signed_at-after-clock`.
-function checkSigningTime(where, candidate, doc, flaw, clock) {
+// A list that has the flaw is signed after the clock in every case that uses it; a case may also name the flaw itself (the member `flaw`),
+// when its clock is before the `signed_at` of a list that other cases use at a later clock.
+function checkSigningTime(where, candidate, doc, flaw, clock, caseFlaw) {
   const late = Date.parse(doc.signed_at) > Date.parse(clock);
-  if (late !== (flaw === 'signed_at-after-clock')) E(`${where}: ${candidate} is signed ${late ? 'after' : 'before'} the clock of the case, ${late ? 'but the list has no flaw signed_at-after-clock' : 'but the list has the flaw signed_at-after-clock'}`);
+  const named = flaw === 'signed_at-after-clock' || caseFlaw === 'signed_at-after-clock';
+  if (late !== named) E(`${where}: ${candidate} is signed ${late ? 'after' : 'before'} the clock of the case, ${late ? 'but neither the list nor the case has the flaw signed_at-after-clock' : 'but the list or the case has the flaw signed_at-after-clock'}`);
 }
 
 // What a root list's content may not hold (check 5 of docs/reference/root-list.md): the faults that the manifest names as a `flaw`.
@@ -200,8 +203,12 @@ function contentFaults(doc) {
 //   - a list's content has none of the faults of check 5 that the manifest does not name as its `flaw`
 //     (`label-twice`, `pin-twice`, `pin-twice-in-removals`, `fingerprint-wrong-form`,
 //     `last-record-digest-wrong-form`, `empty-authorisation`, `sequence-0`), and the one it names;
-//   - a case that accepts a list at the held list's sequence has the held list's bytes, and a case
-//     refused with `sequence-conflict` has other bytes;
+//   - a case that accepts a list at the held list's sequence has the held list's bytes, unless it is a way
+//     back (record 0006, rule 53), and a case refused with `sequence-conflict` has other bytes;
+//   - a case has `wayback`, true, exactly when it accepts a list whose sequence is lower than the held
+//     list's, or equal to it with other bytes; such a list removes a root key of the held list and has an
+//     entry in `removals` for every root key it removes; a case may name the flaw `signed_at-after-clock`
+//     itself, for a clock before the `signed_at` of a list that other cases use at a later clock;
 //   - a case with `bundle` names a bundle of the manifest that has the candidate's sequence and
 //     roots, except for the flaws `wrong-sequence`, `extra-certificate`, `missing-certificate` and
 //     `wrong-order`, which differ in the sequence or in the roots; a case with `min_sequence` (the host's lowest sequence for its initial pins) has no
@@ -210,6 +217,7 @@ function contentFaults(doc) {
 function checkRootList(mpath, m, read, need) {
   const b64u = (s) => Buffer.from(s, 'base64url');
   const listDocs = new Map();
+  const removalsValid = new Map();   // list id: every authorisation in its `removals` is valid by itself
   const spkiHash = (cert) => sha(cert.publicKey.export({ type: 'spki', format: 'der' }));
   const roots = new Map();
   for (const root of m.roots ?? []) {
@@ -269,7 +277,11 @@ function checkRootList(mpath, m, read, need) {
       const named = contentFlaws.includes(l.flaw) ? [l.flaw] : [];
       if (faults.join() !== named.join()) E(`${mpath}: list ${l.id}: its content has the faults [${faults.join(', ')}], and the manifest names [${named.join(', ')}]`);
       const removalsOk = (doc.removals ?? []).every((rm) => removalValid(rm.authorisation, rm.x509_spki_sha256));
-      if (removalsOk === (badRemoval.has(l.id) || l.flaw === 'empty-authorisation')) E(`${mpath}: list ${l.id}: the removal authorisations ${removalsOk ? 'are valid, but a case expects removal-invalid or the flaw is empty-authorisation' : 'are not valid'}`);
+      // an authorisation that is not valid by itself belongs to a list that a case refuses with removal-invalid (or has the flaw empty-authorisation); a list that such a
+      // case refuses may also hold valid ones, when an entry is for a root key that the held list does not have or that the list keeps (checked per case, below)
+      if (!removalsOk && !badRemoval.has(l.id) && l.flaw !== 'empty-authorisation') E(`${mpath}: list ${l.id}: the removal authorisations are not valid, and no case expects removal-invalid`);
+      if (removalsOk && l.flaw === 'empty-authorisation') E(`${mpath}: list ${l.id}: the removal authorisations are valid, but the flaw is empty-authorisation`);
+      removalsValid.set(l.id, removalsOk);
     } catch (e) { E(`${mpath}: list ${l.id}: ${e.message}`); }
   }
   for (const rm of m.removals ?? []) {
@@ -289,15 +301,40 @@ function checkRootList(mpath, m, read, need) {
     if ((c.expect === 'warn') !== Boolean(c.warning)) E(`${mpath}: case ${c.id} expects ${c.expect} ${c.warning ? 'with' : 'without'} a warning`);
     const cand = c.candidate ? listDocs.get(c.candidate) : undefined;
     if (cand) {
-      checkSigningTime(`${mpath}: case ${c.id}`, c.candidate, cand.doc, cand.flaw, c.clock ?? m.clock);
-      // one sequence names one set of root keys: at the held list's sequence a list passes only as the same bytes, and differing bytes are `sequence-conflict`
+      checkSigningTime(`${mpath}: case ${c.id}`, c.candidate, cand.doc, cand.flaw, c.clock ?? m.clock, c.flaw);
+      // one sequence names one set of root keys: at the held list's sequence a list passes only as the same bytes, and differing bytes are `sequence-conflict`;
+      // except by the way back (record 0006, rule 53), which the case names with `wayback`
       const held = c.held ? listDocs.get(c.held) : undefined;
       if (held && held.doc.sequence === cand.doc.sequence) {
         const same = held.json.equals(cand.json);
-        if (c.expect === 'accept' && !same) E(`${mpath}: case ${c.id}: accepted at the held list's sequence, and root-list.json of ${c.candidate} is not the bytes of ${c.held}`);
+        if (c.expect === 'accept' && !same && c.wayback !== true) E(`${mpath}: case ${c.id}: accepted at the held list's sequence, and root-list.json of ${c.candidate} is not the bytes of ${c.held}, and the case is no way back`);
         if (c.reason === 'sequence-conflict' && same) E(`${mpath}: case ${c.id}: sequence-conflict, and root-list.json of ${c.candidate} is the bytes of ${c.held}`);
       }
+      // a list refused with removal-invalid holds an authorisation that is not valid by itself, or an entry for a root key that is not (on the held list and not on this list)
+      if (c.reason === 'removal-invalid' && held) {
+        const heldPins = new Set(held.doc.roots.map((r) => r.x509_spki_sha256));
+        const candPins = new Set(cand.doc.roots.map((r) => r.x509_spki_sha256));
+        const misplaced = (cand.doc.removals ?? []).some((rm) => !heldPins.has(rm.x509_spki_sha256) || candPins.has(rm.x509_spki_sha256));
+        if (removalsValid.get(c.candidate) !== false && !misplaced) E(`${mpath}: case ${c.id}: removal-invalid, and every entry of ${c.candidate} is a valid authorisation of a root key that is on ${c.held} and not on the list`);
+      }
+      // the way back: `wayback` is true exactly when the list is accepted although its sequence is lower than the held list's, or equal with other bytes,
+      // and that is allowed only for a list that removes a root key of the held list and has an entry in `removals` for every root key it removes
+      const lower = held && (cand.doc.sequence < held.doc.sequence || (cand.doc.sequence === held.doc.sequence && !held.json.equals(cand.json)));
+      if (lower && c.expect === 'accept' && c.wayback !== true) E(`${mpath}: case ${c.id}: accepted at a lower sequence than the held list's, and the case has no wayback`);
+      if (c.wayback !== undefined && c.wayback !== true) E(`${mpath}: case ${c.id}: wayback is given only as true`);
+      if (c.wayback === true) {
+        if (c.expect !== 'accept') E(`${mpath}: case ${c.id}: wayback on a case that is not accepted`);
+        else if (!lower) E(`${mpath}: case ${c.id}: wayback, and the list is not lower than the held list, nor equal to it with other bytes`);
+        else {
+          const kept = new Set(cand.doc.roots.map((r) => r.x509_spki_sha256));
+          const removed = held.doc.roots.map((r) => r.x509_spki_sha256).filter((pin) => !kept.has(pin));
+          const named = new Set((cand.doc.removals ?? []).map((r) => r.x509_spki_sha256));
+          if (!removed.length) E(`${mpath}: case ${c.id}: wayback, and the list removes no root key of the held list`);
+          if (removed.some((pin) => !named.has(pin))) E(`${mpath}: case ${c.id}: wayback, and the list removes a root key that has no entry in removals`);
+        }
+      }
     }
+    if (c.flaw !== undefined && c.flaw !== 'signed_at-after-clock') E(`${mpath}: case ${c.id}: unknown flaw ${c.flaw}`);
     if (c.bundle !== undefined) {
       const b = (m.bundles ?? []).find((x) => x.id === c.bundle);
       if (!b) E(`${mpath}: case ${c.id}: bundle ${c.bundle} is no bundle`);

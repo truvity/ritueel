@@ -55,11 +55,15 @@ type vcase struct {
 	Bundle string `json:"bundle"`
 	// MinSequence is the lowest sequence given with the initial pins (--min-sequence).
 	MinSequence *int64 `json:"min_sequence"`
+	// Wayback is true for a list accepted although check 6 or check 7 would have refused it (record 0006, rule 53).
+	Wayback bool `json:"wayback"`
+	// Flaw names the one thing about the case itself that a check refuses it for (signed_at-after-clock).
+	Flaw string `json:"flaw"`
 }
 
 // vknownCaseMembers are the members of a case that these tests run. A case with another member is a
 // kind that the tests do not know, and the run fails with a text that says which.
-var vknownCaseMembers = []string{"id", "held", "candidate", "clock", "expect", "reason", "warning", "bundle", "min_sequence"}
+var vknownCaseMembers = []string{"id", "held", "candidate", "clock", "expect", "reason", "warning", "bundle", "min_sequence", "wayback", "flaw"}
 
 // vunknownCaseMember returns "" or the text for a case that has a member the tests do not know.
 func vunknownCaseMember(data []byte) string {
@@ -264,6 +268,19 @@ func (m *vmanifest) newAgainstHeld(t testing.TB) vcase {
 		}
 	}
 	t.Fatal("no accepting case with a held list")
+	return vcase{}
+}
+
+// wayBackCase is the first case of the manifest that accepts a list by the way back (record 0006,
+// rule 53).
+func (m *vmanifest) wayBackCase(t testing.TB) vcase {
+	t.Helper()
+	for _, c := range m.Cases {
+		if c.Expect == "accept" && c.Wayback {
+			return c
+		}
+	}
+	t.Fatal("no case that accepts a list by the way back")
 	return vcase{}
 }
 

@@ -6,29 +6,29 @@
       "label": "A",
       "certificate": "pki/test-root-a.pem",
       "openpgp": "pki/test-primary-a.pgp",
-      "x509_spki_sha256": "9b3c23d6e22e9dc1adb0a52a2322f700e39c731dfb8a33bdb4ecc58efff89382",
-      "openpgp_fingerprint": "d3780197fa25eb09d7027128ab3de854e11fe959"
+      "x509_spki_sha256": "f4a1d27aa6079ab8a786f3c9bf96b179361a55ef84e88c7ec5e17335570b5114",
+      "openpgp_fingerprint": "6df387de63525c9dc0ec1174bd138d2c4889b79b"
     },
     {
       "label": "B",
       "certificate": "pki/test-root-b.pem",
       "openpgp": "pki/test-primary-b.pgp",
-      "x509_spki_sha256": "3a5017e666b0bfc297d87d555310bd93d201e4d3b9c3ae26dd5f85fceb322f79",
-      "openpgp_fingerprint": "d032a8740021c11ea532193baf7914d9eb850ea6"
+      "x509_spki_sha256": "5924152b774f652e5eaa0bb2a8eeef527364d1c23ce5d82c48f46e02eaff5d4c",
+      "openpgp_fingerprint": "c4288657012230588b51fa66e0831b9c6e084f39"
     },
     {
       "label": "C",
       "certificate": "pki/test-root-c.pem",
       "openpgp": "pki/test-primary-c.pgp",
-      "x509_spki_sha256": "9c0423b2a6db96e7f3e30587c5e6c5f9de2d3c2644ba2f876aa97ca0f41b5fee",
-      "openpgp_fingerprint": "f3be05ce04645f85ef8e1e6227ad679a39372b13"
+      "x509_spki_sha256": "d5dfa63759b362fc9146ecfc9e6c7bd6710f86928b0f065a07e2e11e344e447b",
+      "openpgp_fingerprint": "f04d6949cee1c63e5e268c1602606491c8e00d33"
     },
     {
       "label": "Z",
       "certificate": "pki/test-root-z.pem",
       "openpgp": "pki/test-primary-z.pgp",
-      "x509_spki_sha256": "a1df12d42d16b34e6cb5ed5d932fd683e49ed3445037f5e5ca4c35c6cf8958e7",
-      "openpgp_fingerprint": "7c5d0a249e259a62858be3afa513e6fca8acef63"
+      "x509_spki_sha256": "3be3bfadfad5654d2301fdaa8e34cca2cda554cf968431b56e6cf1fe8dcd03f5",
+      "openpgp_fingerprint": "2015fa9a72973797c70fc6388b163000f8338ed9"
     }
   ],
   "initial_pins": [
@@ -418,6 +418,341 @@
         "lists/seq7-a-and-z.json",
         "lists/seq7-a-and-z.jws"
       ]
+    },
+    {
+      "id": "seqmax-ab-by-a",
+      "signers": [
+        "A"
+      ],
+      "files": [
+        "lists/seqmax-ab-by-a.json",
+        "lists/seqmax-ab-by-a.jws"
+      ]
+    },
+    {
+      "id": "seqmax-abc-by-a",
+      "signers": [
+        "A"
+      ],
+      "files": [
+        "lists/seqmax-abc-by-a.json",
+        "lists/seqmax-abc-by-a.jws"
+      ]
+    },
+    {
+      "id": "seq8-ab-by-a",
+      "signers": [
+        "A"
+      ],
+      "files": [
+        "lists/seq8-ab-by-a.json",
+        "lists/seq8-ab-by-a.jws"
+      ]
+    },
+    {
+      "id": "seq5-ab",
+      "signers": [
+        "A"
+      ],
+      "files": [
+        "lists/seq5-ab.json",
+        "lists/seq5-ab.jws"
+      ]
+    },
+    {
+      "id": "seq5-ac",
+      "signers": [
+        "A",
+        "C"
+      ],
+      "files": [
+        "lists/seq5-ac.json",
+        "lists/seq5-ac.jws"
+      ]
+    },
+    {
+      "id": "h4-bcz",
+      "signers": [
+        "B",
+        "C",
+        "Z"
+      ],
+      "files": [
+        "lists/h4-bcz.json",
+        "lists/h4-bcz.jws"
+      ]
+    },
+    {
+      "id": "h3-bc",
+      "signers": [
+        "A",
+        "B",
+        "C"
+      ],
+      "files": [
+        "lists/h3-bc.json",
+        "lists/h3-bc.jws"
+      ]
+    },
+    {
+      "id": "h2-abc",
+      "signers": [
+        "A",
+        "B",
+        "C"
+      ],
+      "files": [
+        "lists/h2-abc.json",
+        "lists/h2-abc.jws"
+      ]
+    },
+    {
+      "id": "h2-abc-with-z",
+      "signers": [
+        "A",
+        "B",
+        "C",
+        "Z"
+      ],
+      "files": [
+        "lists/h2-abc-with-z.json",
+        "lists/h2-abc-with-z.jws"
+      ]
+    },
+    {
+      "id": "h2-b-without-a",
+      "signers": [
+        "B",
+        "C"
+      ],
+      "files": [
+        "lists/h2-b-without-a.json",
+        "lists/h2-b-without-a.jws"
+      ]
+    },
+    {
+      "id": "seq1-az-without-b",
+      "signers": [
+        "A",
+        "Z"
+      ],
+      "files": [
+        "lists/seq1-az-without-b.json",
+        "lists/seq1-az-without-b.jws"
+      ]
+    },
+    {
+      "id": "seq6-az-without-b",
+      "signers": [
+        "A",
+        "Z"
+      ],
+      "files": [
+        "lists/seq6-az-without-b.json",
+        "lists/seq6-az-without-b.jws"
+      ]
+    },
+    {
+      "id": "seq1-b-without-c",
+      "signers": [
+        "B"
+      ],
+      "files": [
+        "lists/seq1-b-without-c.json",
+        "lists/seq1-b-without-c.jws"
+      ]
+    },
+    {
+      "id": "seq3-bc-revoke-a",
+      "signers": [
+        "B",
+        "C"
+      ],
+      "files": [
+        "lists/seq3-bc-revoke-a.json",
+        "lists/seq3-bc-revoke-a.jws"
+      ]
+    },
+    {
+      "id": "seq8-bc-without-a-by-b",
+      "signers": [
+        "B"
+      ],
+      "files": [
+        "lists/seq8-bc-without-a-by-b.json",
+        "lists/seq8-bc-without-a-by-b.jws"
+      ]
+    },
+    {
+      "id": "seq8-bc-without-a-adds-c",
+      "signers": [
+        "B",
+        "C"
+      ],
+      "files": [
+        "lists/seq8-bc-without-a-adds-c.json",
+        "lists/seq8-bc-without-a-adds-c.jws"
+      ]
+    },
+    {
+      "id": "seq8-ac-without-b-named",
+      "signers": [
+        "A",
+        "B",
+        "C"
+      ],
+      "files": [
+        "lists/seq8-ac-without-b-named.json",
+        "lists/seq8-ac-without-b-named.jws"
+      ]
+    },
+    {
+      "id": "seq8-c-without-ab-a-named",
+      "signers": [
+        "B",
+        "C"
+      ],
+      "files": [
+        "lists/seq8-c-without-ab-a-named.json",
+        "lists/seq8-c-without-ab-a-named.jws"
+      ]
+    },
+    {
+      "id": "seq8-c-without-ab-named",
+      "signers": [
+        "C"
+      ],
+      "files": [
+        "lists/seq8-c-without-ab-named.json",
+        "lists/seq8-c-without-ab-named.jws"
+      ]
+    },
+    {
+      "id": "seq8-b-without-a-and-c-named",
+      "signers": [
+        "B"
+      ],
+      "files": [
+        "lists/seq8-b-without-a-and-c-named.json",
+        "lists/seq8-b-without-a-and-c-named.jws"
+      ]
+    },
+    {
+      "id": "seq8-bc-with-b-named",
+      "signers": [
+        "B",
+        "C"
+      ],
+      "files": [
+        "lists/seq8-bc-with-b-named.json",
+        "lists/seq8-bc-with-b-named.jws"
+      ]
+    },
+    {
+      "id": "seq8-z-without-ab",
+      "signers": [
+        "Z"
+      ],
+      "files": [
+        "lists/seq8-z-without-ab.json",
+        "lists/seq8-z-without-ab.jws"
+      ]
+    },
+    {
+      "id": "seq8-b-without-a-signed-by-a-and-named",
+      "signers": [
+        "A",
+        "B"
+      ],
+      "files": [
+        "lists/seq8-b-without-a-signed-by-a-and-named.json",
+        "lists/seq8-b-without-a-signed-by-a-and-named.jws"
+      ]
+    },
+    {
+      "id": "seq8-bc-new-label-without-a",
+      "signers": [
+        "B",
+        "C"
+      ],
+      "files": [
+        "lists/seq8-bc-new-label-without-a.json",
+        "lists/seq8-bc-new-label-without-a.jws"
+      ]
+    },
+    {
+      "id": "seq8-bc-new-label-without-a-by-c",
+      "signers": [
+        "C"
+      ],
+      "files": [
+        "lists/seq8-bc-new-label-without-a-by-c.json",
+        "lists/seq8-bc-new-label-without-a-by-c.jws"
+      ]
+    },
+    {
+      "id": "seq8-b-without-a-entry-labelled-d",
+      "signers": [
+        "B"
+      ],
+      "files": [
+        "lists/seq8-b-without-a-entry-labelled-d.json",
+        "lists/seq8-b-without-a-entry-labelled-d.jws"
+      ]
+    },
+    {
+      "id": "seq8-b-without-a-changed-after-signing",
+      "signers": [
+        "B"
+      ],
+      "files": [
+        "lists/seq8-b-without-a-changed-after-signing.json",
+        "lists/seq8-b-without-a-changed-after-signing.jws"
+      ]
+    },
+    {
+      "id": "seq8-ab-new-label",
+      "signers": [
+        "A",
+        "B"
+      ],
+      "files": [
+        "lists/seq8-ab-new-label.json",
+        "lists/seq8-ab-new-label.jws"
+      ]
+    },
+    {
+      "id": "seq8-bc-new-fingerprint-without-a",
+      "signers": [
+        "B",
+        "C"
+      ],
+      "files": [
+        "lists/seq8-bc-new-fingerprint-without-a.json",
+        "lists/seq8-bc-new-fingerprint-without-a.jws"
+      ]
+    },
+    {
+      "id": "seq8-z-without-ab-by-a-and-z",
+      "signers": [
+        "A",
+        "Z"
+      ],
+      "files": [
+        "lists/seq8-z-without-ab-by-a-and-z.json",
+        "lists/seq8-z-without-ab-by-a-and-z.jws"
+      ]
+    },
+    {
+      "id": "seq8-b-without-a-signed-by-b-and-z",
+      "signers": [
+        "B",
+        "Z"
+      ],
+      "files": [
+        "lists/seq8-b-without-a-signed-by-b-and-z.json",
+        "lists/seq8-b-without-a-signed-by-b-and-z.jws"
+      ]
     }
   ],
   "cases": [
@@ -743,6 +1078,287 @@
       "clock": "2028-01-01T00:00:00Z",
       "expect": "warn",
       "warning": "held-expired"
+    },
+    {
+      "id": "way-back-from-the-highest-sequence",
+      "held": "seqmax-ab-by-a",
+      "candidate": "seq8-b-without-a",
+      "clock": "2026-12-01T12:00:00Z",
+      "expect": "accept",
+      "wayback": true
+    },
+    {
+      "id": "way-back-at-the-sequence-of-the-thief",
+      "held": "seq8-ab-by-a",
+      "candidate": "seq8-b-without-a",
+      "clock": "2026-12-01T12:00:00Z",
+      "expect": "accept",
+      "wayback": true
+    },
+    {
+      "id": "way-back-with-a-signature-missing",
+      "held": "seqmax-abc-by-a",
+      "candidate": "seq8-bc-without-a-by-b",
+      "clock": "2026-12-01T12:00:00Z",
+      "expect": "refuse",
+      "reason": "insufficient-signers"
+    },
+    {
+      "id": "way-back-with-another-keys-authorisation",
+      "held": "seqmax-ab-by-a",
+      "candidate": "seq8-b-without-a-wrong-removal",
+      "clock": "2026-12-01T12:00:00Z",
+      "expect": "refuse",
+      "reason": "removal-invalid"
+    },
+    {
+      "id": "no-entry-is-not-the-way-back",
+      "held": "seqmax-ab-by-a",
+      "candidate": "seq8-ab-without-a",
+      "clock": "2026-12-01T12:00:00Z",
+      "expect": "refuse",
+      "reason": "rollback"
+    },
+    {
+      "id": "lower-sequence-removes-nothing",
+      "held": "seqmax-ab-by-a",
+      "candidate": "seq7-a",
+      "clock": "2026-12-01T12:00:00Z",
+      "expect": "refuse",
+      "reason": "rollback"
+    },
+    {
+      "id": "way-back-after-its-expiry",
+      "held": "seqmax-ab-by-a",
+      "candidate": "seq8-b-without-a",
+      "clock": "2028-01-02T12:00:00Z",
+      "expect": "refuse",
+      "reason": "expired"
+    },
+    {
+      "id": "way-back-signed-after-the-clock",
+      "held": "seqmax-ab-by-a",
+      "candidate": "seq8-b-without-a",
+      "clock": "2026-11-30T12:00:00Z",
+      "flaw": "signed_at-after-clock",
+      "expect": "refuse",
+      "reason": "malformed"
+    },
+    {
+      "id": "old-list-as-published",
+      "held": "h4-bcz",
+      "candidate": "h2-abc",
+      "clock": "2026-12-01T12:00:00Z",
+      "expect": "refuse",
+      "reason": "rollback"
+    },
+    {
+      "id": "old-list-with-the-signature-of-a-later-key",
+      "held": "h4-bcz",
+      "candidate": "h2-abc-with-z",
+      "clock": "2026-12-01T12:00:00Z",
+      "expect": "refuse",
+      "reason": "rollback"
+    },
+    {
+      "id": "old-list-that-removes-a-later-key",
+      "held": "h3-bc",
+      "candidate": "h2-b-without-a",
+      "clock": "2026-12-01T12:00:00Z",
+      "expect": "refuse",
+      "reason": "rollback"
+    },
+    {
+      "id": "pins-keep-their-lowest-sequence",
+      "held": null,
+      "candidate": "h3-bc",
+      "min_sequence": 4,
+      "clock": "2026-12-01T12:00:00Z",
+      "expect": "refuse",
+      "reason": "rollback"
+    },
+    {
+      "id": "pins-keep-their-lowest-sequence-for-a-named-removal",
+      "held": null,
+      "candidate": "seq8-b-without-a",
+      "min_sequence": 9,
+      "clock": "2026-12-01T12:00:00Z",
+      "expect": "refuse",
+      "reason": "rollback"
+    },
+    {
+      "id": "one-key-and-one-authorisation-by-design",
+      "held": "seq5-ab",
+      "candidate": "seq1-az-without-b",
+      "clock": "2026-12-01T12:00:00Z",
+      "expect": "accept",
+      "wayback": true
+    },
+    {
+      "id": "the-same-takeover-at-the-next-sequence",
+      "held": "seq5-ab",
+      "candidate": "seq6-az-without-b",
+      "clock": "2026-12-01T12:00:00Z",
+      "expect": "accept"
+    },
+    {
+      "id": "retire-with-the-authorisation",
+      "held": "seqmax-abc-by-a",
+      "candidate": "seq8-ac-without-b-named",
+      "clock": "2026-12-01T12:00:00Z",
+      "expect": "accept",
+      "wayback": true
+    },
+    {
+      "id": "two-removed-one-named",
+      "held": "seqmax-abc-by-a",
+      "candidate": "seq8-c-without-ab-a-named",
+      "clock": "2026-12-01T12:00:00Z",
+      "expect": "refuse",
+      "reason": "rollback"
+    },
+    {
+      "id": "two-removed-both-named",
+      "held": "seqmax-abc-by-a",
+      "candidate": "seq8-c-without-ab-named",
+      "clock": "2026-12-01T12:00:00Z",
+      "expect": "accept",
+      "wayback": true
+    },
+    {
+      "id": "extra-entry-for-a-key-not-held",
+      "held": "seqmax-ab-by-a",
+      "candidate": "seq8-b-without-a-and-c-named",
+      "clock": "2026-12-01T12:00:00Z",
+      "expect": "refuse",
+      "reason": "removal-invalid"
+    },
+    {
+      "id": "entry-for-a-key-that-stays",
+      "held": "seqmax-abc-by-a",
+      "candidate": "seq8-bc-with-b-named",
+      "clock": "2026-12-01T12:00:00Z",
+      "expect": "refuse",
+      "reason": "removal-invalid"
+    },
+    {
+      "id": "removal-list-signed-only-by-a-new-key",
+      "held": "seqmax-ab-by-a",
+      "candidate": "seq8-z-without-ab",
+      "clock": "2026-12-01T12:00:00Z",
+      "expect": "refuse",
+      "reason": "unknown-signer"
+    },
+    {
+      "id": "way-back-over-an-expired-held-list",
+      "held": "seqmax-ab-by-a",
+      "candidate": "seq8-b-without-a",
+      "clock": "2027-12-20T12:00:00Z",
+      "expect": "accept",
+      "wayback": true
+    },
+    {
+      "id": "way-back-chain-lowers-the-sequence-step-1",
+      "held": "h3-bc",
+      "candidate": "seq1-b-without-c",
+      "clock": "2026-12-01T12:00:00Z",
+      "expect": "accept",
+      "wayback": true
+    },
+    {
+      "id": "way-back-chain-lowers-the-sequence-step-2",
+      "held": "seq1-b-without-c",
+      "candidate": "h2-abc",
+      "clock": "2026-12-01T12:00:00Z",
+      "expect": "accept"
+    },
+    {
+      "id": "way-back-with-a-new-label",
+      "held": "seqmax-abc-by-a",
+      "candidate": "seq8-bc-new-label-without-a",
+      "clock": "2026-12-01T12:00:00Z",
+      "expect": "accept",
+      "wayback": true
+    },
+    {
+      "id": "way-back-entry-with-another-label",
+      "held": "seqmax-ab-by-a",
+      "candidate": "seq8-b-without-a-entry-labelled-d",
+      "clock": "2026-12-01T12:00:00Z",
+      "expect": "accept",
+      "wayback": true
+    },
+    {
+      "id": "way-back-list-changed-after-signing",
+      "held": "seqmax-ab-by-a",
+      "candidate": "seq8-b-without-a-changed-after-signing",
+      "clock": "2026-12-01T12:00:00Z",
+      "expect": "refuse",
+      "reason": "signature-invalid"
+    },
+    {
+      "id": "way-back-with-a-new-label-the-kept-key-not-signing",
+      "held": "seqmax-abc-by-a",
+      "candidate": "seq8-bc-new-label-without-a-by-c",
+      "clock": "2026-12-01T12:00:00Z",
+      "expect": "refuse",
+      "reason": "insufficient-signers"
+    },
+    {
+      "id": "revoke-signed-by-the-key-with-its-entry",
+      "held": "seqmax-ab-by-a",
+      "candidate": "seq8-b-without-a-signed-by-a-and-named",
+      "clock": "2026-12-01T12:00:00Z",
+      "expect": "accept",
+      "wayback": true
+    },
+    {
+      "id": "way-back-that-also-adds-a-key",
+      "held": "seqmax-ab-by-a",
+      "candidate": "seq8-bc-without-a-adds-c",
+      "clock": "2026-12-01T12:00:00Z",
+      "expect": "accept",
+      "wayback": true
+    },
+    {
+      "id": "old-revoke-list-after-its-key-came-back",
+      "held": "seq5-ac",
+      "candidate": "seq3-bc-revoke-a",
+      "clock": "2026-12-01T12:00:00Z",
+      "expect": "accept",
+      "wayback": true
+    },
+    {
+      "id": "lower-sequence-with-a-new-label-removes-nothing",
+      "held": "seqmax-ab-by-a",
+      "candidate": "seq8-ab-new-label",
+      "clock": "2026-12-01T12:00:00Z",
+      "expect": "refuse",
+      "reason": "rollback"
+    },
+    {
+      "id": "way-back-with-a-new-fingerprint",
+      "held": "seqmax-abc-by-a",
+      "candidate": "seq8-bc-new-fingerprint-without-a",
+      "clock": "2026-12-01T12:00:00Z",
+      "expect": "accept",
+      "wayback": true
+    },
+    {
+      "id": "way-back-removing-every-held-key",
+      "held": "seqmax-ab-by-a",
+      "candidate": "seq8-z-without-ab-by-a-and-z",
+      "clock": "2026-12-01T12:00:00Z",
+      "expect": "accept",
+      "wayback": true
+    },
+    {
+      "id": "way-back-with-a-second-signer-on-no-list",
+      "held": "seqmax-ab-by-a",
+      "candidate": "seq8-b-without-a-signed-by-b-and-z",
+      "clock": "2026-12-01T12:00:00Z",
+      "expect": "refuse",
+      "reason": "unknown-signer"
     },
     {
       "id": "ca-bundle-of-the-list",

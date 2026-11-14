@@ -21,13 +21,22 @@ func doneObject(warnings []string, files ...[2]string) string {
 
 // doneObjectAgain is the same with the member again, written last, when the list is the held one again.
 func doneObjectAgain(warnings []string, again bool, files ...[2]string) string {
+	return doneObjectFlags(warnings, again, false, files...)
+}
+
+// doneObjectFlags is the same with the members again and wayback, in that order, each written only when
+// it is true, after the member checked.
+func doneObjectFlags(warnings []string, again, wayback bool, files ...[2]string) string {
 	var checked []string
 	for _, f := range files {
 		checked = append(checked, fmt.Sprintf(`{"name":%q,"sha256":%q}`, f[0], f[1]))
 	}
 	tail := ""
 	if again {
-		tail = `,"again":true`
+		tail += `,"again":true`
+	}
+	if wayback {
+		tail += `,"wayback":true`
 	}
 	return fmt.Sprintf(`{"output":1,"command":"verify","exit_code":0,"outcome":"done","warnings":%s,"checked":[%s]%s}`+"\n", jsonStrings(warnings), strings.Join(checked, ","), tail)
 }
@@ -36,17 +45,39 @@ func doneObjectAgain(warnings []string, again bool, files ...[2]string) string {
 // reference says: one line, after the line accepted.
 const wantTextAgain = "again: the list the host holds, byte for byte; install nothing"
 
+// wantTextWayback is the line of the text output for a list taken by the way back, as the page's
+// command reference says (docs/reference/cli.md): one line, directly after the line accepted, with the
+// sequence of the held list and the sequence of this list.
+func wantTextWayback(held, list int64) string {
+	return fmt.Sprintf("wayback: the held list had sequence %d; this list replaces it at sequence %d", held, list)
+}
+
 // vacceptedText is the whole standard output of an accepted list in text mode.
-func vacceptedText(s *vscene, again bool) string {
+func vacceptedText(s *vscene, again bool) string { return vacceptedTextFlags(s, again, false) }
+
+// vacceptedTextFlags is the same with the line of the way back, when the list was taken by it.
+func vacceptedTextFlags(s *vscene, again, wayback bool) string {
 	var b strings.Builder
 	fmt.Fprintf(&b, "accepted: sequence %d, %s, expires %s\n", s.candList.Sequence, rootKeys(len(s.candList.Roots)), s.candList.ExpiresAt.Format("2006-01-02T15:04:05Z"))
 	if again {
 		b.WriteString(wantTextAgain + "\n")
 	}
+	if wayback {
+		b.WriteString(wantTextWayback(vheldSequence(s), s.candList.Sequence) + "\n")
+	}
 	for _, f := range vfiles(s) {
 		fmt.Fprintf(&b, "%s  %s\n", f[1], f[0])
 	}
 	return b.String()
+}
+
+// vheldSequence is the sequence of the held list of the scene, read from its bytes here.
+func vheldSequence(s *vscene) int64 {
+	l, err := rootlist.ParseList(s.heldBytes)
+	if err != nil {
+		panic("the held list of the scene does not read: " + err.Error())
+	}
+	return l.Sequence
 }
 
 // vfiles are the entries of checked that the command must give for the scene: the list, its .jws
@@ -110,6 +141,26 @@ var checkNumberOf = map[string]int{
 	"empty-authorisation":                5,
 	"initial-pins-lowest-sequence-above": 6,
 	"same-list-again-after-its-expiry":   11,
+	// The way back (record 0006, rule 53): a list that is not one, with the check that refuses it.
+	"way-back-signed-after-the-clock":                     5,
+	"no-entry-is-not-the-way-back":                        6,
+	"lower-sequence-removes-nothing":                      6,
+	"old-list-as-published":                               6,
+	"old-list-with-the-signature-of-a-later-key":          6,
+	"old-list-that-removes-a-later-key":                   6,
+	"pins-keep-their-lowest-sequence":                     6,
+	"pins-keep-their-lowest-sequence-for-a-named-removal": 6,
+	"two-removed-one-named":                               6,
+	"lower-sequence-with-a-new-label-removes-nothing":     6,
+	"removal-list-signed-only-by-a-new-key":               2,
+	"way-back-list-changed-after-signing":                 3,
+	"way-back-with-a-second-signer-on-no-list":            8,
+	"way-back-with-another-keys-authorisation":            9,
+	"extra-entry-for-a-key-not-held":                      9,
+	"entry-for-a-key-that-stays":                          9,
+	"way-back-with-a-signature-missing":                   10,
+	"way-back-with-a-new-label-the-kept-key-not-signing":  10,
+	"way-back-after-its-expiry":                           11,
 }
 
 // TestEveryCaseOfTheManifestThroughTheCommand runs the cases of the manifest through cli.Run, in both
@@ -124,13 +175,13 @@ func TestEveryCaseOfTheManifestThroughTheCommand(t *testing.T) {
 			case "accept":
 				s := vstage(t, m, c)
 				warn := vheldWarnings(t, m, c, s.clock)
-				again := vagain(s)
+				again, wayback := vagain(s), c.Wayback
 				j := vrunAt(t, s.clock, s.args("json")...)
-				if j.code != ExitOK || j.stdout != doneObjectAgain(warn, again, vfiles(s)...) || j.stderr != warnLines(warn...) {
+				if j.code != ExitOK || j.stdout != doneObjectFlags(warn, again, wayback, vfiles(s)...) || j.stderr != warnLines(warn...) {
 					t.Fatalf("json: %d\nstdout %q\nstderr %q", j.code, j.stdout, j.stderr)
 				}
 				txt := vrunAt(t, s.clock, s.args("text")...)
-				want := vacceptedText(s, again)
+				want := vacceptedTextFlags(s, again, wayback)
 				if txt.code != ExitOK || txt.stdout != want || txt.stderr != warnLines(warn...) {
 					t.Fatalf("text: %d\nstdout %q\nwant   %q\nstderr %q", txt.code, txt.stdout, want, txt.stderr)
 				}
@@ -282,22 +333,22 @@ func TestTheSha256sumLinesAreWhatTheToolReads(t *testing.T) {
 	if bundleCase.ID == "" {
 		t.Fatal("the manifest has no accepting case with a CA bundle")
 	}
-	for _, c := range []vcase{m.newAgainstHeld(t), m.againCase(t), m.againstPins(t), bundleCase} {
+	for _, c := range []vcase{m.newAgainstHeld(t), m.againCase(t), m.againstPins(t), bundleCase, m.wayBackCase(t)} {
 		t.Run(c.ID, func(t *testing.T) {
 			s := vstage(t, m, c)
-			again := vagain(s)
+			again, wayback := vagain(s), c.Wayback
 			r := vrunAt(t, s.clock, s.args("text")...)
 			if r.code != ExitOK {
 				t.Fatalf("exit %d: %s", r.code, r.stderr)
 			}
-			if r.stdout != vacceptedText(s, again) {
-				t.Fatalf("stdout %q, want %q", r.stdout, vacceptedText(s, again))
+			if r.stdout != vacceptedTextFlags(s, again, wayback) {
+				t.Fatalf("stdout %q, want %q", r.stdout, vacceptedTextFlags(s, again, wayback))
 			}
 			lines := strings.Split(strings.TrimSuffix(r.stdout, "\n"), "\n")
 			// After the line accepted, and the line again when there is one, come the lines for sha256sum:
 			// the digest, two spaces and the name, one for each file in one folder.
 			skip := 1
-			if again {
+			if again || wayback {
 				skip = 2
 			}
 			sums := lines[skip:]
@@ -323,8 +374,9 @@ func TestTheSha256sumLinesAreWhatTheToolReads(t *testing.T) {
 			if string(out) != wantOut {
 				t.Errorf("sha256sum says %q, want %q", out, wantOut)
 			}
-			if again {
-				// The page says a script reads the lines after "accepted". With the line again among them,
+			if again || wayback {
+				// The page says a script reads the lines after "accepted". With the line again, or the line
+				// wayback, among them,
 				// the first of those lines is no digest line: sha256sum -c skips it with a warning and
 				// checks the files, and --strict refuses it. A script that means to run the tool on
 				// the lines takes the lines that have a digest.
@@ -338,7 +390,7 @@ func TestTheSha256sumLinesAreWhatTheToolReads(t *testing.T) {
 				cmd = exec.CommandContext(t.Context(), tool, "-c", "--strict", "ALLAFTER")
 				cmd.Dir = s.dir
 				if out, err := cmd.CombinedOutput(); err == nil {
-					t.Errorf("sha256sum -c --strict took the line again: %q", out)
+					t.Errorf("sha256sum -c --strict took the line again or the line wayback: %q", out)
 				}
 			}
 			// The file that changes after the check is the file the lines do not describe: each of the
