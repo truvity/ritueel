@@ -11,7 +11,7 @@ import (
 	"ritueel.id/ritueel/internal/pki"
 )
 
-// Tests that the mutation round found missing: each row is a refusal that has to come from the rule of its own
+// Tests of the refusals that a change of one rule would let through unseen: each row is a refusal that has to come from the rule of its own
 // part, so the text of the error is held to say so (a refusal that only comes later from the standard library's
 // second check is not the rule).
 

@@ -113,7 +113,7 @@ func TestRequireWhatIsNotATool(t *testing.T) {
 }
 
 // The tool is found on the PATH of the moment: with it emptied nothing is found, as the first check
-// of the brief runs it, in a real test run in a subprocess.
+// of the tests runs it, in a real test run in a subprocess.
 func TestRequireInASubprocess(t *testing.T) {
 	cases := []struct {
 		name     string

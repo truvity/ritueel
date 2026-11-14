@@ -21,7 +21,7 @@ var reachedOnlyThroughTheIssuer = map[string]bool{
 
 // unreachableToday are the refusals that no input reaches: the code that holds them is a second line of defence behind a stricter
 // reader of the standard library. It was tried with every single-byte change of a good value and 270,000 changes of the one or two bytes
-// at the front, with no result. (A second one, the canonical form of a key, was on this list in an earlier round: a key with an element
+// at the front, with no result. (A second one, the canonical form of a key, was once on this list: a key with an element
 // after its bit string reaches it, because encoding/asn1 ignores an element after the last field of a struct.) If one is ever reached, the
 // test accepts it, and the row can move out of here.
 var unreachableToday = map[string]string{

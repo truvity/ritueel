@@ -18,7 +18,7 @@ func TestAddMonths(t *testing.T) {
 		months int
 		want   time.Time
 	}{
-		// The cases of the hand-over and the brief.
+		// The cases of the contract and of the profile of the ceremony.
 		{"13 months from the ceremony", utc(2026, 11, 15, 12, 0, 0), 13, utc(2027, 12, 15, 12, 0, 0)},
 		{"31 January plus 1 is the end of February", utc(2026, 1, 31, 0, 0, 0), 1, utc(2026, 2, 28, 0, 0, 0)},
 		{"31 January plus 1 in a leap year", utc(2028, 1, 31, 0, 0, 0), 1, utc(2028, 2, 29, 0, 0, 0)},
