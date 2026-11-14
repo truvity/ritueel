@@ -93,6 +93,7 @@ type spec struct {
 var specs = []spec{
 	{name: "version", usage: "print the version and the commit", run: runVersion},
 	verifySpec,
+	checkSpec,
 }
 
 // invocation is the state of one run, so that two runs share nothing.
