@@ -297,7 +297,7 @@ keyring:
 | Key | Meaning |
 |---|---|
 | `version` | `1`. |
-| `name` | 1 to 64 characters: letters, digits, spaces and hyphens. It names the root keys and their primaries ([below](/reference/bundle/#the-root-certificate)). |
+| `name` | 1 to 45 characters: the ASCII letters `A` to `Z` and `a` to `z`, the digits, single spaces and hyphens, with no space at the start or the end. It names the root keys and their primaries ([below](/reference/bundle/#the-root-certificate)). The limit of 45 keeps the common name of a root key within the 64 characters that RFC 5280 allows: the name, ` Root ` and the label add 7 characters, and a test root key adds ` (TEST ONLY)`, 12 more, so one number holds for both and a name that is too long fails early, when `ritueel.yaml` is read, and not at the ceremony. The characters are limited so that no letter of another script and no invisible character can make two names look alike. |
 | `release_address` | Required in a company bundle, with or without an OpenPGP root. The address in every primary's user ID: the project's release identity, never a person's ([record 0009](../decisions/0009-release-keys-and-the-keyring.md)). |
 | `policy` | The rules every request is checked against: `stores`, `min_firmware`, `pin_policy`, `require_name_constraints` and `validity_months`, with the meanings of the [reference policy](/reference/hand-off-contract/#what-the-certifier-checks). All five are required. |
 | `kind` | Optional. `personal` for a person's own OpenPGP key; absent for a company bundle. A personal bundle has `person` instead of `name` and `release_address` ([personal OpenPGP](/reference/personal-openpgp/)). |
@@ -379,6 +379,7 @@ version: 1
 type: x509-intermediate
 root: acme-tls
 permitted_uri_hosts: [example.com]
+permitted_dns_names: [example.com]
 ```
 
 ```yaml
@@ -402,12 +403,13 @@ use: user
 | `version` | `1`. |
 | `type` | `x509-intermediate`, `openpgp-subkey` or `ssh-ca-key`. |
 | `root` | The name of the root the delegation is under: a file in `want/roots/`, of the kind the type needs. |
-| `permitted_uri_hosts` | For `x509-intermediate`: the hosts a request's name constraints must stay inside. Required when `require_name_constraints` is true. Only URI hosts are expressible in version 1. **Decided for M2:** one permitted DNS zone ([record 0006](../decisions/0006-bundle-history-and-trust-files.md), rule 30). **Not decided:** excluded DNS subtrees and excluded IP ranges, except every IP address, which the [hand-off contract](/reference/hand-off-contract/#what-the-certifier-checks) accepts in a request ([issue #9](https://github.com/truvity/ritueel/issues/9)). |
+| `permitted_uri_hosts` | For `x509-intermediate`: the URI constraints a request's name constraints may hold, each a host or a period and a domain, in the form of [the contract](/reference/hand-off-contract/#the-request). A permitted URI constraint is inside the policy only when it equals an entry. |
+| `permitted_dns_names` | For `x509-intermediate`: the DNS names a request's name constraints may hold, each in the form of the contract. A permitted DNS name is inside the policy only when it equals an entry. **Not decided:** excluded DNS subtrees and excluded IP ranges, except every IP address, which the [hand-off contract](/reference/hand-off-contract/#what-the-certifier-checks) accepts in a request ([issue #9](https://github.com/truvity/ritueel/issues/9)). |
 | `capability` | For `openpgp-subkey`: `sign` or `authenticate`, required. A request for another capability is refused with `policy`; the subkey is bound with this one's key flag ([the contract](/reference/hand-off-contract/#openpgp-subkey)). |
 | `use` | For `ssh-ca-key`: `user` or `host`, required. A request for another `use` is refused with `policy`; the key is listed with this use ([the contract](/reference/hand-off-contract/#ssh-ca-key)). |
 | `kms_read_roles` | For a requester's KMS key in another account: the read-only role to assume, by account ([the contract](/reference/hand-off-contract/#aws-kms)). The role is never taken from a request. |
 
-A test vector's configuration in `testdata/hand-off/v1/manifest.json` is the `policy` block together with the one delegation's members its requests are for: the `permitted_uri_hosts` and `kms_read_roles` there are that delegation's.
+A test vector's configuration in `testdata/hand-off/v1/manifest.json` is the `policy` block together with the one delegation's members its requests are for: the `permitted_uri_hosts`, `permitted_dns_names` and `kms_read_roles` there are that delegation's.
 
 The members are proposed ([issue #8](https://github.com/truvity/ritueel/issues/8)), and so is the split of the rules between `policy` and the delegation file ([issue #9](https://github.com/truvity/ritueel/issues/9)): the contract says the policy lists the rules **for the requester**. The schema of the file:
 
@@ -424,13 +426,14 @@ The members are proposed ([issue #8](https://github.com/truvity/ritueel/issues/8
     "capability": { "enum": ["sign", "authenticate"] },
     "use": { "enum": ["user", "host"] },
     "permitted_uri_hosts": { "type": "array", "uniqueItems": true, "items": { "type": "string" } },
+    "permitted_dns_names": { "type": "array", "uniqueItems": true, "items": { "type": "string" } },
     "kms_read_roles": { "type": "object", "propertyNames": { "pattern": "^[0-9]{12}$" },
                         "additionalProperties": { "type": "string", "pattern": "^arn:aws[a-z-]*:iam::[0-9]{12}:role/" } }
   }
 }
 ```
 
-Five rules the schema cannot state: a delegation name is unique, which its file name guarantees; a name that begins with `break-glass-` is refused, because the SSH CA key list uses those for the break-glass keys; an `x509-intermediate` has `permitted_uri_hosts` when `require_name_constraints` is true; an `openpgp-subkey` has `capability`; an `ssh-ca-key` has `use` and no other key of the type. A delegation under no root is an error. ritueel checks all of them when it reads the file.
+Five rules the schema cannot state: a delegation name is unique, which its file name guarantees; a name that begins with `break-glass-` is refused, because the SSH CA key list uses those for the break-glass keys; an `x509-intermediate` has an entry in `permitted_uri_hosts` or in `permitted_dns_names` (at least one of the two) when `require_name_constraints` is true; an `openpgp-subkey` has `capability`; an `ssh-ca-key` has `use` and no other key of the type. A delegation under no root is an error. ritueel checks all of them when it reads the file.
 
 ## `root.json`
 
@@ -470,10 +473,12 @@ Every X.509 root key's certificate has this profile. A relying party can check e
 | Subject public key | The root key's X.509 key: ECDSA on P-384. |
 | Validity | `notBefore` is the ceremony time; `notAfter` is 36 calendar months later (same day and time of the month, or the last day of the month if it has none), both UTC. |
 | Basic constraints | Critical. `cA` true, no path length. |
-| Key usage | Critical. `keyCertSign` and `cRLSign`. |
 | Subject key identifier | Not critical. The leftmost 160 bits of the SHA-256 of the subject public key bits (RFC 7093, section 2, method 1), as in the [intermediate's profile](/reference/hand-off-contract/#what-is-issued). |
+| Key usage | Critical. `keyCertSign` and `cRLSign`. |
 | Name constraints | Absent: constraints belong to the intermediates. |
 | Anything else | Absent, the authority key identifier included (RFC 5280, section 4.2.1.1, allows it in a self-signed certificate). |
+
+The extensions stand in the certificate in the order of the table: basic constraints, subject key identifier, key usage. The order changes the bytes of the certificate, and it is the order of the test vectors.
 
 **Each use re-issues it.** Every ceremony that signs with a root key makes a new certificate over the same key and the same subject, with a new serial, starting at the ceremony time ([record 0007](../decisions/0007-changing-and-losing-a-root.md), rule 15). The new certificate is a new file in the trust set ([record 0006](../decisions/0006-bundle-history-and-trust-files.md), rules 12 and 31); the earlier trust set keeps the earlier one. A root key that is used every year or two therefore never comes close to its end, and pins on its key never change.
 

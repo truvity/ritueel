@@ -136,7 +136,7 @@ The question means reading a public copy and comparing it with the bundle. There
 
 1. **The keyserver read-back** after `ritueel publish`.
 2. **The chain a live service presents:** `ritueel check tls HOST:PORT` says which intermediate and root the service shows. Whether Go exposes the whole presented chain is not researched.
-3. **A root list fetched from a web address,** piped into a verify command. Hosts check themselves this way, with the signed, numbered root list; ritueel asks no server about its bundle.
+3. **A root list fetched from a web address,** saved to a file and checked with `ritueel verify root-list` (it reads files; a form on standard input is not decided). Hosts check themselves this way, with the signed, numbered root list; ritueel asks no server about its bundle.
 
 Every result prints the time, the source and the facts, and claims no more than this: "On TIME, source X served a copy with these facts. This is not proof that the key is not revoked or that other copies are the same." It never says "safe".
 
