@@ -77,7 +77,7 @@ func LoadRequest(root fsx.FS, dir, stem string) (*Request, error) {
 	if root == nil {
 		return nil, fmt.Errorf("%w: no root folder", ErrLoad)
 	}
-	if !validStem(stem) {
+	if !ValidStem(stem) {
 		return nil, fmt.Errorf("%w: the stem is not 1 to 63 lower-case letters, digits and hyphens that start with a letter or a digit", ErrLoad)
 	}
 	if !fs.ValidPath(dir) {
@@ -107,9 +107,9 @@ func LoadRequest(root fsx.FS, dir, stem string) (*Request, error) {
 	return r, nil
 }
 
-// validStem is the stem of the contract: lower-case letters, digits and hyphens, 1 to 63 characters,
-// starting with a letter or a digit.
-func validStem(s string) bool {
+// ValidStem tells whether s is a stem of the contract ("Messages and files"): lower-case letters, digits and
+// hyphens, 1 to 63 characters, starting with a letter or a digit. [LoadRequest] refuses any other stem.
+func ValidStem(s string) bool {
 	if s == "" || len(s) > 63 {
 		return false
 	}

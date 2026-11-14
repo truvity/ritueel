@@ -32,6 +32,8 @@ func TestNewMakesACheckerFromAWholeConfiguration(t *testing.T) {
 	}
 }
 
+// The delegation is the one part that may be left out: its absence is a statement (the rules that need it are
+// not run and are named), and nodelegation_test.go holds the tests of that.
 func TestNewRefusesAConfigurationWithAPartThatIsLeftEmpty(t *testing.T) {
 	for name, change := range map[string]func(c *handoff.Config){
 		"the whole configuration":     func(c *handoff.Config) { *c = handoff.Config{} },
@@ -39,7 +41,6 @@ func TestNewRefusesAConfigurationWithAPartThatIsLeftEmpty(t *testing.T) {
 		"the stores of the policy":    func(c *handoff.Config) { c.Policy.Stores = nil },
 		"the minimum firmware":        func(c *handoff.Config) { c.Policy.MinFirmware = "" },
 		"the PIN policies":            func(c *handoff.Config) { c.Policy.PINPolicies = nil },
-		"the delegation":              func(c *handoff.Config) { c.Delegation = nil },
 		"the delegation's type":       func(c *handoff.Config) { c.Delegation.Type = "" },
 		"the roots":                   func(c *handoff.Config) { c.Roots = nil },
 		"the roots, as an empty list": func(c *handoff.Config) { c.Roots = []handoff.RootRef{} },

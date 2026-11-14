@@ -90,9 +90,10 @@ var (
 	ErrNoVerifier = errors.New("handoff: no evidence verifier for the store of this request")
 	// ErrConfig is returned by [New] for a configuration that is not whole, and by [Checker.Check] for a
 	// Checker that [New] did not make, a nil request and a nil context. A configuration is whole when it
-	// has a policy (stores, a minimum firmware and the PIN policies that are allowed), a delegation, a
-	// list of roots and a clock, and every verifier in it is a verifier: a rule is never switched off by
-	// a field that was left empty. It says nothing about a request.
+	// has a policy (stores, a minimum firmware and the PIN policies that are allowed), a list of roots and
+	// a clock, and every verifier in it is a verifier: a rule is never switched off by a field that was
+	// left empty. A delegation may be left out, on purpose, and then the rules that belong to a
+	// delegation are not run and are said so ([Config.Delegation]). It says nothing about a request.
 	ErrConfig = errors.New("handoff: invalid checker configuration")
 	// ErrInternal is returned when two readers of one request disagree, or a verifier breaks its
 	// contract: it returns no key for a store that has one, or an error that is neither a refusal of the
@@ -156,7 +157,7 @@ type Policy struct {
 }
 
 // Delegation is the declared name under a root that a request is for, as the rules of check 9 need it.
-// A checker has one, and [New] refuses a configuration that has none.
+// A checker may have one or none ([Config.Delegation]).
 type Delegation struct {
 	// Name is the declared name of the delegation.
 	Name string
@@ -234,14 +235,20 @@ type EvidenceVerifier interface {
 	Verify(ctx context.Context, r *Request, p *Proof, now time.Time) (*Evidence, error)
 }
 
-// Config is what [New] needs to make a [Checker]. Every part but Evidence is required: a rule that needs a
-// value is never switched off by leaving the value out.
+// Config is what [New] needs to make a [Checker]. Every part but Evidence and Delegation is required: a rule
+// that needs a value is never switched off by leaving the value out. The one exception is the delegation, whose
+// absence is a statement and not an omission: the rules that need it are not run and are named as not run.
 type Config struct {
 	// Policy is the certifier's policy.
 	Policy Policy
-	// Delegation is the declared delegation the request is for. Required: the rule that a request is of
-	// the delegation's type and the rule that its name constraints are inside the delegation's lists
-	// need it.
+	// Delegation is the declared delegation the request is for. It may be nil. A checker with no delegation
+	// runs every rule of check 9 that does not need one (the extensions, the evidence rules and the rule about
+	// the roots) and does not run the two that do: the rule that a request is of the delegation's type
+	// ("delegation-type") and the rule that its name constraints are inside the delegation's lists
+	// ("name-constraints"). When every rule that ran passes, check 9 is not-run with those two rules named
+	// in [CheckResult.NotRun], and the verdict is not accepted, not refused and not complete; when a rule
+	// that ran refuses, check 9 failed with the code policy, as with a delegation. A nil delegation never
+	// makes a request accepted.
 	Delegation *Delegation
 	// Roots are the roots of the bundle: the subject and the key of each, at least one. The rule that a
 	// request is not for the key or the name of a root needs them. The list is the caller's to build from

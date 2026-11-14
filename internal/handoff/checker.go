@@ -225,6 +225,13 @@ func (s *settings) checkX509(ctx context.Context, v Verdict, req *Request, p *Pr
 		v.fail(9, CodePolicy, fault)
 		return v, nil
 	}
+	if !s.hasDelegation() {
+		// Every rule that could run passed, and the rules that need a delegation did not run: the check is
+		// not-run with them named, and the request is not accepted (a verdict that holds a not-run check is
+		// never accepted).
+		v.partial(9, notRunWithoutDelegation(p.Type))
+		return v, nil
+	}
 	v.pass(9)
 	v.accept(key, ev)
 	return v, nil

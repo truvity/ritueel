@@ -43,8 +43,9 @@ type CheckResult struct {
 	// Status is the result.
 	Status CheckStatus
 	// NotRun names the rules inside the check that could not run. In this package that is "primaries" of
-	// check 3 for an openpgp-subkey, whose rule needs the signed root list, which is not built. It is empty
-	// when every rule ran, and always empty for a check that failed or passed.
+	// check 3 for an openpgp-subkey, whose rule needs the signed root list, which is not built, and
+	// "delegation-type" and "name-constraints" of check 9 when the configuration holds no delegation. It is
+	// empty when every rule ran, and always empty for a check that failed or passed.
 	NotRun []string
 }
 
