@@ -14,9 +14,9 @@ import (
 )
 
 // A file inside a trust set that no record lists is the failing finding file-unlisted; a file inside
-// the folder of copies (wanted/) that its record does not list, and the names that a desktop system
-// writes, are notices (the page, "The hash chain"). The tests hold the code, the path and the fact,
-// and none of the words of a detail.
+// the folder of copies (wanted/) that its record does not list is a notice (the page, "The hash
+// chain"). The names that a desktop system writes have their own tests in desktop_names_test.go. The
+// tests hold the code, the path and the fact, and none of the words of a detail.
 
 // Files added to a history of three records by someone who wants a wrong "clean": the
 // printed end is the same as before.
@@ -116,34 +116,6 @@ func TestAnUnlistedTrustSetIsNotWalked(t *testing.T) {
 			t.Errorf("the check listed %s", p)
 		}
 	}
-}
-
-func TestNamesThatADesktopWritesInATrustSetAreNotices(t *testing.T) {
-	for _, name := range []string{".DS_Store", "Thumbs.db", "desktop.ini", "._keys.txt", "._x"} {
-		t.Run(name, func(t *testing.T) {
-			b, r := threeRecords(t)
-			p := "trust/" + r[1].set + "/" + name
-			b.put(p, []byte("x"))
-			rep := b.run()
-			wantFindings(t, rep, []wf{{UnexpectedFile, p}})
-			wantReasons(t, rep, nil, []Code{UnexpectedFile})
-			if !rep.Clean() {
-				t.Error("a desktop file makes the history unclean")
-			}
-		})
-	}
-	t.Run("in a folder of the set", func(t *testing.T) {
-		b, r := threeRecords(t)
-		p := "trust/" + r[1].set + "/keyring/.DS_Store"
-		b.put(p, []byte("x"))
-		wantFindings(t, b.run(), []wf{{UnexpectedFile, p}})
-	})
-	t.Run("a name that only begins like one", func(t *testing.T) {
-		b, r := threeRecords(t)
-		p := "trust/" + r[1].set + "/_DS_Store"
-		b.put(p, []byte("x"))
-		wantFindings(t, b.run(), []wf{{FileUnlisted, p}})
-	})
 }
 
 func TestNameThatBreaksTheRuleForNamesInsideATrustSetFailsAndSoDoesATemporaryName(t *testing.T) {
