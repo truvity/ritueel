@@ -144,7 +144,7 @@ export default {
   id: 'everyday',
   kind: 'layout',
   label: 'Four things and the root each one ends at',
-  caption: 'All four end at a root. If a root is lost or stolen, what is below it is at risk.',
+  caption: 'All four end at a root. If a root is lost or stolen, what ends at it is at risk.',
   wide: wide(),
   narrow: narrow(),
 };
