@@ -36,7 +36,7 @@ const (
 	WantedDir = "wanted"
 )
 
-// MaxPathElements is the most elements a path that a record or a plan lists may have: 8. The
+// MaxPathElements is the most elements a path that a record or a plan lists may have: 12. The
 // deepest path that the pages let a ceremony write has 4: trust/<set>/keyring/<file> (the
 // keyring package page) and roots/<label>/attestation/<file> (the cards page); the copies of
 // the wanted files are listed by the path they have in the bundle, want/<kind>/<file>, 3. 12 is

@@ -6,7 +6,7 @@
 // only ASCII letters, digits and underscores. The set is small on purpose: a name is part of a
 // signed format, and a person must be able to tell two names apart, which no one can for a letter
 // that looks like another one (a Cyrillic "a", the Kelvin sign for "K") or for a name with a space
-// or a quote in it. Every member name of the decided formats (the pages of docs/reference) is
+// or a quote in it. Every member name of the formats (the pages of docs/reference) is
 // lower-case ASCII, digits and underscores, so nothing they need is left out. The rule is about
 // the fields of a struct; the keys of a map and the members of an interface are whatever a
 // document has. A field with no tag has its Go name for a member name, which starts with an
