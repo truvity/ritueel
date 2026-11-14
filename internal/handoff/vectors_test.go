@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"encoding/pem"
 	"errors"
+	"maps"
 	"path"
 	"slices"
 	"sort"
@@ -46,6 +47,7 @@ type vectorCase struct {
 	Expect       string   `json:"expect"`
 	Reason       string   `json:"reason"`
 	Confirmation string   `json:"confirmation"`
+	KMSStub      string   `json:"kms_stub"`
 }
 
 type vectorManifest struct {
@@ -123,12 +125,27 @@ func configOfCase(t testing.TB, m vectorManifest, c vectorCase, roots []handoff.
 	return handoff.Config{Policy: p, Delegation: d, Roots: roots, Now: func() time.Time { return clock }}
 }
 
-// checkerOfCase is the checker of a case, with the verifiers that the test gives (none for most).
+// vectorVerifiers are the verifiers that the vector tests register, one function for each key store whose
+// verifier is built. Each is given the case and the configuration that the checker is made from, and returns
+// the verifiers it has for that case (none for a case of another store). A file that registers one does it
+// in init, in a file of its own.
+var vectorVerifiers []func(t testing.TB, m vectorManifest, c vectorCase, cfg handoff.Config) map[handoff.Store]handoff.EvidenceVerifier
+
+// checkerOfCase is the checker of a case, with the verifiers that the vector tests register and those that
+// the test gives (none for most). A verifier that the test gives takes the place of a registered one for the
+// same store.
 func checkerOfCase(t testing.TB, m vectorManifest, c vectorCase, roots []handoff.RootRef, clock time.Time, evidence ...map[handoff.Store]handoff.EvidenceVerifier) *handoff.Checker {
 	t.Helper()
 	cfg := configOfCase(t, m, c, roots, clock)
+	merged := map[handoff.Store]handoff.EvidenceVerifier{}
+	for _, register := range vectorVerifiers {
+		maps.Copy(merged, register(t, m, c, cfg))
+	}
 	for _, e := range evidence {
-		cfg.Evidence = e
+		maps.Copy(merged, e)
+	}
+	if len(merged) > 0 {
+		cfg.Evidence = merged
 	}
 	return mustNew(t, cfg)
 }
@@ -196,25 +213,19 @@ func matches(c vectorCase, v handoff.Verdict, err error) bool {
 // pending names, for each case that this package cannot decide yet, the work that will decide it.
 const (
 	laterPIV     = "the evidence verifier of PIV keys"
-	laterKMS     = "the evidence verifier of AWS KMS keys"
 	laterOpenPGP = "the checks 3 to 9 of an OpenPGP subkey request"
 	laterSSH     = "the checks 4 to 9 of an SSH CA key request"
 )
 
 var pending = map[string]string{
-	// X.509: the store's verifier is check 7 and is not built.
-	"x509-piv-valid":                 laterPIV,
-	"x509-piv-key-mismatch":          laterPIV,
-	"x509-piv-pin-never":             laterPIV,
-	"x509-piv-old-firmware":          laterPIV,
-	"x509-piv-untrusted-chain":       laterPIV,
-	"x509-no-name-constraints":       laterPIV,
-	"x509-name-constraint-outside":   laterPIV,
-	"x509-kms-valid":                 laterKMS,
-	"x509-kms-cross-account":         laterKMS,
-	"x509-kms-cross-account-no-role": laterKMS,
-	"x509-kms-key-mismatch":          laterKMS,
-	"x509-kms-two-actors":            laterKMS,
+	// X.509: the verifier of the store is check 7 and is not built.
+	"x509-piv-valid":               laterPIV,
+	"x509-piv-key-mismatch":        laterPIV,
+	"x509-piv-pin-never":           laterPIV,
+	"x509-piv-old-firmware":        laterPIV,
+	"x509-piv-untrusted-chain":     laterPIV,
+	"x509-no-name-constraints":     laterPIV,
+	"x509-name-constraint-outside": laterPIV,
 
 	// OpenPGP: the back-signatures, the root list and the evidence.
 	"pgp-backsig-missing":              laterOpenPGP,
@@ -338,7 +349,7 @@ func TestAnUndecidedVectorStopsWhereTheMissingPartIs(t *testing.T) {
 		t.Run(c.ID, func(t *testing.T) {
 			v, err := checkerOfCase(t, m, c, roots, testNow).Check(t.Context(), loadCase(t, c))
 			switch later {
-			case laterPIV, laterKMS:
+			case laterPIV:
 				if !errors.Is(err, handoff.ErrNoVerifier) {
 					t.Fatalf("error %v, want ErrNoVerifier", err)
 				}
@@ -360,10 +371,10 @@ func TestAnUndecidedVectorStopsWhereTheMissingPartIs(t *testing.T) {
 	}
 }
 
-// A stub verifier reads what the case says about its evidence, and the code decides the twelve X.509
-// cases that wait for a verifier. The stub knows nothing of the proof: it gives the key of the request
+// A stub verifier reads what the case says about its evidence, and the code decides the X.509 cases that
+// wait for the verifier of a card. The stub knows nothing of the proof: it gives the key of the request
 // unless the case is about the key, a recent firmware and a PIN that is allowed unless the case is about
-// them, one role for a KMS key unless the case is about two.
+// them.
 func TestVectorsThatNeedAVerifierAreDecidedWithAStubbedOne(t *testing.T) {
 	m := readManifest(t)
 	roots := rootsOfManifest(t, m)
@@ -371,7 +382,7 @@ func TestVectorsThatNeedAVerifierAreDecidedWithAStubbedOne(t *testing.T) {
 	var seen []string
 	for _, c := range m.Cases {
 		later, ok := pending[c.ID]
-		if !ok || (later != laterPIV && later != laterKMS) {
+		if !ok || later != laterPIV {
 			continue
 		}
 		seen = append(seen, c.ID)
@@ -382,11 +393,6 @@ func TestVectorsThatNeedAVerifierAreDecidedWithAStubbedOne(t *testing.T) {
 				t.Fatal(err)
 			}
 			ev := &handoff.Evidence{Key: key, Firmware: "5.8.0", PINPolicy: handoff.PINOnce, TouchPolicy: "always"}
-			role := handoff.Principal{ARN: "arn:aws:iam::123456789012:role/example-holder", Kind: handoff.PrincipalRole}
-			if later == laterKMS {
-				ev.Firmware, ev.PINPolicy, ev.TouchPolicy = "", "", ""
-				ev.SignPrincipals = []handoff.Principal{role}
-			}
 			var verifyErr error
 			switch {
 			case strings.HasSuffix(c.ID, "key-mismatch"):
@@ -395,9 +401,7 @@ func TestVectorsThatNeedAVerifierAreDecidedWithAStubbedOne(t *testing.T) {
 				ev.PINPolicy = handoff.PINNever
 			case strings.HasSuffix(c.ID, "old-firmware"):
 				ev.Firmware = "5.6.9"
-			case strings.HasSuffix(c.ID, "two-actors"):
-				ev.SignPrincipals = append(ev.SignPrincipals, handoff.Principal{ARN: "arn:aws:iam::123456789012:role/example-other", Kind: handoff.PrincipalRole})
-			case strings.HasSuffix(c.ID, "untrusted-chain"), strings.HasSuffix(c.ID, "no-role"):
+			case strings.HasSuffix(c.ID, "untrusted-chain"):
 				verifyErr = &handoff.CodeError{Code: handoff.CodeProofInvalid, Detail: "the chain does not lead to a pinned root"}
 			}
 			var sv *stub
@@ -406,7 +410,7 @@ func TestVectorsThatNeedAVerifierAreDecidedWithAStubbedOne(t *testing.T) {
 			} else {
 				sv = returning(ev)
 			}
-			chk := checkerOfCase(t, m, c, roots, testNow, map[handoff.Store]handoff.EvidenceVerifier{handoff.StorePIV: sv, handoff.StoreKMS: sv})
+			chk := checkerOfCase(t, m, c, roots, testNow, map[handoff.Store]handoff.EvidenceVerifier{handoff.StorePIV: sv})
 			v, err := chk.Check(t.Context(), req)
 			if !matches(c, v, err) {
 				t.Errorf("the manifest says %s %s, and the verdict is code %q (%s), error %v", c.Expect, c.Reason, v.Code, v.Detail, err)
@@ -416,8 +420,19 @@ func TestVectorsThatNeedAVerifierAreDecidedWithAStubbedOne(t *testing.T) {
 			}
 		})
 	}
-	if len(seen) != 12 {
-		t.Errorf("the pending map holds %d cases that wait for a verifier of X.509 evidence, want 12: %v", len(seen), seen)
+	// The number is read from the pending map, never fixed: the test fails when a case that waits for a
+	// verifier is not run, and when no case waits and the test is still here.
+	want := 0
+	for _, later := range pending {
+		if later == laterPIV {
+			want++
+		}
+	}
+	if want == 0 {
+		t.Error("no case waits for a verifier of X.509 evidence: delete this test")
+	}
+	if len(seen) != want {
+		t.Errorf("%d cases wait for a verifier of X.509 evidence and %d were run: %v", want, len(seen), seen)
 	}
 }
 
