@@ -18,7 +18,6 @@ import (
 	"slices"
 	"strings"
 	"sync"
-	"sync/atomic"
 	"syscall"
 	"testing"
 	"time"
@@ -212,84 +211,129 @@ func TestOSReadFileOfAFifoWithAWriterIsStillRefused(t *testing.T) {
 }
 
 // TestOSReadFileOfAFileThatGrowsWhileItIsRead: a file of exactly MaxReadSize passes the look at
-// its size, and a writer that appends to it while the reader reads it must not make the reader
-// return more than the limit, nor the first MaxReadSize bytes of a file that has grown: the answer
-// is the whole file or ErrTooLarge, never a longer one, never a cut-off one.
+// its size, and a writer that appends to it must not make the reader return more than the limit,
+// nor the first MaxReadSize bytes of a file that has grown: the answer is the whole file or
+// ErrTooLarge, never a longer one, never a cut-off one, and the read always ends.
 //
-// A read of 8 MiB takes some milliseconds, and the writer starts a few hundred microseconds into
-// it (the delays differ from round to round), so the first appended bytes are in the file well
-// before the reader reaches the end. The writer notes when its first write was done; a read that
-// returns without an error although that was more than 0.8 ms before it returned is a read that
-// did not look beyond the limit (the reader's last look is within microseconds of its return).
+// No assertion here depends on how long anything took. The order of the writer and the reader is
+// fixed by the test in two ways. In the first, the file grows between two reads, and each read
+// starts after the write before it has returned. In the second, a writer appends in the
+// background, and the test either waits for its first write to be done before it starts the read
+// (then the reader's first look finds a file over the limit, and ErrTooLarge is required) or
+// starts the read with no wait (then the writer's place among the reader's calls is anyone's, and
+// the test asserts only what holds in every order: the whole file or ErrTooLarge, never more than
+// the limit, never a part, never an error of another kind).
+//
+// What the test cannot do is to put the first write after the reader's look and before its last
+// read, which is the window that the extra byte of the read is for: that needs a hook between the
+// two, which the package does not have.
 func TestOSReadFileOfAFileThatGrowsWhileItIsRead(t *testing.T) {
 	wd := newWorld(t)
 	p := filepath.Join(wd.root, "grow")
 	root := openFSIn(t, wd.root)
-	delays := []time.Duration{0, 30 * time.Microsecond, 100 * time.Microsecond, 300 * time.Microsecond}
-	const margin = 800 * time.Microsecond
-	sawTooLarge, sawWhole, rounds := 0, 0, 40
-	for round := 0; round < rounds; round++ {
+	remake := func(t *testing.T) {
+		t.Helper()
 		if err := os.WriteFile(p, nil, 0o600); err != nil {
 			t.Fatal(err)
 		}
+		if err := os.Truncate(p, fsx.MaxReadSize); err != nil { // holes: no 8 MiB written to the disk
+			t.Fatal(err)
+		}
+	}
+	requireWhole := func(t *testing.T, what string, r readResult) {
+		t.Helper()
+		if r.err != nil || len(r.data) != fsx.MaxReadSize {
+			t.Fatalf("%s: %d bytes, %v, want the whole file of %d bytes", what, len(r.data), r.err, fsx.MaxReadSize)
+		}
+	}
+	requireTooLarge := func(t *testing.T, what string, r readResult) {
+		t.Helper()
+		if !errors.Is(r.err, fsx.ErrTooLarge) || r.data != nil {
+			t.Fatalf("%s: %d bytes, %v, want ErrTooLarge and no data", what, len(r.data), r.err)
+		}
+	}
+
+	t.Run("a file that grows between two reads", func(t *testing.T) {
+		remake(t)
+		requireWhole(t, "before the file grows", readFileWithin(t, root, "grow"))
+		f, err := os.OpenFile(p, os.O_WRONLY|os.O_APPEND, 0)
+		if err != nil {
+			t.Fatal(err)
+		}
+		_, werr := f.Write([]byte{1})
+		if cerr := f.Close(); werr != nil || cerr != nil {
+			t.Fatalf("the append: %v, %v", werr, cerr)
+		}
+		requireTooLarge(t, "a byte over the limit", readFileWithin(t, root, "grow"))
 		if err := os.Truncate(p, fsx.MaxReadSize); err != nil {
 			t.Fatal(err)
 		}
-		delay := delays[round%len(delays)]
-		start := time.Now()
-		var firstDone atomic.Int64 // nanoseconds since start; 0: no write done yet
-		stop := make(chan struct{})
-		var wg sync.WaitGroup
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			f, err := os.OpenFile(p, os.O_WRONLY|os.O_APPEND, 0)
-			if err != nil {
-				return
-			}
-			defer func() { _ = f.Close() }()
-			for time.Since(start) < delay { // wait, spinning: a sleep is too coarse
-			}
-			chunk := make([]byte, 64<<10)
-			for {
-				select {
-				case <-stop:
+		requireWhole(t, "after the file is cut back to the limit", readFileWithin(t, root, "grow"))
+	})
+
+	// Each round has a writer that appends 64 KiB at a time to the end of the file, up to 1 MiB, and
+	// stops early when the read has returned.
+	for round := 0; round < 40; round++ {
+		waitForTheFirstWrite := round%2 == 0
+		t.Run(fmt.Sprintf("a writer in the background, round %d, read after its first write: %v", round, waitForTheFirstWrite), func(t *testing.T) {
+			remake(t)
+			first := make(chan struct{}) // closed when the first write has returned
+			stop := make(chan struct{})
+			var wg sync.WaitGroup
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+				f, err := os.OpenFile(p, os.O_WRONLY|os.O_APPEND, 0)
+				if err != nil {
+					close(first)
 					return
+				}
+				defer func() { _ = f.Close() }()
+				chunk := make([]byte, 64<<10)
+				for i := 0; i < 16; i++ {
+					if _, err := f.Write(chunk); err != nil {
+						break
+					}
+					if i == 0 {
+						close(first)
+					}
+					select {
+					case <-stop:
+						return
+					default:
+					}
+				}
+				select { // a writer that finished its share before the first write was noted
+				case <-first:
 				default:
+					close(first)
 				}
-				if _, err := f.Write(chunk); err != nil {
-					return
+			}()
+			if waitForTheFirstWrite {
+				<-first
+			}
+			r := readFileWithin(t, root, "grow")
+			close(stop)
+			wg.Wait()
+			switch {
+			case errors.Is(r.err, fsx.ErrTooLarge):
+				if r.data != nil {
+					t.Fatalf("%d bytes came back with ErrTooLarge", len(r.data))
 				}
-				firstDone.CompareAndSwap(0, int64(time.Since(start))+1)
+			case r.err == nil:
+				if waitForTheFirstWrite {
+					t.Fatalf("ReadFile returned %d bytes with no error, though the file was over the limit when the read started", len(r.data))
+				}
+				if len(r.data) > fsx.MaxReadSize {
+					t.Fatalf("ReadFile returned %d bytes, more than the limit of %d, with no error", len(r.data), fsx.MaxReadSize)
+				}
+				if len(r.data) != fsx.MaxReadSize {
+					t.Fatalf("ReadFile returned %d bytes of a file that was at least %d long: a cut-off read", len(r.data), fsx.MaxReadSize)
+				}
+			default:
+				t.Fatalf("%v", r.err)
 			}
-		}()
-		r := readFileWithin(t, root, "grow")
-		returned := time.Since(start)
-		close(stop)
-		wg.Wait()
-		switch {
-		case r.err == nil:
-			if len(r.data) > fsx.MaxReadSize {
-				t.Fatalf("round %d: ReadFile returned %d bytes, more than the limit of %d, with no error", round, len(r.data), fsx.MaxReadSize)
-			}
-			if len(r.data) != fsx.MaxReadSize {
-				t.Fatalf("round %d: ReadFile returned %d bytes of a file that was at least %d long: a cut-off read", round, len(r.data), fsx.MaxReadSize)
-			}
-			if fd := time.Duration(firstDone.Load()); fd != 0 && fd < returned-margin {
-				t.Fatalf("round %d: the file had grown %v before ReadFile returned %d bytes with no error: a read that does not look beyond the limit", round, returned-fd, len(r.data))
-			}
-			sawWhole++
-		case errors.Is(r.err, fsx.ErrTooLarge):
-			if r.data != nil {
-				t.Fatalf("round %d: %d bytes came back with ErrTooLarge", round, len(r.data))
-			}
-			sawTooLarge++
-		default:
-			t.Fatalf("round %d: %v", round, r.err)
-		}
-	}
-	if sawTooLarge == 0 {
-		t.Fatalf("in %d rounds the file never grew under the reader (%d whole reads): the test does not look at what it means to", rounds, sawWhole)
+		})
 	}
 }
 
