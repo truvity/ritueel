@@ -288,9 +288,10 @@ func (ck *checker) hasManifest() (bool, error) {
 }
 
 // plainName decides whether a name from the list of dir is one to look at. A leftover temporary
-// name is skipped, and said (record 0006, rule 45). A name that breaks rule 38 is not entered or
-// read, and is a finding (rule 46). The name is data from the stick, so the path of the finding
-// holds it written with escapes, a backslash doubled (jsonset.EscapeExact), and never as it is.
+// name is skipped, and said (record 0006, rule 45). A name that breaks record 0006, rule 38, is
+// not entered or read, and is a finding (record 0006, rule 46). The name is data from the stick,
+// so the path of the finding holds it written with escapes, a backslash doubled
+// (jsonset.EscapeExact), and never as it is.
 func (ck *checker) plainName(dir, name string) bool {
 	return ck.plainNameIn(dir, name, UnexpectedFile, "a leftover temporary name; it is skipped (record 0006, rule 45)")
 }
