@@ -56,7 +56,7 @@ func escaped(s string) string {
 type hostileName struct {
 	label string
 	name  string
-	// what is the name to the check: "invalid" breaks rule 38 and fails; "temp" starts with the
+	// what is the name to the check: "invalid" breaks record 0006, rule 38, and fails; "temp" starts with the
 	// prefix of a temporary name and is a notice; "valid" is a valid name that is not expected.
 	class string
 }

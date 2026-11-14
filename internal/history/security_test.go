@@ -437,7 +437,7 @@ func TestPathListedAsTwoKindsOfFileWithTwoDigestsFailsWhicheverIsWrong(t *testin
 	})
 }
 
-// Cases that the printed end protects, which the pages decide: the check says what it can, and the
+// Cases that the printed end protects, which the pages set: the check says what it can, and the
 // end line the person keeps is the rest. These hold that the answer is the one the pages give, and
 // that the repairs did not change it.
 func TestRemovedNewestRecordIsWhatTheEndLineProtects(t *testing.T) {

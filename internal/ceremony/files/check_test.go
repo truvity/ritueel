@@ -212,7 +212,7 @@ func TestCheckPathNeedsNoLimitInBytesBecauseTheLimitOnElementsBoundsIt(t *testin
 }
 
 func TestNamesOfTheFilesOfACeremonyFolder(t *testing.T) {
-	// The six names are decided by record 0006, rule 37, and the path of the plan by rule 9.
+	// The six names are set by record 0006, rule 37, and the path of the plan by record 0006, rule 9.
 	want := map[string]string{
 		files.PlanFile:         "plan.json",
 		files.AttemptFile:      "attempt.json",
