@@ -5,7 +5,7 @@ sidebar:
   order: 8
 ---
 
-*Not built yet. This is the page that [record 0006](../decisions/0006-bundle-history-and-trust-files.md) leaves for the format, cadence and rules; the code is [issue #30](https://github.com/truvity/ritueel/issues/30), in M4, and its [test vectors](/reference/crl/#test-vectors) match this page, except the CA bundle check of the command, which has no vector yet.*
+*Not built yet. This is the page that [record 0006](../decisions/0006-bundle-history-and-trust-files.md) leaves for the format, cadence and rules; the code is [issue #30](https://github.com/truvity/ritueel/issues/30), in M4, and its [test vectors](/reference/crl/#test-vectors) follow this page; the README of the set lists the rules that have no vector yet.*
 
 An intermediate certificate is revoked by a certificate revocation list (CRL), the standard way an X.509 client learns that a certificate it can still build a chain to must not be used (RFC 5280, section 5). Each root key signs a CRL of its own, because a CRL is per issuer, and a client that builds a path through either root key may ask for either list ([Several keys, one root](/learn/two-roots/#what-to-expect-from-clients)). A root key that has revoked nothing signs an empty one, so that the client always has a current list to check.
 

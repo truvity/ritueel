@@ -96,7 +96,7 @@ A host takes a new root list **before** the SSH CA key list of the same sequence
 These codes belong to the host and are not sent anywhere.
 
 :::caution[Open]
-One stolen root key can sign this list with a far higher `sequence`, because it needs one signature. A host that takes it refuses every honest list afterwards (`rollback`), and so keeps trusting the keys of the thief's list. This is the same weakness as that of [the root list](/reference/root-list/), which has a way back for a list that removes a root key and has none here yet, and it is decided before the first release ([issue #228](https://github.com/truvity/ritueel/issues/228); [what other systems do](/research/root-list-sequence-and-a-stolen-key-2026-11-14/)). Until then the way back is that the operator of the host removes the SSH CA key list it holds, after the host has taken the honest root list that no longer lists the stolen key.
+One stolen root key can sign this list with a far higher `sequence`, because it needs one signature. A host that takes it refuses every honest list afterwards (`rollback`), and so keeps trusting the keys of the thief's list. This is the same weakness as that of [the root list](/reference/root-list/), for which a way back is decided and not written yet; none is decided for this file. It is decided before the first release ([issue #228](https://github.com/truvity/ritueel/issues/228); [what other systems do](/research/root-list-sequence-and-a-stolen-key-2026-11-14/)). Until then the way back is that the operator of the host removes the SSH CA key list it holds, after the host has taken the honest root list that no longer lists the stolen key.
 :::
 
 ## The file for sshd
