@@ -92,6 +92,7 @@ type spec struct {
 // specs are the command words that exist. Usage lists only these.
 var specs = []spec{
 	{name: "version", usage: "print the version and the commit", run: runVersion},
+	verifySpec,
 }
 
 // invocation is the state of one run, so that two runs share nothing.

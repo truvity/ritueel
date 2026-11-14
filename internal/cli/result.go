@@ -51,6 +51,13 @@ type Result struct {
 	// object of a refusal or of a command that was not confirmed has none (its message goes to
 	// standard error alone). Run sets it from the error; a command does not.
 	Error string `json:"error,omitempty"`
+	// Checked names the bytes that a command checked and accepted, one entry for each file, in the
+	// order the command names them; the member is there for an accepted list and for nothing
+	// else (the member "checked" of docs/reference/cli.md, built by verify root-list).
+	Checked []CheckedFile `json:"checked,omitempty"`
+	// Again is true for an accepted list that is the list the host holds, byte for byte, coming
+	// again (the member "again" of docs/reference/cli.md); the member is absent otherwise.
+	Again bool `json:"again,omitempty"`
 	// Version is the release version (version only).
 	Version string `json:"version,omitempty"`
 	// Commit is the commit of the build (version only).
@@ -59,6 +66,17 @@ type Result struct {
 	// Text is what the command prints on standard output with --output text. It is not
 	// part of the JSON object.
 	Text string `json:"-"`
+}
+
+// CheckedFile is one entry of Result.Checked: a file that was read and checked, and the digest
+// of the bytes that were read.
+type CheckedFile struct {
+	// Name is the base name of the file as the command was given it. A name that is not plain
+	// never gets here: the reader of files refuses it before the file is read.
+	Name string `json:"name"`
+	// SHA256 is the SHA-256 of the bytes that were read and checked, in lower-case hexadecimal;
+	// the file is not read a second time for it.
+	SHA256 string `json:"sha256"`
 }
 
 // writeJSON writes the object and a newline, and nothing else.
