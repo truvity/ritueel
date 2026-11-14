@@ -1,7 +1,9 @@
 ---
-// The places of the site menu, as a row of links under the buttons (How it works has its button). The home page has no
-// sidebar (template: splash), and so no menu button on a phone; this row is its menu. Keep it in
-// step with `sidebar` in astro.config.mjs. Each link is at least 44 px tall, and the row wraps.
+// The places of the site menu, as a row of links under the buttons (How it works and the demo have
+// their buttons, so they are not in the row). The home page has no sidebar (template: splash), and
+// so no menu button on a phone; this row is its menu, and Glossary and The design are reached from
+// the home page only through it. Keep it in step with `sidebar` in astro.config.mjs. Each link is at
+// least 44 px tall, and the row wraps.
 interface Props {
   links: { text: string; href: string }[];
 }
