@@ -496,7 +496,7 @@ Every root key's OpenPGP primary has this profile, as [record 0009](../decisions
 
 **Each use extends it,** with a new self-signature of the same shape at the ceremony time. The new public certificate is a new file in the trust set.
 
-The package `internal/openpgp` builds this profile; the tests check it with gpgv and sqv.
+The package `internal/openpgp` builds this profile; the tests check it with gpgv and sqv. The same package reads a subkey request, with its back-signatures, for the checks of the [hand-off contract](/reference/hand-off-contract/#openpgp-subkey), so that the check and the binding use one reader.
 
 The test roots of the [hand-off vectors](/reference/hand-off-contract/#test-vectors) follow both profiles, with the name `Example Test`.
 
