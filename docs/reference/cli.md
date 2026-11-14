@@ -148,6 +148,7 @@ M2 builds these, with the software store and the cloud store ([issue #8](https:/
 ### Built so far
 
 - `version`: prints the version and the commit it was built from (exit code 0).
+- `verify root-list`: the host's side of the signed root list, with the check of a CA bundle (exit codes 0, 1, 2 and 3). It signs and writes nothing.
 
 The CA bundle is one of the files `apply` writes into the trust set. A command that prints it alone is proposed. `new`, `apply` and `status` come with M2; the milestone of `want` is not set. The thirteen command words are decided; the flags and the exit codes of `join` are proposed. `check cards` comes with M2 and `check restore` with M4, and the name of `check cards` is proposed. `revoke` comes with M4, `verify keyring` with M5, and the guided mode comes after the first signed release; the read-only page of `wizard --web` comes with M2. The commands of the trust files that come later are below.
 
@@ -194,7 +195,7 @@ Every flag, form and list name in this section is proposed, awaiting the maintai
 |---|---|---|
 | `ritueel publish [--revocation FILE]` | A separate process, never inside a ceremony and absent from the offline build. Rebuilds the public key from the verified ceremony record, shows a preview (every user ID, subkeys, fingerprint, each server, "what is published cannot be withdrawn"), waits for the typed confirmation (the first 8 characters of the fingerprint and the server name; 16 characters for a revocation), sends to the keyservers listed in `ritueel.yaml`, reads back and compares. Refuses a test root and a run while a ceremony runs; reads no token. With `--revocation FILE` it sends the revocation signature the holder keeps apart. | Yes |
 | `ritueel check tls HOST:PORT` | Reads the chain a live service presents and says which delegation and root it shows, with the time, the source and the facts; it is not proof that a key is not revoked. Whether Go exposes the full presented chain is not researched. | No |
-| `ritueel verify root-list FILE (--held FILE \| --pin SHA256... [--min-sequence N])` | Run on the two fetched files, the list and its `.jws` (the host checks itself). The arguments are decided ([the command](/reference/cli/#the-first-versions-commands)). A form that reads standard input is not decided. | No |
+| `ritueel verify root-list FILE (--held FILE \| --pin SHA256... [--min-sequence N])` | Run on the two fetched files, the list and its `.jws` (the host checks itself). The command is built ([the command](/reference/cli/#the-first-versions-commands)). A form that reads standard input is not decided. | No |
 
 After every ceremony ritueel prints a list of next steps (its name, NEXT STEPS, is proposed): what changed, who needs it, how. Later: `check --local`, which matches installed roots to the bundle by key pin.
 
