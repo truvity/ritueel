@@ -583,7 +583,8 @@ func TestTheLastFaultListsEverythingThatWasWritten(t *testing.T) {
 }
 
 // Only the fault at the very last flush says that the bundle is whole. Every earlier fault says how many things
-// were written in the folder, and that number is the length of the list.
+// were written in the folder, in the words "1 thing was" and "N things were", and names each one: the number is the
+// length of the list and the names are its entries.
 func TestOnlyTheLastFlushSaysThatTheBundleIsWhole(t *testing.T) {
 	_, clean, _, _ := runCreate(t, 0, StarterOptions{})
 	for n := 1; n <= clean.n; n++ {
@@ -597,8 +598,16 @@ func TestOnlyTheLastFlushSaysThatTheBundleIsWhole(t *testing.T) {
 			t.Errorf("call %d of %d: whole is %v: %s", n, clean.n, whole, err)
 		}
 		if !whole && ce.Made {
-			if want := fmt.Sprintf("the folder was made and %d things were written in it", len(ce.Written)); !strings.Contains(err.Error(), want) {
-				t.Errorf("call %d: want %q in %s", n, want, err)
+			count := fmt.Sprintf("%d things were", len(ce.Written))
+			if len(ce.Written) == 1 {
+				count = "1 thing was"
+			}
+			want := "the folder was made and " + count + " written in it"
+			if len(ce.Written) > 0 {
+				want += " (" + strings.Join(ce.Written, ", ") + ")"
+			}
+			if !strings.Contains(err.Error(), want+": ") {
+				t.Errorf("call %d: want %q followed by the cause in %s", n, want, err)
 			}
 		}
 		if !whole && !ce.Made && !strings.Contains(err.Error(), "the folder was not made") {
@@ -704,4 +713,47 @@ func TestEverythingThatExistsAfterAFaultIsListedExceptTemporaryNames(t *testing.
 			return nil
 		})
 	}
+}
+
+// The text of a stopped call names every path that was written, each through the escape of a text of a person, in the
+// order of the list; the folders end with a slash; the count reads "0 things were", "1 thing was", "2 things were".
+func TestTheTextOfAStoppedCallNamesWhatWasWrittenInTheRightGrammar(t *testing.T) {
+	cause := errors.New("disk full")
+	for _, tc := range []struct {
+		name    string
+		written []string
+		want    string
+	}{
+		{"nothing", nil, "bundle: cannot make the bundle acme: the folder was made and 0 things were written in it: disk full"},
+		{"one", []string{"want/"}, "bundle: cannot make the bundle acme: the folder was made and 1 thing was written in it (want/): disk full"},
+		{"two", []string{"want/", "want/roots/"}, "bundle: cannot make the bundle acme: the folder was made and 2 things were written in it (want/, want/roots/): disk full"},
+		{"five", []string{"a", "b", "c", "d", "e"}, "bundle: cannot make the bundle acme: the folder was made and 5 things were written in it (a, b, c, d, e): disk full"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			err := &CreateError{Dir: "acme", Made: true, Written: tc.written, Err: cause}
+			if got := err.Error(); got != tc.want {
+				t.Errorf("Error() = %q, want %q", got, tc.want)
+			}
+		})
+	}
+
+	t.Run("a name with a line break and an escape is escaped", func(t *testing.T) {
+		err := &CreateError{Dir: "a\nb", Made: true, Written: []string{"x\ny/", "\x1b[31m", "\u202e"}, Err: cause}
+		got := err.Error()
+		for _, bad := range []string{"\n", "\x1b", "\u202e"} {
+			if strings.Contains(got, bad) {
+				t.Errorf("the text holds the raw character %q: %q", bad, got)
+			}
+		}
+		if !strings.Contains(got, "(x\\u000ay/, \\u001b[31m, \\u202e)") {
+			t.Errorf("the names are not shown escaped, in order: %q", got)
+		}
+	})
+
+	t.Run("a folder that was not made lists nothing", func(t *testing.T) {
+		err := &CreateError{Dir: "acme", Written: []string{"want/"}, Err: cause}
+		if got, want := err.Error(), "bundle: cannot make the bundle acme: the folder was not made: disk full"; got != want {
+			t.Errorf("Error() = %q, want %q", got, want)
+		}
+	})
 }

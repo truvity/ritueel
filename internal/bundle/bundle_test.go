@@ -728,3 +728,26 @@ func sameKey(a, b crypto.PublicKey) bool {
 	k, ok := a.(interface{ Equal(crypto.PublicKey) bool })
 	return ok && k.Equal(b)
 }
+
+// A bundle holds no OpenPGP primaries, so a delegation of the type openpgp-subkey cannot make a checker: the error is
+// the configuration error of the library and its words say "primaries", which is what a command tells a person by.
+// A delegation of another type, and no delegation, make one.
+func TestACheckerForAnOpenPGPSubkeyDelegationIsRefusedForWantOfPrimaries(t *testing.T) {
+	files := merge(baseBundle(t), tree{
+		"want/roots/pgp-root.yaml":               []byte("version: 1\nkind: openpgp\ntest: true\n"),
+		"want/delegations/pgp-sign.yaml":         []byte("version: 1\ntype: openpgp-subkey\nroot: pgp-root\ncapability: sign\n"),
+		"want/delegations/pgp-authenticate.yaml": []byte("version: 1\ntype: openpgp-subkey\nroot: pgp-root\ncapability: authenticate\n"),
+	})
+	b := openBundle(t, makeBundle(t, files))
+	for _, name := range []string{"pgp-sign", "pgp-authenticate"} {
+		chk, d, err := b.Checker(name, fixedNow, nil)
+		if chk != nil || d != nil || !errors.Is(err, handoff.ErrConfig) || !strings.Contains(err.Error(), "primaries") {
+			t.Errorf("%s: (%v, %v, %v), want no checker and ErrConfig that names the primaries", name, chk, d, err)
+		}
+	}
+	for _, name := range []string{delegationName, ""} {
+		if chk, _, err := b.Checker(name, fixedNow, nil); err != nil || chk == nil {
+			t.Errorf("%q: (%v, %v), want a checker", name, chk, err)
+		}
+	}
+}
