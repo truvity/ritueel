@@ -14,7 +14,7 @@ A **leaf** is the end of the chain: the certificate of a server, a service or a 
 - **Time.** An intermediate's certificate lasts 13 calendar months ([the contract](/reference/hand-off-contract/)). No chain is valid longer, and AWS Private CA, for one, refuses to issue a leaf that would outlive its parent [1].
 - **Names.** The certificate has critical name constraints. A client that follows them rejects a leaf with a name outside them. Clients differ, so test yours ([measured 2026-11-01](/learn/chain-private-pki/#why-one-intermediate-per-environment)).
 - **Depth.** The path length is 0: the intermediate issues leaves and no further CA.
-- **Use.** When the intermediate's certificate states what its certificates are for (extended key usage), issue a leaf only for those uses. The [reading note on CloudNativePG](/research/postgresql-under-cloudnativepg-and-a-private-pki-2026-11-13/) concludes that an intermediate limited to server use cannot sign client leaves that verify. That is a reading of code and documents, not a test.
+- **Use.** The certificate states what its certificates are for (extended key usage): issue a leaf only for those uses. The [reading note on CloudNativePG](/research/postgresql-under-cloudnativepg-and-a-private-pki-2026-11-13/) concludes that an intermediate limited to server use cannot sign client leaves that verify. That is a reading of code and documents, not a test.
 
 ## What you choose
 
