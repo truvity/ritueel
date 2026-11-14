@@ -9,6 +9,43 @@ import (
 	"go.yaml.in/yaml/v3"
 )
 
+// firstBang returns the first node of the tree, in the order of the file, whose text starts with "!", or nil. It uses
+// one walker for the whole walk, the way the walk of a file does.
+func firstBang(lines [][]byte, n *yaml.Node) *yaml.Node {
+	return (&walker{lines: lines}).firstBang(n)
+}
+
+func (w *walker) firstBang(n *yaml.Node) *yaml.Node {
+	if w.bangAt(n) {
+		return n
+	}
+	for _, c := range n.Content {
+		if b := w.firstBang(c); b != nil {
+			return b
+		}
+	}
+	return nil
+}
+
+// scanTags refuses a node of the text whose source starts with "!" and passes any other text, also a text that is
+// not YAML: it reads the first document of the bytes by itself and leaves every other fault to [read]. It is the
+// check on a text alone, for these tests.
+func scanTags(path string, data []byte) (err error) {
+	defer func() {
+		if recover() != nil {
+			err = nil
+		}
+	}()
+	var doc yaml.Node
+	if yaml.Unmarshal(data, &doc) != nil {
+		return nil
+	}
+	if n := firstBang(bytes.Split(data, []byte("\n")), &doc); n != nil {
+		return errorf(path, n.Line, tagMsg)
+	}
+	return nil
+}
+
 // scanTags refuses a "!" that starts a token (a tag of any kind, the bare "!" among them: the library drops the
 // bare one without a mark) and lets a "!" that is part of a text pass. The page says a file has no tags
 // (docs/reference/bundle.md, "Strict YAML"). These rows are the scan on its own; the readers' own tests refuse the
@@ -309,12 +346,12 @@ func TestBangAtReadsTheTextAtTheLineAndColumnOfANode(t *testing.T) {
 		{"a negative column on a line that starts with a bang", 5, -1, false},
 	} {
 		t.Run(r.name, func(t *testing.T) {
-			if got := bangAt(lines, &yaml.Node{Line: r.line, Column: r.col}); got != r.want {
+			if got := (&walker{lines: lines}).bangAt(&yaml.Node{Line: r.line, Column: r.col}); got != r.want {
 				t.Errorf("line %d column %d: %v, want %v", r.line, r.col, got, r.want)
 			}
 		})
 	}
-	if bangAt(nil, &yaml.Node{Line: 1, Column: 1}) {
+	if (&walker{}).bangAt(&yaml.Node{Line: 1, Column: 1}) {
 		t.Error("no lines: no tag")
 	}
 }
@@ -496,5 +533,152 @@ func TestTwoDocumentsThatHaveNoMarkerBetweenThemAreRefused(t *testing.T) {
 	var e *Error
 	if !errors.As(err, &e) || e.Msg != "a second document: a file holds one document" || e.Line != 0 {
 		t.Fatalf("got %#v", err)
+	}
+}
+
+// wantBang is the answer of the plain rule, with no shortcut: the text at the column of the node (characters, from
+// 1) starts with "!".
+func wantBang(line []byte, col int) bool {
+	if col < 1 {
+		return false
+	}
+	runes := []rune(string(line))
+	return col <= len(runes) && runes[col-1] == '!'
+}
+
+// The walker answers the same for every order of the lookups on one walker: up the columns of a line, down them, and
+// in a mixed order, on lines of ASCII, of non-ASCII and of both, and across lines. This holds the restart of the
+// cursor (a column below the last one) and its resume (a column at or above it).
+func TestBangAtGivesTheSameAnswerInAnyOrderOfLookups(t *testing.T) {
+	lines := [][]byte{
+		[]byte("a: ! b, c: !d"),
+		[]byte("é! 日!x \U0001F600! !é"),
+		[]byte(""),
+		[]byte("!日!日!"),
+		[]byte("plain ! ascii !"),
+	}
+	type look struct{ line, col int }
+	var all []look
+	for i, l := range lines {
+		for c := -1; c <= len([]rune(string(l)))+2; c++ {
+			all = append(all, look{i + 1, c})
+		}
+	}
+	orders := map[string][]look{"up": all}
+	down := make([]look, len(all))
+	mixed := make([]look, 0, len(all))
+	for i, l := range all {
+		down[len(all)-1-i] = l
+	}
+	// A fixed stride that visits every row once, so the columns and the lines jump about.
+	for i := 0; i < len(all); i++ {
+		mixed = append(mixed, all[(i*7)%len(all)])
+	}
+	orders["down"], orders["mixed"] = down, mixed
+	for name, order := range orders {
+		t.Run(name, func(t *testing.T) {
+			w := &walker{lines: lines}
+			for _, l := range order {
+				want := wantBang(lines[l.line-1], l.col)
+				if got := w.bangAt(&yaml.Node{Line: l.line, Column: l.col}); got != want {
+					t.Fatalf("line %d column %d: %v, want %v", l.line, l.col, got, want)
+				}
+			}
+		})
+	}
+}
+
+// The count of the work, with no clock. On a line that is not ASCII a lookup at a column that is not below the last
+// one counts on from the place the walker keeps, and a lookup below it starts again at the line start. A place that
+// the walker was given by hand shows which of the two happened: the answer is the one of the place. The same holds
+// on another line: the place of one line is no place of another.
+func TestBangAtCountsOnFromTheLastColumnOfALineThatIsNotASCII(t *testing.T) {
+	// Columns: 1 to 4 are the four characters of the first word, 5 is "!". The bytes: three each, so "!" is at 12.
+	line := []byte("日日日日!x")
+	bang := &yaml.Node{Line: 1, Column: 5}
+	if got := (&walker{lines: [][]byte{line}}).bangAt(bang); !got {
+		t.Fatal("the bang at column 5 is not found on a fresh walker")
+	}
+	// The place says: column 4 starts at byte 12, which is the byte of the bang. A lookup of column 5 that counts on
+	// from there steps over the bang and finds "x".
+	w := &walker{lines: [][]byte{line}, cur: cursor{line: 1, col: 4, off: 12}}
+	if w.bangAt(bang) {
+		t.Error("a lookup at a higher column did not count on from the last place")
+	}
+	if w.cur != (cursor{line: 1, col: 5, off: 13}) {
+		t.Errorf("the place after the lookup is %+v", w.cur)
+	}
+	// The same column again counts on from itself: nothing to step over.
+	w = &walker{lines: [][]byte{line}, cur: cursor{line: 1, col: 5, off: 12}}
+	if !w.bangAt(bang) {
+		t.Error("a lookup at the column of the last place did not use it")
+	}
+	// A column below the place starts again at the line start, and the answer is the true one.
+	w = &walker{lines: [][]byte{line}, cur: cursor{line: 1, col: 6, off: 99}}
+	if !w.bangAt(bang) {
+		t.Error("a lookup below the last place did not start again")
+	}
+	if w.cur != (cursor{line: 1, col: 5, off: 12}) {
+		t.Errorf("the place after the restart is %+v", w.cur)
+	}
+	// The place of another line is not used.
+	w = &walker{lines: [][]byte{line}, cur: cursor{line: 2, col: 4, off: 12}}
+	if !w.bangAt(bang) {
+		t.Error("the place of another line was used")
+	}
+	// A column past the end gives the end of the line, and no bang.
+	w = &walker{lines: [][]byte{line}}
+	if w.bangAt(&yaml.Node{Line: 1, Column: 50}) || w.cur.off != len(line) {
+		t.Errorf("past the end: place %+v", w.cur)
+	}
+}
+
+// A line of ASCII is indexed by the column: the walker never counts on it, so its place stays empty, and a line that
+// is not ASCII is marked once.
+func TestBangAtDoesNotCountOnALineOfASCII(t *testing.T) {
+	lines := [][]byte{[]byte("a: [b, ! c]"), []byte("é: !")}
+	w := &walker{lines: lines}
+	for c := 1; c <= 12; c++ {
+		_ = w.bangAt(&yaml.Node{Line: 1, Column: c})
+	}
+	if w.cur != (cursor{}) {
+		t.Errorf("the walker counted on a line of ASCII: %+v", w.cur)
+	}
+	if w.ascii[0] != asciiYes {
+		t.Errorf("line 1 is marked %d", w.ascii[0])
+	}
+	if !w.bangAt(&yaml.Node{Line: 2, Column: 4}) || w.ascii[1] != asciiNo || w.cur.line != 2 {
+		t.Errorf("line 2: marked %d, place %+v", w.ascii[1], w.cur)
+	}
+}
+
+// The weaker form of the time bound: the files are near the size limit, with thousands of nodes after one very long
+// run on one line, and the test has no clock but the default timeout of go test. Where the scan of the line start
+// is done again for every node, these files take seconds. The count of the work is held by the two tests above.
+func TestAFileNearTheSizeLimitIsReadWithOneLongLine(t *testing.T) {
+	items := strings.Repeat("a, ", 4000)
+	for name, run := range map[string]string{
+		"a run of spaces":            strings.Repeat(" ", 200000),
+		"a run of non-ASCII letters": "\"" + strings.Repeat("日", 60000) + "\", ",
+	} {
+		for _, tag := range []bool{false, true} {
+			text := "version: 1\nx: [" + run + items
+			if tag {
+				text += "! b]\n"
+			} else {
+				text += "b]\n"
+			}
+			if len(text) > MaxBytes {
+				t.Fatalf("%s: %d bytes, the limit is %d", name, len(text), MaxBytes)
+			}
+			t.Run(name, func(t *testing.T) {
+				_, err := read("f.yaml", []byte(text))
+				var e *Error
+				isTag := errors.As(err, &e) && e.Msg == tagMsg
+				if isTag != tag || (tag && e.Line != 2) {
+					t.Fatalf("tag fault %v, want %v: %v", isTag, tag, err)
+				}
+			})
+		}
 	}
 }

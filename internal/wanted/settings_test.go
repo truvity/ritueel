@@ -103,8 +103,8 @@ func TestEveryUnknownMemberIsRefusedByName(t *testing.T) {
 	kms := "aws_kms:\n  account: \"111122223333\"\n  region: eu-west-1\n  replica_region: eu-central-1\n  admin_role: arn:aws:iam::111122223333:role/a\n  ceremony_role: arn:aws:iam::111122223333:role/b\n"
 	for name, tc := range map[string]struct{ text, ctx string }{
 		"at the top":              {good + "extra: 1\n", ""},
-		"keyservers":              {good + "keyservers: [keys.openpgp.org]\n", ""},
-		"keyservers, the block":   {good + "keyservers:\n  - address: keys.openpgp.org\n", ""},
+		"keyservers":              {good + "keyservers: [keys.example.org]\n", ""},
+		"keyservers, the block":   {good + "keyservers:\n  - address: keys.example.org\n", ""},
 		"in policy":               {replaceOnce(t, good, "  validity_months: 13\n", "  validity_months: 13\n  extra: 1\n"), "policy: "},
 		"in person":               {replaceOnce(t, goodPersonal, "  address: person@example.org\n", "  address: person@example.org\n  extra: x\n"), "person: "},
 		"in keyring":              {good + "keyring:\n  license: CC0-1.0\n  extra: x\n", "keyring: "},
@@ -374,7 +374,7 @@ func TestAnAwsKmsBlock(t *testing.T) {
 		words  []string
 	}{
 		"an account that is not quoted":  {func(s string) string { return strings.Replace(s, `"`+acct+`"`, acct, 1) }, 11, []string{"aws_kms.account must be quoted"}},
-		"an account with a leading zero": {func(s string) string { return strings.Replace(s, `"`+acct+`"`, "011122223333", 1) }, 11, []string{"must be quoted"}},
+		"an account with a leading zero": {func(s string) string { return strings.Replace(s, `"`+acct+`"`, "000000000000", 1) }, 11, []string{"must be quoted"}},
 		"an account that is a float":     {func(s string) string { return strings.Replace(s, `"`+acct+`"`, "1.5", 1) }, 11, []string{"must be quoted"}},
 		"an account of 11 digits":        {func(s string) string { return strings.Replace(s, acct, "11112222333", 1) }, 11, []string{"12 digits"}},
 		"an account of 13 digits":        {func(s string) string { return strings.Replace(s, `"`+acct+`"`, `"1111222233334"`, 1) }, 11, []string{"12 digits"}},
@@ -387,10 +387,10 @@ func TestAnAwsKmsBlock(t *testing.T) {
 			return strings.Replace(s, "region: eu-west-1", "region: "+strings.Repeat("a", 65), 1)
 		}, 12, []string{"aws_kms.region"}},
 		"a role in another account": {func(s string) string {
-			return strings.Replace(s, "iam::"+acct+":role/example-admin", "iam::999988887777:role/example-admin", 1)
+			return strings.Replace(s, "iam::"+acct+":role/example-admin", "iam::444455556666:role/example-admin", 1)
 		}, 14, []string{"aws_kms.admin_role is a role in the account"}},
 		"the ceremony role in another one": {func(s string) string {
-			return strings.Replace(s, "iam::"+acct+":role/example-ceremony", "iam::999988887777:role/example-ceremony", 1)
+			return strings.Replace(s, "iam::"+acct+":role/example-ceremony", "iam::444455556666:role/example-ceremony", 1)
 		}, 15, []string{"aws_kms.ceremony_role is a role in the account"}},
 		"a role ARN with nothing after": {func(s string) string { return strings.Replace(s, "role/example-admin", "role/", 1) }, 14, []string{"aws_kms.admin_role is a role ARN"}},
 		"a user ARN":                    {func(s string) string { return strings.Replace(s, ":role/example-admin", ":user/example-admin", 1) }, 14, []string{"role ARN"}},
