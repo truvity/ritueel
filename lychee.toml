@@ -26,6 +26,10 @@ exclude = [
   # RFC links are references, not something this site can fix; datatracker.ietf.org serves the
   # same documents.
   '^https://www\.rfc-editor\.org/',
+  # fidoalliance.org answers 403 to the link check from the CI runner, as of 2026-11-14, although
+  # the page is served to a reader. The links are references to the CTAP specification, not
+  # something this site can fix.
+  '^https://fidoalliance\.org/',
   # Needs a token or a session.
   '^https://(www\.)?linkedin\.com',
 ]
