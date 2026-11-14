@@ -1402,6 +1402,104 @@
       "reason": "malformed"
     },
     {
+      "id": "x509-subject-domain-component-three-times",
+      "type": "x509-intermediate",
+      "config": "development",
+      "files": [
+        "requests/x509-subject-domain-component-three-times.csr.pem",
+        "requests/x509-subject-domain-component-three-times.proof.json"
+      ],
+      "expect": "accept"
+    },
+    {
+      "id": "x509-subject-empty-value",
+      "type": "x509-intermediate",
+      "config": "development",
+      "files": [
+        "requests/x509-subject-empty-value.csr.pem",
+        "requests/x509-subject-empty-value.proof.json"
+      ],
+      "expect": "refuse",
+      "reason": "policy"
+    },
+    {
+      "id": "x509-subject-organization-65-characters",
+      "type": "x509-intermediate",
+      "config": "development",
+      "files": [
+        "requests/x509-subject-organization-65-characters.csr.pem",
+        "requests/x509-subject-organization-65-characters.proof.json"
+      ],
+      "expect": "refuse",
+      "reason": "policy"
+    },
+    {
+      "id": "x509-subject-empty-relative-name",
+      "type": "x509-intermediate",
+      "config": "development",
+      "files": [
+        "requests/x509-subject-empty-relative-name.csr.pem",
+        "requests/x509-subject-empty-relative-name.proof.json"
+      ],
+      "expect": "refuse",
+      "reason": "malformed"
+    },
+    {
+      "id": "x509-subject-printable-string-at-sign",
+      "type": "x509-intermediate",
+      "config": "development",
+      "files": [
+        "requests/x509-subject-printable-string-at-sign.csr.pem",
+        "requests/x509-subject-printable-string-at-sign.proof.json"
+      ],
+      "expect": "refuse",
+      "reason": "policy"
+    },
+    {
+      "id": "x509-subject-content-fault-before-form-fault",
+      "type": "x509-intermediate",
+      "config": "development",
+      "files": [
+        "requests/x509-subject-content-fault-before-form-fault.csr.pem",
+        "requests/x509-subject-content-fault-before-form-fault.proof.json"
+      ],
+      "expect": "refuse",
+      "reason": "malformed"
+    },
+    {
+      "id": "x509-request-extension-request-empty",
+      "type": "x509-intermediate",
+      "config": "development",
+      "files": [
+        "requests/x509-request-extension-request-empty.csr.pem",
+        "requests/x509-request-extension-request-empty.proof.json"
+      ],
+      "expect": "refuse",
+      "reason": "malformed"
+    },
+    {
+      "id": "x509-request-signature-algorithm-not-well-formed",
+      "type": "x509-intermediate",
+      "config": "development",
+      "files": [
+        "requests/x509-request-signature-algorithm-not-well-formed.csr.pem",
+        "requests/x509-request-signature-algorithm-not-well-formed.proof.json"
+      ],
+      "expect": "refuse",
+      "reason": "malformed"
+    },
+    {
+      "id": "x509-nc-subtree-minimum-0",
+      "type": "x509-intermediate",
+      "config": "development",
+      "files": [
+        "requests/x509-nc-subtree-minimum-0.csr.pem",
+        "requests/x509-nc-subtree-minimum-0.proof.json"
+      ],
+      "expect": "refuse",
+      "reason": "policy"
+    },
+    {
       "id": "x509-response-request",
       "type": "x509-intermediate",
       "config": "development",

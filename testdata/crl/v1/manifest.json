@@ -5,17 +5,17 @@
     {
       "label": "A",
       "certificate": "pki/test-root-a.pem",
-      "x509_spki_sha256": "45150040acec77c364b1f3fe61f24ac935f3a4247da9349a2b6e8a8befc9b6bd"
+      "x509_spki_sha256": "9b3c23d6e22e9dc1adb0a52a2322f700e39c731dfb8a33bdb4ecc58efff89382"
     },
     {
       "label": "B",
       "certificate": "pki/test-root-b.pem",
-      "x509_spki_sha256": "4000bab39280ca4e073bbdd7f7cbb1675bfb445629024222629dd2f920e64a8f"
+      "x509_spki_sha256": "3a5017e666b0bfc297d87d555310bd93d201e4d3b9c3ae26dd5f85fceb322f79"
     },
     {
       "label": "Z",
       "certificate": "pki/test-root-z.pem",
-      "x509_spki_sha256": "318a0b41bd8b94220de8a22874626336ff5a95279ecb4e4eab2598bf7a48d7fa"
+      "x509_spki_sha256": "a1df12d42d16b34e6cb5ed5d932fd683e49ed3445037f5e5ca4c35c6cf8958e7"
     }
   ],
   "certs": [
@@ -23,13 +23,13 @@
       "id": "ca-a-1",
       "file": "certs/ca-a-1.pem",
       "issuer": "A",
-      "serial": "60e3356fcd294fed29d6d310713f961778b4e9"
+      "serial": "65b97c7fc8c65909bfc3cc30affe65da81b36c"
     },
     {
       "id": "ca-b-1",
       "file": "certs/ca-b-1.pem",
       "issuer": "B",
-      "serial": "f7dd8209d929d575694af51391bb6508e17e13"
+      "serial": "6853f05ced40ca137ff0c801749fa07608630c"
     }
   ],
   "crls": [
@@ -60,7 +60,7 @@
       "next_update": "2029-01-01T12:00:00Z",
       "revoked": [
         {
-          "serial": "60e3356fcd294fed29d6d310713f961778b4e9",
+          "serial": "65b97c7fc8c65909bfc3cc30affe65da81b36c",
           "reason": "keyCompromise"
         }
       ]
@@ -74,7 +74,7 @@
       "next_update": "2028-12-15T12:00:00Z",
       "revoked": [
         {
-          "serial": "60e3356fcd294fed29d6d310713f961778b4e9",
+          "serial": "65b97c7fc8c65909bfc3cc30affe65da81b36c",
           "reason": "keyCompromise"
         }
       ]
@@ -97,7 +97,7 @@
       "next_update": "2029-01-01T12:00:00Z",
       "revoked": [
         {
-          "serial": "60e3356fcd294fed29d6d310713f961778b4e9",
+          "serial": "65b97c7fc8c65909bfc3cc30affe65da81b36c",
           "reason": "keyCompromise"
         }
       ]

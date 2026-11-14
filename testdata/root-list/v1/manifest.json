@@ -6,29 +6,29 @@
       "label": "A",
       "certificate": "pki/test-root-a.pem",
       "openpgp": "pki/test-primary-a.pgp",
-      "x509_spki_sha256": "45150040acec77c364b1f3fe61f24ac935f3a4247da9349a2b6e8a8befc9b6bd",
-      "openpgp_fingerprint": "b7848e86c7a31b07647cf5007655340a4424087e"
+      "x509_spki_sha256": "9b3c23d6e22e9dc1adb0a52a2322f700e39c731dfb8a33bdb4ecc58efff89382",
+      "openpgp_fingerprint": "d3780197fa25eb09d7027128ab3de854e11fe959"
     },
     {
       "label": "B",
       "certificate": "pki/test-root-b.pem",
       "openpgp": "pki/test-primary-b.pgp",
-      "x509_spki_sha256": "4000bab39280ca4e073bbdd7f7cbb1675bfb445629024222629dd2f920e64a8f",
-      "openpgp_fingerprint": "00cc3d60d2ee107adf91dc7f32af24362cadd5b9"
+      "x509_spki_sha256": "3a5017e666b0bfc297d87d555310bd93d201e4d3b9c3ae26dd5f85fceb322f79",
+      "openpgp_fingerprint": "d032a8740021c11ea532193baf7914d9eb850ea6"
     },
     {
       "label": "C",
       "certificate": "pki/test-root-c.pem",
       "openpgp": "pki/test-primary-c.pgp",
-      "x509_spki_sha256": "dc92c789435815af4b7ff363c1da7221576449233806b24366a8e8d82e83f5c3",
-      "openpgp_fingerprint": "05d72eb019853a19e2407f3fb39593b0009f7328"
+      "x509_spki_sha256": "9c0423b2a6db96e7f3e30587c5e6c5f9de2d3c2644ba2f876aa97ca0f41b5fee",
+      "openpgp_fingerprint": "f3be05ce04645f85ef8e1e6227ad679a39372b13"
     },
     {
       "label": "Z",
       "certificate": "pki/test-root-z.pem",
       "openpgp": "pki/test-primary-z.pgp",
-      "x509_spki_sha256": "318a0b41bd8b94220de8a22874626336ff5a95279ecb4e4eab2598bf7a48d7fa",
-      "openpgp_fingerprint": "7c83f7fb517888da9a8bdf2e1d2f7a8da92e874e"
+      "x509_spki_sha256": "a1df12d42d16b34e6cb5ed5d932fd683e49ed3445037f5e5ca4c35c6cf8958e7",
+      "openpgp_fingerprint": "7c5d0a249e259a62858be3afa513e6fca8acef63"
     }
   ],
   "initial_pins": [
@@ -776,6 +776,14 @@
       "reason": "ca-bundle-mismatch"
     },
     {
+      "id": "ca-bundle-certificate-names-another-issuer",
+      "held": null,
+      "candidate": "seq7-a",
+      "bundle": "ca-bundle-7-issuer-is-another-name",
+      "expect": "refuse",
+      "reason": "ca-bundle-mismatch"
+    },
+    {
       "id": "ca-bundle-with-a-certificate-too-many",
       "held": null,
       "candidate": "seq7-a",
@@ -845,6 +853,16 @@
         "B"
       ],
       "flaw": "not-a-ca"
+    },
+    {
+      "id": "ca-bundle-7-issuer-is-another-name",
+      "file": "bundles/ca-bundle-7-issuer-is-another-name.pem",
+      "sequence": 7,
+      "roots": [
+        "A",
+        "B"
+      ],
+      "flaw": "issuer-not-subject"
     },
     {
       "id": "ca-bundle-7-extra-certificate",
