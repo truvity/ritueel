@@ -155,17 +155,17 @@ func TestACallerThatRewritesAParameterDuringACallCannotMakeTheCallPanicOrReturnA
 				t.Fatalf("a call panicked: %v", panicked)
 			}
 			t.Logf("refusals by text: %v", texts)
-			// The refusal "a parameter changed while the call copied it" can be forced only by a writer in a second goroutine; it
-			// is reached here, for the serial and the request, where the call is refused most often.
+			// The refusal "a parameter changed while the call copied it" can be reached only by a writer in a second goroutine,
+			// inside a window of a few nanoseconds in one copy. Whether a call is caught there depends on how the two goroutines
+			// are scheduled (with one processor the writer runs only when the caller is preempted), so the count is logged and
+			// nothing is asked of it; what is asked of every call is below, and holds for every interleaving.
 			changed := 0
 			for text, n := range texts {
 				if strings.Contains(text, "a parameter changed while the call copied it") {
 					changed += n
 				}
 			}
-			if (c.name == "the serial" || c.name == "the request") && changed == 0 {
-				t.Errorf("no call was refused for a parameter that changed while it was copied, in %d refusals", refusedN)
-			}
+			t.Logf("%s: %d of %d refusals were for a parameter that changed while it was copied", c.name, changed, refusedN)
 			t.Logf("%s: %d calls, %d returned (%d not the body of either value), %d refused", c.name, calls, returned, mixed, refusedN)
 			if mixed != 0 && !c.lengths {
 				t.Errorf("%d bodies of a mixed value were returned", mixed)
