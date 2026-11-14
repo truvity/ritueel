@@ -192,7 +192,7 @@ function contentFaults(doc) {
 //     `reason`, a warned one a `warning`, an accepted one neither;
 //   - each bundle starts with `# trust-sequence: N` for its `sequence`, and holds the certificates of
 //     its `roots`, in that order; each certificate verifies with its own key and is a CA
-//     certificate, except in a bundle with a `flaw` (`not-signed-by-its-own-key`, `not-a-ca`, ...),
+//     certificate, and names itself as its issuer, except in a bundle with a `flaw` (`not-signed-by-its-own-key`, `not-a-ca`, `issuer-not-subject`, ...),
 //     which a case refuses with `ca-bundle-mismatch`, and which has that flaw only;
 //   - a list's `expires_at` is exactly 13 calendar months after its `signed_at`, and its `signed_at`
 //     is not after the clock of a case that has it as the candidate, except in a list with a `flaw`
@@ -326,12 +326,15 @@ function checkRootList(mpath, m, read, need) {
     const got = certs.map((pem) => spkiHash(new X509Certificate(pem)));
     const want = (b.roots ?? []).map((label) => roots.get(label)?.x509_spki_sha256);
     if (got.join() !== want.join()) E(`${mpath}: bundle ${b.id}: the certificates are not those of ${(b.roots ?? []).join(', ')}, in that order`);
-    if (![undefined, 'not-signed-by-its-own-key', 'not-a-ca', 'extra-certificate', 'missing-certificate', 'wrong-order', 'wrong-sequence'].includes(b.flaw)) E(`${mpath}: bundle ${b.id}: unknown flaw ${b.flaw}`);
+    if (![undefined, 'not-signed-by-its-own-key', 'not-a-ca', 'extra-certificate', 'missing-certificate', 'wrong-order', 'wrong-sequence', 'issuer-not-subject'].includes(b.flaw)) E(`${mpath}: bundle ${b.id}: unknown flaw ${b.flaw}`);
     // a root certificate signs itself and is a CA certificate: its text is what the root key signed
     const parsed = certs.map((pem) => new X509Certificate(pem));
     const selfOk = parsed.every((c) => c.verify(c.publicKey));
     const allCa = parsed.every((c) => c.ca);
     if (selfOk === (b.flaw === 'not-signed-by-its-own-key')) E(`${mpath}: bundle ${b.id}: ${selfOk ? 'every certificate verifies with its own key, but the manifest names the flaw not-signed-by-its-own-key' : 'a certificate does not verify with its own key'}`);
+    // and names itself as its issuer: the issuer name is the subject name
+    const selfNamed = parsed.every((c) => c.issuer === c.subject);
+    if (selfNamed === (b.flaw === 'issuer-not-subject')) E(`${mpath}: bundle ${b.id}: ${selfNamed ? 'every certificate names itself as its issuer, but the manifest names the flaw issuer-not-subject' : 'a certificate names another issuer than its subject'}`);
     if (allCa === (b.flaw === 'not-a-ca')) E(`${mpath}: bundle ${b.id}: ${allCa ? 'every certificate is a CA certificate, but the manifest names the flaw not-a-ca' : 'a certificate is not a CA certificate'}`);
   }
 }

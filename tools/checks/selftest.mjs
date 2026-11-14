@@ -353,6 +353,7 @@ expect('an empty authorisation the manifest does not name', 'vectors', rlWith('m
 expect('a flaw the manifest names and no check knows', 'vectors', rlWith('manifest.json', (t) => t.replace('"flaw": "sequence-0"', '"flaw": "sequence-zero"')), 'fail', { has: ['unknown flaw sequence-zero'] });
 expect('a list accepted at the held sequence with other bytes', 'vectors', rlWith('manifest.json', (t) => t.replace('"candidate": "seq7-a-and-z"', '"candidate": "seq7-a-without-b"')), 'fail', { has: ["accepted at the held list's sequence"] });
 expect('a CA bundle whose flaw its sequence does not bear out', 'vectors', rlWith('manifest.json', (t) => t.replace('"flaw": "extra-certificate"', '"flaw": "wrong-sequence"')), 'fail', { has: ['which the flaw wrong-sequence needs to differ'] });
+expect('a CA bundle with another issuer name that the manifest does not name', 'vectors', rlWith('manifest.json', (t) => t.replace('"flaw": "issuer-not-subject"', '"flaw": "not-a-ca"')), 'fail', { has: ['bundle ca-bundle-7-issuer-is-another-name: a certificate names another issuer than its subject'] });
 
 // ---- SSH CA key list and CRL vectors: the committed sets, copied, then broken one way at a time
 const copyOf = (set) => {
