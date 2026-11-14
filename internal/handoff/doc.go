@@ -45,4 +45,9 @@
 // at most [MaxFileSize] bytes, as for a JSON file in the contract), every refusal text is fixed words
 // and numbers, and any text that came from a request goes through [jsonset.Escape] before it is
 // put into an error.
+//
+// The evidence verifiers for the key stores piv and openpgp-card are in the packages under
+// internal/handoff/evidence: attest (the pinned set of the maker's certificates and the chain rule),
+// piv, openpgpcard and, for tests, attesttest. Each verifier is an [EvidenceVerifier] that the caller puts
+// in [Config.Evidence]; no command registers one yet, because no real maker bundle is shipped.
 package handoff
