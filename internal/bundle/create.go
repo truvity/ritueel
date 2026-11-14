@@ -1,0 +1,169 @@
+package bundle
+
+import (
+	"errors"
+	"fmt"
+	"io/fs"
+	"path/filepath"
+	"strings"
+
+	"ritueel.id/ritueel/internal/fsx"
+	"ritueel.id/ritueel/internal/jsonset"
+	"ritueel.id/ritueel/internal/wanted"
+)
+
+// The modes of what [Create] makes, less the umask of the process.
+const (
+	folderMode fs.FileMode = 0o755
+	fileMode   fs.FileMode = 0o644
+)
+
+// CreateError is the error of [Create]. It says what the call had already made when it stopped, so that the
+// caller can tell a person which folder to remove. Create deletes nothing and does not retry.
+type CreateError struct {
+	// Dir is the folder that was asked for, as the caller gave it.
+	Dir string
+	// Made is true when the folder itself exists because of this call, also when the flush of its parent failed
+	// after the make. When it is false nothing was written.
+	Made bool
+	// Written lists what exists inside the folder after the stop, as paths relative to it: a folder ends
+	// with "/". A folder or a file is listed when its make or its rename succeeded, also when the flush that
+	// follows it failed. It holds no ritueel.yaml unless every other file was written first. The temporary
+	// names (".rt-" and a random part) that a cut leaves in a folder are not listed: a name that fsx drew is not
+	// one of the bundle's, and Create deletes nothing, so the person removes the folder as a whole.
+	Written []string
+	// Err is the cause.
+	Err error
+
+	// whole is true when the bundle is whole on disk (every folder and file is listed) and only the last flush
+	// failed, so that the bundle may not survive a power cut.
+	whole bool
+}
+
+// Error says that the folder was not made, or that it was made in part, and why.
+func (e *CreateError) Error() string {
+	if e == nil {
+		return "bundle: no error"
+	}
+	state := "the folder was not made"
+	if e.Made {
+		state = fmt.Sprintf("the folder was made and %d things were written in it", len(e.Written))
+	}
+	if e.whole {
+		state = "the bundle is whole on disk but was not flushed: it may not survive a power cut"
+	}
+	return fmt.Sprintf("bundle: cannot make the bundle %s: %s: %v", jsonset.Escape(e.Dir), state, e.Err)
+}
+
+// Unwrap returns the cause.
+func (e *CreateError) Unwrap() error {
+	if e == nil {
+		return nil
+	}
+	return e.Err
+}
+
+// Create makes the new bundle folder dir and the starter wanted files in it, and returns the files in the
+// order they were written. Nothing is created above the parent of dir: the parent must exist, and a link as
+// the last element of the parent is refused. The last element of dir must pass [fsx.CheckName]: a bundle is
+// named by its folder, and the name goes into the names of its objects. dir must hold no ".." element.
+//
+// The folder is made by a make that fails when anything holds the name (record 0006, rule 42): a file, a
+// folder (an empty one too), a link, a leftover. Create never writes into an existing folder. Then it makes
+// want/ and want/roots/, writes each root file, and writes ritueel.yaml last; each file has mode 0644 and each
+// folder 0755, less the umask. The folders seen/, sealed/, roots/, requests/, history/, trust/ and drills/ are
+// not made: the code that writes into each makes it. The first error of the writer stops it for good, and
+// the error is a [*CreateError] that lists what was made.
+//
+// The starter files are made and read back before any write ([Starter]); an error there writes nothing.
+func Create(dir string, opt StarterOptions) ([]wanted.File, error) {
+	parent, last, err := splitDir(dir)
+	if err != nil {
+		return nil, &CreateError{Dir: dir, Err: err}
+	}
+	files, err := Starter(opt)
+	if err != nil {
+		return nil, &CreateError{Dir: dir, Err: err}
+	}
+	parentFS, err := fsx.OpenFS(parent)
+	if err != nil {
+		return nil, &CreateError{Dir: dir, Err: fmt.Errorf("the parent folder cannot be opened: %w", err)}
+	}
+	w := &fsx.Writer{FS: parentFS}
+	defer func() { _ = w.Close() }()
+	if err := create(w, dir, last, files); err != nil {
+		return nil, err
+	}
+	return files, nil
+}
+
+// create makes the folder last in the root of w and writes the files into it. It is the part of Create that a
+// test drives with a file system of its own.
+func create(w *fsx.Writer, dir, last string, files []wanted.File) error {
+	e := &CreateError{Dir: dir}
+	total := 2 + len(files) // the two folders and the files
+	fail := func(err error) error {
+		e.Err = err
+		e.whole = e.Made && len(e.Written) == total
+		return e
+	}
+	if err := w.Mkdir(last, folderMode); err != nil {
+		// The make is followed by a flush of the parent. A fault at the flush leaves the folder on disk, so
+		// the person is told to remove it: only a fault before the flush means that nothing was made.
+		e.Made = existsAfter(err)
+		return fail(err)
+	}
+	e.Made = true
+	for _, d := range []string{"want", wanted.RootsDir} {
+		err := w.Mkdir(last+"/"+d, folderMode)
+		if existsAfter(err) {
+			e.Written = append(e.Written, d+"/")
+		}
+		if err != nil {
+			return fail(err)
+		}
+	}
+	for _, f := range files {
+		err := w.WriteFile(last+"/"+f.Path, f.Data, fileMode)
+		if existsAfter(err) {
+			e.Written = append(e.Written, f.Path)
+		}
+		if err != nil {
+			return fail(err)
+		}
+	}
+	return nil
+}
+
+// existsAfter tells whether what a make or a write was asked for exists after it returned err: it does when it
+// succeeded, and when only the flush that follows the make or the rename failed (Step sync-dir). A fault at
+// any earlier step leaves the name unmade.
+func existsAfter(err error) bool {
+	if err == nil {
+		return true
+	}
+	var fe *fsx.Error
+	return errors.As(err, &fe) && fe.Step == fsx.StepSyncDir
+}
+
+// splitDir splits dir into its parent and its last element, and checks the last element and that there is no
+// ".." element. The parent of a single name is ".".
+func splitDir(dir string) (parent, last string, err error) {
+	if dir == "" {
+		return "", "", errors.New("the folder name is empty")
+	}
+	for _, el := range strings.Split(dir, "/") {
+		if el == ".." {
+			return "", "", errors.New("the path has a \"..\" element")
+		}
+	}
+	clean := filepath.Clean(dir)
+	parent, last = filepath.Split(clean)
+	if parent == "" {
+		parent = "."
+	}
+	if err := fsx.CheckName(last); err != nil {
+		return "", "", fmt.Errorf("the last element of the path is not a name of a bundle: %w", err)
+	}
+	return parent, last, nil
+}
