@@ -12,7 +12,7 @@ import (
 	"testing"
 )
 
-// What was decided for this check on 2026-11-14, one test group for each decision, named after what it decides.
+// The choices of this check, one test group for each, named after what it chooses.
 
 // A name that is valid but that the check does not expect, and a leftover temporary name, are a
 // notice: exit code 0, the code in warnings. A name that breaks the rule for names fails.

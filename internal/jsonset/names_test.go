@@ -339,7 +339,7 @@ var formatNames = []string{
 	"x509_spki_sha256", "x5c",
 }
 
-func TestEveryNameOfTheDecidedFormatsIsInsideTheRule(t *testing.T) {
+func TestEveryNameOfTheFormatsIsInsideTheRule(t *testing.T) {
 	if len(formatNames) != 116 {
 		t.Errorf("the list holds %d names", len(formatNames))
 	}
