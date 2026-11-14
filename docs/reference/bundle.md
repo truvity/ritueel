@@ -96,7 +96,7 @@ A personal bundle also holds the wrapped backup of the encryption subkey (record
 
 ### Where the trust sequence is carried
 
-The trust sequence is one integer for the bundle. It grows by one whenever any trust file changes, there is no second counter, and every trust file carries it ([record 0006](../decisions/0006-bundle-history-and-trust-files.md), rule 14):
+The trust sequence is one integer for the bundle. It grows by one whenever any trust file changes, there is no second counter, and every trust file carries it ([record 0006](../decisions/0006-bundle-history-and-trust-files.md), rule 14). It grows for the holder: a host that takes a root list by the way back holds a lower number afterwards, or the same number with another list ([record 0006](../decisions/0006-bundle-history-and-trust-files.md), rule 53). It is carried here:
 
 | Trust file | Where it carries the sequence |
 |---|---|

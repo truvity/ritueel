@@ -13,7 +13,7 @@ Terms used below. A **host** is a system that reads the root list to learn which
 
 ## When
 
-Read on 2026-11-14. The ritueel pages are those of `origin/main` at commit `69ff9df` (2026-11-13). Nothing was run: this note compares documents and source code. Code was read at the versions in the table, not executed.
+Read on 2026-11-14. The ritueel pages are those of `origin/main` at commit `69ff9df` (2026-11-13). When it was first written nothing was run: it compares documents and source code. The run of section 6 is described at the end of that section. Code was read at the versions in the table, not executed.
 
 ## Verdict
 
@@ -239,10 +239,12 @@ What this does not fix, and the page should say:
 6. What a requester of the hand-off contract does when the sequence of the held list goes down after a way back. This note did not read the contract.
 7. If A is also wanted: a host that walks 20 lists with an expired one in the middle, with the clock fixed at the start.
 
+**Result, 2026-11-14.** Items 1 to 5 of section 6 were run. Item 6 was read in the pages of the hand-off contract and not run, and item 7 was covered by a sweep of dates, not by a walk of 20 lists. The way back as first proposed, option E for any list that removes a key, lets an old public list with one added signature bring back a revoked key, and lets a host with only pins take a list below its lowest sequence, with one stolen key in the first case and none in the second. One condition closes both: every root key that the list removes is named in its `removals`, and a host with only pins does not use the way back; with it a run over the 14,994 histories of up to 6 lists that have no re-add (of 25,766) found no old list that passes for an attacker who does not already hold a current root key together with a stored authorisation, or two current root keys, and the revoke list was taken, with every honest list after it, in 11,464 of 11,464 theft scenarios in which the host held the list before the revoke ([record 0006](../decisions/0006-bundle-history-and-trust-files.md), rules 53 and 54). Three further reads of the narrowed form, one of the model, one of the protocol with real keys against a copy of the checker, and one of the writer, held for an attacker who does not already hold a current root key together with a stored authorisation (or two current root keys). They found that these changes are needed, and they are now in the page and the records: a revoke list always carries the key's authorisation, also when the key signs it; a key is removed by its pin and check 9 judges whether an entry is valid; and the writer refuses a root key that comes back. What the way back does not reach is on [the root list page](/reference/root-list/#how-a-host-reads-it). One adjacent point is not part of the way back and is open: check 2 of the SSH CA key list reads the signers of the root list the host holds when the two sequences are equal, so a thief who holds a revoked key and sits on the channel can add the key's own signature to the `.jws` of the honest revoke list and then sign an SSH CA key list at that sequence; this is no worse than before ([issue #245](https://github.com/truvity/ritueel/issues/245)).
+
 ## What this does not show
 
-- Nothing was run. No host, no list and no probe was tried by the author; the report's probes are the report's.
-- Option E's safety against replay is an argument from the page's rules, not a test (section 6).
+- When this note was first written nothing was run; the run of section 6 is described at the end of that section.
+- Option E as first written was not safe against replay (see the result at the end of section 6); the narrowed form that names every removed key is the one that held in the run.
 - The Chromium CRLSet header says "the monotonic sequence number of this CRL set"; the rule a browser applies to a lower one was not found in the files read. Mozilla's CRLite and Remote Settings were not read.
 - Sigstore's client rules and the code of any TUF client (python-tuf, go-tuf) were not read; TUF is read at its specification.
 - For CT only RFC 9162 was read, not the browser policies or the gossip drafts; no sentence on a client facing a smaller tree head was found.

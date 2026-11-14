@@ -129,7 +129,7 @@ Decided in [0005](decisions/0005-a-ceremony-and-where-it-runs.md) and [0007](dec
 
 - Refusals come before anything is written, such as a wrong card or a default PIN.
 - Each OpenPGP primary gets revocation signatures at birth, kept apart. A drill is due yearly.
-- A host refuses a lower sequence, a bad signature and an expired list.
+- A host refuses a lower sequence (except a list that removes a root key and names every key it removes), a bad signature and an expired list.
 - The site publishes only a small target (`site/published.txt`).
 
 Decided in [0001](decisions/0001-what-ritueel-is.md), [0003](decisions/0003-root-cards.md), [0005](decisions/0005-a-ceremony-and-where-it-runs.md), [0006](decisions/0006-bundle-history-and-trust-files.md) and [0007](decisions/0007-changing-and-losing-a-root.md).

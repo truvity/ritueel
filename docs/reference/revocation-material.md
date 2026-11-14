@@ -49,7 +49,7 @@ The **digest** of each signature: the SHA-256 of the binary signature packet, so
 
 ## The removal authorisation
 
-Changing the root keys requires every current root key, or a root key's stored removal authorisation ([the root list](/reference/root-list/#who-signs)). A root key that is lost or destroyed cannot sign the list that removes it, so it signs its consent in advance: when it is born, at the first `apply` or at the `apply` that adds it, its X.509 root key signs a statement over its own pin, in [the format of the root list page](/reference/root-list/#the-removal-authorisation). It has no reason, no sequence and no expiry. A personal bundle, which has no X.509 key and no root list, makes none.
+Changing the root keys requires every current root key, or a root key's stored removal authorisation ([the root list](/reference/root-list/#who-signs)). A root key that is lost or destroyed cannot sign the list that removes it, so it signs its consent in advance: when it is born, at the first `apply` or at the `apply` that adds it, its X.509 root key signs a statement over its own pin, in [the format of the root list page](/reference/root-list/#the-removal-authorisation). A revoke list carries it for every revoked key whose authorisation is stored, also when the key can still sign, so that a host that took a thief's list can take the list. It has no reason, no sequence and no expiry. A personal bundle, which has no X.509 key and no root list, makes none.
 
 It is revocation material, and is handled like a revocation signature:
 
@@ -60,7 +60,7 @@ It is revocation material, and is handled like a revocation signature:
 
 The same refusals apply (`revocation-dir`, `revocation-exists`), it is never printed, and the holder stores it apart from the cards with the revocation signatures. The bundle keeps its digest, the SHA-256 of the JWS text, in `root.json` as `removal_sha256`, and the ceremony record lists it in `revocations` as `{ "label", "reason": "root-removal", "sha256" }`. Its signature is one of the plan's, of kind `root-removal`, and on a card it takes a touch.
 
-`revoke` attaches it to the list that removes the root key, when that root key does not sign the list itself ([root transitions](/reference/transitions/#revoking-a-root-key)). Anyone who holds it and the other root keys can remove that root key from the set, so it is kept with the same care as the revocation signatures.
+`revoke` attaches it to the list that removes the root key whenever it is stored, also when that root key can sign the list ([root transitions](/reference/transitions/#revoking-a-root-key)). Anyone who holds it and the other root keys can remove that root key from the set, and it is public once that list is published, so it is kept with the same care as the revocation signatures until then.
 
 ## Making one later, and checking one
 
@@ -73,7 +73,7 @@ The same refusals apply (`revocation-dir`, `revocation-exists`), it is never pri
 
 ## Using one
 
-`revoke` is the one command that uses stored material: it checks the revocation signature, and the removal authorisation when the root key does not sign, as `check material` does, and attaches the authorisation to the new root list ([root transitions](/reference/transitions/#revoking-a-root-key)); the revocation signature is published beside the keyring package (record 0009, rule 18). For a person's primary the guide is [Revoke a key](/guides/revoke-a-key/).
+`revoke` is the one command that uses stored material: it checks the revocation signature and the removal authorisation, as `check material` does (a root key that can sign and has lost its authorisation is the one exception: `revoke` goes on and warns that the list names no key), and attaches the authorisation to the new root list ([root transitions](/reference/transitions/#revoking-a-root-key)); the revocation signature is published beside the keyring package (record 0009, rule 18). For a person's primary the guide is [Revoke a key](/guides/revoke-a-key/).
 
 ## Follow-ups
 

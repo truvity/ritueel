@@ -28,7 +28,7 @@ sidebar:
 
 ## Revoke a root
 
-For a root key that is lost, stolen or compromised, use [A lost root card](/guides/lost-root-card/): `ritueel revoke --card CARD --reason REASON --material FILE` (`--reason` and `--material` are proposed) ([the checks](/reference/transitions/#revoking-a-root-key)).
+For a root key that is lost, stolen or compromised, use [A lost root card](/guides/lost-root-card/): `ritueel revoke --card CARD --reason REASON --material FILE` (`--reason` and `--material` are proposed) ([the checks](/reference/transitions/#revoking-a-root-key)). Revoke it, do not retire it. The revoke list carries the key's removal authorisation, also when the key can still sign, and only a list that names every key it removes lets a host that took a thief's list at a high sequence take the key off its list ([the way back](/reference/root-list/#how-a-host-reads-it)). If the authorisation is lost and the key can still sign, `revoke` goes on and warns that the list names no key and heals no host that took a thief's list.
 
 ## How you know it worked
 
