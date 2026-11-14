@@ -40,11 +40,19 @@
 
 29. Before the first signed release, two checks are run: `apt` with `gpgv` on the affected Ubuntu and Debian releases, and `rpm` on RHEL 8 and 9 with an ECDSA key. If a verifier that users need refuses the key, a second primary of RSA-4096 is added to the keyring: a key of the OpenPGP root like the others, and the one exception to rule 1 in its algorithm.
 
+30. The release workflow signs `SHA256SUMS` keylessly with cosign, in a job that holds `id-token: write` and no other permission. That job runs no code of this repository and no built binary, and checks the files against the digest from the build job first.
+31. The result is one Sigstore bundle, named after the file it signs plus `.sigstore.json`. The publish job attaches it after it compares its digest with the one from the signing job.
+32. A user pins the issuer `https://token.actions.githubusercontent.com` and the identity of `release.yaml` at a release tag. A pin that accepts a branch, another workflow or another repository is wrong.
+33. From the first signed release on, no bundle means no release: if the keyless signature cannot be made, the release is not published, and the run is repeated later.
+34. The keyless signature is a second check beside the OpenPGP signature. A pass of one never replaces a failure of the other. The keyring is the project's own trust, and the guides say to check it first.
+35. The public log entry names the repository, the workflow and the commit, and cannot be withdrawn. The keyless signature begins with the first signed release (rule 14), and not earlier.
+
 ## Why
 
 - A release is trusted because its signature verifies against a key the user already holds. The root primaries are used once a year, so a signer works with a subkey that a primary has bound, and any active primary can bind it. ritueel's scope ends at files: it makes the keyring file, and a pipeline packages it. Hard revocation must reach tools that cannot read a revocation signature, such as gpgv and apt, so the new package is the revocation.
 - Version 4 and ECDSA P-384 stay because the verifiers decide, and not the standard. RFC 9580 asks for version 6 keys and calls version 4 deprecated, but `gpg` 2.4.8 and `gpgv` refuse version 6, so a user of Debian 12 or Ubuntu 22.04 could not verify (rule 3). P-384 is the largest curve that a PIV slot, the OpenPGP applet and the cloud key store all hold, and the one tested with every verifier the project ran.
 - Two verifier gaps are not measured (rule 29). The upstream source of the `rpm` of RHEL 8 and 9 has no ECDSA verification (RHEL's own patches were not read). The `gpgv` path of `apt` 2.7.13 and later has a list of algorithms for the future (`>=rsa3072,ed25519,ed448`) that leaves out the NIST curves; as of 2026-11-13 it only logs a notice.
+- The keyless signature adds a second proof that shows which workflow of which repository built the release, checked by services that are not the project's keys (rules 30 to 35). It stands beside the OpenPGP signature and not instead of it, because package managers read OpenPGP and the project's own trust is its keyring.
 
 ## What it costs
 
@@ -54,6 +62,9 @@
 - The pipeline must follow the name and version rule of the package.
 - The temporary key and its signer program must be built, then replaced by native signing.
 - Two checks come before the first signed release, and a second primary to make, hold and extend if one of them fails (rule 29).
+- A public service that can be down for hours can stop a release (rule 33).
+- Cosign and its trust root change, so the guides must keep up.
+- While the release key is the temporary cloud key of rule 10, both signatures trust the same release workflow, so the two checks are not independent until the project's own release key replaces the temporary one.
 
 ## Roads not taken
 
@@ -68,7 +79,9 @@
 - **Keep a compromised subkey, with its revocation.** Old signatures stay checkable, but gpgv and apt would keep accepting the compromised key.
 - **Drop expired subkeys.** The package is tidier, but good old signatures stop verifying.
 - **A provisional software primary for the first releases.** Releases start sooner, but early users trust a copyable key and live through a transition with no purpose.
-- **Sigstore keyless signing as the main mechanism.** There is no key to hold, but apt and rpm do not read it and trust moves to a public service; it is kept beside the OpenPGP proof, not instead.
+- **Sigstore keyless signing as the main mechanism.** There is no key to hold, but apt and rpm do not read it and trust moves to a public service; it is the second, additional way (rules 30 to 35), not the main one.
+- **Release when the keyless signature failed.** The release goes out sooner, but it would carry one proof, and every instruction would need two cases.
+- **GitHub attestations instead of a bundle.** The user needs one command, but the check goes through GitHub's store and uses the same services, so it adds no second anchor.
 - **A personal signature of the maintainer on releases, or a tag signed with the maintainer's own hardware key from the first release.** There is nothing to build, but a person sits in the chain.
 - **The release subkey also signs git tags.** It is one key for two jobs, and a tag signature would let the release workflow vouch for source it did not build.
 - **A signing endpoint in the requester system's first version.** It would remove the temporary key, but none is planned.
@@ -80,6 +93,8 @@
 ## Not yet proven or only proposed
 
 - **Not yet proven.** The release workflow, the small signer program, the binding of the temporary release subkey and the keyless signature are not built yet ([#202](https://github.com/truvity/ritueel/issues/202)).
+- **Not yet proven.** The dry run of the signing job on the public service has not been done ([#202](https://github.com/truvity/ritueel/issues/202)). It must show that the job works with `id-token: write` alone, the exact identity text of the certificate, that the bundle verifies with the network off, that the publish job attaches the file and refuses a changed one, and that a failed signing leaves no draft and the run can be repeated.
+- **Not yet proven.** The project does not watch the public log for signatures made in its name ([#202](https://github.com/truvity/ritueel/issues/202)).
 - **Not yet proven.** The two checks of rule 29 are not run yet: `apt` with `gpgv` on the Ubuntu and Debian releases that carry `apt` 2.7.13 or later, and `rpm` on RHEL 8 and 9 with an ECDSA key ([#25](https://github.com/truvity/ritueel/issues/25)).
 - **Proposed.** Whether a well-known package repository (Maven Central) accepts a signing subkey under a certify-only primary is not known; its page says it can only verify against a primary key. A test comes before the first signed release ([#25](https://github.com/truvity/ritueel/issues/25)).
 - **Proposed.** Which primary signs in a year, and so binds the subkey (rule 7), when the OpenPGP root has a key on a card and a key in the cloud: the card of the year ([record 0007](0007-changing-and-losing-a-root.md), rule 16) names cards, and a cloud key has none ([#137](https://github.com/truvity/ritueel/issues/137)).
