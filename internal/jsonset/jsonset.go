@@ -169,6 +169,45 @@ func Errorf(path Path, format string, args ...any) error {
 // struct type) written as \uXXXX.
 func TypeName(t reflect.Type) string { return Escape(t.String()) }
 
+// EscapeExact writes s so that two different texts never give the same output. What it does:
+//   - A backslash is written as two backslashes.
+//   - A byte that is not part of a valid UTF-8 sequence is written as \xNN (lower-case
+//     hexadecimal), not as the escape of U+FFFD, so it differs from the character U+FFFD (written
+//     \ufffd) and from every other such byte.
+//   - A space is written \x20, so that a name cannot carry words that read like another line.
+//   - Every other character is written as [Escape] writes it: a character outside printable ASCII
+//     (a control code, U+007F, any other character) as \uXXXX, a character above U+FFFF as the pair
+//     of escapes of its surrogates. A printable ASCII character that is not a backslash or a space,
+//     a colon among them, stays as it is.
+//
+// The output is one to one. A backslash in it is always the start of one of three things: a
+// doubled backslash, \uXXXX or \xNN. A \xNN comes only from a byte that is not UTF-8 (NN from 80
+// to ff) or from a space (NN is 20), and these cannot be mixed up. A \uXXXX comes only from a
+// valid character. A backslash of the text is always doubled, so it never starts an escape. The
+// output can therefore be read back to the one text that made it. It is for a name from a file
+// system, which can hold a backslash, a space and bytes that are not UTF-8, and which is shown in
+// a line that a person or a program reads back. [Escape] keeps a backslash as it is and writes
+// \ufffd for such a byte, which the texts of errors rely on (an error of a reader shows what the
+// document held), so it is not changed.
+func EscapeExact(s string) string {
+	var b strings.Builder
+	for i := 0; i < len(s); {
+		r, size := utf8.DecodeRuneInString(s[i:])
+		switch {
+		case r == utf8.RuneError && size == 1:
+			fmt.Fprintf(&b, `\x%02x`, s[i])
+		case r == '\\':
+			b.WriteString(`\\`)
+		case r == ' ':
+			b.WriteString(`\x20`)
+		default:
+			b.WriteString(Escape(s[i : i+size]))
+		}
+		i += size
+	}
+	return b.String()
+}
+
 // Escape writes s with every character outside printable ASCII as \uXXXX (a character above
 // U+FFFF as the pair of escapes of its surrogates, bytes that are not UTF-8 as \ufffd) and
 // nothing else changed: no quotes, and a backslash stays one. It is for a text that comes from a
