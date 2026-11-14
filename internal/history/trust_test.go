@@ -383,10 +383,12 @@ func TestRootListVectorsOfTheRepository(t *testing.T) {
 			b := newBundle(t)
 			first := b.apply()
 			list := string(testrepo.Read(t, "testdata", "root-list", "v1", "lists", name))
-			const anchor = "396c106c082d9928a8c2628c58fd770c6826b9a8a6d2a7e4d69407b1c37548f7"
-			if !strings.Contains(list, anchor) {
-				t.Fatalf("the vector %s has changed: its anchor is not %s", name, anchor)
+			// The anchor is the one the vector names, read from the vector's own member.
+			found := regexp.MustCompile(`"last_record_sha256":"([0-9a-f]{64})"`).FindStringSubmatch(list)
+			if found == nil {
+				t.Fatalf("the vector %s names no last_record_sha256", name)
 			}
+			anchor := found[1]
 			// The anchor is a record of this bundle: the list is read, not refused.
 			b.apply(func(r *rec) {
 				r.artifacts["trust/"+r.set+"/root-list.json"] = []byte(strings.Replace(list, anchor, first.digest, 1))

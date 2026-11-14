@@ -8,6 +8,7 @@ import (
 	"crypto/sha1" //nolint:gosec // the version 4 fingerprint is a SHA-1 by the standard
 	"encoding/binary"
 	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"math"
@@ -90,6 +91,54 @@ func fingerprintOfBody(body []byte) string {
 	return hex.EncodeToString(h.Sum(nil))
 }
 
+// vectorPrimaryFingerprints are the fingerprints of the primaries A and B as the vector set names
+// them: the proof of a request lists the primaries that it is bound to, in the order A, B. They are
+// written by the generator and are not computed by the package, so a new run of the generator, which
+// makes new keys, changes them and the tests with them.
+func vectorPrimaryFingerprints(t testing.TB) (a, b string) {
+	t.Helper()
+	var proof struct {
+		Primaries []string `json:"primaries"`
+	}
+	if err := json.Unmarshal(vector(t, "requests", "pgp-software-valid.proof.json"), &proof); err != nil {
+		t.Fatalf("the proof of pgp-software-valid: %v", err)
+	}
+	if len(proof.Primaries) != 2 {
+		t.Fatalf("the proof of pgp-software-valid lists %d primaries, want 2 (A and B)", len(proof.Primaries))
+	}
+	for _, fp := range proof.Primaries {
+		if len(fp) != 40 || strings.Trim(fp, "0123456789abcdef") != "" {
+			t.Fatalf("the proof names the primary %q: not 40 lower-case hexadecimal digits", fp)
+		}
+	}
+	if proof.Primaries[0] == proof.Primaries[1] {
+		t.Fatal("the proof names one fingerprint for both primaries")
+	}
+	return proof.Primaries[0], proof.Primaries[1]
+}
+
+// boundSubkeyFingerprints are the fingerprints that the vector set gives to the subkeys of two
+// requests, by a second file: the answer to a request starts with the same subkey packet, and its
+// fingerprint is taken from that packet by the standard (fingerprintOfBody), with no package code.
+func boundSubkeyFingerprints(t testing.TB) map[string]string {
+	t.Helper()
+	out := map[string]string{}
+	for request, response := range map[string]string{
+		"pgp-software-valid":   "pgp-software-valid",
+		"pgp-response-request": "pgp-response-other-primary",
+	} {
+		ps := splitPackets(t, vector(t, "responses", response+".bound.pgp"))
+		if len(ps) == 0 || ps[0].Tag != tagSubkey {
+			t.Fatalf("the answer %s does not start with a subkey packet", response)
+		}
+		if !bytes.Equal(ps[0].Raw, splitPackets(t, subkeyFile(t, request))[0].Raw) {
+			t.Fatalf("the answer %s starts with another subkey than the request %s", response, request)
+		}
+		out[request] = fingerprintOfBody(ps[0].Body)
+	}
+	return out
+}
+
 // isRequestError tells whether err is one of the three kinds of a faulty request and is also an
 // ErrRequest and no ErrParams.
 func isRequestError(err error, kind error) bool {
@@ -150,10 +199,7 @@ func TestSplitSubkeyFileSplitsEveryVectorRequestIntoTheSubkeyAndItsBackSignature
 }
 
 func TestReadSubkeyReadsTheSubkeyOfEveryVectorRequestThatHasAP384Key(t *testing.T) {
-	want := map[string]string{
-		"pgp-software-valid":   "a61f17bf447724bf8f5ad79a91518423f1e3def5",
-		"pgp-response-request": "b7d2bb70ad30a2b8929afbbdccd289f2f6367378",
-	}
+	want := boundSubkeyFingerprints(t)
 	read := 0
 	for _, f := range vectorSubkeyFiles {
 		if f.name == "pgp-ed25519" {
@@ -337,10 +383,8 @@ func TestEachBackSignatureOfTheFaultyVectorsFailsForTheReasonTheFileNames(t *tes
 }
 
 func TestTheStandardLibraryAgreesWithTheFingerprintOfThePrimaries(t *testing.T) {
-	for label, want := range map[string]string{
-		"a": "d3780197fa25eb09d7027128ab3de854e11fe959",
-		"b": "d032a8740021c11ea532193baf7914d9eb850ea6",
-	} {
+	fa, fb := vectorPrimaryFingerprints(t)
+	for label, want := range map[string]string{"a": fa, "b": fb} {
 		pub, ps := vectorPrimary(t, label)
 		p := primaryOf(t, label)
 		if got := p.Fingerprint(); got != want {
