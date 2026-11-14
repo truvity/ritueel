@@ -1,11 +1,11 @@
 {
   "handoff": 1,
   "type": "ssh-ca-key",
-  "request_sha256": "15652d8d6e0d299d97e5a1a9924c3ac2817e1c0929760f8e9f15db465ec6da23",
+  "request_sha256": "751bb77e2e310ddf4b028901bb072e095e08214acf8ab84ecfd77262198ec56a",
   "store": "aws-kms",
   "evidence": {
     "key_arn": "arn:aws:kms:eu-west-1:123456789012:key/11111111-2222-3333-4444-555555555555",
-    "public_key": "MHYwEAYHKoZIzj0CAQYFK4EEACIDYgAEmqfUWA0/6dL9aoQrpe0njFOpV0iv3CgcQuZS5IOjFS0MdSUhhRdnS2/l0lib3lyLZafvHCC1l0jAFFwqRvpxrsnVFqS5JB2Gs2A9HNvxKSSjqvglqBipjgYtIhaJC0yD"
+    "public_key": "MHYwEAYHKoZIzj0CAQYFK4EEACIDYgAETGrOB5NuPxgkc6IF0TRa1xjWDDJDJnxwGA557vDJMQBnxrywyaKeQTtb9QAiR23aBnn4OoaonnKlAAXvj4kkprZkQPx2CadQZnuKCN8LGwMEXIlhjEfj6WHrYBERZAkp"
   },
   "use": "user"
 }

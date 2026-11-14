@@ -344,6 +344,17 @@ expect('a root pin that is not the certificate\'s key', 'vectors', rlWith('manif
 expect('a removal authorisation by another root', 'vectors', rlWith('removals/test-root-a.removal.jws', () => rl['testdata/set/v1/removals/test-root-b.removal.jws'].toString('utf8')), 'fail', { has: ['removal A: not a valid removal authorisation of root A'] });
 expect('a list whose signers are not the manifest\'s', 'vectors', rlWith('manifest.json', (t) => t.replace('"signers": [\n        "A",\n        "B",\n        "C"\n      ]', '"signers": [\n        "A",\n        "C",\n        "B"\n      ]')), 'fail', { has: ['list seq8-abc: signature 2 is not by its signer C'] });
 
+expect('a list with a date flaw the manifest does not name', 'vectors', rlWith('manifest.json', (t) => t.replace('"flaw": "signed_at-after-clock"', '"flaw": "expires_at-not-13-months"')), 'fail', { has: ['seq7-a-signed-in-the-future: expires_at', 'but the manifest names the flaw expires_at-not-13-months'] });
+expect('a case whose list is signed after its clock, with no flaw named', 'vectors', rlWith('manifest.json', (t) => t.replace('"flaw": "signed_at-after-clock"', '"flaw": "expires_at-not-13-months"')), 'fail', { has: ['is signed after the clock of the case'] });
+expect('a CA bundle with a flaw it does not have', 'vectors', rlWith('manifest.json', (t) => t.replace('"flaw": "not-a-ca"', '"flaw": "not-signed-by-its-own-key"')), 'fail', { has: ['bundle ca-bundle-7-not-a-ca: every certificate verifies with its own key, but the manifest names the flaw'] });
+expect('a lowest sequence that the case does not bear out', 'vectors', rlWith('manifest.json', (t) => t.replace('"min_sequence": 8', '"min_sequence": 7')), 'fail', { has: ['min_sequence 7 against sequence 7'] });
+expect('a list whose content has a fault the manifest does not name', 'vectors', rlWith('manifest.json', (t) => t.replace('"flaw": "label-twice"', '"flaw": "pin-twice"')), 'fail', { has: ['its content has the faults [label-twice], and the manifest names [pin-twice]'] });
+expect('an empty authorisation the manifest does not name', 'vectors', rlWith('manifest.json', (t) => t.replace('"flaw": "empty-authorisation"', '"flaw": "pin-twice-in-removals"')), 'fail', { has: ['its content has the faults [empty-authorisation]'] });
+expect('a flaw the manifest names and no check knows', 'vectors', rlWith('manifest.json', (t) => t.replace('"flaw": "sequence-0"', '"flaw": "sequence-zero"')), 'fail', { has: ['unknown flaw sequence-zero'] });
+expect('a list accepted at the held sequence with other bytes', 'vectors', rlWith('manifest.json', (t) => t.replace('"candidate": "seq7-a-and-z"', '"candidate": "seq7-a-without-b"')), 'fail', { has: ["accepted at the held list's sequence"] });
+expect('a CA bundle whose flaw its sequence does not bear out', 'vectors', rlWith('manifest.json', (t) => t.replace('"flaw": "extra-certificate"', '"flaw": "wrong-sequence"')), 'fail', { has: ['which the flaw wrong-sequence needs to differ'] });
+expect('a CA bundle with another issuer name that the manifest does not name', 'vectors', rlWith('manifest.json', (t) => t.replace('"flaw": "issuer-not-subject"', '"flaw": "not-a-ca"')), 'fail', { has: ['bundle ca-bundle-7-issuer-is-another-name: a certificate names another issuer than its subject'] });
+
 // ---- SSH CA key list and CRL vectors: the committed sets, copied, then broken one way at a time
 const copyOf = (set) => {
   const dir = join(repo, 'testdata', set, 'v1');
@@ -355,10 +366,12 @@ const edited = (set, path, edit) => ({ ...set, [`testdata/set/v1/${path}`]: edit
 const handoff = { ...copyOf('hand-off'), ...Object.fromEntries(Object.entries(copyOf('ssh-ca-keys')).map(([p, v]) => [p.replace('testdata/set/', 'testdata/ssh-ca-keys/'), v])) };
 expect('a hand-off set that matches its manifest', 'vectors', handoff, 'pass', { has: ['vector files, no errors'] });
 expect('a floor answer from a CA that is not installed', 'vectors', edited(handoff, 'manifest.json', (t) => t.replace('"floor_anchors": [\n      "pki/test-foreign-root.pem"', '"floor_anchors": [\n      "pki/test-root-a.pem"')), 'fail', { has: ['floor response x509-floor-valid: not signed by an anchor of floor_anchors'] });
+expect('a case with a configuration the manifest does not have', 'vectors', edited(handoff, 'manifest.json', (t) => t.replace('"config": "development-listed-names"', '"config": "development-listed-name"')), 'fail', { has: ['is no configuration of the manifest'] });
 const ssh = copyOf('ssh-ca-keys');
 expect('an SSH CA key list set that matches its manifest', 'vectors', ssh, 'pass', { has: ['vector files, no errors'] });
 expect('an SSH CA key list changed after signing', 'vectors', edited(ssh, 'lists/seq7-a.json', (t) => t.replace('"sequence":7', '"sequence":8')), 'fail', { has: ['list seq7-a: the signature does not verify'] });
 expect('a user keys file that is not the list\'s', 'vectors', edited(ssh, 'files/ssh-user-ca-keys-7.pub', (t) => t.replace('trust-sequence: 7', 'trust-sequence: 6')), 'fail', { has: ['is not the user keys of seq7-a'] });
+expect('an SSH CA key list signed after the clock of its case, with no flaw named', 'vectors', edited(ssh, 'manifest.json', (t) => t.replace('"flaw": "signed_at-after-clock"', '"flaw": "expires_at-not-13-months"')), 'fail', { has: ['is signed after the clock of the case', 'but the manifest names the flaw expires_at-not-13-months'] });
 const crl = copyOf('crl');
 expect('a CRL set that matches its manifest', 'vectors', crl, 'pass', { has: ['vector files, no errors'] });
 expect('a CRL whose number is not the manifest\'s', 'vectors', edited(crl, 'manifest.json', (t) => t.replace('"number": 7,', '"number": 9,')), 'fail', { has: ['the CRL number is 7, not 9'] });
