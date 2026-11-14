@@ -58,6 +58,10 @@ type Result struct {
 	// Again is true for an accepted list that is the list the host holds, byte for byte, coming
 	// again (the member "again" of docs/reference/cli.md); the member is absent otherwise.
 	Again bool `json:"again,omitempty"`
+	// Wayback is true for a list accepted although check 6 or check 7 would have refused it: its
+	// sequence is lower than the held list's, or equal to it with other content (the member
+	// "wayback" of docs/reference/cli.md, record 0006, rule 53); the member is absent otherwise.
+	Wayback bool `json:"wayback,omitempty"`
 	// Version is the release version (version only).
 	Version string `json:"version,omitempty"`
 	// Commit is the commit of the build (version only).
