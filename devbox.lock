@@ -229,41 +229,41 @@
         }
       }
     },
-    "golangci-lint@2.13.1": {
-      "last_modified": "2026-08-29T00:50:12Z",
-      "resolved": "github:NixOS/nixpkgs/e8be7818e19ada32105a8af937a6a473b38167ca#golangci-lint",
+    "golangci-lint@2.15.0": {
+      "last_modified": "2026-11-12T14:50:34Z",
+      "resolved": "github:NixOS/nixpkgs/2074cc672349f14240fb7ea90d509e0b643e9dd4#golangci-lint",
       "source": "devbox-search",
-      "version": "2.13.1",
+      "version": "2.15.0",
       "systems": {
         "aarch64-darwin": {
           "outputs": [
             {
               "name": "out",
-              "path": "/nix/store/vyl94dsc8a2vfpx0h9hs3ls3w9hfcyfa-golangci-lint-2.13.1",
+              "path": "/nix/store/04ifimpvc8yaqilwsvmkfkw71hbdb4zk-golangci-lint-2.15.0",
               "default": true
             }
           ],
-          "store_path": "/nix/store/vyl94dsc8a2vfpx0h9hs3ls3w9hfcyfa-golangci-lint-2.13.1"
+          "store_path": "/nix/store/04ifimpvc8yaqilwsvmkfkw71hbdb4zk-golangci-lint-2.15.0"
         },
         "aarch64-linux": {
           "outputs": [
             {
               "name": "out",
-              "path": "/nix/store/zg1nnbiiaiq65v0h4b22hqlqpqa8ja0j-golangci-lint-2.13.1",
+              "path": "/nix/store/1c8p25q23jv6nyplk5wrgym51jn94c2k-golangci-lint-2.15.0",
               "default": true
             }
           ],
-          "store_path": "/nix/store/zg1nnbiiaiq65v0h4b22hqlqpqa8ja0j-golangci-lint-2.13.1"
+          "store_path": "/nix/store/1c8p25q23jv6nyplk5wrgym51jn94c2k-golangci-lint-2.15.0"
         },
         "x86_64-linux": {
           "outputs": [
             {
               "name": "out",
-              "path": "/nix/store/sqm80s7p5kx9j4ia19rw3jy41ajx1v73-golangci-lint-2.13.1",
+              "path": "/nix/store/0hbvnysb4w8ikxwb6fcaq4zypzlg9zgi-golangci-lint-2.15.0",
               "default": true
             }
           ],
-          "store_path": "/nix/store/sqm80s7p5kx9j4ia19rw3jy41ajx1v73-golangci-lint-2.13.1"
+          "store_path": "/nix/store/0hbvnysb4w8ikxwb6fcaq4zypzlg9zgi-golangci-lint-2.15.0"
         }
       }
     },
