@@ -28,6 +28,10 @@ type settings struct {
 	now         func() time.Time
 }
 
+// hasDelegation reports whether the configuration had a delegation. [New] holds only a delegation of one of
+// the three types of the page, so a delegation that was given has a type and none that was left out has.
+func (s *settings) hasDelegation() bool { return s.delegation.Type != "" }
+
 // preparedRoot is a root of the bundle: its subject as DER and its key as the bytes of its point.
 type preparedRoot struct {
 	subject []byte
@@ -36,27 +40,26 @@ type preparedRoot struct {
 
 // New makes a Checker from a configuration, or refuses it with an [ErrConfig]: a policy without stores, a
 // minimum firmware or PIN policies (or with a store, a firmware or a PIN policy that is not one of the
-// page's), no delegation (or one of a type that is not one of the page's), no roots (or roots that are
-// not ECDSA P-384 keys with a name), no clock, or a verifier that is nil. Everything the Checker holds is a
-// copy.
+// page's), a delegation of a type that is not one of the page's, no roots (or roots that are not ECDSA P-384
+// keys with a name), no clock, or a verifier that is nil. A nil delegation is allowed and is kept as none:
+// the rules of check 9 that need one are then not run. Everything the Checker holds is a copy.
 func New(cfg Config) (*Checker, error) {
 	s := &settings{}
 	if err := s.takePolicy(cfg.Policy); err != nil {
 		return nil, err
 	}
-	if cfg.Delegation == nil {
-		return nil, fmt.Errorf("%w: no delegation", ErrConfig)
+	if cfg.Delegation != nil {
+		switch cfg.Delegation.Type {
+		case TypeX509, TypeOpenPGP, TypeSSH:
+		default:
+			return nil, fmt.Errorf("%w: the type of the delegation is not one of x509-intermediate, openpgp-subkey and ssh-ca-key", ErrConfig)
+		}
+		d := *cfg.Delegation
+		d.PermittedURIHosts = slices.Clone(d.PermittedURIHosts)
+		d.PermittedDNSNames = slices.Clone(d.PermittedDNSNames)
+		d.KMSReadRoles = maps.Clone(d.KMSReadRoles)
+		s.delegation = d
 	}
-	switch cfg.Delegation.Type {
-	case TypeX509, TypeOpenPGP, TypeSSH:
-	default:
-		return nil, fmt.Errorf("%w: the type of the delegation is not one of x509-intermediate, openpgp-subkey and ssh-ca-key", ErrConfig)
-	}
-	d := *cfg.Delegation
-	d.PermittedURIHosts = slices.Clone(d.PermittedURIHosts)
-	d.PermittedDNSNames = slices.Clone(d.PermittedDNSNames)
-	d.KMSReadRoles = maps.Clone(d.KMSReadRoles)
-	s.delegation = d
 	if len(cfg.Roots) == 0 {
 		return nil, fmt.Errorf("%w: no roots", ErrConfig)
 	}
@@ -177,19 +180,25 @@ func firmwareBefore(a, b [3]uint32) bool {
 // policyRules is the policy part of check 9 for an x509-intermediate whose content package pki has
 // accepted: the rules of "Policy (check 9)" and "The request" that the request, the evidence and the
 // checker's configuration decide. Every rule runs, and none can be left out: the first that refuses gives
-// the detail, and an empty detail means every rule ran and passed.
+// the detail, and an empty detail means every rule ran and passed. The exception is a checker with no
+// delegation: the two rules that need one are not run, and [notRunWithoutDelegation] names them, so the
+// caller does not take an empty detail for a check that passed.
 func (s *settings) policyRules(req *pki.Request, p *Proof, ev *Evidence) string {
-	// The delegation: a request whose type is not the delegation's type is refused.
-	if s.delegation.Type != p.Type {
-		return "the type of the request is not the type of the delegation"
+	if s.hasDelegation() {
+		// The delegation: a request whose type is not the delegation's type is refused.
+		if s.delegation.Type != p.Type {
+			return "the type of the request is not the type of the delegation"
+		}
 	}
 	// The evidence: firmware, PIN policy, the KMS key policy.
 	if f := s.evidenceRules(p.Store, ev); f != "" {
 		return f
 	}
-	// The name constraints are inside the lists of the delegation.
-	if f := s.nameRules(req); f != "" {
-		return f
+	if s.hasDelegation() {
+		// The name constraints are inside the lists of the delegation.
+		if f := s.nameRules(req); f != "" {
+			return f
+		}
 	}
 	// The key and the name of the request are not those of a root of the bundle.
 	return s.rootRules(req)
@@ -292,4 +301,13 @@ func (s *settings) rootRules(req *pki.Request) string {
 		}
 	}
 	return ""
+}
+
+// notRunWithoutDelegation names the rules of check 9 that a checker with no delegation does not run, for a
+// request of type t, in the order of the check. It is the one place that lists them.
+func notRunWithoutDelegation(t Type) []string {
+	if t == TypeX509 {
+		return []string{"delegation-type", "name-constraints"}
+	}
+	return nil
 }
