@@ -1,11 +1,11 @@
 {
   "handoff": 1,
   "type": "openpgp-subkey",
-  "request_sha256": "68203075094b9c726b3a4dba2c69494fe0c48d6ff810c6d71e4239bcbda77147",
+  "request_sha256": "bf1c0a5727c0a54f501cb27895a89b10cc197f58d8ae999b58511eb65977f8a2",
   "store": "software",
   "primaries": [
-    "d4e03a4b42528f614f298766fc70e10c1d0c0ec7",
-    "1de9b70a529d1fefc19baf71b2d0718b32aed4f4"
+    "b7848e86c7a31b07647cf5007655340a4424087e",
+    "00cc3d60d2ee107adf91dc7f32af24362cadd5b9"
   ],
   "capabilities": [
     "sign"
