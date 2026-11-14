@@ -161,51 +161,65 @@ func scanLines(path string, data []byte) error {
 // non-specific tag) among them. The library puts the start of a node that has a tag at its tag, and drops a bare
 // "!" without a mark in the tree, so a value that follows it would be read in two ways (as typed, or as a
 // string). A plain value cannot start with "!", and a "!" inside a text is not at the start of its node, so no
-// text is mistaken. lines are the lines of the file; the column of the node counts characters, not bytes. A node
-// the library gives no position (line 0) is not a tag.
-func bangAt(lines [][]byte, n *yaml.Node) bool {
-	if n.Line < 1 || n.Line > len(lines) || n.Column < 1 {
+// text is mistaken. The column of the node counts characters, not bytes. A node the library gives no position
+// (line 0) is not a tag.
+//
+// The time is linear in the size of the file. A line of ASCII is indexed by the column directly. On any other
+// line the walk visits the nodes in the order of the file, so the columns rise: the walker keeps the byte offset
+// of the last column it looked up and counts on from there, and starts again at the line start only when a
+// column is lower than that one. The answer does not depend on either shortcut.
+func (w *walker) bangAt(n *yaml.Node) bool {
+	if n.Line < 1 || n.Line > len(w.lines) || n.Column < 1 {
 		return false
 	}
-	l, off := lines[n.Line-1], 0
-	for c := 1; c < n.Column && off < len(l); c++ {
-		_, size := utf8.DecodeRune(l[off:])
-		off += size
+	l := w.lines[n.Line-1]
+	var off int
+	if w.isASCII(n.Line-1, l) {
+		off = min(n.Column-1, len(l))
+	} else {
+		off = w.offset(n.Line, l, n.Column)
 	}
 	return off < len(l) && l[off] == '!'
 }
 
-// firstBang returns the first node of the tree, in the order of the file, whose text starts with "!", or nil.
-func firstBang(lines [][]byte, n *yaml.Node) *yaml.Node {
-	if bangAt(lines, n) {
-		return n
+// Whether a line is ASCII, as the walker has found out.
+const (
+	asciiUnknown uint8 = iota
+	asciiYes
+	asciiNo
+)
+
+// isASCII tells whether the line i (counted from 0) holds only bytes below 0x80. It looks at a line once.
+func (w *walker) isASCII(i int, l []byte) bool {
+	if w.ascii == nil {
+		w.ascii = make([]uint8, len(w.lines))
 	}
-	for _, c := range n.Content {
-		if b := firstBang(lines, c); b != nil {
-			return b
+	if w.ascii[i] == asciiUnknown {
+		w.ascii[i] = asciiYes
+		for _, b := range l {
+			if b >= utf8.RuneSelf {
+				w.ascii[i] = asciiNo
+				break
+			}
 		}
 	}
-	return nil
+	return w.ascii[i] == asciiYes
 }
 
-// scanTags refuses a node of the text whose source starts with "!" and passes any other text, also a text that is
-// not YAML: it reads the first document of the bytes by itself and leaves every other fault to [read]. [read] does
-// not call it, because it has the tree already and refuses the same nodes in its walk; it is the check on a text
-// alone, for a test.
-func scanTags(path string, data []byte) (err error) {
-	defer func() {
-		if recover() != nil {
-			err = nil
-		}
-	}()
-	var doc yaml.Node
-	if yaml.Unmarshal(data, &doc) != nil {
-		return nil
+// offset returns the byte offset in the line l (number line, from 1) of the character at column col (from 1), or
+// len(l) when the line is shorter. It resumes from the last lookup when that one was on this line and at a column
+// that is not past col.
+func (w *walker) offset(line int, l []byte, col int) int {
+	c, off := 1, 0
+	if w.cur.line == line && w.cur.col <= col {
+		c, off = w.cur.col, w.cur.off
 	}
-	if n := firstBang(bytes.Split(data, []byte("\n")), &doc); n != nil {
-		return errorf(path, n.Line, tagMsg)
+	for ; c < col && off < len(l); c++ {
+		_, size := utf8.DecodeRune(l[off:])
+		off += size
 	}
-	return nil
+	w.cur = cursor{line: line, col: c, off: off}
+	return off
 }
 
 // isMarker tells whether the line is the marker m alone or m followed by a space.
@@ -258,7 +272,12 @@ type walker struct {
 	d     *document
 	lines [][]byte // the lines of the file, to find the text at the position of a node
 	nodes int
+	ascii []uint8 // per line: asciiUnknown, asciiYes or asciiNo; made when first needed
+	cur   cursor  // the last column looked up on a line that is not ASCII
 }
+
+// cursor is a place in a line: the character at column col starts at byte off. The zero value is no place.
+type cursor struct{ line, col, off int }
 
 // walk checks the node n at the level depth and every node below it. A level is a mapping or a sequence that holds
 // another: the root mapping is level 1, and a scalar does not add a level.
@@ -274,7 +293,7 @@ func (w *walker) walk(n *yaml.Node, depth int) error {
 		return w.d.fail(n, "an alias: a file has none")
 	case n.Anchor != "":
 		return w.d.fail(n, "an anchor: a file has none")
-	case n.Style&yaml.TaggedStyle != 0, bangAt(w.lines, n):
+	case n.Style&yaml.TaggedStyle != 0, w.bangAt(n):
 		return w.d.fail(n, tagMsg)
 	}
 	switch n.Kind {

@@ -399,7 +399,7 @@ func (m *mapping) kms() (*KMS, error) {
 	}
 	k := &KMS{}
 	if v := km.val["account"]; v.Kind == yaml.ScalarNode && v.Tag != "!!str" {
-		return nil, km.fail("account", "aws_kms.account must be quoted, so that a leading zero is kept: \"012345678901\"")
+		return nil, km.fail("account", "aws_kms.account must be quoted, so that a leading zero is kept: \"000000000000\"")
 	}
 	if k.Account, err = km.str("account"); err != nil {
 		return nil, err
