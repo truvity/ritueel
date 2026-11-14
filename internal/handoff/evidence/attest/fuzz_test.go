@@ -2,6 +2,7 @@ package attest_test
 
 import (
 	"bytes"
+	"crypto/x509"
 	"errors"
 	"testing"
 
@@ -118,14 +119,30 @@ func FuzzNewBundle(f *testing.F) {
 	})
 }
 
-// FuzzCertificatesFromPEM reads any text: no panic, and every block that comes back is a copy of bytes that
-// were in the text, at most MaxPinned of them.
+// FuzzCertificatesFromPEM reads any text: no panic, at most MaxPinned blocks, and every block that comes
+// back is one DER certificate. Two laws hold for every text that is read. When its blocks are written again
+// in the canonical form (pemOf, one after the other), the same certificates come back, in the same order.
+// And the text holds no space and no tab outside the two markers, because the doc comment lets only the
+// markers and the line ends stand outside the Base64 text.
 func FuzzCertificatesFromPEM(f *testing.F) {
 	m := newMaker(f)
 	s := m.Spec()
 	one := pemOf("CERTIFICATE", s.Roots[0])
+	two := append(bytes.Clone(one), pemOf("CERTIFICATE", s.PIVIntermediates[0])...)
+	crlf := bytes.ReplaceAll(two, []byte("\n"), []byte("\r\n"))
 	f.Add(one)
-	f.Add(append(bytes.Clone(one), pemOf("CERTIFICATE", s.PIVIntermediates[0])...))
+	f.Add(two)
+	f.Add(crlf)
+	f.Add(bytes.TrimRight(two, "\n"))
+	f.Add(bytes.TrimRight(crlf, "\r\n"))
+	f.Add(append(append(bytes.Clone(one), '\n'), pemOf("CERTIFICATE", s.PIVIntermediates[0])...))
+	f.Add(append([]byte("\r\n\r"), append(bytes.Clone(two), "\r\r\n\n"...)...))
+	f.Add(bytes.Replace(one, []byte("-----\n"), []byte("----- \n"), 1))
+	f.Add(bytes.Replace(one, []byte("-----\n"), []byte("-----\t\n"), 2))
+	f.Add(bytes.Replace(one, []byte("\n"), []byte(" \n"), 2))
+	f.Add(bytes.Replace(one, []byte("\n"), []byte("\r\r\n"), 2))
+	f.Add(append(bytes.TrimRight(one, "\n"), '\r'))
+	f.Add(append(bytes.TrimRight(one, "\n"), ' '))
 	f.Add(pemOf("PRIVATE KEY", []byte{1, 2, 3}))
 	f.Add([]byte("-----BEGIN CERTIFICATE-----\nAAAA\n-----END CERTIFICATE-----\n"))
 	f.Add([]byte("-----BEGIN CERTIFICATE-----\nProc-Type: 4,ENCRYPTED\n\nAAAA\n-----END CERTIFICATE-----\n"))
@@ -140,6 +157,31 @@ func FuzzCertificatesFromPEM(f *testing.F) {
 		}
 		if len(got) == 0 || len(got) > attest.MaxPinned || len(text) > 1<<20 {
 			t.Fatalf("%d blocks from %d bytes", len(got), len(text))
+		}
+		// Every block that comes back is one DER certificate.
+		var again []byte
+		for _, der := range got {
+			c, err := x509.ParseCertificate(der)
+			if err != nil || len(c.Raw) != len(der) {
+				t.Fatalf("a block that is not one certificate: %v", err)
+			}
+			again = append(again, pemOf("CERTIFICATE", der)...)
+		}
+		// The canonical form of the blocks gives the same certificates in the same order.
+		back, err := attest.CertificatesFromPEM(again)
+		if err != nil || len(back) != len(got) {
+			t.Fatalf("the blocks written again: %v, %d of %d", err, len(back), len(got))
+		}
+		for i := range got {
+			if !bytes.Equal(back[i], got[i]) {
+				t.Fatalf("block %d is another certificate when written again", i+1)
+			}
+		}
+		// Only the markers and the line ends stand outside the Base64 text.
+		bare := bytes.ReplaceAll(text, []byte("-----BEGIN CERTIFICATE-----"), nil)
+		bare = bytes.ReplaceAll(bare, []byte("-----END CERTIFICATE-----"), nil)
+		if bytes.ContainsAny(bare, " \t") {
+			t.Fatalf("a space or a tab in an accepted text: %q", text)
 		}
 	})
 }

@@ -63,11 +63,13 @@ func TestOnlyThePinnedCertificatesEndAChain(t *testing.T) {
 		{"piv, only the openpgp intermediate pinned for piv", func() spec {
 			s := m.Spec()
 			s.PIVIntermediates = s.OpenPGPIntermediates
+			s.OpenPGPIntermediates = nil // a bundle that holds one in both groups is refused
 			return s
 		}, false, attest.AppletPIV, false},
 		{"openpgp, only the piv intermediate pinned for openpgp", func() spec {
 			s := m.Spec()
 			s.OpenPGPIntermediates = s.PIVIntermediates
+			s.PIVIntermediates = nil
 			return s
 		}, false, attest.AppletOpenPGP, false},
 		{"piv, the openpgp intermediate pinned in the openpgp group only", func() spec {

@@ -186,9 +186,10 @@ func TestAPIVChainIsNotAnOpenPGPCardChain(t *testing.T) {
 	}
 	ev, err = verifyCard(t, newVerifier(t, b), m.OpenPGPEvidence(t, p384(t)))
 	wantRefusal(t, ev, err, handoff.CodeProofInvalid)
-	// And the piv group alone does not serve the openpgp group.
+	// And the piv intermediate in the openpgp group alone does not serve the openpgp chain.
 	s = m.Spec()
 	s.OpenPGPIntermediates = s.PIVIntermediates
+	s.PIVIntermediates = nil // a bundle that holds one in both groups is refused
 	b, err = attest.NewBundle(s)
 	if err != nil {
 		t.Fatal(err)
@@ -197,18 +198,16 @@ func TestAPIVChainIsNotAnOpenPGPCardChain(t *testing.T) {
 	wantRefusal(t, ev, err, handoff.CodeProofInvalid)
 }
 
-// With one intermediate that serves both applets and is pinned for both, the other applet's chain is
-// accepted. This records that weakness, so that a decision to close it changes a visible test (a piv key
-// sent as an openpgp-card key then passes with no PIN rule).
-func TestASharedIntermediateLetsOneAppletsChainServeTheOther(t *testing.T) {
+// With one intermediate that serves both applets and is pinned for both, the other applet's chain would
+// pass for this one. The bundle refuses such a spec, so no verifier is made from it.
+func TestASharedIntermediateIsRefusedBeforeAVerifierExists(t *testing.T) {
 	m := newMaker(t, true)
-	v := newVerifier(t, m.Bundle(t))
-	ev, err := verifyCard(t, v, m.PIVEvidence(t, p384(t), attesttest.Slot{Policy: []byte{1, 1}}))
-	if err != nil || ev == nil {
-		t.Fatalf("a piv chain through a shared intermediate: %v", err)
+	b, err := attest.NewBundle(m.Spec())
+	if b != nil || !errors.Is(err, attest.ErrBundle) {
+		t.Fatalf("bundle %v, error %v", b, err)
 	}
-	if ev.PINPolicy != "" || ev.Details[attest.DetailPolicyRead] != "false" {
-		t.Errorf("a PIN policy was read from a piv certificate: %+v", ev)
+	if v, err := openpgpcard.New(b); err == nil || v != nil {
+		t.Errorf("a verifier from no bundle: %v, %v", v, err)
 	}
 }
 

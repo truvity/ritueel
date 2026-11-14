@@ -10,6 +10,7 @@ import (
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/asn1"
+	"errors"
 	"fmt"
 	"maps"
 	"slices"
@@ -650,22 +651,18 @@ func TestAKeyThatIsNotP384IsRefused(t *testing.T) {
 	}
 }
 
-// A chain of the openpgp applet offered as piv evidence, and the reverse, is refused when the bundle keeps
-// the two groups apart. When the maker has one intermediate for both applets and the bundle pins it for both,
-// the cross-use is accepted.
+// A chain of the openpgp applet offered as piv evidence is refused. A maker with one intermediate for both
+// applets makes a spec that the bundle refuses, so the cross-use cannot be set up at all.
 func TestOneApplet(t *testing.T) {
 	m := newMaker(t)
 	v := newVerifier(t, m.Bundle(t))
 	ev, err := verifyPIV(t, v, m.OpenPGPEvidenceWith(t, p384(t), attesttest.Slot{Subject: goodCN, PIVExtensions: true}))
 	wantRefusal(t, ev, err, handoff.CodeProofInvalid)
 
-	// With one intermediate for both applets, pinned for both, the other applet's chain is accepted. This
-	// test records that weakness, so that a decision to close it changes a visible test.
 	shared := attesttest.NewMaker(t, attesttest.MakerOptions{TokenECDSA: true, Now: clock, SharedIntermediate: true})
-	sv := newVerifier(t, shared.Bundle(t))
-	ev, err = verifyPIV(t, sv, shared.OpenPGPEvidenceWith(t, p384(t), attesttest.Slot{Subject: goodCN, PIVExtensions: true}))
-	if err != nil || ev == nil {
-		t.Errorf("a shared intermediate: %v", err)
+	b, err := attest.NewBundle(shared.Spec())
+	if b != nil || !errors.Is(err, attest.ErrBundle) {
+		t.Errorf("a shared intermediate: bundle %v, error %v", b, err)
 	}
 }
 

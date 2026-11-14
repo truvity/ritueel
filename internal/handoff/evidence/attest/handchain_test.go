@@ -106,9 +106,10 @@ func TestTheChainMustPassThroughTheTokensCertificate(t *testing.T) {
 }
 
 // A token's certificate that is itself pinned as a root, self-signed with path length 0, ends the chain at
-// once: the chain is the key's certificate and the token's certificate, and the token's certificate is the
-// second element. (A device whose own certificate is pinned needs no intermediate.)
-func TestAPinnedTokenCertificateIsARootOfTheChain(t *testing.T) {
+// once: the chain is the key's certificate and the token's certificate, two certificates. A chain needs a
+// pinned intermediate of the applet above the token's certificate, so it is refused, with the words that
+// say so.
+func TestAPinnedTokenCertificateIsNotEnough(t *testing.T) {
 	tokenKey := handKey(t)
 	token := handIssue(t, "Example Test Token", tokenKey, nil, true, 0, nil)
 	leaf := handIssue(t, "YubiKey PIV Attestation 9c", handKey(t), token, false, 0, nil)
@@ -116,13 +117,19 @@ func TestAPinnedTokenCertificateIsARootOfTheChain(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := verify(t, b, attest.AppletPIV, attesttest.EvidenceJSON(t, leaf.der, token.der), clock); err != nil {
-		t.Errorf("a pinned token certificate: %v", err)
+	for _, a := range []attest.Applet{attest.AppletPIV, attest.AppletOpenPGP} {
+		d := wantRefusal(t, verify(t, b, a, attesttest.EvidenceJSON(t, leaf.der, token.der), clock), handoff.CodeProofInvalid)
+		if d != "the chain does not pass through a pinned intermediate of the applet" {
+			t.Errorf("applet %v: the detail %q", a, d)
+		}
 	}
-	// Another device's certificate is not pinned, and the chain ends nowhere.
+	// Another device's certificate is not pinned, and the chain ends nowhere: other words.
 	other := handIssue(t, "Example Test Token", handKey(t), nil, true, 0, nil)
 	leaf2 := handIssue(t, "YubiKey PIV Attestation 9c", handKey(t), other, false, 0, nil)
-	wantRefusal(t, verify(t, b, attest.AppletPIV, attesttest.EvidenceJSON(t, leaf2.der, other.der), clock), handoff.CodeProofInvalid)
+	d := wantRefusal(t, verify(t, b, attest.AppletPIV, attesttest.EvidenceJSON(t, leaf2.der, other.der), clock), handoff.CodeProofInvalid)
+	if strings.Contains(d, "pinned intermediate") {
+		t.Errorf("a token certificate that is pinned nowhere has the words of a direct token: %q", d)
+	}
 }
 
 // A certificate above the key's certificate that is signed with SHA-1, a pinned intermediate or the token's

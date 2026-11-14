@@ -3,6 +3,7 @@ package handoff_test
 import (
 	"crypto/x509"
 	"encoding/json"
+	"errors"
 	"strings"
 	"testing"
 	"time"
@@ -224,19 +225,23 @@ func TestAnOpenPGPCardRequestIsCheckedLikeAnyOther(t *testing.T) {
 	wantUndecided(t, v, err, handoff.ErrNoVerifier, "ppppppnnn")
 }
 
-// A piv chain presented as openpgp-card evidence is accepted by the library when one intermediate serves both
-// applets and the bundle pins it for both: a key with a PIN policy of never passes with no PIN rule. This
-// records the weakness, so that a decision to close it changes a visible test.
-func TestASharedIntermediateLetsAPIVChainPassAsACardChain(t *testing.T) {
-	m := cardMaker(t, true)
+// A piv chain presented as openpgp-card evidence is refused at check 7. A maker with one intermediate for
+// both applets makes a spec that the bundle refuses, so the piv key cannot pass as a card key.
+func TestAPIVChainDoesNotPassAsACardChain(t *testing.T) {
+	m := cardMaker(t, false)
 	chk := cardChecker(t, m.Bundle(t), nil)
 	f := cardFixture(t, handoff.StoreOpenPGPCard, pivSlot(m, t, attesttest.Slot{Policy: []byte{1, 1}}))
 	v, err := chk.Check(t.Context(), f.request())
-	wantAccepted(t, v, err)
-	// As a piv key the same evidence is refused by the policy.
+	wantRefusal(t, v, err, handoff.CodeProofInvalid, 7)
+	// As a piv key the same evidence passes check 7 and is refused by the policy.
 	f = cardFixture(t, handoff.StorePIV, pivSlot(m, t, attesttest.Slot{Policy: []byte{1, 1}}))
 	v, err = chk.Check(t.Context(), f.request())
 	wantRefusal(t, v, err, handoff.CodePolicy, 9)
+
+	shared := cardMaker(t, true)
+	if b, err := attest.NewBundle(shared.Spec()); b != nil || !errors.Is(err, attest.ErrBundle) {
+		t.Errorf("a shared intermediate: bundle %v, error %v", b, err)
+	}
 }
 
 // A slot certificate that has expired is refused at check 7 with fixed words in the verdict: the detail

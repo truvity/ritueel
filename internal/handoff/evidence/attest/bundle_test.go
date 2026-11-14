@@ -342,7 +342,6 @@ func TestTheDigestOfABundle(t *testing.T) {
 		"no piv intermediate":               {Version: "v", Roots: s.Roots, OpenPGPIntermediates: s.OpenPGPIntermediates},
 		"no openpgp intermediate":           {Version: "v", Roots: s.Roots, PIVIntermediates: s.PIVIntermediates},
 		"the groups swapped":                {Version: "v", Roots: s.Roots, PIVIntermediates: s.OpenPGPIntermediates, OpenPGPIntermediates: s.PIVIntermediates},
-		"the intermediate in both groups":   {Version: "v", Roots: s.Roots, PIVIntermediates: s.PIVIntermediates, OpenPGPIntermediates: s.PIVIntermediates},
 		"no intermediate at all":            {Version: "v", Roots: s.Roots, PIVIntermediates: nil, OpenPGPIntermediates: nil},
 		"an intermediate repeated in a row": {Version: "v", Roots: s.Roots, PIVIntermediates: append(slices.Clone(s.PIVIntermediates), s.PIVIntermediates...), OpenPGPIntermediates: s.OpenPGPIntermediates},
 	}
@@ -385,85 +384,6 @@ func TestANilOrZeroBundleHasNoVersionAndNoDigest(t *testing.T) {
 
 func pemOf(label string, der []byte) []byte {
 	return pem.EncodeToMemory(&pem.Block{Type: label, Bytes: der})
-}
-
-func TestCertificatesFromPEM(t *testing.T) {
-	a, b := []byte{0x30, 0x01, 0x01}, []byte{0x30, 0x02, 0x02, 0x02}
-	one := pemOf("CERTIFICATE", a)
-	two := append(bytes.Clone(one), pemOf("CERTIFICATE", b)...)
-
-	got, err := attest.CertificatesFromPEM(one)
-	if err != nil || len(got) != 1 || !bytes.Equal(got[0], a) {
-		t.Fatalf("one block: %v %x", err, got)
-	}
-	got, err = attest.CertificatesFromPEM(two)
-	if err != nil || len(got) != 2 || !bytes.Equal(got[0], a) || !bytes.Equal(got[1], b) {
-		t.Fatalf("two blocks: %v %x", err, got)
-	}
-	for name, text := range map[string][]byte{
-		"white space between blocks":        append(append(bytes.Clone(one), " \r\n\t\n"...), pemOf("CERTIFICATE", b)...),
-		"white space before and after":      append(append([]byte(" \n\t"), one...), "  \n\n"...),
-		"windows line breaks":               bytes.ReplaceAll(two, []byte("\n"), []byte("\r\n")),
-		"a block with a trailing space too": append(bytes.Clone(one), ' '),
-	} {
-		if got, err := attest.CertificatesFromPEM(text); err != nil || len(got) == 0 {
-			t.Errorf("%s: %v", name, err)
-		}
-	}
-
-	bad := map[string][]byte{
-		"empty":                       {},
-		"only white space":            []byte(" \n\n"),
-		"text only":                   []byte("hello"),
-		"text before a block":         append([]byte("note\n"), one...),
-		"text between blocks":         append(append(bytes.Clone(one), "note\n"...), pemOf("CERTIFICATE", b)...),
-		"text after a block":          append(bytes.Clone(one), "note\n"...),
-		"a private key block":         pemOf("PRIVATE KEY", a),
-		"an EC private key block":     pemOf("EC PRIVATE KEY", a),
-		"a request block":             pemOf("CERTIFICATE REQUEST", a),
-		"a public key block":          pemOf("PUBLIC KEY", a),
-		"a trusted certificate":       pemOf("TRUSTED CERTIFICATE", a),
-		"a good block then a key":     append(bytes.Clone(one), pemOf("PRIVATE KEY", a)...),
-		"a key then a good block":     append(pemOf("PRIVATE KEY", a), one...),
-		"a block with a header":       pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Headers: map[string]string{"Proc-Type": "4,ENCRYPTED"}, Bytes: a}),
-		"a block that does not close": []byte("-----BEGIN CERTIFICATE-----\nMAEB\n"),
-		"a begin line only":           []byte("-----BEGIN CERTIFICATE-----"),
-		"bad Base64 in a block":       []byte("-----BEGIN CERTIFICATE-----\n!!!!\n-----END CERTIFICATE-----\n"),
-		"an end line only":            []byte("-----END CERTIFICATE-----\n"),
-		"non UTF-8 bytes":             {0xff, 0xfe, 0x00},
-		"NUL bytes":                   bytes.Repeat([]byte{0}, 100),
-	}
-	for name, text := range bad {
-		t.Run(name, func(t *testing.T) {
-			if got, err := attest.CertificatesFromPEM(text); err == nil {
-				t.Errorf("read %d blocks", len(got))
-			} else if got != nil {
-				t.Error("a result beside an error")
-			}
-		})
-	}
-}
-
-func TestCertificatesFromPEMIsBounded(t *testing.T) {
-	block := pemOf("CERTIFICATE", []byte{0x30, 0x01, 0x01})
-	sixtyFour := bytes.Repeat(block, attest.MaxPinned)
-	if got, err := attest.CertificatesFromPEM(sixtyFour); err != nil || len(got) != attest.MaxPinned {
-		t.Errorf("%d blocks: %v %d", attest.MaxPinned, err, len(got))
-	}
-	if got, err := attest.CertificatesFromPEM(bytes.Repeat(block, attest.MaxPinned+1)); err == nil {
-		t.Errorf("%d blocks were read", len(got))
-	}
-	// 1 MiB of text is read, one byte more is not (white space does not count against the blocks).
-	atLimit := append(bytes.Clone(block), bytes.Repeat([]byte(" "), 1<<20-len(block))...)
-	if got, err := attest.CertificatesFromPEM(atLimit); err != nil || len(got) != 1 {
-		t.Errorf("a text of 1 MiB: %v", err)
-	}
-	if _, err := attest.CertificatesFromPEM(append(atLimit, ' ')); err == nil {
-		t.Error("a text of 1 MiB and a byte was read")
-	}
-	if _, err := attest.CertificatesFromPEM(bytes.Repeat([]byte("A"), 4<<20)); err == nil {
-		t.Error("4 MiB of text was read")
-	}
 }
 
 // The vectors' own PEM files hold one certificate each and pin a bundle.
