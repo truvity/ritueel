@@ -453,6 +453,7 @@ func TestTheReaderAndTheKeysAreSafeForManyGoroutinesAtOnce(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	wantA, _ := vectorPrimaryFingerprints(t)
 	const workers, rounds = 16, 20
 	results := make([][]string, workers)
 	start := make(chan struct{})
@@ -483,7 +484,7 @@ func TestTheReaderAndTheKeysAreSafeForManyGoroutinesAtOnce(t *testing.T) {
 				// A copy that a goroutine changes is its own.
 				k := a.PublicKey()
 				k.X.SetInt64(int64(w)) //nolint:staticcheck // the coordinates are the only way to change a key in place
-				if a.Fingerprint() != "d3780197fa25eb09d7027128ab3de854e11fe959" {
+				if a.Fingerprint() != wantA {
 					results[w] = append(results[w], "fingerprint changed")
 				}
 			}
