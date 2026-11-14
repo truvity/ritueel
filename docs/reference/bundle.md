@@ -478,7 +478,7 @@ Every X.509 root key's certificate has this profile. A relying party can check e
 | Name constraints | Absent: constraints belong to the intermediates. |
 | Anything else | Absent, the authority key identifier included (RFC 5280, section 4.2.1.1, allows it in a self-signed certificate). |
 
-The extensions stand in the certificate in the order of the table: basic constraints, subject key identifier, key usage. The order changes the bytes of the certificate, and it is the order of the test vectors.
+The extensions stand in the certificate in the order of the table: basic constraints, subject key identifier, key usage. The order changes the bytes of the certificate, and it is the order of the test vectors. The package `internal/pki` builds this profile; the tests check it with OpenSSL and against the test roots.
 
 **Each use re-issues it.** Every ceremony that signs with a root key makes a new certificate over the same key and the same subject, with a new serial, starting at the ceremony time ([record 0007](../decisions/0007-changing-and-losing-a-root.md), rule 15). The new certificate is a new file in the trust set ([record 0006](../decisions/0006-bundle-history-and-trust-files.md), rules 12 and 31); the earlier trust set keeps the earlier one. A root key that is used every year or two therefore never comes close to its end, and pins on its key never change.
 
