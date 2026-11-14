@@ -157,7 +157,7 @@ func strictRows() []strictRow {
 		{"a tilde as a key", with("name: Example", "~: x"), 2, []string{"null"}},
 		{"a float as a key", with("name: Example", "1.5: x"), 2, []string{"key is not a string"}},
 		{"a date as a key", with("name: Example", "2024-01-01: x"), 2, []string{"key is not a string"}},
-		{"an unquoted account number as a key", with("name: Example", "012345678901: x"), 2, []string{"key is not a string", "quotes"}},
+		{"an unquoted account number as a key", with("name: Example", "000000000000: x"), 2, []string{"key is not a string", "quotes"}},
 		{"a number as a key in a nested mapping", with("  min_firmware: 5.7.0", "  1: 5.7.0"), 6, []string{"key is not a string"}},
 		{"a NUL written as an escape in a name", with("name: Example", `name: "Exa\x00mple"`), 2, []string{"name"}},
 		{"a bidirectional control written as an escape in a name", with("name: Example", `name: "Exa\u202emple"`), 2, []string{"name"}},

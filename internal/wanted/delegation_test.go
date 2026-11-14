@@ -245,7 +245,7 @@ func TestKMSReadRoles(t *testing.T) {
 		return "version: 1\ntype: openpgp-subkey\nroot: acme-release\ncapability: sign\nkms_read_roles:\n" + roles
 	}
 	good := "  \"111122223333\": arn:aws:iam::111122223333:role/example-certifier-read\n"
-	d := mustDelegation(t, "example", pgp(good+"  \"999988887777\": arn:aws-us-gov:iam::999988887777:role/path/x\n"))
+	d := mustDelegation(t, "example", pgp(good+"  \"444455556666\": arn:aws-us-gov:iam::444455556666:role/path/x\n"))
 	if len(d.KMSReadRoles) != 2 {
 		t.Errorf("roles %v", d.KMSReadRoles)
 	}
@@ -260,19 +260,19 @@ func TestKMSReadRoles(t *testing.T) {
 		words []string
 	}{
 		"an account that is not quoted":  {"  111122223333: arn:aws:iam::111122223333:role/a\n", 6, []string{"key is not a string", "quotes"}},
-		"an account with a leading zero": {"  011122223333: arn:aws:iam::011122223333:role/a\n", 6, []string{"key is not a string", "quotes"}},
+		"an account with a leading zero": {"  000000000000: arn:aws:iam::000000000000:role/a\n", 6, []string{"key is not a string", "quotes"}},
 		"a short account":                {"  \"11112222333\": arn:aws:iam::11112222333:role/a\n", 6, []string{"12 digits written in quotes"}},
 		"a long account":                 {"  \"1111222233334\": arn:aws:iam::1111222233334:role/a\n", 6, []string{"12 digits written in quotes"}},
 		"an account with a letter":       {"  \"11112222333a\": arn:aws:iam::111122223333:role/a\n", 6, []string{"12 digits written in quotes"}},
 		"an empty account":               {"  \"\": arn:aws:iam::111122223333:role/a\n", 6, []string{"12 digits written in quotes"}},
-		"a role in another account":      {"  \"111122223333\": arn:aws:iam::999988887777:role/a\n", 6, []string{"a role in the account it is listed under"}},
+		"a role in another account":      {"  \"111122223333\": arn:aws:iam::444455556666:role/a\n", 6, []string{"a role in the account it is listed under"}},
 		"a user ARN":                     {"  \"111122223333\": arn:aws:iam::111122223333:user/a\n", 6, []string{"role ARN"}},
 		"a role ARN with nothing after":  {"  \"111122223333\": arn:aws:iam::111122223333:role/\n", 6, []string{"role ARN"}},
 		"a role that is not a string":    {"  \"111122223333\": 5\n", 6, []string{"must be a string"}},
 		"a role that is a list":          {"  \"111122223333\": [a]\n", 6, []string{"must be a string"}},
 		"a role with a space":            {"  \"111122223333\": \"arn:aws:iam::111122223333:role/a b\"\n", 6, []string{"role ARN"}},
 		"a role over 2048 characters":    {"  \"111122223333\": arn:aws:iam::111122223333:role/" + strings.Repeat("a", 2048) + "\n", 6, []string{"role ARN"}},
-		"a second bad entry":             {good + "  \"999988887777\": arn:aws:iam::111122223333:role/a\n", 7, []string{"the account it is listed under"}},
+		"a second bad entry":             {good + "  \"444455556666\": arn:aws:iam::111122223333:role/a\n", 7, []string{"the account it is listed under"}},
 		"an account twice":               {good + "  \"111122223333\": arn:aws:iam::111122223333:role/b\n", 7, []string{"appears twice"}},
 	} {
 		t.Run(name, func(t *testing.T) { _ = refuseDelegation(t, pgp(tc.roles), tc.line, tc.words...) })
@@ -280,8 +280,8 @@ func TestKMSReadRoles(t *testing.T) {
 	_ = refuseDelegation(t, "version: 1\ntype: openpgp-subkey\nroot: acme-release\ncapability: sign\nkms_read_roles: [a]\n", 5, "kms_read_roles must be a mapping")
 	_ = refuseDelegation(t, "version: 1\ntype: openpgp-subkey\nroot: acme-release\ncapability: sign\nkms_read_roles: x\n", 5, "kms_read_roles must be a mapping")
 	// The message never holds the ARN.
-	e := refuseDelegation(t, pgp("  \"111122223333\": arn:aws:iam::999988887777:role/secret-name\n"), 6)
-	if strings.Contains(e.Msg, "secret-name") || strings.Contains(e.Msg, "999988887777") {
+	e := refuseDelegation(t, pgp("  \"111122223333\": arn:aws:iam::444455556666:role/secret-name\n"), 6)
+	if strings.Contains(e.Msg, "secret-name") || strings.Contains(e.Msg, "444455556666") {
 		t.Errorf("the message holds the ARN: %s", e.Msg)
 	}
 }
