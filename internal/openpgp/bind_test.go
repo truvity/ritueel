@@ -878,3 +878,29 @@ func TestTheEmbeddingOfTheBackSignatureOfThePageHasTheOneOctetLengthForm(t *test
 		t.Errorf("the back-signatures had %d different sizes; the test needs both the short and the long numbers", len(seen))
 	}
 }
+
+// The faults of a request are found in the order of the code: the subkey is read before its expiry
+// is looked at. A subkey that was created after the ceremony is a fault of the request, also when
+// the expiry that the caller gave is not after the creation of the subkey, which would be a fault of
+// the parameters if it were looked at first.
+func TestASubkeyCreatedAfterTheCeremonyIsAFaultOfTheRequestWhateverTheExpiryIs(t *testing.T) {
+	s := newSigner(t)
+	late := ceremony.Add(2 * time.Hour)
+	m := newSubkey(t, &s.key.PublicKey, created, late)
+	for _, expires := range []time.Time{ceremony.Add(time.Hour), ceremony.Add(time.Second), late, late.Add(time.Hour)} {
+		b := openpgp.BindParams{Primary: s.params(), Subkey: m.Packet, BackSig: m.BackSig, Capability: "sign", ExpiresAt: expires}
+		assertRefused(t, "BindSubkey", func() ([]byte, error) { return openpgp.BindSubkey(rand.Reader, b) }, openpgp.ErrRequest)
+		if _, err := openpgp.BindSubkey(rand.Reader, b); errors.Is(err, openpgp.ErrParams) {
+			t.Errorf("expiry %v: %v is a fault of the parameters", expires, err)
+		}
+	}
+	if s.calls != 0 {
+		t.Errorf("the signer was asked %d times", s.calls)
+	}
+	// A subkey created at the ceremony, with the same expiry, is not refused for its creation time.
+	ok := newSubkey(t, &s.key.PublicKey, created, ceremony)
+	b := openpgp.BindParams{Primary: s.params(), Subkey: ok.Packet, BackSig: ok.BackSig, Capability: "sign", ExpiresAt: ceremony.Add(time.Hour)}
+	if _, err := openpgp.BindSubkey(rand.Reader, b); err != nil {
+		t.Errorf("a subkey created at the ceremony: %v", err)
+	}
+}
