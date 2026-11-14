@@ -577,3 +577,81 @@ func offCurveKey(t *testing.T) *ecdsa.PublicKey {
 	k.Y.Add(k.Y, big.NewInt(1))
 	return k
 }
+
+// keySwitchCall is a call of SignIntermediate or SignRoot whose key parameter is the object shared: the body tbs names the key
+// that shared holds when the call is made, and call asks the signer s to sign it.
+func keySwitchCall(t *testing.T, root *testRoot, shared *ecdsa.PublicKey, fn string) (tbs []byte, call func(s *hookSigner) ([]byte, error)) {
+	t.Helper()
+	switch fn {
+	case "SignIntermediate":
+		p := root.interParams(withExtensions(t, goodExtensions()...))
+		p.IssuerKey = shared
+		b, err := pki.IntermediateTBS(p)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return b, func(s *hookSigner) ([]byte, error) { return pki.SignIntermediate(nil, s, p, b) }
+	default:
+		p := rootParams(shared)
+		b, err := pki.RootTBS(p)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return b, func(s *hookSigner) ([]byte, error) { return pki.SignRoot(nil, s, p, b) }
+	}
+}
+
+// A caller that switches its key object between two whole keys can leave the object in four states when a call reads it: the
+// first key, the second key, and the two mixes of their numbers (the X of one and the Y of the other, which is not a point). This
+// test puts the object in each state before a call, so that every run goes through each of them, and holds what the call does
+// with a card that is the first key and with a card that is the second. The body names the first key. Only the first key whole
+// and its own card sign, and the signature verifies; every other pair is refused as a parameter before the card is touched.
+// (The race with a second goroutine, in copies_card_norace_test.go, adds the window inside one copy, which no fixed point reaches.)
+func TestAKeyObjectInEachStateItCanBeSwitchedToIsNeverSignedForByTheWrongCard(t *testing.T) {
+	root := buildRoot(t, nil)
+	other := newKey(t)
+	first, second := &root.key.PublicKey, &other.PublicKey
+	states := []struct {
+		name  string
+		set   func(k *ecdsa.PublicKey)
+		whole *ecdsa.PrivateKey // the key that the object holds whole, or nil for a mix
+	}{
+		{"the first key", func(k *ecdsa.PublicKey) { overwrite(k, first, true) }, root.key},
+		{"the second key", func(k *ecdsa.PublicKey) { overwrite(k, second, true) }, other},
+		{"the X of the first and the Y of the second", func(k *ecdsa.PublicKey) { k.X.Set(first.X); k.Y.Set(second.Y) }, nil},
+		{"the X of the second and the Y of the first", func(k *ecdsa.PublicKey) { k.X.Set(second.X); k.Y.Set(first.Y) }, nil},
+	}
+	cards := []struct {
+		name string
+		key  *ecdsa.PrivateKey
+	}{{"the card of the first key", root.key}, {"the card of the second key", other}}
+	for _, fn := range []string{"SignIntermediate", "SignRoot"} {
+		for _, st := range states {
+			for _, c := range cards {
+				t.Run(fn+", "+st.name+", "+c.name, func(t *testing.T) {
+					shared := ownKey(t, first)
+					tbs, call := keySwitchCall(t, root, shared, fn) // the body names the first key
+					st.set(shared)
+					card := &hookSigner{key: c.key}
+					sig, err := call(card)
+					if st.whole == root.key && c.key == root.key {
+						if err != nil {
+							t.Fatalf("the first key with its own card is refused: %v", err)
+						}
+						if card.signs != 1 {
+							t.Errorf("the card was touched %d times, want once", card.signs)
+						}
+						if !ecdsa.VerifyASN1(first, pki.TBSDigest(tbs), sig) {
+							t.Error("the signature is not the signature of the first key over the body")
+						}
+						return
+					}
+					refused(t, err, pki.ErrParams)
+					if sig != nil || card.signs != 0 {
+						t.Errorf("a signature came, or the card was touched %d times, for a call that must be refused", card.signs)
+					}
+				})
+			}
+		}
+	}
+}
