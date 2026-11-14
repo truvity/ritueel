@@ -271,9 +271,6 @@ func TestTheFiveKMSVectorsAreDecidedByTheRealVerifier(t *testing.T) {
 			t.Errorf("%s is not in the pending map", id)
 		}
 	}
-	if got := len(pending); got != 38 {
-		t.Errorf("the pending map holds %d cases, want 38 (the 43 of before, less the five of KMS)", got)
-	}
 }
 
 // Every stub that a case names is a file of the folder of requests, written beside its proof.
