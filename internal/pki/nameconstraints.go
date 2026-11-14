@@ -262,6 +262,21 @@ func hostName(s string) bool {
 	return shapeOfHostName(s) && !numericTopLabel(s)
 }
 
+// ValidDNSName tells whether s is a DNS name in the form that a permitted DNS name of a request may have
+// (the hand-off contract, "The request"): the form that [ParseRequest] holds a permitted DNS name to.
+// A leading period is not part of the form.
+func ValidDNSName(s string) bool {
+	return hostName(s)
+}
+
+// ValidURIHost tells whether s is a URI host in the form that a permitted URI constraint of a request
+// may have: a host name, or a period and then a host name. It is the form that [ParseRequest] holds a
+// permitted URI constraint to. A host name that follows the period has the form of [ValidDNSName]; the
+// period does not count in the length of the name.
+func ValidURIHost(s string) bool {
+	return hostName(strings.TrimPrefix(s, "."))
+}
+
 // shapeOfHostName is the shape of hostName without the rule for the last label.
 func shapeOfHostName(s string) bool {
 	if s == "" || len(s) > 253 {
