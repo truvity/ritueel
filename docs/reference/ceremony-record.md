@@ -106,6 +106,8 @@ The plan fixes every byte to be signed in advance: the root keys, each key's fin
 | `base_sequence` | The trust sequence of the newest trust set when the plan was made, the state it was made against. |
 | `trust_sequence` | The trust sequence of the trust set the ceremony writes: `base_sequence` plus one (0006 rule 14). |
 
+`check history` reads the plan to check its digest and to link an unfinished ceremony. Today it requires only `version`, `ceremony`, `command` and `trust_sequence`. The list grows when the writer of the plan is built, as for [the ceremony record](/reference/ceremony-record/#the-record).
+
 :::note[Proposed]
 The member `ritueel` holds the version of the program that made the plan, its system and architecture as `os_arch`, and the SHA-256 of that copy. The run uses that version, and ritueel refuses to run the plan with another one. This is what lets the offline system keep several versions on the [USB stick](/reference/bundle/#on-the-stick). The names are a proposal, awaiting the maintainer's word.
 :::
@@ -158,6 +160,8 @@ A person who has read the plan may **decline** a request instead of confirming: 
 | `root` | The label of the root key that signs. |
 | `started_at` | When the attempt was written. |
 
+`check history` reads the attempt to check its digest and to link an unfinished ceremony. Today it requires only `version`, `ceremony` and `plan_sha256`. The list grows when the writer of the attempt is built.
+
 ritueel writes the file first, and only then makes the first birth or signature (0005 rule 10). On the stick the attempt is a record in the trace area first, and `attempt.json` is made from it, byte for byte, when the ceremony ends (0005 rules 36 to 39). An existing attempt for a plan means its serials may be used: ritueel refuses to run that plan again. An attempt is **resolved** when a ceremony record names its ceremony: the ceremony's own record, or a closing record from `close`. `status` reports every unresolved attempt as **critical** (exit code 12): an attempt with no ceremony record may mean a signature that was made and never recorded.
 
 :::note[Proposed]
@@ -180,31 +184,33 @@ The members of a line of `signatures.jsonl` are fixed with the code ([#8](https:
 
 The ceremony record is the file `record.json`, written last in its ceremony folder (0006 rule 8). It holds no secret. It says what was done, with which keys, on which key store, what outsiders see and where it ran (0005 rule 3). Its members are the time in UTC, the command, the plan digest, the wanted files and the artifacts with their digests, the keys and key stores, the evidence checked, the policy applied, the slot map version and the confirmation (0006 rule 8). The table gives each.
 
-| Member | Meaning |
-|---|---|
-| `version` | `1`. |
-| `ceremony`, `command`, `arguments` | As in the plan. `command` is `apply`, or `close` for a closing record. |
-| `outcome` | `completed`; `declined` when the person declined the request ([Declining](/reference/ceremony-record/#declining)); or `closed` for a closing record. |
-| `plan_sha256` | The plan digest. Absent in a closing record, which has no plan of its own. |
-| `prev_record_sha256` | The SHA-256 of the ceremony record before it in the chain. Absent in the first ceremony record of the bundle, and only there (0006 rule 8). |
-| `started_at`, `finished_at` | When the attempt was written, and when the ceremony record was. |
-| `root`, `root_reason` | As in the plan. Absent in a closing record. |
-| `slot_map_version` | For a root key on a card: the version of the slot map ([record 0003](../decisions/0003-root-cards.md), rule 4). Absent for a key file or a cloud key. |
-| `confirmation` | `{ "by", "at" }`: `typed` or `flag`, and when (0005 rule 9). |
-| `ran_on` | Proposed. Where the ceremony ran: `workstation` or `offline-system`. Every ceremony record says it (0005 rule 3); the name and the two values are proposed. Whether a second-device check was declared, and what was compared, is open ([#30](https://github.com/truvity/ritueel/issues/30)). |
-| `limit_shown` | The first `apply` only: true, because it prints the [accepted limit](../decisions/0005-a-ceremony-and-where-it-runs.md) (0005 rule 20). |
-| `requests` | One for each request, below. |
-| `wanted` | The plan's list of wanted files, by digest (0006 rule 8). |
-| `applied` | The changes the ceremony applied, as `applies` in the plan. |
-| `left_out` | The changes the ceremony left out, each with the reason, as `leaves_out` in the plan. |
-| `signatures` | The plan's list, each with `signature_sha256`: the SHA-256 of the signature made. |
-| `artifacts` | A list of `{ "path", "sha256" }`: every file the ceremony wrote other than the plan, the copies of the wanted files, the attempt, the two journals, the transcript and the ceremony record itself, in path order. The trust set is among them. |
-| `trust_sequence` | As in the plan. |
-| `transcript_sha256` | The SHA-256 of the transcript. |
-| `advisory_review` | An `apply` that renews: `{ "at", "note" }`, the holder's answer that they reviewed the advisories for the cards, services and algorithms in use, and a short note of what they read. ritueel asks and records; it does not judge the answer ([record 0007](../decisions/0007-changing-and-losing-a-root.md), rule 20). |
-| `declined` | A declining record only: `{ "stem", "reason" }`, the request declined and the reason the person gave. Such a ceremony record has no `signatures`, and its `artifacts` are the refused answer. |
-| `closes` | A closing record only: `{ "ceremony", "attempt_sha256", "reason" }`, the attempt it resolves, its digest, and the reason the person gave. |
-| `revocations` | A ceremony that made revocation material: a list of `{ "label", "reason", "sha256" }`, the digest of each signature packet, and of each removal authorisation with the reason `root-removal`. The material itself is never in the ceremony record (0007 rule 23; [revocation material](/reference/revocation-material/)). |
+| Member | Meaning | Required by `check history` |
+|---|---|---|
+| `version` | `1`. | Yes |
+| `ceremony`, `command`, `arguments` | As in the plan. `command` is `apply`, or `close` for a closing record. | `ceremony` and `command`: yes. `arguments`: no. |
+| `outcome` | `completed`; `declined` when the person declined the request ([Declining](/reference/ceremony-record/#declining)); or `closed` for a closing record. | Yes |
+| `plan_sha256` | The plan digest. Absent in a closing record, which has no plan of its own. | No |
+| `prev_record_sha256` | The SHA-256 of the ceremony record before it in the chain. Absent in the first ceremony record of the bundle, and only there (0006 rule 8). | The chain walk reads it ([the hash chain](/reference/ceremony-record/#the-hash-chain)). |
+| `started_at`, `finished_at` | When the attempt was written, and when the ceremony record was. | No |
+| `root`, `root_reason` | As in the plan. Absent in a closing record. | No |
+| `slot_map_version` | For a root key on a card: the version of the slot map ([record 0003](../decisions/0003-root-cards.md), rule 4). Absent for a key file or a cloud key. | No |
+| `confirmation` | `{ "by", "at" }`: `typed` or `flag`, and when (0005 rule 9). | No |
+| `ran_on` | Proposed. Where the ceremony ran: `workstation` or `offline-system`. Every ceremony record says it (0005 rule 3); the name and the two values are proposed. Whether a second-device check was declared, and what was compared, is open ([#30](https://github.com/truvity/ritueel/issues/30)). | No |
+| `limit_shown` | The first `apply` only: true, because it prints the [accepted limit](../decisions/0005-a-ceremony-and-where-it-runs.md) (0005 rule 20). | No |
+| `requests` | One for each request, below. | No |
+| `wanted` | The plan's list of wanted files, by digest (0006 rule 8). | `apply` only |
+| `applied` | The changes the ceremony applied, as `applies` in the plan. | No |
+| `left_out` | The changes the ceremony left out, each with the reason, as `leaves_out` in the plan. | No |
+| `signatures` | The plan's list, each with `signature_sha256`: the SHA-256 of the signature made. | No |
+| `artifacts` | A list of `{ "path", "sha256" }`: every file the ceremony wrote other than the plan, the copies of the wanted files, the attempt, the two journals, the transcript and the ceremony record itself, in path order. The trust set is among them. A closing record will also list the files of a trust set that the stopped ceremony left, once `close` is built to do it ([the hash chain](/reference/ceremony-record/#the-hash-chain)). | Yes |
+| `trust_sequence` | As in the plan. | No |
+| `transcript_sha256` | The SHA-256 of the transcript. | Yes |
+| `advisory_review` | An `apply` that renews: `{ "at", "note" }`, the holder's answer that they reviewed the advisories for the cards, services and algorithms in use, and a short note of what they read. ritueel asks and records; it does not judge the answer ([record 0007](../decisions/0007-changing-and-losing-a-root.md), rule 20). | No |
+| `declined` | A declining record only: `{ "stem", "reason" }`, the request declined and the reason the person gave. Such a ceremony record has no `signatures`, and its `artifacts` are the refused answer. | No |
+| `closes` | A closing record only: `{ "ceremony", "attempt_sha256", "reason" }`, the attempt it resolves, its digest, and the reason the person gave. | `close` only |
+| `revocations` | A ceremony that made revocation material: a list of `{ "label", "reason", "sha256" }`, the digest of each signature packet, and of each removal authorisation with the reason `root-removal`. The material itself is never in the ceremony record (0007 rule 23; [revocation material](/reference/revocation-material/)). | No |
+
+The last column lists the members that `check history` requires today. It requires only what it reads, so a record that lacks another member of the table passes this check. A record that lacks a required member is `record-invalid` (see [the hash chain](/reference/ceremony-record/#the-hash-chain)). The list grows when the writer of the record is built.
 
 That the ceremony record lists the wanted files and the artifacts by digest is decided (0006 rule 8; 0005 rule 7). The names of the three members are Proposed ([#8](https://github.com/truvity/ritueel/issues/8)). A key's state (active, retired or revoked: 0007 rule 3) is read from the ceremony records and the newest root list; no member holds it. The member `roots_target` is not in version 1: the number of keys wanted is the number in the wanted root file (0007 rule 6).
 
@@ -225,15 +231,25 @@ Ceremony records form one chain (0006 rule 8). The first ceremony record of a bu
 | `record-off-chain` | A `record.json` in a ceremony folder of `history/` is not on the chain. |
 | `record-not-canonical` | A ceremony record is not in canonical form. |
 | `record-version-unknown` | The version of a ceremony record is not known. |
-| `record-invalid` | A ceremony record of a known version breaks the rules of this page: a member is missing, repeated or unknown, or has the wrong type. |
+| `record-invalid` | A ceremony record of a known version breaks the rules of this page: a member is missing, repeated or unknown, or has the wrong type; or `record.json` is there and is not a regular file of at most 8 MiB. |
 | `transcript-digest` | A transcript's digest is not the `transcript_sha256` of its ceremony record. |
-| `file-digest` | A file that a ceremony record lists fails its digest. The files checked are the copies in `wanted/` and the artifacts. A wanted file in `want/` may have changed since, because a person writes it. |
+| `file-digest` | A file that a ceremony record lists fails its digest, or is there and is not a regular file of at most 8 MiB: a folder, a link, a FIFO or a larger file. Nothing there is called absent (0006 rule 31). The files checked are the copies in `wanted/`, the artifacts, the plan and the attempt that a closing record names. The plan is checked against the `plan_sha256` of its record; for a closing record, the attempt of the ceremony it closes is checked against `closes.attempt_sha256`. A wanted file in `want/` may have changed since, because a person writes it. |
 | `file-missing` | A file that a ceremony record lists is not there. It is an error, never "absent" (0006 rule 31). |
 | `trust-set-unlisted` | A trust set in `trust/` is not an artifact of a ceremony record, and no attempt of that ceremony is open. It shows that the newest ceremony record was removed (0006 rule 34). |
 | `unfinished-ceremony` | A trust set in `trust/` is not an artifact of a ceremony record, and an attempt of that ceremony is open. The next command finishes the ceremony. |
-| `anchor-unknown` | The `last_record_sha256` of a root list in `trust/` is not on the chain. |
+| `anchor-unknown` | The `last_record_sha256` of a root list in `trust/` is not on the chain; or a root list cannot be read; or a root list that is not the first has no `last_record_sha256`. The line of the finding says which case it is. |
+| `unexpected-name` | A file or a folder name in `history/`, in `trust/` or in a ceremony folder that the rule for names does not allow (0006 rule 38). The name is shown only with every character beyond printable ASCII written as an escape (0006 rule 46). |
+| `unexpected-file` | A notice. A name in `history/`, in `trust/` or in a ceremony folder that the rule for names allows and that no ceremony record lists; or a leftover temporary name, one that starts with `.rt-`, which shows that a write stopped (0006 rules 39 and 45). |
 
-Every finding ends the command with exit code 3, except `unfinished-ceremony`: it is a notice, and the exit code stays 0. A history with no ceremony record has no finding and exits 0.
+Every finding ends the command with exit code 3, except `unfinished-ceremony` and `unexpected-file`: they are notices, the exit code stays 0, and their names are in `warnings` ([the output](/reference/cli/#machine-readable-output)). A history with no ceremony record has no finding and exits 0.
+
+`unexpected-name` fails and `unexpected-file` does not, because ritueel never writes a name that rule 38 refuses. Such a name came from damage or from outside. A stray file with an ordinary name, for example one that a desktop system leaves, is common on a workstation, and a notice is enough for it.
+
+A listed file that cannot be read is not a finding when the cause is something other than "does not exist", for example a refused permission: the command ends with exit code 1. Only "does not exist" is `file-missing`.
+
+`check history` reads files only. It does not read the [trace area](/reference/trace-area/). An attempt that exists only in the trace area is not seen, so the trust set of that ceremony is `trust-set-unlisted` and not `unfinished-ceremony`.
+
+A trust set that a stopped ceremony left stays unlisted after `close` writes its closing record, because the closing record names the attempt and not the trust set. `close` will list the files of such a trust set, with their digests, in the `artifacts` of its closing record, so that `check history` finds the set listed like any other. This is what `close` will do. It is not built, and `check history` has no special case for it. Until `close` does it, a trust set that a closed, stopped ceremony left is `trust-set-unlisted`.
 
 The ceremony records are not signed by a root. The digest of the end of the history goes into the next signed root list ([the root list](/reference/root-list/#the-list)), which anchors the chain up to that ceremony without another use of the root (0006 rule 8). After every ceremony and every join, ritueel prints the first eight characters of that digest and the count of ceremony records (0006 rule 11; [the end of the history](/reference/bundle/#the-end-of-the-history)).
 
