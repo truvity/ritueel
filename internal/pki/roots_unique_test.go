@@ -145,6 +145,32 @@ func TestTwoRootsOfOneNameOrOneKeyAreRefused(t *testing.T) {
 	})
 }
 
+// The same root listed twice with the same key and the same name, the name once as a UTF8String and once as a PrintableString (and once
+// in capitals), is not one entry: the bytes of the subject differ. The list is refused with ErrParams, and the text says that the one key
+// stands under two forms of one name.
+func TestOneRootUnderTwoStringTypesOfItsNameIsRefused(t *testing.T) {
+	b := newBundle(t)
+	csr := goodRequest(t)
+	const words = "one key stands under two names or under two forms of one name"
+	text := "Gamma Root G (TEST ONLY)"
+	key := newKey(t)
+	asUTF8 := pki.RootRef{Subject: cnName(tUTF8, text), Key: &key.PublicKey}
+	rows := []struct {
+		name  string
+		roots []pki.RootRef
+	}{
+		{"UTF8String, then PrintableString", []pki.RootRef{b.a.ref(), asUTF8, {Subject: cnName(tPrintable, text), Key: &key.PublicKey}}},
+		{"PrintableString, then UTF8String", []pki.RootRef{b.a.ref(), {Subject: cnName(tPrintable, text), Key: &key.PublicKey}, asUTF8}},
+		{"UTF8String, then PrintableString in capitals", []pki.RootRef{b.a.ref(), asUTF8, {Subject: cnName(tPrintable, strings.ToUpper(text)), Key: &key.PublicKey}}},
+		{"B as it is, then B as a PrintableString", []pki.RootRef{b.a.ref(), b.b.ref(), {Subject: cnName(tPrintable, b.b.parsed.Subject.CommonName), Key: &b.b.key.PublicKey}}},
+	}
+	for _, r := range rows {
+		t.Run(r.name, func(t *testing.T) {
+			rootsRefusedBothWays(t, b, csr, r.roots, words)
+		})
+	}
+}
+
 // A root that is listed twice with the same subject bytes and the same key is one root: the list is accepted and the body is the body of
 // the list without it; a request for it is still refused as a request for a root.
 func TestARootListedTwiceIsOneRoot(t *testing.T) {
