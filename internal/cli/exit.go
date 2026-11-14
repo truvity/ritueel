@@ -1,11 +1,14 @@
 // Package cli is the ritueel command line: the commands, the exit codes and the JSON output
 // of docs/reference/cli.md. It writes only to the streams it is given and never exits.
 //
-// A command that refuses returns a Refusal or a BackendRefusal error, which carries the reason
-// codes and the message for a person; Run prints the message on standard error. A command may also
-// return a Result with the exit code 3 or 4 and its Reasons, so that a later command can refuse and
-// still give data members (the checks of check request, the findings of status). Today such a Result
-// prints nothing on standard error, and who prints the line for a person in that case is not decided.
+// A command that refuses returns a Refusal or a BackendRefusal error. This is the way for a command whose
+// refusal has no data members of its own (verify root-list, check history). Run writes "ritueel: " and the
+// message of the error on standard error, after the warning lines, and the codes stand in when Msg is empty.
+// A command that has one line for each finding writes those lines itself, to Env.Stderr, before it returns
+// the Refusal; Run adds only the last line.
+//
+// A later command may return a Result with the exit code 3 or 4; who prints the line for a person in that
+// case is decided when the first such command is built.
 package cli
 
 import (
