@@ -174,17 +174,26 @@ func runVerifyRootList(_ context.Context, c *Call) (*Result, error) {
 	if v.Again {
 		text.WriteString(textAgain + "\n")
 	}
+	if v.Wayback {
+		// Wayback is true only for a host that holds a list, so held is set.
+		fmt.Fprintf(&text, textWayback+"\n", held.List.Sequence, l.Sequence)
+	}
 	for _, f := range checked {
 		// The form that sha256sum -c reads: the digest, two spaces, the name. A name that needs
 		// the escapes of that form (a backslash, a line feed) is refused by the reader of files.
 		fmt.Fprintf(&text, "%s  %s\n", f.SHA256, f.Name)
 	}
-	return &Result{Warnings: warnings, Checked: checked, Again: v.Again, Text: text.String()}, nil
+	return &Result{Warnings: warnings, Checked: checked, Again: v.Again, Wayback: v.Wayback, Text: text.String()}, nil
 }
 
 // textAgain is the line of the text output for the held list coming again, written after the line
 // "accepted". It is the one place of the wording.
 const textAgain = "again: the list the host holds, byte for byte; install nothing"
+
+// textWayback is the line of the text output for a list that was taken by the way back, written
+// after the line "accepted": the held sequence and the list's, in that order. It is the one place
+// of the wording.
+const textWayback = "wayback: the held list had sequence %d; this list replaces it at sequence %d"
 
 // digest is the SHA-256 of the bytes that were read and checked, in lower-case hexadecimal.
 func digest(b []byte) string {
