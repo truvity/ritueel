@@ -42,7 +42,7 @@ The reference policy of the manifest lists, besides the URI host `example.org`, 
 - A subtree with an element other than a minimum or a maximum after its base: the three cases of a minimum or a maximum show the rule.
 - A request signed with SHA-1 or SHA-512 (SHA-256 is the case), and a request whose key is not P-384 other than P-256 (an RSA key): the same code, the same rule.
 - A URI constraint whose name, without the period at its start, has 253 characters: the page counts it so, no case states it.
-- A PEM block with a label other than `CERTIFICATE REQUEST`, or with headers; an extension whose critical flag is written as FALSE; a key that is not in the canonical form: refusals of the Go request reader that no page states, so no case states a result.
+- A request file that breaks a rule of [the request file](../../docs/reference/hand-off-contract.md#the-request) (a label other than `CERTIFICATE REQUEST`, a header line, a line of more than 76 characters, a blank line, two kinds of line end): the page states the rule, and no case shows a refusal. An extension whose critical flag is written as FALSE, and a key that is not in the canonical form: refusals of the Go request reader that no page states, so no case states a result.
 - The comparison of names with a run of spaces as one space: no value may hold two spaces, so no case can show it.
 
 ## The floor with `openssl`
