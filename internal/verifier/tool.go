@@ -1,5 +1,6 @@
 // Package verifier holds the helpers of tests that check an artifact with a tool that did not
-// build it: OpenSSL for a certificate, and later gpgv and sqv for OpenPGP. A test that builds
+// build it: OpenSSL for a certificate (openssl.go), and gpgv (gpg.go) and sqv (sqv.go) for an
+// OpenPGP signature and the certificate that makes it valid. A test that builds
 // a certificate and checks it with the code that built it proves little; a tool that is
 // written by someone else, and reads the bytes as a relying party does, proves the profile.
 //
