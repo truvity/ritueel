@@ -72,7 +72,7 @@ The Go code is the program `ritueel`. Only `ritueel version` is built. [The firs
 
 - `devbox.json` pins Go (`go`), the linter (`golangci-lint`) and the vulnerability scanner (`govulncheck`) at exact versions. It also sets `CGO_ENABLED=0`, so the program is a static executable.
 - `go.mod` has a `go` line that is the pinned Go version, and it has no `toolchain` line. The build and the tests use only the Go that devbox pins: `devbox.json` sets `GOTOOLCHAIN=local`, so a newer `go` line in a `go.mod` makes the `go` command stop, and it does not download another Go. `devbox.json` also sets `GOFLAGS=-mod=readonly`, so a build never changes `go.mod`.
-- The module path is `ritueel.id/ritueel`.
+- The module path is `ritueel.id/ritueel`. The site answers the Go tool for that name with the page `site/public/ritueel/index.html`, which holds the `go-import` tag that names the repository; `just site-build` checks the page against `go.mod` (`site/scripts/check-go-import.mjs`).
 - There is no `vendor/` folder. `go.sum` is committed. `go-verify` checks the downloaded modules against it, and `go-tidy` fails when `go.mod` or `go.sum` is not what `go mod tidy` writes.
 
 ### The layout
