@@ -153,6 +153,12 @@ type Verdict struct {
 	// replaces the held list with it replaces it with an identical file. It is false for every
 	// refusal and for every list that is new.
 	Again bool
+	// Wayback is true for a list that was accepted although check 6 or check 7 would have refused
+	// it: its sequence is lower than the held list's, or equal to it with other content (record
+	// 0006, rule 53). The host's sequence is then the list's, and it is lower than it was, or the
+	// same with another list. It is false for every refusal, for a list with a higher sequence
+	// that names a removed key, and for a host that holds only initial pins.
+	Wayback bool
 }
 
 // CheckInfo describes one of the eleven checks.
@@ -176,6 +182,9 @@ type state struct {
 	// again is set by check 7: the candidate is the held list again. Checks 8, 9 and 10 do not
 	// apply to it (see againOf).
 	again bool
+	// wayback is set by check 6 or 7 when the way back applies and the check would have refused
+	// the list (see unlessWayBack).
+	wayback bool
 }
 
 func (s *state) kids() []string {
@@ -196,15 +205,17 @@ type check struct {
 }
 
 // checks is the table of the page, in its order: the one place where the order is written. Verify
-// runs the rows in order and stops at the first failure, and no row is skipped.
+// runs the rows in order and stops at the first failure. No row is left out of the table; checks 6
+// and 7 pass a list that the way back applies to (unlessWayBack), and checks 8 to 10 pass the held
+// list again (ofANewList).
 var checks = []check{
 	{1, "root-list.jws is a detached general JWS of the form of the page", Malformed, checkJWSForm},
 	{2, "a signer is a root key of the held list or an initial pin", UnknownSigner, checkSomeSignerKnown},
 	{3, "every signature verifies over the bytes of root-list.json", SignatureInvalid, checkSignatures},
 	{4, "version is 1", VersionUnsupported, checkVersion},
 	{5, "root-list.json follows the JSON rules and the members", Malformed, checkMembers},
-	{6, "sequence is not lower than the held one", Rollback, checkNotRollback},
-	{7, "at the held sequence the list is the held list", SequenceConflict, checkSameSequence},
+	{6, "sequence is not lower than the held one, unless the way back applies", Rollback, unlessWayBack(checkNotRollback)},
+	{7, "at the held sequence the list is the held list, unless the way back applies", SequenceConflict, unlessWayBack(checkSameSequence)},
 	{8, "every signer is a root key of the held list or of this list", UnknownSigner, ofANewList(checkAllSignersKnown)},
 	{9, "every removals entry is a valid authorisation", RemovalInvalid, ofANewList(checkRemovals)},
 	{10, "a change of the root keys has the signatures it needs", InsufficientSigners, ofANewList(checkSigners)},
@@ -234,7 +245,7 @@ func Verify(cand Signed, t Trust, now time.Time) Verdict {
 			return Verdict{Reason: c.reason, Check: c.n, Detail: jsonset.Escape(detail)}
 		}
 	}
-	return Verdict{Accepted: true, List: s.list, Again: s.again}
+	return Verdict{Accepted: true, List: s.list, Again: s.again, Wayback: s.wayback}
 }
 
 // CheckHeld returns the warnings of the list the host holds at now: WarningHeldExpired when its
@@ -309,6 +320,53 @@ func checkMembers(s *state) (string, bool) {
 	}
 	s.list = l
 	return "", true
+}
+
+// wayBackApplies is the decision of record 0006, rule 53, made after check 5 from the entries
+// alone: the host holds a list, the candidate removes at least one root key of it, and has an entry
+// in removals for every root key it removes. A root key is removed when its pin is the pin of an
+// entry of roots of the held list and of no entry of roots of the candidate. The entries of
+// removals do not count as being on the candidate, and labels and fingerprints are not compared.
+// An entry is for a key when its pin equals the key's, as written. Whether an entry is valid is
+// check 9's to judge, so a candidate with an entry that is not valid still gets here, and is
+// refused with removal-invalid and not with rollback. A host that holds only initial pins has no
+// held list and never uses the way back.
+func (s *state) wayBackApplies() bool {
+	h := s.t.held
+	if h == nil {
+		return false
+	}
+	kept := s.list.Pins()
+	named := make([]string, len(s.list.Removals))
+	for i, r := range s.list.Removals {
+		named[i] = r.X509SPKISHA256
+	}
+	removed := 0
+	for _, p := range h.List.Pins() {
+		if slices.Contains(kept, p) {
+			continue
+		}
+		if !slices.Contains(named, p) {
+			return false
+		}
+		removed++
+	}
+	return removed > 0
+}
+
+// unlessWayBack makes check 6 or check 7 pass a list that the way back applies to (wayBackApplies).
+// The check is still run on such a list, and when it would have refused the list, the verdict
+// says so (Verdict.Wayback): the list is then accepted by the way back and by nothing else.
+func unlessWayBack(run func(*state) (string, bool)) func(*state) (string, bool) {
+	return func(s *state) (string, bool) {
+		if !s.wayBackApplies() {
+			return run(s)
+		}
+		if _, ok := run(s); !ok {
+			s.wayback = true
+		}
+		return "", true
+	}
 }
 
 func checkNotRollback(s *state) (string, bool) {
