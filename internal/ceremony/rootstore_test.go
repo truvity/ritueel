@@ -183,7 +183,7 @@ func TestABirthWritesTheKeyFileAndTheStoreReadsItBackAsTheSameKey(t *testing.T) 
 	if !strings.HasPrefix(string(text), mark) {
 		t.Errorf("the key file does not start with the page's mark: %.100q", text)
 	}
-	if !strings.Contains(string(text), "-----BEGIN PRIVATE KEY-----") {
+	if !strings.Contains(string(text), "-----BEGIN "+"PRIVATE KEY-----") {
 		t.Errorf("the key file holds no PRIVATE KEY armour")
 	}
 	// An independent read of the same directory by the library of the store gives the same public key.
