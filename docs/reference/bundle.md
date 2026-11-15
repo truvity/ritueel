@@ -331,7 +331,7 @@ The schema, in JSON Schema (draft 2020-12), which the code ships and checks the 
         "address": { "type": "string", "format": "email" }
       }
     },
-    "name": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9 -]{0,63}$" },
+    "name": { "type": "string", "pattern": "^[A-Za-z0-9 -]{1,45}$" },
     "release_address": { "type": "string", "format": "email" },
     "policy": {
       "type": "object",
@@ -368,7 +368,7 @@ The schema, in JSON Schema (draft 2020-12), which the code ships and checks the 
 }
 ```
 
-Three rules the schema cannot state: the two Regions of `aws_kms` differ, both its roles are in `account`, and a `name` has no space at its end and no two spaces in a row. ritueel checks all three when it reads the file.
+Three rules the schema does not state: the two Regions of `aws_kms` differ, both its roles are in `account`, and a `name` has no space at its start or its end and no two spaces in a row. ritueel checks all three when it reads the file.
 
 ### A delegation file
 
