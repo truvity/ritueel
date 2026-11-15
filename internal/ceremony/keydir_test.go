@@ -226,10 +226,10 @@ func TestAnEmptyBundleFolderIsAFailureAndNotABackendRefusal(t *testing.T) {
 	if errors.As(err, &b) {
 		t.Errorf("a fault of the caller was told as a refusal of the key store: %v", err)
 	}
-	// The text of a joined error holds a line feed between its two parts; the command writes it
-	// through the escape of the program. No other control character and nothing but ASCII.
-	if !pfPrintable(strings.ReplaceAll(err.Error(), "\n", " ")) {
-		t.Errorf("the text %+q is not ASCII", err.Error())
+	// The text of a fault that is not a refusal is one line of printable ASCII: the fault of the key
+	// store is wrapped in it and is not joined to it by a line feed.
+	if !pfPrintable(err.Error()) {
+		t.Errorf("the text %+q is not printable ASCII on one line", err.Error())
 	}
 }
 

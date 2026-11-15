@@ -218,12 +218,21 @@ func checkFound(f *Found) ([]string, error) {
 	if len(f.Wanted) != 2 {
 		return nil, errors.New("the plan uses ritueel.yaml and the root file, and the wanted files are not those two")
 	}
-	have := map[string]bool{}
+	// The plan lists the digests of the bytes of Found.Wanted, so those bytes must be the bytes that
+	// Settings and Root hold, not only files of the same paths: one file of each, no other.
+	haveSettings, haveRoot := false, false
 	for _, w := range f.Wanted {
-		have[w.Path] = true
+		switch {
+		case w.Path == f.Settings.File.Path && !haveSettings && bytes.Equal(w.Data, f.Settings.File.Data):
+			haveSettings = true
+		case w.Path == f.Root.File.Path && !haveRoot && bytes.Equal(w.Data, f.Root.File.Data):
+			haveRoot = true
+		default:
+			return nil, errors.New("the wanted files of the plan are not the bytes of ritueel.yaml and of the root file that were read")
+		}
 	}
-	if !have[f.Settings.File.Path] || !have[f.Root.File.Path] || len(have) != 2 {
-		return nil, errors.New("the wanted files of the plan are not ritueel.yaml and the root file that were read")
+	if !haveSettings || !haveRoot {
+		return nil, errors.New("the wanted files of the plan are not the bytes of ritueel.yaml and of the root file that were read")
 	}
 	for _, w := range f.Wanted {
 		if err := files.CheckPath(w.Path); err != nil {
