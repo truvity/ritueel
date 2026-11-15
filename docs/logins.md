@@ -15,7 +15,7 @@ flow: landing
 
 ## What to do
 
-- Two YubiKeys guard your 1Password, main mail and Apple or Google accounts. Put a passkey on both.
+- Two YubiKeys guard your 1Password, main mail and Apple or Google accounts. Put a [passkey](/learn/how-passkeys-work/#passkeys-in-brief) on both.
 - 1Password, a password manager that syncs passkeys, holds one for every other site. This is the default.
 - Backup: a one-time code (TOTP) in 1Password, where a site has no passkey or asks for a second way in. An account is as strong as its weakest way in.
 
