@@ -18,6 +18,10 @@ type Env struct {
 	Build  buildinfo.Info
 	// Now is the clock; a command that needs the time calls it and reads nothing else.
 	Now func() time.Time
+	// StdinIsTerminal is true only when Stdin is a terminal. A typed confirmation is read only then
+	// (record 0005, rule 9; record 0010, rule 13); the zero value is false, so a run that was not told
+	// that a person is there asks for --confirm.
+	StdinIsTerminal bool
 }
 
 // withDefaults returns the Env with every nil stream replaced, so that the command line
