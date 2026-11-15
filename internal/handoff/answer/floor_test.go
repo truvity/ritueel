@@ -209,7 +209,7 @@ func TestTheFloorAcceptsACertificateOfAnInstalledCAAndNamesTheFourChecksItDidNot
 	}
 }
 
-func TestTheFloorTakesAnyKeyThatTheStandardLibraryVerifies(t *testing.T) {
+func TestTheFloorTakesAP256CAAndAnRSA2048CA(t *testing.T) {
 	k := newKit(t)
 	t.Run("a P-256 CA", func(t *testing.T) {
 		key, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
