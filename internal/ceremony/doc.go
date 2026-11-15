@@ -2,8 +2,7 @@
 // which they are written, and what a person reads while it runs (docs/reference/ceremony-record.md,
 // "The order of writes"; record 0005, rules 9 to 13; record 0006, rules 8, 9 and 31 to 45).
 //
-// The package holds, so far, what writes the ceremony folder history/<ceremony>/ and
-// nothing that makes a key or a signature:
+// The package holds what writes the ceremony folder history/<ceremony>/:
 //
 //   - [Folder] is one ceremony folder and its state: new, planned, started, ended, transcribed,
 //     recorded. [Folder.WritePlan] (or [Folder.Adopt] for a plan that an earlier run wrote)
@@ -37,6 +36,12 @@
 //     typed value again and requires the same bytes, so that the words a person confirms and the values
 //     that a run executes come from one reading.
 //   - [CheckKeyDir] is every refusal about the key directory that needs no key.
+//
+// It also makes the keys and the artifacts of the first apply of an X.509 test root ([MakeRoots]): the
+// two keys, a root certificate and a removal authorisation for each, a root.json for each and the first
+// trust set. It judges each artifact with code that did not make it (crypto/x509, encoding/asn1,
+// encoding/pem and internal/rootlist, and not internal/pki, which made the certificate), and it
+// writes no file of the bundle.
 //
 // Every write goes through fsx.Writer, so a name that exists, a link and a temporary name are
 // refused by the one place that knows the rules (record 0006, rules 31 to 33 and 44). A folder
