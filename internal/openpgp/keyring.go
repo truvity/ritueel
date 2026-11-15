@@ -57,6 +57,7 @@ type KeyringEntry struct {
 // one shape that [NewPrimary] writes, which verifies with the key over the user ID, dated not
 // before the key and not before the certification before it. The user IDs of all certificates carry
 // the mark " (TEST ONLY)" or none does: a file that mixes test and real primaries is refused. The
+// primaries that it returns tell that mark ([PrimaryKey.TestMark]), the same for all of them. The
 // expiry of a primary is not compared with a clock here, and the root list is not read.
 //
 // The checks run in this order, the cheapest first, and the first fault gives the error, made once:
@@ -315,6 +316,7 @@ func readCertificates(certs []keyringCert, want []KeyringEntry, check certChecke
 		if err != nil || pk.Fingerprint() != fp {
 			return nil, fail(ErrKeyringForm, "%s: the key packet is not read as it is", at)
 		}
+		pk.test = isTest
 		read, keys = append(read, k), append(keys, pk)
 	}
 	if test > 0 && plain > 0 {

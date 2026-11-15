@@ -19,6 +19,9 @@ import (
 // The zero value holds no key and is refused wherever a key is needed.
 type PrimaryKey struct {
 	k *key
+	// test is set by [ReadKeyring] when the user ID of the certificate that the primary was read from
+	// carries the test mark.
+	test bool
 }
 
 // NewPrimaryKey makes the primary of a public key and its creation time (openpgp_created of
@@ -51,6 +54,14 @@ func (p *PrimaryKey) Created() time.Time {
 		return time.Time{}
 	}
 	return p.k.created
+}
+
+// TestMark reports whether the primary was read by [ReadKeyring] from a certificate whose user ID
+// carries the mark " (TEST ONLY)". All the primaries of one accepted keyring file give the same
+// answer, because a file that mixes the two is refused. It is false for a primary that
+// [NewPrimaryKey] made, which has no user ID, and for a nil or zero value.
+func (p *PrimaryKey) TestMark() bool {
+	return p != nil && p.k != nil && p.test
 }
 
 // PublicKey is a copy of the public key of the primary. It is nil for a nil or zero value.
