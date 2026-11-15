@@ -209,7 +209,7 @@
     - way: A one-time code (TOTP) in 1Password
       advice: accepted
       state: no-tool
-      why: The backup, where a site has no passkey.
+      why: Accepted as backup.
     - way: A passkey on both YubiKeys for a site you choose
       advice: possible
       state: no-tool
