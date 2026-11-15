@@ -1365,7 +1365,7 @@
                   "checkDetail": "The list pins keys A, B and C and is signed by keys A, B and C. It replaces set 13.",
                   "sha256": "c3d9a7e1c3d9a7e1c3d9a7e1c3d9a7e1c3d9a7e1c3d9a7e1c3d9a7e1c3d9a7e1",
                   "sizeBytes": "2412",
-                  "verifyCommand": "ritueel verify root-list trust/14-7d41e9b3/root-list.json --held trust/13-3fa9c1d2/root-list.json"
+                  "verifyCommand": "ritueel verify root-list trust/14-7d41e9b3/root-list.json --held trust/13-b41e07a9/root-list.json"
                 },
                 {
                   "name": "ca-bundle.pem",
@@ -1378,7 +1378,7 @@
                   "checkDetail": "The bundle holds the three X.509 root certificates and matches the root list.",
                   "sha256": "4b7f20d64b7f20d64b7f20d64b7f20d64b7f20d64b7f20d64b7f20d64b7f20d6",
                   "sizeBytes": "3120",
-                  "verifyCommand": "ritueel verify root-list trust/14-7d41e9b3/root-list.json --held trust/13-3fa9c1d2/root-list.json --ca-bundle trust/14-7d41e9b3/ca-bundle.pem"
+                  "verifyCommand": "ritueel verify root-list trust/14-7d41e9b3/root-list.json --held trust/13-b41e07a9/root-list.json --ca-bundle trust/14-7d41e9b3/ca-bundle.pem"
                 },
                 {
                   "name": "crl-A.pem",
@@ -1430,7 +1430,7 @@
                   "checkDetail": "The list names the SSH CA keys of the root and is signed by keys A, B and C.",
                   "sha256": "81c4d6b281c4d6b281c4d6b281c4d6b281c4d6b281c4d6b281c4d6b281c4d6b2",
                   "sizeBytes": "1180",
-                  "verifyCommand": "ritueel verify ssh-ca-keys trust/14-7d41e9b3/ssh-ca-keys.json --held trust/13-3fa9c1d2/ssh-ca-keys.json"
+                  "verifyCommand": "ritueel verify ssh-ca-keys trust/14-7d41e9b3/ssh-ca-keys.json --held trust/13-b41e07a9/ssh-ca-keys.json"
                 },
                 {
                   "name": "acme-keyring.gpg",
