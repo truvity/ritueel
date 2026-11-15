@@ -2,6 +2,7 @@ package history
 
 import (
 	"bytes"
+	"cmp"
 	"context"
 	"encoding/hex"
 	"errors"
@@ -33,6 +34,15 @@ type Inspection struct {
 	// OrderErr says why a clean report has no State. It wraps [ErrOrder]. It is nil when State is
 	// not nil, and nil when the report has a failing finding (the findings are the reason then).
 	OrderErr error
+	// Unfinished are the ceremony folders that hold an entry named attempt.json and no record.json,
+	// and that no closing record names in closes.ceremony, in the order of the names. It is set
+	// whenever the walk ended, whether the report is clean or not and whether the order of the root
+	// lists is sure or not: an open attempt is never hidden by another fault (a fork, a flipped
+	// digest). It is a copy of two lists that the walk holds, so it takes any entry of that name as
+	// an attempt, a link or a folder too; the report says what is wrong with such an entry, and
+	// the caller reads the attempt before it takes the ceremony as open. When State is not nil it
+	// equals State.Unfinished.
+	Unfinished []string
 }
 
 // State is what a writer of the next ceremony needs to know of a bundle whose history is whole.
@@ -59,17 +69,51 @@ type State struct {
 	// The check does not say whether the attempt belongs to this history, or whether the ceremony
 	// is still open: the caller reads the attempt before it takes the ceremony as open.
 	Unfinished []string
+	// Chain is every ceremony record, in the order of the hash chain, the oldest first: the order
+	// that a writer cannot choose, and never an order of folder names. Each of Records is in it
+	// once. It is nil when there is no record.
+	Chain []CeremonyInfo
+	// Unlisted are the trust sets that no record lists (the set that an unfinished ceremony left),
+	// in the order of the names, with the number that the digits of the name give: the one rule of
+	// this package for a number, so that a caller does not write it a second time. A set in it
+	// that has a root list is in Lists too, and its ListJSON is a copy of the bytes that the walk
+	// read; ListJSON is nil for a set that has no root list, or whose bytes were not kept (see
+	// [MaxStateBytes]), and the caller reads the file. In a clean report each of them is linked to
+	// an open attempt, because a set that is not linked is the failing finding trust-set-unlisted.
+	Unlisted []SetInfo
+	// NewestListed is the last set of Lists that a record lists, never a set that no record lists.
+	// It is nil when no record lists a set. Its ListJSON is a copy of the bytes that the walk read
+	// and judged; a bundle where those bytes were not kept has no State ([ErrTooMuch]), as for
+	// Newest.
+	NewestListed *SetInfo
 }
 
-// SetInfo is the newest trust set: the last set of the chain, and the one that holds the highest
-// sequence of all root lists.
+// CeremonyInfo is one record of the chain.
+type CeremonyInfo struct {
+	// Folder is the name of the ceremony folder that holds the record, without "history/".
+	Folder string
+	// Command and Outcome are the members command and outcome of the record: apply or close, and
+	// completed, declined or closed.
+	Command, Outcome string
+	// SHA256 is the digest of record.json as it is stored, lower-case hexadecimal.
+	SHA256 string
+}
+
+// SetInfo is a trust set that [State] describes: the newest one, the newest that a record lists,
+// or one that no record lists. The newest set is the last set of the chain, and the one that holds
+// the highest sequence of all root lists.
 type SetInfo struct {
 	// Name is the folder name of the set, "13-3fa9c1d2".
 	Name string
-	// Number is the number in the name. It equals the member sequence of the list; a set for which
-	// the two differ is not placed, and the bundle has no State.
+	// Number is the trust number in the name: the decimal digits before the first hyphen, at least
+	// 1 (a name that begins 0- has no trust number, as for the finding trust-sequence). A set
+	// whose name has none is not described by a SetInfo: the bundle has no State. For the newest set
+	// it equals the member sequence of the list; a newest set for which the two differ is not
+	// placed, and the bundle has no State. For the other sets it is the number that the digits of
+	// the name give, and nothing more.
 	Number int64
-	// ListJSON is a copy of the bytes of root-list.json that the walk read and judged.
+	// ListJSON is a copy of the bytes of root-list.json that the walk read and judged. It is nil
+	// only for a set of [State.Unlisted] that has no root list or whose bytes were not kept.
 	ListJSON []byte
 }
 
@@ -83,12 +127,19 @@ type SetInfo struct {
 // A State is returned only when the report has no failing finding and there is exactly one reading
 // of the order of the root lists (record 0006, rule 54). Where [Check] judges every order, or says
 // that the order is not sure, there is no State, and [Inspection.OrderErr] wraps [ErrOrder].
+//
+// A set that [State] describes with a [SetInfo] (the newest listed set, and each set of
+// [State.Unlisted]) must have a trust number in its folder name. One bundle that gave a State
+// before this rule gives none now, and it fails closed: a closing record lists a set whose name has
+// no trust number (the check leaves such a set out of trust-sequence), and a newer ceremony
+// stopped and left a set. The report is the same as for [Check]; only State is nil, and
+// [Inspection.OrderErr] says why.
 func Inspect(ctx context.Context, fsys fsx.FS) (*Inspection, error) {
 	ck, err := runCheck(ctx, fsys, limits{readBytes: MaxReadBytes, fileReads: MaxFileReads, perCode: MaxFindingsPerCode}, true)
 	if err != nil {
 		return nil, err
 	}
-	in := &Inspection{Report: ck.report()}
+	in := &Inspection{Report: ck.report(), Unfinished: ck.unfinishedFolders()}
 	if !in.Report.Clean() {
 		return in, nil
 	}
@@ -162,14 +213,98 @@ func (ck *checker) state(rep *Report) (st *State, why string, err error) {
 			return nil, "", fmt.Errorf("%w: the root list of %s is not among the %d bytes of root lists that an inspection keeps", ErrTooMuch, setShown(newest.set), MaxStateBytes)
 		}
 		st.Newest = &SetInfo{Name: newest.set, Number: n, ListJSON: bytes.Clone(newest.read.raw)}
-	}
-	for _, f := range ck.candidates {
-		if _, closed := ck.closed[f]; !closed {
-			st.Unfinished = append(st.Unfinished, f)
+		if why, err := ck.newestListed(st); why != "" || err != nil {
+			return nil, why, err
 		}
 	}
-	slices.Sort(st.Unfinished)
+	if why := ck.chainAndUnlisted(st); why != "" {
+		return nil, why, nil
+	}
+	st.Unfinished = ck.unfinishedFolders()
 	return st, "", nil
+}
+
+// unfinishedFolders are the ceremony folders that hold an entry named attempt.json and no
+// record.json, and that no closing record names, in the order of the names. The walk holds both
+// lists when it ends, whether its report is clean or not.
+func (ck *checker) unfinishedFolders() []string {
+	var out []string
+	for _, f := range ck.candidates {
+		if _, closed := ck.closed[f]; !closed {
+			out = append(out, f)
+		}
+	}
+	slices.Sort(out)
+	return out
+}
+
+// newestListed sets State.NewestListed: the last list of the chain whose set a record lists. why is
+// the reason, in one sentence, when the order has no one reading; an error is a fault of the run.
+func (ck *checker) newestListed(st *State) (why string, err error) {
+	byName := make(map[string]setList, len(ck.rootLists))
+	for _, l := range ck.rootLists {
+		byName[l.set] = l
+	}
+	for i := len(st.Lists) - 1; i >= 0; i-- {
+		name := st.Lists[i].Name
+		if ck.listed[name] == nil {
+			continue
+		}
+		l := byName[name]
+		n, ok := trustNumberFrom1(name)
+		if !ok {
+			return "the name of " + setShown(name) + " has no trust number", nil
+		}
+		if l.read == nil || l.read.raw == nil {
+			return "", fmt.Errorf("%w: the root list of %s is not among the %d bytes of root lists that an inspection keeps", ErrTooMuch, setShown(name), MaxStateBytes)
+		}
+		st.NewestListed = &SetInfo{Name: name, Number: n, ListJSON: bytes.Clone(l.read.raw)}
+		return "", nil
+	}
+	return "", nil
+}
+
+// chainAndUnlisted sets State.Chain and State.Unlisted from what the walk collected. why is the
+// reason, in one sentence, when the order has no one reading.
+func (ck *checker) chainAndUnlisted(st *State) (why string) {
+	var chain []recInfo
+	for _, r := range ck.recs {
+		if r.parsed && ck.onChain[r.digest] {
+			chain = append(chain, r)
+		}
+	}
+	// A clean report has every record on the chain, in one line: the depths are all different.
+	slices.SortFunc(chain, func(a, b recInfo) int {
+		return cmp.Or(cmp.Compare(ck.depth[a.digest], ck.depth[b.digest]), cmp.Compare(a.folder, b.folder))
+	})
+	if len(chain) != st.Records {
+		return "the chain of records does not hold every record"
+	}
+	for i, r := range chain {
+		if ck.depth[r.digest] != i {
+			return "the records do not stand in one line in the chain"
+		}
+		st.Chain = append(st.Chain, CeremonyInfo{Folder: r.folder, Command: r.command, Outcome: r.outcome, SHA256: r.digest})
+	}
+	byName := make(map[string]setList, len(ck.rootLists))
+	for _, l := range ck.rootLists {
+		byName[l.set] = l
+	}
+	for _, name := range slices.Sorted(slices.Values(ck.setNames)) {
+		if ck.listed[name] != nil {
+			continue
+		}
+		n, ok := trustNumberFrom1(name)
+		if !ok {
+			return "the name of " + setShown(name) + " has no trust number"
+		}
+		info := SetInfo{Name: name, Number: n}
+		if l, ok := byName[name]; ok && l.read != nil && l.read.raw != nil {
+			info.ListJSON = bytes.Clone(l.read.raw)
+		}
+		st.Unlisted = append(st.Unlisted, info)
+	}
+	return ""
 }
 
 // rootListOf turns a list that was read into the form of [FindReturns]: each pin and fingerprint as

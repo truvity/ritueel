@@ -32,6 +32,7 @@ func checkInspectInvariants(t *testing.T, m *mnode) *Inspection {
 	sameReport(t, in.Report, want)
 	checkReport(t, in.Report)
 	checkInspection(t, in)
+	checkAdditions(t, m, in)
 	again, err := inspectFS(t, fsys)
 	if err != nil || !reflect.DeepEqual(in, again) {
 		t.Fatalf("a second run differs: %v", err)
