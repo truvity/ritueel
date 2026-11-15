@@ -15,7 +15,7 @@ This page assumes you know what a key pair is ([keys from zero](/learn/what-is-a
 
 ## What a key file is
 
-A key file is a file that holds a private key, encrypted with age, a small file-encryption format. The key is generated in memory and written straight into the file, never to a plain file on disk. The encrypted file is the default home of a software key ([record 0002](../decisions/0002-where-a-key-lives.md), rules 4, 9 and 11).
+A key file is a file that holds a private key, encrypted with age, a small file-encryption format. The key is generated in memory and written straight into the file, never to a plain file on disk. A test root is the one exception. It has no passphrase, so its files are plain and marked TEST ONLY. No real root shares a trust set with it. The encrypted file is the default home of a software key ([record 0002](../decisions/0002-where-a-key-lives.md), rules 4, 9 and 11; [record 0005](../decisions/0005-a-ceremony-and-where-it-runs.md), rule 26).
 
 A key file is a copy by nature. It can be copied and read without a trace, it gives no evidence of where it lives, and a backup of it is another copy, which is exactly the danger.
 
