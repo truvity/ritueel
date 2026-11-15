@@ -147,7 +147,7 @@ The **plan digest** is the SHA-256 of the bytes of the plan file, shown as 64 lo
 A saved plan is refused with exit code 3, before anything is written, for four reasons. `plan-stale` is the one above. `plan-version` is a plan that another copy of ritueel made: the version, the system and architecture, or the digest of the program that runs is not the one in the member `ritueel` of the plan. `plan-used` is a plan whose folder already holds an attempt or a ceremony record, so the plan was started or run, and ritueel does not run it again. `clock-behind` is a clock that shows a time before the plan's `ceremony_time`, because every signature would carry a time that has not come.
 
 :::note[Proposed]
-The reasons `plan-version`, `plan-used` and `clock-behind` are proposed, awaiting the maintainer's word, and are built as proposed.
+The reasons `plan-version`, `plan-used` and `clock-behind` are proposed, and are built as proposed.
 :::
 
 :::note[Proposed]
