@@ -37,7 +37,7 @@
 26. Opening a key file with a passkey must work in the static (no-cgo) build.
 27. Each bundle has its own unlock key and recovery key.
 
-28. A passphrase of a key file (rules 21 and 22) is generated and not chosen: six random words or more, or 15 characters or more. Its scrypt work factor is at least 2^18 and at most 2^22.
+28. A passphrase of a key file (rules 21 and 22) is generated and not chosen: six random words or more, or 15 characters or more. ritueel checks only what it can see: valid UTF-8, no control character, and 15 characters or more, counted as Unicode code points. It says that it did not check that the passphrase was generated; that is the holder's duty. Its scrypt work factor is at least 2^18 and at most 2^22.
 
 ## Why
 
