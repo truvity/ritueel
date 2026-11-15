@@ -32,7 +32,7 @@ func firstPacketOf(t testing.TB, file []byte) *gopacket.PublicKey {
 	return pk
 }
 
-func TestARequestForOneTwoAndSixteenPrimariesIsAcceptedAndTheVerdictHoldsTheSubkey(t *testing.T) {
+func TestARequestForOneTwoAndTheMostPrimariesIsAcceptedAndTheVerdictHoldsTheSubkey(t *testing.T) {
 	for _, n := range []int{1, 2, handoff.MaxPrimaries} {
 		t.Run(fmt.Sprint(n), func(t *testing.T) {
 			f := newPGPFixture(t, n, handoff.StoreSoftware)
@@ -137,8 +137,8 @@ func TestAFileThatIsNotWholePacketsOfTheProfileIsMalformedAtCheckTwoWhateverTheD
 		"the certificate of a primary":  append(pgpPacket(pgpTagPrimary, f.primaries[0].body()), good[len(f.subPacket):]...),
 		"a user id first":               append(pgpPacket(pgpTagUserID, []byte("Example Person")), good...),
 		"a signature first":             append(slices.Clone(sigOf(0)), f.subPacket...),
-		"17 packets after the subkey":   repeat(17),
-		"18 packets after the subkey":   repeat(18),
+		"27 packets after the subkey":   repeat(27),
+		"28 packets after the subkey":   repeat(28),
 		"a cut subkey packet":           good[:len(f.subPacket)-3],
 		"the subkey alone cut":          f.subPacket[:len(f.subPacket)-1],
 		"a cut last signature":          good[:len(good)-1],
@@ -179,7 +179,7 @@ func TestAFileThatIsNotWholePacketsOfTheProfileIsMalformedAtCheckTwoWhateverTheD
 	wantRefusal(t, v, err, handoff.CodePossessionInvalid, 5)
 }
 
-func TestAFileWithSixteenPacketsAfterTheSubkeyIsReadAndSeventeenIsNot(t *testing.T) {
+func TestAFileWithTheMostPacketsAfterTheSubkeyIsReadAndOneMoreIsNot(t *testing.T) {
 	f := newPGPFixture(t, handoff.MaxPrimaries, handoff.StoreSoftware)
 	f.mustAccept(f.checker(nil))
 	// One signature more than primaries: the file is whole, so check 2 passes, and check 5 refuses the count.

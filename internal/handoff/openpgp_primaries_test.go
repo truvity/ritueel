@@ -106,7 +106,7 @@ func TestTheOrderOfPrimariesIsTheOrderOfTheListOfTheChecker(t *testing.T) {
 }
 
 func TestAPrimaryIsHeldToItsFingerprintAtEveryPosition(t *testing.T) {
-	// The position that differs can be any of the sixteen: the first, a middle one and the last.
+	// The position that differs can be any of the primaries up to the bound: the first, a middle one and the last.
 	f := newPGPFixture(t, handoff.MaxPrimaries, handoff.StoreSoftware)
 	for _, at := range []int{0, 7, handoff.MaxPrimaries - 1} {
 		g := newPGPFixture(t, 2, handoff.StoreSoftware)
@@ -137,7 +137,7 @@ func TestNewRefusesPrimariesAndACapabilityThatAreNotAsTheConfigurationSays(t *te
 	otherTime := newPGPKey(t, pgpPrimaryCreated)
 	otherTime.priv = key.priv
 	otherTime.created = pgpPrimaryCreated.Add(time.Second)
-	seventeen := func() []handoff.PrimaryRef {
+	overBound := func() []handoff.PrimaryRef {
 		var out []handoff.PrimaryRef
 		for range handoff.MaxPrimaries + 1 {
 			out = append(out, newPGPKey(t, pgpPrimaryCreated).ref())
@@ -147,7 +147,7 @@ func TestNewRefusesPrimariesAndACapabilityThatAreNotAsTheConfigurationSays(t *te
 	cases := map[string]handoff.Config{
 		"no primaries for an openpgp delegation": with(func(c *handoff.Config) { c.Primaries = nil }),
 		"an empty list of primaries":             with(func(c *handoff.Config) { c.Primaries = []handoff.PrimaryRef{} }),
-		"17 primaries":                           with(func(c *handoff.Config) { c.Primaries = seventeen }),
+		"one primary more than the bound":        with(func(c *handoff.Config) { c.Primaries = overBound }),
 		"primaries for an X.509 delegation":      with(func(c *handoff.Config) { c.Delegation = defaultDelegation() }),
 		"primaries for an SSH delegation": with(func(c *handoff.Config) {
 			c.Delegation = &handoff.Delegation{Name: "n", Type: handoff.TypeSSH, Root: "r"}
@@ -205,12 +205,12 @@ func TestNewRefusesPrimariesAndACapabilityThatAreNotAsTheConfigurationSays(t *te
 			c.Delegation = nil
 			c.Primaries = []handoff.PrimaryRef{good[0], {Fingerprint: "00", Key: key.pub(), Created: key.created}}
 		}),
-		"17 primaries with no delegation": with(func(c *handoff.Config) { c.Delegation = nil; c.Primaries = seventeen }),
+		"one primary more than the bound with no delegation": with(func(c *handoff.Config) { c.Delegation = nil; c.Primaries = overBound }),
 	}
 	for name, cfg := range cases {
 		t.Run(name, func(t *testing.T) { wantConfigError(t, cfg) })
 	}
-	// And what is allowed: primaries with no delegation, none with no delegation, and one to sixteen.
+	// And what is allowed: primaries with no delegation, none with no delegation, and one up to the bound.
 	for name, change := range map[string]func(c *handoff.Config){
 		"primaries with no delegation":   func(c *handoff.Config) { c.Delegation = nil },
 		"no delegation and no primaries": func(c *handoff.Config) { c.Delegation = nil; c.Primaries = nil },
@@ -225,9 +225,9 @@ func TestNewRefusesPrimariesAndACapabilityThatAreNotAsTheConfigurationSays(t *te
 			t.Errorf("%s: New refused it: %v", name, err)
 		}
 	}
-	sixteen := newPGPFixture(t, handoff.MaxPrimaries, handoff.StoreSoftware)
-	if _, err := handoff.New(sixteen.config(nil)); err != nil {
-		t.Errorf("sixteen primaries: %v", err)
+	atBound := newPGPFixture(t, handoff.MaxPrimaries, handoff.StoreSoftware)
+	if _, err := handoff.New(atBound.config(nil)); err != nil {
+		t.Errorf("%d primaries: %v", handoff.MaxPrimaries, err)
 	}
 }
 

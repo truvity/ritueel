@@ -23,9 +23,10 @@ const keyringFile = "keyring.gpg"
 const maxCauseText = 240
 
 // ErrPrimaries is the kind of every error of [Bundle.Primaries] and of [Bundle.Checker] that comes from the
-// OpenPGP primaries of the newest trust set: a root list that pins more of them than the checks take, a root list
-// that gives one fingerprint to two entries, a trust set that pins them and holds no keyring file, and a keyring
-// file that cannot be read or is refused. A caller that asks for this one kind finds every fault of this path;
+// OpenPGP primaries of the newest trust set: a trust set that pins them and holds no keyring file, and a keyring
+// file that cannot be read or is refused. A root list that pins more of them than the checks take, or gives one
+// fingerprint to two entries, is also of this kind, but the reader of the root list refuses both first, so
+// through a real bundle they are faults of [Bundle.Roots]. A caller that asks for this one kind finds every fault of this path;
 // the text of each is a plain sentence. The faults of the set that [Bundle.Roots] also finds (the list, the CA
 // bundle) are not of this kind.
 var ErrPrimaries = errors.New("bundle: the OpenPGP primaries of the trust set cannot be taken")
@@ -45,8 +46,9 @@ var ErrNoKeyring = errors.New("bundle: the trust set pins OpenPGP primaries and 
 // or a file over its size limit is an error here, never "absent") and judged by [openpgp.ReadKeyring] with the
 // entries of the list, so every refusal of that reader is an error here, and an error that wraps
 // [openpgp.ErrKeyring] when it is one of the file. More primaries than [handoff.MaxPrimaries] is an error too:
-// the checker takes no more, and so is a list that gives one fingerprint to two entries: both are faults of the
-// list, found before the file is read, and their sentences name the list and not the file. Every error of this
+// the checker takes no more (the reader of the root list holds no more entries, so this is a second guard), and
+// so is a list that gives one fingerprint to two entries, which the reader of the root list refuses first; the
+// sentences of both name the list and not the file. Every error of this
 // call that comes from the primaries is of the kind [ErrPrimaries]. No primary is returned with an error.
 //
 // Primaries reads the set that Roots reads, with the same rules: the newest set is never replaced by an older

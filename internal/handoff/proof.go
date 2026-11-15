@@ -51,8 +51,10 @@ func shapef(format string, args ...any) error { return errShape(fmt.Sprintf(form
 const (
 	// MaxAttestation is the most certificates in the `attestation` of a proof: 8.
 	MaxAttestation = 8
-	// MaxPrimaries is the most fingerprints in the `primaries` of a proof: 16.
-	MaxPrimaries = 16
+	// MaxPrimaries is the most fingerprints in the `primaries` of a proof: 26, the most entries that a
+	// root list holds (one for each label A to Z), so that every list that the trust set writer and
+	// the reader of root lists accept can be checked.
+	MaxPrimaries = 26
 )
 
 // peekVersion reads the member handoff of a proof file and nothing else: a message of another version is
