@@ -75,6 +75,144 @@
   white-space: nowrap;
 }
 
+/* STATE LABELS AND THE TABLES OF THE CASES (src/pages/status.astro). A state is Starlight's Badge. Its
+   variants give five colours (green, blue, violet, amber, red), but Starlight's "default" is the accent
+   green again, so "not covered" is grey: the three variables the variants set, set to greys. The
+   tables are Starlight's own; a table is a block that scrolls, which would not stretch it over the
+   column, so its wrapper scrolls and the table fills the wrapper, and on a phone it keeps a width of
+   its own and scrolls in its box. The key above the tables is a row of badges. A dash stands where a
+   cell has nothing to say. Names `.sl-badge`. */
+.sl-badge.state-none {
+  --sl-color-bg-badge: var(--sl-color-gray-5);
+  --sl-color-border-badge: var(--sl-color-gray-3);
+  --sl-color-text-badge: var(--sl-color-white);
+}
+:root[data-theme='light'] .sl-badge.state-none {
+  --sl-color-bg-badge: var(--sl-color-gray-3);
+  --sl-color-text-badge: #fff;
+}
+.ps > .cs-key {
+  max-width: none;
+}
+.cs-key {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  padding: 0;
+  list-style: none;
+}
+.cs-key li {
+  margin: 0;
+}
+.cs-wrap {
+  overflow-x: auto;
+}
+.cs-wrap > table {
+  display: table;
+  width: 100%;
+}
+/* The columns of a status table have the same widths in every table, so that State and Milestone stand
+   one under the other down the page. A table with no column Advice gives that width to Way. The widths
+   are in rem, because a table does not honour a percentage and a length in one calc(). State fits the
+   widest "explained, tool planned" and Milestone a milestone on two lines. Why holds the most words, so
+   it takes the rest, and Way and Advice are as narrow as the long names allow: Why is 364px at 1440x900
+   wide. From 100rem the table is wide enough to give Way more room, and the page
+   is shorter than with the narrow Way. A table is at least 66rem wide and scrolls in its box. */
+.cs-table {
+  table-layout: fixed;
+  min-width: 66rem;
+}
+.cs-c-way {
+  width: 14rem;
+}
+.cs-c-way:has(+ .cs-c-state) {
+  width: 23.5rem;
+}
+.cs-c-advice {
+  width: 9.5rem;
+}
+.cs-c-state {
+  width: 15rem;
+}
+.cs-c-ms {
+  width: 7rem;
+}
+@media (min-width: 100rem) {
+  .cs-c-way {
+    width: 24rem;
+  }
+  .cs-c-way:has(+ .cs-c-state) {
+    width: 34.5rem;
+  }
+  .cs-c-advice {
+    width: 10.5rem;
+  }
+  .cs-c-ms {
+    width: 8rem;
+  }
+}
+/* A STATUS TABLE ON A PHONE. Below 40rem five columns do not fit, and a box that scrolls hides the state.
+   Each row is a block instead: the way, then its advice, its state, its reason and its milestone, each
+   with the name of its column. A cell with only a dash is not drawn. The header row stays for screen
+   readers. Names `.cs-wrap` and `.cs-table`. */
+@media (max-width: 39.99rem) {
+  .cs-wrap > .cs-table {
+    display: block;
+    min-width: 0;
+    & :is(tbody, tr, th, td) {
+      display: block;
+    }
+    & colgroup {
+      display: none;
+    }
+    & thead {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip-path: inset(50%);
+    }
+    & tr {
+      padding: 0.7rem 0;
+      border-bottom: 1px solid var(--sl-color-gray-5);
+    }
+    & :is(th, td) {
+      padding: 0.15rem 0;
+      border: 0;
+    }
+    & td:has(> .cs-none) {
+      display: none;
+    }
+    & td::before {
+      color: var(--sl-color-gray-3);
+      font-size: var(--sl-text-sm);
+    }
+    & .cs-advice::before {
+      content: 'Advice: ';
+    }
+    & td:nth-last-child(2)::before {
+      content: 'Why: ';
+    }
+    & td:last-child::before {
+      content: 'Milestone: ';
+    }
+  }
+}
+.cs-table .cs-advice {
+  white-space: nowrap;
+}
+.cs-legend caption {
+  padding-bottom: 0.5rem;
+  text-align: start;
+  color: var(--sl-color-gray-3);
+}
+.cs-none {
+  color: var(--sl-color-gray-3);
+}
+.cs-page {
+  margin-top: 0.5rem;
+}
+
 /* GLOSSARY ON A PHONE. Its four columns leave "Meaning" 120px, so a row is 150 to 300px high. Below 40rem each
    row is a block: the word, its meaning, and the two other cells with the names of their columns. The
    header row stays for screen readers. Only the table of the glossary page: it is the page whose own menu
@@ -116,26 +254,25 @@
   }
 }
 
-/* START PAGE (docs/index.mdx). Starlight's hero has up to 10rem of padding and a 4rem title, which makes
-   the page 2.8 screens long at 1440; the page is short, so the padding and the gaps go, the title is smaller
-   and the title and the line run over the column (the title was in three lines). The column is 72rem, so that the wide drawing of the chain
-   (from 1100px) fits; Starlight's own is 67.5rem. */
+/* START PAGE AND CASE PAGES (template splash: no side menu, so a reader may come by a shared link).
+   WIDTH. Starlight's own column, 67.5rem, leaves 420px free at each side at 1920. 74rem here, and 94rem
+   from 100rem, so that the screen is used and no line of text gets longer (the cards and the columns
+   cut the lines). The hero's title is smaller and the hero has no padding: Starlight gives it up to
+   10rem above and below and a 4rem title, on a page that must fit one screen (site/scripts/check-fit.mjs).
+   Both are documented variables, and `.hero` is Starlight's class. */
+:root:not([data-has-sidebar]) {
+  --sl-content-width: 74rem;
+  --sl-text-6xl: 2.75rem;
+}
+@media (min-width: 100rem) {
+  :root:not([data-has-sidebar]) {
+    --sl-content-width: 94rem;
+  }
+}
 .hero {
   padding-block: 0;
 }
-.hero .copy > * {
-  max-width: none;
-}
-.hero .stack {
-  gap: 1rem;
-}
-:root {
-  --sl-text-6xl: 2.75rem;
-}
-:root:not([data-has-sidebar]) {
-  --sl-content-width: 72rem;
-}
-/* On a phone Starlight centres the hero's title and line, and the page under it is left-aligned. */
+/* On a phone Starlight centres the hero's title, and the cards under it are left-aligned. */
 @media (max-width: 49.99rem) {
   .hero .stack {
     text-align: start;
@@ -144,34 +281,135 @@
     align-items: flex-start;
   }
 }
-/* The two answers side by side, and the last three sections as columns, from the widths they fit
-   (the classes are written in docs/index.mdx). One under the other they are 1.1 screens more. */
-.home-chain,
-.home-cols {
-  --sl-text-h2: 1.5rem;
+/* The six pieces: three columns from 56rem (Starlight's CardGrid has two) and closer cards. The sixth
+   piece holds a text and five links, which stand in a row. The bold line at the end of a piece is a
+   link, so it takes the colour of one. The text of the sixth piece is 16px like the others (Starlight's
+   Card sets 14px). Names `.card`, `.card-grid`, `.body` and `.sl-link-button`. */
+.card {
+  padding: 1rem;
+  gap: 0.5rem;
 }
-@media (min-width: 48rem) {
-  .home-intro {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 0 3rem;
-  }
-  .home-intro > p {
-    margin: 0;
-  }
+.card-grid {
+  line-height: 1.5;
+}
+.card .body {
+  font-size: var(--sl-text-body);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 1rem;
+}
+.card .body > p {
+  flex-basis: 100%;
+}
+.card .body > .sl-link-button {
+  font-size: inherit;
+  margin: 0;
+  padding-block: 0.1rem;
+  color: var(--sl-color-text-accent);
+  text-decoration: underline;
+}
+.card-grid strong {
+  color: var(--sl-color-text-accent);
 }
 @media (min-width: 56rem) {
-  .home-cols {
-    display: grid;
+  .card-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 0 3rem;
   }
 }
-/* The third section is the long one: it gets the wider column. */
-@media (min-width: 66rem) {
-  .home-cols {
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr) minmax(0, 1.6fr);
+/* The footer ("Edit page") sits close under the page: Starlight gives it 3rem above and 1.5rem of gap,
+   a tenth of a screen on a page that must fit one. Names the footer and its `.meta` box. */
+:root:not([data-has-sidebar]) footer {
+  gap: 0;
+}
+:root:not([data-has-sidebar]) footer .meta {
+  margin: 0;
+}
+
+/* A CASE PAGE (flow: landing, site/lib/parts.mjs wraps each `##` in <section class="lp-part lp-NAME">).
+   The parts stand in a grid, not one under the other: the pain over the whole width; what to do over what
+   not to do, beside what ritueel does; the small table of two pages as a third column from 75rem; "Read
+   next" under all. The selector is the parent of the parts, so it names nothing of Starlight. A heading is
+   1.25rem (the documented --sl-text-h2) and the line height 1.5; the margins Starlight puts between
+   blocks are the grid's gap. */
+:has(> .lp-part) {
+  line-height: 1.5;
+  display: grid;
+  gap: 1rem 2rem;
+  align-items: start;
+  grid-template-areas: 'pain' 'do' 'dont' 'does' 'nextto' 'read';
+}
+:has(> .lp-part) > * {
+  margin: 0;
+}
+.lp-part > * + * {
+  margin-top: 0.5rem;
+}
+.lp-part {
+  --sl-text-h2: 1.25rem;
+}
+.lp-pain { grid-area: pain; }
+.lp-do { grid-area: do; }
+.lp-dont { grid-area: dont; }
+.lp-does { grid-area: does; }
+.lp-nextto { grid-area: nextto; }
+.lp-read { grid-area: read; }
+@media (min-width: 50rem) {
+  :has(> .lp-part) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-rows: auto auto 1fr auto;
+    grid-template-areas: 'pain pain' 'do does' 'dont does' 'read read';
   }
+  :has(> .lp-nextto) {
+    grid-template-areas: 'pain pain' 'does nextto' 'do dont' 'read read';
+  }
+}
+@media (min-width: 75rem) {
+  :has(> .lp-part) {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-rows: auto auto auto;
+    grid-template-areas: 'pain pain pain' 'do dont does' 'read read read';
+  }
+  :has(> .lp-nextto) {
+    grid-template-columns: 1fr 1fr 1.25fr;
+    grid-template-rows: auto auto 1fr auto;
+    grid-template-areas: 'pain pain pain' 'do does nextto' 'dont does nextto' 'read read read';
+  }
+}
+/* THE PAIN is a green band: the reader's own words, read first. The accent's tinted ground with a bar
+   at its start. It is no wider than a text column (56rem): at 1920 its lines end at a third of the page. */
+.lp-pain {
+  max-width: 56rem;
+  padding: 0.75rem 1rem;
+  border-inline-start: 0.25rem solid var(--sl-color-accent);
+  background: var(--sl-color-accent-low);
+}
+/* No link-chain icon after a heading: a case page is read once, and its blocks are not linked to. Names
+   Starlight's `.sl-anchor-link`. */
+.lp-part .sl-anchor-link {
+  display: none;
+}
+/* "Read next" is one row: the heading, the links, and the two quiet links at its end. */
+.lp-read {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0 1.5rem;
+}
+.lp-read > *,
+.lp-read li {
+  margin: 0;
+}
+.lp-read ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 1.5rem;
+  padding: 0;
+  list-style: none;
+}
+/* A command of a case page (`check history`) and a name with a hyphen (<span class="nb">) never break in
+   the middle: a command split in two lines reads as two commands. */
+.lp-part :is(code, .nb) {
+  white-space: nowrap;
 }
 
 /* STATUS PAGE (src/pages/status.astro, src/lib-status-html.ts; the Worker draws the same markup).
