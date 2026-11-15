@@ -190,7 +190,8 @@ func (d *Draft) checkSigners(signers []Signer) ([]chosen, error) {
 // rootlist.VerifyCABundle against the list that the reader accepted. The keyring file is judged by
 // openpgp.ReadKeyring with the entries of that same list (the entries that have a fingerprint, in
 // the order of the list), not with the entries of the input: a list that pins no primary has no
-// keyring file, and a list that pins primaries has one that the reader accepts. Any other answer is
+// keyring file, and a list that pins primaries has one that the reader accepts and whose primaries
+// carry the test mark of the X.509 roots. Any other answer is
 // ErrSelf, with the reason code and the number of the check. The builder asks the readers and does
 // not read its own files again.
 func (d *Draft) selfCheck(jwsFile []byte) error {
@@ -218,7 +219,8 @@ func (d *Draft) selfCheck(jwsFile []byte) error {
 
 // selfCheckKeyring asks openpgp.ReadKeyring about the keyring file with the entries of the list that
 // the reader of the page accepted. A keyring file with a list that pins no primary, a list that pins
-// primaries and no file, and a file that the reader refuses are each an ErrSelf.
+// primaries and no file, a file that the reader refuses, and a file whose primaries do not carry the
+// test mark of the X.509 roots of the CA bundle are each an ErrSelf.
 func (d *Draft) selfCheckKeyring(list *rootlist.List) error {
 	var entries []openpgp.KeyringEntry
 	for _, r := range list.Roots {
@@ -234,8 +236,12 @@ func (d *Draft) selfCheckKeyring(list *rootlist.List) error {
 	case d.keyring == nil:
 		return fail(ErrSelf, "the list that was signed pins OpenPGP primaries and the draft holds no keyring file")
 	}
-	if _, err := openpgp.ReadKeyring(slices.Clone(d.keyring), entries); err != nil {
+	primaries, err := openpgp.ReadKeyring(slices.Clone(d.keyring), entries)
+	if err != nil {
 		return failWith(ErrSelf, "the reader of the keyring file refuses the keyring file", err)
+	}
+	if text := markDifference(d.testRoots, primaries[0].TestMark()); text != "" {
+		return fail(ErrSelf, "the keyring file does not fit the CA bundle: %s", text)
 	}
 	return nil
 }

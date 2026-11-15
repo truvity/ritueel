@@ -3,6 +3,7 @@ package trustset_test
 import (
 	"bytes"
 	"slices"
+	"strings"
 	"testing"
 
 	"ritueel.id/ritueel/internal/openpgp"
@@ -112,4 +113,68 @@ func FuzzKeyringEdits(f *testing.F) {
 			t.Fatalf("the reader refuses the file of a draft: %v", err)
 		}
 	})
+}
+
+// FuzzKeyringMark: the bytes are the certificate of A and the certificate of B, the X.509 roots are
+// test roots or real roots, and the list pins the fingerprints of the test primaries or of the real
+// ones. NewDraft gives a draft or an ErrParams and never panics. A draft comes only when the reader of
+// the keyring file accepts the file and the mark of its primaries is the mark of the X.509 roots; a
+// file that the reader accepts with the other mark is refused with the sentence that names the test
+// family.
+func FuzzKeyringMark(f *testing.F) {
+	for _, xTest := range []bool{true, false} {
+		for _, pTest := range []bool{true, false} {
+			a, b := newRoot(f, "A", pTest), newRoot(f, "B", pTest)
+			f.Add(a.PGP, b.PGP, xTest, pTest)
+			f.Add(a.PGP, b.PGP, xTest, !pTest)
+			f.Add(b.PGP, a.PGP, xTest, pTest)
+			f.Add(a.PGP, newRoot(f, "B", !pTest).PGP, xTest, pTest)
+			f.Add(a.PGP[:len(a.PGP)-1], b.PGP, xTest, pTest)
+		}
+	}
+	f.Fuzz(func(t *testing.T, ca, cb []byte, xTest, pTest bool) {
+		in := crossInput(t, xTest, pTest, "A", "B")
+		in.OpenPGPCertificates = map[string][]byte{"A": ca, "B": cb}
+		entries := entriesOfMark(t, pTest, "A", "B")
+		keys, rerr := openpgp.ReadKeyring(slices.Concat(ca, cb), entries)
+		d, err := trustset.NewDraft(in)
+		if err != nil {
+			if d != nil {
+				t.Fatal("a draft comes with an error")
+			}
+			wantOnly(t, err, trustset.ErrParams)
+			if rerr == nil && keys[0].TestMark() != xTest {
+				want := rootsAreTest
+				if keys[0].TestMark() {
+					want = primariesAreTest
+				}
+				if !strings.HasSuffix(err.Error(), ": "+want) {
+					t.Fatalf("the mark differs and the error does not say so: %v", err)
+				}
+			}
+			return
+		}
+		if rerr != nil {
+			t.Fatalf("a draft for a file that the reader refuses: %v", rerr)
+		}
+		for i, k := range keys {
+			if k.TestMark() != xTest {
+				t.Fatalf("a draft whose primary %d has the mark %v and whose roots have %v", i, k.TestMark(), xTest)
+			}
+		}
+		if !bytes.Equal(d.Keyring(), slices.Concat(ca, cb)) {
+			t.Fatal("the draft does not hold the certificates as they are")
+		}
+	})
+}
+
+// entriesOfMark returns the entries that the reader of the keyring file is asked with, for the primaries
+// of the given mark of the labels given.
+func entriesOfMark(t testing.TB, test bool, labels ...string) []openpgp.KeyringEntry {
+	t.Helper()
+	out := make([]openpgp.KeyringEntry, 0, len(labels))
+	for _, l := range labels {
+		out = append(out, openpgp.KeyringEntry{Label: l, Fingerprint: newRoot(t, l, test).Print})
+	}
+	return out
 }

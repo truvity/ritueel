@@ -61,6 +61,9 @@ type Draft struct {
 	// none.
 	keyring    []byte
 	keyringSHA string
+	// testRoots is whether the X.509 roots of the CA bundle are test roots (their common names end
+	// in the test mark). The primaries of the keyring file carry the same mark.
+	testRoots bool
 
 	// previous is the previous root-list.json; nil for a first list.
 	previous []byte
@@ -80,7 +83,8 @@ type Draft struct {
 // never reused (a key that left and comes back under another label is told as a return first:
 // record 0006, rule 54), the certificates, the stored authorisations, and last the list and the bundle, which
 // the reader of the page must accept, and, for a list that pins OpenPGP primaries, the keyring file,
-// which openpgp.ReadKeyring must accept with the entries of the list. No key is used. Every error wraps ErrParams, ErrReturns or
+// which openpgp.ReadKeyring must accept with the entries of the list and whose primaries must
+// carry the same test mark as the X.509 roots (all of them carry it, or none). No key is used. Every error wraps ErrParams, ErrReturns or
 // ErrSelf, and no Draft comes with an error.
 func NewDraft(in Input) (*Draft, error) {
 	// The bytes that are read are the bytes that are kept: the copy is made first, so a caller
@@ -157,7 +161,7 @@ func NewDraft(in Input) (*Draft, error) {
 	if err != nil {
 		return nil, err
 	}
-	d.caBundle, err = MarshalCABundle(in.Sequence, roots, ders)
+	d.caBundle, d.testRoots, err = marshalCABundle(in.Sequence, roots, ders)
 	if err != nil {
 		return nil, err
 	}
@@ -169,7 +173,7 @@ func NewDraft(in Input) (*Draft, error) {
 		return nil, failWith(ErrSelf, "the reader of the page refuses the CA bundle that was written", textError(v.Detail))
 	}
 	d.listSHA, d.caSHA = hexSHA256(d.listJSON), hexSHA256(d.caBundle)
-	if d.keyring, err = keyringOf(roots, in.OpenPGPCertificates); err != nil {
+	if d.keyring, err = keyringOf(roots, in.OpenPGPCertificates, d.testRoots); err != nil {
 		return nil, err
 	}
 	if d.keyring != nil {
@@ -193,11 +197,14 @@ func pinnedEntries(roots []Root) []openpgp.KeyringEntry {
 // keyringOf makes the keyring file of the first form from the certificates that the caller gave: the
 // certificates of the roots that have a fingerprint, joined in the order of roots (label order, as
 // the list is written), and nothing else. The result is nil for a list that pins no primary, and a
-// map of certificates for such a list is refused. The file is then asked of openpgp.ReadKeyring with
-// the entries of roots, and its refusal is an ErrParams that carries the sentence of the reader
-// (record 0005, rule 12: the bytes are judged by the reader before any key is touched). The roots are
-// sorted and hold a fingerprint in all entries or in none (checkRoots).
-func keyringOf(roots []Root, certs map[string][]byte) ([]byte, error) {
+// map of certificates for such a list is refused. The file is then asked of openpgp.ReadKeyring
+// with the entries of roots, and its refusal is an ErrParams that carries the sentence of the reader
+// (record 0005, rule 12: the bytes are judged by the reader before any key is touched). The test mark
+// of the primaries must be the test mark of the X.509 roots, testRoots (list page, "A list never
+// mixes test roots and real roots"; keyring page, "A test root and a real root are never mixed"); a
+// difference is an ErrParams. The roots are sorted and hold a fingerprint in all entries or in none
+// (checkRoots).
+func keyringOf(roots []Root, certs map[string][]byte, testRoots bool) ([]byte, error) {
 	entries := pinnedEntries(roots)
 	if len(entries) == 0 {
 		if len(certs) != 0 {
@@ -223,10 +230,27 @@ func keyringOf(roots []Root, certs map[string][]byte) ([]byte, error) {
 		parts = append(parts, cert)
 	}
 	file := slices.Concat(parts...)
-	if _, err := openpgp.ReadKeyring(file, entries); err != nil {
+	primaries, err := openpgp.ReadKeyring(file, entries)
+	if err != nil {
 		return nil, failWith(ErrParams, "the reader of the keyring file refuses the OpenPGP certificates", err)
 	}
+	if text := markDifference(testRoots, primaries[0].TestMark()); text != "" {
+		return nil, fail(ErrParams, "%s", text)
+	}
 	return file, nil
+}
+
+// markDifference tells, as a sentence, which family is the test one when the X.509 roots and the
+// OpenPGP primaries do not carry the same test mark; it is empty when they agree.
+func markDifference(testRoots, testPrimaries bool) string {
+	switch {
+	case testRoots == testPrimaries:
+		return ""
+	case testRoots:
+		return "the X.509 roots are test roots and the OpenPGP primaries are not"
+	default:
+		return "the OpenPGP primaries are test primaries and the X.509 roots are not"
+	}
 }
 
 // certificatesOf returns the DER certificates of the roots, in the order of roots. The map holds

@@ -355,12 +355,23 @@ func FuzzSelfCheckKeyring(f *testing.F) {
 			}
 			kindOfSelf(t, err)
 			if rerr == nil {
-				t.Fatalf("the reader accepts the file and Sign refuses it: %v", err)
+				// The reader accepts the file: Sign may refuse it only for the test mark of the
+				// primaries, which differs from the mark of the X.509 roots of the draft.
+				keys, _ := openpgp.ReadKeyring(bytes.Clone(data), entries)
+				if len(keys) == 0 || keys[0].TestMark() == fx.d.testRoots {
+					t.Fatalf("the reader accepts the file with the mark of the roots and Sign refuses it: %v", err)
+				}
+				if !strings.Contains(err.Error(), "does not fit the CA bundle") {
+					t.Fatalf("a refusal for the mark does not say so: %v", err)
+				}
 			}
 			return
 		}
 		if rerr != nil {
 			t.Fatalf("Sign takes a file that the reader refuses: %v", rerr)
+		}
+		if keys, _ := openpgp.ReadKeyring(bytes.Clone(data), entries); len(keys) == 0 || keys[0].TestMark() != fx.d.testRoots {
+			t.Fatal("Sign takes a file whose primaries carry another test mark than the roots")
 		}
 		if !bytes.Equal(set.Keyring(), data) || len(set.Files()) != 4 {
 			t.Fatal("the set does not hold the file as it is")

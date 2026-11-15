@@ -230,7 +230,8 @@ func TestKeyringIsCheckedAfterTheListAndTheBundle(t *testing.T) {
 }
 
 // A test primary and a real primary are never mixed in one file. The roots here are all test roots on
-// the X.509 side; one primary has no mark.
+// the X.509 side; one primary has no mark. At the end, all primaries have no mark, which a file may
+// hold, and which does not go with test roots.
 func TestKeyringRefusesAMixOfTestAndRealPrimaries(t *testing.T) {
 	for _, which := range []string{"A", "B"} {
 		in := keyringInput(t, "A", "B")
@@ -243,16 +244,16 @@ func TestKeyringRefusesAMixOfTestAndRealPrimaries(t *testing.T) {
 		}
 		refusesCerts(t, in, "mixes test and real primaries")
 	}
-	// All real is a keyring file as well as all test.
+	// All real primaries are a keyring file as well as all test ones, but they do not go with test
+	// X.509 roots: the two families carry one mark (the list page: a list never mixes test roots and
+	// real roots).
 	in := keyringInput(t, "A", "B")
 	for i, l := range []string{"A", "B"} {
 		cert, print, _ := primaryOf(t, l, false)
 		in.OpenPGPCertificates[l] = cert
 		in.Roots[i].OpenPGPFingerprint = print
 	}
-	if _, err := trustset.NewDraft(in); err != nil {
-		t.Errorf("two real primaries: %v", err)
-	}
+	refusesCerts(t, in, "the X.509 roots are test roots and the OpenPGP primaries are not")
 }
 
 // The user ID of a certificate names the label of its entry. A primary whose user ID says another

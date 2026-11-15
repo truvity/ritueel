@@ -24,7 +24,8 @@
 // authorisation is valid, and that the list and the CA bundle are accepted by the reader of the
 // page. For a list that pins OpenPGP primaries the caller gives their certificates in
 // [Input].OpenPGPCertificates and the draft holds the keyring file, which openpgp.ReadKeyring must
-// accept with the entries of the list. It returns a [Draft] with the bytes of root-list.json and
+// accept with the entries of the list, with the same test mark as the X.509 roots. It returns a
+// [Draft] with the bytes of root-list.json and
 // ca-bundle.pem, which depend on no signature, so a plan can name their digests before a key is
 // touched; the keyring file has a digest too, for the journal ([Draft.KeyringSHA256]), but the plan
 // names none, because a primary that is born in the ceremony has a certification that no one can fix
@@ -33,7 +34,8 @@
 // order, verifies each signature before the next signer is asked, reports each one to the caller
 // ([Signed]), and then asks the readers about its own output, the reader of the page for the list
 // and the CA bundle and openpgp.ReadKeyring, with the entries of the list that the first accepted,
-// for the keyring file ([ErrSelf]). It returns a [Set], the files whole and checked (three, or four
+// for the keyring file, whose test mark must be that of the CA bundle ([ErrSelf]). It returns a
+// [Set], the files whole and checked (three, or four
 // with the keyring file), and [Set.Write] writes it with one call of fsx.
 //
 // The rules that run through the package:
