@@ -97,7 +97,8 @@ func (e *CreateError) Unwrap() error {
 // A folder above dir that holds a name ritueel.yaml refuses it: a bundle is not made inside a bundle. The
 // folders above dir are looked at by name and not by listing them, so a folder that can be passed but not
 // listed is looked at too. A folder that cannot be examined stops the call with an error that names it, and
-// nothing is written: a check that cannot run is not a pass. The starter files are made and read back before
+// so does a parent whose links cannot be followed (the folders above it are then not known): nothing is
+// written, because a check that cannot run is not a pass. The starter files are made and read back before
 // any write ([Starter]); an error there writes nothing.
 func Create(dir string, opt StarterOptions) ([]wanted.File, error) {
 	parent, last, err := splitDir(dir)
@@ -130,16 +131,24 @@ func Create(dir string, opt StarterOptions) ([]wanted.File, error) {
 // bundleAbove returns the nearest folder from parent up to the root of the file system that holds a name
 // ritueel.yaml (of any kind: a file, a folder, a link, a pipe), or "" when none does. parent is made absolute,
 // and its links are followed, so that the folders above it are the ones on the disk. An error is a path that
-// cannot be made absolute, or a folder that cannot be examined ([holdsSettings]): the answer is then not known,
-// and it is not "none".
+// cannot be made absolute, a path whose links cannot be followed (a link that leads to itself, a link to
+// nothing, a folder that cannot be passed), or a folder that cannot be examined ([holdsSettings]): the
+// answer is then not known, and it is not "none". The folders of a path that was not resolved are never
+// looked at, because they may not be the ones on the disk.
 func bundleAbove(parent string) (string, error) {
 	abs, err := filepath.Abs(parent)
 	if err != nil {
 		return "", fmt.Errorf("the parent folder cannot be made absolute: %w", err)
 	}
-	if real, err := filepath.EvalSymlinks(abs); err == nil {
-		abs = real
+	real, err := filepath.EvalSymlinks(abs)
+	if err != nil {
+		var pe *fs.PathError
+		if errors.As(err, &pe) {
+			err = pe.Err // the cause without the path: the text names the parent, made absolute, by its escape
+		}
+		return "", fmt.Errorf("the parent folder %s cannot be resolved: %w", jsonset.EscapeExact(abs), err)
 	}
+	abs = real
 	for p := abs; ; p = filepath.Dir(p) {
 		held, err := holdsSettings(p)
 		if err != nil {

@@ -29,9 +29,36 @@ func FuzzBundleAbove(f *testing.F) {
 		filepath.Join(holder, "a", "..", "a"), holder + "/./a/", "a\x00b", "\xff\xfe", "/no/such", filepath.Join(holder, "ritueel.yaml"), filepath.Join(holder, "ritueel.yaml", "x")} {
 		f.Add(s)
 	}
+	if err := os.Symlink(filepath.Join(root, "loop"), filepath.Join(root, "loop")); err != nil {
+		f.Fatal(err)
+	}
+	if err := os.Symlink(filepath.Join(root, "nowhere"), filepath.Join(root, "dangling")); err != nil {
+		f.Fatal(err)
+	}
+	for _, s := range []string{filepath.Join(root, "loop"), filepath.Join(root, "dangling", "a"), filepath.Join(root, "dangling"), filepath.Join(holder, "no", "such")} {
+		f.Add(s)
+	}
 	f.Fuzz(func(t *testing.T, parent string) {
 		got, err := bundleAbove(parent)
+		// A check that cannot run is not a pass: a parent that cannot be made absolute or whose links cannot be
+		// followed is an error and never "none", and its text is one line of printable ASCII (a name from a file
+		// system is escaped).
+		if abs, absErr := filepath.Abs(parent); absErr == nil {
+			if _, resErr := filepath.EvalSymlinks(abs); resErr != nil {
+				if err == nil || got != "" {
+					t.Fatalf("bundleAbove(%q) = (%q, %v) for a path that cannot be resolved (%v)", parent, got, err, resErr)
+				}
+				if !strings.Contains(err.Error(), "cannot be resolved") {
+					t.Fatalf("bundleAbove(%q): the error does not say it cannot be resolved: %q", parent, err.Error())
+				}
+			}
+		}
 		if err != nil {
+			for _, b := range []byte(err.Error()) {
+				if b < 0x20 || b > 0x7e {
+					t.Fatalf("bundleAbove(%q): the error holds the raw byte %#x: %q", parent, b, err.Error())
+				}
+			}
 			return
 		}
 		if got == "" {
