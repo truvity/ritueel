@@ -5,7 +5,7 @@ sidebar:
   order: 9
 ---
 
-*Not built yet. This is the page that [record 0003](../decisions/0003-root-cards.md) leaves for the formats of the `piv` store; the code is [issue #11](https://github.com/truvity/ritueel/issues/11): the card files come with M2, the card maps with the card check (M6), and the `piv` store and the card adoption with M6. Two parts are built: the check of an attestation chain for a hand-off request, in `internal/handoff/evidence`, and the reader of the wanted card file, in `internal/wanted`. Each is a library that no command runs yet. The `piv` store, the card maps, the checks and the attestation bundle below are not built. The rows of slots are in that record and are not repeated here.*
+*Not built yet. This is the page that [record 0003](../decisions/0003-root-cards.md) leaves for the formats of the `piv` store; the code is [issue #11](https://github.com/truvity/ritueel/issues/11): the card files come with M2, the card maps with the card check (M6), and the `piv` store and the card adoption with M6. Two parts are built: the check of an attestation chain for a hand-off request, in `internal/handoff/evidence`, which no command runs yet, and the wanted card file, in `internal/wanted` and `internal/cards`: `apply` reads every card file and stops when one fails. The `piv` store, the card maps, the card check and the attestation bundle below are not built. The rows of slots are in that record and are not repeated here.*
 
 A root card is a hardware token that is used for root keys only: the root keys of the holder's bundles, each bundle in its own row, and the card's own jobs in row 1 ([record 0003](../decisions/0003-root-cards.md), rules 3 and 12). It is never also a day-to-day card, a server card or a rehearsal card. Before it holds anything, the holder sets its PIN with the maker's tool ([Prepare a root card](/guides/prepare-a-root-card/)). ritueel then adopts it, which replaces the PUK and the management key with random ones sealed in the bundle ([record 0003](../decisions/0003-root-cards.md)); it registers the card, checks it before every ceremony, and keeps the evidence that a key was born on it. A root card is used on the holder's workstation, under the four conditions of [record 0005](../decisions/0005-a-ceremony-and-where-it-runs.md) (a touch for every signature, the number of signatures stated in the plan, no retry of a failed touch, and a check on a second device), or in the offline system, by the rules of the ceremony record ([record 0003](../decisions/0003-root-cards.md)).
 
@@ -111,6 +111,12 @@ other_rows: [3]
 ```
 
 A serial number is the holder's own data and sits in the holder's bundle, not in this repository ([public content](/contributing/public-content/#hardware-tokens)).
+
+### What is read without a card
+
+`ritueel apply` reads every card file under `want/cards/` before anything else is written, and stops with exit code 1 when one fails its check or when two name one card. `ritueel status` will list the cards and these findings. Nothing here reads a card.
+
+The two findings are `card-file-invalid`, a file that fails its check, and `card-serial-twice`, a file that names a serial number that an earlier file already names.
 
 ### The map of one card, `cards/NAME.yaml`
 
