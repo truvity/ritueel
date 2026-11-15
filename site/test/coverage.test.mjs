@@ -9,17 +9,19 @@ const legend = {
   advice: [{ id: 'recommended' }, { id: 'not-recommended' }],
   states: [{ id: 'built' }, { id: 'planned' }, { id: 'tool-planned' }, { id: 'rejected' }],
 };
+const PUBLISHED = { published: ['pki.md'] };
 const aCase = (extra = {}) => ({
   kind: 'case',
   id: 'case-1',
   number: 1,
+  page: '/pki/',
   rows: [{ way: 'A', state: 'built' }, { way: 'B', state: 'planned', milestone: 'M4' }],
   ...extra,
 });
-const problems = (rows, extra = {}) => coverageProblems([legend, aCase({ rows, ...extra })]).join('\n');
+const problems = (rows, extra = {}) => coverageProblems([legend, aCase({ rows, ...extra })], PUBLISHED).join('\n');
 
 test('a good file has no problem', () => {
-  assert.deepEqual(coverageProblems([legend, aCase()]), []);
+  assert.deepEqual(coverageProblems([legend, aCase()], PUBLISHED), []);
 });
 
 test('a state or an advice that the legend lacks is a problem', () => {
@@ -28,7 +30,7 @@ test('a state or an advice that the legend lacks is a problem', () => {
 });
 
 test('a way that is not recommended shows advice only, and every other way has a state', () => {
-  assert.deepEqual(coverageProblems([legend, aCase({ rows: [{ way: 'A', advice: 'not-recommended' }] })]), []);
+  assert.deepEqual(coverageProblems([legend, aCase({ rows: [{ way: 'A', advice: 'not-recommended' }] })], PUBLISHED), []);
   assert.match(problems([{ way: 'A', advice: 'not-recommended', state: 'built' }]), /not recommended and must have no state/);
   assert.match(problems([{ way: 'A' }]), /has no state/);
   assert.match(problems([{ way: 'A', advice: 'recommended' }]), /has no state/);
@@ -37,7 +39,7 @@ test('a way that is not recommended shows advice only, and every other way has a
 test('a way that is planned, or explained with a tool planned, names a milestone', () => {
   assert.match(problems([{ way: 'A', state: 'planned' }]), /must name a milestone/);
   assert.match(problems([{ way: 'A', state: 'tool-planned' }]), /must name a milestone/);
-  assert.deepEqual(coverageProblems([legend, aCase({ rows: [{ way: 'A', state: 'tool-planned', milestone: 'M4, M5' }, { way: 'B', state: 'planned', milestone: 'after the first version (proposed)' }] })]), []);
+  assert.deepEqual(coverageProblems([legend, aCase({ rows: [{ way: 'A', state: 'tool-planned', milestone: 'M4, M5' }, { way: 'B', state: 'planned', milestone: 'after the first version (proposed)' }] })], PUBLISHED), []);
 });
 
 test('a milestone is M0 to M7 or "after the first version", and only a planned way has one', () => {
@@ -49,18 +51,20 @@ test('a milestone is M0 to M7 or "after the first version", and only a planned w
 test('a way twice in one table, an empty table and a wrong id are problems', () => {
   assert.match(problems([{ way: 'A', state: 'built' }, { way: 'A', state: 'built' }]), /twice/);
   assert.match(problems([]), /no row/);
-  assert.match(coverageProblems([legend, aCase({ id: 'case-9' })]).join(), /anchor/);
+  assert.match(coverageProblems([legend, aCase({ id: 'case-9' })], PUBLISHED).join(), /anchor/);
 });
 
-test('a page of a case, when named, is a line of site/published.txt', () => {
-  assert.match(coverageProblems([legend, aCase({ page: '/pki/' })], { published: [] }).join(), /published\.txt/);
-  assert.deepEqual(coverageProblems([legend, aCase({ page: '/pki/' })], { published: ['pki.md'] }), []);
+test('the page of a case is a line of site/published.txt, and every case has one', () => {
+  assert.match(coverageProblems([legend, aCase()], { published: [] }).join(), /published\.txt/);
+  assert.match(coverageProblems([legend, aCase({ page: '/other/' })], PUBLISHED).join(), /other\/ is not a line/);
+  assert.match(coverageProblems([legend, aCase({ page: undefined })], PUBLISHED).join(), /no page/);
+  assert.deepEqual(coverageProblems([legend, aCase()], PUBLISHED), []);
 });
 
 test('a file with no legend, two legends or no case is a problem', () => {
-  assert.match(coverageProblems([aCase()]).join(), /exactly one legend/);
-  assert.match(coverageProblems([legend, legend, aCase()]).join(), /exactly one legend/);
-  assert.match(coverageProblems([legend]).join(), /no case/);
+  assert.match(coverageProblems([aCase()], PUBLISHED).join(), /exactly one legend/);
+  assert.match(coverageProblems([legend, legend, aCase()], PUBLISHED).join(), /exactly one legend/);
+  assert.match(coverageProblems([legend], PUBLISHED).join(), /no case/);
 });
 
 test('docs/coverage.yaml: the real file, read as plain text, holds the legend and five tables that follow the rules', () => {
@@ -89,4 +93,9 @@ test('docs/coverage.yaml: the real file, read as plain text, holds the legend an
     if (r.state === 'planned' || r.state === 'tool-planned') assert.ok(r.milestone, `${r.way}: a planned way names its milestone`);
   }
   assert.doesNotMatch(text, /^\s+shape:/m, 'the field shape is dropped');
+  // Every case has a page, a short address that is a line of site/published.txt.
+  const published = readFileSync(new URL('../published.txt', import.meta.url), 'utf8').split('\n').map((l) => l.trim());
+  const pages = [...text.matchAll(/^  page: (\/[a-z-]+\/)$/gm)].map((m) => m[1]);
+  assert.equal(pages.length, 5, 'each of the five cases names its page');
+  for (const page of pages) assert.ok(published.includes(`${page.slice(1, -1)}.md`), `${page} is not a line of site/published.txt`);
 });

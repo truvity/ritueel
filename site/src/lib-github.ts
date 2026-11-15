@@ -13,7 +13,7 @@ export type { GhIssue, GhMilestone, Github } from './lib-github-rest.ts';
 
 let cached: Promise<Github> | undefined;
 
-// Read once per build; the home page and the status page share the answer.
+// Read once per build; every page that asks shares the answer.
 export function readGithub(): Promise<Github> {
   cached ??= read();
   return cached;

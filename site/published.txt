@@ -16,6 +16,14 @@
 index.mdx
 design.md
 
+# The five case pages, one for each case of the start page. Their addresses are short (/pki/), and
+# docs/coverage.yaml names each as the page of its case.
+pki.md
+sign-releases.md
+commits.md
+ssh.md
+logins.md
+
 learn/index.md
 learn/what-is-a-root.mdx
 learn/custody-chain.md

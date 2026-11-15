@@ -49,3 +49,67 @@ test('a page with no `##` gets no part, and a page that starts with one has no t
   assert.equal(out.length, 1);
   assert.ok(isPart(out[0]));
 });
+
+// A landing as the Markdown processor gives it: the parts, "The pain" first. "does" has a thematic
+// break before the block "next to" and another before the stage, which stays inside "does"; the
+// last paragraph of "read next" is the row of the quiet links.
+const text = (value) => ({ type: 'text', value });
+const heading = (depth, value) => node('heading', { depth, children: [text(value)] });
+const para = (...children) => node('paragraph', { children });
+const button = para(node('strong', { children: [node('link')] }));
+const brk = () => node('thematicBreak');
+const landing = (withNext) => [
+  heading(2, 'The pain'),
+  node('list'),
+  heading(2, 'What to do'),
+  node('list'),
+  heading(2, 'What not to do'),
+  node('list'),
+  heading(2, 'What ritueel does for you'),
+  para(text('does')),
+  ...(withNext ? [brk(), heading(3, 'Next to what you already run'), node('table'), para(text('Aim'))] : []),
+  brk(),
+  para(node('strong', { children: [text('stage')] })),
+  para(text('built today')),
+  button,
+  heading(2, 'Read next'),
+  node('list'),
+  para(text('links')),
+];
+const cls = (n) => n.data?.hProperties?.class;
+
+test('with `flow: landing` the parts have the classes of a landing, and not the class of the rows', () => {
+  const out = run({ flow: 'landing' }, landing(true));
+  assert.deepEqual(out.map(cls), ['lp-part lp-pain', 'lp-part lp-do', 'lp-part lp-dont', 'lp-part lp-does', 'lp-part lp-nextto', 'lp-part lp-read']);
+  assert.ok(!out.some(isPart));
+});
+
+test('a landing without the block "next to" has no such part, and the thematic breaks are dropped', () => {
+  const out = run({ flow: 'landing' }, landing(false));
+  assert.deepEqual(out.map(cls), ['lp-part lp-pain', 'lp-part lp-do', 'lp-part lp-dont', 'lp-part lp-does', 'lp-part lp-read']);
+  assert.ok(!JSON.stringify(out).includes('thematicBreak'));
+});
+
+test('in a landing the stage stays inside "does", the bold link is the button, and the last paragraph of "read next" is the row of quiet links', () => {
+  const out = run({ flow: 'landing' }, landing(true));
+  const does = out.find((n) => cls(n) === 'lp-part lp-does');
+  const stage = does.children.find((n) => cls(n) === 'lp-stage');
+  assert.deepEqual(stage.children.map(cls), ['lp-stagelabel', 'lp-stageline']);
+  assert.equal(cls(does.children.at(-1)), 'lp-button'); // the button follows the stage, outside its block
+  const next = out.find((n) => cls(n) === 'lp-part lp-nextto');
+  assert.equal(next.children[0].depth, 2); // the same level as the other headings
+  const read = out.find((n) => cls(n) === 'lp-part lp-read');
+  assert.deepEqual(read.children.map(cls), [undefined, undefined, 'lp-links']);
+});
+
+test('a paragraph in "What to do" is a note under the list', () => {
+  const src = landing(false);
+  src.splice(src.findIndex((n) => n.type === 'list') + 2, 0, para(text('note')));
+  const out = run({ flow: 'landing' }, src);
+  const doPart = out.find((n) => cls(n) === 'lp-part lp-do');
+  assert.deepEqual(doPart.children.map(cls), [undefined, 'lp-note', undefined]);
+});
+
+test('any other value of `flow` is not touched', () => {
+  assert.equal(run({ flow: 'columns' }, page()), null);
+});

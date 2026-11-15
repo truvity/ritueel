@@ -39,6 +39,9 @@ jobs:
       # The status page in headless Chrome (the runner's own): the live script against a stand-in
       # for the Worker, in light and dark, at 1440, 390 and 375 px.
       - run: devbox run -- just site-render
+      # One screen: the start page and the five case pages in headless Chrome, at 1440x900 and
+      # 1920x970, in the light and the dark theme, with 5 percent of the height to spare.
+      - run: devbox run -- just site-fit
 
   # The local page (ui/) and its API (proto/): the generated code is what buf makes, the page's
   # TypeScript and its safety scan, its tests, both builds (the demo and the real one) and their

@@ -70,6 +70,14 @@ site-test-worker: site-install
 site-render dir='':
     site/scripts/check-render.mjs site/dist {{ dir }}
 
+# One screen (site/scripts/check-fit.mjs): the start page and the five case pages in headless Chrome at
+# 1440x900 and 1920x970, in the light and the dark theme, with 5 percent of the window's height to spare,
+# and no sideways scroll at 400 px. The pages are the start page and the field `page` of each case in
+# docs/coverage.yaml. Prints the bottom of each page against its limit. Needs `just site-build` and
+# Chrome or Chromium (CHROME, or on PATH).
+site-fit:
+    site/scripts/check-fit.mjs site/dist
+
 # The Worker's dry-run deploy: `wrangler deploy --dry-run` on the built site in site/dist, which
 # also bundles the Worker. It uploads nothing and needs no Cloudflare credential. Needs
 # `just site-build`.
@@ -416,4 +424,4 @@ go-release-build:
     (cd dist/upload && sha256sum -c SHA256SUMS && ls -l)
 
 # Everything a pull request must pass.
-check: check-rules site-check site-workers site-render proto-check ui-lint ui-test ui-e2e go-check
+check: check-rules site-check site-workers site-render site-fit proto-check ui-lint ui-test ui-e2e go-check

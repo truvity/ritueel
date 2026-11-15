@@ -2,6 +2,7 @@
 # One entry for the legend and one for each case. Every row has one way. A way has one state of the
 # legend, except a way that we do not recommend, which shows advice only. A state is drawn as the
 # shipped Badge of Starlight, so its words and its colour both show.
+# Each case names its page in the field page: a short address, and the file is a line of site/published.txt.
 # The checks are in site/lib/coverage.mjs and the schema is in site/src/content.config.ts.
 #
 # "Recommended", "Accepted", "Possible" and "Not recommended" are advice. They stand in the field
@@ -44,6 +45,7 @@
   kind: case
   number: 1
   title: Private CA
+  page: /pki/
   rows:
     - way: Root in a cloud key
       state: tool-planned
@@ -77,6 +79,7 @@
   kind: case
   number: 2
   title: Project releases
+  page: /sign-releases/
   rows:
     - way: Root in a cloud key
       state: tool-planned
@@ -116,6 +119,7 @@
   kind: case
   number: 3
   title: Commits and releases
+  page: /commits/
   rows:
     - way: Primary key in an encrypted file, kept offline
       state: tool-planned
@@ -153,6 +157,7 @@
   kind: case
   number: 4
   title: SSH logins
+  page: /ssh/
   rows:
     - way: Break-glass SSH CA key in a cloud key
       state: tool-planned
@@ -191,6 +196,7 @@
   kind: case
   number: 5
   title: Own logins
+  page: /logins/
   rows:
     - way: Two YubiKeys for the few top accounts (1Password, main mail, Apple or Google)
       advice: recommended

@@ -62,7 +62,7 @@ export async function designFacts(): Promise<DesignFacts> {
   };
 }
 
-// The line the home page and the status page both show.
+// The line the status page shows.
 export const designLine = (f: DesignFacts): string =>
   `Design: ${f.records} decision records, ${f.reference} reference pages. Code: ${f.code} lines.`;
 

@@ -1,4 +1,4 @@
-// "The whole chain" of the home page: one picture, read from left to right. Your root in one of three
+// "The whole chain" of the How it works page: one picture, read from left to right. Your root in one of three
 // stores, then the one ceremony of the year, then the keys used every day; under the chain, four
 // years as two rows, which tell the contrast: a key file can be copied, so it is replaced on a
 // calendar; a key that cannot be copied stays the same key and is replaced only on an event.
@@ -128,7 +128,7 @@ const LABEL =
   'Under the chain, over four years: a key file is replaced on a calendar, with a new key in year one and again in year four, three years at most; a key on a card or in a cloud key service is the same key all four years, replaced only on an event.';
 
 // The wide drawing in two sizes made from the same panels: 760 units for a column of 760 to 1100 px, and
-// 1100 units for the wide page, where the home page's column is 1100 to 1152 px. Each is shown at 1:1 or
+// 1100 units for a column of 1100 px or more. Each is shown at 1:1 or
 // a little more (never below it), so its text stays at 12px or more. Both are `fig-wide`; src/styles/figures.css
 // tells them apart by the width of their viewBox and shows the one that fits the column.
 function wide(W = 760) {

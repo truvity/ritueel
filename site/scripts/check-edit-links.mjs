@@ -11,7 +11,7 @@
 //     and <path> is a file in this checkout;
 //   - a page whose link is under docs/ is the page for that file: docs/<page>.md or .mdx,
 //     or docs/<page>/index.md or .mdx.
-// Fails closed: the home page must have a link, and so must at least ten pages.
+// Fails closed: the start page must have a link, and so must at least ten pages.
 //
 // usage: site/scripts/check-edit-links.mjs [dist]   (dist relative to the repository root, default site/dist)
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
@@ -43,7 +43,7 @@ let withLink = 0;
 let homeLinked = false;
 
 for (const file of pages(dist)) {
-  const page = relative(dist, dirname(file)); // '' for the home page
+  const page = relative(dist, dirname(file)); // '' for the start page
   const html = readFileSync(file, 'utf8');
   const links = [...html.matchAll(EDIT)];
   const label = page === '' ? '/' : `/${page}/`;
@@ -66,7 +66,7 @@ for (const file of pages(dist)) {
   }
 }
 
-if (!homeLinked) E('the home page has no edit link');
+if (!homeLinked) E('the start page has no edit link');
 if (withLink < 10) E(`only ${withLink} pages have an edit link; an empty sweep proves nothing`);
 
 if (errors.length) {
