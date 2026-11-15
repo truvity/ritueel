@@ -737,10 +737,11 @@ func bigCopies(total int) []wanted.File {
 	return copies
 }
 
-// The copies together are at most the bytes that Record reads in all, 256 MiB: one byte more is
-// refused before any write, and exactly that many pass the check and reach the writer.
-func TestWritePlanTakesAtMost256MiBOfCopiesInAll(t *testing.T) {
-	const limit = 256 << 20
+// The copies together are at most half of the bytes that Record reads in all, 128 MiB, so that a
+// folder that is written can still be recorded: one byte more is refused before any write, and
+// exactly that many pass the check and reach the writer.
+func TestWritePlanTakesAtMost128MiBOfCopiesInAll(t *testing.T) {
+	const limit = 128 << 20
 	s := newSpec(name1, 1, "")
 	t.Run("one byte over", func(t *testing.T) {
 		copies := bigCopies(limit + 1)
@@ -776,7 +777,7 @@ func TestWritePlanTakesAtMost256MiBOfCopiesInAll(t *testing.T) {
 		// The first changing call fails: the call went past every check of its input, to the writer.
 		err := f.WritePlan(planFor(t, s, copies), copies)
 		if !errors.Is(err, errCut) {
-			t.Fatalf("a set of exactly 256 MiB did not reach the writer: %v", err)
+			t.Fatalf("a set of exactly 128 MiB did not reach the writer: %v", err)
 		}
 	})
 	t.Run("many small ones that add up", func(t *testing.T) {

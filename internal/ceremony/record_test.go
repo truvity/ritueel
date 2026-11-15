@@ -199,12 +199,14 @@ func TestRecordRefusesFilesThatChangedSinceTheAttempt(t *testing.T) {
 	}
 }
 
-// recordIn is the input that the flow gives to Record.
+// recordIn is the input that the flow gives to Record: the root is the root of the plan (the
+// flow's plan names one), because the record is the plan's root, as the page says.
 func (fl *flow) recordIn() ceremony.RecordIn {
 	s := fl.s
 	return ceremony.RecordIn{
 		Command: files.CommandApply, Outcome: files.OutcomeCompleted, PrevRecordSHA256: s.last,
 		StartedAt: ts, FinishedAt: "2026-11-14T10:05:00Z",
+		Root:      &files.PlanRoot{Label: s.label, Store: "software", Test: true, Copyable: true},
 		Artifacts: s.artifactPaths(),
 	}
 }
@@ -471,10 +473,13 @@ func TestRecordWithNoArtifactsHasTheMemberAsAnEmptyList(t *testing.T) {
 	}
 }
 
-// The members that the caller does not give are left out, never written as empty.
+// The members that the caller does not give are left out, never written as empty. The plan names
+// no root here, so the caller gives none (a plan that names a root needs one: see
+// TestRecordRefusesNoRootWhenThePlanNamesOne).
 func TestRecordLeavesOutWhatTheCallerDidNotGive(t *testing.T) {
-	fl := transcribed(t, nil)
+	fl := transcribed(t, planRoot(nil))
 	in := fl.recordIn()
+	in.Root = nil
 	in.StartedAt, in.FinishedAt = "", ""
 	out, err := fl.f.Record(in)
 	if err != nil {
@@ -542,14 +547,14 @@ func TestRecordRefusesMoreThan256MiBOfFiles(t *testing.T) {
 func TestRecordCopiesTheRootAndTheConfirmation(t *testing.T) {
 	fl := transcribed(t, nil)
 	in := fl.recordIn()
-	in.Root = &files.PlanRoot{Label: "A", Store: "software", X509: rep('a'), Test: true}
+	in.Root = &files.PlanRoot{Label: "A", Store: "software", X509: rep('a'), Test: true, Copyable: true}
 	in.Confirmation = &files.Confirmation{By: "typed", At: ts}
 	out, err := fl.f.Record(in)
 	if err != nil {
 		t.Fatal(err)
 	}
 	r, _ := files.ReadRecord(out)
-	if r.Root == nil || r.Root.X509 != rep('a') || r.Confirmation == nil || r.Confirmation.By != "typed" {
+	if r.Root == nil || r.Root.X509 != rep('a') || !r.Root.Copyable || r.Confirmation == nil || r.Confirmation.By != "typed" {
 		t.Errorf("root and confirmation: %+v %+v", r.Root, r.Confirmation)
 	}
 }
@@ -757,7 +762,7 @@ func TestRecordRefusesTwoArtifactsThatDifferOnlyInCase(t *testing.T) {
 // them, so the writer is the only guard.
 func TestRecordRefusesARootWhoseFingerprintIsNotOfTheFormOfThePage(t *testing.T) {
 	good := func() *files.PlanRoot {
-		return &files.PlanRoot{Label: "A", Store: "software", X509: rep('a'), OpenPGP: strings.Repeat("b", 40), Test: true}
+		return &files.PlanRoot{Label: "A", Store: "software", X509: rep('a'), OpenPGP: strings.Repeat("b", 40), Test: true, Copyable: true}
 	}
 	cases := []struct {
 		name string
@@ -931,10 +936,16 @@ func TestRecordRefusesEachCharacterOfAFingerprintThatIsNotALowerCaseDigit(t *tes
 		{"OpenPGP", 40, func(r *files.PlanRoot, s string) { r.OpenPGP = s }},
 	} {
 		t.Run(kind.name, func(t *testing.T) {
-			fl := transcribed(t, nil)
+			// The X.509 fingerprint of a root is the one of the birth of its label, so the
+			// birth of this folder carries the fingerprint that is tried last.
+			fl := transcribed(t, func(s *spec) {
+				if kind.n == 64 {
+					s.pin = strings.Repeat("0123456789abcdef", 4)
+				}
+			})
 			try := func(s string) error {
 				in := fl.recordIn()
-				in.Root = &files.PlanRoot{Label: "A", Store: "software", Test: true}
+				in.Root = &files.PlanRoot{Label: "A", Store: "software", Test: true, Copyable: true}
 				kind.set(in.Root, s)
 				_, err := fl.f.Record(in)
 				return err
@@ -965,14 +976,14 @@ func TestRecordRefusesEachCharacterOfAFingerprintThatIsNotALowerCaseDigit(t *tes
 	}
 }
 
-// A root with no member is a root that names no key: the record is written with it.
+// A root that gives the members of the plan's root and no fingerprint names no key: the record is
+// written with it. An X.509 fingerprint is the one of the birth of the label when it is given.
 func TestRecordTakesARootWithNoFingerprint(t *testing.T) {
 	for name, root := range map[string]*files.PlanRoot{
-		"a root with no member":     {},
-		"a root with a label only":  {Label: "A"},
-		"no root at all":            nil,
-		"a root with both of them":  {Label: "A", X509: rep('1'), OpenPGP: strings.Repeat("2", 40)},
-		"a root with the X.509 key": {X509: rep('0')},
+		"a root with the members of the plan only": {Label: "A", Store: "software", Test: true, Copyable: true},
+		"a root with both of them":                 {Label: "A", Store: "software", Test: true, Copyable: true, X509: rep('a'), OpenPGP: strings.Repeat("2", 40)},
+		"a root with the X.509 key":                {Label: "A", Store: "software", Test: true, Copyable: true, X509: rep('a')},
+		"a root with the OpenPGP key only":         {Label: "A", Store: "software", Test: true, Copyable: true, OpenPGP: strings.Repeat("2", 40)},
 	} {
 		t.Run(name, func(t *testing.T) {
 			fl := transcribed(t, nil)
