@@ -36,6 +36,38 @@
   }
 }
 
+/* SECTIONS IN ROWS, from 100rem. A page whose front matter says `flow: rows` is made of short
+   parts (the design page: about twenty sections of three or four lines). lib/parts.mjs wraps each
+   `##` heading and what follows it, up to the next one, in <section class="ritueel-part">, while
+   the page is built; here the parts are laid out two by two, left to right and then down, in the
+   order of the source. A part is never split. The text before the first heading spans both
+   columns. Below 100rem the sections are blocks, one under the other, as on any page.
+   Two things follow from reading left to right. A row is as high as its taller part, so the
+   shorter one leaves a gap under it. And Starlight's script marks the current heading in the
+   order of the source, so with two parts side by side the mark follows the left one; every entry
+   of the list is still a working link. Names `.sl-markdown-content` and `.sl-heading-wrapper`. */
+@media (min-width: 100rem) {
+  .sl-markdown-content:has(> .ritueel-part) {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 2rem 3rem;
+    align-items: start;
+  }
+  .sl-markdown-content:has(> .ritueel-part) > :not(.ritueel-part) {
+    grid-column: 1 / -1;
+  }
+  .sl-markdown-content > .ritueel-part {
+    /* A table, a figure or a code block in a part stays in its column and scrolls or shrinks there. */
+    min-width: 0;
+    margin-top: 0;
+  }
+  /* The headings are smaller in a column of about 35rem than across the page. */
+  .sl-markdown-content > .ritueel-part > .sl-heading-wrapper.level-h2,
+  .sl-markdown-content > .ritueel-part > .sl-heading-wrapper.level-h2 h2 {
+    font-size: var(--sl-text-2xl);
+  }
+}
+
 /* BADGE. A label stays in one line (Starlight lets a badge break inside a word, so "explained, tool
    planned" split in a narrow cell) and is set in Plex Mono, like the other small labels. */
 .sl-badge {
