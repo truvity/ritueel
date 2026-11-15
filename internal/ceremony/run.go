@@ -89,7 +89,9 @@ type Done struct {
 
 // StoppedError is a fault after the first write of a run: a ceremony folder exists and the ceremony did
 // not end. It says which step stopped, which ceremony folder stands, whether an attempt is open, and
-// which key files may stand in the key directory, in one line, and that close, which closes an open
+// which key files may stand in the key directory (none for a stop at the write of the attempt, before
+// any key is made) and that the key directory may also hold a temporary file that starts with .rt- and
+// can hold a key (from the step make on), in one line, and that close, which closes an open
 // attempt, is not built. Nothing was retried and nothing was deleted (record 0006, rules 33 and 45). It
 // is a failure (exit code 1) whatever its cause is, and a command maps this type before it maps the
 // cause. The cause stays reachable with errors.Is and errors.As where the package that failed keeps
@@ -173,7 +175,9 @@ const (
 //  2. The key directory is judged by the key store ([RootStore.Refuse]); a refusal is a [*BackendError].
 //  3. The plan in words and its digest are printed, and the plan is confirmed ([Confirm]); anything but
 //     the digest, or the first eight characters of it typed at a terminal, is [ErrNotConfirmed] and
-//     nothing is written.
+//     nothing is written. Then the console is asked for its fault once more, so that a console that broke
+//     after the plan was shown is found before anything is written: that is an ordinary failure, and
+//     the person did confirm.
 //  4. The ceremony folder with plan.json and the copies (a direct apply); then the state of the bundle is
 //     judged a second time, immediately before the attempt (this narrows the window of two runs at once
 //     and does not close it: no lock exists yet); then the attempt and the two journals, before the first
@@ -209,6 +213,9 @@ func Run(ctx context.Context, in RunIn) (*Done, error) {
 		return nil, err
 	}
 	if err := r.confirm(); err != nil {
+		return nil, err
+	}
+	if err := r.checkConsole(); err != nil {
 		return nil, err
 	}
 	if err := r.writeFolder(); err != nil {
@@ -415,6 +422,18 @@ func (r *run) show() error {
 	return nil
 }
 
+// checkConsole asks the console for its fault after the confirmation and before anything is written (before the plan
+// folder of a direct apply and before the attempt in every form). A console whose stream refused a line, for
+// example standard error closed by the reader of a pipe, would be found by [MakeRoots] only after the keys
+// are born; here it is found while nothing exists. The person did confirm, so this is an ordinary failure
+// and not [ErrNotConfirmed]. The check of [MakeRoots] after the births stays.
+func (r *run) checkConsole() error {
+	if _, err := r.console.Transcript(); err != nil {
+		return fmt.Errorf("a line could not be shown, so the run stopped, and nothing was written: %w", err)
+	}
+	return nil
+}
+
 // writeFolder is the fourth step for a direct apply: the confirmation was given, and now the ceremony folder is made
 // with plan.json and the copies. A saved plan has its folder already, adopted in the preflight.
 func (r *run) writeFolder() error {
@@ -462,9 +481,18 @@ func (r *run) stop(step string, err error) error {
 	default:
 		state = "nothing was written"
 	}
+	// A key can exist only from the first call of MakeRoots on, which is the phase of an open attempt. A
+	// stop at the write of the attempt itself (phaseAttemptMaybe) names no key file: none was made.
 	keys := ""
-	if (r.phase == phaseAttempt || r.phase == phaseAttemptMaybe) && len(places) > 0 {
+	if r.phase == phaseAttempt && len(places) > 0 {
 		keys = "; the key directory may hold " + strings.Join(places, ", ") + " and the removal authorisations beside them, which stay"
+	}
+	// From the step "make" on (the phases of an open attempt and of a written record) one more thing may be in
+	// the key directory: the software key store writes a key under a temporary name and renames it, and a run
+	// whose rename was refused leaves that file, which holds a whole key. The words are fixed; no file is
+	// listed and no folder is read, and nothing is deleted by the program.
+	if r.phase == phaseAttempt || r.phase == phaseRecorded {
+		keys += "; the key directory may also hold a temporary file whose name starts with .rt-, which can hold a key, and a person removes it by hand"
 	}
 	if step == "record" && r.phase != phaseRecorded {
 		state += " (a cut at the flush of the folder may leave record.json in place: look at the folder)"
