@@ -7,6 +7,7 @@ import (
 	"testing"
 	"unicode/utf8"
 
+	"ritueel.id/ritueel/internal/handoff"
 	"ritueel.id/ritueel/internal/jsonset"
 	"ritueel.id/ritueel/internal/openpgp"
 	"ritueel.id/ritueel/internal/rootlist"
@@ -97,36 +98,38 @@ func TestALabelTwiceAndAFingerprintTwiceAreRefusedAlikeBesideEveryDelegation(t *
 	}
 }
 
-// primariesOf judges the count before the repeat, and the repeat before the file: a list of 17 entries that repeats
-// one gives the count, and neither reads the file.
+// primariesOf judges the count before the repeat, and the repeat before the file: a list of more entries than the
+// checks take that repeats one gives the count, and neither reads the file. No list that the reader accepts holds so
+// many, so the entries are handed over by hand.
 func TestThePrimariesOfAListAreJudgedInTheOrderCountRepeatFile(t *testing.T) {
 	entry := func(label string, i int) rootlist.Root {
 		return rootlist.Root{Label: label, OpenPGPFingerprint: fmt.Sprintf("%040x", i)}
 	}
 	var roots []rootlist.Root
-	for i := range 17 {
+	over := handoff.MaxPrimaries + 1
+	for i := range over {
 		roots = append(roots, entry(string(rune('A'+i)), i+1))
 	}
-	roots[16].OpenPGPFingerprint = roots[0].OpenPGPFingerprint
+	roots[over-1].OpenPGPFingerprint = roots[0].OpenPGPFingerprint
 	b, log := writeRecBundle(t, nil, goodKeyring(t))
 	n := &newestSet{set: TrustSet{Name: "7-3fa9c1d2", Number: 7}, list: &rootlist.List{Roots: roots}}
 	_, err := b.primariesOf(n, true)
-	if err == nil || !strings.Contains(err.Error(), "pins 17") || strings.Contains(err.Error(), "openpgp_fingerprint") {
-		t.Fatalf("17 entries with a repeat: %v, want the count", err)
+	if err == nil || !strings.Contains(err.Error(), fmt.Sprintf("pins %d", over)) || strings.Contains(err.Error(), "openpgp_fingerprint") {
+		t.Fatalf("%d entries with a repeat: %v, want the count", over, err)
 	}
-	roots[15].OpenPGPFingerprint = roots[0].OpenPGPFingerprint
-	n.list = &rootlist.List{Roots: roots[:16]}
+	roots[over-2].OpenPGPFingerprint = roots[0].OpenPGPFingerprint
+	n.list = &rootlist.List{Roots: roots[:over-1]}
 	_, err = b.primariesOf(n, true)
-	if err == nil || !strings.Contains(err.Error(), "gives one openpgp_fingerprint to two entries: the entry with the label A and the entry with the label P") {
-		t.Fatalf("16 entries with a repeat: %v, want the repeat", err)
+	if err == nil || !strings.Contains(err.Error(), "gives one openpgp_fingerprint to two entries: the entry with the label A and the entry with the label Z") {
+		t.Fatalf("%d entries with a repeat: %v, want the repeat", over-1, err)
 	}
 	if countOf(*log, readKeyring) != 0 {
 		t.Errorf("the file was read: %q", *log)
 	}
-	// 16 entries with no repeat: the file is read.
-	roots[15].OpenPGPFingerprint = fmt.Sprintf("%040x", 99)
+	// The most entries with no repeat: the file is read.
+	roots[over-2].OpenPGPFingerprint = fmt.Sprintf("%040x", 99)
 	if _, err := b.primariesOf(n, true); err == nil || countOf(*log, readKeyring) != 1 {
-		t.Errorf("16 entries with no repeat: error %v, reads %d", err, countOf(*log, readKeyring))
+		t.Errorf("%d entries with no repeat: error %v, reads %d", over-1, err, countOf(*log, readKeyring))
 	}
 }
 
@@ -270,13 +273,13 @@ func TestTheNamesInTheSentenceOfARepeatAreEscaped(t *testing.T) {
 	if err == nil || err.Error() != want || !onlyPrintableASCII(err.Error()) {
 		t.Errorf("error %v, want %q", err, want)
 	}
-	roots := make([]rootlist.Root, 17)
+	roots := make([]rootlist.Root, handoff.MaxPrimaries+1)
 	for i := range roots {
 		roots[i] = rootlist.Root{Label: string(rune('A' + i)), OpenPGPFingerprint: fmt.Sprintf("%040x", i+1)}
 	}
 	n = &newestSet{set: TrustSet{Name: "7-\x1b a", Number: 7}, list: &rootlist.List{Roots: roots}}
 	_, err = b.primariesOf(n, true)
-	want = "the root list of the newest trust set 7-" + bs + "u001b" + bs + "x20a pins 17 OpenPGP primaries, and the checks take at most 16"
+	want = "the root list of the newest trust set 7-" + bs + "u001b" + bs + "x20a pins " + fmt.Sprint(handoff.MaxPrimaries+1) + " OpenPGP primaries, and the checks take at most " + fmt.Sprint(handoff.MaxPrimaries)
 	if err == nil || err.Error() != want {
 		t.Errorf("error %v, want %q", err, want)
 	}

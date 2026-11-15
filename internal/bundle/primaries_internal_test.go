@@ -189,28 +189,31 @@ func errText(err error) string {
 	return err.Error()
 }
 
-// Seventeen pinned primaries are refused before the file is read: not one read of the keyring file.
-func TestMoreThanSixteenPrimariesAreRefusedBeforeTheFileIsRead(t *testing.T) {
+// More pinned primaries than the checks take are refused before the file is read: not one read of the keyring file.
+// No root list that the reader accepts holds so many (a list has at most 26 entries, one for each label A to Z), so
+// the entries are those of a hand-made reading of the newest set: this is the second guard, held on its own.
+func TestMoreThanTheBoundOfPrimariesAreRefusedBeforeTheFileIsRead(t *testing.T) {
 	// The entries are those of a hand-made reading of the newest set, so no CA bundle has to match them; the test
 	// shows that the count is judged before the keyring file is read.
 	var roots []rootlist.Root
-	for i := range 17 {
+	for i := range handoff.MaxPrimaries + 1 {
 		roots = append(roots, rootlist.Root{Label: string(rune('A' + i)), OpenPGPFingerprint: fmt.Sprintf("%040x", i+1)})
 	}
 	b, log := writeRecBundle(t, nil, goodKeyring(t))
 	n := &newestSet{set: TrustSet{Name: "7-3fa9c1d2", Number: 7}, list: &rootlist.List{Roots: roots}}
 	refs, err := b.primariesOf(n, true)
-	if refs != nil || err == nil || !strings.Contains(err.Error(), "17") || !strings.Contains(err.Error(), "16") {
-		t.Fatalf("primariesOf = (%v, %v)", refs, err)
+	want := fmt.Sprintf("the root list of the newest trust set 7-3fa9c1d2 pins %d OpenPGP primaries, and the checks take at most %d", handoff.MaxPrimaries+1, handoff.MaxPrimaries)
+	if refs != nil || err == nil || err.Error() != want || !errors.Is(err, ErrPrimaries) {
+		t.Fatalf("primariesOf = (%v, %v), want %q of the kind ErrPrimaries", refs, err, want)
 	}
 	if countOf(*log, readKeyring) != 0 {
 		t.Errorf("the keyring file was read: %q", *log)
 	}
-	// The same list with 16 entries is read (and the file, a file of two certificates, is refused as a count of
+	// The same list with the most entries is read (and the file, a file of two certificates, is refused as a count of
 	// certificates, which proves the read happened).
-	n.list = &rootlist.List{Roots: roots[:16]}
+	n.list = &rootlist.List{Roots: roots[:handoff.MaxPrimaries]}
 	if _, err := b.primariesOf(n, true); !errors.Is(err, openpgp.ErrKeyringPrimaries) || countOf(*log, readKeyring) != 1 {
-		t.Errorf("sixteen entries: error %v, reads %d", err, countOf(*log, readKeyring))
+		t.Errorf("%d entries: error %v, reads %d", handoff.MaxPrimaries, err, countOf(*log, readKeyring))
 	}
 }
 
