@@ -60,10 +60,10 @@ func TestTheReasonsAreEscapedForARefusalAndForAResult(t *testing.T) {
 		{"a refusal by the backend", func(context.Context, *Call) (*Result, error) { return nil, BackendRefusal{Reasons: in, Msg: "no"} }, ExitBackend, "refused", "", "ritueel: no\n"},
 		{"a result with the code 3", func(context.Context, *Call) (*Result, error) {
 			return &Result{ExitCode: ExitRefused, Reasons: in, Text: "no\n"}, nil
-		}, ExitRefused, "refused", "no\n", ""},
+		}, ExitRefused, "refused", "no\n", "ritueel: refused: " + strings.Join(want, ", ") + "\n"},
 		{"a result with the code 4", func(context.Context, *Call) (*Result, error) {
 			return &Result{ExitCode: ExitBackend, Reasons: in, Text: "no\n"}, nil
-		}, ExitBackend, "refused", "no\n", ""},
+		}, ExitBackend, "refused", "no\n", "ritueel: refused by the card or the backend: " + strings.Join(want, ", ") + "\n"},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -127,7 +127,7 @@ func TestAPlainReasonCodeIsUnchangedAndAMissingListLeavesTheMemberOut(t *testing
 			}})
 			js := run(t, "--output", "json", "fake")
 			want := `{"output":1,"command":"fake","exit_code":3,"outcome":"refused",` + tc.member + `,"warnings":[]}` + "\n"
-			if js.code != ExitRefused || js.stdout != want || js.stderr != "" {
+			if js.code != ExitRefused || js.stdout != want || js.stderr != "ritueel: refused: "+strings.Join(tc.reasons, ", ")+"\n" {
 				t.Errorf("result: (%d, %q, %q)\nwant %q", int(js.code), js.stdout, js.stderr, want)
 			}
 			withSpecs(t, spec{name: "fake", usage: "u", run: func(context.Context, *Call) (*Result, error) {

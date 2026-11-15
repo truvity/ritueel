@@ -65,7 +65,7 @@ func TestWarningsOfAResultAreOnStandardErrorAndInTheObject(t *testing.T) {
 			members(ExitOK, "done", map[string]any{"warnings": wantEsc})},
 		{"warnings with a refusal by a result", func() (*Result, error) {
 			return &Result{ExitCode: ExitRefused, Reasons: []string{"declined"}, Warnings: []string{"w1", "w2"}}, nil
-		}, ExitRefused, "", warnLines("w1", "w2"),
+		}, ExitRefused, "", warnLines("w1", "w2") + "ritueel: refused: declined\n",
 			members(ExitRefused, "refused", map[string]any{"reasons": []string{"declined"}, "warnings": []string{"w1", "w2"}})},
 	}
 	for _, tc := range cases {
@@ -352,10 +352,13 @@ func TestAFailedWriteOfTheResultKeepsTheWarnings(t *testing.T) {
 		name string
 		args []string
 		res  *Result
+		// refusal is the line of a refused Result, which is written after the warnings and before the
+		// line that says the result was not written.
+		refusal string
 	}{
-		{"the JSON mode", []string{"--output", "json", "fake"}, &Result{Warnings: []string{"w1", "w2"}}},
-		{"the text mode", []string{"fake"}, &Result{Warnings: []string{"w1", "w2"}, Text: "t\n"}},
-		{"the JSON mode, a refusal", []string{"--output", "json", "fake"}, &Result{ExitCode: ExitRefused, Reasons: []string{"r"}, Warnings: []string{"w1", "w2"}}},
+		{"the JSON mode", []string{"--output", "json", "fake"}, &Result{Warnings: []string{"w1", "w2"}}, ""},
+		{"the text mode", []string{"fake"}, &Result{Warnings: []string{"w1", "w2"}, Text: "t\n"}, ""},
+		{"the JSON mode, a refusal", []string{"--output", "json", "fake"}, &Result{ExitCode: ExitRefused, Reasons: []string{"r"}, Warnings: []string{"w1", "w2"}}, "ritueel: refused: r\n"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			withSpecs(t, spec{name: "fake", usage: "u", run: func(context.Context, *Call) (*Result, error) {
@@ -364,7 +367,7 @@ func TestAFailedWriteOfTheResultKeepsTheWarnings(t *testing.T) {
 			}})
 			var stderr strings.Builder
 			code := Run(t.Context(), tc.args, Env{Stdout: brokenWriter{errors.New("disk full")}, Stderr: &stderr, Build: testBuild})
-			if want := warnLines("w1", "w2") + "ritueel: write the result: disk full\n"; code != ExitFailure || stderr.String() != want {
+			if want := warnLines("w1", "w2") + tc.refusal + "ritueel: write the result: disk full\n"; code != ExitFailure || stderr.String() != want {
 				t.Errorf("(%d, %q), want (1, %q)", int(code), stderr.String(), want)
 			}
 		})

@@ -116,14 +116,19 @@ func TestTheObjectOfEveryOutcome(t *testing.T) {
 		}, ExitBackend, "", warnLines("w1") + "ritueel: locked\n",
 			members(ExitBackend, "refused", map[string]any{"reasons": []string{"pin-locked"}, "warnings": []string{"w1"}})},
 
-		// refused by a Result with the exit code 3 or 4: reasons, no error, nothing on standard error.
+		// refused by a Result with the exit code 3 or 4: reasons, no error, and the line of the refusal on standard error
+		// after the warning lines, in both output modes (the codes stand in when the Result has no Message).
 		{"refused, a result with the code 3", func() (*Result, error) {
 			return &Result{ExitCode: ExitRefused, Reasons: []string{"declined"}, Text: "data\n"}, nil
-		}, ExitRefused, "data\n", "",
+		}, ExitRefused, "data\n", "ritueel: refused: declined\n",
+			members(ExitRefused, "refused", map[string]any{"reasons": []string{"declined"}})},
+		{"refused, a result with the code 3 and a message", func() (*Result, error) {
+			return &Result{ExitCode: ExitRefused, Reasons: []string{"declined"}, Message: "refused: declined (check 2: no)"}, nil
+		}, ExitRefused, "", "ritueel: refused: declined (check 2: no)\n",
 			members(ExitRefused, "refused", map[string]any{"reasons": []string{"declined"}})},
 		{"refused, a result with the code 4 and warnings", func() (*Result, error) {
 			return &Result{ExitCode: ExitBackend, Reasons: []string{"kms-session"}, Warnings: []string{"w1"}}, nil
-		}, ExitBackend, "", warnLines("w1"),
+		}, ExitBackend, "", warnLines("w1") + "ritueel: refused by the card or the backend: kms-session\n",
 			members(ExitBackend, "refused", map[string]any{"reasons": []string{"kms-session"}, "warnings": []string{"w1"}})},
 
 		// not confirmed: no reasons, no error.

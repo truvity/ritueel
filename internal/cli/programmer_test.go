@@ -358,8 +358,14 @@ func TestTheOutcomeFollowsTheExitCode(t *testing.T) {
 		// A refusal names a reason code, and no other outcome does (docs/reference/cli.md: "reasons,
 		// when refused").
 		var reasons []string
+		stderr := ""
 		if want == OutcomeRefused {
 			reasons = []string{"r"}
+			// The line of the refusal of a Result, with the codes standing in for a missing message.
+			stderr = "ritueel: refused: r\n"
+			if code == ExitBackend {
+				stderr = "ritueel: refused by the card or the backend: r\n"
+			}
 		}
 		t.Run(fmt.Sprintf("a result with the code %d", int(code)), func(t *testing.T) {
 			// With no outcome given, and with the right one: the outcome of the code.
@@ -368,7 +374,7 @@ func TestTheOutcomeFollowsTheExitCode(t *testing.T) {
 					return &Result{ExitCode: code, Outcome: given, Reasons: reasons, Text: "t\n"}, nil
 				}})
 				js := run(t, "--output", "json", "fake")
-				if js.code != code || js.stderr != "" {
+				if js.code != code || js.stderr != stderr {
 					t.Errorf("given %q: json (%d, %q)", given, int(js.code), js.stderr)
 				}
 				wantMembers := map[string]any{"output": 1, "command": "fake", "exit_code": int(code), "outcome": string(want)}
@@ -377,7 +383,7 @@ func TestTheOutcomeFollowsTheExitCode(t *testing.T) {
 				}
 				wantObject(t, object(t, js.stdout), wantMembers)
 				text := run(t, "fake")
-				if text.code != code || text.stdout != "t\n" || text.stderr != "" {
+				if text.code != code || text.stdout != "t\n" || text.stderr != stderr {
 					t.Errorf("given %q: text (%d, %q, %q)", given, int(text.code), text.stdout, text.stderr)
 				}
 			}
