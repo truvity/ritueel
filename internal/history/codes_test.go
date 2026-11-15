@@ -14,7 +14,7 @@ import (
 var pageOrder = []string{
 	"chain-broken", "fork", "record-off-chain", "record-not-canonical", "record-version-unknown",
 	"record-invalid", "transcript-digest", "file-digest", "file-missing", "trust-set-unlisted",
-	"unfinished-ceremony", "anchor-unknown", "unexpected-name", "unexpected-file",
+	"unfinished-ceremony", "anchor-unknown", "root-returns", "unexpected-name", "unexpected-file",
 }
 
 func TestCodesAreTheNamesOfThePageInTheOrderOfThePage(t *testing.T) {
@@ -197,6 +197,17 @@ var codeCases = []codeCase{
 			return b, []wf{{AnchorUnknown, "trust/" + r.set + "/root-list.json"}}
 		},
 		reasons: []Code{AnchorUnknown}, records: 1,
+	},
+	{
+		name: "root-returns: a root key that left the root list is on a later list",
+		build: func(t *testing.T) (*bundle, []wf) {
+			b := newBundle(t)
+			b.apply(withRoots(ent{"A", pinOf(1), ""}, ent{"B", pinOf(2), ""}))
+			b.apply(withRoots(ent{"B", pinOf(2), ""}))
+			third := b.apply(withRoots(ent{"A", pinOf(1), ""}, ent{"B", pinOf(2), ""}))
+			return b, []wf{{RootReturns, "trust/" + third.set + "/root-list.json"}}
+		},
+		reasons: []Code{RootReturns}, records: 3,
 	},
 	{
 		name: "unexpected-name: a folder with a space in its name",
