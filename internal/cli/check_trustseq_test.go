@@ -46,7 +46,7 @@ func joinReasons(r []string) string {
 
 func TestCheckHistoryReportsATrustNumberThatDoesNotGrow(t *testing.T) {
 	b := newHB(t, 2)
-	b.add(t, true, func(c *hbCeremony) { c.set = "2-3fa9c1df" })
+	b.add(t, true, func(c *hbCeremony) { c.nameSet("2-3fa9c1df") })
 	rep := chReport(t, b.dir)
 	if got := chCodes(rep.Reasons()); !slices.Equal(got, []string{"trust-sequence"}) {
 		t.Fatalf("the bundle of the test gives the reasons %v", got)
@@ -58,8 +58,8 @@ func TestCheckHistoryReportsATrustNumberThatDoesNotGrow(t *testing.T) {
 
 func TestCheckHistoryReportsATrustNumberThatFalls(t *testing.T) {
 	b := newHB(t, 2)
-	b.add(t, true, func(c *hbCeremony) { c.set = "1-3fa9c1df" })
-	b.add(t, true, func(c *hbCeremony) { c.set = "9-3fa9c1df" })
+	b.add(t, true, func(c *hbCeremony) { c.nameSet("1-3fa9c1df") })
+	b.add(t, true, func(c *hbCeremony) { c.nameSet("9-3fa9c1df") })
 	refusedAs(t, b, []string{
 		"trust-sequence trust/1-3fa9c1df: the number in its name, 1, is not higher than 2, the number of the set before it in the chain, trust/" + b.cs[1].set + " " + seqRule,
 	}, []string{"trust-sequence"})
@@ -67,7 +67,7 @@ func TestCheckHistoryReportsATrustNumberThatFalls(t *testing.T) {
 
 func TestCheckHistoryAcceptsATrustNumberThatSkips(t *testing.T) {
 	b := newHB(t, 2)
-	b.add(t, true, func(c *hbCeremony) { c.set = "9-3fa9c1df" })
+	b.add(t, true, func(c *hbCeremony) { c.nameSet("9-3fa9c1df") })
 	for _, r := range []result{chHist(t, b.dir), chJSON(t, b.dir)} {
 		if r.code != ExitOK || r.stderr != "" {
 			t.Errorf("exit %d, stderr %q; a skip is no finding", r.code, r.stderr)
@@ -113,7 +113,7 @@ func TestCheckHistoryReportsASetOfTheNumberZeroAsNoTrustNumber(t *testing.T) {
 
 func TestCheckHistoryReportsASetWithNoTrustNumberThatARecordLists(t *testing.T) {
 	b := newHB(t, 1)
-	b.add(t, true, func(c *hbCeremony) { c.set = "01-3fa9c1df" })
+	b.add(t, true, func(c *hbCeremony) { c.nameSet("01-3fa9c1df") })
 	refusedAs(t, b, []string{
 		"trust-sequence trust/01-3fa9c1df: its name has no trust number, so the number and the sequence of its root list cannot be compared (record 0006, rule 14)",
 	}, []string{"trust-sequence"})

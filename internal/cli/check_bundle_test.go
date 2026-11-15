@@ -10,8 +10,10 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"regexp"
 	"slices"
 	"sort"
+	"strconv"
 	"strings"
 	"sync"
 	"testing"
@@ -48,6 +50,48 @@ type hbCeremony struct {
 	prev       string // the predecessor the record names, "" for none
 	noSet      bool   // the record lists no trust set, and none is written
 	extraSet   string // a second trust set that the record lists, with the files of the first ("" for none)
+
+	// extraRootList is the root list of extraSet: the list of the first set, with the number of the
+	// name of extraSet as its sequence, unless a test sets it.
+	extraRootList string
+}
+
+// seqMember finds the member sequence of a root list that these tests write.
+var seqMember = regexp.MustCompile(`"sequence":[0-9]+`)
+
+// withSequenceOf is the root list list with the sequence that is the number at the start of the name
+// of the set. A name with no number of at least 1, or with a leading zero, leaves the list as it is.
+func withSequenceOf(list, set string) string {
+	digits, _, _ := strings.Cut(set, "-")
+	if digits == "" || digits[0] == '0' || len(digits) > 15 {
+		return list
+	}
+	n, err := strconv.ParseInt(digits, 10, 64)
+	if err != nil {
+		return list
+	}
+	return seqMember.ReplaceAllLiteralString(list, `"sequence":`+strconv.FormatInt(n, 10))
+}
+
+// nameSet gives the ceremony the trust set name, and its root list the sequence of the number in the
+// name, as a list that a host takes has it.
+func (c *hbCeremony) nameSet(set string) {
+	c.set = set
+	c.rootList = withSequenceOf(c.rootList, set)
+}
+
+// nameExtra is nameSet for the second set that the record lists.
+func (c *hbCeremony) nameExtra(set string) {
+	c.extraSet = set
+	c.extraRootList = withSequenceOf(c.rootList, set)
+}
+
+// listOf is the root list that the ceremony writes for the set.
+func (c hbCeremony) listOf(set string) string {
+	if set != c.set && set == c.extraSet && c.extraRootList != "" {
+		return c.extraRootList
+	}
+	return c.rootList
 }
 
 func (c hbCeremony) base() string { return "history/" + c.folder + "/" }
@@ -71,10 +115,10 @@ func hbMake(n int, prev string, withRecord bool) hbCeremony {
 	c.wanted = "name: bundle " + ns + "\n"
 	c.transcript = "ceremony " + ns + "\n"
 	c.keys = "keys of set " + ns + "\n"
-	c.rootList = `{"version":1}`
+	c.rootList = `{"sequence":` + ns + `,"version":1}`
 	c.plan = `{"ceremony":"` + c.folder + `","command":"apply","trust_sequence":` + ns + `,"version":1,"wanted":[{"path":"ritueel.yaml","sha256":"` + hbSum(c.wanted) + `"}]}`
 	if prev != "" {
-		c.rootList = `{"last_record_sha256":"` + prev + `","version":1}`
+		c.rootList = `{"last_record_sha256":"` + prev + `","sequence":` + ns + `,"version":1}`
 		c.plan = `{"ceremony":"` + c.folder + `","command":"apply","last_record_sha256":"` + prev + `","trust_sequence":` + ns + `,"version":1,"wanted":[{"path":"ritueel.yaml","sha256":"` + hbSum(c.wanted) + `"}]}`
 	}
 	c.attempt = `{"ceremony":"` + c.folder + `","plan_sha256":"` + hbSum(c.plan) + `","version":1}`
@@ -97,7 +141,7 @@ func hbRecord(c hbCeremony, prev string) string {
 	var paths []string
 	for _, set := range []string{c.set, c.extraSet} {
 		if set != "" {
-			paths = append(paths, `{"path":"trust/`+set+`/keys.txt","sha256":"`+hbSum(c.keys)+`"}`, `{"path":"trust/`+set+`/root-list.json","sha256":"`+hbSum(c.rootList)+`"}`)
+			paths = append(paths, `{"path":"trust/`+set+`/keys.txt","sha256":"`+hbSum(c.keys)+`"}`, `{"path":"trust/`+set+`/root-list.json","sha256":"`+hbSum(c.listOf(set))+`"}`)
 		}
 	}
 	slices.Sort(paths) // the entries are in order of the path, which is how the record is written
@@ -140,7 +184,7 @@ func hbWriteCeremony(t testing.TB, dir string, c hbCeremony) {
 		hbWrite(t, dir, "trust/"+c.set+"/root-list.json", c.rootList)
 		if c.extraSet != "" {
 			hbWrite(t, dir, "trust/"+c.extraSet+"/keys.txt", c.keys)
-			hbWrite(t, dir, "trust/"+c.extraSet+"/root-list.json", c.rootList)
+			hbWrite(t, dir, "trust/"+c.extraSet+"/root-list.json", c.listOf(c.extraSet))
 		}
 	}
 	if c.record != "" {
