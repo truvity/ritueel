@@ -1041,9 +1041,13 @@ func (ck *checker) anchors() error {
 		// also the lowest 64-bit number) makes the list one that cannot be read, as for every other
 		// integer outside that range: it is anchor-unknown with that detail and the bundle fails, and
 		// its keys are not read, because no lenient reader of the file is added.
-		if anchor.hasSequence && anchor.sequence < 1 {
-			// The keys of the list are read all the same (it is in rootLists above), so that the list
-			// hides no key from the later lists.
+		// A list with no sequence member is refused by a host as malformed (root-list page), so it is
+		// the same finding. In both cases the keys of the list are read all the same (it is in
+		// rootLists above), so that the list hides no key from the later lists.
+		switch {
+		case !anchor.hasSequence:
+			ck.col.add(AnchorUnknown, path, "the root list has no sequence, and a sequence is an integer of at least 1; its keys are still read")
+		case anchor.sequence < 1:
 			ck.col.add(AnchorUnknown, path, "the root list has a sequence of "+strconv.FormatInt(anchor.sequence, 10)+", and a sequence is an integer of at least 1; its keys are still read")
 		}
 		why, err := ck.judgeAnchor(name, anchor)

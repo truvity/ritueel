@@ -161,14 +161,22 @@ func TestTrustSequenceTheOrderOfAPlaceIsTheSequenceThenTheNumber(t *testing.T) {
 			for set := range c.bad {
 				want = append(want, wf{TrustSequence, "trust/" + set})
 			}
+			// A list with no sequence is judged by the order of the place, and is anchor-unknown.
+			noSeq := 0
+			for _, s := range c.sets {
+				if _, has := seqOfList(s.list); !has {
+					want = append(want, wf{AnchorUnknown, listPathOf(s.name)})
+					noSeq++
+				}
+			}
 			wantExactly(t, rep, want...)
 			for set, w := range c.bad {
 				if d := detail(rep, TrustSequence, "trust/"+set); !strings.Contains(d, w) {
 					t.Errorf("the detail of %s, %q, lacks %q", set, d, w)
 				}
 			}
-			if rep.Clean() != (len(c.bad) == 0) {
-				t.Errorf("Clean() = %v with %d findings", rep.Clean(), len(c.bad))
+			if rep.Clean() != (len(c.bad)+noSeq == 0) {
+				t.Errorf("Clean() = %v with %d findings", rep.Clean(), len(c.bad)+noSeq)
 			}
 		})
 	}
@@ -252,7 +260,7 @@ func TestTrustSequenceASetWithNoNumberInAGroup(t *testing.T) {
 		b := afterOne(t)
 		b.apply(withSets(cset{"02-bbbbbbbb", rootsJSON(0, kA)}, cset{g2, keyList(2, kA)}))
 		rep := b.run()
-		wantExactly(t, rep, wf{TrustSequence, "trust/02-bbbbbbbb"})
+		wantExactly(t, rep, wf{TrustSequence, "trust/02-bbbbbbbb"}, wf{AnchorUnknown, listPathOf("02-bbbbbbbb")})
 		if d := detail(rep, TrustSequence, "trust/02-bbbbbbbb"); !strings.Contains(d, "its name has no trust number") {
 			t.Errorf("the detail %q lacks the words about the name", d)
 		}
@@ -264,7 +272,8 @@ func TestTrustSequenceASetWithNoNumberInAGroup(t *testing.T) {
 		b.apply(withSets(cset{"02-aaaaaaaa", rootsJSON(0, kA)}, cset{g2, rootsJSON(0, kA)}))
 		b.apply(withSet("2-dddddddd", keyList(2, kA)))
 		rep := b.run()
-		wantExactly(t, rep, wf{TrustSequence, "trust/02-aaaaaaaa"}, wf{TrustSequence, "trust/2-dddddddd"})
+		wantExactly(t, rep, wf{TrustSequence, "trust/02-aaaaaaaa"}, wf{TrustSequence, "trust/2-dddddddd"},
+			wf{AnchorUnknown, listPathOf("02-aaaaaaaa")}, wf{AnchorUnknown, listPathOf(g2)})
 	})
 }
 

@@ -42,7 +42,8 @@ const (
 	// UnfinishedCeremony: a trust set that no record lists, with an open attempt. A notice.
 	UnfinishedCeremony Code = "unfinished-ceremony"
 	// AnchorUnknown: the last_record_sha256 of a root list is not a record on the chain, or the
-	// list cannot be read, or a list that is not the first has none.
+	// list cannot be read, or a list that is not the first has none, or a list has no sequence or one
+	// below 1.
 	AnchorUnknown Code = "anchor-unknown"
 	// RootReturns: a root list holds a root key that left the root list, by its pin or by its
 	// OpenPGP fingerprint under another pin (record 0006, rule 54).

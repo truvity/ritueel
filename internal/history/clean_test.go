@@ -40,7 +40,7 @@ func TestFirstRecordHasNoPredecessorAndNoAnchor(t *testing.T) {
 	if first.record.PrevRecordSHA256 != "" {
 		t.Fatal("the builder gave the first record a predecessor")
 	}
-	if string(b.get("trust/"+first.set+"/root-list.json")) != `{"version":1}` {
+	if string(b.get("trust/"+first.set+"/root-list.json")) != `{"sequence":1,"version":1}` {
 		t.Fatalf("the first root list has an anchor: %s", b.get("trust/"+first.set+"/root-list.json"))
 	}
 	wantFindings(t, b.run(), nil)

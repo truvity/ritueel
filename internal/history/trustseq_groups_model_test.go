@@ -55,7 +55,7 @@ func modelGroups(places [][]gset) []wf {
 			)
 		})
 		for _, g := range ordered {
-			if !g.none && g.seq < 1 {
+			if g.none || g.seq < 1 {
 				out = append(out, wf{AnchorUnknown, listPathOf(g.name())})
 			}
 			n, ok := modelNumber(g.name())

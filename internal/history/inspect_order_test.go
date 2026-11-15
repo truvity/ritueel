@@ -99,7 +99,9 @@ func TestInspectUnlistedSetsOfOnePlaceThatAgreeAreOrderedBySequence(t *testing.T
 }
 
 // Sets of one place that tie, that miss a statement or that disagree have no one order: there is no
-// State, ErrOrder says so, and the report is the report of Check. Every case here is a clean report.
+// State, ErrOrder says so, and the report is the report of Check. Every case here is a clean report,
+// except the three with a list that has no sequence: that is the finding anchor-unknown, and a
+// failing report has no ErrOrder.
 func TestInspectSetsOfOnePlaceThatDoNotAgreeHaveNoState(t *testing.T) {
 	type pair struct{ a, b cset }
 	cases := map[string]pair{
@@ -123,6 +125,25 @@ func TestInspectSetsOfOnePlaceThatDoNotAgreeHaveNoState(t *testing.T) {
 			b.unfinished(withSet(c.a.name, c.a.list))
 			b.unfinished(withSet(c.b.name, c.b.list))
 			in := b.inspect()
+			var missing []string
+			for _, s := range []cset{c.a, c.b} {
+				if _, has := seqOfList(s.list); !has {
+					missing = append(missing, listPathOf(s.name))
+				}
+			}
+			if len(missing) > 0 {
+				// The finding is the reason: the report fails, and has neither a State nor an OrderErr.
+				if in.Report.Clean() || in.State != nil || in.OrderErr != nil {
+					t.Fatalf("clean %v, State %v, OrderErr %v", in.Report.Clean(), in.State, in.OrderErr)
+				}
+				for _, p := range missing {
+					has(t, in.Report, AnchorUnknown, p)
+				}
+				if n := countCode(in.Report, AnchorUnknown); n != len(missing) {
+					t.Errorf("%d findings of anchor-unknown, want %d: %v", n, len(missing), findingsOf(in.Report))
+				}
+				return
+			}
 			wantOrderErr(t, in)
 			if !strings.Contains(in.OrderErr.Error(), "stand at one place") {
 				t.Errorf("the reason does not say that sets stand at one place: %v", in.OrderErr)
@@ -279,9 +300,14 @@ func TestInspectNewestMustAgreeWithItsName(t *testing.T) {
 		}
 	})
 	t.Run("no sequence and the name 0", func(t *testing.T) {
-		// A list with no sequence is not a list with the sequence 0.
+		// A list with no sequence is not a list with the sequence 0: it is anchor-unknown with its own
+		// detail, and there is no State.
 		b := chainBundle(t, false, cset{"0-aaaaaaaa", rootsJSON(0, kA)})
-		wantOrderErr(t, b.inspect())
+		in := b.inspect()
+		wantFailed(t, in, []wf{{AnchorUnknown, listPathOf("0-aaaaaaaa")}})
+		if d := detail(in.Report, AnchorUnknown, listPathOf("0-aaaaaaaa")); !strings.Contains(d, "no sequence") {
+			t.Errorf("the detail is %q", d)
+		}
 	})
 	t.Run("a sequence of 0 and the name 0", func(t *testing.T) {
 		// The sequence 0 is below 1: the finding anchor-unknown, so no State.
@@ -520,8 +546,10 @@ func TestInspectEachReasonOfNoOrderSaysWhatIsWrong(t *testing.T) {
 		check("the newest set has another sequence than its number", b.inspect(), "trust/"+setN(2), "not the sequence")
 	}
 	{
+		// A leftover set whose list has no sequence is anchor-unknown (the finding is not one of
+		// trust-sequence), so the report fails and has neither a State nor an OrderErr.
 		b := leftoverLast(t, cset{setN(1), keyList(1, kA)}, setN(2), rootsJSON(0, kA))
-		check("the newest list has no sequence", b.inspect(), "trust/"+setN(2), "not the sequence")
+		wantFailed(t, b.inspect(), []wf{{AnchorUnknown, listPathOf(setN(2))}})
 	}
 }
 

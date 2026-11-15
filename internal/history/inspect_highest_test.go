@@ -17,7 +17,6 @@ import (
 
 const (
 	notHighestWords = "does not hold the highest sequence of the root lists"
-	unreadableWords = "the sequence of a root list of the chain cannot be read"
 	nameNumberWords = "is not the sequence of its root list"
 )
 
@@ -233,36 +232,32 @@ func TestInspectTwoListsWithOneSequenceAtTwoPlaces(t *testing.T) {
 	})
 }
 
-// A list of the chain with no sequence: there is no State, and the sentence says that a sequence
-// cannot be read. A list in the middle or at the front; the last list with none is held to its
-// name first, as before.
+// A list of the chain with no sequence is the finding anchor-unknown, so the report fails and there
+// is no State and no OrderErr: the finding is the reason. A list in the middle, at the front or at
+// the end; the number in the name of a list with none is not compared with anything.
 func TestInspectAListOfTheChainWithNoSequenceHasNoState(t *testing.T) {
 	none := func(num int) seqSet { return seqSet{num: num, none: true} }
 	seq := func(n int64) seqSet { return seqSet{num: int(n), seq: n} }
 	t.Run("the first", func(t *testing.T) {
-		b, _ := chainOf(t, []seqSet{none(1), seq(2)})
-		in := b.inspect()
-		wantReason(t, in, unreadableWords)
-		if got := in.OrderErr.Error(); got != ErrOrder.Error()+": "+unreadableWords {
-			t.Errorf("OrderErr = %q", got)
-		}
+		b, names := chainOf(t, []seqSet{none(1), seq(2)})
+		wantFailed(t, b.inspect(), []wf{{AnchorUnknown, listPathOf(names[0])}})
 	})
 	t.Run("in the middle", func(t *testing.T) {
-		b, _ := chainOf(t, []seqSet{seq(1), none(2), seq(3)})
-		wantReason(t, b.inspect(), unreadableWords)
+		b, names := chainOf(t, []seqSet{seq(1), none(2), seq(3)})
+		wantFailed(t, b.inspect(), []wf{{AnchorUnknown, listPathOf(names[1])}})
 	})
 	t.Run("two of three", func(t *testing.T) {
-		b, _ := chainOf(t, []seqSet{none(1), none(2), seq(3)})
-		wantReason(t, b.inspect(), unreadableWords)
+		b, names := chainOf(t, []seqSet{none(1), none(2), seq(3)})
+		wantFailed(t, b.inspect(), []wf{{AnchorUnknown, listPathOf(names[0])}, {AnchorUnknown, listPathOf(names[1])}})
 	})
 	t.Run("one before a lower last", func(t *testing.T) {
 		// The lower last is the finding trust-sequence, and the report fails.
 		b, names := chainOf(t, []seqSet{none(1), seq(5), seq(3)})
-		wantFailed(t, b.inspect(), []wf{{TrustSequence, "trust/" + names[2]}})
+		wantFailed(t, b.inspect(), []wf{{AnchorUnknown, listPathOf(names[0])}, {TrustSequence, "trust/" + names[2]}})
 	})
 	t.Run("the last", func(t *testing.T) {
 		b, names := chainOf(t, []seqSet{seq(1), none(2)})
-		wantReason(t, b.inspect(), nameNumberWords, "trust/"+names[1])
+		wantFailed(t, b.inspect(), []wf{{AnchorUnknown, listPathOf(names[1])}})
 	})
 	t.Run("a list with no sequence is not the sequence 0", func(t *testing.T) {
 		// A first list with the sequence 0 written out is a list that has a sequence, and a sequence
@@ -270,7 +265,7 @@ func TestInspectAListOfTheChainWithNoSequenceHasNoState(t *testing.T) {
 		b := chainBundle(t, false, cset{setN(1), seqList("0", kA)}, cset{setN(2), keyList(2, kA)})
 		wantFailed(t, b.inspect(), []wf{{AnchorUnknown, listPathOf(setN(1))}, {TrustSequence, "trust/" + setN(1)}})
 		b2 := chainBundle(t, false, cset{setN(1), rootsJSON(0, kA)}, cset{setN(2), keyList(2, kA)})
-		wantReason(t, b2.inspect(), unreadableWords)
+		wantFailed(t, b2.inspect(), []wf{{AnchorUnknown, listPathOf(setN(1))}})
 	})
 	t.Run("a sequence written as text", func(t *testing.T) {
 		// A list whose sequence is no integer cannot be read: the report fails, and there is no
@@ -283,8 +278,8 @@ func TestInspectAListOfTheChainWithNoSequenceHasNoState(t *testing.T) {
 	})
 }
 
-// A last set whose number is not its sequence, is not higher than the one before, or has no sequence
-// is the finding trust-sequence, and the report fails.
+// A last set whose number is not its sequence, is not higher than the one before is the finding
+// trust-sequence, and the report fails; one with no sequence is the finding anchor-unknown.
 func TestInspectTheNameNumberRefusalComesBeforeTheHighestSequence(t *testing.T) {
 	cases := map[string][]seqSet{
 		"the last list is lower and its name says another number": {{num: 3, seq: 3}, {num: 9, seq: 1}},
@@ -379,9 +374,9 @@ func TestInspectTheSequenceZeroIsAFindingOfTheAnchor(t *testing.T) {
 	})
 }
 
-// A single list with no sequence and the name 0 keeps the sentence of the name: the number in the
-// name is held to the sequence of the list before anything else.
-func TestInspectOneListWithNoSequenceKeepsTheSentenceOfTheName(t *testing.T) {
+// A single list with no sequence and the name 0 is the finding anchor-unknown: the number in the
+// name is not held to a sequence that the list does not have, and there is no State.
+func TestInspectOneListWithNoSequenceIsTheFindingOfTheAnchor(t *testing.T) {
 	b := chainBundle(t, false, cset{"0-aaaaaaaa", rootsJSON(0, kA)})
-	wantReason(t, b.inspect(), nameNumberWords, "trust/0-aaaaaaaa")
+	wantFailed(t, b.inspect(), []wf{{AnchorUnknown, listPathOf("0-aaaaaaaa")}})
 }

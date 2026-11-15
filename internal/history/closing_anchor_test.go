@@ -64,9 +64,9 @@ func TestFirstCeremonyThatStoppedAndWasClosedIsCleanWithAListThatHasNoAnchor(t *
 func TestClosingRecordThatListsALeftoverSetWithAnotherAnchorIsAnchorUnknown(t *testing.T) {
 	// Each case: the list of the leftover set that the closing record lists.
 	cases := map[string]func(b *bundle, stopped *rec, between *rec) []byte{
-		"the predecessor of the closing record": func(b *bundle, stopped, between *rec) []byte { return rootListBytes(between.digest) },
-		"a digest of no record":                 func(*bundle, *rec, *rec) []byte { return rootListBytes(digestB) },
-		"no anchor, where the plan names one":   func(*bundle, *rec, *rec) []byte { return rootListBytes("") },
+		"the predecessor of the closing record": func(b *bundle, stopped, between *rec) []byte { return rootListBytes(stopped.set, between.digest) },
+		"a digest of no record":                 func(_ *bundle, stopped, _ *rec) []byte { return rootListBytes(stopped.set, digestB) },
+		"no anchor, where the plan names one":   func(_ *bundle, stopped, _ *rec) []byte { return rootListBytes(stopped.set, "") },
 	}
 	for name, list := range cases {
 		t.Run(name, func(t *testing.T) {
@@ -85,7 +85,7 @@ func TestClosingRecordThatListsALeftoverSetWithAnotherAnchorIsAnchorUnknown(t *t
 	t.Run("an anchor, where the closed ceremony's plan names none", func(t *testing.T) {
 		b := newBundle(t)
 		stopped := b.unfinished() // the first ceremony: its plan names no end
-		b.closing(stopped, listsLeftover(stopped, rootListBytes(digestA)))
+		b.closing(stopped, listsLeftover(stopped, rootListBytes(stopped.set, digestA)))
 		rep := b.run()
 		has(t, rep, AnchorUnknown, rootListPath(stopped))
 	})
@@ -229,24 +229,24 @@ func TestPlanOfAClosedCeremonyIsReadOnceForSeveralSets(t *testing.T) {
 // record of the chain cannot be honest: no record came before the ceremony that wrote it. Before, it
 // was accepted (clean, with the closing record's own end).
 func TestLeftoverSetOfAFirstCeremonyThatStoppedAnchorsNothing(t *testing.T) {
-	build := func(t *testing.T, anchor func(between *rec) []byte) (*bundle, *rec) {
+	build := func(t *testing.T, anchor func(stopped, between *rec) []byte) (*bundle, *rec) {
 		b := newBundle(t)
 		stopped := b.unfinished() // the first: its plan names no end
 		between := b.apply(noSet)
-		b.closing(stopped, listsLeftover(stopped, anchor(between)))
+		b.closing(stopped, listsLeftover(stopped, anchor(stopped, between)))
 		return b, stopped
 	}
 	t.Run("honest: no anchor", func(t *testing.T) {
-		b, _ := build(t, func(*rec) []byte { return nil })
+		b, _ := build(t, func(_, _ *rec) []byte { return nil })
 		wantFindings(t, b.run(), nil)
 	})
 	t.Run("an anchor on a record of the chain", func(t *testing.T) {
-		b, stopped := build(t, func(between *rec) []byte { return rootListBytes(between.digest) })
+		b, stopped := build(t, func(stopped, between *rec) []byte { return rootListBytes(stopped.set, between.digest) })
 		rep := b.run()
 		wantFindings(t, rep, []wf{{AnchorUnknown, rootListPath(stopped)}})
 	})
 	t.Run("an anchor on no record", func(t *testing.T) {
-		b, stopped := build(t, func(*rec) []byte { return rootListBytes(digestA) })
+		b, stopped := build(t, func(stopped, _ *rec) []byte { return rootListBytes(stopped.set, digestA) })
 		has(t, b.run(), AnchorUnknown, rootListPath(stopped))
 	})
 }

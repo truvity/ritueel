@@ -57,8 +57,8 @@
 //     ceremony, found through the attempt the closing record names, and when that plan cannot be
 //     read the anchor is not accepted; absent exactly for the first ceremony),
 //     or is not a record on the chain; or the root list cannot be read; or its sequence is below 1
-//     (a sequence is an integer of at least 1). The keys of a list with a sequence below 1 are still
-//     read, so that the list hides no key from the later lists.
+//     or not there (a sequence is an integer of at least 1). The keys of a list with a sequence below
+//     1, or with none, are still read, so that the list hides no key from the later lists.
 //   - root-returns: a root list holds a root key that left the root list (record 0006, rule 54): an
 //     earlier list held its pin and the list directly before it did not, or an earlier list held
 //     its OpenPGP fingerprint, under any pin, and the list directly before it does not hold it
@@ -98,7 +98,7 @@
 //     [FindReturns] is the same rule for one list and the lists before it.
 //   - trust-sequence: the trust sets that ordinary ceremony records list, taken in the order of the
 //     chain of records (never in the order of the numbers), have a number in the folder name that is
-//     not the sequence of their root list (a list with no sequence is not compared), or a number that
+//     not the sequence of their root list (a list with no sequence is not compared; it is the finding anchor-unknown), or a number that
 //     is not higher than the number of the set before it (record 0006, rules 14 and 21). A skip is
 //     allowed. A name with no trust number gives the finding too. Left out are the sets of a fork,
 //     the sets that a closing record lists, a set that records with different predecessors list,

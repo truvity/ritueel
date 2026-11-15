@@ -221,7 +221,7 @@ func TestInspectGivesTheReportOfCheck(t *testing.T) {
 		build func(t *testing.T) *bundle
 		state bool // a State is expected
 	}{
-		{"three records", func(t *testing.T) *bundle { b, _ := threeRecords(t); return b }, false},
+		{"three records", func(t *testing.T) *bundle { b, _ := threeRecords(t); return b }, true},
 		{"a chain of numbered sets", func(t *testing.T) *bundle { return numbered(t, false, 4) }, true},
 		{"a chain in memory", func(t *testing.T) *bundle { return numbered(t, true, 4) }, true},
 		{"a stopped ceremony", func(t *testing.T) *bundle {

@@ -56,10 +56,10 @@ func handmadeBundle(t testing.TB) handmade {
 		wanted := "name: bundle " + n + "\n"
 		transcript := "ceremony " + n + "\n"
 		keys := "keys of set " + n + "\n"
-		rootList := `{"version":1}`
+		rootList := `{"sequence":` + n + `,"version":1}`
 		plan := `{"ceremony":"` + c + `","command":"apply","trust_sequence":` + n + `,"version":1,"wanted":[{"path":"ritueel.yaml","sha256":"` + sum(wanted) + `"}]}`
 		if prev != "" {
-			rootList = `{"last_record_sha256":"` + prev + `","version":1}`
+			rootList = `{"last_record_sha256":"` + prev + `","sequence":` + n + `,"version":1}`
 			plan = `{"ceremony":"` + c + `","command":"apply","last_record_sha256":"` + prev + `","trust_sequence":` + n + `,"version":1,"wanted":[{"path":"ritueel.yaml","sha256":"` + sum(wanted) + `"}]}`
 		}
 		attempt := `{"ceremony":"` + c + `","plan_sha256":"` + sum(plan) + `","version":1}`
