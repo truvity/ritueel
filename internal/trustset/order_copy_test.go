@@ -350,7 +350,8 @@ func TestTheDraftTellsTheFolderBeforeTheSignature(t *testing.T) {
 	for _, e := range ents {
 		names = append(names, e.Name())
 	}
-	want := trustset.FileNames()
+	// The list pins OpenPGP primaries, so the folder holds the keyring file as well.
+	want := append(trustset.FileNames(), trustset.KeyringFile)
 	if len(names) != len(want) {
 		t.Fatalf("the folder holds %v, want %v", names, want)
 	}

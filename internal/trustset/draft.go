@@ -9,6 +9,7 @@ import (
 
 	"ritueel.id/ritueel/internal/history"
 	"ritueel.id/ritueel/internal/jws"
+	"ritueel.id/ritueel/internal/openpgp"
 	"ritueel.id/ritueel/internal/rootlist"
 )
 
@@ -24,6 +25,12 @@ type Input struct {
 	// Certificates holds, for the label of each root of the new list, the DER of the current
 	// certificate of the root key. It holds no other label.
 	Certificates map[string][]byte
+	// OpenPGPCertificates holds, for the label of each root of the new list that has an
+	// OpenPGPFingerprint, the public certificate of its OpenPGP primary: the binary packets that
+	// openpgp.NewPrimary returned, with every later certification added (the first form of the
+	// keyring file). It holds exactly the labels of those roots and no other label. For a list
+	// whose roots have no fingerprint it is nil or empty, and the set then has no keyring file.
+	OpenPGPCertificates map[string][]byte
 	// LastRecordSHA256 is the end of the history when the plan was made; empty only for sequence 1.
 	LastRecordSHA256 string
 	// Previous is the bytes of the previous root-list.json; nil only for sequence 1.
@@ -49,6 +56,12 @@ type Draft struct {
 	listJSON, caBundle []byte
 	listSHA, caSHA     string
 
+	// keyring is the keyring file in its first form: the certificates of the primaries that the
+	// list pins, joined in the order of the list. It is nil, with no digest, for a list that pins
+	// none.
+	keyring    []byte
+	keyringSHA string
+
 	// previous is the previous root-list.json; nil for a first list.
 	previous []byte
 	// pins are the pins of the roots of the new list.
@@ -66,7 +79,8 @@ type Draft struct {
 // entries, the shape of the change and so who signs, the keys that came back, the labels that are
 // never reused (a key that left and comes back under another label is told as a return first:
 // record 0006, rule 54), the certificates, the stored authorisations, and last the list and the bundle, which
-// the reader of the page must accept. No key is used. Every error wraps ErrParams, ErrReturns or
+// the reader of the page must accept, and, for a list that pins OpenPGP primaries, the keyring file,
+// which openpgp.ReadKeyring must accept with the entries of the list. No key is used. Every error wraps ErrParams, ErrReturns or
 // ErrSelf, and no Draft comes with an error.
 func NewDraft(in Input) (*Draft, error) {
 	// The bytes that are read are the bytes that are kept: the copy is made first, so a caller
@@ -74,6 +88,9 @@ func NewDraft(in Input) (*Draft, error) {
 	in.Previous = slices.Clone(in.Previous)
 	if len(in.Roots) > MaxRoots || len(in.Certificates) > MaxRoots {
 		return nil, fail(ErrParams, "a list holds at most %d root keys and %d certificates are given for at most that many", MaxRoots, MaxRoots)
+	}
+	if len(in.OpenPGPCertificates) > MaxRoots {
+		return nil, fail(ErrParams, "a list holds at most %d root keys and %d OpenPGP certificates are given for at most that many", MaxRoots, MaxRoots)
 	}
 	if err := checkSequence(in.Sequence); err != nil {
 		return nil, err
@@ -152,7 +169,64 @@ func NewDraft(in Input) (*Draft, error) {
 		return nil, failWith(ErrSelf, "the reader of the page refuses the CA bundle that was written", textError(v.Detail))
 	}
 	d.listSHA, d.caSHA = hexSHA256(d.listJSON), hexSHA256(d.caBundle)
+	if d.keyring, err = keyringOf(roots, in.OpenPGPCertificates); err != nil {
+		return nil, err
+	}
+	if d.keyring != nil {
+		d.keyringSHA = hexSHA256(d.keyring)
+	}
 	return d, nil
+}
+
+// pinnedEntries returns the entries of roots that have an OpenPGP fingerprint, as the reader of the
+// keyring file takes them, in the order of roots.
+func pinnedEntries(roots []Root) []openpgp.KeyringEntry {
+	var entries []openpgp.KeyringEntry
+	for _, r := range roots {
+		if r.OpenPGPFingerprint != "" {
+			entries = append(entries, openpgp.KeyringEntry{Label: r.Label, Fingerprint: r.OpenPGPFingerprint})
+		}
+	}
+	return entries
+}
+
+// keyringOf makes the keyring file of the first form from the certificates that the caller gave: the
+// certificates of the roots that have a fingerprint, joined in the order of roots (label order, as
+// the list is written), and nothing else. The result is nil for a list that pins no primary, and a
+// map of certificates for such a list is refused. The file is then asked of openpgp.ReadKeyring with
+// the entries of roots, and its refusal is an ErrParams that carries the sentence of the reader
+// (record 0005, rule 12: the bytes are judged by the reader before any key is touched). The roots are
+// sorted and hold a fingerprint in all entries or in none (checkRoots).
+func keyringOf(roots []Root, certs map[string][]byte) ([]byte, error) {
+	entries := pinnedEntries(roots)
+	if len(entries) == 0 {
+		if len(certs) != 0 {
+			return nil, fail(ErrParams, "%d OpenPGP certificates are given and no root has an OpenPGP fingerprint", len(certs))
+		}
+		return nil, nil
+	}
+	if len(certs) != len(entries) {
+		return nil, fail(ErrParams, "there are %d OpenPGP certificates for %d roots that have an OpenPGP fingerprint", len(certs), len(entries))
+	}
+	parts := make([][]byte, 0, len(entries))
+	for _, e := range entries {
+		cert, ok := certs[e.Label]
+		if !ok {
+			return nil, fail(ErrParams, "there is no OpenPGP certificate for root %s", e.Label)
+		}
+		if len(cert) == 0 {
+			return nil, fail(ErrParams, "the OpenPGP certificate of root %s is empty", e.Label)
+		}
+		if len(cert) > MaxBytes {
+			return nil, fail(ErrParams, "the OpenPGP certificate of root %s is longer than %d bytes", e.Label, MaxBytes)
+		}
+		parts = append(parts, cert)
+	}
+	file := slices.Concat(parts...)
+	if _, err := openpgp.ReadKeyring(file, entries); err != nil {
+		return nil, failWith(ErrParams, "the reader of the keyring file refuses the OpenPGP certificates", err)
+	}
+	return file, nil
 }
 
 // certificatesOf returns the DER certificates of the roots, in the order of roots. The map holds
@@ -257,6 +331,28 @@ func (d *Draft) CABundleSHA256() string {
 		return ""
 	}
 	return d.caSHA
+}
+
+// Keyring returns a copy of the bytes of the keyring file: the certificates of the primaries that the
+// list pins, in the order of the list. It is nil for a list that pins no primary, and for a zero or
+// nil Draft.
+func (d *Draft) Keyring() []byte {
+	if !d.valid() || d.keyring == nil {
+		return nil
+	}
+	return slices.Clone(d.keyring)
+}
+
+// KeyringSHA256 returns the SHA-256 of the keyring file in 64 lower-case hexadecimal digits, for the
+// caller's journal once the certificates exist. It is empty for a list that pins no primary, and for
+// a zero or nil Draft. The plan names no digest for the file: a primary that is born in the ceremony
+// has a self-certification that no one can fix before its key exists, and the ceremony record lists
+// the file with the digest of the bytes that were read back.
+func (d *Draft) KeyringSHA256() string {
+	if !d.valid() || d.keyring == nil {
+		return ""
+	}
+	return d.keyringSHA
 }
 
 // Required returns the labels that must sign, in label order. It is empty for KindFirst and

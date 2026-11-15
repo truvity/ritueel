@@ -63,23 +63,29 @@ func TestSetAccessors(t *testing.T) {
 	}
 }
 
-// Files has the three names in the order of FileNames, each with FileMode and the bytes of the set,
-// and the data are copies.
+// Files has the three names in the order of FileNames and then the keyring file, because the list
+// of this set pins OpenPGP primaries; each has FileMode and the bytes of the set, and the data are
+// copies.
 func TestSetFiles(t *testing.T) {
 	_, s := aSet(t)
 	files := s.Files()
 	names := trustset.FileNames()
-	if len(files) != 3 || len(names) != 3 {
+	if len(files) != 4 || len(names) != 3 {
 		t.Fatalf("%d files, %d names", len(files), len(names))
 	}
 	want := map[string][]byte{
 		trustset.RootListFile:    s.ListJSON(),
 		trustset.RootListJWSFile: s.ListJWS(),
 		trustset.CABundleFile:    s.CABundle(),
+		trustset.KeyringFile:     s.Keyring(),
 	}
 	for i, f := range files {
-		if f.Name != names[i] {
-			t.Errorf("file %d is %q, want %q", i, f.Name, names[i])
+		wantName := trustset.KeyringFile
+		if i < len(names) {
+			wantName = names[i]
+		}
+		if f.Name != wantName {
+			t.Errorf("file %d is %q, want %q", i, f.Name, wantName)
 		}
 		if f.Perm != 0o644 {
 			t.Errorf("%s has mode %v", f.Name, f.Perm)
@@ -155,6 +161,8 @@ func TestSetWrite(t *testing.T) {
 			want = s.ListJWS()
 		case "ca-bundle.pem":
 			want = s.CABundle()
+		case "keyring.gpg":
+			want = s.Keyring()
 		}
 		if !bytes.Equal(data, want) {
 			t.Errorf("%s holds other bytes", e.Name())
@@ -168,7 +176,7 @@ func TestSetWrite(t *testing.T) {
 		}
 	}
 	slices.Sort(got)
-	if !slices.Equal(got, []string{"ca-bundle.pem", "root-list.json", "root-list.jws"}) {
+	if !slices.Equal(got, []string{"ca-bundle.pem", "keyring.gpg", "root-list.json", "root-list.jws"}) {
 		t.Errorf("the folder holds %v", got)
 	}
 	// A second write to the name fails and changes nothing.
@@ -409,9 +417,9 @@ func TestSetWriteCutAtEachStep(t *testing.T) {
 			t.Errorf("step %d: the error is ErrParams: %v", at, err)
 		}
 		if statErr == nil {
-			// The rename or the flush after it failed: the folder is whole, with the three files.
+			// The rename or the flush after it failed: the folder is whole, with the four files.
 			ents, _ := os.ReadDir(filepath.Join(dir, "trust", final))
-			if len(ents) != 3 {
+			if len(ents) != 4 {
 				t.Errorf("step %d: the folder at finalDir holds %d files", at, len(ents))
 			}
 		}

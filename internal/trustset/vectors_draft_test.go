@@ -89,12 +89,24 @@ func vectorInput(t testing.TB, m *vectorManifest, id, previousID string, deps []
 			Label       string `json:"label"`
 			Certificate string `json:"certificate"`
 			Pin         string `json:"x509_spki_sha256"`
+			OpenPGP     string `json:"openpgp"`
+			Fingerprint string `json:"openpgp_fingerprint"`
 		}) bool {
 			return x.Label == r.Label
 		}) {
 			in.Certificates[r.Label] = m.certificate(t, r.Label)
 		} else {
 			in.Certificates[r.Label] = m.certificate(t, "A")
+		}
+		// The certificate of the primary that the entry names, from the vector set (the member
+		// openpgp of the manifest). An entry whose fingerprint no vector primary has gets none.
+		if r.OpenPGPFingerprint != "" {
+			if cert := m.primary(t, r.OpenPGPFingerprint); cert != nil {
+				if in.OpenPGPCertificates == nil {
+					in.OpenPGPCertificates = map[string][]byte{}
+				}
+				in.OpenPGPCertificates[r.Label] = cert
+			}
 		}
 	}
 	if previousID != "" {
