@@ -4,22 +4,26 @@ import (
 	"bytes"
 	"context"
 	"crypto/ecdsa"
+	"crypto/elliptic"
 	"crypto/sha256"
 	"crypto/x509"
 	"encoding/hex"
 	"encoding/json"
 	"encoding/pem"
-	"errors"
 	"fmt"
 	"io/fs"
 	"os"
 	"path"
 	"path/filepath"
+	"regexp"
 	"sort"
 	"strconv"
 	"strings"
 	"testing"
 	"time"
+
+	pgp "github.com/ProtonMail/go-crypto/openpgp"
+	pgpecdsa "github.com/ProtonMail/go-crypto/openpgp/ecdsa"
 
 	"ritueel.id/ritueel/internal/fsx"
 	"ritueel.id/ritueel/internal/handoff"
@@ -227,9 +231,27 @@ func crqDelegationText(t testing.TB, c crqCase, cfg crqConfig) string {
 	return b.String()
 }
 
+// crqKeyringFile is the name of the keyring file inside a trust set. It is written here once, for the test
+// bundles that put the file in place or take it out.
+const crqKeyringFile = "keyring.gpg"
+
+// crqKeyring is the keyring file of the primaries given by their letters (a, b, c or z): the certificate
+// files of the root list vectors, joined in the order given.
+func crqKeyring(t testing.TB, letters ...string) []byte {
+	t.Helper()
+	var out []byte
+	for _, l := range letters {
+		out = append(out, crqRead(t, "root-list", "v1", "pki", "test-primary-"+l+".pgp")...)
+	}
+	if len(out) == 0 {
+		t.Fatal("a keyring file with no certificate")
+	}
+	return out
+}
+
 // crqTrust is the files of the trust set of the sequence 7 of the root list vectors: the list with the test
-// roots A and B, and the CA bundle of that list. The signature is made by the vectors and copied; the command
-// does not read it.
+// roots A and B, the CA bundle of that list and the keyring file of its two primaries (a, then b, the order of
+// the list). The signature is made by the vectors and copied; the command does not read it.
 func crqTrust(t testing.TB) crqTree {
 	t.Helper()
 	at := "trust/" + crqTrustSet + "/"
@@ -237,7 +259,71 @@ func crqTrust(t testing.TB) crqTree {
 		at + "root-list.json": crqRead(t, "root-list", "v1", "lists", "seq7-a.json"),
 		at + "root-list.jws":  crqRead(t, "root-list", "v1", "lists", "seq7-a.jws"),
 		at + "ca-bundle.pem":  crqRead(t, "root-list", "v1", "bundles", "ca-bundle-7.pem"),
+		at + crqKeyringFile:   crqKeyring(t, "a", "b"),
 	}
+}
+
+// crqRingPrimaries are the primaries of a keyring file as a second reader gives them: go-crypto reads the file, and
+// the fingerprint, the key and the creation time of each primary are taken from its key packet. The command's own
+// reader (package openpgp) is not used, so a fault of that reader cannot hide on both sides of a comparison.
+func crqRingPrimaries(t testing.TB, file []byte) []handoff.PrimaryRef {
+	t.Helper()
+	ring, err := pgp.ReadKeyRing(bytes.NewReader(file))
+	if err != nil || len(ring) == 0 {
+		t.Fatalf("go-crypto cannot read the keyring file: %v", err)
+	}
+	var out []handoff.PrimaryRef
+	for _, e := range ring {
+		pub, ok := e.PrimaryKey.PublicKey.(*pgpecdsa.PublicKey)
+		if !ok {
+			t.Fatalf("go-crypto reads a key of type %T", e.PrimaryKey.PublicKey)
+		}
+		pt := make([]byte, 97)
+		pt[0] = 4
+		pub.X.FillBytes(pt[1:49])
+		pub.Y.FillBytes(pt[49:])
+		key, err := ecdsa.ParseUncompressedPublicKey(elliptic.P384(), pt)
+		if err != nil {
+			t.Fatal(err)
+		}
+		out = append(out, handoff.PrimaryRef{Fingerprint: hex.EncodeToString(e.PrimaryKey.Fingerprint), Key: key, Created: e.PrimaryKey.CreationTime.UTC()})
+	}
+	return out
+}
+
+// crqFingerprintMember is the member of a root list that pins an OpenPGP primary, with the comma after it.
+var crqFingerprintMember = regexp.MustCompile(`"openpgp_fingerprint":"[0-9a-f]{40}",`)
+
+// crqTrustWithoutPrimaries is the trust set of crqTrust whose list pins no OpenPGP primary: the members
+// openpgp_fingerprint are cut from the list as text (the reader of the list does not need the canonical form), and
+// there is no keyring file. The signature file is the one of the whole list and does not fit; the command does
+// not read it.
+func crqTrustWithoutPrimaries(t testing.TB) crqTree {
+	t.Helper()
+	tr := crqTrust(t)
+	at := "trust/" + crqTrustSet + "/"
+	list := tr[at+"root-list.json"]
+	cut := crqFingerprintMember.ReplaceAll(list, nil)
+	if bytes.Equal(cut, list) || bytes.Contains(cut, []byte("openpgp_fingerprint")) {
+		t.Fatal("the fingerprints were not cut from the list")
+	}
+	tr[at+"root-list.json"] = cut
+	delete(tr, at+crqKeyringFile)
+	return tr
+}
+
+// crqWithTrust is the tree with the files of its trust set replaced by the files of another.
+func crqWithTrust(tree, trust crqTree) crqTree {
+	out := crqTree{}
+	for p, d := range tree {
+		if !strings.HasPrefix(p, "trust/") {
+			out[p] = d
+		}
+	}
+	for p, d := range trust {
+		out[p] = d
+	}
+	return out
 }
 
 // crqRequestFiles is the files of a case under requests/STEM/, by the name after the stem.
@@ -331,9 +417,9 @@ func crqRoots(t testing.TB, m crqManifest) []handoff.RootRef {
 }
 
 // crqLibrary is the library run of a case, made the way the command makes its own: the policy and the
-// delegation of the configuration, the roots of the vectors, the clock of the vectors, no verifier and no
-// primaries. It returns what Check returned; for an openpgp-subkey delegation it returns the ErrConfig of New,
-// because that type needs primaries and the command has none to give.
+// delegation of the configuration, the roots of the vectors, the clock of the vectors, no verifier and the
+// primaries of the keyring file of the test trust set, read by another reader than the command's. It returns what
+// Check returned.
 func crqLibrary(t testing.TB, m crqManifest, c crqCase) (handoff.Verdict, error) {
 	t.Helper()
 	return crqLibraryWith(t, m, c, true)
@@ -385,13 +471,14 @@ func crqLibraryWith(t testing.TB, m crqManifest, c crqCase, withDelegation bool)
 		d = nil
 	}
 	clock := m.clock(t)
-	checker, err := handoff.New(handoff.Config{Policy: p, Delegation: d, Roots: crqRoots(t, m), Now: func() time.Time { return clock }})
+	cfg2 := handoff.Config{Policy: p, Delegation: d, Roots: crqRoots(t, m), Now: func() time.Time { return clock }}
+	// The checker holds the primaries of the trust set with no delegation and with a delegation of the type
+	// openpgp-subkey, and none beside a delegation of another type (the library refuses them there).
+	if !withDelegation || c.Type == "openpgp-subkey" {
+		cfg2.Primaries = crqRingPrimaries(t, crqKeyring(t, "a", "b"))
+	}
+	checker, err := handoff.New(cfg2)
 	if err != nil {
-		// An openpgp-subkey delegation with no primaries is refused by New with ErrConfig, as it is for the
-		// command (bundle.Checker). Nothing else may fail here.
-		if c.Type == "openpgp-subkey" && withDelegation && errors.Is(err, handoff.ErrConfig) {
-			return handoff.Verdict{}, err
-		}
 		t.Fatalf("the library cannot be made for %s: %v", c.ID, err)
 	}
 	root, err := fsx.OpenFS(testrepo.Path(t, crqVectorsDir))
@@ -491,6 +578,20 @@ func crqChecks(t testing.TB, obj map[string]any) [][2]string {
 			t.Fatalf("an entry of checks has a wrong type: %v", e)
 		}
 		out = append(out, [2]string{n.String(), res})
+	}
+	return out
+}
+
+// crqRingPrimariesOrNil are the fingerprints that go-crypto reads from a keyring file, in order, or nil when it
+// cannot read the file as a keyring.
+func crqRingPrimariesOrNil(file []byte) []string {
+	ring, err := pgp.ReadKeyRing(bytes.NewReader(file))
+	if err != nil || len(ring) == 0 {
+		return nil
+	}
+	var out []string
+	for _, e := range ring {
+		out = append(out, hex.EncodeToString(e.PrimaryKey.Fingerprint))
 	}
 	return out
 }

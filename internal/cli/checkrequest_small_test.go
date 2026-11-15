@@ -18,6 +18,7 @@ import (
 
 	"ritueel.id/ritueel/internal/fsx"
 	"ritueel.id/ritueel/internal/handoff"
+	"ritueel.id/ritueel/internal/jsonset"
 	"ritueel.id/ritueel/internal/testrepo"
 )
 
@@ -353,12 +354,13 @@ func TestFlagCountCountsTheTimesAFlagWasGiven(t *testing.T) {
 
 const otherDelegation = "my-subkey"
 
-// subkeyDelegationBundle is the bundle of an x509 request with a delegation of the type openpgp-subkey under a name.
+// subkeyDelegationBundle is the bundle of a request with a delegation of the type openpgp-subkey under a name, with a
+// trust set whose root list pins no OpenPGP primary.
 func subkeyDelegationBundle(t *testing.T, id, name string) (m crqManifest, c crqCase, dir string) {
 	t.Helper()
 	m = crqManifestOf(t)
 	c = m.byID(t, id)
-	tree := crqBundleTree(t, m, c)
+	tree := crqWithTrust(crqBundleTree(t, m, c), crqTrustWithoutPrimaries(t))
 	tree["want/roots/"+crqRoot+".yaml"] = []byte("version: 1\nkind: openpgp\ntest: true\n")
 	delete(tree, "want/delegations/"+crqDelegation+".yaml")
 	tree["want/delegations/"+name+".yaml"] = []byte("version: 1\ntype: openpgp-subkey\nroot: " + crqRoot + "\ncapability: sign\n")
@@ -373,8 +375,7 @@ func TestAnX509RequestUnderAnOpenPGPDelegationGetsASentenceThatNamesTheDelegatio
 	m, c, dir := subkeyDelegationBundle(t, "x509-software-valid", otherDelegation)
 	before := crqSnapshot(t, dir)
 	want := "request " + c.stem(t) + " is not accepted and not refused: this command cannot judge a request under the delegation " +
-		otherDelegation + ", which is of the type openpgp-subkey: it cannot give the checker the OpenPGP primaries, " +
-		"because where they are read from is not decided"
+		otherDelegation + ", which is of the type openpgp-subkey: the newest root list pins no OpenPGP primary"
 	text := crqRun(t, m.clock(t), "check", "request", c.stem(t), "--delegation", otherDelegation, "--dir", dir)
 	js := crqRun(t, m.clock(t), "--output", "json", "check", "request", c.stem(t), "--delegation", otherDelegation, "--dir", dir)
 	for _, r := range []result{text, js} {
@@ -415,28 +416,32 @@ func TestTheSentenceOfAnOpenPGPDelegationDoesNotDependOnTheTypeOfTheRequest(t *t
 	}
 }
 
-// The neighbours: an OpenPGP request under a delegation of another type, and under none, keep the sentence about the
-// request.
-func TestAnOpenPGPRequestKeepsItsOwnSentenceUnderAnotherDelegationAndUnderNone(t *testing.T) {
+// The neighbours: an OpenPGP request under no delegation keeps the sentence about the request, and under a delegation
+// of another type it has the sentence about that delegation (the checker holds no primaries beside it, whatever the
+// list pins). The root list of the trust set pins no primary here.
+func TestAnOpenPGPRequestKeepsItsOwnSentenceUnderNoDelegationAndHasTheDelegationSentenceUnderAnotherType(t *testing.T) {
 	m := crqManifestOf(t)
 	c := m.byID(t, "pgp-software-valid")
-	tree := crqBundleTree(t, m, c)
+	tree := crqWithTrust(crqBundleTree(t, m, c), crqTrustWithoutPrimaries(t))
 	tree["want/roots/"+crqRoot+".yaml"] = []byte("version: 1\nkind: x509\ntest: true\n")
 	tree["want/delegations/"+crqDelegation+".yaml"] = []byte("version: 1\ntype: x509-intermediate\nroot: " + crqRoot + "\npermitted_uri_hosts: [example.org]\n")
 	dir := t.TempDir()
 	crqWrite(t, dir, tree)
-	for _, args := range [][]string{{"--delegation", crqDelegation}, nil} {
-		r := crqRun(t, m.clock(t), append([]string{"check", "request", c.stem(t), "--dir", dir}, args...)...)
-		if r.code != ExitFailure || !strings.Contains(r.stderr, primariesText) || strings.Contains(r.stderr, "under the delegation") {
-			t.Errorf("%v: (%d, %q), want exit code 1 and the sentence about the request", args, int(r.code), r.stderr)
-		}
+	with := crqRun(t, m.clock(t), "check", "request", c.stem(t), "--delegation", crqDelegation, "--dir", dir)
+	wantWith := "ritueel: request " + c.stem(t) + " is not accepted and not refused: " + otherTypeSentence(crqDelegation, "x509-intermediate") + " (the first check that did not run is check 3)\n"
+	if with.code != ExitFailure || with.stderr != wantWith {
+		t.Errorf("under an x509 delegation: (%d, %q), want exit code 1 and %q", int(with.code), with.stderr, wantWith)
+	}
+	without := crqRun(t, m.clock(t), "check", "request", c.stem(t), "--dir", dir)
+	if without.code != ExitFailure || !strings.Contains(without.stderr, primariesText) || strings.Contains(without.stderr, "under the delegation") {
+		t.Errorf("under none: (%d, %q), want exit code 1 and the sentence about the request", int(without.code), without.stderr)
 	}
 }
 
 // The error carries the checker's error for errors.Is, and its text does not hold what the library said.
 func TestTheErrorOfAnOpenPGPDelegationWrapsTheErrorOfTheChecker(t *testing.T) {
 	cause := fmt.Errorf("%w", handoff.ErrNoPrimaries)
-	err := fmt.Errorf("request stem is not accepted and not refused: %w", delegationPrimariesError{name: otherDelegation, err: cause})
+	err := fmt.Errorf("request stem is not accepted and not refused: %w", sentenceError{text: fmt.Sprintf(delegationNoPrimariesSentence, jsonset.EscapeExact(otherDelegation)), err: cause})
 	if !errors.Is(err, handoff.ErrConfig) || !errors.Is(err, cause) {
 		t.Errorf("the error does not wrap the checker's error: %v", err)
 	}
@@ -451,7 +456,7 @@ func TestTheErrorOfAnOpenPGPDelegationWrapsTheErrorOfTheChecker(t *testing.T) {
 	}
 	// The name is written by the exact escape of a name; a name that is not valid cannot come here, but a text of a
 	// person never reaches a terminal raw.
-	hostile := delegationPrimariesError{name: "a b\\c\x1b", err: cause}
+	hostile := sentenceError{text: fmt.Sprintf(delegationNoPrimariesSentence, jsonset.EscapeExact("a b\\c\x1b")), err: cause}
 	if want := "this command cannot judge a request under the delegation a\\x20b\\\\c\\u001b, which is of the type openpgp-subkey: "; !strings.HasPrefix(hostile.Error(), want) {
 		t.Errorf("Error() = %q, want it to start with %q", hostile.Error(), want)
 	}
