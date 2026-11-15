@@ -355,7 +355,8 @@ func TestRootListWithAnythingElseInItIsNotLookedInto(t *testing.T) {
 func TestRootListVectorsOfTheRepository(t *testing.T) {
 	t.Run("a list with an anchor that is no record of this bundle", func(t *testing.T) {
 		b := newBundle(t)
-		r := b.apply(func(r *rec) {
+		// The set is named for the sequence of the vector, 7, so that the numbers agree.
+		r := b.apply(setName("7-3fa9c1d3"), func(r *rec) {
 			r.artifacts["trust/"+r.set+"/root-list.json"] = testrepo.Read(t, "testdata", "root-list", "v1", "lists", "seq7-a.json")
 			r.refresh()
 		})
@@ -376,7 +377,9 @@ func TestRootListVectorsOfTheRepository(t *testing.T) {
 			r.artifacts["trust/"+r.set+"/root-list.json"] = testrepo.Read(t, "testdata", "root-list", "v1", "lists", "init-a.json")
 			r.refresh()
 		})
-		wantFindings(t, b.run(), []wf{{AnchorUnknown, "trust/" + r.set + "/root-list.json"}})
+		// The vector has the sequence 1, and the set stands second under the number 2: the finding
+		// trust-sequence is at it too.
+		wantFindings(t, b.run(), []wf{{AnchorUnknown, "trust/" + r.set + "/root-list.json"}, {TrustSequence, "trust/" + r.set}})
 	})
 	for _, name := range []string{"seq8-a-unknown-member.json", "seq8-a-version-2.json"} {
 		t.Run(name+" gives its anchor", func(t *testing.T) {
@@ -390,7 +393,7 @@ func TestRootListVectorsOfTheRepository(t *testing.T) {
 			}
 			anchor := found[1]
 			// The anchor is a record of this bundle: the list is read, not refused.
-			b.apply(func(r *rec) {
+			b.apply(setName("8-3fa9c1d3"), func(r *rec) {
 				r.artifacts["trust/"+r.set+"/root-list.json"] = []byte(strings.Replace(list, anchor, first.digest, 1))
 				r.refresh()
 			})

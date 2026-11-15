@@ -519,14 +519,14 @@ func TestRootReturnsInABundleOfCeremonies(t *testing.T) {
 	})
 }
 
-// codes: root-returns is a name of the page, after anchor-unknown and before unexpected-name.
+// codes: root-returns is a name of the page, after anchor-unknown and before trust-sequence.
 func TestRootReturnsIsAFailingCodeInThePlaceOfThePage(t *testing.T) {
 	codes := Codes()
 	i := slices.Index(codes, RootReturns)
 	if i < 0 {
 		t.Fatal("no code root-returns")
 	}
-	if codes[i-1] != AnchorUnknown || codes[i+1] != UnexpectedName {
+	if codes[i-1] != AnchorUnknown || codes[i+1] != TrustSequence {
 		t.Errorf("root-returns stands between %s and %s", codes[i-1], codes[i+1])
 	}
 	if string(RootReturns) != "root-returns" {

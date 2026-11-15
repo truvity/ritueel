@@ -286,7 +286,8 @@ func TestInspectGivesTheReportOfCheck(t *testing.T) {
 // A chain of 1, 2, 5 and 26 ceremonies, each with its set: the lists are in the order of the
 // ceremonies, the newest is the last, the end is the digest of the last record, the count is the
 // count of records. The names are those of the plain run of numbers, and then names that run
-// against the order of the chain: the order is the chain and not the names.
+// against the order of the chain: the order is the chain and not the names, so a number that does
+// not grow is the finding trust-sequence at the set where the chain puts it.
 func TestInspectPutsTheListsInTheOrderOfTheChain(t *testing.T) {
 	for _, n := range []int{1, 2, 5, 26} {
 		for _, style := range []string{"ascending", "descending", "shuffled"} {
@@ -321,6 +322,17 @@ func TestInspectPutsTheListsInTheOrderOfTheChain(t *testing.T) {
 				}
 				b := chainBundle(t, false, sets...)
 				in := b.inspect()
+				if style != "ascending" {
+					// A number that does not grow along the chain is the finding trust-sequence: the
+					// order is the chain, never the numbers, so these sets are found where the chain
+					// puts them, and there is no State.
+					if len(modelTrustSeq(sets)) == 0 {
+						wantState(t, in, names...) // one set, or two that grow
+						return
+					}
+					wantModel(t, in, sets)
+					return
+				}
 				st := wantState(t, in, names...)
 				if st.Records != n {
 					t.Errorf("Records = %d, want %d", st.Records, n)
@@ -495,19 +507,14 @@ func TestInspectStateIsACopy(t *testing.T) {
 }
 
 // The newest set is the last of the chain: the one a ceremony writes last, whatever the names of
-// the earlier sets say. Its sequence is the highest of all lists, so the names before it may fall.
+// the earlier sets say. A name that is lower than the one before it is the finding trust-sequence,
+// at that set and at no other, so there is no State.
 func TestInspectNewestIsTheLastOfTheChainNotTheHighestName(t *testing.T) {
-	b := chainBundle(t, false,
-		cset{"9-aaaaaaaa", keyList(9, kA)}, cset{"8-aaaaaaaa", keyList(8, kA)}, cset{"12-aaaaaaaa", keyList(12, kA)})
-	st := wantState(t, b.inspect(), "9-aaaaaaaa", "8-aaaaaaaa", "12-aaaaaaaa")
-	if st.Newest.Name != "12-aaaaaaaa" || st.Newest.Number != 12 {
-		t.Errorf("Newest = %+v", *st.Newest)
-	}
-	// The same names with the last one lowest: the last of the chain does not hold the highest
-	// sequence, so there is no State, whatever the names say.
-	low := chainBundle(t, false,
-		cset{"9-aaaaaaaa", keyList(9, kA)}, cset{"8-aaaaaaaa", keyList(8, kA)}, cset{"7-aaaaaaaa", keyList(7, kA)})
-	wantOrderErr(t, low.inspect())
+	sets := []cset{{"9-aaaaaaaa", keyList(9, kA)}, {"8-aaaaaaaa", keyList(8, kA)}, {"12-aaaaaaaa", keyList(12, kA)}}
+	wantFailed(t, chainBundle(t, false, sets...).inspect(), []wf{{TrustSequence, "trust/8-aaaaaaaa"}})
+	// The same names with the last one lowest: both falls are found.
+	low := []cset{{"9-aaaaaaaa", keyList(9, kA)}, {"8-aaaaaaaa", keyList(8, kA)}, {"7-aaaaaaaa", keyList(7, kA)}}
+	wantFailed(t, chainBundle(t, false, low...).inspect(), []wf{{TrustSequence, "trust/8-aaaaaaaa"}, {TrustSequence, "trust/7-aaaaaaaa"}})
 }
 
 // A set that has no root list (a personal bundle's set, record 0006, rule 12) is no list of the
