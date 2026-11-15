@@ -361,26 +361,7 @@ func (ck *checker) rootReturns() error {
 	if len(ck.rootLists) == 0 {
 		return nil
 	}
-	var all []placing
-	var placed, floating []setList
-	multi := false
-	// Records that are all off the chain (two records with no predecessor, for one) give no set a
-	// place: every root list is judged as a list whose place cannot be told. A bundle with no
-	// ceremony record keeps the places that its root lists claim.
-	noChain := len(ck.recs) > 0 && len(ck.onChain) == 0
-	for _, l := range ck.rootLists {
-		var ps []placing
-		if !noChain {
-			ps = ck.placingsOf(l)
-		}
-		if len(ps) == 0 {
-			floating = append(floating, l)
-			continue
-		}
-		multi = multi || len(ps) > 1
-		placed = append(placed, l)
-		all = append(all, ps...)
-	}
+	all, placed, floating, multi := ck.placeLists()
 	order := inPlaces(all, setKeys(placed))
 	w := &retWalk{ck: ck, places: order.places, doubts: map[[2]int][]string{}}
 	if multi {
@@ -418,6 +399,32 @@ func (ck *checker) rootReturns() error {
 		}
 	}
 	return ck.floatingReturns(placed, floating)
+}
+
+// placeLists puts each root list of the walk at the places where it stands: all holds one placing
+// for each place of each list that has a place, placed those lists once each, floating the lists
+// whose place cannot be told, and multi says that some list stands at more than one place. It reads
+// what the walk collected and nothing else. [checker.rootReturns] and [Inspect] both take their
+// places from it, so that there is one rule of the place.
+func (ck *checker) placeLists() (all []placing, placed, floating []setList, multi bool) {
+	// Records that are all off the chain (two records with no predecessor, for one) give no set a
+	// place: every root list is judged as a list whose place cannot be told. A bundle with no
+	// ceremony record keeps the places that its root lists claim.
+	noChain := len(ck.recs) > 0 && len(ck.onChain) == 0
+	for _, l := range ck.rootLists {
+		var ps []placing
+		if !noChain {
+			ps = ck.placingsOf(l)
+		}
+		if len(ps) == 0 {
+			floating = append(floating, l)
+			continue
+		}
+		multi = multi || len(ps) > 1
+		placed = append(placed, l)
+		all = append(all, ps...)
+	}
+	return all, placed, floating, multi
 }
 
 // placing is one place at which a list stands. listed is set when a record that stands at the

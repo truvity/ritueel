@@ -52,6 +52,10 @@ type reader struct {
 	// entriesLeft counts down the entries of roots that the run may still keep from the root
 	// lists; entryLimit is where it started.
 	entriesLeft, entryLimit int
+	// keep says that the bytes of each root list that can be read are kept (see [Inspect]); keepLeft
+	// is how many bytes may still be kept.
+	keep     bool
+	keepLeft int64
 }
 
 func newReader(ctx context.Context, fsys fsx.FS, lim limits) *reader {

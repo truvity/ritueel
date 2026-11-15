@@ -63,6 +63,12 @@ const (
 	// the chain is walked. In a bundle that follows the rules each set stands at one place, so
 	// this limit is far away.
 	MaxSetPlaces = 1 << 17
+	// MaxStateBytes is the most bytes of root lists that [Inspect] keeps while it walks, so that the
+	// State holds the bytes that were judged: 64 MiB. A root list that can be read is at most
+	// strictjson.DefaultMaxBytes (256 KiB) and an honest one is a few kilobytes. Bytes that do not
+	// fit are not kept, and a bundle whose newest root list is one of them has no State: Inspect
+	// ends with [ErrTooMuch].
+	MaxStateBytes = 64 << 20
 )
 
 // ErrNotBundle is returned when the folder has no history/ and has no ritueel.yaml: it is not a
@@ -159,9 +165,10 @@ type checker struct {
 
 	records    int
 	recs       []recInfo
-	byDigest   map[string]int // digest of a record file -> the first index in recs that has it
-	candidates []string       // ceremony folders with an attempt.json and no record.json
-	setNames   []string       // the trust sets, in order of name
+	byDigest   map[string]int      // digest of a record file -> the first index in recs that has it
+	candidates []string            // ceremony folders with an attempt.json and no record.json
+	closed     map[string]struct{} // ceremony folders that a closing record names in closes.ceremony
+	setNames   []string            // the trust sets, in order of name
 	sets       map[string]bool
 	listed     map[string]*anchorWant // trust sets that a record lists
 	closedPlan map[string]closedPlan  // closed ceremony -> its plan's end, read once
@@ -201,7 +208,25 @@ type limits struct {
 	setPlaces   int
 }
 
+// check is one run of [Check]: the walk of [runCheck], and the report of what it collected.
 func check(ctx context.Context, fsys fsx.FS, lim limits) (*Report, error) {
+	ck, err := runCheck(ctx, fsys, lim, false)
+	if err != nil {
+		return nil, err
+	}
+	return ck.report(), nil
+}
+
+// report is what the walk found, as [Check] returns it.
+func (ck *checker) report() *Report {
+	return &Report{Records: ck.records, Ends: ck.ends, Findings: ck.col.sorted(), Omitted: ck.col.omitted}
+}
+
+// runCheck is the one walk of the bundle that [Check] and [Inspect] share. It returns the checker
+// with everything the walk collected, and no second walk is made from it. With keep set, the walk
+// keeps the bytes of the root lists that it read and could read (at most [MaxStateBytes] in all),
+// so that [Inspect] can return the bytes that were judged and not a second read of them.
+func runCheck(ctx context.Context, fsys fsx.FS, lim limits, keep bool) (*checker, error) {
 	if fsys == nil {
 		return nil, fsx.ErrNoRoot
 	}
@@ -226,10 +251,13 @@ func check(ctx context.Context, fsys fsx.FS, lim limits) (*Report, error) {
 	if ck.placeLimit == 0 {
 		ck.placeLimit = MaxSetPlaces
 	}
+	if keep {
+		ck.rd.keep, ck.rd.keepLeft = true, MaxStateBytes
+	}
 	if err := ck.run(); err != nil {
 		return nil, err
 	}
-	return &Report{Records: ck.records, Ends: ck.ends, Findings: ck.col.sorted(), Omitted: ck.col.omitted}, nil
+	return ck, nil
 }
 
 func (ck *checker) run() error {
@@ -523,6 +551,12 @@ func (ck *checker) listedFiles(info *recInfo, rec *files.Record) error {
 		if err := expect(f.role, "history/"+folder+"/"+f.name, f.digest); err != nil {
 			return err
 		}
+	}
+	if rec.Command == files.CommandClose && rec.Closes != nil {
+		if ck.closed == nil {
+			ck.closed = map[string]struct{}{}
+		}
+		ck.closed[rec.Closes.Ceremony] = struct{}{}
 	}
 	for _, w := range rec.Wanted {
 		if err := expect(roleWanted, "history/"+folder+"/"+files.WantedDir+"/"+w.Path, w.SHA256); err != nil {
@@ -819,6 +853,9 @@ type anchorOf struct {
 	hasSequence bool
 	// keys are the entries of roots that name a pin or a fingerprint, in the order of the file.
 	keys []rootKey
+	// raw is the bytes of the list that were parsed, kept only when the run keeps them (see
+	// [Inspect]) and only for a list that can be read.
+	raw []byte
 }
 
 // rootKey is one entry of the member roots, in the one form this check compares: the bytes of the
@@ -888,6 +925,11 @@ func (r *reader) parseAnchor(data []byte) (*anchorOf, error) {
 	// counts none.
 	if r.entriesLeft -= len(a.keys); r.entriesLeft < 0 {
 		return nil, fmt.Errorf("%w: more than %d entries of roots were kept from the root lists", ErrTooMuch, r.entryLimit)
+	}
+	// The bytes are kept while the budget lasts; a list whose bytes are not kept is still judged.
+	if r.keep && int64(len(data)) <= r.keepLeft {
+		r.keepLeft -= int64(len(data))
+		a.raw = data
 	}
 	return a, nil
 }

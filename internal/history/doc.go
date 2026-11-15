@@ -98,6 +98,17 @@
 //     folder or a trust set belongs, a leftover temporary name, and a file inside wanted/ that
 //     the record does not list.
 //
+// # The state of a bundle
+//
+// [Inspect] runs the same walk as [Check] once, and returns the same [Report] with a [State] for a
+// writer of the next ceremony: the root lists of the bundle in the order of the hash chain (the
+// form that [FindReturns] takes), the newest set with the bytes of its root-list.json as the walk
+// read and judged them, the end of the history, and the ceremony folders that hold an attempt and
+// no record. There is a State only when the report has no failing finding and the order of the
+// root lists has one reading; otherwise [Inspection.OrderErr] wraps [ErrOrder]. The order is the
+// place of each set in the chain, as for root-returns; it is never guessed, and never taken from a
+// folder name alone.
+//
 // # What it never does
 //
 // Everything that comes from the bundle is hostile data: a name, a type, a size, a digest, the
