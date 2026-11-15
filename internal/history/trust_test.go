@@ -333,7 +333,7 @@ func TestRootListWithAnythingElseInItIsNotLookedInto(t *testing.T) {
 	for name, extra := range map[string]string{
 		"an unknown member": `"comment":"not a member of version 1",`,
 		"version 2":         `"x":1,`,
-		"a list of roots":   `"roots":[{"label":"A"}],`,
+		"a list of roots":   `"roots":[{"label":"A","x509_spki_sha256":"` + pa + `"}],`,
 	} {
 		t.Run(name, func(t *testing.T) {
 			b := newBundle(t)

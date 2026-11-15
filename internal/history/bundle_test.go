@@ -44,6 +44,7 @@ type bundle struct {
 	recs []*rec
 	end  string // the digest of the newest record that was written
 	made int    // the ceremonies made so far, with a record or not
+	mem  *mnode // when set, the bundle is kept in memory and dir is empty
 }
 
 // rec is one ceremony folder, in memory first and on disk after write.
@@ -260,6 +261,12 @@ func (b *bundle) abs(rel string) string { return filepath.Join(b.dir, filepath.F
 
 func (b *bundle) mkdir(rel string) {
 	b.t.Helper()
+	if b.mem != nil {
+		if rel != "." && b.mem.get(rel) == nil {
+			b.mem.put(rel, &mnode{kind: "dir", kids: map[string]*mnode{}})
+		}
+		return
+	}
 	if err := os.MkdirAll(b.abs(rel), 0o755); err != nil {
 		b.t.Fatal(err)
 	}
@@ -267,6 +274,10 @@ func (b *bundle) mkdir(rel string) {
 
 func (b *bundle) put(rel string, data []byte) {
 	b.t.Helper()
+	if b.mem != nil {
+		b.mem.put(rel, &mnode{kind: "file", data: data})
+		return
+	}
 	b.mkdir(dirOf(rel))
 	if err := os.WriteFile(b.abs(rel), data, 0o644); err != nil {
 		b.t.Fatal(err)

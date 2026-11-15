@@ -49,10 +49,18 @@ type reader struct {
 	total     int64
 	fileReads int
 	cache     map[[sha256.Size]byte]fileState
+	// entriesLeft counts down the entries of roots that the run may still keep from the root
+	// lists; entryLimit is where it started.
+	entriesLeft, entryLimit int
 }
 
 func newReader(ctx context.Context, fsys fsx.FS, lim limits) *reader {
-	return &reader{ctx: ctx, fsys: fsys, left: lim.readBytes, total: lim.readBytes, fileReads: lim.fileReads, cache: map[[sha256.Size]byte]fileState{}}
+	entries := lim.rootEntries
+	if entries == 0 {
+		entries = MaxRootEntries
+	}
+	return &reader{ctx: ctx, fsys: fsys, left: lim.readBytes, total: lim.readBytes, fileReads: lim.fileReads, cache: map[[sha256.Size]byte]fileState{},
+		entriesLeft: entries, entryLimit: entries}
 }
 
 // read reads the file at path (relative to the bundle). It returns its bytes when the file is
@@ -103,7 +111,9 @@ func (r *reader) digest(path string) (fileState, error) {
 	if st.kind == standOK {
 		st.digest = files.Digest(data)
 		if isRootList(path) {
-			st.anchor = parseAnchor(data)
+			if st.anchor, err = r.parseAnchor(data); err != nil {
+				return fileState{}, err
+			}
 		}
 	}
 	r.cache[key] = st

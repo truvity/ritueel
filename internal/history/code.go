@@ -8,7 +8,7 @@ import (
 	"ritueel.id/ritueel/internal/jsonset"
 )
 
-// Code is the name of one finding or one notice. Twelve are the names of the table "The hash
+// Code is the name of one finding or one notice. Thirteen are the names of the table "The hash
 // chain" in docs/reference/ceremony-record.md; FileUnlisted, UnexpectedName and UnexpectedFile
 // are for what the check did not expect.
 type Code string
@@ -44,6 +44,9 @@ const (
 	// AnchorUnknown: the last_record_sha256 of a root list is not a record on the chain, or the
 	// list cannot be read, or a list that is not the first has none.
 	AnchorUnknown Code = "anchor-unknown"
+	// RootReturns: a root list holds a root key that left the root list, by its pin or by its
+	// OpenPGP fingerprint under another pin (record 0006, rule 54).
+	RootReturns Code = "root-returns"
 	// UnexpectedName: a name in history/, in trust/, in a ceremony folder or in a trust set that
 	// breaks the rule for names (record 0006, rule 38) and does not start with the prefix of a
 	// temporary name; or a link, a FIFO, a socket or a device where a ceremony folder or a trust
@@ -58,7 +61,7 @@ const (
 var codeOrder = []Code{
 	ChainBroken, Fork, RecordOffChain, RecordNotCanonical, RecordVersionUnknown, RecordInvalid,
 	TranscriptDigest, FileDigest, FileMissing, FileUnlisted, TrustSetUnlisted, UnfinishedCeremony, AnchorUnknown,
-	UnexpectedName, UnexpectedFile,
+	RootReturns, UnexpectedName, UnexpectedFile,
 }
 
 // Codes returns every code in the order findings are reported in.

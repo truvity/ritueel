@@ -3,6 +3,7 @@ package history
 import (
 	"context"
 	"crypto/sha256"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"io/fs"
@@ -45,6 +46,15 @@ const (
 	MaxWalkEntries = 1 << 17
 	// MaxNamesShown is the most names a detail lists, for a fork: 8.
 	MaxNamesShown = 8
+	// MaxRootEntries is the most entries of the member roots that a run keeps from all the root
+	// lists together, for the finding root-returns: 262,144. A run that meets more stops with
+	// [ErrTooMuch]. An honest bundle has a few entries in each of a few lists. One list holds at
+	// most [MaxRootsPerList] entries, because a label is one letter of A to Z.
+	MaxRootEntries = 1 << 18
+	// MaxRootsPerList is the most entries of roots that one root list may have for this check
+	// to read it: 26, the letters A to Z of the labels. A list with more is not read, and is
+	// anchor-unknown.
+	MaxRootsPerList = 26
 )
 
 // ErrNotBundle is returned when the folder has no history/ and has no ritueel.yaml: it is not a
@@ -101,12 +111,18 @@ type recInfo struct {
 // the last_record_sha256 of that ceremony's plan: closes names the ceremony and attempt the
 // digest of its attempt, and the plan is found through them. When two records list the set and
 // differ, conflict is set.
+//
+// by is the record before each record that lists the set ("" for none). It is what places the set
+// for [checker.rootReturns]: a set stands at the place of each record that lists it, whatever
+// kind of record that is, and not at the end that a plan names (a plan is a file that the writer
+// of a closing record can make).
 type anchorWant struct {
 	key      string // what the lister says: its prev, or "closes <ceremony> <attempt digest>"
 	prev     string
 	closes   string
 	attempt  string
 	conflict bool
+	by       map[string]struct{}
 }
 
 // closedPlan is what a closing record's closed ceremony says: the end its plan named, or why the
@@ -130,6 +146,8 @@ type checker struct {
 	rd   *reader
 	col  *collector
 
+	rootLists []setList // the trust sets that have a root-list.json, as the anchor check read them
+
 	records    int
 	recs       []recInfo
 	byDigest   map[string]int // digest of a record file -> the first index in recs that has it
@@ -142,6 +160,7 @@ type checker struct {
 	lowestDone bool
 	unfinished map[string]string // trust sets of an unfinished ceremony -> the end its plan names
 	onChain    map[string]bool   // digests of the records on the chain
+	depth      map[string]int    // digest of a record on the chain -> the number of records before it
 	ends       []string
 	wantedDirs []string // ceremony folders that have a record that was read and a wanted/ folder
 	wrong      []wrongEntry
@@ -166,6 +185,7 @@ type limits struct {
 	fileReads   int
 	perCode     int
 	walkEntries int
+	rootEntries int // 0 is MaxRootEntries
 }
 
 func check(ctx context.Context, fsys fsx.FS, lim limits) (*Report, error) {
@@ -183,6 +203,7 @@ func check(ctx context.Context, fsys fsx.FS, lim limits) (*Report, error) {
 		closedPlan: map[string]closedPlan{},
 		unfinished: map[string]string{},
 		onChain:    map[string]bool{},
+		depth:      map[string]int{},
 		walkLimit:  lim.walkEntries,
 	}
 	if ck.walkLimit == 0 {
@@ -234,6 +255,9 @@ func (ck *checker) run() error {
 		return err
 	}
 	if err := ck.anchors(); err != nil {
+		return err
+	}
+	if err := ck.rootReturns(); err != nil {
 		return err
 	}
 	if err := ck.unlistedFiles(); err != nil {
@@ -514,12 +538,18 @@ func (ck *checker) noteListed(name, prev string, rec *files.Record) {
 			attempt: rec.Closes.AttemptSHA256,
 		}
 	}
-	switch w := ck.listed[name]; {
+	w := ck.listed[name]
+	switch {
 	case w == nil:
-		ck.listed[name] = want
+		w = want
+		ck.listed[name] = w
 	case w.key != want.key:
 		w.conflict = true
 	}
+	if w.by == nil {
+		w.by = map[string]struct{}{}
+	}
+	w.by[prev] = struct{}{}
 }
 
 // trustSetOf returns the name of the trust set that a path of a record is a file of: the path
@@ -626,18 +656,25 @@ func (ck *checker) chain() {
 	slices.Sort(ck.ends)
 }
 
-// walk marks the digest from and every digest below it, as on the chain.
+// walk marks the digest from and every digest below it, as on the chain, and keeps how many records
+// are before each: the place of a record in the chain, which orders the root lists
+// ([checker.rootReturns]). Two records that name the same predecessor have the same depth.
 func (ck *checker) walk(children map[string][]int, from string) {
-	stack := []string{from}
+	type step struct {
+		digest string
+		depth  int
+	}
+	stack := []step{{from, 0}}
 	for len(stack) > 0 {
-		d := stack[len(stack)-1]
+		s := stack[len(stack)-1]
 		stack = stack[:len(stack)-1]
-		if ck.onChain[d] {
+		if ck.onChain[s.digest] {
 			continue
 		}
-		ck.onChain[d] = true
-		for _, i := range children[d] {
-			stack = append(stack, ck.recs[i].digest)
+		ck.onChain[s.digest] = true
+		ck.depth[s.digest] = s.depth
+		for _, i := range children[s.digest] {
+			stack = append(stack, step{ck.recs[i].digest, s.depth + 1})
 		}
 	}
 }
@@ -744,29 +781,134 @@ func (ck *checker) openAttempts() (map[int64][]string, string, error) {
 	return out, end, nil
 }
 
-// anchorOf is what a root list says about its anchor, read once.
+// anchorOf is what a root list says about its anchor and its keys, read once.
 type anchorOf struct {
 	present bool
 	value   string
 	problem string // the list cannot be read
+	// sequence is the member sequence, when the list has it as an integer.
+	sequence    int64
+	hasSequence bool
+	// keys are the entries of roots that name a pin or a fingerprint, in the order of the file.
+	keys []rootKey
 }
 
-// rootList is the one member of root-list.json that this check reads. The rest of the list
-// (its signature, version and unknown members) belongs to the root list's own check.
+// rootKey is one entry of the member roots, in the one form this check compares: the bytes of the
+// pin and of the fingerprint, so that the case of the hexadecimal digits never matters. An entry
+// with no pin and a fingerprint is a key too (hasPin is false): it is known by its fingerprint.
+type rootKey struct {
+	pin    [32]byte
+	hasPin bool
+	fp     [20]byte
+	hasFP  bool
+	label  string // as the file has it, cut short; it is shown only escaped
+}
+
+// maxLabelShown is the most bytes of a label that are kept; a label is one letter on the page.
+const maxLabelShown = 16
+
+// rootList is what this check reads of root-list.json: the anchor, the sequence and the entries
+// of roots. The rest of the list (its signature, version and unknown members) belongs to the
+// root list's own check.
 type rootList struct {
-	LastRecordSHA256 *string `json:"last_record_sha256"`
+	LastRecordSHA256 *string     `json:"last_record_sha256"`
+	Sequence         *int64      `json:"sequence"`
+	Roots            []rootEntry `json:"roots"`
 }
 
-// parseAnchor reads the anchor of the bytes of a root list.
-func parseAnchor(data []byte) *anchorOf {
+type rootEntry struct {
+	Label       *string `json:"label"`
+	Pin         *string `json:"x509_spki_sha256"`
+	Fingerprint *string `json:"openpgp_fingerprint"`
+}
+
+// parseAnchor reads the anchor and the keys of the bytes of a root list. The entries of roots are
+// read in the most lenient way this check has, so that a list that the reader of root lists
+// refuses (a pin in capitals, with a 0x prefix or with separators, an entry with a fingerprint and
+// no pin, a label that is not a letter, no sequence) hides no key: see [hexForm]. An entry with a
+// pin or a fingerprint that is there and cannot be read, and an entry with neither member, make
+// the whole list a list that cannot be read (the finding anchor-unknown), because what it holds is
+// not known; a host refuses such a list too. The entries of a list that can be read count against
+// the limit of the run ([MaxRootEntries]), those of a list that cannot be read do not: an error is
+// [ErrTooMuch].
+func (r *reader) parseAnchor(data []byte) (*anchorOf, error) {
 	var list rootList
 	if err := strictjson.Unmarshal(data, &list, strictjson.Options{AllowUnknown: true}); err != nil {
-		return &anchorOf{problem: "the root list cannot be read: " + err.Error()}
+		return &anchorOf{problem: "the root list cannot be read: " + err.Error()}, nil
 	}
-	if list.LastRecordSHA256 == nil {
-		return &anchorOf{}
+	if len(list.Roots) > MaxRootsPerList {
+		return &anchorOf{problem: "the root list cannot be read: it has more than " + strconv.Itoa(MaxRootsPerList) + " entries of roots, and a label is one letter of A to Z"}, nil
 	}
-	return &anchorOf{present: true, value: *list.LastRecordSHA256}
+	a := &anchorOf{}
+	if list.LastRecordSHA256 != nil {
+		a.present, a.value = true, *list.LastRecordSHA256
+	}
+	if list.Sequence != nil {
+		a.sequence, a.hasSequence = *list.Sequence, true
+	}
+	for i, e := range list.Roots {
+		k, ok := keyOf(e)
+		if !ok {
+			return &anchorOf{problem: "the root list cannot be read: entry " + strconv.Itoa(i) + " of roots has a pin or an OpenPGP fingerprint that is not hexadecimal digits of the right length"}, nil
+		}
+		if !k.hasPin && !k.hasFP {
+			return &anchorOf{problem: "the root list cannot be read: entry " + strconv.Itoa(i) + " of roots has neither a pin nor an OpenPGP fingerprint"}, nil
+		}
+		a.keys = append(a.keys, k)
+	}
+	// The entries of a list that can be read are kept; a list that cannot be read keeps none, and
+	// counts none.
+	if r.entriesLeft -= len(a.keys); r.entriesLeft < 0 {
+		return nil, fmt.Errorf("%w: more than %d entries of roots were kept from the root lists", ErrTooMuch, r.entryLimit)
+	}
+	return a, nil
+}
+
+// hexForm reads s as the n bytes that its hexadecimal digits stand for, in the most lenient way
+// this check has: digits of either case, white space around the text, a 0x prefix, and the
+// separators space, colon and hyphen between digits are accepted and dropped. Every list that
+// the reader of root lists takes is read the same way; the forms that only this check takes are
+// all read as the key the writer meant, so that none of them hides a key from the later lists.
+func hexForm(s string, n int) (b []byte, ok bool) {
+	s = strings.Trim(s, " \t\r\n")
+	s = strings.TrimPrefix(strings.TrimPrefix(s, "0x"), "0X")
+	if strings.ContainsAny(s, " :-") {
+		s = strings.NewReplacer(" ", "", ":", "", "-", "").Replace(s)
+	}
+	if len(s) != 2*n {
+		return nil, false
+	}
+	b = make([]byte, n)
+	if _, err := hex.Decode(b, []byte(s)); err != nil {
+		return nil, false
+	}
+	return b, true
+}
+
+// keyOf turns an entry of roots into a rootKey. ok is false when the entry has a pin or a
+// fingerprint that is there and cannot be read. An entry with neither member gives a key that
+// holds nothing: the caller refuses the list.
+func keyOf(e rootEntry) (k rootKey, ok bool) {
+	if e.Pin != nil {
+		b, good := hexForm(*e.Pin, len(k.pin))
+		if !good {
+			return k, false
+		}
+		copy(k.pin[:], b)
+		k.hasPin = true
+	}
+	if e.Fingerprint != nil {
+		b, good := hexForm(*e.Fingerprint, len(k.fp))
+		if !good {
+			return k, false
+		}
+		copy(k.fp[:], b)
+		k.hasFP = true
+	}
+	if e.Label != nil {
+		k.label = cut(*e.Label, maxLabelShown)
+	}
+	return k, true
 }
 
 // anchors checks the last_record_sha256 of the root list of each trust set that has one. It is
@@ -788,7 +930,9 @@ func (ck *checker) anchors() error {
 			}
 			st = rst
 			if st.kind == standOK {
-				st.anchor = parseAnchor(data)
+				if st.anchor, err = ck.rd.parseAnchor(data); err != nil {
+					return err
+				}
 			}
 		}
 		switch st.kind {
@@ -796,13 +940,16 @@ func (ck *checker) anchors() error {
 			continue // a personal bundle's set has no root list (record 0006, rule 12)
 		case standNotFile:
 			ck.col.add(AnchorUnknown, path, "the root list cannot be read: "+st.why)
+			ck.rootLists = append(ck.rootLists, setList{set: name})
 			continue
 		}
 		anchor = st.anchor
 		if anchor.problem != "" {
 			ck.col.add(AnchorUnknown, path, anchor.problem)
+			ck.rootLists = append(ck.rootLists, setList{set: name})
 			continue
 		}
+		ck.rootLists = append(ck.rootLists, setList{set: name, read: anchor})
 		why, err := ck.judgeAnchor(name, anchor)
 		if err != nil {
 			return err
@@ -820,25 +967,9 @@ func (ck *checker) judgeAnchor(name string, a *anchorOf) (string, error) {
 	if a.present && !files.IsDigest(a.value) {
 		return "last_record_sha256 is not a SHA-256 digest", nil
 	}
-	want, known := "", false
-	if w := ck.listed[name]; w != nil {
-		switch {
-		case w.conflict:
-			return "the records that list the set differ in the record before them, so the anchor cannot be told", nil
-		case w.closes != "":
-			cp, err := ck.planOfClosed(w.closes, w.attempt)
-			if err != nil {
-				return "", err
-			}
-			if cp.why != "" {
-				return "a closing record lists the set, and the plan of the ceremony it closed cannot be read (" + cp.why + "), so the anchor cannot be checked", nil
-			}
-			want, known = cp.last, true
-		default:
-			want, known = w.prev, true
-		}
-	} else if end, ok := ck.unfinished[name]; ok {
-		want, known = end, true
+	want, known, why, err := ck.anchorWanted(name)
+	if err != nil || why != "" {
+		return why, err
 	}
 	switch {
 	case !known && !a.present:
@@ -864,6 +995,35 @@ func (ck *checker) judgeAnchor(name string, a *anchorOf) (string, error) {
 		return "last_record_sha256 " + a.value[:16] + " is not the digest of a record on the chain", nil
 	}
 	return "", nil
+}
+
+// anchorWanted is the record that the root list of the set name must anchor, as the records say
+// it and not as the list says it: "" is none (the ceremony that wrote the set is the first). known
+// is false when nothing says it (no record lists the set and no open attempt belongs to it), and
+// why is a reason when the records that list the set do not give one answer. An error is a read
+// that failed. This is only the anchor that a list must have; the place of a list in the chain is
+// the place of the records that list its set ([checker.placingsOf]).
+func (ck *checker) anchorWanted(name string) (want string, known bool, why string, err error) {
+	if w := ck.listed[name]; w != nil {
+		switch {
+		case w.conflict:
+			return "", false, "the records that list the set differ in the record before them, so the anchor cannot be told", nil
+		case w.closes != "":
+			cp, err := ck.planOfClosed(w.closes, w.attempt)
+			if err != nil {
+				return "", false, "", err
+			}
+			if cp.why != "" {
+				return "", false, "a closing record lists the set, and the plan of the ceremony it closed cannot be read (" + cp.why + "), so the anchor cannot be checked", nil
+			}
+			return cp.last, true, "", nil
+		}
+		return w.prev, true, "", nil
+	}
+	if end, ok := ck.unfinished[name]; ok {
+		return end, true, "", nil
+	}
+	return "", false, "", nil
 }
 
 // planOfClosed finds the plan of the ceremony c that a closing record closes, and returns the end
