@@ -8,8 +8,8 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
-	"regexp"
 	"slices"
+	"strconv"
 	"strings"
 	"syscall"
 	"testing"
@@ -422,11 +422,11 @@ func TestPrimariesAndRootsReadTheSameSetWithTheSameRules(t *testing.T) {
 // Roots keeps its behaviour: it reads no keyring file, so a set with none and a set with a bad one give the roots.
 func TestRootsReadsNoKeyringFile(t *testing.T) {
 	for name, set := range map[string]tree{
-		"no keyring file":     without(trustAB(t, 7), keyringName),
-		"a bad keyring":       merge(trustAB(t, 7), tree{keyringName: []byte("garbage")}),
-		"a folder":            merge(without(trustAB(t, 7), keyringName), tree{keyringName + "/x": []byte("x")}),
-		"a keyring of z":      merge(trustAB(t, 7), tree{keyringName: keyringOf(t, "z")}),
-		"seventeen primaries": merge(memSet(7, memPrimaries(t, 17)), tree{keyringName: []byte("garbage")}),
+		"no keyring file":    without(trustAB(t, 7), keyringName),
+		"a bad keyring":      merge(trustAB(t, 7), tree{keyringName: []byte("garbage")}),
+		"a folder":           merge(without(trustAB(t, 7), keyringName), tree{keyringName + "/x": []byte("x")}),
+		"a keyring of z":     merge(trustAB(t, 7), tree{keyringName: keyringOf(t, "z")}),
+		"the most primaries": merge(memSet(7, memPrimaries(t, handoff.MaxPrimaries)), tree{keyringName: []byte("garbage")}),
 	} {
 		t.Run(name, func(t *testing.T) {
 			b, _ := bundleWith(t, set)
@@ -438,35 +438,64 @@ func TestRootsReadsNoKeyringFile(t *testing.T) {
 	}
 }
 
-// countText is the shape of the error for too many primaries: the number that the list pins comes first, and the
-// number that the checks take comes after it.
-var countText = regexp.MustCompile(`pins 17 OpenPGP primaries.*at most 16`)
+// The checker takes as many primaries as a root list has entries (handoff.MaxPrimaries, 26): a list that pins 17, 20 or
+// 26 of them is read, in the order of the list, with the fingerprint, the key and the creation time that a second
+// reader (go-crypto) gives, and the checker is made for all of them.
+func TestAListThatPinsUpToTheMostPrimariesIsTaken(t *testing.T) {
+	ps := memPrimaries(t, handoff.MaxPrimaries)
+	for _, n := range []int{2, 16, 17, 20, handoff.MaxPrimaries} {
+		t.Run(strconv.Itoa(n), func(t *testing.T) {
+			set := memSet(7, ps[:n])
+			b, dir := bundleWith(t, set)
+			before := digestTree(t, dir)
+			refs, ts, err := b.Primaries()
+			if err != nil || len(refs) != n || ts.Name != setDir {
+				t.Fatalf("Primaries = (%d, %+v, %v), want %d primaries of %s", len(refs), ts, err, n, setDir)
+			}
+			want := ringRefs(t, set[keyringName])
+			for i := range refs {
+				if refs[i].Fingerprint != ps[i].fp || refs[i].Fingerprint != want[i].Fingerprint || !sameKey(refs[i].Key, want[i].Key) || !refs[i].Created.Equal(want[i].Created) {
+					t.Errorf("primary %d = %+v, the second reader gives %+v, the list %s", i, refs[i], want[i], ps[i].fp)
+				}
+			}
+			if chk, d, err := b.Checker("", fixedNow, nil); err != nil || chk == nil || d != nil {
+				t.Errorf("Checker = (%v, %v, %v), want a checker with no delegation", chk, d, err)
+			}
+			sameDigest(t, "a read", before, digestTree(t, dir))
+		})
+	}
+}
 
-// The checker takes at most handoff.MaxPrimaries (16): 16 are given, 17 are an error that names both numbers and no
-// file is read for it.
-func TestMoreThanSixteenPinnedPrimariesAreAnErrorWithBothNumbers(t *testing.T) {
-	ps := memPrimaries(t, 17)
-	b16, _ := bundleWith(t, memSet(7, ps[:16]))
-	refs, _, err := b16.Primaries()
-	if err != nil || len(refs) != 16 {
-		t.Fatalf("sixteen: (%d, %v)", len(refs), err)
-	}
-	if chk, _, err := b16.Checker("", fixedNow, nil); err != nil || chk == nil {
-		t.Errorf("sixteen: Checker (%v, %v)", chk, err)
-	}
-	// The keyring file of the 17 is garbage: the count is judged before the file is read, so the error is the count.
-	set := memSet(7, ps)
-	set[keyringName] = []byte("garbage")
-	b17, _ := bundleWith(t, set)
-	for name, call := range map[string]func() error{
-		"Primaries": func() error { _, _, err := b17.Primaries(); return err },
-		"Checker":   func() error { _, _, err := b17.Checker("", fixedNow, nil); return err },
-	} {
-		err := call()
-		if err == nil || !countText.MatchString(err.Error()) || !strings.Contains(err.Error(), setDir) {
-			t.Errorf("%s: error %v, want the 17 that the list pins, then the 16 that the checks take, and the set", name, err)
-		} else if errors.Is(err, openpgp.ErrKeyring) || strings.Contains(err.Error(), "garbage") {
-			t.Errorf("%s: the file was judged: %v", name, err)
+// With many pinned primaries the keyring file is read and judged: the faults of the file are the faults that are
+// told, and the count is not one of them. The file here is garbage, short by one certificate, or has one too many.
+func TestAFaultOfTheKeyringFileOfAListOfManyPrimariesIsAFaultOfTheFile(t *testing.T) {
+	ps := memPrimaries(t, handoff.MaxPrimaries)
+	for _, n := range []int{17, 20, handoff.MaxPrimaries} {
+		for name, file := range map[string][]byte{
+			"garbage":                   []byte("garbage"),
+			"one certificate short":     memKeyring(ps[:n-1]),
+			"the file of a longer list": memKeyring(ps),
+		} {
+			if name == "the file of a longer list" && n == handoff.MaxPrimaries {
+				continue // the file is then the right one
+			}
+			t.Run(strconv.Itoa(n)+"/"+name, func(t *testing.T) {
+				set := memSet(7, ps[:n])
+				set[keyringName] = file
+				b, _ := bundleWith(t, set)
+				for call, f := range map[string]func() error{
+					"Primaries": func() error { _, _, err := b.Primaries(); return err },
+					"Checker":   func() error { _, _, err := b.Checker("", fixedNow, nil); return err },
+				} {
+					err := f()
+					if err == nil || !errors.Is(err, bundle.ErrPrimaries) || !strings.Contains(err.Error(), "keyring.gpg of the newest trust set "+setDir+" is refused") {
+						t.Errorf("%s: %v, want the keyring file refused", call, err)
+					}
+					if err != nil && strings.Contains(err.Error(), "checks take at most") {
+						t.Errorf("%s: the count is judged: %v", call, err)
+					}
+				}
+			})
 		}
 	}
 }

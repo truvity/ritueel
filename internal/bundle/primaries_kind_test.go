@@ -67,8 +67,6 @@ func primariesFaults(t *testing.T) []struct {
 		put  func(t *testing.T, at string)
 		want string
 	}{
-		{"17 pinned", memSet(7, memPrimaries(t, 17)), nil, "pins 17"},
-		{"26 pinned", memSet(7, memPrimaries(t, 26)), nil, "pins 26"},
 		{"no keyring file", without(two, keyringName), nil, "holds no keyring.gpg"},
 		{"a link", without(two, keyringName), func(t *testing.T, at string) {
 			mustSymlink(t, "real.gpg", at)
@@ -376,11 +374,11 @@ func TestAListThatPinsOneFingerprintTwiceIsAFaultOfTheListNamedByTheTwoLabels(t 
 	sameDigest(t, "a read", before, digestTree(t, dir))
 }
 
-// The repeat is found whatever the places of the two entries: first and second, first and last of 16, a fingerprint
-// on three entries (the first pair is named), and two repeats (the first one met is named). The error names the place
-// of the second entry of the pair.
+// The repeat is found whatever the places of the two entries: first and second, first and last of 16 and of 26, a
+// fingerprint on three entries (the first pair is named), and two repeats (the first one met is named). The error
+// names the place of the second entry of the pair.
 func TestTheRepeatedFingerprintNamesTheFirstPairWhereverTheEntriesAre(t *testing.T) {
-	ps := memPrimaries(t, 16)
+	ps := memPrimaries(t, handoff.MaxPrimaries)
 	for _, tc := range []struct {
 		name  string
 		copy  map[int]int // entry i takes the fingerprint of entry j
@@ -393,6 +391,10 @@ func TestTheRepeatedFingerprintNamesTheFirstPairWhereverTheEntriesAre(t *testing
 		{"first and last of sixteen", map[int]int{15: 0}, 16, "A", "P", 15},
 		{"second and last of sixteen", map[int]int{15: 1}, 16, "B", "P", 15},
 		{"last two of sixteen", map[int]int{15: 14}, 16, "O", "P", 15},
+		{"first and last of the most entries", map[int]int{25: 0}, 26, "A", "Z", 25},
+		{"second and last of the most entries", map[int]int{25: 1}, 26, "B", "Z", 25},
+		{"last two of the most entries", map[int]int{25: 24}, 26, "Y", "Z", 25},
+		{"two in the middle of the most entries", map[int]int{13: 12}, 26, "M", "N", 13},
 		{"one fingerprint on three entries", map[int]int{1: 0, 2: 0}, 3, "A", "B", 1},
 		{"two repeats: the first met is named", map[int]int{4: 1, 2: 0}, 6, "A", "C", 2},
 		{"two repeats, the later pair first in the list", map[int]int{5: 3, 3: 2}, 6, "C", "D", 3},
@@ -425,19 +427,41 @@ func TestEntriesWithNoFingerprintAreNotARepeat(t *testing.T) {
 	}
 }
 
-// With 17 entries and a repeat the reader of the list refuses the list first, for the repeat: the count of the pinned
-// primaries is judged only for a list that the reader accepts. 17 entries with no repeat give the count.
-func TestARepeatInAListOf17EntriesIsTheListsBeforeTheCountOfPinnedPrimaries(t *testing.T) {
-	ps := memPrimaries(t, 17)
-	ps[16].fp = ps[0].fp
-	b, _ := bundleWith(t, memSet(7, ps))
+// A list of the most entries (26, one for each label A to Z) is read: with a repeat the reader of the list refuses it
+// for the repeat, and with none its primaries are taken. A list of more entries than that is no list of this program:
+// a label is one capital letter and is not given twice, so the reader of the list refuses it before the primaries are
+// asked for, and the error is not of the kind ErrPrimaries. The count of the primaries is then a second guard that no
+// bundle reaches (it is held on its own in the tests of the package).
+func TestAListOfTheMostEntriesIsReadAndMoreThanTheMostIsRefusedByTheReaderOfTheList(t *testing.T) {
+	ps := memPrimaries(t, handoff.MaxPrimaries)
+	repeated := slices.Clone(ps)
+	repeated[len(repeated)-1].fp = repeated[0].fp
+	b, _ := bundleWith(t, memSet(7, repeated))
 	_, _, err := b.Primaries()
-	if want := listRepeatText("A", "Q", 16); err == nil || err.Error() != want || errors.Is(err, bundle.ErrPrimaries) {
-		t.Errorf("error %v, want %q", err, want)
+	if want := listRepeatText("A", "Z", handoff.MaxPrimaries-1); err == nil || err.Error() != want || errors.Is(err, bundle.ErrPrimaries) {
+		t.Errorf("%d entries with a repeat: %v, want %q", handoff.MaxPrimaries, err, want)
 	}
-	ps = memPrimaries(t, 17)
 	b, _ = bundleWith(t, memSet(7, ps))
-	if _, _, err := b.Primaries(); err == nil || !countText.MatchString(err.Error()) || !errors.Is(err, bundle.ErrPrimaries) {
-		t.Errorf("17 entries with no repeat: %v, want the count", err)
+	if refs, _, err := b.Primaries(); err != nil || len(refs) != handoff.MaxPrimaries {
+		t.Errorf("%d entries with no repeat: (%d, %v), want them all", handoff.MaxPrimaries, len(refs), err)
+	}
+	// One entry more: the label of the 27th is not a capital letter, or it is a label that the list has already.
+	extra := newMemPrimary(t, "A", memTime, true)
+	again := append(slices.Clone(ps), extra)
+	extra.label = "["
+	more := append(slices.Clone(ps), extra)
+	for name, roots := range map[string][]memPrimary{"a label that is not a capital letter": more, "a label twice": again} {
+		set := memSet(7, roots)
+		bb, _ := bundleWith(t, set)
+		for call, f := range map[string]func() error{
+			"Primaries": func() error { _, _, err := bb.Primaries(); return err },
+			"Roots":     func() error { _, _, err := bb.Roots(); return err },
+			"Checker":   func() error { _, _, err := bb.Checker("", fixedNow, nil); return err },
+		} {
+			err := f()
+			if err == nil || errors.Is(err, bundle.ErrPrimaries) || errors.Is(err, bundle.ErrNoKeyring) || !strings.Contains(err.Error(), "root-list.json") {
+				t.Errorf("%d entries, %s, %s: %v, want a fault of the list and not of the primaries", handoff.MaxPrimaries+1, name, call, err)
+			}
+		}
 	}
 }
