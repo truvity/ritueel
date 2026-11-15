@@ -79,7 +79,7 @@ Write this site path form for every page, published or not. The build rewrites a
 
 ## Start page and case pages
 
-The start page is six pieces. Pieces 1 to 5 are the five cases: each holds who the reader is and two pain lines, and links to its page. Piece 6 says what ritueel is, in its design phase with no release yet, and holds the links into the site, because the page has no sidebar. One line under the pieces says: "Lost or exposed a key? Revoke." The page fits one screen with no scroll at 1920x970 and at 1440x900, and need not fit other sizes. On a phone the pieces stack in one column and the page scrolls. It carries no figure; the picture of the whole chain is on How it works.
+The start page is six pieces, and under its title stands the name mark, once. Pieces 1 to 5 are the five cases: each holds who the reader is and two pain lines, and links to its page. Piece 6 says what ritueel is, in its design phase with no release yet, and holds the links into the site, because the page has no sidebar. One line under the pieces says: "Lost or exposed a key? Revoke." The page fits one screen with no scroll at 1920x970 and at 1440x900, and need not fit other sizes. On a phone the pieces stack in one column and the page scrolls. It carries no figure; the picture of the whole chain is on How it works.
 
 A case page stands alone, because a reader may arrive by a shared link. It has at most 250 words, counted with its title, headings, box, table and button. It fits one screen at the same two sizes. It has no side menu. Its blocks are:
 
