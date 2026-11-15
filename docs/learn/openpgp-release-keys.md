@@ -30,7 +30,7 @@ OpenPGP has no certificate chains. It has a primary key, subkeys that the primar
 |---|---|
 | `sqv` 1.5.0, `sq` 1.4.1 | Rejects. A *hard* reason (no reason, compromised) rejects every signature of the key. A *soft* reason (superseded, retired) rejects only signatures made after the revocation and accepts earlier ones. |
 | `gpg` 2.4.8 | Marks the key revoked (`[r]`, `REVKEYSIG`) and prints the reason, but `gpg --verify` still says "Good signature" and exits 0. |
-| `gpgv` 2.4.8 | Ignores the revocation: a good signature, no warning. |
+| `gpgv` 2.4.9 | Reports a good signature and exits 0; its status output names the revocation with `REVKEYSIG`. |
 | apt 3.2.0 | Uses `gpgv`, so it behaves the same. |
 | rpm 6.0.2 | Not tested yet ([issue #25](https://github.com/truvity/ritueel/issues/25)). |
 
