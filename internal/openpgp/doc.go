@@ -33,6 +33,13 @@
 // faults of an answer are [ErrBoundFile], [ErrBinding] and [ErrBindingShape], each of them also an
 // [ErrAnswer].
 //
+// It reads the keyring file of a trust set in its first form ([ReadKeyring]): the public
+// certificates of the primaries, in the order of the root list, each held to the fingerprint of its
+// entry. A certification that [NewPrimary] or [ExtendPrimary] returns is checked by the same
+// function that the reader uses, so the builder returns a certificate that the reader accepts, and
+// no other. The faults of that file are [ErrKeyringForm] and [ErrKeyringPrimaries], each of them
+// also an [ErrKeyring].
+//
 // A user ID has the one shape of the page, and each part of it follows the rule of its key in
 // ritueel.yaml, so that no text of a caller can add a character that a person cannot read or an
 // address that the user ID does not show.

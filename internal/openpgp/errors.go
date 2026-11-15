@@ -61,3 +61,23 @@ var (
 	// right and the profile is not. It is an [ErrAnswer] and not an [ErrBinding].
 	ErrBindingShape error = &kindError{"openpgp: the subkey binding has not the subpackets of the page", ErrAnswer}
 )
+
+// The faults of the keyring file of a trust set, first form (docs/reference/keyring-package.md,
+// "The first form of the keyring file"). Each is an [ErrKeyring], so that a caller that wants "the
+// keyring file is refused" has one kind to ask for.
+var (
+	// ErrKeyring is the kind of every refusal of a keyring file. It wraps nothing, and it is not
+	// an [ErrParams]: a refusal of the arguments of [ReadKeyring] is an ErrParams.
+	ErrKeyring = errors.New("openpgp: refused keyring file")
+	// ErrKeyringForm marks bytes that are not certificates of the first form: a file that is too
+	// large or empty, armoured or not whole packets, a packet that the first form does not have, a
+	// key that is not a version 4 ECDSA key on P-384, a user ID that is not the one shape of the
+	// page, a certification that is not the self-signature of the page or does not verify, or a mix
+	// of test and real primaries. It is also an [ErrKeyring].
+	ErrKeyringForm error = &kindError{"openpgp: the keyring file is not certificates of the first form", ErrKeyring}
+	// ErrKeyringPrimaries marks a file of the first form whose certificates are not the primaries
+	// of the root list: one is missing, one is too many, one is not on the list, one stands at
+	// another place, one repeats, or a user ID names another label than its entry. It is also an
+	// [ErrKeyring].
+	ErrKeyringPrimaries error = &kindError{"openpgp: the keyring file does not hold the primaries of the root list", ErrKeyring}
+)
