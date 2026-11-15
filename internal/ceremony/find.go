@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"strings"
 
+	"ritueel.id/ritueel/internal/cards"
 	"ritueel.id/ritueel/internal/fsx"
 	"ritueel.id/ritueel/internal/history"
 	"ritueel.id/ritueel/internal/jsonset"
@@ -121,7 +122,7 @@ func Find(ctx context.Context, in FindInput) (*Found, error) {
 	if err := ctx.Err(); err != nil {
 		return nil, err
 	}
-	settings, rf, err := readWanted(in.FS)
+	settings, rf, err := readWanted(ctx, in.FS)
 	if err != nil {
 		return nil, err
 	}
@@ -168,8 +169,9 @@ func labelOf(i int) string { return string(rune('A' + i)) }
 // that fails its own check, with an error that names the path (escaped by the error itself). The
 // names of the root files are listed and counted before any is read; the bytes of the root files are
 // read only when there are no more than maxRootsRead of them. The delegation files are read and
-// checked one at a time, and not used or kept.
-func readWanted(fsys fsx.FS) (*wanted.Settings, rootFiles, error) {
+// checked one at a time, and not used or kept. The card files are checked last, as a whole, and not kept
+// either. A canceled context is returned as it is: it is not a refused file.
+func readWanted(ctx context.Context, fsys fsx.FS) (*wanted.Settings, rootFiles, error) {
 	refused := func(err error) error {
 		return fmt.Errorf("a wanted file is refused, and nothing was written: %w", err)
 	}
@@ -188,6 +190,12 @@ func readWanted(fsys fsx.FS) (*wanted.Settings, rootFiles, error) {
 		}
 	}
 	if err := wanted.CheckDelegations(fsys, settings); err != nil {
+		return nil, rootFiles{}, refused(err)
+	}
+	if err := cards.Check(ctx, fsys); err != nil {
+		if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
+			return nil, rootFiles{}, err
+		}
 		return nil, rootFiles{}, refused(err)
 	}
 	return settings, rf, nil
