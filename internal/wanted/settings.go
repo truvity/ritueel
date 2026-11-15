@@ -31,7 +31,8 @@ const Version = 1
 const MaxNameLen = 45
 
 // MaxFiles is the most entries of want/roots, want/delegations or want/cards that the listers of this
-// package accept: a folder with more is an error.
+// package accept, not counting leftover temporary names, which they skip (record 0006, rule 45): a
+// folder with more is an error.
 const MaxFiles = 1000
 
 // The tables of members of ritueel.yaml, in the order of docs/reference/bundle.md.
