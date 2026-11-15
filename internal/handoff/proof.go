@@ -70,6 +70,40 @@ func peekVersion(file []byte) (version int64, reason error) {
 	return n, nil
 }
 
+// ErrProofShape is wrapped by the error of [ReadProof] for a proof file that is not of the form of the
+// page. Its text is the page's words, the same text as the detail of a refusal with the code
+// malformed that the certifier gives for the same file.
+var ErrProofShape = errors.New("handoff: the proof file is not of the form of the page")
+
+// ReadProof reads a proof file by the rules of the page, as the certifier reads it, and returns the
+// proof. It is for the requester, who reads its own proof file by the rules of the certifier, so that the
+// two cannot differ about what a proof is. Like [Checker.Check] it first reads the version alone: a file
+// that is longer than [MaxFileSize], is not one JSON object with an integer handoff, or has a version
+// other than [Version], is refused before anything else of it is read. A file that is not of the form
+// of the page is an error that wraps [ErrProofShape]; the files of the request are not looked at, and
+// nothing is returned with an error. The proof that is returned shares nothing with the file.
+func ReadProof(file []byte) (*Proof, error) {
+	if len(file) > MaxFileSize {
+		return nil, fmt.Errorf("%w: the proof file is longer than %d bytes", ErrProofShape, MaxFileSize)
+	}
+	version, err := peekVersion(file)
+	if err != nil {
+		return nil, fmt.Errorf("%w: %w", ErrProofShape, err)
+	}
+	if version != Version {
+		return nil, fmt.Errorf("%w: %w", ErrProofShape, shapef("the contract version is %d, and only %d is known", version, Version))
+	}
+	p, err := readProof(file)
+	if err != nil {
+		var shape errShape
+		if errors.As(err, &shape) {
+			return nil, fmt.Errorf("%w: %w", ErrProofShape, shape)
+		}
+		return nil, err
+	}
+	return p, nil
+}
+
 // readProof reads a proof file by the rules of the page: one JSON object, no member twice, no member the
 // page does not define, no null, integers only (the strict reader), and then the members that each type
 // has and has not, the values that each member may take, and the shape of the evidence for the store.
