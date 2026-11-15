@@ -19,8 +19,8 @@
 // # What it finds
 //
 // A [Finding] has a [Code], a path and a detail. The codes are the thirteen names of the page
-// and three more, for what the check did not expect. A code that [Code.Fails] ends the command
-// with exit code 3; the two notices (UnfinishedCeremony and UnexpectedFile) do not. [Check] returns
+// and four more: file-unlisted, trust-sequence, and two for what the check did not expect. A code
+// that [Code.Fails] ends the command with exit code 3; the two notices (UnfinishedCeremony and UnexpectedFile) do not. [Check] returns
 // the findings in one fixed order: the order of [Codes], then by path, then by detail.
 //
 //   - chain-broken: a record's prev_record_sha256 is not the digest of a record; or a record
@@ -47,14 +47,18 @@
 //     attempt linked to it, it is an unfinished ceremony. An attempt is linked when its plan is
 //     the plan of this history: the plan's trust_sequence is the set's number, and its
 //     last_record_sha256 is the digest of the one end of the chain (or absent, in a history
-//     with no record at all). Anything else is the finding trust-set-unlisted.
+//     with no record at all). Anything else is the finding trust-set-unlisted. A name with no trust
+//     number (the digits before the first hyphen, from 1 up: 0 is no trust number) is that finding
+//     too, whether or not an attempt is open.
 //   - anchor-unknown: the last_record_sha256 of a root list is not the record before the
 //     ceremony that wrote the set (the prev_record_sha256 of the record that lists the set, or
 //     the end the plan of an unfinished ceremony names; for a set that a closing record lists, the
 //     ceremony that wrote it is the closed one, so it is the end named by the plan of that
 //     ceremony, found through the attempt the closing record names, and when that plan cannot be
 //     read the anchor is not accepted; absent exactly for the first ceremony),
-//     or is not a record on the chain; or the root list cannot be read.
+//     or is not a record on the chain; or the root list cannot be read; or its sequence is below 1
+//     (a sequence is an integer of at least 1). The keys of a list with a sequence below 1 are still
+//     read, so that the list hides no key from the later lists.
 //   - root-returns: a root list holds a root key that left the root list (record 0006, rule 54): an
 //     earlier list held its pin and the list directly before it did not, or an earlier list held
 //     its OpenPGP fingerprint, under any pin, and the list directly before it does not hold it
@@ -92,6 +96,17 @@
 //     a return, because the list before it is not known. A list with an entry whose pin or
 //     fingerprint cannot be read in that form, or an entry with neither, is such a list.
 //     [FindReturns] is the same rule for one list and the lists before it.
+//   - trust-sequence: the trust sets that ordinary ceremony records list, taken in the order of the
+//     chain of records (never in the order of the numbers), have a number in the folder name that is
+//     not the sequence of their root list (a list with no sequence is not compared), or a number that
+//     is not higher than the number of the set before it (record 0006, rules 14 and 21). A skip is
+//     allowed. A name with no trust number gives the finding too. Left out are the sets of a fork,
+//     the sets that a closing record lists, a set that records with different predecessors list,
+//     a set whose record is not on the chain, and a set that no record lists. The sets that one
+//     record lists together are judged one after the other, in the order that the package gives
+//     sets at one place (the sequence of their lists, then the number in the folder name), and
+//     the last of them is the set before for the next place. A set is compared with the judged set
+//     directly before it in the chain, also when that set has a finding itself.
 //   - unexpected-name: a name that breaks the rule for names (record 0006, rule 38), or a link,
 //     a FIFO, a socket or a device where a ceremony folder or a trust set belongs.
 //   - unexpected-file: a name that the check does not expect, a plain file where a ceremony

@@ -74,19 +74,15 @@ func chainOf(t testing.TB, specs []seqSet) (*bundle, []string) {
 }
 
 // The sequences of a chain that grows give a State, and the newest is the last of the chain with
-// the highest sequence. Gaps are fine; an earlier list may repeat or run against the order as long
-// as the last one is above all of them.
+// the highest sequence. Gaps are fine. A number that repeats or runs against the order of the chain
+// is the finding trust-sequence, so a report with it has no State (see the next test).
 func TestInspectAChainWhoseLastListIsTheHighestGivesAState(t *testing.T) {
 	cases := map[string][]int64{
-		"one list":                         {1},
-		"one list with a high number":      {40},
-		"1, 2, 3":                          {1, 2, 3},
-		"1, 3":                             {1, 3},
-		"gaps":                             {2, 5, 9, 30},
-		"two earlier lists with a tie":     {2, 2, 3},
-		"earlier lists that run backwards": {7, 4, 9},
-		"the first one is the highest":     {1, 9, 3, 10},
-		"a low list in the middle":         {5, 1, 6},
+		"one list":                    {1},
+		"one list with a high number": {40},
+		"1, 2, 3":                     {1, 2, 3},
+		"1, 3":                        {1, 3},
+		"gaps":                        {2, 5, 9, 30},
 	}
 	for name, seqs := range cases {
 		t.Run(name, func(t *testing.T) {
@@ -104,37 +100,38 @@ func TestInspectAChainWhoseLastListIsTheHighestGivesAState(t *testing.T) {
 	}
 }
 
-// A chain whose last list does not hold a sequence above every list before it has no State: the
-// sentence names the last set and says why. Equal counts as not above.
-func TestInspectALastListThatIsNotTheHighestHasNoState(t *testing.T) {
+// A number that repeats or runs against the order of the chain is the finding trust-sequence, at the
+// set whose number is not higher than the number of the set before it, and the report fails: no
+// State, and no OrderErr (the finding is the reason). Equal counts as not higher.
+func TestInspectAChainWhoseNumbersRepeatOrRunBackHasNoState(t *testing.T) {
 	cases := map[string][]int64{
-		"3, 1":                      {3, 1},
-		"1, 3, 2":                   {1, 3, 2},
-		"2, 2":                      {2, 2},
-		"1, 2, 2":                   {1, 2, 2},
-		"the highest in the middle": {1, 9, 4},
-		"the highest first":         {9, 2, 4, 3},
-		"an equal one early":        {5, 1, 5},
-		"5, 1, 4, 6, 6":             {5, 1, 4, 6, 6},
+		"two earlier lists with a tie":     {2, 2, 3},
+		"earlier lists that run backwards": {7, 4, 9},
+		"the first one is the highest":     {1, 9, 3, 10},
+		"a low list in the middle":         {5, 1, 6},
+		"3, 1":                             {3, 1},
+		"1, 3, 2":                          {1, 3, 2},
+		"2, 2":                             {2, 2},
+		"1, 2, 2":                          {1, 2, 2},
+		"the highest in the middle":        {1, 9, 4},
+		"the highest first":                {9, 2, 4, 3},
+		"an equal one early":               {5, 1, 5},
+		"5, 1, 4, 6, 6":                    {5, 1, 4, 6, 6},
 	}
 	for name, seqs := range cases {
 		t.Run(name, func(t *testing.T) {
-			b, names := chainOf(t, nums(seqs...))
-			in := b.inspect()
-			wantReason(t, in, notHighestWords, "trust/"+names[len(names)-1])
-			want := ErrOrder.Error() + ": the last set of the chain, trust/" + names[len(names)-1] + ", " + notHighestWords
-			if in.OrderErr.Error() != want {
-				t.Errorf("OrderErr = %q\n want      %q", in.OrderErr.Error(), want)
-			}
+			b, _ := chainOf(t, nums(seqs...))
+			wantModel(t, b.inspect(), csetsOf(nums(seqs...)))
 		})
 	}
 }
 
-// A long chain that stops: 25 ceremonies and a last one that carries a lower number.
+// A long chain that stops: 25 ceremonies and a last one that carries a lower number. The finding
+// is at the last set only.
 func TestInspectALongChainThatEndsOnALowerSequenceHasNoState(t *testing.T) {
 	b := numbered(t, false, 25)
 	b.apply(withSet("24-bbbbbbbb", keyList(24, kA)))
-	wantReason(t, b.inspect(), notHighestWords, "trust/24-bbbbbbbb")
+	wantFailed(t, b.inspect(), []wf{{TrustSequence, "trust/24-bbbbbbbb"}})
 }
 
 // A ceremony stops, a later ceremony writes a set with a higher number, and then close lists the
@@ -218,22 +215,21 @@ func TestInspectAClosingRecordAndTheHighestSequence(t *testing.T) {
 func TestInspectTwoListsWithOneSequenceAtTwoPlaces(t *testing.T) {
 	t.Run("the last two", func(t *testing.T) {
 		b, names := chainOf(t, nums(1, 2, 2))
-		in := b.inspect()
-		wantReason(t, in, notHighestWords, "trust/"+names[2])
+		wantFailed(t, b.inspect(), []wf{{TrustSequence, "trust/" + names[2]}})
 	})
 	t.Run("the first and the last", func(t *testing.T) {
 		b, names := chainOf(t, nums(4, 5, 4))
-		wantReason(t, b.inspect(), notHighestWords, "trust/"+names[2])
+		wantFailed(t, b.inspect(), []wf{{TrustSequence, "trust/" + names[2]}})
 	})
 	t.Run("only the earlier two", func(t *testing.T) {
 		b, names := chainOf(t, nums(2, 2, 3))
-		wantState(t, b.inspect(), names...)
+		wantFailed(t, b.inspect(), []wf{{TrustSequence, "trust/" + names[1]}})
 	})
 	t.Run("a name number below the sequence of the list", func(t *testing.T) {
-		// 2-aaaaaaaa has the sequence 3 and 3-bbbbbbbb the sequence 3: equal, so no State; the
-		// number of the last name is the sequence of its list, so the sentence is the new one.
+		// 2-aaaaaaaa has the sequence 3 and 3-bbbbbbbb the sequence 3: the first is not the sequence
+		// of its list; the second is higher than the number 2 before it and is its list's number.
 		b, names := chainOf(t, []seqSet{{num: 2, seq: 3}, {num: 3, seq: 3}})
-		wantReason(t, b.inspect(), notHighestWords, "trust/"+names[1])
+		wantFailed(t, b.inspect(), []wf{{TrustSequence, "trust/" + names[0]}})
 	})
 }
 
@@ -260,22 +256,19 @@ func TestInspectAListOfTheChainWithNoSequenceHasNoState(t *testing.T) {
 		wantReason(t, b.inspect(), unreadableWords)
 	})
 	t.Run("one before a lower last", func(t *testing.T) {
-		// Both reasons hold; one sentence is given, and it is one of the two.
-		b, _ := chainOf(t, []seqSet{none(1), seq(5), seq(3)})
-		in := b.inspect()
-		wantReason(t, in)
-		if msg := in.OrderErr.Error(); !strings.Contains(msg, unreadableWords) && !strings.Contains(msg, notHighestWords) {
-			t.Errorf("OrderErr %q names neither reason", msg)
-		}
+		// The lower last is the finding trust-sequence, and the report fails.
+		b, names := chainOf(t, []seqSet{none(1), seq(5), seq(3)})
+		wantFailed(t, b.inspect(), []wf{{TrustSequence, "trust/" + names[2]}})
 	})
 	t.Run("the last", func(t *testing.T) {
 		b, names := chainOf(t, []seqSet{seq(1), none(2)})
 		wantReason(t, b.inspect(), nameNumberWords, "trust/"+names[1])
 	})
 	t.Run("a list with no sequence is not the sequence 0", func(t *testing.T) {
-		// A first list with the sequence 0 written out is a list that has a sequence.
+		// A first list with the sequence 0 written out is a list that has a sequence, and a sequence
+		// below 1 is anchor-unknown; the name 1 is not that sequence.
 		b := chainBundle(t, false, cset{setN(1), seqList("0", kA)}, cset{setN(2), keyList(2, kA)})
-		wantState(t, b.inspect(), setN(1), setN(2))
+		wantFailed(t, b.inspect(), []wf{{AnchorUnknown, listPathOf(setN(1))}, {TrustSequence, "trust/" + setN(1)}})
 		b2 := chainBundle(t, false, cset{setN(1), rootsJSON(0, kA)}, cset{setN(2), keyList(2, kA)})
 		wantReason(t, b2.inspect(), unreadableWords)
 	})
@@ -290,8 +283,8 @@ func TestInspectAListOfTheChainWithNoSequenceHasNoState(t *testing.T) {
 	})
 }
 
-// The refusals that were there keep their sentences when the new one would also fire: the number in
-// the name of the newest set is compared with its sequence first.
+// A last set whose number is not its sequence, is not higher than the one before, or has no sequence
+// is the finding trust-sequence, and the report fails.
 func TestInspectTheNameNumberRefusalComesBeforeTheHighestSequence(t *testing.T) {
 	cases := map[string][]seqSet{
 		"the last list is lower and its name says another number": {{num: 3, seq: 3}, {num: 9, seq: 1}},
@@ -300,8 +293,8 @@ func TestInspectTheNameNumberRefusalComesBeforeTheHighestSequence(t *testing.T) 
 	}
 	for name, specs := range cases {
 		t.Run(name, func(t *testing.T) {
-			b, names := chainOf(t, specs)
-			wantReason(t, b.inspect(), nameNumberWords, "trust/"+names[len(names)-1])
+			b, _ := chainOf(t, specs)
+			wantModel(t, b.inspect(), csetsOf(specs))
 		})
 	}
 }
@@ -352,8 +345,11 @@ func TestInspectNotHighestComesBeforeTheBytesBudget(t *testing.T) {
 			r.refresh()
 		})
 	}
-	// With the budget spent the newest list is not kept; the last set has the lowest sequence.
-	b.apply(withSet(setN(1), keyList(1, kA)))
+	// With the budget spent the newest list is not kept; the last set has the lowest sequence. It is
+	// a leftover set that a closing record lists: the sets of a closing record are not judged by
+	// trust-sequence, so the report is clean.
+	stopped := b.unfinished(withSet("1-bbbbbbbb", keyList(1, kA)))
+	b.closing(stopped, listsLeftover(stopped, nil))
 	want, err := runMem(t, b.mem)
 	if err != nil || !want.Clean() {
 		t.Fatalf("Check = %v, %v; the bundle is meant to be clean", want, err)
@@ -366,18 +362,20 @@ func TestInspectNotHighestComesBeforeTheBytesBudget(t *testing.T) {
 	wantReason(t, in, notHighestWords)
 }
 
-// The sequence 0 written out is a sequence like any other for this rule: two lists with it are two
-// lists with one sequence, and a list with it before a list with the sequence 1 is lower. (The
-// root list page says a host takes only a sequence of at least 1; the inspection does not judge
-// that, and holds only the order.)
-func TestInspectTheSequenceZeroIsHeldToTheSameRule(t *testing.T) {
+// The sequence 0 written out is a sequence below 1: the root list page says a host takes only a
+// sequence of at least 1, so the report has the finding anchor-unknown for it and fails, and there
+// is no State. Two lists with it are also two lists with one number.
+func TestInspectTheSequenceZeroIsAFindingOfTheAnchor(t *testing.T) {
 	t.Run("two lists with the sequence 0", func(t *testing.T) {
 		b := chainBundle(t, false, cset{"0-aaaaaaaa", seqList("0", kA)}, cset{"0-bbbbbbbb", seqList("0", kA)})
-		wantReason(t, b.inspect(), notHighestWords, "trust/0-bbbbbbbb")
+		wantFailed(t, b.inspect(), []wf{
+			{AnchorUnknown, listPathOf("0-aaaaaaaa")}, {AnchorUnknown, listPathOf("0-bbbbbbbb")},
+			{TrustSequence, "trust/0-bbbbbbbb"},
+		})
 	})
 	t.Run("the sequence 0 and then 1", func(t *testing.T) {
 		b := chainBundle(t, false, cset{"0-aaaaaaaa", seqList("0", kA)}, cset{setN(1), keyList(1, kA)})
-		wantState(t, b.inspect(), "0-aaaaaaaa", setN(1))
+		wantFailed(t, b.inspect(), []wf{{AnchorUnknown, listPathOf("0-aaaaaaaa")}})
 	})
 }
 

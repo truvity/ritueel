@@ -66,15 +66,16 @@ func TestInspectTheSetAfterAClosingRecordStandsAfterIt(t *testing.T) {
 	wantState(t, b.inspect(), setN(5), setN(6), setN(7))
 }
 
-// The same chain with the set after the closing record the lowest of all: the last of the chain
-// does not hold the highest sequence, so there is no State.
+// The same chain with the set after the closing record the lowest of all: its number is not higher
+// than the number of the set before it (the set that the closing record lists is left out), so the
+// finding trust-sequence is at it, and there is no State.
 func TestInspectTheSetAfterAClosingRecordWithTheLowestSequenceHasNoState(t *testing.T) {
 	b := newBundle(t)
 	b.apply(withSet(setN(5), keyList(5, kA)))
 	stopped := b.unfinished(withSet(setN(6), keyList(6, kA)))
 	b.closing(stopped, listsLeftover(stopped, nil))
 	b.apply(withSet(setN(1), keyList(1, kA)))
-	wantOrderErr(t, b.inspect())
+	wantFailed(t, b.inspect(), []wf{{TrustSequence, "trust/" + setN(1)}})
 }
 
 // A set that no record lists stands where its list says it follows (the record named by
@@ -254,29 +255,46 @@ func TestInspectNewestMustAgreeWithItsName(t *testing.T) {
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			b := chainBundle(t, false, cset{setN(1), keyList(1, kA)}, cset{c.set, c.list})
-			wantOrderErr(t, b.inspect())
+			sets := []cset{{setN(1), keyList(1, kA)}, {c.set, c.list}}
+			wantRefusedBy(t, chainBundle(t, false, sets...).inspect(), sets)
 		})
 	}
+	t.Run("the same cases for a set that a closing record lists", func(t *testing.T) {
+		// A set that a closing record lists is not judged by trust-sequence: the report is clean, and
+		// the State refuses the newest set whose name and list do not agree.
+		for _, c := range cases {
+			t.Run(c.name, func(t *testing.T) {
+				if c.set == "latest" || strings.HasPrefix(c.set, "-") {
+					return // a name with no number is held to the rule for names first
+				}
+				in := leftoverLast(t, cset{setN(1), keyList(1, kA)}, c.set, c.list).inspect()
+				if in.Report.Clean() {
+					wantOrderErr(t, in)
+					return
+				}
+				if in.State != nil || in.OrderErr != nil {
+					t.Errorf("State %v, OrderErr %v with a failing report", in.State, in.OrderErr)
+				}
+			})
+		}
+	})
 	t.Run("no sequence and the name 0", func(t *testing.T) {
 		// A list with no sequence is not a list with the sequence 0.
 		b := chainBundle(t, false, cset{"0-aaaaaaaa", rootsJSON(0, kA)})
 		wantOrderErr(t, b.inspect())
 	})
 	t.Run("a sequence of 0 and the name 0", func(t *testing.T) {
+		// The sequence 0 is below 1: the finding anchor-unknown, so no State.
 		b := chainBundle(t, false, cset{"0-aaaaaaaa", seqList("0", kA)})
-		st := wantState(t, b.inspect(), "0-aaaaaaaa")
-		if st.Newest.Number != 0 {
-			t.Errorf("Number = %d", st.Newest.Number)
-		}
+		wantFailed(t, b.inspect(), []wf{{AnchorUnknown, listPathOf("0-aaaaaaaa")}})
 	})
 	t.Run("the first set carries any sequence when it is not the newest", func(t *testing.T) {
-		// Only the newest set is held to its name: the order comes from the chain.
+		// Every listed set is held to its name now: the first set carries the sequence 50 and its name
+		// says 1, so it has the finding trust-sequence, newest or not.
 		b := chainBundle(t, false, cset{setN(1), keyList(50, kA)}, cset{setN(60), keyList(60, kA)})
-		wantState(t, b.inspect(), setN(1), setN(60))
-		// With the newest below the first, the newest is held to the sequences of the chain too.
+		wantFailed(t, b.inspect(), []wf{{TrustSequence, "trust/" + setN(1)}})
 		low := chainBundle(t, false, cset{setN(1), keyList(50, kA)}, cset{setN(2), keyList(2, kA)})
-		wantOrderErr(t, low.inspect())
+		wantFailed(t, low.inspect(), []wf{{TrustSequence, "trust/" + setN(1)}})
 	})
 }
 
@@ -297,7 +315,8 @@ func TestInspectErrOrderIsItsOwnError(t *testing.T) {
 	if ErrOrder == nil || errors.Is(ErrOrder, ErrTooMuch) || errors.Is(ErrOrder, ErrNotBundle) {
 		t.Error("ErrOrder is nil or another error")
 	}
-	b := chainBundle(t, false, cset{setN(1), keyList(1, kA)}, cset{setN(2), keyList(9, kA)})
+	b := chainBundle(t, false, cset{setN(1), keyList(1, kA)})
+	b.apply(withSets(cset{setN(2), keyList(2, kA)}, cset{setN(3), keyList(3, kA)}))
 	in := b.inspect()
 	wantOrderErr(t, in)
 	if errors.Is(in.OrderErr, ErrTooMuch) {
@@ -311,7 +330,7 @@ func TestInspectErrOrderIsItsOwnError(t *testing.T) {
 // The words of a reason never carry a name as it is on the stick: a name is shown with the escape,
 // and cut.
 func TestInspectOrderReasonDoesNotCarryRawNames(t *testing.T) {
-	b := chainBundle(t, false, cset{setN(1), keyList(1, kA)}, cset{"2-" + strings.Repeat("a", 8), keyList(7, kA)})
+	b := leftoverLast(t, cset{setN(1), keyList(1, kA)}, "2-"+strings.Repeat("a", 8), keyList(7, kA))
 	in := b.inspect()
 	wantOrderErr(t, in)
 	if msg := in.OrderErr.Error(); !printable(msg) || strings.ContainsAny(msg, "\r\n") {
@@ -333,8 +352,8 @@ func TestInspectFindReturnsOverTheListsOfACleanBundleFindsNothing(t *testing.T) 
 		"fingerprints": {
 			{setN(1), keyList(1, ent{"A", pa, f1})}, {setN(2), keyList(2, ent{"A", pa, f1}, ent{"B", pb, f2})}, {setN(3), keyList(3, ent{"B", pb, f2})},
 		},
-		"descending names": {
-			{"9-aaaaaaaa", keyList(9, kA, kB)}, {"8-aaaaaaaa", keyList(8, kB)}, {"17-aaaaaaaa", keyList(17, kB)},
+		"names with gaps": {
+			{"9-aaaaaaaa", keyList(9, kA, kB)}, {"17-aaaaaaaa", keyList(17, kB)}, {"40-aaaaaaaa", keyList(40, kB)},
 		},
 		"lists with no keys": {
 			{setN(1), keyList(1)}, {setN(2), keyList(2)}, {setN(3), keyList(3, kA)},
@@ -496,15 +515,12 @@ func TestInspectEachReasonOfNoOrderSaysWhatIsWrong(t *testing.T) {
 		check("one record lists two sets", b.inspect(), "stand at one place")
 	}
 	{
-		b := chainBundle(t, false, cset{setN(1), keyList(1, kA)}, cset{setN(2), keyList(9, kA)})
+		// The newest set is one that a closing record lists, which trust-sequence leaves out.
+		b := leftoverLast(t, cset{setN(1), keyList(1, kA)}, setN(2), keyList(9, kA))
 		check("the newest set has another sequence than its number", b.inspect(), "trust/"+setN(2), "not the sequence")
 	}
 	{
-		b := chainBundle(t, false, cset{setN(1), keyList(1, kA)}, cset{"latest", keyList(2, kA)})
-		check("the newest set has no number", b.inspect(), "trust/latest", "not the sequence")
-	}
-	{
-		b := chainBundle(t, false, cset{setN(1), keyList(1, kA)}, cset{setN(2), rootsJSON(0, kA)})
+		b := leftoverLast(t, cset{setN(1), keyList(1, kA)}, setN(2), rootsJSON(0, kA))
 		check("the newest list has no sequence", b.inspect(), "trust/"+setN(2), "not the sequence")
 	}
 }

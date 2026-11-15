@@ -61,7 +61,7 @@ func TestTrustNumberIsAtMostFifteenDigitsWithNoLeadingZero(t *testing.T) {
 	}{
 		{"999999999999999-3fa9c1d3", 999999999999999, UnfinishedCeremony},
 		{"1000000000000000-3fa9c1d3", 1000000000000000, TrustSetUnlisted},
-		{"0-3fa9c1d3", 0, UnfinishedCeremony},
+		{"0-3fa9c1d3", 0, TrustSetUnlisted}, // 0 is no trust number: the trust numbers are 1 and up
 		{"00-3fa9c1d3", 0, TrustSetUnlisted},
 		{"01-3fa9c1d3", 1, TrustSetUnlisted},
 		{"1-3fa9c1d3", 1, UnfinishedCeremony},

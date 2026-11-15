@@ -176,6 +176,7 @@ type checker struct {
 	lowestDone bool
 	unfinished map[string]string // trust sets of an unfinished ceremony -> the end its plan names
 	onChain    map[string]bool   // digests of the records on the chain
+	forked     map[string]bool   // digests of records that two or more records name: the places of a fork
 	depth      map[string]int    // digest of a record on the chain -> the number of records before it
 	ends       []string
 	wantedDirs []string // ceremony folders that have a record that was read and a wanted/ folder
@@ -241,6 +242,7 @@ func runCheck(ctx context.Context, fsys fsx.FS, lim limits, keep bool) (*checker
 		closedPlan: map[string]closedPlan{},
 		unfinished: map[string]string{},
 		onChain:    map[string]bool{},
+		forked:     map[string]bool{},
 		depth:      map[string]int{},
 		walkLimit:  lim.walkEntries,
 		placeLimit: lim.setPlaces,
@@ -302,6 +304,7 @@ func (ck *checker) run() error {
 	if err := ck.anchors(); err != nil {
 		return err
 	}
+	ck.trustSequence()
 	if err := ck.rootReturns(); err != nil {
 		return err
 	}
@@ -695,6 +698,9 @@ func (ck *checker) chain() {
 	}
 	for _, prev := range slices.Sorted(maps.Keys(children)) {
 		kids := children[prev]
+		if len(kids) >= 2 {
+			ck.forked[prev] = true
+		}
 		first, ok := ck.byDigest[prev]
 		if len(kids) < 2 || !ok {
 			continue // a missing predecessor is chain-broken for each record that names it
@@ -758,7 +764,7 @@ func (ck *checker) trust() error {
 		}
 		path := "trust/" + name
 		n, ok := trustNumber(name)
-		if !ok {
+		if !ok || n < 1 {
 			ck.col.add(TrustSetUnlisted, path, "no record lists it, and its name has no trust number")
 			continue
 		}
@@ -778,7 +784,10 @@ func (ck *checker) trust() error {
 }
 
 // trustNumber returns the number a trust set's name begins with: the decimal digits before the
-// first hyphen, written with no leading zero (the spelling is Proposed on the bundle page).
+// first hyphen, written with no leading zero (the spelling is Proposed on the bundle page). A name
+// that begins 0- has the number 0 here, which is a number that is read and is no trust number: the
+// trust numbers are 1 and up (the sequence of a root list is at least 1), and the callers that
+// judge a name by its number ask for [trustNumberFrom1].
 func trustNumber(name string) (int64, bool) {
 	digits, _, found := strings.Cut(name, "-")
 	if !found || digits == "" || len(digits) > 15 || (len(digits) > 1 && digits[0] == '0') {
@@ -789,6 +798,13 @@ func trustNumber(name string) (int64, bool) {
 		return 0, false
 	}
 	return n, true
+}
+
+// trustNumberFrom1 is [trustNumber] for a name whose number is a trust number: 1 and up. A number of
+// 0 is read by [trustNumber] and is no trust number.
+func trustNumberFrom1(name string) (int64, bool) {
+	n, ok := trustNumber(name)
+	return n, ok && n >= 1
 }
 
 // openAttempts links each open attempt to the trust sequence of its plan, and returns the
@@ -1020,6 +1036,16 @@ func (ck *checker) anchors() error {
 			continue
 		}
 		ck.rootLists = append(ck.rootLists, setList{set: name, read: anchor})
+		// The range of a sequence is judged here: it is an integer of at least 1 (root-list page). A
+		// sequence that the strict reader of JSON does not accept (outside plus or minus 2^53-1, so
+		// also the lowest 64-bit number) makes the list one that cannot be read, as for every other
+		// integer outside that range: it is anchor-unknown with that detail and the bundle fails, and
+		// its keys are not read, because no lenient reader of the file is added.
+		if anchor.hasSequence && anchor.sequence < 1 {
+			// The keys of the list are read all the same (it is in rootLists above), so that the list
+			// hides no key from the later lists.
+			ck.col.add(AnchorUnknown, path, "the root list has a sequence of "+strconv.FormatInt(anchor.sequence, 10)+", and a sequence is an integer of at least 1; its keys are still read")
+		}
 		why, err := ck.judgeAnchor(name, anchor)
 		if err != nil {
 			return err
@@ -1047,7 +1073,7 @@ func (ck *checker) judgeAnchor(name string, a *anchorOf) (string, error) {
 		// list, so it is a second fact unless the set has the lowest trust number of all: then it
 		// can be the first, whose record was removed or whose ceremony did not finish, and the
 		// first finding says all there is to say.
-		if n, ok := trustNumber(name); ok && n == ck.lowestSet() {
+		if n, ok := trustNumberFrom1(name); ok && n == ck.lowestSet() {
 			return "", nil
 		}
 		return "the root list has no last_record_sha256, and the set is not the first one", nil
@@ -1155,7 +1181,7 @@ func (ck *checker) lowestSet() int64 {
 	ck.lowestDone = true
 	ck.lowest = -1
 	for _, name := range ck.setNames {
-		if n, ok := trustNumber(name); ok && (ck.lowest < 0 || n < ck.lowest) {
+		if n, ok := trustNumberFrom1(name); ok && (ck.lowest < 0 || n < ck.lowest) {
 			ck.lowest = n
 		}
 	}

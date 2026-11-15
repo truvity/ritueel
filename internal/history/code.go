@@ -9,8 +9,8 @@ import (
 )
 
 // Code is the name of one finding or one notice. Thirteen are the names of the table "The hash
-// chain" in docs/reference/ceremony-record.md; FileUnlisted, UnexpectedName and UnexpectedFile
-// are for what the check did not expect.
+// chain" in docs/reference/ceremony-record.md; FileUnlisted, TrustSequence, UnexpectedName and
+// UnexpectedFile are the others.
 type Code string
 
 // The codes, in the order the findings are reported in: the order of the page's table, with
@@ -47,6 +47,10 @@ const (
 	// RootReturns: a root list holds a root key that left the root list, by its pin or by its
 	// OpenPGP fingerprint under another pin (record 0006, rule 54).
 	RootReturns Code = "root-returns"
+	// TrustSequence: the trust sets that ordinary ceremony records list, taken in the order of the
+	// chain, have a folder number that is not the sequence of their root list, or a number that is
+	// not higher than the number before it (record 0006, rules 14 and 21).
+	TrustSequence Code = "trust-sequence"
 	// UnexpectedName: a name in history/, in trust/, in a ceremony folder or in a trust set that
 	// breaks the rule for names (record 0006, rule 38) and does not start with the prefix of a
 	// temporary name; or a link, a FIFO, a socket or a device where a ceremony folder or a trust
@@ -61,7 +65,7 @@ const (
 var codeOrder = []Code{
 	ChainBroken, Fork, RecordOffChain, RecordNotCanonical, RecordVersionUnknown, RecordInvalid,
 	TranscriptDigest, FileDigest, FileMissing, FileUnlisted, TrustSetUnlisted, UnfinishedCeremony, AnchorUnknown,
-	RootReturns, UnexpectedName, UnexpectedFile,
+	RootReturns, TrustSequence, UnexpectedName, UnexpectedFile,
 }
 
 // Codes returns every code in the order findings are reported in.

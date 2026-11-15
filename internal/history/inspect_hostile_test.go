@@ -627,8 +627,9 @@ func TestInspectConcurrentRunsAgree(t *testing.T) {
 	}
 }
 
-// A long chain: the order of 300 ceremonies whose names run against the chain, up to the last one,
-// which holds the highest sequence.
+// A long chain: 300 ceremonies whose names run against the chain, up to the last one, which holds
+// the highest sequence. Each set whose number is not higher than the one before it is a finding of
+// trust-sequence (298 of them: the first has no set before it, the last is higher than the one before), and there is no State.
 func TestInspectALongChainInTheOrderOfTheChain(t *testing.T) {
 	const n = 300
 	sets := make([]cset, n)
@@ -642,10 +643,11 @@ func TestInspectALongChainInTheOrderOfTheChain(t *testing.T) {
 		sets[i] = cset{names[i], keyList(int64(num), kA)}
 	}
 	b := chainBundle(t, true, sets...)
-	st := wantState(t, b.inspect(), names...)
-	if st.Records != n || st.End != b.recs[n-1].digest {
-		t.Errorf("Records %d, End %s", st.Records, st.End)
+	var want []wf
+	for i := 1; i < n-1; i++ {
+		want = append(want, wf{TrustSequence, "trust/" + names[i]})
 	}
+	wantFailed(t, b.inspect(), want)
 }
 
 // Many open attempts in one bundle: the names come out in order, once each.
