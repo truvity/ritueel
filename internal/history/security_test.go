@@ -51,7 +51,7 @@ func TestPlantedUnfinishedCeremonyIsNotANoticeInAHistoryWithRecords(t *testing.T
 	t.Run("a plan with no last_record_sha256 and a list with no anchor", func(t *testing.T) {
 		b, u, end := plant(func(r *rec) {
 			r.plan.LastRecordSHA256 = ""
-			r.artifacts["trust/"+r.set+"/root-list.json"] = rootListBytes("")
+			r.artifacts["trust/"+r.set+"/root-list.json"] = rootListBytes(r.set, "")
 			r.refresh()
 		})
 		rep := b.run()
@@ -106,7 +106,7 @@ func TestPlantedUnfinishedCeremonyIsNotANoticeInAHistoryWithRecords(t *testing.T
 		b.apply()
 		b.apply()
 		u := b.unfinished(func(r *rec) {
-			r.artifacts["trust/"+r.set+"/root-list.json"] = rootListBytes("")
+			r.artifacts["trust/"+r.set+"/root-list.json"] = rootListBytes(r.set, "")
 			r.refresh()
 		})
 		rep := b.run()
@@ -120,7 +120,7 @@ func TestPlantedUnfinishedCeremonyIsNotANoticeInAHistoryWithRecords(t *testing.T
 		first := b.apply()
 		b.apply()
 		u := b.unfinished(func(r *rec) {
-			r.artifacts["trust/"+r.set+"/root-list.json"] = rootListBytes(first.digest)
+			r.artifacts["trust/"+r.set+"/root-list.json"] = rootListBytes(r.set, first.digest)
 			r.refresh()
 		})
 		rep := b.run()
@@ -217,7 +217,7 @@ func TestRootListOfAnUnfinishedSetAnchorsTheEndOfItsPlan(t *testing.T) {
 				case "older":
 					anchor = first.digest
 				}
-				r.artifacts["trust/"+r.set+"/root-list.json"] = rootListBytes(anchor)
+				r.artifacts["trust/"+r.set+"/root-list.json"] = rootListBytes(r.set, anchor)
 				r.refresh()
 			})
 			rep := b.run()
@@ -311,8 +311,9 @@ func TestRootListRolledBackToTheListBeforeIsNotClean(t *testing.T) {
 	})
 	rep := b.run()
 	// Before: exit 0, and an end line that is the third record's digest, changed from the
-	// untouched history's, which was the only sign.
-	wantFindings(t, rep, []wf{{AnchorUnknown, "trust/" + three.set + "/root-list.json"}})
+	// untouched history's, which was the only sign. The copied list also holds the sequence of the
+	// set before, which is not the number of the third folder.
+	wantFindings(t, rep, []wf{{AnchorUnknown, "trust/" + three.set + "/root-list.json"}, {TrustSequence, "trust/" + three.set}})
 	if rep.Clean() {
 		t.Error("clean")
 	}
@@ -322,7 +323,7 @@ func TestAnchorRulesOfTheRecordBeforeTheCeremony(t *testing.T) {
 	t.Run("the first list has an anchor", func(t *testing.T) {
 		b := newBundle(t)
 		r := b.apply(func(r *rec) {
-			r.artifacts["trust/"+r.set+"/root-list.json"] = rootListBytes(digestA)
+			r.artifacts["trust/"+r.set+"/root-list.json"] = rootListBytes(r.set, digestA)
 			r.refresh()
 		})
 		wantFindings(t, b.run(), []wf{{AnchorUnknown, "trust/" + r.set + "/root-list.json"}})
@@ -331,7 +332,7 @@ func TestAnchorRulesOfTheRecordBeforeTheCeremony(t *testing.T) {
 		b := newBundle(t)
 		b.apply()
 		r := b.apply(func(r *rec) {
-			r.artifacts["trust/"+r.set+"/root-list.json"] = rootListBytes("")
+			r.artifacts["trust/"+r.set+"/root-list.json"] = rootListBytes(r.set, "")
 			r.refresh()
 		})
 		wantFindings(t, b.run(), []wf{{AnchorUnknown, "trust/" + r.set + "/root-list.json"}})

@@ -50,7 +50,7 @@ func modelNumber(name string) (int64, bool) {
 
 // modelTrustSeq is what record 0006, rules 14 and 21, give for a chain of ordinary ceremonies that list one set each, with
 // no fork and no closing record: for each set in the order of the chain, a finding anchor-unknown
-// when the sequence of its list is below 1, and a finding trust-sequence when the number of its
+// when the list has no sequence or one below 1, and a finding trust-sequence when the number of its
 // name is not the sequence of its list, is not higher than the number of the set before it, or is
 // no trust number at all. A list with no sequence is not compared with its name.
 func modelTrustSeq(sets []cset) []wf {
@@ -63,11 +63,16 @@ func modelTrustSeq(sets []cset) []wf {
 			name = setN(i + 1)
 		}
 		seq, hasSeq := seqOfList(s.list)
-		if hasSeq && (seq > maxIJSON || seq < -maxIJSON) {
+		switch {
+		case !hasSeq:
+			// a list with no sequence member is refused by a host, so it is anchor-unknown; it is not
+			// compared with its name
+			out = append(out, wf{AnchorUnknown, listPathOf(name)})
+		case seq > maxIJSON || seq < -maxIJSON:
 			// a number that RFC 8785 cannot hold: the list cannot be read, so it has no sequence to compare
 			out = append(out, wf{AnchorUnknown, listPathOf(name)})
 			hasSeq = false
-		} else if hasSeq && seq < 1 {
+		case seq < 1:
 			out = append(out, wf{AnchorUnknown, listPathOf(name)})
 		}
 		n, ok := modelNumber(name)

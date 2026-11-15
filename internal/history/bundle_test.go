@@ -10,6 +10,7 @@ import (
 	"os"
 	"path/filepath"
 	"slices"
+	"strconv"
 	"strings"
 	"sync"
 	"syscall"
@@ -101,13 +102,26 @@ func refsOf(m map[string][]byte) []files.FileRef {
 	return out
 }
 
-// rootListBytes is the root list of a trust set: the one member the check reads, and a version.
-func rootListBytes(last string) []byte {
-	m := map[string]any{"version": 1}
+// rootListBytes is the root list of the trust set set: a version, the sequence (the number of
+// the folder of the set, as a list that a host takes has it) and the anchor when there is one.
+func rootListBytes(set, last string) []byte {
+	m := map[string]any{"version": 1, "sequence": setSequence(set)}
 	if last != "" {
 		m["last_record_sha256"] = last
 	}
 	return must(canonjson.Marshal(m))
+}
+
+// setSequence is the number at the start of the name of a trust set, the sequence that its root
+// list carries. A name with no number of at least 1 (and one with a number that does not fit) gets
+// 1: such a set is judged by its name, and its list still has a sequence.
+func setSequence(set string) int64 {
+	n, _, _ := strings.Cut(set, "-")
+	v, err := strconv.ParseInt(n, 10, 64)
+	if err != nil || v < 1 || v > 1<<53-1 {
+		return 1
+	}
+	return v
 }
 
 // apply adds the ceremony folder of a ceremony of a plan, with a record, and a trust set.
@@ -140,7 +154,7 @@ func (b *bundle) add(kind string, of *rec, opts []func(*rec)) *rec {
 		r.noPlan, r.noAttempt = true, true
 	default:
 		r.wanted = map[string][]byte{"ritueel.yaml": []byte(fmt.Sprintf("name: bundle %d\n", n))}
-		r.artifacts["trust/"+r.set+"/root-list.json"] = rootListBytes(b.end)
+		r.artifacts["trust/"+r.set+"/root-list.json"] = rootListBytes(r.set, b.end)
 		r.artifacts["trust/"+r.set+"/keys.txt"] = []byte(fmt.Sprintf("keys of set %d\n", n))
 		r.record = files.Record{Version: 1, Command: files.CommandApply, Outcome: files.OutcomeCompleted, PrevRecordSHA256: b.end, TrustSequence: int64(n)}
 		if kind == "unfinished" {
@@ -244,7 +258,7 @@ func prev(d string) func(*rec) {
 	return func(r *rec) {
 		r.record.PrevRecordSHA256 = d
 		if p := "trust/" + r.set + "/root-list.json"; r.artifacts[p] != nil {
-			r.artifacts[p] = rootListBytes(d)
+			r.artifacts[p] = rootListBytes(r.set, d)
 			r.refresh()
 		}
 	}

@@ -3,6 +3,7 @@
 package history
 
 import (
+	"fmt"
 	"regexp"
 	"strings"
 	"testing"
@@ -17,7 +18,7 @@ func TestTrustSetThatNoRecordListsIsUnlisted(t *testing.T) {
 	b := newBundle(t)
 	b.apply()
 	b.mkdir("trust/9-3fa9c1d2")
-	b.put("trust/9-3fa9c1d2/root-list.json", rootListBytes(b.end))
+	b.put("trust/9-3fa9c1d2/root-list.json", rootListBytes("9-3fa9c1d2", b.end))
 	rep := b.run()
 	wantFindings(t, rep, []wf{{TrustSetUnlisted, "trust/9-3fa9c1d2"}})
 	wantReasons(t, rep, []Code{TrustSetUnlisted}, nil)
@@ -231,7 +232,7 @@ func TestRootListAnchorsToTheRecordBeforeTheCeremonyThatWroteTheSet(t *testing.T
 	first := b2.apply()
 	b2.apply()
 	third := b2.apply(func(r *rec) {
-		r.artifacts["trust/"+r.set+"/root-list.json"] = rootListBytes(first.digest)
+		r.artifacts["trust/"+r.set+"/root-list.json"] = rootListBytes(r.set, first.digest)
 		r.refresh()
 	})
 	rep := b2.run()
@@ -251,7 +252,8 @@ func rootListAs(last string, bytesOf func(string) []byte) func(*rec) {
 }
 
 func TestRootListThatDoesNotAnchorToTheChain(t *testing.T) {
-	enc := rootListBytes
+	// The list under test is the one of the second set of the bundle: its sequence is 2.
+	enc := func(last string) []byte { return rootListBytes(setOfRecord(2), last) }
 	cases := []struct {
 		name string
 		list func(first *rec) []byte
@@ -259,11 +261,11 @@ func TestRootListThatDoesNotAnchorToTheChain(t *testing.T) {
 		{"a digest that is no record", func(*rec) []byte { return enc(digestB) }},
 		{"a digest in capitals", func(f *rec) []byte { return enc(strings.ToUpper(f.digest)) }},
 		{"a digest that is too short", func(f *rec) []byte { return enc(f.digest[:63]) }},
-		{"a text that is no digest", func(*rec) []byte { return []byte(`{"last_record_sha256":"hello","version":1}`) }},
-		{"a number for the digest", func(*rec) []byte { return []byte(`{"last_record_sha256":5,"version":1}`) }},
-		{"null for the digest", func(*rec) []byte { return []byte(`{"last_record_sha256":null,"version":1}`) }},
-		{"no anchor in a list that is not the first", func(*rec) []byte { return []byte(`{"version":1}`) }},
-		{"an empty object", func(*rec) []byte { return []byte(`{}`) }},
+		{"a text that is no digest", func(*rec) []byte { return []byte(`{"last_record_sha256":"hello","sequence":2,"version":1}`) }},
+		{"a number for the digest", func(*rec) []byte { return []byte(`{"last_record_sha256":5,"sequence":2,"version":1}`) }},
+		{"null for the digest", func(*rec) []byte { return []byte(`{"last_record_sha256":null,"sequence":2,"version":1}`) }},
+		{"no anchor in a list that is not the first", func(*rec) []byte { return []byte(`{"sequence":2,"version":1}`) }},
+		{"an object with a sequence and nothing else", func(*rec) []byte { return []byte(`{"sequence":2}`) }},
 		{"a list that is cut short", func(f *rec) []byte {
 			return []byte(`{"last_record_sha256":"` + f.digest[:20])
 		}},
@@ -271,7 +273,7 @@ func TestRootListThatDoesNotAnchorToTheChain(t *testing.T) {
 		{"an empty file", func(*rec) []byte { return nil }},
 		{"a list that is an array", func(*rec) []byte { return []byte(`[]`) }},
 		{"a repeated anchor", func(f *rec) []byte {
-			return []byte(`{"last_record_sha256":"` + f.digest + `","last_record_sha256":"` + f.digest + `","version":1}`)
+			return []byte(`{"last_record_sha256":"` + f.digest + `","last_record_sha256":"` + f.digest + `","sequence":2,"version":1}`)
 		}},
 		{"a byte order mark", func(f *rec) []byte {
 			return append([]byte("\xef\xbb\xbf"), enc(f.digest)...)
@@ -297,7 +299,7 @@ func TestRootListAnchorDetailSaysWhichCase(t *testing.T) {
 	b.apply()
 	hex16 := regexp.MustCompile(`[0-9a-f]{16}`)
 	var details []string
-	for _, list := range [][]byte{enc(digestB), []byte(`{"version":1}`), []byte("garbage")} {
+	for _, list := range [][]byte{enc(digestB), []byte(`{"sequence":3,"version":1}`), []byte("garbage")} {
 		second := b.apply(func(r *rec) {
 			r.artifacts["trust/"+r.set+"/root-list.json"] = list
 			r.refresh()
@@ -319,11 +321,15 @@ func TestRootListAnchorDetailSaysWhichCase(t *testing.T) {
 	}
 }
 
-func enc(s string) []byte { return rootListBytes(s) }
+// setOfRecord is the name of the trust set that the builder gives the ceremony n.
+func setOfRecord(n int) string { return fmt.Sprintf("%d-%08x", n, 0x3fa9c1d2+uint32(n)) }
+
+// enc is the root list of the second set of a bundle built by the builder.
+func enc(s string) []byte { return rootListBytes(setOfRecord(2), s) }
 
 func TestRootListThatIsNotTheFirstNeedsAnAnchorButTheFirstDoesNot(t *testing.T) {
 	b := newBundle(t)
-	b.apply(rootListAs("", enc)) // the first list, with no anchor: nothing to say
+	b.apply(rootListAs("", func(s string) []byte { return rootListBytes(setOfRecord(1), s) })) // the first list, with no anchor: nothing to say
 	wantFindings(t, b.run(), nil)
 }
 
@@ -343,7 +349,7 @@ func TestRootListWithAnythingElseInItIsNotLookedInto(t *testing.T) {
 				version = "2"
 			}
 			b.apply(func(r *rec) {
-				r.artifacts["trust/"+r.set+"/root-list.json"] = []byte(`{` + extra + `"last_record_sha256":"` + first.digest + `","version":` + version + `}`)
+				r.artifacts["trust/"+r.set+"/root-list.json"] = []byte(`{` + extra + `"last_record_sha256":"` + first.digest + `","sequence":2,"version":` + version + `}`)
 				r.refresh()
 			})
 			wantFindings(t, b.run(), nil)

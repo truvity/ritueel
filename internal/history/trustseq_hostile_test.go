@@ -50,7 +50,7 @@ func TestTrustSequenceFindingsAreBounded(t *testing.T) {
 	const sets = MaxFindingsPerCode + 101
 	list := make([]cset, sets)
 	for i := range list {
-		list[i] = cset{fmt.Sprintf("1-%08x", i), rootsJSON(0, kA)}
+		list[i] = cset{fmt.Sprintf("1-%08x", i), keyList(1, kA)}
 	}
 	rep, err := runMem(t, chainMem(t, list...))
 	if err != nil {

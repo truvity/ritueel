@@ -5,6 +5,7 @@ package history
 import (
 	"fmt"
 	"slices"
+	"strconv"
 	"strings"
 	"testing"
 )
@@ -162,6 +163,12 @@ func TestTrustSequenceTheNumberIsTheSequenceOfItsList(t *testing.T) {
 			var want []wf
 			for _, i := range c.bad {
 				want = append(want, wf{TrustSequence, "trust/" + names[i]})
+			}
+			// A list with no sequence is not compared with its name; it is anchor-unknown.
+			for i, s := range c.specs {
+				if s.none {
+					want = append(want, wf{AnchorUnknown, listPathOf(names[i])})
+				}
 			}
 			wantExactly(t, rep, want...)
 			for _, f := range trustSeqFindings(rep) {
@@ -583,9 +590,9 @@ func TestTrustNumberZeroIsNoTrustNumber(t *testing.T) {
 	})
 	t.Run("a listed set 0- that has no sequence is not judged by its name", func(t *testing.T) {
 		// the folder number of a listed set is held to the sequence of its list, and a list with no
-		// sequence has none to compare (a known cost of judging a number by its list)
+		// sequence has none to compare: it is anchor-unknown, and not trust-sequence
 		b := chainBundle(t, false, cset{"0-aaaaaaaa", rootsJSON(0, kA)})
-		wantExactly(t, b.run())
+		wantExactly(t, b.run(), wf{AnchorUnknown, listPathOf("0-aaaaaaaa")})
 	})
 	t.Run("the set 0- is the number before in the order", func(t *testing.T) {
 		b := chainBundle(t, false, cset{"0-aaaaaaaa", seqList("0", kA)}, cset{setN(1), keyList(1, kA)})
@@ -597,8 +604,8 @@ func TestTrustNumberZeroIsNoTrustNumber(t *testing.T) {
 		b := newBundle(t)
 		b.apply(noSet)
 		b.mkdir("trust/0-3fa9c1d2")
-		b.put("trust/0-3fa9c1d2/root-list.json", rootListBytes(""))
-		b.put("trust/1-3fa9c1d2/root-list.json", rootListBytes(""))
+		b.put("trust/0-3fa9c1d2/root-list.json", rootListBytes("0-3fa9c1d2", ""))
+		b.put("trust/1-3fa9c1d2/root-list.json", rootListBytes("1-3fa9c1d2", ""))
 		rep := b.run()
 		has(t, rep, TrustSetUnlisted, "trust/0-3fa9c1d2")
 		has(t, rep, TrustSetUnlisted, "trust/1-3fa9c1d2")
@@ -653,8 +660,18 @@ func TestTrustNumberSpellings(t *testing.T) {
 			}
 		})
 		t.Run("listed "+name, func(t *testing.T) {
+			// The list holds a sequence (the number of the name when it has one), so that the
+			// findings are those of the name.
+			list := keyList(1, kA)
+			if sp.number {
+				n, err := strconv.ParseInt(sp.prefix, 10, 64)
+				if err != nil {
+					t.Fatal(err)
+				}
+				list = keyList(n, kA)
+			}
 			b := newBundle(t)
-			b.apply(withSet(name, rootsJSON(0, kA)))
+			b.apply(withSet(name, list))
 			rep := b.run()
 			if !sp.ok {
 				if countCode(rep, UnexpectedName) == 0 || rep.Clean() {

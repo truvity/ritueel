@@ -39,20 +39,20 @@ func TestUnexplainedSetWithTheLowestNumberAndNoAnchorHasOneFinding(t *testing.T)
 func TestUnexplainedSetThatIsNotTheLowestAndHasNoAnchorHasTwoFindings(t *testing.T) {
 	t.Run("a planted set after three", func(t *testing.T) {
 		b, _ := threeRecords(t)
-		b.put("trust/4-3fa9c1d6/root-list.json", rootListBytes(""))
+		b.put("trust/4-3fa9c1d6/root-list.json", rootListBytes("4-3fa9c1d6", ""))
 		rep := b.run()
 		wantFindings(t, rep, []wf{{TrustSetUnlisted, "trust/4-3fa9c1d6"}, {AnchorUnknown, "trust/4-3fa9c1d6/root-list.json"}})
 	})
 	t.Run("a set with no number among sets with numbers", func(t *testing.T) {
 		b, _ := threeRecords(t)
-		b.put("trust/x-3fa9c1d6/root-list.json", rootListBytes(""))
+		b.put("trust/x-3fa9c1d6/root-list.json", rootListBytes("x-3fa9c1d6", ""))
 		rep := b.run()
 		wantFindings(t, rep, []wf{{TrustSetUnlisted, "trust/x-3fa9c1d6"}, {AnchorUnknown, "trust/x-3fa9c1d6/root-list.json"}})
 	})
 	t.Run("the second of two unexplained sets", func(t *testing.T) {
 		b := newBundle(t)
-		b.put("trust/1-aaaaaaaa/root-list.json", rootListBytes(""))
-		b.put("trust/2-aaaaaaaa/root-list.json", rootListBytes(""))
+		b.put("trust/1-aaaaaaaa/root-list.json", rootListBytes("1-aaaaaaaa", ""))
+		b.put("trust/2-aaaaaaaa/root-list.json", rootListBytes("2-aaaaaaaa", ""))
 		rep := b.run()
 		wantFindings(t, rep, []wf{
 			{TrustSetUnlisted, "trust/1-aaaaaaaa"},
@@ -65,7 +65,7 @@ func TestUnexplainedSetThatIsNotTheLowestAndHasNoAnchorHasTwoFindings(t *testing
 func TestUnexplainedSetWithTheLowestNumberAndAnAnchorIsJudgedByTheAnchor(t *testing.T) {
 	b := newBundle(t)
 	b.apply(noSet)
-	b.put("trust/1-aaaaaaaa/root-list.json", rootListBytes(digestA)) // a digest that is no record
+	b.put("trust/1-aaaaaaaa/root-list.json", rootListBytes("1-aaaaaaaa", digestA)) // a digest that is no record
 	rep := b.run()
 	wantFindings(t, rep, []wf{{TrustSetUnlisted, "trust/1-aaaaaaaa"}, {AnchorUnknown, "trust/1-aaaaaaaa/root-list.json"}})
 }
@@ -83,7 +83,7 @@ func TestWorkGrowsAboutLinearlyWithTheNumberOfUnexplainedSets(t *testing.T) {
 		m.file("ritueel.yaml", "name: x\n")
 		m.put("history", newMem())
 		for i := 0; i < n; i++ {
-			m.file(fmt.Sprintf("trust/%d-aaaaaaaa/root-list.json", i+200), `{"version":1}`)
+			m.file(fmt.Sprintf("trust/%d-aaaaaaaa/root-list.json", i+200), fmt.Sprintf(`{"sequence":%d,"version":1}`, i+200))
 		}
 		var before, after runtime.MemStats
 		runtime.GC()

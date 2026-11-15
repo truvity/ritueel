@@ -191,7 +191,7 @@ var codeCases = []codeCase{
 		build: func(t *testing.T) (*bundle, []wf) {
 			b := newBundle(t)
 			r := b.apply(func(r *rec) {
-				r.artifacts["trust/"+r.set+"/root-list.json"] = rootListBytes(digestB)
+				r.artifacts["trust/"+r.set+"/root-list.json"] = rootListBytes(r.set, digestB)
 				r.refresh()
 			})
 			return b, []wf{{AnchorUnknown, "trust/" + r.set + "/root-list.json"}}
