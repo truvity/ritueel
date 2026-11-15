@@ -10,6 +10,7 @@ import (
 	"os"
 	"path/filepath"
 	"slices"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -19,8 +20,10 @@ import (
 
 // Every fault of the OpenPGP primaries of the newest trust set gives the command one form: exit code 1 and one line
 // that starts with "request STEM is not accepted and not refused: ", in text mode and in JSON mode. The faults are
-// the faults of the list (more primaries than the checks take, one fingerprint on two entries) and of the keyring
-// file (missing, not a plain file, refused by the reader).
+// the faults of the list (more primaries than the checks take) and of the keyring file (missing, not a plain file,
+// refused by the reader). One fingerprint on two entries is not one of them: the reader of the list refuses such a list
+// first, as it refuses a label twice, and the command says so in the sentence of the bundle (see
+// TestARepeatedFingerprintStopsTheCommandWithTheRefusalOfTheList).
 
 const (
 	fingerprintOfA = "6df387de63525c9dc0ec1174bd138d2c4889b79b"
@@ -54,19 +57,6 @@ func primariesFaultsOfTheCommand(t *testing.T) []primariesFault {
 		}
 	}
 	noFile := func(t *testing.T, files crqTree) { delete(files, keyringAt) }
-	repeat := func(t *testing.T, files crqTree) {
-		files[listAt] = bytes.Replace(files[listAt], []byte(fingerprintOfB), []byte(fingerprintOfA), 1)
-	}
-	repeatsOf := func(n, i, j int) func(t *testing.T) []memRoot {
-		return func(t *testing.T) []memRoot {
-			roots := memRoots(t, n)
-			roots[i].fp = roots[j].fp
-			return roots
-		}
-	}
-	listSentence := func(first, second string) string {
-		return "the root list of the newest trust set " + crqTrustSet + " gives one openpgp_fingerprint to two entries: the entry with the label " + first + " and the entry with the label " + second
-	}
 	symlink := func(target string, real []byte) func(t *testing.T, at string) {
 		return func(t *testing.T, at string) {
 			if real != nil {
@@ -84,9 +74,6 @@ func primariesFaultsOfTheCommand(t *testing.T) []primariesFault {
 			sentence: "the root list of the newest trust set " + crqTrustSet + " pins 17 OpenPGP primaries, and the checks take at most 16"},
 		{name: "26 pinned", kind: "ErrPrimaries", change: trust(func(t *testing.T) []memRoot { return memRoots(t, 26) }),
 			sentence: "the root list of the newest trust set " + crqTrustSet + " pins 26 OpenPGP primaries, and the checks take at most 16"},
-		{name: "one fingerprint on the first two entries", kind: "ErrPrimaries", change: repeat, sentence: listSentence("A", "B")},
-		{name: "one fingerprint on the first and the last of 16", kind: "ErrPrimaries", change: trust(repeatsOf(16, 15, 0)), sentence: listSentence("A", "P")},
-		{name: "one fingerprint on the last two of 16", kind: "ErrPrimaries", change: trust(repeatsOf(16, 15, 14)), sentence: listSentence("O", "P")},
 		{name: "no keyring file", kind: "ErrNoKeyring", change: noFile, sentence: noKeyringSentence},
 		{name: "a link", kind: "ErrPrimaries", change: noFile, place: symlink("real.gpg", append(bytes.Clone(a), b...)), sentence: refusedSentence, prefix: true},
 		{name: "a dangling link", kind: "ErrPrimaries", change: noFile, place: symlink("nowhere.gpg", nil), sentence: refusedSentence, prefix: true},
@@ -173,13 +160,22 @@ func TestEveryFaultOfThePrimariesIsTheSentenceOfARequestThatIsNotJudgedInBothMod
 	}
 }
 
-// A fault of the list is found before any keyring file is read: the sentence is the same whether the file is good,
-// missing or garbage. For a repeated fingerprint it names the list and never the file, and never the fingerprint.
-func TestARepeatedFingerprintGivesTheSentenceOfTheListWhateverTheKeyringFileIs(t *testing.T) {
+// listRepeatLine is the line of the command for a bundle whose newest root list gives one fingerprint to two entries:
+// the reader of the list refuses the list, and the error of the bundle says where and which entries. It is not the line
+// of a request that is not judged.
+func listRepeatLine(first, second string, at int) string {
+	return "ritueel: bundle: the newest trust set " + crqTrustSet + ": root-list.json: malformed JSON: $.roots[" + strconv.Itoa(at) +
+		"].openpgp_fingerprint: the fingerprint appears twice: the entries with the labels " + first + " and " + second + " have the same one\n"
+}
+
+// A list that gives one fingerprint to two entries is refused by the reader of the list before any keyring file is read:
+// the line is the same whether the file is good, missing or garbage, and with every delegation and none. It names the
+// list, the place and the two labels, and never the file and never the fingerprint. The exit code is 1, nothing is
+// written on standard output in text mode, and the bundle is not changed.
+func TestARepeatedFingerprintStopsTheCommandWithTheRefusalOfTheList(t *testing.T) {
 	m := crqManifestOf(t)
 	c := m.byID(t, "pgp-software-valid")
-	want := "ritueel: request " + c.stem(t) + " is not accepted and not refused: the root list of the newest trust set " + crqTrustSet +
-		" gives one openpgp_fingerprint to two entries: the entry with the label A and the entry with the label B\n"
+	want := listRepeatLine("A", "B", 1)
 	for name, file := range map[string][]byte{"good": crqKeyring(t, "a", "b"), "none": nil, "garbage": []byte("x"), "swapped": crqKeyring(t, "b", "a")} {
 		files := crqBundleTree(t, m, c)
 		files[listAt] = bytes.Replace(files[listAt], []byte(fingerprintOfB), []byte(fingerprintOfA), 1)
@@ -190,17 +186,104 @@ func TestARepeatedFingerprintGivesTheSentenceOfTheListWhateverTheKeyringFileIs(t
 		}
 		dir := t.TempDir()
 		crqWrite(t, dir, files)
+		before := crqSnapshot(t, dir)
 		for _, args := range [][]string{{"--delegation", crqDelegation}, nil} {
 			r := crqRun(t, m.clock(t), append([]string{"check", "request", c.stem(t), "--dir", dir}, args...)...)
 			if r.code != ExitFailure || r.stderr != want || r.stdout != "" {
 				t.Errorf("%s %v: (%d, %q, %q), want exit code 1 and %q", name, args, int(r.code), r.stdout, r.stderr, want)
 			}
+			if strings.Contains(r.stderr, fingerprintOfA) || strings.Contains(r.stderr, "keyring.gpg") {
+				t.Errorf("%s %v: the line names the fingerprint or the file: %q", name, args, r.stderr)
+			}
+		}
+		crqSame(t, "check request", before, crqSnapshot(t, dir))
+	}
+}
+
+// The line, in both modes, for the places that the two entries can have, for each kind of request: the same line in
+// text and in the member error of the object in JSON mode, with no result, no checks and no reasons.
+func TestARepeatedFingerprintGivesTheSameLineInBothModesWhereverTheEntriesAre(t *testing.T) {
+	m := crqManifestOf(t)
+	now := m.clock(t)
+	for _, tc := range []struct {
+		name         string
+		n, i, j      int
+		first, other string
+	}{
+		{"the first two of 2", 2, 1, 0, "A", "B"},
+		{"the first and the last of 16", 16, 15, 0, "A", "P"},
+		{"the last two of 16", 16, 15, 14, "O", "P"},
+	} {
+		for _, id := range []string{"pgp-software-valid", "x509-software-valid"} {
+			t.Run(tc.name+"/"+id, func(t *testing.T) {
+				c := m.byID(t, id)
+				roots := memRoots(t, tc.n)
+				roots[tc.i].fp = roots[tc.j].fp
+				files := crqWithTrust(crqBundleTree(t, m, c), memTrustOf(roots))
+				dir := t.TempDir()
+				crqWrite(t, dir, files)
+				before := crqSnapshot(t, dir)
+				want := listRepeatLine(tc.first, tc.other, tc.i)
+				for _, mode := range [][]string{nil, {"--output", "json"}} {
+					r := crqRun(t, now, append([]string{"check", "request", c.stem(t), "--dir", dir}, mode...)...)
+					if r.code != ExitFailure || r.stderr != want || !onlyPrintable(r.stderr) {
+						t.Fatalf("%v: (%d, %q), want exit code 1 and %q", mode, int(r.code), r.stderr, want)
+					}
+					if mode == nil {
+						if r.stdout != "" {
+							t.Errorf("text mode: standard output = %q", r.stdout)
+						}
+						continue
+					}
+					obj := object(t, r.stdout)
+					if msg, _ := obj["error"].(string); msg != strings.TrimSuffix(strings.TrimPrefix(want, "ritueel: "), "\n") || obj["outcome"] != "failed" || obj["exit_code"] != jsonNumber("1") {
+						t.Errorf("object = %s", r.stdout)
+					}
+					for _, k := range []string{"checks", "reasons"} {
+						if _, ok := obj[k]; ok {
+							t.Errorf("the object has %s: %s", k, r.stdout)
+						}
+					}
+				}
+				crqSame(t, "check request", before, crqSnapshot(t, dir))
+			})
 		}
 	}
 }
 
-// Beside an x509-intermediate delegation the command gives no primaries and does not judge them: a repeated
-// fingerprint, 17 pins or a missing file stop nothing there.
+// Beside an x509-intermediate or an ssh-ca-key delegation the run is stopped too: the list is refused first, whatever the
+// delegation takes, as it is for a label twice. (Before the reader of the list refused the repeat, such a run passed
+// it, because it judged no primaries.)
+func TestARepeatedFingerprintStopsTheCommandBesideEveryDelegation(t *testing.T) {
+	m := crqManifestOf(t)
+	c := m.byID(t, "x509-software-valid")
+	for name, args := range map[string][]string{"x509 delegation": {"--delegation", crqDelegation}, "no delegation": nil} {
+		t.Run(name, func(t *testing.T) {
+			files := crqBundleTree(t, m, c)
+			files[listAt] = bytes.Replace(files[listAt], []byte(fingerprintOfB), []byte(fingerprintOfA), 1)
+			dir := t.TempDir()
+			crqWrite(t, dir, files)
+			r := crqRun(t, m.clock(t), append([]string{"check", "request", c.stem(t), "--dir", dir}, args...)...)
+			if want := listRepeatLine("A", "B", 1); r.code != ExitFailure || r.stderr != want || r.stdout != "" {
+				t.Errorf("(%d, %q, %q), want exit code 1 and %q", int(r.code), r.stdout, r.stderr, want)
+			}
+		})
+	}
+	t.Run("a label twice gives the same kind of line", func(t *testing.T) {
+		files := crqBundleTree(t, m, c)
+		files[listAt] = bytes.Replace(files[listAt], []byte(`"label":"B"`), []byte(`"label":"A"`), 1)
+		dir := t.TempDir()
+		crqWrite(t, dir, files)
+		r := crqRun(t, m.clock(t), "check", "request", c.stem(t), "--dir", dir, "--delegation", crqDelegation)
+		if want := "ritueel: bundle: the newest trust set " + crqTrustSet + ": root-list.json: malformed JSON: $.roots[1].label: the label appears twice\n"; r.code != ExitFailure || r.stderr != want {
+			t.Errorf("(%d, %q), want exit code 1 and %q", int(r.code), r.stderr, want)
+		}
+	})
+}
+
+// Beside an x509-intermediate delegation the command gives no primaries and does not judge them: 17 pins or a missing
+// file stop nothing there. (A list that the reader of the list refuses, one fingerprint on two entries among them,
+// stops every run: see TestARepeatedFingerprintStopsTheCommandBesideEveryDelegation.)
 func TestAFaultOfThePrimariesDoesNotStopARunBesideAnX509Delegation(t *testing.T) {
 	m := crqManifestOf(t)
 	now := m.clock(t)

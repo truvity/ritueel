@@ -236,10 +236,11 @@ func TestAKeyringFileInASetThatPinsNoPrimaryIsNotReadByTheCommand(t *testing.T) 
 	}
 }
 
-// A list that gives one fingerprint to two entries is a fault of the list that no keyring file can answer. The command
-// stops with exit code 1 and says so in the same plain sentence as for every other keyring fault: the request is not
-// accepted and not refused.
-func TestAListThatPinsOneFingerprintTwiceStopsTheCommandWithTheSentenceOfARequestThatIsNotJudged(t *testing.T) {
+// A list that gives one fingerprint to two entries is a fault of the list that no keyring file can answer. The reader of
+// the list refuses it, and the command stops with exit code 1 and one line of the bundle's error: the newest trust set, the
+// file, the place of the second entry and the two labels. It is not the sentence of a request that is not judged: the
+// list is not a list, as for a label twice.
+func TestAListThatPinsOneFingerprintTwiceStopsTheCommandWithTheRefusalOfTheList(t *testing.T) {
 	m := crqManifestOf(t)
 	c := m.byID(t, "pgp-software-valid")
 	tree := crqBundleTree(t, m, c)
@@ -248,9 +249,12 @@ func TestAListThatPinsOneFingerprintTwiceStopsTheCommandWithTheSentenceOfAReques
 	dir := t.TempDir()
 	crqWrite(t, dir, tree)
 	r := crqRun(t, m.clock(t), "check", "request", c.stem(t), "--dir", dir, "--delegation", crqDelegation)
-	prefix := "ritueel: request " + c.stem(t) + " is not accepted and not refused: "
-	if r.code != ExitFailure || !strings.HasPrefix(r.stderr, prefix) || strings.Count(r.stderr, "\n") != 1 || !onlyPrintable(r.stderr) {
-		t.Errorf("(%d, %q), want exit code 1 and one line that starts with %q", int(r.code), r.stderr, prefix)
+	want := "ritueel: bundle: the newest trust set " + crqTrustSet + ": root-list.json: malformed JSON: $.roots[1].openpgp_fingerprint: the fingerprint appears twice: the entries with the labels A and B have the same one\n"
+	if r.code != ExitFailure || r.stderr != want || r.stdout != "" {
+		t.Errorf("(%d, %q, %q), want exit code 1 and the one line %q", int(r.code), r.stdout, r.stderr, want)
+	}
+	if strings.Contains(r.stderr, "is not accepted and not refused") {
+		t.Errorf("the line is the sentence of a request that is not judged: %q", r.stderr)
 	}
 }
 
