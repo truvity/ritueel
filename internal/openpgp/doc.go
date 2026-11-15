@@ -40,6 +40,15 @@
 // no other. The faults of that file are [ErrKeyringForm] and [ErrKeyringPrimaries], each of them
 // also an [ErrKeyring].
 //
+// It reads the material that a software root keeps apart from its bundle: it splits one public
+// certificate into its packets ([SplitCertificate]), reads a stored file of one signature, binary or
+// one armour block ([ReadSignatureFile]), names the issuer of a revocation signature
+// ([RevocationIssuer]) and reads a revocation signature with the primary that made it
+// ([ReadRevocation]), which accepts exactly what [RevocationSignature] writes and verifies it, with
+// the reason, the creation time and the SHA-256 of the packet that the bundle keeps. The faults are
+// [ErrCertificateForm], [ErrSignatureFile], [ErrRevocation] and [ErrRevocationReason] (also an
+// ErrRevocation). The readers open no file, read no clock and start no program.
+//
 // A user ID has the one shape of the page, and each part of it follows the rule of its key in
 // ritueel.yaml, so that no text of a caller can add a character that a person cannot read or an
 // address that the user ID does not show.

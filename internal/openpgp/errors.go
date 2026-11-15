@@ -81,3 +81,24 @@ var (
 	// [ErrKeyring].
 	ErrKeyringPrimaries error = &kindError{"openpgp: the keyring file does not hold the primaries of the root list", ErrKeyring}
 )
+
+// The faults of the readers of stored OpenPGP material (docs/reference/revocation-material.md, "What
+// is made"): a certificate that is split, a file that holds one signature, a revocation signature
+// that is read and verified.
+var (
+	// ErrCertificateForm marks bytes that [SplitCertificate] refuses: not one Public-Key packet, one
+	// User ID packet and one to [MaxCertifications] Signature packets, whole, in that order and
+	// nothing else, or longer than [MaxKeyringBytes].
+	ErrCertificateForm = errors.New("openpgp: the certificate is not of the first form")
+	// ErrSignatureFile marks a file that [ReadSignatureFile] refuses: not the binary packet of one
+	// signature and not exactly one armour block of one, or longer than [MaxSignatureFileBytes].
+	ErrSignatureFile = errors.New("openpgp: the file is not one signature packet")
+	// ErrRevocation marks a packet that [ReadRevocation] or [RevocationIssuer] refuses: it is not the
+	// key revocation signature that [RevocationSignature] writes, or it does not verify with the
+	// primary that it is given.
+	ErrRevocation = errors.New("openpgp: refused revocation signature")
+	// ErrRevocationReason marks a revocation signature whose reason for revocation subpacket is
+	// missing, or whose code and word are not one of the four of the profile. It is also an
+	// [ErrRevocation].
+	ErrRevocationReason error = &kindError{"openpgp: the reason for revocation is refused", ErrRevocation}
+)

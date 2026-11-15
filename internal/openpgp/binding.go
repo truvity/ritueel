@@ -232,23 +232,26 @@ func readBindingPacket(pkt []byte) ([]byte, sigAreas, error) {
 // scanSigAreas walks the lengths of the two subpacket areas of a signature body and counts the
 // subpackets of each, so that the shared reader, which has no limit, is called only for areas of
 // at most maxBindingSubpackets. It checks no more than that: the form of the body is read by splitSig.
-func scanSigAreas(body []byte) error {
+func scanSigAreas(body []byte) error { return scanAreasOf(ErrBinding, body) }
+
+// scanAreasOf is [scanSigAreas] for a reader of another kind: every fault wraps kind.
+func scanAreasOf(kind error, body []byte) error {
 	if len(body) < 6 || body[0] != 4 {
-		return fail(ErrBinding, "the signature is not a version 4 signature")
+		return fail(kind, "the signature is not a version 4 signature")
 	}
 	hl := int(binary.BigEndian.Uint16(body[4:6]))
 	if len(body) < 6+hl+2 {
-		return fail(ErrBinding, "the hashed area runs past the packet")
+		return fail(kind, "the hashed area runs past the packet")
 	}
 	if _, err := scanArea(body[6:6+hl], maxBindingSubpackets); err != nil {
-		return fail(ErrBinding, "the hashed area: %v", err)
+		return fail(kind, "the hashed area: %v", err)
 	}
 	ul := int(binary.BigEndian.Uint16(body[6+hl : 8+hl]))
 	if len(body) < 8+hl+ul {
-		return fail(ErrBinding, "the unhashed area runs past the packet")
+		return fail(kind, "the unhashed area runs past the packet")
 	}
 	if _, err := scanArea(body[8+hl:8+hl+ul], maxBindingSubpackets); err != nil {
-		return fail(ErrBinding, "the unhashed area: %v", err)
+		return fail(kind, "the unhashed area: %v", err)
 	}
 	return nil
 }
@@ -293,19 +296,24 @@ var errAreaTooMany = errors.New("more subpackets than the limit")
 // readSigValues reads what follows the unhashed area: the two bytes of the hash tag and the two
 // numbers of an ECDSA signature, with no byte after them.
 func readSigValues(rest []byte) (tag, r, s []byte, err error) {
+	return readValuesOf(ErrBinding, rest)
+}
+
+// readValuesOf is [readSigValues] for a reader of another kind: every fault wraps kind.
+func readValuesOf(kind error, rest []byte) (tag, r, s []byte, err error) {
 	if len(rest) < 2 {
-		return nil, nil, nil, fail(ErrBinding, "the signature has no hash tag")
+		return nil, nil, nil, fail(kind, "the signature has no hash tag")
 	}
 	r, tail, err := readMPI(rest[2:])
 	if err != nil {
-		return nil, nil, nil, fail(ErrBinding, "the signature has no first number")
+		return nil, nil, nil, fail(kind, "the signature has no first number")
 	}
 	s, tail, err = readMPI(tail)
 	if err != nil {
-		return nil, nil, nil, fail(ErrBinding, "the signature has no second number")
+		return nil, nil, nil, fail(kind, "the signature has no second number")
 	}
 	if len(tail) != 0 {
-		return nil, nil, nil, fail(ErrBinding, "the signature has bytes after its two numbers")
+		return nil, nil, nil, fail(kind, "the signature has bytes after its two numbers")
 	}
 	return rest[:2], r, s, nil
 }
