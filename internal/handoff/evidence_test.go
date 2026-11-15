@@ -57,8 +57,8 @@ func TestAVerifierRegisteredForSoftwareIsNeverCalled(t *testing.T) {
 func TestAStoreWithNoVerifierGivesNoVerifierAndCheckSevenIsNotRun(t *testing.T) {
 	for _, store := range []handoff.Store{handoff.StorePIV, handoff.StoreOpenPGPCard, handoff.StoreKMS} {
 		t.Run(string(store), func(t *testing.T) {
-			f := newFixture(t, store, csrSpec{})
-			v, err := newChecker(t).Check(t.Context(), f.request())
+			f := newStoreCase(t, store)
+			v, err := f.checker(nil, nil).Check(t.Context(), f.request())
 			wantUndecided(t, v, err, handoff.ErrNoVerifier, "ppppppnnn")
 		})
 	}
@@ -214,8 +214,8 @@ func TestEvidenceForAKeyOfAnotherCurveOrNotAPointIsKeyMismatch(t *testing.T) {
 func TestEvidenceForTheKeyOfTheRequestPassesCheckEightAndIsKept(t *testing.T) {
 	for _, store := range []handoff.Store{handoff.StorePIV, handoff.StoreOpenPGPCard, handoff.StoreKMS} {
 		t.Run(string(store), func(t *testing.T) {
-			f := newFixture(t, store, csrSpec{})
-			ev := f.goodEvidence(store)
+			f := newStoreCase(t, store)
+			ev := f.good()
 			// A copy of the key with its own numbers: equality is by the point, not by the pointer.
 			raw, err := ev.Key.Bytes()
 			if err != nil {
@@ -224,9 +224,9 @@ func TestEvidenceForTheKeyOfTheRequestPassesCheckEightAndIsKept(t *testing.T) {
 			if ev.Key, err = ecdsa.ParseUncompressedPublicKey(elliptic.P384(), raw); err != nil {
 				t.Fatal(err)
 			}
-			v, err := checkerWith(t, store, returning(ev)).Check(t.Context(), f.request())
+			v, err := f.checker(returning(ev), nil).Check(t.Context(), f.request())
 			wantAccepted(t, v, err)
-			if v.Evidence == nil || v.Evidence.Key == nil || !v.Evidence.Key.Equal(f.publicKey()) {
+			if v.Evidence == nil || v.Evidence.Key == nil || !v.Evidence.Key.Equal(f.key) {
 				t.Errorf("the verdict does not carry what the verifier read: %+v", v.Evidence)
 			}
 			if v.Evidence.Unprotected {

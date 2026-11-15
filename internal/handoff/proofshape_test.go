@@ -349,9 +349,9 @@ func TestAProofFileThatBreaksTheJSONRulesIsMalformedAtCheckTwo(t *testing.T) {
 func TestEvidenceInItsExactFormIsRead(t *testing.T) {
 	for _, store := range []handoff.Store{handoff.StorePIV, handoff.StoreOpenPGPCard, handoff.StoreKMS} {
 		t.Run(string(store), func(t *testing.T) {
-			f := newFixture(t, store, csrSpec{})
-			sv := returning(f.goodEvidence(store))
-			v, err := checkerWith(t, store, sv).Check(t.Context(), f.request())
+			f := newStoreCase(t, store)
+			sv := returning(f.good())
+			v, err := f.checker(sv, nil).Check(t.Context(), f.request())
 			wantAccepted(t, v, err)
 		})
 	}

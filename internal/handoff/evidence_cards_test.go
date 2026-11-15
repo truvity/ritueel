@@ -51,6 +51,27 @@ func cardFixture(t testing.TB, store handoff.Store, evidence func(key *fixture) 
 	return f
 }
 
+// cardPGPChecker is the checker of a request of type openpgp-subkey for the fixture, with the two verifiers
+// of the bundle. The store openpgp-card is the store of a subkey; an x509-intermediate request with it is
+// refused at check 6 (cardstore_test.go).
+func cardPGPChecker(t testing.TB, f *pgpFixture, b *attest.Bundle, change func(c *handoff.Config)) *handoff.Checker {
+	t.Helper()
+	pv, err := piv.New(b)
+	if err != nil {
+		t.Fatal(err)
+	}
+	ov, err := openpgpcard.New(b)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return f.checker(func(c *handoff.Config) {
+		c.Evidence = map[handoff.Store]handoff.EvidenceVerifier{handoff.StorePIV: pv, handoff.StoreOpenPGPCard: ov}
+		if change != nil {
+			change(c)
+		}
+	})
+}
+
 func pivSlot(m *attesttest.Maker, t testing.TB, s attesttest.Slot) func(f *fixture) []byte {
 	return func(f *fixture) []byte { return m.PIVEvidence(t, f.publicKey(), s) }
 }
@@ -159,14 +180,12 @@ func TestAChainThatIsNotPinnedIsProofInvalid(t *testing.T) {
 	}
 }
 
-// A request with the store openpgp-card is accepted with the policy not read, whatever the policy's minimum
-// firmware and PIN policies are: the page says that the certifier then records the key as attested and
-// enforces no PIN or touch policy. The accepted evidence says "false" in policy_read, so that the ceremony
-// can say that the policy was not read. This test pins down the present behaviour of the library for the
-// case of a person's card as the holder of an intermediate, so that a later rule for it changes a visible test.
+// A subkey request with the store openpgp-card is accepted with the policy not read, whatever the policy's
+// minimum firmware and PIN policies are: the page says that the certifier then records the key as attested
+// and enforces no PIN or touch policy. The accepted evidence says "false" in policy_read, so that the
+// ceremony can say that the policy was not read.
 func TestAnOpenPGPCardRequestIsAcceptedWithThePolicyNotRead(t *testing.T) {
 	m := cardMaker(t, false)
-	opgp := func(f *fixture) []byte { return m.OpenPGPEvidence(t, f.publicKey()) }
 	for name, change := range map[string]func(c *handoff.Config){
 		"the default policy": nil,
 		"a firmware that no card has": func(c *handoff.Config) {
@@ -181,8 +200,9 @@ func TestAnOpenPGPCardRequestIsAcceptedWithThePolicyNotRead(t *testing.T) {
 		},
 	} {
 		t.Run(name, func(t *testing.T) {
-			chk := cardChecker(t, m.Bundle(t), change)
-			f := cardFixture(t, handoff.StoreOpenPGPCard, opgp)
+			f := newPGPFixture(t, 2, handoff.StoreOpenPGPCard)
+			f.proof["evidence"] = json.RawMessage(m.OpenPGPEvidence(t, f.sub.pub()))
+			chk := cardPGPChecker(t, f, m.Bundle(t), change)
 			v, err := chk.Check(t.Context(), f.request())
 			wantAccepted(t, v, err)
 			if v.Evidence.Details[attest.DetailPolicyRead] != "false" {
@@ -200,18 +220,19 @@ func TestAnOpenPGPCardRequestIsAcceptedWithThePolicyNotRead(t *testing.T) {
 	wantRefusal(t, v, err, handoff.CodePolicy, 9)
 }
 
-// A card key's chain is checked and its key is compared with the request's key: another key is a
+// A card key's chain is checked and its key is compared with the subkey of the request: another key is a
 // key-mismatch, and a chain that is not the card's is proof-invalid.
 func TestAnOpenPGPCardRequestIsCheckedLikeAnyOther(t *testing.T) {
 	m := cardMaker(t, false)
-	chk := cardChecker(t, m.Bundle(t), nil)
 	other := newP384(t)
-	f := cardFixture(t, handoff.StoreOpenPGPCard, func(*fixture) []byte { return m.OpenPGPEvidence(t, other.Public()) })
-	v, err := chk.Check(t.Context(), f.request())
+	g := newPGPFixture(t, 2, handoff.StoreOpenPGPCard)
+	g.proof["evidence"] = json.RawMessage(m.OpenPGPEvidence(t, other.Public()))
+	v, err := cardPGPChecker(t, g, m.Bundle(t), nil).Check(t.Context(), g.request())
 	wantRefusal(t, v, err, handoff.CodeKeyMismatch, 8)
 
-	f = cardFixture(t, handoff.StoreOpenPGPCard, func(f *fixture) []byte { return m.PIVEvidence(t, f.publicKey(), attesttest.Slot{}) })
-	v, err = chk.Check(t.Context(), f.request())
+	g = newPGPFixture(t, 2, handoff.StoreOpenPGPCard)
+	g.proof["evidence"] = json.RawMessage(m.PIVEvidence(t, g.sub.pub(), attesttest.Slot{}))
+	v, err = cardPGPChecker(t, g, m.Bundle(t), nil).Check(t.Context(), g.request())
 	wantRefusal(t, v, err, handoff.CodeProofInvalid, 7)
 
 	// The store of the proof is the one the checker dispatches on: a piv chain under the store piv, with the
@@ -220,7 +241,7 @@ func TestAnOpenPGPCardRequestIsCheckedLikeAnyOther(t *testing.T) {
 	only := newCheckerWith(t, func(c *handoff.Config) {
 		c.Evidence = map[handoff.Store]handoff.EvidenceVerifier{handoff.StoreOpenPGPCard: ov}
 	})
-	f = cardFixture(t, handoff.StorePIV, pivSlot(m, t, attesttest.Slot{}))
+	f := cardFixture(t, handoff.StorePIV, pivSlot(m, t, attesttest.Slot{}))
 	v, err = only.Check(t.Context(), f.request())
 	wantUndecided(t, v, err, handoff.ErrNoVerifier, "ppppppnnn")
 }
@@ -230,11 +251,12 @@ func TestAnOpenPGPCardRequestIsCheckedLikeAnyOther(t *testing.T) {
 func TestAPIVChainDoesNotPassAsACardChain(t *testing.T) {
 	m := cardMaker(t, false)
 	chk := cardChecker(t, m.Bundle(t), nil)
-	f := cardFixture(t, handoff.StoreOpenPGPCard, pivSlot(m, t, attesttest.Slot{Policy: []byte{1, 1}}))
-	v, err := chk.Check(t.Context(), f.request())
+	g := newPGPFixture(t, 2, handoff.StoreOpenPGPCard)
+	g.proof["evidence"] = json.RawMessage(m.PIVEvidence(t, g.sub.pub(), attesttest.Slot{Policy: []byte{1, 1}}))
+	v, err := cardPGPChecker(t, g, m.Bundle(t), nil).Check(t.Context(), g.request())
 	wantRefusal(t, v, err, handoff.CodeProofInvalid, 7)
 	// As a piv key the same evidence passes check 7 and is refused by the policy.
-	f = cardFixture(t, handoff.StorePIV, pivSlot(m, t, attesttest.Slot{Policy: []byte{1, 1}}))
+	f := cardFixture(t, handoff.StorePIV, pivSlot(m, t, attesttest.Slot{Policy: []byte{1, 1}}))
 	v, err = chk.Check(t.Context(), f.request())
 	wantRefusal(t, v, err, handoff.CodePolicy, 9)
 

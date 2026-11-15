@@ -18,10 +18,10 @@ import (
 func TestAcceptedIsTrueForARequestThatEveryCheckAccepted(t *testing.T) {
 	for _, store := range []handoff.Store{handoff.StoreSoftware, handoff.StorePIV, handoff.StoreOpenPGPCard, handoff.StoreKMS} {
 		t.Run(string(store), func(t *testing.T) {
-			f := newFixture(t, store, csrSpec{})
-			chk := newChecker(t)
+			f := newStoreCase(t, store)
+			chk := f.checker(nil, nil)
 			if store != handoff.StoreSoftware {
-				chk = checkerWith(t, store, returning(f.goodEvidence(store)))
+				chk = f.checker(returning(f.good()), nil)
 			}
 			v, err := chk.Check(t.Context(), f.request())
 			wantAccepted(t, v, err)

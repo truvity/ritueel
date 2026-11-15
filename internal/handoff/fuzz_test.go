@@ -3,6 +3,7 @@ package handoff_test
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"os"
 	"path"
@@ -200,9 +201,29 @@ func containsInt(list []int, n int) bool {
 	return false
 }
 
+// neverACardIntermediate says what holds for a request that names the type x509-intermediate and the store
+// openpgp-card: check 6 never passes for it, so no evidence is read and no later check runs.
+func neverACardIntermediate(t *testing.T, proof []byte, v handoff.Verdict) {
+	t.Helper()
+	var head struct{ Type, Store string }
+	if json.Unmarshal(proof, &head) != nil || head.Type != "x509-intermediate" || head.Store != "openpgp-card" {
+		return
+	}
+	if v.Checks[5].Status == handoff.StatusPassed || v.Accepted() {
+		t.Fatalf("an x509-intermediate request on an openpgp-card passed check 6: %s", statuses(v))
+	}
+	if v.Code == handoff.CodeStoreNotAllowed && v.Detail != cardRefusalWords {
+		t.Fatalf("the refusal has the words %q", v.Detail)
+	}
+}
+
 func FuzzCheck(f *testing.F) {
 	for _, s := range seedRequests(f) {
 		f.Add(s[0], s[1], s[2], s[3])
+		// The same request on the card store: for an X.509 request, check 6 refuses it.
+		if card := bytes.Replace(s[0], []byte(`"store": "piv"`), []byte(`"store": "openpgp-card"`), 1); !bytes.Equal(card, s[0]) {
+			f.Add(card, s[1], s[2], s[3])
+		}
 	}
 	chk := fuzzChecker(f)
 	f.Fuzz(func(t *testing.T, proof, csr, subkey, ssh []byte) {
@@ -210,6 +231,7 @@ func FuzzCheck(f *testing.F) {
 		before := copyOfRequest(r)
 		v, err := chk.Check(t.Context(), r)
 		checkVerdictLaws(t, r, v, err)
+		neverACardIntermediate(t, proof, v)
 		if !sameRequest(before, r) {
 			t.Fatal("the request of the caller was changed")
 		}

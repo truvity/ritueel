@@ -145,19 +145,22 @@ func TestAPIVKeyWhoseEvidenceHoldsNoFirmwareOrNoPINPolicyIsNotAccepted(t *testin
 	}
 }
 
+// The key of a card is a key of an openpgp-subkey request: an x509-intermediate request with this store
+// does not reach the evidence (cardstore_test.go).
+
 func TestAnOpenPGPCardKeyNeedsNoFirmwareAndNoPINPolicy(t *testing.T) {
 	// The page: the extensions of the card's certificate are not specified yet, and a certifier that
 	// cannot read them records the key as attested and enforces no PIN or touch policy.
-	f := newFixture(t, handoff.StoreOpenPGPCard, csrSpec{})
-	ev := &handoff.Evidence{Key: f.publicKey()}
-	v, err := checkerWith(t, handoff.StoreOpenPGPCard, returning(ev)).Check(t.Context(), f.request())
+	f := newPGPFixture(t, 2, handoff.StoreOpenPGPCard)
+	ev := &handoff.Evidence{Key: f.sub.pub()}
+	v, err := f.checker(withVerifier(handoff.StoreOpenPGPCard, returning(ev))).Check(t.Context(), f.request())
 	wantAccepted(t, v, err)
 }
 
 func TestAnOpenPGPCardKeyWithAFirmwareThatIsOldIsRefused(t *testing.T) {
-	f := newFixture(t, handoff.StoreOpenPGPCard, csrSpec{})
-	ev := &handoff.Evidence{Key: f.publicKey(), Firmware: "5.6.9"}
-	v, err := checkerWith(t, handoff.StoreOpenPGPCard, returning(ev)).Check(t.Context(), f.request())
+	f := newPGPFixture(t, 2, handoff.StoreOpenPGPCard)
+	ev := &handoff.Evidence{Key: f.sub.pub(), Firmware: "5.6.9"}
+	v, err := f.checker(withVerifier(handoff.StoreOpenPGPCard, returning(ev))).Check(t.Context(), f.request())
 	wantRefusal(t, v, err, handoff.CodePolicy, 9)
 }
 
@@ -536,9 +539,9 @@ func TestARootListThatCannotBeReadIsAConfigurationFault(t *testing.T) {
 func TestAStoreThatThePolicyDoesNotListIsNotAllowed(t *testing.T) {
 	for _, store := range []handoff.Store{handoff.StorePIV, handoff.StoreOpenPGPCard, handoff.StoreKMS, handoff.StoreSoftware} {
 		t.Run(string(store), func(t *testing.T) {
-			f := newFixture(t, store, csrSpec{})
-			sv := returning(f.goodEvidence(store))
-			without := checkerWithCfg(t, store, sv, func(c *handoff.Config) {
+			f := newStoreCase(t, store)
+			sv := returning(f.good())
+			without := f.checker(sv, func(c *handoff.Config) {
 				c.Policy.Stores = slices.DeleteFunc(slices.Clone(c.Policy.Stores), func(s handoff.Store) bool { return s == store })
 			})
 			v, err := without.Check(t.Context(), f.request())
@@ -547,7 +550,7 @@ func TestAStoreThatThePolicyDoesNotListIsNotAllowed(t *testing.T) {
 				t.Error("the evidence of a store that is not allowed was read")
 			}
 			// Listed, it is accepted: it is the list that decides.
-			v, err = checkerWith(t, store, sv).Check(t.Context(), f.request())
+			v, err = f.checker(sv, nil).Check(t.Context(), f.request())
 			wantAccepted(t, v, err)
 		})
 	}

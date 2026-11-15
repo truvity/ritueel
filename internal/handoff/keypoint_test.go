@@ -40,7 +40,7 @@ func pointlessKeys() map[string]*ecdsa.PublicKey {
 
 func TestAKeyOfAVerifierWithOnlyOneCoordinateIsKeyMismatchForEveryStore(t *testing.T) {
 	for _, store := range []handoff.Store{handoff.StorePIV, handoff.StoreOpenPGPCard, handoff.StoreKMS} {
-		f := newFixture(t, store, csrSpec{})
+		f := newStoreCase(t, store)
 		for name, key := range pointlessKeys() {
 			t.Run(string(store)+"/"+name, func(t *testing.T) {
 				defer func() {
@@ -48,10 +48,10 @@ func TestAKeyOfAVerifierWithOnlyOneCoordinateIsKeyMismatchForEveryStore(t *testi
 						t.Errorf("Check panicked on a key that a verifier returned: %v", r)
 					}
 				}()
-				ev := f.goodEvidence(store)
+				ev := f.good()
 				ev.Key = key
 				sv := returning(ev)
-				v, err := checkerWith(t, store, sv).Check(t.Context(), f.request())
+				v, err := f.checker(sv, nil).Check(t.Context(), f.request())
 				wantRefusal(t, v, err, handoff.CodeKeyMismatch, 8)
 				if v.Detail == "" || !plain(v.Detail) {
 					t.Errorf("the detail is empty or not plain text: %q", v.Detail)
