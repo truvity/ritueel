@@ -26,6 +26,13 @@
 // ceremony binds. The faults of a request are [ErrForm], [ErrAlgorithm] and [ErrBackSignature],
 // each of them also an [ErrRequest]. The reader opens no file and starts no program.
 //
+// It reads an answer in the same way: it splits the file `<stem>.bound.pgp` into its two packets
+// ([SplitBoundFile]), reads the issuer of the binding ([BindingIssuer]) and verifies the binding of
+// a subkey by a primary ([VerifyBinding]), with the subpackets of the page and no other, so that
+// a binding that BindSubkey returns is a binding that the requester accepts, and no other. The
+// faults of an answer are [ErrBoundFile], [ErrBinding] and [ErrBindingShape], each of them also an
+// [ErrAnswer].
+//
 // A user ID has the one shape of the page, and each part of it follows the rule of its key in
 // ritueel.yaml, so that no text of a caller can add a character that a person cannot read or an
 // address that the user ID does not show.

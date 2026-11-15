@@ -42,3 +42,22 @@ func (e *kindError) Unwrap() error { return e.parent }
 func fail(kind error, format string, args ...any) error {
 	return fmt.Errorf("%w: %s", kind, fmt.Sprintf(format, args...))
 }
+
+// The faults of an answer: the files that come back from a ceremony, which the requester reads
+// (docs/reference/hand-off-contract.md, "What comes back"). Each is an [ErrAnswer], so that a caller
+// that wants "the answer is faulty" has one kind to ask for, as [ErrRequest] is for a request.
+var (
+	// ErrAnswer is the kind of every fault of an answer.
+	ErrAnswer = errors.New("openpgp: refused answer")
+	// ErrBoundFile marks a bound file that is not exactly two whole packets: a Public-Subkey packet,
+	// then one Signature packet. It is also an [ErrAnswer].
+	ErrBoundFile error = &kindError{"openpgp: the bound file is not a subkey packet and a signature packet", ErrAnswer}
+	// ErrBinding marks a signature that is not a version 4 type 0x18 signature with ECDSA and SHA-384
+	// by the named primary over that primary and that subkey, or that does not verify. It is also an
+	// [ErrAnswer].
+	ErrBinding error = &kindError{"openpgp: the subkey binding is refused", ErrAnswer}
+	// ErrBindingShape marks a binding whose signature verified and whose subpackets are not the set
+	// of the page. It is returned only after the signature verified, so it says that the issuer is
+	// right and the profile is not. It is an [ErrAnswer] and not an [ErrBinding].
+	ErrBindingShape error = &kindError{"openpgp: the subkey binding has not the subpackets of the page", ErrAnswer}
+)

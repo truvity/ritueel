@@ -41,6 +41,7 @@ func bind(t testing.TB, b openpgp.BindParams) []byte {
 	if err != nil {
 		t.Fatalf("BindSubkey: %v", err)
 	}
+	assertBindingMatches(t, out, b) // the one reader of the answer accepts what the writer wrote
 	return out
 }
 
