@@ -35,7 +35,7 @@
 24. Users verify with the keyring, never with one primary's certificate, because a subkey may be bound by any active primary.
 25. In the first version the package goes in the user's own repository. The fingerprints of the primaries are published on the project's site and in its security file.
 26. The root's key is published in more than one place that would have to be broken into separately: a key server (ritueel's publish step sends the public key to the keyservers the holder lists, [record 0011](0011-publishing-and-what-to-do-after-a-ceremony.md)), the release page with the keyring file, and a "how to verify" page with the commands. The last two belong to the user's own pipeline; ritueel prints what to do.
-27. Sigstore and build provenance are a complement. ritueel neither issues nor verifies provenance for a user's releases.
+27. Sigstore and build provenance are a complement to OpenPGP, never a replacement. RPM and DEB repositories, and some older systems such as Maven, still need OpenPGP. ritueel neither issues nor verifies provenance for a user's releases.
 28. Nothing is done for old releases in the first version. A user keeps the keyring version of the time.
 
 29. Before the first signed release, two checks are run: `apt` with `gpgv` on the affected Ubuntu and Debian releases, and `rpm` on RHEL 8 and 9 with an ECDSA key. If a verifier that users need refuses the key, a second primary of RSA-4096 is added to the keyring: a key of the OpenPGP root like the others, and the one exception to rule 1 in its algorithm.

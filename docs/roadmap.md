@@ -48,6 +48,7 @@ None is planned in detail; each starts as a decision proposal. The sections "Not
 - A fallback driver for the `openpgp-card` store.
 - References and test vectors of the trust files, by milestone (M2, M4), and files for a key on one's own domain (WKD) and the DNS record text, as a later output with a guide.
 - The build list of stage one of a person's key.
+- A person's own primary in a cloud key of a personal account (record 0008, rule 8). It is not covered today. Its milestone is proposed. ([issue #287](https://github.com/truvity/ritueel/issues/287))
 - How the first replica of a cloud root is made under the key policy.
 - The build and test list of the cards, and packing single-key roots into one card row.
 - The format of the wrapped key, fixed by the M1 proof.

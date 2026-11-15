@@ -28,14 +28,14 @@
 
 18. ritueel is a teaching product first: the purpose is a smooth and safe experience of managing a root, not the tools. The site is part of the product; it teaches the logic of roots and intermediates, with one guide per procedure and drills on test keys.
 19. Opinionated help covers the whole life of a root: where the bundle lives, backup and restore, re-signing and rotating, revocation, card loss and replacement. Each procedure gets a Learn page (why and when), a guide (steps) and a drill.
-20. The teaching target is the Learn path, from the ground up, in four groups: the basics; down the chain; where a key lives; and the keys of one root side by side. The other targets are a glossary, a reference generated from the program, and a "how to verify a release" page that comes with the release candidate, not before.
-21. The site compares key stores by what each protects against and costs (software and its backends, YubiKey PIV and OpenPGP card, AWS KMS), recommends devices to buy for testing, and dates each claim.
-22. The site publishes only the home page, the Learn path (an overview and its pages, in the four groups of rule 20), the demo, the glossary, where it stands (status and roadmap), one page that states the design in brief, "How it works" (an overview of the use cases and two layout pages, in pictures), and the hand-off contract that the requester system reads. Each "How it works" page says that the pictures show the design. Records, guides, tool, reference, principles, research and contributor pages are not published; they are written under docs/ and read in the repository.
+20. The teaching targets are the case pages and the status table of each case. Behind them is the Learn path, from the ground up, in four groups: the basics; down the chain; where a key lives; and the keys of one root side by side. The other targets are a glossary, a reference generated from the program, and a "how to verify a release" page that comes with the release candidate, not before.
+21. The site compares key stores by what each protects against and costs (software and its backends, YubiKey PIV and OpenPGP card, AWS KMS), recommends devices to buy for testing, and dates each claim. It also recommends two YubiKeys for an ordinary user's top accounts.
+22. The site publishes only the start page, one page for each case (rule 35), the Learn path (an overview and its pages, in the four groups of rule 20), the demo, the glossary, where it stands (one status table for each case, and the roadmap), one page that states the design in brief, "How it works" (an overview of the use cases and two layout pages, in pictures), and the hand-off contract that the requester system reads. Each "How it works" page says that the pictures show the design. Records, guides, tool, reference, principles, research and contributor pages are not published; they are written under docs/ and read in the repository.
 23. The allowlist site/published.txt says which pages are published; a page comes back by one line, and nothing is deleted. Old addresses of unpublished pages redirect (302) to their file on GitHub, and links from published pages to unpublished files open that file.
 24. The site shows, not only tells: a comic-style "How it works?" sketch of the major use cases (binding subkeys from a YubiKey, signing a PKI intermediate); illustrations of the YubiKey, slots and passkeys; the layout of a root card, a day-to-day card and a server card; the layout of a bundle and of the extra partition on the stick.
 25. The pictures are inline SVG that follows the theme of the site, drawn by a figure kit under `site/figures/`.
-26. Pages say what is built and mark what is not built as planned. Pages do not call the second card a spare, the custody two-person control, or a replica a second root, and state the accepted limit.
-27. The site is judged at two bars: the design phase and the first signed release; in the design phase a newcomer's reading test does not block. Learn is done when someone new to PKI has read every Learn page end to end, their questions are answered on the page, and the comparison page exists.
+26. Pages say what is built and mark what is not built as planned, in the states of the status page. Pages do not call the second card or the second YubiKey a spare, the custody two-person control, or a replica a second root, and state the accepted limit.
+27. The site is judged at two bars: the design phase and the first signed release; in the design phase a newcomer's reading test does not block. Learn is done when someone new to PKI has read every Learn page end to end, their questions are answered on the page, and the comparison page exists. A case page is done when each way in its table has one state of the legend, or advice only for a way that we do not recommend. Each state that no record decides is marked as advice or proposed.
 
 28. The glossary fixes fifteen words: root, delegated key, holder, requester, key store, ceremony, bundle, history, record, renew, replace, trust files, wanted, not applied yet and apply.
 29. A root is what outsiders trust without further proof, of one kind, built from keys in any place; a delegated key is an intermediate certificate key, an OpenPGP subkey or an SSH CA key, and a delegation is a declared name under a root for a key that does daily work.
@@ -43,17 +43,19 @@
 31. To renew is to extend the same key; to replace is to make a new key on an event, including the three-year limit.
 32. The words card, row and card file are defined on the bundle and cards pages.
 
-33. The milestones are: Learn; M0 Records; M1 Proofs on a rehearsal card; M2 Release candidate; M3 A person's key, stage one; M4 A company's cloud root; M5 First signed release; M6 A company's card roots, then a person's card-born primaries; M7 Afterwards. Dates are not promised, the order is; what each milestone delivers is on the roadmap page. A change to the plan is a pull request to the roadmap page. Milestones are GitHub milestones with area and type labels.
+33. The milestones are: Learn; M0 Records; M1 Proofs on a rehearsal card; M2 Release candidate; M3 A person's key, stage one; M4 A company's cloud root; M5 First signed release; M6 A company's card roots, then a person's card-born primaries; M7 Afterwards. Dates are not promised, the order is; what each milestone delivers is on the roadmap page. A way that the status page marks "planned" or "explained, tool planned" names its milestone there, and the work of that milestone is its row on the roadmap page. A change to the plan is a pull request to the roadmap page. Milestones are GitHub milestones with area and type labels.
 34. M0 (the written design) is the small clean set of records, the page that states the design in brief, the reference pages, the glossary and the teaching pages saying the same thing. M1 comes first of the builds: the passkey proof, the card proofs and the stick test, before the key stores.
+35. The site is entered by five cases. Case 1: a company's internal PKI. Case 2: a project or company signing releases. Case 3: a developer's commits and own releases. Case 4: SSH logins. Case 5: an ordinary user's own logins. The start page lists the cases, and each case has one page of its own. The status page shows one table for each case, with one state for each way, except a way that we do not recommend, which shows advice only. Where ritueel is not needed, the page says so and gives short advice. The advice is not a feature and does not widen rules 8 to 10.
 
 ## Why
 
-Root custody is rare and costly to get wrong; daily issuing is busy, so the two are kept apart. A reader who does not know why a root is kept apart and guarded makes the expensive mistake faster, so teaching comes first.
+Root custody is rare and costly to get wrong; daily issuing is busy, so the two are kept apart. A reader who does not know why a root is kept apart and guarded makes the expensive mistake faster, so teaching comes first. A reader comes with a task, not with a root, so the site starts from the task and says when ritueel is not needed.
 
 ## What it costs
 
 - The contract needs work on both sides, and the software-root mode comes first.
 - Most pages are read on GitHub, not on the site.
+- Each case table must be kept true to the records.
 
 ## Roads not taken
 
@@ -73,6 +75,9 @@ Root custody is rare and costly to get wrong; daily issuing is busy, so the two 
 - **One root for each organisation or person, with three faces.** One name, but it brings A and B back as a grid and cannot say a root of one kind with a key on a card and a key in the cloud; one root of each kind was chosen.
 - **Place and slot as words of their own.** Complete, but a place is one fact about a key; one sentence in the glossary row "key store" does the work.
 - **A glossary of sixteen words.** "Place" and "certification" would have entries and "delegation" would rename "delegated key", but the list grows by a third and one sentence in a row that exists does the same; the list has fifteen words (rule 28).
+- **Enter the site by the Learn path only.** One path for every reader, but a reader with a task must read the basics before the answer.
+- **One table for all cases, with a column for each case.** One picture, but most cells would be empty.
+- **A sixth case for someone who already has a root in a file.** It would answer that reader, but nothing is imported except a person's own OpenPGP primary ([record 0002](0002-where-a-key-lives.md), rule 2), so ritueel has no way for such a root.
 
 ## Not yet proven or only proposed
 
