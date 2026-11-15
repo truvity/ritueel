@@ -16,8 +16,8 @@ flow: landing
 
 ## What to do
 
-- Keep your OpenPGP primary key offline, in an encrypted file, away from your daily machine (ritueel support planned, [M3](/roadmap/)).
-- Put a signing subkey and an authentication subkey on your day-to-day card (ritueel support planned, [M3](/roadmap/)).
+- Keep your [OpenPGP primary key](/learn/chain-openpgp/) offline, in an [encrypted file](/learn/a-key-in-a-file/), away from your daily machine (ritueel support planned, [M3](/roadmap/)).
+- Put a signing subkey and an authentication subkey on your [day-to-day card](/how-it-works/cards/#day-to-day-card) (ritueel support planned, [M3](/roadmap/)).
 - Sign your own releases with cosign, and add OpenPGP where users need it.
 - Keep two encrypted copies in different places.
 

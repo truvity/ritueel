@@ -16,16 +16,16 @@ flow: landing
 
 ## What to do
 
-- Use an SSH CA: a person joins or leaves without a change on every host.
+- Use an [SSH CA](/learn/chain-ssh/#an-ssh-ca): a person joins or leaves without a change on every host.
 - Keep the daily SSH CA key in the system that issues certificates.
-- Keep the break-glass (emergency) SSH CA key in a cloud key (ritueel support planned, [M4](/roadmap/)). Or keep it on two root cards (ritueel support planned, [M6](/roadmap/)).
+- Keep the break-glass (emergency) SSH CA key in a [cloud key](/learn/how-a-kms-key-works/) (ritueel support planned, [M4](/roadmap/)). Or keep it on two [root cards](/how-it-works/cards/#root-card) (ritueel support planned, [M6](/roadmap/)).
 - For your own login key, use 1Password with its SSH agent. Or use a day-to-day card (ritueel support planned, [M3](/roadmap/)).
 
 M3, M4 and M6 are milestones on the [roadmap](/roadmap/).
 
 ## What not to do
 
-- A break-glass key in a file, Vault or OpenBao: it can be copied.
+- A break-glass [key in a file](/learn/a-key-in-a-file/), Vault or OpenBao: it can be copied.
 - One card alone: no second key.
 - A plain key file for your own login: a copy takes your key.
 
