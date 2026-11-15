@@ -7,6 +7,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"syscall"
 	"testing"
@@ -286,9 +287,10 @@ func TestAPrimaryCreatedAfterTheClockIsExitOneAndNeverARefusal(t *testing.T) {
 	}
 }
 
-// A test primary and a real primary in one keyring file, and more than 16 pinned primaries, are exit code 1 with the
-// sentence of the file or the count; two real primaries are a pair of one kind.
-func TestAMixOfTestAndRealPrimariesAndMoreThanSixteenAreExitOne(t *testing.T) {
+// A test primary and a real primary in one keyring file are exit code 1 with the sentence of the file, and a root list
+// of more entries than a list holds (27) is exit code 1 with the line of the list, never the sentence of a count of
+// primaries; two real primaries are a pair of one kind, and the most primaries are judged.
+func TestAMixOfTestAndRealPrimariesAndMoreThanTheMostAreExitOne(t *testing.T) {
 	m := crqManifestOf(t)
 	now := m.clock(t)
 	c := m.byID(t, "pgp-software-valid")
@@ -311,20 +313,26 @@ func TestAMixOfTestAndRealPrimariesAndMoreThanSixteenAreExitOne(t *testing.T) {
 			t.Errorf("(%d, %q): a pair of one kind is refused as a file", int(r.code), r.stderr)
 		}
 	})
-	t.Run("seventeen", func(t *testing.T) {
-		r := run(t, memRoots(t, 17))
-		if r.code != ExitFailure || !strings.Contains(r.stderr, "17") || !strings.Contains(r.stderr, "16") || !onlyPrintable(r.stderr) || strings.Count(r.stderr, "\n") != 1 {
-			t.Errorf("(%d, %q)", int(r.code), r.stderr)
-		}
-		// A run that the command cannot judge is neither accepted nor refused, and says so, as every other run of this kind.
-		if prefix := "ritueel: request " + c.stem(t) + " is not accepted and not refused: "; !strings.HasPrefix(r.stderr, prefix) {
-			t.Errorf("standard error = %q, want it to start with %q", r.stderr, prefix)
+	t.Run("a list of 27 entries is the list's fault and not a count of primaries", func(t *testing.T) {
+		// A list holds one entry for each label A to Z: the 27th has a label that is not a capital letter, or a label that
+		// the list has already. The reader of the list refuses it, and the line is the bundle's, with the file named.
+		roots := theMostRoots(t)
+		extra := newMemRoot(t, "A", memCreated, true)
+		again := append(slices.Clone(roots), extra)
+		extra.label = "["
+		for name, list := range map[string][]memRoot{"a label twice": again, "a label that is not a capital letter": append(slices.Clone(roots), extra)} {
+			r := run(t, list)
+			if r.code != ExitFailure || !onlyPrintable(r.stderr) || strings.Count(r.stderr, "\n") != 1 || r.stdout != "" ||
+				!strings.HasPrefix(r.stderr, "ritueel: bundle: the newest trust set "+crqTrustSet+": root-list.json: ") ||
+				strings.Contains(r.stderr, "checks take") || strings.Contains(r.stderr, "not accepted and not refused") {
+				t.Errorf("%s: (%d, %q, %q)", name, int(r.code), r.stdout, r.stderr)
+			}
 		}
 	})
-	t.Run("sixteen", func(t *testing.T) {
-		r := run(t, memRoots(t, 16))
-		if strings.Contains(r.stderr, "16 ") && strings.Contains(r.stderr, "at most") {
-			t.Errorf("(%d, %q): sixteen is the most the checks take", int(r.code), r.stderr)
+	t.Run("the most primaries are judged and not counted", func(t *testing.T) {
+		r := run(t, theMostRoots(t))
+		if r.code != ExitRefused || strings.Contains(r.stderr, "checks take") || strings.Contains(r.stderr, "not accepted and not refused") {
+			t.Errorf("(%d, %q): the most the checks take is judged", int(r.code), r.stderr)
 		}
 	})
 }

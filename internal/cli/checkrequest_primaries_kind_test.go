@@ -20,8 +20,9 @@ import (
 
 // Every fault of the OpenPGP primaries of the newest trust set gives the command one form: exit code 1 and one line
 // that starts with "request STEM is not accepted and not refused: ", in text mode and in JSON mode. The faults are
-// the faults of the list (more primaries than the checks take) and of the keyring file (missing, not a plain file,
-// refused by the reader). One fingerprint on two entries is not one of them: the reader of the list refuses such a list
+// the faults of the keyring file (missing, not a plain file, refused by the reader). A list that pins more primaries
+// than the checks take is not one of them: the checks take as many as a list holds, so no list that the reader accepts
+// pins more. One fingerprint on two entries is not one of them either: the reader of the list refuses such a list
 // first, as it refuses a label twice, and the command says so in the sentence of the bundle (see
 // TestARepeatedFingerprintStopsTheCommandWithTheRefusalOfTheList).
 
@@ -70,10 +71,6 @@ func primariesFaultsOfTheCommand(t *testing.T) []primariesFault {
 		}
 	}
 	return []primariesFault{
-		{name: "17 pinned", kind: "ErrPrimaries", change: trust(func(t *testing.T) []memRoot { return memRoots(t, 17) }),
-			sentence: "the root list of the newest trust set " + crqTrustSet + " pins 17 OpenPGP primaries, and the checks take at most 16"},
-		{name: "26 pinned", kind: "ErrPrimaries", change: trust(func(t *testing.T) []memRoot { return memRoots(t, 26) }),
-			sentence: "the root list of the newest trust set " + crqTrustSet + " pins 26 OpenPGP primaries, and the checks take at most 16"},
 		{name: "no keyring file", kind: "ErrNoKeyring", change: noFile, sentence: noKeyringSentence},
 		{name: "a link", kind: "ErrPrimaries", change: noFile, place: symlink("real.gpg", append(bytes.Clone(a), b...)), sentence: refusedSentence, prefix: true},
 		{name: "a dangling link", kind: "ErrPrimaries", change: noFile, place: symlink("nowhere.gpg", nil), sentence: refusedSentence, prefix: true},
