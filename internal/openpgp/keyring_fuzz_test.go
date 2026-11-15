@@ -275,6 +275,12 @@ func FuzzReadKeyring(f *testing.F) {
 		if certs != len(want) || (test > 0 && plain > 0) {
 			t.Fatalf("accepted %d certificates for %d entries, with %d test and %d real user IDs", certs, len(want), test, plain)
 		}
+		// The mark that the primaries tell is the mark of the user IDs of the file, the same for all.
+		for i, k := range keys {
+			if k.TestMark() != (test > 0) {
+				t.Fatalf("primary %d: TestMark = %v for a file with %d test and %d real user IDs", i, k.TestMark(), test, plain)
+			}
+		}
 	})
 }
 
