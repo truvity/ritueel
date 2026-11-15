@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"io/fs"
 	"os"
+	"reflect"
 	"strconv"
 	"strings"
 	"sync"
@@ -26,21 +27,25 @@ const (
 	// ModeTest is no encryption: the root is a TEST ONLY root (record 0005, rule 26). The caller
 	// takes it from the bundle's root.json (`test`) and from the plan, never from a file.
 	ModeTest Mode = iota + 1
-	// ModePassphrase is an age file with one scrypt recipient (record 0002, rules 22 and 28). It
-	// is not built in this version: [Open] refuses it with [ErrNotBuilt].
+	// ModePassphrase is an age file with one scrypt recipient (record 0002, rules 22 and 28), for
+	// a root that is not a test root and a holder without cards. It needs a [PassphraseSource].
 	ModePassphrase
 )
 
-// PassphraseSource gives the passphrase of one key. It is the plug of the passphrase mode, which
-// is not built in this version; a Config for a test root must not set it.
+// PassphraseSource gives the passphrase of one key. It is the plug of the passphrase mode: the
+// store calls it once for each key that a call saves or opens (an X.509 key, an OpenPGP primary),
+// never twice for the same key in one call, and never keeps what it returns. A Config for a test
+// root must not set it. [ReaderSource] reads the passphrases from a reader, one line each; a
+// prompt at a terminal is the caller's to build.
 type PassphraseSource interface {
 	// Passphrase returns the passphrase of the key that p names. The bytes are the store's to
-	// clear after use.
+	// clear after use; the slice must be a copy that the source does not keep.
 	Passphrase(ctx context.Context, p Purpose) ([]byte, error)
 }
 
 // Config opens a [Store]. BundleDir is required: a Config without it is refused, so the check of
-// the key directory cannot be left out by leaving a field empty.
+// the key directory cannot be left out by leaving a field empty. A field that is set for a mode
+// that ignores it hides a mistake and is refused.
 type Config struct {
 	// KeyDir is the key directory, outside the bundle ([CheckKeyDir]).
 	KeyDir string
@@ -48,7 +53,8 @@ type Config struct {
 	BundleDir string
 	// Mode says how the files are protected; the zero value is refused.
 	Mode Mode
-	// Passphrases gives the passphrases of the passphrase mode. A test root must leave it nil.
+	// Passphrases gives the passphrases of the passphrase mode, which needs it. A test root must
+	// leave it nil.
 	Passphrases PassphraseSource
 }
 
@@ -74,9 +80,10 @@ type fileWriter interface {
 type Store struct {
 	mu     sync.Mutex
 	mode   Mode
-	fsys   fsx.FS     // the key directory, for reads
-	w      fileWriter // the writer of the same folder
-	format format     // wraps and unwraps the payload of a file; set by Open
+	fsys   fsx.FS           // the key directory, for reads
+	w      fileWriter       // the writer of the same folder
+	format format           // wraps and unwraps the payload of a file; set by Open
+	source PassphraseSource // the passphrases of a passphrase root; nil for a test root
 	closed bool
 	stop   error // the first error of the writer; set once
 }
@@ -86,10 +93,9 @@ type Store struct {
 // of the folder are not checked or changed: on exFAT they mean nothing, and a mode of 0700 is
 // the holder's duty.
 //
-// A zero Mode, an empty BundleDir, a ModeTest with a source set and a ModePassphrase with none are
-// an [ErrParams]. ModePassphrase is not built in this version and is an [ErrNotBuilt]. The way
-// that a card opens a key file (passkeys and a recovery key) is not built either, and there is
-// no Mode for it.
+// A zero Mode, an empty BundleDir, a ModeTest with a source set and a ModePassphrase with none (a
+// nil interface or a nil pointer in it) are an [ErrParams]. The way that a card opens a key file
+// (passkeys and a recovery key) is not built, and there is no Mode for it.
 func Open(cfg Config) (*Store, error) {
 	switch cfg.Mode {
 	case ModeTest:
@@ -97,7 +103,7 @@ func Open(cfg Config) (*Store, error) {
 			return nil, refuse(ErrParams, "a test root has no passphrase and the source is set")
 		}
 	case ModePassphrase:
-		if cfg.Passphrases == nil {
+		if nilSource(cfg.Passphrases) {
 			return nil, refuse(ErrParams, "a passphrase root needs a source of passphrases")
 		}
 	default:
@@ -105,9 +111,6 @@ func Open(cfg Config) (*Store, error) {
 	}
 	if cfg.BundleDir == "" {
 		return nil, refuse(ErrParams, "the bundle folder is empty")
-	}
-	if cfg.Mode == ModePassphrase {
-		return nil, refuse(ErrNotBuilt, "opening a key file with a passphrase is not built")
 	}
 	dir, err := checkKeyDir(os.Stat, cfg.KeyDir, cfg.BundleDir)
 	if err != nil {
@@ -128,7 +131,24 @@ func Open(cfg Config) (*Store, error) {
 		_ = w.Close()
 		return nil, err
 	}
-	return &Store{mode: cfg.Mode, fsys: w.FS, w: w, format: plainFormat{}}, nil
+	st := &Store{mode: cfg.Mode, fsys: w.FS, w: w, format: plainFormat{}}
+	if cfg.Mode == ModePassphrase {
+		st.format, st.source = ageFormat{}, cfg.Passphrases
+	}
+	return st, nil
+}
+
+// nilSource reports whether a source is nil: a nil interface, or a nil pointer, map, function or
+// channel inside one, which would panic when it is called.
+func nilSource(src PassphraseSource) bool {
+	if src == nil {
+		return true
+	}
+	switch v := reflect.ValueOf(src); v.Kind() {
+	case reflect.Pointer, reflect.Map, reflect.Func, reflect.Chan, reflect.Slice, reflect.Interface:
+		return v.IsNil()
+	}
+	return false
 }
 
 // stillTheCheckedFolder is the look after the open: a link put into a parent of the key directory
@@ -293,12 +313,7 @@ func (s *Store) save(kind FileKind, label, reason string, k *Key,
 	}
 	defer func() { clear(payload) }()
 	pub := k.publicCopy()
-	return s.write(kind, label, reason, payload, func(file []byte) error {
-		inner, err := s.format.unwrap(kind, file)
-		if err != nil {
-			return err
-		}
-		defer clear(inner)
+	return s.write(kind, label, reason, payload, func(inner []byte) error {
 		priv, err := parse(inner)
 		if err != nil {
 			return err
@@ -372,11 +387,7 @@ func (s *Store) saveText(kind FileKind, label, reason string, payload []byte) er
 	if err := s.begin(); err != nil {
 		return err
 	}
-	return s.write(kind, label, reason, payload, func(file []byte) error {
-		got, err := s.format.unwrap(kind, file)
-		if err != nil {
-			return err
-		}
+	return s.write(kind, label, reason, payload, func(got []byte) error {
 		if !bytes.Equal(got, payload) {
 			return refuse(ErrKeyFile, "the file does not read back as it was given")
 		}
@@ -384,9 +395,16 @@ func (s *Store) saveText(kind FileKind, label, reason string, payload []byte) er
 	}, nil)
 }
 
-// write wraps the payload and writes the file, reads it back and checks it with verify. done is
-// called when the whole has passed. The caller holds the lock and has checked the store.
-func (s *Store) write(kind FileKind, label, reason string, payload []byte, verify func(file []byte) error, done func()) error {
+// write wraps the payload and writes the file, reads it back, unwraps it and checks the payload
+// that came out with verify. done is called when the whole has passed. The caller holds the lock
+// and has checked the store. A passphrase root asks its source once, after the name has been
+// looked at and before the payload is encrypted, and uses that passphrase for the read back too.
+// The mode and the format of the store must agree before the name is looked at, the source is
+// asked or a byte is encrypted: a passphrase mode has the age format and the test mode the plain
+// one, so a store that was put together wrongly writes nothing and never puts a plain file under
+// an .age name. A file of the other mode in the folder is still an ErrWrongMode first.
+func (s *Store) write(kind FileKind, label, reason string, payload []byte, verify func(payload []byte) error, done func()) error {
+	sf, secret := s.format.(secretFormat)
 	name := fileName(s.mode, label, kind, reason)
 	if name == "" || fsx.CheckName(name) != nil {
 		return refuse(ErrParams, "the file name is not valid")
@@ -398,6 +416,9 @@ func (s *Store) write(kind FileKind, label, reason string, payload []byte, verif
 	if err := noOtherMode(s.mode, keyFilesOf(before)); err != nil {
 		return err
 	}
+	if !modeAndFormatAgree(s.mode, secret) {
+		return refuse(ErrParams, "the mode of the store and its file format do not agree")
+	}
 	// The name is looked at before a byte of the key goes to the disk: a writer that meets a file
 	// of that name has already made, flushed and closed a whole temporary file with the new key.
 	for _, e := range before {
@@ -406,7 +427,22 @@ func (s *Store) write(kind FileKind, label, reason string, payload []byte, verif
 			return s.stop
 		}
 	}
-	file, err := s.format.wrap(kind, payload)
+	if len(payload) > MaxKeyFileSize {
+		return refuse(ErrKeyFile, "the key file would be longer than %d bytes", MaxKeyFileSize)
+	}
+	var pass []byte
+	if secret {
+		if pass, err = s.passphrase(context.Background(), Purpose{Label: label, File: kind}); err != nil {
+			return err
+		}
+		defer clear(pass)
+	}
+	var file []byte
+	if secret {
+		file, err = sf.wrapWith(pass, kind, payload)
+	} else {
+		file, err = s.format.wrap(kind, payload)
+	}
 	if err != nil {
 		return err
 	}
@@ -431,13 +467,65 @@ func (s *Store) write(kind FileKind, label, reason string, payload []byte, verif
 	if !bytes.Equal(back, file) {
 		return fmt.Errorf("%w: the file %s was written and does not read back as it was written", ErrKeyFile, name)
 	}
-	if err := verify(back); err != nil {
+	if err := s.verifyBack(sf, pass, kind, back, verify); err != nil {
 		return fmt.Errorf("the file %s was written and failed its check: %w", name, err)
 	}
 	if done != nil {
 		done()
 	}
 	return nil
+}
+
+// modeAndFormatAgree says whether the mode of a store fits the format that it holds: the
+// passphrase mode needs a format with a passphrase (an age file) and the test mode a plain one. No
+// other mode is built.
+func modeAndFormatAgree(mode Mode, secret bool) bool {
+	switch mode {
+	case ModePassphrase:
+		return secret
+	case ModeTest:
+		return !secret
+	}
+	return false
+}
+
+// verifyBack unwraps the file that was read back and hands the payload to verify. A passphrase
+// root opens it with the passphrase that wrote it.
+func (s *Store) verifyBack(sf secretFormat, pass []byte, kind FileKind, back []byte, verify func(payload []byte) error) error {
+	var inner []byte
+	var err error
+	if sf != nil {
+		inner, err = sf.unwrapWith(pass, kind, back)
+	} else {
+		inner, err = s.format.unwrap(kind, back)
+	}
+	if err != nil {
+		return err
+	}
+	defer clear(inner)
+	return verify(inner)
+}
+
+// passphrase asks the source for the passphrase of one key and checks it with [CheckPassphrase].
+// The slice that comes back is the caller's to clear. It is cleared here on every path that
+// returns an error.
+func (s *Store) passphrase(ctx context.Context, p Purpose) ([]byte, error) {
+	if s.source == nil {
+		return nil, refuse(ErrParams, "a passphrase root has no source of passphrases")
+	}
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+	pass, err := s.source.Passphrase(ctx, p)
+	if err != nil {
+		clear(pass)
+		return nil, fmt.Errorf("software: the source of passphrases gave none: %w", err)
+	}
+	if err := CheckPassphrase(pass); err != nil {
+		clear(pass)
+		return nil, err
+	}
+	return pass, nil
 }
 
 // leftover says which temporary file of the writer a failed write may have left in the key
@@ -597,11 +685,24 @@ func (s *Store) read(ctx context.Context, kind FileKind, label, reason string) (
 	if err := ctx.Err(); err != nil {
 		return nil, err
 	}
-	payload, err := s.format.unwrap(kind, file)
+	sf, secret := s.format.(secretFormat)
+	if !secret {
+		return s.format.unwrap(kind, file)
+	}
+	// The header is looked at before the passphrase is asked: a file that is refused costs no
+	// prompt and no scrypt.
+	if err := sf.inspect(file); err != nil {
+		return nil, err
+	}
+	pass, err := s.passphrase(ctx, Purpose{Label: label, File: kind})
 	if err != nil {
 		return nil, err
 	}
-	return payload, nil
+	defer clear(pass)
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+	return sf.unwrapWith(pass, kind, file)
 }
 
 // exists reports whether the key directory lists a name. It never reads the file.

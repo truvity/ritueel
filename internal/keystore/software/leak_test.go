@@ -104,7 +104,7 @@ func leakScenario(t *testing.T, s *Store, bundle, keys string) ([]error, canarie
 	note(CheckKeyDir(filepath.Join(keys, "nowhere"), bundle))
 	_, e := Open(Config{KeyDir: keys, BundleDir: bundle})
 	note(e)
-	_, e = Open(Config{KeyDir: keys, BundleDir: bundle, Mode: ModePassphrase, Passphrases: &recordingSource{}})
+	_, e = Open(Config{KeyDir: keys, BundleDir: bundle, Mode: ModePassphrase}) // a passphrase root with no source
 	note(e)
 	_, e = Open(Config{KeyDir: bundle, BundleDir: bundle, Mode: ModeTest})
 	note(e)

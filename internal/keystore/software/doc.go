@@ -3,12 +3,14 @@
 // a key file in a key directory outside the bundle (record 0005, rule 30), and opened again at a
 // later ceremony.
 //
-// What is built is the TEST ONLY mode: plain key files, marked as such, for a test root (record
-// 0005, rule 26). The mode of passphrase files is named ([ModePassphrase]) and refused with
-// [ErrNotBuilt]. The way that is the default, a passkey on each root card with a recovery key
-// (record 0002, rules 19 to 21), is not built either: its format is not written before the proof
-// on a card, and there is no Mode for it. A caller that has neither a test root nor a source of
-// passphrases gets a refusal that says so.
+// Two modes are built. [ModeTest] is the TEST ONLY mode: plain key files, marked as such, for a
+// test root (record 0005, rule 26). [ModePassphrase] is the passphrase mode: an age file with one
+// scrypt recipient (record 0002, rules 20, 22 and 28), for a root that is not a test root and a
+// holder without cards, and for a script root (record 0005, rule 27). The way that is the default,
+// a passkey on each root card with a recovery key (record 0002, rules 19 to 21), is not built: its
+// format is not written before the proof on a card, and there is no Mode for it. A caller that has
+// neither a test root nor a source of passphrases must refuse with [ErrNotBuilt] and a sentence
+// that says so.
 //
 // The package is a library. It has no command and no flag; the commands that make and use a root
 // call it. It writes no log line, prints nothing, reads no environment variable, starts no
@@ -50,11 +52,49 @@
 // be compared by the caller with the pin or the fingerprint in the trust set before it signs: the
 // package cannot know them, and it cannot tell a copy of an older key file from the file.
 //
+// # Passphrase files
+//
+// A passphrase file is an age file of the format age-encryption.org/v1, binary and not armoured,
+// made by the library filippo.io/age (only its package age). It has one scrypt recipient and no
+// other stanza, and its payload is the PEM of the X.509 key, the binary transferable secret key,
+// one signature packet or the text of a JWS. The work factor that is written is [WriteWorkFactor]
+// (2^18); a file is read at any work factor from [MinWorkFactor] to [MaxWorkFactor] (2^18 to
+// 2^22).
+//
+// The header is looked at before any work. A file is refused as an [ErrKeyFile], before scrypt
+// runs and before a passphrase is asked, unless its header holds exactly one stanza of the type
+// scrypt, with two arguments (a salt of 16 bytes in unpadded Base64 and a work factor written as a
+// plain decimal number from 18 to 22) and a body of 32 bytes. A header that asks for 2^30 costs
+// nothing. The library's own identity then runs with its maximum work factor set to 22, the
+// payload is read up to [MaxKeyFileSize] and one byte more, and a longer payload is refused. A
+// file that did not open with the passphrase is an [ErrWrongPassphrase]; a damaged or cut file is
+// an [ErrKeyFile]. No text of the library is repeated in an error, because it holds lines of the
+// file.
+//
+// A passphrase comes from a [PassphraseSource], once for each key that a call saves or opens, and
+// is never kept. [CheckPassphrase] holds it to the rule of record 0002 (at least 15 characters,
+// valid text, no control or format character); it judges neither randomness nor strength, so
+// "generated and not chosen" is advice and not a check. [ReaderSource] reads one line for each
+// ask from a reader that the caller owns, for example a descriptor given as --passphrase-fd. The
+// package asks no terminal. A save writes the file, reads it back and opens it again with the same
+// passphrase, so a save of a passphrase file runs scrypt twice.
+//
+// What an open costs depends on the work factor that the file says, and a file may say any factor
+// from 18 to 22. At 18 an open needs about 256 MiB of memory and about a second. At 22, the
+// highest, it needs about 4 GiB of memory and 7 to 9 seconds (measured), and it needs them at every
+// open: also for a wrong passphrase and for a file whose payload is damaged, because only the work
+// shows that. The header is looked at first, so a factor above 22 costs nothing, but one file that
+// says 22 can still cost a small machine its memory.
+//
 // # Secrets in memory
 //
 // Go does not promise that a secret that was in memory is cleared. The package clears the byte
 // buffers that it made (and that internal/openpgp made for it), the numbers of the private keys
-// that it parsed itself, and the scalar of a [Key] when it is closed, and no more. Out of its
+// that it parsed itself, the passphrase slices that a source gave it, and the scalar of a [Key]
+// when it is closed, and no more. The age library takes a passphrase as a string and keeps a copy
+// of its own: those two copies cannot be cleared from here. The plain key also passes through
+// buffers of the age library (the chunks of its stream, 64 KiB each, which hold the payload as it
+// is written or read), and this package cannot clear those either. Out of its
 // reach are the copies inside crypto/ecdsa (the key keeps its scalar in its own memory, and a
 // slice that Bytes returned is that memory), the copies that crypto/x509, encoding/asn1,
 // encoding/pem and the OpenPGP reader of go-crypto made while they read the key, and the copies
