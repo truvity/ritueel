@@ -67,6 +67,12 @@ type Result struct {
 	// reached a verdict, for the exit codes 0 and 3, and for the exit code 1 of a request in which a check
 	// did not run and no error stopped the checks (see notJudged); it is absent otherwise.
 	Checks []CheckState `json:"checks,omitempty"`
+	// Ceremony is the name of the ceremony (the member "ceremony" of docs/reference/cli.md): the
+	// folder history/CEREMONY/ of a plan or a run. It is there for apply and absent otherwise.
+	Ceremony string `json:"ceremony,omitempty"`
+	// Plan is the plan file, its digest and the eight characters a person types (the member "plan"
+	// of docs/reference/cli.md); with apply --plan-only it is the result. Absent otherwise.
+	Plan *PlanRef `json:"plan,omitempty"`
 	// Version is the release version (version only).
 	Version string `json:"version,omitempty"`
 	// Commit is the commit of the build (version only).
@@ -80,6 +86,17 @@ type Result struct {
 	// part of the JSON object. With an empty Message Run writes "refused: " and the reason codes, as it
 	// does for a Refusal. A Result that did not refuse leaves it empty.
 	Message string `json:"-"`
+}
+
+// PlanRef is the member "plan" of the JSON object: where the plan file is, relative to the bundle, its
+// SHA-256 and the first eight characters of it.
+type PlanRef struct {
+	// Path is the path of plan.json in the bundle, history/CEREMONY/plan.json.
+	Path string `json:"path"`
+	// SHA256 is the plan digest, 64 lower-case hexadecimal digits.
+	SHA256 string `json:"sha256"`
+	// Prefix is the first eight characters of the digest, which a person types to confirm.
+	Prefix string `json:"prefix"`
 }
 
 // CheckState is one entry of Result.Checks: the number of a check and its result.

@@ -99,6 +99,7 @@ var specs = []spec{
 	verifySpec,
 	checkSpec,
 	newSpec,
+	applySpec,
 }
 
 // invocation is the state of one run, so that two runs share nothing.
