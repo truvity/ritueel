@@ -137,7 +137,7 @@ func checkList(t *testing.T, data []byte, l *rootlist.List) {
 			t.Fatalf("a time that is not of the form: %v", tm)
 		}
 	}
-	labels, pins := map[string]bool{}, map[string]bool{}
+	labels, pins, prints := map[string]bool{}, map[string]bool{}, map[string]bool{}
 	for _, r := range l.Roots {
 		if len(r.Label) != 1 || r.Label[0] < 'A' || r.Label[0] > 'Z' || !lowerHex(r.X509SPKISHA256, 64) || (r.OpenPGPFingerprint != "" && !lowerHex(r.OpenPGPFingerprint, 40)) {
 			t.Fatalf("a root that is not of the form: %+v", r)
@@ -145,7 +145,13 @@ func checkList(t *testing.T, data []byte, l *rootlist.List) {
 		if labels[r.Label] || pins[r.X509SPKISHA256] {
 			t.Fatalf("a label or a pin twice: %+v", r)
 		}
+		if r.OpenPGPFingerprint != "" && prints[r.OpenPGPFingerprint] {
+			t.Fatalf("a fingerprint twice: %+v", r)
+		}
 		labels[r.Label], pins[r.X509SPKISHA256] = true, true
+		if r.OpenPGPFingerprint != "" {
+			prints[r.OpenPGPFingerprint] = true
+		}
 	}
 	if l.LastRecordSHA256 != "" && !lowerHex(l.LastRecordSHA256, 64) {
 		t.Fatalf("a digest that is not of the form: %q", l.LastRecordSHA256)
@@ -171,6 +177,12 @@ func FuzzParseList(f *testing.F) {
 	w := newWorld(f)
 	f.Add(listOf(7, w.a, w.b).json())
 	f.Add(listOf(8, w.b).withRemovals(removalOf(f, w.a)).json())
+	twice := listOf(7, w.a, w.b)
+	twice.roots[1].fp = twice.roots[0].fp
+	f.Add(twice.json())
+	none := listOf(7, w.a, w.b)
+	none.roots[0].noFP, none.roots[1].noFP = true, true
+	f.Add(none.json())
 	f.Add([]byte(`{}`))
 	f.Add([]byte(``))
 	f.Fuzz(func(t *testing.T, data []byte) {
