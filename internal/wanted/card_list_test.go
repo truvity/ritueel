@@ -161,7 +161,7 @@ func TestListCardNamesRefusesWhatIsNotACardFileAndReturnsNothing(t *testing.T) {
 		{"a name that only looks like a leftover", file(".rtx.yaml", cardServerOne), "want/cards/.rtx.yaml", "lower-case"},
 		{"a leftover name that is not at the start", file("a.rt-abc.yaml", cardServerOne), "want/cards/a.rt-abc.yaml", "lower-case"},
 		{"a name of 64 characters", file(strings.Repeat("a", 64)+".yaml", cardServerOne), "want/cards/" + strings.Repeat("a", 64) + ".yaml", "1 to 63"},
-		{"a space in the name", file("a b.yaml", cardServerOne), "want/cards/a b.yaml", "lower-case"},
+		{"a space in the name", file("a b.yaml", cardServerOne), `want/cards/a\x20b.yaml`, "lower-case"},
 		{"a hyphen first", file("-a.yaml", cardServerOne), "want/cards/-a.yaml", "lower-case"},
 		{"a name that is a serial with a dot", file("1.5.yaml", cardServerOne), "want/cards/1.5.yaml", "lower-case"},
 		{"a folder with a good name", func(t *testing.T, cards string) {
