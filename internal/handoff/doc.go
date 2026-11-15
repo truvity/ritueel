@@ -16,7 +16,9 @@
 // A [Checker] is made by [New] from a [Config], and a Checker that was not made by New refuses every
 // request with [ErrConfig]. New refuses a configuration with no policy (stores, a minimum firmware, the PIN
 // policies that are allowed), no roots or no clock, or with a verifier that is nil: no rule is switched off
-// by a field that was left empty. The delegation may be left out. A Checker with no delegation does not run the
+// by a field that was left empty. With primaries it also refuses a clock that cannot be read or gives a
+// time outside the years 1970 to 2106, and a primary created after the clock; check 5 of an openpgp-subkey
+// request holds the primaries to the clock of that call again ([ErrConfig], never a refusal). The delegation may be left out. A Checker with no delegation does not run the
 // rules that belong to one (that a request is of the delegation's type, and that its name constraints are
 // inside the delegation's lists); it says so, and its check 9 is not-run and never passed ([Config.Delegation]).
 // The Checker keeps its own copy of the configuration.

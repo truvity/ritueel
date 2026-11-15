@@ -6,7 +6,6 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
-	"math"
 	"strings"
 	"time"
 
@@ -66,7 +65,7 @@ func (s *settings) checkOpenPGP(ctx context.Context, v Verdict, req *Request, p 
 
 	// A checker that holds no primaries cannot judge this type: the request is neither accepted nor refused.
 	if len(s.primaries) == 0 {
-		return v, fmt.Errorf("%w: the checker holds no primaries", ErrConfig)
+		return v, errNoPrimaries("the checker holds no primaries")
 	}
 
 	// Check 3: the digest of the bytes of the file, then the primaries.
@@ -94,8 +93,14 @@ func (s *settings) checkOpenPGP(ctx context.Context, v Verdict, req *Request, p 
 		return v, err
 	}
 	now = now.Truncate(time.Second)
-	if u := now.Unix(); u < 1 || u > math.MaxUint32 {
+	if !holdsTime(now) {
 		return v, fmt.Errorf("%w: the clock is outside the years 1970 to 2106", ErrInternal)
+	}
+	// Every active primary is held to the clock of this call, as New held it to the clock that it read: a
+	// clock that failed then, or has stepped back since, does not skip the guard. This is a checker that
+	// cannot decide and not a refusal: no code of the contract names it.
+	if fp, after := s.primaryAfter(now); after {
+		return v, fmt.Errorf("%w: the primary %s was created after the clock that this check read", ErrConfig, fp)
 	}
 	if sub.Created().After(now) {
 		v.fail(5, CodePossessionInvalid, "the subkey was created after the time of the check")

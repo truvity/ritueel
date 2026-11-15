@@ -94,16 +94,36 @@ var (
 	// has a policy (stores, a minimum firmware and the PIN policies that are allowed), a list of roots and
 	// a clock, and every verifier in it is a verifier: a rule is never switched off by a field that was
 	// left empty. A delegation may be left out, on purpose, and then the rules that belong to a
-	// delegation are not run and are said so ([Config.Delegation]). It is also returned by [Checker.Check]
-	// for a request of type openpgp-subkey on a checker that holds no primaries ([Config.Primaries]): that
-	// request is neither accepted nor refused. It says nothing else about a request.
+	// delegation are not run and are said so ([Config.Delegation]). It is also returned by [New] for
+	// primaries that are given and a clock that cannot be read, or that reads a time that an OpenPGP time
+	// field cannot hold, because a primary cannot then be held to the clock. [Checker.Check] returns it for a
+	// request of type openpgp-subkey on a checker that holds no primaries ([ErrNoPrimaries], which wraps it),
+	// and for such a request when a primary was created after the clock that this call read ([Config.Primaries]):
+	// that request is neither accepted nor refused. It says nothing else about a request.
 	ErrConfig = errors.New("handoff: invalid checker configuration")
+	// ErrNoPrimaries is the one error for "the checker holds no primaries for this". It wraps [ErrConfig], so
+	// errors.Is(err, ErrConfig) is true for it too. [Checker.Check] returns it for a request of type
+	// openpgp-subkey on a checker with none, and [New] returns it for a delegation of type openpgp-subkey with
+	// none. No other error of this package matches it: the error of a clock that cannot be read, or of a primary
+	// created after the clock, wraps [ErrConfig] only.
+	ErrNoPrimaries error = &primariesError{text: "the checker holds no primaries for this"}
 	// ErrInternal is returned when two readers of one request disagree, or a verifier breaks its
 	// contract: it returns no key for a store that has one, or an error that is neither a refusal of the
 	// evidence nor a plain failure, or it panics. It is a fault of this package or of the verifier, never
 	// of the request, and the checks that were not made are not-run.
 	ErrInternal = errors.New("handoff: a reader or a verifier broke its contract")
 )
+
+// primariesError is the error of [ErrNoPrimaries]: the text of an [ErrConfig] with its own words, which
+// matches [ErrNoPrimaries] and unwraps to [ErrConfig].
+type primariesError struct{ text string }
+
+func (e *primariesError) Error() string        { return ErrConfig.Error() + ": " + e.text }
+func (e *primariesError) Unwrap() error        { return ErrConfig }
+func (e *primariesError) Is(target error) bool { return target == ErrNoPrimaries }
+
+// errNoPrimaries is an error that reads as text and matches [ErrNoPrimaries] and [ErrConfig].
+func errNoPrimaries(text string) error { return &primariesError{text: text} }
 
 // CodeError is an error that carries the code of a refusal. An [EvidenceVerifier] returns one for a
 // refusal of the evidence.
@@ -268,7 +288,12 @@ type Config struct {
 	// error that wraps [ErrConfig], with checks 1 and 2 passed and the rest not-run. Each entry is checked by
 	// [New]: a key that is nil or not ECDSA on P-384, a creation time that is not whole seconds in the years
 	// 1970 to 2106 or that is after the clock of the checker, a fingerprint that is not the one that the key
-	// and the time give, and two entries with one fingerprint or one point are an [ErrConfig].
+	// and the time give, and two entries with one fingerprint or one point are an [ErrConfig]. So is a
+	// clock that cannot be read when [New] reads it, or that gives a time outside the years 1970 to 2106:
+	// a primary cannot then be held to it. The creation time of every primary is held to the clock again
+	// for each request of type openpgp-subkey (check 5), the one reading of that call: a primary created
+	// after it ends the call with an error that wraps [ErrConfig] and names the primary by its fingerprint.
+	// It is a checker that cannot decide, and never a refusal.
 	Primaries []PrimaryRef
 	// Evidence maps a store to the verifier of its evidence (check 7). A software key needs none, and a
 	// verifier given for it is never called. A store with no verifier is not an error of the
@@ -277,7 +302,8 @@ type Config struct {
 	Evidence map[Store]EvidenceVerifier
 	// Now is the clock, given to the verifiers. Required. It is called under the same protection as a
 	// verifier: a clock that panics gives [ErrInternal] and no acceptance. [New] reads it once when
-	// Primaries are given, to refuse a primary that was created after it.
+	// Primaries are given, to refuse a primary that was created after it, and refuses a configuration whose
+	// clock cannot be read then.
 	Now func() time.Time
 }
 
