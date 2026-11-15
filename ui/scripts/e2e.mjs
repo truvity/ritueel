@@ -385,7 +385,7 @@ await go('#/history/20250902T100000Z-apply-4d6b21fa');
 await go('#/trust');
 {
   const t = await flat();
-  check('F: acme shows set 13-3fa9c1d2 with seven files, each with a check word', /Set 13-3fa9c1d2/.test(t) && (await count('main [data-row-id]')) === 7 && (t.match(/\bpassed\b/g) ?? []).length >= 7);
+  check('F: acme shows set 13-b41e07a9 with seven files, each with a check word', /Set 13-b41e07a9/.test(t) && (await count('main [data-row-id]')) === 7 && (t.match(/\bpassed\b/g) ?? []).length >= 7);
   const codes = JSON.parse(await evalJs(`JSON.stringify([...${selAll('main code')}].map((c) => c.textContent))`));
   const verify = codes.filter((c) => c.startsWith('ritueel verify '));
   check('F: each file has a command that verifies it', verify.length >= 7, String(verify.length));

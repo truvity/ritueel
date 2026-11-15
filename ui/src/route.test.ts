@@ -78,7 +78,7 @@ describe('hash routes', () => {
     for (const [kind, slug] of [[ObjectKind.ROOT, 'root'], [ObjectKind.KEY, 'key'], [ObjectKind.USER_ID, 'userid'], [ObjectKind.DELEGATION, 'delegation'], [ObjectKind.REQUEST, 'request']] as const)
       expect(hrefForObject(ref(kind, 'x')), slug).toBe(`#/inventory/roots/${slug}/x`);
     expect(hrefForObject(ref(ObjectKind.CEREMONY, '20261120T100000Z-apply-3fa9c1d2'))).toBe('#/history/20261120T100000Z-apply-3fa9c1d2');
-    expect(hrefForObject(ref(ObjectKind.TRUST_SET, '13-3fa9c1d2'))).toBe('#/trust');
+    expect(hrefForObject(ref(ObjectKind.TRUST_SET, '13-b41e07a9'))).toBe('#/trust');
     expect(hrefForObject(ref(ObjectKind.TRUST_FILE, 'root-list.json'))).toBe('#/trust');
     expect(hrefForObject(ref(ObjectKind.BUNDLE, 'acme'))).toBe('#/todo');
     expect(hrefForObject(ref(ObjectKind.UNSPECIFIED, 'x'))).toBe('#/todo');

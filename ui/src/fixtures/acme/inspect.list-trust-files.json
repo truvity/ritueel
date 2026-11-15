@@ -1,13 +1,13 @@
 {
   "trustSequence": 13,
-  "setName": "13-3fa9c1d2",
+  "setName": "13-b41e07a9",
   "writtenAt": "2026-11-20T10:14:00Z",
   "ceremonyId": "20261120T100000Z-apply-3fa9c1d2",
   "files": [
     {
       "name": "root-list.json",
       "kind": "TRUST_FILE_KIND_ROOT_LIST",
-      "path": "trust/13-3fa9c1d2/root-list.json",
+      "path": "trust/13-b41e07a9/root-list.json",
       "trustSequence": 13,
       "builtAt": "2026-11-20T10:14:00Z",
       "validUntil": "2027-12-20T00:00:00Z",
@@ -15,12 +15,12 @@
       "checkDetail": "The list pins keys A, B and C and is signed by key B. It replaces set 12.",
       "sha256": "7331888673318886733188867331888673318886733188867331888673318886",
       "sizeBytes": "2412",
-      "verifyCommand": "ritueel verify root-list trust/13-3fa9c1d2/root-list.json --held trust/12-03e4a9f6/root-list.json"
+      "verifyCommand": "ritueel verify root-list trust/13-b41e07a9/root-list.json --held trust/12-03e4a9f6/root-list.json"
     },
     {
       "name": "ca-bundle.pem",
       "kind": "TRUST_FILE_KIND_CA_BUNDLE",
-      "path": "trust/13-3fa9c1d2/ca-bundle.pem",
+      "path": "trust/13-b41e07a9/ca-bundle.pem",
       "trustSequence": 13,
       "builtAt": "2026-11-20T10:14:00Z",
       "validUntil": "2029-11-20T00:00:00Z",
@@ -28,12 +28,12 @@
       "checkDetail": "The bundle holds the three X.509 root certificates and matches the root list.",
       "sha256": "b19ab1e6b19ab1e6b19ab1e6b19ab1e6b19ab1e6b19ab1e6b19ab1e6b19ab1e6",
       "sizeBytes": "3120",
-      "verifyCommand": "ritueel verify root-list trust/13-3fa9c1d2/root-list.json --held trust/12-03e4a9f6/root-list.json --ca-bundle trust/13-3fa9c1d2/ca-bundle.pem"
+      "verifyCommand": "ritueel verify root-list trust/13-b41e07a9/root-list.json --held trust/12-03e4a9f6/root-list.json --ca-bundle trust/13-b41e07a9/ca-bundle.pem"
     },
     {
       "name": "crl-A.pem",
       "kind": "TRUST_FILE_KIND_CRL",
-      "path": "trust/13-3fa9c1d2/crl-A.pem",
+      "path": "trust/13-b41e07a9/crl-A.pem",
       "trustSequence": 13,
       "builtAt": "2025-12-23T10:14:00Z",
       "validUntil": "2028-01-23T00:00:00Z",
@@ -41,12 +41,12 @@
       "checkDetail": "Signed by key A. It was made at set 9 and copied unchanged since. It stays current until 2028-01-23.",
       "sha256": "a191fe30a191fe30a191fe30a191fe30a191fe30a191fe30a191fe30a191fe30",
       "sizeBytes": "524",
-      "verifyCommand": "ritueel verify crl trust/13-3fa9c1d2/crl-A.pem --ca-bundle trust/13-3fa9c1d2/ca-bundle.pem"
+      "verifyCommand": "ritueel verify crl trust/13-b41e07a9/crl-A.pem --ca-bundle trust/13-b41e07a9/ca-bundle.pem"
     },
     {
       "name": "crl-B.pem",
       "kind": "TRUST_FILE_KIND_CRL",
-      "path": "trust/13-3fa9c1d2/crl-B.pem",
+      "path": "trust/13-b41e07a9/crl-B.pem",
       "trustSequence": 13,
       "builtAt": "2026-11-20T10:14:00Z",
       "validUntil": "2028-12-20T00:00:00Z",
@@ -54,12 +54,12 @@
       "checkDetail": "Signed by key B. It was made in this set, because key B signed in it.",
       "sha256": "d5dbb5dcd5dbb5dcd5dbb5dcd5dbb5dcd5dbb5dcd5dbb5dcd5dbb5dcd5dbb5dc",
       "sizeBytes": "526",
-      "verifyCommand": "ritueel verify crl trust/13-3fa9c1d2/crl-B.pem --ca-bundle trust/13-3fa9c1d2/ca-bundle.pem"
+      "verifyCommand": "ritueel verify crl trust/13-b41e07a9/crl-B.pem --ca-bundle trust/13-b41e07a9/ca-bundle.pem"
     },
     {
       "name": "crl-C.pem",
       "kind": "TRUST_FILE_KIND_CRL",
-      "path": "trust/13-3fa9c1d2/crl-C.pem",
+      "path": "trust/13-b41e07a9/crl-C.pem",
       "trustSequence": 13,
       "builtAt": "2025-03-18T10:14:00Z",
       "validUntil": "2027-04-18T00:00:00Z",
@@ -67,12 +67,12 @@
       "checkDetail": "Signed by key C. It was made at set 5 and copied unchanged since. It stays current until 2027-04-18.",
       "sha256": "0f7e5c9e0f7e5c9e0f7e5c9e0f7e5c9e0f7e5c9e0f7e5c9e0f7e5c9e0f7e5c9e",
       "sizeBytes": "524",
-      "verifyCommand": "ritueel verify crl trust/13-3fa9c1d2/crl-C.pem --ca-bundle trust/13-3fa9c1d2/ca-bundle.pem"
+      "verifyCommand": "ritueel verify crl trust/13-b41e07a9/crl-C.pem --ca-bundle trust/13-b41e07a9/ca-bundle.pem"
     },
     {
       "name": "ssh-ca-keys.json",
       "kind": "TRUST_FILE_KIND_SSH_CA_KEYS",
-      "path": "trust/13-3fa9c1d2/ssh-ca-keys.json",
+      "path": "trust/13-b41e07a9/ssh-ca-keys.json",
       "trustSequence": 13,
       "builtAt": "2026-11-20T10:14:00Z",
       "validUntil": "2027-12-20T00:00:00Z",
@@ -80,12 +80,12 @@
       "checkDetail": "The list names the SSH CA keys of the root and is signed by key B.",
       "sha256": "ad8bbe5bad8bbe5bad8bbe5bad8bbe5bad8bbe5bad8bbe5bad8bbe5bad8bbe5b",
       "sizeBytes": "1180",
-      "verifyCommand": "ritueel verify ssh-ca-keys trust/13-3fa9c1d2/ssh-ca-keys.json --held trust/12-03e4a9f6/ssh-ca-keys.json"
+      "verifyCommand": "ritueel verify ssh-ca-keys trust/13-b41e07a9/ssh-ca-keys.json --held trust/12-03e4a9f6/ssh-ca-keys.json"
     },
     {
       "name": "acme-keyring.gpg",
       "kind": "TRUST_FILE_KIND_KEYRING",
-      "path": "trust/13-3fa9c1d2/keyring/acme-keyring.gpg",
+      "path": "trust/13-b41e07a9/keyring/acme-keyring.gpg",
       "trustSequence": 13,
       "builtAt": "2026-11-20T10:14:00Z",
       "validUntil": "2028-03-18T00:00:00Z",
@@ -93,7 +93,7 @@
       "checkDetail": "The keyring holds the public keys of the OpenPGP root and its subkey.",
       "sha256": "128485c9128485c9128485c9128485c9128485c9128485c9128485c9128485c9",
       "sizeBytes": "4096",
-      "verifyCommand": "ritueel verify keyring trust/13-3fa9c1d2/keyring/acme-keyring.gpg --root-list trust/13-3fa9c1d2/root-list.json"
+      "verifyCommand": "ritueel verify keyring trust/13-b41e07a9/keyring/acme-keyring.gpg --root-list trust/13-b41e07a9/root-list.json"
     }
   ],
   "readAt": "2026-11-24T09:00:00Z"

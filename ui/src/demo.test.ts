@@ -202,9 +202,9 @@ describe('the fixtures tell the made-up world, one bundle at a time', () => {
     expect(inv.delegations.map((d) => d.name).sort()).toEqual(['acme-ca', 'acme-release']);
     expect(inv.requests.map((r) => r.stem)).toContain('acme-ca-2027');
     expect(w.ceremonies.ceremonies.map((c) => c.id)).toContain('20261120T100000Z-apply-3fa9c1d2');
-    expect(w.trust.setName).toBe('13-3fa9c1d2');
+    expect(w.trust.setName).toBe('13-b41e07a9');
     const bundle = read('../../docs/reference/bundle.md');
-    for (const name of ['root-a', 'root-b', 'day-ana', 'acme-tls', 'acme-release', 'acme-ssh', 'acme-ca', 'acme-ca-2027', '13-3fa9c1d2', '20261120T100000Z-apply-3fa9c1d2']) expect(bundle, name).toContain(name);
+    for (const name of ['root-a', 'root-b', 'day-ana', 'acme-tls', 'acme-release', 'acme-ssh', 'acme-ca', 'acme-ca-2027', '13-b41e07a9', '20261120T100000Z-apply-3fa9c1d2']) expect(bundle, name).toContain(name);
     const keyA = inv.keys.find((k) => k.root === 'acme-release' && k.label === 'A');
     const uid = inv.userIds.find((u) => u.key === keyA?.fingerprint);
     expect(uid?.text).toBe('Example Release Root A <release@example.com>');
