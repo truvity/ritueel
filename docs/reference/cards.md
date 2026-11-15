@@ -5,7 +5,7 @@ sidebar:
   order: 9
 ---
 
-*Not built yet. This is the page that [record 0003](../decisions/0003-root-cards.md) leaves for the formats of the `piv` store; the code is [issue #11](https://github.com/truvity/ritueel/issues/11): the card files and the card maps come with M2, and the `piv` store and the card adoption with M6. One part is built: the check of an attestation chain for a hand-off request, in `internal/handoff/evidence`, a library that no command runs yet. The `piv` store, the card files, the checks and the attestation bundle below are not built. The rows of slots are in that record and are not repeated here.*
+*Not built yet. This is the page that [record 0003](../decisions/0003-root-cards.md) leaves for the formats of the `piv` store; the code is [issue #11](https://github.com/truvity/ritueel/issues/11): the card files come with M2, the card maps with the card check (M6), and the `piv` store and the card adoption with M6. Two parts are built: the check of an attestation chain for a hand-off request, in `internal/handoff/evidence`, and the reader of the wanted card file, in `internal/wanted`. Each is a library that no command runs yet. The `piv` store, the card maps, the checks and the attestation bundle below are not built. The rows of slots are in that record and are not repeated here.*
 
 A root card is a hardware token that is used for root keys only: the root keys of the holder's bundles, each bundle in its own row, and the card's own jobs in row 1 ([record 0003](../decisions/0003-root-cards.md), rules 3 and 12). It is never also a day-to-day card, a server card or a rehearsal card. Before it holds anything, the holder sets its PIN with the maker's tool ([Prepare a root card](/guides/prepare-a-root-card/)). ritueel then adopts it, which replaces the PUK and the management key with random ones sealed in the bundle ([record 0003](../decisions/0003-root-cards.md)); it registers the card, checks it before every ceremony, and keeps the evidence that a key was born on it. A root card is used on the holder's workstation, under the four conditions of [record 0005](../decisions/0005-a-ceremony-and-where-it-runs.md) (a touch for every signature, the number of signatures stated in the plan, no retry of a failed touch, and a check on a second device), or in the offline system, by the rules of the ceremony record ([record 0003](../decisions/0003-root-cards.md)).
 
@@ -26,7 +26,7 @@ A server card works like a small do-it-yourself HSM, but it is an ordinary card,
 
 | Path | Written by | Holds |
 |---|---|---|
-| `want/cards/NAME.yaml` | A person | The card file: one for each card this bundle uses, of any of the four kinds. It holds the card's serial and kind, and the rows of other bundles that the card declares. |
+| `want/cards/NAME.yaml` | A person | The card file: one for each card this bundle uses, of any of the four kinds. It holds the card's serial and kind, the applications the bundle uses, and the rows of other bundles that the card declares. |
 | `cards/NAME.yaml` (proposed path, under `seen/`; the folder name is decided, [record 0006](../decisions/0006-bundle-history-and-trust-files.md), rule 37) | ritueel | The map of one card: every slot of its PIV, OpenPGP and FIDO2 applications and what it is used for. |
 | `cards/NAME.sealed.age` (proposed path, under `sealed/`; the folder name is decided, record 0006, rule 37) | ritueel | This bundle's own copy of the card's secrets (management key, PUK and, on a day-to-day card, the Admin PIN of the OpenPGP application), sealed to the same recipients as the key files ([record 0003](../decisions/0003-root-cards.md)). One file for each card that ritueel adopted, root and day-to-day. |
 | `roots/<label>/attestation/slot-<slot>.pem` | ritueel | The attestation certificate of one key, as the card made it: one file for each key born for the root key, in the slots of this bundle's row. |
@@ -38,7 +38,7 @@ The sealed file is not public material: it is safe only because the recipients' 
 ## The card file and the card map
 
 :::note[Proposed]
-[Record 0003](../decisions/0003-root-cards.md), rule 5, and [record 0006](../decisions/0006-bundle-history-and-trust-files.md), rule 5, decide what the bundle holds for cards: one wanted card file for each card, which a person writes, and one card map for each card, which ritueel writes. The file names, the members and the values below are the proposed shape, and are fixed with the card proofs (M1).
+[Record 0003](../decisions/0003-root-cards.md), rule 5, and [record 0006](../decisions/0006-bundle-history-and-trust-files.md), rule 5, decide what the bundle holds for cards: one wanted card file for each card, which a person writes, and one card map for each card, which ritueel writes. The members of the card file are built as they are written below. The file names, the members and the values of the card map are the proposed shape, and are fixed with the card proofs (M1).
 :::
 
 A person writes the card file ([record 0006](../decisions/0006-bundle-history-and-trust-files.md), rule 5). ritueel writes the card map from the read-only check, and nobody edits it ([record 0003](../decisions/0003-root-cards.md), rule 5). The plan names a card that the ceremony adopts, so that the person confirms it.
@@ -56,11 +56,59 @@ applications: [piv]
 |---|---|
 | `version` | `1`. |
 | the file name | The holder's name for the card, not its serial ([record 0006](../decisions/0006-bundle-history-and-trust-files.md), rule 5). It names the card's map file and its sealed file. |
-| `serial` | The serial number the card reports about itself, as a string of digits. It identifies the card in every later check. A serial is never reused for another holder's role ([record 0003](../decisions/0003-root-cards.md), rule 5). |
+| `serial` | The serial number the card reports about itself, as a string of 1 to 10 digits, written in quotes. Two serials are the same card when their numbers are equal, so `"0123"` and `"123"` name one card. It identifies the card in every later check. A serial is never reused for another holder's role ([record 0003](../decisions/0003-root-cards.md), rule 5). |
 | `kind` | `root`, `day-to-day`, `server` or `rehearsal` ([the four kinds](/reference/cards/#the-four-kinds)). A card has one kind and never changes it. |
-| `applications` | The applications of the card that this bundle uses: a list of `piv`, `openpgp` and `fido2`. |
+| `applications` | The applications of the card that this bundle uses: a list of 1 to 3 of `piv`, `openpgp` and `fido2`, none twice. |
+| `other_rows` | Optional. The rows of other bundles that this card holds, as numbers from 2 to 6, none twice, at most 5. Only a card that uses `piv` has them. A card file never holds another bundle's name. An empty list means the same as no member. |
 
-A card file also declares the rows of other bundles that the card holds ([record 0003](../decisions/0003-root-cards.md), rule 10; [a pair shared by bundles](/reference/cards/#a-pair-shared-by-bundles)). Adoption replaces the management key by a random one that needs a touch to use, sealed in `cards/NAME.sealed.age`; nothing else is accepted for a root card (record 0003, rule 15). The one-time-code application is switched off on the root and day-to-day cards that ritueel adopts (record 0003, rule 16). The version of the slot map in force is written into every ceremony record (record 0003, rule 4).
+A card file also declares the rows of other bundles that the card holds, in `other_rows` ([record 0003](../decisions/0003-root-cards.md), rule 10; [a pair shared by bundles](/reference/cards/#a-pair-shared-by-bundles)). Adoption replaces the management key by a random one that needs a touch to use, sealed in `cards/NAME.sealed.age`; nothing else is accepted for a root card (record 0003, rule 15). The one-time-code application is switched off on the root and day-to-day cards that ritueel adopts (record 0003, rule 16). The version of the slot map in force is written into every ceremony record (record 0003, rule 4).
+
+The schema of the card file, in JSON Schema (draft 2020-12), which the code is checked against:
+
+```json
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["version", "serial", "kind", "applications"],
+  "properties": {
+    "version": { "const": 1 },
+    "serial": { "type": "string", "pattern": "^[0-9]{1,10}$" },
+    "kind": { "enum": ["root", "day-to-day", "server", "rehearsal"] },
+    "applications": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 3,
+      "uniqueItems": true,
+      "items": { "enum": ["piv", "openpgp", "fido2"] }
+    },
+    "other_rows": {
+      "type": "array",
+      "maxItems": 5,
+      "uniqueItems": true,
+      "items": { "type": "integer", "minimum": 2, "maximum": 6 }
+    }
+  }
+}
+```
+
+Rules that the schema cannot state:
+
+- `other_rows` is allowed to hold rows only when `applications` holds `piv`, because a row is four PIV slots.
+- The name of the file is 1 to 63 characters of lower-case letters, digits and hyphens, and ends in `.yaml`.
+- Two files do not name one card: the same number is one card, however many zeros come before it.
+- The file is strict YAML, as for the other wanted files ([the wanted files](/reference/bundle/#the-wanted-files)): an unknown member is an error that names it.
+- The members `holder` and `kept` are not read in this version. A file that holds one is refused with that reason, so that a holder who followed the older row of the bundle page finds it.
+
+A card file that declares a row of another bundle looks like this:
+
+```yaml
+version: 1
+serial: "00000001"
+kind: root
+applications: [piv, openpgp]
+other_rows: [3]
+```
 
 A serial number is the holder's own data and sits in the holder's bundle, not in this repository ([public content](/contributing/public-content/#hardware-tokens)).
 
@@ -109,7 +157,7 @@ A second bundle cannot adopt the cards again. It gets its sealed copy by a reque
 :::note[Proposed]
 How a second bundle lists a card that another bundle adopted is proposed, awaiting the maintainer's word, and is fixed with the card proofs (M1):
 
-1. Each bundle's card files list the card for its own rows. The same serial may be in several bundles. The list of rows may be empty: a bundle that uses the card only for the passkey lists it with `applications: [fido2]`.
+1. Each bundle's card files list the card for its own use. The same serial may be in several bundles. A bundle that uses the card only for the passkey lists it with `applications: [fido2]`. A row of another bundle is declared in `other_rows`.
 2. In `cards/NAME.yaml` a slot of another bundle's row is listed as `use: other-bundle` with its `row` and no key hash, because a hash would go stale when the other bundle replaces a root.
 3. Check 9 compares this bundle's own rows exactly and the rest against the built-in layout. A row of another bundle that the card file declares is not a failure; an undeclared occupied row is a finding; a key outside the layout still fails with `card-layout`.
 4. The plan takes the lowest row that is empty on the card, as the check reads it.
@@ -188,7 +236,7 @@ A maker joins the attestation bundle ([record 0003](../decisions/0003-root-cards
 
 ## Follow-ups
 
-- The `piv` store, the card files and the card maps, the checks, the attestation bundle and its test ([issue #11](https://github.com/truvity/ritueel/issues/11)).
+- The `piv` store, the card maps, the checks, the attestation bundle and its test ([issue #11](https://github.com/truvity/ritueel/issues/11)).
 - Measure that reading the factory-value report spends no PIN try, on firmware 5.8 ([issue #11](https://github.com/truvity/ritueel/issues/11)).
 
 ## Standards
