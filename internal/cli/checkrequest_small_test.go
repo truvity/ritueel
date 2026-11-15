@@ -435,7 +435,7 @@ func TestAnOpenPGPRequestKeepsItsOwnSentenceUnderAnotherDelegationAndUnderNone(t
 
 // The error carries the checker's error for errors.Is, and its text does not hold what the library said.
 func TestTheErrorOfAnOpenPGPDelegationWrapsTheErrorOfTheChecker(t *testing.T) {
-	cause := fmt.Errorf("%w: an openpgp-subkey delegation needs primaries", handoff.ErrConfig)
+	cause := fmt.Errorf("%w", handoff.ErrNoPrimaries)
 	err := fmt.Errorf("request stem is not accepted and not refused: %w", delegationPrimariesError{name: otherDelegation, err: cause})
 	if !errors.Is(err, handoff.ErrConfig) || !errors.Is(err, cause) {
 		t.Errorf("the error does not wrap the checker's error: %v", err)

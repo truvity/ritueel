@@ -286,7 +286,7 @@ func TestTheErrorOfACheckThatCouldNotDecideSaysWhichCheckDidNotRunFirst(t *testi
 			[]string{"request stem is not accepted and not refused", "no evidence verifier", "only a request with a software key", "check 7"}, []string{"openpgp"}},
 		{"a type that is not built", fmt.Errorf("%w", handoff.ErrTypeNotBuilt), v,
 			[]string{"cannot judge a request of this type yet", "check 7"}, []string{"openpgp", "primaries"}},
-		{"an openpgp request", fmt.Errorf("%w: the checker holds no primaries", handoff.ErrConfig), verdictOf(passed(2)...),
+		{"an openpgp request", fmt.Errorf("%w", handoff.ErrNoPrimaries), verdictOf(passed(2)...),
 			[]string{"cannot judge an openpgp-subkey request", "OpenPGP primaries", "not decided", "check 3"}, []string{"software key", "yet"}},
 		{"a type that is not built, with a check that names primaries", fmt.Errorf("%w", handoff.ErrTypeNotBuilt), withNotRun(verdictOf(passed(2)...), 2, "primaries"),
 			[]string{"cannot judge a request of this type yet", "check 3"}, []string{"openpgp", "OpenPGP primaries"}},
@@ -435,9 +435,19 @@ func TestOnlyTheErrorOfAnOpenPGPRequestWithNoPrimariesIsTheSentenceAboutThePrima
 		err  error
 		want bool
 	}{
-		{"the error of Check", fmt.Errorf("%w: the checker holds no primaries", handoff.ErrConfig), true},
-		{"the error of New", fmt.Errorf("%w: an openpgp-subkey delegation needs primaries", handoff.ErrConfig), true},
-		{"wrapped twice", fmt.Errorf("a: %w", fmt.Errorf("%w: needs primaries", handoff.ErrConfig)), true},
+		{"the error value of the checker", handoff.ErrNoPrimaries, true},
+		{"the error value, wrapped", fmt.Errorf("a: %w", handoff.ErrNoPrimaries), true},
+		{"wrapped twice", fmt.Errorf("a: %w", fmt.Errorf("b: %w", handoff.ErrNoPrimaries)), true},
+		{"joined with another error", errors.Join(errors.New("x"), handoff.ErrNoPrimaries), true},
+		// A match on the words is gone: an error that says primaries is not the error of a checker with none.
+		{"an ErrConfig that says the words of Check", fmt.Errorf("%w: the checker holds no primaries", handoff.ErrConfig), false},
+		{"an ErrConfig that says the words of New", fmt.Errorf("%w: an openpgp-subkey delegation needs primaries", handoff.ErrConfig), false},
+		{"an ErrConfig that says only primaries", fmt.Errorf("%w: needs primaries", handoff.ErrConfig), false},
+		{"a primary created after the clock", fmt.Errorf("%w: the primary 0123456789abcdef0123456789abcdef01234567 was created after the clock that this check read", handoff.ErrConfig), false},
+		{"a primary created after the clock of the checker", fmt.Errorf("%w: the primary 0123456789abcdef0123456789abcdef01234567 was created after the clock of the checker", handoff.ErrConfig), false},
+		{"a clock that could not be read", fmt.Errorf("%w: the clock of the checker could not be read (it panicked), so its primaries cannot be held to it", handoff.ErrConfig), false},
+		{"a clock outside the years", fmt.Errorf("%w: the clock of the checker could not be read as a time in the years 1970 to 2106, so its primaries cannot be held to it", handoff.ErrConfig), false},
+		{"the bare config error", handoff.ErrConfig, false},
 		{"a config error about something else", fmt.Errorf("%w: no roots", handoff.ErrConfig), false},
 		{"the words and no config error", errors.New("the checker holds no primaries"), false},
 		{"an internal error that says primaries", fmt.Errorf("%w: primaries", handoff.ErrInternal), false},
@@ -453,7 +463,7 @@ func TestOnlyTheErrorOfAnOpenPGPRequestWithNoPrimariesIsTheSentenceAboutThePrima
 }
 
 func TestTheSentenceAboutThePrimariesIsOneLineThatStillWrapsTheCheckersError(t *testing.T) {
-	cause := fmt.Errorf("%w: the checker holds no primaries", handoff.ErrConfig)
+	cause := fmt.Errorf("%w", handoff.ErrNoPrimaries)
 	err := checkRequestError("stem", verdictOf(passed(2)...), cause)
 	if !errors.Is(err, handoff.ErrConfig) || !errors.Is(err, cause) {
 		t.Errorf("the error does not wrap the checker's error: %v", err)

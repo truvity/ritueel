@@ -208,7 +208,7 @@ func TestCheckHistoryFindsAReturnThatTheNamesOfTheFoldersWouldHide(t *testing.T)
 	if r.code != ExitRefused || r.stdout != "" {
 		t.Fatalf("exit %d, stdout %q, stderr %q", r.code, r.stdout, r.stderr)
 	}
-	if !strings.Contains(r.stderr, "root-returns trust/"+hbSet(2)+"/root-list.json: root key \"B\" returns: its pin "+hbPin(2)[:16]+"... was on an earlier list and is not on the list before this one; the order of the trust sets is not sure (record 0006, rule 54); among trust/"+hbSet(1)+", trust/1-ffffffff; pin held on ") {
+	if !strings.Contains(r.stderr, "root-returns trust/"+hbSet(2)+"/root-list.json: root key \"B\" returns: its pin "+hbPin(2)[:16]+"... was on an earlier list and is not on the list before this one; the order of the trust sets is not sure, among trust/"+hbSet(1)+", trust/1-ffffffff (record 0006, rule 54); pin held on ") {
 		t.Errorf("standard error %q", r.stderr)
 	}
 	if got := chLines(r.stderr); !slices.Equal(got, chWantLines(rep)) {

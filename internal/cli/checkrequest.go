@@ -140,9 +140,10 @@ func (e delegationPrimariesError) Unwrap() error { return e.err }
 
 // needsPrimaries tells whether err is the error of the checker that holds no primaries: an openpgp-subkey
 // request on a checker with none (Check), or an openpgp-subkey delegation that New refuses without them
-// (Checker). Both are an ErrConfig and say "primaries"; nothing else does.
+// (Checker). Both are handoff.ErrNoPrimaries; no other error is, so a clock that cannot be read, or a primary
+// created after the clock, is not taken for it.
 func needsPrimaries(err error) bool {
-	return errors.Is(err, handoff.ErrConfig) && strings.Contains(err.Error(), "primaries")
+	return errors.Is(err, handoff.ErrNoPrimaries)
 }
 
 // checkRequestError is the error of a check that could not decide. The request is not accepted. The text says
