@@ -18,9 +18,12 @@ const yamlSuffix = ".yaml"
 // folder of more files than it can use before it reads any of them. The folder is listed once,
 // through package fsx, which follows no link and stops at [fsx.MaxDirEntries] names; at most
 // [MaxFiles] names are accepted, and more is an error. A folder that does not exist gives no name.
-// Each name must be NAME.yaml with a NAME that passes [ValidName], and each entry must be a regular
-// file: a name of another form, a link, a folder and a FIFO are errors that name the path, escaped.
-// An error returns no name.
+// An entry whose name starts with ".rt-", in any case of the letters, is the leftover of a stopped
+// write: it is skipped, whatever kind of entry it is (a file, a folder, a link), it is not read, it is
+// no error and it does not count toward [MaxFiles] (record 0006, rule 45). A folder of very many such
+// names is bounded by [fsx.MaxDirEntries] alone: more is an error. Every other entry must be
+// NAME.yaml with a NAME that passes [ValidName] and must be a regular file: a name of another form,
+// a link, a folder and a FIFO are errors that name the path, escaped. An error returns no name.
 func ListRootNames(fsys fsx.FS) ([]string, error) {
 	return listNames(fsys, RootsDir, ValidName)
 }
@@ -107,8 +110,11 @@ func listDelegationNames(fsys fsx.FS, s *Settings) ([]string, error) {
 }
 
 // listNames lists dir once and returns the names (without ".yaml") of its entries, in the order of
-// the entries' names. A folder that does not exist gives none. Every entry must be a regular file
-// called NAME.yaml with a NAME that valid accepts.
+// the entries' names. A folder that does not exist gives none. An entry whose name starts with
+// [fsx.TempPrefix], compared without case, is skipped before any other check and does not count
+// toward [MaxFiles] (record 0006, rule 45); the number of names that fsx lists is bounded by
+// [fsx.MaxDirEntries]. Every other entry must be a regular file called NAME.yaml with a NAME that
+// valid accepts.
 func listNames(fsys fsx.FS, dir string, valid func(string) error) ([]string, error) {
 	if fsys == nil {
 		return nil, errorf(dir, 0, "there is no folder to read it from")
@@ -122,11 +128,18 @@ func listNames(fsys fsx.FS, dir string, valid func(string) error) ([]string, err
 		e.cause = err
 		return nil, e
 	}
-	if len(ents) > MaxFiles {
+	kept := make([]fs.DirEntry, 0, len(ents))
+	for _, e := range ents {
+		if isTemporaryName(e.Name()) {
+			continue
+		}
+		kept = append(kept, e)
+	}
+	if len(kept) > MaxFiles {
 		return nil, errorf(dir, 0, fmt.Sprintf("the folder holds more than %d files", MaxFiles))
 	}
-	names := make([]string, 0, len(ents))
-	for _, e := range ents {
+	names := make([]string, 0, len(kept))
+	for _, e := range kept {
 		entry := dir + "/" + e.Name()
 		stem, ok := strings.CutSuffix(e.Name(), yamlSuffix)
 		if !ok {
@@ -142,6 +155,14 @@ func listNames(fsys fsx.FS, dir string, valid func(string) error) ([]string, err
 	}
 	slices.Sort(names)
 	return names, nil
+}
+
+// isTemporaryName reports whether name starts with [fsx.TempPrefix], compared without case: the
+// leftover of a stopped write, which a reader skips (record 0006, rule 45). It is the test that
+// package bundle uses to skip the same names in its own folders; fsx and history fold the ASCII
+// letters by hand, which gives the same answer for a prefix that is ASCII.
+func isTemporaryName(name string) bool {
+	return strings.HasPrefix(strings.ToLower(name), fsx.TempPrefix)
 }
 
 // listFault is the short text for the error of a listing: fixed words for the faults that are told
