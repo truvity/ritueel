@@ -144,8 +144,8 @@ func TestATimeThatIsNotInTheFormOfRFC5280IsRefused(t *testing.T) {
 	// as instants does not see them; the certificate is not the one that the profile describes.
 	for name, raw := range map[string][]byte{
 		"without seconds":     mkDER(0x17, []byte("2611201000Z")),
-		"with an offset":      mkDER(0x17, []byte("261120110000+0100")),
-		"with a minus offset": mkDER(0x17, []byte("261120090000-0100")),
+		"with an offset":      mkDER(0x17, []byte("261120"+"110000+0100")),
+		"with a minus offset": mkDER(0x17, []byte("261120"+"090000-0100")),
 	} {
 		t.Run("notBefore "+name, func(t *testing.T) {
 			c := mkCertSpec{NotBeforeDER: raw}.build()
@@ -156,7 +156,7 @@ func TestATimeThatIsNotInTheFormOfRFC5280IsRefused(t *testing.T) {
 	}
 	for name, raw := range map[string][]byte{
 		"without seconds": mkDER(0x17, []byte("2911201000Z")),
-		"with an offset":  mkDER(0x17, []byte("291120110000+0100")),
+		"with an offset":  mkDER(0x17, []byte("291120"+"110000+0100")),
 	} {
 		t.Run("notAfter "+name, func(t *testing.T) {
 			c := mkCertSpec{}.buildWithNotAfterDER(raw)
