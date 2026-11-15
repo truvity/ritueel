@@ -86,7 +86,7 @@ AWS does not copy any of the right-hand column. A replica made without a policy 
 
 **A delegated key with exactly one signer.**
 
-- A key that a requester holds in its own KMS account and that the root certifies. ritueel reads the key, its policy and its public key from AWS KMS and refuses unless every statement in the key policy that allows Sign names the same one role. That check reads key policy statements only. It does not see IAM policies, grants or role chains, which is why the design denies grants (below). A key in another account is read through a small read-only role in that account.
+- A key that a requester holds in its own KMS account and that the root certifies. ritueel reads the key, its policy and its public key from AWS KMS and refuses unless every statement in the key policy that allows Sign names the same one role. That check reads the statements of the key policy of one key only. It does not see IAM policies, grants, role chains or the policies of the replicas of a multi-Region key. It does not count a principal that may write the policy or make grants. This is why the design denies grants (below). A key in another account is read through a small read-only role in that account.
 
 ## What a policy should say
 
