@@ -356,15 +356,15 @@ func (f *Folder) makeFolders(op string) error {
 
 // ownCopies makes the copies of the caller's list that the call works on: the list, and the bytes
 // of each copy, so that a caller that changes its bytes during the call changes nothing. The bytes
-// of all the copies together are at most [maxFolderBytes], the limit that [Folder.Record] reads in
-// all; a list over it is refused before any byte is copied.
+// of all the copies together are at most [maxCopiesBytes]; a list over it is refused before any
+// byte is copied.
 func ownCopies(op string, copies []wanted.File) ([]wanted.File, error) {
 	own := slices.Clone(copies)
 	total := 0
 	for _, c := range own {
 		total += len(c.Data)
-		if total > maxFolderBytes {
-			return nil, newError(op, ErrInvalidInput, nil, "the copies are more than %d bytes in all", maxFolderBytes)
+		if total > maxCopiesBytes {
+			return nil, newError(op, ErrInvalidInput, nil, "the copies are more than %d bytes in all", maxCopiesBytes)
 		}
 	}
 	for i := range own {
@@ -378,9 +378,10 @@ func ownCopies(op string, copies []wanted.File) ([]wanted.File, error) {
 // not made again), history/<name>/, plan.json, wanted/ with the folders of the paths of the copies,
 // and each copy, in the order of the plan's wanted list. plan is the canonical plan of the
 // ceremony the folder names; copies are exactly the files that the plan lists, with the digests
-// it lists, and their bytes together are at most the bytes that [Folder.Record] reads in all. The
-// call takes its own copy of the plan and of every copy at its top, so a caller that changes its
-// bytes during the call changes nothing. A ceremony folder that exists is refused with an error
+// it lists, and their bytes together are at most [maxCopiesBytes], half of what [Folder.Record]
+// reads in all, so that a folder made here can still be recorded. The call takes its own copy of
+// the plan and of every copy at its top, so a caller that changes its bytes during the call
+// changes nothing. A ceremony folder that exists is refused with an error
 // that wraps fs.ErrExist before anything is made, so the writer is not stopped by a name that is
 // taken; the read of history/ and the Mkdir of the ceremony folder are made under one lock of the
 // package, so two Folders on one writer do not stop each other. After a failed write the folder is
@@ -466,7 +467,7 @@ func (f *Folder) verifyFile(op, name string, want []byte) error {
 // Adopt returns the copies that it read and compared, in the order of the plan's wanted list: the
 // caller goes on with these bytes and reads no copy a second time. The plan bytes are the
 // caller's already. The copies share nothing with the Folder, and their bytes together are at most
-// the bytes that [Folder.Record] reads in all.
+// [maxCopiesBytes], the limit of [Folder.WritePlan].
 func (f *Folder) Adopt(plan []byte) ([]wanted.File, error) {
 	if f == nil {
 		return nil, newError("adopt", ErrOutOfOrder, nil, "the folder was not made by NewFolder")
@@ -565,8 +566,8 @@ func (f *Folder) checkPlannedFolder(op string, p *files.Plan, plan []byte) ([]wa
 			return nil, newError(op, nil, err, "a copy cannot be read")
 		}
 		total += len(b)
-		if total > maxFolderBytes {
-			return nil, newError(op, ErrDiskMismatch, nil, "the copies are more than %d bytes in all", maxFolderBytes)
+		if total > maxCopiesBytes {
+			return nil, newError(op, ErrDiskMismatch, nil, "the copies are more than %d bytes in all", maxCopiesBytes)
 		}
 		d := files.Digest(b)
 		if d != w.SHA256 {

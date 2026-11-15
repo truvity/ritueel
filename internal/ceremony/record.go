@@ -25,9 +25,15 @@ const (
 	// maxArtifacts is the most artifacts that one record lists.
 	maxArtifacts = 1000
 	// maxFolderBytes is the most bytes that [Folder.Record] reads in all: the plan, the copies,
-	// the attempt, the journals, the transcript and the artifacts. [Folder.WritePlan] and
-	// [Folder.Adopt] take at most this many bytes of copies: one limit for both.
+	// the attempt, the journals, the transcript and the artifacts.
 	maxFolderBytes = 256 << 20
+	// maxCopiesBytes is the most bytes that the copies of the wanted files hold together, the limit
+	// of [Folder.WritePlan] and of [Folder.Adopt]. It is half of [maxFolderBytes] and not all of it:
+	// Record reads the copies and also everything else of the folder under the one limit of
+	// [maxFolderBytes], so a folder whose copies took all of it would be accepted by WritePlan and
+	// then could not be recorded, after the keys exist. The other half is left for the plan, the
+	// attempt, the journals, the transcript and the artifacts.
+	maxCopiesBytes = maxFolderBytes / 2
 )
 
 // RecordIn is what the engine knows of the ceremony when it asks for the record. It holds no
@@ -49,6 +55,9 @@ type RecordIn struct {
 	// FinishedAt is when the record is written; left out of the record when "".
 	FinishedAt string
 	// Root is the root key that signed, with the fingerprints that are known now; nil leaves it out.
+	// It is the plan's root (see [Folder.Record]): the plan names a root exactly when this is not nil,
+	// and a fingerprint that the plan's root gives is given here as it is. A fingerprint that the plan
+	// does not give may be added.
 	Root *files.PlanRoot
 	// Confirmation is how and when the plan was confirmed; nil leaves it out.
 	Confirmation *files.Confirmation
@@ -82,7 +91,13 @@ type RecordIn struct {
 //   - an artifact path is not a plain path of the bundle, is under history/, is given twice or
 //     twice in letters of another case, or the artifacts are more than 1,000;
 //   - the root names a fingerprint that is not of the form of the page: 64 lower-case hexadecimal
-//     digits for an X.509 key, 40 for an OpenPGP key;
+//     digits for an X.509 key, 40 for an OpenPGP key; or a label that is not one upper-case letter,
+//     or a store that is not one of piv, openpgp-card, aws-kms and software;
+//   - the root is not the plan's: the plan names no root, or the label or the store that the plan's
+//     root gives, or the X.509 or OpenPGP fingerprint that the plan's root gives, or test, or
+//     copyable, is another or is left out; the plan names a root and the input gives none; or the X.509 fingerprint is not the
+//     public_key_sha256 of the line of births.jsonl for the label of the root (an empty X.509
+//     fingerprint is not compared);
 //   - the plan names requests (the record of an answer is not written yet) or the input is not as
 //     [RecordIn] says.
 //
@@ -104,6 +119,7 @@ func (f *Folder) Record(in RecordIn) ([]byte, error) {
 	if err := f.begin(op, stateTranscribed); err != nil {
 		return nil, err
 	}
+	in = copyRecordIn(in)
 	if err := checkRecordIn(op, in); err != nil {
 		return nil, err
 	}
@@ -127,6 +143,22 @@ func (f *Folder) Record(in RecordIn) ([]byte, error) {
 	}
 	f.state = stateRecorded
 	return slices.Clone(b), nil
+}
+
+// copyRecordIn takes one copy of what the caller gave: the root, the confirmation and the list of
+// artifacts. Record judges and uses only this copy, so a caller that changes its input while Record
+// runs cannot put into the record a value that no check saw.
+func copyRecordIn(in RecordIn) RecordIn {
+	if in.Root != nil {
+		root := *in.Root
+		in.Root = &root
+	}
+	if in.Confirmation != nil {
+		c := *in.Confirmation
+		in.Confirmation = &c
+	}
+	in.Artifacts = slices.Clone(in.Artifacts)
+	return in
 }
 
 // checkRecordBytes reads the bytes of a record with the reader that judges it and requires the
@@ -163,6 +195,12 @@ func checkRecordIn(op string, in RecordIn) error {
 		return newError(op, ErrInvalidInput, nil, "ran_on is %s, not one of the two words the page gives", jsonset.Quote(in.RanOn))
 	}
 	if in.Root != nil {
+		if in.Root.Label != "" && !isRootLabel(in.Root.Label) {
+			return newError(op, ErrInvalidInput, nil, "the label of the root is %s, not one upper-case letter", jsonset.Quote(in.Root.Label))
+		}
+		if in.Root.Store != "" && !slices.Contains(rootStores, in.Root.Store) {
+			return newError(op, ErrInvalidInput, nil, "the store of the root is %s, not one of %s", jsonset.Quote(in.Root.Store), strings.Join(rootStores, ", "))
+		}
 		if in.Root.X509 != "" && !files.IsDigest(in.Root.X509) {
 			return newError(op, ErrInvalidInput, nil, "the X.509 fingerprint of the root is not 64 lower-case hexadecimal digits")
 		}
@@ -175,6 +213,14 @@ func checkRecordIn(op string, in RecordIn) error {
 	}
 	return nil
 }
+
+// rootStores are the key stores that a root can live in: the words that the reader of the wanted
+// files accepts for a store (piv, openpgp-card, aws-kms and software).
+var rootStores = []string{"piv", "openpgp-card", "aws-kms", "software"}
+
+// isRootLabel reports whether s is a label of a root key, the rule of the label of a line of the
+// birth journal: one upper-case letter.
+func isRootLabel(s string) bool { return len(s) == 1 && s[0] >= 'A' && s[0] <= 'Z' }
 
 // isLowerHex reports whether s is n lower-case hexadecimal digits.
 func isLowerHex(s string, n int) bool {
@@ -195,6 +241,9 @@ type recordReader struct {
 	f     *Folder
 	op    string
 	total int
+	// pins holds, for each label of the birth journal, the public_key_sha256 of its line. It is
+	// filled by births, from the bytes that were read.
+	pins map[string]string
 }
 
 // read reads the file at path (relative to the bundle) once, through fsx, and counts it.
@@ -251,14 +300,9 @@ func (r *recordReader) build(in RecordIn) (*files.Record, error) {
 		Applied:          p.Applies,
 		LeftOut:          p.LeavesOut,
 	}
-	if in.Root != nil {
-		root := *in.Root
-		rec.Root = &root
-	}
-	if in.Confirmation != nil {
-		c := *in.Confirmation
-		rec.Confirmation = &c
-	}
+	// in is the copy that Record made, so the record takes its pointers as they are.
+	rec.Root = in.Root
+	rec.Confirmation = in.Confirmation
 	if p.TrustSequence != nil {
 		rec.TrustSequence = *p.TrustSequence
 	}
@@ -269,6 +313,9 @@ func (r *recordReader) build(in RecordIn) (*files.Record, error) {
 		return nil, err
 	}
 	if err := r.journals(p, rec); err != nil {
+		return nil, err
+	}
+	if err := r.root(in.Root, p); err != nil {
 		return nil, err
 	}
 	tb, err := r.read(dir+files.TranscriptFile, "transcript.txt")
@@ -365,6 +412,7 @@ func (r *recordReader) births(p *files.Plan, lines [][]byte) error {
 		return r.mismatch("births.jsonl holds %d lines and the plan lists %d births", len(lines), len(p.Births))
 	}
 	seen := make(map[string]bool, len(lines))
+	r.pins = make(map[string]string, len(lines))
 	for i, raw := range lines {
 		l, err := files.ReadBirthLine(raw)
 		if err != nil {
@@ -374,6 +422,7 @@ func (r *recordReader) births(p *files.Plan, lines [][]byte) error {
 			return r.mismatch("births.jsonl holds the key %s twice", l.Label)
 		}
 		seen[l.Label] = true
+		r.pins[l.Label] = l.PublicKeySHA256
 		planned, ok := p.Births[i].(map[string]any)
 		if !ok {
 			return r.mismatch("birth %d of the plan is not an object", i+1)
@@ -392,6 +441,50 @@ func (r *recordReader) births(p *files.Plan, lines [][]byte) error {
 				return r.mismatch("birth %d: the %s of the journal is not the %s of the plan", i+1, m.name, m.name)
 			}
 		}
+	}
+	return nil
+}
+
+// root judges the root that the caller gives against the plan and the births that were read. The
+// record says "root: as in the plan", so the root is the plan's: the label and the store, when the
+// plan's root gives them, are the plan's; test and copyable are the plan's (a plan that leaves one
+// out says false); the plan has a root exactly when the caller gives one, so a record never loses a
+// root that the plan names; the X.509 and the OpenPGP fingerprint, when the plan's root gives them,
+// are the plan's, and a caller that leaves one out differs. When the journal of births
+// has a line for the label of the root, the X.509 fingerprint is the public_key_sha256 of that
+// line; an empty X.509 fingerprint is not compared. The form of each member was judged by
+// checkRecordIn. An error names the member that differs, with the two values escaped.
+func (r *recordReader) root(in *files.PlanRoot, p *files.Plan) error {
+	pr := p.Root
+	if in == nil {
+		if pr != nil {
+			return newError(r.op, ErrInvalidInput, nil, "the plan names a root, and the record is given none")
+		}
+		return nil
+	}
+	if pr == nil {
+		return newError(r.op, ErrInvalidInput, nil, "the plan names no root, and the record is given one")
+	}
+	if pr.Label != "" && in.Label != pr.Label {
+		return newError(r.op, ErrInvalidInput, nil, "the label of the root is %s and the plan's root has %s", jsonset.Quote(in.Label), jsonset.Quote(pr.Label))
+	}
+	if pr.Store != "" && in.Store != pr.Store {
+		return newError(r.op, ErrInvalidInput, nil, "the store of the root is %s and the plan's root has %s", jsonset.Quote(in.Store), jsonset.Quote(pr.Store))
+	}
+	if in.Test != pr.Test {
+		return newError(r.op, ErrInvalidInput, nil, "the test member of the root is %t and the plan's root has %t", in.Test, pr.Test)
+	}
+	if in.Copyable != pr.Copyable {
+		return newError(r.op, ErrInvalidInput, nil, "the copyable member of the root is %t and the plan's root has %t", in.Copyable, pr.Copyable)
+	}
+	if pr.X509 != "" && in.X509 != pr.X509 {
+		return newError(r.op, ErrInvalidInput, nil, "the X.509 fingerprint of the root is %s and the plan's root has %s", jsonset.Quote(in.X509), jsonset.Quote(pr.X509))
+	}
+	if pr.OpenPGP != "" && in.OpenPGP != pr.OpenPGP {
+		return newError(r.op, ErrInvalidInput, nil, "the OpenPGP fingerprint of the root is %s and the plan's root has %s", jsonset.Quote(in.OpenPGP), jsonset.Quote(pr.OpenPGP))
+	}
+	if pin, born := r.pins[in.Label]; born && in.X509 != "" && in.X509 != pin {
+		return newError(r.op, ErrInvalidInput, nil, "the X.509 fingerprint of the root is %s and the line of births.jsonl for the key %s has %s", jsonset.Quote(in.X509), jsonset.Quote(in.Label), jsonset.Quote(pin))
 	}
 	return nil
 }

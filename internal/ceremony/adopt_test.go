@@ -585,18 +585,18 @@ func sparseFolder(t *testing.T, total int) (*bundle, []byte) {
 	return b, plan
 }
 
-// The copies together are at most the bytes that Record reads in all, as for WritePlan: 256 MiB
-// are adopted, and one byte more is refused as a mismatch.
-func TestAdoptTakesAtMost256MiBOfCopiesInAll(t *testing.T) {
+// The copies together are at most half of the bytes that Record reads in all, as for WritePlan:
+// 128 MiB are adopted, and one byte more is refused as a mismatch.
+func TestAdoptTakesAtMost128MiBOfCopiesInAll(t *testing.T) {
 	if testing.Short() {
-		t.Skip("reads 256 MiB of zeros")
+		t.Skip("reads 128 MiB of zeros")
 	}
-	const limit = 256 << 20
+	const limit = 128 << 20
 	t.Run("exactly the limit", func(t *testing.T) {
 		b, plan := sparseFolder(t, limit)
 		_, _, copies, err := adoptCopies(t, b, name1, plan)
 		if err != nil {
-			t.Fatalf("256 MiB: %v", err)
+			t.Fatalf("128 MiB: %v", err)
 		}
 		n := 0
 		for _, c := range copies {
