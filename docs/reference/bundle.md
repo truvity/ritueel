@@ -59,7 +59,7 @@ acme/
 │   ├── signatures.jsonl               the journal of signatures
 │   ├── transcript.txt                 what ritueel printed
 │   └── record.json                    the ceremony record, written last
-├── trust/13-3fa9c1d2/                 HISTORY  one trust set; its name carries its number and its identity
+├── trust/13-b41e07a9/                 HISTORY  one trust set; its name carries its number and its identity
 └── drills/                            SEEN     the reports of the restore check, which the holder commits
 ```
 
@@ -80,7 +80,7 @@ The folders inside `want/`, the file `want/openpgp.yaml`, the folder `wanted/` o
 | `roots/<label>/ssh-break-glass.pub` | HISTORY | The same ceremony, from M2 with the cloud store | The break-glass SSH CA key of the root key, one OpenSSH line ([record 0006](../decisions/0006-bundle-history-and-trust-files.md), rule 29; [the SSH CA key list](/reference/ssh-ca-key-list/#how-a-key-enters-the-list)). |
 | `requests/<name>/` | REQUEST | The requester writes the request; a ceremony adds the answer (requests in, answers out: [record 0001](../decisions/0001-what-ritueel-is.md), rules 3 to 7) | One folder for each request; `<name>` is the stem of the [hand-off contract](/reference/hand-off-contract/#messages-and-files). It holds the request files and, once given, the answer beside them: `<name>.result.json`, and `<name>.cert.pem` or `<name>.bound.pgp` ([record 0006](../decisions/0006-bundle-history-and-trust-files.md), rule 6). |
 | `history/<ceremony>/` | HISTORY | A ceremony; `close` writes a closing record | One ceremony folder for each ceremony, with the [ceremony files](/reference/ceremony-record/): the plan, exact copies of the wanted files the plan used, the attempt, the [birth journal](/reference/ceremony-record/#the-birth-journal), the journal of signatures, the transcript and the ceremony record ([record 0006](../decisions/0006-bundle-history-and-trust-files.md), rule 7). Each ceremony record names the one before it (record 0006, rule 8). |
-| `trust/<number>-<identity>/` | HISTORY | A ceremony, built beside and renamed into place; also `revoke`, which writes the trust set without the key ([record 0007](../decisions/0007-changing-and-losing-a-root.md), rule 11) | One trust set ([record 0006](../decisions/0006-bundle-history-and-trust-files.md), rule 12): `root-list.json`, `root-list.jws` and `ca-bundle.pem` ([the root list](/reference/root-list/#files)); from M4 `crl-<label>.pem` for each active root key ([the CRLs](/reference/crl/#files)); from M4 `ssh-ca-keys.json`, `ssh-ca-keys.jws` and `ssh-user-ca-keys.pub` ([the SSH CA key list](/reference/ssh-ca-key-list/#files)); from M5 `keyring/` ([the keyring package](/reference/keyring-package/#files)). |
+| `trust/<number>-<identity>/` | HISTORY | A ceremony, built beside and renamed into place; also `revoke`, which writes the trust set without the key ([record 0007](../decisions/0007-changing-and-losing-a-root.md), rule 11) | One trust set ([record 0006](../decisions/0006-bundle-history-and-trust-files.md), rule 12): `root-list.json`, `root-list.jws` and `ca-bundle.pem` ([the root list](/reference/root-list/#files)); from M4 `crl-<label>.pem` for each active root key ([the CRLs](/reference/crl/#files)); from M4 `ssh-ca-keys.json`, `ssh-ca-keys.jws` and `ssh-user-ca-keys.pub` ([the SSH CA key list](/reference/ssh-ca-key-list/#files)); from M5 `keyring/` ([the keyring package](/reference/keyring-package/#files)). The package `internal/trustset` builds the three files of the list, and its function `SetName` spells the name. |
 | `drills/` | SEEN | The restore check; the holder commits the reports | Reports of the restore check. They are not ceremony records and stay out of the hash chain ([record 0007](../decisions/0007-changing-and-losing-a-root.md), rule 26). |
 
 An inert proposal of the page ([record 0010](../decisions/0010-the-engine-the-process-and-the-page.md), rule 12) is not a wanted file and has no mark here. It is built after the first build of the page. Where it waits and what it may hold are open ([issue #147](https://github.com/truvity/ritueel/issues/147)).
@@ -151,7 +151,7 @@ A read is bounded, so that a damaged or hostile stick cannot fill the memory. A 
 | What | Its name | Source |
 |---|---|---|
 | A ceremony folder | The time in UTC, the command and the first eight characters of the plan's digest, for example `20261120T100000Z-apply-3fa9c1d2`. | 0006 rule 31. The spelling is Proposed. |
-| A trust set | Its number and the first eight characters of a digest, for example `13-3fa9c1d2`. | 0006 rules 12 and 31. The spelling is Proposed. |
+| A trust set | Its number and the first eight characters of the SHA-256 of its `root-list.json`, for example `13-b41e07a9`. | 0006 rules 12 and 31. The spelling is Proposed. |
 | An answer to a request | The stem of the request, in the folder of the request. | 0006 rule 6 |
 | A copy of a wanted file | Its path under `wanted/` in the ceremony folder. | 0006 rule 7 |
 | A sealed file | A digest. Which file is current is open ([issue #144](https://github.com/truvity/ritueel/issues/144)). | 0006 rule 31 |
