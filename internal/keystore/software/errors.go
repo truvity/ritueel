@@ -24,15 +24,18 @@ var (
 	// ErrWrongMode marks a file of the other mode: a plain file where the store holds a
 	// passphrase root, or an age file where it holds a test root. The file is not parsed.
 	ErrWrongMode = errors.New("software: a key file of the other mode stands there")
-	// ErrPassphrase marks a passphrase that is not acceptable. It is built with the passphrase
-	// files and is not returned by this version.
+	// ErrPassphrase marks a passphrase that is not acceptable: too short, too long, not UTF-8, a
+	// control or format character in it, or a source that gave none. It is returned by
+	// [CheckPassphrase], by [ReaderSource] and by a store that was given such a passphrase.
 	ErrPassphrase = errors.New("software: the passphrase is not acceptable")
-	// ErrWrongPassphrase marks a file that did not open with the passphrase. It is built with the
-	// passphrase files and is not returned by this version.
+	// ErrWrongPassphrase marks a passphrase file that did not open with the passphrase. The library
+	// tells a wrong passphrase from a damaged file only where it can: a file whose stanza was
+	// changed also says this.
 	ErrWrongPassphrase = errors.New("software: the key file did not open with this passphrase")
 	// ErrNotBuilt marks a way to open a key file that is not built: the passkey way and the
-	// recovery key (not written before the proof on a card), a passphrase file, a backend that is
-	// not `file`.
+	// recovery key (not written before the proof on a card), a backend that is not `file`. This
+	// package has no Mode for them and never returns it itself; a caller that has neither a test
+	// root nor a source of passphrases returns it.
 	ErrNotBuilt = errors.New("software: this way to open a key file is not built")
 )
 

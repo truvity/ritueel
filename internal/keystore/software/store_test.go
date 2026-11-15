@@ -295,8 +295,7 @@ func TestOpenRefusesAnythingThatIsNotAnOpenableConfigAndMakesNoStore(t *testing.
 		{"a test root with a source", Config{KeyDir: keys, BundleDir: bundle, Mode: ModeTest, Passphrases: &recordingSource{}}, ErrParams, ""},
 		{"a test root with a typed nil source", Config{KeyDir: keys, BundleDir: bundle, Mode: ModeTest, Passphrases: typedNil}, ErrParams, ""},
 		{"a passphrase root with no source", Config{KeyDir: keys, BundleDir: bundle, Mode: ModePassphrase}, ErrParams, ""},
-		{"a passphrase root with a source is not built", Config{KeyDir: keys, BundleDir: bundle, Mode: ModePassphrase, Passphrases: &recordingSource{}}, ErrNotBuilt, "not-built"},
-		{"a passphrase root with a typed nil source is not built", Config{KeyDir: keys, BundleDir: bundle, Mode: ModePassphrase, Passphrases: typedNil}, ErrNotBuilt, "not-built"},
+		{"a passphrase root with a typed nil source", Config{KeyDir: keys, BundleDir: bundle, Mode: ModePassphrase, Passphrases: typedNil}, ErrParams, ""},
 		{"an empty KeyDir", Config{BundleDir: bundle, Mode: ModeTest}, ErrKeyDir, "key-dir"},
 		{"a missing KeyDir", Config{KeyDir: filepath.Join(keys, "nowhere"), BundleDir: bundle, Mode: ModeTest}, ErrKeyDir, "key-dir"},
 		{"a missing BundleDir", Config{KeyDir: keys, BundleDir: filepath.Join(bundle, "nowhere"), Mode: ModeTest}, ErrKeyDir, "key-dir"},
@@ -494,12 +493,12 @@ func TestAFileOfTheOtherModeIsErrWrongModeAndIsNeverParsed(t *testing.T) {
 	}
 }
 
-// A passphrase Store cannot be made in this version; the half of the rule that this version can
-// show is the one that does not depend on the cipher: the plain file of a test root where a
-// passphrase root stands is not parsed and not written over.
+// The plain file of a test root where a passphrase root stands is not parsed and not written over.
+// This test shows it on a store whose mode is changed by hand; the Store that Open makes in
+// ModePassphrase is tested in agefile_test.go.
 func TestAPlainFileWhereAPassphraseRootStandsIsErrWrongModeWithoutAParse(t *testing.T) {
 	s, _, keys := openStore(t)
-	s.mode = ModePassphrase // as 11 b will make it; no write is made in this mode here
+	s.mode = ModePassphrase // no write is made in this mode here
 	fm := recordFormat(s)
 	rec := record(s)
 	k := mustGenerate(t)
