@@ -175,7 +175,9 @@ type Delegation struct {
 	// PermittedDNSNames are the DNS names a request's name constraints may hold. A permitted DNS name is
 	// inside only when it equals an entry (record 0006, rule 30).
 	PermittedDNSNames []string
-	// Capability is the capability of an openpgp-subkey delegation, sign or authenticate. Not read here.
+	// Capability is the capability of an openpgp-subkey delegation, sign or authenticate. It is required for
+	// that type and empty for any other ([New]); a request of that type must have exactly this one capability
+	// (check 9).
 	Capability string
 	// Use is the use of an ssh-ca-key delegation, user or host. Not read here.
 	Use string
@@ -265,8 +267,8 @@ type Config struct {
 	// request of type openpgp-subkey on a checker that holds none is not judged: [Checker.Check] returns an
 	// error that wraps [ErrConfig], with checks 1 and 2 passed and the rest not-run. Each entry is checked by
 	// [New]: a key that is nil or not ECDSA on P-384, a creation time that is not whole seconds in the years
-	// 1970 to 2106, a fingerprint that is not the one that the key and the time give, and two entries with
-	// one fingerprint or one point are an [ErrConfig].
+	// 1970 to 2106 or that is after the clock of the checker, a fingerprint that is not the one that the key
+	// and the time give, and two entries with one fingerprint or one point are an [ErrConfig].
 	Primaries []PrimaryRef
 	// Evidence maps a store to the verifier of its evidence (check 7). A software key needs none, and a
 	// verifier given for it is never called. A store with no verifier is not an error of the
@@ -274,7 +276,8 @@ type Config struct {
 	// or an interface that holds a nil pointer, map, function or slice, is an [ErrConfig].
 	Evidence map[Store]EvidenceVerifier
 	// Now is the clock, given to the verifiers. Required. It is called under the same protection as a
-	// verifier: a clock that panics gives [ErrInternal] and no acceptance.
+	// verifier: a clock that panics gives [ErrInternal] and no acceptance. [New] reads it once when
+	// Primaries are given, to refuse a primary that was created after it.
 	Now func() time.Time
 }
 

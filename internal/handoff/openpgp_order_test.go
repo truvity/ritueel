@@ -88,6 +88,7 @@ func TestTheClockIsReadOnceAndOnlyWhenCheckFiveIsReached(t *testing.T) {
 			tc.change(f)
 			var reads int
 			chk := f.checker(func(c *handoff.Config) { c.Now = func() time.Time { reads++; return testNow } })
+			reads = 0 // the one read of New (a primary is not after the clock) is not a read of a call
 			_, _ = chk.Check(t.Context(), f.request())
 			if reads != tc.reads {
 				t.Errorf("the clock was read %d times, want %d", reads, tc.reads)
@@ -103,6 +104,7 @@ func TestTheClockIsReadOnceAndOnlyWhenCheckFiveIsReached(t *testing.T) {
 		c.Evidence = map[handoff.Store]handoff.EvidenceVerifier{handoff.StorePIV: rv}
 		c.Now = func() time.Time { reads++; return clock }
 	})
+	reads = 0 // the one read of New is not a read of a call
 	v, err := chk.Check(t.Context(), f.request())
 	wantAccepted(t, v, err)
 	if reads != 1 {

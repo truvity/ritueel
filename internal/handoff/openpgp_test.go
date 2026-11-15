@@ -293,6 +293,7 @@ func TestAKeyThatIsNotAVersionFourEcdsaKeyOnP384IsAlgorithmUnsupportedWhateverFo
 			g.subPacket = packet
 			var reads int
 			chk := g.checker(func(c *handoff.Config) { c.Now = func() time.Time { reads++; return testNow } })
+			reads = 0 // the one read of New is not a read of a call
 			v, err := chk.Check(t.Context(), g.request())
 			wantRefusal(t, v, err, handoff.CodeAlgorithmUnsupported, 4)
 			if got := statuses(v); got != "pppfnnnnn" {
