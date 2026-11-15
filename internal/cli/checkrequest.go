@@ -108,8 +108,10 @@ func runCheckRequest(ctx context.Context, c *Call) (*Result, error) {
 	return requestOutcome(stem, name, v)
 }
 
-// trustSetWarning is the one warning of an accepted request: the roots of the checks were read from the newest
-// trust set of the bundle, and this command does not check that set's signature file or its expiry.
+// trustSetWarning is the warning that every run printing the nine results gives, accepted, refused or not
+// complete: the roots of the checks were read from the newest trust set of the bundle, and this command does
+// not check that set's signature file or its expiry. A run that stops before it has nine results gives none.
+// In a run that is not complete it comes last, after the warnings that say which check did not run.
 const trustSetWarning = "trust-set-unchecked: this command did not check the signature and the expiry of the trust set that the roots were read from"
 
 // primariesSentence is the plain sentence for what this command cannot do for an openpgp-subkey request:
@@ -185,7 +187,8 @@ func (e *notJudged) Error() string { return e.msg }
 // what the verdict means: accepted only when Verdict.Accepted says so (never from Refused or Complete), a
 // refusal when a check refused, and otherwise a request that was not judged in full: exit code 1, whatever
 // check did not run and whatever rule it names. A verdict that is none of these and has no check that did
-// not run is a fault of the program, and exit code 1 too.
+// not run is a fault of the program, and exit code 1 too. Every result that has the nine checks carries the
+// trust-set warning; a fault of the program, which has no nine results, carries none.
 func requestOutcome(stem, delegation string, v handoff.Verdict) (*Result, error) {
 	checks := make([]CheckState, len(v.Checks))
 	for i, ch := range v.Checks {
@@ -208,9 +211,15 @@ func requestOutcome(stem, delegation string, v handoff.Verdict) (*Result, error)
 				break
 			}
 		}
+		// The warning goes with the nine results only; a refusal that came with fewer has none.
+		var refusedWarnings []string
+		if len(v.Checks) == 9 {
+			refusedWarnings = []string{trustSetWarning}
+		}
 		return &Result{
 			ExitCode: ExitRefused,
 			Reasons:  []string{string(v.Code)},
+			Warnings: refusedWarnings,
 			Checks:   checks,
 			Message:  fmt.Sprintf("refused: %s (check %d: %s)", v.Code, n, v.Detail),
 			Text:     checkLines(v) + "request " + stem + ": refused: " + code + "\n",
@@ -253,6 +262,8 @@ func requestOutcome(stem, delegation string, v handoff.Verdict) (*Result, error)
 	if delegationOnly {
 		reason = fmt.Sprintf("check %d needs a delegation; give --delegation NAME", first.N)
 	}
+	// The warning about the trust set comes last, after the ones that say which check did not run.
+	warnings = append(warnings, trustSetWarning)
 	return nil, WithWarnings(&notJudged{
 		msg:    "request " + stem + " is not accepted and not refused: " + reason,
 		text:   checkLines(v) + "request " + stem + ": not complete: " + jsonset.Escape(reason) + "\n",
