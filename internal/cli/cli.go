@@ -57,6 +57,9 @@ func (c *Call) FlagBool(name string) bool { return c.declared(name).Bool(name) }
 // FlagSet reports whether the flag name was given on the command line.
 func (c *Call) FlagSet(name string) bool { return c.declared(name).IsSet(name) }
 
+// FlagCount returns how many times the flag name was given on the command line: 0 when it was not given.
+func (c *Call) FlagCount(name string) int { return c.declared(name).Count(name) }
+
 // declared returns the library's command for the accessors, after it has checked the name.
 func (c *Call) declared(name string) *ucli.Command {
 	if c.cmd == nil {
