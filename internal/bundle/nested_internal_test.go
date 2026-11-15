@@ -4,6 +4,7 @@ package bundle
 
 import (
 	"errors"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
@@ -38,18 +39,20 @@ func TestHoldsSettingsIsTrueForEveryKindOfThingThatStandsInThePlaceOfTheName(t *
 	for kind, put := range kindsOfTheName {
 		t.Run(kind, func(t *testing.T) {
 			dir := t.TempDir()
-			if holdsSettings(dir) {
-				t.Fatal("an empty folder holds the name")
+			if held, err := holdsSettings(dir); held || err != nil {
+				t.Fatalf("an empty folder: (%v, %v), want (false, nil)", held, err)
 			}
 			put(t, filepath.Join(dir, "ritueel.yaml"))
-			if !holdsSettings(dir) {
-				t.Errorf("a folder with %s in the place of ritueel.yaml does not hold the name", kind)
+			if held, err := holdsSettings(dir); !held || err != nil {
+				t.Errorf("a folder with %s in the place of ritueel.yaml: (%v, %v), want (true, nil)", kind, held, err)
 			}
 		})
 	}
 }
 
-func TestHoldsSettingsIsFalseForWhatIsNotAFolderOrHoldsOtherNames(t *testing.T) {
+// Only a name that does not exist is absent. A path that does not exist, a folder with other names, and a link as the
+// last element (the name is looked at inside what it points to) all answer "absent", with no error.
+func TestHoldsSettingsIsFalseWithNoErrorForWhatHoldsOtherNamesOrIsNotThere(t *testing.T) {
 	root := t.TempDir()
 	mustDo(t, os.WriteFile(filepath.Join(root, "file"), []byte("x"), 0o644))
 	mustDo(t, os.Mkdir(filepath.Join(root, "other"), 0o755))
@@ -57,18 +60,60 @@ func TestHoldsSettingsIsFalseForWhatIsNotAFolderOrHoldsOtherNames(t *testing.T) 
 		mustDo(t, os.WriteFile(filepath.Join(root, "other", name), nil, 0o644))
 	}
 	mustDo(t, os.Symlink(filepath.Join(root, "other"), filepath.Join(root, "link")))
+	mustDo(t, os.Symlink("nowhere", filepath.Join(root, "dangling")))
 	for name, p := range map[string]string{
 		"a path that does not exist":  filepath.Join(root, "missing"),
-		"a file":                      filepath.Join(root, "file"),
 		"a folder with other names":   filepath.Join(root, "other"),
-		"a link to a folder":          filepath.Join(root, "link"), // the last element is a link: not opened
-		"a name with a NUL":           filepath.Join(root, "a\x00b"),
-		"the empty path":              "",
+		"a link to a folder":          filepath.Join(root, "link"),
+		"a link to nothing":           filepath.Join(root, "dangling"),
 		"a path that ends with a dot": filepath.Join(root, "other") + "/.",
 	} {
-		if holdsSettings(p) {
-			t.Errorf("%s: holdsSettings is true", name)
+		if held, err := holdsSettings(p); held || err != nil {
+			t.Errorf("%s: (%v, %v), want (false, nil)", name, held, err)
 		}
+	}
+}
+
+// Anything else than "does not exist" is a folder that cannot be examined: the answer is not "absent", it is an
+// error that names the folder, and the answer is never true.
+func TestHoldsSettingsOfWhatCannotBeExaminedIsAnErrorAndNeverAbsent(t *testing.T) {
+	root := t.TempDir()
+	mustDo(t, os.WriteFile(filepath.Join(root, "file"), []byte("x"), 0o644))
+	mustDo(t, os.Symlink("loop", filepath.Join(root, "loop")))
+	for name, tc := range map[string]struct {
+		path string
+		want string
+	}{
+		"a path that is a file":      {filepath.Join(root, "file"), "not a directory"},
+		"a link to itself as folder": {filepath.Join(root, "loop"), "too many levels of symbolic links"},
+		"a name with a NUL":          {filepath.Join(root, "a\x00b"), "invalid argument"},
+		"a path too long":            {root + strings.Repeat("/aaaaaaaaaa", 600), "file name too long"},
+	} {
+		held, err := holdsSettings(tc.path)
+		if held || err == nil {
+			t.Errorf("%s: (%v, %v), want (false, an error)", name, held, err)
+			continue
+		}
+		if errors.Is(err, fs.ErrNotExist) {
+			t.Errorf("%s: the error says the name does not exist: %v", name, err)
+		}
+		if !strings.Contains(err.Error(), "cannot be examined for ritueel.yaml: ") || !strings.Contains(err.Error(), tc.want) {
+			t.Errorf("%s: error = %q, want the words %q and %q", name, err.Error(), "cannot be examined for ritueel.yaml: ", tc.want)
+		}
+	}
+}
+
+// The empty path has no folder in it. holdsSettings joins the name to it and so looks at the working folder; the
+// function is never given "", and what it answers for it is the answer for the working folder.
+func TestHoldsSettingsOfTheEmptyPathLooksAtTheWorkingFolder(t *testing.T) {
+	cwd := t.TempDir()
+	t.Chdir(cwd)
+	if held, err := holdsSettings(""); held || err != nil {
+		t.Errorf("an empty working folder: (%v, %v), want (false, nil)", held, err)
+	}
+	mustDo(t, os.WriteFile(filepath.Join(cwd, "ritueel.yaml"), nil, 0o644))
+	if held, err := holdsSettings(""); !held || err != nil {
+		t.Errorf("a working folder that holds the name: (%v, %v), want (true, nil)", held, err)
 	}
 }
 

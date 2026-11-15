@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"io/fs"
+	"os"
 	"path/filepath"
 	"strings"
 
@@ -52,11 +53,11 @@ func (e *CreateError) Error() string {
 	if e.whole {
 		state = "the bundle is whole on disk but was not flushed: it may not survive a power cut"
 	}
-	return fmt.Sprintf("bundle: cannot make the bundle %s: %s: %v", jsonset.Escape(e.Dir), state, e.Err)
+	return fmt.Sprintf("bundle: cannot make the bundle %s: %s: %v", jsonset.EscapeExact(e.Dir), state, e.Err)
 }
 
 // writtenText says how many things the stopped call made inside the folder and names each one, as the paths of
-// [CreateError.Written] through the escape of every text of a person: "1 thing was", "N things were".
+// [CreateError.Written] through the exact escape of a name from a file system: "1 thing was", "N things were".
 func writtenText(written []string) string {
 	count := fmt.Sprintf("%d things were", len(written))
 	if len(written) == 1 {
@@ -68,7 +69,7 @@ func writtenText(written []string) string {
 	}
 	names := make([]string, len(written))
 	for i, w := range written {
-		names[i] = jsonset.Escape(w)
+		names[i] = jsonset.EscapeExact(w)
 	}
 	return text + " (" + strings.Join(names, ", ") + ")"
 }
@@ -94,7 +95,10 @@ func (e *CreateError) Unwrap() error {
 // the error is a [*CreateError] that lists what was made.
 //
 // A folder above dir that holds a name ritueel.yaml refuses it: a bundle is not made inside a bundle. The
-// starter files are made and read back before any write ([Starter]); an error there writes nothing.
+// folders above dir are looked at by name and not by listing them, so a folder that can be passed but not
+// listed is looked at too. A folder that cannot be examined stops the call with an error that names it, and
+// nothing is written: a check that cannot run is not a pass. The starter files are made and read back before
+// any write ([Starter]); an error there writes nothing.
 func Create(dir string, opt StarterOptions) ([]wanted.File, error) {
 	parent, last, err := splitDir(dir)
 	if err != nil {
@@ -115,7 +119,7 @@ func Create(dir string, opt StarterOptions) ([]wanted.File, error) {
 		return nil, &CreateError{Dir: dir, Err: err}
 	}
 	if above != "" {
-		return nil, &CreateError{Dir: dir, Err: fmt.Errorf("the folder %s holds %s: a bundle is not made inside a bundle", jsonset.Escape(above), wanted.SettingsPath)}
+		return nil, &CreateError{Dir: dir, Err: fmt.Errorf("the folder %s holds %s: a bundle is not made inside a bundle", jsonset.EscapeExact(above), wanted.SettingsPath)}
 	}
 	if err := create(w, dir, last, files); err != nil {
 		return nil, err
@@ -124,10 +128,10 @@ func Create(dir string, opt StarterOptions) ([]wanted.File, error) {
 }
 
 // bundleAbove returns the nearest folder from parent up to the root of the file system that holds a name
-// ritueel.yaml (of any kind: a file, a folder, a link), or "" when none does. parent is made absolute, and its
-// links are followed, so that the folders above it are the ones on the disk. A folder that cannot be opened
-// is passed over: nothing can be told about it, and the folders above it are still read. An error is only a
-// path that cannot be made absolute.
+// ritueel.yaml (of any kind: a file, a folder, a link, a pipe), or "" when none does. parent is made absolute,
+// and its links are followed, so that the folders above it are the ones on the disk. An error is a path that
+// cannot be made absolute, or a folder that cannot be examined ([holdsSettings]): the answer is then not known,
+// and it is not "none".
 func bundleAbove(parent string) (string, error) {
 	abs, err := filepath.Abs(parent)
 	if err != nil {
@@ -137,7 +141,11 @@ func bundleAbove(parent string) (string, error) {
 		abs = real
 	}
 	for p := abs; ; p = filepath.Dir(p) {
-		if holdsSettings(p) {
+		held, err := holdsSettings(p)
+		if err != nil {
+			return "", err
+		}
+		if held {
 			return p, nil
 		}
 		if filepath.Dir(p) == p {
@@ -146,16 +154,25 @@ func bundleAbove(parent string) (string, error) {
 	}
 }
 
-// holdsSettings tells whether the folder p holds the name ritueel.yaml. Only a name that does not exist
-// counts as absent: a file, a folder, a link, a pipe or a file that cannot be read all hold the name.
-func holdsSettings(p string) bool {
-	dir, err := fsx.OpenFS(p)
-	if err != nil {
-		return false
+// holdsSettings tells whether the folder p holds the name ritueel.yaml. It looks at the name itself with a
+// call that follows no link and does not open the folder, so a folder that can be passed but not listed is
+// looked at too. A name that exists, of any kind (a file, a folder, a link, a link to nothing, a pipe), holds
+// the name; only "does not exist" is absent. Any other error means that the folder cannot be examined: it is
+// returned with the name of the folder, and it is never taken for "absent".
+func holdsSettings(p string) (bool, error) {
+	_, err := os.Lstat(filepath.Join(p, wanted.SettingsPath))
+	if err == nil {
+		return true, nil
 	}
-	defer func() { _ = dir.Close() }()
-	_, err = dir.ReadFile(wanted.SettingsPath)
-	return !errors.Is(err, fs.ErrNotExist)
+	if errors.Is(err, fs.ErrNotExist) {
+		return false, nil
+	}
+	// The cause is the error of the system without the path, which the text names by its escape.
+	var pe *fs.PathError
+	if errors.As(err, &pe) {
+		err = pe.Err
+	}
+	return false, fmt.Errorf("the folder %s cannot be examined for %s: %w", jsonset.EscapeExact(p), wanted.SettingsPath, err)
 }
 
 // create makes the folder last in the root of w and writes the files into it. It is the part of Create that a
