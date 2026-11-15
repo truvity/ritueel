@@ -5,7 +5,7 @@ sidebar:
   order: 3
 ---
 
-*Not built yet. The keyring file and the package are decided in [record 0009](../decisions/0009-release-keys-and-the-keyring.md); the code is [issue #15](https://github.com/truvity/ritueel/issues/15), in M5. This page is the specification of the package and of the file it is built from: what is in them, how the package is built and checked, and which installers it is tested on. What it says was measured carries a date.*
+*Not built yet. The keyring file and the package are decided in [record 0009](../decisions/0009-release-keys-and-the-keyring.md); the code is [issue #15](https://github.com/truvity/ritueel/issues/15), in M5. The first form of the keyring file, with the primaries only, is written into the trust set from M2; the package and the full file are M5. This page is the specification of the package and of the file it is built from: what is in them, how the package is built and checked, and which installers it is tested on. What it says was measured carries a date.*
 
 The keyring package carries the public certificates of every active primary to apt, rpm and `gpg` users, so that a signature by any subkey a primary bound verifies. ritueel makes the keyring file, which holds those certificates. The release pipeline builds the package from the file (`.deb`, `.rpm` and plain files) and publishes it. ritueel does not build, sign or publish the package: the user's repository signs it with its current subkey ([record 0009](../decisions/0009-release-keys-and-the-keyring.md), rules 21 to 23).
 
@@ -34,6 +34,26 @@ The package puts these files on the system. The same files are written beside th
 ritueel writes the keyring file in the trust set, under `keyring/`. The keyring holds the public certificates of the root keys and their subkeys ([record 0006](../decisions/0006-bundle-history-and-trust-files.md), rule 12). The pipeline's builder makes from it the two packages, `<name>-keyring_<version>_all.deb` and `<name>-keyring-<version>-1.noarch.rpm`, and the plain files beside them. A `.deb` holds only the first two files, and a `.rpm` the first three. The key files of a package do not replace a user's own keyring: apt reads `Signed-By`, and rpm imports only when told to.
 
 Beside the packages, not in them: the revocation signature of every primary or subkey that was revoked hard and dropped from this version, armoured, one file for each, named by the fingerprint it revokes. The signature stays with the holder, outside the bundle ([record 0006](../decisions/0006-bundle-history-and-trust-files.md), rule 1). The holder gives a primary's stored revocation signature to `revoke`, which checks its digest against the entry of `revocations` for that reason in the `root.json` of that root key ([the bundle](/reference/bundle/#rootjson)) before it uses it; a subkey's revocation is made at the ceremony.
+
+## The first form of the keyring file
+
+From M2 the keyring file of a trust set has the primaries only. It is binary, with no armour. For each entry of the root list that has an `openpgp_fingerprint`, in the order of the list, it holds the packets of one certificate: the primary key packet, the one user ID packet, and the certifications of the primary in creation order. It holds no subkey. The key packet of each certificate gives the fingerprint of its entry, so the file needs no digest of its own: the list pins it. A trust set whose list pins no primary has no keyring file.
+
+ritueel reads the file with one strict reader, `ReadKeyring` in `internal/openpgp`. It takes the bytes of the file and the entries of the list that have a fingerprint, opens no file and writes nothing, and it returns the primaries in the order of the list or an error and no primary. It reads both header formats and every fixed length of RFC 9580, section 4.2, so the certificate files of the hand-off, whose packets have five-octet lengths, are read as they are, and it takes no byte as unique: the same certificate in another header form is the same certificate.
+
+It refuses, in this order, and the first fault gives the error:
+
+1. **The arguments.** A list that is empty, has more than 26 entries, has a label that is not one capital letter or a fingerprint that is not 40 lower-case hexadecimal digits, or names one label or one fingerprint twice. The file is not read.
+2. **The size and the form.** A file that is empty, longer than 1 MiB (checked before any packet is read) or armoured; a packet that is not whole, or has a partial or an indeterminate length; a packet that is not, in this order, one public key packet, one user ID packet and one or more signature packets for each certificate, so a subkey, a second user ID, a user attribute and a trust packet are refused; more than 26 certificates, more than 256 certifications for one primary, or more than 6,708 packets.
+3. **The primaries.** A certificate that is missing, one too many, one that stands at another place than its entry, one that is not on the list, and a key or a key point that repeats.
+4. **The key.** Anything but a version 4 ECDSA key on P-384, with its point on the curve and a creation time that is not zero, whose fingerprint is the fingerprint of the entry at its place.
+5. **The user ID.** Anything but the one shape of [the OpenPGP primary](/reference/bundle/#the-openpgp-primary), of at most 1,024 bytes, that names the label of its entry.
+6. **Each certification.** One that is not the self-signature of that page, row Self-signature: a positive certification of the user ID with exactly the four hashed subpackets and the one unhashed subpacket the row names, each once and in any order, in a packet of at most 512 bytes with at most 32 subpackets in each area, whose two bytes of hash tag are the start of its digest and that verifies with the key over the user ID. A certification dated before the key, or before the one before it, is refused. Every certification must pass, not only one.
+7. **A mix.** A file in which some user IDs carry the mark ` (TEST ONLY)` and some do not.
+
+A certification that the builder of a primary returns is checked by the same function that the reader uses, so that the builder returns a certificate that the reader accepts, and no other. An error names a position and a label and holds no byte of the file; a code point of a user ID shows as `U+XXXX`.
+
+The reader reads no clock: it does not compare the expiry of a primary with the time of the check, and a primary that has expired is read. It does not read the root list or check its signature. A signature of any other type, a revocation among them, refuses the whole file. The limits above are proposed: no record fixes them. They do not hold all at once, because 26 certificates of 256 certifications each are more than 1 MiB, so one call checks at most about 6,500 signatures. The largest file that the limits allow has 26 certificates and 6,525 certifications in 1,048,519 bytes; it was read in 2.4 s on 2026-11-15 on a machine with a load average of 3.8, and in 4 s to 7 s on a busy machine.
 
 ## What the certificates hold
 
