@@ -15,20 +15,20 @@ flow: landing
 
 ## What to do
 
-- Keep the OpenPGP root in a cloud key (ritueel support planned, [M4](/roadmap/) and [M5](/roadmap/)).
-- Or keep it on two root cards (ritueel support planned, [M6](/roadmap/)).
+- Keep the [OpenPGP root](/learn/chain-openpgp/) in a [cloud key](/learn/how-a-kms-key-works/) (ritueel support planned, [M4](/roadmap/) and [M5](/roadmap/)).
+- Or keep it on two [root cards](/how-it-works/cards/#root-card) (ritueel support planned, [M6](/roadmap/)).
 - Sign with cosign together with OpenPGP, never instead: RPM and DEB need OpenPGP.
 
 M4, M5 and M6 are milestones on the [roadmap](/roadmap/).
 
 ## What not to do
 
-- A root key in a file: a copy leaves no trace.
+- A root [key in a file](/learn/a-key-in-a-file/): a copy leaves no trace.
 - One card alone: no second key.
 
 ## What ritueel does for you
 
-ritueel will plan each ceremony; a person confirms it. It does not package or publish releases.
+ritueel will plan each [ceremony](/glossary/); a person confirms it. It does not package or publish releases.
 
 ---
 

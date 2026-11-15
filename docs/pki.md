@@ -15,19 +15,19 @@ flow: landing
 
 ## What to do
 
-- Keep the root in a cloud key with a copy in a second region (ritueel support planned, [M4](/roadmap/)).
-- Or keep it on two root cards (ritueel support planned, [M6](/roadmap/)).
+- Keep the root in a [cloud key](/learn/how-a-kms-key-works/) with a copy in a second region (ritueel support planned, [M4](/roadmap/)).
+- Or keep it on two [root cards](/how-it-works/cards/#root-card) (ritueel support planned, [M6](/roadmap/)).
 
 M4 and M6 are milestones on the [roadmap](/roadmap/).
 
 ## What not to do
 
-- A real root in a key file, Vault or OpenBao: it can be copied.
+- A real root in a [key file](/learn/a-key-in-a-file/), Vault or OpenBao: it can be copied.
 - One card alone: no second key.
 
 ## What ritueel does for you
 
-ritueel will plan each ceremony; a person confirms it. HSMs and AWS Private CA roots are not covered.
+ritueel will plan each [ceremony](/glossary/); a person confirms it. HSMs and AWS Private CA roots are not covered.
 
 ---
 
