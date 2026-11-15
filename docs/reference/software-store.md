@@ -69,7 +69,7 @@ ritueel stores no passphrase in the keyring, because it keeps no passphrase anyw
 
 ## The ceremony record
 
-A ceremony with a software root writes in its ceremony record: `copyable` true (as the plan's `root` already says), `backend`, and `warnings`, a list of codes: `software-copyable` for every backend, and `onepassword-copyable` or `keyring-insecure` as above. No secret and no reference to a path.
+A ceremony with a software root writes in its ceremony record that the key can be copied: the member `copyable` of `root` is true, as the plan's `root` already says ([the record](/reference/ceremony-record/#the-record)). The record has no member for the backend and no list of warnings. No secret and no reference to a path.
 
 ## Follow-ups
 

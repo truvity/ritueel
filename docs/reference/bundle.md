@@ -441,6 +441,8 @@ Five rules the schema cannot state: a delegation name is unique, which its file 
 
 A key is active, retired or revoked ([record 0007](../decisions/0007-changing-and-losing-a-root.md), rule 3); which one is read from the ceremony records and the newest root list, not from this file. What a key replaces, and until when, is a wanted field (record 0007, rules 3 and 5). Root state as files is later.
 
+The first `apply` of an X.509 test root writes `version`, `label`, `store`, `test`, `created_at`, `x509_spki_sha256` and `removal_sha256`. `removal_sha256` is the SHA-256 of the text of the removal authorisation. The other members are written by later ceremonies.
+
 | Member | Meaning |
 |---|---|
 | `version` | `1`. |
@@ -463,7 +465,7 @@ Revocation material that is made again later (record 0007, rule 23) cannot chang
 
 ## The root certificate
 
-Every X.509 root key's certificate has this profile. A relying party can check every row.
+Every X.509 root key's certificate has this profile. A relying party can check every row. Before the certificate is written, code that did not make it checks it against this profile.
 
 | Field | Value |
 |---|---|
