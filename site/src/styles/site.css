@@ -281,6 +281,34 @@
     align-items: flex-start;
   }
 }
+/* THE NAME MARK: the name in the mono type of the site, "ritu" in the text colour and "eel" in the accent,
+   and a small round dot after it (the eye of the eel). It stands once on the site, as the tagline of the
+   start page (docs/index.mdx), under the question; no other page and no other word carries it. The top
+   bar keeps the plain name. The face is the preloaded mono semi-bold (src/route-middleware.ts), so the
+   mark does not jump at the first paint. `--sl-color-white` is the text colour of the theme (dark in the
+   light theme), so the mark reads in both. The rules name Starlight's `.hero` too, so that they leave
+   alone the `mark` class of a code line (Expressive Code's `.ec-line.mark`). */
+.hero .mark {
+  font-family: var(--sl-font-mono);
+  font-size: 1.5em;
+  font-weight: 600;
+  letter-spacing: -0.03em;
+  color: var(--sl-color-white);
+}
+.hero .mark b {
+  font-weight: inherit;
+  color: var(--sl-color-accent-high);
+}
+.hero .mark::after {
+  content: '';
+  display: inline-block;
+  width: 0.3em;
+  height: 0.3em;
+  margin-inline-start: 0.14em;
+  border-radius: 50%;
+  background: var(--sl-color-white);
+  vertical-align: 0.4em;
+}
 /* The six pieces: three columns from 56rem (Starlight's CardGrid has two) and closer cards. The sixth
    piece holds a text and five links, which stand in a row. The bold line at the end of a piece is a
    link, so it takes the colour of one. The text of the sixth piece is 16px like the others (Starlight's
