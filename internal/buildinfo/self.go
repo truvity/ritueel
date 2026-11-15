@@ -21,9 +21,10 @@ type Program struct {
 }
 
 // Self describes the program that runs: its version ([Read]), its system and architecture, and the
-// SHA-256 of its own file. The file is the one that os.Executable names, opened read-only and
-// hashed as a stream: it is larger than the longest file that the readers of a bundle accept, so it
-// is never read whole into memory. A file that cannot be found, opened or read to its end is an
+// SHA-256 of its own file. The file is the one that os.Executable names: its path is looked at before
+// it is opened and must be a regular file, and it is then opened read-only and hashed as a stream.
+// The file is larger than the longest file that the readers of a bundle accept, so it is never read
+// whole into memory. A file that cannot be found, opened or read to its end is an
 // error and gives no Program: a digest that cannot be computed is not an empty one.
 func Self() (Program, error) {
 	exe, err := os.Executable()
@@ -37,9 +38,19 @@ func Self() (Program, error) {
 	return Program{Version: Read().Version, OSArch: runtime.GOOS + "/" + runtime.GOARCH, SHA256: sum}, nil
 }
 
-// fileDigest returns the SHA-256 of the regular file at path, read as a stream. A path that is not
-// a regular file (a folder, a FIFO, a device) is an error, so that the read never waits.
+// fileDigest returns the SHA-256 of the regular file at path, read as a stream. It looks at the path
+// first, with a call that opens nothing, and refuses a path that is not a regular file (a folder, a
+// FIFO, a device) before any open, because the open of a FIFO with no writer waits. The file that is
+// opened is looked at again, and it must be the same file and still a regular one, so that a path
+// that was swapped between the two looks is refused and not read.
 func fileDigest(path string) (string, error) {
+	before, err := os.Stat(path)
+	if err != nil {
+		return "", fmt.Errorf("buildinfo: the file of the running program cannot be looked at: %w", err)
+	}
+	if !before.Mode().IsRegular() {
+		return "", errors.New("buildinfo: the file of the running program is not a regular file")
+	}
 	f, err := os.Open(path)
 	if err != nil {
 		return "", fmt.Errorf("buildinfo: the file of the running program cannot be opened: %w", err)
@@ -52,8 +63,8 @@ func fileDigest(path string) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("buildinfo: the file of the running program cannot be looked at: %w", err)
 	}
-	if !info.Mode().IsRegular() {
-		return "", errors.New("buildinfo: the file of the running program is not a regular file")
+	if !info.Mode().IsRegular() || !os.SameFile(before, info) {
+		return "", errors.New("buildinfo: the file of the running program is not the regular file that was looked at")
 	}
 	h := sha256.New()
 	if _, err := io.Copy(h, f); err != nil {
