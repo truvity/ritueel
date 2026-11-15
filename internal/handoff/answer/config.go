@@ -89,7 +89,8 @@ type settings struct {
 // creation time give, or two entries with one fingerprint; no floor certificate or more than [MaxAnchors], one
 // that is not one PEM file of one certificate (read by [pki.ReadPEMFile] and [x509.ParseCertificate]), or two
 // that are the same; a Validity out of its bounds; a nil clock. New reads no clock. A floor certificate that is
-// not a CA, has ended or has the wrong key usage is not refused here: the check of an answer refuses an answer
+// not a CA, has ended, has the wrong key usage or has a key outside the list of the floor (ECDSA on P-256, P-384
+// or P-521, Ed25519, or RSA of 2048 bits or more) is not refused here: the check of an answer refuses an answer
 // that it would have to verify, and says why.
 func New(cfg Config) (*Checker, error) {
 	s := &settings{}

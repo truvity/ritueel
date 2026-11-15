@@ -36,6 +36,12 @@
 // is not a fault of the answer: [Verdict.RequestRefused] says so and [Verdict.CertifierReasons] holds the
 // reasons.
 //
+// The floor holds the installed CA certificate and the answer to a named list, set down in one place
+// (floorListFault): a CA key that is ECDSA on P-256, P-384 or P-521, Ed25519, or RSA of 2048 bits or more, and a
+// signature of ECDSA or RSA (PKCS #1 version 1.5 or PSS) with SHA-256, SHA-384 or SHA-512, or Ed25519. The list is
+// applied before the signature is verified; anything else, a SHA-1 or MD5 signature included, is refused with the
+// code issuer. The full contract keeps ECDSA on P-384 with SHA-384 only.
+//
 // The signature is verified more than once on the full X.509 contract. An accepted X.509 answer is verified
 // twice: once by the issuer check (check 4) against the anchor, and once more by the comparison with the exact
 // form that the builder of package pki writes (check 8, pki.Assemble), which verifies the signature again before
