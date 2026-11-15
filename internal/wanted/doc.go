@@ -41,5 +41,10 @@
 //
 // Nothing here follows a link. A file is read by the name it is given, through package fsx, which refuses
 // a link in any element of the path, a file that is not a regular file and a file over 8 MiB. The only
-// folders listed are want/roots, want/delegations and want/cards, each once, for the names in it.
+// folders listed are want/roots, want/delegations and want/cards, each once, for the names in it. A
+// lister skips every entry whose name starts with ".rt-", in any case of the letters, whatever kind of
+// entry it is: that is the leftover of a stopped write, and it is never read as a part of a bundle
+// (record 0006, rule 45). It is no error, it is not read and it does not count toward [MaxFiles]; every
+// other name that is not NAME.yaml is an error. The readers of one file are not listers: they refuse a
+// name that is not valid when they are asked for it by name.
 package wanted

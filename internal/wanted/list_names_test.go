@@ -157,7 +157,8 @@ func TestListRootNamesRefusesWhatIsNotARootFileAndGivesNoName(t *testing.T) {
 		{"another extension", file("a.txt"), "want/roots/a.txt"},
 		{"the yml spelling", file("a.yml"), "want/roots/a.yml"},
 		{"no name", file(".yaml"), "want/roots/.yaml"},
-		{"a leftover of a stop", file(".rt-abc.yaml"), "want/roots/.rt-abc.yaml"},
+		// A name that starts with ".rt-" is not refused: it is skipped (list_temporary_test.go).
+		{"a name that only looks like a leftover", file(".rtx.yaml"), "want/roots/.rtx.yaml"},
 		{"a name of 64 characters", file(strings.Repeat("a", 64) + ".yaml"), "want/roots/" + strings.Repeat("a", 64) + ".yaml"},
 		{"a name with a control character", file("a\x01b.yaml"), "want/roots/a\\u0001b.yaml"},
 		{"a folder with a good name", func(t *testing.T, roots string) {

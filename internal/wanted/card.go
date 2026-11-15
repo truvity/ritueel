@@ -32,7 +32,7 @@ const (
 )
 
 // otherRowsMember is the name of the member that declares the rows of other bundles (record 0003, rule 10:
-// "declared in the wanted card file"; the page names no member, and this is the proposed name).
+// "declared in the wanted card file"; docs/reference/cards.md, "The card file", names the member).
 const otherRowsMember = "other_rows"
 
 // CardKind is one of the four kinds of card (record 0003, rule 11). A card has one kind and never changes it.
@@ -147,8 +147,10 @@ func LoadCard(fsys fsx.FS, name string) (*Card, error) {
 
 // ListCardNames lists want/cards once and returns the names (without ".yaml"), in the order of the names,
 // and reads no file. It judges the folder as [ListRootNames] judges want/roots: a folder that does not
-// exist gives no name; a name that is not NAME.yaml with a NAME that passes [ValidName] is an error, a
-// leftover ".rt-" name too; a link, a folder or a FIFO is an error; more than [MaxFiles] names is an error.
+// exist gives no name; an entry whose name starts with ".rt-", in any case of the letters, is the
+// leftover of a stopped write and is skipped, whatever kind of entry it is, and it does not count toward
+// [MaxFiles] (record 0006, rule 45); any other name that is not NAME.yaml with a NAME that passes
+// [ValidName] is an error; a link, a folder or a FIFO is an error; more than [MaxFiles] names is an error.
 // It does not apply [MaxCards]: that is the caller's check. An error returns no name.
 func ListCardNames(fsys fsx.FS) ([]string, error) {
 	return listNames(fsys, CardsDir, ValidName)

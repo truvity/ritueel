@@ -174,7 +174,8 @@ func TestListRootsRefusesWhatIsNotARootFileAndReturnsNothing(t *testing.T) {
 		{"the yml spelling", file("a.yml", lstRootText), "want/roots/a.yml", "NAME.yaml"},
 		{"no name", file(".yaml", lstRootText), "want/roots/.yaml", "1 to 63"},
 		{"two extensions", file("a.yaml.yaml", lstRootText), "want/roots/a.yaml.yaml", "lower-case"},
-		{"a leftover of a stop", file(".rt-abc.yaml", lstRootText), "want/roots/.rt-abc.yaml", "lower-case"},
+		// A name that starts with ".rt-" is not refused: it is skipped (list_temporary_test.go).
+		{"a name that only looks like a leftover", file(".rtx.yaml", lstRootText), "want/roots/.rtx.yaml", "lower-case"},
 		{"a name of 64 characters", file(strings.Repeat("a", 64)+".yaml", lstRootText), "want/roots/" + strings.Repeat("a", 64) + ".yaml", "1 to 63"},
 		{"a space in the name", file("a b.yaml", lstRootText), "want/roots/a b.yaml", "lower-case"},
 		{"a hyphen first", file("-a.yaml", lstRootText), "want/roots/-a.yaml", "lower-case"},

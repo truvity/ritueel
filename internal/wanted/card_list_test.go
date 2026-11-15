@@ -157,8 +157,9 @@ func TestListCardNamesRefusesWhatIsNotACardFileAndReturnsNothing(t *testing.T) {
 		{"an editor backup", file("root-a.yaml~", cardServerOne), "want/cards/root-a.yaml~", "NAME.yaml"},
 		{"an editor swap file", file(".root-a.yaml.swp", cardServerOne), "want/cards/.root-a.yaml.swp", "NAME.yaml"},
 		{"a name with an underscore", file("root_a.yaml", cardServerOne), "want/cards/root_a.yaml", "lower-case"},
-		{"a leftover of a stopped write", file(".rt-abc.yaml", cardServerOne), "want/cards/.rt-abc.yaml", "lower-case"},
-		{"a leftover of a stopped write with a long name", file(".rt-k3j9x0a1b2c.yaml", cardServerOne), "want/cards/.rt-k3j9x0a1b2c.yaml", "lower-case"},
+		// A name that starts with ".rt-" is not refused: it is skipped (list_temporary_test.go).
+		{"a name that only looks like a leftover", file(".rtx.yaml", cardServerOne), "want/cards/.rtx.yaml", "lower-case"},
+		{"a leftover name that is not at the start", file("a.rt-abc.yaml", cardServerOne), "want/cards/a.rt-abc.yaml", "lower-case"},
 		{"a name of 64 characters", file(strings.Repeat("a", 64)+".yaml", cardServerOne), "want/cards/" + strings.Repeat("a", 64) + ".yaml", "1 to 63"},
 		{"a space in the name", file("a b.yaml", cardServerOne), "want/cards/a b.yaml", "lower-case"},
 		{"a hyphen first", file("-a.yaml", cardServerOne), "want/cards/-a.yaml", "lower-case"},
