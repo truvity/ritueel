@@ -63,7 +63,6 @@ const asOf = BUILT_AT.replace('T', ' ').replace(/:\d{2}Z$/, ' UTC');
 const headings = [
   ...cases.map((c) => ({ depth: 2, slug: `case-${c.number}`, text: `Case ${c.number}. ${c.title}` })),
   { depth: 2, slug: 'the-states', text: 'The states' },
-  { depth: 2, slug: 'how-far-ritueel-has-got', text: 'How far ritueel has got' },
   { depth: 2, slug: 'milestones', text: 'Milestones' },
   { depth: 2, slug: 'design', text: 'Design' },
   { depth: 2, slug: 'issues-by-milestone', text: 'Issues by milestone' },
@@ -168,7 +167,6 @@ const headings = [
     </div>
     <p>The column Advice says what we think of a way. It is not a state.</p>
 
-    <h2 id="how-far-ritueel-has-got">How far ritueel has got</h2>
     <p class="ps-design"><strong>{designLine(facts)}</strong></p>
     <p>
       ritueel is in its <a href="/roadmap/">design phase</a>: there is no release yet. This page counts what exists, for each
