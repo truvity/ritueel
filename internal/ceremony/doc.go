@@ -20,6 +20,24 @@
 //     what was printed and nothing else (record 0006, rule 9). It writes no file: the caller
 //     hands [Console.Transcript] to [Folder.WriteTranscript] after [Folder.End].
 //
+// The package also holds what comes before the folder, the find and the plan of the first apply of a
+// software test root (docs/reference/ceremony-record.md, "The plan"; record 0005, rules 4 to 8, 13, 19
+// and 20):
+//
+//   - [Find] reads the wanted files and the state of the bundle, through fsx, and says what is not
+//     applied yet. It writes nothing and stores nothing. It knows one case, the first apply: a bundle
+//     with no ceremony record, no trust set and no entry under roots/, with one wanted root file of the
+//     kind x509 that is a test root. Every other state, and every root of a kind that is not built, is
+//     refused with a text that says what to do. An open attempt is refused with the reason
+//     [ReasonUnfinishedCeremony] (exit code 3), so apply makes no plan and runs none until it is closed.
+//   - [MakePlan] builds the plan of a [Found]: it reads the clock once, draws the serials from
+//     [Env].Rand, and writes the canonical bytes, the digest and the words ([PlanOut.Words]). The name
+//     of the ceremony is its time and the command, 20261120T100000Z-apply. [ReadPlanOut] is the one way
+//     a saved plan is taken: a strict reader of exactly the shape that MakePlan writes, which writes the
+//     typed value again and requires the same bytes, so that the words a person confirms and the values
+//     that a run executes come from one reading.
+//   - [CheckKeyDir] is every refusal about the key directory that needs no key.
+//
 // Every write goes through fsx.Writer, so a name that exists, a link and a temporary name are
 // refused by the one place that knows the rules (record 0006, rules 31 to 33 and 44). A folder
 // that may exist already (history/) is read first and made only when it is absent. Every file
