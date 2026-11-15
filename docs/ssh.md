@@ -19,7 +19,7 @@ flow: landing
 - Use an [SSH CA](/learn/chain-ssh/#an-ssh-ca): a person joins or leaves without a change on every host.
 - Keep the daily SSH CA key in the system that issues certificates.
 - Keep the break-glass (emergency) SSH CA key in a [cloud key](/learn/how-a-kms-key-works/) (ritueel support planned, [M4](/roadmap/)). Or keep it on two [root cards](/how-it-works/cards/#root-card) (ritueel support planned, [M6](/roadmap/)).
-- For your own login key, use 1Password with its SSH agent. Or use a day-to-day card (ritueel support planned, [M3](/roadmap/)).
+- For your own login key, use 1Password with its SSH agent. Or use a [day-to-day card](/how-it-works/cards/#day-to-day-card) (ritueel support planned, [M3](/roadmap/)).
 
 M3, M4 and M6 are milestones on the [roadmap](/roadmap/).
 
