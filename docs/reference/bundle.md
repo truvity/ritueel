@@ -51,7 +51,7 @@ acme/
 ├── sealed/                            HISTORY  the sealed card secrets
 ├── roots/A/                           HISTORY  root.json and attestation/, written once
 ├── requests/acme-ca-2027/             REQUEST  the request, and once given the answer
-├── history/20261120T100000Z-apply-3fa9c1d2/   HISTORY  one ceremony folder for each ceremony
+├── history/20261120T100000Z-apply/   HISTORY  one ceremony folder for each ceremony
 │   ├── plan.json                      the plan
 │   ├── wanted/                        exact copies of the wanted files the plan used
 │   ├── attempt.json                   written before the first key is born
@@ -150,7 +150,7 @@ A read is bounded, so that a damaged or hostile stick cannot fill the memory. A 
 
 | What | Its name | Source |
 |---|---|---|
-| A ceremony folder | The time in UTC, the command and the first eight characters of the plan's digest, for example `20261120T100000Z-apply-3fa9c1d2`. | 0006 rule 31. The spelling is Proposed. |
+| A ceremony folder | The time in UTC and the command, for example `20261120T100000Z-apply`. | 0006 rule 31. The spelling is Proposed. |
 | A trust set | Its number and the first eight characters of the SHA-256 of its `root-list.json`, for example `13-b41e07a9`. | 0006 rules 12 and 31. The spelling is Proposed. |
 | An answer to a request | The stem of the request, in the folder of the request. | 0006 rule 6 |
 | A copy of a wanted file | Its path under `wanted/` in the ceremony folder. | 0006 rule 7 |
