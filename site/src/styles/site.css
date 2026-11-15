@@ -1,0 +1,280 @@
+/* The few rules a page is broken without; everything else is Starlight's own look (theme.css has the
+   colours, fonts.css the type). Each rule says why it stays. */
+
+/* WIDTH. A page with a side menu: Starlight's 45rem column leaves 450px free at each side at 1920 and wraps
+   a table row onto many lines. 64rem (a documented variable); running text keeps Starlight's own 45rem
+   line, so that tables use the width and no line of text gets longer. Names `.sl-markdown-content`. */
+:root[data-has-sidebar] {
+  --sl-content-width: 64rem;
+}
+.sl-markdown-content > :is(p, ul, ol, blockquote) {
+  max-width: 45rem;
+}
+
+/* ON THIS PAGE. From 72rem Starlight puts the list in a 300px column. Up to 100rem that leaves the
+   content 790px at 1440 (a screen more on a long page, the drawings shrink), so up to there the list
+   stays the dropdown above the content, as below 72rem, and the content is centred. The dropdown is
+   inside the column, so the column's boxes are dissolved, not hidden. Names `.right-sidebar-container`,
+   `.right-sidebar`, `.right-sidebar-panel`, `.main-pane` and `mobile-starlight-toc`. */
+@media (min-width: 72rem) and (max-width: 99.99rem) {
+  :root[data-has-toc] {
+    --sl-mobile-toc-height: 3rem;
+  }
+  .right-sidebar-container,
+  .right-sidebar {
+    display: contents;
+  }
+  .right-sidebar-panel {
+    display: none;
+  }
+  div:has(> mobile-starlight-toc) {
+    display: block;
+  }
+  :root[data-has-sidebar][data-has-toc] .main-pane {
+    --sl-content-margin-inline: auto;
+    width: 100%;
+  }
+}
+
+/* BADGE. A label stays in one line (Starlight lets a badge break inside a word, so "explained, tool
+   planned" split in a narrow cell) and is set in Plex Mono, like the other small labels. */
+.sl-badge {
+  font-family: var(--sl-font-mono);
+  white-space: nowrap;
+}
+
+/* GLOSSARY ON A PHONE. Its four columns leave "Meaning" 120px, so a row is 150 to 300px high. Below 40rem each
+   row is a block: the word, its meaning, and the two other cells with the names of their columns. The
+   header row stays for screen readers. Only the table of the glossary page: it is the page whose own menu
+   entry is current. Names `.sl-markdown-content` and `.sidebar-content`. */
+@media (max-width: 40rem) {
+  :root:has(.sidebar-content a[aria-current='page'][href='/glossary/']) .sl-markdown-content > table {
+    &,
+    & :is(tbody, tr, td) {
+      display: block;
+    }
+    & thead {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip-path: inset(50%);
+    }
+    & tr {
+      padding: 0.7rem 0;
+      border-bottom: 1px solid var(--sl-color-gray-5);
+    }
+    & td {
+      padding: 0.15rem 0;
+      border: 0;
+    }
+    & td:first-child {
+      font-size: var(--sl-text-lg);
+    }
+    & td:nth-child(n + 3)::before {
+      color: var(--sl-color-gray-3);
+      font-size: var(--sl-text-sm);
+    }
+    & td:nth-child(3)::before {
+      content: 'The page word: ';
+    }
+    & td:nth-child(4)::before {
+      content: 'Decided in: ';
+    }
+  }
+}
+
+/* START PAGE (docs/index.mdx). Starlight's hero has up to 10rem of padding and a 4rem title, which makes
+   the page 2.8 screens long at 1440; the page is short, so the padding and the gaps go, the title is smaller
+   and the title and the line run over the column (the title was in three lines). The column is 72rem, so that the wide drawing of the chain
+   (from 1100px) fits; Starlight's own is 67.5rem. */
+.hero {
+  padding-block: 0;
+}
+.hero .copy > * {
+  max-width: none;
+}
+.hero .stack {
+  gap: 1rem;
+}
+:root {
+  --sl-text-6xl: 2.75rem;
+}
+:root:not([data-has-sidebar]) {
+  --sl-content-width: 72rem;
+}
+/* On a phone Starlight centres the hero's title and line, and the page under it is left-aligned. */
+@media (max-width: 49.99rem) {
+  .hero .stack {
+    text-align: start;
+  }
+  .hero .copy {
+    align-items: flex-start;
+  }
+}
+/* The two answers side by side, and the last three sections as columns, from the widths they fit
+   (the classes are written in docs/index.mdx). One under the other they are 1.1 screens more. */
+.home-chain,
+.home-cols {
+  --sl-text-h2: 1.5rem;
+}
+@media (min-width: 48rem) {
+  .home-intro {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0 3rem;
+  }
+  .home-intro > p {
+    margin: 0;
+  }
+}
+@media (min-width: 56rem) {
+  .home-cols {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0 3rem;
+  }
+}
+/* The third section is the long one: it gets the wider column. */
+@media (min-width: 66rem) {
+  .home-cols {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr) minmax(0, 1.6fr);
+  }
+}
+
+/* STATUS PAGE (src/pages/status.astro, src/lib-status-html.ts; the Worker draws the same markup).
+   Five-column tables and the milestone cards need room: 90rem, a documented variable. It comes after the
+   64rem rule above and wins over it. Running text keeps its 45rem line. */
+:root:has(.ps) {
+  --sl-content-width: 90rem;
+}
+.ps > :is(p, ul, ol) {
+  max-width: 45rem;
+}
+:root {
+  --ps-line: var(--sl-color-hairline);
+}
+/* In the light theme Starlight's hairline is 1.2 to 1 against the ground; a card border is 3 to 1. */
+:root[data-theme='light'] {
+  --ps-line: var(--sl-color-gray-4);
+}
+/* The milestone cards: eight blocks of four plain lines ran together. A grid, a border, the key in mono. */
+.ps-cards {
+  display: grid;
+  gap: 0.75rem;
+  margin-block: 1rem;
+}
+@media (min-width: 48rem) {
+  .ps-cards {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+.ps-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 0.75rem;
+  border: 1px solid var(--ps-line);
+  border-radius: 0.5rem;
+}
+.ps-card p {
+  margin: 0;
+}
+.ps-card-k,
+.ps-v {
+  font-family: var(--sl-font-mono);
+  font-size: var(--sl-text-xs);
+}
+.ps-card-k {
+  color: var(--sl-color-text-accent);
+}
+.ps-card-n {
+  font-weight: 600;
+  color: var(--sl-color-white);
+}
+.ps-delivers {
+  flex: 1;
+  font-size: var(--sl-text-sm);
+}
+/* The current milestone: an accent border, doubled, besides the word "current" in its key. */
+.ps-card.ps-current {
+  border-color: var(--sl-color-accent);
+  box-shadow: inset 0 0 0 1px var(--sl-color-accent);
+}
+/* The bar is an empty <span> whose width is set in the markup; without a rule there is nothing to see. */
+.ps-bar {
+  height: 0.4rem;
+  background: var(--sl-color-gray-5);
+}
+.ps-bar > span {
+  display: block;
+  height: 100%;
+  background: var(--sl-color-accent);
+}
+/* The issues of a milestone: a box that opens, the chips of its issues, the tags "live", "snapshot"
+   and "current". The classes are ours. */
+.ps-detail {
+  margin-block: 0.5rem;
+  padding: 0.5rem 1rem;
+  border: 1px solid var(--ps-line);
+  border-radius: 0.5rem;
+}
+.ps-asof {
+  margin-inline-start: 0.5rem;
+  font-size: var(--sl-text-xs);
+  color: var(--sl-color-gray-3);
+}
+.ps-tag {
+  display: inline-block;
+  margin-inline-start: 0.5rem;
+  padding: 0 0.3em;
+  border: 1px solid var(--sl-color-accent);
+  border-radius: 0.25rem;
+  background: var(--sl-color-accent-low);
+  font-family: var(--sl-font-mono);
+  font-size: var(--sl-text-xs);
+  color: var(--sl-color-accent-high);
+}
+.ps-tag-live {
+  border-color: var(--sl-color-purple);
+  background: var(--sl-color-purple-low);
+  color: var(--sl-color-purple-high);
+}
+.ps-tag-build {
+  border-color: var(--sl-color-blue);
+  background: var(--sl-color-blue-low);
+  color: var(--sl-color-blue-high);
+}
+.ps-asof-line .ps-tag {
+  margin-inline-start: 0;
+}
+.ps-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  margin: 0.25rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+.ps-chips li {
+  margin: 0;
+}
+.ps-chip {
+  display: inline-block;
+  padding: 0 0.6rem;
+  border: 1px solid var(--ps-line);
+  border-radius: 1em;
+  font-size: var(--sl-text-xs);
+  text-decoration: none;
+  overflow-wrap: anywhere;
+}
+.ps-chip-bad {
+  border-color: var(--sl-color-red);
+}
+.ps-no {
+  font-family: var(--sl-font-mono);
+  color: var(--sl-color-text-accent);
+}
+.ps-state {
+  color: var(--sl-color-gray-3);
+}

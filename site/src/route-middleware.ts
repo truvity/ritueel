@@ -1,7 +1,6 @@
 // Drops the table of contents from a page with fewer than two headings: the
-// "On this page" bar (src/components/PageSidebar.astro) would only list the page
-// title. A page with `tableOfContents: false` has no table of contents to begin
-// with.
+// "On this page" list would only list the page title. A page with `tableOfContents: false` has no
+// table of contents to begin with.
 //
 // And it points each page's "Edit page" link at the file in the repository. Starlight builds
 // the link from `editLink.baseUrl` plus the entry's path from the site directory,
@@ -10,6 +9,13 @@
 // link set in a page's own `editUrl` is left alone; the generated pages have none.
 // site/scripts/check-edit-links.mjs checks the result in the built site.
 import { defineRouteMiddleware } from '@astrojs/starlight/route-data';
+// The three files of the first paint (the text, the headings, the mono face): a preload, so that the
+// system font is not seen for a moment before the swap. Same origin, so the Content-Security-Policy
+// needs no change. Vite gives each its hashed address under /_astro/.
+import sansRegular from './assets/fonts/IBMPlexSans-Regular-Latin1.woff2?url';
+import sansSemiBold from './assets/fonts/IBMPlexSans-SemiBold-Latin1.woff2?url';
+import monoSemiBold from './assets/fonts/IBMPlexMono-SemiBold-Latin1.woff2?url';
+const PRELOAD = [sansRegular, sansSemiBold, monoSemiBold];
 
 type TocItem = { children?: TocItem[] };
 
@@ -30,6 +36,7 @@ export const onRequest = defineRouteMiddleware((context) => {
     const base = route.editUrl.href.slice(0, route.editUrl.href.length - filePath.length);
     route.editUrl = new URL(base + REPO_DIR + filePath.slice(CONTENT_DIR.length));
   }
+  for (const href of PRELOAD) route.head.push({ tag: 'link', attrs: { rel: 'preload', as: 'font', type: 'font/woff2', href, crossorigin: 'anonymous' }, content: '' });
   if (route.toc && countHeadings(route.toc.items.slice(1)) < 2) {
     route.toc = undefined;
   }

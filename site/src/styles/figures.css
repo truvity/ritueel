@@ -18,10 +18,14 @@
 }
 .fig figcaption {
   margin: 0.9rem 0 0;
-  max-width: var(--ritueel-prose-width, 75ch);
+  max-width: 45rem;
   font-size: var(--sl-text-sm);
   line-height: 1.5;
   color: var(--sl-color-text);
+}
+/* The caption is outside Starlight's page text, so its links need the accent themselves. */
+.fig figcaption a {
+  color: var(--sl-color-text-accent);
 }
 
 /* A strip of panels: one column on a phone (the panel is 280 units wide and never drawn narrower),
@@ -140,3 +144,34 @@
 .fig .t-long { font-size: 12px; }
 .fig .chip { fill: var(--sl-color-bg-nav); stroke: none; }
 .fig .halo { fill: var(--sl-color-bg-nav); stroke: var(--sl-color-bg-nav); stroke-width: 5; stroke-linejoin: round; }
+
+/* The figure "whole-chain" (the start page) has three drawings: the wide one (760 units) for a column
+   of 760 to 1100 px, one made for the wide page (1100 units, the same panels) from 1100 px, and the
+   tall one (320 units) for a phone. Each is shown at 1:1 or more and never above 1.15 times, so the
+   labels stay 12 px or more. The two wide drawings are both .fig-wide; their viewBox tells them apart. */
+.fig-layout[data-figure='whole-chain'] .fig-wide[viewBox^='0 0 1100 '] {
+  display: none;
+}
+.fig-layout[data-figure='whole-chain'] .fig-wide[viewBox^='0 0 760 '] {
+  max-width: 54.5rem;
+}
+.fig-layout[data-figure='whole-chain'] .fig-narrow {
+  max-width: 23rem;
+}
+/* The rules above switch to the tall drawing at 48rem; this picture keeps the wide one down to 47.5rem. */
+@container (min-width: 47.5rem) {
+  .fig-layout[data-figure='whole-chain'] .fig-wide[viewBox^='0 0 760 '] {
+    display: block;
+  }
+  .fig-layout[data-figure='whole-chain'] .fig-narrow {
+    display: none;
+  }
+}
+@container (min-width: 68.75rem) {
+  .fig-layout[data-figure='whole-chain'] .fig-wide[viewBox^='0 0 760 '] {
+    display: none;
+  }
+  .fig-layout[data-figure='whole-chain'] .fig-wide[viewBox^='0 0 1100 '] {
+    display: block;
+  }
+}
