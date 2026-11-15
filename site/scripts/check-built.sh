@@ -184,6 +184,28 @@ if [ -s "$dist/status/index.html" ]; then
   grep -q 'data-github="\(available\|unavailable\)"' "$dist/status/index.html" || bad "status/index.html does not say whether the issues were read"
 fi
 
+# The tables of the status page (docs/coverage.yaml): one heading for each case of the data file, in
+# order, and the states of the legend, each as a shipped badge. The ids are the anchors /status/#case-N
+# that the case pages link.
+if [ -s "$dist/status/index.html" ]; then
+  want=$(grep -c '^  kind: case$' docs/coverage.yaml || true)
+  have=$(grep -o '<h2 id="case-[0-9]*"' "$dist/status/index.html" | wc -l)
+  { [ "$want" -gt 0 ] && [ "$want" -eq "$have" ]; } || bad "status/index.html has $have case headings (h2 id=case-N); docs/coverage.yaml has $want cases"
+  for n in $(seq 1 "$want"); do
+    grep -q "<h2 id=\"case-$n\"" "$dist/status/index.html" || bad "status/index.html has no heading for case $n"
+  done
+  grep -q '<h2 id="the-states"' "$dist/status/index.html" || bad "status/index.html has no section \"The states\""
+  states=$(awk '/^  states:/ { s = 1; next } /^- id:/ { s = 0 } s && /^    - id: / { n++ } END { print n + 0 }' docs/coverage.yaml)
+  [ "$states" -gt 0 ] || bad "docs/coverage.yaml has no state in its legend"
+  [ "$(grep -o '<th scope="row"><span class="sl-badge' "$dist/status/index.html" | wc -l)" -eq "$states" ] || bad "status/index.html does not show each of the $states states of the legend as a badge in \"The states\""
+fi
+
+# A mark that tells a reader that words wait for approval never ships: no built page holds the class
+# new-mark. Each check fails closed: the pages must be there to be searched.
+pages=$(find "$dist" -name '*.html' | wc -l)
+[ "$pages" -gt 0 ] || bad "no HTML page in $dist to search for the class new-mark"
+if grep -rlE 'class="[^"]*new-mark' "$dist" --include=*.html; then bad "a built page holds the class new-mark (pages above)"; fi
+
 # The landing page says what ritueel is and that it is in the design phase.
 grep -q 'design phase' "$dist/index.html" || bad "the landing page lacks the status paragraph"
 

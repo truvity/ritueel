@@ -1,6 +1,10 @@
 ---
-// The project status page: what exists and how far each milestone has got.
+// The project status page: the state of every way to keep a key, for five cases, and what exists
+// and how far each milestone has got.
 //
+// - The legend and the five tables of the cases (the ways to keep a key and the state of each) are
+//   the entries of docs/coverage.yaml, a content collection (src/content.config.ts); they come
+//   first on the page. lib/coverage.mjs checks the whole file at the build, and a problem fails it.
 // - The design facts (decision records by status, reference pages, lines of code) are counted
 //   from the repository at build time, with src/lib-status.ts. They never change after the build.
 // - The milestones and what each delivers are the rows of docs/roadmap.md, also read at build
@@ -11,9 +15,12 @@
 //   same-origin script (src/scripts/status-live.ts) swaps it in. Without JavaScript, or when the
 //   Worker has nothing, the snapshot stays and a note says so. One renderer draws both
 //   (src/lib-status-html.ts).
+import { getCollection } from 'astro:content';
 import StarlightPage from '@astrojs/starlight/components/StarlightPage.astro';
 import { Aside, Badge } from '@astrojs/starlight/components';
 import { docsHref } from '../../lib/docs-links.mjs';
+import { coverageProblems } from '../../lib/coverage.mjs';
+import { publishedDocs } from '../../lib/published.mjs';
 import { readGithub } from '../lib-github';
 import { milestoneNameDrift, milestoneRows } from '../lib-milestones';
 import { partHtml } from '../lib-status-html';
@@ -28,8 +35,35 @@ for (const line of milestoneNameDrift(roadmap, github)) console.log(`status: roa
 // The snapshot of the live parts: the same renderer the Worker uses for the live fragment.
 const snapshot = { rows, mode: 'snapshot' as const, asOf: BUILT_AT, available: github.available };
 
+// The legend and the cases of docs/coverage.yaml.
+const entries = (await getCollection('coverage')).map((e) => e.data);
+const problems = coverageProblems(entries, { published: publishedDocs() });
+if (problems.length) throw new Error(`docs/coverage.yaml:\n  ${problems.join('\n  ')}`);
+const legend = entries.find((e) => e.kind === 'legend')!;
+const cases = entries.filter((e) => e.kind === 'case').sort((a, b) => a.number - b.number);
+const stateOf = Object.fromEntries(legend.states.map((st) => [st.id, st]));
+const adviceOf = Object.fromEntries(legend.advice.map((a) => [a.id, a.label]));
+// A state is the shipped Badge, in a colour of its own, so that the six are told apart by colour and by
+// words: green built, blue explained with no tool needed, violet explained with a tool planned, amber
+// planned, red rejected, and grey (the class `state-none`, site.css) not covered.
+const variantOf: Record<string, 'default' | 'success' | 'note' | 'caution' | 'tip' | 'danger'> = {
+  built: 'success', 'no-tool': 'note', 'tool-planned': 'tip', planned: 'caution', 'not-covered': 'default', rejected: 'danger',
+};
+const badgeOf = (id: string) => ({ variant: variantOf[id], class: id === 'not-covered' ? 'state-none' : undefined });
+
+// A milestone as the table says it ("M4, M5", "after the first version (proposed)"): each code M0 to M7
+// links to the roadmap, and the words "after the first version" link to that part of it.
+function milestoneParts(text: string) {
+  return text.split(/(M\d|after the first version)/).filter(Boolean).map((t) => (
+    /^M\d$/.test(t) ? { text: t, href: '/roadmap/' } : t === 'after the first version' ? { text: t, href: '/roadmap/#after-the-first-version' } : { text: t }
+  ));
+}
+
 const asOf = BUILT_AT.replace('T', ' ').replace(/:\d{2}Z$/, ' UTC');
 const headings = [
+  ...cases.map((c) => ({ depth: 2, slug: `case-${c.number}`, text: `Case ${c.number}. ${c.title}` })),
+  { depth: 2, slug: 'the-states', text: 'The states' },
+  { depth: 2, slug: 'how-far-ritueel-has-got', text: 'How far ritueel has got' },
   { depth: 2, slug: 'milestones', text: 'Milestones' },
   { depth: 2, slug: 'design', text: 'Design' },
   { depth: 2, slug: 'issues-by-milestone', text: 'Issues by milestone' },
@@ -48,6 +82,93 @@ const headings = [
   headings={headings}
 >
   <div class="ps" data-github={github.available ? 'available' : 'unavailable'} data-live="snapshot" data-live-src="/api/status/live/">
+    <p>
+      Each case has one table. Each way has one state, except a way that we do not recommend: it shows advice only. No way in these
+      tables is built yet. Only <a href={docsHref('/reference/cli/#built-so-far')}>a part of ritueel is built</a>.
+    </p>
+    <ul class="cs-key" aria-label="The states">
+      {
+        legend.states.map((st) => (
+          <li><Badge text={st.label} {...badgeOf(st.id)} /></li>
+        ))
+      }
+    </ul>
+    <p>
+      <a href="#the-states">What each state means</a> is under the tables.
+    </p>
+
+    {
+      cases.map((c) => {
+        // The column Advice is left out of a table where no row has any advice.
+        const hasAdvice = c.rows.some((r) => r.advice);
+        return (
+          <>
+            <h2 id={`case-${c.number}`}>Case {c.number}. {c.title}</h2>
+            <div class="cs-wrap" tabindex="0" role="region" aria-labelledby={`case-${c.number}`}>
+              <table class="cs-table">
+                <colgroup>
+                  <col class="cs-c-way" />
+                  {hasAdvice && <col class="cs-c-advice" />}
+                  <col class="cs-c-state" />
+                  <col />
+                  <col class="cs-c-ms" />
+                </colgroup>
+                <thead>
+                  <tr>
+                    <th scope="col">Way</th>
+                    {hasAdvice && <th scope="col">Advice</th>}
+                    <th scope="col">State</th>
+                    <th scope="col">Why</th>
+                    <th scope="col">Milestone</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {
+                    c.rows.map((r) => (
+                      <tr>
+                        <th scope="row">{r.way}</th>
+                        {hasAdvice && <td class="cs-advice">{r.advice ? adviceOf[r.advice] : <span class="cs-none" aria-hidden="true">—</span>}</td>}
+                        <td>
+                          {r.state ? <Badge text={stateOf[r.state].label} {...badgeOf(r.state)} /> : <span class="cs-none" aria-hidden="true">—</span>}
+                        </td>
+                        <td>{r.why}</td>
+                        <td>
+                          {r.milestone ? milestoneParts(r.milestone).map((m) => (m.href ? <a href={m.href}>{m.text}</a> : m.text)) : <span class="cs-none" aria-hidden="true">—</span>}
+                        </td>
+                      </tr>
+                    ))
+                  }
+                </tbody>
+              </table>
+            </div>
+            {c.page && <p class="cs-page"><a href={c.page}>Case page</a></p>}
+          </>
+        );
+      })
+    }
+
+    <h2 id="the-states">The states</h2>
+    <div class="cs-wrap" tabindex="0" role="region" aria-labelledby="legend-caption">
+      <table class="cs-legend">
+        <caption id="legend-caption">What each state means</caption>
+        <thead>
+          <tr><th scope="col">State</th><th scope="col">Meaning</th></tr>
+        </thead>
+        <tbody>
+          {
+            legend.states.map((st) => (
+              <tr>
+                <th scope="row"><Badge text={st.label} {...badgeOf(st.id)} /></th>
+                <td>{st.meaning}</td>
+              </tr>
+            ))
+          }
+        </tbody>
+      </table>
+    </div>
+    <p>The column Advice says what we think of a way. It is not a state.</p>
+
+    <h2 id="how-far-ritueel-has-got">How far ritueel has got</h2>
     <p class="ps-design"><strong>{designLine(facts)}</strong></p>
     <p>
       ritueel is in its <a href="/roadmap/">design phase</a>: there is no release yet. This page counts what exists, for each

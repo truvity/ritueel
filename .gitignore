@@ -5,6 +5,10 @@
 *.test
 *.out
 coverage.*
+# The site's coverage tables are source files, not Go coverage output.
+!/docs/coverage.yaml
+!/site/lib/coverage.mjs
+!/site/test/coverage.test.mjs
 *.prof
 
 # Go workspace files are local by choice

@@ -1,0 +1,219 @@
+# What the status page (site/src/pages/status.astro) draws: the legend and one table for each case.
+# One entry for the legend and one for each case. Every row has one way. A way has one state of the
+# legend, except a way that we do not recommend, which shows advice only. A state is drawn as the
+# shipped Badge of Starlight, so its words and its colour both show.
+# The checks are in site/lib/coverage.mjs and the schema is in site/src/content.config.ts.
+#
+# "Recommended", "Accepted", "Possible" and "Not recommended" are advice. They stand in the field
+# advice and are drawn in their own column, never as a state. A way that is not recommended has no
+# state: a mark beside it would read as "good". A way whose state says that a tool is planned, or
+# that the way is planned, names its milestone (M3 to M6) or says "after the first version".
+
+- id: states
+  kind: legend
+  advice:
+    - id: recommended
+      label: Recommended
+    - id: accepted
+      label: Accepted
+    - id: possible
+      label: Possible
+    - id: not-recommended
+      label: Not recommended
+  states:
+    - id: built
+      label: built
+      meaning: ritueel does this today. Nothing here is built yet.
+    - id: tool-planned
+      label: explained, tool planned
+      meaning: A page explains it. A tool is planned, with its milestone.
+    - id: planned
+      label: planned
+      meaning: A tool is planned. No page explains it yet.
+    - id: no-tool
+      label: explained, no tool needed
+      meaning: A page explains it. No ritueel tool is needed.
+    - id: not-covered
+      label: not covered
+      meaning: ritueel does not cover this now.
+    - id: rejected
+      label: "rejected: unsafe"
+      meaning: We reject this way because it is unsafe.
+
+- id: case-1
+  kind: case
+  number: 1
+  title: Private CA
+  rows:
+    - way: Root in a cloud key
+      state: tool-planned
+      why: The recommended path with a cloud account.
+      milestone: M4
+    - way: Root on two root cards
+      state: tool-planned
+      why: The choice when no root-only account exists.
+      milestone: M6
+    - way: Root key in a file
+      state: rejected
+      why: Unsafe for a real root. Allowed for test roots and drills.
+    - way: One card, no second
+      state: rejected
+      why: No second independent key.
+    - way: Root inside Vault or OpenBao
+      state: rejected
+      why: A software store gives no evidence.
+    - way: HSM (YubiHSM 2)
+      state: not-covered
+      why: An HSM is not a key store of ritueel now.
+    - way: Root held by AWS Private CA
+      state: not-covered
+      why: A managed CA is not a key store of ritueel now.
+    - way: "Daily: Vault, OpenBao, step-ca or AWS Private CA issue under a ritueel root"
+      state: planned
+      why: No page yet.
+      milestone: after the first version
+
+- id: case-2
+  kind: case
+  number: 2
+  title: Project releases
+  rows:
+    - way: Root in a cloud key
+      state: tool-planned
+      why: The path to the first signed release.
+      milestone: M4, M5
+    - way: Root on two root cards
+      state: tool-planned
+      why: Added after the first release.
+      milestone: M6
+    - way: cosign together with OpenPGP
+      state: no-tool
+      why: OpenPGP stays for RPM, DEB and old systems.
+    - way: Root key in a file, anywhere
+      state: rejected
+      why: A software root never anchors a release.
+    - way: One key, no second
+      state: rejected
+      why: On cards, no second independent key.
+    - way: HSM
+      state: not-covered
+      why: An HSM is not a key store of ritueel now.
+    - way: "Daily: release subkey in a cloud key, used by the release workflow"
+      state: tool-planned
+      why: "One signer: the release workflow."
+      milestone: M5
+    - way: "Daily: release subkey in a file"
+      advice: accepted
+      state: tool-planned
+      why: Replaced within three years (record 0009, rule 9).
+      milestone: M5
+    - way: "Daily: sign by hand with a subkey on a card"
+      advice: accepted
+      state: no-tool
+      why: For a small project. Our proposal; no record decides this yet.
+
+- id: case-3
+  kind: case
+  number: 3
+  title: Commits and releases
+  rows:
+    - way: Primary key in an encrypted file, kept offline
+      state: tool-planned
+      why: The primary only certifies and stays offline.
+      milestone: M3
+    - way: Primary keys born on two root cards
+      state: tool-planned
+      why: Stage two of a person's key.
+      milestone: M6
+    - way: Primary key in a cloud key of a personal account
+      state: planned
+      why: Planned, not yet designed. Record 0008, rule 8.
+      milestone: after the first version (proposed)
+    - way: Primary key on one card, no second
+      state: rejected
+      why: No second independent key.
+    - way: Primary key as a file on the daily machine
+      state: rejected
+      why: A copy leaves no trace.
+    - way: HSM
+      state: not-covered
+      why: An HSM is not a key store of ritueel now.
+    - way: "Daily: signing subkey on a day-to-day card"
+      state: tool-planned
+      why: Born on the card; the primary binds it.
+      milestone: M3
+    - way: "Daily: subkeys as files on the daily machine"
+      state: rejected
+      why: A copy leaves no trace.
+    - way: Keyless signing (cosign) for your own releases, together with OpenPGP where needed
+      state: no-tool
+      why: Neither replaces the other.
+
+- id: case-4
+  kind: case
+  number: 4
+  title: SSH logins
+  rows:
+    - way: Break-glass SSH CA key in a cloud key
+      state: tool-planned
+      why: Part of a cloud root.
+      milestone: M4
+    - way: Break-glass SSH CA key on two root cards
+      state: tool-planned
+      why: Held offline, like a root key.
+      milestone: M6
+    - way: Break-glass SSH CA key in a file, or on one card
+      state: rejected
+      why: Copyable, or no second key.
+    - way: Break-glass SSH CA key inside Vault or OpenBao
+      state: rejected
+      why: A software store gives no evidence.
+    - way: HSM
+      state: not-covered
+      why: An HSM is not a key store of ritueel now.
+    - way: "Daily: the SSH CA key of the issuing system stays there; ritueel lists its public key"
+      state: tool-planned
+      why: An anchor, not a chain.
+      milestone: M4
+    - way: "Daily, your own login key: on a day-to-day card"
+      state: tool-planned
+      why: The authentication subkey serves SSH.
+      milestone: M3
+    - way: "Daily, your own login key: a private key in 1Password, used through its SSH agent"
+      advice: accepted
+      state: no-tool
+      why: The default for your own login key.
+    - way: "Daily, your own login key: a plain key file on the disk"
+      advice: not-recommended
+      why: A copy takes your key.
+
+- id: case-5
+  kind: case
+  number: 5
+  title: Own logins
+  rows:
+    - way: Two YubiKeys for the few top accounts (1Password, main mail, Apple or Google)
+      advice: recommended
+      state: no-tool
+      why: A passkey on both YubiKeys.
+    - way: A passkey from 1Password for every other site
+      advice: recommended
+      state: no-tool
+      why: It syncs to all devices. This is the default.
+    - way: A one-time code (TOTP) in 1Password
+      advice: accepted
+      state: no-tool
+      why: The backup, where a site has no passkey.
+    - way: A passkey on both YubiKeys for a site you choose
+      advice: possible
+      state: no-tool
+      why: Possible where the site accepts a passkey.
+    - way: One YubiKey, no second
+      advice: not-recommended
+      why: One loss locks you out.
+    - way: Codes by SMS or mail
+      advice: not-recommended
+      why: Weak.
+    - way: Password only
+      state: rejected
+      why: Unsafe.

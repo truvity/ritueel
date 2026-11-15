@@ -1,6 +1,6 @@
 import { fileURLToPath } from 'node:url';
 import { defineCollection } from 'astro:content';
-import { glob } from 'astro/loaders';
+import { file, glob } from 'astro/loaders';
 import { docsSchema, i18nSchema } from '@astrojs/starlight/schema';
 import { i18nLoader } from '@astrojs/starlight/loaders';
 import { z } from 'astro/zod';
@@ -18,10 +18,42 @@ export const collections = {
   docs: defineCollection({
     loader: glob({ base: 'src/content/docs', pattern: publishedDocs() }),
     // `flow: rows` shows the sections of a page in rows of two on a wide screen (lib/parts.mjs wraps
-    // them, src/styles/layout.css lays them out). It is for a page of short parts.
+    // them, src/styles/site.css lays them out). It is for a page of short parts.
     schema: docsSchema({ extend: z.object({ flow: z.enum(['rows']).optional() }) }),
   }),
   i18n: defineCollection({ loader: i18nLoader(), schema: i18nSchema() }),
+  // docs/coverage.yaml: the legend and the tables of the status page. lib/coverage.mjs checks what
+  // the whole file must satisfy; a wrong shape or an unknown field fails here.
+  coverage: defineCollection({
+    loader: file(`${docsRoot}/coverage.yaml`),
+    schema: z.discriminatedUnion('kind', [
+      z.strictObject({
+        id: z.string(),
+        kind: z.literal('legend'),
+        advice: z.array(z.strictObject({ id: z.string(), label: z.string() })).min(1),
+        states: z.array(z.strictObject({ id: z.string(), label: z.string(), meaning: z.string() })).min(1),
+      }),
+      z.strictObject({
+        id: z.string(),
+        kind: z.literal('case'),
+        number: z.number().int().positive(),
+        title: z.string(),
+        // The address of the case page, once the case pages exist.
+        page: z.string().regex(/^\/[a-z-]+\/$/).optional(),
+        rows: z.array(
+          z.strictObject({
+            way: z.string(),
+            // One state of the legend, except a way that is not recommended: it shows advice only.
+            state: z.string().optional(),
+            advice: z.string().optional(),
+            why: z.string().min(1),
+            // The milestone of a way that is planned, or explained with a tool planned.
+            milestone: z.string().optional(),
+          }),
+        ),
+      }),
+    ]),
+  }),
   decisions: defineCollection({
     loader: glob({ base: `${docsRoot}/decisions`, pattern: ['*.md', '!README.md', '!_*'] }),
     schema: z.object({
