@@ -5,7 +5,7 @@
 //   (src/scripts/status-live.ts) swaps each part in for its snapshot.
 // The Worker is a plain module bundled by Wrangler, not an Astro server, so this is a function
 // of its inputs with no Astro component in it. It imports nothing at run time:
-// site/scripts/check-worker.mjs runs it in Node..
+// site/scripts/check-worker.mjs runs it in Node.
 import type { MilestoneRow } from './lib-milestones.ts';
 
 export const PARTS = ['cards', 'issues', 'checks'] as const;
