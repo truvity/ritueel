@@ -99,7 +99,7 @@ func TestNewRefusesAConfigurationWithAPartLeftOut(t *testing.T) {
 	t.Run("a CA bundle with the floor", func(t *testing.T) {
 		wantConfigRefused(t, floorConfig(t, func(c *answer.Config) { c.CABundle = k.bundle }, ca))
 	})
-	t.Run("more than sixteen primaries", func(t *testing.T) {
+	t.Run("more primaries than the bound", func(t *testing.T) {
 		wantConfigRefused(t, base(func(c *answer.Config) {
 			c.Primaries = nil
 			for i := 0; i < handoff.MaxPrimaries+1; i++ {
@@ -107,7 +107,7 @@ func TestNewRefusesAConfigurationWithAPartLeftOut(t *testing.T) {
 			}
 		}))
 	})
-	t.Run("sixteen primaries are held", func(t *testing.T) {
+	t.Run("as many primaries as the bound are held", func(t *testing.T) {
 		cfg := base(func(c *answer.Config) {
 			c.Primaries = nil
 			for i := 0; i < handoff.MaxPrimaries; i++ {
