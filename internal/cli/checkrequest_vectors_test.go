@@ -78,8 +78,11 @@ func TestEveryRequestCaseGivesThroughTheCommandWhatTheLibraryGives(t *testing.T)
 					if !errors.Is(libErr, handoff.ErrConfig) || !strings.Contains(libErr.Error(), "primaries") {
 						t.Errorf("the library gave %v for an openpgp-subkey delegation with no primaries, want ErrConfig that names the primaries", libErr)
 					}
-					if s, _ := obj["error"].(string); !strings.Contains(s, "cannot judge an openpgp-subkey request") || !strings.Contains(s, "primaries") {
-						t.Errorf("error = %q, want the plain sentence about the primaries", s)
+					// The command runs under a delegation of this type, so the sentence names the delegation and not
+					// a request of this type.
+					if s, _ := obj["error"].(string); !strings.Contains(s, "cannot judge a request under the delegation "+crqDelegation+", which is of the type openpgp-subkey") ||
+						!strings.Contains(s, "primaries") || strings.Contains(s, "cannot judge an openpgp-subkey request") {
+						t.Errorf("error = %q, want the plain sentence about the delegation and its primaries", s)
 					}
 				case !errors.Is(libErr, handoff.ErrNoVerifier) && !errors.Is(libErr, handoff.ErrTypeNotBuilt):
 					t.Errorf("the library gave an error that is neither no verifier nor a type that is not built: %v", libErr)

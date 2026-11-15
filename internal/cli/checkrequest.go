@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"slices"
 	"strings"
 
 	ucli "github.com/urfave/cli/v3"
@@ -63,6 +64,9 @@ func runCheckRequest(ctx context.Context, c *Call) (*Result, error) {
 		return nil, UsageError{Msg: "STEM is not 1 to 63 lower-case letters, digits and hyphens, starting with a letter or a digit"}
 	}
 	name := ""
+	if c.FlagCount(flagDelegation) > 1 {
+		return nil, UsageError{Msg: "--delegation is given once: it names the one delegation to check the request under"}
+	}
 	if c.FlagSet(flagDelegation) {
 		name = c.FlagString(flagDelegation)
 		if name == "" {
@@ -87,7 +91,9 @@ func runCheckRequest(ctx context.Context, c *Call) (*Result, error) {
 	checker, _, err := b.Checker(name, c.Env.Now, evidenceVerifiers(c, b))
 	if err != nil {
 		if needsPrimaries(err) {
-			return nil, fmt.Errorf("request %s is not accepted and not refused: %w", stem, primariesError{err: err})
+			// No request has been read yet, so the fault is the delegation: it is of the type openpgp-subkey,
+			// and the checker holds no primaries for it. The request may be of any type.
+			return nil, fmt.Errorf("request %s is not accepted and not refused: %w", stem, delegationPrimariesError{name: name, err: err})
 		}
 		return nil, err
 	}
@@ -117,6 +123,20 @@ type primariesError struct{ err error }
 
 func (e primariesError) Error() string { return primariesSentence }
 func (e primariesError) Unwrap() error { return e.err }
+
+// delegationPrimariesError is the error of a delegation of the type openpgp-subkey that the checker refuses
+// because it holds no primaries. The request is not named as the cause: it may be of any type, and it is the
+// delegation that this command cannot give primaries for.
+type delegationPrimariesError struct {
+	name string
+	err  error
+}
+
+func (e delegationPrimariesError) Error() string {
+	return "this command cannot judge a request under the delegation " + jsonset.EscapeExact(e.name) +
+		", which is of the type openpgp-subkey: it cannot give the checker the OpenPGP primaries, because where they are read from is not decided"
+}
+func (e delegationPrimariesError) Unwrap() error { return e.err }
 
 // needsPrimaries tells whether err is the error of the checker that holds no primaries: an openpgp-subkey
 // request on a checker with none (Check), or an openpgp-subkey delegation that New refuses without them
@@ -239,14 +259,21 @@ func requestOutcome(stem, delegation string, v handoff.Verdict) (*Result, error)
 	}, warnings...)
 }
 
-// onlyDelegationRules tells whether the rules a check did not run are all rules of one delegation: the
-// delegation's type and its name constraints, which the library leaves out when no delegation is given.
+// delegationRules are the rules of check 9 that the library leaves out when no delegation is given, for every
+// type of request that has one: "delegation-type" and "name-constraints" for an x509-intermediate request,
+// "delegation-type" and "capability" for an openpgp-subkey request. The library does not export them
+// (handoff.notRunWithoutDelegation is its one list), so this list is kept here and a test compares it with the
+// names that the library returns for each type.
+var delegationRules = []string{"delegation-type", "name-constraints", "capability"}
+
+// onlyDelegationRules tells whether the rules a check did not run are all rules of one delegation, which the
+// library leaves out when no delegation is given ([delegationRules]).
 func onlyDelegationRules(ch handoff.CheckResult) bool {
 	if len(ch.NotRun) == 0 {
 		return false
 	}
 	for _, r := range ch.NotRun {
-		if r != "delegation-type" && r != "name-constraints" {
+		if !slices.Contains(delegationRules, r) {
 			return false
 		}
 	}

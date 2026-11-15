@@ -49,14 +49,14 @@ func runNew(_ context.Context, c *Call) (*Result, error) {
 	if err != nil {
 		var ce *bundle.CreateError
 		if errors.As(err, &ce) && ce.Made {
-			return nil, fmt.Errorf("%w; the folder %s is left as it is; remove it and run new again", err, jsonset.Escape(dir))
+			return nil, fmt.Errorf("%w; the folder %s is left as it is; remove it and run new again", err, jsonset.EscapeExact(dir))
 		}
 		return nil, err
 	}
 	var b strings.Builder
-	fmt.Fprintf(&b, "made the bundle %s\n", jsonset.Escape(dir))
+	fmt.Fprintf(&b, "made the bundle %s\n", jsonset.EscapeExact(dir))
 	for _, f := range files {
-		fmt.Fprintf(&b, "%s  %s\n", f.SHA256, jsonset.Escape(f.Path))
+		fmt.Fprintf(&b, "%s  %s\n", f.SHA256, jsonset.EscapeExact(f.Path))
 	}
 	b.WriteString("no key was made and no card was touched; edit name and release_address in ritueel.yaml before the first apply\n")
 	if c.FlagBool(flagTestRoot) {

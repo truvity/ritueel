@@ -205,9 +205,8 @@ func TestNewReadsTheFoldersAboveAsTheyAreOnTheDisk(t *testing.T) {
 	})
 }
 
-// A folder above that can be passed but not listed (no read bit) is not looked into by the code, which opens it to
-// read it; the folders above that one are still read. Only the second half is held here: whether the folder that
-// cannot be opened must itself refuse is a decision that is open, and no test holds it either way.
+// A folder above that can be passed but not listed (no read bit) is looked at by the name, and the folders above it are
+// still read. The folder that holds the name and cannot be listed refuses too: new_small_test.go.
 func TestNewStillReadsTheFoldersAboveOneThatCannotBeOpened(t *testing.T) {
 	if os.Geteuid() == 0 {
 		t.Skip("a process that is root opens every folder")

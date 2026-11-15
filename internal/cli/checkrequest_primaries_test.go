@@ -11,6 +11,10 @@ import (
 
 const primariesText = "this command cannot judge an openpgp-subkey request: it cannot give the checker the OpenPGP primaries, because where they are read from is not decided"
 
+// delegationPrimariesText is the sentence for a delegation of the type openpgp-subkey: it is the delegation that the
+// command cannot give primaries for, so the sentence names it, and the request may be of any type.
+const delegationPrimariesText = "this command cannot judge a request under the delegation " + crqDelegation + ", which is of the type openpgp-subkey: it cannot give the checker the OpenPGP primaries, because where they are read from is not decided"
+
 func TestAnOpenPGPRequestIsNotJudgedAndTheSentenceIsPlainInBothModesWithAndWithoutADelegation(t *testing.T) {
 	m := crqManifestOf(t)
 	now := m.clock(t)
@@ -31,8 +35,9 @@ func TestAnOpenPGPRequestIsNotJudgedAndTheSentenceIsPlainInBothModesWithAndWitho
 						t.Fatalf("delegation %v: exit code %d\n%s%s", withDelegation, int(r.code), r.stdout, r.stderr)
 					}
 					line := "ritueel: request " + c.stem(t) + " is not accepted and not refused: " + primariesText
-					if withDelegation && r.stderr != line+"\n" {
-						t.Errorf("standard error = %q, want %q", r.stderr, line+"\n")
+					delegationLine := "ritueel: request " + c.stem(t) + " is not accepted and not refused: " + delegationPrimariesText
+					if withDelegation && r.stderr != delegationLine+"\n" {
+						t.Errorf("standard error = %q, want %q", r.stderr, delegationLine+"\n")
 					}
 					if !withDelegation && (!strings.HasPrefix(r.stderr, line+" (the first check that did not run is check ") || strings.Count(r.stderr, "\n") != 1) {
 						t.Errorf("standard error = %q, want the sentence and the first check that did not run", r.stderr)
@@ -52,7 +57,11 @@ func TestAnOpenPGPRequestIsNotJudgedAndTheSentenceIsPlainInBothModesWithAndWitho
 						t.Errorf("the object has %s: %s", k, js.stdout)
 					}
 				}
-				if msg, _ := obj["error"].(string); !strings.Contains(msg, primariesText) || obj["outcome"] != "failed" || obj["exit_code"] != jsonNumber("1") {
+				want := primariesText
+				if withDelegation {
+					want = delegationPrimariesText
+				}
+				if msg, _ := obj["error"].(string); !strings.Contains(msg, want) || obj["outcome"] != "failed" || obj["exit_code"] != jsonNumber("1") {
 					t.Errorf("object = %s", js.stdout)
 				}
 			}
@@ -91,7 +100,7 @@ func TestAnOpenPGPRequestThatChecksOneAndTwoRefuseIsARefusalWithNoDelegationAndT
 		}
 		dir := crqBundle(t, m, c)
 		with := crqRun(t, now, "check", "request", c.stem(t), "--delegation", crqDelegation, "--dir", dir)
-		if with.code != ExitFailure || !strings.Contains(with.stderr, primariesText) {
+		if with.code != ExitFailure || !strings.Contains(with.stderr, delegationPrimariesText) || strings.Contains(with.stderr, "openpgp-subkey request") {
 			t.Errorf("%s with a delegation: (%d, %q), want exit code 1 and the sentence", c.ID, int(with.code), with.stderr)
 		}
 		without := crqRun(t, now, "check", "request", c.stem(t), "--dir", dir)
