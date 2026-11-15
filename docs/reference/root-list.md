@@ -17,7 +17,7 @@ A system that updates its own trust, such as a system that holds delegated keys,
 | `root-list.jws` | Its signatures: a detached JSON Web Signature over the bytes of `root-list.json`, with one signature for each root key that signs it. |
 | `ca-bundle.pem` | The certificates of the root keys on the list, in its order, with the trust sequence in the first line. |
 
-ritueel writes the three files together, in a numbered trust set of [the bundle](/reference/bundle/#the-layout). Publishing them is the holder's pipeline; the names a host fetches them under are the holder's choice.
+ritueel writes the three files together, in a numbered trust set of [the bundle](/reference/bundle/#the-layout). A trust set whose list pins OpenPGP primaries holds a fourth file beside them, `keyring.gpg`; it is not a file of the list, and a host that reads the list does not read it ([the keyring package](/reference/keyring-package/#the-first-form-of-the-keyring-file)). Publishing them is the holder's pipeline; the names a host fetches them under are the holder's choice.
 
 ## Versioning
 
