@@ -21,6 +21,14 @@ import (
 // A stop: the first fault after the first write. The ceremony is left as it is, nothing is retried and
 // nothing is deleted (record 0006, rules 33 and 45), and the line says what is on disk.
 
+// The two clauses of the line of a stop that name what the key directory may hold. The first is made from
+// the first call of the maker on; the second from the step make on. Both are fixed words: no file is
+// listed and no folder is read.
+const (
+	stopKeyClause  = "; the key directory may hold A.x509.key.pem, B.x509.key.pem and the removal authorisations beside them, which stay"
+	stopTempClause = "; the key directory may also hold a temporary file whose name starts with .rt-, which can hold a key, and a person removes it by hand"
+)
+
 // rtEvents are the changing calls of one whole run, in order.
 func rtEvents(t *testing.T) []string {
 	t.Helper()
@@ -235,8 +243,25 @@ func TestACutAtEveryWriteOfARunIsAStopThatSaysWhatIsOnDisk(t *testing.T) {
 			if wantStep == "write-plan" && (!strings.Contains(msg, "no attempt was written") || strings.Contains(msg, "close")) {
 				t.Errorf("the line of a stop before the attempt: %s", msg)
 			}
-			if wantAttempt && !strings.Contains(msg, "the key directory may hold A.x509.key.pem, B.x509.key.pem and the removal authorisations") {
-				t.Errorf("the line of a stop with an open attempt does not name the key files: %s", msg)
+			// The key files are named from the first call of the maker on (the step make and every later
+			// step), not at the write of the attempt, where no key can exist; the temporary file is named
+			// from the step make on, and not before.
+			later := n > l.attemptEnd
+			if got := strings.Contains(msg, stopKeyClause); got != later {
+				t.Errorf("the line names the key files = %v, want %v: %s", got, later, msg)
+			}
+			if got := strings.Contains(msg, stopTempClause); got != later {
+				t.Errorf("the line names the temporary file = %v, want %v: %s", got, later, msg)
+			}
+			if !later {
+				for _, not := range []string{"key directory", "A.x509.key.pem", "B.x509.key.pem", "removal authorisations", "a temporary file whose name starts with", "a person removes it by hand"} {
+					if strings.Contains(msg, not) {
+						t.Errorf("the line of a stop before the maker ran says %q: %s", not, msg)
+					}
+				}
+			}
+			if later && strings.Index(msg, stopKeyClause) > strings.Index(msg, stopTempClause) {
+				t.Errorf("the clause of the temporary file stands before the clause of the key files: %s", msg)
 			}
 			if wantStep == "record" && !strings.Contains(msg, "look at the folder") {
 				t.Errorf("the line of a stop at the record does not say that record.json may be in place: %s", msg)
