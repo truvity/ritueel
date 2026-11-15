@@ -3,6 +3,7 @@ package files_test
 import (
 	"bytes"
 	"errors"
+	"reflect"
 	"strings"
 	"testing"
 
@@ -32,7 +33,7 @@ func TestARootJSONOfTheFirstApplyIsReadWithEveryMember(t *testing.T) {
 		t.Fatalf("ReadRootJSON: %v", err)
 	}
 	want := files.RootJSON{Version: 1, Label: "A", Store: "software", Test: true, CreatedAt: "2026-11-20T10:00:00Z", X509SPKISHA256: dg('a'), RemovalSHA256: dg('c')}
-	if *r != want {
+	if !reflect.DeepEqual(*r, want) {
 		t.Errorf("got %+v, want %+v", *r, want)
 	}
 }
@@ -54,7 +55,7 @@ func TestRootJSONCanonicalIsTheCanonicalFormWithTheMembersSortedAndNoLineFeed(t 
 		t.Errorf("IsCanonical = %v, %v", ok, err)
 	}
 	back, err := files.ReadRootJSON(b)
-	if err != nil || *back != *r {
+	if err != nil || !reflect.DeepEqual(back, r) {
 		t.Errorf("the canonical bytes read back as %+v, %v", back, err)
 	}
 	again, err := back.Canonical()
@@ -78,6 +79,7 @@ func TestARootJSONThatHoldsOnlyAnOpenPGPKeyIsRead(t *testing.T) {
 	r, err := rjRead(t, func(m map[string]any) {
 		delete(m, "x509_spki_sha256")
 		m["openpgp_fingerprint"], m["openpgp_created"] = strings.Repeat("ab", 20), "2026-11-20T09:00:00Z"
+		m["revocations"] = map[string]any{"compromised": dg('1'), "superseded": dg('2')}
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -154,6 +156,7 @@ func TestEveryRootJSONThatBreaksARuleIsRefusedWithTheMemberNamed(t *testing.T) {
 		{"an empty pin beside an OpenPGP key", func(m map[string]any) {
 			m["x509_spki_sha256"] = ""
 			m["openpgp_fingerprint"], m["openpgp_created"] = strings.Repeat("ab", 20), "2026-11-20T09:00:00Z"
+			m["revocations"] = map[string]any{"compromised": dg('1'), "superseded": dg('2')}
 		}, "x509_spki_sha256"},
 		{"a removal digest of 63 digits", set("removal_sha256", dg('c')[:63]), "removal_sha256"},
 		{"a removal digest in upper case", set("removal_sha256", strings.ToUpper(dg('c'))), "removal_sha256"},
@@ -420,7 +423,7 @@ func TestARootJSONThatIsNotInTheCanonicalSpellingIsRefusedAndNoValueComesBack(t 
 	}
 	// Control: the canonical bytes themselves are read, and they are what Canonical writes.
 	got, err := files.ReadRootJSON(canon)
-	if err != nil || *got != *r {
+	if err != nil || !reflect.DeepEqual(got, r) {
 		t.Fatalf("the canonical bytes: %+v, %v", got, err)
 	}
 }
@@ -457,6 +460,7 @@ func TestACanonicalFileThatIsReadWritesTheSameBytesWhateverItsMembers(t *testing
 		"an OpenPGP key only": func(m map[string]any) {
 			delete(m, "x509_spki_sha256")
 			m["openpgp_fingerprint"], m["openpgp_created"] = strings.Repeat("ab", 20), "2026-11-20T09:00:00Z"
+			m["revocations"] = map[string]any{"compromised": dg('1'), "superseded": dg('2')}
 		},
 	} {
 		t.Run(name, func(t *testing.T) {

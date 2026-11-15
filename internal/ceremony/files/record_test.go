@@ -78,7 +78,7 @@ func TestReadRecordTakesEveryMemberOfThePage(t *testing.T) {
 	m["signatures"] = []any{map[string]any{"n": 1, "kind": "root-certificate"}}
 	m["trust_sequence"] = 1
 	m["advisory_review"] = map[string]any{"at": "2026-11-14T10:02:00Z", "note": "read them"}
-	m["revocations"] = []any{map[string]any{"label": "a", "reason": "retired", "sha256": dg('c')}}
+	m["revocations"] = []any{map[string]any{"label": "A", "reason": "retired", "sha256": dg('c')}}
 	r, err := files.ReadRecord(encode(t, m, nil))
 	if err != nil {
 		t.Fatal(err)
@@ -102,7 +102,7 @@ func TestReadRecordTakesEveryMemberOfThePage(t *testing.T) {
 		{"signatures", len(r.Signatures) == 1},
 		{"trust_sequence", r.TrustSequence == 1},
 		{"advisory_review", r.AdvisoryReview != nil && r.AdvisoryReview.Note == "read them" && r.AdvisoryReview.At == "2026-11-14T10:02:00Z"},
-		{"revocations", len(r.Revocations) == 1},
+		{"revocations", len(r.Revocations) == 1 && r.Revocations[0] == files.RevocationEntry{Label: "A", Reason: "retired", SHA256: dg('c')}},
 	}
 	for _, c := range checks {
 		if !c.ok {
@@ -562,7 +562,7 @@ func TestRecordRoundTripFromCanonicalToReadRecordAndBack(t *testing.T) {
 		TrustSequence:    7,
 		TranscriptSHA256: dg('3'),
 		AdvisoryReview:   &files.Advisory{At: "2026-11-14T10:02:00Z", Note: "read"},
-		Revocations:      []any{map[string]any{"label": "a"}},
+		Revocations:      []files.RevocationEntry{{Label: "A", Reason: "retired", SHA256: dg('7')}},
 	}
 	closing := &files.Record{Version: 1, Ceremony: "c-close", Command: "close", Outcome: "closed", TranscriptSHA256: dg('3'),
 		Artifacts: []files.FileRef{}, Closes: &files.Closes{Ceremony: "c", AttemptSHA256: dg('6'), Reason: "stopped"}}

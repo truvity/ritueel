@@ -3,6 +3,7 @@ package files_test
 import (
 	"bytes"
 	"errors"
+	"reflect"
 	"strings"
 	"testing"
 
@@ -29,6 +30,14 @@ func FuzzReadRootJSON(f *testing.F) {
 			delete(m, "x509_spki_sha256")
 			m["openpgp_fingerprint"], m["openpgp_created"] = strings.Repeat("ab", 20), "2026-11-20T09:00:00Z"
 		}),
+		encode(f, rjPrimaryDoc(), nil),
+		encode(f, rjPrimaryDoc(), without("revocations")),
+		encode(f, rjPrimaryDoc(), without("openpgp_fingerprint", "openpgp_created")),
+		encode(f, rjPrimaryDoc(), func(m map[string]any) { revsOf(m)["retired"], revsOf(m)["no-reason"] = dg('3'), dg('4') }),
+		encode(f, rjPrimaryDoc(), func(m map[string]any) { revsOf(m)["root-removal"] = dg('3') }),
+		encode(f, rjPrimaryDoc(), set("revocations", map[string]any{})),
+		encode(f, rjPrimaryDoc(), set("revocations", nil)),
+		[]byte(rjPrimaryText(`{"compromised":"` + dg('1') + `","superseded":"` + dg('2') + `"}`)),
 		encode(f, rjDoc(), set("label", "a")), encode(f, rjDoc(), set("store", "hsm")), encode(f, rjDoc(), set("version", 1.5)),
 		encode(f, rjDoc(), set("extra", 1)), encode(f, rjDoc(), set("created_at", "2026-11-20T10:00:00.5Z")),
 		[]byte(strings.Repeat("[", 5000)), []byte("\xef\xbb\xbf" + string(good)), append(append([]byte{}, good...), good...),
@@ -52,7 +61,7 @@ func FuzzReadRootJSON(f *testing.F) {
 			t.Fatalf("Canonical is not canonical: %v", err)
 		}
 		back, err := files.ReadRootJSON(out)
-		if err != nil || *back != *r {
+		if err != nil || !reflect.DeepEqual(back, r) {
 			t.Fatalf("the canonical bytes read back as %+v, %v; want %+v", back, err, *r)
 		}
 		again, err := back.Canonical()
@@ -61,6 +70,23 @@ func FuzzReadRootJSON(f *testing.F) {
 		}
 		if !bytes.Equal(b, out) {
 			t.Fatalf("an accepted file is not the bytes that its reading writes:\n%s\n%s", b, out)
+		}
+		// A key with a primary has revocations, with the two reasons that are always made and no
+		// word besides the four; a key with none has no member.
+		if (r.OpenPGPFingerprint != "") != (r.Revocations != nil) {
+			t.Fatalf("revocations and the fingerprint do not stand together: %+v", r)
+		}
+		if r.Revocations != nil {
+			for _, w := range []string{"compromised", "superseded"} {
+				if !files.IsDigest(r.Revocations[w]) {
+					t.Fatalf("an accepted file has no digest for %s: %+v", w, r.Revocations)
+				}
+			}
+			for k, v := range r.Revocations {
+				if (k != "compromised" && k != "superseded" && k != "retired" && k != "no-reason") || !files.IsDigest(v) {
+					t.Fatalf("an accepted file holds %q: %q", k, v)
+				}
+			}
 		}
 		if r.Version != 1 || r.Label == "" || r.Store == "" || r.CreatedAt == "" || (r.X509SPKISHA256 == "" && r.OpenPGPFingerprint == "") {
 			t.Fatalf("an accepted file lacks a required member: %+v", r)

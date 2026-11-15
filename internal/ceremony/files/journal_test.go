@@ -328,8 +328,8 @@ func TestSignatureLineWantsEachMemberInItsForm(t *testing.T) {
 		{"n 0", func(m map[string]any) { m["n"] = 0 }, "n"},
 		{"n -1", func(m map[string]any) { m["n"] = -1 }, "n"},
 		{"n 1", func(m map[string]any) { m["n"] = 1 }, ""},
-		{"n 112", func(m map[string]any) { m["n"] = 112 }, ""},
-		{"n 113", func(m map[string]any) { m["n"] = 113 }, "n"},
+		{"n 190", func(m map[string]any) { m["n"] = 190 }, ""},
+		{"n 191", func(m map[string]any) { m["n"] = 191 }, "n"},
 		{"n a million", func(m map[string]any) { m["n"] = 1000000 }, "n"},
 		{"n a fraction", func(m map[string]any) { m["n"] = 1.5 }, "n"},
 		{"n a string", func(m map[string]any) { m["n"] = "1" }, "n"},
@@ -510,7 +510,7 @@ func TestCanonicalRefusesWhatTheReaderRefuses(t *testing.T) {
 	sgood := files.SignatureLine{At: "2026-11-14T10:00:00Z", N: 1, Kind: "root-list", Key: dg('a'), SignatureSHA256: dg('b')}
 	for name, edit := range map[string]func(*files.SignatureLine){
 		"At": func(l *files.SignatureLine) { l.At = "" }, "N": func(l *files.SignatureLine) { l.N = 0 },
-		"N high": func(l *files.SignatureLine) { l.N = 113 }, "Kind": func(l *files.SignatureLine) { l.Kind = "x" },
+		"N high": func(l *files.SignatureLine) { l.N = 191 }, "Kind": func(l *files.SignatureLine) { l.Kind = "x" },
 		"Key": func(l *files.SignatureLine) { l.Key = "" }, "Digest": func(l *files.SignatureLine) { l.SignatureSHA256 = dg('b')[:40] },
 	} {
 		l := sgood
@@ -555,8 +555,8 @@ func TestEveryLineThatCanonicalWritesIsReadBack(t *testing.T) {
 }
 
 func TestTheLimitsOfAJournalAreTheOnesOfThePage(t *testing.T) {
-	if files.MaxJournalLines != 4*26+8 {
-		t.Errorf("MaxJournalLines = %d, want 4 for each of 26 labels and 8 more", files.MaxJournalLines)
+	if files.MaxJournalLines != 7*26+8 {
+		t.Errorf("MaxJournalLines = %d, want 7 for each of 26 labels and 8 more", files.MaxJournalLines)
 	}
 	if files.MaxJournalLine != 4096 {
 		t.Errorf("MaxJournalLine = %d", files.MaxJournalLine)
