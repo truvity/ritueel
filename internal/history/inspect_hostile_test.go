@@ -627,13 +627,17 @@ func TestInspectConcurrentRunsAgree(t *testing.T) {
 	}
 }
 
-// A long chain: the order of 300 ceremonies whose names run against the chain.
+// A long chain: the order of 300 ceremonies whose names run against the chain, up to the last one,
+// which holds the highest sequence.
 func TestInspectALongChainInTheOrderOfTheChain(t *testing.T) {
 	const n = 300
 	sets := make([]cset, n)
 	names := make([]string, n)
 	for i := range sets {
 		num := 5000 - 3*i
+		if i == n-1 {
+			num = 9000
+		}
 		names[i] = setN(num)
 		sets[i] = cset{names[i], keyList(int64(num), kA)}
 	}

@@ -16,8 +16,11 @@ import (
 // settled by one reading. Two or more trust sets stand at one place and their sequences and
 // numbers do not put them in one order, or a set stands at more than one place, or a set that no
 // record lists cannot be placed (its place is not on the chain), or the newest set does not carry
-// the number that its folder name says. It never leads to a guessed order, and never to an order
-// taken from a folder name alone. [Inspection.OrderErr] wraps it.
+// the number that its folder name says, or the last set of the chain does not hold the highest
+// sequence (a ceremony that stopped, and a later one that wrote a set with a higher number: a list
+// built on the last set would take a number that is in use), or the sequence of a list of the
+// chain cannot be read. It never leads to a guessed order, and never to an order taken from a
+// folder name alone. [Inspection.OrderErr] wraps it.
 var ErrOrder = errors.New("the order of the root lists cannot be settled")
 
 // Inspection is what [Inspect] returns.
@@ -42,17 +45,24 @@ type State struct {
 	End string
 	// Lists is every root list of the bundle, in the order of the hash chain, the newest last, in
 	// the form that [FindReturns] takes. Name is the folder name of the set (without "trust/"). A
-	// list in it is never Unreadable.
+	// list in it is never Unreadable. A label is as the walk kept it: it may be cut short, and it
+	// may hold control characters or an escape sequence, so a caller shows it only through the
+	// escape of internal/jsonset. The next list is built from Newest.ListJSON and never from these
+	// labels.
 	Lists []RootList
-	// Newest is the last of Lists; nil when there is no trust set with a root list.
+	// Newest is the last of Lists, the newest set: it is the last of the chain and it holds the
+	// highest sequence of all lists (a bundle where it does not has no State). It is nil when there
+	// is no trust set with a root list.
 	Newest *SetInfo
-	// Unfinished are the names of the ceremony folders that hold attempt.json and no record.json,
-	// and that no closing record names in closes.ceremony, in the order of the names. The check
-	// does not say whether the attempt belongs to this history: a person or a later part reads it.
+	// Unfinished are the names of the ceremony folders that hold a file named attempt.json and no
+	// record.json, and that no closing record names in closes.ceremony, in the order of the names.
+	// The check does not say whether the attempt belongs to this history, or whether the ceremony
+	// is still open: the caller reads the attempt before it takes the ceremony as open.
 	Unfinished []string
 }
 
-// SetInfo is the newest trust set.
+// SetInfo is the newest trust set: the last set of the chain, and the one that holds the highest
+// sequence of all root lists.
 type SetInfo struct {
 	// Name is the folder name of the set, "13-3fa9c1d2".
 	Name string
@@ -119,18 +129,34 @@ func (ck *checker) state(rep *Report) (st *State, why string, err error) {
 		st.End = rep.Ends[0]
 	}
 	var newest setList
-	for _, g := range order.bySeq {
+	// before is the highest sequence of the lists before the last one; seqOK is false when the
+	// sequence of one list of the chain cannot be read.
+	var before int64
+	haveBefore, seqOK := false, true
+	for i, g := range order.bySeq {
 		if len(g.lists) != 1 || g.lists[0].read == nil {
 			return nil, "a trust set is not at one place of its own, or its root list cannot be read", nil
 		}
 		l := g.lists[0]
 		st.Lists = append(st.Lists, rootListOf(l))
 		newest = l
+		switch {
+		case !l.read.hasSequence:
+			seqOK = false
+		case i < len(order.bySeq)-1 && (!haveBefore || l.read.sequence > before):
+			before, haveBefore = l.read.sequence, true
+		}
 	}
 	if len(st.Lists) > 0 {
 		n, ok := trustNumber(newest.set)
 		if !ok || !newest.read.hasSequence || newest.read.sequence != n {
 			return nil, "the number in the name of " + setShown(newest.set) + " is not the sequence of its root list", nil
+		}
+		if !seqOK {
+			return nil, "the sequence of a root list of the chain cannot be read", nil
+		}
+		if haveBefore && newest.read.sequence <= before {
+			return nil, "the last set of the chain, " + setShown(newest.set) + ", does not hold the highest sequence of the root lists", nil
 		}
 		if newest.read.raw == nil {
 			return nil, "", fmt.Errorf("%w: the root list of %s is not among the %d bytes of root lists that an inspection keeps", ErrTooMuch, setShown(newest.set), MaxStateBytes)
