@@ -129,7 +129,7 @@ const LABEL =
 
 // The wide drawing in two sizes made from the same panels: 760 units for a column of 760 to 1100 px, and
 // 1100 units for the wide page, where the home page's column is 1100 to 1152 px. Each is shown at 1:1 or
-// a little more (never below it), so its text stays at 12px or more. Both are `fig-wide`; src/styles/home.css
+// a little more (never below it), so its text stays at 12px or more. Both are `fig-wide`; src/styles/figures.css
 // tells them apart by the width of their viewBox and shows the one that fits the column.
 function wide(W = 760) {
   const pw = W > 800 ? [330, 336, 330] : [216, 224, 216];
@@ -165,7 +165,7 @@ export default {
   label: 'The whole chain of ritueel: from your root to the keys of every day',
   caption:
     'The design, not a program: a key in a file can be copied without a trace, so it is replaced on a calendar. A key on a card or in a cloud key service cannot be copied out. So there is no rotation on a calendar: you keep the same key, and the yearly ceremony only renews what is due.',
-  // Both wide drawings are in `wide`: the figure kit shows one of them by the width of the column (src/styles/home.css).
+  // Both wide drawings are in `wide`: the figure kit shows one of them by the width of the column (src/styles/figures.css).
   wide: wide(1100) + wide(760),
   narrow: narrow(),
 };

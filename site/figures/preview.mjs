@@ -2,7 +2,7 @@
 // Writes one standalone HTML file per figure and theme, to look at a drawing (in headless Chrome, or
 // a browser) without building the site: `node site/figures/preview.mjs <out-dir> [starlight-style-dir]`.
 // The page is the figure as Figure.astro would place it, in a column like the site's (sidebar from
-// 50em, content at most 72rem, 16px gutter on a phone), with site/src/styles/figures.css.
+// 50em, content at most 64rem, 16px gutter on a phone), with site/src/styles/figures.css.
 // With the second argument, Starlight's own CSS is used (props.css, layers.css, reset.css, markdown.css
 // from `npm pack @astrojs/starlight@0.42.10`, folder package/dist/style), so list numbers, paragraph
 // spacing and the layers are the real ones; without it, a few stand-in tokens of the same values.
@@ -20,7 +20,6 @@ if (!out) {
 }
 mkdirSync(out, { recursive: true });
 const css = readFileSync(join(here, '..', 'src', 'styles', 'figures.css'), 'utf8');
-const layout = readFileSync(join(here, '..', 'src', 'styles', 'layout.css'), 'utf8').match(/--ritueel-prose-width:[^;]*;/)[0];
 
 const stand = `
 :root { --sl-color-white: hsl(0,0%,100%); --sl-color-gray-1: hsl(224,20%,94%); --sl-color-gray-2: hsl(224,6%,77%); --sl-color-gray-3: hsl(224,6%,56%); --sl-color-gray-5: hsl(224,10%,23%); --sl-color-gray-6: hsl(224,14%,16%); --sl-color-black: hsl(224,10%,10%);
@@ -43,14 +42,13 @@ const page = (name, theme, fragment) => `<!doctype html>
 <title>${name} (${theme})</title>
 <style>
 ${slStyles()}
-:root { ${layout} }
 html { color-scheme: ${theme}; }
 body { margin: 0; background: var(--sl-color-bg); color: var(--sl-color-text); font-family: var(--__sl-font, var(--sl-font-system)); font-size: var(--sl-text-base); line-height: var(--sl-line-height, 1.6); }
 main { padding: 1.5rem 1rem; }
 @media (min-width: 50em) { main { margin-left: var(--sl-sidebar-width); padding: 2rem 1.5rem; } body::before { content: ''; position: fixed; inset: 0 auto 0 0; width: var(--sl-sidebar-width); background: var(--sl-color-bg-sidebar); border-right: 1px solid var(--sl-color-hairline-light, var(--sl-color-gray-5)); } }
-.sl-markdown-content { max-width: 72rem; }
+.sl-markdown-content { max-width: 64rem; }
 .sl-markdown-content h2 { font-size: var(--sl-text-h2, 1.5rem); color: var(--sl-color-white); }
-.sl-markdown-content > p { max-width: var(--ritueel-prose-width, 75ch); }
+.sl-markdown-content > p { max-width: 45rem; }
 </style>
 <style>${css}</style></head>
 <body><main><div class="sl-markdown-content">
