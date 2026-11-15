@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"ritueel.id/ritueel/internal/jws"
+	"ritueel.id/ritueel/internal/openpgp"
 	"ritueel.id/ritueel/internal/rootlist"
 )
 
@@ -39,7 +40,8 @@ type chosen struct {
 // been made and verified; when it returns an error, or panics, Sign stops with ErrSign, asks no more
 // signers and returns no set (the line of the caller's journal is the caller's). At the end the
 // builder asks the reader of the page about its own output, as a host does (see selfCheck), and
-// the set is returned only when the reader accepts it (ErrSelf otherwise).
+// the set is returned only when the reader accepts it (ErrSelf otherwise). For a list that pins
+// OpenPGP primaries the keyring file is part of what the readers judge.
 func (d *Draft) Sign(signers []Signer, after func(Signed) error) (*Set, error) {
 	if !d.valid() {
 		return nil, fail(ErrParams, "the draft is empty")
@@ -95,6 +97,7 @@ func (d *Draft) Sign(signers []Signer, after func(Signed) error) (*Set, error) {
 		listJSON: slices.Clone(d.listJSON),
 		listJWS:  file,
 		caBundle: slices.Clone(d.caBundle),
+		keyring:  slices.Clone(d.keyring),
 	}, nil
 }
 
@@ -184,9 +187,12 @@ func (d *Draft) checkSigners(signers []Signer) ([]chosen, error) {
 // (signed_at not after it, expires_at after it) are asked at the moment of the ceremony. The verdict
 // must be Accepted, not Again and not Wayback (the sequence is the previous one plus one, so the
 // way back never applies to a list that this package writes). The CA bundle is judged by
-// rootlist.VerifyCABundle against the list that the reader accepted. Any other answer is ErrSelf,
-// with the reason code and the number of the check. The builder asks the reader and does not read its
-// own file again.
+// rootlist.VerifyCABundle against the list that the reader accepted. The keyring file is judged by
+// openpgp.ReadKeyring with the entries of that same list (the entries that have a fingerprint, in
+// the order of the list), not with the entries of the input: a list that pins no primary has no
+// keyring file, and a list that pins primaries has one that the reader accepts. Any other answer is
+// ErrSelf, with the reason code and the number of the check. The builder asks the readers and does
+// not read its own files again.
 func (d *Draft) selfCheck(jwsFile []byte) error {
 	var trust rootlist.Trust
 	var err error
@@ -206,6 +212,30 @@ func (d *Draft) selfCheck(jwsFile []byte) error {
 	}
 	if cv := rootlist.VerifyCABundle(slices.Clone(d.caBundle), v.List); !cv.Accepted {
 		return failWith(ErrSelf, "the reader of the page refuses the CA bundle", textError(cv.Detail))
+	}
+	return d.selfCheckKeyring(v.List)
+}
+
+// selfCheckKeyring asks openpgp.ReadKeyring about the keyring file with the entries of the list that
+// the reader of the page accepted. A keyring file with a list that pins no primary, a list that pins
+// primaries and no file, and a file that the reader refuses are each an ErrSelf.
+func (d *Draft) selfCheckKeyring(list *rootlist.List) error {
+	var entries []openpgp.KeyringEntry
+	for _, r := range list.Roots {
+		if r.OpenPGPFingerprint != "" {
+			entries = append(entries, openpgp.KeyringEntry{Label: r.Label, Fingerprint: r.OpenPGPFingerprint})
+		}
+	}
+	switch {
+	case len(entries) == 0 && d.keyring == nil:
+		return nil
+	case len(entries) == 0:
+		return fail(ErrSelf, "the draft holds a keyring file and the list that was signed pins no OpenPGP primary")
+	case d.keyring == nil:
+		return fail(ErrSelf, "the list that was signed pins OpenPGP primaries and the draft holds no keyring file")
+	}
+	if _, err := openpgp.ReadKeyring(slices.Clone(d.keyring), entries); err != nil {
+		return failWith(ErrSelf, "the reader of the keyring file refuses the keyring file", err)
 	}
 	return nil
 }

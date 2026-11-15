@@ -1,16 +1,20 @@
 package trustset_test
 
 import (
+	"crypto/ecdsa"
+	"crypto/rand"
 	"crypto/sha256"
 	"crypto/x509"
 	"encoding/hex"
 	"errors"
+	"slices"
 	"sync"
 	"testing"
 	"time"
 
 	"ritueel.id/ritueel/internal/jws"
 	"ritueel.id/ritueel/internal/keystore/software"
+	"ritueel.id/ritueel/internal/openpgp"
 	"ritueel.id/ritueel/internal/pki"
 	"ritueel.id/ritueel/internal/trustset"
 )
@@ -19,7 +23,9 @@ import (
 var ceremony = time.Date(2026, time.January, 1, 0, 0, 0, 0, time.UTC)
 
 // testRoot is one root key made in memory: a P-384 software key, its self-signed root certificate,
-// the pin and a made-up OpenPGP fingerprint (this package reads no OpenPGP).
+// the pin, and a real OpenPGP primary of its own (a second P-384 key, the certificate that
+// openpgp.NewPrimary made and the fingerprint of its key packet). The primary carries the test mark
+// of the root, so a test root and a real root are never mixed by accident.
 type testRoot struct {
 	Label string
 	Pin   string
@@ -28,6 +34,46 @@ type testRoot struct {
 	DER   []byte
 	Key   *software.Key
 	Test  bool
+	// PGP is the public certificate of the OpenPGP primary (key, user ID, one certification).
+	PGP []byte
+	// PGPKey is the key of the OpenPGP primary, for a test that adds a certification.
+	PGPKey *software.Key
+}
+
+// primaryCreated is the creation time of the OpenPGP primaries of the test roots; the ceremony is
+// after it.
+var primaryCreated = time.Date(2025, time.December, 1, 0, 0, 0, 0, time.UTC)
+
+// primaryParams are the parameters of the primary of a test root at a ceremony time.
+func (r *testRoot) primaryParams(t testing.TB, at time.Time) openpgp.PrimaryParams {
+	t.Helper()
+	uid, err := openpgp.UserID("Example Test", r.Label, "root@example.org", r.Test)
+	if err != nil {
+		t.Fatalf("UserID: %v", err)
+	}
+	return openpgp.PrimaryParams{Key: r.PGPKey, CreationTime: primaryCreated, CeremonyTime: at, ExpiresAt: at.AddDate(3, 0, 0), UserID: uid}
+}
+
+// makePrimary gives the root a new OpenPGP primary.
+func (r *testRoot) makePrimary(t testing.TB) {
+	t.Helper()
+	key, err := software.Generate()
+	if err != nil {
+		t.Fatalf("Generate: %v", err)
+	}
+	r.PGPKey = key
+	r.PGP, err = openpgp.NewPrimary(rand.Reader, r.primaryParams(t, ceremony))
+	if err != nil {
+		t.Fatalf("NewPrimary: %v", err)
+	}
+	pub, ok := key.Public().(*ecdsa.PublicKey)
+	if !ok {
+		t.Fatalf("the public key is a %T", key.Public())
+	}
+	r.Print, err = openpgp.Fingerprint(pub, primaryCreated)
+	if err != nil {
+		t.Fatalf("Fingerprint: %v", err)
+	}
 }
 
 var (
@@ -60,7 +106,7 @@ func newRoot(t testing.TB, label string, test bool) *testRoot {
 		t.Fatalf("ParseCertificate: %v", err)
 	}
 	r.Pin = jws.Pin(r.Cert)
-	r.Print = hexOf("fingerprint of " + name)[:40]
+	r.makePrimary(t)
 	roots[name] = r
 	return r
 }
@@ -95,6 +141,30 @@ func (r *testRoot) entry(withPrint bool) trustset.Root {
 		e.OpenPGPFingerprint = r.Print
 	}
 	return e
+}
+
+// certificatesOfRoots returns the OpenPGPCertificates of an input for the given entries: the
+// certificate of the made root whose fingerprint an entry has, by the label of the entry. An entry
+// with no fingerprint, or with a fingerprint that no made root has, gives none. The result is nil
+// when no entry gives one.
+func certificatesOfRoots(entries []trustset.Root) map[string][]byte {
+	rootsMu.Lock()
+	defer rootsMu.Unlock()
+	var out map[string][]byte
+	for _, e := range entries {
+		if e.OpenPGPFingerprint == "" {
+			continue
+		}
+		for _, r := range roots {
+			if r.Print == e.OpenPGPFingerprint {
+				if out == nil {
+					out = map[string][]byte{}
+				}
+				out[e.Label] = slices.Clone(r.PGP)
+			}
+		}
+	}
+	return out
 }
 
 // signer makes the Signer of the key.

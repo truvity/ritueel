@@ -13,7 +13,8 @@ import (
 var (
 	// ErrParams is wrapped by an error for a parameter that is wrong, or for a value from
 	// outside that breaks the form of the pages: a number, a label, a pin, a time, a certificate,
-	// a document over its limit, a draft, a set or a writer that is nil or empty. A signer that is
+	// a document over its limit, OpenPGP certificates that the reader of the keyring file refuses
+	// or that do not fit the roots, a draft, a set or a writer that is nil or empty. A signer that is
 	// nil or has no usable certificate is ErrSigners, not ErrParams.
 	ErrParams = errors.New("trustset: invalid parameter")
 	// ErrSign is wrapped by an error for a signer that failed, returned a signature of the wrong

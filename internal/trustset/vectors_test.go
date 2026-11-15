@@ -30,6 +30,8 @@ type vectorManifest struct {
 		Label       string `json:"label"`
 		Certificate string `json:"certificate"`
 		Pin         string `json:"x509_spki_sha256"`
+		OpenPGP     string `json:"openpgp"`
+		Fingerprint string `json:"openpgp_fingerprint"`
 	} `json:"roots"`
 	Removals []struct {
 		Label string `json:"label"`
@@ -59,6 +61,18 @@ func loadVectors(t testing.TB) *vectorManifest {
 		t.Fatal("the manifest has no lists, roots or bundles")
 	}
 	return &m
+}
+
+// primary returns the public certificate of the vector primary with the fingerprint, read from its
+// file of the set, or nil when the manifest has no primary with it.
+func (m *vectorManifest) primary(t testing.TB, fingerprint string) []byte {
+	t.Helper()
+	for _, r := range m.Roots {
+		if r.Fingerprint == fingerprint && r.OpenPGP != "" {
+			return vectorFile(t, r.OpenPGP)
+		}
+	}
+	return nil
 }
 
 // certificate returns the DER certificate of a vector root, read from its PEM file.

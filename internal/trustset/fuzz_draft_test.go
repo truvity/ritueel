@@ -14,6 +14,7 @@ import (
 	"ritueel.id/ritueel/internal/canonjson"
 	"ritueel.id/ritueel/internal/history"
 	"ritueel.id/ritueel/internal/jws"
+	"ritueel.id/ritueel/internal/openpgp"
 	"ritueel.id/ritueel/internal/rootlist"
 	"ritueel.id/ritueel/internal/trustset"
 )
@@ -81,6 +82,7 @@ func lawsOfDraft(t *testing.T, in trustset.Input, d *trustset.Draft, err error) 
 	if v := rootlist.VerifyCABundle(d.CABundle(), list); !v.Accepted {
 		t.Fatalf("the reader refuses the CA bundle: %+v", v)
 	}
+	lawsOfKeyring(t, d, list)
 	if d.Sequence() != in.Sequence || list.Sequence != in.Sequence {
 		t.Fatalf("sequence %d, %d, input %d", d.Sequence(), list.Sequence, in.Sequence)
 	}
@@ -125,6 +127,9 @@ func lawsOfDraft(t *testing.T, in trustset.Input, d *trustset.Draft, err error) 
 	set, serr := d.Sign(signers, func(trustset.Signed) error { return nil })
 	if serr != nil {
 		t.Fatalf("a draft that cannot be signed by the signers it names: %v", serr)
+	}
+	if !bytes.Equal(set.Keyring(), d.Keyring()) || (len(set.Files()) == 4) != (d.Keyring() != nil) {
+		t.Fatal("the keyring file of the set is not the keyring file of the draft")
 	}
 	if set.Name() != d.SetName() {
 		t.Fatalf("the set is named %q, the draft %q", set.Name(), d.SetName())
@@ -192,6 +197,7 @@ func FuzzDraftPrevious(f *testing.F) {
 			Previous: data,
 			Earlier:  []history.RootList{historyList("1", entries)},
 		}
+		in.OpenPGPCertificates = certificatesOfRoots(in.Roots)
 		d, err := trustset.NewDraft(in)
 		lawsOfDraft(t, in, d, err)
 		// The sequence that the bytes ask for, when they are a list, with an Earlier of that length.
@@ -304,6 +310,7 @@ func FuzzDraftInput(f *testing.F) {
 				in.Departures = append(in.Departures, trustset.Departure{X509SPKISHA256: newRoot(t, l, true).Pin, Leave: trustset.LeaveRevoked})
 			}
 		}
+		in.OpenPGPCertificates = certificatesOfRoots(in.Roots)
 		d, err := trustset.NewDraft(in)
 		lawsOfDraft(t, in, d, err)
 	})
@@ -360,6 +367,7 @@ func FuzzDraftCertificate(f *testing.F) {
 			Roots:        []trustset.Root{a.entry(true)},
 			Certificates: map[string][]byte{"A": der},
 		}
+		in.OpenPGPCertificates = certificatesOfRoots(in.Roots)
 		if c, err := x509.ParseCertificate(der); err == nil {
 			// The pin of whatever certificate came, so that the pin check is not the only refusal.
 			in.Roots[0].X509SPKISHA256 = jws.Pin(c)
@@ -467,6 +475,7 @@ func FuzzEarlier(f *testing.F) {
 			Sequence: int64(len(earlier)) + 1, SignedAt: firstCeremony.Add(time.Hour), Roots: entries,
 			Certificates: certsOf(t, "A", "B"), LastRecordSHA256: hexOf("end"), Earlier: earlier,
 		}
+		in.OpenPGPCertificates = certificatesOfRoots(entries)
 		if in.Sequence == 1 {
 			return
 		}
@@ -491,4 +500,30 @@ func FuzzEarlier(f *testing.F) {
 		d, err := trustset.NewDraft(in)
 		lawsOfDraft(t, in, d, err)
 	})
+}
+
+// lawsOfKeyring holds what a draft that came without an error says of its keyring file: there is one
+// exactly when the list has a fingerprint, its digest is the digest of its bytes, and the reader of
+// the keyring file reads it again with the entries of the list.
+func lawsOfKeyring(t testing.TB, d *trustset.Draft, list *rootlist.List) {
+	t.Helper()
+	var entries []openpgp.KeyringEntry
+	for _, r := range list.Roots {
+		if r.OpenPGPFingerprint != "" {
+			entries = append(entries, openpgp.KeyringEntry{Label: r.Label, Fingerprint: r.OpenPGPFingerprint})
+		}
+	}
+	if len(entries) == 0 {
+		if d.Keyring() != nil || d.KeyringSHA256() != "" {
+			t.Fatal("a list that pins no primary has a keyring file")
+		}
+		return
+	}
+	if d.Keyring() == nil || d.KeyringSHA256() != hexOf(string(d.Keyring())) {
+		t.Fatal("a list that pins primaries has no keyring file, or a wrong digest of it")
+	}
+	keys, err := openpgp.ReadKeyring(d.Keyring(), entries)
+	if err != nil || len(keys) != len(entries) {
+		t.Fatalf("the reader of the keyring file refuses the file of a draft: %v", err)
+	}
 }

@@ -105,6 +105,7 @@ func (c *chain) input(n next) trustset.Input {
 		Certificates: certsOf(c.t, n.labels...),
 		Departures:   slices.Clone(n.deps),
 	}
+	in.OpenPGPCertificates = certificatesOfRoots(in.Roots)
 	if seq > 1 {
 		in.LastRecordSHA256 = lastRecord(int(seq))
 		in.Previous = c.links[len(c.links)-1].set.ListJSON()
@@ -326,7 +327,7 @@ func newRootVariant(t testing.TB, label, variant string) *testRoot {
 		t.Fatalf("ParseCertificate: %v", err)
 	}
 	r.Pin = jws.Pin(r.Cert)
-	r.Print = hexOf("fingerprint of " + name)[:40]
+	r.makePrimary(t)
 	roots[name] = r
 	return r
 }

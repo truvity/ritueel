@@ -424,6 +424,8 @@ func TestMostEarlierLists(t *testing.T) {
 			Certificates:     certsOf(t, "A", "B"),
 			LastRecordSHA256: hexOf("end"),
 			Previous:         previousOf(t, int64(tc.earlier), firstCeremony, entries),
+
+			OpenPGPCertificates: certificatesOfRoots(entries),
 		}
 		for i := 0; i < tc.earlier; i++ {
 			in.Earlier = append(in.Earlier, historyList("x", entries))

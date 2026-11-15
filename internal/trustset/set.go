@@ -4,16 +4,20 @@ import (
 	"slices"
 
 	"ritueel.id/ritueel/internal/fsx"
+	"ritueel.id/ritueel/internal/rootlist"
 )
 
-// Set is the three files of one trust set, whole and checked. It holds no key. A Set is immutable
-// and every accessor returns copies. A zero Set refuses everything.
+// Set is the files of one trust set, whole and checked: the three that every set has and, when its
+// root list pins OpenPGP primaries, the keyring file. It holds no key. A Set is immutable and every
+// accessor returns copies. A zero Set refuses everything.
 type Set struct {
 	sequence int64
 	signers  []string
 	listJSON []byte
 	listJWS  []byte
 	caBundle []byte
+	// keyring is the keyring file; nil exactly when the list pins no OpenPGP primary.
+	keyring []byte
 }
 
 // valid reports whether s was made by Draft.Sign.
@@ -75,13 +79,51 @@ func (s *Set) CABundle() []byte {
 	return slices.Clone(s.caBundle)
 }
 
-// Files returns the files of the set in the order of FileNames, each with FileMode, ready for
-// fsx.Writer.WriteSet. The data are copies. A zero or nil Set has no files.
+// Keyring returns a copy of the bytes of the keyring file; nil for a set whose list pins no OpenPGP
+// primary, and for a zero or nil Set.
+func (s *Set) Keyring() []byte {
+	if !s.valid() || s.keyring == nil {
+		return nil
+	}
+	return slices.Clone(s.keyring)
+}
+
+// hasKeyring reports whether the set holds a keyring file, and whether that agrees with its list:
+// a list that pins OpenPGP primaries needs the file, and a list that pins none must not have one
+// (bundle page, "The layout"; keyring page, "The first form of the keyring file"). A set whose list
+// cannot be read agrees with nothing.
+func (s *Set) hasKeyring() (has, ok bool) {
+	list, err := rootlist.ParseList(s.listJSON)
+	if err != nil {
+		return false, false
+	}
+	pins := false
+	for _, r := range list.Roots {
+		if r.OpenPGPFingerprint != "" {
+			pins = true
+			break
+		}
+	}
+	has = len(s.keyring) > 0
+	return has, pins == has
+}
+
+// Files returns the files of the set in the order of FileNames, and the keyring file after them
+// when the list pins OpenPGP primaries, each with FileMode, ready for fsx.Writer.WriteSet. The data
+// are copies. A zero or nil Set has no files, and neither has a set whose keyring file does not
+// agree with its list (a list that pins primaries and no file, or a file and a list that pins none).
 func (s *Set) Files() []fsx.NewFile {
 	if !s.valid() {
 		return nil
 	}
+	has, ok := s.hasKeyring()
+	if !ok {
+		return nil
+	}
 	names := FileNames()
+	if has {
+		names = append(names, KeyringFile)
+	}
 	out := make([]fsx.NewFile, 0, len(names))
 	for _, name := range names {
 		var data []byte
@@ -92,6 +134,8 @@ func (s *Set) Files() []fsx.NewFile {
 			data = s.listJWS
 		case CABundleFile:
 			data = s.caBundle
+		case KeyringFile:
+			data = s.keyring
 		default:
 			// A name that this package has no bytes for: no file is made up for it.
 			return nil

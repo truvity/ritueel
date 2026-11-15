@@ -68,6 +68,9 @@ func TestRealRootsMakeAList(t *testing.T) {
 		SignedAt:     firstCeremony,
 		Roots:        []trustset.Root{a.entry(true), b.entry(true)},
 		Certificates: map[string][]byte{"A": a.DER, "B": b.DER},
+		// Real primaries too: the keyring file does not ask for the test mark either, it asks only that
+		// all primaries have it or none has.
+		OpenPGPCertificates: map[string][]byte{"A": a.PGP, "B": b.PGP},
 	}
 	d, err := trustset.NewDraft(in)
 	if err != nil {
