@@ -13,11 +13,13 @@ import (
 // the limit is checked before a line is parsed.
 const MaxJournalLine = 4096
 
-// MaxJournalLines is the most lines that a journal of one ceremony holds: 4 for each of the 26
-// labels that a trust set can hold (a certificate, a removal authorisation, a self-signature and
-// one revocation signature) and 8 more. A journal that is longer is not a journal of this
-// program.
-const MaxJournalLines = 4*26 + 8
+// MaxJournalLines is the most lines that a journal of one ceremony holds: 7 for each of the 26
+// labels that a trust set can hold (a certificate, a removal authorisation, a self-signature and up
+// to four revocation signatures, one for each reason: compromised and superseded are always made,
+// retired and no-reason when the holder asks) and 8 more. A journal that is longer is not a journal
+// of this program. The journal of births holds at most two lines for each label (an X.509 key and a
+// primary), far below the limit; both journals share it.
+const MaxJournalLines = 7*26 + 8
 
 // maxPlaceBytes is the most bytes of the member place of a birth line.
 const maxPlaceBytes = 255
@@ -57,20 +59,24 @@ var signatureKinds = []string{
 
 // BirthLine is one line of births.jsonl, the birth journal: the members of "The birth journal" of
 // docs/reference/ceremony-record.md. A line is written after the key exists. It holds no secret.
-// [ReadBirthLine] requires every member: a line has no optional member.
+// [ReadBirthLine] requires every member: a line has no optional member. A label may have two lines,
+// one for each purpose (its X.509 key and its OpenPGP primary): the pair of label and purpose is
+// born once, and the reader of one line does not know the others.
 type BirthLine struct {
 	// At is when the key existed: a time.
 	At string `json:"at"`
 	// Label is the key's label: one upper-case letter.
 	Label string `json:"label"`
 	// Purpose is what the key is for, a word of lower-case letters, digits and hyphens, for
-	// example x509-root (the words are Proposed on the page).
+	// example x509-root or openpgp-primary (the words are Proposed on the page).
 	Purpose string `json:"purpose"`
 	// Store is the key store, a word as Purpose is.
 	Store string `json:"store"`
 	// Place is where the key is, as the plan gives it: printable ASCII, at most 255 bytes.
 	Place string `json:"place"`
-	// PublicKeySHA256 is the SHA-256 digest of the public key: the fingerprint of an X.509 key.
+	// PublicKeySHA256 is the SHA-256 digest of the public key: the DER SubjectPublicKeyInfo of an
+	// X.509 key, which is its pin, and of the same encoding of an OpenPGP primary's key (the member
+	// has 64 digits for both; the 40-digit fingerprint of a primary is in the signature lines).
 	PublicKeySHA256 string `json:"public_key_sha256"`
 }
 

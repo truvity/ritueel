@@ -81,7 +81,8 @@ type Closes struct {
 
 // Record is record.json, version 1: the members of the table "The record" of
 // docs/reference/ceremony-record.md. A member whose shape the page leaves open or Proposed is
-// kept as any, a list of any or strictjson.Raw, and is not looked into.
+// kept as any, a list of any or strictjson.Raw, and is not looked into. The list revocations is typed:
+// [RevocationEntry].
 //
 // What [ReadRecord] requires: version, ceremony, command, outcome, transcript_sha256 and artifacts
 // (the member present, the list may be empty) in every record; plan_sha256 and a wanted list
@@ -92,7 +93,8 @@ type Closes struct {
 // confirmation and advisory_review is checked when it is there, and is not required. It refuses what
 // the table says is absent or only in some records: closes only in a closing record, declined
 // only when the outcome is declined, no plan_sha256, root or root_reason in a closing record,
-// and the command close with the outcome closed and no other.
+// and the command close with the outcome closed and no other. The list revocations is only in a
+// completed apply, is not empty, and each entry is whole (see [RevocationEntry]).
 type Record struct {
 	Version          int64          `json:"version"`
 	Ceremony         string         `json:"ceremony"`
@@ -126,7 +128,10 @@ type Record struct {
 	AdvisoryReview   *Advisory `json:"advisory_review,omitempty"`
 	Declined         *Declined `json:"declined,omitempty"`
 	Closes           *Closes   `json:"closes,omitempty"`
-	Revocations      []any     `json:"revocations,omitempty"`
+	// Revocations lists the digest of each revocation signature and of each removal authorisation
+	// that the ceremony made. It is only in a completed apply; it holds at most [MaxRevocations]
+	// entries and no pair of label and reason twice.
+	Revocations []RevocationEntry `json:"revocations,omitempty"`
 }
 
 // recordNoEmpty are the optional members of a record that are a digest, a time, a name or a word,
@@ -204,6 +209,9 @@ func (r *Record) validate() error {
 			return err
 		}
 	}
+	if err := c.revocations(r.Revocations); err != nil {
+		return err
+	}
 	return r.validateKinds(c)
 }
 
@@ -218,6 +226,9 @@ func (r *Record) validateKinds(c checker) error {
 	// made with the attempt; a closing record names the attempt it closes in closes and has no
 	// journals. So the three members are only in a completed apply.
 	if r.Outcome != OutcomeCompleted || r.Command != CommandApply {
+		if r.Revocations != nil {
+			return formatError(c.what, "revocations", "is only in a record of an apply that was completed: a declined record and a closing record make no revocation material")
+		}
 		for _, m := range []struct{ name, digest string }{
 			{"attempt_sha256", r.AttemptSHA256}, {"births_sha256", r.BirthsSHA256}, {"signatures_sha256", r.SignaturesSHA256},
 		} {
