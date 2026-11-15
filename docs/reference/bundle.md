@@ -257,7 +257,6 @@ A person writes `ritueel.yaml` and one strict YAML file for each card, root and 
 - **The digest** of a wanted file is the SHA-256 of the bytes as stored, so `sha256sum` gives the same value. The plan lists the wanted files it used by digest ([record 0005](../decisions/0005-a-ceremony-and-where-it-runs.md), rule 7). Two files with one meaning have two digests. This is accepted (record 0005, rule 6).
 - **The name** of an object is the name of its file without `.yaml`. A card's file is named by a name the holder gives, not by its serial (record 0006, rule 5).
 - **A leftover temporary name** in `want/roots`, `want/delegations` or `want/cards`, a name that starts with `.rt-` in any case and of any kind of entry, is skipped when the folder is listed: it is not read, it is no error and it does not count toward the limit of 1,000 names (record 0006, rule 45).
-- **A leftover temporary name** in `want/roots`, `want/delegations` or `want/cards`, a name that starts with `.rt-` in any case and of any kind of entry, is skipped when the folder is listed: it is not read, it is no error and it does not count toward the limit of 1,000 names (record 0006, rule 45).
 - **A deleted line or file** retires, revokes and removes nothing, and `status` shows it as a finding. The history wins over a wanted file (record 0005, rule 5). The name of the finding is fixed with the code. A wanted file that fails its check stops `apply` before anything is written (record 0005, rule 19).
 
 | File | One for each | Holds | Decided by |
