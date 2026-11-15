@@ -33,7 +33,7 @@ A cloud key service cannot attest where its key was made, but it can tell you, t
 
 | Kind | May hold |
 |---|---|
-| Attested | Roots, intermediates and subkeys. |
+| Attested | Roots, intermediates and subkeys. An OpenPGP-card key is refused for an X.509 intermediate and for an SSH CA key, because its attestation shows no PIN or touch rule ([record 0002](../decisions/0002-where-a-key-lives.md), rule 7). |
 | Read from the service | Roots, intermediates and subkeys. |
 | None | Test roots, drills and development; a person's own key; never a root that other people rely on. |
 
