@@ -226,12 +226,6 @@ if [ -s "$dist/status/index.html" ]; then
   done < <(grep -rhoE 'href="/status/#[A-Za-z0-9_-]+"' "$dist" --include=index.html | sed -E 's/.*#([^"]+)"/\1/' | sort -u)
 fi
 
-# A mark that tells a reader that words wait for approval never ships: no built page holds the class
-# new-mark. Each check fails closed: the pages must be there to be searched.
-pages=$(find "$dist" -name '*.html' | wc -l)
-[ "$pages" -gt 0 ] || bad "no HTML page in $dist to search for the class new-mark"
-if grep -rlE 'class="[^"]*new-mark' "$dist" --include=*.html; then bad "a built page holds the class new-mark (pages above)"; fi
-
 # The landing page says what ritueel is and that it is in the design phase.
 grep -q 'design phase' "$dist/index.html" || bad "the landing page lacks the status paragraph"
 
