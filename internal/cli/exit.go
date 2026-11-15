@@ -7,8 +7,10 @@
 // A command that has one line for each finding writes those lines itself, to Env.Stderr, before it returns
 // the Refusal; Run adds only the last line.
 //
-// A later command may return a Result with the exit code 3 or 4; who prints the line for a person in that
-// case is decided when the first such command is built.
+// A command whose refusal also carries data members (the checks of check request, the findings of status)
+// returns a Result with the exit code 3 or 4, its Reasons and its data members. Run writes the Message of
+// that Result in the same form, after the warning lines, in both output modes; with an empty Message it
+// writes "refused: " and the codes, as a Refusal does.
 package cli
 
 import (

@@ -19,6 +19,7 @@ var checkSpec = spec{
 	usage: "check what a bundle holds, and change nothing",
 	subs: []spec{
 		checkHistorySpec,
+		checkRequestSpec,
 	},
 }
 

@@ -62,6 +62,11 @@ type Result struct {
 	// sequence is lower than the held list's, or equal to it with other content (the member
 	// "wayback" of docs/reference/cli.md, record 0006, rule 53); the member is absent otherwise.
 	Wayback bool `json:"wayback,omitempty"`
+	// Checks are the nine checks of the hand-off contract, in order, with their results (the member
+	// "checks" of docs/reference/cli.md, built by check request). The member is there when the command
+	// reached a verdict, for the exit codes 0 and 3, and for the exit code 1 of a request in which a check
+	// did not run and no error stopped the checks (see notJudged); it is absent otherwise.
+	Checks []CheckState `json:"checks,omitempty"`
 	// Version is the release version (version only).
 	Version string `json:"version,omitempty"`
 	// Commit is the commit of the build (version only).
@@ -70,6 +75,19 @@ type Result struct {
 	// Text is what the command prints on standard output with --output text. It is not
 	// part of the JSON object.
 	Text string `json:"-"`
+	// Message is the line for a person of a refused Result (the exit code 3 or 4): Run writes it on
+	// standard error as "ritueel: MESSAGE", after the warning lines, in both output modes. It is not
+	// part of the JSON object. With an empty Message Run writes "refused: " and the reason codes, as it
+	// does for a Refusal. A Result that did not refuse leaves it empty.
+	Message string `json:"-"`
+}
+
+// CheckState is one entry of Result.Checks: the number of a check and its result.
+type CheckState struct {
+	// N is the number of the check, 1 to 9.
+	N int `json:"n"`
+	// Result is "passed", "failed" or "not-run".
+	Result string `json:"result"`
 }
 
 // CheckedFile is one entry of Result.Checked: a file that was read and checked, and the digest

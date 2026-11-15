@@ -2,6 +2,7 @@ package cli
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"slices"
@@ -94,6 +95,7 @@ var specs = []spec{
 	{name: "version", usage: "print the version and the commit", run: runVersion},
 	verifySpec,
 	checkSpec,
+	newSpec,
 }
 
 // invocation is the state of one run, so that two runs share nothing.
@@ -330,6 +332,22 @@ func (inv *invocation) writeWarnings(warnings []string) {
 	}
 }
 
+// writeRefusal writes the line of a refused Result on standard error, in both output modes: its Message,
+// or "refused: " and the codes when there is none (the codes of the card or the backend after the
+// words "refused by the card or the backend"), as the text of a Refusal or a BackendRefusal reads. The
+// reasons are already escaped; the message goes through the same escape as the text of an error.
+func (inv *invocation) writeRefusal(res *Result) {
+	prefix := "refused"
+	if res.ExitCode == ExitBackend {
+		prefix = "refused by the card or the backend"
+	}
+	msg := refusalText(prefix, "", res.Reasons)
+	if res.Message != "" {
+		msg = jsonset.Escape(res.Message)
+	}
+	_, _ = fmt.Fprintf(inv.env.Stderr, "%s: %s\n", programName, msg)
+}
+
 // finish writes what the end of the run needs and returns the exit code.
 func (inv *invocation) finish(err error) ExitCode {
 	mode, known := outputMode(inv.output)
@@ -342,6 +360,9 @@ func (inv *invocation) finish(err error) ExitCode {
 		res.Reasons = escaped(res.Reasons)
 		res.Warnings = escapedWarnings(res.Warnings)
 		inv.writeWarnings(res.Warnings)
+		if res.Outcome == OutcomeRefused {
+			inv.writeRefusal(res)
+		}
 		res.Output = FormatVersion
 		res.Command = inv.command
 		var werr error
@@ -383,7 +404,16 @@ func (inv *invocation) finish(err error) ExitCode {
 		if outcome == OutcomeFailed || outcome == OutcomeUsage {
 			res.Error = msg
 		}
+		var nj *notJudged
+		if errors.As(err, &nj) {
+			res.Checks = nj.checks
+		}
 		_ = writeJSON(inv.env.Stdout, res)
+	} else if known && mode == OutputText {
+		var nj *notJudged
+		if errors.As(err, &nj) {
+			_, _ = io.WriteString(inv.env.Stdout, nj.text)
+		}
 	}
 	return code
 }
