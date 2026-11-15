@@ -82,8 +82,9 @@ func TestProgramNewAndCheckRequest(t *testing.T) {
 	for _, ext := range []string{"csr.pem", "proof.json"} {
 		putFile(t, dir, "requests/x509-csr-bad-signature/x509-csr-bad-signature."+ext, vectorFile(t, "hand-off", "v1", "requests", "x509-csr-bad-signature."+ext))
 	}
+	const trustSetWarning = "ritueel: warning: trust-set-unchecked: this command did not check the signature and the expiry of the trust set that the roots were read from\n"
 	code, stdout, stderr = runProgramIn(t, exe, dir, "check", "request", "x509-csr-bad-signature", "--delegation", "example-intermediate")
-	if code != 3 || !strings.HasSuffix(stdout, "request x509-csr-bad-signature: refused: possession-invalid\n") || !strings.HasPrefix(stderr, "ritueel: refused: possession-invalid (check 5: ") {
+	if code != 3 || !strings.HasSuffix(stdout, "request x509-csr-bad-signature: refused: possession-invalid\n") || !strings.HasPrefix(stderr, trustSetWarning+"ritueel: refused: possession-invalid (check 5: ") {
 		t.Errorf("a bad signature: exit %d, stdout %q, stderr %q", code, stdout, stderr)
 	}
 	code, stdout2, stderr2 := runProgramIn(t, exe, dir, "check", "request", "x509-csr-bad-signature", "--delegation", "example-intermediate", "--output", "json")
@@ -100,6 +101,9 @@ func TestProgramNewAndCheckRequest(t *testing.T) {
 	if checks, _ := obj["checks"].([]any); len(checks) != 9 {
 		t.Errorf("checks = %#v, want nine", obj["checks"])
 	}
+	if w, _ := obj["warnings"].([]any); len(w) != 1 || w[0] != strings.TrimSuffix(strings.TrimPrefix(trustSetWarning, "ritueel: warning: "), "\n") {
+		t.Errorf("warnings = %#v, want the one warning about the trust set", obj["warnings"])
+	}
 
 	// The same request in another working folder with no --dir: a usage error that names the flag.
 	code, stdout, stderr = runProgramIn(t, exe, parent, "check", "request", "x509-csr-bad-signature")
@@ -112,7 +116,6 @@ func TestProgramNewAndCheckRequest(t *testing.T) {
 		putFile(t, dir, "requests/x509-software-valid/x509-software-valid."+ext, vectorFile(t, "hand-off", "v1", "requests", "x509-software-valid."+ext))
 	}
 	code, stdout, stderr = runProgramIn(t, exe, dir, "check", "request", "x509-software-valid", "--delegation", "example-intermediate")
-	const trustSetWarning = "ritueel: warning: trust-set-unchecked: this command did not check the signature and the expiry of the trust set that the roots were read from\n"
 	if code != 0 || stderr != trustSetWarning || !strings.HasSuffix(stdout, "request x509-software-valid: accepted\n") {
 		t.Errorf("a valid request: exit %d, stdout %q, stderr %q", code, stdout, stderr)
 	}
@@ -120,7 +123,8 @@ func TestProgramNewAndCheckRequest(t *testing.T) {
 	const noDelegation = "request x509-software-valid: not complete: check 9 needs a delegation; give --delegation NAME\n"
 	if code != 1 || !strings.HasSuffix(stdout, noDelegation) || strings.Contains(stdout, "accepted") ||
 		!strings.HasPrefix(stderr, "ritueel: warning: check 9: rules not run:") ||
-		!strings.HasSuffix(stderr, "ritueel: request x509-software-valid is not accepted and not refused: check 9 needs a delegation; give --delegation NAME\n") {
+		!strings.HasSuffix(stderr, trustSetWarning+"ritueel: request x509-software-valid is not accepted and not refused: check 9 needs a delegation; give --delegation NAME\n") ||
+		strings.Count(stderr, "trust-set-unchecked") != 1 {
 		t.Errorf("no delegation: exit %d, stdout %q, stderr %q", code, stdout, stderr)
 	}
 	code, stdout, _ = runProgramIn(t, exe, dir, "check", "request", "x509-software-valid", "--output", "json")
