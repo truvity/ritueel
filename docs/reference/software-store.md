@@ -5,9 +5,9 @@ sidebar:
   order: 16
 ---
 
-*Not built yet. The encrypted file is built with M2 ([issue #8](https://github.com/truvity/ritueel/issues/8)); 1Password ([issue #59](https://github.com/truvity/ritueel/issues/59)) and the OS keyring ([issue #60](https://github.com/truvity/ritueel/issues/60)) are M7. The reasons are in [record 0002](../decisions/0002-where-a-key-lives.md); the facts behind the choices are in [the research](/research/software-key-backends-2026-11-01/).*
+*Partly built. The package `internal/keystore/software` is library code: it keeps a key in a key file that has a passphrase (an age file with one scrypt recipient) and, for a test root only, in a plain key file marked TEST ONLY. No command uses it yet; the commands come with M2 ([issue #8](https://github.com/truvity/ritueel/issues/8)). The card way, the recovery key, 1Password ([issue #59](https://github.com/truvity/ritueel/issues/59)) and the OS keyring ([issue #60](https://github.com/truvity/ritueel/issues/60)) are not built; the last two are M7. The reasons are in [record 0002](../decisions/0002-where-a-key-lives.md); the facts behind the choices are in [the research](/research/software-key-backends-2026-11-01/).*
 
-A software key has no evidence of where it lives and can be copied ([what a key store can prove](/learn/what-a-store-can-prove/)). The backend decides where the bytes sit between ceremonies. In every backend the key is generated in memory and written straight into its backend, never to a file on disk.
+A software key has no evidence of where it lives and can be copied ([what a key store can prove](/learn/what-a-store-can-prove/)). The backend decides where the bytes sit between ceremonies. In every backend the key is generated in memory and written straight into its backend, never to a file on disk. A test root is the one exception: its key files are plain and marked TEST ONLY.
 
 ## The backends
 
