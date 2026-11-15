@@ -43,6 +43,19 @@
 // encoding/pem and internal/rootlist, and not internal/pki, which made the certificate), and it
 // writes no file of the bundle.
 //
+// [Run] is the whole of one ceremony after the refusals of the command line, and the only caller of
+// [Folder]. It reads the history ([history.Inspect]) and refuses an open attempt; for a saved plan
+// ([ReadSavedPlan], the form history/<ceremony>/plan.json that [CheckPlanPath] judges) it also refuses
+// a plan that is stale ([ReasonPlanStale]), used ([ReasonPlanUsed]) or made by another program
+// ([ReasonPlanVersion]), and a clock that is before the ceremony time ([ReasonClockBehind]). The key
+// directory is judged by the key store before the person confirms. The person confirms by typing the
+// first eight characters of the plan digest at a terminal, or a script passes the whole digest
+// ([Confirm]); anything else is [ErrNotConfirmed] and writes nothing. Then come the plan folder, the
+// attempt with the two journals, [MakeRoots], the journals read back from their files and checked
+// again, the transcript, the artifacts (the root.json of each key, then the trust set), the ceremony
+// record last, and the check of the history on the bundle that was written. A fault after the first
+// write is a [*StoppedError].
+//
 // Every write goes through fsx.Writer, so a name that exists, a link and a temporary name are
 // refused by the one place that knows the rules (record 0006, rules 31 to 33 and 44). A folder
 // that may exist already (history/) is read first and made only when it is absent. Every file
