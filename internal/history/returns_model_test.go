@@ -651,8 +651,9 @@ func compareModel(t *testing.T, b mBundle) {
 				t.Errorf("%s: the list before cannot be read: %v, and the detail is %q", mf, w.prevGone, f.Detail)
 			}
 			if w.doubt {
-				// The bound of a detail may cut the names of the sets (they come last).
-				if cut := strings.HasSuffix(f.Detail, "..."); !cut && !strings.Contains(f.Detail, "; among trust/") {
+				// The names of the sets come directly after the words that say the order is not sure;
+				// the bound of a detail may cut them, and then it ends with three dots.
+				if cut := strings.HasSuffix(f.Detail, "..."); !cut && !strings.Contains(f.Detail, "is not sure, among trust/") {
 					t.Errorf("%s: the order is not sure and the detail names no set: %q", mf, f.Detail)
 				}
 			} else if strings.Contains(f.Detail, "among") {

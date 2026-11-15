@@ -589,7 +589,7 @@ func TestRootReturnsTheDetailNamesAtMostTwoSetsAndCountsTheRest(t *testing.T) {
 			t.Fatal("no finding")
 		}
 		for _, f := range returnsOf(rep) {
-			if !strings.Contains(f.Detail, notSure+" (record 0006, rule 54); among trust/1-aaaaaaaa, trust/1-aaaaaaab;") {
+			if !strings.Contains(f.Detail, notSure+", among trust/1-aaaaaaaa, trust/1-aaaaaaab (record 0006, rule 54);") {
 				t.Errorf("the detail %q", f.Detail)
 			}
 		}
@@ -601,7 +601,7 @@ func TestRootReturnsTheDetailNamesAtMostTwoSetsAndCountsTheRest(t *testing.T) {
 			t.Fatal("no finding")
 		}
 		for _, f := range got {
-			if want := notSure + " (record 0006, rule 54); among trust/1-aaaaaaaa, trust/1-aaaaaaab and 1 more;"; !strings.Contains(f.Detail, want) {
+			if want := notSure + ", among trust/1-aaaaaaaa, trust/1-aaaaaaab and 1 more (record 0006, rule 54);"; !strings.Contains(f.Detail, want) {
 				t.Errorf("the detail %q lacks %q", f.Detail, want)
 			}
 		}
@@ -613,7 +613,7 @@ func TestRootReturnsTheDetailNamesAtMostTwoSetsAndCountsTheRest(t *testing.T) {
 			t.Fatal("no finding")
 		}
 		for _, f := range got {
-			if want := notSure + " (record 0006, rule 54); among trust/1-aaaaaaaa, trust/1-aaaaaaab and 5 more;"; !strings.Contains(f.Detail, want) {
+			if want := notSure + ", among trust/1-aaaaaaaa, trust/1-aaaaaaab and 5 more (record 0006, rule 54);"; !strings.Contains(f.Detail, want) {
 				t.Errorf("the detail %q lacks %q", f.Detail, want)
 			}
 		}
@@ -655,7 +655,7 @@ func TestRootReturnsADetailWhenTheOrderIsNotSureHasTheFormOfTheOthers(t *testing
 		if !strings.HasPrefix(f.Line(), "root-returns trust/5-aaaaaaaa") && !strings.HasPrefix(f.Line(), "root-returns trust/5-cccccccc") {
 			t.Errorf("the line is %q", f.Line())
 		}
-		for _, w := range []string{`root key "A" returns: ` + wPin(pa) + "; " + notSure + " (record 0006, rule 54); among trust/5-", "; among trust/5-"} {
+		for _, w := range []string{`root key "A" returns: ` + wPin(pa) + "; " + notSure + ", among trust/5-", ", among trust/5-"} {
 			if !strings.Contains(f.Detail, w) {
 				t.Errorf("the detail %q lacks %q", f.Detail, w)
 			}
@@ -669,8 +669,9 @@ func TestRootReturnsADetailWhenTheOrderIsNotSureHasTheFormOfTheOthers(t *testing
 	}
 }
 
-// A finding with both reasons and the shortest names a set may have says both, and the record and
-// rule, inside the bound of a detail.
+// A finding with both reasons and the shortest names a set may have says both, says that the order
+// is not sure and names the sets, inside the bound of a detail: what comes after the names (the rule
+// and the holders) is what the bound cuts.
 func TestRootReturnsADetailWithBothReasonsAndShortNamesKeepsThemAll(t *testing.T) {
 	rep := runWithUnlisted(t,
 		[]cset{{"5-a", keyList(0, ent{"A", pa, f1})}},
@@ -680,7 +681,9 @@ func TestRootReturnsADetailWithBothReasonsAndShortNamesKeepsThemAll(t *testing.T
 		t.Fatalf("%d findings: %v", len(got), lines(got))
 	}
 	for _, f := range got {
-		for _, w := range []string{"its pin " + short16(pa), "its OpenPGP fingerprint " + f1[:16], "(record 0006, rule 54)"} {
+		// The reason, the words that say the order is not sure and the names of the sets come first;
+		// the rule and the holders follow, and the bound of a detail cuts them first.
+		for _, w := range []string{"its pin " + short16(pa), "its OpenPGP fingerprint " + f1[:16], notSure + ", among trust/5-a, trust/5-b an"} {
 			if !strings.Contains(f.Detail, w) {
 				t.Errorf("the detail %q lacks %q", f.Detail, w)
 			}

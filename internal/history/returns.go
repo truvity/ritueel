@@ -44,7 +44,8 @@ type fpKey struct {
 
 // tally counts, for a group of lists, how many of them hold each key. A list counts once for a
 // key, however many entries of it name the key. size is the number of lists of the group, those
-// that cannot be read included: such a list holds no key.
+// that cannot be read included: such a list holds no key. Only the tallies that [view] reads as
+// prev and cur have a size; the running tally cum holds counts only, and merge does not add sizes.
 type tally struct {
 	size  int
 	pin   map[[32]byte]int // lists that hold the pin
@@ -84,7 +85,6 @@ func (t *tally) addList(keys []rootKey) {
 
 // merge adds the counts of o to t.
 func (t *tally) merge(o *tally) {
-	t.size += o.size
 	for k, n := range o.pin {
 		bump(&t.pin, k, n)
 	}
@@ -167,6 +167,13 @@ func (h *holders) other(set string) string {
 		return h.b
 	}
 	return set
+}
+
+// holder is [holders.other], and says whether the set itself is the only one that held the key: a
+// set that more than one record lists is judged at its later place against its own earlier place.
+func (h *holders) holder(set string) (name string, self bool) {
+	name = h.other(set)
+	return name, name == set
 }
 
 func addHolders(pinHold map[[32]byte]*holders, fpHold map[[20]byte]*holders, set string, keys []rootKey) {
@@ -333,7 +340,10 @@ func keysOf(in []RootKey) ([]rootKey, error) {
 //     the records that list it are off the chain, or its list cannot be read) is judged as a list
 //     after one that cannot be read: an entry of it is a return when any other list that could be
 //     read held the key. Such a list is already anchor-unknown or chain-broken, so the bundle fails
-//     with or without this finding; the lists with a place are judged without it.
+//     with or without this finding; the lists with a place are judged without it. When the bundle
+//     has ceremony records and none of them is on the chain (two records that have no
+//     prev_record_sha256, for one), no set has a place, and every root list is judged so. A bundle
+//     with no ceremony record keeps the places that its root lists claim.
 //
 // A list that cannot be read adds nothing to what was held. The list after it, when it has a
 // place, has no known list before it: an entry of that list is a return when an earlier list that
@@ -343,7 +353,10 @@ func keysOf(in []RootKey) ([]rootKey, error) {
 // The work is one sort by place and name, at most three passes over the lists (the third only when
 // the first reading shows an entry that the second does not), and one pass over the floating
 // lists. Each list has at most [MaxRootsPerList] entries, all lists together at most
-// [MaxRootEntries], and the maps hold at most one item for each entry.
+// [MaxRootEntries], and all the sets together stand at most at [MaxSetPlaces] places. The maps of
+// the tallies and of the holders hold at most one item for each entry, and the notes of the places
+// and the placings hold at most one item for each place, so the memory is bounded by the entries
+// and the places, and not by the number of records.
 func (ck *checker) rootReturns() error {
 	if len(ck.rootLists) == 0 {
 		return nil
@@ -351,8 +364,15 @@ func (ck *checker) rootReturns() error {
 	var all []placing
 	var placed, floating []setList
 	multi := false
+	// Records that are all off the chain (two records with no predecessor, for one) give no set a
+	// place: every root list is judged as a list whose place cannot be told. A bundle with no
+	// ceremony record keeps the places that its root lists claim.
+	noChain := len(ck.recs) > 0 && len(ck.onChain) == 0
 	for _, l := range ck.rootLists {
-		ps := ck.placingsOf(l)
+		var ps []placing
+		if !noChain {
+			ps = ck.placingsOf(l)
+		}
 		if len(ps) == 0 {
 			floating = append(floating, l)
 			continue
@@ -582,10 +602,12 @@ func (w *retWalk) run(groups []group, visit func(l setList, at int, r returned, 
 				r := r0
 				r.k = k
 				if v.pinReturns(k) {
-					r.pinCase, r.holder = true, pinHold[k.pin].other(l.set)
+					r.pinCase = true
+					r.holder, r.pinSelf = pinHold[k.pin].holder(l.set)
 				}
 				if v.fpReturns(k) {
-					r.fpCase, r.fpHolder = true, fpHold[k.fp].other(l.set)
+					r.fpCase = true
+					r.fpHolder, r.fpSelf = fpHold[k.fp].holder(l.set)
 				}
 				if !r.pinCase && !r.fpCase {
 					continue
@@ -649,10 +671,12 @@ func (ck *checker) floatingReturns(placed, floating []setList) error {
 		for _, k := range l.read.keys {
 			r := returned{k: k, floating: true}
 			if k.hasPin && all.pin[k.pin] > 1 {
-				r.pinCase, r.holder = true, pinHold[k.pin].other(l.set)
+				r.pinCase = true
+				r.holder, r.pinSelf = pinHold[k.pin].holder(l.set)
 			}
 			if k.hasFP && all.fp[k.fp] > 1 {
-				r.fpCase, r.fpHolder = true, fpHold[k.fp].other(l.set)
+				r.fpCase = true
+				r.fpHolder, r.fpSelf = fpHold[k.fp].holder(l.set)
 			}
 			if r.pinCase || r.fpCase {
 				ck.col.add(RootReturns, listPath(l.set), returnDetail(r))
@@ -833,8 +857,10 @@ type returned struct {
 	k        rootKey
 	pinCase  bool
 	holder   string // a set that held the pin
+	pinSelf  bool   // the only set that held the pin is the set itself, at an earlier place
 	fpCase   bool
 	fpHolder string   // a set that held the fingerprint
+	fpSelf   bool     // the only set that held the fingerprint is the set itself, at an earlier place
 	doubt    []string // the sets whose order is not sure; empty when the order is sure
 	floating bool     // the place of the list cannot be told
 	known    bool     // the list before can be read (false only when one list is before and cannot be read)
@@ -843,28 +869,26 @@ type returned struct {
 
 // returnDetail says what returned, in printable ASCII, in this order: the label (written with
 // escapes, because it is a text of the file, and cut), the reason (which key returned, by which of
-// the two cases, and what the list before it held), what is not sure, the rule, and last the names
-// of the sets (each cut). The bound of a detail cuts from the end, so it cuts a name or the words
-// about what is not sure and never the reason: the label takes at most 51 bytes, the reason at most
-// 150, and the bound is 240.
+// the two cases, and what the list before it held), what is not sure, the rule, and last the
+// names of the sets (each cut). When the order is not sure, the names of the sets whose order is
+// not sure come directly after the words that say so, before the rule and before the holders. The
+// bound of a detail cuts from the end, so it cuts a name or the words about what is not sure and
+// never the reason: the label takes at most 51 bytes, the reason at most 150, and the bound is 240.
 func returnDetail(r returned) string {
 	d := `root key "` + labelShown(r.k.label) + `" returns: ` + reasonOf(r)
 	switch {
 	case r.floating:
 		d += "; the place of this trust set in the chain cannot be told"
 	case len(r.doubt) > 0:
-		d += "; the order of the trust sets is not sure"
+		d += "; the order of the trust sets is not sure, among " + doubtNames(r.doubt)
 	}
 	d += " (record 0006, rule 54)"
 	var where []string
-	if len(r.doubt) > 0 {
-		where = append(where, "among "+doubtNames(r.doubt))
-	}
 	if r.pinCase {
-		where = append(where, "pin held on "+setShown(r.holder))
+		where = append(where, "pin held on "+heldOn(r.holder, r.pinSelf))
 	}
 	if r.fpCase {
-		where = append(where, "fingerprint held on "+setShown(r.fpHolder))
+		where = append(where, "fingerprint held on "+heldOn(r.fpHolder, r.fpSelf))
 	}
 	if len(r.doubt) == 0 && !r.floating && r.prevSet != "" {
 		where = append(where, "list before "+setShown(r.prevSet))
@@ -873,6 +897,16 @@ func returnDetail(r returned) string {
 		d += "; " + w
 	}
 	return d
+}
+
+// heldOn names the set that held a key. When the only set that held it is the set judged (a set
+// that more than one record lists, judged at its later place against its own earlier place), it
+// says so in plain words and does not print the name as if it were another set.
+func heldOn(holder string, self bool) string {
+	if self {
+		return "the same set at an earlier place"
+	}
+	return setShown(holder)
 }
 
 // reasonOf is the words that say which key returned and why, with no name of a set in them.

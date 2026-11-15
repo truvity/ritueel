@@ -55,35 +55,41 @@
 //     ceremony, found through the attempt the closing record names, and when that plan cannot be
 //     read the anchor is not accepted; absent exactly for the first ceremony),
 //     or is not a record on the chain; or the root list cannot be read.
-//   - root-returns: a root list holds a root key that left the root list (record 0006, rule 54):
-//     an earlier list held its pin and the list directly before it did not, or an earlier list
-//     held its OpenPGP fingerprint, under any pin, and the list directly before it does not hold
-//     it under this pin. An entry with a fingerprint and no pin is a key held by its fingerprint,
-//     and counts as its own pin. A key that stays is reported once, at the list that brings it
-//     back. The check reads the root list of every trust set, also a set that no record lists.
-//     The order is the order of the hash chain of the ceremony records, not the names that the
-//     writer of the newest ceremony chooses: a set that a record lists stands at the place of that
-//     record, for a closing record too (the closing record is a record of the chain like any
-//     other, so its place is not the end that the plan of the closed ceremony names, which the
-//     writer of the closing record can make), and a set that more than one record lists stands
-//     at the place of each and is judged at each. A set that no record lists stands at the place
+//   - root-returns: a root list holds a root key that left the root list (record 0006, rule 54): an
+//     earlier list held its pin and the list directly before it did not, or an earlier list held
+//     its OpenPGP fingerprint, under any pin, and the list directly before it does not hold it
+//     under this pin. An entry with a fingerprint and no pin is a key held by its fingerprint, and
+//     counts as its own pin. A key that stays is reported once, at the list that brings it back.
+//     The check reads the root list of every trust set, also a set that no record lists. The order
+//     is the order of the hash chain of the ceremony records, not the names that the writer of the
+//     newest ceremony chooses: a set that a record lists stands at the place of that record, for a
+//     closing record too (it is a record of the chain like any other, so its place is not the end
+//     that the plan of the closed ceremony names, which the writer of the closing record can make),
+//     and a set that more than one record lists stands at the place of each and is judged at each,
+//     at most [MaxSetPlaces] places in all (more ends the run with [ErrTooMuch]; a bundle that
+//     follows the rules has one place for each set). A set that no record lists stands at the place
 //     of the record that its last_record_sha256 names (none when it names none). Sets at the same
-//     place are ordered by the member sequence of their lists and then by the number in the
-//     folder name; where these tie, are missing or disagree, each reading is judged, and an entry
-//     that any of them shows as a return is a finding. Where more than one set that a record
-//     lists stands at one place (records that fork, or one record that lists two sets), the
-//     names and sequences of its sets are not believed: every order of them is judged. The detail of a finding says that the order is not sure when a group of sets that tie
-//     is around the entry, or when the readings differ for it (the other reading does not show it,
-//     or has another list before it), and names up to two of the sets of the places whose order
-//     is not sure and how many more. The reason comes first in the detail and the names of sets
-//     last, so that its bound cuts a name and never the reason. A set whose place cannot be told (it is anchor-unknown or chain-broken)
-//     is judged as a list after one that cannot be read: an entry
-//     of it is a return when any other list held the key. The entries are read in one form, the
-//     bytes the digits stand for, so the case of a digit makes no difference, and a 0x prefix,
+//     place are ordered by the member sequence of their lists and then by the number in the folder
+//     name; where these tie, are missing or disagree, each reading is judged, and an entry that any
+//     of them shows as a return is a finding. Where more than one set that a record lists stands at
+//     one place (records that fork, or one record that lists two sets), the names and sequences of
+//     its sets are not believed: every order of them is judged. The detail of a finding says that
+//     the order is not sure when a group of sets that tie is around the entry, or when the readings
+//     differ for it (the other reading does not show it, or has another list before it); it then
+//     names up to two of the sets of the places whose order is not sure and how many more, directly
+//     after those words. The reason comes first in the detail and the bound of a detail cuts from
+//     its end, so it cuts a name and never the reason. A set whose only earlier holder of the key
+//     is itself is named as the same set at an earlier place. A set whose place cannot be told (it
+//     is anchor-unknown or chain-broken) is judged as a list after one that cannot be read: an
+//     entry of it is a return when any other list held the key. So is every set when the bundle has
+//     ceremony records and none of them is on the chain: no set has a place (the bundle fails with
+//     chain-broken, and the name root-returns is there when a key came back). A bundle with no
+//     ceremony record keeps the places that its root lists claim. The entries are read in one form,
+//     the bytes the digits stand for, so the case of a digit makes no difference, and a 0x prefix,
 //     white space and the separators space, colon and hyphen are dropped. One finding is given for
 //     each entry, whose detail names the label and the case. A list that cannot be read (it is
-//     anchor-unknown) adds nothing, and an entry of the list after it that an earlier list held
-//     is a return, because the list before it is not known. A list with an entry whose pin or
+//     anchor-unknown) adds nothing, and an entry of the list after it that an earlier list held is
+//     a return, because the list before it is not known. A list with an entry whose pin or
 //     fingerprint cannot be read in that form, or an entry with neither, is such a list.
 //     [FindReturns] is the same rule for one list and the lists before it.
 //   - unexpected-name: a name that breaks the rule for names (record 0006, rule 38), or a link,
@@ -111,6 +117,8 @@
 // Each loop and each read has a named limit: the file limits of fsx (8 MiB for a file, 65,536
 // names for a folder), those of strictjson (256 KiB and 10,000 levels for a record, a plan, an
 // attempt and a root list), files.MaxPathElements (12) for a path in
-// a record, [MaxReadBytes], [MaxFileReads], [MaxWalkEntries], [MaxRootEntries] (with [MaxRootsPerList] for one list),
-// [MaxFindingsPerCode] and [MaxNamesShown]. A command that prints the findings prints [Report.Omitted] too.
+// a record, [MaxReadBytes], [MaxFileReads], [MaxWalkEntries], [MaxRootEntries] (with
+// [MaxRootsPerList] for one list), [MaxSetPlaces] (the places at which the trust sets stand, all
+// sets together), [MaxFindingsPerCode] and [MaxNamesShown]. A command that prints the findings
+// prints [Report.Omitted] too.
 package history

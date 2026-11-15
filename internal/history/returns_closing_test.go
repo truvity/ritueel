@@ -215,7 +215,7 @@ func TestRootReturnsOneRecordThatListsTwoSetsIsJudgedInEveryOrder(t *testing.T) 
 	t.Run("the detail names the sets of the place", func(t *testing.T) {
 		rep := build(t, cset{"3-aaaaaaaa", seqList("3", kB)}, cset{"4-aaaaaaaa", seqList("4", kA)})
 		f := firstReturn(t, rep)
-		if want := "; " + wAmong("3-aaaaaaaa", "4-aaaaaaaa"); !strings.Contains(f.Detail, want) {
+		if want := "; " + wUnsure("3-aaaaaaaa", "4-aaaaaaaa"); !strings.Contains(f.Detail, want) {
 			t.Errorf("the detail %q lacks %q", f.Detail, want)
 		}
 	})
@@ -236,7 +236,7 @@ func TestRootReturnsOneRecordThatListsTwoSetsIsJudgedInEveryOrder(t *testing.T) 
 		}
 		wantReturnsAt(t, rep, "4-aaaaaaaa A")
 		for _, f := range returnsOf(rep) {
-			if want := wAmong("2-aaaaaaaa", "3-aaaaaaaa", "4-aaaaaaaa"); !strings.Contains(f.Detail, want) {
+			if want := wUnsure("2-aaaaaaaa", "3-aaaaaaaa", "4-aaaaaaaa"); !strings.Contains(f.Detail, want) {
 				t.Errorf("the detail %q lacks %q", f.Detail, want)
 			}
 		}
@@ -325,7 +325,7 @@ func TestRootReturnsTheDetailSaysNotSureExactlyWhenTheReadingsDiffer(t *testing.
 		wantReturnsAt(t, rep, "9-aaaaaaaa K")
 		allNotSure(t, rep)
 		f := firstReturn(t, rep)
-		if want := "; " + wAmong("2-aaaaaaaa", "3-aaaaaaaa", "9-aaaaaaaa"); !strings.Contains(f.Detail, want) {
+		if want := "; " + wUnsure("2-aaaaaaaa", "3-aaaaaaaa", "9-aaaaaaaa"); !strings.Contains(f.Detail, want) {
 			t.Errorf("the detail %q lacks %q", f.Detail, want)
 		}
 		if !strings.Contains(f.Detail, wPin(pc)) {
@@ -460,7 +460,7 @@ func TestRootReturnsEveryFormOfTheDetailKeepsItsReasonWhole(t *testing.T) {
 				}
 				// The words about the order, when they fit, follow the reason; they never come
 				// before it.
-				if i := strings.Index(d, wUnsure); i >= 0 && i < len(reason) {
+				if i := strings.Index(d, wNotSure); i >= 0 && i < len(reason) {
 					t.Errorf("the words about the order come before the reason: %q", d)
 				}
 				if c.floating && len(d) < maxDetail && !strings.Contains(d, "cannot be told") {

@@ -119,7 +119,7 @@ func TestReturnDetailNamesTheListBeforeOnlyWhenTheOrderIsSure(t *testing.T) {
 	}
 	unsure := base
 	unsure.doubt = []string{"a", "b"}
-	if d := returnDetail(unsure); strings.Contains(d, "; list before trust/") || !strings.HasSuffix(d, "; among trust/a, trust/b; pin held on trust/h") {
+	if d := returnDetail(unsure); strings.Contains(d, "; list before trust/") || !strings.HasSuffix(d, "; the order of the trust sets is not sure, among trust/a, trust/b (record 0006, rule 54); pin held on trust/h") {
 		t.Errorf("an order that is not sure: %q", d)
 	}
 	floating := base

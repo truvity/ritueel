@@ -57,11 +57,16 @@ func wHeldPin(set string) string { return "pin held on " + wsetOf(set) }
 func wHeldFP(set string) string  { return "fingerprint held on " + wsetOf(set) }
 func wBefore(set string) string  { return "list before " + wsetOf(set) }
 
-// wUnsure is what a detail says when the order of the sets is not sure.
-const wUnsure = "the order of the trust sets is not sure (record 0006, rule 54)"
+// wNotSure is the words that say the order of the sets is not sure. The names of the sets whose
+// order is not sure follow them directly (wAmong), before the rule and before the holders.
+const wNotSure = "the order of the trust sets is not sure"
 
 // wRule is the rule that closes the reason.
 const wRule = " (record 0006, rule 54)"
+
+// wUnsure is what a detail says when the order of the sets is not sure, with the sets named: the
+// words, the names directly after them, and then the rule.
+func wUnsure(sets ...string) string { return wNotSure + ", " + wAmong(sets...) + wRule }
 
 // wAmong is the part that names the sets whose order is not sure.
 func wAmong(sets ...string) string {
