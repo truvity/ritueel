@@ -21,8 +21,9 @@ const docsLinks = {
   },
 };
 
-// A page with `flow: rows` in its front matter gets its sections wrapped, for the rows of the wide
-// layout (site/lib/parts.mjs). The same Satteri processor, the same place in the order.
+// A page with `flow: rows` or `flow: landing` in its front matter gets its sections wrapped, for the
+// rows of the wide layout and for the blocks of a case page (site/lib/parts.mjs). The same Satteri
+// processor, the same place in the order.
 const docsParts = {
   name: 'ritueel-docs-parts',
   hooks: {
@@ -103,10 +104,21 @@ export default defineConfig({
       expressiveCode: { customizeTheme: codeSyntaxColours },
       customCss: ['./src/styles/theme.css', './src/styles/fonts.css', './src/styles/site.css'],
       routeMiddleware: './src/route-middleware.ts',
-      // The menu is six entries: only the target (docs/contributing/pages.md, "What is published").
-      // The pages are those of site/published.txt; a slug that is not on the list fails the build.
-      // The hand-off contract is not in the menu; the design page links it.
+      // The menu is seven entries, Cases first: only the target (docs/contributing/pages.md, "What is
+      // published"). The pages are those of site/published.txt; a slug that is not on the list fails
+      // the build. The hand-off contract is not in the menu; the design page links it.
       sidebar: [
+        {
+          label: 'Cases',
+          collapsed: false,
+          items: [
+            { slug: 'pki', label: 'Private CA' },
+            { slug: 'sign-releases', label: 'Project releases' },
+            { slug: 'commits', label: 'Commits and releases' },
+            { slug: 'ssh', label: 'SSH logins' },
+            { slug: 'logins', label: 'Own logins' },
+          ],
+        },
         {
           label: 'Learn',
           items: [
@@ -188,7 +200,10 @@ export default defineConfig({
         // the status page is built.
         starlightLinksValidator({
           errorOnRelativeLinks: false,
-          exclude: ['/status/', '/demo/', '/demo/**'],
+          // '/status/#*' is a case page's link to its table on the status page: the validator matches
+          // the raw link, so the form with an anchor needs its own entry. '/' is the start page,
+          // which the validator does not list as a page.
+          exclude: ['/', '/status/', '/status/#*', '/demo/', '/demo/**'],
         }),
       ],
     }),

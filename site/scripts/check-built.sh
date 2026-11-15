@@ -9,9 +9,10 @@ dist=${1:-site/dist}
 fail=0
 bad() { echo "check-built: $*" >&2; fail=1; }
 
-# The pages of site/published.txt (the fourteen Learn pages, the three How it works pages, the glossary, the roadmap, the hand-off contract),
-# the pages made in src/pages, and the demo.
+# The pages of site/published.txt (the five case pages, the fourteen Learn pages, the three How it works
+# pages, the glossary, the roadmap, the hand-off contract), the pages made in src/pages, and the demo.
 for f in index.html 404.html sitemap-index.xml robots.txt \
+         pki/index.html sign-releases/index.html commits/index.html ssh/index.html logins/index.html \
          learn/index.html learn/what-is-a-root/index.html learn/custody-chain/index.html \
          learn/chain-private-pki/index.html learn/chain-openpgp/index.html learn/chain-ssh/index.html \
          learn/how-a-yubikey-holds-keys/index.html learn/how-passkeys-work/index.html learn/how-a-kms-key-works/index.html \
@@ -39,13 +40,24 @@ done <<< "$unpublished"
 # The figures (site/figures, placed by <Figure>) reached the output: a figure page holds its <figure>
 # and drawings that are images with a label, and none of the drawings keeps its text in the search.
 # (Starlight's own icons are <svg> too, so the check names the drawings by role="img".)
-for f in index.html how-it-works/index.html how-it-works/cards/index.html how-it-works/bundle-and-stick/index.html \
+for f in how-it-works/index.html how-it-works/cards/index.html how-it-works/bundle-and-stick/index.html \
          learn/how-a-yubikey-holds-keys/index.html learn/how-passkeys-work/index.html learn/a-key-in-a-file/index.html \
          learn/what-is-a-root/index.html learn/choosing-where-a-root-lives/index.html; do
   [ -s "$dist/$f" ] || continue
   grep -q '<figure class="fig ' "$dist/$f" || bad "$f has no figure"
   [ "$(grep -o '<svg[^>]* role="img"[^>]* data-pagefind-ignore' "$dist/$f" | wc -l)" -ge 1 ] || bad "$f has no drawing with role=img and data-pagefind-ignore (did a sanitizer drop them?)"
   if grep -Eo '<svg[^>]* (class="fig-[a-z]+" )?viewBox="[^"]*"[^>]*>' "$dist/$f" | grep -v 'role="img"' | grep -q 'viewBox="0 0 \(280 224\|760\|360\)'; then bad "$f has a drawing without role=img"; fi
+done
+
+# The case pages (docs/pki.md and four more): each holds the blocks of a case page that site/lib/parts.mjs
+# makes (the pain first, and "Read next"), has no side menu and no table of contents, and links the
+# table of its case on the status page (the next block reads the cases from docs/coverage.yaml).
+for f in pki sign-releases commits ssh logins; do
+  page="$dist/$f/index.html"
+  [ -s "$page" ] || continue
+  grep -q '<section class="lp-part lp-pain"' "$page" || bad "$f/ has no block lp-pain: is flow: landing in its front matter, and does site/lib/parts.mjs run?"
+  grep -q '<section class="lp-part lp-read"' "$page" || bad "$f/ has no block lp-read"
+  ! grep -q 'data-has-sidebar' "$page" || bad "$f/ has a side menu; a case page stands alone"
 done
 
 # A page with a list of headings holds Starlight's "On this page" (the dropdown and the column), and a
@@ -186,7 +198,9 @@ fi
 
 # The tables of the status page (docs/coverage.yaml): one heading for each case of the data file, in
 # order, and the states of the legend, each as a shipped badge. The ids are the anchors /status/#case-N
-# that the case pages link.
+# that the case pages link: each case page links the table of its own case, and every /status/#anchor
+# that a built page links is an id of the status page. The link validator does not check these links
+# (the status page is made in src/pages and is excluded from it), so a wrong id would fail nowhere else.
 if [ -s "$dist/status/index.html" ]; then
   want=$(grep -c '^  kind: case$' docs/coverage.yaml || true)
   have=$(grep -o '<h2 id="case-[0-9]*"' "$dist/status/index.html" | wc -l)
@@ -198,6 +212,18 @@ if [ -s "$dist/status/index.html" ]; then
   states=$(awk '/^  states:/ { s = 1; next } /^- id:/ { s = 0 } s && /^    - id: / { n++ } END { print n + 0 }' docs/coverage.yaml)
   [ "$states" -gt 0 ] || bad "docs/coverage.yaml has no state in its legend"
   [ "$(grep -o '<th scope="row"><span class="sl-badge' "$dist/status/index.html" | wc -l)" -eq "$states" ] || bad "status/index.html does not show each of the $states states of the legend as a badge in \"The states\""
+  cases=0
+  while read -r number page; do
+    [ -n "$number" ] || continue
+    cases=$((cases + 1))
+    [ -s "$dist${page}index.html" ] || { bad "the page $page of case $number is not built"; continue; }
+    grep -q "href=\"/status/#case-$number\"" "$dist${page}index.html" || bad "${page#/} does not link the table of its case, /status/#case-$number"
+  done < <(awk '/^  number: / { n = $2 } /^  page: / { print n, $2 }' docs/coverage.yaml)
+  [ "$cases" -eq "$want" ] || bad "docs/coverage.yaml names $cases case pages for $want cases"
+  while read -r anchor; do
+    [ -n "$anchor" ] || continue
+    grep -q "id=\"$anchor\"" "$dist/status/index.html" || bad "a page links /status/#$anchor, which is no id of the status page"
+  done < <(grep -rhoE 'href="/status/#[A-Za-z0-9_-]+"' "$dist" --include=index.html | sed -E 's/.*#([^"]+)"/\1/' | sort -u)
 fi
 
 # A mark that tells a reader that words wait for approval never ships: no built page holds the class

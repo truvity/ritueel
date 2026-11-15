@@ -145,7 +145,7 @@
 .fig .chip { fill: var(--sl-color-bg-nav); stroke: none; }
 .fig .halo { fill: var(--sl-color-bg-nav); stroke: var(--sl-color-bg-nav); stroke-width: 5; stroke-linejoin: round; }
 
-/* The figure "whole-chain" (the start page) has three drawings: the wide one (760 units) for a column
+/* The figure "whole-chain" (How it works) has three drawings: the wide one (760 units) for a column
    of 760 to 1100 px, one made for the wide page (1100 units, the same panels) from 1100 px, and the
    tall one (320 units) for a phone. Each is shown at 1:1 or more and never above 1.15 times, so the
    labels stay 12 px or more. The two wide drawings are both .fig-wide; their viewBox tells them apart. */

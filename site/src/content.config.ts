@@ -17,9 +17,10 @@ const docsRoot = fileURLToPath(new URL('../../docs', import.meta.url));
 export const collections = {
   docs: defineCollection({
     loader: glob({ base: 'src/content/docs', pattern: publishedDocs() }),
-    // `flow: rows` shows the sections of a page in rows of two on a wide screen (lib/parts.mjs wraps
-    // them, src/styles/site.css lays them out). It is for a page of short parts.
-    schema: docsSchema({ extend: z.object({ flow: z.enum(['rows']).optional() }) }),
+    // `flow: rows` shows the sections of a page in rows of two on a wide screen. `flow: landing` is
+    // the layout of a case page, a page that stands alone: no side menu, the parts in two or three
+    // columns, one screen. lib/parts.mjs wraps the parts of both.
+    schema: docsSchema({ extend: z.object({ flow: z.enum(['rows', 'landing']).optional() }) }),
   }),
   i18n: defineCollection({ loader: i18nLoader(), schema: i18nSchema() }),
   // docs/coverage.yaml: the legend and the tables of the status page. lib/coverage.mjs checks what
@@ -38,8 +39,8 @@ export const collections = {
         kind: z.literal('case'),
         number: z.number().int().positive(),
         title: z.string(),
-        // The address of the case page, once the case pages exist.
-        page: z.string().regex(/^\/[a-z-]+\/$/).optional(),
+        // The address of the case page: one path part, and a line of site/published.txt (lib/coverage.mjs).
+        page: z.string().regex(/^\/[a-z-]+\/$/),
         rows: z.array(
           z.strictObject({
             way: z.string(),

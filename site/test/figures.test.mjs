@@ -51,7 +51,7 @@ test('a strip has three or six panels, numbered from 1, each with a title and a 
 test('a layout has a wide and a narrow drawing', () => {
   for (const fig of all.filter((f) => f.kind === 'layout')) {
     assert.ok(/class="fig-wide"/.test(fig.wide) && /viewBox="0 0 760 /.test(fig.wide), `${fig.id}: wide`);
-    // the home page's picture is drawn 320 units wide: a phone of 360 px has a column of 328 px, and 360 units would be drawn at 0.91
+    // the picture of the whole chain is drawn 320 units wide: a phone of 360 px has a column of 328 px, and 360 units would be drawn at 0.91
     const narrowWidth = fig.id === 'whole-chain' ? 320 : 360;
     assert.ok(/class="fig-narrow"/.test(fig.narrow) && new RegExp(`viewBox="0 0 ${narrowWidth} `).test(fig.narrow), `${fig.id}: narrow`);
   }

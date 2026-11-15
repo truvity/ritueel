@@ -39,8 +39,10 @@ export function coverageProblems(entries, { published = [] } = {}) {
       if (ways.has(r.way)) problems.push(`${c.id}: the way "${r.way}" is in the table twice`);
       ways.add(r.way);
     }
-    // The page of a case is optional until the case pages exist; when it is named, it is published.
-    if (c.page !== undefined) {
+    // The page of a case is a page of the site: its file is a line of site/published.txt.
+    if (c.page === undefined) {
+      problems.push(`${c.id}: the case has no page`);
+    } else {
       const file = c.page.replace(/^\/|\/$/g, '') + '.md';
       if (!published.includes(file)) problems.push(`${c.id}: the page ${c.page} is not a line of site/published.txt (${file})`);
     }

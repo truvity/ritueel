@@ -1,89 +1,60 @@
 ---
 title: "ritueel: keep the root of your PKI and the primary key of OpenPGP safe"
-description: ritueel teaches how to keep a private CA root or an OpenPGP primary key safe for years. It is in its design phase; its tools are still to come.
+description: ritueel is a command-line program for root keys, in its design phase. Pick the case that is yours.
 template: splash
 hero:
-  title: Keep the root of your PKI and the primary key of OpenPGP safe
-  tagline: ritueel teaches how, from the ground up. Its tools are still to come.
+  title: Which case is yours?
 ---
 
-import Actions from '../site/src/components/home/Actions.astro';
-import Destinations from '../site/src/components/home/Destinations.astro';
-import Figure from '../site/src/components/Figure.astro';
+{/* Starlight's shipped parts. docs/ has no node_modules, so the package is reached by its path. */}
+import { Card, CardGrid, LinkButton, LinkCard } from '../site/node_modules/@astrojs/starlight/dist/components.ts';
 
-<Actions
-  actions={[
-    { text: 'Start: what a root is', href: '/learn/what-is-a-root/', variant: 'primary' },
-    { text: 'How it works', href: '/how-it-works/', variant: 'secondary' },
-    { text: 'Try the demo', href: '/demo/', variant: 'minimal' },
-  ]}
-/>
+export const pieces = [
+  {
+    who: "We run our company's private CA.",
+    pains: ['We renew certificates once a year and must find out again how.', 'We cannot say today what our root has signed.'],
+    link: 'See what to do',
+    href: '/pki/',
+  },
+  {
+    who: "We sign our project's releases.",
+    pains: ['A key expired, and we learned it when something stopped working.', 'If our root were lost tomorrow, we would have no tested way back.'],
+    link: 'See what to do',
+    href: '/sign-releases/',
+  },
+  {
+    who: 'I sign my commits and my own releases.',
+    pains: ['My OpenPGP primary key is a file on my laptop.', 'A copy of that file would leave no trace.'],
+    link: 'See what to do',
+    href: '/commits/',
+  },
+  {
+    who: 'We log in to our servers with SSH.',
+    pains: ['A copied key file would open our servers, and we would not know.', 'When someone leaves, we must remove their key from every host.'],
+    link: 'See what to do',
+    href: '/ssh/',
+  },
+  {
+    who: 'I protect my own logins.',
+    pains: ['A stolen password could open my accounts.', 'If I lose one device, I could be locked out.'],
+    link: 'See what to do',
+    href: '/logins/',
+  },
+];
 
-<Destinations
-  links={[
-    { text: 'Learn', href: '/learn/' },
-    { text: 'Glossary', href: '/glossary/' },
-    { text: 'Where it stands', href: '/status/' },
-    { text: 'The design', href: '/design/' },
-  ]}
-/>
+<CardGrid>
+  {pieces.map((p) => (
+    <LinkCard title={p.who} href={p.href} description={`${p.pains.join('<br>')}<br><strong>${p.link}</strong>`} />
+  ))}
+  <Card title="About ritueel and this site">
+    ritueel is a command-line program, in its design phase, with no release yet. It will plan and record each use of a root key. For your own logins no ritueel tool is needed. Case 5 gives advice instead.
 
-<div class="home-intro">
+    <LinkButton href="/learn/" variant="minimal">Learn</LinkButton>
+    <LinkButton href="/how-it-works/" variant="minimal">How it works</LinkButton>
+    <LinkButton href="/status/" variant="minimal">Status</LinkButton>
+    <LinkButton href="/glossary/" variant="minimal">Glossary</LinkButton>
+    <LinkButton href="/demo/" variant="minimal">Demo (made-up data)</LinkButton>
+  </Card>
+</CardGrid>
 
-ritueel helps one person or a small team keep a private CA root (the top key of a PKI, a system of certificates) or an OpenPGP primary key for years without losing it, leaking it or letting it expire.
-
-ritueel does not replace your certificate system, your secret store or your cloud key service. It covers what each of them leaves open: the root above them.
-
-</div>
-
-<div class="home-chain">
-
-## The whole chain
-
-The [ceremony](/glossary/) is the one act that uses the root.
-
-<Figure name="whole-chain">
-  The design, not a program: a key in a file can be copied without a trace, so it is [replaced](/learn/life-of-a-root/#rotate) on a calendar. A key on a card or in a cloud key service cannot be copied out. So there is no rotation on a calendar: you keep the same key, and the yearly ceremony only [renews](/learn/life-of-a-root/#re-sign) what is due.
-</Figure>
-
-</div>
-
-<div class="home-cols">
-
-<section>
-
-## Layers of a key
-
-- [**Where it lives:**](/learn/choosing-where-a-root-lives/) card slot, cloud key or key file. [Same ceremony for all.](/how-it-works/#every-ceremony-is-one-apply)
-- [**What it is for:**](/learn/what-is-a-root/) a root outsiders trust; a delegated key works daily.
-- [**When it ends:**](/learn/life-of-a-root/) intermediate 13 months; root key 3 years after use.
-
-[See a key drawn in three layers.](/how-it-works/#three-layers)
-
-</section>
-
-<section>
-
-## What exists today
-
-The picture shows the design, not a program. ritueel is in its design phase, and only [a part is built](/reference/cli/#built-so-far). What exists is the [design page](/design/), the teaching pages, pictures of [how it works](/how-it-works/) and a [demo](/demo/) of the program's local page, with made-up data. [Where it stands](/status/) says how far each step has got. The records behind the design are in the [repository](https://github.com/truvity/ritueel/tree/main/docs).
-
-</section>
-
-<section>
-
-## Is it for you?
-
-It is for you if you recognise one of these:
-
-- Your CA root or OpenPGP primary key is a file: on a laptop, on a server or in a password manager.
-- You renew certificates or subkeys about once a year, and each time you must find out again how you did it.
-- A certificate or a key expired, and you learned it when something stopped working.
-- You could not say today what your root has signed.
-- If the root were lost tomorrow, you would have no tested way back.
-
-Each of these can end in lost days or in a security incident. It is not for you if you look for a service that signs every day. Lost or exposed a key? Read [revoke](/learn/revoke/) first.
-
-</section>
-
-</div>
+Lost or exposed a key? [Revoke.](/learn/revoke/)
