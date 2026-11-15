@@ -23,7 +23,7 @@ const (
 )
 
 // rootKind is one kind of root that the engine can make. The table [rootKinds] has one kind, the
-// X.509 root; part 14 adds the OpenPGP root, and a kind that is not in the table is refused in Find
+// X.509 root; the OpenPGP root comes later, and a kind that is not in the table is refused in Find
 // as not built. A kind makes the keys of a plan, the artifacts of its first apply, and checks each
 // artifact by code that did not make it.
 type rootKind interface {
