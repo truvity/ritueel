@@ -63,16 +63,38 @@ func parseSetName(name string) (TrustSet, bool) {
 //
 // The signature of the list (root-list.jws) and the date of its expiry are not checked here: verify
 // root-list and check history do that, and an expired list must not stop a person from reading a request.
+// Roots reads no keyring file; [Bundle.Primaries] does, from the same set.
 func (b *Bundle) Roots() ([]handoff.RootRef, TrustSet, error) {
-	if err := b.usable(); err != nil {
+	n, err := b.readNewest()
+	if err != nil {
 		return nil, TrustSet{}, err
+	}
+	return n.roots, n.set, nil
+}
+
+// newestSet is what one reading of the newest trust set gives: its name and number, its root list as the
+// strict reader made it, and its roots in the order of the list. [Bundle.Roots], [Bundle.Primaries] and
+// [Bundle.Checker] all take their data from one of these, so that the roots and the primaries of one run are
+// read from the same set.
+type newestSet struct {
+	set   TrustSet
+	list  *rootlist.List
+	roots []handoff.RootRef
+}
+
+// readNewest finds the newest trust set and reads its list and its CA bundle, once. It is the one place that
+// picks the newest set (see [Bundle.Roots] for the rules) and the one place that reads the files that every
+// trust set has. It reads no keyring file.
+func (b *Bundle) readNewest() (*newestSet, error) {
+	if err := b.usable(); err != nil {
+		return nil, err
 	}
 	ents, err := fsx.ReadDir(b.fsys, TrustDir)
 	if err != nil {
 		if errors.Is(err, fs.ErrNotExist) {
-			return nil, TrustSet{}, fmt.Errorf("%w: %w", ErrNoTrustSet, err)
+			return nil, fmt.Errorf("%w: %w", ErrNoTrustSet, err)
 		}
-		return nil, TrustSet{}, fmt.Errorf("bundle: the folder trust cannot be read: %w", err)
+		return nil, fmt.Errorf("bundle: the folder trust cannot be read: %w", err)
 	}
 	var newest TrustSet
 	byNumber := map[int64]string{}
@@ -86,7 +108,7 @@ func (b *Bundle) Roots() ([]handoff.RootRef, TrustSet, error) {
 			continue
 		}
 		if other, dup := byNumber[set.Number]; dup {
-			return nil, TrustSet{}, fmt.Errorf("bundle: two trust sets have the number %d: %s and %s", set.Number, other, set.Name)
+			return nil, fmt.Errorf("bundle: two trust sets have the number %d: %s and %s", set.Number, other, set.Name)
 		}
 		byNumber[set.Number] = set.Name
 		if set.Number > newest.Number {
@@ -94,35 +116,36 @@ func (b *Bundle) Roots() ([]handoff.RootRef, TrustSet, error) {
 		}
 	}
 	if newest.Number == 0 {
-		return nil, TrustSet{}, ErrNoTrustSet
+		return nil, ErrNoTrustSet
 	}
-	refs, err := b.readSet(newest)
+	list, refs, err := b.readSet(newest)
 	if err != nil {
-		return nil, TrustSet{}, err
+		return nil, err
 	}
-	return refs, newest, nil
+	return &newestSet{set: newest, list: list, roots: refs}, nil
 }
 
-// readSet reads the list and the CA bundle of one trust set and returns its roots in the order of the list.
-func (b *Bundle) readSet(set TrustSet) ([]handoff.RootRef, error) {
+// readSet reads the list and the CA bundle of one trust set and returns the list and its roots in the order of
+// the list.
+func (b *Bundle) readSet(set TrustSet) (*rootlist.List, []handoff.RootRef, error) {
 	at := TrustDir + "/" + set.Name + "/"
 	listData, err := fsx.ReadFile(b.fsys, at+rootListFile)
 	if err != nil {
-		return nil, fmt.Errorf("bundle: the newest trust set %s: %w", set.Name, err)
+		return nil, nil, fmt.Errorf("bundle: the newest trust set %s: %w", set.Name, err)
 	}
 	pemData, err := fsx.ReadFile(b.fsys, at+caBundleFile)
 	if err != nil {
-		return nil, fmt.Errorf("bundle: the newest trust set %s: %w", set.Name, err)
+		return nil, nil, fmt.Errorf("bundle: the newest trust set %s: %w", set.Name, err)
 	}
 	list, err := rootlist.ParseList(listData)
 	if err != nil {
-		return nil, fmt.Errorf("bundle: the newest trust set %s: %s: %w", set.Name, rootListFile, err)
+		return nil, nil, fmt.Errorf("bundle: the newest trust set %s: %s: %w", set.Name, rootListFile, err)
 	}
 	if list.Sequence != set.Number {
-		return nil, fmt.Errorf("bundle: the newest trust set %s: the sequence of %s is %d, and the number of the folder is %d", set.Name, rootListFile, list.Sequence, set.Number)
+		return nil, nil, fmt.Errorf("bundle: the newest trust set %s: the sequence of %s is %d, and the number of the folder is %d", set.Name, rootListFile, list.Sequence, set.Number)
 	}
 	if v := rootlist.VerifyCABundle(pemData, list); !v.Accepted {
-		return nil, fmt.Errorf("bundle: the newest trust set %s: %s is not the bundle of the list: %s", set.Name, caBundleFile, v.Detail)
+		return nil, nil, fmt.Errorf("bundle: the newest trust set %s: %s is not the bundle of the list: %s", set.Name, caBundleFile, v.Detail)
 	}
 	// The bundle has the form that VerifyCABundle accepted: a first line, and one certificate for each root of
 	// the list, in the order of the list. The certificates are read once more here only for their keys.
@@ -131,17 +154,17 @@ func (b *Bundle) readSet(set TrustSet) ([]handoff.RootRef, error) {
 	for i := range list.Roots {
 		var blk *pem.Block
 		if blk, rest = pem.Decode(rest); blk == nil {
-			return nil, fmt.Errorf("bundle: the newest trust set %s: certificate %d of %s is missing", set.Name, i+1, caBundleFile)
+			return nil, nil, fmt.Errorf("bundle: the newest trust set %s: certificate %d of %s is missing", set.Name, i+1, caBundleFile)
 		}
 		cert, err := x509.ParseCertificate(blk.Bytes)
 		if err != nil {
-			return nil, fmt.Errorf("bundle: the newest trust set %s: certificate %d of %s does not parse", set.Name, i+1, caBundleFile)
+			return nil, nil, fmt.Errorf("bundle: the newest trust set %s: certificate %d of %s does not parse", set.Name, i+1, caBundleFile)
 		}
 		key, ok := cert.PublicKey.(*ecdsa.PublicKey)
 		if !ok || key == nil || key.Curve != elliptic.P384() {
-			return nil, fmt.Errorf("bundle: the newest trust set %s: the key of certificate %d is not an ECDSA key on P-384", set.Name, i+1)
+			return nil, nil, fmt.Errorf("bundle: the newest trust set %s: the key of certificate %d is not an ECDSA key on P-384", set.Name, i+1)
 		}
 		refs = append(refs, handoff.RootRef{Subject: bytes.Clone(cert.RawSubject), Key: key})
 	}
-	return refs, nil
+	return list, refs, nil
 }

@@ -95,12 +95,21 @@ func (b *Bundle) Request(stem string) (*handoff.Request, error) {
 	return handoff.LoadRequest(b.fsys, RequestsDir+"/"+stem, stem)
 }
 
-// Checker makes the [handoff.Checker] of the bundle: the policy of ritueel.yaml, the roots of the newest trust
-// set ([Bundle.Roots]) and the delegation named. A name of "" is no delegation: the checker then does not run
-// the rules that belong to one, and says so in its verdict. A name is read from want/delegations with the
-// wanted root file that it names, which must exist and be of the kind its type needs. The evidence verifiers
-// and the clock are the caller's; no OpenPGP primaries are set. It returns the delegation too (nil for none).
-// It reads no other wanted file.
+// Checker makes the [handoff.Checker] of the bundle: the policy of ritueel.yaml, the roots and the OpenPGP
+// primaries of the newest trust set and the delegation named. A name of "" is no delegation: the checker then
+// does not run the rules that belong to one, and says so in its verdict. A name is read from want/delegations
+// with the wanted root file that it names, which must exist and be of the kind its type needs. The evidence
+// verifiers and the clock are the caller's. It returns the delegation too (nil for none). It reads no other
+// wanted file.
+//
+// The newest trust set is read once, and the roots and the primaries come from that one reading
+// ([Bundle.Roots] and [Bundle.Primaries] read the same set). The primaries are given with no delegation, when
+// the root list pins any, and with a delegation of the type openpgp-subkey, which the checker refuses when the
+// list pins none (an error that wraps [handoff.ErrNoPrimaries]). A delegation of another type is given none,
+// because the checker refuses primaries beside it, and the keyring file is not read then. A keyring file that
+// cannot be read or is refused is an error here, and the checker is not made: it never goes on with no
+// primaries, and it never falls back to an older trust set. A list that pins primaries and a set with no
+// keyring file is an error that wraps [ErrNoKeyring]. Every error of the primaries is of the kind [ErrPrimaries].
 func (b *Bundle) Checker(name string, now func() time.Time, evidence map[handoff.Store]handoff.EvidenceVerifier) (*handoff.Checker, *wanted.Delegation, error) {
 	if err := b.usable(); err != nil {
 		return nil, nil, err
@@ -112,19 +121,31 @@ func (b *Bundle) Checker(name string, now func() time.Time, evidence map[handoff
 			return nil, nil, err
 		}
 	}
-	roots, _, err := b.Roots()
+	n, err := b.readNewest()
 	if err != nil {
 		return nil, nil, err
 	}
-	cfg, err := configOf(b.settings, d, roots, now, evidence)
+	cfg, err := configOf(b.settings, d, n.roots, now, evidence)
 	if err != nil {
 		return nil, nil, err
+	}
+	if takesPrimaries(d) {
+		if cfg.Primaries, err = b.primariesOf(n, false); err != nil {
+			return nil, nil, err
+		}
 	}
 	c, err := handoff.New(cfg)
 	if err != nil {
 		return nil, nil, err
 	}
 	return c, d, nil
+}
+
+// takesPrimaries tells whether the checker is given the OpenPGP primaries beside the delegation d: with no
+// delegation, and with one of the type openpgp-subkey. handoff.New refuses primaries beside a delegation of
+// another type. d may be nil.
+func takesPrimaries(d *wanted.Delegation) bool {
+	return d == nil || d.Type == wanted.TypeOpenPGPSubkey
 }
 
 // configOf maps the wanted files to the configuration of the checks: the fields of the policy go over
