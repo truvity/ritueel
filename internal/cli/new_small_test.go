@@ -126,7 +126,8 @@ func TestNewStopsAtAParentThatCannotBeReached(t *testing.T) {
 }
 
 // The parent can be opened by a relative path but a folder above it cannot be examined: the command stops with exit
-// code 1, names the folder that could not be examined, and writes nothing. A check that cannot run is not a pass.
+// code 1, says that the parent folder cannot be resolved and names it, and writes nothing. A check that cannot run is
+// not a pass.
 func TestNewStopsWhenAFolderAboveCannotBeExaminedAndNamesIt(t *testing.T) {
 	skipMode(t)
 	root, d1, deep := nestedTree(t)
@@ -135,7 +136,7 @@ func TestNewStopsWhenAFolderAboveCannotBeExaminedAndNamesIt(t *testing.T) {
 	t.Chdir(deep)
 	must(t, os.Chmod(d1, 0o600))
 	restore(t, d1)
-	want := "the folder " + deep + " cannot be examined for ritueel.yaml: permission denied"
+	want := "the parent folder " + deep + " cannot be resolved: permission denied"
 	for _, args := range [][]string{{"new", "dir"}, {"--output", "json", "new", "dir"}} {
 		r := run(t, args...)
 		if r.code != ExitFailure || !strings.Contains(r.stderr, want) || !strings.Contains(r.stderr, "the folder was not made") || strings.Contains(r.stderr, "remove it") {
