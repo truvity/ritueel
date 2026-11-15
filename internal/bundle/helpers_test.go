@@ -82,9 +82,27 @@ func vector(t testing.TB, rel ...string) []byte {
 // header is the first line of a CA bundle of the trust sequence n.
 func header(n int) string { return "# trust-sequence: " + strconv.Itoa(n) + "\n" }
 
-// trustAB is the files of a trust set of sequence n whose list holds the test roots A and B. The list and the
-// bundle of the vectors are of sequence 7; the sequence is changed in both, as text. The signature is not made:
-// a bundle's reader does not check it.
+// keyringName is the name of the keyring file inside a trust set. It is written here once, for the tests that put
+// the file in place or take it out.
+const keyringName = "keyring.gpg"
+
+// keyringOf is the keyring file of the test primaries given by their letters (a, b, c or z): the certificate files
+// of the root list vectors, joined in the order given.
+func keyringOf(t testing.TB, letters ...string) []byte {
+	t.Helper()
+	var out []byte
+	for _, l := range letters {
+		out = append(out, vector(t, "root-list", "v1", "pki", "test-primary-"+l+".pgp")...)
+	}
+	if len(out) == 0 {
+		t.Fatal("a keyring file with no certificate")
+	}
+	return out
+}
+
+// trustAB is the files of a trust set of sequence n whose list holds the test roots A and B, with the keyring file
+// of their two primaries (a, then b). The list and the bundle of the vectors are of sequence 7; the sequence is
+// changed in both, as text. The signature is not made: a bundle's reader does not check it.
 func trustAB(t testing.TB, n int) tree {
 	t.Helper()
 	list := bytes.Replace(vector(t, "root-list", "v1", "lists", "seq7-a.json"), []byte(`"sequence":7`), []byte(`"sequence":`+strconv.Itoa(n)), 1)
@@ -92,10 +110,11 @@ func trustAB(t testing.TB, n int) tree {
 	if bytes.Equal(list, vector(t, "root-list", "v1", "lists", "seq7-a.json")) && n != 7 {
 		t.Fatal("the sequence of the list was not changed")
 	}
-	return tree{"root-list.json": list, "ca-bundle.pem": bundle}
+	return tree{"root-list.json": list, "ca-bundle.pem": bundle, keyringName: keyringOf(t, "a", "b")}
 }
 
-// trustA is the files of a trust set of sequence n whose list holds the test root A alone.
+// trustA is the files of a trust set of sequence n whose list holds the test root A alone, with the keyring file of
+// its primary.
 func trustA(t testing.TB, n int) tree {
 	t.Helper()
 	list := bytes.Replace(vector(t, "root-list", "v1", "lists", "seq7-a-without-b.json"), []byte(`"sequence":7`), []byte(`"sequence":`+strconv.Itoa(n)), 1)
@@ -103,7 +122,7 @@ func trustA(t testing.TB, n int) tree {
 	if blk == nil {
 		t.Fatal("no certificate in the bundle of the vectors")
 	}
-	return tree{"root-list.json": list, "ca-bundle.pem": append([]byte(header(n)), pem.EncodeToMemory(blk)...)}
+	return tree{"root-list.json": list, "ca-bundle.pem": append([]byte(header(n)), pem.EncodeToMemory(blk)...), keyringName: keyringOf(t, "a")}
 }
 
 // inSet puts the files of a trust set under trust/NAME/.

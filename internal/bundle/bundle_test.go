@@ -729,25 +729,50 @@ func sameKey(a, b crypto.PublicKey) bool {
 	return ok && k.Equal(b)
 }
 
-// A bundle holds no OpenPGP primaries, so a delegation of the type openpgp-subkey cannot make a checker: the error is
-// the configuration error of the library and its words say "primaries", which is what a command tells a person by.
-// A delegation of another type, and no delegation, make one.
-func TestACheckerForAnOpenPGPSubkeyDelegationIsRefusedForWantOfPrimaries(t *testing.T) {
-	files := merge(baseBundle(t), tree{
+// A delegation of the type openpgp-subkey needs primaries. With the keyring file of the trust set the checker is made;
+// with a list that pins none it is the configuration error of the library, whose words say "primaries", which is what
+// a command tells a person by; with a list that pins some and no keyring file it is ErrNoKeyring. A delegation of
+// another type, and no delegation, make a checker whatever the list pins.
+func TestACheckerForAnOpenPGPSubkeyDelegationNeedsTheKeyringFileOrAListThatPinsNoPrimary(t *testing.T) {
+	extra := tree{
 		"want/roots/pgp-root.yaml":               []byte("version: 1\nkind: openpgp\ntest: true\n"),
 		"want/delegations/pgp-sign.yaml":         []byte("version: 1\ntype: openpgp-subkey\nroot: pgp-root\ncapability: sign\n"),
 		"want/delegations/pgp-authenticate.yaml": []byte("version: 1\ntype: openpgp-subkey\nroot: pgp-root\ncapability: authenticate\n"),
-	})
-	b := openBundle(t, makeBundle(t, files))
-	for _, name := range []string{"pgp-sign", "pgp-authenticate"} {
+	}
+	// The files of the bundle with the keyring file: a checker, and the delegation.
+	b := openBundle(t, makeBundle(t, merge(baseBundle(t), extra)))
+	for _, name := range []string{"pgp-sign", "pgp-authenticate", delegationName, ""} {
 		chk, d, err := b.Checker(name, fixedNow, nil)
-		if chk != nil || d != nil || !errors.Is(err, handoff.ErrConfig) || !strings.Contains(err.Error(), "primaries") {
+		if err != nil || chk == nil || (name != "") != (d != nil) {
+			t.Errorf("%q: (%v, %v, %v), want a checker", name, chk, d, err)
+		}
+	}
+	// A list that pins none: the delegation of the type openpgp-subkey is refused for want of primaries.
+	noPins := tree{"root-list.json": bytes.ReplaceAll(trustAB(t, 7)["root-list.json"], []byte(`"openpgp_fingerprint":"6df387de63525c9dc0ec1174bd138d2c4889b79b",`), nil)}
+	noPins["root-list.json"] = bytes.ReplaceAll(noPins["root-list.json"], []byte(`"openpgp_fingerprint":"c4288657012230588b51fa66e0831b9c6e084f39",`), nil)
+	if bytes.Contains(noPins["root-list.json"], []byte("openpgp_fingerprint")) {
+		t.Fatal("the fingerprints were not cut")
+	}
+	b2 := openBundle(t, makeBundle(t, merge(withoutPrefix(baseBundle(t), "trust/"), extra, inSet("7-3fa9c1d2", merge(without(trustAB(t, 7), keyringName), noPins)))))
+	for _, name := range []string{"pgp-sign", "pgp-authenticate"} {
+		chk, d, err := b2.Checker(name, fixedNow, nil)
+		if chk != nil || d != nil || !errors.Is(err, handoff.ErrConfig) || !errors.Is(err, handoff.ErrNoPrimaries) || !strings.Contains(err.Error(), "primaries") {
 			t.Errorf("%s: (%v, %v, %v), want no checker and ErrConfig that names the primaries", name, chk, d, err)
 		}
 	}
 	for _, name := range []string{delegationName, ""} {
-		if chk, _, err := b.Checker(name, fixedNow, nil); err != nil || chk == nil {
+		if chk, _, err := b2.Checker(name, fixedNow, nil); err != nil || chk == nil {
 			t.Errorf("%q: (%v, %v), want a checker", name, chk, err)
 		}
+	}
+	// A list that pins some and no keyring file.
+	b3 := openBundle(t, makeBundle(t, merge(withoutPrefix(baseBundle(t), "trust/"), extra, inSet("7-3fa9c1d2", without(trustAB(t, 7), keyringName)))))
+	for _, name := range []string{"pgp-sign", "pgp-authenticate", ""} {
+		if chk, d, err := b3.Checker(name, fixedNow, nil); chk != nil || d != nil || !errors.Is(err, bundle.ErrNoKeyring) {
+			t.Errorf("%q: (%v, %v, %v), want no checker and ErrNoKeyring", name, chk, d, err)
+		}
+	}
+	if chk, _, err := b3.Checker(delegationName, fixedNow, nil); err != nil || chk == nil {
+		t.Errorf("an x509 delegation: (%v, %v), want a checker, because the keyring file is not read for it", chk, err)
 	}
 }
