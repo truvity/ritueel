@@ -82,11 +82,12 @@ func TestTheContractTableIsReadAsTheNineChecks(t *testing.T) {
 
 // ---- accepted -----------------------------------------------------------------------------------
 
-// acceptedWarning is the one warning of an accepted run: the roots were read from the newest trust set, and the
-// command does not check that set's signature file or its expiry. A run that is not accepted has none.
-const acceptedWarning = "trust-set-unchecked: this command did not check the signature and the expiry of the trust set that the roots were read from"
+// trustSetWarningText is the warning that every run with nine results gives, accepted, refused or not complete: the
+// roots were read from the newest trust set, and the command does not check that set's signature file or its
+// expiry. A run that stops before it has nine results has none.
+const trustSetWarningText = "trust-set-unchecked: this command did not check the signature and the expiry of the trust set that the roots were read from"
 
-const acceptedStderr = "ritueel: warning: " + acceptedWarning + "\n"
+const trustSetStderrLine = "ritueel: warning: " + trustSetWarningText + "\n"
 
 func TestAnAcceptedRequestIsExitZeroWithNinePassedChecksAndTheLastLine(t *testing.T) {
 	m := crqManifestOf(t)
@@ -96,8 +97,8 @@ func TestAnAcceptedRequestIsExitZeroWithNinePassedChecksAndTheLastLine(t *testin
 	checks := contractChecks(t)
 
 	text := crqRun(t, now, "check", "request", stem, "--delegation", crqDelegation, "--dir", dir)
-	if text.code != ExitOK || text.stderr != acceptedStderr {
-		t.Fatalf("text: (%d, %q), want only the one warning of an accepted run", int(text.code), text.stderr)
+	if text.code != ExitOK || text.stderr != trustSetStderrLine {
+		t.Fatalf("text: (%d, %q), want only the one warning about the trust set", int(text.code), text.stderr)
 	}
 	var want strings.Builder
 	for _, c := range checks {
@@ -110,12 +111,12 @@ func TestAnAcceptedRequestIsExitZeroWithNinePassedChecksAndTheLastLine(t *testin
 	}
 
 	js := crqRun(t, now, "check", "request", stem, "--delegation", crqDelegation, "--dir", dir, "--output", "json")
-	if js.code != ExitOK || js.stderr != acceptedStderr {
-		t.Fatalf("json: (%d, %q), want only the one warning of an accepted run", int(js.code), js.stderr)
+	if js.code != ExitOK || js.stderr != trustSetStderrLine {
+		t.Fatalf("json: (%d, %q), want only the one warning about the trust set", int(js.code), js.stderr)
 	}
 	obj := object(t, js.stdout)
 	got := crqChecks(t, obj)
-	wantObject(t, withoutChecks(obj), map[string]any{"output": 1, "command": "check", "exit_code": 0, "outcome": "done", "warnings": []string{acceptedWarning}})
+	wantObject(t, withoutChecks(obj), map[string]any{"output": 1, "command": "check", "exit_code": 0, "outcome": "done", "warnings": []string{trustSetWarningText}})
 	if len(got) != 9 {
 		t.Fatalf("checks = %v", got)
 	}
@@ -200,12 +201,16 @@ func TestEachRefusalCodeIsExitThreeWithTheCheckThatRefused(t *testing.T) {
 			if want := "request " + stem + ": refused: " + tc.code; lines[10] != want {
 				t.Errorf("last line = %q, want %q", lines[10], want)
 			}
-			// Standard error: the refusal, with the check and its detail.
-			prefix := "ritueel: refused: " + tc.code + " (check " + strconv.Itoa(n) + ": "
-			if !strings.HasPrefix(text.stderr, prefix) || !strings.HasSuffix(text.stderr, ")\n") || strings.Count(text.stderr, "\n") != 1 {
-				t.Errorf("standard error = %q, want one line that starts %q and ends with the detail and a closing parenthesis", text.stderr, prefix)
+			// Standard error: the warning about the trust set, then the refusal, with the check and its detail.
+			if !strings.HasPrefix(text.stderr, trustSetStderrLine) {
+				t.Errorf("standard error = %q, want it to start with the warning about the trust set", text.stderr)
 			}
-			if detail := strings.TrimSuffix(strings.TrimPrefix(text.stderr, prefix), ")\n"); strings.TrimSpace(detail) == "" {
+			refusal := strings.TrimPrefix(text.stderr, trustSetStderrLine)
+			prefix := "ritueel: refused: " + tc.code + " (check " + strconv.Itoa(n) + ": "
+			if !strings.HasPrefix(refusal, prefix) || !strings.HasSuffix(refusal, ")\n") || strings.Count(refusal, "\n") != 1 {
+				t.Errorf("the refusal line = %q, want one line that starts %q and ends with the detail and a closing parenthesis", refusal, prefix)
+			}
+			if detail := strings.TrimSuffix(strings.TrimPrefix(refusal, prefix), ")\n"); strings.TrimSpace(detail) == "" {
 				t.Errorf("the refusal line has no detail: %q", text.stderr)
 			}
 			if !onlyPrintable(text.stdout) || !onlyPrintable(text.stderr) {
@@ -218,7 +223,7 @@ func TestEachRefusalCodeIsExitThreeWithTheCheckThatRefused(t *testing.T) {
 			}
 			obj := object(t, js.stdout)
 			got := crqChecks(t, obj)
-			wantObject(t, withoutChecks(obj), map[string]any{"output": 1, "command": "check", "exit_code": 3, "outcome": "refused", "reasons": []string{tc.code}})
+			wantObject(t, withoutChecks(obj), map[string]any{"output": 1, "command": "check", "exit_code": 3, "outcome": "refused", "reasons": []string{tc.code}, "warnings": []string{trustSetWarningText}})
 			if len(got) != 9 {
 				t.Fatalf("checks = %v", got)
 			}
@@ -541,7 +546,7 @@ func TestTheFolderFlagIsAcceptedBeforeAndAfterTheWords(t *testing.T) {
 		{"check", "request", stem, "--delegation", crqDelegation, "--dir", dir},
 		{"check", "request", "--delegation", crqDelegation, stem, "--dir=" + dir},
 	} {
-		if r := crqRun(t, now, args...); r.code != ExitOK || r.stderr != acceptedStderr {
+		if r := crqRun(t, now, args...); r.code != ExitOK || r.stderr != trustSetStderrLine {
 			t.Errorf("%v: (%d, %q)", args[:3], int(r.code), r.stderr)
 		}
 	}

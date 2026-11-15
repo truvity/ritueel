@@ -176,8 +176,8 @@ func TestAnOpenPGPRequestThatCheckNineCannotRunForWantOfADelegationSaysToGiveOne
 			if want := "request stem is not accepted and not refused: check 9 needs a delegation; give --delegation NAME"; err.Error() != want {
 				t.Errorf("error = %q, want %q", err.Error(), want)
 			}
-			if want := "check 9: rules not run: " + list + "; give --delegation NAME"; fmt.Sprint(warningsOf(err)) != fmt.Sprint([]string{want}) {
-				t.Errorf("warnings = %v, want [%q]", warningsOf(err), want)
+			if want := "check 9: rules not run: " + list + "; give --delegation NAME"; fmt.Sprint(warningsOf(err)) != fmt.Sprint([]string{want, trustSetWarningText}) {
+				t.Errorf("warnings = %v, want [%q, the warning about the trust set]", warningsOf(err), want)
 			}
 			if !strings.HasSuffix(nj.text, "request stem: not complete: check 9 needs a delegation; give --delegation NAME\n") {
 				t.Errorf("text = %q", nj.text)
@@ -188,8 +188,8 @@ func TestAnOpenPGPRequestThatCheckNineCannotRunForWantOfADelegationSaysToGiveOne
 			if want := "request stem is not accepted and not refused: check 9 did not run these rules: " + list; err.Error() != want {
 				t.Errorf("with a delegation: error = %q, want %q", err.Error(), want)
 			}
-			if w := warningsOf(err); len(w) != 1 || strings.Contains(w[0], "give --delegation") {
-				t.Errorf("with a delegation: warnings = %v, want one with no hint", w)
+			if w := warningsOf(err); len(w) != 2 || strings.Contains(w[0], "give --delegation") || w[1] != trustSetWarningText {
+				t.Errorf("with a delegation: warnings = %v, want one with no hint and then the warning about the trust set", w)
 			}
 		})
 	}

@@ -85,8 +85,8 @@ func TestARefusedVerdictIsExitThreeWithTheCodeTheFailedCheckAndTheDetail(t *test
 	if !strings.HasSuffix(res.Text, "request stem: refused: possession-invalid\n") || strings.Contains(res.Text, "accepted") {
 		t.Errorf("text = %q", res.Text)
 	}
-	if len(res.Warnings) != 0 {
-		t.Errorf("warnings = %v", res.Warnings)
+	if len(res.Warnings) != 1 || res.Warnings[0] != trustSetWarningText {
+		t.Errorf("warnings = %q, want the one warning about the trust set: a refusal has the nine results", res.Warnings)
 	}
 }
 
@@ -135,7 +135,7 @@ func TestACheckThatDidNotRunIsNotJudgedAndExitOneWithTheNineResultsAndTheReason(
 	if want := "request stem is not accepted and not refused: check 9 needs a delegation; give --delegation NAME"; err.Error() != want {
 		t.Errorf("error = %q, want %q", err.Error(), want)
 	}
-	if want := []string{"check 9: rules not run: delegation-type, name-constraints; give --delegation NAME"}; fmt.Sprint(warningsOf(err)) != fmt.Sprint(want) {
+	if want := []string{"check 9: rules not run: delegation-type, name-constraints; give --delegation NAME", trustSetWarningText}; fmt.Sprint(warningsOf(err)) != fmt.Sprint(want) {
 		t.Errorf("warnings = %q, want %q", warningsOf(err), want)
 	}
 	if !strings.HasSuffix(nj.text, "request stem: not complete: check 9 needs a delegation; give --delegation NAME\n") || strings.Contains(nj.text, "accepted") {
@@ -151,8 +151,8 @@ func TestACheckThatDidNotRunIsNotJudgedAndExitOneWithTheNineResultsAndTheReason(
 	// With a delegation named the hint to name one is not given, and the reason names the rules.
 	res, err = requestOutcome("stem", "d", v)
 	nj = notJudgedOf(t, res, err)
-	if w := warningsOf(err); len(w) != 1 || strings.Contains(w[0], "give --delegation") || w[0] != "check 9: rules not run: delegation-type, name-constraints" {
-		t.Errorf("warnings = %q: the hint to give a delegation is shown to someone who gave one", w)
+	if w := warningsOf(err); len(w) != 2 || strings.Contains(w[0], "give --delegation") || w[0] != "check 9: rules not run: delegation-type, name-constraints" || w[1] != trustSetWarningText {
+		t.Errorf("warnings = %q: the hint to give a delegation is shown to someone who gave one, or the warning about the trust set is not last", w)
 	}
 	if want := "request stem is not accepted and not refused: check 9 did not run these rules: delegation-type, name-constraints"; err.Error() != want {
 		t.Errorf("error = %q, want %q", err.Error(), want)
@@ -169,29 +169,29 @@ func TestACheckThatDidNotRunIsNotJudgedAndExitOneWithTheNineResultsAndTheReason(
 		res, err = requestOutcome("stem", delegation, v)
 		_ = notJudgedOf(t, res, err)
 		w := warningsOf(err)
-		if len(w) != 2 || !strings.HasPrefix(w[0], "check 7:") || !strings.HasPrefix(w[1], "check 9:") {
+		if len(w) != 3 || !strings.HasPrefix(w[0], "check 7:") || !strings.HasPrefix(w[1], "check 9:") || w[2] != trustSetWarningText {
 			t.Errorf("delegation %q: warnings = %q", delegation, w)
 		}
 		if want := "request stem is not accepted and not refused: check 7 did not run these rules: primaries"; err.Error() != want {
 			t.Errorf("delegation %q: error = %q, want %q", delegation, err.Error(), want)
 		}
 		// The hint to name a delegation belongs to the warning of check 9 alone, and only when none was named.
-		if strings.Contains(w[0], "give --delegation") || strings.Contains(w[1], "give --delegation") != (delegation == "") {
+		if strings.Contains(w[0], "give --delegation") || strings.Contains(w[1], "give --delegation") != (delegation == "") || strings.Contains(w[2], "give --delegation") {
 			t.Errorf("delegation %q: the hint is on the wrong warning: %q", delegation, w)
 		}
 	}
 }
 
 // A check that did not run and names no rule, and a check that passed with a rule not run, are not judged either.
-func TestACheckThatDidNotRunAndNamesNoRuleIsNotJudgedAndHasNoWarning(t *testing.T) {
+func TestACheckThatDidNotRunAndNamesNoRuleIsNotJudgedAndHasOnlyTheWarningAboutTheTrustSet(t *testing.T) {
 	v := verdictOf(passed(8)...)
 	res, err := requestOutcome("stem", "d", v)
 	nj := notJudgedOf(t, res, err)
 	if want := "request stem is not accepted and not refused: check 9 did not run"; err.Error() != want {
 		t.Errorf("error = %q, want %q", err.Error(), want)
 	}
-	if w := warningsOf(err); len(w) != 0 {
-		t.Errorf("warnings = %q, want none: no rule was named", w)
+	if w := warningsOf(err); len(w) != 1 || w[0] != trustSetWarningText {
+		t.Errorf("warnings = %q, want only the warning about the trust set: no rule was named", w)
 	}
 	if !strings.HasSuffix(nj.text, "request stem: not complete: check 9 did not run\n") {
 		t.Errorf("text = %q", nj.text)
@@ -349,8 +349,8 @@ func TestNoRequestThatWasNotAcceptedIsExitZeroAndOnlyTheDelegationCaseAsksForADe
 				t.Errorf("error = %q, want %q", err.Error(), want)
 			}
 			w := warningsOf(err)
-			if len(w) == 0 || strings.Contains(w[0], "give --delegation") != tc.hint {
-				t.Errorf("warnings = %q, hint wanted: %v", w, tc.hint)
+			if len(w) != 2 || strings.Contains(w[0], "give --delegation") != tc.hint || w[1] != trustSetWarningText {
+				t.Errorf("warnings = %q, hint wanted: %v, and the warning about the trust set last", w, tc.hint)
 			}
 		})
 	}
@@ -379,7 +379,7 @@ func TestOnlyDelegationRulesIsTrueForTheTwoRulesOfOneDelegationAndNothingElse(t 
 	}
 }
 
-// An accepted verdict is the only one that is exit 0, and it carries the one warning.
+// An accepted verdict is the only one that is exit 0, and it carries the one warning about the trust set.
 func TestOnlyAVerdictThatWasAcceptedIsExitZero(t *testing.T) {
 	// A verdict can be accepted only by Check, so this uses the library on a real case: x509-software-valid.
 	m := crqManifestOf(t)
@@ -392,18 +392,18 @@ func TestOnlyAVerdictThatWasAcceptedIsExitZero(t *testing.T) {
 	if err != nil || res == nil || res.ExitCode != ExitOK {
 		t.Fatalf("(%v, %v), want exit code 0", res, err)
 	}
-	if len(res.Warnings) != 1 || res.Warnings[0] != acceptedWarning {
-		t.Errorf("warnings = %q, want the one warning of an accepted run", res.Warnings)
+	if len(res.Warnings) != 1 || res.Warnings[0] != trustSetWarningText {
+		t.Errorf("warnings = %q, want the one warning about the trust set", res.Warnings)
 	}
 	if len(res.Checks) != 9 || res.Message != "" || len(res.Reasons) != 0 {
 		t.Errorf("(%v, %q, %v)", res.Checks, res.Message, res.Reasons)
 	}
-	// A refusal of the same request has none of that.
+	// A refusal of the same request is not exit 0, has no message of an acceptance, and has the same warning.
 	refused := verdictOf(append(passed(2), handoff.StatusFailed)...)
 	refused.Code, refused.Detail = "policy", "x"
 	res, err = requestOutcome("stem", "d", refused)
-	if err != nil || res.ExitCode != ExitRefused || len(res.Warnings) != 0 {
-		t.Errorf("(%v, %v): a refusal has the warning of an accepted run", res, err)
+	if err != nil || res.ExitCode != ExitRefused || len(res.Warnings) != 1 || res.Warnings[0] != trustSetWarningText {
+		t.Errorf("(%v, %v): a refusal has the nine results and so the warning about the trust set", res, err)
 	}
 }
 
@@ -514,12 +514,12 @@ func TestAHostileRuleNameReachesNoTerminalInARequestThatWasNotJudged(t *testing.
 		if len(lines) != 11 || !strings.HasPrefix(lines[10], "request stem: not complete: check 9 did not run these rules: ") {
 			t.Errorf("delegation %q: standard output has %d lines: %q", delegation, len(lines), text.stdout)
 		}
-		if strings.Count(text.stderr, "\n") != 2 {
-			t.Errorf("delegation %q: standard error = %q, want a warning and the line of the error", delegation, text.stderr)
+		if strings.Count(text.stderr, "\n") != 3 {
+			t.Errorf("delegation %q: standard error = %q, want two warnings and the line of the error", delegation, text.stderr)
 		}
 		obj := object(t, js.stdout)
-		if w, _ := stringList(obj["warnings"]); len(w) != 1 || strings.Contains(w[0], "\n") {
-			t.Errorf("delegation %q: warnings = %v", delegation, obj["warnings"])
+		if w, _ := stringList(obj["warnings"]); len(w) != 2 || strings.Contains(w[0], "\n") || w[1] != trustSetWarningText {
+			t.Errorf("delegation %q: warnings = %v, want the one of the rules and, last, the one about the trust set", delegation, obj["warnings"])
 		}
 		if len(crqChecks(t, obj)) != 9 {
 			t.Errorf("delegation %q: checks = %v", delegation, obj["checks"])
@@ -540,7 +540,7 @@ func TestTheObjectOfARequestThatWasNotJudgedIsAFailureWithTheNineResults(t *test
 	wantObject(t, withoutChecks(obj), map[string]any{
 		"output": 1, "command": "fake", "exit_code": 1, "outcome": "failed",
 		"error":    "request stem is not accepted and not refused: check 9 needs a delegation; give --delegation NAME",
-		"warnings": []string{"check 9: rules not run: delegation-type, name-constraints; give --delegation NAME"},
+		"warnings": []string{"check 9: rules not run: delegation-type, name-constraints; give --delegation NAME", trustSetWarningText},
 	})
 	if got := crqChecks(t, obj); len(got) != 9 || got[8] != [2]string{"9", "not-run"} || got[0] != [2]string{"1", "passed"} {
 		t.Errorf("checks = %v", got)

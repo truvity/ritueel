@@ -72,6 +72,11 @@ func TestEveryRequestCaseGivesThroughTheCommandWhatTheLibraryGives(t *testing.T)
 				if _, ok := obj["reasons"]; ok {
 					t.Errorf("an exit code 1 has the member reasons: %s", r.stdout)
 				}
+				// The command stopped before it had nine results: no warning about the trust set, and none
+				// of another kind.
+				if w := stringsOf(obj["warnings"]); len(w) != 0 || r.stderr == "" || strings.Contains(r.stderr, "trust-set-unchecked") {
+					t.Errorf("a request that stopped before nine results has the warnings %q and standard error %q", w, r.stderr)
+				}
 				switch {
 				case c.Type == "openpgp-subkey":
 					// The library refuses a delegation of this type that has no primaries, and the command has none.
@@ -100,13 +105,17 @@ func TestEveryRequestCaseGivesThroughTheCommandWhatTheLibraryGives(t *testing.T)
 						t.Errorf("checks[%d] = %v, the library says check %d is %s", i, got[i], ch.N, ch.Status)
 					}
 				}
+				// Every run with nine results, accepted or refused, has the one warning about the trust set.
+				if w := stringsOf(obj["warnings"]); len(w) != 1 || w[0] != trustSetWarningText {
+					t.Errorf("warnings = %q, want the one warning about the trust set", w)
+				}
 				if wantCode == ExitRefused {
 					reasons, ok := stringList(obj["reasons"])
 					if !ok || len(reasons) != 1 || reasons[0] != string(v.Code) {
 						t.Errorf("reasons = %v, want [%s]", obj["reasons"], v.Code)
 					}
-					if !strings.HasPrefix(r.stderr, "ritueel: refused: "+string(v.Code)+" (check ") {
-						t.Errorf("standard error = %q, want the refusal line of the code %s", r.stderr, v.Code)
+					if !strings.HasPrefix(r.stderr, trustSetStderrLine+"ritueel: refused: "+string(v.Code)+" (check ") {
+						t.Errorf("standard error = %q, want the warning about the trust set and then the refusal line of the code %s", r.stderr, v.Code)
 					}
 				} else if _, ok := obj["reasons"]; ok {
 					t.Errorf("an accepted request has reasons: %s", r.stdout)
@@ -203,7 +212,7 @@ func TestWithNoDelegationAnAcceptedCaseIsNotJudgedAndARefusalOfAnEarlierRuleStay
 		wantObject(t, withoutChecks(obj), map[string]any{
 			"output": 1, "command": "check", "exit_code": 1, "outcome": "failed",
 			"error":    "request " + stem + " is not accepted and not refused: " + reason,
-			"warnings": []string{wantWarning},
+			"warnings": []string{wantWarning, trustSetWarningText},
 		})
 		checks := crqChecks(t, obj)
 		if len(checks) != 9 {
@@ -222,7 +231,7 @@ func TestWithNoDelegationAnAcceptedCaseIsNotJudgedAndARefusalOfAnEarlierRuleStay
 		if _, ok := obj["reasons"]; ok {
 			t.Errorf("a request that is not judged has reasons: %s", js.stdout)
 		}
-		if want := "ritueel: warning: " + wantWarning + "\nritueel: request " + stem + " is not accepted and not refused: " + reason + "\n"; js.stderr != want {
+		if want := "ritueel: warning: " + wantWarning + "\n" + trustSetStderrLine + "ritueel: request " + stem + " is not accepted and not refused: " + reason + "\n"; js.stderr != want {
 			t.Errorf("standard error = %q, want %q", js.stderr, want)
 		}
 
@@ -363,6 +372,9 @@ func TestEveryRequestCaseWithNoDelegationGivesThroughTheCommandWhatTheLibraryGiv
 				if _, ok := obj["checks"]; ok {
 					t.Errorf("an error of the library has checks: %s", r.stdout)
 				}
+				if w := stringsOf(obj["warnings"]); len(w) != 0 || strings.Contains(r.stderr, "trust-set-unchecked") {
+					t.Errorf("a run that stopped before nine results has the warnings %q and standard error %q", w, r.stderr)
+				}
 				if msg, _ := obj["error"].(string); !strings.Contains(msg, "request "+c.stem(t)+" is not accepted and not refused") {
 					t.Errorf("error = %q", msg)
 				}
@@ -378,6 +390,9 @@ func TestEveryRequestCaseWithNoDelegationGivesThroughTheCommandWhatTheLibraryGiv
 				}
 				if reasons, _ := stringList(obj["reasons"]); len(reasons) != 1 || reasons[0] != string(v.Code) {
 					t.Errorf("reasons = %v, want [%s]", obj["reasons"], v.Code)
+				}
+				if w := stringsOf(obj["warnings"]); len(w) != 1 || w[0] != trustSetWarningText {
+					t.Errorf("warnings = %q, want the one warning about the trust set", w)
 				}
 				got := crqChecks(t, obj)
 				for i, ch := range v.Checks {
@@ -404,6 +419,9 @@ func TestEveryRequestCaseWithNoDelegationGivesThroughTheCommandWhatTheLibraryGiv
 				}
 				if msg, _ := obj["error"].(string); !strings.HasSuffix(msg, "check 9 needs a delegation; give --delegation NAME") {
 					t.Errorf("error = %q", msg)
+				}
+				if w := stringsOf(obj["warnings"]); len(w) < 2 || w[len(w)-1] != trustSetWarningText || strings.Contains(strings.Join(w[:len(w)-1], "\n"), "trust-set-unchecked") {
+					t.Errorf("warnings = %q, want the ones of the rules and then, last and once, the one about the trust set", w)
 				}
 			}
 		})

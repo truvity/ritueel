@@ -124,23 +124,25 @@ func TestAnOpenPGPRequestThatChecksOneAndTwoRefuseIsARefusalWithNoDelegationAndT
 	}
 }
 
-// The warning of an accepted run belongs to an accepted run alone: a refusal, a request that was not judged and a
-// command that failed carry none, on standard error and in the object, in both modes.
-func TestOnlyAnAcceptedRequestCarriesTheWarningAboutTheTrustSet(t *testing.T) {
+// The warning about the trust set belongs to every run that prints the nine results: an accepted request, a refusal
+// and a request that is not complete. A command that stopped before it had nine results carries none. It is on
+// standard error and in the object, in both modes, once.
+func TestEveryRunThatHasTheNineResultsCarriesTheWarningAboutTheTrustSetAndNoOtherRunDoes(t *testing.T) {
 	m := crqManifestOf(t)
 	now := m.clock(t)
 	for _, tc := range []struct {
 		id       string
 		withDele bool
 		code     ExitCode
+		nine     bool // the run has the nine results
 	}{
-		{"x509-software-valid", true, ExitOK},
-		{"x509-csr-bad-signature", true, ExitRefused},
-		{"x509-csr-bad-signature", false, ExitRefused},
-		{"x509-software-valid", false, ExitFailure},
-		{"x509-piv-valid", true, ExitFailure},
-		{"ssh-software-valid", true, ExitFailure},
-		{"pgp-software-valid", true, ExitFailure},
+		{"x509-software-valid", true, ExitOK, true},
+		{"x509-csr-bad-signature", true, ExitRefused, true},
+		{"x509-csr-bad-signature", false, ExitRefused, true},
+		{"x509-software-valid", false, ExitFailure, true}, // not complete: check 9 needs a delegation
+		{"x509-piv-valid", true, ExitFailure, false},
+		{"ssh-software-valid", true, ExitFailure, false},
+		{"pgp-software-valid", true, ExitFailure, false},
 	} {
 		t.Run(tc.id, func(t *testing.T) {
 			c := m.byID(t, tc.id)
@@ -154,12 +156,24 @@ func TestOnlyAnAcceptedRequestCarriesTheWarningAboutTheTrustSet(t *testing.T) {
 				if r.code != tc.code {
 					t.Fatalf("%v: exit code %d, want %d\n%s%s", mode, int(r.code), int(tc.code), r.stdout, r.stderr)
 				}
-				has := strings.Contains(r.stderr, "trust-set-unchecked") || strings.Contains(r.stdout, "trust-set-unchecked")
-				if has != (tc.code == ExitOK) {
+				has := strings.Contains(r.stderr, "trust-set-unchecked")
+				if has != tc.nine {
 					t.Errorf("%v: the trust set warning is there: %v\n%s%s", mode, has, r.stdout, r.stderr)
 				}
-				if tc.code == ExitOK && strings.Count(r.stderr, "warning:") != 1 {
-					t.Errorf("%v: standard error = %q, want one warning", mode, r.stderr)
+				if got := strings.Count(r.stderr, "trust-set-unchecked"); got > 1 {
+					t.Errorf("%v: the trust set warning is given %d times: %q", mode, got, r.stderr)
+				}
+				// The warning is a line of standard error, and never of standard output.
+				if strings.Contains(r.stdout, "trust-set-unchecked") && mode == nil {
+					t.Errorf("%v: the trust set warning is on standard output: %q", mode, r.stdout)
+				}
+				if tc.nine && !strings.Contains(r.stderr, trustSetStderrLine) {
+					t.Errorf("%v: standard error = %q, want the line %q", mode, r.stderr, trustSetStderrLine)
+				}
+				if mode != nil {
+					if w := stringsOf(object(t, r.stdout)["warnings"]); (len(w) > 0 && w[len(w)-1] == trustSetWarningText) != tc.nine {
+						t.Errorf("%v: warnings = %q, want the one about the trust set last: %v", mode, w, tc.nine)
+					}
 				}
 			}
 		})

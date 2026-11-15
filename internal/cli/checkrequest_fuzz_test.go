@@ -124,16 +124,19 @@ func FuzzCheckRequestFiles(f *testing.F) {
 				if !withDelegation {
 					t.Fatalf("a request with no delegation is accepted: %s", r.stdout)
 				}
-				if w := stringsOf(obj["warnings"]); len(w) != 1 || w[0] != acceptedWarning {
-					t.Fatalf("an accepted request has the warnings %q, want the one warning", w)
+				if w := stringsOf(obj["warnings"]); len(w) != 1 || w[0] != trustSetWarningText {
+					t.Fatalf("an accepted request has the warnings %q, want the one warning about the trust set", w)
 				}
 			case ExitRefused:
 				reasons := stringsOf(obj["reasons"])
 				if len(reasons) != 1 || !knownCode(reasons[0]) || len(crqChecks(t, obj)) != 9 {
 					t.Fatalf("a refusal that is not one known code and nine checks: %s", r.stdout)
 				}
-				if w := stringsOf(obj["warnings"]); len(w) != 0 {
-					t.Fatalf("a refusal has the warnings %q", w)
+				if w := stringsOf(obj["warnings"]); len(w) != 1 || w[0] != trustSetWarningText {
+					t.Fatalf("a refusal has the warnings %q, want the one warning about the trust set", w)
+				}
+				if !strings.HasPrefix(r.stderr, trustSetStderrLine+"ritueel: refused: ") {
+					t.Fatalf("a refusal has the standard error %q, want the warning about the trust set and then the refusal", r.stderr)
 				}
 			case ExitFailure:
 				if obj["outcome"] != "failed" {
@@ -156,12 +159,19 @@ func FuzzCheckRequestFiles(f *testing.F) {
 					if msg, _ := obj["error"].(string); !strings.Contains(msg, "is not accepted and not refused: check ") {
 						t.Fatalf("exit code 1 with checks and an error that does not say so: %s", r.stdout)
 					}
-					if w := stringsOf(obj["warnings"]); withDelegation && len(w) > 1 {
-						t.Fatalf("too many warnings: %q", w)
+					// The warning about the trust set comes last, and once.
+					w := stringsOf(obj["warnings"])
+					if len(w) < 1 || w[len(w)-1] != trustSetWarningText {
+						t.Fatalf("a request that is not complete has the warnings %q, want the one about the trust set last", w)
 					}
-				}
-				if w := stringsOf(obj["warnings"]); len(w) > 0 && w[0] == acceptedWarning {
-					t.Fatalf("a request that was not accepted has the warning of an accepted run: %s", r.stdout)
+					for _, other := range w[:len(w)-1] {
+						if other == trustSetWarningText {
+							t.Fatalf("the warning about the trust set is not last: %q", w)
+						}
+					}
+				} else if w := stringsOf(obj["warnings"]); len(w) != 0 {
+					// A run that stopped before it had nine results has no warning about the trust set.
+					t.Fatalf("a run with no nine results has the warnings %q", w)
 				}
 			}
 		}
