@@ -16,6 +16,9 @@ import (
 
 const cardRefusalLine = "ritueel: refused: store-not-allowed (check 6: the store openpgp-card is not allowed for an x509-intermediate: its attestation shows no PIN or touch rule)\n"
 
+// The refusal has the nine results, so standard error holds the warning about the trust set and then the refusal.
+const cardRefusalStderr = trustSetStderrLine + cardRefusalLine
+
 // crqCardBundle is the bundle of the case with the store of its proof file set to openpgp-card.
 func crqCardBundle(t testing.TB, m crqManifest, c crqCase) (dir, stem string) {
 	t.Helper()
@@ -71,8 +74,8 @@ func TestAnX509RequestWithTheStoreOpenPGPCardIsExitThreeWithStoreNotAllowedAtChe
 					if text.code != ExitRefused {
 						t.Fatalf("delegation %v: exit code %d\n%s%s", withDelegation, int(text.code), text.stdout, text.stderr)
 					}
-					if text.stderr != cardRefusalLine {
-						t.Errorf("standard error = %q, want %q", text.stderr, cardRefusalLine)
+					if text.stderr != cardRefusalStderr {
+						t.Errorf("standard error = %q, want the warning and then the refusal %q", text.stderr, cardRefusalStderr)
 					}
 					lines := strings.Split(strings.TrimSuffix(text.stdout, "\n"), "\n")
 					if len(lines) != 11 {
@@ -98,12 +101,12 @@ func TestAnX509RequestWithTheStoreOpenPGPCardIsExitThreeWithStoreNotAllowedAtChe
 					}
 
 					js := crqRun(t, now, append(args, "--output", "json")...)
-					if js.code != ExitRefused || js.stderr != cardRefusalLine {
+					if js.code != ExitRefused || js.stderr != cardRefusalStderr {
 						t.Fatalf("json: (%d, %q)", int(js.code), js.stderr)
 					}
 					obj := object(t, js.stdout)
 					got := crqChecks(t, obj)
-					wantObject(t, withoutChecks(obj), map[string]any{"output": 1, "command": "check", "exit_code": 3, "outcome": "refused", "reasons": []string{"store-not-allowed"}})
+					wantObject(t, withoutChecks(obj), map[string]any{"output": 1, "command": "check", "exit_code": 3, "outcome": "refused", "reasons": []string{"store-not-allowed"}, "warnings": []string{trustSetWarningText}})
 					for i, g := range got {
 						want := map[bool]string{true: "passed", false: "not-run"}[i+1 < 6]
 						if i+1 == 6 {
