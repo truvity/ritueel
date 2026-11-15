@@ -19,7 +19,7 @@ A record is `NNNN-short-title-in-kebab-case.md`. Numbers are taken in the order 
 Every record has these parts, in this order:
 
 - **Status.** One of `Proposed`, `Accepted`, `Rejected`, `Superseded by NNNN`, or `Accepted; amended by NNNN`.
-- **Date.** The day the status or the text last changed.
+- **Date.** The day the record was accepted. Until the first release the text may change after that day; git has the dates of the changes.
 - **Decision.** Numbered plain sentences, one rule each, in the active voice. No sub-headings, tables or code blocks: an exact format is only named and linked to its reference page.
 - **Why.** The reasons, in a short paragraph or a few bullets.
 - **What it costs.** What gets harder, what must follow. Include costs.
