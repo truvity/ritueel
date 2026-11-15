@@ -54,9 +54,11 @@ type preparedPrimary struct {
 // page's), a delegation of a type that is not one of the page's, a delegation of type openpgp-subkey with no
 // primaries or with a capability that is not sign or authenticate, primaries or a capability with a
 // delegation of another type, primaries that are not as [Config.Primaries] says, no roots (or roots that are
-// not ECDSA P-384 keys with a name), no clock, a primary that was created after the clock, or a verifier that
-// is nil. A nil delegation is allowed and is kept as none: the rules of check 9 that need one are then not
-// run. Everything the Checker holds is a copy.
+// not ECDSA P-384 keys with a name), no clock, primaries and a clock that cannot be read or that gives a time
+// outside the years 1970 to 2106, a primary that was created after the clock, or a verifier that is nil. An
+// openpgp-subkey delegation with no primaries is an [ErrNoPrimaries], which is an [ErrConfig] too. A nil
+// delegation is allowed and is kept as none: the rules of check 9 that need one are then not run. Everything
+// the Checker holds is a copy.
 func New(cfg Config) (*Checker, error) {
 	s := &settings{}
 	if err := s.takePolicy(cfg.Policy); err != nil {
@@ -125,7 +127,7 @@ func (s *settings) takePrimaries(cfg Config) error {
 				return fmt.Errorf("%w: the capability of an openpgp-subkey delegation is not sign or authenticate", ErrConfig)
 			}
 			if len(cfg.Primaries) == 0 {
-				return fmt.Errorf("%w: an openpgp-subkey delegation needs primaries", ErrConfig)
+				return errNoPrimaries("an openpgp-subkey delegation needs primaries")
 			}
 		} else {
 			if d.Capability != "" {
@@ -164,30 +166,47 @@ func (s *settings) takePrimaries(cfg Config) error {
 	return nil
 }
 
-// primariesNotAfterClock refuses a primary that was created after the clock of the checker. Such a primary
-// cannot be bound: the ceremony refuses a ceremony time that is before the creation time of the key, so a
-// request would pass every check and fail only in the binding. The clock is read once, here, and only when
-// there are primaries. A clock that panics, or whose time an OpenPGP time field cannot hold (outside the years
-// 1970 to 2106), is not judged here: check 5 reads the clock too and tells that fault as it always did
-// ([ErrInternal]), so a clock that is broken is told in one place. The fault names the primary by its
-// fingerprint.
+// primariesNotAfterClock is the first half of the guard against a primary that was created after the clock
+// of the checker. Such a primary cannot be bound: the ceremony refuses a ceremony time that is before the
+// creation time of the key, so a request would pass every check and fail only in the binding. The clock is
+// read once, here, and only when there are primaries. A check that cannot run is not a pass: a clock that
+// cannot be read (it panics), or whose time an OpenPGP time field cannot hold (outside the years 1970 to
+// 2106), is an [ErrConfig] that says the clock could not be read, and a primary that was created after the
+// clock is an [ErrConfig] that names the primary by its fingerprint. The second half is check 5 of an
+// openpgp-subkey request, which holds every primary to the clock that it read for that request
+// ([settings.primaryAfter]), so a clock that steps back after [New] does not skip the guard.
 func (s *settings) primariesNotAfterClock() error {
 	if len(s.primaries) == 0 {
 		return nil
 	}
 	now, err := s.clock()
 	if err != nil {
-		return nil
+		return fmt.Errorf("%w: the clock of the checker could not be read (it panicked), so its primaries cannot be held to it", ErrConfig)
 	}
-	if u := now.Truncate(time.Second).Unix(); u < 1 || u > math.MaxUint32 {
-		return nil
+	if !holdsTime(now) {
+		return fmt.Errorf("%w: the clock of the checker could not be read as a time in the years 1970 to 2106, so its primaries cannot be held to it", ErrConfig)
 	}
-	for _, pr := range s.primaries {
-		if pr.key.Created().After(now) {
-			return fmt.Errorf("%w: the primary %s was created after the clock of the checker", ErrConfig, pr.fingerprint)
-		}
+	if fp, after := s.primaryAfter(now); after {
+		return fmt.Errorf("%w: the primary %s was created after the clock of the checker", ErrConfig, fp)
 	}
 	return nil
+}
+
+// holdsTime reports whether an OpenPGP time field can hold t, cut to whole seconds: the years 1970 to 2106.
+func holdsTime(t time.Time) bool {
+	u := t.Truncate(time.Second).Unix()
+	return u >= 1 && u <= math.MaxUint32
+}
+
+// primaryAfter returns the fingerprint of the first primary, in the order of the list, that was created
+// after now, and whether there is one.
+func (s *settings) primaryAfter(now time.Time) (string, bool) {
+	for _, pr := range s.primaries {
+		if pr.key.Created().After(now) {
+			return pr.fingerprint, true
+		}
+	}
+	return "", false
 }
 
 // takePolicy reads the policy: every field is required, and nothing that it lists is unknown.

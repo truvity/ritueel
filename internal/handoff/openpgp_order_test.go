@@ -44,7 +44,20 @@ func TestTheClockDecidesWhichBackSignaturesAreInTheFuture(t *testing.T) {
 	}
 }
 
+// A clock that can be read by New and not by the call (it gives a time outside the years 1970 to 2106, or panics) is an
+// error of the checker, never a refusal or an acceptance. With primaries New already refuses such a clock, so the clock
+// of these tests is good for its first read and bad for the next.
 func TestAClockOutsideTheYears1970To2106IsAFaultOfTheCheckerAndNeverARefusalOrAnAcceptance(t *testing.T) {
+	afterNew := func(bad func() time.Time) func() time.Time {
+		n := 0
+		return func() time.Time {
+			n++
+			if n == 1 {
+				return testNow
+			}
+			return bad()
+		}
+	}
 	for name, at := range map[string]time.Time{
 		"before 1970":              time.Date(1960, 1, 1, 0, 0, 0, 0, time.UTC),
 		"one second before 1970":   time.Unix(-1, 0),
@@ -55,7 +68,7 @@ func TestAClockOutsideTheYears1970To2106IsAFaultOfTheCheckerAndNeverARefusalOrAn
 	} {
 		t.Run(name, func(t *testing.T) {
 			f := newPGPFixture(t, 2, handoff.StoreSoftware)
-			chk := f.checker(func(c *handoff.Config) { c.Now = func() time.Time { return at } })
+			chk := f.checker(func(c *handoff.Config) { c.Now = afterNew(func() time.Time { return at }) })
 			v, err := chk.Check(t.Context(), f.request())
 			wantUndecided(t, v, err, handoff.ErrInternal, "ppppnnnnn")
 			if v.Refused() {
@@ -65,7 +78,7 @@ func TestAClockOutsideTheYears1970To2106IsAFaultOfTheCheckerAndNeverARefusalOrAn
 	}
 	// A panicking clock is an error too, and no acceptance.
 	f := newPGPFixture(t, 2, handoff.StoreSoftware)
-	chk := f.checker(func(c *handoff.Config) { c.Now = func() time.Time { panic("the clock broke") } })
+	chk := f.checker(func(c *handoff.Config) { c.Now = afterNew(func() time.Time { panic("the clock broke") }) })
 	v, err := chk.Check(t.Context(), f.request())
 	wantUndecided(t, v, err, handoff.ErrInternal, "ppppnnnnn")
 }

@@ -26,8 +26,9 @@ type RootRef = pki.RootRef
 // not-run (when the version cannot be read, check 2 fails and check 1 is not-run, because the page gives
 // that fault to check 2). A refusal is in the verdict ([Verdict.Code]); the error is non-nil only when the
 // checker cannot decide (see the package comment): [ErrTypeNotBuilt] for an ssh-ca-key request that passed
-// the checks that are built for it, [ErrConfig] (beside checks 1 and 2 passed) for an openpgp-subkey request on
-// a checker that holds no primaries, [ErrNoVerifier] for a store with no verifier,
+// the checks that are built for it, [ErrNoPrimaries] (an [ErrConfig] too, beside checks 1 and 2 passed) for an
+// openpgp-subkey request on a checker that holds no primaries, an [ErrConfig] (beside checks 1 to 4 passed)
+// for an openpgp-subkey request when a primary was created after the clock that this call read, [ErrNoVerifier] for a store with no verifier,
 // the error of a verifier that failed without refusing or that panicked, [ErrConfig] for a Checker that
 // [New] did not make, and [ErrInternal]. The verdict is returned with every error, with the checks that
 // did not run marked not-run.

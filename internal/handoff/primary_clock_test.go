@@ -201,29 +201,110 @@ func TestNewReadsTheClockOnceWhenPrimariesAreGivenAndNeverWhenNoneAre(t *testing
 	}
 }
 
-// A clock that panics, and a clock whose time a field of OpenPGP cannot hold, are not judged by New: it makes the
-// checker, even for a primary that would be late for a sane clock, and the call of check 5 tells the fault, as it
-// always did, as an error of the checker and never as a refusal or an acceptance.
-func TestAClockThatIsBrokenIsLeftToCheckFiveAndNewDoesNotRefuseOrPanic(t *testing.T) {
-	for name, clock := range map[string]func() time.Time{
-		"a panic":                  func() time.Time { panic("the clock broke") },
-		"before 1970":              func() time.Time { return time.Date(1960, 1, 1, 0, 0, 0, 0, time.UTC) },
-		"the epoch":                func() time.Time { return time.Unix(0, 0) },
-		"one second before 1970":   func() time.Time { return time.Unix(-1, 0) },
-		"the first second of 2106": func() time.Time { return time.Unix(1<<32, 0) },
-		"the year 2200":            func() time.Time { return time.Date(2200, 1, 1, 0, 0, 0, 0, time.UTC) },
-		"the zero time":            func() time.Time { return time.Time{} },
+// With primaries, a clock that cannot be read (it panics), or whose time an OpenPGP time field cannot hold (outside the
+// years 1970 to 2106), is an ErrConfig that says the clock could not be read: a primary cannot be held to such a clock,
+// and a check that cannot run is not a pass. It is neither an ErrInternal nor an ErrNoPrimaries, and New does not panic.
+func TestNewWithPrimariesRefusesAClockThatCannotBeRead(t *testing.T) {
+	for name, tc := range map[string]struct {
+		clock func() time.Time
+		words string
+	}{
+		"a panic":                                {func() time.Time { panic("the clock broke") }, "(it panicked)"},
+		"before 1970":                            {func() time.Time { return time.Date(1960, 1, 1, 0, 0, 0, 0, time.UTC) }, "1970 to 2106"},
+		"the epoch":                              {func() time.Time { return time.Unix(0, 0) }, "1970 to 2106"},
+		"one second before 1970":                 {func() time.Time { return time.Unix(-1, 0) }, "1970 to 2106"},
+		"the first second of 2106":               {func() time.Time { return time.Unix(1<<32, 0) }, "1970 to 2106"},
+		"the year 2200":                          {func() time.Time { return time.Date(2200, 1, 1, 0, 0, 0, 0, time.UTC) }, "1970 to 2106"},
+		"the zero time":                          {func() time.Time { return time.Time{} }, "1970 to 2106"},
+		"half a second before 1970 is before it": {func() time.Time { return time.Unix(0, 500_000_000) }, "1970 to 2106"},
+	} {
+		for shape, change := range map[string]func(c *handoff.Config){
+			"two primaries, a delegation": func(c *handoff.Config) {},
+			"one primary":                 func(c *handoff.Config) { c.Primaries = c.Primaries[:1] },
+			"primaries and no delegation": func(c *handoff.Config) { c.Delegation = nil },
+			"an authenticate delegation":  func(c *handoff.Config) { c.Delegation.Capability = "authenticate" },
+		} {
+			t.Run(name+", "+shape, func(t *testing.T) {
+				f := newPGPFixture(t, 2, handoff.StoreSoftware)
+				chk, err := handoff.New(f.config(func(c *handoff.Config) { change(c); c.Now = tc.clock }))
+				if chk != nil || err == nil {
+					t.Fatalf("New returned (%v, %v) for primaries and a clock that cannot be read", chk, err)
+				}
+				if !errors.Is(err, handoff.ErrConfig) {
+					t.Errorf("the error does not wrap ErrConfig: %v", err)
+				}
+				if errors.Is(err, handoff.ErrInternal) || errors.Is(err, handoff.ErrNoPrimaries) {
+					t.Errorf("the error is an ErrInternal or an ErrNoPrimaries too: %v", err)
+				}
+				if !strings.Contains(err.Error(), "the clock of the checker could not be read") || !strings.Contains(err.Error(), tc.words) {
+					t.Errorf("the error %q does not say that the clock could not be read, with %q", err.Error(), tc.words)
+				}
+			})
+		}
+	}
+}
+
+// A time that a field holds is read: the last second of 2105-2106, the second after the epoch.
+func TestNewWithPrimariesReadsTheFirstAndTheLastSecondThatAFieldHolds(t *testing.T) {
+	for name, at := range map[string]time.Time{
+		"the second after the epoch, with a fraction": time.Unix(1, 999_999_999),
+		"the last second that a field holds":          time.Unix(1<<32-1, 0),
+		"the last second, with a fraction":            time.Unix(1<<32-1, 999_999_999),
 	} {
 		t.Run(name, func(t *testing.T) {
-			f := newPGPFixture(t, 2, handoff.StoreSoftware)
-			chk, err := handoff.New(f.config(func(c *handoff.Config) { c.Now = clock }))
-			if err != nil || chk == nil {
-				t.Fatalf("New refused the configuration: %v", err)
+			f := primariesCreatedAt(t, time.Unix(1, 0))
+			if _, err := handoff.New(f.config(func(c *handoff.Config) { c.Now = func() time.Time { return at } })); err != nil {
+				t.Errorf("New refused a clock that a field holds: %v", err)
 			}
-			v, err := chk.Check(t.Context(), f.request())
-			wantUndecided(t, v, err, handoff.ErrInternal, "ppppnnnnn")
-			if v.Refused() || v.Accepted() {
-				t.Errorf("the request was refused or accepted for a fault of the clock: %q", v.Code)
+		})
+	}
+}
+
+// With no primaries the clock is not read by New, so a clock that cannot be read does not matter to it: the checker is
+// made, and a request that needs no primaries is judged as before.
+func TestNewWithNoPrimariesDoesNotReadTheClockAndAcceptsOneThatCannotBeRead(t *testing.T) {
+	for name, clock := range map[string]func() time.Time{
+		"a panic":       func() time.Time { panic("the clock broke") },
+		"before 1970":   func() time.Time { return time.Date(1960, 1, 1, 0, 0, 0, 0, time.UTC) },
+		"the year 2200": func() time.Time { return time.Date(2200, 1, 1, 0, 0, 0, 0, time.UTC) },
+	} {
+		t.Run(name, func(t *testing.T) {
+			calls := 0
+			cfg := defaultConfig(t)
+			cfg.Now = func() time.Time { calls++; return clock() }
+			chk, err := handoff.New(cfg)
+			if err != nil || chk == nil {
+				t.Fatalf("New refused a configuration with no primaries: %v", err)
+			}
+			if calls != 0 {
+				t.Errorf("New read the clock %d times with no primaries", calls)
+			}
+		})
+	}
+}
+
+// A configuration that is refused for another reason is refused for it, with a clock that cannot be read as well: the
+// clock is read after the policy, the primaries, the delegation and the roots, and only when they are whole.
+func TestNewTellsTheEarlierFaultBeforeTheFaultOfTheClock(t *testing.T) {
+	f := newPGPFixture(t, 2, handoff.StoreSoftware)
+	for name, change := range map[string]func(c *handoff.Config){
+		"no roots":         func(c *handoff.Config) { c.Roots = nil },
+		"a bad capability": func(c *handoff.Config) { c.Delegation.Capability = "certify" },
+	} {
+		t.Run(name, func(t *testing.T) {
+			calls := 0
+			_, err := handoff.New(f.config(func(c *handoff.Config) {
+				change(c)
+				c.Now = func() time.Time { calls++; panic("the clock broke") }
+			}))
+			if !errors.Is(err, handoff.ErrConfig) {
+				t.Fatalf("New returned %v", err)
+			}
+			if strings.Contains(err.Error(), "the clock of the checker could not be read") {
+				t.Errorf("the fault of the clock is told for a configuration with another fault: %v", err)
+			}
+			if calls != 0 {
+				t.Errorf("the clock was read %d times", calls)
 			}
 		})
 	}
