@@ -17,7 +17,9 @@ const AcceptedLimit = "A software root key is a file. Anyone who copies the file
 // with the reason, or that it leaves out nothing; the number of signatures and that none can be fixed
 // before the keys are born; the number of touches; the wanted files it used, each with the first
 // eight characters of its digest; the accepted limit; and last the plan digest in 64 digits. Every
-// name from a file goes through jsonset.EscapeExact. A nil or zero PlanOut has no words.
+// text that is not fixed words goes through jsonset.EscapeExact, the digests too: a PlanOut that was
+// made by hand and holds a line break in a digest prints no line break. A nil or zero PlanOut has no
+// words.
 func (p *PlanOut) Words() []string {
 	if p == nil || p.Name == "" || p.SHA256 == "" {
 		return nil
@@ -41,9 +43,9 @@ func (p *PlanOut) Words() []string {
 		"touches: 0",
 	)
 	for _, w := range p.Wanted {
-		lines = append(lines, fmt.Sprintf("wanted file %s, digest %s", esc(w.Path), prefixOf(w.SHA256)))
+		lines = append(lines, fmt.Sprintf("wanted file %s, digest %s", esc(w.Path), esc(prefixOf(w.SHA256))))
 	}
-	lines = append(lines, "limit: "+AcceptedLimit, "plan digest "+p.SHA256)
+	lines = append(lines, "limit: "+AcceptedLimit, "plan digest "+esc(p.SHA256))
 	return lines
 }
 

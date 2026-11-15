@@ -37,6 +37,25 @@ const leftOutReason = "a change of the root keys runs alone (record 0007, rule 9
 // maxRequestNames is the most names under requests/ that Find keeps.
 const maxRequestNames = wanted.MaxFiles
 
+// maxRootsRead is the most root files whose bytes Find reads. This version builds one root, so a
+// bundle of two or more root files is refused whatever they hold; the first few are read only so
+// that the refusal can name what is wrong with them (a kind that is not built, a root that is not a
+// test root). A bundle of more root files is refused from their names, and none is read.
+const maxRootsRead = 8
+
+// rootFiles are the root files of a bundle as Find reads them: all the names, in order, and the
+// roots of those names when there are no more than maxRootsRead of them.
+type rootFiles struct {
+	// names are the names of every root file, without ".yaml", in the order of the names.
+	names []string
+	// roots are the roots of the names, in the same order; nil when the names are more than
+	// maxRootsRead and none was read.
+	roots []*wanted.Root
+}
+
+// unread reports whether the files were too many to be read.
+func (r rootFiles) unread() bool { return len(r.names) > len(r.roots) }
+
 // FindInput is what Find reads: the bundle, from its root folder. Find reads and writes nothing
 // else.
 type FindInput struct {
@@ -89,7 +108,9 @@ func (f *Found) Nothing() bool { return f == nil || len(f.Applies) == 0 }
 // check (exit code 1); a history that fails its own check (exit code 3); a history whose order cannot
 // be settled (exit code 1); an open attempt (exit code 3, [ReasonUnfinishedCeremony]); a bundle that
 // is not in the first state (exit code 1, [ErrNotFirst]); a root that is not built (exit code 1,
-// [ErrNotBuilt]); a request name that is not a plain name (exit code 1).
+// [ErrNotBuilt]); a request name that is not a plain name (exit code 1). The names of the root files
+// are listed and counted before any is read, and when there are more than maxRootsRead of them none
+// is read: that bundle is refused as not built, at the place of that refusal, whatever the files hold.
 func Find(ctx context.Context, in FindInput) (*Found, error) {
 	if ctx == nil {
 		return nil, errors.New("ceremony: there is no context")
@@ -100,7 +121,7 @@ func Find(ctx context.Context, in FindInput) (*Found, error) {
 	if err := ctx.Err(); err != nil {
 		return nil, err
 	}
-	settings, roots, err := readWanted(in.FS)
+	settings, rf, err := readWanted(in.FS)
 	if err != nil {
 		return nil, err
 	}
@@ -117,7 +138,7 @@ func Find(ctx context.Context, in FindInput) (*Found, error) {
 	if err := refuseNotFirst(in.FS, st); err != nil {
 		return nil, err
 	}
-	if err := notBuilt(settings, roots); err != nil {
+	if err := notBuilt(settings, rf); err != nil {
 		return nil, err
 	}
 	requests, err := requestNames(in.FS)
@@ -128,10 +149,10 @@ func Find(ctx context.Context, in FindInput) (*Found, error) {
 	for _, name := range requests {
 		found.LeavesOut = append(found.LeavesOut, LeftOut{Object: "requests/" + name, Reason: leftOutReason})
 	}
-	if len(roots) == 0 {
+	if len(rf.roots) == 0 {
 		return found, nil
 	}
-	root := roots[0]
+	root := rf.roots[0]
 	for i := range defaultKeys {
 		found.Applies = append(found.Applies, Change{Change: changeCreate, Object: root.Name + "/" + labelOf(i)})
 	}
@@ -143,22 +164,33 @@ func Find(ctx context.Context, in FindInput) (*Found, error) {
 // labelOf is the label of the i-th key of a root: the next free letters from A (record 0006, rule 2).
 func labelOf(i int) string { return string(rune('A' + i)) }
 
-// readWanted reads ritueel.yaml, every root file and every delegation file, and refuses the first one
+// readWanted reads ritueel.yaml, the root files and every delegation file, and refuses the first one
 // that fails its own check, with an error that names the path (escaped by the error itself). The
-// delegation files are read and checked, and not used.
-func readWanted(fsys fsx.FS) (*wanted.Settings, []*wanted.Root, error) {
+// names of the root files are listed and counted before any is read; the bytes of the root files are
+// read only when there are no more than maxRootsRead of them. The delegation files are read and
+// checked one at a time, and not used or kept.
+func readWanted(fsys fsx.FS) (*wanted.Settings, rootFiles, error) {
+	refused := func(err error) error {
+		return fmt.Errorf("a wanted file is refused, and nothing was written: %w", err)
+	}
 	settings, err := wanted.LoadSettings(fsys)
 	if err != nil {
-		return nil, nil, fmt.Errorf("a wanted file is refused, and nothing was written: %w", err)
+		return nil, rootFiles{}, refused(err)
 	}
-	roots, err := wanted.ListRoots(fsys)
+	names, err := wanted.ListRootNames(fsys)
 	if err != nil {
-		return nil, nil, fmt.Errorf("a wanted file is refused, and nothing was written: %w", err)
+		return nil, rootFiles{}, refused(err)
 	}
-	if _, err := wanted.ListDelegations(fsys, settings); err != nil {
-		return nil, nil, fmt.Errorf("a wanted file is refused, and nothing was written: %w", err)
+	rf := rootFiles{names: names}
+	if len(names) <= maxRootsRead {
+		if rf.roots, err = wanted.LoadRoots(fsys, names); err != nil {
+			return nil, rootFiles{}, refused(err)
+		}
 	}
-	return settings, roots, nil
+	if err := wanted.CheckDelegations(fsys, settings); err != nil {
+		return nil, rootFiles{}, refused(err)
+	}
+	return settings, rf, nil
 }
 
 // inspect reads the history of the bundle once and returns its state, or the reason there is none: a
@@ -255,8 +287,14 @@ func refuseNotFirst(fsys fsx.FS, st *history.State) error {
 // file and what to do (exit code 1, [ErrNotBuilt]). The order is: a root of the kind openpgp or ssh;
 // a root that is not a test root; two roots of one kind; a personal bundle. A root of a kind that is
 // not built is never left out silently: a label that was made without an OpenPGP primary could never
-// get one, because a label names a key and is not reused.
-func notBuilt(s *wanted.Settings, roots []*wanted.Root) error {
+// get one, because a label names a key and is not reused. A bundle of more root files than Find reads
+// (maxRootsRead) is refused first, from the names alone, because none of those files was read.
+func notBuilt(s *wanted.Settings, rf rootFiles) error {
+	if rf.unread() {
+		path := func(name string) string { return jsonset.EscapeExact(wanted.RootsDir + "/" + name + ".yaml") }
+		return fmt.Errorf("%w: the bundle has %d root files, more than this version reads, and a bundle has one root of each kind; keep one of %s and %s; nothing was written", ErrNotBuilt, len(rf.names), path(rf.names[0]), path(rf.names[1]))
+	}
+	roots := rf.roots
 	for _, r := range roots {
 		switch r.Kind {
 		case wanted.RootX509:

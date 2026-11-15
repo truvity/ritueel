@@ -11,6 +11,11 @@ import (
 // Env is everything the engine reads from outside. Nothing here reads a global. The zero value
 // reads nothing and makes nothing: a plan cannot be made without a clock, and nothing is printed
 // without a [Console].
+//
+// [MakePlan] reads three fields and no other: the clock (Now), the source of the serials (Rand) and
+// the description of the program (Self). It prints nothing, so a nil Out is no fault of MakePlan, and
+// it never reads In or InIsTerminal. The rule that a nil Console is an error belongs to the part that
+// prints a line: where a line must be printed and there is no Console, that part fails.
 type Env struct {
 	// Now is the clock. The plan takes whole seconds from it, once. A nil clock is an error: a
 	// check that cannot run is not a pass.
@@ -24,7 +29,7 @@ type Env struct {
 	// InIsTerminal is true only when In is a terminal. A typed confirmation is read only then.
 	InIsTerminal bool
 	// Out is everything a person reads. A nil Console is an error where a line must be printed,
-	// and never io.Discard.
+	// and never io.Discard. MakePlan does not use it.
 	Out *Console
 }
 

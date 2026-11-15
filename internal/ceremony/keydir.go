@@ -1,7 +1,7 @@
 package ceremony
 
 import (
-	"errors"
+	"fmt"
 
 	"ritueel.id/ritueel/internal/keystore/software"
 )
@@ -12,7 +12,8 @@ import (
 // (docs/reference/cli.md, "--key-dir"). A refusal is a [*BackendError] (exit code 4) with the reason
 // code of the key store, key-dir or key-exists. Any other fault, such as a key directory that cannot be
 // listed, is an ordinary error. It makes no key and writes nothing; it opens the folder to look and
-// closes it.
+// closes it. The text of an ordinary fault is one line: the fault of the key store is wrapped in the
+// text of this function, and the two are never joined by a line feed.
 func CheckKeyDir(keyDir, bundleDir string) error {
 	s, err := software.Open(software.Config{KeyDir: keyDir, BundleDir: bundleDir, Mode: software.ModeTest})
 	if err != nil {
@@ -41,5 +42,5 @@ func keyDirError(err error) error {
 	if code := software.Code(err); code != "" {
 		return &BackendError{Reasons: []string{code}, Msg: err.Error() + "; nothing was written"}
 	}
-	return errors.Join(errors.New("the key directory cannot be checked, and nothing was written"), err)
+	return fmt.Errorf("the key directory cannot be checked, and nothing was written: %w", err)
 }
