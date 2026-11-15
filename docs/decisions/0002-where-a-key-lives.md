@@ -12,7 +12,7 @@
 5. ritueel never exports a key from a card or KMS: backup means two independent cards or a KMS replica.
 6. Redundancy protects against loss, not compromise, so the number of root keys follows the key store. No hardware security module is used.
 
-7. Attested key stores (piv, openpgp-card) and aws-kms may hold root keys, intermediates and subkeys. Key stores with no evidence (software; a token that cannot attest) may hold test roots, drills, development, the first consumer's harness and a person's own primary (encrypted file only), and intermediates and subkeys only where policy.stores lists the key store.
+7. Attested key stores (piv, openpgp-card) and aws-kms may hold root keys, intermediates and subkeys. An openpgp-card key is refused for an X.509 intermediate and for an SSH CA key, because its attestation shows no PIN or touch rule. Key stores with no evidence (software; a token that cannot attest) may hold test roots, drills, development, the first consumer's harness and a person's own primary (encrypted file only), and intermediates and subkeys only where policy.stores lists the key store.
 8. No root key that others rely on exists in software or in any key store with no evidence, except a person's own primary. A software root never anchors a signed release.
 9. ritueel offers three kinds of key store for a root key: a software key in an encrypted age file, a card-born key on a root card, and one cloud KMS key with a replica. A software root key is written as an age file (rule 20), except a test root (rule 4); accepted costs: no attestation, the key in memory at each ceremony, a copy that may go unnoticed.
 
