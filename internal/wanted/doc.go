@@ -1,7 +1,7 @@
-// Package wanted reads the wanted files of a bundle: ritueel.yaml, a delegation file and the small wanted
-// root file (docs/reference/bundle.md, "The wanted files"). Each is one strict YAML file that a person
-// writes on the workstation (record 0006, rule 5). The package reads untrusted bytes and returns either a
-// value that was made by its own parser or an error, never a part of a value.
+// Package wanted reads the wanted files of a bundle: ritueel.yaml, a delegation file, the small wanted
+// root file and a card file (docs/reference/bundle.md, "The wanted files"). Each is one strict YAML file
+// that a person writes on the workstation (record 0006, rule 5). The package reads untrusted bytes and
+// returns either a value that was made by its own parser or an error, never a part of a value.
 //
 // A reader keeps the bytes of the file exactly as they were read and their SHA-256, so that a later
 // ceremony can copy the file and list it by its digest (record 0005, rule 6). It never writes the bytes
@@ -30,11 +30,16 @@
 // words and numbers. A text that came from the file goes through [jsonset.Escape] and is cut at 40
 // characters before it is put in a message, so a message is printable ASCII whatever the file held.
 //
-// A [Settings], a [Delegation] and a [Root] that was not made by its parser is not usable: each has
+// A card file (want/cards/NAME.yaml, docs/reference/cards.md, "The card file") names one card: its serial, its
+// kind, the applications that the bundle uses and the rows of other bundles that the card declares. It is read
+// from the file alone: no card is read, and nothing here can reach one. Two serials are the same card when
+// [SerialKey] gives one text for both, so a caller that judges a whole folder compares serials only through it.
+//
+// A [Settings], a [Delegation], a [Root] and a [Card] that was not made by its parser is not usable: each has
 // Valid, which is false for a zero value and for one that a caller built by hand, and a package that
 // takes one refuses a value that is not Valid.
 //
-// Nothing here follows a link or reads a folder. A file is read by the name it is given, through package
-// fsx, which refuses a link in any element of the path, a file that is not a regular file and a file over
-// 8 MiB. A folder is never listed by this package.
+// Nothing here follows a link. A file is read by the name it is given, through package fsx, which refuses
+// a link in any element of the path, a file that is not a regular file and a file over 8 MiB. The only
+// folders listed are want/roots, want/delegations and want/cards, each once, for the names in it.
 package wanted

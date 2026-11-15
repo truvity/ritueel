@@ -27,6 +27,9 @@ var (
 	capabilityEnum = []string{"sign", "authenticate"}
 	useEnum        = []string{"user", "host"}
 	rootKindEnum   = []string{string(RootX509), string(RootOpenPGP), string(RootSSH)}
+	// The fixed sets of a card file (docs/reference/cards.md, "The card file").
+	cardKindEnum    = []string{string(CardRoot), string(CardDayToDay), string(CardServer), string(CardRehearsal)}
+	applicationEnum = []string{string(AppPIV), string(AppOpenPGP), string(AppFIDO2)}
 )
 
 // mapping is a mapping node of a document whose members were checked against a table: no member is unknown,
@@ -139,15 +142,47 @@ func (m *mapping) boolean(name string) (bool, error) {
 // integer reads the member as an integer: plain decimal digits, no sign, no leading zero, no underscore and
 // at most nine digits.
 func (m *mapping) integer(name string) (int, error) {
-	v := m.val[name]
+	return m.intNode(m.val[name], m.what(name))
+}
+
+// intNode reads one node as an integer by the rule of [mapping.integer]; at names it in a message.
+func (m *mapping) intNode(v *yaml.Node, at string) (int, error) {
 	if v.Kind != yaml.ScalarNode || v.Tag != "!!int" || !plainInteger(v.Value) {
-		return 0, m.d.fail(v, m.what(name)+" must be an integer of plain decimal digits: no sign, no leading zero, no underscore, at most nine digits")
+		return 0, m.d.fail(v, at+" must be an integer of plain decimal digits: no sign, no leading zero, no underscore, at most nine digits")
 	}
 	n := 0
 	for _, c := range v.Value {
 		n = n*10 + int(c-'0')
 	}
 	return n, nil
+}
+
+// integers reads the member as a list of integers, in flow or block style, of at most most entries, each from
+// lo to hi and none twice. The length is checked before the first entry is read. An empty list is a list.
+func (m *mapping) integers(name string, most, lo, hi int) ([]int, error) {
+	v := m.val[name]
+	if v.Kind != yaml.SequenceNode {
+		return nil, m.d.fail(v, m.what(name)+" must be a list")
+	}
+	if len(v.Content) > most {
+		return nil, m.d.fail(v, m.what(name)+fmt.Sprintf(" must hold at most %d entries", most))
+	}
+	out := make([]int, 0, len(v.Content))
+	for i, e := range v.Content {
+		at := fmt.Sprintf("%s entry %d", m.what(name), i+1)
+		n, err := m.intNode(e, at)
+		if err != nil {
+			return nil, err
+		}
+		if n < lo || n > hi {
+			return nil, m.d.fail(e, at+fmt.Sprintf(" must be from %d to %d", lo, hi))
+		}
+		if slices.Contains(out, n) {
+			return nil, m.d.fail(e, at+" repeats an earlier entry")
+		}
+		out = append(out, n)
+	}
+	return out, nil
 }
 
 // plainInteger tells whether s is 0, or one to nine decimal digits with no leading zero.
