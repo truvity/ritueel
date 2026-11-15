@@ -180,9 +180,10 @@ func TestCreateStopsAtAParentThatCanBePassedButNotOpened(t *testing.T) {
 	}
 }
 
-// bundleAbove on a folder whose way is not passable: the first folder looked at cannot be examined, so the answer is an
-// error that names that folder, even when a folder further up holds the name. The answer is never "none", and it is
-// never the folder further up that holds the name (that folder cannot be reached through this path).
+// bundleAbove on a folder whose way is not passable: the links of the path cannot be followed, so the answer is an
+// error that says the parent folder cannot be resolved and names it, even when a folder further up holds the name. The
+// answer is never "none", and it is never the folder further up that holds the name (that folder cannot be reached
+// through this path); the folders of a path that was not resolved are not looked at.
 func TestBundleAboveOfAFolderThatCannotBeExaminedIsAnErrorThatNamesItAndNeverNone(t *testing.T) {
 	skipAsRoot(t)
 	for _, mode := range []os.FileMode{0o000, 0o600, 0o644} {
@@ -201,7 +202,7 @@ func TestBundleAboveOfAFolderThatCannotBeExaminedIsAnErrorThatNamesItAndNeverNon
 				if !errors.Is(err, os.ErrPermission) {
 					t.Errorf("error = %v, want one that says permission denied", err)
 				}
-				want := "the folder " + deep + " cannot be examined for ritueel.yaml: permission denied"
+				want := "the parent folder " + deep + " cannot be resolved: permission denied"
 				if err.Error() != want {
 					t.Errorf("error = %q, want %q", err.Error(), want)
 				}
@@ -211,8 +212,8 @@ func TestBundleAboveOfAFolderThatCannotBeExaminedIsAnErrorThatNamesItAndNeverNon
 }
 
 // Create with a relative DIR, run from a folder that was reached before a folder above it lost its pass bit. The
-// parent can be opened (by the relative path), so the call reaches the folders above; the first of them cannot be
-// examined, and the call stops with an error that names it, makes nothing and says that the folder was not made.
+// parent can be opened (by the relative path), so the call reaches the folders above; the links of the path cannot be
+// followed, and the call stops with an error that names the parent, makes nothing and says that the folder was not made.
 func TestCreateStopsWhenAFolderAboveCannotBeExaminedAndWritesNothing(t *testing.T) {
 	skipAsRoot(t)
 	_, d1, deep := modeTree(t)
@@ -224,7 +225,7 @@ func TestCreateStopsWhenAFolderAboveCannotBeExaminedAndWritesNothing(t *testing.
 	if err == nil || files != nil || !errors.As(err, &ce) || ce.Made || len(ce.Written) != 0 || ce.Dir != "dir" {
 		t.Fatalf("(%v, %v), want a CreateError for a folder that was not made", files, err)
 	}
-	want := "bundle: cannot make the bundle dir: the folder was not made: the folder " + deep + " cannot be examined for ritueel.yaml: permission denied"
+	want := "bundle: cannot make the bundle dir: the folder was not made: the parent folder " + deep + " cannot be resolved: permission denied"
 	if err.Error() != want {
 		t.Errorf("error = %q, want %q", err.Error(), want)
 	}
@@ -391,7 +392,7 @@ func TestCreateRefusesHostileDirsAndMakesNothing(t *testing.T) {
 	}
 }
 
-// The name of the folder that cannot be examined is written by the exact escape too: a space, a backslash and a byte
+// The name of the parent that cannot be resolved is written by the exact escape too: a space, a backslash and a byte
 // that is not UTF-8 in its name read back as that one name.
 func TestTheFolderThatCannotBeExaminedIsNamedOneToOne(t *testing.T) {
 	skipAsRoot(t)
@@ -405,7 +406,7 @@ func TestTheFolderThatCannotBeExaminedIsNamedOneToOne(t *testing.T) {
 	mustDo(t, os.Chmod(d1, 0o600))
 	restoreMode(t, d1)
 	_, err = bundleAbove(deep)
-	want := `the folder ` + root + `/d\x201/in\\ner\xff cannot be examined for ritueel.yaml: permission denied`
+	want := `the parent folder ` + root + `/d\x201/in\\ner\xff cannot be resolved: permission denied`
 	if err == nil || err.Error() != want {
 		t.Errorf("error = %v, want %q", err, want)
 	}

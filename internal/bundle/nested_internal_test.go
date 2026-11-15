@@ -172,12 +172,18 @@ func TestBundleAboveReadsARelativePathFromTheCurrentFolderAndTheDiskNotTheLinks(
 }
 
 func TestBundleAboveEndsAtTheRootOfTheFileSystem(t *testing.T) {
-	// The loop stops at the root, with no holder, for the root itself and for a path that does not exist.
-	for _, p := range []string{"/", "/no/such/folder/at/all"} {
-		got, err := bundleAbove(p)
-		if err != nil || got != "" {
-			t.Errorf("bundleAbove(%q) = (%q, %v), want nothing", p, got, err)
-		}
+	// The loop stops at the root, with no holder, for the root itself.
+	if got, err := bundleAbove("/"); err != nil || got != "" {
+		t.Errorf("bundleAbove(/) = (%q, %v), want nothing", got, err)
+	}
+	// A path that does not exist cannot be resolved: the answer is an error, and not "none": the folders above it
+	// are not known.
+	got, err := bundleAbove("/no/such/folder/at/all")
+	if err == nil || got != "" {
+		t.Fatalf("bundleAbove of a path that does not exist = (%q, %v), want an error and no folder", got, err)
+	}
+	if want := "the parent folder /no/such/folder/at/all cannot be resolved: no such file or directory"; err.Error() != want {
+		t.Errorf("error = %q, want %q", err.Error(), want)
 	}
 }
 
