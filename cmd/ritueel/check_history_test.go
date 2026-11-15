@@ -53,10 +53,12 @@ func makeBundle(t *testing.T, n int) (dir, end, keys string) {
 		wanted := "name: bundle " + ns + "\n"
 		transcript := "ceremony " + ns + "\n"
 		keysText := "keys of set " + ns + "\n"
-		rootList := `{"version":1}`
+		// The root list holds the sequence of its set, the number at the start of the folder of the
+		// set, and its members stand in the order of their names.
+		rootList := `{"sequence":` + ns + `,"version":1}`
 		plan := `{"ceremony":"` + folder + `","command":"apply","trust_sequence":` + ns + `,"version":1,"wanted":[{"path":"ritueel.yaml","sha256":"` + sumOf(wanted) + `"}]}`
 		if prev != "" {
-			rootList = `{"last_record_sha256":"` + prev + `","version":1}`
+			rootList = `{"last_record_sha256":"` + prev + `","sequence":` + ns + `,"version":1}`
 			plan = `{"ceremony":"` + folder + `","command":"apply","last_record_sha256":"` + prev + `","trust_sequence":` + ns + `,"version":1,"wanted":[{"path":"ritueel.yaml","sha256":"` + sumOf(wanted) + `"}]}`
 		}
 		attempt := `{"ceremony":"` + folder + `","plan_sha256":"` + sumOf(plan) + `","version":1}`
