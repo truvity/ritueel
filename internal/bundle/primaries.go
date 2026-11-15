@@ -14,8 +14,9 @@ import (
 
 // keyringFile is the name of the keyring file inside a trust set: the one place in this package that holds it
 // (docs/reference/keyring-package.md, "The first form of the keyring file"). The name and the place of the file
-// are not yet decided, so nothing else in the program writes the name down: every sentence that names it takes
-// it from here. The bundle keeps its own copy of the name, as it does for the root list and the CA bundle.
+// are decided: one flat file named keyring.gpg, beside the other three files of the trust set. Nothing else in the
+// program writes the name down: every sentence that names it takes it from here. The bundle keeps its own copy of
+// the name, as it does for the root list and the CA bundle; a test of internal/trustset pins that the two agree.
 const keyringFile = "keyring.gpg"
 
 // maxCauseText is the most characters of the cause that the error of a refused keyring file shows.
