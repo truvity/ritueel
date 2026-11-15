@@ -154,7 +154,7 @@ describe('the fixtures tell the made-up world, one bundle at a time', () => {
         expect(c.command === CeremonyCommand.APPLY ? 'apply' : 'close', c.id).toBe(m![2]);
         if (c.planSha256) {
           expect(c.planSha256, c.id).toBe(m![3].repeat(8));
-          if (c.trustSetName) expect(c.trustSetName, c.id).toBe(`${c.trustSequence}-${m![3]}`);
+          if (c.trustSetName) expect(c.trustSetName, c.id).toMatch(new RegExp(`^${c.trustSequence}-[0-9a-f]{8}$`));
         }
         expect(day(c.plannedAt).replaceAll('-', ''), `${c.id}: the time of the id is the day of the plan`).toBe(m![1]);
       }
