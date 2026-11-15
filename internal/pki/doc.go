@@ -33,11 +33,12 @@
 // it. [IntermediateTBS] reads the same bytes by the same function and adds only what needs the
 // issuer. It does not decide what a policy allows; the policy refuses first.
 //
-// An error that this package makes wraps one of [ErrParams] (a parameter of the caller is wrong),
-// [ErrRequest] (the request asks for something that is not issued) or [ErrSignature] (a signature
-// does not verify or is not a DER ECDSA value), and one only. The error of a signer is the signer's:
-// it stays reachable with errors.Is and errors.As under an [ErrSignature], and it may itself wrap
-// another kind or any other error. The text of an error is printable ASCII: it holds only fixed
+// An error that this package makes wraps one of four kinds, and one only: [ErrParams] (a parameter of
+// the caller is wrong), [ErrRequest] (the request asks for something that is not issued), [ErrSignature]
+// (a signature does not verify or is not a DER ECDSA value) or [ErrPEM] (a PEM file is not in the form of
+// the page; it is a fault of the file and not of a request, and only [ReadPEMFile] returns it). The
+// error of a signer is the signer's: it stays reachable with errors.Is and errors.As under an
+// [ErrSignature], and it may itself wrap another kind or any other error. The text of an error is printable ASCII: it holds only fixed
 // words and numbers, and any text that came from a parser is shown by [jsonset.Escape].
 //
 // Every exported function copies what it reads more than once (the serial, the keys, the bytes of the

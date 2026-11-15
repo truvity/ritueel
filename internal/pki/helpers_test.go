@@ -159,8 +159,9 @@ func mustHexStatic(s string) []byte {
 
 var ceremony = utc(2026, time.November, 15, 12, 0, 0)
 
-// kinds are the three kinds of error of the package: every error wraps exactly one.
-var kinds = []error{pki.ErrParams, pki.ErrRequest, pki.ErrSignature}
+// kinds are the four kinds of error of the package: every error wraps exactly one. The fourth, ErrPEM, is the
+// kind of a PEM file that is not in the form of the page, and only ReadPEMFile returns it.
+var kinds = []error{pki.ErrParams, pki.ErrRequest, pki.ErrSignature, pki.ErrPEM}
 
 // printable reports whether s holds printable ASCII only: bytes 0x20 to 0x7e.
 func printable(s string) bool {
@@ -181,7 +182,7 @@ func onePrefix(t testing.TB, err error) {
 	}
 }
 
-// kindOf returns the one kind of the package that err wraps. Every error of the package wraps exactly one of the three
+// kindOf returns the one kind of the package that err wraps. Every error of the package wraps exactly one of the four
 // kinds, so an error that wraps none or more than one is a fault, and the test that met it fails.
 // refusalLog is what zz_refusals_test.go reads at the end of the package: every error of kind ErrRequest or ErrParams that a test looked at,
 // with its text and its check.
