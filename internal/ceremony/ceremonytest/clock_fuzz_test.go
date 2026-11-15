@@ -15,8 +15,9 @@ import (
 func FuzzBundleClock(f *testing.F) {
 	f.Add(int64(1795168800), int64(0), int32(0))
 	f.Add(int64(-62135596800), int64(0), int32(0)) // year 1
-	f.Add(int64(253402300799), int64(999999999), int32(0))
-	f.Add(int64(253402300800), int64(0), int32(0)) // year 10000
+	last := time.Date(9999, 12, 31, 23, 59, 59, 0, time.UTC).Unix() // the last second of the year 9999
+	f.Add(last, int64(999999999), int32(0))
+	f.Add(last+1, int64(0), int32(0)) // year 10000
 	f.Add(int64(-62135596801), int64(0), int32(0)) // year 0
 	f.Add(int64(1700000000), int64(123456789), int32(5*3600+1800))
 	f.Add(int64(1700000000), int64(-5), int32(-12*3600))
