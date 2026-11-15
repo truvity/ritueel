@@ -18,6 +18,8 @@ const (
 	RootsDir = "want/roots"
 	// DelegationsDir is the folder of the delegation files, one NAME.yaml for each delegation.
 	DelegationsDir = "want/delegations"
+	// CardsDir is the folder of the wanted card files, one NAME.yaml for each card.
+	CardsDir = "want/cards"
 )
 
 // Version is the one version of every wanted file: each has "version: 1".
@@ -28,8 +30,8 @@ const Version = 1
 // of RFC 5280.
 const MaxNameLen = 45
 
-// MaxFiles is the most entries of want/roots or of want/delegations that a command lists. This package
-// lists no folder; the number is the one the listing of a caller holds itself to.
+// MaxFiles is the most entries of want/roots, want/delegations or want/cards that the listers of this
+// package accept: a folder with more is an error.
 const MaxFiles = 1000
 
 // The tables of members of ritueel.yaml, in the order of docs/reference/bundle.md.
