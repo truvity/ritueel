@@ -90,11 +90,14 @@ func NewDraft(in Input) (*Draft, error) {
 	// The bytes that are read are the bytes that are kept: the copy is made first, so a caller
 	// that changes Previous later changes neither.
 	in.Previous = slices.Clone(in.Previous)
-	if len(in.Roots) > MaxRoots || len(in.Certificates) > MaxRoots {
-		return nil, fail(ErrParams, "a list holds at most %d root keys and %d certificates are given for at most that many", MaxRoots, MaxRoots)
+	if len(in.Roots) > MaxRoots {
+		return nil, fail(ErrParams, "a list holds at most %d root keys and %d root keys are given", MaxRoots, len(in.Roots))
+	}
+	if len(in.Certificates) > MaxRoots {
+		return nil, fail(ErrParams, "a list holds at most %d root keys and %d certificates are given", MaxRoots, len(in.Certificates))
 	}
 	if len(in.OpenPGPCertificates) > MaxRoots {
-		return nil, fail(ErrParams, "a list holds at most %d root keys and %d OpenPGP certificates are given for at most that many", MaxRoots, MaxRoots)
+		return nil, fail(ErrParams, "a list holds at most %d root keys and %d OpenPGP certificates are given", MaxRoots, len(in.OpenPGPCertificates))
 	}
 	if err := checkSequence(in.Sequence); err != nil {
 		return nil, err

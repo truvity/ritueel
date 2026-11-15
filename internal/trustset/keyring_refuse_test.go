@@ -199,13 +199,13 @@ func TestKeyringTwentySixRoots(t *testing.T) {
 
 	in.OpenPGPCertificates["AA"] = newRoot(t, "A", true).PGP
 	in.Sequence = 0 // a fault that a later check would tell: the bounds are told first
-	refusesCerts(t, in, "OpenPGP certificates are given for at most")
+	refusesCerts(t, in, "a list holds at most 26 root keys and 27 OpenPGP certificates are given")
 	short := keyringInput(t, "A", "B")
 	for i := 0; i < 25; i++ {
 		short.OpenPGPCertificates[string(rune('a'+i))+"x"] = newRoot(t, "A", true).PGP
 	}
 	short.Sequence = 0
-	refusesCerts(t, short, "OpenPGP certificates are given for at most")
+	refusesCerts(t, short, "a list holds at most 26 root keys and 27 OpenPGP certificates are given")
 }
 
 // The keyring file is made after the list and the CA bundle: a fault of the X.509 certificates is

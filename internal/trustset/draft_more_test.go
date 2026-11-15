@@ -19,13 +19,13 @@ func TestBoundsAreCheckedBeforeTheEntriesAreRead(t *testing.T) {
 	for i := 0; i < 25; i++ { // 27 roots in all: one more than the list may hold
 		in.Roots = append(in.Roots, trustset.Root{Label: "bad label", X509SPKISHA256: "x"})
 	}
-	refuses(t, in, "at most 26 root keys and 26 certificates")
+	refuses(t, in, "a list holds at most 26 root keys and 27 root keys are given")
 	in = c.input(next{labels: []string{"A", "B"}})
 	in.Certificates = map[string][]byte{}
 	for i := 0; i < 27; i++ {
 		in.Certificates[strings.Repeat("a", i+1)] = nil
 	}
-	refuses(t, in, "at most 26 root keys and 26 certificates")
+	refuses(t, in, "a list holds at most 26 root keys and 27 certificates are given")
 	// 26 roots and 26 certificates are within the bound.
 	labels := make([]string, 26)
 	for i := range labels {
