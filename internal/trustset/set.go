@@ -16,7 +16,8 @@ type Set struct {
 	listJSON []byte
 	listJWS  []byte
 	caBundle []byte
-	// keyring is the keyring file; nil exactly when the list pins no OpenPGP primary.
+	// keyring is the keyring file; nil exactly when the list pins no OpenPGP primary. A keyring that
+	// is not nil is a keyring held, also with zero bytes.
 	keyring []byte
 }
 
@@ -90,8 +91,10 @@ func (s *Set) Keyring() []byte {
 
 // hasKeyring reports whether the set holds a keyring file, and whether that agrees with its list:
 // a list that pins OpenPGP primaries needs the file, and a list that pins none must not have one
-// (bundle page, "The layout"; keyring page, "The first form of the keyring file"). A set whose list
-// cannot be read agrees with nothing.
+// (bundle page, "The layout"; keyring page, "The first form of the keyring file"). A keyring that is
+// not nil is held, also with zero bytes: such a set does not agree with a list that pins none, and
+// it does not agree with a list that pins primaries either, as an empty file is no keyring file. A
+// set whose list cannot be read agrees with nothing.
 func (s *Set) hasKeyring() (has, ok bool) {
 	list, err := rootlist.ParseList(s.listJSON)
 	if err != nil {
@@ -104,8 +107,8 @@ func (s *Set) hasKeyring() (has, ok bool) {
 			break
 		}
 	}
-	has = len(s.keyring) > 0
-	return has, pins == has
+	has = s.keyring != nil
+	return has, pins == has && (!has || len(s.keyring) > 0)
 }
 
 // Files returns the files of the set in the order of FileNames, and the keyring file after them
