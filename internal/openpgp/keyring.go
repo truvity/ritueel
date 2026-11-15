@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"strings"
+	"time"
 )
 
 // The limits of the keyring file (docs/reference/keyring-package.md, "The first form of the keyring
@@ -58,7 +59,7 @@ type KeyringEntry struct {
 // the mark " (TEST ONLY)" or none does: a file that mixes test and real primaries is refused. The
 // expiry of a primary is not compared with a clock here, and the root list is not read.
 //
-// The checks run in this order, and the first fault gives the error, made once:
+// The checks run in this order, the cheapest first, and the first fault gives the error, made once:
 //
 //  1. want: empty, longer than [MaxKeyringCertificates], a label that is not one capital letter, a
 //     fingerprint that is not 40 lower-case hexadecimal digits, or a label or a fingerprint twice,
@@ -70,12 +71,17 @@ type KeyringEntry struct {
 //     [MaxCertifications] certifications for each: any fault is an ErrKeyringForm. Then the number of
 //     certificates against len(want): fewer is "missing", more is "one too many", each an
 //     [ErrKeyringPrimaries].
-//  4. Each certificate in order: the key (an ErrKeyringForm), whether its fingerprint repeats an
-//     earlier one or its point is an earlier one's, then its fingerprint against want[i] (a
-//     fingerprint that is on the list at another place is "out of order", one that is not on the
-//     list is "not on the list"; each an ErrKeyringPrimaries), the user ID, its label against the
-//     label of the entry (an ErrKeyringPrimaries), and the certifications.
-//  5. No mix of the test mark.
+//  4. Every certificate in order, with no signature check: the key (an ErrKeyringForm), whether its
+//     fingerprint repeats an earlier one or its point is an earlier one's, then its fingerprint
+//     against want[i] (a fingerprint that is on the list at another place is "out of order", one that
+//     is not on the list is "not on the list"; each an ErrKeyringPrimaries), the user ID, its label
+//     against the label of the entry (an ErrKeyringPrimaries), and whether one certification of it
+//     repeats another, compared by the body of the packet, so that the same certification in
+//     another header form is a repeat too (an ErrKeyringForm).
+//  5. No mix of the test mark over all the certificates.
+//  6. Only then the certifications, certificate by certificate and in order, each verified: a file
+//     whose last certificate holds a foreign key, or that mixes test and real primaries, costs no
+//     signature check.
 //
 // A fault of the arguments is an [ErrParams]. A fault of the file is an ErrKeyringForm or an
 // ErrKeyringPrimaries, and both are an [ErrKeyring]. The text of an error names a position and a
@@ -92,6 +98,17 @@ func ReadKeyring(file []byte, want []KeyringEntry) (keys []*PrimaryKey, err erro
 			keys, err = nil, fail(ErrKeyringForm, "the file could not be read")
 		}
 	}()
+	return readKeyring(file, want, checkCertification)
+}
+
+// certChecker is the check of one self-certification that the reader runs for each certification
+// of the file: [checkCertification] in [ReadKeyring].
+type certChecker func(pkt []byte, k *key, userID string, notBefore time.Time) (certification, error)
+
+// readKeyring is the work of [ReadKeyring] after the check of want: it has no recover, so that a
+// panic in it can be seen by a test of the package, and it takes the check of one certification as
+// a parameter, so that a test can count the checks that a file costs. want is held to its rules.
+func readKeyring(file []byte, want []KeyringEntry, check certChecker) ([]*PrimaryKey, error) {
 	if len(file) == 0 {
 		return nil, fail(ErrKeyringForm, "the file is empty")
 	}
@@ -112,7 +129,7 @@ func ReadKeyring(file []byte, want []KeyringEntry) (keys []*PrimaryKey, err erro
 	if len(certs) > len(want) {
 		return nil, fail(ErrKeyringPrimaries, "one too many: the file has %d certificates, and the list has %d entries", len(certs), len(want))
 	}
-	return readCertificates(certs, want)
+	return readCertificates(certs, want, check)
 }
 
 // checkKeyringEntries holds want to its rules: an [ErrParams] for each fault.
@@ -159,9 +176,11 @@ func isFingerprint(s string) bool {
 // keyringCert is the packets of one certificate, each whole with its header.
 type keyringCert struct {
 	key  []byte
-	uid  []byte // the body of the User ID packet
-	has  bool   // whether the User ID packet was read
-	sigs [][]byte
+	uid  []byte   // the body of the User ID packet
+	has  bool     // whether the User ID packet was read
+	sigs [][]byte // each whole with its header
+	// bodies are the bodies of sigs, to compare two of them whatever their header forms.
+	bodies [][]byte
 }
 
 // where names a certificate by its position and, when the list has an entry there, its label.
@@ -184,7 +203,7 @@ func groupKeyring(file []byte, want []KeyringEntry) ([]keyringCert, error) {
 		if err != nil {
 			return nil, fail(ErrKeyringForm, "packet %d is not whole, or its length is a form that is not read", n)
 		}
-		raw := rest[:len(rest)-len(after)]
+		raw := rest[:len(rest)-len(after)] // the whole packet, with its header
 		rest = after
 		if len(certs) == 0 && tag != tagPublicKey {
 			return nil, fail(ErrKeyringForm, "the first packet is not a Public-Key packet (tag %d)", tag)
@@ -208,9 +227,6 @@ func groupKeyring(file []byte, want []KeyringEntry) ([]keyringCert, error) {
 			if cur.has {
 				return nil, fail(ErrKeyringForm, "%s has a second user ID packet", at)
 			}
-			if len(cur.sigs) > 0 {
-				return nil, fail(ErrKeyringForm, "%s has a user ID packet after a certification", at)
-			}
 			cur.uid, cur.has = body, true
 		case tagSignature:
 			if !cur.has {
@@ -219,7 +235,7 @@ func groupKeyring(file []byte, want []KeyringEntry) ([]keyringCert, error) {
 			if len(cur.sigs) == MaxCertifications {
 				return nil, fail(ErrKeyringForm, "%s has more than %d certifications", at, MaxCertifications)
 			}
-			cur.sigs = append(cur.sigs, raw)
+			cur.sigs, cur.bodies = append(cur.sigs, raw), append(cur.bodies, body)
 		case tagSubkey:
 			return nil, fail(ErrKeyringForm, "%s has a Public-Subkey packet: subkeys come with M5, and the first form has none", at)
 		default:
@@ -243,9 +259,11 @@ func certComplete(certs []keyringCert, i int, want []KeyringEntry) error {
 	return nil
 }
 
-// readCertificates reads the key, the user ID and the certifications of each certificate, against
-// the entry at its position, and returns the primaries.
-func readCertificates(certs []keyringCert, want []KeyringEntry) ([]*PrimaryKey, error) {
+// readCertificates reads the certificates against the entries of their positions and returns the
+// primaries. It makes the checks that need no signature check for all certificates first, and
+// checks the certifications of the first certificate only after every certificate has passed them.
+func readCertificates(certs []keyringCert, want []KeyringEntry, check certChecker) ([]*PrimaryKey, error) {
+	read := make([]*key, 0, len(certs))
 	keys := make([]*PrimaryKey, 0, len(certs))
 	prints := make(map[string]int, len(certs))
 	points := make(map[string]int, len(certs))
@@ -286,22 +304,31 @@ func readCertificates(certs []keyringCert, want []KeyringEntry) ([]*PrimaryKey, 
 		} else {
 			plain++
 		}
-		notBefore := k.created
-		for j, sig := range c.sigs {
-			cert, err := checkCertification(sig, k, uid, notBefore)
-			if err != nil {
-				return nil, fail(ErrKeyringForm, "%s, certification %d: %v", at, j+1, err)
+		seen := make(map[string]int, len(c.bodies))
+		for j, body := range c.bodies {
+			if first, ok := seen[string(body)]; ok {
+				return nil, fail(ErrKeyringForm, "%s: certification %d repeats certification %d", at, j+1, first+1)
 			}
-			notBefore = cert.created
+			seen[string(body)] = j
 		}
 		pk, err := NewPrimaryKey(k.ec, k.created)
 		if err != nil || pk.Fingerprint() != fp {
 			return nil, fail(ErrKeyringForm, "%s: the key packet is not read as it is", at)
 		}
-		keys = append(keys, pk)
+		read, keys = append(read, k), append(keys, pk)
 	}
 	if test > 0 && plain > 0 {
 		return nil, fail(ErrKeyringForm, "the file mixes test and real primaries: %d with the mark %q and %d without it", test, strings.TrimSpace(testMark), plain)
+	}
+	for i, c := range certs {
+		notBefore := read[i].created
+		for j, sig := range c.sigs {
+			cert, err := check(sig, read[i], string(c.uid), notBefore)
+			if err != nil {
+				return nil, fail(ErrKeyringForm, "%s, certification %d: %v", where(i, want), j+1, err)
+			}
+			notBefore = cert.created
+		}
 	}
 	return keys, nil
 }
