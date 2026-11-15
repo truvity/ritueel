@@ -28,7 +28,7 @@ var checkNames = [9]string{
 	"request_sha256 is the digest of the request",
 	"The key is ECDSA P-384",
 	"The request's signature verifies with its own key",
-	"The store is allowed by the policy",
+	"The store is allowed by the policy and by the type of the request",
 	"The evidence is valid",
 	"The key in the evidence is the key in the request",
 	"The policy accepts the request",
