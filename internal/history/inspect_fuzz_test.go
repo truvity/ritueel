@@ -13,7 +13,7 @@ import (
 
 // checkInspectInvariants holds what is true of every Inspection of every bundle: the report is the
 // report of Check, a State only for a clean report, an OrderErr only without a State, no list
-// Unreadable, the newest is the last list and agrees with its name and its file, and a second run
+// Unreadable, the newest is the last list, holds the highest sequence and agrees with its name and its file, and a second run
 // says the same.
 func checkInspectInvariants(t *testing.T, m *mnode) *Inspection {
 	t.Helper()
@@ -89,6 +89,31 @@ func checkInspectInvariants(t *testing.T, m *mnode) *Inspection {
 			t.Fatalf("Newest %s is not the last list", st.Newest.Name)
 		}
 	}
+	// The newest list holds the highest sequence: every list has a sequence that an independent
+	// reader finds, and the last one is above all that stand before it.
+	var top int64
+	for i, l := range st.Lists {
+		file := m.get("trust/" + l.Name + "/root-list.json")
+		if file == nil {
+			t.Fatalf("the list %s is no file of the bundle", l.Name)
+		}
+		var v struct {
+			Sequence *json.Number `json:"sequence"`
+		}
+		if err := json.Unmarshal(file.data, &v); err != nil || v.Sequence == nil {
+			t.Fatalf("the list %s of a State has no sequence that can be read: %v", l.Name, err)
+		}
+		n, err := v.Sequence.Int64()
+		if err != nil {
+			t.Fatalf("the sequence %q of %s is no integer", *v.Sequence, l.Name)
+		}
+		if i == len(st.Lists)-1 && i > 0 && n <= top {
+			t.Fatalf("the last list %s has the sequence %d, a list before it has %d", l.Name, n, top)
+		}
+		if i == 0 || n > top {
+			top = n
+		}
+	}
 	// Every list in the State is a trust set of the bundle, with a root list, as a regular file.
 	for _, l := range st.Lists {
 		n := m.get("trust/" + l.Name + "/root-list.json")
@@ -113,6 +138,10 @@ func FuzzInspectLists(f *testing.F) {
 	f.Add(ok(1, kA), ok(2, kA), ok(3, kA), uint8(2))
 	f.Add(ok(1, kA), ok(2, kA), ok(3, kA), uint8(7))
 	f.Add(ok(1, kA), ok(2, kA), ok(2, kA), uint8(4))
+	f.Add(ok(1, kA), ok(1, kA), ok(3, kA), uint8(0))
+	f.Add(ok(5, kA), ok(1, kA), ok(3, kA), uint8(0))
+	f.Add(ok(1, kA), ok(3, kA), ok(2, kA), uint8(6))
+	f.Add(rootsJSON(0, kA), ok(2, kA), ok(3, kA), uint8(0))
 	f.Add(ok(1, kA), ok(9, kA), ok(3, ent{"C", "", f1}), uint8(3))
 	f.Add([]byte(`{`), []byte(``), []byte(`null`), uint8(5))
 	f.Add(rootsJSON(0, kA), rootsJSON(0, kA), rootsJSON(0, kA), uint8(6))

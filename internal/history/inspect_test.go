@@ -301,6 +301,11 @@ func TestInspectPutsTheListsInTheOrderOfTheChain(t *testing.T) {
 					case "shuffled":
 						num = 1 + (i*7+3)%n + 100*(i%2) // not monotone along the chain
 					}
+					if i == n-1 && style != "ascending" {
+						// The last set holds the highest sequence of the chain: only the sets
+						// before it run against the order.
+						num = 5000
+					}
 					names[i] = setN(num)
 					sets[i] = cset{names[i], keyList(int64(num), kA)}
 				}
@@ -489,14 +494,20 @@ func TestInspectStateIsACopy(t *testing.T) {
 	}
 }
 
-// The newest set is the last of the chain: the one a ceremony writes last, whatever the names say.
+// The newest set is the last of the chain: the one a ceremony writes last, whatever the names of
+// the earlier sets say. Its sequence is the highest of all lists, so the names before it may fall.
 func TestInspectNewestIsTheLastOfTheChainNotTheHighestName(t *testing.T) {
 	b := chainBundle(t, false,
-		cset{"9-aaaaaaaa", keyList(9, kA)}, cset{"8-aaaaaaaa", keyList(8, kA)}, cset{"7-aaaaaaaa", keyList(7, kA)})
-	st := wantState(t, b.inspect(), "9-aaaaaaaa", "8-aaaaaaaa", "7-aaaaaaaa")
-	if st.Newest.Name != "7-aaaaaaaa" || st.Newest.Number != 7 {
+		cset{"9-aaaaaaaa", keyList(9, kA)}, cset{"8-aaaaaaaa", keyList(8, kA)}, cset{"12-aaaaaaaa", keyList(12, kA)})
+	st := wantState(t, b.inspect(), "9-aaaaaaaa", "8-aaaaaaaa", "12-aaaaaaaa")
+	if st.Newest.Name != "12-aaaaaaaa" || st.Newest.Number != 12 {
 		t.Errorf("Newest = %+v", *st.Newest)
 	}
+	// The same names with the last one lowest: the last of the chain does not hold the highest
+	// sequence, so there is no State, whatever the names say.
+	low := chainBundle(t, false,
+		cset{"9-aaaaaaaa", keyList(9, kA)}, cset{"8-aaaaaaaa", keyList(8, kA)}, cset{"7-aaaaaaaa", keyList(7, kA)})
+	wantOrderErr(t, low.inspect())
 }
 
 // A set that has no root list (a personal bundle's set, record 0006, rule 12) is no list of the

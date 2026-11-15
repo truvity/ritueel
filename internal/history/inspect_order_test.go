@@ -55,15 +55,26 @@ func TestInspectAClosingRecordAtTheEnd(t *testing.T) {
 	}
 }
 
-// The newest list after a closing record whose name says it is the oldest of all: the order is the
-// chain, so the set stands last.
+// The newest list after a closing record is in the chain after it, whatever the earlier names say:
+// here the set after the closing record has the highest sequence of all, so it is the newest.
 func TestInspectTheSetAfterAClosingRecordStandsAfterIt(t *testing.T) {
 	b := newBundle(t)
 	b.apply(withSet(setN(5), keyList(5, kA)))
 	stopped := b.unfinished(withSet(setN(6), keyList(6, kA)))
 	b.closing(stopped, listsLeftover(stopped, nil))
+	b.apply(withSet(setN(7), keyList(7, kA)))
+	wantState(t, b.inspect(), setN(5), setN(6), setN(7))
+}
+
+// The same chain with the set after the closing record the lowest of all: the last of the chain
+// does not hold the highest sequence, so there is no State.
+func TestInspectTheSetAfterAClosingRecordWithTheLowestSequenceHasNoState(t *testing.T) {
+	b := newBundle(t)
+	b.apply(withSet(setN(5), keyList(5, kA)))
+	stopped := b.unfinished(withSet(setN(6), keyList(6, kA)))
+	b.closing(stopped, listsLeftover(stopped, nil))
 	b.apply(withSet(setN(1), keyList(1, kA)))
-	wantState(t, b.inspect(), setN(5), setN(6), setN(1))
+	wantOrderErr(t, b.inspect())
 }
 
 // A set that no record lists stands where its list says it follows (the record named by
@@ -261,8 +272,11 @@ func TestInspectNewestMustAgreeWithItsName(t *testing.T) {
 	})
 	t.Run("the first set carries any sequence when it is not the newest", func(t *testing.T) {
 		// Only the newest set is held to its name: the order comes from the chain.
-		b := chainBundle(t, false, cset{setN(1), keyList(50, kA)}, cset{setN(2), keyList(2, kA)})
-		wantState(t, b.inspect(), setN(1), setN(2))
+		b := chainBundle(t, false, cset{setN(1), keyList(50, kA)}, cset{setN(60), keyList(60, kA)})
+		wantState(t, b.inspect(), setN(1), setN(60))
+		// With the newest below the first, the newest is held to the sequences of the chain too.
+		low := chainBundle(t, false, cset{setN(1), keyList(50, kA)}, cset{setN(2), keyList(2, kA)})
+		wantOrderErr(t, low.inspect())
 	})
 }
 
@@ -320,7 +334,7 @@ func TestInspectFindReturnsOverTheListsOfACleanBundleFindsNothing(t *testing.T) 
 			{setN(1), keyList(1, ent{"A", pa, f1})}, {setN(2), keyList(2, ent{"A", pa, f1}, ent{"B", pb, f2})}, {setN(3), keyList(3, ent{"B", pb, f2})},
 		},
 		"descending names": {
-			{"9-aaaaaaaa", keyList(9, kA, kB)}, {"8-aaaaaaaa", keyList(8, kB)}, {"7-aaaaaaaa", keyList(7, kB)},
+			{"9-aaaaaaaa", keyList(9, kA, kB)}, {"8-aaaaaaaa", keyList(8, kB)}, {"17-aaaaaaaa", keyList(17, kB)},
 		},
 		"lists with no keys": {
 			{setN(1), keyList(1)}, {setN(2), keyList(2)}, {setN(3), keyList(3, kA)},

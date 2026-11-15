@@ -104,10 +104,10 @@
 // writer of the next ceremony: the root lists of the bundle in the order of the hash chain (the
 // form that [FindReturns] takes), the newest set with the bytes of its root-list.json as the walk
 // read and judged them, the end of the history, and the ceremony folders that hold an attempt and
-// no record. There is a State only when the report has no failing finding and the order of the
-// root lists has one reading; otherwise [Inspection.OrderErr] wraps [ErrOrder]. The order is the
-// place of each set in the chain, as for root-returns; it is never guessed, and never taken from a
-// folder name alone.
+// no record. There is a State only when the report has no failing finding, the order of the
+// root lists has one reading, and the last list of the chain holds the highest sequence; otherwise
+// [Inspection.OrderErr] wraps [ErrOrder]. The order is the place of each set in the chain, as for
+// root-returns; it is never guessed, and never taken from a folder name alone.
 //
 // # What it never does
 //
