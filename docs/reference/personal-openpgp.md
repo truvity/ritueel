@@ -23,11 +23,11 @@ policy:
   stores: [openpgp-card]
   min_firmware: 5.7.0
   pin_policy: [once, always]
-  require_name_constraints: false
+  require_name_constraints: true
   validity_months: 13
 ```
 
-`kind: personal` replaces `name` and `release_address` with `person` (a name of 1 to 64 characters and an address) and is otherwise [the same file](/reference/bundle/#ritueelyaml). It is additive: a file without `kind` is a company bundle. Its two delegations, `daily` (`capability: sign`) and `ssh` (`capability: authenticate`), are wanted delegation files under the OpenPGP root ([a delegation file](/reference/bundle/#a-delegation-file)).
+`kind: personal` replaces `name` and `release_address` with `person` (a name of 1 to 64 characters and an address) and is otherwise [the same file](/reference/bundle/#ritueelyaml). `require_name_constraints` is `true` here too. A personal bundle has no X.509 key, so the rule has nothing to check. It is additive: a file without `kind` is a company bundle. Its two delegations, `daily` (`capability: sign`) and `ssh` (`capability: authenticate`), are wanted delegation files under the OpenPGP root ([a delegation file](/reference/bundle/#a-delegation-file)).
 
 | Part | In a company bundle | In a personal bundle |
 |---|---|---|
