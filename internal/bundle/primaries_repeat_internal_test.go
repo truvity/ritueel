@@ -10,6 +10,7 @@ import (
 	"ritueel.id/ritueel/internal/jsonset"
 	"ritueel.id/ritueel/internal/openpgp"
 	"ritueel.id/ritueel/internal/rootlist"
+	"ritueel.id/ritueel/internal/strictjson"
 )
 
 // repeatedList is the list of the vectors with the fingerprint of B replaced by the one of A.
@@ -22,9 +23,14 @@ func repeatedList(t testing.TB) []byte {
 	return []byte(list)
 }
 
-// A list that gives one fingerprint to two entries is found before the keyring file is read: no run reads the file,
-// whatever it holds, for Primaries and for Checker with no delegation or an openpgp-subkey delegation.
-func TestARepeatedFingerprintIsFoundBeforeTheKeyringFileIsRead(t *testing.T) {
+// repeatText is the error of a bundle whose newest list gives one fingerprint to its entries A and B: the reader of the
+// list refuses the list.
+const repeatText = "bundle: the newest trust set 7-3fa9c1d2: root-list.json: malformed JSON: $.roots[1].openpgp_fingerprint: the fingerprint appears twice: the entries with the labels A and B have the same one"
+
+// A list that gives one fingerprint to two entries is refused by the reader of the list, before any keyring file is read
+// and so before primariesOf could judge it: no run reads the file, whatever it holds, for Primaries and for Checker with
+// no delegation or an openpgp-subkey delegation. The error is the one of the list, not of the kind ErrPrimaries.
+func TestARepeatedFingerprintIsRefusedByTheReaderOfTheListBeforeTheKeyringFileIsRead(t *testing.T) {
 	for name, file := range map[string][]byte{"a good file": goodKeyring(t), "no file": nil, "garbage": []byte("garbage")} {
 		for _, call := range []struct {
 			name string
@@ -37,8 +43,11 @@ func TestARepeatedFingerprintIsFoundBeforeTheKeyringFileIsRead(t *testing.T) {
 			t.Run(name+", "+call.name, func(t *testing.T) {
 				b, log := writeRecBundle(t, repeatedList(t), file)
 				err := call.run(b)
-				if err == nil || !errors.Is(err, ErrPrimaries) || errors.Is(err, openpgp.ErrKeyring) || errors.Is(err, ErrNoKeyring) {
-					t.Fatalf("error %v, want one of the kind ErrPrimaries and no other", err)
+				if err == nil || err.Error() != repeatText {
+					t.Fatalf("error %v, want %q", err, repeatText)
+				}
+				if errors.Is(err, ErrPrimaries) || errors.Is(err, openpgp.ErrKeyring) || errors.Is(err, ErrNoKeyring) || !errors.Is(err, strictjson.ErrMalformed) {
+					t.Errorf("error %v: want the malformed-JSON error of the list and no kind of the primaries", err)
 				}
 				if got := countOf(*log, readKeyring); got != 0 {
 					t.Errorf("the keyring file was read %d times: %q", got, *log)
@@ -51,23 +60,40 @@ func TestARepeatedFingerprintIsFoundBeforeTheKeyringFileIsRead(t *testing.T) {
 	}
 }
 
-// Beside an x509-intermediate or an ssh-ca-key delegation the checker holds no primaries, so the list's repeat is not
-// judged and the file is not read; Primaries, which asks for the primaries themselves, gives the error.
-func TestARepeatedFingerprintIsNotJudgedBesideADelegationThatTakesNoPrimaries(t *testing.T) {
+// The list is refused whatever the delegation is: beside an x509-intermediate or an ssh-ca-key delegation, which takes
+// no primaries, the checker is refused too (the list itself is not a list), as it is for a label twice, and so is
+// Primaries. The keyring file is not read.
+func TestARepeatedFingerprintRefusesTheListBesideADelegationThatTakesNoPrimariesToo(t *testing.T) {
 	for _, delegation := range []string{"x509d", "sshd"} {
 		t.Run(delegation, func(t *testing.T) {
 			b, log := writeRecBundle(t, repeatedList(t), goodKeyring(t))
 			chk, d, err := b.Checker(delegation, time0, nil)
-			if err != nil || chk == nil || d == nil {
-				t.Fatalf("Checker = (%v, %v, %v), want a checker", chk, d, err)
+			if chk != nil || d != nil || err == nil || err.Error() != repeatText {
+				t.Fatalf("Checker = (%v, %v, %v), want no checker and %q", chk, d, err, repeatText)
 			}
 			if got := countOf(*log, readKeyring); got != 0 {
 				t.Errorf("the keyring file was read %d times", got)
 			}
-			if _, _, err := b.Primaries(); !errors.Is(err, ErrPrimaries) {
-				t.Errorf("Primaries: %v, want an error of the kind ErrPrimaries", err)
+			if _, _, err := b.Primaries(); err == nil || err.Error() != repeatText || errors.Is(err, ErrPrimaries) {
+				t.Errorf("Primaries: %v, want %q", err, repeatText)
 			}
 		})
+	}
+}
+
+// A label twice is refused in the same way beside the same delegations: the repeat of a fingerprint is of the same kind.
+func TestALabelTwiceAndAFingerprintTwiceAreRefusedAlikeBesideEveryDelegation(t *testing.T) {
+	labelTwice := []byte(strings.Replace(string(vec(t, "root-list", "v1", "lists", "seq7-a.json")), `"label":"B"`, `"label":"A"`, 1))
+	for name, list := range map[string][]byte{"a label twice": labelTwice, "a fingerprint twice": repeatedList(t)} {
+		for _, delegation := range []string{"", "pgpd", "x509d", "sshd"} {
+			t.Run(name+", delegation "+delegation, func(t *testing.T) {
+				b, _ := writeRecBundle(t, list, goodKeyring(t))
+				chk, d, err := b.Checker(delegation, time0, nil)
+				if chk != nil || d != nil || err == nil || !errors.Is(err, strictjson.ErrMalformed) || errors.Is(err, ErrPrimaries) {
+					t.Errorf("Checker = (%v, %v, %v), want no checker and the malformed-JSON error of the list", chk, d, err)
+				}
+			})
+		}
 	}
 }
 
