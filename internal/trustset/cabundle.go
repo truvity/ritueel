@@ -33,40 +33,47 @@ const testMark = " (TEST ONLY)"
 // bytes are judged with rootlist.VerifyCABundle before they are returned. Every error wraps
 // ErrParams, and no bytes come with an error.
 func MarshalCABundle(sequence int64, roots []Root, certs [][]byte) ([]byte, error) {
+	out, _, err := marshalCABundle(sequence, roots, certs)
+	return out, err
+}
+
+// marshalCABundle is MarshalCABundle that also says whether the roots are test roots (all are, or
+// none is: a mix is refused). The answer is false with an error.
+func marshalCABundle(sequence int64, roots []Root, certs [][]byte) ([]byte, bool, error) {
 	if err := checkSequence(sequence); err != nil {
-		return nil, err
+		return nil, false, err
 	}
 	if err := checkRoots(roots); err != nil {
-		return nil, err
+		return nil, false, err
 	}
 	if !slices.IsSortedFunc(roots, func(a, b Root) int { return strings.Compare(a.Label, b.Label) }) {
-		return nil, fail(ErrParams, "the roots are not in label order, the order of the list")
+		return nil, false, fail(ErrParams, "the roots are not in label order, the order of the list")
 	}
 	if len(certs) != len(roots) {
-		return nil, fail(ErrParams, "there are %d certificates for %d roots", len(certs), len(roots))
+		return nil, false, fail(ErrParams, "there are %d certificates for %d roots", len(certs), len(roots))
 	}
 	out := []byte("# trust-sequence: " + strconv.FormatInt(sequence, 10) + "\n")
 	tests := 0
 	for i, root := range roots {
 		test, err := checkCertificate(root, certs[i])
 		if err != nil {
-			return nil, err
+			return nil, false, err
 		}
 		if test {
 			tests++
 		}
 		out = append(out, pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: certs[i]})...)
 		if len(out) > MaxBytes {
-			return nil, fail(ErrParams, "ca-bundle.pem is longer than %d bytes", MaxBytes)
+			return nil, false, fail(ErrParams, "ca-bundle.pem is longer than %d bytes", MaxBytes)
 		}
 	}
 	if tests != 0 && tests != len(roots) {
-		return nil, fail(ErrParams, "the certificates mix test roots and real roots")
+		return nil, false, fail(ErrParams, "the certificates mix test roots and real roots")
 	}
 	if err := judgeBundle(out, sequence, roots); err != nil {
-		return nil, err
+		return nil, false, err
 	}
-	return out, nil
+	return out, tests != 0, nil
 }
 
 // checkCertificate asks of one certificate what rootlist.VerifyCABundle asks, before a byte is
