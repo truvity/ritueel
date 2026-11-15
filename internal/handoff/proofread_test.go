@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"slices"
 	"strings"
 	"testing"
@@ -138,11 +139,15 @@ func TestReadProofRefusesWhatTheCertifierRefusesAtChecksOneAndTwoWithTheSameWord
 			}
 		})
 	}
-	t.Run("an OpenPGP proof with seventeen primaries", func(t *testing.T) {
+	t.Run("an OpenPGP proof with one more primary than the bound", func(t *testing.T) {
 		pf := newPGPFixture(t, 2, handoff.StoreSoftware)
-		pf.edit(func(m map[string]any) { m["primaries"] = longList(17) })
-		if p, err := handoff.ReadProof(pf.request().Files[handoff.FileProof]); err == nil || p != nil {
+		pf.edit(func(m map[string]any) { m["primaries"] = fingerprints(handoff.MaxPrimaries + 1) })
+		p, err := handoff.ReadProof(pf.request().Files[handoff.FileProof])
+		if err == nil || p != nil {
 			t.Fatalf("ReadProof = %v, %v", p, err)
+		}
+		if want := fmt.Sprintf("primaries holds more than %d fingerprints", handoff.MaxPrimaries); !strings.Contains(err.Error(), want) {
+			t.Errorf("the error is %q, want it to say %q", err, want)
 		}
 	})
 }

@@ -98,9 +98,8 @@ func runCheckRequest(ctx context.Context, c *Call) (*Result, error) {
 			return nil, fmt.Errorf("request %s is not accepted and not refused: %w", stem, sentenceError{
 				text: fmt.Sprintf(delegationNoPrimariesSentence, jsonset.EscapeExact(name)), err: err})
 		case errors.Is(err, bundle.ErrPrimaries):
-			// The primaries of the newest trust set: the list pins more than the checks take or gives one
-			// fingerprint to two entries, the set pins primaries and holds no keyring file, or the file is
-			// refused. The bundle's error is the plain sentence, with the set and the cause escaped and cut.
+			// The primaries of the newest trust set: the set pins primaries and holds no keyring file, or the
+			// file is refused. The bundle's error is the plain sentence, with the set and the cause escaped and cut.
 			return nil, fmt.Errorf("request %s is not accepted and not refused: %w", stem, err)
 		}
 		return nil, err
@@ -134,7 +133,8 @@ const trustSetWarning = "trust-set-unchecked: this command did not check the sig
 // trust set are made in package bundle ([bundle.Bundle.Primaries]), which holds the name of the keyring file;
 // each is of the kind [bundle.ErrPrimaries]. A file that is refused, and a set that pins primaries and holds no
 // file, say so with the name of the file; the two faults of the list (more primaries than the checks take, and
-// one fingerprint given to two entries) name the list and not the file.
+// one fingerprint given to two entries) name the list and not the file, and the reader of the root list
+// refuses both first.
 const (
 	// noPrimariesSentence is for an openpgp-subkey request when the newest root list pins no OpenPGP primary.
 	noPrimariesSentence = "this command cannot judge an openpgp-subkey request: the newest root list pins no OpenPGP primary"
