@@ -17,7 +17,7 @@ A bundle has its own history, trust sequence and one root of each kind it uses (
 
 A **card** is a hardware token, such as a YubiKey. A **card file** is the wanted file of one card. A **row** is the four PIV slots that a card keeps for the keys of one bundle ([record 0003](../decisions/0003-root-cards.md), rules 3 and 5).
 
-A bundle is named by its directory (record 0006, rule 3).
+A bundle is named by its directory (record 0006, rule 3). `ritueel new` refuses a folder that is below a folder that holds a name `ritueel.yaml`, of any kind.
 
 :::note[Proposed]
 What `acme/A` names when one letter labels the keys of several roots in one bundle is open ([issue #137](https://github.com/truvity/ritueel/issues/137)).
@@ -88,7 +88,7 @@ An inert proposal of the page ([record 0010](../decisions/0010-the-engine-the-pr
 A personal bundle also holds the wrapped backup of the encryption subkey (record 0008, rule 10). Its path and format are fixed with the personal OpenPGP stage ([issue #18](https://github.com/truvity/ritueel/issues/18)).
 
 - A ceremony only adds files. Nothing under `history/`, `trust/`, `sealed/` or `requests/` is ever overwritten ([record 0006](../decisions/0006-bundle-history-and-trust-files.md), rule 31). `seen/` is the one place that is replaced: a check writes a new map whole over the old one.
-- The bundle keeps no second copy of a root key's certificate or public key. They are in the newest trust set that holds them (record 0006, rule 12), because a copy that a ceremony replaced would break rule 31 of record 0006.
+- The bundle keeps no second copy of a root key's certificate or public key. They are in the newest trust set that holds them (record 0006, rule 12), because a copy that a ceremony replaced would break rule 31 of record 0006. `check request` reads the roots from that set. It does not check the signature file or the expiry of the set, and it says so with the warning `trust-set-unchecked`.
 - ritueel never changes a wanted file on its own, and never changes a request. It adds the answer beside it (record 0006, rules 5 and 6). A person edits no other path than the wanted files and the requests.
 - ritueel refuses a request whose folder already has an answer (record 0006, rule 6).
 - The bundle is found by `--dir DIR`, or is the current directory when it holds `ritueel.yaml` ([Commands](/reference/cli/#flags-every-ceremony-shares)).
@@ -299,7 +299,7 @@ keyring:
 | `version` | `1`. |
 | `name` | 1 to 45 characters: the ASCII letters `A` to `Z` and `a` to `z`, the digits, single spaces and hyphens, with no space at the start or the end. It names the root keys and their primaries ([below](/reference/bundle/#the-root-certificate)). The limit of 45 keeps the common name of a root key within the 64 characters that RFC 5280 allows: the name, ` Root ` and the label add 7 characters, and a test root key adds ` (TEST ONLY)`, 12 more, so one number holds for both and a name that is too long fails early, when `ritueel.yaml` is read, and not at the ceremony. The characters are limited so that no letter of another script and no invisible character can make two names look alike. |
 | `release_address` | Required in a company bundle, with or without an OpenPGP root. The address in every primary's user ID: the project's release identity, never a person's ([record 0009](../decisions/0009-release-keys-and-the-keyring.md)). |
-| `policy` | The rules every request is checked against: `stores`, `min_firmware`, `pin_policy`, `require_name_constraints` and `validity_months`, with the meanings of the [reference policy](/reference/hand-off-contract/#what-the-certifier-checks). All five are required. |
+| `policy` | The rules every request is checked against: `stores`, `min_firmware`, `pin_policy`, `require_name_constraints` and `validity_months`, with the meanings of the [reference policy](/reference/hand-off-contract/#what-the-certifier-checks). All five are required. `require_name_constraints` must be `true`: a policy cannot switch the name-constraints rule off. |
 | `kind` | Optional. `personal` for a person's own OpenPGP key; absent for a company bundle. A personal bundle has `person` instead of `name` and `release_address` ([personal OpenPGP](/reference/personal-openpgp/)). |
 | `person` | Only with `kind: personal`: `name` (1 to 64 characters) and `address`. |
 | `aws_kms` | Optional, from M2; required when a root key's key store is `aws-kms`. The root account, the two Regions and the two roles ([the block](/reference/kms-root/#ritueelyaml)). |
@@ -343,7 +343,7 @@ The schema, in JSON Schema (draft 2020-12), which the code ships and checks the 
         "min_firmware": { "type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$" },
         "pin_policy": { "type": "array", "uniqueItems": true, "minItems": 1,
                         "items": { "enum": ["never", "once", "always"] } },
-        "require_name_constraints": { "type": "boolean" },
+        "require_name_constraints": { "const": true },
         "validity_months": { "type": "integer", "minimum": 1 }
       }
     },
@@ -368,7 +368,7 @@ The schema, in JSON Schema (draft 2020-12), which the code ships and checks the 
 }
 ```
 
-Two rules the schema cannot state: the two Regions of `aws_kms` differ, and both its roles are in `account`. ritueel checks both when it reads the file.
+Three rules the schema cannot state: the two Regions of `aws_kms` differ, both its roles are in `account`, and a `name` has no space at its end and no two spaces in a row. ritueel checks all three when it reads the file.
 
 ### A delegation file
 
@@ -502,7 +502,7 @@ The test roots of the [hand-off vectors](/reference/hand-off-contract/#test-vect
 
 ## The software root's key files
 
-A software root key ([the `software` store](../decisions/0002-where-a-key-lives.md)) serves tests, drills and development, and never anchors a signed release ([record 0002](../decisions/0002-where-a-key-lives.md), rules 7 and 8; [record 0009](../decisions/0009-release-keys-and-the-keyring.md)). Its private key is in a file in a **key directory**, given by `--key-dir DIR`, which ritueel refuses when it is inside the bundle ([record 0005](../decisions/0005-a-ceremony-and-where-it-runs.md), roads not taken: key files inside the bundle). Every command that writes a key file, and every ceremony record of a ceremony that uses one, says that a software root key can be copied (record 0005, rule 27).
+A software root key ([the `software` store](../decisions/0002-where-a-key-lives.md)) serves tests, drills and development, and never anchors a signed release ([record 0002](../decisions/0002-where-a-key-lives.md), rules 7 and 8; [record 0009](../decisions/0009-release-keys-and-the-keyring.md)). Its private key is in a file in a **key directory**, given by `--key-dir DIR`, which ritueel refuses when it is the bundle or inside it, or inside the work tree of a repository that holds the bundle. A key file of more than 64 KiB is refused before it is parsed. ([record 0005](../decisions/0005-a-ceremony-and-where-it-runs.md), roads not taken: key files inside the bundle). Every command that writes a key file, and every ceremony record of a ceremony that uses one, says that a software root key can be copied (record 0005, rule 27).
 
 | File | Content |
 |---|---|
