@@ -237,12 +237,12 @@ func TestTheOtherStoresHaveNoPublicKeyToCompare(t *testing.T) {
 	// compared with the key of the request; nothing else is compared.
 	for _, store := range []handoff.Store{handoff.StorePIV, handoff.StoreOpenPGPCard} {
 		t.Run(string(store), func(t *testing.T) {
-			f := newFixture(t, store, csrSpec{})
-			v, err := checkerWith(t, store, returning(f.goodEvidence(store))).Check(t.Context(), f.request())
+			f := newStoreCase(t, store)
+			v, err := f.checker(returning(f.good()), nil).Check(t.Context(), f.request())
 			wantAccepted(t, v, err)
 			// A proof of these stores that holds a public_key is not of the form of the page.
 			f.proof["evidence"] = map[string]any{"attestation": []string{b64("a"), b64("b")}, "public_key": b64("x")}
-			v, err = checkerWith(t, store, returning(f.goodEvidence(store))).Check(t.Context(), f.request())
+			v, err = f.checker(returning(f.good()), nil).Check(t.Context(), f.request())
 			wantRefusal(t, v, err, handoff.CodeMalformed, 2)
 		})
 	}

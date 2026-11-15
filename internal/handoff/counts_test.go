@@ -39,10 +39,10 @@ func TestAnAttestationUpToTheBoundIsReadAndOneOverIsMalformedAtCheckTwo(t *testi
 	for _, store := range []handoff.Store{handoff.StorePIV, handoff.StoreOpenPGPCard} {
 		for _, n := range []int{2, 3, 4, handoff.MaxAttestation - 1, handoff.MaxAttestation, handoff.MaxAttestation + 1, handoff.MaxAttestation + 2, 100, 1000} {
 			t.Run(fmt.Sprintf("%s/%d", store, n), func(t *testing.T) {
-				f := newFixture(t, store, csrSpec{})
+				f := newStoreCase(t, store)
 				f.proof["evidence"] = map[string]any{"attestation": certs(n)}
-				sv := returning(f.goodEvidence(store))
-				v, err := checkerWith(t, store, sv).Check(t.Context(), f.request())
+				sv := returning(f.good())
+				v, err := f.checker(sv, nil).Check(t.Context(), f.request())
 				if n <= handoff.MaxAttestation {
 					wantAccepted(t, v, err)
 					return

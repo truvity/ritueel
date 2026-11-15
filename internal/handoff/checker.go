@@ -221,7 +221,14 @@ func (s *settings) checkX509(ctx context.Context, v Verdict, req *Request, p *Pr
 // A refusal is in v, with the checks before it passed; the caller stops when it returns an error or v is
 // refused, and goes on with the evidence it returns otherwise.
 func (s *settings) checkStoreEvidenceKey(ctx context.Context, v *Verdict, req *Request, p *Proof, key *ecdsa.PublicKey, now func() (time.Time, error)) (*Evidence, error) {
-	// Check 6: the store.
+	// Check 6: the store. A key on an OpenPGP card is not taken for an X.509 intermediate, because its
+	// attestation shows no PIN or touch rule; the refusal comes before any evidence is read, and also when the
+	// policy lists the store (the policy lists it for subkeys). A request of type openpgp-subkey is judged by
+	// the policy alone.
+	if p.Type == TypeX509 && p.Store == StoreOpenPGPCard {
+		v.fail(6, CodeStoreNotAllowed, "the store openpgp-card is not allowed for an x509-intermediate: its attestation shows no PIN or touch rule")
+		return nil, nil
+	}
 	if !slices.Contains(s.stores, p.Store) {
 		v.fail(6, CodeStoreNotAllowed, fmt.Sprintf("the policy does not allow the store %s", p.Store))
 		return nil, nil
