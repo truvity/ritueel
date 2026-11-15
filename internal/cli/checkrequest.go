@@ -51,7 +51,8 @@ func evidenceVerifiers(_ *Call, _ *bundle.Bundle) map[handoff.Store]handoff.Evid
 // What stops the command from judging the request is a failure (exit code 1): a folder that is not a
 // bundle, a wanted file that fails its own check, a delegation with no file, no trust set, a request whose
 // files cannot be read, an error of the checker (no verifier for the store, a type whose checks are not
-// built, an openpgp-subkey request, for which the command has no primaries to give), and a check that did not
+// built, an openpgp-subkey request that the root list or the keyring file of the newest trust set gives no
+// primaries for), and a check that did not
 // run, whatever the reason and whatever rule it names, with no delegation named among them (check 9 needs
 // one). A request that a check refuses is exit code 3, with the code. Exit code 0 is a request that all nine
 // checks passed and that Verdict.Accepted says is accepted, and no other. Nothing is written to the bundle.
@@ -88,12 +89,19 @@ func runCheckRequest(ctx context.Context, c *Call) (*Result, error) {
 		// The folder was opened to read it only; nothing was written, so a failed close loses nothing.
 		_ = b.Close()
 	}()
-	checker, _, err := b.Checker(name, c.Env.Now, evidenceVerifiers(c, b))
+	checker, d, err := b.Checker(name, c.Env.Now, evidenceVerifiers(c, b))
 	if err != nil {
-		if needsPrimaries(err) {
+		switch {
+		case needsPrimaries(err):
 			// No request has been read yet, so the fault is the delegation: it is of the type openpgp-subkey,
-			// and the checker holds no primaries for it. The request may be of any type.
-			return nil, fmt.Errorf("request %s is not accepted and not refused: %w", stem, delegationPrimariesError{name: name, err: err})
+			// and the newest root list pins no primary for it. The request may be of any type.
+			return nil, fmt.Errorf("request %s is not accepted and not refused: %w", stem, sentenceError{
+				text: fmt.Sprintf(delegationNoPrimariesSentence, jsonset.EscapeExact(name)), err: err})
+		case errors.Is(err, bundle.ErrPrimaries):
+			// The primaries of the newest trust set: the list pins more than the checks take or gives one
+			// fingerprint to two entries, the set pins primaries and holds no keyring file, or the file is
+			// refused. The bundle's error is the plain sentence, with the set and the cause escaped and cut.
+			return nil, fmt.Errorf("request %s is not accepted and not refused: %w", stem, err)
 		}
 		return nil, err
 	}
@@ -103,42 +111,51 @@ func runCheckRequest(ctx context.Context, c *Call) (*Result, error) {
 	}
 	v, err := checker.Check(ctx, req)
 	if err != nil {
+		if needsPrimaries(err) && d != nil && d.Type != wanted.TypeOpenPGPSubkey {
+			// The checker holds no primaries beside a delegation of another type, so an openpgp-subkey request
+			// under it stops at the first check that needs them, whatever the root list pins.
+			return nil, fmt.Errorf("request %s is not accepted and not refused: %w%s", stem, sentenceError{
+				text: fmt.Sprintf(otherDelegationSentence, jsonset.EscapeExact(name), jsonset.EscapeExact(d.Type)), err: err}, firstNotRun(v))
+		}
 		return nil, checkRequestError(stem, v, err)
 	}
 	return requestOutcome(stem, name, v)
 }
 
 // trustSetWarning is the warning that every run printing the nine results gives, accepted, refused or not
-// complete: the roots of the checks were read from the newest trust set of the bundle, and this command does
-// not check that set's signature file or its expiry. A run that stops before it has nine results gives none.
-// In a run that is not complete it comes last, after the warnings that say which check did not run.
-const trustSetWarning = "trust-set-unchecked: this command did not check the signature and the expiry of the trust set that the roots were read from"
+// complete: the roots and the OpenPGP primaries of the checks were read from the newest trust set of the
+// bundle, and this command does not check that set's signature file or its expiry. A run that stops before it
+// has nine results gives none. In a run that is not complete it comes last, after the warnings that say which
+// check did not run.
+const trustSetWarning = "trust-set-unchecked: this command did not check the signature and the expiry of the trust set that the roots and the OpenPGP primaries were read from"
 
-// primariesSentence is the plain sentence for what this command cannot do for an openpgp-subkey request:
-// the checker judges one only when it holds the OpenPGP primaries of the root list, and where the command
-// should read them from is not decided.
-const primariesSentence = "this command cannot judge an openpgp-subkey request: it cannot give the checker the OpenPGP primaries, because where they are read from is not decided"
+// The sentences of a request that this command cannot judge for want of OpenPGP primaries. Each is exit code 1
+// and says that the request is neither accepted nor refused. The sentences of the primaries of the newest
+// trust set are made in package bundle ([bundle.Bundle.Primaries]), which holds the name of the keyring file;
+// each is of the kind [bundle.ErrPrimaries]. A file that is refused, and a set that pins primaries and holds no
+// file, say so with the name of the file; the two faults of the list (more primaries than the checks take, and
+// one fingerprint given to two entries) name the list and not the file.
+const (
+	// noPrimariesSentence is for an openpgp-subkey request when the newest root list pins no OpenPGP primary.
+	noPrimariesSentence = "this command cannot judge an openpgp-subkey request: the newest root list pins no OpenPGP primary"
+	// delegationNoPrimariesSentence is for a delegation of the type openpgp-subkey in the same case; it takes
+	// the escaped name of the delegation.
+	delegationNoPrimariesSentence = "this command cannot judge a request under the delegation %s, which is of the type openpgp-subkey: the newest root list pins no OpenPGP primary"
+	// otherDelegationSentence is for an openpgp-subkey request under a delegation of another type, which the
+	// checker gives no primaries, whatever the list pins; it says only that, and takes the escaped name and type
+	// of the delegation.
+	otherDelegationSentence = "this command cannot judge an openpgp-subkey request under the delegation %s, which is of the type %s: the checks take the OpenPGP primaries only for a delegation of the type openpgp-subkey"
+)
 
-// primariesError is the error of a request or a delegation that needs the primaries. It reads as the one
-// plain sentence and still carries the error of the checker, for errors.Is.
-type primariesError struct{ err error }
-
-func (e primariesError) Error() string { return primariesSentence }
-func (e primariesError) Unwrap() error { return e.err }
-
-// delegationPrimariesError is the error of a delegation of the type openpgp-subkey that the checker refuses
-// because it holds no primaries. The request is not named as the cause: it may be of any type, and it is the
-// delegation that this command cannot give primaries for.
-type delegationPrimariesError struct {
-	name string
+// sentenceError is an error that reads as one plain sentence and still carries the error of the checker, for
+// errors.Is.
+type sentenceError struct {
+	text string
 	err  error
 }
 
-func (e delegationPrimariesError) Error() string {
-	return "this command cannot judge a request under the delegation " + jsonset.EscapeExact(e.name) +
-		", which is of the type openpgp-subkey: it cannot give the checker the OpenPGP primaries, because where they are read from is not decided"
-}
-func (e delegationPrimariesError) Unwrap() error { return e.err }
+func (e sentenceError) Error() string { return e.text }
+func (e sentenceError) Unwrap() error { return e.err }
 
 // needsPrimaries tells whether err is the error of the checker that holds no primaries: an openpgp-subkey
 // request on a checker with none (Check), or an openpgp-subkey delegation that New refuses without them
@@ -148,21 +165,25 @@ func needsPrimaries(err error) bool {
 	return errors.Is(err, handoff.ErrNoPrimaries)
 }
 
+// firstNotRun is the clause that names the first check that did not run, or nothing.
+func firstNotRun(v handoff.Verdict) string {
+	for _, c := range v.Checks {
+		if c.Status == handoff.StatusNotRun {
+			return fmt.Sprintf(" (the first check that did not run is check %d)", c.N)
+		}
+	}
+	return ""
+}
+
 // checkRequestError is the error of a check that could not decide. The request is not accepted. The text says
 // which check did not run first, and, for a request that waits for a part that is not built or not given,
 // says so plainly.
 func checkRequestError(stem string, v handoff.Verdict, err error) error {
-	where := ""
-	for _, c := range v.Checks {
-		if c.Status == handoff.StatusNotRun {
-			where = fmt.Sprintf(" (the first check that did not run is check %d)", c.N)
-			break
-		}
-	}
+	where := firstNotRun(v)
 	var extra string
 	switch {
 	case needsPrimaries(err):
-		return fmt.Errorf("request %s is not accepted and not refused: %w%s", stem, primariesError{err: err}, where)
+		return fmt.Errorf("request %s is not accepted and not refused: %w%s", stem, sentenceError{text: noPrimariesSentence, err: err}, where)
 	case errors.Is(err, handoff.ErrNoVerifier):
 		extra = "; this command registers no verifier of a card or of a cloud key, so it accepts only a request with a software key"
 	case errors.Is(err, handoff.ErrTypeNotBuilt):

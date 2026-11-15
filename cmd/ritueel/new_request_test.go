@@ -78,11 +78,13 @@ func TestProgramNewAndCheckRequest(t *testing.T) {
 	putFile(t, dir, "trust/7-3fa9c1d2/root-list.json", vectorFile(t, "root-list", "v1", "lists", "seq7-a.json"))
 	putFile(t, dir, "trust/7-3fa9c1d2/root-list.jws", vectorFile(t, "root-list", "v1", "lists", "seq7-a.jws"))
 	putFile(t, dir, "trust/7-3fa9c1d2/ca-bundle.pem", vectorFile(t, "root-list", "v1", "bundles", "ca-bundle-7.pem"))
+	// The list pins two OpenPGP primaries, so the trust set holds the keyring file of both, in the order of the list.
+	putFile(t, dir, "trust/7-3fa9c1d2/keyring.gpg", vectorFile(t, "root-list", "v1", "pki", "test-primary-a.pgp")+vectorFile(t, "root-list", "v1", "pki", "test-primary-b.pgp"))
 	putFile(t, dir, "want/delegations/example-intermediate.yaml", "version: 1\ntype: x509-intermediate\nroot: x509\npermitted_uri_hosts: [example.org, \".example.org\"]\npermitted_dns_names: [example.org]\n")
 	for _, ext := range []string{"csr.pem", "proof.json"} {
 		putFile(t, dir, "requests/x509-csr-bad-signature/x509-csr-bad-signature."+ext, vectorFile(t, "hand-off", "v1", "requests", "x509-csr-bad-signature."+ext))
 	}
-	const trustSetWarning = "ritueel: warning: trust-set-unchecked: this command did not check the signature and the expiry of the trust set that the roots were read from\n"
+	const trustSetWarning = "ritueel: warning: trust-set-unchecked: this command did not check the signature and the expiry of the trust set that the roots and the OpenPGP primaries were read from\n"
 	code, stdout, stderr = runProgramIn(t, exe, dir, "check", "request", "x509-csr-bad-signature", "--delegation", "example-intermediate")
 	if code != 3 || !strings.HasSuffix(stdout, "request x509-csr-bad-signature: refused: possession-invalid\n") || !strings.HasPrefix(stderr, trustSetWarning+"ritueel: refused: possession-invalid (check 5: ") {
 		t.Errorf("a bad signature: exit %d, stdout %q, stderr %q", code, stdout, stderr)
@@ -137,5 +139,21 @@ func TestProgramNewAndCheckRequest(t *testing.T) {
 	}
 	if checks, _ := obj2["checks"].([]any); len(checks) != 9 {
 		t.Errorf("checks = %#v, want nine", obj2["checks"])
+	}
+
+	// A trust set whose list pins primaries and that holds no keyring file stops the program with one sentence, for
+	// a request of any type that is run with no delegation: nothing is accepted and nothing is refused.
+	if err := os.Remove(filepath.Join(dir, "trust", "7-3fa9c1d2", "keyring.gpg")); err != nil {
+		t.Fatal(err)
+	}
+	code, stdout, stderr = runProgramIn(t, exe, dir, "check", "request", "x509-software-valid")
+	const noKeyring = "ritueel: request x509-software-valid is not accepted and not refused: the newest trust set 7-3fa9c1d2 pins OpenPGP primaries and holds no keyring.gpg\n"
+	if code != 1 || stdout != "" || stderr != noKeyring {
+		t.Errorf("no keyring file: exit %d, stdout %q, stderr %q, want exit 1 and %q", code, stdout, stderr, noKeyring)
+	}
+	// A request under a delegation of the type x509-intermediate does not read the keyring file at all.
+	code, _, _ = runProgramIn(t, exe, dir, "check", "request", "x509-software-valid", "--delegation", "example-intermediate")
+	if code != 0 {
+		t.Errorf("no keyring file, x509 delegation: exit %d, want 0", code)
 	}
 }

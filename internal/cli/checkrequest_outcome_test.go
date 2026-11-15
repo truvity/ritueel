@@ -287,7 +287,7 @@ func TestTheErrorOfACheckThatCouldNotDecideSaysWhichCheckDidNotRunFirst(t *testi
 		{"a type that is not built", fmt.Errorf("%w", handoff.ErrTypeNotBuilt), v,
 			[]string{"cannot judge a request of this type yet", "check 7"}, []string{"openpgp", "primaries"}},
 		{"an openpgp request", fmt.Errorf("%w", handoff.ErrNoPrimaries), verdictOf(passed(2)...),
-			[]string{"cannot judge an openpgp-subkey request", "OpenPGP primaries", "not decided", "check 3"}, []string{"software key", "yet"}},
+			[]string{"cannot judge an openpgp-subkey request", "pins no OpenPGP primary", "check 3"}, []string{"software key", "yet"}},
 		{"a type that is not built, with a check that names primaries", fmt.Errorf("%w", handoff.ErrTypeNotBuilt), withNotRun(verdictOf(passed(2)...), 2, "primaries"),
 			[]string{"cannot judge a request of this type yet", "check 3"}, []string{"openpgp", "OpenPGP primaries"}},
 		{"an internal error", handoff.ErrInternal, v, []string{"not accepted and not refused", "check 7"}, []string{"software key", "cannot judge"}},
@@ -468,7 +468,7 @@ func TestTheSentenceAboutThePrimariesIsOneLineThatStillWrapsTheCheckersError(t *
 	if !errors.Is(err, handoff.ErrConfig) || !errors.Is(err, cause) {
 		t.Errorf("the error does not wrap the checker's error: %v", err)
 	}
-	for _, w := range []string{"request stem is not accepted and not refused", "this command cannot judge an openpgp-subkey request", "primaries", "where they are read from is not decided"} {
+	for _, w := range []string{"request stem is not accepted and not refused", "this command cannot judge an openpgp-subkey request", "primary", "the newest root list pins no OpenPGP primary"} {
 		if !strings.Contains(err.Error(), w) {
 			t.Errorf("%q does not hold %q", err.Error(), w)
 		}
@@ -480,9 +480,9 @@ func TestTheSentenceAboutThePrimariesIsOneLineThatStillWrapsTheCheckersError(t *
 		t.Errorf("exit code %d, outcome %q, want 1 and failed", int(code), outcome)
 	}
 	// The error text is the same sentence whatever the library says in its own words.
-	other := primariesError{err: errors.New("x")}
-	if other.Error() != primariesSentence {
-		t.Errorf("Error() = %q, want %q", other.Error(), primariesSentence)
+	other := sentenceError{text: noPrimariesSentence, err: errors.New("x")}
+	if other.Error() != noPrimariesSentence || other.Error() != primariesText {
+		t.Errorf("Error() = %q, want %q", other.Error(), noPrimariesSentence)
 	}
 }
 

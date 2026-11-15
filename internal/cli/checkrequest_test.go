@@ -83,9 +83,9 @@ func TestTheContractTableIsReadAsTheNineChecks(t *testing.T) {
 // ---- accepted -----------------------------------------------------------------------------------
 
 // trustSetWarningText is the warning that every run with nine results gives, accepted, refused or not complete: the
-// roots were read from the newest trust set, and the command does not check that set's signature file or its
-// expiry. A run that stops before it has nine results has none.
-const trustSetWarningText = "trust-set-unchecked: this command did not check the signature and the expiry of the trust set that the roots were read from"
+// roots and the OpenPGP primaries were read from the newest trust set, and the command does not check that set's
+// signature file or its expiry. A run that stops before it has nine results has none.
+const trustSetWarningText = "trust-set-unchecked: this command did not check the signature and the expiry of the trust set that the roots and the OpenPGP primaries were read from"
 
 const trustSetStderrLine = "ritueel: warning: " + trustSetWarningText + "\n"
 
@@ -433,8 +433,8 @@ func TestARequestOfAStoreWithNoVerifierIsExitOneAndSaysOnlyASoftwareKeyIsAccepte
 	}
 }
 
-// An OpenPGP request and an SSH request cannot be judged by this command. The text says so plainly, and for an
-// OpenPGP request it names the primaries that the bundle cannot give.
+// An SSH request cannot be judged by this command: its checks are not built. The text says so plainly. An OpenPGP
+// request is judged (see the tests of the keyring file).
 func TestARequestOfATypeThatIsNotBuiltIsExitOneAndSaysSo(t *testing.T) {
 	m := crqManifestOf(t)
 	now := m.clock(t)
@@ -443,8 +443,6 @@ func TestARequestOfATypeThatIsNotBuiltIsExitOneAndSaysSo(t *testing.T) {
 		want    []string
 		wantNot []string
 	}{
-		{"pgp-software-valid", []string{"openpgp-subkey", "primaries", "cannot judge"}, []string{"ssh"}},
-		{"pgp-piv-valid", []string{"openpgp-subkey", "primaries", "cannot judge"}, []string{"ssh"}},
 		{"ssh-software-valid", []string{"cannot judge a request of this type yet", "check 4"}, []string{"openpgp"}},
 		{"ssh-piv-valid", []string{"cannot judge a request of this type yet"}, []string{"openpgp"}},
 	} {

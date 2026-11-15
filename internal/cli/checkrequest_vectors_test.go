@@ -28,6 +28,7 @@ func TestEveryRequestCaseGivesThroughTheCommandWhatTheLibraryGives(t *testing.T)
 	now := m.clock(t)
 	ran, skipped, decided, undecided := 0, 0, 0, 0
 	exits := map[ExitCode]int{}
+	pgpExits := map[ExitCode]int{}
 	for _, c := range m.Requests {
 		if c.Config == listedConfig {
 			skipped++
@@ -42,6 +43,9 @@ func TestEveryRequestCaseGivesThroughTheCommandWhatTheLibraryGives(t *testing.T)
 			r := crqRun(t, now, "check", "request", c.stem(t), "--delegation", crqDelegation, "--dir", dir, "--output", "json")
 			crqSame(t, "check request", before, crqSnapshot(t, dir))
 			exits[r.code]++
+			if c.Type == "openpgp-subkey" && r.code != ExitFailure {
+				pgpExits[r.code]++
+			}
 			obj := object(t, r.stdout)
 			if got, want := obj["command"], "check"; got != want {
 				t.Errorf("command = %v, want %v", got, want)
@@ -77,20 +81,16 @@ func TestEveryRequestCaseGivesThroughTheCommandWhatTheLibraryGives(t *testing.T)
 				if w := stringsOf(obj["warnings"]); len(w) != 0 || r.stderr == "" || strings.Contains(r.stderr, "trust-set-unchecked") {
 					t.Errorf("a request that stopped before nine results has the warnings %q and standard error %q", w, r.stderr)
 				}
-				switch {
-				case c.Type == "openpgp-subkey":
-					// The library refuses a delegation of this type that has no primaries, and the command has none.
-					if !errors.Is(libErr, handoff.ErrConfig) || !strings.Contains(libErr.Error(), "primaries") {
-						t.Errorf("the library gave %v for an openpgp-subkey delegation with no primaries, want ErrConfig that names the primaries", libErr)
-					}
-					// The command runs under a delegation of this type, so the sentence names the delegation and not
-					// a request of this type.
-					if s, _ := obj["error"].(string); !strings.Contains(s, "cannot judge a request under the delegation "+crqDelegation+", which is of the type openpgp-subkey") ||
-						!strings.Contains(s, "primaries") || strings.Contains(s, "cannot judge an openpgp-subkey request") {
-						t.Errorf("error = %q, want the plain sentence about the delegation and its primaries", s)
-					}
-				case !errors.Is(libErr, handoff.ErrNoVerifier) && !errors.Is(libErr, handoff.ErrTypeNotBuilt):
+				if !errors.Is(libErr, handoff.ErrNoVerifier) && !errors.Is(libErr, handoff.ErrTypeNotBuilt) {
 					t.Errorf("the library gave an error that is neither no verifier nor a type that is not built: %v", libErr)
+				}
+				if c.Type == "openpgp-subkey" {
+					pgpExits[ExitFailure]++
+					// An OpenPGP request that no check refused and that needs a card or a cloud key: the store has
+					// no verifier, and the sentence says so; it is not the sentence about the primaries.
+					if s, _ := obj["error"].(string); !errors.Is(libErr, handoff.ErrNoVerifier) || !strings.Contains(s, "no evidence verifier") || strings.Contains(s, "pins no OpenPGP primary") {
+						t.Errorf("error = %q (library: %v), want no evidence verifier", s, libErr)
+					}
 				}
 				if s, _ := obj["error"].(string); !strings.Contains(s, "request "+c.stem(t)+" is not accepted and not refused") {
 					t.Errorf("error = %q, want the words that the request is not accepted and not refused", s)
@@ -156,6 +156,11 @@ func TestEveryRequestCaseGivesThroughTheCommandWhatTheLibraryGives(t *testing.T)
 		if exits[code] == 0 {
 			t.Errorf("no case ended with the exit code %d: the test would not see a fault of that kind", int(code))
 		}
+	}
+	// The OpenPGP cases, counted by what is true: 14 are decided (2 accepted, 12 refused) and 6 are not, because
+	// the command registers no verifier of a card or of a cloud key.
+	if pgpExits[ExitOK] != 2 || pgpExits[ExitRefused] != 12 || pgpExits[ExitFailure] != 6 {
+		t.Errorf("the OpenPGP cases ended as %v, want 2 accepted, 12 refused and 6 not judged", pgpExits)
 	}
 	t.Logf("%d request cases: %d run (%d decided, %d undecided by the library and the command alike), %d skipped; exit codes %v", len(m.Requests), ran, decided, undecided, skipped, exits)
 }
@@ -378,10 +383,8 @@ func TestEveryRequestCaseWithNoDelegationGivesThroughTheCommandWhatTheLibraryGiv
 				if msg, _ := obj["error"].(string); !strings.Contains(msg, "request "+c.stem(t)+" is not accepted and not refused") {
 					t.Errorf("error = %q", msg)
 				}
-				if errors.Is(libErr, handoff.ErrConfig) && strings.Contains(libErr.Error(), "primaries") {
-					if msg, _ := obj["error"].(string); !strings.Contains(msg, "cannot judge an openpgp-subkey request") {
-						t.Errorf("an openpgp-subkey request with no primaries: error = %q", msg)
-					}
+				if msg, _ := obj["error"].(string); !errors.Is(libErr, handoff.ErrNoVerifier) && !errors.Is(libErr, handoff.ErrTypeNotBuilt) || strings.Contains(msg, "pins no OpenPGP primary") {
+					t.Errorf("the library gave %v and the error is %q: a trust set that pins primaries never gives the sentence about none", libErr, msg)
 				}
 			case v.Refused():
 				kinds["refused"]++
