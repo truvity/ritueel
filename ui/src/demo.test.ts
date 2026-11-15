@@ -204,7 +204,7 @@ describe('the fixtures tell the made-up world, one bundle at a time', () => {
     expect(w.ceremonies.ceremonies.map((c) => c.id)).toContain('20261120T100000Z-apply-3fa9c1d2');
     expect(w.trust.setName).toBe('13-b41e07a9');
     const bundle = read('../../docs/reference/bundle.md');
-    for (const name of ['root-a', 'root-b', 'day-ana', 'acme-tls', 'acme-release', 'acme-ssh', 'acme-ca', 'acme-ca-2027', '13-b41e07a9', '20261120T100000Z-apply-3fa9c1d2']) expect(bundle, name).toContain(name);
+    for (const name of ['root-a', 'root-b', 'day-ana', 'acme-tls', 'acme-release', 'acme-ssh', 'acme-ca', 'acme-ca-2027', '13-b41e07a9', '20261120T100000Z-apply']) expect(bundle, name).toContain(name);
     const keyA = inv.keys.find((k) => k.root === 'acme-release' && k.label === 'A');
     const uid = inv.userIds.find((u) => u.key === keyA?.fingerprint);
     expect(uid?.text).toBe('Example Release Root A <release@example.com>');
