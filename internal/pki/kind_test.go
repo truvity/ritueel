@@ -10,7 +10,7 @@ import (
 	"ritueel.id/ritueel/internal/pki"
 )
 
-// Every error of the package wraps exactly one of the three kinds (errors.go). Sign and Assemble read the
+// Every error of the package wraps exactly one of the four kinds (errors.go). Sign and Assemble read the
 // extensions of a body with the rules of a request, and those rules wrap ErrRequest: the error that comes
 // out of a body whose extensions are not those of the profile wraps ErrRequest as well as the kind of
 // the call (ErrParams for Sign, ErrSignature for Assemble). A caller that tests errors.Is(err, ErrRequest)

@@ -5,7 +5,7 @@ import "errors"
 // Check names the check of the hand-off contract ("What the certifier checks", docs/reference/hand-off-contract.md)
 // that refused a request, for the reason code that the contract gives it. It is a second question that
 // an error answers, beside its kind: every error of this package still wraps exactly one of
-// [ErrParams], [ErrRequest] and [ErrSignature], and an [ErrRequest] that comes from reading a request
+// [ErrParams], [ErrRequest], [ErrSignature] and [ErrPEM], and an [ErrRequest] that comes from reading a request
 // also says which check it is, so that the later code needs no text to tell them apart. See [CheckOf].
 type Check int
 

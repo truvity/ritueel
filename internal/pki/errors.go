@@ -28,6 +28,10 @@ var (
 	ErrSignature = errors.New("pki: invalid signature or certificate")
 )
 
+// The four kinds of an error of this package are [ErrParams], [ErrRequest], [ErrSignature] and [ErrPEM].
+// ErrPEM is declared in pemfile.go: it is the kind of a PEM file that is not in the form of the page, and
+// it is not a fault of a request. Every error wraps one of the four and no other.
+
 // fail returns an error that wraps kind. The text is fixed words and numbers.
 func fail(kind error, format string, args ...any) error {
 	return fmt.Errorf("%w: %s", kind, sprintf(format, args...))
@@ -58,7 +62,7 @@ func failWith(kind error, what string, cause error) error {
 }
 
 // rekind returns an error of the given kind for a refusal that came from a check of another kind
-// (or of none, a parser's). Every error of this package wraps exactly one kind, so a function of one
+// (or of none, a parser's). Every error of this package wraps exactly one of its four kinds, so a function of one
 // kind that reuses a check of another says what the check said in its own kind, and never passes the
 // other kind on: a caller that tests errors.Is(err, ErrRequest) is not told that a request was refused
 // when a body was. An error of the package keeps its words (without the words of its kind) and the

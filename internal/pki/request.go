@@ -8,7 +8,6 @@ import (
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/asn1"
-	"encoding/base64"
 	"slices"
 )
 
@@ -318,68 +317,42 @@ func RequestKeyFile(file []byte) (*ecdsa.PublicKey, error) {
 	return RequestKey(der)
 }
 
-// The marker lines of a request file.
-const (
-	pemBegin   = "-----BEGIN CERTIFICATE REQUEST-----"
-	pemEnd     = "-----END CERTIFICATE REQUEST-----"
-	maxPEMLine = 76
-)
+// maxPEMLine is the longest line of base64 that a PEM file may hold: the limit of MIME (RFC 2045).
+const maxPEMLine = 76
 
 // readRequestFile reads the file of a request and returns the DER inside it, by the rule that the doc
-// comment of [ParseRequestFile] gives. It does not use the PEM reader of the standard library, which
-// skips text before the block and blank lines, spaces and tabs inside it, and ignores what follows
-// the footer.
+// comment of [ParseRequestFile] gives. The rule is [ReadPEMFile] with the label CERTIFICATE REQUEST;
+// this function only says each refusal of it in the words about "the request file" and with the check
+// [CheckMalformed], as it always has.
 func readRequestFile(file []byte) ([]byte, error) {
-	if len(file) > MaxRequestSize {
-		return nil, failRequest(CheckMalformed, "the request file is longer than %d octets", MaxRequestSize)
+	der, err := ReadPEMFile(file, "CERTIFICATE REQUEST")
+	if err == nil {
+		return der, nil
 	}
-	file, err := copyBytes(file) // read more than once: copied first
-	if err != nil {
+	fault, ok := pemFaultOf(err)
+	if !ok {
 		return nil, err
 	}
-	if !bytes.HasPrefix(file, []byte("-----BEGIN ")) {
+	switch fault {
+	case pemTooLong:
+		return nil, failRequest(CheckMalformed, "the request file is longer than %d octets", MaxRequestSize)
+	case pemNoBlock:
 		return nil, failRequest(CheckMalformed, "the request file does not start with a PEM block")
-	}
-	if !bytes.HasPrefix(file, []byte(pemBegin)) {
+	case pemWrongLabel:
 		return nil, failRequest(CheckMalformed, "the PEM block of the request file does not have the label CERTIFICATE REQUEST")
-	}
-	body := file[len(pemBegin):]
-	var eol []byte
-	switch {
-	case bytes.HasPrefix(body, []byte("\r\n")):
-		eol = []byte("\r\n")
-	case bytes.HasPrefix(body, []byte("\n")):
-		eol = []byte("\n")
-	default:
+	case pemNoEOL:
 		return nil, failRequest(CheckMalformed, "the first line of the request file is not followed by a line end of LF or CRLF")
-	}
-	lines := bytes.Split(body[len(eol):], eol)
-	end := slices.IndexFunc(lines, func(l []byte) bool { return string(l) == pemEnd })
-	if end < 0 {
+	case pemNoFooter:
 		return nil, failRequest(CheckMalformed, "the request file is not a PEM block")
-	}
-	// After the footer: nothing, or one line end (an empty last part of the split).
-	if after := lines[end+1:]; len(after) > 1 || (len(after) == 1 && len(after[0]) != 0) {
+	case pemAfter:
 		return nil, failRequest(CheckMalformed, "the request file has something after its PEM block")
-	}
-	var text []byte
-	for _, line := range lines[:end] {
-		switch {
-		case bytes.IndexByte(line, ':') >= 0:
-			return nil, failRequest(CheckMalformed, "the PEM block of the request file has headers")
-		case len(line) == 0 || len(line) > maxPEMLine:
-			return nil, failRequest(CheckMalformed, "a line of the base64 text of the request file is empty or longer than %d characters", maxPEMLine)
-		}
-		text = append(text, line...)
-	}
-	der, err := base64.StdEncoding.DecodeString(string(text))
-	// The text is the one text that the standard alphabet and padding write for the DER: the decoder
-	// ignores a carriage return and a line feed, and accepts bits after the data, so the text is
-	// written again and compared.
-	if err != nil || len(der) == 0 || base64.StdEncoding.EncodeToString(der) != string(text) {
+	case pemHeaders:
+		return nil, failRequest(CheckMalformed, "the PEM block of the request file has headers")
+	case pemLine:
+		return nil, failRequest(CheckMalformed, "a line of the base64 text of the request file is empty or longer than %d characters", maxPEMLine)
+	default:
 		return nil, failRequest(CheckMalformed, "the base64 text of the request file is not the standard base64 of one request")
 	}
-	return der, nil
 }
 
 // elementsOf splits the content of a constructed element into its elements. It returns nil when a part
