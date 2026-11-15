@@ -222,8 +222,8 @@ func TestJournalLinesSplitsOnlyAWholeJournal(t *testing.T) {
 		{"an empty line", "\n", false, 0},
 		{"an empty line between two", "x\n\ny\n", false, 0},
 		{"an empty line at the end", "x\n\n", false, 0},
-		{"112 lines", strings.Repeat("x\n", 112), true, 112},
-		{"113 lines", strings.Repeat("x\n", 113), false, 0},
+		{"190 lines", strings.Repeat("x\n", 190), true, 190},
+		{"191 lines", strings.Repeat("x\n", 191), false, 0},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
@@ -239,7 +239,7 @@ func TestJournalLinesSplitsOnlyAWholeJournal(t *testing.T) {
 }
 
 func FuzzJournalLines(f *testing.F) {
-	for _, s := range []string{"", "x\n", "x\ny\n", "x", "\n", "x\n\n", strings.Repeat("a\n", 113), "a\r\nb\n"} {
+	for _, s := range []string{"", "x\n", "x\ny\n", "x", "\n", "x\n\n", strings.Repeat("a\n", 191), "a\r\nb\n"} {
 		f.Add([]byte(s))
 	}
 	f.Fuzz(func(t *testing.T, b []byte) {

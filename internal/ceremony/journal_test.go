@@ -183,31 +183,31 @@ func TestSignatureNumbersAreTheNextOne(t *testing.T) {
 	wantKind(t, fl.tr.Births().Append(sig(3)), ceremony.ErrInvalidInput)
 }
 
-// A journal takes 4*26+8 = 112 lines and no more.
-func TestAJournalTakesAtMost112Lines(t *testing.T) {
-	if ceremony.MaxJournalLines != 112 || files.MaxJournalLines != 112 {
-		t.Fatalf("the limits are %d and %d, want 112 (4 for each of 26 labels and 8 more)", ceremony.MaxJournalLines, files.MaxJournalLines)
+// A journal takes 7*26+8 = 190 lines and no more.
+func TestAJournalTakesAtMost190Lines(t *testing.T) {
+	if ceremony.MaxJournalLines != 190 || files.MaxJournalLines != 190 {
+		t.Fatalf("the limits are %d and %d, want 190 (7 for each of 26 labels and 8 more)", ceremony.MaxJournalLines, files.MaxJournalLines)
 	}
 	b, fl := started(t)
-	for n := int64(1); n <= 112; n++ {
+	for n := int64(1); n <= 190; n++ {
 		if err := fl.tr.Signatures().Append(sigBytes(t, n, "root-list", rep('a'))); err != nil {
 			t.Fatalf("line %d: %v", n, err)
 		}
 	}
 	mark := b.r.mark()
-	err := fl.tr.Signatures().Append(rawSigBytes(t, 113))
+	err := fl.tr.Signatures().Append(rawSigBytes(t, 191))
 	if err == nil {
-		t.Fatal("the 113th line was written")
+		t.Fatal("the 191st line was written")
 	}
 	wantKind(t, err, ceremony.ErrInvalidInput)
 	if got := b.r.since(mark); len(got) != 0 {
-		t.Errorf("the 113th line reached the file system: %v", got)
+		t.Errorf("the 191st line reached the file system: %v", got)
 	}
-	if lines := strings.Count(string(b.read("history", name1, "signatures.jsonl")), "\n"); lines != 112 {
+	if lines := strings.Count(string(b.read("history", name1, "signatures.jsonl")), "\n"); lines != 190 {
 		t.Errorf("signatures.jsonl has %d lines", lines)
 	}
 	// A repeat of a line that fits is refused too, by the number and not by the size.
-	wantKind(t, fl.tr.Signatures().Append(sigBytes(t, 112, "root-list", rep('a'))), ceremony.ErrInvalidInput)
+	wantKind(t, fl.tr.Signatures().Append(sigBytes(t, 190, "root-list", rep('a'))), ceremony.ErrInvalidInput)
 }
 
 func TestAJournalIsClosedByEnd(t *testing.T) {
@@ -311,7 +311,7 @@ func TestTwoGoroutinesAppendNumberedLinesWholeAndInOrder(t *testing.T) {
 }
 
 // A journal that a hand edit left with a half line, an empty line, a line that its reader refuses,
-// a label twice or more than 112 lines is not a journal that a record lists. The refusal writes
+// a label twice or more than 190 lines is not a journal that a record lists. The refusal writes
 // nothing and does not stop the folder: with the file put right, the record is written.
 func TestRecordRefusesAJournalThatIsNotWhole(t *testing.T) {
 	good := string(birthBytes(t, "A", rep('a'))) + "\n"
@@ -337,7 +337,7 @@ func TestRecordRefusesAJournalThatIsNotWhole(t *testing.T) {
 		{"a signature line that its reader refuses", "signatures.jsonl", "{}\n"},
 		{"a fourth signature that the plan does not list", "signatures.jsonl", string(sigBytes(t, 4, "root-list", rep('a'))) + "\n"},
 		{"a line with a carriage return", "births.jsonl", "x\r\n"},
-		{"more than 112 lines", "signatures.jsonl", sigLines(113)},
+		{"more than 190 lines", "signatures.jsonl", sigLines(191)},
 		{"a signature that is not the next number", "signatures.jsonl", string(rawSigBytes(t, 7)) + "\n"},
 	}
 	for _, c := range cases {

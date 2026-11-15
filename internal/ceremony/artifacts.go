@@ -622,18 +622,28 @@ func CheckRootJSON(b []byte, w RootJSONWant) error {
 	return nil
 }
 
-// BornKey is a key that the store made, as the engine saw it: the label, the store, the place the
-// store gave for it, and the pin.
+// BornKey is a key that the store made, as the engine saw it: the label, the purpose, the store, the
+// place the store gave for it, and the pin. A label may name two keys, one for each purpose: its
+// X.509 key and its OpenPGP primary.
 type BornKey struct {
 	// Label is the label of the key.
 	Label string
+	// Purpose is what the key is for, the word of the birth in the plan. It is left empty by a
+	// caller that knows only X.509 keys; an empty purpose is then the purpose x509-root.
+	Purpose string
 	// Store is the word of the store that made it.
 	Store string
 	// Place is the place the store gave for the key.
 	Place string
 	// Pin is the SHA-256 of the DER SubjectPublicKeyInfo of the key.
 	Pin string
+	// Fingerprint is the 40-digit fingerprint of an OpenPGP primary; it is empty for an X.509 key.
+	Fingerprint string
 }
+
+// isX509 reports whether the key is the X.509 key of its label: the purpose is x509-root, or not
+// given.
+func (k BornKey) isX509() bool { return k.Purpose == "" || k.Purpose == purposeX509Root }
 
 // MadeSignature is a signature that was made, as the engine saw it, once for each signature of the
 // plan.
@@ -668,13 +678,20 @@ func CheckPlanAgainstKeys(p *PlanOut, born []BornKey, made []MadeSignature) erro
 		if k.Label != b.Label || k.Store != b.Store || k.Place != b.Place || !isPin(k.Pin) {
 			return bad("births", "the key %d is not the key %s of the plan in its store and place", i+1, b.Label)
 		}
+		if k.Purpose != "" && k.Purpose != b.Purpose {
+			return bad("births", "the key %d is not the key %s of the plan in its purpose", i+1, b.Label)
+		}
 	}
 	if len(made) != len(p.Signatures) {
 		return bad("signatures", "%d signatures were made and the plan lists %d", len(made), len(p.Signatures))
 	}
+	// The pin that signs is the pin of the X.509 key of the label: a primary of the same label has
+	// its own key, which the signatures of the kinds primary-* will be held to.
 	pins := make(map[string]string, len(born))
 	for _, k := range born {
-		pins[k.Label] = k.Pin
+		if k.isX509() {
+			pins[k.Label] = k.Pin
+		}
 	}
 	for i, s := range p.Signatures {
 		m := made[i]
@@ -772,7 +789,10 @@ type JournalRead struct {
 // the plan, with the label, purpose, store and place of the plan and the pin of that key; and one
 // signature line for each signature of the plan, in the order of n, of the kind of the plan, with the
 // pin of the key that signs: the subject of a certificate or a removal authorisation, the signer of
-// the list. pins maps each label to its pin. The error is an [*ArtifactError].
+// the list. A pair of label and purpose is born once: a label may have two lines, one for each
+// purpose. pins maps each label to the pin of its X.509 key, the key of the purpose x509-root; the pin
+// of a key of another purpose is under the text "<label>/<purpose>", and a birth of another purpose
+// with no pin under that text is refused. The error is an [*ArtifactError].
 func CheckJournals(p *PlanOut, pins map[string]string, births, signatures JournalRead) error {
 	const art = "journals"
 	bad := func(member, format string, args ...any) error { return artifactErr(art, member, format, args...) }
@@ -785,18 +805,23 @@ func CheckJournals(p *PlanOut, pins map[string]string, births, signatures Journa
 	if len(births.Lines) != len(p.Births) {
 		return bad("births.jsonl", "holds %d lines and the plan lists %d births", len(births.Lines), len(p.Births))
 	}
-	seen := map[string]bool{}
+	seen := map[birthKey]bool{}
 	for i, raw := range births.Lines {
 		l, err := files.ReadBirthLine(raw)
 		if err != nil {
 			return bad("births.jsonl", "the line %d is refused by its reader: %v", i+1, err)
 		}
 		b := p.Births[i]
-		if seen[l.Label] || l.Label != b.Label || l.Purpose != b.Purpose || l.Store != b.Store || l.Place != b.Place {
+		k := birthKey{l.Label, l.Purpose}
+		if seen[k] || l.Label != b.Label || l.Purpose != b.Purpose || l.Store != b.Store || l.Place != b.Place {
 			return bad("births.jsonl", "the line %d is not the birth %s of the plan, once", i+1, b.Label)
 		}
-		seen[l.Label] = true
-		if pin, ok := pins[l.Label]; !ok || l.PublicKeySHA256 != pin {
+		seen[k] = true
+		pinKey := l.Label
+		if l.Purpose != purposeX509Root {
+			pinKey = l.Label + "/" + l.Purpose
+		}
+		if pin, ok := pins[pinKey]; !ok || l.PublicKeySHA256 != pin {
 			return bad("births.jsonl", "the line %d does not hold the pin of the key %s", i+1, b.Label)
 		}
 	}

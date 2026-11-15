@@ -406,6 +406,7 @@ func TestEveryBreakOfRootJSONIsRefusedWithTheMemberNamed(t *testing.T) {
 		{"no removal digest", mkRootJSON(t, func(r *files.RootJSON) { r.RemovalSHA256 = "" }), nil, "removal_sha256"},
 		{"an OpenPGP key besides the X.509 key", mkRootJSON(t, func(r *files.RootJSON) {
 			r.OpenPGPFingerprint, r.OpenPGPCreated = strings.Repeat("ab", 20), "2026-11-20T10:00:00Z"
+			r.Revocations = map[string]string{"compromised": strings.Repeat("11", 32), "superseded": strings.Repeat("22", 32)}
 		}), nil, "openpgp_fingerprint"},
 		{"the facts name another label", good, func(w *ceremony.RootJSONWant) { w.Label = "B" }, "label"},
 		{"the facts name another pin", good, func(w *ceremony.RootJSONWant) { w.Pin = strings.Repeat("11", 32) }, "x509_spki_sha256"},

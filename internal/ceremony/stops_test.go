@@ -20,7 +20,7 @@ import (
 )
 
 // newBundleFailing makes a bundle whose writer fails its nth changing call.
-func newBundleFailing(t *testing.T, n int) *bundle {
+func newBundleFailing(t testing.TB, n int) *bundle {
 	t.Helper()
 	dir := t.TempDir()
 	if err := os.WriteFile(filepath.Join(dir, "ritueel.yaml"), []byte(manifestText), 0o644); err != nil {

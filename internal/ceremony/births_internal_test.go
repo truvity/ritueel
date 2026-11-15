@@ -29,8 +29,8 @@ func birthLineBytes(t testing.TB, label, purpose, store, place string) []byte {
 // FuzzBirthsAgainstThePlan feeds the comparison of the birth journal with the births of a plan
 // with any list of births (as JSON) and any bytes of a journal. The laws: it never panics; every
 // refusal is of kind ErrDiskMismatch; and an accepted journal has one line for each birth, in
-// the order of the plan, each line read by the reader of the journal, no label twice, and in
-// each member that the birth gives (label, purpose, store, place) the very text of the line.
+// the order of the plan, each line read by the reader of the journal, no pair of label and purpose
+// twice (a label may be born twice, once for each purpose), and in each member that the birth gives (label, purpose, store, place) the very text of the line.
 func FuzzBirthsAgainstThePlan(f *testing.F) {
 	a := birthLineBytes(f, "A", "x509-root", "software", "A.x509.key.pem")
 	b := birthLineBytes(f, "B", "x509-root", "kms", "arn:aws:kms:eu-west-1:1:key/b")
@@ -46,6 +46,10 @@ func FuzzBirthsAgainstThePlan(f *testing.F) {
 	f.Add(plan(`[{"purpose":"x509-root"}]`), a)
 	f.Add(plan(`[{"label":"A","store":7}]`), a)
 	f.Add(plan(`[{"label":"A"},{"label":"A"}]`), append(append([]byte{}, a...), a...))
+	p := birthLineBytes(f, "A", "openpgp-primary", "software", "A.openpgp.key.asc")
+	f.Add(plan(`[{"label":"A","purpose":"x509-root"},{"label":"A","purpose":"openpgp-primary"}]`), append(append([]byte{}, a...), p...))
+	f.Add(plan(`[{"label":"A","purpose":"openpgp-primary"},{"label":"A","purpose":"x509-root"}]`), append(append([]byte{}, a...), p...))
+	f.Add(plan(`[{"label":"A","purpose":"openpgp-primary"},{"label":"A","purpose":"openpgp-primary"}]`), append(append([]byte{}, p...), p...))
 	f.Add(plan(`[{"label":"A","place":null}]`), a)
 	f.Fuzz(func(t *testing.T, planJSON, journal []byte) {
 		var births []any
@@ -67,16 +71,16 @@ func FuzzBirthsAgainstThePlan(f *testing.F) {
 		if len(lines) != len(births) {
 			t.Fatalf("%d lines accepted for %d births", len(lines), len(births))
 		}
-		seen := map[string]bool{}
+		seen := map[[2]string]bool{}
 		for i, raw := range lines {
 			l, rerr := files.ReadBirthLine(raw)
 			if rerr != nil {
 				t.Fatalf("line %d accepted and its reader refuses it: %v", i, rerr)
 			}
-			if seen[l.Label] {
-				t.Fatalf("label %s accepted twice", l.Label)
+			if seen[[2]string{l.Label, l.Purpose}] {
+				t.Fatalf("the key %s for the purpose %s accepted twice", l.Label, l.Purpose)
 			}
-			seen[l.Label] = true
+			seen[[2]string{l.Label, l.Purpose}] = true
 			m, isMap := births[i].(map[string]any)
 			if !isMap {
 				t.Fatalf("birth %d is not an object and was accepted", i)
