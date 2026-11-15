@@ -10,7 +10,7 @@
 3. ritueel never keeps a private key outside the key store that made it (except as in rule 2), and keeps no PIN or passphrase a person types. It never retries a PIN, and reads one only from the terminal, without echo. The holder keeps PINs in a password manager, one entry per card.
 4. A software key is generated in memory and written directly into its key store, never to a plain file on disk. A test root is the one exception: it has no passphrase, so its key files are plain and marked TEST ONLY ([record 0005](0005-a-ceremony-and-where-it-runs.md), rule 26).
 5. ritueel never exports a key from a card or KMS: backup means two independent cards or a KMS replica.
-6. Redundancy protects against loss, not compromise, so the number of root keys follows the key store. No hardware security module is used.
+6. Redundancy protects against loss, not compromise, so the number of root keys follows the key store. A hardware security module (HSM) is not a key store of ritueel now; it may come later.
 
 7. Attested key stores (piv, openpgp-card) and aws-kms may hold root keys, intermediates and subkeys. An openpgp-card key is refused for an X.509 intermediate and for an SSH CA key, because its attestation shows no PIN or touch rule. Key stores with no evidence (software; a token that cannot attest) may hold test roots, drills, development, the first consumer's harness and a person's own primary (encrypted file only), and intermediates and subkeys only where policy.stores lists the key store.
 8. No root key that others rely on exists in software or in any key store with no evidence, except a person's own primary. A software root never anchors a signed release.

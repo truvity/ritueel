@@ -51,7 +51,7 @@ Each card makes its own keys, so no copy exists and each key can be attested at 
 - **One root, one card, a spare.** The spare is a copy or nothing a verifier trusts.
 - **Off-card key imported into both.** No card can attest its birth.
 - **Software key wrapped, or split 2-of-2.** In memory at each signing; a split stops signing if one card is lost.
-- **A certified module for the root key.** It would meet the public rules for CAs (see What it costs), but the design takes cards whose keys are attested at birth and claims no certified level (rule 22), and uses no hardware security module ([record 0002](0002-where-a-key-lives.md), rule 6).
+- **A certified module for the root key.** It would meet the public rules for CAs (see What it costs), but the design takes cards whose keys are attested at birth and claims no certified level (rule 22), and uses no hardware security module now ([record 0002](0002-where-a-key-lives.md), rule 6).
 - **HSM pair with a wrapped export.** About EUR 786 a device ([the research note](../research/private-root-alternatives-2026-11-02.md)), and the key is copied.
 - **Two holders, or a remote one.** Either card alone signs, so separation is procedural, and each ceremony waits on a person.
 - **One pair per bundle, or one pair per bundle until a later milestone.** A holder with two bundles keeps four cards.
@@ -70,7 +70,7 @@ Each card makes its own keys, so no copy exists and each key can be attested at 
 - **Adoption on the stick as well as on the workstation.** A card could be adopted where the root is used, but two copies of a bundle could each make a secret for one card, and a lost stick could hold the only copy; adoption runs on the workstation only (rule 15).
 - **Two kinds of card only.** A server's card and a practice card would have no honest place.
 - **Server card managed like a root card.** Its slots belong to the requester; adoption would break the service.
-- **The name "hsm" for a kind of card.** "hsm" names a product class this design rejects.
+- **The name "hsm" for a kind of card.** "hsm" names a product class that ritueel does not cover now.
 - **Test root only in a file.** Proofs and drills need a real card.
 - **One card for the roots and day-to-day gpg.** A shared PC/SC lock, a PIN prompt per operation, one reset for both.
 - **Signing on the card with gpg-agent.** It needs gpg at run time; gpg 2.2 sent two wrong PINs to a test card.

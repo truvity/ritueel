@@ -1,6 +1,6 @@
 ---
 name: site-change
-description: Use when changing the ritueel site itself, not just a page's words - files in site/, site/public/ (headers, redirects), the theme, a home page or a section's first screen, the link check, or the deploy workflow.
+description: Use when changing the ritueel site itself, not just a page's words - files in site/, site/public/ (headers, redirects), the theme, the start page or a section's first screen, the link check, or the deploy workflow.
 ---
 
 Read "Changing the site" in `docs/contributing/pages.md` and follow it, with "The site" in `docs/contributing/tools.md` for how the build, the headers and the deploy work. Judge the change against the mission in `docs/contributing/design.md`.
@@ -13,7 +13,7 @@ Checklist:
 - [ ] A moved or renamed page has a 301 line in the hand-written part of `site/public/_redirects` in the same pull request. An unpublished page is redirected (302) to its file on GitHub by the generated block: run `just site-redirects` and commit the result.
 - [ ] The link check stays bounded: `lychee` with a timeout, bounded retries and redirects, a wall-clock `timeout` around the run, and `-v`. A host that loops on redirects is excluded in `lychee.toml`. A job that runs long is a finding, not a rerun.
 - [ ] A page is `.md`; `.mdx` is only for a page that places components ("Page format" in `docs/contributing/pages.md`, checked by `just check-mdx-pages`).
-- [ ] A home page says what the project is, what exists today, who it is for and where to start, in about 200 words with about ten links, with honest status. Pain-first prose belongs in the Learn pages.
+- [ ] The start page and each case page follow "Start page and case pages" in `docs/contributing/pages.md`. Pain-first prose belongs in the Learn pages.
 - [ ] You built the site, served it, and took screenshots with headless Chrome at 1440 px and 390 px, in light and dark. You looked at all four, fixed what was off, and found no horizontal scroll at 375 px. Say so in the pull request.
 - [ ] `devbox run -- just site-lint`, `site-build` and `check-rules` pass; CI is green.
 - [ ] After the maintainer merges and the Site deploy is green, check with `curl` and report the result:

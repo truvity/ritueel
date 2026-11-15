@@ -49,7 +49,7 @@ So the Nitrokey 3 is a good second device to **test**. A token that cannot attes
 | Token2 PIN+ | FIDO2 only, as far as the sources show. |
 | Nitrokey Passkey | FIDO2 only. |
 | Nitrokey Pro 2, Start, Storage 2 | Older devices with an OpenPGP card and no PIV. |
-| YubiHSM 2 | Not a smartcard, with its own protocol, and the FIPS model costs about 935 to 1150 EUR at retailers. [record 0002](../decisions/0002-where-a-key-lives.md) takes no HSM for keys used once a year. |
+| YubiHSM 2 | Not a smartcard, with its own protocol, and the FIPS model costs about 935 to 1150 EUR at retailers. [record 0002](../decisions/0002-where-a-key-lives.md) takes no HSM now for keys used once a year. |
 
 ## Cloud keys: nothing to buy, a lot to read
 
