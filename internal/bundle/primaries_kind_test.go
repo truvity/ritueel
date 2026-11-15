@@ -12,12 +12,14 @@ import (
 	"os"
 	"path/filepath"
 	"slices"
+	"strconv"
 	"strings"
 	"testing"
 
 	"ritueel.id/ritueel/internal/bundle"
 	"ritueel.id/ritueel/internal/handoff"
 	"ritueel.id/ritueel/internal/openpgp"
+	"ritueel.id/ritueel/internal/strictjson"
 	"ritueel.id/ritueel/internal/testrepo"
 )
 
@@ -67,7 +69,6 @@ func primariesFaults(t *testing.T) []struct {
 	}{
 		{"17 pinned", memSet(7, memPrimaries(t, 17)), nil, "pins 17"},
 		{"26 pinned", memSet(7, memPrimaries(t, 26)), nil, "pins 26"},
-		{"one fingerprint on two entries", withList(t, func(l []byte) []byte { return replaceOnce(t, l, fingerprintB, fingerprintA) }), nil, "gives one openpgp_fingerprint to two entries"},
 		{"no keyring file", without(two, keyringName), nil, "holds no keyring.gpg"},
 		{"a link", without(two, keyringName), func(t *testing.T, at string) {
 			mustSymlink(t, "real.gpg", at)
@@ -189,6 +190,11 @@ func TestTheFaultsOfTheSetThatAreNotOfThePrimariesAreNotOfTheKindErrPrimaries(t 
 			_, _, err := b.Primaries()
 			return err
 		}, nil},
+		{"one fingerprint on two entries (the list is refused before the reader)", func() error {
+			b, _ := bundleWith(t, withList(t, func(l []byte) []byte { return replaceOnce(t, l, fingerprintB, fingerprintA) }))
+			_, _, err := b.Primaries()
+			return err
+		}, strictjson.ErrMalformed},
 		{"a label that is not a capital letter", func() error {
 			b, _ := bundleWith(t, withList(t, func(l []byte) []byte { return replaceOnce(t, l, `"label":"B"`, `"label":"b"`) }))
 			_, _, err := b.Primaries()
@@ -325,24 +331,34 @@ func TestEveryErrorKindOfThePrimariesPathIsClassified(t *testing.T) {
 	}
 }
 
-// One fingerprint on two entries is a fault of the list. The sentence names the list of the newest trust set and the
-// two labels, not the keyring file, and the fingerprint itself is not in it. Exact text.
+// listRepeatText is the error of the bundle for a root list in which two entries have one openpgp_fingerprint: the
+// reader of the list refuses the list, naming the place of the second entry and the two labels.
+func listRepeatText(first, second string, at int) string {
+	return "bundle: the newest trust set " + setDir + ": root-list.json: malformed JSON: $.roots[" + strconv.Itoa(at) + "].openpgp_fingerprint: the fingerprint appears twice: the entries with the labels " + first + " and " + second + " have the same one"
+}
+
+// One fingerprint on two entries is a fault of the list, found by the reader of the list: the error is not of the
+// kind ErrPrimaries (the list is refused before the primaries are asked for), it is a malformed-JSON error of the list,
+// it names the newest trust set, the file and the two labels, and the fingerprint itself is not in it. Exact text.
 func TestAListThatPinsOneFingerprintTwiceIsAFaultOfTheListNamedByTheTwoLabels(t *testing.T) {
-	const want = "the root list of the newest trust set " + setDir + " gives one openpgp_fingerprint to two entries: the entry with the label A and the entry with the label B"
+	want := listRepeatText("A", "B", 1)
 	b, dir := bundleWith(t, withList(t, func(l []byte) []byte { return replaceOnce(t, l, fingerprintB, fingerprintA) }))
 	before := digestTree(t, dir)
 	refs, set, err := b.Primaries()
 	if refs != nil || set != (bundle.TrustSet{}) || err == nil || err.Error() != want {
 		t.Fatalf("(%v, %+v, %v), want an error with the text %q", refs, set, err, want)
 	}
-	if !errors.Is(err, bundle.ErrPrimaries) || errors.Is(err, openpgp.ErrKeyring) || errors.Is(err, openpgp.ErrParams) || errors.Is(err, bundle.ErrNoKeyring) {
-		t.Errorf("kind of %q: want ErrPrimaries only", err)
+	if !errors.Is(err, strictjson.ErrMalformed) || errors.Is(err, bundle.ErrPrimaries) || errors.Is(err, openpgp.ErrKeyring) || errors.Is(err, openpgp.ErrParams) || errors.Is(err, bundle.ErrNoKeyring) {
+		t.Errorf("kind of %q: want the malformed-JSON error of the list and no kind of the primaries", err)
 	}
 	if strings.Contains(err.Error(), fingerprintA) || strings.Contains(err.Error(), "keyring.gpg") {
 		t.Errorf("the sentence names the fingerprint or the file: %q", err)
 	}
 	if _, _, cerr := b.Checker("", fixedNow, nil); cerr == nil || cerr.Error() != want {
 		t.Errorf("Checker: %v, want the same sentence", cerr)
+	}
+	if _, _, cerr := b.Roots(); cerr == nil || cerr.Error() != want {
+		t.Errorf("Roots: %v, want the same sentence", cerr)
 	}
 	// The text of the sentence does not depend on the keyring file: a missing file and a file of garbage give it too.
 	for name, file := range map[string][]byte{"no file": nil, "garbage": []byte("garbage")} {
@@ -361,24 +377,25 @@ func TestAListThatPinsOneFingerprintTwiceIsAFaultOfTheListNamedByTheTwoLabels(t 
 }
 
 // The repeat is found whatever the places of the two entries: first and second, first and last of 16, a fingerprint
-// on three entries (the first pair is named), and two repeats (the first one met is named).
+// on three entries (the first pair is named), and two repeats (the first one met is named). The error names the place
+// of the second entry of the pair.
 func TestTheRepeatedFingerprintNamesTheFirstPairWhereverTheEntriesAre(t *testing.T) {
 	ps := memPrimaries(t, 16)
 	for _, tc := range []struct {
-		name   string
-		copy   map[int]int // entry i takes the fingerprint of entry j
-		n      int
-		wantA  string
-		wantB  string
-		unique bool
+		name  string
+		copy  map[int]int // entry i takes the fingerprint of entry j
+		n     int
+		wantA string
+		wantB string
+		at    int
 	}{
-		{"first and second of two", map[int]int{1: 0}, 2, "A", "B", false},
-		{"first and last of sixteen", map[int]int{15: 0}, 16, "A", "P", false},
-		{"second and last of sixteen", map[int]int{15: 1}, 16, "B", "P", false},
-		{"last two of sixteen", map[int]int{15: 14}, 16, "O", "P", false},
-		{"one fingerprint on three entries", map[int]int{1: 0, 2: 0}, 3, "A", "B", false},
-		{"two repeats: the first met is named", map[int]int{4: 1, 2: 0}, 6, "A", "C", false},
-		{"two repeats, the later pair first in the list", map[int]int{5: 3, 3: 2}, 6, "C", "D", false},
+		{"first and second of two", map[int]int{1: 0}, 2, "A", "B", 1},
+		{"first and last of sixteen", map[int]int{15: 0}, 16, "A", "P", 15},
+		{"second and last of sixteen", map[int]int{15: 1}, 16, "B", "P", 15},
+		{"last two of sixteen", map[int]int{15: 14}, 16, "O", "P", 15},
+		{"one fingerprint on three entries", map[int]int{1: 0, 2: 0}, 3, "A", "B", 1},
+		{"two repeats: the first met is named", map[int]int{4: 1, 2: 0}, 6, "A", "C", 2},
+		{"two repeats, the later pair first in the list", map[int]int{5: 3, 3: 2}, 6, "C", "D", 3},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			roots := slices.Clone(ps[:tc.n])
@@ -386,9 +403,8 @@ func TestTheRepeatedFingerprintNamesTheFirstPairWhereverTheEntriesAre(t *testing
 				roots[i].fp = roots[j].fp
 			}
 			b, _ := bundleWith(t, memSet(7, roots))
-			want := "the root list of the newest trust set " + setDir + " gives one openpgp_fingerprint to two entries: the entry with the label " + tc.wantA + " and the entry with the label " + tc.wantB
 			_, _, err := b.Primaries()
-			if err == nil || err.Error() != want || !errors.Is(err, bundle.ErrPrimaries) {
+			if want := listRepeatText(tc.wantA, tc.wantB, tc.at); err == nil || err.Error() != want || errors.Is(err, bundle.ErrPrimaries) {
 				t.Errorf("error %v, want %q", err, want)
 			}
 		})
@@ -409,13 +425,19 @@ func TestEntriesWithNoFingerprintAreNotARepeat(t *testing.T) {
 	}
 }
 
-// With 17 entries and a repeat the count comes first (the list is too long for the checks whatever it repeats).
-func TestTheCountOfPinnedPrimariesIsJudgedBeforeTheRepeat(t *testing.T) {
+// With 17 entries and a repeat the reader of the list refuses the list first, for the repeat: the count of the pinned
+// primaries is judged only for a list that the reader accepts. 17 entries with no repeat give the count.
+func TestARepeatInAListOf17EntriesIsTheListsBeforeTheCountOfPinnedPrimaries(t *testing.T) {
 	ps := memPrimaries(t, 17)
 	ps[16].fp = ps[0].fp
 	b, _ := bundleWith(t, memSet(7, ps))
 	_, _, err := b.Primaries()
-	if err == nil || !countText.MatchString(err.Error()) || strings.Contains(err.Error(), "openpgp_fingerprint") {
-		t.Errorf("error %v, want the count", err)
+	if want := listRepeatText("A", "Q", 16); err == nil || err.Error() != want || errors.Is(err, bundle.ErrPrimaries) {
+		t.Errorf("error %v, want %q", err, want)
+	}
+	ps = memPrimaries(t, 17)
+	b, _ = bundleWith(t, memSet(7, ps))
+	if _, _, err := b.Primaries(); err == nil || !countText.MatchString(err.Error()) || !errors.Is(err, bundle.ErrPrimaries) {
+		t.Errorf("17 entries with no repeat: %v, want the count", err)
 	}
 }

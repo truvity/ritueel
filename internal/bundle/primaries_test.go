@@ -19,6 +19,7 @@ import (
 	"ritueel.id/ritueel/internal/fsx"
 	"ritueel.id/ritueel/internal/handoff"
 	"ritueel.id/ritueel/internal/openpgp"
+	"ritueel.id/ritueel/internal/strictjson"
 )
 
 // Bundle.Primaries and the primaries that Bundle.Checker gives: the keyring file of the newest trust set, read with
@@ -525,8 +526,9 @@ func TestPrimariesOfANilClosedOrHandMadeBundleIsErrBundle(t *testing.T) {
 }
 
 // A list that gives one fingerprint to two entries is a list that no host can use: the file cannot be held to it.
-// The fault is the list's, found before the keyring file is read: the error is of the kind ErrPrimaries, names the list
-// and the two entries, and is not an error of the keyring file; no primary comes with it.
+// The fault is the list's, found by the reader of the list before the keyring file is asked for: the error is a
+// malformed-JSON error of the list, not of the kind ErrPrimaries and not an error of the keyring file; it names the
+// list and the place of the second entry and the two labels; no primary comes with it.
 func TestAListThatPinsOneFingerprintTwiceIsAnErrorOfTheListNotOfTheKeyringFile(t *testing.T) {
 	list := bytes.Replace(trustAB(t, 7)["root-list.json"], []byte("c4288657012230588b51fa66e0831b9c6e084f39"), []byte("6df387de63525c9dc0ec1174bd138d2c4889b79b"), 1)
 	if bytes.Equal(list, trustAB(t, 7)["root-list.json"]) {
@@ -537,11 +539,11 @@ func TestAListThatPinsOneFingerprintTwiceIsAnErrorOfTheListNotOfTheKeyringFile(t
 	if refs != nil || set != (bundle.TrustSet{}) || err == nil {
 		t.Fatalf("(%v, %+v, %v), want an error and nothing else", refs, set, err)
 	}
-	if !strings.HasPrefix(err.Error(), "the root list of the newest trust set "+setDir+" ") || !strings.Contains(err.Error(), "the entry with the label A and the entry with the label B") || !printableText(err.Error()) {
+	if !strings.HasPrefix(err.Error(), "bundle: the newest trust set "+setDir+": root-list.json: malformed JSON: ") || !strings.Contains(err.Error(), "the entries with the labels A and B have the same one") || !printableText(err.Error()) {
 		t.Errorf("error text = %q", err.Error())
 	}
-	if !errors.Is(err, bundle.ErrPrimaries) || errors.Is(err, openpgp.ErrKeyring) {
-		t.Errorf("kind: ErrPrimaries=%v ErrKeyring=%v, want the first and not the second", errors.Is(err, bundle.ErrPrimaries), errors.Is(err, openpgp.ErrKeyring))
+	if errors.Is(err, bundle.ErrPrimaries) || errors.Is(err, openpgp.ErrKeyring) || !errors.Is(err, strictjson.ErrMalformed) {
+		t.Errorf("kind: ErrPrimaries=%v ErrKeyring=%v ErrMalformed=%v, want only the last", errors.Is(err, bundle.ErrPrimaries), errors.Is(err, openpgp.ErrKeyring), errors.Is(err, strictjson.ErrMalformed))
 	}
 	if chk, _, cerr := b.Checker("", fixedNow, nil); chk != nil || cerr == nil || cerr.Error() != err.Error() {
 		t.Errorf("Checker = (%v, %v)", chk, cerr)
