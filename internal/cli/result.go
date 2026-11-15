@@ -73,6 +73,18 @@ type Result struct {
 	// Plan is the plan file, its digest and the eight characters a person types (the member "plan"
 	// of docs/reference/cli.md); with apply --plan-only it is the result. Absent otherwise.
 	Plan *PlanRef `json:"plan,omitempty"`
+	// Record is the ceremony record that a run wrote (the member "record" of docs/reference/cli.md):
+	// its path in the bundle and its digest. It is there for an apply that ran, and absent otherwise.
+	Record *RecordRef `json:"record,omitempty"`
+	// Artifacts are the files that the ceremony record lists, in the order of the record (the member
+	// "artifacts" of docs/reference/cli.md). It is there for an apply that ran, and absent otherwise.
+	Artifacts []ArtifactRef `json:"artifacts,omitempty"`
+	// TrustSequence is the trust sequence of the trust set that the ceremony wrote (the member
+	// "trust_sequence" of docs/reference/cli.md); absent when no trust set was written.
+	TrustSequence int64 `json:"trust_sequence,omitempty"`
+	// Roots are the root keys of the ceremony, in label order (the member "roots" of
+	// docs/reference/cli.md). It is there for an apply that ran, and absent otherwise.
+	Roots []RootRef `json:"roots,omitempty"`
 	// Version is the release version (version only).
 	Version string `json:"version,omitempty"`
 	// Commit is the commit of the build (version only).
@@ -97,6 +109,40 @@ type PlanRef struct {
 	SHA256 string `json:"sha256"`
 	// Prefix is the first eight characters of the digest, which a person types to confirm.
 	Prefix string `json:"prefix"`
+}
+
+// RecordRef is the member "record" of the JSON object: where the ceremony record is, relative to the
+// bundle, and its SHA-256.
+type RecordRef struct {
+	// Path is the path of record.json in the bundle, history/CEREMONY/record.json.
+	Path string `json:"path"`
+	// SHA256 is the digest of the file, 64 lower-case hexadecimal digits.
+	SHA256 string `json:"sha256"`
+}
+
+// ArtifactRef is one entry of Result.Artifacts: a file that the ceremony record lists, with the digest of
+// the bytes that were read back from the disk.
+type ArtifactRef struct {
+	// Path is the path of the file in the bundle.
+	Path string `json:"path"`
+	// SHA256 is the digest of the file, 64 lower-case hexadecimal digits.
+	SHA256 string `json:"sha256"`
+}
+
+// RootRef is one entry of Result.Roots (the member "roots" of docs/reference/cli.md). The member
+// "openpgp_fingerprint" is only for a bundle that has an OpenPGP root, which this version does not make,
+// so it is not written.
+type RootRef struct {
+	// Label is the label of the key.
+	Label string `json:"label"`
+	// Store is the key store of the key: "software".
+	Store string `json:"store"`
+	// Test is true for a test root.
+	Test bool `json:"test"`
+	// X509SPKISHA256 is the pin of the key: the SHA-256 of its DER SubjectPublicKeyInfo.
+	X509SPKISHA256 string `json:"x509_spki_sha256"`
+	// NotAfter is when the root certificate of the key ends.
+	NotAfter string `json:"not_after"`
 }
 
 // CheckState is one entry of Result.Checks: the number of a check and its result.

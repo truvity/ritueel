@@ -340,26 +340,27 @@ func TestTwoPlansInOneSecondTheSecondIsRefusedAndTheFirstIsUntouched(t *testing.
 	crqSame(t, "the second plan in JSON mode", before, apSnapshot(t, dir))
 }
 
-func TestApplyWithoutPlanOnlyIsNotBuiltAndWritesNothing(t *testing.T) {
+func TestApplyThatCannotRunIsRefusedBeforeAnythingIsWritten(t *testing.T) {
 	for _, c := range []struct {
 		args  []string
+		code  ExitCode
 		words string
 	}{
-		{[]string{"apply"}, "without --plan-only"},
-		{[]string{"apply", "history/" + apName + "/plan.json"}, "saved plan"},
-		{[]string{"apply", "--key-dir", "x"}, "without --plan-only"},
-		{[]string{"apply", "somewhere", "--key-dir", "x"}, "saved plan"},
+		{[]string{"apply"}, ExitUsage, "--key-dir"},
+		{[]string{"apply", "history/" + apName + "/plan.json"}, ExitUsage, "--key-dir"},
+		{[]string{"apply", "--key-dir", "x"}, ExitBackend, "nothing was written"},
+		{[]string{"apply", "somewhere", "--key-dir", "x"}, ExitUsage, "history/CEREMONY/plan.json"},
 	} {
 		args := c.args
 		t.Run(strings.Join(args, " "), func(t *testing.T) {
 			dir := apBundle(t, apFiles())
 			before := apSnapshot(t, dir)
 			r := apRun(t, apClock, append([]string{"--dir", dir}, args...)...)
-			if r.code != ExitFailure || r.stdout != "" {
-				t.Fatalf("exit code %d, stdout %q", r.code, r.stdout)
+			if r.code != c.code || r.stdout != "" {
+				t.Fatalf("exit code %d, stdout %q, stderr %q", r.code, r.stdout, r.stderr)
 			}
-			if n := strings.Count(r.stderr, "\n"); n != 1 || !strings.Contains(r.stderr, "not built yet") || !strings.Contains(r.stderr, c.words) || !strings.Contains(r.stderr, "nothing was written") {
-				t.Errorf("standard error is not one plain line that says it is not built yet: %q", r.stderr)
+			if !strings.Contains(r.stderr, c.words) {
+				t.Errorf("standard error does not say %q: %q", c.words, r.stderr)
 			}
 			crqSame(t, "apply", before, apSnapshot(t, dir))
 		})
@@ -368,21 +369,21 @@ func TestApplyWithoutPlanOnlyIsNotBuiltAndWritesNothing(t *testing.T) {
 		dir := apBundle(t, apFiles())
 		r := apRun(t, apClock, "--dir", dir, "--output", "json", "apply")
 		obj := apObject(t, r.stdout)
-		if r.code != ExitFailure || obj["outcome"] != "failed" || obj["command"] != "apply" {
+		if r.code != ExitUsage || obj["outcome"] != "usage" || obj["command"] != "apply" {
 			t.Errorf("%d %v", r.code, obj)
 		}
-		if msg, _ := obj["error"].(string); !strings.Contains(msg, "not built yet") {
+		if msg, _ := obj["error"].(string); !strings.Contains(msg, "--key-dir") {
 			t.Errorf("error = %v", obj["error"])
 		}
 	})
 }
 
-func TestApplyDoesNotLookAtTheBundleBeforeItSaysItIsNotBuilt(t *testing.T) {
-	// Not built is a fact about the command and not about the folder: a folder that is not a
+func TestApplyJudgesTheCommandLineBeforeItLooksAtTheFolder(t *testing.T) {
+	// A usage error is a fact about the command line and not about the folder: a folder that is not a
 	// bundle gets the same line, and no file.
 	dir := t.TempDir()
 	r := apRun(t, apClock, "--dir", dir, "apply")
-	if r.code != ExitFailure || !strings.Contains(r.stderr, "not built yet") {
+	if r.code != ExitUsage || !strings.Contains(r.stderr, "--key-dir") {
 		t.Errorf("exit code %d, stderr %q", r.code, r.stderr)
 	}
 	if ents, _ := os.ReadDir(dir); len(ents) != 0 {
@@ -666,13 +667,10 @@ func TestHelpListsApplyAndTheWordHasItsFlags(t *testing.T) {
 		t.Errorf("--help: %d %q", r.code, r.stdout)
 	}
 	r = apRun(t, apClock, "apply", "--help")
-	for _, w := range []string{"--plan-only", "--key-dir"} {
+	for _, w := range []string{"--plan-only", "--key-dir", "--confirm"} {
 		if r.code != ExitOK || !strings.Contains(r.stdout, w) {
 			t.Errorf("apply --help does not list %s: %d %q", w, r.code, r.stdout)
 		}
-	}
-	if strings.Contains(r.stdout, "--confirm") {
-		t.Errorf("apply --help lists a flag that is not built: %q", r.stdout)
 	}
 }
 
