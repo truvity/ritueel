@@ -6,6 +6,7 @@ import (
 	"crypto/elliptic"
 	"fmt"
 	"maps"
+	"math"
 	"reflect"
 	"slices"
 	"strconv"
@@ -53,8 +54,9 @@ type preparedPrimary struct {
 // page's), a delegation of a type that is not one of the page's, a delegation of type openpgp-subkey with no
 // primaries or with a capability that is not sign or authenticate, primaries or a capability with a
 // delegation of another type, primaries that are not as [Config.Primaries] says, no roots (or roots that are
-// not ECDSA P-384 keys with a name), no clock, or a verifier that is nil. A nil delegation is allowed and is
-// kept as none: the rules of check 9 that need one are then not run. Everything the Checker holds is a copy.
+// not ECDSA P-384 keys with a name), no clock, a primary that was created after the clock, or a verifier that
+// is nil. A nil delegation is allowed and is kept as none: the rules of check 9 that need one are then not
+// run. Everything the Checker holds is a copy.
 func New(cfg Config) (*Checker, error) {
 	s := &settings{}
 	if err := s.takePolicy(cfg.Policy); err != nil {
@@ -91,6 +93,9 @@ func New(cfg Config) (*Checker, error) {
 		return nil, fmt.Errorf("%w: no clock", ErrConfig)
 	}
 	s.now = cfg.Now
+	if err := s.primariesNotAfterClock(); err != nil {
+		return nil, err
+	}
 	s.verifiers = make(map[Store]EvidenceVerifier, len(cfg.Evidence))
 	for store, verifier := range cfg.Evidence {
 		if !knownStore(store) {
@@ -155,6 +160,32 @@ func (s *settings) takePrimaries(cfg Config) error {
 			}
 		}
 		s.primaries = append(s.primaries, preparedPrimary{fingerprint: ref.Fingerprint, key: key, point: point})
+	}
+	return nil
+}
+
+// primariesNotAfterClock refuses a primary that was created after the clock of the checker. Such a primary
+// cannot be bound: the ceremony refuses a ceremony time that is before the creation time of the key, so a
+// request would pass every check and fail only in the binding. The clock is read once, here, and only when
+// there are primaries. A clock that panics, or whose time an OpenPGP time field cannot hold (outside the years
+// 1970 to 2106), is not judged here: check 5 reads the clock too and tells that fault as it always did
+// ([ErrInternal]), so a clock that is broken is told in one place. The fault names the primary by its
+// fingerprint.
+func (s *settings) primariesNotAfterClock() error {
+	if len(s.primaries) == 0 {
+		return nil
+	}
+	now, err := s.clock()
+	if err != nil {
+		return nil
+	}
+	if u := now.Truncate(time.Second).Unix(); u < 1 || u > math.MaxUint32 {
+		return nil
+	}
+	for _, pr := range s.primaries {
+		if pr.key.Created().After(now) {
+			return fmt.Errorf("%w: the primary %s was created after the clock of the checker", ErrConfig, pr.fingerprint)
+		}
 	}
 	return nil
 }
