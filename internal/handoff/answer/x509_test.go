@@ -741,7 +741,7 @@ func TestTheCertificateIsExactlyTheFormOfThePage(t *testing.T) {
 			return e
 		})}},
 		{"an authority key identifier that adds the issuer name", certSpec{exts: extsWith(k, csr, func(e []pkix.Extension) []pkix.Extension {
-			e[5] = pkix.Extension{Id: oidAKI, Value: tlv(0x30, e[5].Value[4:], tlv(0xa1, tlv(0xa4, k.a.cert.RawSubject)), tlv(0x82, []byte{1}))}
+			e[5] = pkix.Extension{Id: oidAKI, Value: akiWithIssuerName(t, k)}
 			return e
 		})}},
 		{"the extensions in another order", certSpec{exts: extsWith(k, csr, func(e []pkix.Extension) []pkix.Extension {
