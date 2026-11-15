@@ -51,7 +51,7 @@ A root is built from one or more keys, in any key store ([record 0001](../decisi
 | From | To | What the records say |
 |---|---|---|
 | Key file | Card | A key file is a copy by nature ([record 0002](../decisions/0002-where-a-key-lives.md), rule 11). A root card key is born on its card and never leaves it ([record 0002](../decisions/0002-where-a-key-lives.md), rules 2 and 5). |
-| Key file | Cloud key | A cloud key is born in the service and is never exported ([record 0002](../decisions/0002-where-a-key-lives.md), rules 2 and 5). Its evidence is the key's description, policy and audit trail, read from the service ([record 0004](../decisions/0004-the-cloud-root.md), rule 12). |
+| Key file | Cloud key | A cloud key is born in the service and is never exported ([record 0002](../decisions/0002-where-a-key-lives.md), rules 2 and 5). Its evidence is the key's description, public key and policy, read from the service ([record 0004](../decisions/0004-the-cloud-root.md), rule 12). |
 | Card | Cloud key | A root key on a card has a PIN rule and a touch rule ([record 0003](../decisions/0003-root-cards.md), rule 2). A cloud key is confirmed by the typed plan digest and a session of the ceremony role ([record 0004](../decisions/0004-the-cloud-root.md), rule 8). |
 | Cloud key | Card | A root on cards has two independent keys, A and B, one on each card. One holder keeps them in two places ([record 0003](../decisions/0003-root-cards.md), rule 1). |
 
