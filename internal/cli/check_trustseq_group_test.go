@@ -15,7 +15,7 @@ import (
 // attempt follow the plan. The set is named with that number.
 func hbOpenFor(num int, name string) func(*hbCeremony) {
 	return func(c *hbCeremony) {
-		c.set = name
+		c.nameSet(name)
 		c.plan = strings.Replace(c.plan, fmt.Sprintf(`"trust_sequence":%d,`, c.n), fmt.Sprintf(`"trust_sequence":%d,`, num), 1)
 		c.attempt = `{"ceremony":"` + c.folder + `","plan_sha256":"` + hbSum(c.plan) + `","version":1}`
 	}
@@ -56,7 +56,7 @@ func doneAs(t *testing.T, b *hbundle, warnings []string) {
 // than the first, exit 3, one line, the same in both modes.
 func TestCheckHistoryReportsTwoSetsOfOneRecordWithOneNumber(t *testing.T) {
 	b := newHB(t, 1)
-	b.add(t, true, func(c *hbCeremony) { c.set = "2-3fa9c1d1"; c.extraSet = "2-3fa9c1d2" })
+	b.add(t, true, func(c *hbCeremony) { c.nameSet("2-3fa9c1d1"); c.nameExtra("2-3fa9c1d2") })
 	refusedAs(t, b, []string{
 		"trust-sequence trust/2-3fa9c1d2: the number in its name, 2, is not higher than 2, the number of the set before it in the chain, trust/2-3fa9c1d1 " + seqRule,
 	}, []string{"trust-sequence"})
@@ -66,14 +66,14 @@ func TestCheckHistoryReportsTwoSetsOfOneRecordWithOneNumber(t *testing.T) {
 // two.
 func TestCheckHistoryAcceptsTwoSetsOfOneRecordWithGrowingNumbers(t *testing.T) {
 	b := newHB(t, 1)
-	b.add(t, true, func(c *hbCeremony) { c.set = "2-3fa9c1d1"; c.extraSet = "3-3fa9c1d2" })
+	b.add(t, true, func(c *hbCeremony) { c.nameSet("2-3fa9c1d1"); c.nameExtra("3-3fa9c1d2") })
 	doneAs(t, b, nil)
 }
 
 func TestCheckHistoryHoldsTheSetAfterAGroupToTheLastSetOfTheGroup(t *testing.T) {
 	b := newHB(t, 1)
-	b.add(t, true, func(c *hbCeremony) { c.set = "2-3fa9c1d1"; c.extraSet = "4-3fa9c1d2" })
-	b.add(t, true, func(c *hbCeremony) { c.set = "3-3fa9c1d3" })
+	b.add(t, true, func(c *hbCeremony) { c.nameSet("2-3fa9c1d1"); c.nameExtra("4-3fa9c1d2") })
+	b.add(t, true, func(c *hbCeremony) { c.nameSet("3-3fa9c1d3") })
 	refusedAs(t, b, []string{
 		"trust-sequence trust/3-3fa9c1d3: the number in its name, 3, is not higher than 4, the number of the set before it in the chain, trust/4-3fa9c1d2 " + seqRule,
 	}, []string{"trust-sequence"})
@@ -114,6 +114,6 @@ func TestCheckHistoryAcceptsAnOrdinarySetWithTheNumberOfAClosedLeftover(t *testi
 	b := newHB(t, 1)
 	stopped := b.add(t, false, hbOpenFor(2, "2-3fa9c1ee"))
 	hbClosing(t, b, stopped)
-	b.add(t, true, func(c *hbCeremony) { c.set = "2-3fa9c1ff" })
+	b.add(t, true, func(c *hbCeremony) { c.nameSet("2-3fa9c1ff") })
 	doneAs(t, b, nil)
 }

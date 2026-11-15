@@ -828,7 +828,7 @@ func faultCases() []faultCase {
 		}, []string{"trust-set-unlisted"}},
 		{"a root list that names a record that is not there", "anchor-unknown", func(t *testing.T) *hbundle {
 			b := newHB(t, 2)
-			b.add(t, true, func(c *hbCeremony) { c.rootList = `{"last_record_sha256":"` + aaaa + `","version":1}` })
+			b.add(t, true, func(c *hbCeremony) { c.rootList = `{"last_record_sha256":"` + aaaa + `","sequence":3,"version":1}` })
 			return b
 		}, []string{"anchor-unknown"}},
 		{"a root key that left the root list and is on a later one", "root-returns", func(t *testing.T) *hbundle {
@@ -836,7 +836,7 @@ func faultCases() []faultCase {
 		}, []string{"root-returns"}},
 		{"a trust set whose number is not higher than the number before it", "trust-sequence", func(t *testing.T) *hbundle {
 			b := newHB(t, 2)
-			b.add(t, true, func(c *hbCeremony) { c.set = "2-3fa9c1df" })
+			b.add(t, true, func(c *hbCeremony) { c.nameSet("2-3fa9c1df") })
 			return b
 		}, []string{"trust-sequence"}},
 		{"a folder with a space in history", "unexpected-name", func(t *testing.T) *hbundle {
