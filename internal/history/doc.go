@@ -124,6 +124,32 @@
 // [Inspection.OrderErr] wraps [ErrOrder]. The order is the place of each set in the chain, as for
 // root-returns; it is never guessed, and never taken from a folder name alone.
 //
+// Four more things tell what an unfinished ceremony and the history left:
+//
+//   - [Inspection.Unfinished] (and [State.Unfinished], which is the same list) names the ceremony
+//     folders that hold an entry named attempt.json and no record.json, and that no closing record
+//     names. It is taken from the names of the folders and from the closing records, in the order of
+//     the names. It is set whenever the walk ended, also for a failing report. It lists every such
+//     folder and does not judge whether the attempt belongs to this history: an entry of that name
+//     of any type counts, so a caller reads the attempt (its plan, and the end the plan names)
+//     before it takes the ceremony as open.
+//   - [State.Chain] is every ceremony record in the order of the hash chain, the oldest first, with
+//     its folder, its command and outcome, and the digest of its record.json. It is taken from the
+//     chain of records (each record names the one before it), and never from the names of the
+//     folders.
+//   - [State.Unlisted] are the trust sets that no record lists, in the order of the names, each with
+//     its trust number (the digits of the folder name, from 1 up) and a copy of its root list. They
+//     are taken from the names of the folders under trust/ and from the records that list sets. A
+//     set with no root-list.json stands in Unlisted with no list bytes, and is not in
+//     [State.Lists], which holds only the lists that were read.
+//   - [State.NewestListed] is the last set of [State.Lists] that a record lists, a closing record
+//     too, with its trust number and a copy of its root list. It is taken from the order of the
+//     chain of records, and is nil when no record lists a set. It differs from [State.Newest] when
+//     an unfinished ceremony left a set with a higher number.
+//
+// A name with no trust number (a name that begins 0- too) gives no State for a bundle where one of
+// these sets carries it: [Inspection.OrderErr] says so, and the report is the same as for [Check].
+//
 // # What it never does
 //
 // Everything that comes from the bundle is hostile data: a name, a type, a size, a digest, the

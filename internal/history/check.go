@@ -117,6 +117,10 @@ type recInfo struct {
 	parsed  bool   // ReadRecord succeeded, so prev below is known
 	hasPrev bool
 	prev    string
+	// command and outcome are the members of the same names, when the record was read (they are
+	// one of the few words that the reader of records takes); State.Chain shows them.
+	command string
+	outcome string
 }
 
 // anchorWant is what the records that list a trust set say its root list must anchor: the record
@@ -523,6 +527,7 @@ func (ck *checker) record(folder string) error {
 		info.parsed = true
 		info.hasPrev = rec.PrevRecordSHA256 != ""
 		info.prev = rec.PrevRecordSHA256
+		info.command, info.outcome = rec.Command, rec.Outcome
 	}
 	ck.recs = append(ck.recs, info)
 	if err != nil {

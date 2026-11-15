@@ -88,6 +88,11 @@ func (b *bundle) inspect() *Inspection {
 	}
 	sameReport(b.t, in.Report, want)
 	checkInspection(b.t, in)
+	m := b.mem
+	if m == nil {
+		m = loadForModel(b.t, b.dir)
+	}
+	checkAdditions(b.t, m, in)
 	return in
 }
 
@@ -121,6 +126,18 @@ func checkInspection(t testing.TB, in *Inspection) {
 		}
 	} else if in.State.Newest == nil || in.State.Newest.Name != in.State.Lists[n-1].Name {
 		t.Errorf("Newest %v is not the last list %q", in.State.Newest, in.State.Lists[n-1].Name)
+	}
+	// A number of a SetInfo is a trust number: 1 and up, so no caller can take 0 for one.
+	if in.State.Newest != nil && in.State.Newest.Number < 1 {
+		t.Errorf("Newest.Number = %d", in.State.Newest.Number)
+	}
+	if in.State.NewestListed != nil && in.State.NewestListed.Number < 1 {
+		t.Errorf("NewestListed.Number = %d", in.State.NewestListed.Number)
+	}
+	for _, u := range in.State.Unlisted {
+		if u.Number < 1 {
+			t.Errorf("Unlisted %q has Number %d", u.Name, u.Number)
+		}
 	}
 }
 
