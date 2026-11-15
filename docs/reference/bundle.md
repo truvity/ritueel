@@ -442,7 +442,7 @@ Five rules the schema cannot state: a delegation name is unique, which its file 
 
 A key is active, retired or revoked ([record 0007](../decisions/0007-changing-and-losing-a-root.md), rule 3); which one is read from the ceremony records and the newest root list, not from this file. What a key replaces, and until when, is a wanted field (record 0007, rules 3 and 5). Root state as files is later.
 
-The first `apply` of an X.509 test root writes `version`, `label`, `store`, `test`, `created_at`, `x509_spki_sha256` and `removal_sha256`. `removal_sha256` is the SHA-256 of the text of the removal authorisation. The other members are written by later ceremonies.
+The first `apply` of an X.509 test root writes `version`, `label`, `store`, `test`, `created_at`, `x509_spki_sha256` and `removal_sha256`. `removal_sha256` is the SHA-256 of the text of the removal authorisation, as stored. The other members are written by later ceremonies. A key that has an OpenPGP primary is written with `openpgp_fingerprint`, `openpgp_created` and `revocations` as well, and the members are in the canonical order; a file for an X.509 key alone has none of the three, and its bytes are the same as before.
 
 | Member | Meaning |
 |---|---|
@@ -454,7 +454,7 @@ The first `apply` of an X.509 test root writes `version`, `label`, `store`, `tes
 | `x509_spki_sha256` | The pin of the X.509 root key. |
 | `openpgp_fingerprint` | The primary's fingerprint. Present when the bundle has an OpenPGP root. |
 | `openpgp_created` | The OpenPGP creation time of the primary, which fixes its fingerprint and is on no card ([record 0006](../decisions/0006-bundle-history-and-trust-files.md), rule 10). Present with the fingerprint. |
-| `revocations` | An object from reason (`compromised`, `superseded`, and any the holder added) to the SHA-256 of that revocation signature packet, which is stored elsewhere ([revocation material](/reference/revocation-material/)). |
+| `revocations` | An object from reason to the SHA-256 of the binary packet of that revocation signature, which is stored elsewhere ([revocation material](/reference/revocation-material/)). It is present exactly when `openpgp_fingerprint` is, and a file with one and not the other is refused. It holds `compromised` and `superseded`, and `retired` and `no-reason` when the holder asked for them; no other reason, and no value that is not a digest. An empty object is refused. |
 | `removal_sha256` | The SHA-256 of the key's removal authorisation, which is stored elsewhere with the revocation signatures ([revocation material](/reference/revocation-material/#the-removal-authorisation)). Absent in a personal bundle. |
 | `adopted` | True for an OpenPGP primary adopted as it was ([record 0008](../decisions/0008-a-persons-own-key.md)) or for a cloud key that ritueel adopted instead of creating ([record 0004](../decisions/0004-the-cloud-root.md)). Absent otherwise. |
 | `store_ref` | For a key in `piv` (from M6) or `aws-kms` (from M2); absent for `software`. For `piv`: `{ "serial", "row" }`, the card's serial and the key's row in the [slot map](../decisions/0003-root-cards.md); the slots follow from the built-in map. For `aws-kms`: `{ "x509_arn", "openpgp_arn", "ssh_arn" }`, the ARNs of the primary keys, one for each kind of root the bundle uses ([the cloud root](/reference/kms-root/#what-ritueel-creates)). |
