@@ -237,7 +237,7 @@ The members of `evidence` for each key store:
 
 Ceremony records form one chain (0006 rule 8). The first ceremony record of a bundle has no `prev_record_sha256`; every other names the one before it, so each ceremony folder names the one before it.
 
-The checks of this part are built as library code (`internal/history`, with the readers in `internal/ceremony/files`), and the command `ritueel check history` is built on it. Its findings and exit codes are as written here, except the finding `root-returns`: it is decided ([record 0006](../decisions/0006-bundle-history-and-trust-files.md), rule 54) and not built yet, so the command does not report it today.
+The checks of this part are built as library code (`internal/history`, with the readers in `internal/ceremony/files`), and the command `ritueel check history` is built on it. Its findings and exit codes are as written here.
 
 `check history` walks the chain from the first ceremony record and reports each finding under one name:
 
