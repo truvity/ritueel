@@ -317,31 +317,35 @@ func TestACertificationOfFiveHundredAndTwelveBytesIsReadAndOneMoreByteIsRefusedB
 	pad := func(n int) func(*sigSpec) {
 		return func(sp *sigSpec) { sp.Hashed = append(sp.Hashed, sub{Type: 100, Data: make([]byte, n)}) }
 	}
-	sizeFor := func(n int) int { return len(bodyOf(t, m.sig(t, ceremony, pad(n)))) }
-	find := func(target int) int {
-		for n := 0; n < 600; n++ {
-			if sizeFor(n) == target {
-				return n
+	// The size of the body is not a function of the padding alone: the two numbers of the signature are
+	// written without their leading zeros, so a signature is one or two bytes shorter now and then, and
+	// the length of a subpacket grows by two bytes at one padding. So the packet itself is kept when its
+	// body has the size asked for, and a target that one pass of the padding steps over is met by
+	// another pass, which signs again.
+	packetOfSize := func(target int) []byte {
+		for pass := 0; pass < 200; pass++ {
+			for n := 0; n < 600; n++ {
+				if sig := m.sig(t, ceremony, pad(n)); len(bodyOf(t, sig)) == target {
+					return sig
+				}
 			}
 		}
 		t.Fatalf("no padding gives a body of %d bytes", target)
-		return 0
+		return nil
 	}
-	at, over := find(openpgp.MaxCertificationBody), find(openpgp.MaxCertificationBody+1)
 	for _, c := range []struct {
-		n     int
+		sig   []byte
 		words string
 		not   string
 	}{
-		{at, "four", "longer"},
-		{over, "longer than 512", ""},
+		{packetOfSize(openpgp.MaxCertificationBody), "four", "longer"},
+		{packetOfSize(openpgp.MaxCertificationBody + 1), "longer than 512", ""},
 	} {
-		sig := m.sig(t, ceremony, pad(c.n))
-		_, _, err := openpgp.CheckCertificationBytes(sig, m.keyPacket(), m.uid, m.at)
+		_, _, err := openpgp.CheckCertificationBytes(c.sig, m.keyPacket(), m.uid, m.at)
 		if err == nil || !strings.Contains(err.Error(), c.words) || (c.not != "" && strings.Contains(err.Error(), c.not)) {
-			t.Errorf("a body of %d bytes: error = %v, want the words %q", len(bodyOf(t, sig)), err, c.words)
+			t.Errorf("a body of %d bytes: error = %v, want the words %q", len(bodyOf(t, c.sig)), err, c.words)
 		}
-		assertKeyringRefused(t, fmt.Sprintf("a body of %d bytes", len(bodyOf(t, sig))), m.assemble(sig), wantOf(m), openpgp.ErrKeyringForm, c.words)
+		assertKeyringRefused(t, fmt.Sprintf("a body of %d bytes", len(bodyOf(t, c.sig))), m.assemble(c.sig), wantOf(m), openpgp.ErrKeyringForm, c.words)
 	}
 }
 

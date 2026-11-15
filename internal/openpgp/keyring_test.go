@@ -500,8 +500,13 @@ func TestTheBuilderAndTheReaderCallTheOneSharedCheckOfACertification(t *testing.
 	if !callsIn(t, "primary.go", "selfSign")["checkCertification"] {
 		t.Error("selfSign does not call checkCertification: the builder does not read back its own certification by the shared check")
 	}
-	if !callsIn(t, "keyring.go", "readCertificates")["checkCertification"] {
-		t.Error("readCertificates does not call checkCertification")
+	// The reader takes the check as a parameter: ReadKeyring hands it the shared check as a value, and the
+	// loop calls the parameter (see TestOnlyTheExportedPathsRecoverAndTheWorkIsInFunctionsThatDoNot).
+	if !identsIn(t, "keyring.go", "ReadKeyring", "checkCertification") {
+		t.Error("ReadKeyring does not hand checkCertification to the reader")
+	}
+	if !callsIn(t, "keyring.go", "readCertificates")["check"] {
+		t.Error("readCertificates does not call the check it is given")
 	}
 	// There is no second way to verify a certification: the signature is verified in one function.
 	for _, file := range []string{"primary.go", "keyring.go"} {

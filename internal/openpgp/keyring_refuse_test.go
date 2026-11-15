@@ -339,10 +339,11 @@ func TestAMixOfTestAndRealPrimariesIsRefusedAndTwoOfOneKindAreNot(t *testing.T) 
 		}
 		assertKeyringRefused(t, fmt.Sprintf("a mix %v", order), file, wantOf(ms...), openpgp.ErrKeyringForm, "mixes test and real primaries")
 	}
-	// The mix is refused after each certificate was read: a certificate that is not good is the first fault.
+	// The mix is found before the first certification is verified: a file that mixes and also holds a bad
+	// certification is refused for the mix, and no signature check is made.
 	test, real := newKeyringPrimary(t, "A", true), newKeyringPrimary(t, "B", false)
 	broken := real.assemble(real.sig(t, ceremony, func(sp *sigSpec) { sp.Type = 0x10 }))
-	assertKeyringRefused(t, "a mix with a bad certification", cat(test.good(t), broken), wantOf(test, real), openpgp.ErrKeyringForm, "certification 1")
+	assertNoCheckRefused(t, "a mix with a bad certification", cat(test.good(t), broken), wantOf(test, real), openpgp.ErrKeyringForm, "mixes test and real primaries")
 }
 
 func TestAUserIDThatIsNotTheOneShapeOfThePageIsRefusedAndShownOnlyAsAnEscape(t *testing.T) {

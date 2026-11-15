@@ -58,6 +58,22 @@ func wantFromFile(file []byte, mode uint8) []openpgp.KeyringEntry {
 	return want
 }
 
+// softSignatures is the signature packets of a file by the tests' own packet reader, none when the file
+// is not whole packets.
+func softSignatures(file []byte) [][]byte {
+	tags, bodies, ok := softPackets(file)
+	if !ok {
+		return nil
+	}
+	var out [][]byte
+	for i, tag := range tags {
+		if tag == tagSignature {
+			out = append(out, bodies[i])
+		}
+	}
+	return out
+}
+
 func hasDuplicate(want []openpgp.KeyringEntry) bool {
 	seenL, seenF := map[string]bool{}, map[string]bool{}
 	for _, e := range want {
@@ -120,10 +136,11 @@ func sha1OfKeyBody(b []byte) []byte {
 	return h.Sum(nil)
 }
 
-// FuzzReadKeyring gives ReadKeyring any bytes and a list made from the file. An error returns no
-// primary, is one of the three kinds and shows only printable ASCII. A success returns the primaries
-// of the list in its order, go-crypto reads the same fingerprints, and every certification is one that
-// the tests' own check of the page accepts.
+// FuzzReadKeyring gives the reader, through the inner function that has no recover, any bytes and a
+// list made from the file. An error returns no primary, is one of the three kinds and shows only
+// printable ASCII. A success returns the primaries of the list in its order, makes one signature check
+// for each certification, go-crypto reads the same fingerprints, no certification repeats another of its
+// certificate, and every certification is one that the tests' own check of the page accepts.
 func FuzzReadKeyring(f *testing.F) {
 	v := loadVectorKeyring(f)
 	a, b, z := newKeyringPrimary(f, "A", true), newKeyringPrimary(f, "B", true), newKeyringPrimary(f, "C", false)
@@ -139,6 +156,16 @@ func FuzzReadKeyring(f *testing.F) {
 		f.Add(repack(f, cat(a.cert(f), b.cert(f)), "new1"), mode)
 	}
 	good := a.good(f)
+	rep := a.sig(f, ceremony, nil)
+	repBody := splitPackets(f, rep)[0].Body
+	repOld, _ := packetIn("old2", tagSignature, repBody)
+	for _, c := range [][]byte{
+		a.assemble(rep, rep), a.assemble(rep, repOld), a.assemble(rep, a.sig(f, ceremony.Add(time.Second), nil), rep),
+		cat(a.good(f), b.good(f), z.good(f)), cat(a.good(f), z.good(f), b.good(f)), cat(a.chain(f, 3), b.chain(f, 2)),
+	} {
+		f.Add(c, uint8(0))
+		f.Add(c, uint8(1))
+	}
 	for _, c := range [][]byte{
 		nil, {0x00}, {0xC6, 0x00}, []byte("-----BEGIN PGP PUBLIC KEY BLOCK-----"), good[:len(good)-1], cat(good, []byte{0}),
 		cat(a.keyPacket(), a.uidPacket()), cat(a.keyPacket(), a.sig(f, ceremony, nil)),
@@ -155,9 +182,24 @@ func FuzzReadKeyring(f *testing.F) {
 		want := wantFromFile(file, mode)
 		fileBefore := bytes.Clone(file)
 		wantBefore := slices.Clone(want)
-		keys, err := openpgp.ReadKeyring(file, want)
+		// The reader without the net of a recover: a panic in it is a failure of this target, which the
+		// exported function would turn into an error and hide.
+		keys, err := openpgp.ReadKeyringNoRecover(file, want)
 		if !bytes.Equal(file, fileBefore) || !slices.Equal(want, wantBefore) {
-			t.Fatal("ReadKeyring changed its arguments")
+			t.Fatal("the reader changed its arguments")
+		}
+		// The counting reader runs the same inner function: it gives the same answer, and it never makes
+		// more signature checks than the file holds certifications.
+		ckeys, checked, cerr := openpgp.ReadKeyringCounting(file, want)
+		if (err == nil) != (cerr == nil) || (err != nil && err.Error() != cerr.Error()) || len(keys) != len(ckeys) {
+			t.Fatalf("the reader says %d primaries and %v, the counting reader %d and %v", len(keys), err, len(ckeys), cerr)
+		}
+		if n := len(softSignatures(file)); len(checked) > n {
+			t.Fatalf("%d signature checks for %d signature packets", len(checked), n)
+		}
+		// The exported function gives the same answer as the inner one: the net changes no result.
+		if ekeys, eerr := openpgp.ReadKeyring(file, want); (err == nil) != (eerr == nil) || (err != nil && err.Error() != eerr.Error()) || len(keys) != len(ekeys) {
+			t.Fatalf("the inner reader says %d primaries and %v, ReadKeyring %d and %v", len(keys), err, len(ekeys), eerr)
 		}
 		if err != nil {
 			if keys != nil {
@@ -177,6 +219,9 @@ func FuzzReadKeyring(f *testing.F) {
 			}
 			checkText(t, "fuzz", err)
 			return
+		}
+		if len(checked) != len(softSignatures(file)) {
+			t.Fatalf("an accepted file of %d certifications made %d signature checks", len(softSignatures(file)), len(checked))
 		}
 		if len(keys) != len(want) {
 			t.Fatalf("%d primaries for %d entries", len(keys), len(want))
@@ -198,12 +243,14 @@ func FuzzReadKeyring(f *testing.F) {
 		}
 		var keyPkt []byte
 		var uid string
+		var bodiesSince [][]byte
 		ps := splitPackets(t, file)
 		certs, test, plain := 0, 0, 0
 		for i, tag := range tags {
 			switch tag {
 			case tagPublicKey:
 				certs++
+				bodiesSince = nil
 				keyPkt = ps[i].Raw
 				if i+1 >= len(tags) || tags[i+1] != tagUserID || i+2 >= len(tags) || tags[i+2] != tagSignature {
 					t.Fatalf("accepted a certificate whose packets after the key are not 13, 2: tags % d", tags)
@@ -217,6 +264,10 @@ func FuzzReadKeyring(f *testing.F) {
 				}
 			case tagSignature:
 				checkAcceptedCertification(t, ps[i].Raw, keyPkt, uid)
+				if slices.ContainsFunc(bodiesSince, func(b []byte) bool { return bytes.Equal(b, bodies[i]) }) {
+					t.Fatal("accepted a certification that repeats another of its certificate")
+				}
+				bodiesSince = append(bodiesSince, bodies[i])
 			default:
 				t.Fatalf("accepted a packet of tag %d", tag)
 			}
@@ -253,13 +304,19 @@ func FuzzCheckCertification(f *testing.F) {
 			at = time.Unix(notBefore, 0).UTC()
 		}
 		before := bytes.Clone(pkt)
-		c1, l1, err := openpgp.CheckCertificationBytes(pkt, key, m.uid, at)
+		// The inner function has no recover: a panic in it fails this target.
+		c1, l1, err := openpgp.CheckCertificationBytesNoRecover(pkt, key, m.uid, at)
 		if !bytes.Equal(pkt, before) {
 			t.Fatal("the check changed its packet")
 		}
-		c2, l2, err2 := openpgp.CheckCertificationBytes(pkt, key, m.uid, at)
+		c2, l2, err2 := openpgp.CheckCertificationBytesNoRecover(pkt, key, m.uid, at)
 		if (err == nil) != (err2 == nil) || !c1.Equal(c2) || l1 != l2 {
 			t.Fatal("the check is not the same on a second call")
+		}
+		// The shared check with its net gives the same answer.
+		c3, l3, err3 := openpgp.CheckCertificationBytes(pkt, key, m.uid, at)
+		if (err == nil) != (err3 == nil) || (err != nil && err.Error() != err3.Error()) || !c1.Equal(c3) || l1 != l3 {
+			t.Fatal("the shared check with its net does not give the answer of the inner function")
 		}
 		if err != nil {
 			if !c1.IsZero() || l1 != 0 {

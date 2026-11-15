@@ -172,13 +172,20 @@ func (e certError) Error() string { return string(e) }
 //  6. go-crypto reads the packet, agrees on the creation time and the key expiration time, and the
 //     signature verifies with k over userID.
 //
-// It reads no clock: the expiry is not compared with the time of the check.
+// It reads no clock: the expiry is not compared with the time of the check. A panic is turned into
+// an error here; [checkCertificationWork] is the same check without that net.
 func checkCertification(pkt []byte, k *key, userID string, notBefore time.Time) (cert certification, err error) {
 	defer func() {
 		if r := recover(); r != nil {
 			cert, err = certification{}, certError("the certification could not be read")
 		}
 	}()
+	return checkCertificationWork(pkt, k, userID, notBefore)
+}
+
+// checkCertificationWork is the work of [checkCertification], with no recover, so that a panic in
+// it can be seen by a test of the package.
+func checkCertificationWork(pkt []byte, k *key, userID string, notBefore time.Time) (cert certification, err error) {
 	tag, body, rest, err := splitPacket(pkt)
 	if err != nil || tag != tagSignature || len(rest) != 0 {
 		return cert, certError("the bytes are not one signature packet")
