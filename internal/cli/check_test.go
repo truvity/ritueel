@@ -834,6 +834,11 @@ func faultCases() []faultCase {
 		{"a root key that left the root list and is on a later one", "root-returns", func(t *testing.T) *hbundle {
 			return hbReturned(t, "A")
 		}, []string{"root-returns"}},
+		{"a trust set whose number is not higher than the number before it", "trust-sequence", func(t *testing.T) *hbundle {
+			b := newHB(t, 2)
+			b.add(t, true, func(c *hbCeremony) { c.set = "2-3fa9c1df" })
+			return b
+		}, []string{"trust-sequence"}},
 		{"a folder with a space in history", "unexpected-name", func(t *testing.T) *hbundle {
 			b := newHB(t, 3)
 			if err := os.Mkdir(b.path("history/a b"), 0o755); err != nil {
@@ -1475,7 +1480,7 @@ func TestEveryRunClosesTheFolders(t *testing.T) {
 var pageOrder = []string{
 	"chain-broken", "fork", "record-off-chain", "record-not-canonical", "record-version-unknown", "record-invalid",
 	"transcript-digest", "file-digest", "file-missing", "file-unlisted", "trust-set-unlisted", "unfinished-ceremony",
-	"anchor-unknown", "root-returns", "unexpected-name", "unexpected-file",
+	"anchor-unknown", "root-returns", "trust-sequence", "unexpected-name", "unexpected-file",
 }
 
 func TestTheLibraryKeepsTheOrderOfThePage(t *testing.T) {

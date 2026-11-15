@@ -47,6 +47,7 @@ type hbCeremony struct {
 	digest     string // SHA-256 of record, "" when there is none
 	prev       string // the predecessor the record names, "" for none
 	noSet      bool   // the record lists no trust set, and none is written
+	extraSet   string // a second trust set that the record lists, with the files of the first ("" for none)
 }
 
 func (c hbCeremony) base() string { return "history/" + c.folder + "/" }
@@ -93,9 +94,14 @@ func (c *hbCeremony) seal() {
 // space.
 func hbRecord(c hbCeremony, prev string) string {
 	ns := fmt.Sprint(c.n)
-	artifacts := `[` +
-		`{"path":"trust/` + c.set + `/keys.txt","sha256":"` + hbSum(c.keys) + `"},` +
-		`{"path":"trust/` + c.set + `/root-list.json","sha256":"` + hbSum(c.rootList) + `"}]`
+	var paths []string
+	for _, set := range []string{c.set, c.extraSet} {
+		if set != "" {
+			paths = append(paths, `{"path":"trust/`+set+`/keys.txt","sha256":"`+hbSum(c.keys)+`"}`, `{"path":"trust/`+set+`/root-list.json","sha256":"`+hbSum(c.rootList)+`"}`)
+		}
+	}
+	slices.Sort(paths) // the entries are in order of the path, which is how the record is written
+	artifacts := `[` + strings.Join(paths, ",") + `]`
 	if c.noSet {
 		artifacts = `[]`
 	}
@@ -132,6 +138,10 @@ func hbWriteCeremony(t testing.TB, dir string, c hbCeremony) {
 	if !c.noSet {
 		hbWrite(t, dir, "trust/"+c.set+"/keys.txt", c.keys)
 		hbWrite(t, dir, "trust/"+c.set+"/root-list.json", c.rootList)
+		if c.extraSet != "" {
+			hbWrite(t, dir, "trust/"+c.extraSet+"/keys.txt", c.keys)
+			hbWrite(t, dir, "trust/"+c.extraSet+"/root-list.json", c.rootList)
+		}
 	}
 	if c.record != "" {
 		hbWrite(t, dir, b+"record.json", c.record)
