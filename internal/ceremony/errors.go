@@ -48,8 +48,10 @@ func (e *BackendError) Error() string {
 	return "refused by the key store: " + strings.Join(e.Reasons, ", ")
 }
 
-// ErrNotConfirmed is a ceremony that the person did not confirm: exit code 5. It is built with the
-// confirmation and is not returned by this version.
+// ErrNotConfirmed is a ceremony that the person did not confirm: exit code 5. [Run] returns it, and
+// has written nothing, for a missing, empty, malformed or wrong --confirm value, for a typed line that
+// is not the first eight characters of the plan digest, and for a typed confirmation when standard
+// input is not a terminal. A caller tells it with errors.Is.
 var ErrNotConfirmed = errors.New("not confirmed")
 
 // ErrNotBuilt is the kind of a refusal of something that the first apply of this version does not

@@ -28,6 +28,10 @@ var (
 	// ErrDiskMismatch is a file or a folder on disk that is not what the folder holds or wrote: a
 	// plan that another run wrote, a copy that changed, a file that is not whole.
 	ErrDiskMismatch = errors.New("the ceremony folder on disk is not what it should be")
+	// ErrAttemptExists is the fault of [Folder.Start] when attempt.json exists already: another run of
+	// the plan wrote its attempt first. The file that exists is untouched, and the call made no
+	// journal. The folder is stopped, as after any failed write.
+	ErrAttemptExists = errors.New("the ceremony folder holds an attempt already")
 	// ErrFolderStopped is the fault of a write that failed, and of every call after it. The
 	// folder never retries and deletes nothing; the files that exist stay.
 	ErrFolderStopped = errors.New("a write of the ceremony folder failed; the folder is stopped")
@@ -39,7 +43,7 @@ const maxCauseText = 300
 // FolderError is the error of the ceremony folder, of a journal that it made and of the record.
 // Its text is made once, when the error is made, in printable ASCII: the text of the cause goes
 // through jsonset.Escape and is cut, and no method of the cause is called again. The kind
-// (ErrOutOfOrder, ErrInvalidInput, ErrDiskMismatch, ErrFolderStopped, fs.ErrExist) and the cause
+// (ErrOutOfOrder, ErrInvalidInput, ErrDiskMismatch, ErrAttemptExists, ErrFolderStopped, fs.ErrExist) and the cause
 // stay reachable with errors.Is and errors.As.
 type FolderError struct {
 	// Op is the step: "write-plan", "adopt", "start", "end", "transcript", "record", "births.jsonl"
@@ -376,7 +380,9 @@ func ownCopies(op string, copies []wanted.File) ([]wanted.File, error) {
 // WritePlan makes the ceremony folder and writes plan.json and the copies of the wanted files
 // under wanted/, in this order: history/ when it is absent (it is read first: an existing one is
 // not made again), history/<name>/, plan.json, wanted/ with the folders of the paths of the copies,
-// and each copy, in the order of the plan's wanted list. plan is the canonical plan of the
+// and each copy, in the order of the plan's wanted list; then plan.json (at once) and each copy (after the
+// last one) are read back and compared with the bytes that were written, and a difference stops the
+// folder with [ErrDiskMismatch]. plan is the canonical plan of the
 // ceremony the folder names; copies are exactly the files that the plan lists, with the digests
 // it lists, and their bytes together are at most [maxCopiesBytes], half of what [Folder.Record]
 // reads in all, so that a folder made here can still be recorded. The call takes its own copy of
@@ -436,6 +442,13 @@ func (f *Folder) WritePlan(plan []byte, copies []wanted.File) error {
 		}
 		if err := f.w.WriteFile(f.dir()+"/"+files.WantedDir+"/"+w.Path, data[w.Path], fileMode); err != nil {
 			return f.stop(op, err, "a copy of a wanted file could not be written")
+		}
+	}
+	// Each copy is read back and compared with the bytes that were written, as plan.json is: a copy that
+	// is not what was written stops the call, before the attempt and before any key.
+	for _, w := range p.Wanted {
+		if err := f.verifyFile(op, files.WantedDir+"/"+w.Path, data[w.Path]); err != nil {
+			return err
 		}
 	}
 	f.plan, f.planSHA, f.parsed = own, files.Digest(own), p
@@ -633,7 +646,8 @@ func (f *Folder) walkWanted(op string) (found, dirs []string, err error) {
 // empty; all before the first key is born (record 0005, rule 10). a is the attempt: its ceremony is
 // the folder's, its plan digest is the digest of the plan that the folder holds, and a version of 0
 // is taken as 1. It returns the [Trace] that writes the two journals. An error returns no Trace;
-// a failed write stops the folder.
+// a failed write stops the folder. An attempt.json that exists already (another run of the plan was
+// first) is not replaced: the error satisfies [ErrAttemptExists] and fs.ErrExist, and no journal is made.
 func (f *Folder) Start(a files.Attempt) (Trace, error) {
 	if f == nil {
 		return nil, newError("start", ErrOutOfOrder, nil, "the folder was not made by NewFolder")
@@ -665,6 +679,9 @@ func (f *Folder) Start(a files.Attempt) (Trace, error) {
 		return nil, newError(op, ErrInvalidInput, nil, "the attempt is not what its reader reads")
 	}
 	if err := f.w.WriteFile(f.dir()+"/"+files.AttemptFile, b, fileMode); err != nil {
+		if errors.Is(err, fs.ErrExist) {
+			return nil, f.stop(op, errors.Join(ErrAttemptExists, err), "attempt.json exists already")
+		}
 		return nil, f.stop(op, err, "attempt.json could not be written")
 	}
 	if err := f.verifyFile(op, files.AttemptFile, b); err != nil {
@@ -704,7 +721,8 @@ func (f *Folder) End() error {
 
 // WriteTranscript writes transcript.txt after [Folder.End]. b is the text of [Console.Transcript];
 // it must pass the rules of the page: UTF-8, LF line endings, no terminal control sequence, and
-// the limits of the transcript.
+// the limits of the transcript. The file is read back and compared with b; a difference stops the
+// folder with [ErrDiskMismatch].
 func (f *Folder) WriteTranscript(b []byte) error {
 	if f == nil {
 		return newError("transcript", ErrOutOfOrder, nil, "the folder was not made by NewFolder")
@@ -724,6 +742,11 @@ func (f *Folder) WriteTranscript(b []byte) error {
 	}
 	if err := f.w.WriteFile(f.dir()+"/"+files.TranscriptFile, own, fileMode); err != nil {
 		return f.stop(op, err, "transcript.txt could not be written")
+	}
+	// The file is read back and compared with the bytes of the transcript: the record holds its digest,
+	// so a transcript on disk that is not what was printed stops the run before any artifact is written.
+	if err := f.verifyFile(op, files.TranscriptFile, own); err != nil {
+		return err
 	}
 	f.state = stateTranscribed
 	return nil
