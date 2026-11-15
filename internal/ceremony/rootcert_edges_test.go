@@ -7,11 +7,12 @@ import (
 	"crypto/elliptic"
 	"crypto/rand"
 	"crypto/x509"
-	"strings"
 	"testing"
 	"time"
 
 	"ritueel.id/ritueel/internal/ceremony"
+	"ritueel.id/ritueel/internal/keystore/software"
+	"ritueel.id/ritueel/internal/openpgp"
 	"ritueel.id/ritueel/internal/trustset"
 )
 
@@ -108,16 +109,22 @@ func TestAP256KeyWhosePinIsTheWantedPinIsStillRefused(t *testing.T) {
 }
 
 func TestAListThatNamesAnOpenPGPFingerprintIsNotTheListOfAnX509OnlyRoot(t *testing.T) {
+	// The writer of the trust set needs the OpenPGP certificates of the primaries when a root names
+	// a fingerprint, so the list is made with two real software primaries and is a good list in
+	// every other way: the one fault is the fingerprint that the first list must not hold.
 	keys := mkRootKeys("A", "B")
 	var roots []trustset.Root
 	certs := map[string][]byte{}
-	for i, k := range keys {
-		r := trustset.Root{Label: k.Label, X509SPKISHA256: k.Pin}
-		r.OpenPGPFingerprint = strings.Repeat(string(rune('a'+i)), 40)
-		roots = append(roots, r)
+	pgpCerts := map[string][]byte{}
+	for _, k := range keys {
+		cert, print := mkOpenPGPPrimary(t, k.Label)
+		roots = append(roots, trustset.Root{Label: k.Label, X509SPKISHA256: k.Pin, OpenPGPFingerprint: print})
 		certs[k.Label] = k.Cert.DER
+		pgpCerts[k.Label] = cert
 	}
-	d, err := trustset.NewDraft(trustset.Input{Sequence: 1, SignedAt: pfClock, Roots: roots, Certificates: certs})
+	d, err := trustset.NewDraft(trustset.Input{
+		Sequence: 1, SignedAt: pfClock, Roots: roots, Certificates: certs, OpenPGPCertificates: pgpCerts,
+	})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -135,6 +142,36 @@ func TestAListThatNamesAnOpenPGPFingerprintIsNotTheListOfAnX509OnlyRoot(t *testi
 	}
 	_, err = ceremony.CheckRootList(set, mkWantFor(keys, "A"))
 	mkWantArtifactError(t, err, "root list", "roots")
+}
+
+// mkOpenPGPPrimary makes a software primary for a label and returns its public certificate and its
+// fingerprint, the way the writer of the trust set wants them.
+func mkOpenPGPPrimary(t testing.TB, label string) (cert []byte, print string) {
+	t.Helper()
+	key, err := software.Generate()
+	if err != nil {
+		t.Fatalf("Generate: %v", err)
+	}
+	pub, ok := key.Public().(*ecdsa.PublicKey)
+	if !ok {
+		t.Fatalf("the public key is a %T", key.Public())
+	}
+	created := time.Date(2025, time.December, 1, 0, 0, 0, 0, time.UTC)
+	uid, err := openpgp.UserID("Example Test", label, "root@example.org", true)
+	if err != nil {
+		t.Fatalf("UserID: %v", err)
+	}
+	cert, err = openpgp.NewPrimary(rand.Reader, openpgp.PrimaryParams{
+		Key: key, CreationTime: created, CeremonyTime: pfClock, ExpiresAt: pfClock.AddDate(3, 0, 0), UserID: uid,
+	})
+	if err != nil {
+		t.Fatalf("NewPrimary: %v", err)
+	}
+	print, err = openpgp.Fingerprint(pub, created)
+	if err != nil {
+		t.Fatalf("Fingerprint: %v", err)
+	}
+	return cert, print
 }
 
 func TestATimeThatIsNotInTheFormOfRFC5280IsRefused(t *testing.T) {
