@@ -13,7 +13,6 @@
 //   (src/lib-status-html.ts).
 import StarlightPage from '@astrojs/starlight/components/StarlightPage.astro';
 import { Aside, Badge } from '@astrojs/starlight/components';
-import '../styles/status.css';
 import { docsHref } from '../../lib/docs-links.mjs';
 import { readGithub } from '../lib-github';
 import { milestoneNameDrift, milestoneRows } from '../lib-milestones';
@@ -89,8 +88,8 @@ const headings = [
       Counted from <a href="https://github.com/truvity/ritueel/tree/main/docs"><code>docs/</code></a> at the build. The{' '}
       <a href="https://github.com/truvity/ritueel/tree/main/docs/decisions">decision records</a> are counted with the status each one states, and <a href="/design/">the design in brief</a> says what they decide.
     </p>
-    <div class="ps-wrap not-content" tabindex="0" role="region" aria-labelledby="design-caption">
-      <table class="ps-table">
+    <div tabindex="0" role="region" aria-labelledby="design-caption">
+      <table>
         <caption id="design-caption">What exists in the repository</caption>
         <thead>
           <tr>
