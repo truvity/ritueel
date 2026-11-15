@@ -157,9 +157,11 @@ func parseTime(s string) (time.Time, bool) {
 // the list again. A list of another version than 1 gives an error that wraps ErrUnsupportedVersion,
 // any other fault an error that wraps strictjson.ErrMalformed.
 //
-// Two forms are not on the page and are the smallest refusal that keeps a list a set: a label or
-// a pin twice among roots, and a pin twice among removals, are refused; and an OpenPGP
-// fingerprint is 40 lower-case hexadecimal digits (the page says "hexadecimal digits").
+// Two forms are not on the page and are the smallest refusal that keeps a list a set: a label, a
+// pin or an OpenPGP fingerprint twice among roots, and a pin twice among removals, are refused (an
+// entry with no fingerprint is not compared; the detail of a fingerprint twice names the two
+// labels); and an OpenPGP fingerprint is 40 lower-case hexadecimal digits (the page says
+// "hexadecimal digits").
 func ParseList(data []byte) (*List, error) {
 	var raw listJSON
 	if err := strictjson.Unmarshal(data, &raw, strictjson.Options{MaxBytes: MaxBytes}); err != nil {
@@ -191,6 +193,7 @@ func ParseList(data []byte) (*List, error) {
 	}
 	labels := map[string]bool{}
 	pins := map[string]bool{}
+	prints := map[string]string{} // fingerprint -> label of the first entry that has it
 	for i, r := range raw.Roots {
 		at := func(name string) jsonset.Path {
 			return path(jsonset.Member("roots"), jsonset.Element(i), jsonset.Member(name))
@@ -213,6 +216,13 @@ func ParseList(data []byte) (*List, error) {
 		}
 		if pins[root.X509SPKISHA256] {
 			return nil, jsonset.Errorf(at("x509_spki_sha256"), "the pin appears twice")
+		}
+		if root.OpenPGPFingerprint != "" {
+			if first, twice := prints[root.OpenPGPFingerprint]; twice {
+				return nil, jsonset.Errorf(at("openpgp_fingerprint"),
+					"the fingerprint appears twice: the entries with the labels %s and %s have the same one", first, root.Label)
+			}
+			prints[root.OpenPGPFingerprint] = root.Label
 		}
 		labels[root.Label], pins[root.X509SPKISHA256] = true, true
 		l.Roots = append(l.Roots, root)

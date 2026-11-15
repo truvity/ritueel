@@ -187,6 +187,7 @@ func TestCheck5TheListMustFollowTheRulesAndMembers(t *testing.T) {
 		sub("a pin that is empty", pinOf(w.a), `"x509_spki_sha256":""`),
 		sub("a pin twice in roots", pinOf(w.b), pinOf(w.a)),
 		sub("a label twice in roots", `"label":"B"`, `"label":"A"`),
+		sub("a fingerprint twice in roots", `"openpgp_fingerprint":"`+w.b.fp()+`"`, `"openpgp_fingerprint":"`+fpA+`"`),
 		sub("a label of two letters", `"label":"A"`, `"label":"AB"`),
 		sub("a label in lower case", `"label":"A"`, `"label":"a"`),
 		sub("an empty label", `"label":"A"`, `"label":""`),
