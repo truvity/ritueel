@@ -75,7 +75,7 @@ Each protected header has exactly these members:
 |---|---|
 | `alg` | `ES384`: ECDSA on P-384 with SHA-384 (RFC 7518, section 3.4), the signature as the 96 bytes of `r` and `s`. |
 | `kid` | The `x509_spki_sha256` of the signing root key. Two signatures never have the same `kid`. |
-| `x5c` | A list of one: the signing root key's certificate, Base64 DER. It carries the public key; it is never trusted as a certificate. |
+| `x5c` | A list of one: the certificate that the signing root key had before this ceremony, Base64 DER, so that the plan can name the signing input (a key born in this ceremony has only its new one). It carries the public key; it is never trusted as a certificate. |
 | `typ` | `root-list+json`, so that a signature by the same key over another kind of document is not taken for a root list (RFC 8725, section 3.11). |
 
 ### Who signs
