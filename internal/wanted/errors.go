@@ -11,8 +11,9 @@ import (
 // of fixed words and numbers. Any text that came from the file is escaped and cut before it is in Msg.
 type Error struct {
 	// Path is the path of the file in the bundle, with "/" as the separator: "ritueel.yaml" or
-	// "want/delegations/example.yaml". It can hold a name that came from a caller, so [Error.Error]
-	// escapes it.
+	// "want/delegations/example.yaml". It can hold a name that came from a folder or from a caller,
+	// which can hold a space, a backslash or bytes that are not UTF-8, so [Error.Error] escapes it
+	// exactly (see [jsonset.EscapeExact]) and two different names never give one text.
 	Path string
 	// Line is the line of the file, counted from 1, or 0 when the fault has no line.
 	Line int
@@ -22,12 +23,15 @@ type Error struct {
 	cause error
 }
 
-// Error returns the path, the line and the text, in printable ASCII.
+// Error returns the path, the line and the text, in printable ASCII. The path is written with
+// [jsonset.EscapeExact]: a space as \x20, a backslash doubled, a byte that is not UTF-8 as its own
+// \xNN, so that two different names never give one text (record 0006, rule 46). The text is written
+// with [jsonset.Escape].
 func (e *Error) Error() string {
 	if e == nil {
 		return "wanted: no error"
 	}
-	s := jsonset.Escape(e.Path)
+	s := jsonset.EscapeExact(e.Path)
 	if e.Line > 0 {
 		s += ":" + strconv.Itoa(e.Line)
 	}

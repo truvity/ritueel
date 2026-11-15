@@ -177,7 +177,7 @@ func TestListRootsRefusesWhatIsNotARootFileAndReturnsNothing(t *testing.T) {
 		// A name that starts with ".rt-" is not refused: it is skipped (list_temporary_test.go).
 		{"a name that only looks like a leftover", file(".rtx.yaml", lstRootText), "want/roots/.rtx.yaml", "lower-case"},
 		{"a name of 64 characters", file(strings.Repeat("a", 64)+".yaml", lstRootText), "want/roots/" + strings.Repeat("a", 64) + ".yaml", "1 to 63"},
-		{"a space in the name", file("a b.yaml", lstRootText), "want/roots/a b.yaml", "lower-case"},
+		{"a space in the name", file("a b.yaml", lstRootText), `want/roots/a\x20b.yaml`, "lower-case"},
 		{"a hyphen first", file("-a.yaml", lstRootText), "want/roots/-a.yaml", "lower-case"},
 		{"a folder with a good name", func(t *testing.T, roots string) {
 			if err := os.Mkdir(filepath.Join(roots, "a.yaml"), 0o755); err != nil {

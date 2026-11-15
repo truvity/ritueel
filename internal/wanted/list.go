@@ -114,7 +114,9 @@ func listDelegationNames(fsys fsx.FS, s *Settings) ([]string, error) {
 // [fsx.TempPrefix], compared without case, is skipped before any other check and does not count
 // toward [MaxFiles] (record 0006, rule 45); the number of names that fsx lists is bounded by
 // [fsx.MaxDirEntries]. Every other entry must be a regular file called NAME.yaml with a NAME that
-// valid accepts.
+// valid accepts. An error names the entry with its real name in the path; [Error.Error] writes that
+// name with the exact escape of package jsonset, so a space, a backslash or a byte that is not UTF-8 in
+// it is shown in a way that two different names never share.
 func listNames(fsys fsx.FS, dir string, valid func(string) error) ([]string, error) {
 	if fsys == nil {
 		return nil, errorf(dir, 0, "there is no folder to read it from")
