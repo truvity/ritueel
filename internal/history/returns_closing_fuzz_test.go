@@ -79,9 +79,13 @@ func FuzzCheckClosing(f *testing.F) {
 }
 
 // Many records that list many sets: every set stands at the place of every record that lists it, and
-// the run still ends in bounded time with the findings that the walk makes.
+// the run still ends in bounded time with the findings that the walk makes. The bundle stays below
+// the limit of the places (MaxSetPlaces): 100 records of 1,000 sets are 100,000 places.
 func TestRootReturnsManyRecordsThatListManySetsAreBounded(t *testing.T) {
-	const records, sets = 200, 1000
+	const records, sets = 100, 1000
+	if records*sets > MaxSetPlaces {
+		t.Fatalf("%d places are above the limit of %d", records*sets, MaxSetPlaces)
+	}
 	var names []string
 	for i := 0; i < sets; i++ {
 		names = append(names, fmt.Sprintf("%d-aaaaaaaa", i+1))

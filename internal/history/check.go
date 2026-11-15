@@ -55,6 +55,14 @@ const (
 	// to read it: 26, the letters A to Z of the labels. A list with more is not read, and is
 	// anchor-unknown.
 	MaxRootsPerList = 26
+	// MaxSetPlaces is the most places at which the trust sets of a bundle stand, all sets together,
+	// for the finding root-returns: 131,072. A set that records list stands at one place for each
+	// different record before a record that lists it, and is judged at each, so the work and the
+	// memory of the finding grow with this number and not with the number of sets. A run that meets
+	// more stops with [ErrTooMuch]. It is counted when a record notes a new place of a set, before
+	// the chain is walked. In a bundle that follows the rules each set stands at one place, so
+	// this limit is far away.
+	MaxSetPlaces = 1 << 17
 )
 
 // ErrNotBundle is returned when the folder has no history/ and has no ritueel.yaml: it is not a
@@ -63,8 +71,9 @@ const (
 var ErrNotBundle = errors.New("the folder has no history folder and no ritueel.yaml: it is not a bundle")
 
 // ErrTooMuch is returned when a run would read more than [MaxReadBytes] bytes or list more than
-// [MaxFileReads] different files, or look at more than [MaxWalkEntries] names. The check is not
-// done, and is never a clean one.
+// [MaxFileReads] different files, look at more than [MaxWalkEntries] names, keep more than
+// [MaxRootEntries] entries of roots, or note more than [MaxSetPlaces] places of trust sets. The
+// check is not done, and is never a clean one.
 var ErrTooMuch = errors.New("the bundle holds more than a check reads")
 
 func errTooManyNames(limit int) error {
@@ -166,6 +175,8 @@ type checker struct {
 	wrong      []wrongEntry
 	walked     int
 	walkLimit  int
+	places     int // the places of trust sets noted so far: see noteListed
+	placeLimit int
 }
 
 // Check walks the history of the bundle at fsys and reports what it finds: the chain of the
@@ -179,13 +190,15 @@ func Check(ctx context.Context, fsys fsx.FS) (*Report, error) {
 }
 
 // limits are the limits of a run that a test can lower: the constants above are what [Check]
-// passes. A walkEntries of 0 is [MaxWalkEntries].
+// passes. A walkEntries of 0 is [MaxWalkEntries], a rootEntries of 0 is [MaxRootEntries] and a
+// setPlaces of 0 is [MaxSetPlaces].
 type limits struct {
 	readBytes   int64
 	fileReads   int
 	perCode     int
 	walkEntries int
-	rootEntries int // 0 is MaxRootEntries
+	rootEntries int
+	setPlaces   int
 }
 
 func check(ctx context.Context, fsys fsx.FS, lim limits) (*Report, error) {
@@ -205,9 +218,13 @@ func check(ctx context.Context, fsys fsx.FS, lim limits) (*Report, error) {
 		onChain:    map[string]bool{},
 		depth:      map[string]int{},
 		walkLimit:  lim.walkEntries,
+		placeLimit: lim.setPlaces,
 	}
 	if ck.walkLimit == 0 {
 		ck.walkLimit = MaxWalkEntries
+	}
+	if ck.placeLimit == 0 {
+		ck.placeLimit = MaxSetPlaces
 	}
 	if err := ck.run(); err != nil {
 		return nil, err
@@ -517,7 +534,9 @@ func (ck *checker) listedFiles(info *recInfo, rec *files.Record) error {
 			return err
 		}
 		if name, ok := trustSetOf(a.Path); ok && ck.sets[name] {
-			ck.noteListed(name, info.prev, rec)
+			if err := ck.noteListed(name, info.prev, rec); err != nil {
+				return err
+			}
 		}
 	}
 	if rec.Command == files.CommandApply {
@@ -528,8 +547,10 @@ func (ck *checker) listedFiles(info *recInfo, rec *files.Record) error {
 }
 
 // noteListed notes that the record rec, whose predecessor is prev, lists a file of the trust set
-// name.
-func (ck *checker) noteListed(name, prev string, rec *files.Record) {
+// name. Each different prev is one place of the set, and it is counted when it is new, so that the
+// notes are bounded by [MaxSetPlaces] and not by the number of records. The run ends with
+// [ErrTooMuch] when the limit is passed.
+func (ck *checker) noteListed(name, prev string, rec *files.Record) error {
 	want := &anchorWant{key: prev, prev: prev}
 	if rec.Command == files.CommandClose {
 		want = &anchorWant{
@@ -549,7 +570,14 @@ func (ck *checker) noteListed(name, prev string, rec *files.Record) {
 	if w.by == nil {
 		w.by = map[string]struct{}{}
 	}
-	w.by[prev] = struct{}{}
+	if _, seen := w.by[prev]; !seen {
+		ck.places++
+		if ck.places > ck.placeLimit {
+			return fmt.Errorf("%w: the trust sets stand at more than %d places in the chain of records (MaxSetPlaces)", ErrTooMuch, ck.placeLimit)
+		}
+		w.by[prev] = struct{}{}
+	}
+	return nil
 }
 
 // trustSetOf returns the name of the trust set that a path of a record is a file of: the path

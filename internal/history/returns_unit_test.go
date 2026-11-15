@@ -30,7 +30,7 @@ func TestReturnDetailEscapesAndCutsTheNamesOfSets(t *testing.T) {
 		want string
 	}{{39, name(39)}, {40, name(40)}, {41, name(40) + "..."}, {200, name(40) + "..."}} {
 		got := returnDetail(returned{k: k, pinCase: true, known: true, holder: name(c.n), doubt: []string{name(c.n)}})
-		if want := "among trust/" + c.want + "; pin held on trust/" + c.want; !strings.HasSuffix(got, want) {
+		if want := "among trust/" + c.want + " (record 0006, rule 54); pin held on trust/" + c.want; !strings.HasSuffix(got, want) {
 			t.Errorf("a name of %d bytes: %q does not end with %q", c.n, got, want)
 		}
 	}
