@@ -261,7 +261,7 @@ A person writes `ritueel.yaml` and one strict YAML file for each card, root and 
 | File | One for each | Holds | Decided by |
 |---|---|---|---|
 | `ritueel.yaml` | bundle | The settings ([below](/reference/bundle/#ritueelyaml)). | [0006](../decisions/0006-bundle-history-and-trust-files.md) rule 5 |
-| `want/cards/NAME.yaml` | card | The card's serial; its kind, which is `root`, `day-to-day`, `server` or `rehearsal` and never changes; the holder; and the rows of other bundles that the card declares. | [0003](../decisions/0003-root-cards.md) rules 5, 10 and 11 |
+| `want/cards/NAME.yaml` | card | The card's serial and kind, which is `root`, `day-to-day`, `server` or `rehearsal` and never changes; the applications the bundle uses; and the rows of other bundles that the card declares ([the card file](/reference/cards/#the-card-file-wantcardsnameyaml)). | [0003](../decisions/0003-root-cards.md) rules 5, 10 and 11 |
 | `want/roots/NAME.yaml` | root | The kind of the root (X.509, OpenPGP or SSH CA); its keys, each with a label and a place (a card named by its card file, or a cloud key); for a key, what it replaces and until when, and an optional retire date with a reason; the revocation reasons to keep ready; and whether it is a test root. The number of keys in the file is the number of root keys wanted. A key listed with no history is born by `apply`. | [0007](../decisions/0007-changing-and-losing-a-root.md) rules 3, 5, 6, 10, 21 and 23; [0005](../decisions/0005-a-ceremony-and-where-it-runs.md) rules 4, 20 and 26 |
 | `want/delegations/NAME.yaml` | delegation | The type (`x509-intermediate`, `openpgp-subkey` or `ssh-ca-key`), the root it is under, and its limits ([below](/reference/bundle/#a-delegation-file)). A delegation is a declared name under a root for a key that does daily work. | [0006](../decisions/0006-bundle-history-and-trust-files.md) rule 27; [0008](../decisions/0008-a-persons-own-key.md) rule 9 |
 | `want/openpgp.yaml` | bundle | The user IDs of the OpenPGP root. | [0008](../decisions/0008-a-persons-own-key.md) rule 16 (that a person edits the user IDs; the file and its members are Proposed, [#18](https://github.com/truvity/ritueel/issues/18)) |
@@ -271,7 +271,7 @@ These parts are fixed with the code ([issue #8](https://github.com/truvity/ritue
 
 The rules a request is checked against are split between `policy` in `ritueel.yaml` and each delegation's file ([issue #9](https://github.com/truvity/ritueel/issues/9)).
 
-A card file never holds another bundle's name. A row of another bundle is declared as `use: other-bundle` with its row ([issue #11](https://github.com/truvity/ritueel/issues/11)).
+A card file never holds another bundle's name. A row of another bundle is declared in `other_rows`; the words `use: other-bundle` are the card map's ([issue #11](https://github.com/truvity/ritueel/issues/11)).
 
 Who owns a user ID of the OpenPGP root, whether the user IDs are one file for the root or one file for each object (the decision asks one file for each object), and how an old user ID is marked to retire, are open ([issue #18](https://github.com/truvity/ritueel/issues/18)). Where a test root is marked, for example in its wanted root file, and how a test bundle starts, is open ([issue #136](https://github.com/truvity/ritueel/issues/136)).
 :::
