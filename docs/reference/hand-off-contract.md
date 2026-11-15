@@ -23,17 +23,17 @@ The key is made where it will live (a YubiKey slot, a card's OpenPGP applet, an 
 
 The least a system that holds an X.509 intermediate needs from a root is a certificate for its request. That is the **floor** of this contract: the requester sends a PKCS#10 request, as in [the request](/reference/hand-off-contract/#the-request), and gets back a certificate. Any certificate authority that can be configured to the profile below serves the floor; ritueel serves the floor and the rest of the contract. The floor is X.509 only: an OpenPGP subkey and an SSH CA key need the full contract.
 
-**What the CA issues.** The rows of [What is issued](/reference/hand-off-contract/#what-is-issued) that the requester checks, and nothing critical besides. In the terms of a CA tool:
+**What the CA issues.** The rows of [What is issued](/reference/hand-off-contract/#what-is-issued) that the requester checks on the floor (version 3, the subject, the public key, the four requested extensions and the validity), and nothing critical besides. In the terms of a CA tool:
 
 - Copy the subject and the public key of the request, unchanged.
 - Copy the requested extensions with their criticality: basic constraints (critical, `cA` true, path length 0), key usage (critical, `keyCertSign`, and `cRLSign` when asked), name constraints (critical, at least one permitted subtree), and extended key usage (required in the request). Add no other critical extension.
 - Make it valid for 13 calendar months from the time of issue.
 
-The serial number, the form of the key identifiers and the issuing key are the CA's own; ritueel uses P-384 and `ecdsa-with-SHA384`, and a CA on the floor should too. [The test vectors' README](https://github.com/truvity/ritueel/blob/main/testdata/hand-off/README.md) has an `openssl` recipe that issues a floor certificate for a vector's request.
+The serial number, the form of the key identifiers and the issuing key are the CA's own; ritueel uses P-384 and `ecdsa-with-SHA384`, and a CA on the floor should too. The requester accepts a CA certificate with an ECDSA key on P-256, P-384 or P-521, an Ed25519 key, or an RSA key of 2048 bits or more, signed with SHA-256, SHA-384 or SHA-512, or with Ed25519. It refuses any other key or signature, a SHA-1 or MD5 signature included. [The test vectors' README](https://github.com/truvity/ritueel/blob/main/testdata/hand-off/README.md) has an `openssl` recipe that issues a floor certificate for a vector's request.
 
-**What the requester checks on the floor.** Of [its checks](/reference/hand-off-contract/#what-the-requester-checks-before-it-installs), those that need nothing but the certificate: that it verifies to a CA certificate the operator installed (`issuer`), that it holds the requester's own key (`key-mismatch`), the profile (`profile`) and the validity (`validity`). The version, `request_sha256`, the digests of `result.json` and the trust sequence cannot be checked, because there is no result file. The requester reports those checks as not run, never as passed, and reports that nobody but itself checked where its key lives: the certifier's checks 6 to 8 are not run on the floor ([principle 4](/principles/)).
+**What the requester checks on the floor.** Of [its checks](/reference/hand-off-contract/#what-the-requester-checks-before-it-installs), those that need nothing but the certificate: that it is signed by a CA certificate the operator installed (`issuer`), that it holds the requester's own key (`key-mismatch`), the profile (`profile`) and the validity (`validity`). The version, `request_sha256`, the digests of `result.json` and the trust sequence cannot be checked, because there is no result file. The requester reports those checks as not run, never as passed, and reports that nobody but itself checked where its key lives: the certifier's checks 6 to 8 are not run on the floor ([principle 4](/principles/)).
 
-**Trust on the floor.** The requester's anchors are the CA certificates the operator installed, and nothing else. A signed [root list](/reference/root-list/) is optional: without one there is **no trust sequence and no protection against rollback**, so an older file of anchors put back in place is accepted, as a TLS client accepts the file it is given.
+**Trust on the floor.** The requester's anchors are the CA certificates the operator installed, and nothing else. The certificate must be signed by one of them itself. The requester builds no chain through other certificates, so the operator installs the CA certificate that signs the answer. A signed [root list](/reference/root-list/) is optional: without one there is **no trust sequence and no protection against rollback**, so an older file of anchors put back in place is accepted, as a TLS client accepts the file it is given.
 
 **The full contract** is the floor plus the proof file and its evidence, the result file, the reason codes, and the trust sequence with the signed root list. A requester that sends a proof file gets all of it from ritueel.
 
@@ -193,7 +193,7 @@ Touch policy and form factor are read and recorded, and the reference policy doe
 
 ### What is issued
 
-The profile of the certificate. The requester can check every row.
+The profile of the certificate. On the full contract the requester checks every row, and the extensions stand in the order of the rows: basic constraints, key usage, name constraints, extended key usage, subject key identifier, authority key identifier.
 
 | Field | Value |
 |---|---|
@@ -224,6 +224,8 @@ Each failure gives one of these codes. They belong to the requester and are not 
 | The subject, basic constraints, key usage, name constraints and extended key usage are exactly what it asked. No extension outside the profile is critical. | `profile` |
 | The validity is the length it expects (for example 12 to 14 months) and has not ended. | `validity` |
 | The digests in `result.json` match the files. | `malformed` |
+
+On the full contract the requester refuses with `profile` a certificate that has any extension besides the six of the profile, critical or not. It refuses with `profile` a certificate that differs from a row of What is issued in the version, the serial, the key identifiers, the order of the extensions, or a validity of other than 13 calendar months. It refuses with `issuer` a certificate that is not signed with `ecdsa-with-SHA384` or that names another issuer. A validity outside the length the requester expects gives `validity` first.
 
 ## OpenPGP subkey
 
@@ -342,7 +344,7 @@ The requester reads the list from where the holder publishes it, with the host r
 | `issuer` | For X.509, the SHA-256 of the DER `SubjectPublicKeyInfo` of the issuing root. For OpenPGP, the fingerprint of the primary. For an SSH CA key, the SHA-256 of the DER `SubjectPublicKeyInfo` of the root that signed the list. |
 | `trust_sequence` | The sequence number of the trust set (root list, CA bundle and keyring) that the answer belongs to. The requester must hold a root list at least this recent before it installs. |
 
-A refused answer holds no artifacts and no secret. The codes:
+A refused answer holds `handoff`, `type`, `request_sha256`, `outcome`, `reasons` and `trust_sequence`, and no other member: no artifacts, no dates, no issuer and no secret. The codes:
 
 | Code | Meaning |
 |---|---|
@@ -358,7 +360,7 @@ A refused answer holds no artifacts and no secret. The codes:
 | `policy` | A rule of the certifier's policy refuses it, or the request asks for what this page does not allow. |
 | `declined` | The person at the ceremony did not confirm. |
 
-The answer does not say which part of a policy failed. The certifier's output and its ceremony record do.
+The answer does not say which part of a policy failed. The certifier's output and its ceremony record do. A requester that reads an answer with `outcome` `refused` installs nothing. It checks that the answer is well formed, that the version is the one it sent and that the answer is for its request. Then it shows the `reasons` and runs no other check. A refusal by the certifier is not a fault of the answer.
 
 **Trust files.** The CA bundle, the keyring, the signed root list, the SSH CA key list and the CRLs are not part of this contract. ritueel builds them and publishes none of them; the user's own pipeline publishes them ([record 0006](../decisions/0006-bundle-history-and-trust-files.md)). The contract fixes one thing about them: they carry the **trust sequence**, one integer that grows by one each time any of them changes, and `trust_sequence` in the answer says which one the answer needs. The root list's own format, and the CA bundle's, are in [the root list reference](/reference/root-list/), the SSH CA key list's in [its reference](/reference/ssh-ca-key-list/), and the CRLs in [theirs](/reference/crl/), each with vectors made from the same test roots as these. The one thing ritueel sends out is a public OpenPGP key, to the keyservers the holder lists ([record 0011](../decisions/0011-publishing-and-what-to-do-after-a-ceremony.md)); the contract does not carry it.
 
