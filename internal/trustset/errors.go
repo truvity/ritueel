@@ -13,13 +13,29 @@ import (
 var (
 	// ErrParams is wrapped by an error for a parameter that is wrong, or for a value from
 	// outside that breaks the form of the pages: a number, a label, a pin, a time, a certificate,
-	// a document over its limit, a signer that is nil or has no usable certificate.
+	// a document over its limit, a draft, a set or a writer that is nil or empty. A signer that is
+	// nil or has no usable certificate is ErrSigners, not ErrParams.
 	ErrParams = errors.New("trustset: invalid parameter")
 	// ErrSign is wrapped by an error for a signer that failed, returned a signature of the wrong
-	// size or one that does not verify, or panicked, and for a document that was signed but that
-	// the reader of the page refuses.
+	// size or one that does not verify, or panicked, and for an after function that failed or
+	// panicked. A set that the reader of the page refuses, after it was signed, is ErrSelf.
 	ErrSign = errors.New("trustset: signing failed")
+	// ErrSigners is wrapped by an error of Draft.Sign for signers that are not the signers the
+	// list needs: one missing, one too many, two of the one-of group, a signer for a revoked key
+	// whose authorisation stands for its signature, a certificate with another pin than the label's,
+	// a nil signer, a label twice. No key has been asked when it is returned.
+	ErrSigners = errors.New("trustset: the signers are not the signers the list needs")
+	// ErrReturns is wrapped by an error of NewDraft for a list that adds a root key that left
+	// (record 0006, rule 54). Its text starts with CodeRootReturns.
+	ErrReturns = errors.New("trustset: a root key that left comes back")
+	// ErrSelf is wrapped by an error of NewDraft or Draft.Sign when the reader of the page refuses
+	// what the builder itself wrote. It is a fault of the builder, not of the caller.
+	ErrSelf = errors.New("trustset: the builder's own output was refused by the reader")
 )
+
+// CodeRootReturns is the reason code of record 0006, rule 54, for a list that adds a root key that
+// left. The text of an error that wraps ErrReturns holds it.
+const CodeRootReturns = "root-returns"
 
 // fail returns an error that wraps kind and no other kind of this package. The text is fixed
 // words and numbers; a text that comes from outside is passed through [jsonset.Escape] or
