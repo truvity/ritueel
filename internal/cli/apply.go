@@ -70,17 +70,24 @@ func runApply(ctx context.Context, c *Call) (*Result, error) {
 	return planOnlyIn(ctx, c, dir)
 }
 
-// planOnlyIn is apply --plan-only on the bundle folder dir.
+// planOnlyIn is apply --plan-only on the bundle folder dir. The folder is opened once, with one
+// writer: its FS is what Find reads, and the writer writes the plan folder into it, so that what was
+// judged and what is written are one folder even when a parent of dir is swapped between two opens.
+// The key directory is checked against the same path of the folder that this open used. The writer is
+// released before the plan is shown, and on every path out.
 func planOnlyIn(ctx context.Context, c *Call, dir string) (*Result, error) {
-	fsys, err := fsx.OpenFS(dir)
+	w, err := fsx.Open(dir)
 	if err != nil {
 		return nil, err
 	}
+	released := false
 	defer func() {
-		// The folder was opened to read it only; nothing was written, so a failed close loses nothing.
-		_ = fsys.Close()
+		if !released {
+			// Nothing was written on a path that gets here, so a failed close loses nothing.
+			_ = w.Close()
+		}
 	}()
-	found, err := ceremony.Find(ctx, ceremony.FindInput{FS: fsys})
+	found, err := ceremony.Find(ctx, ceremony.FindInput{FS: w.FS})
 	if err != nil {
 		return nil, applyError(err)
 	}
@@ -88,6 +95,7 @@ func planOnlyIn(ctx context.Context, c *Call, dir string) (*Result, error) {
 		return &Result{ExitCode: ExitOK, Text: nothingToApply}, nil
 	}
 	if c.FlagSet(flagKeyDir) {
+		// The key directory is judged against the path text of the bundle, not the opened folder; holding it to the folder by identity comes with the part that makes keys.
 		if err := ceremony.CheckKeyDir(c.FlagString(flagKeyDir), dir); err != nil {
 			return nil, applyError(err)
 		}
@@ -102,7 +110,12 @@ func planOnlyIn(ctx context.Context, c *Call, dir string) (*Result, error) {
 	if err != nil {
 		return nil, applyError(err)
 	}
-	if err := writePlan(dir, plan, found); err != nil {
+	err = writePlan(w, plan, found)
+	released = true
+	if cerr := w.Close(); cerr != nil && err == nil {
+		err = fmt.Errorf("the bundle folder could not be released: %w", cerr)
+	}
+	if err != nil {
 		return nil, err
 	}
 	path := "history/" + plan.Name + "/" + files.PlanFile
@@ -121,19 +134,10 @@ func planOnlyIn(ctx context.Context, c *Call, dir string) (*Result, error) {
 	}, nil
 }
 
-// writePlan writes the plan folder of the bundle at dir with ceremony.Folder.WritePlan, the only
-// writer of this command, and releases the folder. A name that is taken, which is a plan made in the
-// same second, is a failure that says so, and the folder that exists is untouched.
-func writePlan(dir string, plan *ceremony.PlanOut, found *ceremony.Found) (err error) {
-	w, err := fsx.Open(dir)
-	if err != nil {
-		return err
-	}
-	defer func() {
-		if cerr := w.Close(); cerr != nil && err == nil {
-			err = fmt.Errorf("the bundle folder could not be released: %w", cerr)
-		}
-	}()
+// writePlan writes the plan folder with ceremony.Folder.WritePlan, the only writer of this command,
+// into the folder that w holds; the caller releases w. A name that is taken, which is a plan made in
+// the same second, is a failure that says so, and the folder that exists is untouched.
+func writePlan(w *fsx.Writer, plan *ceremony.PlanOut, found *ceremony.Found) error {
 	folder, err := ceremony.NewFolder(w, plan.Name)
 	if err != nil {
 		return err
