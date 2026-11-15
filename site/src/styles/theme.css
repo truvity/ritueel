@@ -1,0 +1,97 @@
+/* The colours of the whole site: neutral greys and one green accent, set through Starlight's documented
+   variables (--sl-color-*). Starlight reads them in two blocks (dark: :root, light: :root[data-theme='light']);
+   so does this file. Dark: ground #0a0a0a, surface #171717, border #2a2a2a, text #f5f5f5, accent #3dd68c.
+   Light: the green is darker (#097350 for fills, #07603f for text) and so is the muted grey (#595959), so that
+   every text and ground pair reaches 4.5 to 1 in both themes. Blue and violet are for the note and tip
+   notes and badges; the accent is green. The syntax colours of code blocks are in astro.config.mjs. */
+
+:root {
+  color-scheme: dark;
+
+  /* greys, dark to light ground: white is the strongest text */
+  --sl-color-white: #f5f5f5;
+  --sl-color-gray-1: #d4d4d4;
+  --sl-color-gray-2: #a3a3a3; /* secondary text, and the running text of a page */
+  --sl-color-gray-3: #949494; /* the muted text: the least bright text of the site */
+  --sl-color-gray-4: #666666; /* the boundary of a control */
+  --sl-color-gray-5: #2a2a2a; /* border */
+  --sl-color-gray-6: #171717; /* surface */
+  --sl-color-black: #0a0a0a; /* ground */
+
+  /* the accent: one green for links, focus, buttons, selection and the highlight of a search; "high" is the text colour, "low" the tinted ground */
+  --sl-color-accent: #3dd68c;
+  --sl-color-accent-high: #3dd68c;
+  --sl-color-accent-low: #143024;
+
+  /* the other colour families of Starlight (its notes and badges) */
+  --sl-color-green: var(--sl-color-accent);
+  --sl-color-green-high: var(--sl-color-accent-high);
+  --sl-color-green-low: var(--sl-color-accent-low);
+  --sl-color-blue: #5aa9f0;
+  --sl-color-blue-high: #8cc4f7;
+  --sl-color-blue-low: #16283a;
+  --sl-color-orange: #d9a441;
+  --sl-color-orange-high: #e6c07b;
+  --sl-color-orange-low: #2e2820;
+  --sl-color-red: #f07178;
+  --sl-color-red-high: #f07178;
+  --sl-color-red-low: #301d1e;
+  --sl-color-purple: #a98bf0;
+  --sl-color-purple-high: #c4b0f5;
+  --sl-color-purple-low: #251f38;
+
+  --sl-color-text: var(--sl-color-gray-2);
+  --sl-color-text-accent: var(--sl-color-accent-high);
+  --sl-color-text-invert: var(--sl-color-accent-low);
+  --sl-color-bg: var(--sl-color-black);
+  --sl-color-bg-nav: var(--sl-color-gray-6);
+  --sl-color-bg-sidebar: var(--sl-color-gray-6);
+  --sl-color-bg-inline-code: var(--sl-color-gray-5);
+  --sl-color-bg-accent: var(--sl-color-accent);
+  --sl-color-hairline: var(--sl-color-gray-5);
+  --sl-color-hairline-light: var(--sl-color-gray-5);
+  --sl-color-hairline-shade: var(--sl-color-black);
+  --sl-color-backdrop-overlay: rgba(10, 10, 10, 0.72);
+}
+
+:root[data-theme='light'] {
+  color-scheme: light;
+
+  --sl-color-white: #171717;
+  --sl-color-gray-1: #262626;
+  --sl-color-gray-2: #525252;
+  --sl-color-gray-3: #595959;
+  --sl-color-gray-4: #878787;
+  --sl-color-gray-5: #e4e4e0;
+  --sl-color-gray-6: #efefec;
+  --sl-color-gray-7: #ffffff;
+  --sl-color-black: #f7f7f5;
+
+  --sl-color-accent: #097350;
+  --sl-color-accent-high: #07603f;
+  --sl-color-accent-low: #e3f1ea;
+
+  --sl-color-orange: #a67c00;
+  --sl-color-orange-high: #7a5700;
+  --sl-color-orange-low: #f3ecd9;
+  --sl-color-red: #c43c44;
+  --sl-color-red-high: #a32630;
+  --sl-color-red-low: #f9e8e8;
+  --sl-color-blue: #2f6fb5;
+  --sl-color-blue-high: #1f4f8a;
+  --sl-color-blue-low: #e3edf8;
+  --sl-color-purple: #7a56c4;
+  --sl-color-purple-high: #5a3a9e;
+  --sl-color-purple-low: #eee8f8;
+
+  --sl-color-text-accent: var(--sl-color-accent);
+  --sl-color-text-invert: var(--sl-color-black);
+  --sl-color-bg-nav: var(--sl-color-gray-7);
+  --sl-color-bg-sidebar: var(--sl-color-bg);
+  --sl-color-bg-inline-code: var(--sl-color-gray-6);
+  --sl-color-bg-accent: var(--sl-color-accent);
+  --sl-color-hairline: var(--sl-color-gray-5);
+  --sl-color-hairline-light: var(--sl-color-gray-5);
+  --sl-color-hairline-shade: var(--sl-color-gray-5);
+  --sl-color-backdrop-overlay: rgba(23, 23, 23, 0.4);
+}

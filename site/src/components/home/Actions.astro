@@ -1,5 +1,7 @@
 ---
-// The call-to-action links, after the two answers. Same look as the former hero buttons.
+// The call-to-action links of the start page, after the heading: Starlight's own LinkButton, one for
+// each action, as its Hero draws the buttons of a page that lists them in its front matter.
+import { LinkButton } from '@astrojs/starlight/components';
 interface Props {
   actions: { text: string; href: string; variant?: 'primary' | 'secondary' | 'minimal' }[];
 }
@@ -7,43 +9,20 @@ const { actions } = Astro.props;
 ---
 
 <p class="not-content actions">
-  {actions.map((a) => <a href={a.href} class:list={['btn', a.variant ?? 'primary']}>{a.text}</a>)}
+  {actions.map((a) => <LinkButton href={a.href} variant={a.variant ?? 'primary'}>{a.text}</LinkButton>)}
 </p>
 
 <style>
+  /* Inline, so that the links of Destinations.astro follow on the same line and wrap with it. */
   .actions {
-    margin: 2rem 0 0;
-    display: flex;
+    display: inline-flex;
     flex-wrap: wrap;
     align-items: center;
-    gap: 0.7rem 0.9rem;
+    gap: 0.5rem;
+    margin: 0 1.5rem 0.5rem 0;
+    vertical-align: top;
   }
-  .btn {
-    display: inline-block;
-    padding: 0.65rem 1.25rem;
-    border: 2px solid var(--rt-ink);
-    border-radius: 0.3rem;
-    font-weight: 650;
-    line-height: 1.2;
-    text-decoration: none;
-    color: var(--sl-color-white);
-  }
-  .btn.primary {
-    background: var(--rt-ink);
-    color: var(--rt-ink-on);
-  }
-  .btn.primary:hover { background: color-mix(in srgb, var(--rt-ink) 85%, var(--sl-color-white)); }
-  .btn.secondary:hover { background: color-mix(in srgb, var(--rt-ink) 14%, transparent); }
-  .btn.minimal {
-    border-color: transparent;
-    padding-inline: 0.4rem;
-    text-decoration: underline;
-    text-decoration-color: var(--rt-ink);
-    text-decoration-thickness: 2px;
-    text-underline-offset: 0.2em;
-  }
-  .btn:focus-visible {
-    outline: 3px solid var(--sl-color-text-accent);
-    outline-offset: 3px;
+  .actions :global(.sl-link-button) {
+    margin: 0;
   }
 </style>

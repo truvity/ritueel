@@ -36,6 +36,34 @@ const docsParts = {
   },
 };
 
+// The syntax colours of a code block (Starlight's default themes) have blues, purples and teal; the
+// site has one green accent and neutral greys (src/styles/theme.css). A colour in the blue to purple
+// range (hue 165 to 300 degrees, and not grey) becomes the accent green of the theme's own kind; the
+// other colours of a token (greys, amber, red) are kept. Only the code blocks of the hand-off
+// contract page are affected today. The green is the accent of theme.css (its night and its day
+// value): the line below repeats them, because the highlighter works on values, not on variables.
+const CODE_ACCENT = { dark: '#3dd68c', light: '#07603f' };
+function codeSyntaxColours(theme) {
+  for (const rule of theme.settings ?? []) {
+    const fg = rule.settings?.foreground;
+    const m = typeof fg === 'string' ? /^#([0-9a-f]{6})/i.exec(fg) : null;
+    if (!m) continue;
+    const [r, g, b] = [0, 2, 4].map((i) => parseInt(m[1].slice(i, i + 2), 16) / 255);
+    const max = Math.max(r, g, b);
+    const min = Math.min(r, g, b);
+    const d = max - min;
+    if (d === 0) continue;
+    const l = (max + min) / 2;
+    const sat = d / (1 - Math.abs(2 * l - 1));
+    const hue = (max === r ? ((g - b) / d) % 6 : max === g ? (b - r) / d + 2 : (r - g) / d + 4) * 60;
+    const h = (hue + 360) % 360;
+    if (sat > 0.15 && h >= 165 && h <= 300) rule.settings.foreground = rule.scope ? CODE_ACCENT[theme.type === 'light' ? 'light' : 'dark'] : theme.type === 'light' ? '#262626' : '#d4d4d4';
+  }
+  // The plain text of a block is neutral, not the slate of the default themes.
+  if (theme.colors?.['editor.foreground']) theme.colors['editor.foreground'] = theme.type === 'light' ? '#262626' : '#d4d4d4';
+  return theme;
+}
+
 // https://ritueel.id. The custom domain and its DNS are managed outside this repository; the
 // site is static and is served from the root by a Cloudflare Worker with static assets
 // (site/wrangler.jsonc).
@@ -69,17 +97,11 @@ export default defineConfig({
         { tag: 'meta', attrs: { property: 'og:site_name', content: 'ritueel' } },
         { tag: 'meta', attrs: { property: 'og:type', content: 'website' } },
       ],
-      // PageSidebar draws "On this page" as the dropdown at the top of the content below 100rem and
-      // as a column at the right from 100rem; TwoColumnContent leaves the column to it;
-      // src/styles/layout.css sets the wide column and the breakpoint; the route middleware drops
-      // the list from pages with fewer than two headings.
-      components: {
-        TwoColumnContent: './src/components/TwoColumnContent.astro',
-        PageSidebar: './src/components/PageSidebar.astro',
-        // The home page's headline and links (the only page with `hero:` front matter).
-        Hero: './src/components/Hero.astro',
-      },
-      customCss: ['./src/styles/layout.css', './src/styles/home.css'],
+      // The look is Starlight's own: its parts and templates, with the colours and the fonts set through
+      // its variables (theme.css, fonts.css). site.css holds the few rules a page is broken without,
+      // each with its reason. No component of Starlight is replaced.
+      expressiveCode: { customizeTheme: codeSyntaxColours },
+      customCss: ['./src/styles/theme.css', './src/styles/fonts.css', './src/styles/site.css'],
       routeMiddleware: './src/route-middleware.ts',
       // The menu is six entries: only the target (docs/contributing/pages.md, "What is published").
       // The pages are those of site/published.txt; a slug that is not on the list fails the build.

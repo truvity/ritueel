@@ -1,9 +1,9 @@
 ---
 // The places of the site menu, as a row of links under the buttons (How it works and the demo have
-// their buttons, so they are not in the row). The home page has no sidebar (template: splash), and
+// their buttons, so they are not in the row). The start page has no sidebar (template: splash), and
 // so no menu button on a phone; this row is its menu, and Glossary and The design are reached from
-// the home page only through it. Keep it in step with `sidebar` in astro.config.mjs. Each link is at
-// least 44 px tall, and the row wraps.
+// the start page only through it. Keep it in step with `sidebar` in astro.config.mjs.
+import { LinkButton } from '@astrojs/starlight/components';
 interface Props {
   links: { text: string; href: string }[];
 }
@@ -12,18 +12,20 @@ const { links } = Astro.props;
 
 <nav class="not-content destinations" aria-label="Sections of the site">
   <ul>
-    {links.map((l) => <li><a href={l.href}>{l.text}</a></li>)}
+    {links.map((l) => <li><LinkButton href={l.href} variant="secondary">{l.text}</LinkButton></li>)}
   </ul>
 </nav>
 
 <style>
   .destinations {
-    margin: 1.1rem 0 0;
+    display: inline-block;
+    margin: 0 0 0.5rem;
+    vertical-align: top;
   }
   ul {
     display: flex;
     flex-wrap: wrap;
-    gap: 0.5rem 0.6rem;
+    gap: 0.5rem;
     margin: 0;
     padding: 0;
     list-style: none;
@@ -32,22 +34,7 @@ const { links } = Astro.props;
     margin: 0;
     padding: 0;
   }
-  a {
-    display: inline-flex;
-    align-items: center;
-    min-height: 2.75rem;
-    padding: 0 0.9rem;
-    border: 1px solid var(--sl-color-gray-5);
-    border-radius: 0.3rem;
-    color: var(--sl-color-white);
-    text-decoration: none;
-  }
-  a:hover {
-    border-color: var(--rt-ink);
-    background: color-mix(in srgb, var(--rt-ink) 14%, transparent);
-  }
-  a:focus-visible {
-    outline: 3px solid var(--sl-color-text-accent);
-    outline-offset: 3px;
+  .destinations :global(.sl-link-button) {
+    margin: 0;
   }
 </style>
