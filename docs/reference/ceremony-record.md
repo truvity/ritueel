@@ -5,7 +5,7 @@ sidebar:
   order: 5
 ---
 
-*Not built yet. This is version 1 of the files that a ceremony of [record 0005](../decisions/0005-a-ceremony-and-where-it-runs.md) write into a ceremony folder, under the rules of [record 0006](../decisions/0006-bundle-history-and-trust-files.md). The command `ritueel check history` reads them; nothing writes them yet. The code is [issue #9](https://github.com/truvity/ritueel/issues/9), in M2; it follows this page.*
+*Built for one case. This is version 1 of the files that a ceremony of [record 0005](../decisions/0005-a-ceremony-and-where-it-runs.md) writes into a ceremony folder, under the rules of [record 0006](../decisions/0006-bundle-history-and-trust-files.md). The command `ritueel apply` writes them for the first `apply` of an x509 test root, run directly or from a saved plan ([the command](/reference/cli/#built-so-far)), and the command `ritueel check history` reads them. Every other ceremony, the trace area of the stick and the command `close` are not built. The code is [issue #9](https://github.com/truvity/ritueel/issues/9), in M2; it follows this page.*
 
 A cite such as (0005 rule 12) names the rule that decides the statement. A statement marked Proposed is not decided and names its open issue. What is later is listed at the end.
 
@@ -138,11 +138,17 @@ Each member of `signatures`:
 
 The **plan digest** is the SHA-256 of the bytes of the plan file, shown as 64 lower-case hexadecimal digits.
 
-- **A person** sees the plan in words and its digest, and types **the first eight characters** of the digest, and nothing more. ritueel compares them with the digest's first eight, without regard to case. A key press is not accepted (0005 rule 9).
+- **A person** sees the plan in words and its digest, and types **the first eight characters** of the digest, and nothing more. ritueel compares them with the digest's first eight, without regard to case. A key press is not accepted (0005 rule 9). The typed line is read only when standard input is a terminal: a line that comes through a pipe is not a person, so without `--confirm` and without a terminal the confirmation is refused and nothing is read.
 - **A script** passes `--confirm DIGEST` with all 64 digits, which it can only have by reading the plan ritueel wrote (`--plan-only --output json` prints it, see [Commands](/reference/cli/#machine-readable-output)).
 - **A wrong or missing confirmation is refused before the attempt is written** (exit code 5). Nothing is signed and no attempt is written.
 
 `ritueel apply PLAN` executes a plan made earlier (it asks for the first eight characters of the digest; `--confirm DIGEST` is the flag for scripts: 0005 rule 13). **A plan is bound to the state it was made against:** ritueel refuses it with the reason code `plan-stale` (exit code 3) when the newest trust sequence is no longer `base_sequence`, the end of the history is no longer `last_record_sha256`, or any file of `inputs` has another digest. The stick carries no wanted files (0005 rule 30), so on a stick only the end of the history and the trust sequence can be compared. A confirmation never replaces a touch.
+
+A saved plan is refused with exit code 3, before anything is written, for four reasons. `plan-stale` is the one above. `plan-version` is a plan that another copy of ritueel made: the version, the system and architecture, or the digest of the program that runs is not the one in the member `ritueel` of the plan. `plan-used` is a plan whose folder already holds an attempt or a ceremony record, so the plan was started or run, and ritueel does not run it again. `clock-behind` is a clock that shows a time before the plan's `ceremony_time`, because every signature would carry a time that has not come.
+
+:::note[Proposed]
+The reasons `plan-version`, `plan-used` and `clock-behind` are proposed, awaiting the maintainer's word, and are built as proposed.
+:::
 
 :::note[Proposed]
 What `apply PLAN` does when a wanted file changed after the plan was made, and an age limit of a plan, are not decided ([#142](https://github.com/truvity/ritueel/issues/142)). A flag `--only` that a script must pass to confirm is not decided either ([#143](https://github.com/truvity/ritueel/issues/143)). None of the three is a rule.
@@ -199,7 +205,7 @@ The ceremony record is the file `record.json`, written last in its ceremony fold
 | `root`, `root_reason` | As in the plan. Absent in a closing record. | No |
 | `slot_map_version` | For a root key on a card: the version of the slot map ([record 0003](../decisions/0003-root-cards.md), rule 4). Absent for a key file or a cloud key. | No |
 | `confirmation` | `{ "by", "at" }`: `typed` or `flag`, and when (0005 rule 9). | No. `at` is not required; when it is there it is checked. |
-| `ran_on` | Proposed. Where the ceremony ran: `workstation` or `offline-system`. Every ceremony record says it (0005 rule 3); the name and the two values are proposed. Whether a second-device check was declared, and what was compared, is open ([#30](https://github.com/truvity/ritueel/issues/30)). | No |
+| `ran_on` | Proposed. Where the ceremony ran: `workstation` or `offline-system`. Every ceremony record says it (0005 rule 3); the name and the two values are proposed. Whether a second-device check was declared, and what was compared, is open ([#30](https://github.com/truvity/ritueel/issues/30)). Built as proposed: `apply` writes `workstation`, and `offline-system` is not written yet. | No |
 | `limit_shown` | The first `apply` only: true, because it prints the [accepted limit](../decisions/0005-a-ceremony-and-where-it-runs.md) (0005 rule 20). | No |
 | `requests` | One for each request, below. | No |
 | `wanted` | The plan's list of wanted files, by digest (0006 rule 8). | Yes for `apply`, and the list is not empty. |
