@@ -19,7 +19,7 @@ const (
 
 // rootMembers is the table of the members of a wanted root file that this version reads. The page lists what
 // the file holds, and gives no more member names (issue #8): the keys, the retirement date and the revocation
-// reasons are read from the first apply on.
+// reasons are read by a later version; the first apply makes two keys of each root by default (record 0005, rule 20).
 var rootMembers = []member{
 	{name: "version", required: true},
 	{name: "kind", required: true, enum: rootKindEnum},
@@ -61,7 +61,7 @@ func LoadRoot(fsys fsx.FS, name string) (*Root, error) {
 }
 
 // ParseRoot reads the bytes of the wanted root file NAME: version 1, kind (x509, openpgp or ssh) and the
-// optional test. Any other member is an error that says the other members are read from the first apply on.
+// optional test. Any other member is an error that says that a later version reads the other members.
 func ParseRoot(name string, data []byte) (*Root, error) {
 	path := rootPath(name)
 	if err := ValidName(name); err != nil {
@@ -78,7 +78,7 @@ func ParseRoot(name string, data []byte) (*Root, error) {
 			known = known || t.name == k.Value
 		}
 		if !known {
-			return nil, d.fail(k, "the member \""+shown(k.Value)+"\" is not read yet: a root file holds version, kind and test now, and its keys, the retirement date and the revocation reasons are read from the first apply on")
+			return nil, d.fail(k, "the member \""+shown(k.Value)+"\" is not read yet: a root file holds version, kind and test now, and its keys, the retirement date and the revocation reasons are read by a later version, and the first apply makes two keys of each root by default")
 		}
 	}
 	top, err := d.mappingOf(d.root, "", rootMembers)
