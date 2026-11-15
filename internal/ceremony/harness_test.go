@@ -205,14 +205,14 @@ func (f *spyFile) Sync() error {
 // bundle is a folder with ritueel.yaml at its root, a writer over it that goes through the
 // recording file system, and a second, plain handle to read it back with.
 type bundle struct {
-	t   *testing.T
+	t   testing.TB
 	dir string
 	w   *fsx.Writer
 	r   *rec
 	raw fsx.FS
 }
 
-func newBundle(t *testing.T) *bundle {
+func newBundle(t testing.TB) *bundle {
 	t.Helper()
 	dir := t.TempDir()
 	if err := os.WriteFile(filepath.Join(dir, "ritueel.yaml"), []byte(manifestText), 0o644); err != nil {
@@ -223,7 +223,7 @@ func newBundle(t *testing.T) *bundle {
 
 // openBundle opens dir with a new writer; the Nth changing call of that writer fails when failAt
 // is N.
-func openBundle(t *testing.T, dir string, failAt int) *bundle {
+func openBundle(t testing.TB, dir string, failAt int) *bundle {
 	t.Helper()
 	inner, err := fsx.OpenFS(dir)
 	if err != nil {
@@ -467,7 +467,7 @@ func (s *spec) artifactPaths() []string {
 
 // flow runs one synthetic ceremony through a Folder, step by step.
 type flow struct {
-	t   *testing.T
+	t   testing.TB
 	b   *bundle
 	s   *spec
 	f   *ceremony.Folder
@@ -479,7 +479,7 @@ type flow struct {
 	next int
 }
 
-func newFlow(t *testing.T, b *bundle, s *spec) *flow {
+func newFlow(t testing.TB, b *bundle, s *spec) *flow {
 	t.Helper()
 	f, err := ceremony.NewFolder(b.w, s.name)
 	if err != nil {

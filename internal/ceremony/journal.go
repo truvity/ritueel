@@ -23,17 +23,22 @@ const (
 // judges the file, and appends it only when the reader accepts it and the line is the canonical
 // form of what it read; so a journal holds nothing that [files.ReadBirthLine] or
 // [files.ReadSignatureLine] would refuse. The lines of the journal of signatures are numbered
-// from 1 without a gap, and a label is born once. The state is behind a lock, so two goroutines
+// from 1 without a gap, and a key is born once: the unit is the pair of label and purpose, because
+// one label names an X.509 key and an OpenPGP primary together (docs/reference/bundle.md, "root.json"),
+// and the two are two births. The state is behind a lock, so two goroutines
 // that append keep every line whole and in one order.
 type fileJournal struct {
 	j    *fsx.Journal
 	kind journalKind
 	op   string
 
-	mu     sync.Mutex
-	count  int
-	labels map[string]bool
+	mu    sync.Mutex
+	count int
+	born  map[birthKey]bool
 }
+
+// birthKey is the unit of a birth: a label and the purpose of the key.
+type birthKey struct{ label, purpose string }
 
 // Append checks line and writes it. It copies the line first, so a caller that changes its bytes
 // after the call cannot change what was checked.
@@ -47,7 +52,7 @@ func (j *fileJournal) Append(line []byte) error {
 	if j.count >= MaxJournalLines {
 		return newError(j.op, ErrInvalidInput, nil, "a journal takes at most %d lines", MaxJournalLines)
 	}
-	label, err := j.check(own)
+	key, err := j.checkKey(own)
 	if err != nil {
 		return err
 	}
@@ -61,38 +66,46 @@ func (j *fileJournal) Append(line []byte) error {
 		return newError(j.op, ErrFolderStopped, err, "the line could not be written")
 	}
 	j.count++
-	if label != "" {
-		if j.labels == nil {
-			j.labels = make(map[string]bool)
+	if key != (birthKey{}) {
+		if j.born == nil {
+			j.born = make(map[birthKey]bool)
 		}
-		j.labels[label] = true
+		j.born[key] = true
 	}
 	return nil
 }
 
-// check judges a line and returns the label of a birth line, "".
+// check judges a line and returns the label of a birth line, "" for a line of the other journal.
 func (j *fileJournal) check(line []byte) (label string, err error) {
+	k, err := j.checkKey(line)
+	return k.label, err
+}
+
+// checkKey judges a line and returns the key of a birth line, and the zero key for a line of the
+// other journal.
+func (j *fileJournal) checkKey(line []byte) (key birthKey, err error) {
 	switch j.kind {
 	case kindBirths:
 		l, err := files.ReadBirthLine(line)
 		if err != nil {
-			return "", newError(j.op, ErrInvalidInput, err, "the line is refused by its reader")
+			return birthKey{}, newError(j.op, ErrInvalidInput, err, "the line is refused by its reader")
 		}
-		if j.labels[l.Label] {
-			return "", newError(j.op, ErrInvalidInput, nil, "the key %s is born twice", l.Label)
+		k := birthKey{l.Label, l.Purpose}
+		if j.born[k] {
+			return birthKey{}, newError(j.op, ErrInvalidInput, nil, "the key %s is born twice for the purpose %s", l.Label, l.Purpose)
 		}
-		return l.Label, nil
+		return k, nil
 	case kindSignatures:
 		l, err := files.ReadSignatureLine(line)
 		if err != nil {
-			return "", newError(j.op, ErrInvalidInput, err, "the line is refused by its reader")
+			return birthKey{}, newError(j.op, ErrInvalidInput, err, "the line is refused by its reader")
 		}
 		if l.N != int64(j.count)+1 {
-			return "", newError(j.op, ErrInvalidInput, nil, "the signature n=%d comes after %d lines; the next is n=%d", l.N, j.count, j.count+1)
+			return birthKey{}, newError(j.op, ErrInvalidInput, nil, "the signature n=%d comes after %d lines; the next is n=%d", l.N, j.count, j.count+1)
 		}
-		return "", nil
+		return birthKey{}, nil
 	}
-	return "", newError(j.op, ErrOutOfOrder, nil, "there is no journal")
+	return birthKey{}, newError(j.op, ErrOutOfOrder, nil, "there is no journal")
 }
 
 // journalLines splits the bytes of a journal into its whole lines. ok is false when the file ends

@@ -71,6 +71,15 @@ type RecordIn struct {
 	// under history/ is an artifact, and two paths that differ only in the case of letters are
 	// refused, wherever they stand in the list.
 	Artifacts []string
+	// Revocations lists, in the order of the plan's signatures, one entry for each signature of the
+	// plan of the kind primary-revocation (the digest of the packet, with its reason) and one for
+	// each of the kind root-removal (the digest of the text of the removal authorisation, with the
+	// reason root-removal). It holds only digests: never a signature. It is required when the plan
+	// has a signature of the kind primary-revocation, and optional when it has none; when it is
+	// given, [Folder.Record] reads every file it relies on back from the disk and holds each
+	// entry to the journal and to the root.json of its label (see [Folder.Record]). It is copied
+	// first, like the rest of the input.
+	Revocations []files.RevocationEntry
 }
 
 // Record writes record.json, the last file of the ceremony folder, and returns its bytes (the
@@ -99,7 +108,18 @@ type RecordIn struct {
 //     public_key_sha256 of the line of births.jsonl for the label of the root (an empty X.509
 //     fingerprint is not compared);
 //   - the plan names requests (the record of an answer is not written yet) or the input is not as
-//     [RecordIn] says.
+//     [RecordIn] says;
+//   - the root names an OpenPGP fingerprint that is not the key of the line of signatures.jsonl for
+//     the self-signature of its label, or the plan has such a signature for the label and the root
+//     names no OpenPGP fingerprint;
+//   - the list of revocations is missing and the plan has a signature of the kind primary-revocation;
+//     or is given and is not exactly one entry for each signature of the plan of the kind
+//     primary-revocation and root-removal, in the order of the plan, with the label (the subject of
+//     the signature) and the reason of that signature (root-removal for a removal authorisation); or
+//     an entry of a revocation signature has a digest other than the signature_sha256 of the line of
+//     signatures.jsonl for it; or the root.json of a label that the list names is not among the
+//     artifacts, is refused by files.ReadRootJSON, or holds for that reason a digest other than the
+//     entry's (revocations[reason] for a signature, removal_sha256 for root-removal).
 //
 // The record it writes has the member signature_sha256 in each signature of the plan, and the key
 // that signed in each signature the plan did not name it for. The artifacts stand in the byte
@@ -158,6 +178,7 @@ func copyRecordIn(in RecordIn) RecordIn {
 		in.Confirmation = &c
 	}
 	in.Artifacts = slices.Clone(in.Artifacts)
+	in.Revocations = slices.Clone(in.Revocations)
 	return in
 }
 
@@ -211,6 +232,14 @@ func checkRecordIn(op string, in RecordIn) error {
 	if len(in.Artifacts) > maxArtifacts {
 		return newError(op, ErrInvalidInput, nil, "%d artifacts are more than the %d that a record lists", len(in.Artifacts), maxArtifacts)
 	}
+	if len(in.Revocations) > files.MaxRevocations {
+		return newError(op, ErrInvalidInput, nil, "%d revocation entries are more than the %d that a record lists", len(in.Revocations), files.MaxRevocations)
+	}
+	for i, e := range in.Revocations {
+		if err := files.CheckRevocationEntry(e); err != nil {
+			return newError(op, ErrInvalidInput, err, "the revocation entry %d is refused by its reader", i+1)
+		}
+	}
 	return nil
 }
 
@@ -241,9 +270,17 @@ type recordReader struct {
 	f     *Folder
 	op    string
 	total int
-	// pins holds, for each label of the birth journal, the public_key_sha256 of its line. It is
-	// filled by births, from the bytes that were read.
+	// pins holds, for each label of the birth journal, the public_key_sha256 of its line of the
+	// purpose x509-root: the pin of the X.509 key. It is filled by births, from the bytes that were
+	// read.
 	pins map[string]string
+	// selfKeys holds, for each label that the plan gives a signature of the kind
+	// primary-self-signature, the key of the line of signatures.jsonl for it: the fingerprint of the
+	// primary that signed. It is filled by signatures, from the bytes that were read.
+	selfKeys map[string]string
+	// rootJSONs holds the bytes of each root.json among the artifacts, by label. It is filled by
+	// artifacts, from the bytes that were read, so that a file is read once.
+	rootJSONs map[string][]byte
 }
 
 // read reads the file at path (relative to the bundle) once, through fsx, and counts it.
@@ -329,6 +366,9 @@ func (r *recordReader) build(in RecordIn) (*files.Record, error) {
 	if err := r.artifacts(in.Artifacts, rec); err != nil {
 		return nil, err
 	}
+	if err := r.revocations(in.Revocations, rec); err != nil {
+		return nil, err
+	}
 	return rec, nil
 }
 
@@ -405,24 +445,28 @@ func (r *recordReader) journals(p *files.Plan, rec *files.Record) error {
 
 // births compares the lines of the birth journal with the births of the plan: one line for each
 // birth of the plan, in the order of the plan, with the same value in each of the members label,
-// purpose, store and place that the plan gives. A missing line, a line too many and a line for a
-// label that the plan does not list are an error. The plan always names the label of a birth.
+// purpose, store and place that the plan gives. A pair of label and purpose is born once; a label
+// may be born twice, once for each purpose. A missing line, a line too many and a line for a label
+// that the plan does not list are an error. The plan always names the label of a birth.
 func (r *recordReader) births(p *files.Plan, lines [][]byte) error {
 	if len(lines) != len(p.Births) {
 		return r.mismatch("births.jsonl holds %d lines and the plan lists %d births", len(lines), len(p.Births))
 	}
-	seen := make(map[string]bool, len(lines))
+	seen := make(map[birthKey]bool, len(lines))
 	r.pins = make(map[string]string, len(lines))
 	for i, raw := range lines {
 		l, err := files.ReadBirthLine(raw)
 		if err != nil {
 			return newError(r.op, ErrDiskMismatch, err, "a line of births.jsonl is refused by its reader")
 		}
-		if seen[l.Label] {
-			return r.mismatch("births.jsonl holds the key %s twice", l.Label)
+		k := birthKey{l.Label, l.Purpose}
+		if seen[k] {
+			return r.mismatch("births.jsonl holds the key %s twice for the purpose %s", l.Label, l.Purpose)
 		}
-		seen[l.Label] = true
-		r.pins[l.Label] = l.PublicKeySHA256
+		seen[k] = true
+		if l.Purpose == purposeX509Root {
+			r.pins[l.Label] = l.PublicKeySHA256
+		}
 		planned, ok := p.Births[i].(map[string]any)
 		if !ok {
 			return r.mismatch("birth %d of the plan is not an object", i+1)
@@ -486,6 +530,12 @@ func (r *recordReader) root(in *files.PlanRoot, p *files.Plan) error {
 	if pin, born := r.pins[in.Label]; born && in.X509 != "" && in.X509 != pin {
 		return newError(r.op, ErrInvalidInput, nil, "the X.509 fingerprint of the root is %s and the line of births.jsonl for the key %s has %s", jsonset.Quote(in.X509), jsonset.Quote(in.Label), jsonset.Quote(pin))
 	}
+	// A root whose label has a self-signature of a primary in this ceremony names that primary: the
+	// key of the line of the journal of signatures is the OpenPGP fingerprint of the root, and a
+	// root that names none, or another, is not the key that signed.
+	if key, signed := r.selfKeys[in.Label]; signed && in.OpenPGP != key {
+		return newError(r.op, ErrInvalidInput, nil, "the OpenPGP fingerprint of the root is %s and the line of signatures.jsonl for the self-signature of the key %s has %s", jsonset.Quote(in.OpenPGP), jsonset.Quote(in.Label), jsonset.Quote(key))
+	}
 	return nil
 }
 
@@ -497,6 +547,7 @@ func (r *recordReader) signatures(p *files.Plan, lines [][]byte) ([]any, error) 
 		return nil, r.mismatch("signatures.jsonl holds %d lines and the plan lists %d signatures", len(lines), len(p.Signatures))
 	}
 	out := make([]any, 0, len(p.Signatures))
+	r.selfKeys = make(map[string]string)
 	for i, raw := range lines {
 		l, err := files.ReadSignatureLine(raw)
 		if err != nil {
@@ -511,6 +562,13 @@ func (r *recordReader) signatures(p *files.Plan, lines [][]byte) ([]any, error) 
 		}
 		if kind, _ := planned["kind"].(string); kind != l.Kind {
 			return nil, r.mismatch("signature %d: the kind of the journal is not the kind of the plan", i+1)
+		}
+		if l.Kind == files.KindPrimarySelfSignature {
+			subject, _ := planned["subject"].(string)
+			if _, twice := r.selfKeys[subject]; twice || subject == "" {
+				return nil, r.mismatch("signature %d: the plan gives no single subject for a self-signature of a primary", i+1)
+			}
+			r.selfKeys[subject] = l.Key
 		}
 		m := maps.Clone(planned)
 		if key, has := m["key"]; has {
@@ -550,12 +608,97 @@ func (r *recordReader) artifacts(paths []string, rec *files.Record) error {
 		}
 		lower[key] = p
 	}
+	r.rootJSONs = make(map[string][]byte)
 	for _, p := range sorted {
 		b, err := r.read(p, "an artifact")
 		if err != nil {
 			return err
 		}
 		rec.Artifacts = append(rec.Artifacts, files.FileRef{Path: p, SHA256: files.Digest(b)})
+		if label, ok := rootJSONLabel(p); ok {
+			r.rootJSONs[label] = b
+		}
 	}
+	return nil
+}
+
+// rootJSONLabel returns the label of a path of the form roots/<label>/root.json, with the label one
+// upper-case letter, and false for any other path.
+func rootJSONLabel(path string) (string, bool) {
+	rest, ok := strings.CutPrefix(path, rootsDir+"/")
+	if !ok {
+		return "", false
+	}
+	label, file, ok := strings.Cut(rest, "/")
+	if !ok || file != files.RootJSONFile || !isRootLabel(label) {
+		return "", false
+	}
+	return label, true
+}
+
+// revocations judges the list of revocations that the caller gives against the plan, the journal of
+// signatures and the root.json files that were read back, and sets it in the record. The plan's
+// signatures of the kinds primary-revocation and root-removal, each with the digest of its journal
+// line, are what the list must be. A list that is not given is refused when the plan has a
+// signature of the kind primary-revocation, and leaves the record without the member otherwise.
+func (r *recordReader) revocations(given []files.RevocationEntry, rec *files.Record) error {
+	type want struct {
+		label, reason, journalDigest string
+		isSignature                  bool
+	}
+	var wants []want
+	for i, s := range rec.Signatures {
+		m, _ := s.(map[string]any)
+		kind, _ := m["kind"].(string)
+		if kind != files.KindPrimaryRevocation && kind != files.KindRootRemoval {
+			continue
+		}
+		label, _ := m["subject"].(string)
+		if !isRootLabel(label) {
+			return r.mismatch("signature %d of the plan names no key as its subject", i+1)
+		}
+		w := want{label: label, reason: files.ReasonRootRemoval}
+		if kind == files.KindPrimaryRevocation {
+			reason, _ := m["reason"].(string)
+			w.reason, w.isSignature = reason, true
+			w.journalDigest, _ = m["signature_sha256"].(string)
+		}
+		wants = append(wants, w)
+	}
+	hasRevocation := slices.ContainsFunc(wants, func(w want) bool { return w.isSignature })
+	if len(given) == 0 {
+		if hasRevocation {
+			return newError(r.op, ErrInvalidInput, nil, "the plan makes revocation signatures and the record is given no list of them")
+		}
+		return nil
+	}
+	if len(given) != len(wants) {
+		return newError(r.op, ErrInvalidInput, nil, "the list of revocations has %d entries and the plan has %d signatures of the kinds primary-revocation and root-removal", len(given), len(wants))
+	}
+	for i, e := range given {
+		w := wants[i]
+		if e.Label != w.label || e.Reason != w.reason {
+			return newError(r.op, ErrInvalidInput, nil, "revocation entry %d is the key %s and the reason %s and the plan's signature there is the key %s and the reason %s", i+1, jsonset.Quote(e.Label), jsonset.Quote(e.Reason), jsonset.Quote(w.label), jsonset.Quote(w.reason))
+		}
+		if w.isSignature && e.SHA256 != w.journalDigest {
+			return newError(r.op, ErrInvalidInput, nil, "revocation entry %d (the key %s, the reason %s) does not hold the digest of the line of signatures.jsonl for that signature", i+1, jsonset.Quote(e.Label), jsonset.Quote(e.Reason))
+		}
+		raw, ok := r.rootJSONs[e.Label]
+		if !ok {
+			return newError(r.op, ErrInvalidInput, nil, "revocation entry %d names the key %s and the root.json of that key is not among the artifacts", i+1, jsonset.Quote(e.Label))
+		}
+		rj, err := files.ReadRootJSON(raw)
+		if err != nil {
+			return newError(r.op, ErrDiskMismatch, err, "the root.json of the key %s on disk is refused by its reader", jsonset.Quote(e.Label))
+		}
+		held := rj.RemovalSHA256
+		if w.isSignature {
+			held = rj.Revocations[e.Reason]
+		}
+		if rj.Label != e.Label || held != e.SHA256 {
+			return newError(r.op, ErrInvalidInput, nil, "revocation entry %d (the key %s, the reason %s) is not the digest that the root.json of that key holds", i+1, jsonset.Quote(e.Label), jsonset.Quote(e.Reason))
+		}
+	}
+	rec.Revocations = slices.Clone(given)
 	return nil
 }

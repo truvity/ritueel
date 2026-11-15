@@ -17,6 +17,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"reflect"
 	"slices"
 	"strings"
 	"testing"
@@ -169,7 +170,7 @@ func TestTheResultHoldsTheArtifactsOfThePageAndNoSecret(t *testing.T) {
 			t.Fatalf("%s: %v", root.Label, err)
 		}
 		wantDoc := files.RootJSON{Version: 1, Label: root.Label, Store: "software", Test: true, CreatedAt: "2026-11-20T10:00:00Z", X509SPKISHA256: root.Pin, RemovalSHA256: root.RemovalSHA256}
-		if *doc != wantDoc {
+		if !reflect.DeepEqual(*doc, wantDoc) {
 			t.Errorf("%s: root.json is %+v, want %+v", root.Label, *doc, wantDoc)
 		}
 		// The removal authorisations of the two keys differ.
