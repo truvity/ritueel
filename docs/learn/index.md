@@ -8,6 +8,8 @@ sidebar:
 
 ritueel teaches first. These pages explain how to keep a root key safe, whatever tool you use; of ritueel, only [a part is built](/reference/cli/#built-so-far). Only the first group, Basics, starts from zero. Every other page says in its first lines what it assumes, and links to the basics. If you come with a goal, the [table of goals](#goals) says which pages to read.
 
+> **The name.** *ritueel* is Dutch for "ritual" (plural *rituelen*). Pronounced /ri.tyˈʋeːl/ (ri‧tu‧eel), roughly "ree-tü-VAYL", stress on the last syllable. [Hear it](https://commons.wikimedia.org/wiki/File:Nl-ritueel.ogg) · [Wiktionary](https://en.wiktionary.org/wiki/ritueel)
+
 ## Basics
 
 - [What is a root?](/learn/what-is-a-root/): the key everything else hangs from, what goes wrong when it is lost or stolen, and five ideas about keys that the other pages use.
