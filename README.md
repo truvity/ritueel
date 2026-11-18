@@ -2,6 +2,8 @@
 
 ritueel helps one person or a small team keep a private root and an OpenPGP primary key for years without losing it, leaking it, misusing it or letting it expire. It teaches the model first, and its tools run each ceremony with the person deciding.
 
+> **The name.** *ritueel* is Dutch for "ritual" (plural *rituelen*). Pronounced /ri.tyˈʋeːl/ (ri‧tu‧eel), roughly "ree-tü-VAYL", stress on the last syllable. [Hear it](https://commons.wikimedia.org/wiki/File:Nl-ritueel.ogg) · [Wiktionary](https://en.wiktionary.org/wiki/ritueel)
+
 The site at [ritueel.id](https://ritueel.id) teaches first: the logic of keeping root keys and intermediates, the [custody chain](docs/learn/custody-chain.md), the key stores compared in the open, and the whole life of a root. The tools come after, because the steps are mostly manual ceremonies. ritueel is open source (MIT). The program is written in Go; its local page is written in TypeScript (`ui/`).
 
 The guides, tool pages, specifications and research are written under `docs/` and read here on GitHub: the site publishes only the Learn path, a demo, the glossary, where the project stands and the design in brief.
