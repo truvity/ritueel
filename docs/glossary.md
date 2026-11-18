@@ -7,6 +7,8 @@ sidebar:
 
 These words carry the design. The pages and the records use each only as below. Where a page keeps an older or narrower word, the third column says so: the glossary does not rename a page's word. It defines words from the records; it decides nothing new.
 
+> **The name.** *ritueel* is Dutch for "ritual" (plural *rituelen*). Pronounced /ri.tyˈʋeːl/ (ri‧tu‧eel), roughly "ree-tü-VAYL", stress on the last syllable. [Hear it](https://commons.wikimedia.org/wiki/File:Nl-ritueel.ogg) · [Wiktionary](https://en.wiktionary.org/wiki/ritueel)
+
 | Word | Meaning | The page word | Decided in |
 |---|---|---|---|
 | **root** | What outsiders trust without further proof, of one kind: X.509 anchor, OpenPGP identity or SSH CA. Built from one or more keys, labelled A, B, then the next letter. | `root`, `root key` (one key), `primary` (OpenPGP) | [0001](decisions/0001-what-ritueel-is.md) (rules 28 to 31), [0002](decisions/0002-where-a-key-lives.md) |
