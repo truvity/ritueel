@@ -183,20 +183,26 @@ func TestAKeyDirectoryThatHoldsAKeyFileIsRefusedWithTheReasonKeyExists(t *testin
 	}
 }
 
-func TestAFolderOrALinkWithTheNameOfAKeyFileIsNotAKeyFile(t *testing.T) {
-	root, bundle := pfKeyDirCase(t)
-	keys := filepath.Join(root, "keys")
-	if err := os.Mkdir(keys, 0o700); err != nil {
-		t.Fatal(err)
-	}
-	if err := os.Mkdir(filepath.Join(keys, "A.x509.key.pem"), 0o700); err != nil {
-		t.Fatal(err)
-	}
-	if err := os.Symlink("A.x509.key.pem", filepath.Join(keys, "B.x509.key.pem")); err != nil {
-		t.Fatal(err)
-	}
-	if err := ceremony.CheckKeyDir(keys, bundle); err != nil {
-		t.Errorf("CheckKeyDir: %v", err)
+func TestAFolderOrALinkWithTheNameOfAKeyFileOrARemovalFileIsAUseOfTheKeyDirectory(t *testing.T) {
+	// Any entry of such a name is a use, whatever its type, and the names are compared without regard to case.
+	for _, kind := range []string{"folder", "link"} {
+		for _, name := range []string{"A.x509.key.pem", "a.removal.jws", "B.REMOVAL.JWS"} {
+			t.Run(kind+" "+name, func(t *testing.T) {
+				root, bundle := pfKeyDirCase(t)
+				keys := filepath.Join(root, "keys")
+				if err := os.Mkdir(keys, 0o700); err != nil {
+					t.Fatal(err)
+				}
+				if kind == "folder" {
+					if err := os.Mkdir(filepath.Join(keys, name), 0o700); err != nil {
+						t.Fatal(err)
+					}
+				} else if err := os.Symlink("elsewhere", filepath.Join(keys, name)); err != nil {
+					t.Fatal(err)
+				}
+				pfWantBackend(t, ceremony.CheckKeyDir(keys, bundle), "key-exists")
+			})
+		}
 	}
 }
 
