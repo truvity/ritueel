@@ -14,6 +14,7 @@ import (
 	"fmt"
 	"io"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -39,19 +40,64 @@ type sfCase struct {
 
 var sfSteps = []sfCase{{"the root certificate", 1}, {"the removal authorisation", 2}}
 
+// sfDeadlineCtx is a context whose deadline passes when the test says so, and not before: Done is open and Err
+// is nil until expire, then Done is closed and Err is context.DeadlineExceeded, as for a context past its deadline.
+// A real deadline of some milliseconds would pass wherever the machine is slow, in the making of a key or the
+// writing of a file, and the run would stop at another step than the one the test means.
+type sfDeadlineCtx struct {
+	context.Context
+	done chan struct{}
+	mu   sync.Mutex
+	err  error
+	at   time.Time
+}
+
+func newSfDeadlineCtx() *sfDeadlineCtx {
+	return &sfDeadlineCtx{Context: context.Background(), done: make(chan struct{})}
+}
+
+// expire makes the deadline passed; a second call does nothing.
+func (c *sfDeadlineCtx) expire() {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	if c.err == nil {
+		c.err, c.at = context.DeadlineExceeded, time.Now()
+		close(c.done)
+	}
+}
+
+func (c *sfDeadlineCtx) Done() <-chan struct{} { return c.done }
+
+func (c *sfDeadlineCtx) Err() error {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	return c.err
+}
+
+func (c *sfDeadlineCtx) Deadline() (time.Time, bool) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	return c.at, c.err != nil
+}
+
 // sfRun makes the signing of A fail on its n-th signature with the error that fault gives, the context having
-// ended (cancelled, or past its deadline) when the fault comes.
+// ended (cancelled, or past its deadline) when the fault comes. The test itself ends the context, inside the
+// signature that fails and before the fault is returned, so the end of the context comes at that point and at no
+// other, however slow the machine is: nothing waits for a time.
 func sfRun(t *testing.T, n int, deadline bool, fault func(ctx context.Context) error) (*ceremony.Made, *mkRun, error) {
 	t.Helper()
 	r := newMkRun(t)
 	var ctx context.Context
-	var cancel context.CancelFunc
+	var end func() // ends the context: a cancel, or the passing of the deadline
 	if deadline {
-		ctx, cancel = context.WithTimeout(context.Background(), 150*time.Millisecond)
+		d := newSfDeadlineCtx()
+		ctx, end = d, d.expire
 	} else {
+		var cancel context.CancelFunc
 		ctx, cancel = context.WithCancel(context.Background())
+		end = cancel
 	}
-	t.Cleanup(cancel)
+	t.Cleanup(end)
 	r.store.wrapKey = mkWrap(func(k *mkKey) {
 		calls := 0
 		k.signFn = func(rd io.Reader, digest []byte, o crypto.SignerOpts) ([]byte, error) {
@@ -59,11 +105,7 @@ func sfRun(t *testing.T, n int, deadline bool, fault func(ctx context.Context) e
 			if k.label != "A" || calls != n {
 				return k.Key.Sign(rd, digest, o)
 			}
-			if deadline {
-				<-ctx.Done()
-			} else {
-				cancel()
-			}
+			end()
 			return nil, fault(ctx)
 		}
 	})
@@ -293,5 +335,35 @@ func TestAConnectCancelOrDeadlineFromTheKeyPortIsTheEndOfTheContext(t *testing.T
 				}
 			})
 		}
+	}
+}
+
+// The context of the tests above is open until the test lets its deadline pass, and then it is what a context past
+// its deadline is: closed Done, DeadlineExceeded, a deadline in the past, and the same for a context derived from it.
+func TestTheDeadlineContextOfTheSigningFaultTestsIsOpenUntilItPassesAndThenIsPastItsDeadline(t *testing.T) {
+	d := newSfDeadlineCtx()
+	child, cancel := context.WithCancel(d)
+	defer cancel()
+	if d.Err() != nil || child.Err() != nil {
+		t.Fatalf("before: %v, %v", d.Err(), child.Err())
+	}
+	select {
+	case <-d.Done():
+		t.Fatal("Done is closed before the deadline passed")
+	default:
+	}
+	if _, ok := d.Deadline(); ok {
+		t.Error("a deadline is reported before it passed")
+	}
+	d.expire()
+	d.expire()
+	<-child.Done() // the derived context follows the parent at once
+	for name, err := range map[string]error{"the context": d.Err(), "a derived context": child.Err(), "its cause": context.Cause(child)} {
+		if !errors.Is(err, context.DeadlineExceeded) {
+			t.Errorf("%s: %v, want context.DeadlineExceeded", name, err)
+		}
+	}
+	if at, ok := d.Deadline(); !ok || time.Until(at) > 0 {
+		t.Errorf("the deadline: %v, %v; want one in the past", at, ok)
 	}
 }
