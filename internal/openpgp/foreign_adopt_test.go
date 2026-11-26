@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"crypto"
 	"crypto/rand"
+	"crypto/rsa"
 	"crypto/sha256"
 	"errors"
 	"math/big"
@@ -346,4 +347,89 @@ func TestAWipedKeyIsKnownToBeWiped(t *testing.T) {
 	if !k.Wiped() {
 		t.Errorf("a key that was wiped is not")
 	}
+}
+
+// fkSwappedPrimes is the secret numbers of the RSA template with the primes in the other order and u
+// made again for that order, which is a good secret for a tolerant reader.
+func fkSwappedPrimes(t testing.TB, b *fkBase) (swapped, canonical []byte) {
+	t.Helper()
+	own := b.secrets(t).Primary
+	d, p, q := own[0], own[1], own[2]
+	bp, bq := new(big.Int).SetBytes(p), new(big.Int).SetBytes(q)
+	if bp.Cmp(bq) >= 0 {
+		t.Fatal("the template has its primes in the other order already")
+	}
+	u := new(big.Int).ModInverse(bq, bp)
+	return fkEncode(d, q, p, u.Bytes()), fkEncode(own...)
+}
+
+func TestRSAPrimesAreWrittenInTheOrderOfTheStandardOnly(t *testing.T) {
+	b := fkNamed(t, "rsa4096")
+	swapped, canonical := fkSwappedPrimes(t, b)
+	digest := sha256.Sum256([]byte("a message"))
+	for _, protected := range []bool{false, true} {
+		pass := []byte(nil)
+		if protected {
+			pass = []byte(fkPass)
+		}
+		k := fkRead(t, fkSecretFile(t, b, protected, swapped))
+		// the export is read tolerantly, as it stands, and signs
+		secret, err := k.OpenSecret(pass)
+		if err != nil {
+			t.Fatalf("protected=%v: OpenSecret of an export with p above q: %v", protected, err)
+		}
+		sig, err := secret.Signer().Sign(rand.Reader, digest[:], crypto.SHA256)
+		if err != nil || rsa.VerifyPKCS1v15(secret.Signer().Public().(*rsa.PublicKey), crypto.SHA256, digest[:], sig) != nil {
+			t.Fatalf("protected=%v: the key of an export with p above q does not sign: %v", protected, err)
+		}
+		secret.Wipe()
+		// the packet that is written has p below q, and is the packet of the canonical export
+		pkt, err := k.SecretPacket(pass)
+		if err != nil {
+			t.Fatalf("protected=%v: SecretPacket: %v", protected, err)
+		}
+		want, err := fkRead(t, fkSecretFile(t, b, false, canonical)).SecretPacket(nil)
+		if err != nil || !bytes.Equal(pkt, want) {
+			t.Errorf("protected=%v: the packet of an export with p above q is not the canonical packet: %v", protected, err)
+		}
+		s2, _, err := openpgp.OpenSecretPacket(pkt)
+		if err != nil {
+			t.Fatalf("protected=%v: OpenSecretPacket of the written packet: %v", protected, err)
+		}
+		sig, err = s2.Signer().Sign(rand.Reader, digest[:], crypto.SHA256)
+		if err != nil || rsa.VerifyPKCS1v15(s2.Signer().Public().(*rsa.PublicKey), crypto.SHA256, digest[:], sig) != nil {
+			t.Errorf("protected=%v: the key of the written packet does not sign: %v", protected, err)
+		}
+		s2.Wipe()
+	}
+	// a hand-made packet with p above q is refused, with no number in the text
+	k := fkRead(t, b.plain)
+	certPub, _ := openpgp.PrimaryPublicBody(k.Certificate())
+	for name, nums := range map[string][]byte{"p above q": swapped, "p equal to q": fkSamePrimes(t, b)} {
+		var sum uint16
+		for _, c := range nums {
+			sum += uint16(c)
+		}
+		region := append(append([]byte{0}, nums...), byte(sum>>8), byte(sum))
+		s, _, err := openpgp.OpenSecretPacket(fkJoin(fkPacket{5, append(bytes.Clone(certPub), region...)}))
+		if !errors.Is(err, openpgp.ErrForeignSecret) || s != nil {
+			t.Errorf("%s: OpenSecretPacket: %v, want ErrForeignSecret", name, err)
+		}
+		fkCheckText(t, name, err, b)
+	}
+	// p = q is refused by the reader of an export too, and SecretPacket writes nothing for it
+	pq := fkRead(t, fkSecretFile(t, b, false, fkSamePrimes(t, b)))
+	if s, err := pq.OpenSecret(nil); !errors.Is(err, openpgp.ErrForeignSecret) || s != nil {
+		t.Errorf("OpenSecret with p = q: %v, want ErrForeignSecret", err)
+	}
+	if pkt, err := pq.SecretPacket(nil); !errors.Is(err, openpgp.ErrForeignSecret) || pkt != nil {
+		t.Errorf("SecretPacket with p = q: %v, want ErrForeignSecret and no packet", err)
+	}
+}
+
+// fkSamePrimes is the secret numbers with the first prime twice.
+func fkSamePrimes(t testing.TB, b *fkBase) []byte {
+	t.Helper()
+	own := b.secrets(t).Primary
+	return fkEncode(own[0], own[1], own[1], own[3])
 }

@@ -142,8 +142,8 @@
 // stretches the passphrase of an exported file holds blocks of it, and is not cleared. The standard
 // library's validation of an RSA key and its precomputation each build a copy of the key of their
 // own. One [Store.SaveAdopted] opens the key several times (to write the packet, to read it back,
-// to check the file), so several copies stay until the garbage collector frees them, and none is
-// promised gone. The pages that the system swapped out are out of its reach
+// to check the file), so several copies stay. A copy that the garbage collector freed is not erased:
+// it stays in memory, as it was, until the runtime reuses that memory, and no copy is promised gone. The pages that the system swapped out are out of its reach
 // too. A scan of the memory of a process after Close can still find the scalar. A key and a passphrase are never put into an error, a
 // file name, a log line or a temporary file other than the key file itself.
 package software

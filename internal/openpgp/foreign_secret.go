@@ -439,8 +439,9 @@ func (s *ForeignSecret) Signer() crypto.Signer {
 }
 
 // Wipe clears the numbers of the private key, word by word, and drops it: every handle from
-// [ForeignSecret.Signer] then refuses to sign. It does not clear what it cannot reach, and that stays
-// in memory until the garbage collector frees it, or until the process ends:
+// [ForeignSecret.Signer] then refuses to sign. It does not clear what it cannot reach. Such a copy stays
+// in memory as it is until the runtime happens to reuse that memory: the garbage collector frees it
+// and does not erase it. They are:
 //   - the copies that crypto/rsa, crypto/ecdsa and crypto/ed25519 made, among them one that the
 //     validation of an RSA key builds and one that its precomputation builds;
 //   - the scratch space of the big-number checks of the primes p and q (the primality test) and of
@@ -516,7 +517,9 @@ func wipeRSA(k *rsa.PrivateKey) {
 // [ErrForeignSecret] when it is wrong), the numbers must read to their end in the form of RFC 9580
 // section 3.2, and the secret must be the secret of the public key in the same packet, or the
 // result is an ErrForeignSecret: for RSA the primes multiply to the modulus, the key validates and
-// the number u of the packet is the inverse of the first prime modulo the second; for Ed25519 the
+// the number u of the packet is the inverse of the first prime modulo the second (the standard asks for
+// p below q, but an export may have the other order, and it is taken when u matches the order that it
+// has; p = q is refused, because the first prime has no inverse modulo itself); for Ed25519 the
 // public key derived from the secret is the public key of the packet; for P-384 the secret is in
 // the range of the group and the scalar times the base point is the point of the packet.
 //
@@ -535,7 +538,7 @@ func (k *ForeignKey) OpenSecret(passphrase []byte) (secret *ForeignSecret, err e
 	}()
 	var key crypto.Signer
 	err = k.withNumbers(passphrase, func(numbers []byte) (err error) {
-		key, err = foreignPrivateKey(k.pub, numbers)
+		key, err = foreignPrivateKey(k.pub, numbers, false)
 		return err
 	})
 	if err != nil {
@@ -605,11 +608,13 @@ func (k *ForeignKey) decryptSecret(passphrase []byte) ([]byte, error) {
 }
 
 // foreignPrivateKey turns the numbers of a secret into a standard-library key and checks them against
-// the public part. numbers is not changed and not kept.
-func foreignPrivateKey(pub fkPublic, numbers []byte) (crypto.Signer, error) {
+// the public part. numbers is not changed and not kept. strict only concerns RSA: the standard
+// asks for p below q (RFC 9580, section 5.5.3, with u the inverse of p modulo q), and a strict reader
+// refuses the other order, which a tolerant one takes when u matches the order that was given.
+func foreignPrivateKey(pub fkPublic, numbers []byte, strict bool) (crypto.Signer, error) {
 	switch pub.alg.ID {
 	case algoRSA:
-		return rsaFromNumbers(pub, numbers)
+		return rsaFromNumbers(pub, numbers, strict)
 	case algoEdDSA:
 		return ed25519FromNumbers(pub, numbers)
 	case algoECDSA:
@@ -660,7 +665,11 @@ func p384FromNumbers(pub fkPublic, numbers []byte) (crypto.Signer, error) {
 	return k, nil
 }
 
-func rsaFromNumbers(pub fkPublic, numbers []byte) (crypto.Signer, error) {
+// rsaFromNumbers reads d, p, q and u. With strict, p must be below q; without it either order is
+// taken, with u the inverse of the first prime modulo the second as the order stands. p = q is
+// refused in both: the first prime has no inverse modulo itself, so u cannot match ("the number u
+// is not the inverse"), and with strict the order check refuses it first.
+func rsaFromNumbers(pub fkPublic, numbers []byte, strict bool) (crypto.Signer, error) {
 	var parts [4][]byte // d, p, q, u
 	rest := numbers
 	for i := range parts {
@@ -692,6 +701,10 @@ func rsaFromNumbers(pub fkPublic, numbers []byte) (crypto.Signer, error) {
 	// unique: programs take it modulo lambda or modulo phi, so no tighter bound is asked. A real
 	// export meets both bounds: this function opens the secret of an export too, and no
 	// program writes a u that is not below q or a d that is not below n.
+	if strict && priv.Primes[0].Cmp(priv.Primes[1]) >= 0 {
+		wipeRSA(priv)
+		return nil, fail(ErrForeignSecret, "the primes of the secret are not in the order of the standard (p below q)")
+	}
 	if u.Cmp(priv.Primes[1]) >= 0 || priv.D.Cmp(priv.N) >= 0 {
 		wipeRSA(priv)
 		return nil, fail(ErrForeignSecret, "a number of the secret is not below its bound: d below the modulus, u below the second prime")
@@ -772,6 +785,10 @@ func PrimaryPublicBody(cert []byte) (body []byte, err error) {
 // subkey. Its public part is byte for byte the body of the first packet of [ForeignKey.Certificate].
 // A caller that keeps it keeps it under its own protection and clears it.
 //
+// The packet is always in the canonical form of the standard. An RSA export that has its primes in the
+// other order (p above q, which some programs write) is read as it stands, and written with p below q
+// and u made again for that order, so that one key has one spelling in a key file.
+//
 // The secret is opened with passphrase as [ForeignKey.OpenSecret] opens it, with the same checks
 // and refusals (a passphrase that is nil or empty does for a secret that is not protected), and
 // the numbers must be those of the public key, as there. The packet is read back with
@@ -794,13 +811,30 @@ func (k *ForeignKey) SecretPacket(passphrase []byte) (pkt []byte, err error) {
 		return nil, err
 	}
 	err = k.withNumbers(passphrase, func(numbers []byte) error {
-		// The numbers must be the secret of the public part, with the checks of OpenSecret.
-		key, err := foreignPrivateKey(k.pub, numbers)
+		// The numbers must be the secret of the public part, with the checks of OpenSecret. An RSA
+		// export that has p above q is checked as it stands, and written in the order of the standard.
+		canon := numbers
+		if k.pub.alg.ID == algoRSA {
+			re, err := canonicalRSANumbers(numbers)
+			if err != nil {
+				return err
+			}
+			if re != nil {
+				defer clear(re)
+				canon = re
+				key, err := foreignPrivateKey(k.pub, numbers, false)
+				if err != nil {
+					return err
+				}
+				wipeKey(key)
+			}
+		}
+		key, err := foreignPrivateKey(k.pub, canon, true)
 		if err != nil {
 			return err
 		}
 		wipeKey(key)
-		pkt = secretPacketOf(pubBody, numbers)
+		pkt = secretPacketOf(pubBody, canon)
 		return nil
 	})
 	if err != nil {
@@ -821,6 +855,48 @@ func (k *ForeignKey) SecretPacket(passphrase []byte) (pkt []byte, err error) {
 		return nil, fail(ErrForeignSecret, "the secret packet does not read back as the key of the certificate")
 	}
 	return pkt, nil
+}
+
+// canonicalRSANumbers puts the four numbers of an RSA secret in the order of the standard. When p is
+// below q (or equal, which the checks that follow refuse) it returns nil: the numbers stand as they
+// are. When p is above q it returns new numbers, in a buffer of its own for the caller to clear: d, the
+// two primes swapped, and u made again as the inverse of the new first prime modulo the new second. It
+// does not judge the numbers: the caller checks the result against the public part, and the order as
+// it stood before. The big numbers that it makes are cleared, with the limits that
+// [ForeignSecret.Wipe] names.
+func canonicalRSANumbers(numbers []byte) ([]byte, error) {
+	var parts [4][]byte
+	rest := numbers
+	for i := range parts {
+		var err error
+		if parts[i], rest, err = readMPI(rest); err != nil {
+			return nil, fail(ErrForeignSecret, "the secret is not the four numbers of an RSA key")
+		}
+	}
+	if len(rest) != 0 {
+		return nil, fail(ErrForeignSecret, "the secret has bytes after its four numbers")
+	}
+	p, q := new(big.Int).SetBytes(parts[1]), new(big.Int).SetBytes(parts[2])
+	defer wipeInt(p)
+	defer wipeInt(q)
+	if p.Cmp(q) <= 0 {
+		return nil, nil
+	}
+	u := new(big.Int).ModInverse(q, p)
+	if u == nil {
+		return nil, fail(ErrForeignSecret, "the primes of the secret have no inverse of one modulo the other")
+	}
+	defer wipeInt(u)
+	// made at a size that no append can pass, so that no growth leaves a copy behind
+	out := make([]byte, 0, len(numbers)+2+maxRSASecretNumber)
+	out = append(out, numbers[:2+len(parts[0])]...) // d, as it stands
+	for _, v := range []*big.Int{q, p, u} {
+		b := v.Bytes()
+		out = append(out, byte(v.BitLen()>>8), byte(v.BitLen()))
+		out = append(out, b...)
+		clear(b)
+	}
+	return out, nil
 }
 
 // publicBody is the body of the first packet of the certificate, the public key packet of the
@@ -863,7 +939,9 @@ func secretPacketOf(pubBody, numbers []byte) []byte {
 // bits, EdDSA legacy on Ed25519, ECDSA on P-384), S2K usage 0 and a correct two-octet checksum; the
 // numbers must read to their end and be the secret of the public part, with the checks of
 // [ForeignKey.OpenSecret] (the primes and the number u of RSA, the public key derived from the
-// seed of Ed25519, the point of the scalar of P-384); and a second reader (go-crypto) must read
+// seed of Ed25519, the point of the scalar of P-384); the RSA primes must be in the order of the
+// standard, p below q (the writer of this package always writes them so, and a packet with p above q
+// is an ErrForeignSecret, as is p = q); and a second reader (go-crypto) must read
 // the public part as it is read here.
 //
 // Every other input is refused with the kinds of the reader of an export: a packet that is not
@@ -912,7 +990,7 @@ func OpenSecretPacket(pkt []byte) (secret *ForeignSecret, pub AdoptedPublic, err
 	if _, err := agreePublic(wrap(tagPublicKey, pubBody), pubBody, fp, false); err != nil {
 		return nil, AdoptedPublic{}, err
 	}
-	key, err := foreignPrivateKey(p, numbers)
+	key, err := foreignPrivateKey(p, numbers, true)
 	if err != nil {
 		return nil, AdoptedPublic{}, err
 	}

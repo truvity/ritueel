@@ -167,8 +167,8 @@ func errAdoptedSource(err error) error {
 //
 // The packet is cleared after the write; the passphrases are cleared as the package clears them
 // (see "Secrets in memory"). fk is not wiped: it is the caller's. One call opens the secret several
-// times (the packet, its read back, the check of the file), and each leaves copies that the garbage
-// collector frees later.
+// times (the packet, its read back, the check of the file), and each leaves copies that are not
+// cleared (see "Secrets in memory").
 func (s *Store) SaveAdopted(ctx context.Context, label string, fk *openpgp.ForeignKey) error {
 	if s == nil {
 		return refuse(ErrParams, "the store was not made by Open")
