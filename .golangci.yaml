@@ -45,6 +45,10 @@ linters:
         # command that needs one lives in its own package, and that package
         # replaces this rule with a path-scoped one in the same pull request.
         # Test files are left out so that httptest and the like stay possible.
+        # The rule is about imports in ritueel's own code. The libraries of atom (the key port and its in-process
+        # link) import net/http themselves and are not checked by it; ritueel's code that links them names no type
+        # of that package (internal/keystore/atoomsoftware), so it needs no exception. A package that must
+        # name one adds a path-scoped exception here, in the same pull request.
         offline:
           files:
             - $all

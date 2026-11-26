@@ -287,6 +287,8 @@ go-build:
     [ "$got" = "$want" ] || { echo "go-build: 'ritueel version' printed '$got', wanted '$want'" >&2; exit 1; }
     rc=0; bin/ritueel > /dev/null 2>&1 || rc=$?
     [ "$rc" -eq 2 ] || { echo "go-build: no arguments should exit 2, got $rc" >&2; exit 1; }
+    # The same program for macOS, with cgo off: a driver of atom that needs cgo or a system library would fail here.
+    GOOS=darwin GOARCH=arm64 CGO_ENABLED=0 go build -trimpath -o /dev/null ./cmd/ritueel
 
 # Known vulnerabilities in what this module imports. Its own workflow (security.yaml), never in `check`:
 # a new advisory is news about the world, not about the change.
