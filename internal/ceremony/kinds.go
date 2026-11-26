@@ -184,7 +184,8 @@ func isNilValue(v any) bool {
 // the kind of root that its wanted file has: the births, the signatures, and the seven checks of artifacts.go. It
 // is the births, the signatures and the checks of the run, and it writes no file of the bundle: the caller writes the
 // artifacts in the order of the run, from the bytes that the returned [Made] holds. It runs [RootStore.Refuse]
-// first and checks the plan against the store before the first key is made. After each key is born it
+// first, checks the plan against the store and starts the store ([RootStore.Start]; nothing is done when the
+// run started it already) before the first key is made. After each key is born it
 // writes one line of the birth journal; after the last it prints the fingerprint of each key; after each
 // signature it writes one line of the journal of signatures; and it checks every artifact before it
 // returns it. A fault is an error and no Made comes with it. The keys are closed before it returns.

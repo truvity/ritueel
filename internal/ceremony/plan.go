@@ -39,16 +39,17 @@ const (
 	firstTrustSequence = 1
 	// maxKeys is the most keys one plan makes: the most root keys that one list holds.
 	maxKeys = trustset.MaxRoots
-	// keyFileSuffix ends the place of an X.509 key of a software test root, after its label (the
-	// software store page).
-	keyFileSuffix = ".x509.key.pem"
+	// legacyKeyFileSuffix ended the place of an X.509 key in the plans that earlier versions of ritueel made,
+	// after its label: the place was the name of a key file. It is read only to say that such a plan is old.
+	legacyKeyFileSuffix = ".x509.key.pem"
 	// maxVersionBytes is the most bytes of the version of the program in a plan.
 	maxVersionBytes = 128
 )
 
 // PlanBirth is one key to be born, as the member births of the plan lists it: the label, the
-// purpose, the key store and the place. The place of a software key is the name of its key file, never
-// a path. An X.509 key has no creation time, so the page's fifth member is left out (Proposed).
+// purpose, the key store and the place. The place of a key is the purpose that names it in the key port,
+// x509-root- and the label in lower case, the same for every store and never a path. An X.509 key has
+// no creation time, so the page's fifth member is left out (Proposed).
 type PlanBirth struct {
 	Label   string `json:"label"`
 	Purpose string `json:"purpose"`
@@ -177,7 +178,7 @@ func MakePlan(f *Found, env Env) (*PlanOut, error) {
 			return nil, errors.New("the source of random numbers gave one serial number twice, so no plan is made")
 		}
 		seen[text] = true
-		doc.Births = append(doc.Births, PlanBirth{Label: l, Purpose: purposeX509Root, Store: storeSoftware, Place: l + keyFileSuffix})
+		doc.Births = append(doc.Births, PlanBirth{Label: l, Purpose: purposeX509Root, Store: storeSoftware, Place: purposeOf(l)})
 		doc.Signatures = append(doc.Signatures,
 			PlanSignature{N: n + 1, Kind: kindRootCertificate, Subject: l, Serial: text, NotBefore: timeText(t), NotAfter: timeText(notAfter), Derived: true},
 			PlanSignature{N: n + 2, Kind: kindRootRemoval, Subject: l, Derived: true},
@@ -418,7 +419,11 @@ func (d *planDoc) checkKeys(rootName string) ([]string, error) {
 		if d.Applies[i] != (Change{Change: changeCreate, Object: rootName + "/" + l}) {
 			return nil, errors.New("the plan is not the plan of a first apply: applies is not the creation of the keys A, B, ... of the root, in order")
 		}
-		if d.Births[i] != (PlanBirth{Label: l, Purpose: purposeX509Root, Store: storeSoftware, Place: l + keyFileSuffix}) {
+		if d.Births[i] != (PlanBirth{Label: l, Purpose: purposeX509Root, Store: storeSoftware, Place: purposeOf(l)}) {
+			if d.Births[i] == (PlanBirth{Label: l, Purpose: purposeX509Root, Store: storeSoftware, Place: l + legacyKeyFileSuffix}) {
+				return nil, errors.New("the plan is not the plan of a first apply of this version: it names each key by the name of a key file, as an earlier ritueel did, and this version names it by its purpose, " +
+					purposeOf(l) + "; make the plan again with apply --plan-only, and nothing was written")
+			}
 			return nil, errors.New("the plan is not the plan of a first apply: births is not the keys A, B, ... in a software store, in order")
 		}
 	}

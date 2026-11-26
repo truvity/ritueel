@@ -47,11 +47,17 @@ func TestADirectApplyWithTheFlagWritesTheFilesOfTheFirstApplyAndNoOther(t *testi
 		t.Errorf("the bundle holds\n%q\nwant\n%q", got, want)
 	}
 	keys := rtNames(r.keyTree())
-	if want := []string{"A.removal.jws", "A.x509.key.pem", "B.removal.jws", "B.x509.key.pem"}; !slices.Equal(keys, want) {
+	if want := []string{"A.removal.jws", "B.removal.jws", "test-only-keys", mkKeyFile("A"), mkKeyFile("B")}; !slices.Equal(keys, want) {
 		t.Errorf("the key directory holds %q, want %q", keys, want)
 	}
 	for _, k := range keys {
 		st, err := os.Stat(filepath.Join(r.keyDir, k))
+		if k == "test-only-keys" {
+			if err != nil || !st.IsDir() || st.Mode().Perm() != 0o700 {
+				t.Errorf("%s: %v %v, want a folder that nobody but the owner can enter", k, st, err)
+			}
+			continue
+		}
 		if err != nil || !st.Mode().IsRegular() || st.Mode().Perm()&0o077 != 0 {
 			t.Errorf("%s: %v %v, want a regular file that nobody but the owner can read", k, st, err)
 		}
@@ -223,7 +229,7 @@ func TestTheJournalsOfARunHaveOneLinePerKeyAndPerSignatureInOrder(t *testing.T) 
 			t.Fatal(err)
 		}
 		label := string(rune('A' + i))
-		if b.Label != label || b.Place != label+".x509.key.pem" || b.Store != "software" || b.Purpose != "x509-root" || b.PublicKeySHA256 != done.Roots[i].X509SPKISHA256 {
+		if b.Label != label || b.Place != "x509-root-"+strings.ToLower(label) || b.Store != "software" || b.Purpose != "x509-root" || b.PublicKeySHA256 != done.Roots[i].X509SPKISHA256 {
 			t.Errorf("birth line %d = %+v", i, b)
 		}
 	}

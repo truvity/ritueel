@@ -59,7 +59,7 @@ func mkWantStoppedAfterTheBirths(t *testing.T, r *mkRun, m *ceremony.Made, err e
 		t.Errorf("the step is %q, want fingerprints", me.Step)
 	}
 	text := err.Error()
-	for _, want := range []string{"nothing is signed", "A.x509.key.pem", "B.x509.key.pem", "2 lines"} {
+	for _, want := range []string{"nothing is signed", "x509-root-a", "x509-root-b", "2 lines"} {
 		if !strings.Contains(text, want) {
 			t.Errorf("the error does not say %q: %s", want, text)
 		}
@@ -80,7 +80,7 @@ func mkWantStoppedAfterTheBirths(t *testing.T, r *mkRun, m *ceremony.Made, err e
 		t.Errorf("%d birth lines were written, want 2", n)
 	}
 	// The keys are born and are kept: nothing is deleted by any path.
-	if got := strings.Join(r.keyFiles(), " "); got != "A.x509.key.pem B.x509.key.pem" {
+	if got := strings.Join(r.keyFiles(), " "); got != mkKeyFile("A")+" "+mkKeyFile("B") {
 		t.Errorf("the key folder holds %q", got)
 	}
 	for _, label := range []string{"A", "B"} {
@@ -278,7 +278,7 @@ func TestASettingsOrRootFileThatIsNotTheFileOfThePlanByPathOrDigestIsRefusedBefo
 			if len(r.keyFiles()) != 0 {
 				t.Errorf("a key was made: %v", r.keyFiles())
 			}
-			if _, err := os.Stat(filepath.Join(r.keyDir, "A.x509.key.pem")); err == nil {
+			if _, err := os.Stat(filepath.Join(r.keyDir, mkKeyFile("A"))); err == nil {
 				t.Error("the key file of A exists")
 			}
 		})

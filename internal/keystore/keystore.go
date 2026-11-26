@@ -2,9 +2,10 @@
 // key signs through [crypto.Signer], tells its public key and where it lives, and says whether it
 // can be copied. It never gives its private half.
 //
-// The interface is small on purpose. It has one implementation now (internal/keystore/software);
-// the card and cloud key stores add theirs, and what they all need to create or open a key is
-// added when the second one is built, not guessed here from one.
+// The interface is small on purpose. A ceremony's keys come from one implementation, the key port of
+// atom (internal/keystore/port); the card and cloud key stores are further drivers behind the same
+// port, and what they all need to create or open a key is added when the second one is built, not
+// guessed here from one. internal/keystore/software also implements it, for the in-memory keys of tests.
 package keystore
 
 import "crypto"

@@ -143,10 +143,11 @@ func TestProgramApplyFollowsTheScriptOfTheCommandPage(t *testing.T) {
 	if code != 0 || !strings.HasPrefix(verified, "accepted: sequence 1, 2 root keys") {
 		t.Errorf("verify root-list: exit %d, %q, %s", code, verified, stderr)
 	}
-	// The key directory holds the keys and nothing else.
+	// The key directory holds the keys and nothing else: the folder test-only-keys, with the two keys, and
+	// the two removal authorisations beside it.
 	ents, _ := os.ReadDir(keys)
-	if len(ents) != 4 {
-		t.Errorf("the key directory holds %d files, want 4", len(ents))
+	if len(ents) != 3 {
+		t.Errorf("the key directory holds %d entries, want 3", len(ents))
 	}
 }
 

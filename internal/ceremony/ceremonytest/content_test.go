@@ -211,7 +211,7 @@ func TestMoreWritesAPlanThatNamesTheEnd(t *testing.T) {
 		t.Errorf("plan: root %+v, %d signatures, %d births, %d applies", plan.Root, len(plan.Signatures), len(plan.Births), len(plan.Applies))
 	}
 	text := string(readFile(t, m.Dir, "history", out.Ceremony, "plan.json"))
-	if !strings.Contains(text, `"place":"C.x509.key.pem"`) || !strings.Contains(text, `"object":"x509/C"`) {
+	if !strings.Contains(text, `"place":"x509-root-c"`) || !strings.Contains(text, `"object":"x509/C"`) {
 		t.Errorf("the plan does not name the key C: %s", text)
 	}
 	rec, err := files.ReadRecord(readFile(t, m.Dir, "history", out.Ceremony, "record.json"))

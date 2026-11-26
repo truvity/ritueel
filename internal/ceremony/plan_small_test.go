@@ -16,7 +16,7 @@ import (
 	"ritueel.id/ritueel/internal/buildinfo"
 	"ritueel.id/ritueel/internal/ceremony"
 	"ritueel.id/ritueel/internal/ceremony/files"
-	"ritueel.id/ritueel/internal/keystore/software"
+	"ritueel.id/ritueel/internal/keydir"
 	"ritueel.id/ritueel/internal/wanted"
 )
 
@@ -294,7 +294,7 @@ func TestTheFaultTextOfCheckKeyDirThatIsNotARefusalIsOneLine(t *testing.T) {
 		t.Errorf("the text does not say that nothing was written: %q", err)
 	}
 	// The one fault is wrapped in the other: the fault of the key store can still be found.
-	if !errors.Is(err, software.ErrParams) && !errors.Is(err, software.ErrKeyDir) {
+	if !errors.Is(err, keydir.ErrParams) && !errors.Is(err, keydir.ErrKeyDir) {
 		t.Errorf("the fault of the key store cannot be reached from %q", err)
 	}
 	var join interface{ Unwrap() []error }

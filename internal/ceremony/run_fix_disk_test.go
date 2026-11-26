@@ -32,10 +32,21 @@ func fxIndex(t *testing.T, path string) int {
 }
 
 // fxNoKeys fails the test when the key directory holds anything.
+// fxNoKeys fails the test when the key directory holds a key or a removal authorisation. A run that
+// stopped after the key store was started, and before the first key, leaves the folder test-only-keys,
+// empty; that is no key.
 func fxNoKeys(t *testing.T, r *rt) {
 	t.Helper()
-	if ents, err := os.ReadDir(r.keyDir); err != nil || len(ents) != 0 {
-		t.Errorf("the key directory holds %d entries (%v), want none", len(ents), err)
+	ents, err := os.ReadDir(r.keyDir)
+	if err != nil {
+		t.Errorf("the key directory cannot be read: %v", err)
+		return
+	}
+	for _, e := range ents {
+		if inner, ierr := os.ReadDir(filepath.Join(r.keyDir, e.Name())); e.Name() == "test-only-keys" && e.IsDir() && ierr == nil && len(inner) == 0 {
+			continue
+		}
+		t.Errorf("the key directory holds %q, want no key and no removal authorisation", e.Name())
 	}
 }
 
@@ -83,7 +94,7 @@ func TestACopyOfAWantedFileThatReachesTheDiskChangedStopsTheRunBeforeTheAttemptA
 					t.Errorf("the store made %d keys and %d removals", b, sv)
 				}
 				msg := err.Error()
-				for _, w := range []string{"stopped at write-plan", "the plan folder may hold some of its files, no attempt was written, and no key was made", "nothing was retried and nothing was deleted"} {
+				for _, w := range []string{"stopped at write-plan", "the plan folder may hold some of its files, no attempt was written, and no key was made", "nothing was retried, and ritueel deleted nothing"} {
 					if !strings.Contains(msg, w) {
 						t.Errorf("the line does not say %q: %s", w, msg)
 					}
@@ -257,7 +268,7 @@ func TestTheLineOfAStopWhilePlanningSaysOnlyWhatIsTrueAtEachOfTheFirstWrites(t *
 				t.Fatalf("Run = %v, want a stop at write-plan with no attempt", err)
 			}
 			msg := err.Error()
-			if !strings.Contains(msg, "; "+want+"; nothing was retried and nothing was deleted") {
+			if !strings.Contains(msg, "; "+want+"; nothing was retried, and ritueel deleted nothing") {
 				t.Errorf("the line does not say %q before the closing words: %s", want, msg)
 			}
 			for _, not := range []string{"the plan and the copies are written", "an attempt is open", "close", "nothing was signed", "no attempt exists"} {

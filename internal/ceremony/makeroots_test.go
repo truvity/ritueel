@@ -13,7 +13,6 @@ import (
 	"crypto/x509"
 	"encoding/base64"
 	"encoding/hex"
-	"encoding/pem"
 	"errors"
 	"io"
 	"os"
@@ -92,15 +91,11 @@ func TestTheFingerprintsShownAreThePinsOfTheKeysInTheKeyFiles(t *testing.T) {
 // mkScalarKey reads the private key of a key file.
 func mkScalarKey(t testing.TB, keyDir, label string) *ecdsa.PrivateKey {
 	t.Helper()
-	b, err := os.ReadFile(filepath.Join(keyDir, label+".x509.key.pem"))
+	b, err := os.ReadFile(filepath.Join(keyDir, mkKeyFile(label)))
 	if err != nil {
 		t.Fatal(err)
 	}
-	blk, _ := pem.Decode(b)
-	if blk == nil {
-		t.Fatal("no PEM block")
-	}
-	k, err := x509.ParsePKCS8PrivateKey(blk.Bytes)
+	k, err := x509.ParsePKCS8PrivateKey(b)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -150,7 +145,7 @@ func TestTheResultHoldsTheArtifactsOfThePageAndNoSecret(t *testing.T) {
 	// that is the digest of the stored text, and a root.json that says so.
 	for i, root := range m.Roots {
 		k := mkScalarKey(t, r.keyDir, root.Label)
-		if root.Pin != mkPin(&k.PublicKey) || root.Place != root.Label+".x509.key.pem" {
+		if root.Pin != mkPin(&k.PublicKey) || root.Place != "x509-root-"+strings.ToLower(root.Label) {
 			t.Errorf("%s: pin %s place %s", root.Label, root.Pin, root.Place)
 		}
 		sig := r.plan.Signatures[2*i]
@@ -251,7 +246,7 @@ func TestMakeRootsWritesNoFileInTheBundleAndOnlyTheKeysInTheKeyDirectory(t *test
 	before := tree(t, r.bundleDir)
 	r.mustMake()
 	sameTree(t, "the bundle", before, tree(t, r.bundleDir))
-	if got, want := r.keyFiles(), []string{"A.removal.jws", "A.x509.key.pem", "B.removal.jws", "B.x509.key.pem"}; !slices.Equal(got, want) {
+	if got, want := r.keyFiles(), []string{"A.removal.jws", "B.removal.jws", mkKeyFile("A"), mkKeyFile("B")}; !slices.Equal(got, want) {
 		t.Errorf("the key directory holds %v, want %v", got, want)
 	}
 	for _, n := range r.keyFiles() {
@@ -334,7 +329,7 @@ func TestAFailedBirthOfTheSecondKeyLeavesOneKeyFileOneLineAndNoSignature(t *test
 	if !errors.As(err, &me) || me.Step != "births" {
 		t.Errorf("the error is %v, want a MakeError of the step births", err)
 	}
-	if got := r.keyFiles(); !slices.Equal(got, []string{"A.x509.key.pem"}) {
+	if got := r.keyFiles(); !slices.Equal(got, []string{mkKeyFile("A")}) {
 		t.Errorf("the key directory holds %v, want one key file", got)
 	}
 	if r.log.count("births-line") != 1 || r.log.count("console:") != 0 || r.log.count("sign") != 0 || r.log.count("signatures-line") != 0 {
@@ -353,7 +348,7 @@ func TestAKeyThatIsBornAndWhoseJournalLineFailsLeavesTheKeyAndNoFingerprint(t *t
 		t.Fatalf("MakeRoots: a result %v, the error %v", m != nil, err)
 	}
 	// The key exists; the line does not: the page says that a missing line may mean that the key exists.
-	if got := r.keyFiles(); !slices.Equal(got, []string{"A.x509.key.pem", "B.x509.key.pem"}) {
+	if got := r.keyFiles(); !slices.Equal(got, []string{mkKeyFile("A"), mkKeyFile("B")}) {
 		t.Errorf("the key directory holds %v", got)
 	}
 	if r.log.count("births-line") != 1 || r.log.count("console:") != 0 || r.log.count("sign") != 0 {
@@ -596,7 +591,7 @@ func TestAContextThatIsCancelledAfterTheFirstBirthStopsTheRun(t *testing.T) {
 	if m != nil || !errors.Is(err, context.Canceled) {
 		t.Fatalf("MakeRoots: a result %v, the error %v", m != nil, err)
 	}
-	if got := r.keyFiles(); !slices.Equal(got, []string{"A.x509.key.pem"}) {
+	if got := r.keyFiles(); !slices.Equal(got, []string{mkKeyFile("A")}) {
 		t.Errorf("the key directory holds %v", got)
 	}
 	if r.log.count("birth B") != 0 || r.log.count("sign") != 0 {
@@ -944,14 +939,13 @@ func TestSettingsAndRootThatAreNotTheFilesOfThePlanAreRefusedBeforeAnyKeyIsMade(
 	}
 }
 
-func TestAKeyFileNameThatIsAFolderOrALinkStopsTheRunAfterTheKeysBeforeItAndReplacesNothing(t *testing.T) {
-	// The check of the key directory counts regular key files only (the tests of CheckKeyDir say so), so
-	// a folder or a link with the name of the key file of B is seen when B is born, after A. The run
-	// stops with key-exists, and nothing that stands in the folder is replaced or removed.
+func TestAFolderOrALinkWithTheNameOfTheKeyFolderIsRefusedBeforeAnyKeyIsMadeAndReplacesNothing(t *testing.T) {
+	// The check of the key directory counts the name test-only-keys of any kind, a folder or a link too, and
+	// refuses with key-exists before a key is made. Nothing that stands in the folder is replaced or removed.
 	for _, kind := range []string{"folder", "link"} {
 		t.Run(kind, func(t *testing.T) {
 			r := newMkRun(t)
-			path := filepath.Join(r.keyDir, "B.x509.key.pem")
+			path := filepath.Join(r.keyDir, "test-only-keys")
 			if kind == "folder" {
 				if err := os.Mkdir(path, 0o700); err != nil {
 					t.Fatal(err)
@@ -965,12 +959,12 @@ func TestAKeyFileNameThatIsAFolderOrALinkStopsTheRunAfterTheKeysBeforeItAndRepla
 			}
 			st, lerr := os.Lstat(path)
 			if lerr != nil || (kind == "folder") != st.IsDir() || (kind == "link") != (st.Mode()&os.ModeSymlink != 0) {
-				t.Errorf("the entry with the name of the key file changed: %v, %v", st, lerr)
+				t.Errorf("the entry with the name of the key folder changed: %v, %v", st, lerr)
 			}
 			if _, err := os.Stat(filepath.Join(r.root, "elsewhere")); err == nil {
 				t.Error("a file was written through the link")
 			}
-			if r.log.count("signatures-line") != 0 || r.log.count("console:") != 0 {
+			if r.log.count("birth") != 0 || r.log.count("signatures-line") != 0 || r.log.count("console:") != 0 {
 				t.Errorf("the run went on:\n%s", strings.Join(r.log.all(), "\n"))
 			}
 		})

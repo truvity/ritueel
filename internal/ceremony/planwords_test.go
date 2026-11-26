@@ -33,8 +33,8 @@ func TestTheGoldenPlanInWords(t *testing.T) {
 	want := []string{
 		"ceremony 20261120T100000Z-apply, made at 2026-11-20T10:00:00Z, by ritueel v0.0.0-test (linux/amd64)",
 		"writes the first trust set, number 1",
-		"make the X.509 root key A: a software key in a file (A.x509.key.pem), TEST ONLY",
-		"make the X.509 root key B: a software key in a file (B.x509.key.pem), TEST ONLY",
+		"make the X.509 root key A: a software key in a file of the folder test-only-keys (x509-root-a), TEST ONLY",
+		"make the X.509 root key B: a software key in a file of the folder test-only-keys (x509-root-b), TEST ONLY",
 		"leaves out: nothing",
 		"signatures: 5; none can be fixed before the keys are born, so each is derived from a key made in this ceremony",
 		"touches: 0",
@@ -60,7 +60,7 @@ func TestThePlanInWordsHasTheRequestsItLeavesOut(t *testing.T) {
 		t.Errorf("no line %q in\n%s", want, strings.Join(words, "\n"))
 	}
 	i := slices.Index(words, want)
-	if words[i-1] != "make the X.509 root key B: a software key in a file (B.x509.key.pem), TEST ONLY" || !strings.HasPrefix(words[i+1], "signatures: 5;") {
+	if words[i-1] != "make the X.509 root key B: a software key in a file of the folder test-only-keys (x509-root-b), TEST ONLY" || !strings.HasPrefix(words[i+1], "signatures: 5;") {
 		t.Errorf("the line is not between the keys and the signatures: %q ... %q", words[i-1], words[i+1])
 	}
 }

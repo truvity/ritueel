@@ -447,10 +447,15 @@ func TestTwoRunsOfOneSavedPlanFromTwoGoroutinesLetExactlyOneWin(t *testing.T) {
 			if _, stopped := rtStopped(o.err); !stopped && !errors.As(o.err, &ref) && rtKind(o.err) != "failure" {
 				t.Errorf("try %d, run %d: %v is neither a refusal nor a failure", try, i, o.err)
 			}
-			if ents, _ := os.ReadDir(keys[i]); len(ents) != 0 {
-				// A loser that reached the key store made keys only if it also wrote its attempt, which
-				// the exclusive create gives to one run.
-				t.Errorf("try %d, run %d lost and left %d files in its key directory", try, i, len(ents))
+			// A loser that reached the key store made keys only if it also wrote its attempt, which the
+			// exclusive create gives to one run. The store is started before the attempt, so a loser may
+			// have made the empty folder test-only-keys, and nothing else.
+			for _, e := range func() []os.DirEntry { ents, _ := os.ReadDir(keys[i]); return ents }() {
+				inner, ierr := os.ReadDir(filepath.Join(keys[i], e.Name()))
+				if e.Name() == "test-only-keys" && e.IsDir() && ierr == nil && len(inner) == 0 {
+					continue
+				}
+				t.Errorf("try %d, run %d lost and left %q in its key directory", try, i, e.Name())
 			}
 		}
 		if wins != 1 {

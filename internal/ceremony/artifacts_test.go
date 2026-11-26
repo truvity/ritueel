@@ -570,7 +570,7 @@ func TestEveryBreakOfTheJournalsIsRefusedWithTheMemberNamed(t *testing.T) {
 		}, "births.jsonl"},
 		{"a birth line that is empty", func(_ **ceremony.PlanOut, _ map[string]string, b, _ *ceremony.JournalRead) { b.Lines[1] = nil }, "births.jsonl"},
 		{"another place in a birth line", func(_ **ceremony.PlanOut, _ map[string]string, b, _ *ceremony.JournalRead) {
-			b.Lines[0] = bytes.Replace(b.Lines[0], []byte("A.x509.key.pem"), []byte("Z.x509.key.pem"), 1)
+			b.Lines[0] = bytes.Replace(b.Lines[0], []byte("x509-root-a"), []byte("x509-root-z"), 1)
 		}, "births.jsonl"},
 		{"another store in a birth line", func(_ **ceremony.PlanOut, _ map[string]string, b, _ *ceremony.JournalRead) {
 			b.Lines[0] = bytes.Replace(b.Lines[0], []byte(`"software"`), []byte(`"piv"`), 1)

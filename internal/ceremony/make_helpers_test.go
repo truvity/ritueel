@@ -8,7 +8,6 @@ import (
 	"crypto"
 	"crypto/ecdsa"
 	"crypto/x509"
-	"encoding/pem"
 	"errors"
 	"fmt"
 	"io"
@@ -210,6 +209,11 @@ func (s *mkStore) Refuse(ctx context.Context) error {
 		return s.refuseErr
 	}
 	return s.inner.Refuse(ctx)
+}
+
+// Start is forwarded and not logged: it is not one of the acts that the tests of the order watch.
+func (s *mkStore) Start(ctx context.Context, labels []string) error {
+	return s.inner.Start(ctx, labels)
 }
 
 func (s *mkStore) Birth(ctx context.Context, label string) (keystore.Key, error) {
@@ -460,7 +464,8 @@ func (r *mkRun) mustMake() *ceremony.Made {
 	return m
 }
 
-// keyFiles are the names of the files in the key directory, sorted.
+// keyFiles are the names of the files in the key directory, sorted: the removal authorisations, and the
+// files in the folder test-only-keys under the name test-only-keys/<file>. The folder itself is not listed.
 func (r *mkRun) keyFiles() []string {
 	r.t.Helper()
 	ents, err := os.ReadDir(r.keyDir)
@@ -469,9 +474,25 @@ func (r *mkRun) keyFiles() []string {
 	}
 	var out []string
 	for _, e := range ents {
-		out = append(out, e.Name())
+		if e.Name() != "test-only-keys" {
+			out = append(out, e.Name())
+			continue
+		}
+		inner, err := os.ReadDir(filepath.Join(r.keyDir, e.Name()))
+		if err != nil {
+			r.t.Fatal(err)
+		}
+		for _, f := range inner {
+			out = append(out, e.Name()+"/"+f.Name())
+		}
 	}
 	return out
+}
+
+// mkKeyFile is the name of the key file of a label under the key directory, as the key driver keeps it:
+// test-only-keys/x509-root-<label in lower case>.p8.
+func mkKeyFile(label string) string {
+	return "test-only-keys/x509-root-" + strings.ToLower(label) + ".p8"
 }
 
 // mkCache makes one good ceremony once per test binary would be cheaper, but a test that changes
@@ -485,15 +506,11 @@ func mkGood(t *testing.T) (*mkRun, *ceremony.Made) {
 // mkScalar reads the private scalar of the key file of a label in the key directory.
 func mkScalar(t testing.TB, keyDir, label string) []byte {
 	t.Helper()
-	b, err := os.ReadFile(filepath.Join(keyDir, label+".x509.key.pem"))
+	b, err := os.ReadFile(filepath.Join(keyDir, mkKeyFile(label)))
 	if err != nil {
 		t.Fatal(err)
 	}
-	blk, _ := pem.Decode(b)
-	if blk == nil {
-		t.Fatal("the key file holds no PEM block")
-	}
-	k, err := x509.ParsePKCS8PrivateKey(blk.Bytes)
+	k, err := x509.ParsePKCS8PrivateKey(b)
 	if err != nil {
 		t.Fatalf("the key file does not parse: %v", err)
 	}
