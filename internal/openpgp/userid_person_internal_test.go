@@ -19,12 +19,18 @@ func TestCheckPersonUserID(t *testing.T) {
 		{"name and address", "Example Person <person@example.org>", true},
 		{"a comment", "Example Person (work) <person@example.org>", true},
 		{"no address", "Example Person", true},
-		{"letters outside ASCII", "Zoë Müller-Łukasiewicz <zoe@example.org>", true},
-		{"other scripts", "例 示 <person@example.org>", true},
+		{"two spaces inside", "Example  Person", true},
+		{"every printable symbol", "!\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~", true},
 		{"a release root's shape is allowed", "Example Release Root A <release@example.org>", true},
 		{"as long as it may be", strings.Repeat("a", maxUserID), true},
 		{"empty", "", false},
 		{"one byte too long", strings.Repeat("a", maxUserID+1), false},
+		{"a space at the start", " Example Person", false},
+		{"a space at the end", "Example Person ", false},
+		{"only a space", " ", false},
+		{"letters outside ASCII", "Zo\u00eb M\u00fcller <zoe@example.org>", false},
+		{"a Cyrillic letter that looks Latin", "Examp\u043ee Person", false},
+		{"a Hebrew letter", "Example \u05d0 Person", false},
 		{"not UTF-8", "Example \xff Person", false},
 		{"a line break", "Example\nPerson", false},
 		{"a tab", "Example\tPerson", false},
@@ -37,10 +43,7 @@ func TestCheckPersonUserID(t *testing.T) {
 		{"a bidirectional override", "Example \u202eerson", false},
 		{"a line separator", "Example\u2028Person", false},
 		{"a no-break space", "Example\u00a0Person", false},
-		{"a private-use character", "Example\ue000Person", false},
 		{"a combining mark", "Zoe\u0308 Person", false},
-		{"a noncharacter", "Example\ufdd0Person", false},
-		{"a code point with no meaning", "Example\u0378Person", false},
 	}
 	for _, c := range cases {
 		err := checkPersonUserID(c.id)
@@ -51,12 +54,15 @@ func TestCheckPersonUserID(t *testing.T) {
 			t.Errorf("%s: %v is not an ErrParams", c.name, err)
 		}
 	}
-	// checkUserID still requires the shape, with the same character rules
+	// checkUserID still requires the shape, with the character rules of before
 	if checkUserID("Example Person <person@example.org>") == nil {
 		t.Error("checkUserID takes a user ID that is not a release root's")
 	}
 	if checkUserID("Example Release Root A <release@example.org>") != nil {
 		t.Error("checkUserID refuses a release root's user ID")
+	}
+	if checkUserIDText("Zo\u00eb \u00e9") != nil || checkUserIDText("a\u0378") == nil || checkUserIDText("a\u200bb") == nil {
+		t.Error("the character rules of checkUserID changed")
 	}
 }
 

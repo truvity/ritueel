@@ -117,19 +117,14 @@ func checkAddress(address string) error {
 // point, a noncharacter, or a space other than the plain space U+0020. It then requires the shape
 // that [UserID] writes, and applies the rules of that function to each part.
 func checkUserID(id string) error {
-	if err := checkPersonUserID(id); err != nil {
+	if err := checkUserIDText(id); err != nil {
 		return err
 	}
 	return checkUserIDShape(id)
 }
 
-// checkPersonUserID is the character rules of [checkUserID] and nothing of the shape of a release
-// root's user ID: it is the rule for a NEW user ID of a person's own key (record 0008, rule 16), which
-// has the name and the address that the person gives, in any form. The text is not empty, is at most
-// 1024 bytes, is UTF-8, and holds no control character, no format character, no separator (line,
-// paragraph or space other than U+0020), no private-use or surrogate code point, no combining mark, no
-// noncharacter and no code point with no assigned meaning.
-func checkPersonUserID(id string) error {
+// checkUserIDText is the character rules of [checkUserID], with no shape.
+func checkUserIDText(id string) error {
 	if id == "" {
 		return fail(ErrParams, "the user ID is empty")
 	}
@@ -153,6 +148,30 @@ func checkPersonUserID(id string) error {
 		case !isAssigned(r):
 			return fail(ErrParams, "the user ID holds a code point with no assigned meaning (U+%04X)", r)
 		}
+	}
+	return nil
+}
+
+// checkPersonUserID is the rule for a NEW user ID of a person's own key (record 0008, rule 16), which has
+// the name and the address that the person gives, in any form and with no shape of a release root's. It is
+// printable ASCII only: the bytes 0x20 to 0x7E, with no space at the start or the end, not empty and at
+// most 1024 bytes. The wanted files that feed it are ASCII, and a text of ASCII has no letter that is
+// invisible, no letter that is read from right to left, and no two letters that look the same. A user ID
+// that the key already has keeps its exact bytes and is held to [checkExistingUserID].
+func checkPersonUserID(id string) error {
+	if id == "" {
+		return fail(ErrParams, "the user ID is empty")
+	}
+	if len(id) > maxUserID {
+		return fail(ErrParams, "the user ID is longer than %d bytes", maxUserID)
+	}
+	for i := 0; i < len(id); i++ {
+		if id[i] < ' ' || id[i] > '~' {
+			return fail(ErrParams, "the user ID holds a character that is not printable ASCII (byte %d)", i)
+		}
+	}
+	if id[0] == ' ' || id[len(id)-1] == ' ' {
+		return fail(ErrParams, "the user ID has a space at its start or its end")
 	}
 	return nil
 }
