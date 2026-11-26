@@ -461,7 +461,7 @@ var fkRichSubs = []string{"valid", "expired", "revoked", "rebound", "revokedonly
 // verify, a weak one, a misplaced one, a subkey with a garbage secret, a subkey with a card stub
 // (go-crypto 1.5.2 does not skip the serial number of one), a subkey with no binding first or only the
 // binding of another key. What is left reads in both.
-func fkBuildRich(t testing.TB, b *fkBase, prot fkProt, clean bool) *fkRich {
+func fkBuildRich(t testing.TB, b *fkBase, prot fkProt, clean bool, skipSubs ...string) *fkRich {
 	t.Helper()
 	enc, sig, other := fkDonors(t)
 	me := b.primaryPair()
@@ -563,6 +563,9 @@ func fkBuildRich(t testing.TB, b *fkBase, prot fkProt, clean bool) *fkRich {
 	next := 0
 	bind := func(d fkDonorKey, s fkSigSpec) []byte { return b.subSig(t, me, d.pair.pub, s) }
 	for _, name := range fkRichSubs {
+		if slices.Contains(skipSubs, name) {
+			continue
+		}
 		if clean && (name == "nobacksig" || name == "weakbind" || name == "misplaced" || name == "garbage" || name == "revokedonly" || name == "other" || name == "rebound" || name == "card" || name == "card254") {
 			continue
 		}
@@ -651,6 +654,25 @@ var (
 	fkRichMu    sync.Mutex
 	fkRichCache = map[string]*fkRich{}
 )
+
+// fkRichKept is the rich file without the signing subkey that has no back-signature: its binding is the one
+// that go-crypto refuses to read as a key ring, and the certificate of the rest is to be read by it.
+func fkRichKept(t testing.TB, b *fkBase, protected bool) *fkRich {
+	t.Helper()
+	key := fmt.Sprintf("%s/%v/kept", b.name, protected)
+	fkRichMu.Lock()
+	defer fkRichMu.Unlock()
+	if r, ok := fkRichCache[key]; ok {
+		return r
+	}
+	prot := fkProt{}
+	if protected {
+		prot = fkProt{Pass: fkPass}
+	}
+	r := fkBuildRich(t, b, prot, false, "nobacksig")
+	fkRichCache[key] = r
+	return r
+}
 
 // fkRichOf returns the rich file of a template and a protection, made once for the test binary.
 func fkRichOf(t testing.TB, b *fkBase, protected, clean bool) *fkRich {

@@ -244,6 +244,7 @@ func FuzzForeignOpenSecret(f *testing.F) {
 			fkPlainText(t, err)
 			return
 		}
+		_ = fkCertProperty(t, "the key", k)
 		pk, err := gpacket.Read(bytes.NewReader(wrap(6, softBody(t, k.Certificate()))))
 		if err != nil {
 			t.Fatalf("go-crypto does not read the primary: %v", err)
@@ -397,22 +398,13 @@ func FuzzForeignSubkeyPublicPart(f *testing.F) {
 			fkPlainText(t, err)
 			return
 		}
+		// refused, or the certificate holds nothing of the secret area (the property of a certificate)
+		var secret [][]byte
+		if len(area) > 2 {
+			secret = [][]byte{area[2:]}
+		}
+		_ = fkCertProperty(t, "the subkey", k, secret...)
 		cert := k.Certificate()
-		ctags, bodies, ok := softPackets(cert)
-		if !ok {
-			t.Fatal("the certificate is not whole packets")
-		}
-		for i, tag := range ctags {
-			if tag == 14 && len(k.Subkeys) == 1 && k.Subkeys[0].Form != openpgp.SubkeyPublic {
-				sub := bodies[i]
-				if !bytes.HasPrefix(body, sub) {
-					t.Fatal("the subkey of the certificate is not the start of the secret subkey packet")
-				}
-				if len(sub) > len(pub)+2 {
-					t.Fatalf("the subkey of the certificate takes %d bytes of the secret area", len(sub)-len(pub))
-				}
-			}
-		}
 		if len(area) > 2 {
 			if where, bad := fkLeaksExcept(cert, pub, area[2:]); bad {
 				t.Fatalf("the certificate holds a run of the secret area (%s)", where)
