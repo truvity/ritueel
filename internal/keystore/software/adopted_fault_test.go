@@ -225,6 +225,15 @@ func TestASaveOfAnAdoptedKeyThatDoesNotReadBackAsWrittenSaysSoAndKeepsTheFile(t 
 			if !strings.Contains(err.Error(), adFinal) {
 				t.Errorf("the error does not name the file: %v", err)
 			}
+			// the comparison with the bytes that were written comes first, and says so, whatever the
+			// file would say of itself when it is opened
+			say := "does not read back as it was written"
+			if !d.keeps {
+				say = "cannot be read back"
+			}
+			if !strings.Contains(err.Error(), say) || strings.Contains(err.Error(), "failed its check") {
+				t.Errorf("the error does not say %q: %v", say, err)
+			}
 			if d.keeps {
 				if _, err := os.Stat(filepath.Join(keys, adFinal)); err != nil {
 					t.Errorf("the file was deleted: %v", err)

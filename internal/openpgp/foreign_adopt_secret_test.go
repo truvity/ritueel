@@ -449,8 +449,14 @@ func TestOpenSecretPacketHoldsTheRSANumbersToTheirBounds(t *testing.T) {
 				x.Sec = append(x.Sec, fkMPI(num))
 			}
 			err := alRefusal(t, c.name, b, x.packet(), c.nums, openpgp.ErrForeignSecret)
-			if err != nil && !strings.Contains(err.Error(), "not below its bound") {
-				t.Errorf("the text does not name the bound: %v", err)
+			// a d that is over the modulus by more than the length of the modulus is refused for its length
+			// before its value is looked at: the key is made at random, and so is which one of the two
+			word := "not below its bound"
+			if len(c.nums[0]) > 512 {
+				word = "four numbers"
+			}
+			if err != nil && !strings.Contains(err.Error(), word) {
+				t.Errorf("the text does not say %q: %v", word, err)
 			}
 		})
 	}

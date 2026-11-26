@@ -2,7 +2,10 @@ package software
 
 import (
 	"bytes"
+	"crypto"
+	"encoding/json"
 	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -11,6 +14,7 @@ import (
 
 	pgp "github.com/ProtonMail/go-crypto/openpgp"
 
+	"ritueel.id/ritueel/internal/keystore"
 	"ritueel.id/ritueel/internal/openpgp"
 )
 
@@ -397,5 +401,130 @@ func TestTheExportedFileIsNeverTouched(t *testing.T) {
 	}
 	if _, err := pgp.ReadKeyRing(bytes.NewReader(file)); err != nil {
 		t.Errorf("go-crypto does not read the export after the save: %v", err)
+	}
+}
+
+func TestAnExistingKeyFileIsRefusedBeforeAnyPassphraseIsAsked(t *testing.T) {
+	lowWork(t)
+	b := adoptedNamed(t, "ed25519")
+	saved := adSavedOf(t, "ed25519")
+	born := mustGenerate(t)
+	// a protected export, so that a prompt for it would be asked first if the name were looked at late
+	fk := b.foreign(t, exportPass)
+	for name, plant := range map[string]func(t *testing.T, st *Store, keys string){
+		"an adopted key file": func(t *testing.T, _ *Store, keys string) { writeKeyFile(t, keys, adFinal, saved.file) },
+		"a key file of a key that ritueel made": func(t *testing.T, st *Store, _ string) {
+			if err := st.SaveOpenPGP("A", born, certFor(t, born)); err != nil {
+				t.Fatal(err)
+			}
+		},
+		"a file with nothing in it": func(t *testing.T, _ *Store, keys string) { writeKeyFile(t, keys, adFinal, nil) },
+	} {
+		t.Run(name, func(t *testing.T) {
+			src := adoptedSource(exportPass)
+			st, _, keys := openPassStore(t, src)
+			plant(t, st, keys)
+			asked := src.calls()
+			before := readKeyFile(t, keys, adFinal)
+			names := dirNames(t, keys)
+			rec := record(st)
+			err := st.SaveAdopted(bg(), "A", fk)
+			wantRefusal(t, err, ErrKeyExists, "key-exists", exportPass, testPass)
+			if src.calls() != asked {
+				t.Errorf("the source was asked %d times for a file that stands there", src.calls()-asked)
+			}
+			if rec.calls() != 0 || !bytes.Equal(before, readKeyFile(t, keys, adFinal)) || strings.Join(dirNames(t, keys), ",") != strings.Join(names, ",") {
+				t.Errorf("the folder was written to")
+			}
+			if fk.Wiped() {
+				t.Errorf("the export was wiped")
+			}
+			// the store is stopped, as it is for every other key that stands: nothing more is asked
+			if again := st.SaveAdopted(bg(), "B", fk); again != err { //nolint:errorlint // the very same error value
+				t.Errorf("the next save returns %v, want the first error itself", again)
+			}
+			if src.calls() != asked {
+				t.Errorf("the source was asked after the stop")
+			}
+		})
+	}
+}
+
+func TestAnAdoptedKeyShowsAndMarshalsNothingOfItself(t *testing.T) {
+	lowWork(t)
+	for _, name := range []string{"ed25519", "p384"} {
+		k, s := adOpen(t, name)
+		words := adSecretWords(s.pkt)
+		for _, v := range []any{k, *k, struct{ Key *AdoptedKey }{k}, []*AdoptedKey{k}, map[string]*AdoptedKey{"a": k}} {
+			for _, verb := range []string{"%v", "%+v", "%#v", "%s", "%x", "%q", "%d"} {
+				out := fmt.Sprintf(verb, v)
+				for _, w := range words[:4] {
+					if strings.Contains(out, w) {
+						t.Errorf("%s of %T holds a run of the secret", verb, v)
+					}
+				}
+			}
+		}
+		for what, marshal := range map[string]func() ([]byte, error){
+			"json": func() ([]byte, error) { return json.Marshal(k) }, //nolint:staticcheck // that it marshals to nothing is what is tested
+			"text": func() ([]byte, error) { return json.Marshal(struct{ K *AdoptedKey }{k}) },
+		} {
+			out, err := marshal()
+			if err != nil || strings.Contains(string(out), "secret") || len(out) > 20 {
+				t.Errorf("%s: %q %v, want nothing of the key", what, out, err)
+			}
+		}
+	}
+}
+
+func TestEveryMethodOfANilOrZeroAdoptedKeyIsSafe(t *testing.T) {
+	for name, k := range map[string]*AdoptedKey{"nil": nil, "zero": {}} {
+		t.Run(name, func(t *testing.T) {
+			if k.Close() != nil || k.Public() != nil || k.Fingerprint() != "" || !k.Created().IsZero() || k.Algorithm() != (openpgp.ForeignAlgorithm{}) {
+				t.Errorf("a method answers something")
+			}
+			if k.Kind() != keystore.KindSoftware || !k.Copyable() || len(k.Warnings()) != 1 {
+				t.Errorf("the answers that need no key are not those of a software key")
+			}
+			if _, err := k.Sign(nil, make([]byte, 32), crypto.SHA256); !errors.Is(err, ErrParams) {
+				t.Errorf("Sign: %v", err)
+			}
+			if err := k.selfCheck(); !errors.Is(err, ErrParams) {
+				t.Errorf("selfCheck: %v", err)
+			}
+		})
+	}
+}
+
+func TestAnAdoptedKeyIsNotOpenedFromAFileOfTheOtherModeOrAFileThatIsNotAnAgeFile(t *testing.T) {
+	lowWork(t)
+	s := adSavedOf(t, "ed25519")
+	for name, c := range map[string]struct {
+		file string
+		data []byte
+		want error
+		code string
+	}{
+		"the plain key file of a test root": {"A.openpgp.key.asc", []byte("TEST ONLY"), ErrWrongMode, "key-file-mode"},
+		"a file that is not an age file":    {adFinal, []byte("not an age file at all"), ErrKeyFile, "key-file"},
+		"an empty file":                     {adFinal, nil, ErrKeyFile, "key-file"},
+		"the age header and nothing else":   {adFinal, []byte("age-encryption.org/v1\n"), ErrKeyFile, "key-file"},
+	} {
+		t.Run(name, func(t *testing.T) {
+			src := newPassSource(testPass)
+			st, _, keys := openPassStore(t, src)
+			writeKeyFile(t, keys, c.file, c.data)
+			k, err := st.OpenAdopted(bg(), "A", expectOf(s.fk))
+			if k != nil {
+				t.Errorf("a key is returned")
+			}
+			wantRefusal(t, err, c.want, c.code)
+			if err := st.CheckAdopted(bg(), "A", expectOf(s.fk)); !errors.Is(err, c.want) {
+				t.Errorf("CheckAdopted: %v", err)
+			}
+			if src.calls() != 0 {
+				t.Errorf("the source was asked for a file that is refused by its look")
+			}
+		})
 	}
 }

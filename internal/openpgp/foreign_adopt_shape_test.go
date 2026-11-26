@@ -12,6 +12,7 @@ import (
 	"crypto/sha512"
 	"encoding/base64"
 	"encoding/binary"
+	"errors"
 	"math/big"
 	"strings"
 	"testing"
@@ -287,4 +288,52 @@ func alReverse(s string) string {
 		b[i], b[j] = b[j], b[i]
 	}
 	return string(b)
+}
+
+func TestPrimaryPublicBodyIsACopyAndHoldsItsLimits(t *testing.T) {
+	fkEachBase(t, func(t *testing.T, b *fkBase) {
+		k := fkRead(t, b.plain)
+		cert := k.Certificate()
+		body, err := openpgp.PrimaryPublicBody(cert)
+		if err != nil {
+			t.Fatal(err)
+		}
+		want := bytes.Clone(body)
+		clear(body)
+		if again, _ := openpgp.PrimaryPublicBody(cert); !bytes.Equal(again, want) {
+			t.Errorf("the body that was returned is not a copy: clearing it changed the certificate")
+		}
+		// either form of the header, and what follows the first packet is not read
+		old := append(oldPacket(6, want), []byte("not packets at all")...)
+		if got, err := openpgp.PrimaryPublicBody(old); err != nil || !bytes.Equal(got, want) {
+			t.Errorf("the old form of the header: %v", err)
+		}
+		// a packet that claims more than the limit is a limit, not a form
+		huge := []byte{0xC6, 0xFF, 0x7F, 0xFF, 0xFF, 0xFF}
+		if _, err := openpgp.PrimaryPublicBody(huge); !errors.Is(err, openpgp.ErrForeignLimit) {
+			t.Errorf("a packet of 2 GiB: %v, want ErrForeignLimit", err)
+		}
+		over := wrap(6, make([]byte, openpgp.MaxForeignPacketBytes+1))
+		if _, err := openpgp.PrimaryPublicBody(over); !errors.Is(err, openpgp.ErrForeignLimit) {
+			t.Errorf("a packet one byte over the limit: %v, want ErrForeignLimit", err)
+		}
+		// the public part of another algorithm is not read, and a packet with bytes after the key is not one
+		for name, c := range map[string][]byte{
+			"a byte after the key": wrap(6, append(bytes.Clone(want), 0)),
+			"the version changed":  wrap(6, append([]byte{3}, want[1:]...)),
+			"a secret key packet":  wrap(5, want),
+			"an empty packet":      wrap(6, nil),
+			"nothing":              nil,
+		} {
+			got, err := openpgp.PrimaryPublicBody(c)
+			if err == nil || got != nil || !errors.Is(err, openpgp.ErrForeignKey) {
+				t.Errorf("%s: %v %v, want a refusal and nothing", name, got, err)
+			}
+		}
+	})
+}
+
+// oldPacket writes a packet in the old format with a two-octet length.
+func oldPacket(tag byte, body []byte) []byte {
+	return append([]byte{0x80 | tag<<2 | 1, byte(len(body) >> 8), byte(len(body))}, body...)
 }
