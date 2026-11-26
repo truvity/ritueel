@@ -113,7 +113,13 @@ func TestQASnapshotDoesNotDependOnAnyOrderOfTheFile(t *testing.T) {
 					if !qaSnapshotEqual(first, k) {
 						t.Fatalf("the snapshot depends on the order:\n%+v\n%+v", openpgp.SnapshotOf(first), openpgp.SnapshotOf(k))
 					}
-					if !reflect.DeepEqual(first.SigningBasis(), k.SigningBasis()) {
+					// the digest of the certificate is the one thing of the basis that follows the bytes of the file
+					fb, kb := first.SigningBasis(), k.SigningBasis()
+					if fb.CertificateSHA256 != sha256.Sum256(first.Certificate()) || kb.CertificateSHA256 != sha256.Sum256(k.Certificate()) {
+						t.Fatal("the digest of the basis is not the digest of the certificate")
+					}
+					fb.CertificateSHA256, kb.CertificateSHA256 = [32]byte{}, [32]byte{}
+					if !reflect.DeepEqual(fb, kb) {
 						t.Fatal("the description of the basis depends on the order")
 					}
 					p1, ok1 := openpgp.SnapshotPrimaryUserID(first)
@@ -133,17 +139,21 @@ func TestQASnapshotDoesNotDependOnAnyOrderOfTheFile(t *testing.T) {
 	// the tie is marked
 	u := openpgp.SnapshotUsers(first)[0]
 	t.Logf("the answer for the user ID with four signatures in one second: %+v", u)
-	if u.Text != A || u.Expires.Sub(fkEpoch) != 10*86400*time.Second || !u.Signed.Equal(fkAt(1000)) || !u.Tied {
+	if u.Text != A || u.Expires.Sub(fkEpoch) != 10*86400*time.Second || !u.Signed.Equal(fkAt(1000)) || !u.Tied || u.Weak {
 		t.Errorf("the user ID of the answer: %+v", u)
 	}
 	if e := openpgp.SnapshotKey(first).Expiry; !e.Any || e.Agree || e.Marked || e.Earliest.Sub(fkEpoch) != 10*86400*time.Second {
 		t.Errorf("the end of the key of the answer: %+v", e)
 	}
-	if !openpgp.SnapshotKey(first).DirectTied {
-		t.Error("three direct-key signatures in one second are not marked as tied")
+	if openpgp.SnapshotKey(first).DirectTied {
+		t.Error("three direct-key signatures in one second with other ends are tied: the end decided")
 	}
 	if p, ok := openpgp.SnapshotPrimaryUserID(first); !ok || p != B {
 		t.Errorf("the primary user ID is %q (%v), want the flagged one, %q", p, ok, B)
+	}
+	// the strong one wins the tie of the end, so that the flags are those of a strong signature: 1 or 4
+	if u.Flags != 1 && u.Flags != 4 {
+		t.Errorf("the flags of the user ID are %d: the SHA-1 signature, flags 8, or the one with the later end, won", u.Flags)
 	}
 	var tiedSubs []bool
 	for _, s := range openpgp.SnapshotSubkeys(first) {
@@ -369,9 +379,9 @@ func TestQAUncountedClaimsCoverOnlyCertificationsAndDirectKeySignatures(t *testi
 	}
 }
 
-// Which user ID is THE primary one: among the live user IDs that carry the primary flag, the newest source, a
-// tie by the smaller text; none flagged, the live one with the newest source, a tie in the same way; none live,
-// none. The rule is held for every order of the user IDs in the file.
+// Which user ID is THE primary one: among the live user IDs whose source carries the primary flag, the newest
+// source, a tie by the smaller text; and NONE when no live user ID carries the flag: the answer only describes,
+// there is no fall-back to the newest user ID. The rule is held for every order of the user IDs in the file.
 func TestQAPrimaryUserIDRule(t *testing.T) {
 	b := fkNamed(t, "ed25519")
 	w := fkWriter{b}
@@ -388,18 +398,20 @@ func TestQAPrimaryUserIDRule(t *testing.T) {
 		name   string
 		blocks []qaUserBlock
 		want   string // empty: none
+		flags  int    // how many live user IDs carry the flag in their source
 	}{
-		{"two flagged: the newest source", []qaUserBlock{{A, [][]byte{cert(A, 1000, true)}}, {B, [][]byte{cert(B, 1100, true)}}}, B},
-		{"two flagged in one second: the smaller text", []qaUserBlock{{B, [][]byte{cert(B, 1000, true)}}, {A, [][]byte{cert(A, 1000, true)}}}, A},
-		{"three flagged, the newest in the middle", []qaUserBlock{{A, [][]byte{cert(A, 1000, true)}}, {C, [][]byte{cert(C, 1200, true)}}, {B, [][]byte{cert(B, 1100, true)}}}, C},
-		{"none flagged: the newest source", []qaUserBlock{{A, [][]byte{cert(A, 1000, false)}}, {B, [][]byte{cert(B, 1100, false)}}}, B},
-		{"none flagged, in one second: the smaller text", []qaUserBlock{{B, [][]byte{cert(B, 1000, false)}}, {A, [][]byte{cert(A, 1000, false)}}}, A},
-		{"one flagged and older, one unflagged and newer: the flagged one", []qaUserBlock{{A, [][]byte{cert(A, 1000, true)}}, {B, [][]byte{cert(B, 1100, false)}}}, A},
-		{"the flag is in the newest signature only", []qaUserBlock{{A, [][]byte{cert(A, 1000, true), cert(A, 1100, false)}}, {B, [][]byte{cert(B, 1050, false)}}}, A},
-		{"the flagged one is revoked: the newest live one", []qaUserBlock{{A, [][]byte{cert(A, 1000, true), revoke(A, 1200)}}, {B, [][]byte{cert(B, 1100, false)}}}, B},
-		{"the newer flagged one is revoked: the older flagged one", []qaUserBlock{{A, [][]byte{cert(A, 1000, true)}}, {B, [][]byte{cert(B, 1100, true), revoke(B, 1200)}}}, A},
-		{"all revoked: none", []qaUserBlock{{A, [][]byte{cert(A, 1000, true), revoke(A, 1200)}}, {B, [][]byte{cert(B, 1100, false), revoke(B, 1300)}}}, ""},
-		{"one user ID, unflagged", []qaUserBlock{{A, [][]byte{cert(A, 1000, false)}}}, A},
+		{"two flagged: the newest source", []qaUserBlock{{A, [][]byte{cert(A, 1000, true)}}, {B, [][]byte{cert(B, 1100, true)}}}, B, 2},
+		{"two flagged in one second: the smaller text", []qaUserBlock{{B, [][]byte{cert(B, 1000, true)}}, {A, [][]byte{cert(A, 1000, true)}}}, A, 2},
+		{"three flagged, the newest in the middle", []qaUserBlock{{A, [][]byte{cert(A, 1000, true)}}, {C, [][]byte{cert(C, 1200, true)}}, {B, [][]byte{cert(B, 1100, true)}}}, C, 3},
+		{"none flagged: none", []qaUserBlock{{A, [][]byte{cert(A, 1000, false)}}, {B, [][]byte{cert(B, 1100, false)}}}, "", 0},
+		{"none flagged, in one second: none", []qaUserBlock{{B, [][]byte{cert(B, 1000, false)}}, {A, [][]byte{cert(A, 1000, false)}}}, "", 0},
+		{"one flagged and older, one unflagged and newer: the flagged one", []qaUserBlock{{A, [][]byte{cert(A, 1000, true)}}, {B, [][]byte{cert(B, 1100, false)}}}, A, 1},
+		{"the flag is in an older signature only: none", []qaUserBlock{{A, [][]byte{cert(A, 1000, true), cert(A, 1100, false)}}, {B, [][]byte{cert(B, 1050, false)}}}, "", 0},
+		{"the flagged one is revoked: none", []qaUserBlock{{A, [][]byte{cert(A, 1000, true), revoke(A, 1200)}}, {B, [][]byte{cert(B, 1100, false)}}}, "", 0},
+		{"the newer flagged one is revoked: the older flagged one", []qaUserBlock{{A, [][]byte{cert(A, 1000, true)}}, {B, [][]byte{cert(B, 1100, true), revoke(B, 1200)}}}, A, 1},
+		{"all revoked: none", []qaUserBlock{{A, [][]byte{cert(A, 1000, true), revoke(A, 1200)}}, {B, [][]byte{cert(B, 1100, false), revoke(B, 1300)}}}, "", 0},
+		{"one user ID, unflagged: none", []qaUserBlock{{A, [][]byte{cert(A, 1000, false)}}}, "", 0},
+		{"one user ID, flagged", []qaUserBlock{{A, [][]byte{cert(A, 1000, true)}}}, A, 1},
 	} {
 		t.Run(c.name, func(t *testing.T) {
 			qaPermutations(c.blocks, func(bs []qaUserBlock) {
@@ -414,6 +426,9 @@ func TestQAPrimaryUserIDRule(t *testing.T) {
 					got, ok := openpgp.SnapshotPrimaryUserID(key)
 					if got != c.want || ok != (c.want != "") {
 						t.Errorf("%s: the primary user ID is %q (%v), want %q", door, got, ok, c.want)
+					}
+					if got := key.SigningBasis().PrimaryFlagged; got != c.flags {
+						t.Errorf("%s: %d live user IDs are flagged in the basis, want %d", door, got, c.flags)
 					}
 					marked := ""
 					n := 0

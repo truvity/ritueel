@@ -19,7 +19,7 @@ func TestQAIsAssigned(t *testing.T) {
 		{0x0378, false, "a hole of the Greek block"}, {0x0380, false, "another hole"}, {0x2fe0, false, "a hole after the radicals"},
 		{0xfdd0, false, "a noncharacter"}, {0xfffe, false, "a noncharacter at the end of a plane"},
 		{0x1fffe, false, "a noncharacter of plane 1"}, {0x10ffff, false, "the last code point"},
-		{0xe0080, false, "a hole in the tags plane"}, {0x33000, false, "a hole in plane 3"},
+		{0xe0080, false, "a hole in the tags plane"}, {0x35000, false, "a hole in plane 3"},
 	} {
 		if got := isAssigned(c.r); got != c.want {
 			t.Errorf("U+%04X (%s): isAssigned is %v, want %v", c.r, c.what, got, c.want)

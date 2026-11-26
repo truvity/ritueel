@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"reflect"
+	"slices"
 	"strings"
 	"sync"
 	"testing"
@@ -52,14 +53,26 @@ func TestQASigningBasisIsTheSnapshotFieldByField(t *testing.T) {
 // key says the same when it is asked again.
 func TestQASigningBasisSharesNothingWithTheKey(t *testing.T) {
 	fkEachBase(t, func(t *testing.T, b *fkBase) {
-		for _, shape := range []string{"rich", "plain"} {
+		for _, shape := range []string{"rich", "plain", "crafted"} {
 			file := b.plain
-			if shape == "rich" {
+			if shape == "crafted" && b.name != "ed25519" {
+				continue // the writer of signatures here is the one of the Ed25519 template
+			}
+			switch shape {
+			case "rich":
 				file = fkRichOf(t, b, false, true).file
+			case "crafted":
+				// a direct-key source with preferences and dropped types, and a user ID with both
+				w := fkWriter{b}
+				file = qaFile(t, b, [][]byte{qaKeySig(t, w, 0x1F, 8, 1200, fkSubpacket(21, false, 8, 9), fkSubpacket(26, false, []byte("u")...))},
+					qaUserBlock{fkUser, [][]byte{qaUserSig(t, w, fkUser, 0x13, 8, 1000, fkSubpacket(11, false, 9), fkSubpacket(30, false, 1), fkSubpacket(20, false, qaPayload(20)...), fkSubpacket(12, false, qaPayload(12)...))}})
 			}
 			k := fkRead(t, file)
 			want := k.SigningBasis()
 			snap := openpgp.SnapshotOf(k)
+			if shape == "crafted" && (len(want.DirectPrefs) != 1 || len(want.DirectDropped) != 1 || len(want.UserIDs[0].Prefs) != 2 || len(want.UserIDs[0].Dropped) != 2) {
+				t.Fatalf("the crafted key has too little to alias: %+v", want)
+			}
 			if len(want.UserIDs) == 0 || (shape == "rich" && len(want.Subkeys) == 0) {
 				t.Fatalf("%s: the basis has %d user IDs and %d subkeys", shape, len(want.UserIDs), len(want.Subkeys))
 			}
@@ -67,8 +80,16 @@ func TestQASigningBasisSharesNothingWithTheKey(t *testing.T) {
 				got := k.SigningBasis()
 				qaScramble(reflect.ValueOf(&got), 1)
 				for i := range got.UserIDs {
+					for j := range got.UserIDs[i].Prefs {
+						clear(got.UserIDs[i].Prefs[j].Data)
+					}
+					clear(got.UserIDs[i].Dropped)
 					got.UserIDs[i] = openpgp.ForeignBasisUserID{Text: "scribble"}
 				}
+				for j := range got.DirectPrefs {
+					clear(got.DirectPrefs[j].Data)
+				}
+				clear(got.DirectDropped)
 				for i := range got.Subkeys {
 					got.Subkeys[i] = openpgp.ForeignBasisSubkey{Fingerprint: "scribble"}
 				}
@@ -244,4 +265,156 @@ func TestQAACertificateThatChangesDuringTheReadIsNeverParsedAsOtherThanItWasHash
 	if ok == 0 || digest == 0 {
 		t.Errorf("the writer and the reader did not meet: %d keys, %d digests", ok, digest)
 	}
+}
+
+// For each hashed subpacket type that exists, the source of a user ID and the direct-key source carry it, drop it
+// or write it afresh: the whitelisted types (11, 21, 22, 23, 30, 39) are in Prefs with their exact bytes, once
+// each and no longer than 32 octets; every other type that the rule drops is in Dropped, sorted, and its bytes
+// are nowhere in the basis; the types that a later signature writes afresh (2, 9, 25, 27, 33) are in neither.
+func TestQASigningBasisShowsWhatIsCarriedAndWhatIsDropped(t *testing.T) {
+	b := fkNamed(t, "ed25519")
+	w := fkWriter{b}
+	marker := bytes.Repeat([]byte{0xE7}, 5)
+	payload := func(typ byte) ([]byte, bool) { // the bytes, and whether they are distinctive enough to look for
+		switch typ {
+		case 6:
+			return []byte("regex-ZQXWV$"), true
+		case 12:
+			return append([]byte{0x80, 22}, bytes.Repeat([]byte{0xAB}, 20)...), true
+		case 16:
+			return bytes.Repeat([]byte{0xCD}, 8), true
+		case 20:
+			name, value := "note-ZQXWV@example.org", "value-ZQXWV"
+			return append(append([]byte{0x80, 0, 0, 0, 0, byte(len(name)), 0, byte(len(value))}, name...), value...), true
+		case 24, 26, 28:
+			return []byte("https://example.org/ZQXWV"), true
+		case 10, 37, 100, 101, 110:
+			return marker, true
+		case 3, 4, 5, 7, 29, 31, 34, 35:
+			return qaPayload(typ), false
+		}
+		return qaPayload(typ), false
+	}
+	rewritten := map[byte]bool{2: true, 9: true, 25: true, 27: true, 33: true}
+	carried := map[byte]bool{11: true, 21: true, 22: true, 23: true, 30: true, 39: true}
+	tried := 0
+	for typ := byte(1); typ <= 127; typ++ {
+		if typ == 2 || typ == 33 || (typ > 41 && typ != 63 && typ != 100 && typ != 101 && typ != 110 && typ != 127) {
+			continue
+		}
+		data, distinctive := payload(typ)
+		for _, size := range []string{"as it is", "33 octets", "twice"} {
+			subs := [][]byte{fkSubpacket(typ, false, data...)}
+			switch size {
+			case "33 octets":
+				if !carried[typ] {
+					continue
+				}
+				data = bytes.Repeat([]byte{5}, 33)
+				if typ == 39 {
+					data = bytes.Repeat([]byte{5}, 34)
+				}
+				subs = [][]byte{fkSubpacket(typ, false, data...)}
+			case "twice":
+				if !carried[typ] {
+					continue
+				}
+				subs = append(subs, fkSubpacket(typ, false, data...))
+			}
+			for _, where := range []string{"a user ID", "the direct-key signature"} {
+				var file []byte
+				good := qaUserSig(t, w, fkUser, 0x13, 8, 500)
+				if where == "a user ID" {
+					file = qaFile(t, b, nil, qaUserBlock{fkUser, [][]byte{qaUserSig(t, w, fkUser, 0x13, 8, 1000, subs...)}})
+				} else {
+					file = qaFile(t, b, [][]byte{qaKeySig(t, w, 0x1F, 8, 1000, subs...)}, qaUserBlock{fkUser, [][]byte{good}})
+				}
+				k, err := openpgp.ReadForeignKey(file)
+				if err != nil {
+					continue // a signature that does not count with this subpacket: a malformed field
+				}
+				basis := k.SigningBasis()
+				prefs, dropped := basis.UserIDs[0].Prefs, basis.UserIDs[0].Dropped
+				if where != "a user ID" {
+					prefs, dropped = basis.DirectPrefs, basis.DirectDropped
+					if !basis.DirectHave {
+						continue
+					}
+				}
+				tried++
+				name := fkItoa(int(typ)) + " " + size + " in " + where
+				inPrefs := false
+				for _, p := range prefs {
+					if p.Type == typ {
+						inPrefs = true
+						if !bytes.Equal(p.Data, data) {
+							t.Errorf("%s: the carried bytes are %x, want %x", name, p.Data, data)
+						}
+					}
+					if !carried[p.Type] {
+						t.Errorf("%s: the type %d is carried", name, p.Type)
+					}
+				}
+				wantCarried := carried[typ] && size == "as it is" && len(data) <= 32
+				if inPrefs != wantCarried {
+					t.Errorf("%s: carried is %v, want %v", name, inPrefs, wantCarried)
+				}
+				inDropped := slices.Contains(dropped, typ)
+				wantDropped := !rewritten[typ] && !wantCarried
+				if inDropped != wantDropped {
+					t.Errorf("%s: dropped is %v, want %v (dropped %v)", name, inDropped, wantDropped, dropped)
+				}
+				if !slices.IsSorted(dropped) || len(slices.Compact(slices.Clone(dropped))) != len(dropped) {
+					t.Errorf("%s: the dropped types are not sorted and once each: %v", name, dropped)
+				}
+				if rewritten[typ] && (inPrefs || inDropped) {
+					t.Errorf("%s: a type that is written afresh is shown", name)
+				}
+				// the bytes of what is dropped are nowhere in the basis, in any form
+				if distinctive && !carried[typ] {
+					probe := data
+					if typ == 12 || typ == 16 {
+						probe = bytes.Repeat([]byte{data[len(data)-1]}, 8)
+					}
+					if len(probe) > 12 {
+						probe = probe[len(probe)-8:]
+					}
+					for _, s := range fkStrings(basis) {
+						if bytes.Contains(s, probe) {
+							t.Errorf("%s: the bytes of a dropped subpacket are in the basis: %q", name, s)
+							break
+						}
+					}
+				}
+			}
+		}
+	}
+	if tried < 100 {
+		t.Errorf("only %d cases were taken by the reader", tried)
+	}
+}
+
+// The key level of the basis is what the key says: its fingerprint, its algorithm and the SHA-256 of its certificate.
+func TestQASigningBasisKeyLevel(t *testing.T) {
+	fkEachBase(t, func(t *testing.T, b *fkBase) {
+		k := fkRead(t, b.plain)
+		got := k.SigningBasis()
+		sum := sha256.Sum256(k.Certificate())
+		if got.Fingerprint != k.Primary.Fingerprint || !reflect.DeepEqual(got.Algorithm, k.Primary.Algorithm) || got.CertificateSHA256 != sum {
+			t.Errorf("the key level of the basis: %+v", got)
+		}
+		if got.Fingerprint != strings.ToLower(got.Fingerprint) || len(got.Fingerprint) != 40 {
+			t.Errorf("the fingerprint is %q", got.Fingerprint)
+		}
+		// a view that a caller edited is not what the basis says
+		k.Primary.Fingerprint, k.Primary.Algorithm = "00", openpgp.ForeignAlgorithm{ID: 99}
+		if again := k.SigningBasis(); again.Fingerprint != got.Fingerprint || !reflect.DeepEqual(again.Algorithm, got.Algorithm) {
+			t.Errorf("an edit of the view changed the basis: %+v", again)
+		}
+		// the digest changes with the certificate, and it is the same for the key of the certificate
+		kc, err := qaReadCert(k.Certificate())
+		if err != nil || kc.SigningBasis().CertificateSHA256 != sum {
+			t.Errorf("the digest of the basis of the certificate: %v", err)
+		}
+	})
 }

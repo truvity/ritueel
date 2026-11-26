@@ -1,6 +1,8 @@
 package openpgp
 
 import (
+	"bytes"
+	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
 	"slices"
@@ -13,6 +15,16 @@ func BasisAgainstSnapshot(k *ForeignKey) []string {
 	note := func(f string, a ...any) { diffs = append(diffs, fmt.Sprintf(f, a...)) }
 	b, s := k.SigningBasis(), &k.snap
 	e := s.expiry()
+	if b.Fingerprint != hex.EncodeToString(s.fp) || b.Algorithm != k.pub.alg || b.CertificateSHA256 != sha256.Sum256(k.cert) {
+		note("Fingerprint, Algorithm or CertificateSHA256")
+	}
+	if b.PrimaryFlagged != s.flaggedUserIDs() {
+		note("PrimaryFlagged")
+	}
+	if b.DirectHave != s.direct.have || b.DirectWeak != s.direct.weak || b.DirectSigExpires != s.direct.sigExpires ||
+		!b.DirectEnd.Equal(s.direct.expires) || !bytes.Equal(b.DirectDropped, s.direct.dropped) || !samePrefs(b.DirectPrefs, s.direct.prefs) {
+		note("the direct-key source")
+	}
 	if b.Revoked != s.revoked {
 		note("Revoked")
 	}
@@ -38,6 +50,8 @@ func BasisAgainstSnapshot(k *ForeignKey) []string {
 				note("user ID %d: Revoked, Signed, KeyFlags, Primary or KeyExpires", i)
 			case g.SigExpires != u.sigExpires || g.Weak != u.weak || g.AnyStrong != u.anyStrong || g.Tied != u.tied:
 				note("user ID %d: SigExpires, Weak, AnyStrong or Tied", i)
+			case !samePrefs(g.Prefs, u.prefs) || !bytes.Equal(g.Dropped, u.dropped):
+				note("user ID %d: Prefs or Dropped", i)
 			case g.IsPrimary != (have && i == primary):
 				note("user ID %d: IsPrimary", i)
 			case g.TextOK != (checkExistingUserID(u.text) == nil):
@@ -69,4 +83,16 @@ func compareStrings(a, b string) int {
 		return 1
 	}
 	return 0
+}
+
+func samePrefs(a []ForeignBasisPref, b []subpacket) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i := range a {
+		if a[i].Type != b[i].typ || !bytes.Equal(a[i].Data, b[i].data) {
+			return false
+		}
+	}
+	return true
 }
