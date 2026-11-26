@@ -69,6 +69,21 @@
 // the passphrase or the secret is one that it clears. The reader opens no file, reads no clock and
 // starts no program.
 //
+// The certificate that [ForeignKey.Certificate] writes can be read again, as it stands, with no secret:
+// [ReadForeignCertificate] reads the packets as [ReadForeignKey] does and accepts them only when the
+// certificate that the reader assembles from them is the input, byte for byte, so that a certificate that
+// it accepts is one that it would have written (an [ErrAdoptedCertificate] says that it would not). Both
+// readers fill an unexported snapshot of the key out of the signatures that counted, and the two give the
+// same snapshot for the same key. The snapshot is what a signature of an adopted key is made from; the
+// exported view is for a person to read and cannot steer it.
+//
+// An adopted key signs through an [AdoptedIssuer], which joins that snapshot to a [crypto.Signer]: RSA
+// with 4096 bits (PKCS#1 v1.5), Ed25519 (EdDSA legacy, algorithm 22) or ECDSA on P-384, each with
+// SHA-384. The signer is given the SHA-384 digest (and, for Ed25519, which takes no hash, the digest as
+// its message), and its answer is checked with the public key of the primary packet, with the standard
+// library, before it is used. A signer of the adopted key may be the [ForeignSigner] or any other signer
+// of the same key.
+//
 // A user ID has the one shape of the page, and each part of it follows the rule of its key in
 // ritueel.yaml, so that no text of a caller can add a character that a person cannot read or an
 // address that the user ID does not show.

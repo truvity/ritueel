@@ -6,7 +6,8 @@ import (
 )
 
 var (
-	// ErrParams marks a parameter that the builders refuse: a key that is not ECDSA on P-384, a
+	// ErrParams marks a parameter that the builders refuse: a key that is not ECDSA on P-384 (where a
+	// builder takes only that), a nil or a wiped signer, a signer that is not the key of an adopted key, a
 	// time that is not in whole seconds or is out of order, a user ID, or a part of it, that breaks
 	// the rules of the pages, a capability or a reason that is not one of the profile's.
 	ErrParams = errors.New("openpgp: refused parameter")
