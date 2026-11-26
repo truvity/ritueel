@@ -593,8 +593,9 @@ func readForeignKey(file []byte) (*ForeignKey, error) {
 // for the export of the same key. The certificate is binary packets: an armoured one is refused.
 //
 // The certificate is read ONLY against digest, the SHA-256 of the certificate that the caller holds from a
-// place that whoever writes the certificate file cannot change (later, the digest that the newest ceremony
-// record lists for the file). The digest is compared before anything is parsed, and a mismatch is an
+// record of the bundle's history, a place that whoever writes the certificate file cannot change (later, the
+// digest that the newest ceremony record lists for the file). It is a [HeldDigest], which only
+// [ParseHeldDigest] makes, from the text of a record; the zero value is an [ErrParams]. The digest is compared before anything is parsed, and a mismatch is an
 // [ErrAdoptedCertificate]. The digest is what carries completeness and freshness. Nothing in the
 // certificate can: it is a list of signatures, and someone who can write the file and cannot sign can
 // delete the newest self-signature, a key revocation or the retirement of a user ID, and what is left is
@@ -623,7 +624,7 @@ func readForeignKey(file []byte) (*ForeignKey, error) {
 // hashing and of verification. A fault of the packets is an [ErrForeignKey] of the kind that the export
 // has for it. The key has no secret: [ForeignKey.OpenSecret] is an [ErrParams], its primary has no
 // [SecretState], and [ForeignKey.Wipe] clears nothing. It returns no key with an error.
-func ReadForeignCertificate(cert []byte, digest [sha256.Size]byte) (key *ForeignKey, err error) {
+func ReadForeignCertificate(cert []byte, digest HeldDigest) (key *ForeignKey, err error) {
 	defer func() {
 		if r := recover(); r != nil {
 			key, err = nil, fail(ErrForeignForm, "the certificate could not be read")
@@ -632,14 +633,20 @@ func ReadForeignCertificate(cert []byte, digest [sha256.Size]byte) (key *Foreign
 	return readForeignCertificate(cert, digest)
 }
 
-func readForeignCertificate(cert []byte, digest [sha256.Size]byte) (*ForeignKey, error) {
+func readForeignCertificate(cert []byte, digest HeldDigest) (*ForeignKey, error) {
+	if digest == (HeldDigest{}) {
+		return nil, fail(ErrParams, "there is no digest of the certificate: it is read only against a digest from a record")
+	}
 	if len(cert) == 0 {
 		return nil, fail(ErrForeignForm, "the certificate is empty")
 	}
 	if len(cert) > MaxForeignKeyBytes {
 		return nil, fail(ErrForeignLimit, "the certificate is longer than MaxForeignKeyBytes (%d bytes)", MaxForeignKeyBytes)
 	}
-	if sha256.Sum256(cert) != digest {
+	// The certificate is copied before it is hashed, and the copy is what is parsed: a caller's slice that
+	// another goroutine changes cannot differ between the hash and the parse.
+	cert = bytes.Clone(cert)
+	if sha256.Sum256(cert) != digest.sum {
 		return nil, fail(ErrAdoptedCertificate, "the SHA-256 of the certificate is not the digest that the caller holds for it")
 	}
 	if err := checkCertificateFraming(cert); err != nil {

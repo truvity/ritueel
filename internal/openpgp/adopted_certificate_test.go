@@ -3,8 +3,10 @@ package openpgp_test
 import (
 	"bytes"
 	"crypto/sha256"
+	"encoding/hex"
 	"errors"
 	"slices"
+	"strings"
 	"testing"
 
 	gpacket "github.com/ProtonMail/go-crypto/openpgp/packet"
@@ -18,7 +20,18 @@ import (
 // fkReadCertificate reads a certificate against its own SHA-256, which is how a test that is not about the
 // digest reads one.
 func fkReadCertificate(cert []byte) (*openpgp.ForeignKey, error) {
-	return openpgp.ReadForeignCertificate(cert, sha256.Sum256(cert))
+	return openpgp.ReadForeignCertificate(cert, fkDigest(cert))
+}
+
+// fkDigest is the digest of a certificate as a record would hold it. A test makes it from the bytes it has
+// just made; the code under test cannot.
+func fkDigest(cert []byte) openpgp.HeldDigest {
+	sum := sha256.Sum256(cert)
+	d, err := openpgp.ParseHeldDigest(hex.EncodeToString(sum[:]))
+	if err != nil {
+		panic(err)
+	}
+	return d
 }
 
 // fkCertParts is the certificate of a template as its packets.
@@ -214,7 +227,7 @@ func TestReadForeignCertificateIsReadOnlyAgainstItsDigest(t *testing.T) {
 	fkEachBase(t, func(t *testing.T, b *fkBase) {
 		export := fkRead(t, fkRichOf(t, b, false, true).file)
 		cert := export.Certificate()
-		digest := sha256.Sum256(cert)
+		digest := fkDigest(cert)
 		if _, err := openpgp.ReadForeignCertificate(cert, digest); err != nil {
 			t.Fatalf("the certificate against its digest: %v", err)
 		}
@@ -249,9 +262,40 @@ func TestReadForeignCertificateIsReadOnlyAgainstItsDigest(t *testing.T) {
 		if !errors.Is(err, openpgp.ErrAdoptedCertificate) {
 			t.Errorf("garbage against a digest: %v", err)
 		}
-		var zero [32]byte
-		if _, err = openpgp.ReadForeignCertificate(cert, zero); !errors.Is(err, openpgp.ErrAdoptedCertificate) {
-			t.Errorf("a certificate against the zero digest: %v", err)
+		if _, err = openpgp.ReadForeignCertificate(cert, openpgp.HeldDigest{}); !errors.Is(err, openpgp.ErrParams) {
+			t.Errorf("a certificate against no digest: %v", err)
 		}
 	})
+}
+
+// A held digest is made only from the text of a record: 64 lower-case hexadecimal digits.
+func TestParseHeldDigest(t *testing.T) {
+	good := strings.Repeat("0123456789abcdef", 4)
+	d, err := openpgp.ParseHeldDigest(good)
+	if err != nil || d.String() != good {
+		t.Fatalf("a digest of 64 lower-case digits: %q, %v", d.String(), err)
+	}
+	if (openpgp.HeldDigest{}).String() != "" {
+		t.Error("the zero digest has a text")
+	}
+	for name, text := range map[string]string{
+		"empty":       "",
+		"upper case":  strings.ToUpper(good),
+		"one short":   good[1:],
+		"one long":    good + "0",
+		"not hex":     good[:63] + "g",
+		"a space":     good[:63] + " ",
+		"a newline":   good + "\n",
+		"a prefix":    "sha256:" + good,
+		"zeros":       strings.Repeat("0", 64),
+		"a wide hexa": strings.Repeat("\uff10", 64),
+	} {
+		d, err := openpgp.ParseHeldDigest(text)
+		if err == nil || !errors.Is(err, openpgp.ErrParams) || d != (openpgp.HeldDigest{}) {
+			t.Errorf("%s: %v", name, err)
+		}
+		if err != nil && strings.Contains(err.Error(), "0123456789") {
+			t.Errorf("%s: the error holds the text: %v", name, err)
+		}
+	}
 }
