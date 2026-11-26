@@ -178,7 +178,14 @@ func FuzzForeignReadKey(f *testing.F) {
 			}
 			// the public parts that the certificate holds are not secret, and a secret run that stands in one
 			// of them is not a leak
+			// and a run that a packet of the file that is not secret holds too: the certificate may carry
+			// the run from there, as it carries what the primary signed
 			var public []byte
+			for i, tag := range tags {
+				if tag != 5 && tag != 7 && tag != 10 && tag != 12 {
+					public = append(public, bodies[i]...)
+				}
+			}
 			var certSubs [][]byte
 			for _, p := range ps {
 				if p.tag == 6 || p.tag == 14 {
