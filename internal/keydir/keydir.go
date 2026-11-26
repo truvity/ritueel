@@ -8,14 +8,17 @@ import (
 	"path/filepath"
 )
 
-// Stat is os.Stat. A test replaces it to show that two spellings of one folder are told apart by
-// os.SameFile and never by comparing strings.
+// Stat is os.Stat. Production code passes os.Stat. A test replaces it to show that two spellings
+// of one folder are told apart by os.SameFile and never by comparing strings; any other function
+// is for tests only, because a stat that lies skips every rule.
 type Stat func(path string) (fs.FileInfo, error)
 
 // The kinds of a [Refusal].
 var (
-	// ErrKeyDir marks a key directory that is refused: inside the bundle or the repository that
-	// holds it, missing, a link that cannot be resolved, or not a folder.
+	// ErrKeyDir marks a key directory that is refused: empty, inside the bundle or the repository
+	// that holds it, missing, a link that cannot be resolved, or not a folder; also a bundle
+	// folder that is missing, cannot be resolved or is not a folder, and a folder that cannot be
+	// compared with the bundle folder or with the repository of the bundle.
 	ErrKeyDir = errors.New("keydir: the key directory is refused")
 	// ErrParams marks a parameter of the caller that is wrong: an empty bundle folder. It is a
 	// fault of the caller, not a refusal of a key directory.
@@ -24,14 +27,20 @@ var (
 
 // Refusal is the error of [Check] and [CheckStat]. Kind is [ErrKeyDir] or [ErrParams], and an
 // error that is a Refusal satisfies errors.Is for its Kind. Reason says why in fixed words: it
-// holds no path and no text that came from the caller or from the file system.
+// holds no path and no text that came from the caller or from the file system. The refusals of
+// this package always have a Kind; the Error method is safe for one built by hand without it.
 type Refusal struct {
 	Kind   error
 	Reason string
 }
 
-// Error gives the kind and the reason.
-func (r *Refusal) Error() string { return r.Kind.Error() + ": " + r.Reason }
+// Error gives the kind and the reason, or a fixed text and the reason when there is no kind.
+func (r *Refusal) Error() string {
+	if r.Kind == nil {
+		return "keydir: the key directory is refused: " + r.Reason
+	}
+	return r.Kind.Error() + ": " + r.Reason
+}
 
 // Unwrap gives the kind.
 func (r *Refusal) Unwrap() error { return r.Kind }
@@ -44,8 +53,11 @@ func refuse(kind error, format string, args ...any) error {
 // docs/reference/cli.md (--key-dir): it refuses a key directory that is the bundle folder or
 // any folder inside it, that is inside the work tree of the repository that holds the bundle
 // (the first folder at or above the bundle with a `.git` file or folder; proposed, built as the
-// page of the revocation directory says), that does not exist, or that is not a folder. A key
-// directory that is a parent of the bundle, or beside it, is accepted: the stick keeps `keys/<bundle>/` beside
+// page of the revocation directory says), that is empty, that does not exist, or that is not a
+// folder; it also refuses when the bundle folder does not exist, cannot be resolved or is not a
+// folder, and when the key directory cannot be compared with the bundle folder or with the
+// repository of the bundle. A key directory that is a parent of the bundle, or beside it, is
+// accepted unless a rule above refuses it: the stick keeps `keys/<bundle>/` beside
 // `bundles/<name>/`.
 //
 // Both paths are resolved as the operating system resolves them: a relative path is joined to the
@@ -65,13 +77,19 @@ func refuse(kind error, format string, args ...any) error {
 // checks the path again with [CheckStat] and refuses when the folder is no longer the one that
 // was checked. A swap that is made and undone between the two looks cannot be seen, and the
 // holder's folder is the rest.
+//
+// Check gives only the verdict, and is for a caller that opens nothing. A store that opens the
+// folder uses [CheckStat], opens the resolved path that it returns and never its own argument,
+// and checks again after the open.
 func Check(keyDir, bundleDir string) error {
 	_, err := CheckStat(os.Stat, keyDir, bundleDir)
 	return err
 }
 
 // CheckStat is [Check] with the stat function, and returns the resolved key directory that was
-// checked.
+// checked. Production code passes os.Stat; another function is for tests only, because a stat
+// that lies skips every rule. A store opens the resolved path that CheckStat returns, never its
+// own argument, and checks again after it has opened the folder.
 func CheckStat(stat Stat, keyDir, bundleDir string) (string, error) {
 	if bundleDir == "" {
 		return "", refuse(ErrParams, "the bundle folder is empty")
@@ -194,7 +212,8 @@ func inRepository(stat Stat, key, bundle string) (bool, error) {
 }
 
 // repositoryRoot returns the first folder at or above dir that holds a `.git` file or folder (a
-// worktree has a file). It looks at the name only and reads nothing.
+// worktree has a file). It looks at the name only and reads nothing. It uses os.Lstat and not the
+// stat function of the check: the [Stat] seam does not cover it.
 func repositoryRoot(dir string) (string, bool) {
 	for cur := dir; ; {
 		if _, err := os.Lstat(filepath.Join(cur, ".git")); err == nil {

@@ -33,7 +33,9 @@ func checkKeyDir(stat keydir.Stat, keyDir, bundleDir string) (string, error) {
 func fromKeyDir(err error) error {
 	var r *keydir.Refusal
 	if !errors.As(err, &r) {
-		return err
+		// Fail closed: an error that is not a refusal still has the class and the code of one, and
+		// its text, which may hold a path, is not repeated.
+		return refuse(ErrKeyDir, "the key directory cannot be checked")
 	}
 	if errors.Is(r, keydir.ErrParams) {
 		return refuse(ErrParams, "%s", r.Reason)
