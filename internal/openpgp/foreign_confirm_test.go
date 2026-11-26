@@ -243,9 +243,17 @@ func fkReviewerAttacks(t testing.TB) []fkAttack {
 			return
 		}
 		bound := s.bound(t, b, body)
-		attacks = append(attacks, fkAttack{name: name, file: bound, secret: [][]byte{s.area()[2:]}, serial: serial})
-		// and with no binding at all, and with a binding that is the genuine one but does not verify
-		attacks = append(attacks, fkAttack{name: name + ", no binding", file: fkCraftedFile(t, b, body), secret: [][]byte{s.area()[2:]}, serial: serial})
+		// the outcome of every one of these: the file is read, the crafted subkey is left out of the
+		// certificate (the genuine binding does not verify over the bytes that the stretched packet cuts)
+		// and the certificate is the primary, its user ID and its self-signature
+		left := func(t *testing.T, k *openpgp.ForeignKey, ps []fkCP) {
+			if len(fkCertTagsOf(ps, 14)) != 0 || k.Subkeys[0].InCertificate || k.Subkeys[0].Fingerprint != "" {
+				t.Errorf("the crafted subkey is in the certificate: %+v", k.Subkeys[0])
+			}
+		}
+		attacks = append(attacks, fkAttack{name: name, file: bound, secret: [][]byte{s.area()[2:]}, serial: serial, check: left})
+		// and with no binding at all
+		attacks = append(attacks, fkAttack{name: name + ", no binding", file: fkCraftedFile(t, b, body), secret: [][]byte{s.area()[2:]}, serial: serial, check: left})
 	}
 	for _, usage := range []byte{0, 254, 255} {
 		s := fkRSASub(t, 65537, usage)
