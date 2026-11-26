@@ -19,6 +19,7 @@ package atoomsoftware
 import (
 	"errors"
 	"fmt"
+	"io"
 	"io/fs"
 	"log/slog"
 	"os"
@@ -36,7 +37,7 @@ import (
 
 // The refusals of [Open].
 var (
-	// ErrFolderExists marks a folder test-only-keys that stands in the key directory already: the keys of
+	// ErrFolderExists marks an entry test-only-keys that stands in the key directory already and is not an empty folder: the keys of
 	// an earlier use are never adopted.
 	ErrFolderExists = errors.New("atoomsoftware: the folder of the test keys exists already")
 	// ErrStateRefused marks a state folder that the driver refuses: its mode, its owner, or an entry in
@@ -56,8 +57,9 @@ type Link struct {
 
 // Open makes the folder [keydir.TestOnlyFolder] in dir with the mode 0700, and starts the software
 // driver on it, with one purpose for each name: an ES384 key that allows sign. dir is the resolved key
-// directory that [keydir.Dir.Path] gives. A folder that stands already is an [ErrFolderExists], and
-// nothing is changed in it. A folder that the driver refuses is an [ErrStateRefused]. Nothing is deleted.
+// directory that [keydir.Dir.Path] gives. A folder that stands already and is empty is used as it is,
+// without a change of its mode; any other entry of that name is an [ErrFolderExists], and nothing is
+// changed in it. A folder that the driver refuses is an [ErrStateRefused]. Nothing is deleted.
 // The caller closes the Link.
 func Open(dir string, purposes []string) (*Link, error) {
 	decls := make([]purpose.Declaration, len(purposes))
@@ -66,12 +68,15 @@ func Open(dir string, purposes []string) (*Link, error) {
 	}
 	state := filepath.Join(dir, keydir.TestOnlyFolder)
 	if err := os.Mkdir(state, stateMode); err != nil {
-		if errors.Is(err, fs.ErrExist) {
+		if !errors.Is(err, fs.ErrExist) {
+			return nil, fmt.Errorf("atoomsoftware: the folder %s cannot be made in the key directory: %s", keydir.TestOnlyFolder, reason(err))
+		}
+		// A folder that an earlier run left is used as it is when it is a real folder and empty (a key in it
+		// is never adopted). Its mode and owner are the driver's to judge: it refuses what it does not accept.
+		if !emptyFolder(state) {
 			return nil, ErrFolderExists
 		}
-		return nil, fmt.Errorf("atoomsoftware: the folder %s cannot be made in the key directory: %s", keydir.TestOnlyFolder, reason(err))
-	}
-	if err := os.Chmod(state, stateMode); err != nil { // the umask may have narrowed it
+	} else if err := os.Chmod(state, stateMode); err != nil { // the umask may have narrowed it
 		return nil, fmt.Errorf("atoomsoftware: the folder %s cannot be set to the mode 0700: %s", keydir.TestOnlyFolder, reason(err))
 	}
 	svc, err := software.New(software.Options{
@@ -109,6 +114,21 @@ func (l *Link) Close() error {
 		}
 	})
 	return nil
+}
+
+// emptyFolder reports whether path is a real folder (not a link) that holds nothing.
+func emptyFolder(path string) bool {
+	fi, err := os.Lstat(path)
+	if err != nil || !fi.IsDir() {
+		return false
+	}
+	f, err := os.Open(path)
+	if err != nil {
+		return false
+	}
+	defer func() { _ = f.Close() }()
+	names, err := f.Readdirnames(1)
+	return len(names) == 0 && errors.Is(err, io.EOF)
 }
 
 // reason is the text of the operating system's error without the path that the error holds.

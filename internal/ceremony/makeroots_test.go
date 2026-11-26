@@ -939,28 +939,45 @@ func TestSettingsAndRootThatAreNotTheFilesOfThePlanAreRefusedBeforeAnyKeyIsMade(
 	}
 }
 
-func TestAFolderOrALinkWithTheNameOfTheKeyFolderIsRefusedBeforeAnyKeyIsMadeAndReplacesNothing(t *testing.T) {
-	// The check of the key directory counts the name test-only-keys of any kind, a folder or a link too, and
-	// refuses with key-exists before a key is made. Nothing that stands in the folder is replaced or removed.
-	for _, kind := range []string{"folder", "link"} {
+func TestAnEntryWithTheNameOfTheKeyFolderThatIsNotAnEmptyFitFolderIsRefusedBeforeAnyKeyIsMadeAndReplacesNothing(t *testing.T) {
+	// The check of the key directory refuses with key-exists, before a key is made, the name test-only-keys when
+	// it is a link, a file, a folder that holds anything, or a folder of another mode than 0700. Only an empty
+	// folder of the mode 0700, owned by this user, is accepted, and it is used as it is. Nothing that stands
+	// there is replaced or removed.
+	for _, kind := range []string{"folder with a file", "folder of the mode 0755", "file", "link"} {
 		t.Run(kind, func(t *testing.T) {
 			r := newMkRun(t)
 			path := filepath.Join(r.keyDir, "test-only-keys")
-			if kind == "folder" {
+			switch kind {
+			case "folder with a file":
 				if err := os.Mkdir(path, 0o700); err != nil {
 					t.Fatal(err)
 				}
-			} else if err := os.Symlink(filepath.Join(r.root, "elsewhere"), path); err != nil {
-				t.Fatal(err)
+				if err := os.WriteFile(filepath.Join(path, "x509-root-a.p8"), []byte("old"), 0o600); err != nil {
+					t.Fatal(err)
+				}
+			case "folder of the mode 0755":
+				if err := os.Mkdir(path, 0o755); err != nil {
+					t.Fatal(err)
+				}
+				if err := os.Chmod(path, 0o755); err != nil {
+					t.Fatal(err)
+				}
+			case "file":
+				if err := os.WriteFile(path, []byte("old"), 0o600); err != nil {
+					t.Fatal(err)
+				}
+			default:
+				if err := os.Symlink(filepath.Join(r.root, "elsewhere"), path); err != nil {
+					t.Fatal(err)
+				}
 			}
+			before := tree(t, r.keyDir)
 			m, err := r.make()
 			if m != nil || mkBackendReason(err) != "key-exists" {
 				t.Fatalf("MakeRoots: a result %v, the error %v; want key-exists", m != nil, err)
 			}
-			st, lerr := os.Lstat(path)
-			if lerr != nil || (kind == "folder") != st.IsDir() || (kind == "link") != (st.Mode()&os.ModeSymlink != 0) {
-				t.Errorf("the entry with the name of the key folder changed: %v, %v", st, lerr)
-			}
+			sameTree(t, "the key directory", before, tree(t, r.keyDir))
 			if _, err := os.Stat(filepath.Join(r.root, "elsewhere")); err == nil {
 				t.Error("a file was written through the link")
 			}

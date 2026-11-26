@@ -37,8 +37,8 @@ type RootStore interface {
 	// Start starts the key store for the keys of the labels: for the software driver, the folder of its keys is
 	// made in the key directory and the driver is linked in the process. It is called after the person
 	// confirmed the plan and before the attempt is written, so that nothing is made before the
-	// confirmation. It makes no key. A second call with the same labels does nothing. A store that is not started
-	// when the first key is asked for is started then, for every label.
+	// confirmation. It makes no key. A second call with the same labels does nothing. The labels are exactly those of
+	// the plan: the driver declares no other purpose, and a Birth before Start is an error.
 	Start(ctx context.Context, labels []string) error
 	// Birth makes the key of a label in the store and reads it back. The caller writes the journal line
 	// only after Birth returned. The caller closes the key. The store is started first.
@@ -134,8 +134,8 @@ func (s *softwareStore) Place(label string) string { return purposeOf(label) }
 // Refuse runs [CheckKeyDir] on the key directory: the folder, and what stands in it. A refusal is a
 // [*BackendError]. After a nil return the store may make keys. Only the last answer counts: a call
 // forgets an earlier nil first, so a call that refuses, for any reason, leaves the store refusing
-// every Birth and SaveRemoval until a later call returns nil. After [RootStore.Start] the folder of the
-// test keys is this store's own and is not a use of the key directory.
+// every Birth and SaveRemoval until a later call returns nil. The empty folder that [RootStore.Start]
+// made is not a use of the key directory; once it holds a key it is.
 func (s *softwareStore) Refuse(ctx context.Context) error {
 	if s == nil {
 		return errNoStore
@@ -152,7 +152,7 @@ func (s *softwareStore) Refuse(ctx context.Context) error {
 	if err := s.use(); err != nil {
 		return err
 	}
-	if err := checkKeyDir(s.keyDir, s.bundleDir, s.started); err != nil {
+	if err := CheckKeyDir(s.keyDir, s.bundleDir); err != nil {
 		return err
 	}
 	s.refused = true
@@ -216,18 +216,10 @@ func (s *softwareStore) start(ctx context.Context, labels []string) error {
 	return nil
 }
 
-// allLabels are the labels A to Z, the labels that a store started by its first birth declares.
-func allLabels() []string {
-	out := make([]string, 0, 26)
-	for c := 'A'; c <= 'Z'; c++ {
-		out = append(out, string(c))
-	}
-	return out
-}
-
 // Birth makes an ECDSA P-384 key in the store (the key must be absent, the store must say that it made
 // it, the public key must read back and a signature must verify: see [port.Birth]). It makes no key before
-// [RootStore.Refuse] returned nil. A store that was not started is started here for every label. A key that exists is never adopted, and the
+// [RootStore.Refuse] returned nil.
+// The store must have been started with the labels of the plan; a Birth before that is an error. A key that exists is never adopted, and the
 // refusal is a [*BackendError] with the reason key-exists. An error returns no key.
 func (s *softwareStore) Birth(ctx context.Context, label string) (keystore.Key, error) {
 	if ctx == nil {
@@ -252,11 +244,7 @@ func (s *softwareStore) Birth(ctx context.Context, label string) (keystore.Key, 
 		return nil, errors.New("ceremony: the key directory was not refused or accepted yet, so no key is made")
 	}
 	if !s.started {
-		// A caller that did not start the store (a run starts it, for the labels of its plan, before the
-		// attempt) has it started here, for every label.
-		if err := s.start(ctx, allLabels()); err != nil {
-			return nil, err
-		}
+		return nil, errors.New("ceremony: the key store was not started, so no key is made: Start is called with the labels of the plan before the first Birth")
 	}
 	if !slices.Contains(s.labels, label) {
 		return nil, errors.New("ceremony: the key store was not started for this label, so no key is made")

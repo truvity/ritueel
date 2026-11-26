@@ -29,6 +29,9 @@ const (
 	stopTempClause = "; the folder test-only-keys may also hold a temporary file whose name starts with .tmp-, which can hold a key; the key driver removes its own temporary files there when it opens the folder, and a person may remove one by hand; the key directory may also hold a temporary file whose name starts with .rt-, which holds a removal authorisation and no key"
 )
 
+// stopEmptyClause is said by a stop after the key store started and before the first key.
+const stopEmptyClause = "; the empty folder test-only-keys may stand in the key directory: it is harmless, and the next run uses it"
+
 // rtEvents are the changing calls of one whole run, in order.
 func rtEvents(t *testing.T) []string {
 	t.Helper()
@@ -256,11 +259,19 @@ func TestACutAtEveryWriteOfARunIsAStopThatSaysWhatIsOnDisk(t *testing.T) {
 			if got := strings.Contains(msg, stopTempClause); got != later {
 				t.Errorf("the line names the temporary file = %v, want %v: %s", got, later, msg)
 			}
+			// The key store starts after the plan folder and before the attempt: a stop at the step attempt says
+			// that the empty folder may stand, and a stop before it says nothing of the key directory.
+			if got, want := strings.Contains(msg, stopEmptyClause), wantStep == "attempt"; got != want {
+				t.Errorf("the line says the empty folder may stand = %v, want %v: %s", got, want, msg)
+			}
 			if !later {
-				for _, not := range []string{"key directory", "x509-root-a", "x509-root-b", "removal authorisations", "a temporary file whose name starts with", "a person may remove one by hand"} {
+				for _, not := range []string{"x509-root-a", "x509-root-b", "removal authorisations", "a temporary file whose name starts with", "a person may remove one by hand"} {
 					if strings.Contains(msg, not) {
 						t.Errorf("the line of a stop before the maker ran says %q: %s", not, msg)
 					}
+				}
+				if wantStep != "attempt" && strings.Contains(msg, "key directory") {
+					t.Errorf("the line of a stop before the key store started says the key directory: %s", msg)
 				}
 			}
 			if later && strings.Index(msg, stopKeyClause) > strings.Index(msg, stopTempClause) {

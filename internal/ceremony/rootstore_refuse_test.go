@@ -84,6 +84,7 @@ func TestARefuseThatRefusesLeavesTheStoreRefusingWhateverTheReasonUntilALaterRef
 			if err := s.Refuse(ctx); err != nil {
 				t.Fatalf("Refuse after the cause was gone: %v", err)
 			}
+			mkStart(t, s, "A", "B")
 			k, err := s.Birth(ctx, "A")
 			if err != nil {
 				t.Fatalf("Birth after a Refuse that accepted: %v", err)
@@ -104,6 +105,7 @@ func TestARefuseThatRefusesAfterTheKeyWasMadeStopsTheNextKeyAndTheNextRemoval(t 
 	if err := s.Refuse(ctx); err != nil {
 		t.Fatal(err)
 	}
+	mkStart(t, s, "A", "B")
 	a, err := s.Birth(ctx, "A")
 	if err != nil {
 		t.Fatal(err)
