@@ -103,7 +103,7 @@ Decided in [0010](decisions/0010-the-engine-the-process-and-the-page.md).
 ## A person's key
 
 - Everyone uses OpenPGP as their own key.
-- Stage one adopts an existing primary as a software key with an expiry. Card-born primaries come later.
+- Stage one adopts an existing primary as a software key with an expiry. Stage two follows directly: card-born primaries on two root cards, vouched for by the adopted key.
 - Changing a name or address is a ceremony: a person edits the user IDs, and `apply` certifies the new one and revokes the old one as no longer valid; the key and its trust stay. For a person's own key it is part of M3.
 
 Decided in [0008](decisions/0008-a-persons-own-key.md).
@@ -155,6 +155,6 @@ The open decisions are the issues with the label [status:needs-decision](https:/
 
 ## What comes later
 
-More key stores, a person's card-born primaries (stage two), a post-quantum root and a Go library. Recipes for consumers that need a change of the hand-off contract, a check of the local trust store, and calling a code host's own tool.
+More key stores, a post-quantum root and a Go library. Recipes for consumers that need a change of the hand-off contract, a check of the local trust store, and calling a code host's own tool.
 
 Listed in [the roadmap](/roadmap/#after-the-first-version).
