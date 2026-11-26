@@ -246,19 +246,26 @@ func TestForeignEveryCertificateIsReadByTheLibrary(t *testing.T) {
 	}
 }
 
-// A user attribute that the primary signed is copied with its body, which the reader does not read. The
-// library reads the body of an attribute when it reads a key ring, and refuses a body that is not subpackets.
-// Only the primary can make such a file, with a signature over a body that no tool writes.
+// A user attribute whose body is not a sequence of subpackets is left out even when the primary signed it, and
+// counted once in UserAttributesLeftOut. The certificate that is written holds no attribute packet and stays
+// readable by the library.
 func TestForeignCertificateOfAMalformedAttribute(t *testing.T) {
 	b := fkNamed(t, "ed25519")
 	head := fkTemplateHead(t, b.file(t, fkProt{}))
 	body := []byte("not subpackets of an image")
 	file := fkJoin(head[0], head[1], head[2], fkPacket{17, body}, fkPacket{2, fkAttrSig(t, b, body, 1000)})
 	k := fkRead(t, file)
-	if k.UserAttributesLeftOut != 0 {
-		t.Fatalf("the attribute is left out: %d", k.UserAttributesLeftOut)
+	if k.UserAttributesLeftOut != 1 {
+		t.Fatalf("the malformed attribute must be left out and counted once: the count is %d", k.UserAttributesLeftOut)
 	}
 	if _, err := pgp.ReadKeyRing(bytes.NewReader(k.Certificate())); err != nil {
-		t.Skipf("BUG: the primary signed an attribute whose body is not subpackets, the reader writes it, and the library refuses the whole certificate: %v", err)
+		t.Fatalf("the library must read the certificate when a malformed attribute is left out: %v", err)
+	}
+	ps, err := fkWalkCertificate(k.Certificate())
+	if err != nil {
+		t.Fatalf("the certificate does not walk: %v", err)
+	}
+	if n := len(fkCertTagsOf(ps, 17)); n != 0 {
+		t.Errorf("the certificate holds %d user attribute packets, want none", n)
 	}
 }
