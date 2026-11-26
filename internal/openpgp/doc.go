@@ -89,6 +89,18 @@
 // library, before it is used. A signer of the adopted key may be the [ForeignSigner] or any other signer
 // of the same key.
 //
+// What a ceremony that signs for an adopted key must do. It reads a kept certificate only against the digest
+// that the newest record of the bundle's history lists for it, as a [HeldDigest], and never against a digest
+// made from the file. It shows the person [ForeignKey.SigningBasis], and not the per-signature view, as what
+// later signatures are made from. When the source of a user ID is weak, it tells the person that the flags,
+// the primary mark, the end and the preferences of that user ID come from a SHA-1 signature, re-signs only
+// when the person confirms it, and never falls back silently to an older strong signature. It shows a choice
+// that is tied, which the bytes of the packets decided and which is arbitrary. It refuses, or asks, when the
+// export has uncounted claims ([ForeignKey.UncountedClaims]) newer than the newest signature that counted,
+// since another program may rank them above what it signs. It refuses to build when the end of the key has no
+// source, and, when the sources do not agree or one has a signature expiration time, it extends the key first.
+// It takes the primary user ID from the basis and never as the first of a list.
+//
 // A user ID has the one shape of the page, and each part of it follows the rule of its key in
 // ritueel.yaml, so that no text of a caller can add a character that a person cannot read or an
 // address that the user ID does not show.

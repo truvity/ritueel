@@ -135,6 +135,7 @@ type snapUserID struct {
 type snapSubkey struct {
 	fp      []byte // 20 bytes
 	body    []byte // the body of its public subkey packet
+	alg     ForeignAlgorithm
 	revoked bool
 	bound   time.Time // the time of its newest binding that counts, of any hash
 	// weak is true when that newest binding is made with SHA-1, and anyStrong when some binding that
@@ -291,7 +292,7 @@ func laterOf(a, b time.Time) time.Time {
 }
 
 // addSubkey adds the subkey of a group that goes into the certificate.
-func (o *fkOutput) addSubkey(fp, body []byte, counted []snapSig) {
+func (o *fkOutput) addSubkey(fp, body []byte, alg ForeignAlgorithm, counted []snapSig) {
 	o.noteCounted(counted)
 	sigs := make([]ForeignSignature, len(counted))
 	for i, c := range counted {
@@ -303,7 +304,7 @@ func (o *fkOutput) addSubkey(fp, body []byte, counted []snapSig) {
 		raws[i] = c.raw
 	}
 	summariseSubkey(&view, raws)
-	k := snapSubkey{fp: bytes.Clone(fp), body: bytes.Clone(body), revoked: view.Revoked}
+	k := snapSubkey{fp: bytes.Clone(fp), body: bytes.Clone(body), alg: alg, revoked: view.Revoked}
 	for _, c := range counted {
 		if c.sig.Type == sigSubkeyBinding {
 			k.anyStrong = k.anyStrong || c.sig.Status == SignatureValid

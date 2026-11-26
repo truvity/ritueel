@@ -1026,7 +1026,7 @@ func (v *fkVerifier) subkeys(w *fkWalk, out *fkOutput) []ForeignSubkey {
 		views[i].Fingerprint, views[i].KeyID = fingerprintHex(s.fp)
 		if g.first == i {
 			out.subs[i] = append(wrap(tagSubkey, s.pubBody), g.emits...)
-			out.addSubkey(s.fp, s.pubBody, g.counted)
+			out.addSubkey(s.fp, s.pubBody, s.pub.alg, g.counted)
 		}
 	}
 	return views

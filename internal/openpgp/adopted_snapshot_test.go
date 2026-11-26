@@ -64,6 +64,9 @@ func TestSnapshotOfTheCertificateIsTheSnapshotOfTheExport(t *testing.T) {
 				if !reflect.DeepEqual(openpgp.SnapshotOf(k), openpgp.SnapshotOf(kc)) {
 					t.Errorf("the snapshot of the certificate is not the snapshot of the export:\n export:      %+v\n certificate: %+v", openpgp.SnapshotOf(k), openpgp.SnapshotOf(kc))
 				}
+				if !reflect.DeepEqual(k.SigningBasis(), kc.SigningBasis()) {
+					t.Errorf("the description of the certificate is not the description of the export:\n export:      %+v\n certificate: %+v", k.SigningBasis(), kc.SigningBasis())
+				}
 				fkCheckSnapshot(t, k)
 				fkCheckSnapshot(t, kc)
 			})
@@ -722,4 +725,76 @@ func fkReverseBlocks(t testing.TB, file []byte) []byte {
 		}
 	}
 	return fkJoin(out...)
+}
+
+// The description of what later signatures are made from: the same values as the snapshot, the primary
+// user ID by the one rule, a text that a re-signing may not cover marked, and no slice shared with the key.
+func TestSigningBasisDescribesWhatLaterSignaturesAreMadeFrom(t *testing.T) {
+	fkEachBase(t, func(t *testing.T, b *fkBase) {
+		k := fkRead(t, fkRichOf(t, b, false, false).file)
+		d := k.SigningBasis()
+		key := openpgp.SnapshotKey(k)
+		if d.Revoked != key.Revoked || !d.Newest.Equal(key.Newest) || d.ExpiryAny != key.Expiry.Any || d.ExpiryAgree != key.Expiry.Agree ||
+			d.ExpiryMarked != key.Expiry.Marked || !d.ExpiryEarliest.Equal(key.Expiry.Earliest) || d.DirectTied != key.DirectTied {
+			t.Errorf("the key level of the description: %+v, snapshot %+v", d, key)
+		}
+		users, subs := openpgp.SnapshotUsers(k), openpgp.SnapshotSubkeys(k)
+		if len(d.UserIDs) != len(users) || len(d.Subkeys) != len(subs) {
+			t.Fatalf("%d user IDs and %d subkeys in the description, %d and %d in the snapshot", len(d.UserIDs), len(d.Subkeys), len(users), len(subs))
+		}
+		primaries := 0
+		want, _ := openpgp.SnapshotPrimaryUserID(k)
+		for i, u := range d.UserIDs {
+			s := users[i]
+			if u.Text != s.Text || u.Revoked != s.Revoked || !u.Signed.Equal(s.Signed) || u.KeyFlags != s.Flags || u.Primary != s.Primary ||
+				u.Weak != s.Weak || u.AnyStrong != s.AnyStrong || u.Tied != s.Tied || u.SigExpires != s.SigExpires || !u.KeyExpires.Equal(s.Expires) {
+				t.Errorf("user ID %d: %+v, snapshot %+v", i, u, s)
+			}
+			if u.IsPrimary {
+				primaries++
+				if u.Text != want || u.Text != fkRichUserID("primary") {
+					t.Errorf("the primary user ID is %q", u.Text)
+				}
+			}
+			if !u.TextOK {
+				t.Errorf("the text of user ID %d does not pass the rule for an existing one: %q", i, u.Text)
+			}
+		}
+		if primaries != 1 {
+			t.Errorf("%d user IDs are the primary one", primaries)
+		}
+		for i, s := range d.Subkeys {
+			w := subs[i]
+			if s.Fingerprint != hex.EncodeToString(w.Fingerprint) || s.Revoked != w.Revoked || s.Weak != w.Weak || s.AnyStrong != w.AnyStrong || s.Tied != w.Tied || s.Algorithm.ID == 0 {
+				t.Errorf("subkey %d: %+v, snapshot %+v", i, s, w)
+			}
+		}
+
+		// no slice is shared with the key, and what a caller edits changes nothing
+		d.UserIDs[0].Text = "changed"
+		d.Subkeys[0].Fingerprint = "changed"
+		d.UserIDs = d.UserIDs[:0]
+		k.UserIDs = nil
+		if again := k.SigningBasis(); again.UserIDs[0].Text == "changed" || again.Subkeys[0].Fingerprint == "changed" || len(again.UserIDs) != len(users) {
+			t.Error("the description shares what the caller edited with the key")
+		}
+		if (*openpgp.ForeignKey)(nil).SigningBasis().UserIDs != nil || (&openpgp.ForeignKey{}).SigningBasis().Newest != (time.Time{}) {
+			t.Error("the description of no key is not empty")
+		}
+	})
+}
+
+// A text that is not the text of a user ID that a re-signing may cover is marked, here a line break in a user ID
+// that the primary signed.
+func TestSigningBasisMarksATextThatMayNotBeCovered(t *testing.T) {
+	b := fkNamed(t, "ed25519")
+	w := fkWriter{b}
+	head := fkTemplateHead(t, b.file(t, fkProt{}))
+	text := "Example\nPerson <person@example.org>"
+	sig := w.sign(t, "user", 0x13, w.areas(1000), nil, 8, sha256.New, []byte(text))
+	k := fkRead(t, fkJoin(head[0], fkPacket{13, []byte(text)}, fkPacket{2, sig}))
+	d := k.SigningBasis()
+	if len(d.UserIDs) != 1 || d.UserIDs[0].Text != text || d.UserIDs[0].TextOK || !d.UserIDs[0].IsPrimary {
+		t.Errorf("the description: %+v", d.UserIDs)
+	}
 }
