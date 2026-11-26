@@ -703,7 +703,11 @@ func (v *fkVerifier) keyLevel(w *fkWalk, out *fkOutput) (sigs []ForeignSignature
 			case sigKeyRevocation:
 				out.revoked = true
 			case sigDirectKey:
-				out.direct = append(out.direct, snapSig{sig: fs, raw: emit, sigExpires: count(h.areas.hashed, spSigExpiration) > 0})
+				prefs := carriedSubpackets(h.areas.hashed)
+				out.direct = append(out.direct, snapSig{
+					sig: fs, raw: emit, sigExpires: count(h.areas.hashed, spSigExpiration) > 0,
+					prefs: prefs, dropped: droppedTypes(h.areas.hashed, prefs),
+				})
 			}
 		}
 	}
@@ -803,6 +807,7 @@ func (v *fkVerifier) components(w *fkWalk, out *fkOutput) (ids []ForeignUserID, 
 					rec := snapSig{sig: fs, raw: emit, sigExpires: count(h.areas.hashed, spSigExpiration) > 0}
 					if isCertification(h.typ) {
 						rec.prefs = carriedSubpackets(h.areas.hashed)
+						rec.dropped = droppedTypes(h.areas.hashed, rec.prefs)
 					}
 					grp.add(emit, out, rec)
 					grp.ok = grp.ok || isCertification(h.typ)
@@ -1000,7 +1005,7 @@ func (v *fkVerifier) subkeys(w *fkWalk, out *fkOutput) []ForeignSubkey {
 				fs.OtherRevocations++
 			}
 			if emit != nil {
-				grp.add(emit, out, snapSig{sig: sg, raw: emit})
+				grp.add(emit, out, snapSig{sig: sg, raw: emit, sigExpires: count(h.areas.hashed, spSigExpiration) > 0})
 			}
 		}
 		summariseSubkey(&fs, raws)

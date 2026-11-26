@@ -21,13 +21,15 @@ import (
 
 // snapSig is a signature that counted, as the reader keeps it for the snapshot: what the view says of it,
 // the packet that the reader wrote for it, whether its hashed area has a signature expiration time (type 3),
-// which this layer does not judge, and, for a certification, the preference subpackets of its hashed area
-// that a later signature may carry over.
+// which this layer does not judge, and, for a certification or a direct-key signature, the preference
+// subpackets of its hashed area that a later signature may carry over and the types of the hashed
+// subpackets that it will not carry (see [droppedTypes]).
 type snapSig struct {
 	sig        ForeignSignature
 	raw        []byte
 	sigExpires bool
 	prefs      []subpacket
+	dropped    []byte
 }
 
 // earlierEnd tells whether the key end x is earlier than the key end y. No end (the zero time) is the
@@ -42,10 +44,14 @@ func earlierEnd(x, y time.Time) bool {
 	return x.Before(y)
 }
 
+// weakHash tells whether the signature is made with SHA-1.
+func (s snapSig) weakHash() bool { return s.sig.Status == SignatureValidWeakHash }
+
 // outranks tells whether the signature b is chosen over the signature a as the newest. The newer creation
 // time wins, whatever the hash. In a tie of the time the conservative one wins, in this order: the earlier
-// end of the key (no end counts as the latest), then the smaller bytes of the packet that the reader wrote.
-// It does not depend on the order of the file. It is the one helper of every "newest" choice of the snapshot.
+// end of the key (no end counts as the latest), then a strong hash before a weak one, then the smaller bytes
+// of the packet that the reader wrote. It does not depend on the order of the file. It is the one helper of
+// every "newest" choice of the snapshot.
 func outranks(b, a snapSig) bool {
 	if !b.sig.Created.Equal(a.sig.Created) {
 		return b.sig.Created.After(a.sig.Created)
@@ -53,12 +59,34 @@ func outranks(b, a snapSig) bool {
 	if !b.sig.KeyExpires.Equal(a.sig.KeyExpires) {
 		return earlierEnd(b.sig.KeyExpires, a.sig.KeyExpires)
 	}
+	if b.weakHash() != a.weakHash() {
+		return !b.weakHash()
+	}
 	return bytes.Compare(b.raw, a.raw) < 0
 }
 
+// sameContent tells whether two signatures say the same in everything that a builder uses: the key flags,
+// the primary flag, the carried preference subpackets, the dropped types and a signature expiration time.
+func sameContent(a, b snapSig) bool {
+	if a.sig.KeyFlags != b.sig.KeyFlags || a.sig.Primary != b.sig.Primary || a.sigExpires != b.sigExpires || !bytes.Equal(a.dropped, b.dropped) {
+		return false
+	}
+	if len(a.prefs) != len(b.prefs) {
+		return false
+	}
+	for i := range a.prefs {
+		if a.prefs[i].typ != b.prefs[i].typ || !bytes.Equal(a.prefs[i].data, b.prefs[i].data) {
+			return false
+		}
+	}
+	return true
+}
+
 // newestSig is the signature of the list that [outranks] all the others that pass keep, its place in the
-// list, and false when none passes. tied is true when the choice was made by the bytes of the packets: some
-// other signature that passes keep has the same time and the same end of the key and is another packet. Such
+// list, and false when none passes. tied is true when the choice was left to the bytes of the packets AND
+// it matters: some other signature that passes keep is still equal to the chosen one after the time, the end
+// of the key and the strength of the hash, and differs from it in something that a builder uses (see
+// [sameContent]). The same content signed twice, which gives other bytes for RSA and ECDSA, is not tied. Such
 // a choice does not depend on the order of the file, and it is arbitrary; a ceremony shows it.
 func newestSig(sigs []snapSig, keep func(ForeignSignature) bool) (best snapSig, idx int, tied, ok bool) {
 	for i, s := range sigs {
@@ -70,7 +98,8 @@ func newestSig(sigs []snapSig, keep func(ForeignSignature) bool) (best snapSig, 
 		return best, -1, false, false
 	}
 	for i, s := range sigs {
-		if i != idx && keep(s.sig) && s.sig.Created.Equal(best.sig.Created) && s.sig.KeyExpires.Equal(best.sig.KeyExpires) && !bytes.Equal(s.raw, best.raw) {
+		if i != idx && keep(s.sig) && s.sig.Created.Equal(best.sig.Created) && s.sig.KeyExpires.Equal(best.sig.KeyExpires) &&
+			s.weakHash() == best.weakHash() && !sameContent(s, best) {
 			tied = true
 			break
 		}
@@ -83,6 +112,33 @@ func newestSig(sigs []snapSig, keep func(ForeignSignature) bool) (best snapSig, 
 // algorithms (21), compression algorithms (22), the key server preferences (23), the features (30) and
 // the preferred AEAD ciphersuites (39). Every other type is dropped.
 var carriedTypes = []byte{11, 21, 22, 23, 30, 39}
+
+// rewrittenTypes are the subpacket types that a later signature writes afresh and never copies: the
+// creation time (2), the primary user ID flag (25), the key flags (27), the key expiration time (9) and the
+// issuer fingerprint (33).
+var rewrittenTypes = []byte{2, 9, 25, 27, 33}
+
+// droppedTypes lists, sorted and once each, the types of the subpackets of a hashed area that a later
+// signature will neither write afresh nor carry over: a designated revoker, a notation, a policy URL, a
+// signer's user ID, a signature expiration, any unknown type, and a carried type that was too long or
+// occurred twice. Only the numbers: the bytes are never kept.
+func droppedTypes(hashed, carried []subpacket) []byte {
+	var out []byte
+	for _, sp := range hashed {
+		if slices.Contains(rewrittenTypes, sp.typ) || slices.Contains(out, sp.typ) {
+			continue
+		}
+		kept := false
+		for _, c := range carried {
+			kept = kept || c.typ == sp.typ
+		}
+		if !kept {
+			out = append(out, sp.typ)
+		}
+	}
+	slices.Sort(out)
+	return out
+}
 
 // maxCarried is the most octets of the contents of one carried subpacket. A longer one is dropped.
 const maxCarried = 32
@@ -121,6 +177,8 @@ type snapUserID struct {
 	primary bool
 	expires time.Time
 	prefs   []subpacket
+	// dropped are the types of the hashed subpackets of that signature that a re-signing will not carry.
+	dropped []byte
 	// sigExpires is true when that signature has a signature expiration time (type 3), which this layer
 	// does not judge.
 	sigExpires bool
@@ -150,7 +208,10 @@ type snapDirect struct {
 	have       bool
 	expires    time.Time
 	sigExpires bool
-	tied       bool // the choice of the newest was made by the bytes of the packets
+	weak       bool        // the newest direct-key signature is made with SHA-1
+	tied       bool        // the choice of the newest was made by the bytes of the packets, and it matters
+	prefs      []subpacket // its carried subpackets
+	dropped    []byte      // the types of its hashed subpackets that a re-signing will not carry
 }
 
 // fkSnapshot is the snapshot: the primary, and what the signatures of the primary say of the key, the
@@ -215,30 +276,37 @@ func (s *fkSnapshot) expiry() expiryAnswer {
 	return a
 }
 
-// primaryUserID answers which user ID is THE primary one, by one rule that depends on nothing of the order
-// of the file: among the live user IDs (not revoked) that carry the primary flag, the one whose source
-// signature is the newest, a tie broken by the smaller text bytes; when none carries the flag, the live user
-// ID whose source signature is the newest, a tie broken in the same way; and none when no user ID is live.
-// It returns the place of that user ID in the lists of the snapshot. No later code may take the first user
-// ID of the list as the primary one.
+// primaryUserID DESCRIBES which user ID carries the primary flag, by one rule that depends on nothing of the
+// order of the file: among the live user IDs (not revoked) whose source signature carries the primary flag,
+// the one whose source signature is the newest, a tie broken by the smaller text bytes; and NONE when no live
+// user ID carries it. There is no fall-back to the newest user ID: a builder that wrote the primary flag
+// (subpacket 25) on a user ID chosen by a fall-back would add a flag that the person never set, and other
+// programs choose differently when none is flagged. The place to write the flag is an explicit parameter that
+// the ceremony gives, and no code may derive it from this method or take the first user ID of a list. It
+// returns the place of that user ID in the lists of the snapshot.
 func (s *fkSnapshot) primaryUserID() (int, bool) {
-	pick := func(wantFlag bool) (int, bool) {
-		best, found := -1, false
-		for i, u := range s.users {
-			if u.revoked || (wantFlag && !u.primary) {
-				continue
-			}
-			if !found || u.signed.After(s.users[best].signed) ||
-				(u.signed.Equal(s.users[best].signed) && bytes.Compare(u.text, s.users[best].text) < 0) {
-				best, found = i, true
-			}
+	best, found := -1, false
+	for i, u := range s.users {
+		if u.revoked || !u.primary {
+			continue
 		}
-		return best, found
+		if !found || u.signed.After(s.users[best].signed) ||
+			(u.signed.Equal(s.users[best].signed) && bytes.Compare(u.text, s.users[best].text) < 0) {
+			best, found = i, true
+		}
 	}
-	if i, ok := pick(true); ok {
-		return i, true
+	return best, found
+}
+
+// flaggedUserIDs is the number of live user IDs whose source signature carries the primary flag.
+func (s *fkSnapshot) flaggedUserIDs() int {
+	n := 0
+	for _, u := range s.users {
+		if !u.revoked && u.primary {
+			n++
+		}
 	}
-	return pick(false)
+	return n
 }
 
 // noteNewest raises newest to t.
@@ -277,7 +345,7 @@ func (o *fkOutput) addUser(text []byte, counted []snapSig) {
 		}
 	}
 	if src, _, tied, ok := newestSig(counted, func(s ForeignSignature) bool { return isCertification(s.Type) }); ok {
-		u.flags, u.primary, u.expires, u.prefs = src.sig.KeyFlags, src.sig.Primary, src.sig.KeyExpires, src.prefs
+		u.flags, u.primary, u.expires, u.prefs, u.dropped = src.sig.KeyFlags, src.sig.Primary, src.sig.KeyExpires, src.prefs, src.dropped
 		u.sigExpires, u.weak, u.tied = src.sigExpires, src.sig.Status == SignatureValidWeakHash, tied
 	}
 	o.users = append(o.users, u)
@@ -335,7 +403,10 @@ func (o *fkOutput) snapshot(w *fkWalk, v *fkVerifier) fkSnapshot {
 	slices.SortFunc(s.users, func(a, b snapUserID) int { return bytes.Compare(a.text, b.text) })
 	slices.SortFunc(s.subkeys, func(a, b snapSubkey) int { return bytes.Compare(a.fp, b.fp) })
 	if d, _, tied, ok := newestSig(o.direct, func(ForeignSignature) bool { return true }); ok {
-		s.direct = snapDirect{have: true, expires: d.sig.KeyExpires, sigExpires: d.sigExpires, tied: tied}
+		s.direct = snapDirect{
+			have: true, expires: d.sig.KeyExpires, sigExpires: d.sigExpires, weak: d.weakHash(), tied: tied,
+			prefs: d.prefs, dropped: d.dropped,
+		}
 	}
 	return s
 }

@@ -794,7 +794,135 @@ func TestSigningBasisMarksATextThatMayNotBeCovered(t *testing.T) {
 	sig := w.sign(t, "user", 0x13, w.areas(1000), nil, 8, sha256.New, []byte(text))
 	k := fkRead(t, fkJoin(head[0], fkPacket{13, []byte(text)}, fkPacket{2, sig}))
 	d := k.SigningBasis()
-	if len(d.UserIDs) != 1 || d.UserIDs[0].Text != text || d.UserIDs[0].TextOK || !d.UserIDs[0].IsPrimary {
+	if len(d.UserIDs) != 1 || d.UserIDs[0].Text != text || d.UserIDs[0].TextOK || d.UserIDs[0].IsPrimary || d.PrimaryFlagged != 0 {
 		t.Errorf("the description: %+v", d.UserIDs)
+	}
+}
+
+// Two signatures in one second with the same end are common and mean nothing when they say the same: a tie
+// is marked only when the candidates that are still equal after the time, the end and the strength of the
+// hash differ in something that a builder uses. A strong hash comes before a weak one.
+func TestSnapshotTieIsMarkedOnlyWhenTheCandidatesDiffer(t *testing.T) {
+	b := fkNamed(t, "ed25519")
+	w := fkWriter{b}
+	life := fkSubpacket(9, true, fkU32(10*86400)...)
+	flags := func(f byte) []byte { return fkSubpacket(27, false, f) }
+	user := func(extra ...[]byte) []byte { return w.userSig(t, 0x13, w.areas(1000, extra...), nil) }
+	weak := func(extra ...[]byte) []byte { return fkSHA1UserSig(t, w, w.areas(1000, extra...)) }
+	cases := []struct {
+		name     string
+		sigs     [][]byte
+		wantTied bool
+		wantWeak bool
+	}{
+		{"the same content in another order of the subpackets: other bytes, not tied", [][]byte{user(flags(3), life), user(life, flags(3))}, false, false},
+		{"other flags", [][]byte{user(flags(1)), user(flags(2))}, true, false},
+		{"another primary flag", [][]byte{user(flags(1), fkSubpacket(25, false, 1)), user(flags(1))}, true, false},
+		{"other preferences", [][]byte{user(fkSubpacket(21, false, 8)), user(fkSubpacket(21, false, 9))}, true, false},
+		{"a type that is dropped in one", [][]byte{user(fkSubpacket(100, false, 1)), user()}, true, false},
+		{"a signature expiration in one", [][]byte{user(fkSubpacket(3, false, fkU32(5)...)), user()}, true, false},
+		{"a strong one before a weak one, whatever they say", [][]byte{weak(flags(1)), user(flags(2))}, false, false},
+		{"two weak ones that say other things", [][]byte{weak(flags(1)), weak(flags(2))}, true, true},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			for _, sigs := range [][][]byte{c.sigs, reversed(c.sigs)} {
+				k := fkRead(t, fkEdFile(t, w, nil, sigs))
+				u := openpgp.SnapshotUsers(k)[0]
+				if u.Tied != c.wantTied || u.Weak != c.wantWeak {
+					t.Errorf("tied %v weak %v, want %v %v", u.Tied, u.Weak, c.wantTied, c.wantWeak)
+				}
+			}
+		})
+	}
+}
+
+// The basis shows everything that a re-signing carries and drops: for each user ID and for the direct-key
+// source the carried preferences with their bytes in the order they are written, and the types of the hashed
+// subpackets that are not carried, numbers only.
+func TestSigningBasisShowsWhatAReSigningCarriesAndDrops(t *testing.T) {
+	b := fkNamed(t, "ed25519")
+	w := fkWriter{b}
+	long := bytes.Repeat([]byte{7}, 33)
+	extras := [][]byte{
+		fkSubpacket(30, false, 1), fkSubpacket(21, false, 8, 9),
+		fkSubpacket(12, false, append([]byte{0x80, 1}, bytes.Repeat([]byte{4}, 20)...)...), // a designated revoker
+		fkSubpacket(20, false, append([]byte{0, 0, 0, 0, 0, 1, 0, 1}, 'n', 'v')...),        // a notation: name n, value v
+		fkSubpacket(26, false, []byte("http")...),
+		fkSubpacket(100, false, 5),      // unknown
+		fkSubpacket(22, false, long...), // carried type, too long
+		fkSubpacket(3, false, fkU32(7)...),
+		fkSubpacket(27, false, 3), fkSubpacket(9, true, fkU32(86400)...), // written afresh
+	}
+	user := w.userSig(t, 0x13, w.areas(1000, extras...), nil)
+	direct := w.keySig(t, 0x1F, w.areas(1100, append([][]byte{fkSubpacket(23, false, 0x80)}, extras[3:5]...)...), nil)
+	k := fkRead(t, fkEdFile(t, w, [][]byte{direct}, [][]byte{user}))
+	kc, err := fkReadCertificate(k.Certificate())
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, key := range []*openpgp.ForeignKey{k, kc} {
+		d := key.SigningBasis()
+		u := d.UserIDs[0]
+		if !reflect.DeepEqual(u.Prefs, []openpgp.ForeignBasisPref{{Type: 21, Data: []byte{8, 9}}, {Type: 30, Data: []byte{1}}}) {
+			t.Errorf("the carried preferences of the user ID: %+v", u.Prefs)
+		}
+		if !reflect.DeepEqual(u.Dropped, []uint8{3, 12, 20, 22, 26, 100}) {
+			t.Errorf("the dropped types of the user ID: %v", u.Dropped)
+		}
+		if !d.DirectHave || d.DirectWeak || !reflect.DeepEqual(d.DirectPrefs, []openpgp.ForeignBasisPref{{Type: 23, Data: []byte{0x80}}}) ||
+			!reflect.DeepEqual(d.DirectDropped, []uint8{20, 26}) || !d.DirectEnd.IsZero() || d.DirectSigExpires {
+			t.Errorf("the direct-key source: %+v", d)
+		}
+		if !u.SigExpires {
+			t.Errorf("the signature expiration of the user ID is not shown")
+		}
+	}
+	// nothing is shared with the key
+	d := k.SigningBasis()
+	d.UserIDs[0].Prefs[0].Data[0] = 99
+	d.UserIDs[0].Dropped[0] = 99
+	d.DirectPrefs[0].Data[0] = 99
+	d.DirectDropped[0] = 99
+	again := k.SigningBasis()
+	if again.UserIDs[0].Prefs[0].Data[0] != 8 || again.UserIDs[0].Dropped[0] != 3 || again.DirectPrefs[0].Data[0] != 0x80 || again.DirectDropped[0] != 20 {
+		t.Error("the basis shares memory with the key")
+	}
+	// no source: nothing shown
+	plain := fkRead(t, b.plain).SigningBasis()
+	if plain.DirectHave || plain.DirectPrefs != nil || plain.DirectDropped != nil {
+		t.Errorf("a key with no direct-key signature shows one: %+v", plain)
+	}
+}
+
+// The basis gives the primary's fingerprint and algorithm and the SHA-256 of the certificate, from the key
+// and not from the view that a caller edits.
+func TestSigningBasisGivesTheIdentityOfTheKey(t *testing.T) {
+	fkEachBase(t, func(t *testing.T, b *fkBase) {
+		k := fkRead(t, b.plain)
+		d := k.SigningBasis()
+		sum := sha256.Sum256(k.Certificate())
+		if d.Fingerprint != k.Primary.Fingerprint || d.Algorithm != k.Primary.Algorithm || d.CertificateSHA256 != sum {
+			t.Errorf("the basis: %s %v %x, the key: %s %v %x", d.Fingerprint, d.Algorithm, d.CertificateSHA256, k.Primary.Fingerprint, k.Primary.Algorithm, sum)
+		}
+		k.Primary.Fingerprint, k.Primary.Algorithm = "edited", openpgp.ForeignAlgorithm{}
+		if again := k.SigningBasis(); again.Fingerprint != d.Fingerprint || again.Algorithm != d.Algorithm {
+			t.Error("an edit of the view changed the basis")
+		}
+	})
+}
+
+// The basis does not invent a primary user ID: when no live user ID carries the primary flag, none is THE
+// primary one and the count says so.
+func TestSigningBasisDoesNotInventAPrimaryUserID(t *testing.T) {
+	b := fkNamed(t, "ed25519")
+	w := fkWriter{b}
+	none := fkRead(t, fkEdFile(t, w, nil, [][]byte{w.userSig(t, 0x13, w.areas(1000), nil)})).SigningBasis()
+	if none.PrimaryFlagged != 0 || none.UserIDs[0].IsPrimary || none.UserIDs[0].Primary {
+		t.Errorf("a key with no primary flag: %+v", none)
+	}
+	one := fkRead(t, fkEdFile(t, w, nil, [][]byte{w.userSig(t, 0x13, w.areas(1000, fkSubpacket(25, false, 1)), nil)})).SigningBasis()
+	if one.PrimaryFlagged != 1 || !one.UserIDs[0].IsPrimary || !one.UserIDs[0].Primary {
+		t.Errorf("a key with the primary flag: %+v", one)
 	}
 }

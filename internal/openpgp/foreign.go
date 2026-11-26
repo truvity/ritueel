@@ -373,7 +373,10 @@ type ForeignSubkey struct {
 type ForeignKey struct {
 	// Primary is the primary key.
 	Primary ForeignPrimary
-	// UserIDs are the user IDs in the order of the file.
+	// UserIDs are the user IDs in the order of the file, one for each occurrence: a user ID that appears twice
+	// in an export is listed twice here, each with the signatures that stand under it. The certificate, the
+	// snapshot and [ForeignKey.SigningBasis] merge the two into one user ID with the signatures of both, so
+	// that the view of such a key and the basis can differ; the basis is what later signatures are made from.
 	UserIDs []ForeignUserID
 	// Subkeys are the subkeys in the order of the file.
 	Subkeys []ForeignSubkey
@@ -402,7 +405,10 @@ type ForeignKey struct {
 	// reader read and the primary did not make. These are unverified claims: the reader does not know that the
 	// primary made them. A program that does count them may rank one above the newest signature that the reader
 	// counted. UncountedClaimsNewest is the newest creation time among those that have one (an unreadable
-	// signature may have none), and zero when there is none. Both are zero for a key that
+	// or an old signature may have none), and zero when there is none. A zero time with a count above zero
+	// is not "nothing newer": the claims have no time that can be compared, and a ceremony must ask the person
+	// when the count is above zero and the time is zero, and not only when the time is newer than the newest
+	// signature that counted. Both are zero for a key that
 	// [ReadForeignCertificate] read, since a certificate holds only what counted, and neither enters the
 	// snapshot that a signature is made from.
 	UncountedClaims       int
