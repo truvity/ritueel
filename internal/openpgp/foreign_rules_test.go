@@ -42,6 +42,10 @@ func (w fkWriter) sign(t testing.TB, kind string, typ byte, hashed, unhashed []b
 		h.Write([]byte{0xB4})
 		h.Write(binary.BigEndian.AppendUint32(nil, uint32(len(target))))
 		h.Write(target)
+	case "attr":
+		h.Write([]byte{0xD1})
+		h.Write(binary.BigEndian.AppendUint32(nil, uint32(len(target))))
+		h.Write(target)
 	case "sub":
 		h.Write([]byte{0x99, byte(len(target) >> 8), byte(len(target))})
 		h.Write(target)
