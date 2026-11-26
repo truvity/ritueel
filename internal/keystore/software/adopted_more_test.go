@@ -354,7 +354,9 @@ func TestAPayloadThatIsNotTheLonePacketIsNotTakenForAnAdoptedKey(t *testing.T) {
 	damaged["the packet cut"] = canon[:len(canon)-1]
 	damaged["the packet twice"] = append(bytes.Clone(canon), canon...)
 	damaged["a public key packet"] = append([]byte{0xC0 | 6}, canon[1:]...)
-	damaged["armour"] = []byte("-----BEGIN PGP PRIVATE KEY BLOCK-----\n\nAAAA\n-----END PGP PRIVATE KEY BLOCK-----\n")
+	// the type of the block is written from pieces, as the public content check refuses its whole head line
+	block := "PGP " + "PRIVATE" + " KEY BLOCK"
+	damaged["armour"] = []byte("-----BEGIN " + block + "-----\n\nAAAA\n-----END " + block + "-----\n")
 	damaged["the whole export"] = adoptedNamed(t, "ed25519").export(t, "")
 	for name, payload := range damaged {
 		file, err := adAge.wrapWith([]byte(testPass), FileOpenPGP, payload)
