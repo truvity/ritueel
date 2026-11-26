@@ -1,0 +1,10 @@
+# The settings of this bundle. A person writes this file; ritueel never changes it.
+version: 1
+name: Example                    # in the names of the root keys; 1 to 45 characters
+release_address: release@example.org
+policy:
+  stores: [piv, openpgp-card, aws-kms, software]
+  min_firmware: 5.7.0
+  pin_policy: [once, always]
+  require_name_constraints: true
+  validity_months: 13

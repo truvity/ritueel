@@ -1,0 +1,2 @@
+{"at":"2026-11-20T10:00:05Z","label":"A","place":"A.x509.key.pem","public_key_sha256":"c6d5f01f3e6b17bd72ed7cf7defc17bcba8874bbff47c4526e5e0762a325897a","purpose":"x509-root","store":"software"}
+{"at":"2026-11-20T10:00:06Z","label":"B","place":"B.x509.key.pem","public_key_sha256":"73aaf6508ff0db338bb6f075369fdab60e6e7d321a40c5316d37b960cc00f57f","purpose":"x509-root","store":"software"}

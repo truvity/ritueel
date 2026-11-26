@@ -1,0 +1,16 @@
+ceremony 20261120T100000Z-apply, made at 2026-11-20T10:00:00Z, by ritueel dev (linux/amd64)
+writes the first trust set, number 1
+make the X.509 root key A: a software key in a file (A.x509.key.pem), TEST ONLY
+make the X.509 root key B: a software key in a file (B.x509.key.pem), TEST ONLY
+leaves out: nothing
+signatures: 5; none can be fixed before the keys are born, so each is derived from a key made in this ceremony
+touches: 0
+wanted file ritueel.yaml, digest bbdf0444
+wanted file want/roots/x509.yaml, digest bac6c44b
+limit: A software root key is a file. Anyone who copies the file can sign as this root, and nothing records it. This is a TEST ONLY root: it is for rehearsals and tests, never for anything that others rely on.
+plan digest e74090cdbe7a3a9c57917698aa9d02c8afc5b8cde702731113512d9e9d03fa3b
+confirmed with --confirm, the whole plan digest
+root key A: x509 pin c6d5f01f3e6b17bd72ed7cf7defc17bcba8874bbff47c4526e5e0762a325897a
+root key B: x509 pin 73aaf6508ff0db338bb6f075369fdab60e6e7d321a40c5316d37b960cc00f57f
+checked: root-certificate, removal-authorisation, root-list, ca-bundle, root-json, plan, journals
+writes: roots/A/root.json, roots/B/root.json, trust/1-9c9a9768/ca-bundle.pem, trust/1-9c9a9768/root-list.json, trust/1-9c9a9768/root-list.jws
