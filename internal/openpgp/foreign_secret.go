@@ -489,7 +489,8 @@ func wipeRSA(k *rsa.PrivateKey) {
 	wipeInt(k.Precomputed.Qinv)
 }
 
-// OpenSecret opens the secret of the primary key and returns it as a standard-library private key. A
+// OpenSecret opens the secret of the primary key and returns it as a [ForeignSecret], whose signer holds
+// a standard-library private key and does not hand it out. A
 // protected secret is decrypted with the passphrase (S2K usage 254, AES in CFB mode, the SHA-1 check
 // of RFC 9580 section 5.5.3); an unprotected secret ignores the passphrase, which may be nil. It
 // never opens the secret of a subkey.
