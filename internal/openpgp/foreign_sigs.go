@@ -2,8 +2,12 @@ package openpgp
 
 import (
 	"bytes"
+	"crypto/sha1"
+	"crypto/sha256"
+	"crypto/sha512"
 	"encoding/binary"
 	"fmt"
+	"hash"
 	"time"
 
 	"github.com/ProtonMail/go-crypto/openpgp/packet"
@@ -102,7 +106,7 @@ func isRevocationType(t byte) bool {
 }
 
 // claimed tells whether the primary has to answer for the signature: it names the primary, or it is a
-// revocation that is not provably another key's. A revocation that cannot be read must not hide behind
+// revocation or a subkey binding that is not provably another key's. A revocation that cannot be read must not hide behind
 // that: it is listed, with the status unreadable, on the component that it stands on.
 func (h fkHead) claimed() bool {
 	switch h.issuer {
@@ -111,7 +115,7 @@ func (h fkHead) claimed() bool {
 	case issuerOther:
 		return false
 	}
-	return isRevocationType(h.typ)
+	return isRevocationType(h.typ) || h.typ == sigSubkeyBinding
 }
 
 // head reads the head of a signature. A version 3 signature names the primary by its key ID, and
@@ -283,28 +287,101 @@ func fillFields(fs *ForeignSignature, a sigAreas, keyCreated time.Time) bool {
 	return true
 }
 
-// evaluate judges one signature that the primary claims. check is go-crypto's verification for the
-// kind of signature, run only after every cheaper test has passed.
-func (v *fkVerifier) evaluate(s fkSig, h fkHead, keyCreated time.Time, check func(*packet.Signature) error) ForeignSignature {
-	fs := ForeignSignature{Type: h.typ, Hash: hashName(h.hash), Status: SignatureUnreadable}
-	if h.version != 4 || !h.parsed || !fillFields(&fs, h.areas, keyCreated) {
-		return fs
+// fkCtx is what judging one signature needs besides the signature: the bytes that it covers before its
+// own fields, and how to verify it.
+type fkCtx struct {
+	// data is what the signature hashes before its own fields (RFC 9580, section 5.2.4): the key
+	// prefix of the primary, then the key prefix of the subkey, or the user ID or attribute prefix and
+	// its body. These are the bytes that the certificate gets, hashed here by this package for the
+	// check of the hash tag, and hashed by go-crypto from its own serialisation for the verification.
+	data       []byte
+	keyCreated time.Time
+	// verify is go-crypto's verification of the kind of signature; a signature counts only if it
+	// passes.
+	verify func(*packet.Signature) error
+	// strong, when it is set, is a stricter verification that only changes the view: a signature that
+	// passes verify and fails strong counts for the certificate and is reported as not verified.
+	strong func(*packet.Signature) error
+	// sub, for a binding, is the subkey: a back-signature in the unhashed area that verifies with it
+	// is carried over.
+	sub *packet.PublicKey
+}
+
+// hashers are the hashes of the signatures that can count, by their numbers.
+var hashers = map[byte]func() hash.Hash{2: sha1.New, 8: sha256.New, 9: sha512.New384, 10: sha512.New}
+
+// tagOK tells whether the two octets that follow the unhashed area of a signature are the first two of its
+// digest, which this package computes over data, the hashed fields and the trailer (RFC 9580, section
+// 5.2.4). go-crypto does not compare them for a version 4 signature.
+func tagOK(hashID byte, a sigAreas, data []byte) bool {
+	h := hashers[hashID]
+	if h == nil || len(a.rest) < 2 {
+		return false
 	}
-	if h.hasUnknownCritical() {
-		fs.Status = SignatureUnknownCritical
-		return fs
+	d := h()
+	d.Write(data)
+	d.Write(a.fields)
+	trailer := []byte{4, 0xFF, 0, 0, 0, 0}
+	binary.BigEndian.PutUint32(trailer[2:], uint32(len(a.fields)))
+	d.Write(trailer)
+	return bytes.Equal(a.rest[:2], d.Sum(nil)[:2])
+}
+
+// canonicalValues tells whether what follows the unhashed area of a signature is the hash tag and the
+// signature values of the algorithm, each number in the form of RFC 9580 section 3.2, and nothing
+// after them: a signature that is not in this form is not carried over, and its value is never changed.
+func canonicalValues(algo byte, rest []byte) bool {
+	if len(rest) < 2 {
+		return false
 	}
-	if st := hashStatus(h.hash); st != 0 {
-		fs.Status = st
-		return fs
+	vals := rest[2:]
+	n := 0
+	switch algo {
+	case algoRSA, algoRSASign:
+		n = 1
+	case algoDSA, algoECDSA, algoEdDSA:
+		n = 2
+	case algoEd25519:
+		return len(vals) == 64
+	default:
+		return false
 	}
-	fs.Status = SignatureNotVerified
-	if h.algo != v.alg {
-		return fs
+	for i := 0; i < n; i++ {
+		var err error
+		if _, vals, err = readMPI(vals); err != nil {
+			return false
+		}
 	}
+	return len(vals) == 0
+}
+
+// emitBody writes the body of a signature that has been verified, from the bytes that were verified and
+// from nothing else: the fixed fields and the hashed area exactly as they were hashed (a.fields), an
+// unhashed area that this package builds (the issuer key ID, the issuer fingerprint when the hashed area
+// has none, and a back-signature that was verified), and the hash tag and the values as they stood
+// (a.rest), which [canonicalValues] and [tagOK] have judged. Nothing of the unhashed area of the file is
+// carried over.
+func emitBody(a sigAreas, issuerFP []byte, embedded []byte) []byte {
+	subs := []subpacket{{typ: spIssuerKeyID, data: issuerFP[12:]}}
+	if count(a.hashed, spIssuerFingerprint) == 0 {
+		subs = append(subs, subpacket{typ: spIssuerFingerprint, data: append([]byte{4}, issuerFP...)})
+	}
+	if embedded != nil {
+		subs = append(subs, subpacket{typ: spEmbeddedSignature, data: embedded})
+	}
+	un := encodeArea(subs)
+	body := make([]byte, 0, len(a.fields)+2+len(un)+len(a.rest))
+	body = append(body, a.fields...)
+	body = append(body, byte(len(un)>>8), byte(len(un)))
+	body = append(body, un...)
+	return append(body, a.rest...)
+}
+
+// readSignature has go-crypto read a signature packet.
+func readSignature(raw []byte) (*packet.Signature, error) {
 	var sig *packet.Signature
 	err := safely(func() error {
-		p, err := packet.Read(bytes.NewReader(s.raw))
+		p, err := packet.Read(bytes.NewReader(raw))
 		if err != nil {
 			return err
 		}
@@ -314,40 +391,164 @@ func (v *fkVerifier) evaluate(s fkSig, h fkHead, keyCreated time.Time, check fun
 		}
 		return nil
 	})
+	return sig, err
+}
+
+// evaluate judges one signature that the primary claims and, when it counts, returns the packet that the
+// certificate gets for it, written by this package (see [emitBody]). The tests run in this order, the
+// cheapest first: version and fields, critical subpackets, hash, algorithm, the form of the values, the
+// hash tag, then go-crypto's verification.
+func (v *fkVerifier) evaluate(s fkSig, h fkHead, c fkCtx) (ForeignSignature, []byte) {
+	fs := ForeignSignature{Type: h.typ, Hash: hashName(h.hash), Status: SignatureUnreadable}
+	if h.version != 4 || !h.parsed || !fillFields(&fs, h.areas, c.keyCreated) {
+		return fs, nil
+	}
+	if h.hasUnknownCritical() {
+		fs.Status = SignatureUnknownCritical
+		return fs, nil
+	}
+	if st := hashStatus(h.hash); st != 0 {
+		fs.Status = st
+		return fs, nil
+	}
+	fs.Status = SignatureNotVerified
+	if h.algo != v.alg {
+		return fs, nil
+	}
+	if !canonicalValues(h.algo, h.areas.rest) {
+		fs.Status = SignatureUnreadable
+		return fs, nil
+	}
+	if !tagOK(h.hash, h.areas, c.data) {
+		return fs, nil
+	}
+	sig, err := readSignature(s.raw)
 	if err != nil || sig.Version != 4 || byte(sig.SigType) != h.typ || !sig.CreationTime.Equal(fs.Created) {
 		fs.Status = SignatureUnreadable
-		return fs
+		return fs, nil
 	}
-	if safely(func() error { return check(sig) }) == nil {
-		fs.Status = SignatureValid
-		if h.hash == 2 {
-			fs.Status = SignatureValidWeakHash
+	if safely(func() error { return c.verify(sig) }) != nil {
+		return fs, nil
+	}
+	fs.Status = SignatureValid
+	if h.hash == 2 {
+		fs.Status = SignatureValidWeakHash
+	}
+	var embedded []byte
+	if c.sub != nil {
+		embedded = v.backSignature(h.areas, c)
+	}
+	emitted := wrap(tagSignature, emitBody(h.areas, v.fp, embedded))
+	if c.strong != nil && safely(func() error { return c.strong(sig) }) != nil {
+		fs.Status = SignatureNotVerified
+	}
+	return fs, emitted
+}
+
+// backSignature returns the body, written by this package, of a back-signature (type 0x19) in the
+// unhashed area of a binding that verifies with the subkey over the primary and the subkey, or nil.
+// A back-signature in the hashed area of the binding is part of what the binding covers and is carried
+// over with it as it stands; one in the unhashed area is carried over only if it verifies, and then
+// written again with the issuer of the subkey and nothing else from its unhashed area.
+func (v *fkVerifier) backSignature(a sigAreas, c fkCtx) []byte {
+	for _, sp := range a.unhashed {
+		if sp.typ != spEmbeddedSignature || len(sp.data) > maxBindingBody {
+			continue
+		}
+		e, err := splitSig(sp.data)
+		if err != nil || scanAreasOf(errFrame, sp.data) != nil || e.sigType != sigPrimaryKeyBinding ||
+			hashStatus(e.hash) != 0 || e.algo != byte(c.sub.PubKeyAlgo) || (fkHead{areas: e}).hasUnknownCritical() ||
+			!canonicalValues(e.algo, e.rest) || !tagOK(e.hash, e, c.data) {
+			continue
+		}
+		sig, err := readSignature(wrap(tagSignature, sp.data))
+		if err != nil || sig.Version != 4 {
+			continue
+		}
+		verified := safely(func() error {
+			hh, err := sig.PrepareVerify()
+			if err != nil {
+				return err
+			}
+			if err := v.pk.SerializeForHash(hh); err != nil {
+				return err
+			}
+			if err := c.sub.SerializeForHash(hh); err != nil {
+				return err
+			}
+			return c.sub.VerifySignature(hh, sig)
+		}) == nil
+		if verified {
+			return emitBody(e, c.sub.Fingerprint, nil)
 		}
 	}
-	return fs
+	return nil
 }
+
+// maxBindingBody is the most bytes of an embedded signature that is looked at.
+const maxBindingBody = 4096
 
 // isCertification tells whether a type is one of the four certifications of a user ID.
 func isCertification(t byte) bool { return t >= sigCertGeneric && t <= sigPositiveCertification }
 
+// fkOutput is what the judging of the signatures decides goes into the certificate, written by this
+// package: the packets of each part that passed, in the order of the standard.
+type fkOutput struct {
+	keySigs [][]byte // direct-key signatures and key revocations of the primary that verify
+	comps   [][]byte // per user ID or attribute of the walk, or nil when it is left out
+	subs    [][]byte // per subkey of the walk, or nil when it is left out
+}
+
+// assemble writes the certificate: the primary key packet, its signatures, the user IDs and attributes
+// that passed, each with its signatures, and the subkeys that passed, each with its signatures. Every
+// packet is written by this package (new-format headers with the shortest length); every byte of
+// content is covered by a signature of the primary that verified.
+func (o *fkOutput) assemble(primaryPacket []byte) []byte {
+	cert := bytes.Clone(primaryPacket)
+	for _, p := range o.keySigs {
+		cert = append(cert, p...)
+	}
+	for _, p := range o.comps {
+		cert = append(cert, p...)
+	}
+	for _, p := range o.subs {
+		cert = append(cert, p...)
+	}
+	return cert
+}
+
+// keyData is the prefix that every signature of the primary covers: its public key.
+func (v *fkVerifier) keyData(w *fkWalk) []byte { return hashPrefix(w.primaryBody) }
+
 // keyLevel judges the signatures on the primary key itself: the direct-key signatures and the key
 // revocations that it claims, and a count of the others. unreadable counts the revocations that could
-// not be used.
-func (v *fkVerifier) keyLevel(w *fkWalk) (sigs []ForeignSignature, other, unreadable int) {
+// not be used, otherRev the key revocations of other keys that are left out.
+func (v *fkVerifier) keyLevel(w *fkWalk, out *fkOutput) (sigs []ForeignSignature, other, otherRev, unreadable int) {
+	data := v.keyData(w)
 	for _, s := range w.keyT.sigs {
 		h := v.head(s)
+		var fs ForeignSignature
+		var emit []byte
 		switch {
 		case !h.claimed():
 			other++
+			if h.typ == sigKeyRevocation {
+				otherRev++
+			}
+			continue
 		case h.typ == sigDirectKey:
-			sigs = append(sigs, v.evaluate(s, h, v.created, func(g *packet.Signature) error { return v.pk.VerifyDirectKeySignature(g) }))
+			fs, emit = v.evaluate(s, h, fkCtx{data: data, keyCreated: v.created, verify: func(g *packet.Signature) error { return v.pk.VerifyDirectKeySignature(g) }})
 		case h.typ == sigKeyRevocation:
-			sigs = append(sigs, v.evaluate(s, h, v.created, func(g *packet.Signature) error { return v.pk.VerifyRevocationSignature(g) }))
+			fs, emit = v.evaluate(s, h, fkCtx{data: data, keyCreated: v.created, verify: func(g *packet.Signature) error { return v.pk.VerifyRevocationSignature(g) }})
 		default:
-			sigs = append(sigs, misplaced(h))
+			fs = misplaced(h)
+		}
+		sigs = append(sigs, fs)
+		if emit != nil {
+			out.keySigs = append(out.keySigs, emit)
 		}
 	}
-	return sigs, other, unusableRevocations(sigs)
+	return sigs, other, otherRev, unusableRevocations(sigs)
 }
 
 // unusableRevocations counts the revocations in a list that the primary claims and that the reader could
@@ -373,12 +574,34 @@ func misplaced(h fkHead) ForeignSignature {
 	return ForeignSignature{Type: h.typ, Status: SignatureMisplaced, Hash: hashName(h.hash)}
 }
 
-// userIDs judges the signatures on each user ID and returns the user IDs and the number of them that
-// have a valid self-signature.
-func (v *fkVerifier) userIDs(w *fkWalk) (ids []ForeignUserID, valid int) {
-	for _, u := range w.users {
+// componentData is what a signature on a user ID or a user attribute covers before its own fields: the
+// key prefix, then 0xB4 (user ID) or 0xD1 (user attribute), the four-octet length and the body.
+func (v *fkVerifier) componentData(w *fkWalk, u *fkUser) []byte {
+	lead := byte(0xB4)
+	if u.attr {
+		lead = 0xD1
+	}
+	data := append(v.keyData(w), lead, byte(len(u.text)>>24), byte(len(u.text)>>16), byte(len(u.text)>>8), byte(len(u.text)))
+	return append(data, u.text...)
+}
+
+// components judges the signatures on each user ID and user attribute. It returns the view of the user
+// IDs, the number of them that have a valid self-signature, and the number of user attributes that are left
+// out. A user ID or a user attribute goes into the certificate only with at least one certification that
+// verifies; it then goes with every certification and certification revocation of the primary that
+// verifies. Other keys' certifications are counted and left out.
+func (v *fkVerifier) components(w *fkWalk, out *fkOutput) (ids []ForeignUserID, valid, attrsLeftOut int) {
+	out.comps = make([][]byte, len(w.users))
+	for i, u := range w.users {
+		data := v.componentData(w, u)
 		text := string(u.text)
+		verify := func(g *packet.Signature) error { return v.pk.VerifyUserIdSignature(text, v.pk, g) }
+		if u.attr {
+			verify = func(g *packet.Signature) error { return v.verifyAttribute(w, u.text, g) }
+		}
 		fu := ForeignUserID{Text: text}
+		var emits []byte
+		self := false
 		for _, s := range u.t.sigs {
 			h := v.head(s)
 			switch {
@@ -386,22 +609,51 @@ func (v *fkVerifier) userIDs(w *fkWalk) (ids []ForeignUserID, valid int) {
 				fu.Certifications++
 			case !h.claimed():
 				fu.OtherSignatures++
+				if h.typ == sigCertRevocation {
+					fu.OtherRevocations++
+				}
 			case isCertification(h.typ) || h.typ == sigCertRevocation:
-				fu.Signatures = append(fu.Signatures, v.evaluate(s, h, v.created, func(g *packet.Signature) error {
-					return v.pk.VerifyUserIdSignature(text, v.pk, g)
-				}))
+				fs, emit := v.evaluate(s, h, fkCtx{data: data, keyCreated: v.created, verify: verify})
+				fu.Signatures = append(fu.Signatures, fs)
+				if emit != nil {
+					emits = append(emits, emit...)
+					self = self || isCertification(h.typ)
+				}
 			default:
 				fu.Signatures = append(fu.Signatures, misplaced(h))
 			}
+		}
+		if u.attr {
+			if self {
+				out.comps[i] = append(wrap(tagUserAttribute, u.text), emits...)
+			} else {
+				attrsLeftOut++
+			}
+			continue
 		}
 		summariseUserID(&fu)
 		fu.UnreadableRevocations = unusableRevocations(fu.Signatures)
 		if fu.Valid {
 			valid++
+			out.comps[i] = append(wrap(tagUserID, u.text), emits...)
 		}
 		ids = append(ids, fu)
 	}
-	return ids, valid
+	return ids, valid, attrsLeftOut
+}
+
+// verifyAttribute verifies a signature over a user attribute packet with the primary key.
+func (v *fkVerifier) verifyAttribute(w *fkWalk, body []byte, g *packet.Signature) error {
+	h, err := g.PrepareVerify()
+	if err != nil {
+		return err
+	}
+	if err := v.pk.SerializeForHash(h); err != nil {
+		return err
+	}
+	h.Write([]byte{0xD1, byte(len(body) >> 24), byte(len(body) >> 16), byte(len(body) >> 8), byte(len(body))})
+	h.Write(body)
+	return v.pk.VerifySignature(h, g)
 }
 
 // hardRevocation tells whether a revocation cannot be undone by a later signature: it has no reason, or
@@ -480,41 +732,70 @@ func newer(a, b *ForeignSignature) *ForeignSignature {
 	return a
 }
 
-// subkeys judges the signatures on each subkey. A subkey that go-crypto cannot read has its claimed
-// signatures marked unreadable: they cannot be verified.
-func (v *fkVerifier) subkeys(w *fkWalk) []ForeignSubkey {
-	var out []ForeignSubkey
-	for _, s := range w.subs {
-		fs := ForeignSubkey{Algorithm: s.pub.alg, Created: s.pub.created, Form: s.form}
-		fs.Fingerprint, fs.KeyID = fingerprintHex(s.fp)
-		sub, subErr := s.gopk, error(nil)
-		if sub == nil {
-			subErr = safely(func() error {
-				var err error
-				sub, err = goCryptoPublic(s.pubPacket)
-				return err
-			})
+// subkeys judges the signatures on each subkey. A subkey goes into the certificate only if at least
+// one binding of the primary verifies over its public bytes (SHA-1 or stronger; the back-signature of a
+// subkey that can sign is asked for in the view and not here); it is then written as a public subkey packet
+// built from the cut that was confirmed, with its bindings and subkey revocations that verify. Every
+// other subkey, whatever packet it came in, is left out and reported, with no fingerprint: an
+// unconfirmed cut is not to be trusted.
+func (v *fkVerifier) subkeys(w *fkWalk, out *fkOutput) []ForeignSubkey {
+	var views []ForeignSubkey
+	out.subs = make([][]byte, len(w.subs))
+	for i, s := range w.subs {
+		fs := ForeignSubkey{Form: s.form}
+		if !s.unread {
+			fs.Algorithm, fs.Created = s.pub.alg, s.pub.created
 		}
+		var data []byte
+		if !s.unread {
+			data = append(v.keyData(w), hashPrefix(s.pubBody)...)
+		}
+		var emits []byte
+		confirmed := false
 		for _, g := range s.t.sigs {
 			h := v.head(g)
+			unreadable := s.gopk == nil && (h.typ == sigSubkeyBinding || h.typ == sigSubkeyRevoke)
+			var sg ForeignSignature
+			var emit []byte
 			switch {
 			case !h.claimed():
 				fs.OtherSignatures++
-			case subErr != nil && (h.typ == sigSubkeyBinding || h.typ == sigSubkeyRevoke):
-				fs.Signatures = append(fs.Signatures, ForeignSignature{Type: h.typ, Status: SignatureUnreadable, Hash: hashName(h.hash)})
+				if h.typ == sigSubkeyRevoke {
+					fs.OtherRevocations++
+				}
+				continue
+			case unreadable:
+				sg = ForeignSignature{Type: h.typ, Status: SignatureUnreadable, Hash: hashName(h.hash)}
 			case h.typ == sigSubkeyBinding:
-				fs.Signatures = append(fs.Signatures, v.evaluate(g, h, s.pub.created, func(x *packet.Signature) error { return v.pk.VerifyKeySignature(sub, x) }))
+				sub := s.gopk
+				sg, emit = v.evaluate(g, h, fkCtx{
+					data: data, keyCreated: s.pub.created, sub: sub,
+					verify: func(x *packet.Signature) error { return v.pk.VerifySubkeyRevocationSignature(x, sub) },
+					strong: func(x *packet.Signature) error { return v.pk.VerifyKeySignature(sub, x) },
+				})
+				confirmed = confirmed || emit != nil
 			case h.typ == sigSubkeyRevoke:
-				fs.Signatures = append(fs.Signatures, v.evaluate(g, h, s.pub.created, func(x *packet.Signature) error { return v.pk.VerifySubkeyRevocationSignature(x, sub) }))
+				sub := s.gopk
+				sg, emit = v.evaluate(g, h, fkCtx{
+					data: data, keyCreated: s.pub.created,
+					verify: func(x *packet.Signature) error { return v.pk.VerifySubkeyRevocationSignature(x, sub) },
+				})
 			default:
-				fs.Signatures = append(fs.Signatures, misplaced(h))
+				sg = misplaced(h)
 			}
+			fs.Signatures = append(fs.Signatures, sg)
+			emits = append(emits, emit...)
 		}
 		summariseSubkey(&fs)
 		fs.UnreadableRevocations = unusableRevocations(fs.Signatures)
-		out = append(out, fs)
+		if confirmed {
+			fs.InCertificate = true
+			fs.Fingerprint, fs.KeyID = fingerprintHex(s.fp)
+			out.subs[i] = append(wrap(tagSubkey, s.pubBody), emits...)
+		}
+		views = append(views, fs)
 	}
-	return out
+	return views
 }
 
 // summariseSubkey fills the view from the bindings that count, by the rule of [summariseUserID]: the
@@ -570,66 +851,4 @@ func (v *fkVerifier) countClaimed(w *fkWalk) int {
 		count(&s.t)
 	}
 	return n
-}
-
-// confirmsHash tells whether a hash may authenticate a subkey: SHA-1 or a stronger one (SHA-224, SHA-256,
-// SHA-384, SHA-512, SHA3-256, SHA3-512). MD5, RIPEMD-160 and the other obsolete hashes may not.
-func confirmsHash(id byte) bool {
-	switch id {
-	case 2, 8, 9, 10, 11, 12, 14:
-		return true
-	}
-	return false
-}
-
-// confirmSubkeys is the check that authenticates the cut of every subkey that came as a secret key
-// packet, secret or stub. The cut of such a packet is made by its own length fields and nothing else
-// vouches for it; a binding signature of the primary does, because it signs the exact bytes of the
-// public subkey. So a secret subkey goes into the certificate only if at least one binding (type 0x18)
-// that the primary has not provably not made verifies, with the public key of the primary, over the
-// public subkey packet that the cut made, with SHA-1 or a stronger hash. The signature is verified with
-// [packet.PublicKey.VerifySubkeyRevocationSignature], which hashes the primary and the subkey and does
-// not ask for a back-signature (the binding of a subkey that can sign is judged for the view by
-// VerifyKeySignature, which does). The expiry of the binding, a revocation of the subkey and a missing
-// back-signature do not matter here. go-crypto hashes its own serialisation of the subkey, and
-// [agreePublic] has already made it write exactly the bytes of the cut (s.pubBody) with the fingerprint
-// that this package computed, so the bytes that the signature covers are the bytes that the
-// certificate gets. When no binding verifies, the whole file is an [ErrForeignSubkey].
-func (v *fkVerifier) confirmSubkeys(w *fkWalk) error {
-	for _, s := range w.subs {
-		if s.form == SubkeyPublic {
-			continue
-		}
-		ok := false
-		for _, g := range s.t.sigs {
-			if v.bindsSubkey(g, s) {
-				ok = true
-				break
-			}
-		}
-		if !ok {
-			return fail(ErrForeignSubkey, "a subkey that came as a secret key packet (%s) has no binding signature of the primary that verifies over its public part", s.form)
-		}
-	}
-	return nil
-}
-
-// bindsSubkey tells whether one signature is a binding of the primary that verifies over the public
-// subkey packet of s.
-func (v *fkVerifier) bindsSubkey(g fkSig, s *fkSub) bool {
-	h := v.head(g)
-	if h.version != 4 || !h.parsed || h.typ != sigSubkeyBinding || h.issuer == issuerOther || h.algo != v.alg || !confirmsHash(h.hash) || s.gopk == nil {
-		return false
-	}
-	return safely(func() error {
-		p, err := packet.Read(bytes.NewReader(g.raw))
-		if err != nil {
-			return err
-		}
-		sig, ok := p.(*packet.Signature)
-		if !ok || sig.Version != 4 || byte(sig.SigType) != sigSubkeyBinding {
-			return errFrame
-		}
-		return v.pk.VerifySubkeyRevocationSignature(sig, s.gopk)
-	}) == nil
 }

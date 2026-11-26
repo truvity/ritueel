@@ -38,7 +38,7 @@ const (
 	// user attribute packet, and keeps the limit of [MaxForeignPacketBytes].
 	MaxForeignUserIDBytes = 2048
 	// MaxForeignClaimedSignatures is the most signatures in the whole file that the primary has to answer
-	// for, which are the ones that are verified: those that name the primary, and the revocations that
+	// for, which are the ones that are verified: those that name the primary, and the revocations and subkey bindings that
 	// are not provably another key's: 2048, which a key re-signed every year for twenty years, with fifteen
 	// user IDs and thirty subkeys, comes near. The certifications of other keys are only counted, and keep
 	// the limit of [MaxForeignSignatures] for each component.
@@ -222,7 +222,8 @@ type ForeignUserID struct {
 	// primary claims to have made on this user ID, in the order of the file.
 	Signatures []ForeignSignature
 	// Valid is true when at least one of Signatures is a certification that counts: a self-signature
-	// that verifies (made with SHA-1 or a strong hash).
+	// that verifies (made with SHA-1 or a strong hash). Only a user ID with Valid true is in the
+	// certificate.
 	Valid bool
 	// WeakHash is true when Valid is true and no self-signature that counts is strong: the fields above
 	// come from a SHA-1 self-signature (status [SignatureValidWeakHash]). The key is accepted, and the adoption re-signs with a strong hash.
@@ -252,12 +253,16 @@ type ForeignUserID struct {
 	// behind a signature that cannot be read. A caller that adopts a key must look at this count.
 	UnreadableRevocations int
 	// Certifications counts the certifications (types 0x10 to 0x13) that other keys made on this user
-	// ID. They are kept in the certificate and not verified: the reader does not have those keys. A
-	// certification whose issuer cannot be read is counted here too.
+	// ID. They are left out of the certificate and not verified: the reader does not have those keys.
+	// A certification whose issuer cannot be read is counted here too.
 	Certifications int
+	// OtherRevocations counts the certification revocations (type 0x30) of other keys on this user ID: a
+	// subset of OtherSignatures, so that a caller can tell that some were present. They are left out of
+	// the certificate.
+	OtherRevocations int
 	// OtherSignatures counts the other signatures on this user ID that the primary does not claim: those
 	// of other keys (a revocation by another key, for example), and those whose type cannot be read or is
-	// not a certification or a revocation and whose issuer is not the primary's. They are kept in the
+	// not a certification or a revocation and whose issuer is not the primary's. They are left out of the
 	// certificate and not verified.
 	OtherSignatures int
 }
@@ -299,9 +304,19 @@ type ForeignSubkey struct {
 	// UnreadableRevocations counts the subkey revocations (type 0x28) that the primary claims and that
 	// the reader could not use (see [ForeignUserID.UnreadableRevocations]).
 	UnreadableRevocations int
-	// OtherSignatures counts the signatures on this subkey that the primary does not claim, kept and not
-	// verified.
+	// OtherRevocations counts the subkey revocations (type 0x28) of other keys on this subkey: a subset of
+	// OtherSignatures, left out of the certificate.
+	OtherRevocations int
+	// OtherSignatures counts the signatures on this subkey that the primary does not claim, left out of
+	// the certificate and not verified.
 	OtherSignatures int
+	// InCertificate is true when the subkey is in the certificate: at least one binding of the primary
+	// verifies over its public part (SHA-1 or stronger). A subkey that is not (no binding, a binding that
+	// does not verify or is made with MD5, a public part that does not read) is left out whatever
+	// packet it came in, and reported: its Fingerprint and KeyID are empty, because an unconfirmed
+	// public part is not to be trusted, and the Algorithm and Created that are shown are those that
+	// its packet claims.
+	InCertificate bool
 }
 
 // ForeignKey is what the file of an exported secret key holds, read by [ReadForeignKey]. The exported
@@ -323,16 +338,22 @@ type ForeignKey struct {
 	// claims to have made, in the order of the file.
 	KeySignatures []ForeignSignature
 	// OtherKeySignatures counts the signatures on the primary key itself that the primary does not
-	// claim (a revocation by a designated revoker, for example): kept and not verified.
-	OtherKeySignatures int
+	// claim (a revocation by a designated revoker, for example): left out of the certificate and not
+	// verified. OtherKeyRevocations counts the key revocations (type 0x20) among them, so that a caller
+	// can tell that a designated revoker may have revoked the key.
+	OtherKeySignatures  int
+	OtherKeyRevocations int
 	// UnreadableRevocations counts the key revocations (type 0x20) in KeySignatures that the primary
 	// claims and that the reader could not use (see [ForeignUserID.UnreadableRevocations]). A caller that
 	// adopts a key must look at it.
 	UnreadableRevocations int
 	// UserAttributes is the number of user attribute packets (photographs) and UserAttributeBytes
-	// the total size of their bodies. They are kept in the certificate and not read.
-	UserAttributes     int
-	UserAttributeBytes int
+	// the total size of their bodies. They are not read. A user attribute is in the certificate only
+	// with a certification by the primary that verifies over it; UserAttributesLeftOut counts those
+	// that are not, which a caller tells the person.
+	UserAttributes        int
+	UserAttributeBytes    int
+	UserAttributesLeftOut int
 
 	cert  []byte
 	pub   fkPublic
@@ -340,22 +361,39 @@ type ForeignKey struct {
 	wiped bool
 }
 
-// Certificate returns the public certificate, binary: every packet of the file that is not secret
-// material, byte for byte and in order, with the secret key packet of the primary and of each subkey
-// turned into its public key packet (a new-format header with the shortest length, and the public
-// part of the body). It starts with the primary and holds no secret. Trust packets and marker packets
-// are not in it: a trust packet is local to the tool that wrote it. It is a copy.
+// Certificate returns the public certificate, binary: the part of the file that the primary's own
+// signatures confirm, written by the reader. It is not the packets of the file. The reader writes
+// every packet itself, with the shortest header of the new format, and puts into it only what a
+// signature of the primary verifies, in the order of the standard:
 //
-// A subkey that came as a secret key packet (with a secret or as a stub) is in the certificate only
-// because a binding signature of the primary verified over its public bytes: the cut of such a packet is
-// made by its own length fields, and the signature is what confirms it. A subkey that came as a public
-// key packet is copied as it is.
+//   - the public key packet of the primary, cut from the secret key packet and confirmed by its
+//     self-signatures;
+//   - each direct-key signature and key revocation of the primary that verifies;
+//   - each user ID with at least one certification by the primary that verifies, then every
+//     certification and certification revocation by the primary that verifies; each user attribute
+//     the same way;
+//   - each subkey, whatever packet it came in (secret, stub or public), with at least one binding by
+//     the primary that verifies over its public bytes, written as a public subkey packet built from
+//     the part that was confirmed, then every binding and subkey revocation by the primary that
+//     verifies.
 //
-// Warning: the bytes are the public packets of the file as they came, all of them: a user ID with no
-// valid self-signature, a subkey that is not bound, a signature that does not verify or that the
-// reader cannot read, and the certifications of other keys are in it as they stood. What is valid is in
-// the parsed view of the key, not in these bytes. A caller that stores or publishes the certificate
-// decides what to do with a part that does not verify.
+// A signature is written again from the bytes that were verified: its version, type, algorithms and
+// hashed area as they were hashed, its signature values (refused if they are not in the canonical form),
+// and an unhashed area that the reader builds (the issuer of the primary, and a back-signature of a
+// subkey that verified). Nothing else of the unhashed area of the file is carried over. SHA-1 signatures
+// that verify count and are flagged in the view; MD5 and RIPEMD-160 signatures, signatures with a
+// critical subpacket that the reader does not understand, and signatures that do not verify do not.
+//
+// What stays out, and is counted in the view so that a caller can tell the person: every certification
+// and revocation by another key (the reader cannot verify them; they remain in the person's own
+// keyring and on key servers), every signature that claims the primary and does not verify, a user ID or
+// user attribute with no valid self-signature, a subkey with no valid binding, and the trust and marker
+// packets, which are local to the tool that wrote them. The certificate thus has fewer packets than
+// the file, and no byte that the primary did not sign, except within the value of a signature: an
+// edited file cannot make the reader write into the certificate a byte that is not covered by a
+// signature that verified, because the only bytes of the file that are copied are the content that such
+// a signature covers and the signature values themselves, and the secret bytes of the file are in
+// neither. It is a copy.
 func (k *ForeignKey) Certificate() []byte {
 	if k == nil {
 		return nil
@@ -387,7 +425,7 @@ func (k *ForeignKey) Wipe() {
 //     length are refused by name (a key is never written with them); a packet over
 //     [MaxForeignPacketBytes], more than [MaxForeignPackets] packets, [MaxForeignUserIDs] user IDs,
 //     [MaxForeignSubkeys] subkeys or [MaxForeignSignatures] signatures on one component are an
-//     [ErrForeignLimit]; trust packets and marker packets are skipped and are not kept; any other
+//     [ErrForeignLimit]; trust packets and marker packets are skipped; any other
 //     packet that does not belong in a transferable key is an [ErrForeignPacket] with its tag; the
 //     order is the standard's (the primary, its signatures, the user IDs and attributes with their
 //     signatures, then the subkeys with theirs), and another order is an [ErrForeignForm];
@@ -403,10 +441,12 @@ func (k *ForeignKey) Wipe() {
 //     255, 253 or a cipher number, another cipher, a simple or salted S2K, Argon2, another hash) is an
 //     [ErrForeignProtection];
 //   - the subkeys: public, as a GNU stub with no secret, or with a secret: all are read. The reader
-//     skips the secret bytes of a subkey and never decrypts or keeps them; the algorithm of a secret
-//     subkey must be one whose public part it can delimit (RSA, ElGamal, DSA, ECDSA, EdDSA, ECDH,
-//     X25519, X448, Ed25519, Ed448), or the file is an [ErrForeignAlgorithm]; a subkey that is not
-//     version 4 is an [ErrForeignVersion];
+//     skips the secret bytes of a subkey and never decrypts or keeps them; a malformed secret subkey
+//     packet (an algorithm whose public part it cannot delimit, a public part out of the bounds, a
+//     second parser that disagrees, a secret area that does not account for the packet, a version
+//     other than 4) refuses the file ([ErrForeignAlgorithm], [ErrForeignForm], [ErrForeignVersion],
+//     [ErrForeignProtection]); a subkey that no binding of the primary confirms is left out of the
+//     certificate and reported ([ForeignSubkey.InCertificate]), never a reason to refuse the file;
 //   - the signatures: a signature that the primary claims (its issuer fingerprint, or its issuer key
 //     ID when there is no fingerprint) is read and verified with go-crypto, and counts only when it
 //     is version 4, made with SHA-256, SHA-384, SHA-512 or SHA-1, and has no critical subpacket that
@@ -473,13 +513,8 @@ func readForeignKey(file []byte) (*ForeignKey, error) {
 	if n := v.countClaimed(w); n > MaxForeignClaimedSignatures {
 		return nil, fail(ErrForeignLimit, "the file has more than MaxForeignClaimedSignatures (%d) signatures that the primary has to answer for", MaxForeignClaimedSignatures)
 	}
-	if err := v.confirmSubkeys(w); err != nil {
-		return nil, err
-	}
-	for _, s := range w.subs {
-		w.cert = append(w.cert, s.held...)
-	}
-	k := &ForeignKey{cert: w.cert, pub: w.pub, prot: w.prot}
+	k := &ForeignKey{pub: w.pub, prot: w.prot}
+	out := &fkOutput{}
 	k.Primary = ForeignPrimary{
 		Fingerprint: v.fpHex,
 		KeyID:       v.idHex,
@@ -488,19 +523,20 @@ func readForeignKey(file []byte) (*ForeignKey, error) {
 		Secret:      w.prot.state(),
 		Cipher:      w.prot.cipherName(),
 	}
-	k.KeySignatures, k.OtherKeySignatures, k.UnreadableRevocations = v.keyLevel(w)
+	k.KeySignatures, k.OtherKeySignatures, k.OtherKeyRevocations, k.UnreadableRevocations = v.keyLevel(w, out)
 	for _, s := range k.KeySignatures {
 		if s.Type == sigKeyRevocation && s.Status.Counts() {
 			k.Primary.Revoked = true
 		}
 	}
 	valid := 0
-	k.UserIDs, valid = v.userIDs(w)
-	k.Subkeys = v.subkeys(w)
+	k.UserIDs, valid, k.UserAttributesLeftOut = v.components(w, out)
+	k.Subkeys = v.subkeys(w, out)
 	k.UserAttributes, k.UserAttributeBytes = w.attrs, w.attrBytes
 	if valid == 0 {
 		return nil, v.noSelfSignature(k.UserIDs)
 	}
+	k.cert = out.assemble(w.primaryPacket)
 	if err := checkPublicOnly(k.cert, v.fp); err != nil {
 		return nil, err
 	}
@@ -508,20 +544,23 @@ func readForeignKey(file []byte) (*ForeignKey, error) {
 	return k, nil
 }
 
-// checkPublicOnly is the read back of the certificate: it is whole packets from the first to the
-// last, it starts with the primary key packet that has the given fingerprint, and it holds no secret
-// key packet.
+// checkPublicOnly is the read back of the certificate: it is whole packets from the first to the last,
+// each with the shortest header of the new format, it starts with the primary key packet that has the given
+// fingerprint, and the only other tags in it are public subkeys, user IDs, user attributes and signatures:
+// no secret key packet, no trust packet, no packet of any other kind.
 func checkPublicOnly(cert, fp []byte) error {
 	rest := cert
 	for n := 1; len(rest) > 0; n++ {
-		tag, _, body, after, err := splitForeignPacket(rest, n)
-		if err != nil || tag == tagSecretKey || tag == tagSecretSubkey || (n == 1 && tag != tagPublicKey) {
-			return fail(ErrForeignForm, "the certificate does not read back as public packets")
+		tag, raw, body, after, err := splitForeignPacket(rest, n)
+		ok := err == nil && bytes.Equal(raw, wrap(tag, body))
+		if ok && n == 1 {
+			got, ferr := foreignFingerprint(body)
+			ok = tag == tagPublicKey && ferr == nil && bytes.Equal(got, fp)
+		} else if ok {
+			ok = tag == tagSubkey || tag == tagUserID || tag == tagUserAttribute || tag == tagSignature
 		}
-		if n == 1 {
-			if got, err := foreignFingerprint(body); err != nil || !bytes.Equal(got, fp) {
-				return fail(ErrForeignForm, "the certificate does not read back as the primary that was read")
-			}
+		if !ok {
+			return fail(ErrForeignForm, "the certificate does not read back as the public packets that were written")
 		}
 		rest = after
 	}

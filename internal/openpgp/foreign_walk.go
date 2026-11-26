@@ -8,41 +8,37 @@ import (
 	"github.com/ProtonMail/go-crypto/openpgp/packet"
 )
 
-// This file walks the packets of a transferable key (RFC 9580, section 10.1) and builds its public
-// certificate. It reads framing and order only: no signature is verified here.
+// This file walks the packets of a transferable key (RFC 9580, section 10.1). It reads framing and order
+// only: no signature is verified here, and it builds no certificate: what the certificate holds is
+// decided by the signatures, after the walk (see [fkVerifier.assemble]).
 
 // fkSig is one signature packet of a component, whole and by its body.
 type fkSig struct {
 	raw, body []byte
 }
 
-// fkTarget is the signatures of one component. n counts every signature read, kept or not.
+// fkTarget is the signatures of one component. n counts every signature read.
 type fkTarget struct {
 	sigs []fkSig
 	n    int
-	drop bool // the signatures are counted and not kept (a user attribute)
-	// sink, when it is set, receives the whole packets of the signatures instead of the certificate: a
-	// subkey's packets are held back until the subkey is confirmed (see [fkVerifier.confirmSubkeys]).
-	sink *[]byte
 }
 
+// fkUser is a user ID or a user attribute, in the order of the file.
 type fkUser struct {
+	attr bool // a user attribute packet: its body is not read
 	text []byte
 	t    fkTarget
 }
 
 type fkSub struct {
 	pub       fkPublic
-	fp        []byte            // the fingerprint
+	fp        []byte            // the fingerprint of the cut
 	pubBody   []byte            // the public part of the body, for the fingerprint
-	pubPacket []byte            // the public subkey packet, for go-crypto
-	gopk      *packet.PublicKey // go-crypto's reading of it, set for a secret subkey
+	pubPacket []byte            // the public subkey packet that the cut makes, for go-crypto
+	gopk      *packet.PublicKey // go-crypto's reading of it, set once it agrees with the cut
 	form      SubkeyForm
+	unread    bool // a public subkey packet whose public part does not read: nothing can confirm it
 	t         fkTarget
-	// held is what the certificate gets for this subkey once it passes: its public subkey packet, then
-	// its signature packets as they stood. It is a copy, and nothing of it is in the certificate
-	// before the check of a subkey that came as a secret key packet has passed.
-	held []byte
 }
 
 // fkWalk is a transferable key taken apart. Its slices point into the bytes that were walked, which
@@ -53,19 +49,18 @@ type fkWalk struct {
 	primaryBody   []byte // the public part of the primary's body
 	primaryPacket []byte // the public key packet of the primary, in the new format
 	keyT          fkTarget
-	users         []*fkUser
+	users         []*fkUser // user IDs and user attributes, in the order of the file
 	subs          []*fkSub
-	attrs         int
+	ids           int // the number of user IDs in users
+	attrs         int // the number of user attributes in users
 	attrBytes     int
-	cert          []byte
 }
 
 // walkForeign reads the packets of data and groups them by the order of the standard: the primary,
 // its signatures, each user ID and attribute with its signatures, each subkey with its signatures.
-// It skips trust and marker packets, counts the limits, and builds the public certificate as it
-// goes, in the order of the file.
+// It skips trust and marker packets and counts the limits.
 func walkForeign(data []byte) (*fkWalk, error) {
-	w := &fkWalk{cert: make([]byte, 0, len(data))}
+	w := &fkWalk{}
 	done := false
 	defer func() {
 		if !done {
@@ -79,7 +74,7 @@ func walkForeign(data []byte) (*fkWalk, error) {
 		if n > MaxForeignPackets {
 			return nil, fail(ErrForeignLimit, "the file has more than MaxForeignPackets (%d) packets", MaxForeignPackets)
 		}
-		tag, raw, body, after, err := splitForeignPacket(rest, n)
+		tag, _, body, after, err := splitForeignPacket(rest, n)
 		if err != nil {
 			return nil, err
 		}
@@ -94,7 +89,7 @@ func walkForeign(data []byte) (*fkWalk, error) {
 			started, cur = true, &w.keyT
 			continue
 		}
-		if cur, err = w.add(cur, tag, raw, body); err != nil {
+		if cur, err = w.add(cur, tag, body); err != nil {
 			return nil, err
 		}
 	}
@@ -124,7 +119,7 @@ func (w *fkWalk) start(tag byte, body []byte) error {
 	default:
 		return fail(ErrForeignPacket, "the file holds %s, which does not belong in a transferable key", tagName(tag))
 	}
-	pub, err := parseForeignPublic("the primary key", body, false)
+	pub, err := parseForeignPublic("the primary key", body, false, true)
 	if err != nil {
 		return err
 	}
@@ -138,7 +133,6 @@ func (w *fkWalk) start(tag byte, body []byte) error {
 	w.pub, w.prot = pub, prot
 	w.primaryBody = body[:pub.length]
 	w.primaryPacket = wrap(tagPublicKey, w.primaryBody)
-	w.cert = append(w.cert, w.primaryPacket...)
 	return nil
 }
 
@@ -175,7 +169,7 @@ func checkPrimary(pub fkPublic) error {
 
 // add reads one packet that follows the primary and returns the component that the next signature
 // belongs to.
-func (w *fkWalk) add(cur *fkTarget, tag byte, raw, body []byte) (*fkTarget, error) {
+func (w *fkWalk) add(cur *fkTarget, tag byte, body []byte) (*fkTarget, error) {
 	switch tag {
 	case tagSecretKey, tagPublicKey:
 		return nil, fail(ErrForeignPrimaries, "the file holds a second primary key (%s)", tagName(tag))
@@ -184,14 +178,7 @@ func (w *fkWalk) add(cur *fkTarget, tag byte, raw, body []byte) (*fkTarget, erro
 		if cur.n > MaxForeignSignatures {
 			return nil, fail(ErrForeignLimit, "a component of the key has more than MaxForeignSignatures (%d) signatures", MaxForeignSignatures)
 		}
-		if cur.sink != nil {
-			*cur.sink = append(*cur.sink, raw...)
-		} else {
-			w.cert = append(w.cert, raw...)
-		}
-		if !cur.drop {
-			cur.sigs = append(cur.sigs, fkSig{raw: raw, body: body})
-		}
+		cur.sigs = append(cur.sigs, fkSig{raw: wrap(tagSignature, body), body: body})
 		return cur, nil
 	case tagUserID:
 		if len(w.subs) > 0 {
@@ -200,12 +187,12 @@ func (w *fkWalk) add(cur *fkTarget, tag byte, raw, body []byte) (*fkTarget, erro
 		if len(body) > MaxForeignUserIDBytes {
 			return nil, fail(ErrForeignLimit, "a user ID packet is longer than MaxForeignUserIDBytes (%d bytes)", MaxForeignUserIDBytes)
 		}
-		if len(w.users) == MaxForeignUserIDs {
+		if w.ids == MaxForeignUserIDs {
 			return nil, fail(ErrForeignLimit, "the file has more than MaxForeignUserIDs (%d) user IDs", MaxForeignUserIDs)
 		}
+		w.ids++
 		u := &fkUser{text: body}
 		w.users = append(w.users, u)
-		w.cert = append(w.cert, raw...)
 		return &u.t, nil
 	case tagUserAttribute:
 		if len(w.subs) > 0 {
@@ -216,10 +203,11 @@ func (w *fkWalk) add(cur *fkTarget, tag byte, raw, body []byte) (*fkTarget, erro
 		}
 		w.attrs++
 		w.attrBytes += len(body)
-		w.cert = append(w.cert, raw...)
-		return &fkTarget{drop: true}, nil
+		u := &fkUser{attr: true, text: body}
+		w.users = append(w.users, u)
+		return &u.t, nil
 	case tagSecretSubkey, tagSubkey:
-		s, err := w.subkey(tag, raw, body)
+		s, err := w.subkey(tag, body)
 		if err != nil {
 			return nil, err
 		}
@@ -228,36 +216,45 @@ func (w *fkWalk) add(cur *fkTarget, tag byte, raw, body []byte) (*fkTarget, erro
 	return nil, fail(ErrForeignPacket, "the file holds %s, which does not belong in a transferable key", tagName(tag))
 }
 
-// subkey reads a subkey packet, public or secret. A secret subkey is turned into its public
-// subkey packet in the certificate, and its secret bytes are not read, copied or kept: all that is
-// asked of them is whether they are the GNU stub.
-func (w *fkWalk) subkey(tag byte, raw, body []byte) (*fkSub, error) {
+// subkey reads a subkey packet, public or secret.
+//
+// A secret subkey is held to its structure: the public part ends where its own length fields say, which
+// nothing has confirmed, so three layers guard the cut (the bounds of its fields, a second parser that
+// must read the public packet that the cut makes and write it again to the same bytes, and a secret area
+// that must account for the packet), and a fault in any of them refuses the file: a malformed secret key
+// packet means that the file is damaged or edited. The secret bytes are not read, copied or kept: all
+// that is asked of them is whether they are the GNU stub. The layer that cannot be fooled comes after
+// the walk: a binding of the primary must verify over exactly these bytes, or the subkey is left out of
+// the certificate.
+//
+// A public subkey packet that does not read, or whose public part the second parser does not read
+// as it is, is not a reason to refuse the file: it is kept as a subkey that nothing can confirm.
+func (w *fkWalk) subkey(tag byte, body []byte) (*fkSub, error) {
 	if len(w.subs) == MaxForeignSubkeys {
 		return nil, fail(ErrForeignLimit, "the file has more than MaxForeignSubkeys (%d) subkeys", MaxForeignSubkeys)
 	}
-	pub, err := parseForeignPublic("a subkey", body, tag == tagSubkey)
-	if err != nil {
+	pub, err := parseForeignPublic("a subkey", body, tag == tagSubkey, true)
+	if err != nil && tag == tagSecretSubkey {
 		return nil, err
 	}
-	fp, err := foreignFingerprint(body[:pub.length])
+	s := &fkSub{form: SubkeyPublic}
 	if err != nil {
-		return nil, err
+		s.unread = true
+		w.subs = append(w.subs, s)
+		return s, nil
 	}
-	s := &fkSub{pub: pub, fp: fp, pubBody: body[:pub.length]}
-	s.t.sink = &s.held
-	if tag == tagSubkey {
-		s.form, s.pubPacket = SubkeyPublic, raw
-		s.held = append(s.held, raw...)
-	} else {
-		// A secret subkey: the public part ends where its own length fields say, which nothing has
-		// confirmed. Three layers guard the cut: the bounds of its fields, a second parser that must
-		// read the public packet that the cut makes and write it again to the same bytes, and a secret
-		// area that must account for the packet. The layer that cannot be fooled comes after the walk:
-		// a binding signature of the primary must verify over exactly these bytes
-		// ([fkVerifier.confirmSubkeys]). Until then nothing of the subkey is in the certificate: its
-		// packets are held in s.held.
-		s.pubPacket = wrap(tagSubkey, s.pubBody)
-		if s.gopk, err = agreePublic(s.pubPacket, s.pubBody, fp, true); err != nil {
+	s.pub, s.pubBody = pub, body[:pub.length]
+	if s.fp, err = foreignFingerprint(s.pubBody); err != nil {
+		if tag == tagSecretSubkey {
+			return nil, err
+		}
+		s.unread = true
+		w.subs = append(w.subs, s)
+		return s, nil
+	}
+	s.pubPacket = wrap(tagSubkey, s.pubBody)
+	if tag == tagSecretSubkey {
+		if s.gopk, err = agreePublic(s.pubPacket, s.pubBody, s.fp, true); err != nil {
 			return nil, err
 		}
 		stub, err := checkSecretArea(pub.alg.ID, body[pub.length:])
@@ -268,7 +265,8 @@ func (w *fkWalk) subkey(tag byte, raw, body []byte) (*fkSub, error) {
 		if stub {
 			s.form = SubkeyStub
 		}
-		s.held = append(s.held, s.pubPacket...)
+	} else if s.gopk, err = agreePublic(s.pubPacket, s.pubBody, s.fp, true); err != nil {
+		s.gopk = nil
 	}
 	w.subs = append(w.subs, s)
 	return s, nil
