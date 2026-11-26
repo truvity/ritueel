@@ -54,7 +54,24 @@ type fkVerifier struct {
 	// hashed is the number of bytes that the checks of signatures have been charged so far, and err the
 	// refusal that the budget [MaxForeignHashedBytes] makes when it is passed.
 	hashed int64
+	// verifs is the number of public-key verifications charged so far, against [MaxForeignVerifications].
+	verifs int
 	err    error
+}
+
+// chargeVerify counts n public-key verifications against [MaxForeignVerifications], before they are done,
+// like [fkVerifier.charge]: it returns false, and keeps the refusal in v.err, when the budget would be
+// passed.
+func (v *fkVerifier) chargeVerify(n int) bool {
+	if v.err != nil {
+		return false
+	}
+	v.verifs += n
+	if v.verifs > MaxForeignVerifications {
+		v.err = fail(ErrForeignLimit, "the file needs more than MaxForeignVerifications (%d) public-key verifications of signatures", MaxForeignVerifications)
+		return false
+	}
+	return true
 }
 
 // charge counts n bytes of hashing against [MaxForeignHashedBytes], before the hashing is done. It
@@ -457,6 +474,10 @@ func (v *fkVerifier) evaluate(s fkSig, h fkHead, c fkCtx) (ForeignSignature, []b
 		fs.Status = SignatureUnreadable
 		return fs, nil
 	}
+	if !v.chargeVerify(1) {
+		fs.Status = SignatureUnreadable
+		return fs, nil
+	}
 	if safely(func() error { return c.verify(sig) }) != nil {
 		return fs, nil
 	}
@@ -469,7 +490,8 @@ func (v *fkVerifier) evaluate(s fkSig, h fkHead, c fkCtx) (ForeignSignature, []b
 		embedded = v.backSignature(h.areas, c)
 	}
 	emitted := wrap(tagSignature, emitBody(h.areas, v.fp, embedded))
-	if c.strong != nil && safely(func() error { return c.strong(sig) }) != nil {
+	// The strict pass verifies the binding and, for a subkey that can sign, the cross-signature in it.
+	if c.strong != nil && (!v.chargeVerify(2) || safely(func() error { return c.strong(sig) }) != nil) {
 		fs.Status = SignatureNotVerified
 	}
 	return fs, emitted
@@ -509,7 +531,7 @@ func (v *fkVerifier) verifyBack(body []byte, c fkCtx) []byte {
 		return nil
 	}
 	sig, err := readSignature(wrap(tagSignature, body))
-	if err != nil || sig.Version != 4 {
+	if err != nil || sig.Version != 4 || !v.chargeVerify(1) {
 		return nil
 	}
 	verified := safely(func() error {
@@ -722,11 +744,15 @@ func (v *fkVerifier) components(w *fkWalk, out *fkOutput) (ids []ForeignUserID, 
 		}
 		ids = append(ids, fu)
 	}
+	counted := map[*fkGroup]bool{} // a user attribute that is left out counts once, however often it appears
 	for i, u := range w.users {
 		g := group[i]
 		switch {
 		case !g.ok && u.attr:
-			attrsLeftOut++
+			if !counted[g] {
+				counted[g] = true
+				attrsLeftOut++
+			}
 		case g.ok && g.first == i && u.attr:
 			out.comps[i] = append(wrap(tagUserAttribute, u.text), g.emits...)
 		case g.ok && g.first == i:
