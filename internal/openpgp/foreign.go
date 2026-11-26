@@ -127,8 +127,8 @@ const (
 	SignatureValid SignatureStatus = iota + 1
 	// SignatureValidWeakHash is such a signature made with SHA-1 that verifies. It counts: a SHA-1
 	// signature still proves that the key made it, and keys of 2008 to 2016 (RSA-4096 among them) carry
-	// no other. The user ID or the subkey that only has such signatures is flagged (the field WeakHash),
-	// and the adoption of the key re-signs with a strong hash. go-crypto verifies a SHA-1 signature
+	// no other. The user ID or the subkey whose newest signature is such a one is flagged (the field
+	// WeakHash), and the adoption of the key re-signs with a strong hash. go-crypto verifies a SHA-1 signature
 	// without a setting for it, so no change of its use was needed.
 	SignatureValidWeakHash
 	// SignatureWeakHash is a signature made with MD5, RIPEMD-160 or another hash that is broken or
@@ -248,12 +248,15 @@ type ForeignUserID struct {
 	// not SHA-1, SHA-256, SHA-384 or SHA-512). A user ID can thus be absent from the certificate although
 	// the primary signed it: the view shows it, with the status of each of its signatures.
 	Valid bool
-	// WeakHash is true when Valid is true and no self-signature that counts is strong: the fields above
-	// come from a SHA-1 self-signature (status [SignatureValidWeakHash]). The key is accepted, and the adoption re-signs with a strong hash.
+	// WeakHash is true when Valid is true and the self-signature that gives the fields below is made with
+	// SHA-1 (status [SignatureValidWeakHash]): the person last chose these fields with a weak signature. The
+	// key is accepted, and the adoption re-signs with a strong hash.
 	WeakHash bool
-	// Created is the creation time of the self-signature that gives the fields: the newest strong one
-	// when there is one, else the newest weak one (the later one in the file among equal times). The
-	// fields below are read from that signature.
+	// Created is the creation time of the self-signature that gives the fields: the newest one that counts,
+	// whatever its hash. A tie in time is broken by what the signatures say (the earlier end of the key, no
+	// end counting as the latest) and then by the bytes of the packets that the reader wrote, never by the
+	// place in the file; the snapshot that later signatures are made from chooses the same one. The fields
+	// below are read from that signature.
 	Created time.Time
 	// KeyExpires is the key expiry that the newest valid self-signature gives, and zero if none.
 	KeyExpires time.Time
@@ -313,11 +316,10 @@ type ForeignSubkey struct {
 	// subkey whose binding has no back-signature that verifies is in the certificate, with its
 	// binding and without a back-signature, and is reported here as not bound.
 	Bound bool
-	// WeakHash is true when Bound is true and no binding that counts is strong: the fields come from a
-	// SHA-1 binding.
+	// WeakHash is true when Bound is true and the binding that gives the fields is made with SHA-1.
 	WeakHash bool
-	// BoundAt is the creation time of the binding that gives the fields (the newest strong one when
-	// there is one, else the newest weak one; the later one in the file among equal times), and Flags
+	// BoundAt is the creation time of the binding that gives the fields (the newest one that counts,
+	// whatever its hash, chosen as for [ForeignUserID.Created]), and Flags
 	// and Expires are read from that binding: the first key flags octet, and
 	// the end of the key counted from the creation of the subkey (zero if none).
 	BoundAt time.Time

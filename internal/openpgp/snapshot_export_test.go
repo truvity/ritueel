@@ -26,7 +26,7 @@ type SnapUser struct {
 	Prefs   []SnapPref
 	// SigExpires: the newest self-signature has a signature expiration time. Weak: it is SHA-1.
 	// AnyStrong: some self-signature that counts is not.
-	SigExpires, Weak, AnyStrong bool
+	SigExpires, Weak, AnyStrong, Tied bool
 }
 
 // SnapSubkey is a subkey of the snapshot as a test reads it.
@@ -36,7 +36,7 @@ type SnapSubkey struct {
 	Revoked     bool
 	Bound       time.Time
 	// Weak: the newest binding is SHA-1. AnyStrong: some binding that counts is not.
-	Weak, AnyStrong bool
+	Weak, AnyStrong, Tied bool
 }
 
 // SnapKey is the key level of the snapshot as a test reads it.
@@ -46,6 +46,7 @@ type SnapKey struct {
 	Revoked                   bool
 	Newest                    time.Time
 	Expiry                    ExpiryAnswer
+	DirectTied                bool
 }
 
 // ExpiryAnswer is what the snapshot says of the end of the key.
@@ -57,7 +58,7 @@ type ExpiryAnswer struct {
 // SnapshotKey returns the key level of the snapshot.
 func SnapshotKey(k *ForeignKey) SnapKey {
 	s := k.snap
-	return SnapKey{Packet: s.packet, Body: s.body, Fingerprint: s.fp, Created: s.created, Revoked: s.revoked, Newest: s.newest, Expiry: SnapshotExpiry(k)}
+	return SnapKey{Packet: s.packet, Body: s.body, Fingerprint: s.fp, Created: s.created, Revoked: s.revoked, Newest: s.newest, Expiry: SnapshotExpiry(k), DirectTied: s.direct.tied}
 }
 
 // SnapshotExpiry returns the answer of the snapshot about the end of the key.
@@ -71,7 +72,7 @@ func SnapshotUsers(k *ForeignKey) []SnapUser {
 	var out []SnapUser
 	for _, u := range k.snap.users {
 		su := SnapUser{Text: string(u.text), Revoked: u.revoked, Signed: u.signed, Flags: u.flags, Primary: u.primary, Expires: u.expires,
-			SigExpires: u.sigExpires, Weak: u.weak, AnyStrong: u.anyStrong}
+			SigExpires: u.sigExpires, Weak: u.weak, AnyStrong: u.anyStrong, Tied: u.tied}
 		for _, p := range u.prefs {
 			su.Prefs = append(su.Prefs, SnapPref{p.typ, p.data})
 		}
@@ -84,7 +85,7 @@ func SnapshotUsers(k *ForeignKey) []SnapUser {
 func SnapshotSubkeys(k *ForeignKey) []SnapSubkey {
 	var out []SnapSubkey
 	for _, s := range k.snap.subkeys {
-		out = append(out, SnapSubkey{Fingerprint: s.fp, Body: s.body, Revoked: s.revoked, Bound: s.bound, Weak: s.weak, AnyStrong: s.anyStrong})
+		out = append(out, SnapSubkey{Fingerprint: s.fp, Body: s.body, Revoked: s.revoked, Bound: s.bound, Weak: s.weak, AnyStrong: s.anyStrong, Tied: s.tied})
 	}
 	return out
 }

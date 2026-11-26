@@ -138,10 +138,9 @@ func fkCheckSnapshot(t *testing.T, k *openpgp.ForeignKey) {
 		if u.Text != w.Text || u.Text != string(userBodies[i]) || u.Revoked != w.Revoked || !u.Signed.Equal(signed) || u.AnyStrong != anyStrong {
 			t.Errorf("user ID %d of the snapshot is not the view's: %+v, view %+v", i, u, w)
 		}
-		// the view takes the newest strong one and breaks a tie by the place in the file: the fields are
-		// compared where the view and the snapshot choose the same signature
-		if len(newest) == 1 && (newest[0].Status == openpgp.SignatureValid || !anyStrong) {
-			if u.Flags != w.KeyFlags || u.Primary != w.Primary || !u.Expires.Equal(w.KeyExpires) || u.Weak != (newest[0].Status != openpgp.SignatureValid) {
+		// the view and the snapshot choose the same signature: the fields are the same, with no exception
+		if len(newest) > 0 {
+			if u.Flags != w.KeyFlags || u.Primary != w.Primary || !u.Expires.Equal(w.KeyExpires) || u.Weak != w.WeakHash {
 				t.Errorf("user ID %d of the snapshot has other fields than the view's: %+v, view %+v", i, u, w)
 			}
 		}
@@ -166,7 +165,7 @@ func fkCheckSnapshot(t *testing.T, k *openpgp.ForeignKey) {
 				bound = g.Created
 			}
 		}
-		if hex.EncodeToString(s.Fingerprint) != w.Fingerprint || !bytes.Equal(s.Body, subBodies[i]) || s.Revoked != w.Revoked || !s.Bound.Equal(bound) {
+		if hex.EncodeToString(s.Fingerprint) != w.Fingerprint || !bytes.Equal(s.Body, subBodies[i]) || s.Revoked != w.Revoked || !s.Bound.Equal(bound) || s.Weak != w.WeakHash {
 			t.Errorf("subkey %d of the snapshot is not the view's: %+v, view %+v", i, s, w)
 		}
 	}
@@ -577,5 +576,56 @@ func TestTheViewCountsTheSelfSignaturesThatWereClaimedAndNotCounted(t *testing.T
 	}
 	if !reflect.DeepEqual(openpgp.SnapshotOf(k), openpgp.SnapshotOf(kc)) || !openpgp.SnapshotNewest(k).Equal(fkAt(1000)) {
 		t.Error("the claims that were not counted entered the snapshot")
+	}
+}
+
+// tied is true when the newest choice was made by the bytes of the packets: the same second and the same
+// end of the key in two packets. It is not true when the time or the end decides.
+func TestSnapshotMarksAChoiceThatTheBytesDecided(t *testing.T) {
+	b := fkNamed(t, "ed25519")
+	w := fkWriter{b}
+	life := func(days uint32) []byte { return fkSubpacket(9, true, fkU32(days*86400)...) }
+	flags := func(f byte) []byte { return fkSubpacket(27, false, f) }
+	user := func(at int, extra ...[]byte) []byte { return w.userSig(t, 0x13, w.areas(at, extra...), nil) }
+	direct := func(at int, extra ...[]byte) []byte { return w.keySig(t, 0x1F, w.areas(at, extra...), nil) }
+	enc, _, _ := fkDonors(t)
+	bind := func(at int, f byte) []byte {
+		return w.sign(t, "sub", 0x18, w.areas(at, fkSubpacket(27, false, f)), nil, 8, sha256.New, enc[3].pub.Body)
+	}
+	cases := []struct {
+		name                 string
+		keySigs, userSigs    [][]byte
+		subSigs              [][]byte
+		wantUser, wantDirect bool
+		wantSubkey           bool
+	}{
+		{"one signature each", [][]byte{direct(1100)}, [][]byte{user(1000, flags(1))}, [][]byte{bind(1000, 0x0C)}, false, false, false},
+		{"another time", [][]byte{direct(1100), direct(1200)}, [][]byte{user(1000, flags(1)), user(1001, flags(2))}, [][]byte{bind(1000, 0x0C), bind(1001, 0x04)}, false, false, false},
+		{"the same time and another end: the end decides", [][]byte{direct(1100, life(5)), direct(1100, life(6))}, [][]byte{user(1000, life(10)), user(1000, life(20))}, nil, false, false, false},
+		{"the same time and the same end: the bytes decide", [][]byte{direct(1100, flags(1)), direct(1100, flags(2))}, [][]byte{user(1000, flags(1)), user(1000, flags(2))}, [][]byte{bind(1000, 0x0C), bind(1000, 0x04)}, true, true, true},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			var file []byte
+			if c.subSigs != nil {
+				file = w.file(t, fkParts{noSelf: true, keySigs: c.keySigs, userSigs: c.userSigs, subSigs: c.subSigs, noBind: true})
+			} else {
+				file = fkEdFile(t, w, c.keySigs, c.userSigs)
+			}
+			k := fkRead(t, file)
+			kc, err := fkReadCertificate(k.Certificate())
+			if err != nil || !reflect.DeepEqual(openpgp.SnapshotOf(k), openpgp.SnapshotOf(kc)) {
+				t.Fatalf("the certificate does not read back to the same snapshot: %v", err)
+			}
+			if got := openpgp.SnapshotUsers(k)[0].Tied; got != c.wantUser {
+				t.Errorf("the user ID is tied: %v, want %v", got, c.wantUser)
+			}
+			if got := openpgp.SnapshotKey(k).DirectTied; got != c.wantDirect {
+				t.Errorf("the direct-key signature is tied: %v, want %v", got, c.wantDirect)
+			}
+			if subs := openpgp.SnapshotSubkeys(k); c.subSigs != nil && (len(subs) != 1 || subs[0].Tied != c.wantSubkey) {
+				t.Errorf("the subkey: %+v, want tied %v", subs, c.wantSubkey)
+			}
+		})
 	}
 }

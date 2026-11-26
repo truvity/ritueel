@@ -152,8 +152,16 @@ func fkViewUsers(t *testing.T, k *openpgp.ForeignKey, r *fkRich) {
 		t.Errorf("newest: the fields come from the newest self-signature, not the last in the file: %+v", nw)
 	}
 	eq := u("equal")
-	if !eq.Valid || eq.KeyFlags != 2 || !eq.Created.Equal(fkAt(1300)) {
-		t.Errorf("equal: of two self-signatures in the same second the later in the file gives the fields: %+v", eq)
+	// of two self-signatures in the same second the choice is made by what they say and by their bytes,
+	// never by their place in the file, and it is the choice of the snapshot that later signatures are
+	// made from: the view and the snapshot never describe two different signatures
+	if !eq.Valid || (eq.KeyFlags != 1 && eq.KeyFlags != 2) || !eq.Created.Equal(fkAt(1300)) {
+		t.Errorf("equal: the fields of two self-signatures in the same second: %+v", eq)
+	}
+	for _, s := range openpgp.SnapshotUsers(k) {
+		if s.Text == eq.Text && (s.Flags != eq.KeyFlags || s.Primary != eq.Primary || !s.Expires.Equal(eq.KeyExpires)) {
+			t.Errorf("equal: the view gives the flags %d and the snapshot %d", eq.KeyFlags, s.Flags)
+		}
 	}
 	mp := u("misplaced")
 	if mp.Valid || len(mp.Signatures) != 1 || mp.Signatures[0].Status != openpgp.SignatureMisplaced || mp.Signatures[0].Type != 0x18 {

@@ -55,15 +55,26 @@ func outranks(b, a snapSig) bool {
 	return bytes.Compare(b.raw, a.raw) < 0
 }
 
-// newestSig is the signature of the list that [outranks] all the others that pass keep, and false when none
-// passes.
-func newestSig(sigs []snapSig, keep func(ForeignSignature) bool) (best snapSig, ok bool) {
-	for _, s := range sigs {
+// newestSig is the signature of the list that [outranks] all the others that pass keep, its place in the
+// list, and false when none passes. tied is true when the choice was made by the bytes of the packets: some
+// other signature that passes keep has the same time and the same end of the key and is another packet. Such
+// a choice does not depend on the order of the file, and it is arbitrary; a ceremony shows it.
+func newestSig(sigs []snapSig, keep func(ForeignSignature) bool) (best snapSig, idx int, tied, ok bool) {
+	for i, s := range sigs {
 		if keep(s.sig) && (!ok || outranks(s, best)) {
-			best, ok = s, true
+			best, idx, ok = s, i, true
 		}
 	}
-	return best, ok
+	if !ok {
+		return best, -1, false, false
+	}
+	for i, s := range sigs {
+		if i != idx && keep(s.sig) && s.sig.Created.Equal(best.sig.Created) && s.sig.KeyExpires.Equal(best.sig.KeyExpires) && !bytes.Equal(s.raw, best.raw) {
+			tied = true
+			break
+		}
+	}
+	return best, idx, tied, true
 }
 
 // carriedTypes are the subpacket types of a self-signature that a later one may carry over as they are,
@@ -115,6 +126,8 @@ type snapUserID struct {
 	// weak is true when that signature is made with SHA-1, and anyStrong when some self-signature of the
 	// user ID that counts is not. A user ID with weak true and anyStrong false is held by SHA-1 only.
 	weak, anyStrong bool
+	// tied is true when the choice of that signature was made by the bytes of the packets (see [newestSig]).
+	tied bool
 }
 
 // snapSubkey is a subkey of the certificate, which a binding of the primary confirms.
@@ -126,6 +139,8 @@ type snapSubkey struct {
 	// weak is true when that newest binding is made with SHA-1, and anyStrong when some binding that
 	// counts is not.
 	weak, anyStrong bool
+	// tied is true when the choice of the newest binding was made by the bytes of the packets.
+	tied bool
 }
 
 // snapDirect is the newest direct-key signature that counts, which is a source of the key's expiry.
@@ -133,6 +148,7 @@ type snapDirect struct {
 	have       bool
 	expires    time.Time
 	sigExpires bool
+	tied       bool // the choice of the newest was made by the bytes of the packets
 }
 
 // fkSnapshot is the snapshot: the primary, and what the signatures of the primary say of the key, the
@@ -220,7 +236,11 @@ func (o *fkOutput) addUser(text []byte, counted []snapSig) {
 		sigs[i] = c.sig
 	}
 	view := ForeignUserID{Signatures: sigs}
-	summariseUserID(&view)
+	raws := make([][]byte, len(counted))
+	for i, c := range counted {
+		raws[i] = c.raw
+	}
+	summariseUserID(&view, raws)
 	u := snapUserID{text: bytes.Clone(text), revoked: view.Revoked}
 	for _, c := range counted {
 		if isCertification(c.sig.Type) {
@@ -228,9 +248,9 @@ func (o *fkOutput) addUser(text []byte, counted []snapSig) {
 			u.anyStrong = u.anyStrong || c.sig.Status == SignatureValid
 		}
 	}
-	if src, ok := newestSig(counted, func(s ForeignSignature) bool { return isCertification(s.Type) }); ok {
+	if src, _, tied, ok := newestSig(counted, func(s ForeignSignature) bool { return isCertification(s.Type) }); ok {
 		u.flags, u.primary, u.expires, u.prefs = src.sig.KeyFlags, src.sig.Primary, src.sig.KeyExpires, src.prefs
-		u.sigExpires, u.weak = src.sigExpires, src.sig.Status == SignatureValidWeakHash
+		u.sigExpires, u.weak, u.tied = src.sigExpires, src.sig.Status == SignatureValidWeakHash, tied
 	}
 	o.users = append(o.users, u)
 }
@@ -251,15 +271,19 @@ func (o *fkOutput) addSubkey(fp, body []byte, counted []snapSig) {
 		sigs[i] = c.sig
 	}
 	view := ForeignSubkey{Signatures: sigs}
-	summariseSubkey(&view)
+	raws := make([][]byte, len(counted))
+	for i, c := range counted {
+		raws[i] = c.raw
+	}
+	summariseSubkey(&view, raws)
 	k := snapSubkey{fp: bytes.Clone(fp), body: bytes.Clone(body), revoked: view.Revoked}
 	for _, c := range counted {
 		if c.sig.Type == sigSubkeyBinding {
 			k.anyStrong = k.anyStrong || c.sig.Status == SignatureValid
 		}
 	}
-	if src, ok := newestSig(counted, func(s ForeignSignature) bool { return s.Type == sigSubkeyBinding }); ok {
-		k.bound, k.weak = src.sig.Created, src.sig.Status == SignatureValidWeakHash
+	if src, _, tied, ok := newestSig(counted, func(s ForeignSignature) bool { return s.Type == sigSubkeyBinding }); ok {
+		k.bound, k.weak, k.tied = src.sig.Created, src.sig.Status == SignatureValidWeakHash, tied
 	}
 	o.subSnaps = append(o.subSnaps, k)
 }
@@ -277,8 +301,8 @@ func (o *fkOutput) snapshot(w *fkWalk, v *fkVerifier) fkSnapshot {
 		users:   o.users,
 		subkeys: o.subSnaps,
 	}
-	if d, ok := newestSig(o.direct, func(ForeignSignature) bool { return true }); ok {
-		s.direct = snapDirect{have: true, expires: d.sig.KeyExpires, sigExpires: d.sigExpires}
+	if d, _, tied, ok := newestSig(o.direct, func(ForeignSignature) bool { return true }); ok {
+		s.direct = snapDirect{have: true, expires: d.sig.KeyExpires, sigExpires: d.sigExpires, tied: tied}
 	}
 	return s
 }

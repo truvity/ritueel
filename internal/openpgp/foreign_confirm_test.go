@@ -686,8 +686,8 @@ func TestForeignSignWhileWiping(t *testing.T) {
 	})
 }
 
-// strong and weak signatures: the fields come from the newest strong one, else from the newest weak one,
-// and WeakHash says that they come from a weak one.
+// strong and weak signatures: the fields come from the newest signature that counts, whatever its hash (the
+// person's last choice), and WeakHash says that they come from a weak one.
 func TestForeignStrongBeforeWeakFields(t *testing.T) {
 	b := fkNamed(t, "ed25519")
 	w := fkWriter{b}
@@ -709,8 +709,8 @@ func TestForeignStrongBeforeWeakFields(t *testing.T) {
 		subFlags     byte
 		subWeakFlags bool
 	}{
-		{"a strong one older than a weak one", [][]byte{user(8, sha256.New, 1000, 3), user(2, sha1.New, 1100, 1)}, 1000, 3, false,
-			[][]byte{sub(8, sha256.New, 1000, 0x0C), sub(2, sha1.New, 1100, 0x04)}, 1000, 0x0C, false},
+		{"a strong one older than a weak one", [][]byte{user(8, sha256.New, 1000, 3), user(2, sha1.New, 1100, 1)}, 1100, 1, true,
+			[][]byte{sub(8, sha256.New, 1000, 0x0C), sub(2, sha1.New, 1100, 0x04)}, 1100, 0x04, true},
 		{"a weak one older than a strong one", [][]byte{user(2, sha1.New, 1000, 1), user(8, sha256.New, 1100, 3)}, 1100, 3, false,
 			[][]byte{sub(2, sha1.New, 1000, 0x04), sub(8, sha256.New, 1100, 0x0C)}, 1100, 0x0C, false},
 		{"only weak ones", [][]byte{user(2, sha1.New, 1000, 1), user(2, sha1.New, 1100, 3)}, 1100, 3, true,
