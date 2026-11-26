@@ -50,7 +50,7 @@ func TestSnapshotOfTheCertificateIsTheSnapshotOfTheExport(t *testing.T) {
 			t.Run(name, func(t *testing.T) {
 				k := fkRead(t, file)
 				cert := k.Certificate()
-				kc, err := openpgp.ReadForeignCertificate(cert)
+				kc, err := fkReadCertificate(cert)
 				if err != nil {
 					t.Fatalf("ReadForeignCertificate of the certificate of the export: %v", err)
 				}
@@ -188,7 +188,7 @@ func TestSnapshotUserIDAndExpiryFollowTheNewestSignature(t *testing.T) {
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
 			k := fkRead(t, fkEdFile(t, w, c.keySigs, c.userSigs))
-			kc, err := openpgp.ReadForeignCertificate(k.Certificate())
+			kc, err := fkReadCertificate(k.Certificate())
 			if err != nil || !reflect.DeepEqual(openpgp.SnapshotOf(k), openpgp.SnapshotOf(kc)) {
 				t.Fatalf("the certificate does not read back to the same snapshot: %v", err)
 			}

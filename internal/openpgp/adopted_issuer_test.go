@@ -182,7 +182,7 @@ func TestNewAdoptedIssuerAcceptsAnySignerOfTheKey(t *testing.T) {
 			t.Fatal(err)
 		}
 		defer sec.Wipe()
-		cert, err := openpgp.ReadForeignCertificate(export.Certificate())
+		cert, err := fkReadCertificate(export.Certificate())
 		if err != nil {
 			t.Fatal(err)
 		}

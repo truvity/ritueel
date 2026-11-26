@@ -91,7 +91,7 @@ func TestMeasureSHA384ByGpgvAndSqvForEveryAlgorithmOfTheKit(t *testing.T) {
 		}
 		// the reader reads what the step signed: the certificate with the direct-key signature is a
 		// certificate that it writes again as it stands, and the signature is the newest of the key
-		kr, err := openpgp.ReadForeignCertificate(ring)
+		kr, err := fkReadCertificate(ring)
 		if err != nil {
 			t.Fatalf("ReadForeignCertificate of the certificate with the direct-key signature: %v", err)
 		}

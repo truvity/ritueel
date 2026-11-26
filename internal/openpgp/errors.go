@@ -167,11 +167,14 @@ var (
 	// since both fail the same check: a damaged framing is an ErrForeignForm when the file is read,
 	// and a damaged armour is an ErrForeignArmour.
 	ErrWrongPassphrase = errors.New("openpgp: the passphrase does not open the secret key")
-	// ErrAdoptedCertificate marks a certificate that [ReadForeignCertificate] refuses because the reader
-	// would not write it as it stands: the one rule is that the certificate that the reader assembles
-	// from the input is the input, byte for byte. A trust or marker packet, a header that is not the
-	// shortest, a secret key packet, a signature that does not verify, another key's certification, an
-	// unhashed subpacket that the reader would not write, a duplicate, a user ID or a subkey with no
-	// signature that counts, and any other order are each refused by it. It is also an [ErrForeignKey].
+	// ErrAdoptedCertificate marks a certificate that [ReadForeignCertificate] refuses: its SHA-256 is not the
+	// digest that the caller holds (checked before anything is parsed), or the reader would not write it as it
+	// stands, since the certificate that the reader assembles from the input must be the input, byte for byte.
+	// A trust or marker packet, a header that is not the shortest, a secret key packet, a signature that does
+	// not verify, another key's certification, an unhashed subpacket that the reader would not write, a
+	// duplicate, a user ID or a subkey with no signature that counts, and a packet of one class out of its
+	// place among the others are each refused by the second rule. That rule proves that nothing but what the
+	// primary signed is there; it does not prove that nothing is missing, which only the digest does. It is also
+	// an [ErrForeignKey].
 	ErrAdoptedCertificate error = &kindError{"openpgp: the certificate is not one that the reader writes", ErrForeignKey}
 )

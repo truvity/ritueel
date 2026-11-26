@@ -69,13 +69,18 @@
 // the passphrase or the secret is one that it clears. The reader opens no file, reads no clock and
 // starts no program.
 //
-// The certificate that [ForeignKey.Certificate] writes can be read again, as it stands, with no secret:
-// [ReadForeignCertificate] reads the packets as [ReadForeignKey] does and accepts them only when the
-// certificate that the reader assembles from them is the input, byte for byte, so that a certificate that
-// it accepts is one that it would have written (an [ErrAdoptedCertificate] says that it would not). Both
-// readers fill an unexported snapshot of the key out of the signatures that counted, and the two give the
-// same snapshot for the same key. The snapshot is what a signature of an adopted key is made from; the
-// exported view is for a person to read and cannot steer it.
+// The certificate that [ForeignKey.Certificate] writes can be read again, with no secret, by
+// [ReadForeignCertificate], which takes the SHA-256 of the certificate from the caller and reads the
+// certificate only against it. In plain words: the digest carries completeness and freshness, and the
+// reader cannot. The reader accepts the packets only when the certificate that it assembles from them is
+// the input, byte for byte, so that every packet in it is one that the primary signed and that the reader
+// would have written (an [ErrAdoptedCertificate] says that it would not). That proves "only what the
+// primary signed"; it does not prove "all of it" or "the newest": someone who can write the file and
+// cannot sign can delete the newest self-signature, a key revocation or the retirement of a user ID, and
+// the rest is still such a certificate. The digest must come from a place that the writer of the file
+// cannot change. Both readers fill an unexported snapshot of the key out of the signatures that counted,
+// and the two give the same snapshot for the same key. The snapshot is what a signature of an adopted key
+// is made from; the exported view is for a person to read and cannot steer it.
 //
 // An adopted key signs through an [AdoptedIssuer], which joins that snapshot to a [crypto.Signer]: RSA
 // with 4096 bits (PKCS#1 v1.5), Ed25519 (EdDSA legacy, algorithm 22) or ECDSA on P-384, each with

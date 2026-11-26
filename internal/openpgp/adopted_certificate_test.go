@@ -2,6 +2,7 @@ package openpgp_test
 
 import (
 	"bytes"
+	"crypto/sha256"
 	"errors"
 	"slices"
 	"testing"
@@ -14,6 +15,12 @@ import (
 // ReadForeignCertificate accepts a certificate only when the reader would write it as it stands. The
 // accepted case is the certificate of every key of the kit; each refusal changes one thing in it.
 
+// fkReadCertificate reads a certificate against its own SHA-256, which is how a test that is not about the
+// digest reads one.
+func fkReadCertificate(cert []byte) (*openpgp.ForeignKey, error) {
+	return openpgp.ReadForeignCertificate(cert, sha256.Sum256(cert))
+}
+
 // fkCertParts is the certificate of a template as its packets.
 func fkCertParts(t testing.TB, b *fkBase) []fkPacket {
 	t.Helper()
@@ -24,7 +31,7 @@ func fkCertParts(t testing.TB, b *fkBase) []fkPacket {
 // refusal of a certificate is, with ErrForeignKey, and returns no key.
 func fkCertRefused(t testing.TB, what string, cert []byte, b *fkBase, kinds ...error) error {
 	t.Helper()
-	k, err := openpgp.ReadForeignCertificate(cert)
+	k, err := fkReadCertificate(cert)
 	if err == nil {
 		t.Errorf("%s: the certificate was read, want a refusal", what)
 		return nil
@@ -48,7 +55,7 @@ func TestReadForeignCertificateAcceptsTheCertificateOfAnExport(t *testing.T) {
 	fkEachBase(t, func(t *testing.T, b *fkBase) {
 		export := fkRead(t, b.plain)
 		cert := export.Certificate()
-		k, err := openpgp.ReadForeignCertificate(cert)
+		k, err := fkReadCertificate(cert)
 		if err != nil {
 			t.Fatalf("ReadForeignCertificate: %v", err)
 		}
@@ -198,4 +205,53 @@ func TestReadForeignCertificateHoldsTheLimitsBeforeAnyVerification(t *testing.T)
 	// a user ID packet longer than MaxForeignUserIDBytes
 	long := slices.Concat(fkJoin(ps[0]), fkJoin(fkPacket{13, make([]byte, openpgp.MaxForeignUserIDBytes+1)}))
 	_ = fkCertRefused(t, "a user ID longer than the limit", long, b, openpgp.ErrForeignLimit)
+}
+
+// The certificate is read only against the digest that the caller holds, and the digest is compared before
+// anything is parsed: a certificate with a newest self-signature taken out is a certificate that the reader
+// would write, and only the digest tells it from the whole one.
+func TestReadForeignCertificateIsReadOnlyAgainstItsDigest(t *testing.T) {
+	fkEachBase(t, func(t *testing.T, b *fkBase) {
+		export := fkRead(t, fkRichOf(t, b, false, true).file)
+		cert := export.Certificate()
+		digest := sha256.Sum256(cert)
+		if _, err := openpgp.ReadForeignCertificate(cert, digest); err != nil {
+			t.Fatalf("the certificate against its digest: %v", err)
+		}
+
+		// the same certificate with a key revocation of the primary taken out is still a fixpoint, and it
+		// is refused against the digest of the whole one
+		ps := fkSplit(t, cert)
+		var cut []fkPacket
+		taken := 0
+		for _, p := range ps {
+			if p.Tag == 2 && len(cut) > 0 && taken == 0 && cut[len(cut)-1].Tag == 6 {
+				taken++ // a signature right after the primary: a key signature
+				continue
+			}
+			cut = append(cut, p)
+		}
+		if taken == 0 {
+			t.Fatal("the rich certificate has no signature on the key")
+		}
+		short := fkJoin(cut...)
+		if _, err := fkReadCertificate(short); err != nil {
+			t.Fatalf("the certificate with a signature of the key taken out is not read against its own digest: %v", err)
+		}
+		k, err := openpgp.ReadForeignCertificate(short, digest)
+		if k != nil || !errors.Is(err, openpgp.ErrAdoptedCertificate) {
+			t.Errorf("a shortened certificate against the digest of the whole one: %v", err)
+		}
+
+		// the digest is compared before anything is parsed: a mismatch of garbage is an
+		// ErrAdoptedCertificate and not a fault of the packets
+		_, err = openpgp.ReadForeignCertificate([]byte{1, 2, 3}, digest)
+		if !errors.Is(err, openpgp.ErrAdoptedCertificate) {
+			t.Errorf("garbage against a digest: %v", err)
+		}
+		var zero [32]byte
+		if _, err = openpgp.ReadForeignCertificate(cert, zero); !errors.Is(err, openpgp.ErrAdoptedCertificate) {
+			t.Errorf("a certificate against the zero digest: %v", err)
+		}
+	})
 }

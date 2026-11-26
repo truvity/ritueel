@@ -2,6 +2,7 @@ package openpgp
 
 import (
 	"bytes"
+	"crypto/sha256"
 	"fmt"
 	"time"
 
@@ -580,37 +581,55 @@ func readForeignKey(file []byte) (*ForeignKey, error) {
 // certificate and the snapshot that a later signature is made from are those that [ReadForeignKey] gives
 // for the export of the same key. The certificate is binary packets: an armoured one is refused.
 //
-// The one rule is that the input is the certificate that the reader would write from it: the reader reads
-// the packets as [ReadForeignKey] does (public key packets in place of the secret ones, the same limits
-// and the same checks of every signature), assembles the certificate from what the signatures of the
-// primary confirm, and accepts the input only when [ForeignKey.Certificate] of the result equals the
-// input, byte for byte. Everything that the reader would not have written is refused with
+// The certificate is read ONLY against digest, the SHA-256 of the certificate that the caller holds from a
+// place that whoever writes the certificate file cannot change (later, the digest that the newest ceremony
+// record lists for the file). The digest is compared before anything is parsed, and a mismatch is an
+// [ErrAdoptedCertificate]. The digest is what carries completeness and freshness. Nothing in the
+// certificate can: it is a list of signatures, and someone who can write the file and cannot sign can
+// delete the newest self-signature, a key revocation or the retirement of a user ID, and what is left is
+// still a certificate that the reader would write. Without the digest, a revoked key would be signable
+// again, a retired user ID live, and an older expiry, older flags or another primary user ID would come
+// back.
+//
+// The second rule is that the input is the certificate that the reader would write from it: the reader
+// reads the packets as [ReadForeignKey] does (public key packets in place of the secret ones, the same
+// limits and the same checks of every signature), assembles the certificate from what the signatures of
+// the primary confirm, and accepts the input only when [ForeignKey.Certificate] of the result equals the
+// input, byte for byte. What this proves is that every packet in it is one that a signature of the
+// primary confirms and that the reader writes in this form. It does not prove that nothing is missing or
+// that the newest signature is there. Everything that the reader would not have written is refused with
 // [ErrAdoptedCertificate]: a trust or marker packet, a header that is not the shortest, a secret key
 // packet, a signature that does not verify or that the reader does not count, a certification of another
 // key, an unhashed subpacket that the reader would not write, a duplicate, a user ID or a subkey with no
-// signature that counts, and any other order. A secret key packet is refused cheaply before anything is
-// verified, and so is every packet that a public certificate has no place for.
+// signature that counts, and a packet of one class (key signatures, user IDs, subkeys) out of its place
+// among the others. The order of the signatures of one component, of the user IDs and of the key
+// signatures among themselves is the input's: it is not refused.
+// A secret key packet is refused cheaply before anything is verified, and so is every packet that a
+// public certificate has no place for.
 //
 // The limits are those of [ReadForeignKey], held before any signature is verified: the size, the
 // packets, the user IDs and subkeys, the signatures that the primary has to answer for, and the budgets of
 // hashing and of verification. A fault of the packets is an [ErrForeignKey] of the kind that the export
 // has for it. The key has no secret: [ForeignKey.OpenSecret] is an [ErrParams], its primary has no
 // [SecretState], and [ForeignKey.Wipe] clears nothing. It returns no key with an error.
-func ReadForeignCertificate(cert []byte) (key *ForeignKey, err error) {
+func ReadForeignCertificate(cert []byte, digest [sha256.Size]byte) (key *ForeignKey, err error) {
 	defer func() {
 		if r := recover(); r != nil {
 			key, err = nil, fail(ErrForeignForm, "the certificate could not be read")
 		}
 	}()
-	return readForeignCertificate(cert)
+	return readForeignCertificate(cert, digest)
 }
 
-func readForeignCertificate(cert []byte) (*ForeignKey, error) {
+func readForeignCertificate(cert []byte, digest [sha256.Size]byte) (*ForeignKey, error) {
 	if len(cert) == 0 {
 		return nil, fail(ErrForeignForm, "the certificate is empty")
 	}
 	if len(cert) > MaxForeignKeyBytes {
 		return nil, fail(ErrForeignLimit, "the certificate is longer than MaxForeignKeyBytes (%d bytes)", MaxForeignKeyBytes)
+	}
+	if sha256.Sum256(cert) != digest {
+		return nil, fail(ErrAdoptedCertificate, "the SHA-256 of the certificate is not the digest that the caller holds for it")
 	}
 	if err := checkCertificateFraming(cert); err != nil {
 		return nil, err
