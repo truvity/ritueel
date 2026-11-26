@@ -118,8 +118,9 @@ var (
 	// file. It is also an [ErrForeignKey].
 	ErrForeignForm error = &kindError{"openpgp: the file is not the packets of one transferable key", ErrForeignKey}
 	// ErrForeignLimit marks a file that passes a named limit of the reader: [MaxForeignKeyBytes],
-	// [MaxForeignPackets], [MaxForeignUserIDs], [MaxForeignSubkeys], [MaxForeignSignatures] or
-	// [MaxForeignPacketBytes]. The text names the constant. It is also an [ErrForeignKey].
+	// [MaxForeignPackets], [MaxForeignUserIDs], [MaxForeignUserIDBytes], [MaxForeignSubkeys],
+	// [MaxForeignSignatures], [MaxForeignClaimedSignatures] or [MaxForeignPacketBytes]. The text names the
+	// constant. It is also an [ErrForeignKey].
 	ErrForeignLimit error = &kindError{"openpgp: the file passes a limit of the reader", ErrForeignKey}
 	// ErrForeignArmour marks an armoured file that is not exactly one block of type PGP PRIVATE KEY
 	// BLOCK: another type (a public key block, a message, a signature), a second block, a header or a
@@ -151,8 +152,8 @@ var (
 	// [ErrForeignKey].
 	ErrForeignProtection error = &kindError{"openpgp: the secret of the primary key is protected in a form that is not read", ErrForeignKey}
 	// ErrForeignSelfSignature marks a key none of whose user IDs has a valid self-signature: there is
-	// no user ID, or every self-signature is made with a weak hash, carries a critical subpacket that
-	// is not understood, or does not verify. It is also an [ErrForeignKey].
+	// no user ID, or every self-signature is made with a hash that does not count (MD5, RIPEMD-160), carries
+	// a critical subpacket that is not understood, or does not verify. It is also an [ErrForeignKey].
 	ErrForeignSelfSignature error = &kindError{"openpgp: no user ID has a valid self-signature", ErrForeignKey}
 	// ErrForeignSecret marks a secret that opened and is not a good secret: its checksum is wrong, its
 	// numbers do not read to their end, or it is not the secret of the public key in the same packet.

@@ -57,8 +57,11 @@ func newForeignVerifier(w *fkWalk) (*fkVerifier, error) {
 	if err != nil {
 		return nil, err
 	}
-	pk, err := goCryptoPublic(w.primaryPacket)
-	if err != nil || !bytes.Equal(pk.Fingerprint, fp) || byte(pk.PubKeyAlgo) != w.pub.alg.ID {
+	pk, err := agreePublic(w.primaryPacket, w.primaryBody, fp, false)
+	if err != nil {
+		return nil, err
+	}
+	if byte(pk.PubKeyAlgo) != w.pub.alg.ID {
 		return nil, fail(ErrForeignForm, "go-crypto does not read the public key of the primary as it is read here")
 	}
 	v := &fkVerifier{pk: pk, fp: fp, keyID: fp[12:], created: w.pub.created, alg: w.pub.alg.ID}
@@ -66,8 +69,22 @@ func newForeignVerifier(w *fkWalk) (*fkVerifier, error) {
 	return v, nil
 }
 
+// issuer is what a signature says about who made it.
+type issuer uint8
+
+const (
+	// issuerUnknown is a signature that does not say, or says in a form that the reader does not read,
+	// or says only in its unhashed area (which nothing protects), or is not version 4.
+	issuerUnknown issuer = iota
+	// issuerPrimary is a signature that names the primary.
+	issuerPrimary
+	// issuerOther is a signature that names another key in its hashed area: its fingerprint, or its
+	// key ID when it has no fingerprint, is not the primary's.
+	issuerOther
+)
+
 // fkHead is what is read of a signature before it is judged: its version and type, the fixed fields of
-// a version 4 signature, its areas, and whether the primary claims it.
+// a version 4 signature, its areas, and who it says made it.
 type fkHead struct {
 	version byte
 	typ     byte
@@ -75,12 +92,33 @@ type fkHead struct {
 	hash    byte
 	parsed  bool // a version 4 signature whose areas read, each with at most maxBindingSubpackets
 	areas   sigAreas
-	claims  bool // the primary's issuer fingerprint or key ID is in it
+	issuer  issuer
 }
 
-// head reads the head of a signature. A version 3 signature claims by its key ID; a version 4
-// signature by its hashed issuer fingerprint, or by its issuer key ID (hashed or not) when it has no
-// fingerprint, which is how gpg reads it; a signature of another version claims nothing.
+// isRevocationType tells whether a type is a revocation: of the key (0x20), of a subkey (0x28) or of a
+// certification (0x30).
+func isRevocationType(t byte) bool {
+	return t == sigKeyRevocation || t == sigSubkeyRevoke || t == sigCertRevocation
+}
+
+// claimed tells whether the primary has to answer for the signature: it names the primary, or it is a
+// revocation that is not provably another key's. A revocation that cannot be read must not hide behind
+// that: it is listed, with the status unreadable, on the component that it stands on.
+func (h fkHead) claimed() bool {
+	switch h.issuer {
+	case issuerPrimary:
+		return true
+	case issuerOther:
+		return false
+	}
+	return isRevocationType(h.typ)
+}
+
+// head reads the head of a signature. A version 3 signature names the primary by its key ID, and
+// anything else of it is unknown; a version 4 signature names its issuer by its hashed issuer
+// fingerprint, or by its hashed issuer key ID when it has no fingerprint, and by its issuer key ID in
+// the unhashed area only to name the primary (which is how gpg writes old signatures); a signature of
+// another version names nothing.
 func (v *fkVerifier) head(s fkSig) fkHead {
 	var h fkHead
 	b := s.body
@@ -92,7 +130,9 @@ func (v *fkVerifier) head(s fkSig) fkHead {
 	case 3:
 		if len(b) >= 17 {
 			h.typ, h.algo, h.hash = b[2], b[15], b[16]
-			h.claims = bytes.Equal(b[7:15], v.keyID)
+			if bytes.Equal(b[7:15], v.keyID) {
+				h.issuer = issuerPrimary
+			}
 		}
 	case 4:
 		h.typ = b[1]
@@ -102,7 +142,7 @@ func (v *fkVerifier) head(s fkSig) fkHead {
 		if scanAreasOf(errFrame, b) == nil {
 			if a, err := splitSig(b); err == nil {
 				h.areas, h.parsed = a, true
-				h.claims = v.claimsV4(a)
+				h.issuer = v.issuerV4(a)
 			}
 		}
 	default:
@@ -111,18 +151,37 @@ func (v *fkVerifier) head(s fkSig) fkHead {
 	return h
 }
 
-// claimsV4 tells whether a version 4 signature names the primary as its issuer.
-func (v *fkVerifier) claimsV4(a sigAreas) bool {
+// issuerV4 reads who a version 4 signature says made it.
+func (v *fkVerifier) issuerV4(a sigAreas) issuer {
 	if count(a.hashed, spIssuerFingerprint) > 0 {
 		fp, ok := find(a.hashed, spIssuerFingerprint)
-		return ok && len(fp) == 21 && fp[0] == 4 && bytes.Equal(fp[1:], v.fp)
+		switch {
+		case !ok:
+			return issuerUnknown
+		case len(fp) == 21 && fp[0] == 4:
+			if bytes.Equal(fp[1:], v.fp) {
+				return issuerPrimary
+			}
+			return issuerOther
+		case len(fp) == 33 && (fp[0] == 5 || fp[0] == 6):
+			return issuerOther // the fingerprint of a key of another version
+		}
+		return issuerUnknown
 	}
-	if n := count(a.hashed, spIssuerKeyID); n > 0 {
+	if count(a.hashed, spIssuerKeyID) > 0 {
 		id, ok := find(a.hashed, spIssuerKeyID)
-		return ok && bytes.Equal(id, v.keyID)
+		switch {
+		case !ok || len(id) != 8:
+			return issuerUnknown
+		case bytes.Equal(id, v.keyID):
+			return issuerPrimary
+		}
+		return issuerOther
 	}
-	id, ok := find(a.unhashed, spIssuerKeyID)
-	return ok && bytes.Equal(id, v.keyID)
+	if id, ok := find(a.unhashed, spIssuerKeyID); ok && bytes.Equal(id, v.keyID) {
+		return issuerPrimary
+	}
+	return issuerUnknown
 }
 
 // hasUnknownCritical tells whether either area has a critical subpacket of a type that is not in
@@ -150,13 +209,15 @@ func hashName(id byte) string {
 	return fmt.Sprintf("hash %d", id)
 }
 
-// hashStatus is the status that a signature hash gives, or 0 when the hash is one of the three that
-// count.
+// hashStatus is the status that a signature hash gives, or 0 when the hash may go on to be verified.
+// SHA-256, SHA-384 and SHA-512 are strong; SHA-1 is weak, and a SHA-1 signature that verifies still
+// proves that the key made it, so it goes on to be verified and counts with the status
+// [SignatureValidWeakHash]. MD5, RIPEMD-160 and the other obsolete hashes never count.
 func hashStatus(id byte) SignatureStatus {
 	switch id {
-	case 8, 9, 10:
+	case 8, 9, 10, 2:
 		return 0
-	case 1, 2, 3, 4, 5, 6, 7:
+	case 1, 3, 4, 5, 6, 7:
 		return SignatureWeakHash
 	}
 	return SignatureHashNotAccepted
@@ -259,6 +320,9 @@ func (v *fkVerifier) evaluate(s fkSig, h fkHead, keyCreated time.Time, check fun
 	}
 	if safely(func() error { return check(sig) }) == nil {
 		fs.Status = SignatureValid
+		if h.hash == 2 {
+			fs.Status = SignatureValidWeakHash
+		}
 	}
 	return fs
 }
@@ -267,12 +331,13 @@ func (v *fkVerifier) evaluate(s fkSig, h fkHead, keyCreated time.Time, check fun
 func isCertification(t byte) bool { return t >= sigCertGeneric && t <= sigPositiveCertification }
 
 // keyLevel judges the signatures on the primary key itself: the direct-key signatures and the key
-// revocations that it claims, and a count of the others.
-func (v *fkVerifier) keyLevel(w *fkWalk) (sigs []ForeignSignature, other int) {
+// revocations that it claims, and a count of the others. unreadable counts the revocations that could
+// not be used.
+func (v *fkVerifier) keyLevel(w *fkWalk) (sigs []ForeignSignature, other, unreadable int) {
 	for _, s := range w.keyT.sigs {
 		h := v.head(s)
 		switch {
-		case !h.claims:
+		case !h.claimed():
 			other++
 		case h.typ == sigDirectKey:
 			sigs = append(sigs, v.evaluate(s, h, v.created, func(g *packet.Signature) error { return v.pk.VerifyDirectKeySignature(g) }))
@@ -282,7 +347,24 @@ func (v *fkVerifier) keyLevel(w *fkWalk) (sigs []ForeignSignature, other int) {
 			sigs = append(sigs, misplaced(h))
 		}
 	}
-	return sigs, other
+	return sigs, other, unusableRevocations(sigs)
+}
+
+// unusableRevocations counts the revocations in a list that the primary claims and that the reader could
+// not use: unreadable, with a critical subpacket that it does not understand, or with a hash that it does
+// not take. A signature that does not verify is not counted: it was read and it is not the primary's.
+func unusableRevocations(sigs []ForeignSignature) int {
+	n := 0
+	for _, s := range sigs {
+		if !isRevocationType(s.Type) {
+			continue
+		}
+		switch s.Status {
+		case SignatureUnreadable, SignatureUnknownCritical, SignatureWeakHash, SignatureHashNotAccepted:
+			n++
+		}
+	}
+	return n
 }
 
 // misplaced is the entry for a signature of the primary of a type that does not belong where it
@@ -300,9 +382,9 @@ func (v *fkVerifier) userIDs(w *fkWalk) (ids []ForeignUserID, valid int) {
 		for _, s := range u.t.sigs {
 			h := v.head(s)
 			switch {
-			case !h.claims && isCertification(h.typ):
+			case !h.claimed() && isCertification(h.typ):
 				fu.Certifications++
-			case !h.claims:
+			case !h.claimed():
 				fu.OtherSignatures++
 			case isCertification(h.typ) || h.typ == sigCertRevocation:
 				fu.Signatures = append(fu.Signatures, v.evaluate(s, h, v.created, func(g *packet.Signature) error {
@@ -313,6 +395,7 @@ func (v *fkVerifier) userIDs(w *fkWalk) (ids []ForeignUserID, valid int) {
 			}
 		}
 		summariseUserID(&fu)
+		fu.UnreadableRevocations = unusableRevocations(fu.Signatures)
 		if fu.Valid {
 			valid++
 		}
@@ -321,26 +404,61 @@ func (v *fkVerifier) userIDs(w *fkWalk) (ids []ForeignUserID, valid int) {
 	return ids, valid
 }
 
-// summariseUserID fills what the newest valid self-signature and the newest valid revocation say.
+// hardRevocation tells whether a revocation cannot be undone by a later signature: it has no reason, or
+// the reason is "no reason" (0), "key material compromised" (2) or a code that is not known. Only
+// "superseded" (1), "retired" (3) and "user ID no longer valid" (32) are soft.
+func hardRevocation(s *ForeignSignature) bool {
+	return !s.HasReason || (s.Reason != 1 && s.Reason != 3 && s.Reason != 32)
+}
+
+// revocationOf picks the revocation that revokes: a hard one whatever its date (the newest), or else a
+// soft one that is not older than the newest valid signature that it revokes (when there is one). It
+// returns nil when nothing revokes.
+func revocationOf(revs []*ForeignSignature, newest *ForeignSignature) *ForeignSignature {
+	var hard, soft *ForeignSignature
+	for _, r := range revs {
+		switch {
+		case hardRevocation(r) && (hard == nil || !r.Created.Before(hard.Created)):
+			hard = r
+		case !hardRevocation(r) && (soft == nil || !r.Created.Before(soft.Created)):
+			soft = r
+		}
+	}
+	switch {
+	case hard != nil:
+		return hard
+	case soft != nil && (newest == nil || !soft.Created.Before(newest.Created)):
+		return soft
+	}
+	return nil
+}
+
+// summariseUserID fills what the newest valid self-signature and the revocations say.
 func summariseUserID(fu *ForeignUserID) {
-	var self, rev *ForeignSignature
+	var self *ForeignSignature
+	var revs []*ForeignSignature
+	strong := false
 	for i := range fu.Signatures {
 		s := &fu.Signatures[i]
-		if s.Status != SignatureValid {
+		if !s.Status.Counts() {
 			continue
 		}
 		switch {
-		case isCertification(s.Type) && (self == nil || !s.Created.Before(self.Created)):
-			self = s
-		case s.Type == sigCertRevocation && (rev == nil || !s.Created.Before(rev.Created)):
-			rev = s
+		case isCertification(s.Type):
+			strong = strong || s.Status == SignatureValid
+			if self == nil || !s.Created.Before(self.Created) {
+				self = s
+			}
+		case s.Type == sigCertRevocation:
+			revs = append(revs, s)
 		}
 	}
 	if self != nil {
-		fu.Valid, fu.Created, fu.KeyExpires, fu.KeyFlags, fu.Primary = true, self.Created, self.KeyExpires, self.KeyFlags, self.Primary
+		fu.Valid, fu.WeakHash = true, !strong
+		fu.Created, fu.KeyExpires, fu.KeyFlags, fu.Primary = self.Created, self.KeyExpires, self.KeyFlags, self.Primary
 	}
-	if rev != nil && (self == nil || !rev.Created.Before(self.Created)) {
-		fu.Revoked, fu.RevokedAt = true, rev.Created
+	if r := revocationOf(revs, self); r != nil {
+		fu.Revoked, fu.RevokedAt = true, r.Created
 	}
 }
 
@@ -351,16 +469,18 @@ func (v *fkVerifier) subkeys(w *fkWalk) []ForeignSubkey {
 	for _, s := range w.subs {
 		fs := ForeignSubkey{Algorithm: s.pub.alg, Created: s.pub.created, Form: s.form}
 		fs.Fingerprint, fs.KeyID = fingerprintHex(s.fp)
-		var sub *packet.PublicKey
-		subErr := safely(func() error {
-			var err error
-			sub, err = goCryptoPublic(s.pubPacket)
-			return err
-		})
+		sub, subErr := s.gopk, error(nil)
+		if sub == nil {
+			subErr = safely(func() error {
+				var err error
+				sub, err = goCryptoPublic(s.pubPacket)
+				return err
+			})
+		}
 		for _, g := range s.t.sigs {
 			h := v.head(g)
 			switch {
-			case !h.claims:
+			case !h.claimed():
 				fs.OtherSignatures++
 			case subErr != nil && (h.typ == sigSubkeyBinding || h.typ == sigSubkeyRevoke):
 				fs.Signatures = append(fs.Signatures, ForeignSignature{Type: h.typ, Status: SignatureUnreadable, Hash: hashName(h.hash)})
@@ -373,28 +493,56 @@ func (v *fkVerifier) subkeys(w *fkWalk) []ForeignSubkey {
 			}
 		}
 		summariseSubkey(&fs)
+		fs.UnreadableRevocations = unusableRevocations(fs.Signatures)
 		out = append(out, fs)
 	}
 	return out
 }
 
-// summariseSubkey fills what the newest valid binding and the newest valid revocation say.
+// summariseSubkey fills what the newest valid binding and the revocations say.
 func summariseSubkey(fs *ForeignSubkey) {
-	var bind, rev *ForeignSignature
+	var bind *ForeignSignature
+	var revs []*ForeignSignature
+	strong := false
 	for i := range fs.Signatures {
 		s := &fs.Signatures[i]
-		if s.Status != SignatureValid {
+		if !s.Status.Counts() {
 			continue
 		}
-		switch {
-		case s.Type == sigSubkeyBinding && (bind == nil || !s.Created.Before(bind.Created)):
-			bind = s
-		case s.Type == sigSubkeyRevoke && (rev == nil || !s.Created.Before(rev.Created)):
-			rev = s
+		switch s.Type {
+		case sigSubkeyBinding:
+			strong = strong || s.Status == SignatureValid
+			if bind == nil || !s.Created.Before(bind.Created) {
+				bind = s
+			}
+		case sigSubkeyRevoke:
+			revs = append(revs, s)
 		}
 	}
 	if bind != nil {
-		fs.Bound, fs.BoundAt, fs.Flags, fs.Expires = true, bind.Created, bind.KeyFlags, bind.KeyExpires
+		fs.Bound, fs.WeakHash = true, !strong
+		fs.BoundAt, fs.Flags, fs.Expires = bind.Created, bind.KeyFlags, bind.KeyExpires
 	}
-	fs.Revoked = rev != nil && (bind == nil || !rev.Created.Before(bind.Created))
+	fs.Revoked = revocationOf(revs, bind) != nil
+}
+
+// countClaimed counts the signatures in the file that the primary has to answer for, which are the ones
+// that are verified, before any of them is.
+func (v *fkVerifier) countClaimed(w *fkWalk) int {
+	n := 0
+	count := func(t *fkTarget) {
+		for _, s := range t.sigs {
+			if v.head(s).claimed() {
+				n++
+			}
+		}
+	}
+	count(&w.keyT)
+	for _, u := range w.users {
+		count(&u.t)
+	}
+	for _, s := range w.subs {
+		count(&s.t)
+	}
+	return n
 }
