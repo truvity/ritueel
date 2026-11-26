@@ -166,4 +166,11 @@ var (
 	// since both fail the same check: a damaged framing is an ErrForeignForm when the file is read,
 	// and a damaged armour is an ErrForeignArmour.
 	ErrWrongPassphrase = errors.New("openpgp: the passphrase does not open the secret key")
+	// ErrAdoptedCertificate marks a certificate that [ReadForeignCertificate] refuses because the reader
+	// would not write it as it stands: the one rule is that the certificate that the reader assembles
+	// from the input is the input, byte for byte. A trust or marker packet, a header that is not the
+	// shortest, a secret key packet, a signature that does not verify, another key's certification, an
+	// unhashed subpacket that the reader would not write, a duplicate, a user ID or a subkey with no
+	// signature that counts, and any other order are each refused by it. It is also an [ErrForeignKey].
+	ErrAdoptedCertificate error = &kindError{"openpgp: the certificate is not one that the reader writes", ErrForeignKey}
 )

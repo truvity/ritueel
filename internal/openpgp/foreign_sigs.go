@@ -593,6 +593,14 @@ type fkOutput struct {
 	comps   [][]byte // per user ID or attribute of the walk, or nil when it is left out
 	subs    [][]byte // per subkey of the walk, or nil when it is left out
 	dups    int      // the duplicates that were dropped: signatures, user IDs, attributes and subkeys
+
+	// What the snapshot of the key is made of (see fkSnapshot), collected as the signatures are judged and
+	// as the parts that go into the certificate are chosen.
+	revoked  bool            // a key revocation counts
+	newest   time.Time       // the newest signature that counts anywhere in the certificate
+	expiry   expiryCandidate // the newest self-signature that can give the expiry of the key
+	users    []snapUserID
+	subSnaps []snapSubkey
 }
 
 // fkGroup is the occurrences of one user ID, user attribute or subkey that have the same bytes, merged
@@ -607,16 +615,19 @@ type fkGroup struct {
 	broken  bool              // a subkey revocation that the library's key-ring reader would refuse: the subkey is left out
 	ok      bool              // some occurrence has what the part needs (a certification, a binding)
 	back    map[string][]byte // the back-signatures judged for a subkey, by their bytes
+	counted []snapSig         // the signatures written, once each, in the order they are written
 }
 
-// add merges the written signature packet of one occurrence into the group, counting a duplicate.
-func (g *fkGroup) add(emit []byte, out *fkOutput) {
+// add merges the written signature packet of one occurrence into the group, counting a duplicate. rec is
+// what the snapshot keeps of the signature.
+func (g *fkGroup) add(emit []byte, out *fkOutput, rec snapSig) {
 	if g.seen[string(emit)] {
 		out.dups++
 		return
 	}
 	g.seen[string(emit)] = true
 	g.emits = append(g.emits, emit...)
+	g.counted = append(g.counted, rec)
 }
 
 // groupOf returns the group of a key, making it at place i when it is the first.
@@ -687,6 +698,13 @@ func (v *fkVerifier) keyLevel(w *fkWalk, out *fkOutput) (sigs []ForeignSignature
 		default:
 			seen[string(emit)] = true
 			out.keySigs = append(out.keySigs, emit)
+			out.noteNewest(fs.Created)
+			switch fs.Type {
+			case sigKeyRevocation:
+				out.revoked = true
+			case sigDirectKey:
+				out.noteExpiry(fs)
+			}
 		}
 	}
 	return sigs, other, otherRev, unusableRevocations(sigs)
@@ -780,7 +798,11 @@ func (v *fkVerifier) components(w *fkWalk, out *fkOutput) (ids []ForeignUserID, 
 					fu.OtherRevocations++
 				}
 				if emit != nil {
-					grp.add(emit, out)
+					rec := snapSig{sig: fs}
+					if isCertification(h.typ) {
+						rec.prefs = carriedSubpackets(h.areas.hashed)
+					}
+					grp.add(emit, out, rec)
 					grp.ok = grp.ok || isCertification(h.typ)
 				}
 			default:
@@ -808,8 +830,10 @@ func (v *fkVerifier) components(w *fkWalk, out *fkOutput) (ids []ForeignUserID, 
 			}
 		case g.ok && !g.bad && g.first == i && u.attr:
 			out.comps[i] = append(wrap(tagUserAttribute, u.text), g.emits...)
+			out.noteCounted(g.counted)
 		case g.ok && g.first == i:
 			out.comps[i] = append(wrap(tagUserID, u.text), g.emits...)
+			out.addUser(u.text, g.counted)
 		}
 	}
 	return ids, valid, attrsLeftOut
@@ -977,7 +1001,7 @@ func (v *fkVerifier) subkeys(w *fkWalk, out *fkOutput) []ForeignSubkey {
 				fs.OtherRevocations++
 			}
 			if emit != nil {
-				grp.add(emit, out)
+				grp.add(emit, out, snapSig{sig: sg})
 			}
 		}
 		summariseSubkey(&fs)
@@ -1003,6 +1027,7 @@ func (v *fkVerifier) subkeys(w *fkWalk, out *fkOutput) []ForeignSubkey {
 		views[i].Fingerprint, views[i].KeyID = fingerprintHex(s.fp)
 		if g.first == i {
 			out.subs[i] = append(wrap(tagSubkey, s.pubBody), g.emits...)
+			out.addSubkey(s.fp, s.pubBody, g.counted)
 		}
 	}
 	return views
