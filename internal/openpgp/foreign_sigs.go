@@ -602,6 +602,7 @@ type fkGroup struct {
 	first   int               // the place of the first occurrence in the file
 	emits   []byte            // the verified signatures, written
 	seen    map[string]bool   // the signature packets written so far
+	bad     bool              // a user attribute whose body is not a sequence of subpackets
 	partial bool              // a binding verified and is not complete
 	broken  bool              // a subkey revocation that the library's key-ring reader would refuse: the subkey is left out
 	ok      bool              // some occurrence has what the part needs (a certification, a binding)
@@ -753,6 +754,13 @@ func (v *fkVerifier) components(w *fkWalk, out *fkOutput) (ids []ForeignUserID, 
 		}
 		grp := out.groupOf(groups, key, i)
 		group[i] = grp
+		if u.attr && !wellFormedAttribute(u.text) {
+			// A body that is not a sequence of subpackets would make other readers refuse the whole
+			// certificate: the attribute is left out, as one with no valid certification is, and its
+			// signatures are not checked.
+			grp.bad = true
+			continue
+		}
 		fu := ForeignUserID{Text: text}
 		for _, s := range u.t.sigs {
 			h := v.head(s)
@@ -793,18 +801,26 @@ func (v *fkVerifier) components(w *fkWalk, out *fkOutput) (ids []ForeignUserID, 
 	for i, u := range w.users {
 		g := group[i]
 		switch {
-		case !g.ok && u.attr:
+		case (!g.ok || g.bad) && u.attr:
 			if !counted[g] {
 				counted[g] = true
 				attrsLeftOut++
 			}
-		case g.ok && g.first == i && u.attr:
+		case g.ok && !g.bad && g.first == i && u.attr:
 			out.comps[i] = append(wrap(tagUserAttribute, u.text), g.emits...)
 		case g.ok && g.first == i:
 			out.comps[i] = append(wrap(tagUserID, u.text), g.emits...)
 		}
 	}
 	return ids, valid, attrsLeftOut
+}
+
+// wellFormedAttribute tells whether the body of a user attribute packet is a sequence of attribute
+// subpackets (RFC 9580, section 5.12): each with a length in one of the forms of section 5.2.3.7 that counts
+// the type octet and so is at least 1, running exactly to the end of the body. The types need not be known.
+func wellFormedAttribute(body []byte) bool {
+	_, err := parseArea(body)
+	return err == nil
 }
 
 // verifyAttribute verifies a signature over a user attribute packet with the primary key.

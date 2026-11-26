@@ -393,8 +393,10 @@ type ForeignKey struct {
 	UnreadableRevocations int
 	// UserAttributes is the number of user attribute packets (photographs) and UserAttributeBytes
 	// the total size of their bodies. They are not read. A user attribute is in the certificate only
-	// with a certification by the primary that verifies over it; UserAttributesLeftOut counts those
-	// that are not, which a caller tells the person.
+	// with a certification by the primary that verifies over it and a body that is a well-formed sequence
+	// of attribute subpackets (each with a valid length, running exactly to the end of the body), since
+	// other readers refuse a certificate that holds one that is not. UserAttributesLeftOut counts the
+	// distinct attributes that are not in it, for either reason, which a caller tells the person.
 	// DuplicatesDropped counts what the certificate left out because the same thing was in the file
 	// twice: a user ID, an attribute or a subkey with the same bytes (merged into the first, with their
 	// verified signatures), and a signature written out twice for one part.
