@@ -34,6 +34,14 @@ const (
 	// MaxForeignPassphraseBytes is the most bytes of the passphrase that [ForeignKey.OpenSecret]
 	// takes: 4096. A longer one is an [ErrParams].
 	MaxForeignPassphraseBytes = 4096
+	// MaxForeignUserIDBytes is the most bytes of the body of one user ID packet: 2048. A photograph is a
+	// user attribute packet, and keeps the limit of [MaxForeignPacketBytes].
+	MaxForeignUserIDBytes = 2048
+	// MaxForeignClaimedSignatures is the most signatures in the whole file that the primary has to answer
+	// for, which are the ones that are verified: those that name the primary, and the revocations that
+	// are not provably another key's: 512. The certifications of other keys are only counted, and keep
+	// the limit of [MaxForeignSignatures] for each component.
+	MaxForeignClaimedSignatures = 512
 )
 
 // SecretState tells whether the secret of the primary key in the file is protected by a passphrase.
@@ -90,7 +98,7 @@ func (f SubkeyForm) String() string {
 }
 
 // SignatureStatus is what the reader made of one signature that its own primary key claims to have
-// made. Only SignatureValid counts.
+// made. SignatureValid and SignatureValidWeakHash count (see [SignatureStatus.Counts]); the others do not.
 type SignatureStatus uint8
 
 // The statuses of a signature, in the order that the reader decides them: the first that applies.
@@ -98,8 +106,15 @@ const (
 	// SignatureValid is a version 4 signature that verifies with the primary key, with SHA-256,
 	// SHA-384 or SHA-512, and no critical subpacket that the reader does not understand.
 	SignatureValid SignatureStatus = iota + 1
-	// SignatureWeakHash is a signature made with MD5, SHA-1, RIPEMD-160 or another hash that is
-	// broken or obsolete. It is present and does not count; it is not verified.
+	// SignatureValidWeakHash is such a signature made with SHA-1 that verifies. It counts: a SHA-1
+	// signature still proves that the key made it, and keys of 2008 to 2016 (RSA-4096 among them) carry
+	// no other. The user ID or the subkey that only has such signatures is flagged (the field WeakHash),
+	// and the adoption of the key re-signs with a strong hash. go-crypto verifies a SHA-1 signature
+	// without a setting for it, so no change of its use was needed.
+	SignatureValidWeakHash
+	// SignatureWeakHash is a signature made with MD5, RIPEMD-160 or another hash that is broken or
+	// obsolete (not SHA-1: see SignatureValidWeakHash). It is present and does not count; it is not
+	// verified.
 	SignatureWeakHash
 	// SignatureHashNotAccepted is a signature made with a hash that is not weak and that the reader
 	// does not take: SHA-224, SHA-3 or a hash that it does not know. It does not count.
@@ -119,11 +134,16 @@ const (
 	SignatureMisplaced
 )
 
+// Counts tells whether a signature with this status counts: it verified.
+func (s SignatureStatus) Counts() bool { return s == SignatureValid || s == SignatureValidWeakHash }
+
 // String is a few words for the status.
 func (s SignatureStatus) String() string {
 	switch s {
 	case SignatureValid:
 		return "valid"
+	case SignatureValidWeakHash:
+		return "valid, weak hash"
 	case SignatureWeakHash:
 		return "weak hash"
 	case SignatureHashNotAccepted:
@@ -142,7 +162,7 @@ func (s SignatureStatus) String() string {
 
 // ForeignSignature is one signature that the primary key claims to have made (its issuer is the
 // primary's, or it names none), with what the reader found. The times are in UTC, and zero when the
-// signature has none. A signature that is not [SignatureValid] gives the fields that its hashed
+// signature has none. A signature that does not count gives the fields that its hashed
 // subpackets hold, for a person to see; none of them counts.
 type ForeignSignature struct {
 	// Type is the signature type of RFC 9580, section 5.2.1: 0x10 to 0x13 a certification of a user
@@ -187,7 +207,7 @@ type ForeignPrimary struct {
 	// for an unprotected secret.
 	Cipher string
 	// Revoked is true when a valid key revocation signature by the primary is in the file. The reader
-	// does not refuse such a key: the caller decides.
+	// does not refuse such a key: the caller decides. A key revocation is hard whatever its date.
 	Revoked bool
 }
 
@@ -200,9 +220,12 @@ type ForeignUserID struct {
 	// Signatures are the certifications (0x10 to 0x13) and certification revocations (0x30) that the
 	// primary claims to have made on this user ID, in the order of the file.
 	Signatures []ForeignSignature
-	// Valid is true when at least one of Signatures is a valid certification: a self-signature that
-	// counts.
+	// Valid is true when at least one of Signatures is a certification that counts: a self-signature
+	// that verifies (made with SHA-1 or a strong hash).
 	Valid bool
+	// WeakHash is true when Valid is true and every self-signature that counts was made with SHA-1
+	// (status [SignatureValidWeakHash]). The key is accepted, and the adoption re-signs with a strong hash.
+	WeakHash bool
 	// Created is the creation time of the newest valid self-signature (the later one in the file
 	// among equal times), and the fields below are read from that signature.
 	Created time.Time
@@ -212,18 +235,28 @@ type ForeignUserID struct {
 	KeyFlags uint8
 	// Primary is its primary user ID flag.
 	Primary bool
-	// Revoked is true when a valid certification revocation by the primary is not older than the
-	// newest valid self-signature (or when it is valid and there is no valid self-signature). A
-	// revocation in the same second as a self-signature counts: when in doubt it revokes.
+	// Revoked is true when a hard certification revocation by the primary counts, whatever its date (no
+	// reason, no reason specified, key material compromised, or a reason that is not known), or when a
+	// soft one counts (superseded, retired, user ID no longer valid) that is not older than the newest
+	// self-signature that counts, or that counts when there is none. A revocation in the same second as
+	// a self-signature revokes: when in doubt it does.
 	Revoked bool
-	// RevokedAt is the creation time of that revocation.
+	// RevokedAt is the creation time of the revocation that revokes.
 	RevokedAt time.Time
+	// UnreadableRevocations counts the certification revocations (type 0x30) in Signatures that the
+	// primary claims and that the reader could not use: unreadable, with a critical subpacket that it
+	// does not understand, or made with a hash that it does not take. A signature of this type that is
+	// not provably another key's is in Signatures with its status, so that a revocation does not hide
+	// behind a signature that cannot be read. A caller that adopts a key must look at this count.
+	UnreadableRevocations int
 	// Certifications counts the certifications (types 0x10 to 0x13) that other keys made on this user
 	// ID. They are kept in the certificate and not verified: the reader does not have those keys. A
-	// signature whose issuer cannot be read is counted here too.
+	// certification whose issuer cannot be read is counted here too.
 	Certifications int
-	// OtherSignatures counts the other signatures of other keys on this user ID, a revocation by
-	// another key for example. They are kept in the certificate and not verified.
+	// OtherSignatures counts the other signatures on this user ID that the primary does not claim: those
+	// of other keys (a revocation by another key, for example), and those whose type cannot be read or is
+	// not a certification or a revocation and whose issuer is not the primary's. They are kept in the
+	// certificate and not verified.
 	OtherSignatures int
 }
 
@@ -244,19 +277,26 @@ type ForeignSubkey struct {
 	// Signatures are the subkey bindings (0x18) and subkey revocations (0x28) that the primary
 	// claims to have made on this subkey, in the order of the file.
 	Signatures []ForeignSignature
-	// Bound is true when at least one binding verifies. A binding of a subkey that can sign needs its
-	// embedded back-signature, which go-crypto checks with it.
+	// Bound is true when at least one binding verifies (with SHA-1 or a strong hash). A binding of a
+	// subkey that can sign needs its embedded back-signature, which go-crypto checks with it.
 	Bound bool
+	// WeakHash is true when Bound is true and every binding that counts was made with SHA-1.
+	WeakHash bool
 	// BoundAt is the creation time of the newest valid binding (the later one in the file among
 	// equal times), and Flags and Expires are read from that binding: the first key flags octet, and
 	// the end of the key counted from the creation of the subkey (zero if none).
 	BoundAt time.Time
 	Flags   uint8
 	Expires time.Time
-	// Revoked is true when a valid subkey revocation by the primary is not older than the newest valid
-	// binding, or when it is valid and no binding is.
+	// Revoked is true when a hard subkey revocation by the primary counts, whatever its date, or a soft
+	// one that is not older than the newest binding that counts, or that counts when there is none (see
+	// [ForeignUserID.Revoked] for the reasons).
 	Revoked bool
-	// OtherSignatures counts the signatures of other keys on this subkey, kept and not verified.
+	// UnreadableRevocations counts the subkey revocations (type 0x28) that the primary claims and that
+	// the reader could not use (see [ForeignUserID.UnreadableRevocations]).
+	UnreadableRevocations int
+	// OtherSignatures counts the signatures on this subkey that the primary does not claim, kept and not
+	// verified.
 	OtherSignatures int
 }
 
@@ -264,7 +304,10 @@ type ForeignSubkey struct {
 // fields are for reading: a caller that changes them changes nothing that the reader keeps. The
 // secret of the primary is kept inside, in the form it had in the file, and [ForeignKey.Wipe]
 // clears it. A ForeignKey is not safe for use by several goroutines at once, and it is used by its
-// pointer: a copy of the struct shares the secret and is not wiped by the wipe of the original.
+// pointer: a copy of the struct shares the memory of the secret with the original, so the wipe of the
+// original clears it for the copy too, and the copy then answers [ForeignKey.OpenSecret] with an
+// error ([ErrForeignSecret] or [ErrWrongPassphrase]) and never with a key. A wipe of the copy does
+// not mark the original as wiped.
 type ForeignKey struct {
 	// Primary is the primary key.
 	Primary ForeignPrimary
@@ -275,9 +318,13 @@ type ForeignKey struct {
 	// KeySignatures are the direct-key signatures (0x1F) and key revocations (0x20) that the primary
 	// claims to have made, in the order of the file.
 	KeySignatures []ForeignSignature
-	// OtherKeySignatures counts the signatures of other keys on the primary key itself (a revocation by
-	// a designated revoker, for example): kept and not verified.
+	// OtherKeySignatures counts the signatures on the primary key itself that the primary does not
+	// claim (a revocation by a designated revoker, for example): kept and not verified.
 	OtherKeySignatures int
+	// UnreadableRevocations counts the key revocations (type 0x20) in KeySignatures that the primary
+	// claims and that the reader could not use (see [ForeignUserID.UnreadableRevocations]). A caller that
+	// adopts a key must look at it.
+	UnreadableRevocations int
 	// UserAttributes is the number of user attribute packets (photographs) and UserAttributeBytes
 	// the total size of their bodies. They are kept in the certificate and not read.
 	UserAttributes     int
@@ -294,6 +341,12 @@ type ForeignKey struct {
 // turned into its public key packet (a new-format header with the shortest length, and the public
 // part of the body). It starts with the primary and holds no secret. Trust packets and marker packets
 // are not in it: a trust packet is local to the tool that wrote it. It is a copy.
+//
+// Warning: the bytes are the public packets of the file as they came, all of them: a user ID with no
+// valid self-signature, a subkey that is not bound, a signature that does not verify or that the
+// reader cannot read, and the certifications of other keys are in it as they stood. What is valid is in
+// the parsed view of the key, not in these bytes. A caller that stores or publishes the certificate
+// decides what to do with a part that does not verify.
 func (k *ForeignKey) Certificate() []byte {
 	if k == nil {
 		return nil
@@ -347,20 +400,28 @@ func (k *ForeignKey) Wipe() {
 //     version 4 is an [ErrForeignVersion];
 //   - the signatures: a signature that the primary claims (its issuer fingerprint, or its issuer key
 //     ID when there is no fingerprint) is read and verified with go-crypto, and counts only when it
-//     is version 4, made with SHA-256, SHA-384 or SHA-512 and has no critical subpacket that the
-//     reader does not understand (the subpackets 2, 3, 9, 11, 16, 21 to 30, 32, 33 and 39 are
+//     is version 4, made with SHA-256, SHA-384, SHA-512 or SHA-1, and has no critical subpacket that
+//     the reader does not understand (the subpackets 2, 3, 9, 11, 16, 21 to 30, 32, 33 and 39 are
 //     understood; a critical bit on any other one, notation data included, makes the signature not
-//     count). A signature of another key is counted, never parsed beyond its issuer, and never makes
-//     a refusal. If no user ID has a valid self-signature, the file is an [ErrForeignSelfSignature].
+//     count). A SHA-1 signature that verifies counts with the status [SignatureValidWeakHash] and the
+//     user ID or subkey that has only such signatures is flagged: such keys are common among RSA-4096
+//     keys made from 2008 to 2016, a SHA-1 signature still proves that the key made it, and the
+//     adoption re-signs with a strong hash. MD5 and RIPEMD-160 never count. A signature of another key
+//     is counted, never parsed beyond its issuer, and never makes a refusal; a revocation (0x20, 0x28,
+//     0x30) that is not provably another key's is read as the primary's and listed, so that it does not
+//     hide behind a signature that cannot be read. At most [MaxForeignClaimedSignatures] signatures are
+//     verified. If no user ID has a valid self-signature, the file is an [ErrForeignSelfSignature].
 //
 // A primary that carries a valid key revocation is not refused: it is reported
 // ([ForeignPrimary.Revoked]). The reader reads no clock, so a key or a signature that has expired is
 // reported with its dates and not refused.
 //
 // It returns no key with an error. The file is not changed and not kept: everything that the key
-// holds is a copy, and the buffers that the reader made for an armoured file or for the secret are
-// cleared before it returns. The caller clears its own copy of the file when it has no more use for
-// it. Every fault is an [ErrForeignKey].
+// holds is a copy. The buffer that the reader made for an armoured file is cleared before it returns,
+// and so is the copy that it made of the secret of the primary on every return that does not hand the
+// key back. When it hands the key back, that copy is kept inside the key by design, so that
+// [ForeignKey.OpenSecret] can open it, until [ForeignKey.Wipe]. The caller clears its own copy of the
+// file when it has no more use for it. Every fault is an [ErrForeignKey].
 func ReadForeignKey(file []byte) (key *ForeignKey, err error) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -390,9 +451,18 @@ func readForeignKey(file []byte) (*ForeignKey, error) {
 	if err != nil {
 		return nil, err
 	}
+	done := false
+	defer func() {
+		if !done {
+			w.clearSecret()
+		}
+	}()
 	v, err := newForeignVerifier(w)
 	if err != nil {
 		return nil, err
+	}
+	if n := v.countClaimed(w); n > MaxForeignClaimedSignatures {
+		return nil, fail(ErrForeignLimit, "the file has more than MaxForeignClaimedSignatures (%d) signatures that the primary has to answer for", MaxForeignClaimedSignatures)
 	}
 	k := &ForeignKey{cert: w.cert, pub: w.pub, prot: w.prot}
 	k.Primary = ForeignPrimary{
@@ -403,9 +473,9 @@ func readForeignKey(file []byte) (*ForeignKey, error) {
 		Secret:      w.prot.state(),
 		Cipher:      w.prot.cipherName(),
 	}
-	k.KeySignatures, k.OtherKeySignatures = v.keyLevel(w)
+	k.KeySignatures, k.OtherKeySignatures, k.UnreadableRevocations = v.keyLevel(w)
 	for _, s := range k.KeySignatures {
-		if s.Type == sigKeyRevocation && s.Status == SignatureValid {
+		if s.Type == sigKeyRevocation && s.Status.Counts() {
 			k.Primary.Revoked = true
 		}
 	}
@@ -419,6 +489,7 @@ func readForeignKey(file []byte) (*ForeignKey, error) {
 	if err := checkPublicOnly(k.cert, v.fp); err != nil {
 		return nil, err
 	}
+	done = true
 	return k, nil
 }
 

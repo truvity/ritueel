@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"crypto/ecdsa"
 	"crypto/elliptic"
+
+	"github.com/ProtonMail/go-crypto/openpgp/packet"
 )
 
 // This file walks the packets of a transferable key (RFC 9580, section 10.1) and builds its public
@@ -28,9 +30,10 @@ type fkUser struct {
 
 type fkSub struct {
 	pub       fkPublic
-	fp        []byte // the fingerprint
-	pubBody   []byte // the public part of the body, for the fingerprint
-	pubPacket []byte // the public subkey packet, for go-crypto
+	fp        []byte            // the fingerprint
+	pubBody   []byte            // the public part of the body, for the fingerprint
+	pubPacket []byte            // the public subkey packet, for go-crypto
+	gopk      *packet.PublicKey // go-crypto's reading of it, set for a secret subkey
 	form      SubkeyForm
 	t         fkTarget
 }
@@ -56,6 +59,12 @@ type fkWalk struct {
 // goes, in the order of the file.
 func walkForeign(data []byte) (*fkWalk, error) {
 	w := &fkWalk{cert: make([]byte, 0, len(data))}
+	done := false
+	defer func() {
+		if !done {
+			w.clearSecret()
+		}
+	}()
 	var cur *fkTarget
 	started := false
 	rest := data
@@ -85,7 +94,14 @@ func walkForeign(data []byte) (*fkWalk, error) {
 	if !started {
 		return nil, fail(ErrForeignForm, "the file holds no key packet")
 	}
+	done = true
 	return w, nil
+}
+
+// clearSecret clears the copy of the secret region of the primary that the walk holds.
+func (w *fkWalk) clearSecret() {
+	clear(w.prot.data)
+	clear(w.prot.iv)
 }
 
 // start reads the first packet that counts: the secret key packet of the primary.
@@ -170,6 +186,9 @@ func (w *fkWalk) add(cur *fkTarget, tag byte, raw, body []byte) (*fkTarget, erro
 		if len(w.subs) > 0 {
 			return nil, fail(ErrForeignForm, "a user ID follows a subkey: a transferable key has its user IDs before its subkeys")
 		}
+		if len(body) > MaxForeignUserIDBytes {
+			return nil, fail(ErrForeignLimit, "a user ID packet is longer than MaxForeignUserIDBytes (%d bytes)", MaxForeignUserIDBytes)
+		}
 		if len(w.users) == MaxForeignUserIDs {
 			return nil, fail(ErrForeignLimit, "the file has more than MaxForeignUserIDs (%d) user IDs", MaxForeignUserIDs)
 		}
@@ -218,26 +237,24 @@ func (w *fkWalk) subkey(tag byte, raw, body []byte) (*fkSub, error) {
 		s.form, s.pubPacket = SubkeyPublic, raw
 		w.cert = append(w.cert, raw...)
 	} else {
-		region := body[pub.length:]
-		if len(region) == 0 {
-			return nil, fail(ErrForeignForm, "the secret key packet of a subkey has no secret part")
+		// A secret subkey: the public part ends where its own length fields say, so it is held to
+		// two more checks before one byte of it goes into the certificate. A second parser must read
+		// the public packet that the cut makes, and the bytes after the cut must start a secret
+		// area (usage octet, S2K specifier) of a known form.
+		s.pubPacket = wrap(tagSubkey, s.pubBody)
+		if s.gopk, err = agreePublic(s.pubPacket, s.pubBody, fp, true); err != nil {
+			return nil, err
+		}
+		stub, err := checkSecretStart(body[pub.length:])
+		if err != nil {
+			return nil, err
 		}
 		s.form = SubkeyWithSecret
-		if isGNUStub(region) {
+		if stub {
 			s.form = SubkeyStub
 		}
-		s.pubPacket = wrap(tagSubkey, s.pubBody)
 		w.cert = append(w.cert, s.pubPacket...)
 	}
 	w.subs = append(w.subs, s)
 	return s, nil
-}
-
-// isGNUStub tells whether the secret part of a secret key packet is the GNU extension that says the
-// secret is not in the file (S2K usage 254 or 255, a cipher, S2K type 101, a hash, the letters GNU
-// and a mode). Only the five octets that say so are read: a card serial number that may follow is
-// not looked at.
-func isGNUStub(region []byte) bool {
-	return len(region) >= 8 && (region[0] == usageSHA1 || region[0] == usageChecksum) &&
-		region[2] == s2kGNU && string(region[4:7]) == "GNU"
 }

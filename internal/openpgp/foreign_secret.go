@@ -13,7 +13,9 @@ import (
 	"crypto/sha256"
 	"crypto/sha512"
 	"crypto/subtle"
+	"errors"
 	"hash"
+	"io"
 	"math/big"
 	"strconv"
 )
@@ -36,6 +38,9 @@ const (
 	s2kGNU      = 101
 	// aesBlock is the block size of AES, which is the size of the IV.
 	aesBlock = 16
+	// rsaPrimeMinBits and rsaPrimeMaxBits bound the two primes of an RSA-4096 key.
+	rsaPrimeMinBits = 2040
+	rsaPrimeMaxBits = 2056
 	// maxRSASecretNumber is the most bytes of one of the numbers of an RSA secret: the modulus has 512.
 	maxRSASecretNumber = 512
 )
@@ -169,6 +174,60 @@ func gnuFault(region []byte) error {
 	return fail(ErrForeignNoSecret, "a GNU extension of mode %d: the secret is not in this file", region[7])
 }
 
+// checkSecretStart holds what follows the public part of the secret key packet of a subkey to be the
+// start of a secret area of a known form (RFC 9580, section 5.5.3): the usage octet, then for usage 254,
+// 255 and 253 the cipher (and the AEAD mode) and an S2K specifier that reads to its end (types 0, 1, 3, 4
+// and the GNU type 101 with its three letters). It reads no more: not a byte of the secret is kept or
+// looked at. It tells whether the area is the GNU stub, which says the secret is not in the file. Any
+// other start is an [ErrForeignForm]: the cut that the public part made may be in the wrong place.
+func checkSecretStart(region []byte) (stub bool, err error) {
+	bad := func() error {
+		return fail(ErrForeignForm, "what follows the public part of a secret subkey is not the start of a secret area")
+	}
+	if len(region) == 0 {
+		return false, fail(ErrForeignForm, "the secret key packet of a subkey has no secret part")
+	}
+	switch u := region[0]; {
+	case u == usageNone:
+		if len(region) < 1+3+2 {
+			return false, bad()
+		}
+		return false, nil
+	case u >= 1 && u <= 13:
+		if len(region) < 1+8 {
+			return false, bad()
+		}
+		return false, nil
+	case u == usageSHA1 || u == usageChecksum || u == usageAEAD:
+		off := 2
+		if u == usageAEAD {
+			off = 3
+		}
+		if len(region) <= off {
+			return false, bad()
+		}
+		gnu, ok := s2kSpecReads(region[off:])
+		if !ok {
+			return false, bad()
+		}
+		return gnu && u != usageAEAD, nil
+	}
+	return false, bad()
+}
+
+// s2kSpecReads tells whether b starts with an S2K specifier that reads to its end, and whether it is the
+// GNU extension.
+func s2kSpecReads(b []byte) (gnu, ok bool) {
+	need := map[byte]int{0: 2, 1: 10, s2kIterated: 11, 4: 20, s2kGNU: 6}[b[0]]
+	if need == 0 || len(b) < need {
+		return false, false
+	}
+	if b[0] == s2kGNU {
+		return true, string(b[2:5]) == "GNU"
+	}
+	return false, true
+}
+
 // classifyProtected reads usage 254: the cipher, the iterated and salted S2K, the IV and the
 // ciphertext.
 func classifyProtected(region []byte) (p fkProtection, err error) {
@@ -241,25 +300,61 @@ func iteratedKey(newHash func() hash.Hash, salt, pass []byte, count int, out []b
 	}
 }
 
-// ForeignSecret is the opened secret of the primary of a foreign key: a standard-library private key.
-// Wipe clears it.
+// ErrSecretWiped marks a signature that was asked of a key whose [ForeignSecret] was wiped. It is not an
+// [ErrForeignKey].
+var ErrSecretWiped = errors.New("openpgp: the secret key was wiped")
+
+// ForeignSecret is the opened secret of the primary of a foreign key. It holds a standard-library
+// private key and hands out only a [ForeignSigner] that uses it, so that [ForeignSecret.Wipe] can
+// make the handle unusable. Copies of the key that crypto/rsa, crypto/ecdsa and the garbage collector
+// made inside the standard library are out of reach, and may stay in memory until the process ends;
+// Wipe clears what this package can reach: the numbers of the key, word by word, and drops the key.
 type ForeignSecret struct {
-	key crypto.Signer
+	key    crypto.Signer
+	signer *ForeignSigner
 }
 
-// Signer returns the private key as a [crypto.Signer]: an [*rsa.PrivateKey], an [ed25519.PrivateKey] or
-// an [*ecdsa.PrivateKey] on P-384. It is the key itself, not a copy: [ForeignSecret.Wipe] clears it.
-// It returns nil after the wipe.
-func (s *ForeignSecret) Signer() crypto.Signer {
-	if s == nil {
+// ForeignSigner is a [crypto.Signer] that signs with the primary key of a foreign key until the
+// [ForeignSecret] it came from is wiped, and then refuses every signature with [ErrSecretWiped]. It does
+// not hand out the standard-library key. It is not safe for use by several goroutines at once with a
+// wipe. A later part that needs what only the concrete key offers, such as decrypting with an RSA key,
+// would need a method added here; the primary of a person is certify-only and signs.
+type ForeignSigner struct {
+	secret *ForeignSecret
+	pub    crypto.PublicKey
+}
+
+// Public returns the public key: an [*rsa.PublicKey], an [ed25519.PublicKey] or an [*ecdsa.PublicKey].
+func (f *ForeignSigner) Public() crypto.PublicKey {
+	if f == nil {
 		return nil
 	}
-	return s.key
+	return f.pub
 }
 
-// Wipe clears the numbers of the private key, word by word, and drops it. A key that was used
-// still has the copies that crypto/rsa, crypto/ecdsa and the garbage collector made, which are out
-// of reach. It is safe to call more than once.
+// Sign signs digest as the key does, passing rand and opts through, or returns [ErrSecretWiped] after the
+// wipe (and on a nil signer).
+func (f *ForeignSigner) Sign(rand io.Reader, digest []byte, opts crypto.SignerOpts) ([]byte, error) {
+	if f == nil || f.secret == nil || f.secret.key == nil {
+		return nil, ErrSecretWiped
+	}
+	return f.secret.key.Sign(rand, digest, opts)
+}
+
+// Signer returns the handle that signs with the private key, a [*ForeignSigner]. It is not the
+// standard-library key and cannot be converted to it. It returns nil after the wipe. A handle
+// that was returned before the wipe answers [ErrSecretWiped] afterwards.
+func (s *ForeignSecret) Signer() crypto.Signer {
+	if s == nil || s.key == nil {
+		return nil
+	}
+	return s.signer
+}
+
+// Wipe clears the numbers of the private key, word by word, and drops it: every handle from
+// [ForeignSecret.Signer] then refuses to sign. A key that was used still has the copies that
+// crypto/rsa, crypto/ecdsa and the garbage collector made, which are out of reach and may stay in memory
+// until the process ends. It is safe to call more than once.
 func (s *ForeignSecret) Wipe() {
 	if s == nil {
 		return
@@ -273,6 +368,13 @@ func (s *ForeignSecret) Wipe() {
 		wipePrivate(k)
 	}
 	s.key = nil
+}
+
+// newForeignSecret wraps a key.
+func newForeignSecret(key crypto.Signer) *ForeignSecret {
+	s := &ForeignSecret{key: key}
+	s.signer = &ForeignSigner{secret: s, pub: key.Public()}
+	return s
 }
 
 // wipeInt sets a number to zero, word by word.
@@ -352,7 +454,7 @@ func (k *ForeignKey) OpenSecret(passphrase []byte) (secret *ForeignSecret, err e
 	if err != nil {
 		return nil, err
 	}
-	return &ForeignSecret{key: key}, nil
+	return newForeignSecret(key), nil
 }
 
 // decryptSecret derives the key, decrypts the ciphertext into a buffer of its own and checks its
@@ -462,6 +564,12 @@ func rsaFromNumbers(pub fkPublic, numbers []byte) (crypto.Signer, error) {
 	}
 	u := new(big.Int).SetBytes(parts[3])
 	defer wipeInt(u)
+	for _, q := range priv.Primes {
+		if q.BitLen() < rsaPrimeMinBits || q.BitLen() > rsaPrimeMaxBits || !q.ProbablyPrime(20) {
+			wipeRSA(priv)
+			return nil, fail(ErrForeignSecret, "a prime of the secret is not a prime of 2040 to 2056 bits")
+		}
+	}
 	if err := priv.Validate(); err != nil {
 		wipeRSA(priv)
 		return nil, fail(ErrForeignSecret, "the primes and the exponent do not make the key of the public part")
