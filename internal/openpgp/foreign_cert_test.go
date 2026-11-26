@@ -120,12 +120,18 @@ func fkCheckCertificate(t *testing.T, c fkCertCase, k *openpgp.ForeignKey) {
 	// the subkeys with a binding, and the user IDs with a self-signature, and no others
 	var wantSubs []string
 	for i, s := range k.Subkeys {
-		if s.InCertificate {
+		switch {
+		case s.InCertificate:
 			if s.Fingerprint != hex.EncodeToString(c.fingerprints[1+i]) {
 				t.Errorf("%s: subkey %d: the fingerprint %s, want %x", c.name, i, s.Fingerprint, c.fingerprints[1+i])
 			}
 			wantSubs = append(wantSubs, s.Fingerprint)
-		} else if s.Fingerprint != "" || s.KeyID != "" {
+		case s.IncompleteBinding:
+			// its public bytes were confirmed by a binding that verifies: the view keeps the fingerprint
+			if s.Fingerprint != hex.EncodeToString(c.fingerprints[1+i]) {
+				t.Errorf("%s: subkey %d has an incomplete binding and the fingerprint %q", c.name, i, s.Fingerprint)
+			}
+		case s.Fingerprint != "" || s.KeyID != "":
 			t.Errorf("%s: subkey %d is left out and has the fingerprint %q", c.name, i, s.Fingerprint)
 		}
 	}

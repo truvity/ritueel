@@ -171,9 +171,9 @@ func fkViewSubkeys(t *testing.T, k *openpgp.ForeignKey, r *fkRich) {
 		got := k.Subkeys[r.sub[name]]
 		d := r.donor[name]
 		// a subkey with no binding that verifies is left out of the certificate and has no fingerprint
-		inCert := name != "revokedonly" && name != "other" && name != "misplaced"
+		inCert := name != "revokedonly" && name != "other" && name != "misplaced" && name != "nobacksig"
 		wantFP := ""
-		if inCert {
+		if inCert || name == "nobacksig" { // an incomplete binding: confirmed bytes, left out
 			wantFP = hexOf(d.pair.pub.Fingerprint)
 		}
 		if got.Fingerprint != wantFP || got.InCertificate != inCert || got.Algorithm != d.want {
@@ -205,7 +205,7 @@ func fkViewSubkeys(t *testing.T, k *openpgp.ForeignKey, r *fkRich) {
 		t.Errorf("revokedonly: %+v", ro)
 	}
 	nb := s("nobacksig")
-	if nb.Bound || len(nb.Signatures) != 1 || nb.Signatures[0].Status != openpgp.SignatureNotVerified {
+	if nb.Bound || !nb.IncompleteBinding || nb.InCertificate || len(nb.Signatures) != 1 || nb.Signatures[0].Status != openpgp.SignatureNotVerified {
 		t.Errorf("nobacksig: a signing subkey with no back-signature is bound: %+v", nb)
 	}
 	if bs := s("backsig"); !bs.Bound || bs.Flags != 0x02 {

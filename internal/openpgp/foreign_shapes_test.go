@@ -655,8 +655,7 @@ var (
 	fkRichCache = map[string]*fkRich{}
 )
 
-// fkRichKept is the rich file without the signing subkey that has no back-signature: its binding is the one
-// that go-crypto refuses to read as a key ring, and the certificate of the rest is to be read by it.
+// fkRichKept is the rich file with every shape, for the test of what the certificate keeps.
 func fkRichKept(t testing.TB, b *fkBase, protected bool) *fkRich {
 	t.Helper()
 	key := fmt.Sprintf("%s/%v/kept", b.name, protected)
@@ -669,7 +668,7 @@ func fkRichKept(t testing.TB, b *fkBase, protected bool) *fkRich {
 	if protected {
 		prot = fkProt{Pass: fkPass}
 	}
-	r := fkBuildRich(t, b, prot, false, "nobacksig")
+	r := fkBuildRich(t, b, prot, false)
 	fkRichCache[key] = r
 	return r
 }

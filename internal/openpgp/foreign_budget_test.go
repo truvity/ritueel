@@ -33,7 +33,9 @@ func TestForeignHashedBytesBudget(t *testing.T) {
 	}
 	b := fkNamed(t, "ed25519")
 	head := fkTemplateHead(t, b.file(t, fkProt{}))
-	photo := fkPacket{17, make([]byte, openpgp.MaxForeignPacketBytes)}
+	// a photograph that is one image subpacket of the largest size, as the library reads it
+	n := openpgp.MaxForeignPacketBytes - 6
+	photo := fkPacket{17, append([]byte{0xFF, byte((n + 1) >> 24), byte((n + 1) >> 16), byte((n + 1) >> 8), byte(n + 1), 1}, make([]byte, n)...)}
 	sig := fkPacket{2, fkAttrSig(t, b, photo.Body, 1000)}
 	build := func(n int) []byte {
 		ps := []fkPacket{head[0], head[1], head[2], photo}
@@ -169,17 +171,14 @@ func TestForeignBackSignatureRule(t *testing.T) {
 			t.Errorf("go-crypto does not read the certificate: %v", err)
 		}
 	})
-	t.Run("one garbage back-signature: in the certificate, not bound, no back-signature written", func(t *testing.T) {
+	t.Run("one garbage back-signature: left out, incomplete, fingerprint kept", func(t *testing.T) {
 		k := fkRead(t, file(bind(1000, garbage)))
 		ps := fkCertProperty(t, "one garbage", k)
-		if !k.Subkeys[0].InCertificate || k.Subkeys[0].Bound || embeddedIn(ps) != 0 {
-			t.Errorf("in certificate %v, bound %v, %d back-signatures written, want true, false and 0", k.Subkeys[0].InCertificate, k.Subkeys[0].Bound, embeddedIn(ps))
-		}
-		// the rule has a consequence that the doc comment names: the library refuses such a certificate
-		if _, err := pgpRead(k.Certificate()); err == nil {
-			t.Log("go-crypto reads a certificate with a signing subkey that has no back-signature")
-		} else {
-			t.Logf("go-crypto does not read the certificate with a signing subkey without a back-signature: %v", err)
+		// the binding is not complete: it is not written, the subkey is left out with its fingerprint, and
+		// the certificate is one that the library reads
+		s := k.Subkeys[0]
+		if s.InCertificate || s.Bound || !s.IncompleteBinding || s.Fingerprint != hexOf(d.pair.pub.Fingerprint) || embeddedIn(ps) != 0 || len(fkCertTagsOf(ps, 14)) != 0 {
+			t.Errorf("%+v", s)
 		}
 	})
 	// go-crypto refuses a signature with two embedded signatures, so the rule that only the first is tried

@@ -540,9 +540,11 @@ func TestForeignSecretSubkeyBindings(t *testing.T) {
 	t.Run("a signing subkey with a binding and no back-signature", func(t *testing.T) {
 		nb := bind(sig[0], w.areas(1000, fkSubpacket(27, false, 0x02)), 8, sha256.New)
 		k := fkRead(t, file(sig[0], fkAsSecret, nb))
-		if s := k.Subkeys[0]; s.Bound || len(fkCertTags(t, k, 14)) != 1 {
-			t.Errorf("a signing subkey with no back-signature is bound, or is not in the certificate: %+v", s)
+		// an incomplete binding is not written: the subkey is left out, reported, with its fingerprint
+		if s := k.Subkeys[0]; s.Bound || s.InCertificate || !s.IncompleteBinding || s.Fingerprint != hexOf(sig[0].pair.pub.Fingerprint) || len(fkCertTags(t, k, 14)) != 0 {
+			t.Errorf("a signing subkey with no back-signature: %+v", s)
 		}
+		_ = fkCertProperty(t, "a signing subkey with no back-signature", k)
 	})
 	t.Run("a binding with SHA-1", func(t *testing.T) {
 		weak := bind(enc[0], w.areas(1000, flags), 2, sha1.New)
