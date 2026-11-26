@@ -3,9 +3,6 @@ package openpgp_test
 import (
 	"bytes"
 	"encoding/hex"
-	"errors"
-	"io"
-	"reflect"
 	"slices"
 	"testing"
 
@@ -102,152 +99,73 @@ func fkRichCase(t testing.TB, r *fkRich, name string, clean bool) fkCertCase {
 	return c
 }
 
-// fkExpectedCertificate is what the certificate must be, packet by packet: the public key packet for a
-// secret key packet, every other packet as it is, and no trust packet and no marker packet.
-func fkExpectedCertificate(t testing.TB, b *fkBase, file []byte) [][]byte {
-	t.Helper()
-	known := fkKnownPublic(t, b)
-	var out [][]byte
-	for _, p := range splitPackets(t, file) {
-		switch p.Tag {
-		case 5, 7:
-			tag := byte(6)
-			if p.Tag == 7 {
-				tag = 14
-			}
-			var pub []byte
-			for _, k := range known {
-				if bytes.HasPrefix(p.Body, k) && len(k) > len(pub) {
-					pub = k
-				}
-			}
-			if pub == nil {
-				t.Fatalf("a secret key packet has no public part that the tests know")
-			}
-			out = append(out, wrap(tag, pub))
-		case 10, 12:
-		default:
-			out = append(out, bytes.Clone(p.Raw))
-		}
-	}
-	return out
-}
-
-// fkCheckCertificate holds the certificate of a key to every promise that the doc comment makes.
+// fkCheckCertificate holds the certificate of a key to the property of the certificate (fkCertProperty), and
+// to what the view says it holds: the primary, the user IDs with a valid self-signature and the subkeys
+// with a valid binding, in the order of the file, and no other. Where go-crypto reads the file as a key
+// ring, it reads the certificate as the same key.
 func fkCheckCertificate(t *testing.T, c fkCertCase, k *openpgp.ForeignKey) {
 	t.Helper()
 	cert := k.Certificate()
 	if len(cert) == 0 {
 		t.Fatalf("%s: no certificate", c.name)
 	}
-
-	// (2) no secret number, no secret region, no stub serial number, no pass phrase
-	if where, bad := fkLeaks(cert, c.numbers...); bad {
-		t.Errorf("%s: the certificate holds a run of a secret number (%s)", c.name, where)
-	}
-	if where, bad := fkLeaks(cert, c.regions...); bad {
-		t.Errorf("%s: the certificate holds a run of a secret region (%s)", c.name, where)
-	}
-	for _, form := range fkHexForms(fkSerial) {
-		if bytes.Contains(cert, form) {
-			t.Errorf("%s: the certificate holds the serial number of a stub", c.name)
-		}
-	}
+	secrets := append(slices.Clone(c.numbers), c.regions...)
+	ps := fkCertProperty(t, c.name, k, secrets...)
 	for _, pass := range []string{fkPass, fkPassOther} {
 		if bytes.Contains(cert, []byte(pass)) {
 			t.Errorf("%s: the certificate holds a passphrase", c.name)
 		}
 	}
 
-	// (3) packet by packet
-	got := splitPackets(t, cert)
-	want := fkExpectedCertificate(t, c.b, c.file)
-	if len(got) != len(want) {
-		t.Fatalf("%s: the certificate has %d packets, the file %d that are not secret or local", c.name, len(got), len(want))
-	}
-	for i := range want {
-		if !bytes.Equal(got[i].Raw, want[i]) {
-			t.Errorf("%s: packet %d of the certificate (tag %d) is not the packet of the file (% x... against % x...)",
-				c.name, i, got[i].Tag, got[i].Raw[:min(8, len(got[i].Raw))], want[i][:min(8, len(want[i]))])
+	// the subkeys with a binding, and the user IDs with a self-signature, and no others
+	var wantSubs []string
+	for i, s := range k.Subkeys {
+		if s.InCertificate {
+			if s.Fingerprint != hex.EncodeToString(c.fingerprints[1+i]) {
+				t.Errorf("%s: subkey %d: the fingerprint %s, want %x", c.name, i, s.Fingerprint, c.fingerprints[1+i])
+			}
+			wantSubs = append(wantSubs, s.Fingerprint)
+		} else if s.Fingerprint != "" || s.KeyID != "" {
+			t.Errorf("%s: subkey %d is left out and has the fingerprint %q", c.name, i, s.Fingerprint)
 		}
 	}
-	if got[0].Tag != 6 {
-		t.Errorf("%s: the certificate starts with tag %d, want the primary key packet (6)", c.name, got[0].Tag)
+	if got := fkCertSubkeys(ps); !slices.Equal(got, wantSubs) {
+		t.Errorf("%s: the subkeys of the certificate are %v, want those of the view that are in it: %v", c.name, got, wantSubs)
 	}
-	for i, p := range got {
-		if p.Tag == 5 || p.Tag == 7 || p.Tag == 12 || p.Tag == 10 {
-			t.Errorf("%s: packet %d of the certificate has tag %d", c.name, i, p.Tag)
+	var wantUsers []string
+	for _, u := range k.UserIDs {
+		if u.Valid {
+			wantUsers = append(wantUsers, u.Text)
 		}
 	}
-
-	// (1) go-crypto reads it: the same keys, user IDs and signatures as the file has
-	rd := gpacket.NewReader(bytes.NewReader(cert))
-	var fps [][]byte
-	var users []string
-	sigs := 0
-	for {
-		p, err := rd.Next()
-		if errors.Is(err, io.EOF) {
-			break
-		}
-		if err != nil {
-			t.Fatalf("%s: go-crypto does not read the certificate: %v", c.name, err)
-		}
-		switch p := p.(type) {
-		case *gpacket.PublicKey:
-			fps = append(fps, p.Fingerprint)
-		case *gpacket.UserId:
-			users = append(users, p.Id)
-		case *gpacket.Signature:
-			sigs++
-		}
-	}
-	if len(fps) != len(c.fingerprints) {
-		t.Fatalf("%s: go-crypto finds %d keys in the certificate, want %d", c.name, len(fps), len(c.fingerprints))
-	}
-	for i := range fps {
-		if !bytes.Equal(fps[i], c.fingerprints[i]) {
-			t.Errorf("%s: key %d of the certificate has the fingerprint %x, want %x", c.name, i, fps[i], c.fingerprints[i])
-		}
-	}
-	if !slices.Equal(users, c.users) {
-		t.Errorf("%s: user IDs %q, want %q", c.name, users, c.users)
-	}
-	wantSigs := 0
-	for _, p := range splitPackets(t, c.file) {
-		if p.Tag == 2 {
-			wantSigs++
-		}
-	}
-	if sigs != wantSigs {
-		t.Errorf("%s: %d signatures in the certificate, %d in the file", c.name, sigs, wantSigs)
+	if got := fkCertUsers(ps); !slices.Equal(got, wantUsers) {
+		t.Errorf("%s: user IDs %q, want those with a valid self-signature %q", c.name, got, wantUsers)
 	}
 	if k.Primary.Fingerprint != hex.EncodeToString(c.fingerprints[0]) {
-		t.Errorf("%s: the fingerprint of the key is not that of the certificate", c.name)
+		t.Errorf("%s: the fingerprint of the key is not that of the file", c.name)
 	}
 
 	// the file and the certificate as key rings, where go-crypto reads the file
 	if c.clean {
 		in := fkRingSummary(t, c.name+" file", c.file)
 		out := fkRingSummary(t, c.name+" certificate", cert)
-		if !reflect.DeepEqual(in, out) {
+		if in.primary != out.primary || !slices.Equal(in.subs, out.subs) || len(in.users) != len(out.users) {
 			t.Errorf("%s: go-crypto reads the file as %+v and the certificate as %+v", c.name, in, out)
 		}
-		if len(out.subs) != len(c.fingerprints)-1 {
-			t.Errorf("%s: go-crypto finds %d subkeys, want %d", c.name, len(out.subs), len(c.fingerprints)-1)
+		for name := range in.users {
+			if _, ok := out.users[name]; !ok {
+				t.Errorf("%s: go-crypto does not find the user ID %q in the certificate", c.name, name)
+			}
 		}
 	}
 
-	// (4) a copy
+	// a copy
 	first := bytes.Clone(cert)
 	for i := range cert {
 		cert[i] ^= 0xFF
 	}
 	if second := k.Certificate(); !bytes.Equal(second, first) {
 		t.Errorf("%s: a change of the returned certificate changed the next one", c.name)
-	}
-	if &k.Certificate()[0] == &cert[0] {
-		t.Errorf("%s: two calls return the same array", c.name)
 	}
 }
 
@@ -320,9 +238,9 @@ func TestForeignCertificateOfRichFiles(t *testing.T) {
 	})
 }
 
-// The same certificate for each header form of the file, and the packets that the reader skips are
-// not in it. The headers of the packets that are copied keep the form that the file gave them.
-func TestForeignCertificateKeepsHeadersOfCopiedPackets(t *testing.T) {
+// The certificate is written by the reader, so it is the same bytes for every header form of the file,
+// for the armoured file, and for a file with trust and marker packets in it.
+func TestForeignCertificateIsTheSameForEveryHeaderForm(t *testing.T) {
 	b := fkNamed(t, "ed25519")
 	r := fkRichOf(t, b, true, true)
 	base := fkRead(t, r.file).Certificate()
@@ -332,15 +250,11 @@ func TestForeignCertificateKeepsHeadersOfCopiedPackets(t *testing.T) {
 		c := fkRichCase(t, r, form, true)
 		c.file = file
 		fkCheckCertificate(t, c, k)
-		// the key packets are new-format in every certificate; the others are the file's
-		got, want := splitPackets(t, k.Certificate()), splitPackets(t, base)
-		if len(got) != len(want) {
-			t.Fatalf("%s: %d packets, want %d", form, len(got), len(want))
+		if !bytes.Equal(k.Certificate(), base) {
+			t.Errorf("%s: the certificate is not the certificate of the new-format file", form)
 		}
-		for i := range got {
-			if got[i].Tag != want[i].Tag || !bytes.Equal(got[i].Body, want[i].Body) {
-				t.Errorf("%s: packet %d differs in tag or body from the certificate of the new-format file", form, i)
-			}
+		if !bytes.Equal(fkRead(t, fkArmourKey(t, file)).Certificate(), base) {
+			t.Errorf("%s: the armoured file gives another certificate", form)
 		}
 	}
 }
@@ -502,7 +416,17 @@ func TestForeignSubkeyVersions(t *testing.T) {
 			body := bytes.Clone(sub.Body)
 			body[0] = v
 			file := fkJoin(ps[0], ps[1], ps[2], fkPacket{sub.Tag, body}, ps[4])
-			_ = fkRefused(t, "a subkey of another version", file, b, openpgp.ErrForeignVersion)
+			if form == fkAsSecret {
+				// a damaged secret key packet refuses the file
+				_ = fkRefused(t, "a secret subkey of another version", file, b, openpgp.ErrForeignVersion)
+				continue
+			}
+			// a public subkey packet that does not read is left out and reported, and is no reason to refuse
+			k := fkRead(t, file)
+			if len(k.Subkeys) != 1 || k.Subkeys[0].InCertificate || k.Subkeys[0].Fingerprint != "" {
+				t.Errorf("a public subkey of version %d: %+v", v, k.Subkeys)
+			}
+			_ = fkCertProperty(t, "a public subkey of another version", k)
 		}
 	}
 }

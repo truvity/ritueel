@@ -14,7 +14,6 @@ import (
 	"errors"
 	"fmt"
 	"hash"
-	"strings"
 	"sync"
 	"testing"
 
@@ -107,7 +106,7 @@ func fkKindName(err error) string {
 		e error
 		n string
 	}{
-		{openpgp.ErrForeignSubkey, "ErrForeignSubkey"}, {openpgp.ErrForeignAlgorithm, "ErrForeignAlgorithm"},
+		{openpgp.ErrForeignAlgorithm, "ErrForeignAlgorithm"},
 		{openpgp.ErrForeignProtection, "ErrForeignProtection"}, {openpgp.ErrForeignLimit, "ErrForeignLimit"},
 		{openpgp.ErrForeignSelfSignature, "ErrForeignSelfSignature"}, {openpgp.ErrForeignForm, "ErrForeignForm"},
 	} {
@@ -498,13 +497,13 @@ func TestForeignSecretSubkeyBindings(t *testing.T) {
 		}
 	})
 	t.Run("a public subkey with no binding", func(t *testing.T) {
+		// the certificate holds only what a signature of the primary confirms: a subkey with none is left
+		// out and reported, with no fingerprint
 		k := fkRead(t, file(enc[0], fkAsPublic))
-		if s := k.Subkeys[0]; s.Form != openpgp.SubkeyPublic || s.Bound || len(fkCertTags(t, k, 14)) != 1 {
+		if s := k.Subkeys[0]; s.Form != openpgp.SubkeyPublic || s.Bound || s.InCertificate || s.Fingerprint != "" || len(fkCertTags(t, k, 14)) != 0 {
 			t.Errorf("%+v", s)
 		}
-		if !bytes.Contains(k.Certificate(), wrap(14, enc[0].pub.Body)) {
-			t.Error("the public subkey is not copied")
-		}
+		_ = fkCertProperty(t, "a public subkey with no binding", k)
 	})
 
 	// the refusals: the file is refused or, when it is read, the subkey is not in the certificate
@@ -526,9 +525,7 @@ func TestForeignSecretSubkeyBindings(t *testing.T) {
 					if k != nil || !errors.Is(err, openpgp.ErrForeignKey) {
 						t.Fatalf("%v", err)
 					}
-					if !errors.Is(err, openpgp.ErrForeignSubkey) && !strings.Contains(err.Error(), "subkey") {
-						t.Logf("refused with %s", fkKindName(err))
-					}
+					t.Logf("refused with %s", fkKindName(err))
 					return
 				}
 				if n := len(fkCertTags(t, k, 14)); n != 0 {

@@ -170,8 +170,14 @@ func fkViewSubkeys(t *testing.T, k *openpgp.ForeignKey, r *fkRich) {
 		t.Helper()
 		got := k.Subkeys[r.sub[name]]
 		d := r.donor[name]
-		if got.Fingerprint != hexOf(d.pair.pub.Fingerprint) || got.Algorithm != d.want {
-			t.Fatalf("subkey %d is %s %+v, want %s %+v (the order of the file)", r.sub[name], got.Fingerprint, got.Algorithm, hexOf(d.pair.pub.Fingerprint), d.want)
+		// a subkey with no binding that verifies is left out of the certificate and has no fingerprint
+		inCert := name != "revokedonly" && name != "other" && name != "misplaced"
+		wantFP := ""
+		if inCert {
+			wantFP = hexOf(d.pair.pub.Fingerprint)
+		}
+		if got.Fingerprint != wantFP || got.InCertificate != inCert || got.Algorithm != d.want {
+			t.Fatalf("subkey %d is %q %+v in certificate %v, want %q %+v %v (the order of the file)", r.sub[name], got.Fingerprint, got.Algorithm, got.InCertificate, wantFP, d.want, inCert)
 		}
 		if got.Form != r.form[name].wantForm() {
 			t.Errorf("%s: form %v, want %v", name, got.Form, r.form[name].wantForm())

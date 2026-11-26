@@ -340,12 +340,8 @@ func TestForeignRefusesPacketsOutOfOrder(t *testing.T) {
 			ps[3] = fkPacket{7, enc[0].pub.Body}
 			return ps
 		}), []error{openpgp.ErrForeignForm}, []string{"no secret part"}},
-		{"a public subkey with bytes after its public part", fkMutate(func(t testing.TB, b *fkBase, ps []fkPacket) []fkPacket {
-			ps[3] = fkPacket{14, append(bytes.Clone(enc[0].pub.Body), 1, 2, 3)}
-			return ps
-		}), []error{openpgp.ErrForeignForm}, []string{"after its public part"}},
-		{"a subkey cut short", fkMutate(func(t testing.TB, b *fkBase, ps []fkPacket) []fkPacket {
-			ps[3] = fkPacket{14, enc[0].pub.Body[:5]}
+		{"a secret subkey with bytes after a public part that fills it", fkMutate(func(t testing.TB, b *fkBase, ps []fkPacket) []fkPacket {
+			ps[3] = fkPacket{7, enc[0].pub.Body[:5]}
 			return ps
 		}), []error{openpgp.ErrForeignForm}, []string{"cut short"}},
 	})
