@@ -284,8 +284,8 @@ func softBody(t *testing.T, cert []byte) []byte {
 func fkSignAndVerifyQuiet(t *testing.T, s crypto.Signer, pk *gpacket.PublicKey) {
 	t.Helper()
 	d := sha256.Sum256([]byte("fuzz"))
-	switch s.(type) {
-	case *rsa.PrivateKey:
+	switch s.Public().(type) {
+	case *rsa.PublicKey:
 		sig, err := s.Sign(rand.Reader, d[:], crypto.SHA256)
 		if err != nil {
 			t.Fatalf("the key does not sign: %v", err)
@@ -293,12 +293,12 @@ func fkSignAndVerifyQuiet(t *testing.T, s crypto.Signer, pk *gpacket.PublicKey) 
 		if rsa.VerifyPKCS1v15(pk.PublicKey.(*rsa.PublicKey), crypto.SHA256, d[:], sig) != nil {
 			t.Fatal("the signature does not verify")
 		}
-	case ed25519.PrivateKey:
+	case ed25519.PublicKey:
 		sig, err := s.Sign(rand.Reader, d[:], crypto.Hash(0))
 		if err != nil || !ed25519.Verify(ed25519.PublicKey(pk.PublicKey.(*eddsa.PublicKey).X), d[:], sig) {
 			t.Fatalf("the key does not sign a signature that verifies: %v", err)
 		}
-	case *ecdsa.PrivateKey:
+	case *ecdsa.PublicKey:
 		sig, err := s.Sign(rand.Reader, d[:], crypto.SHA256)
 		if err != nil {
 			t.Fatalf("the key does not sign: %v", err)

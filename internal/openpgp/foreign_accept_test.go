@@ -12,7 +12,6 @@ import (
 	"crypto/sha512"
 	"encoding/hex"
 	"errors"
-	"math/big"
 	"testing"
 
 	pgp "github.com/ProtonMail/go-crypto/openpgp"
@@ -151,71 +150,104 @@ func fkSignAndVerify(t testing.TB, signer crypto.Signer, pk *gpacket.PublicKey) 
 	}
 }
 
-// fkCheckSignerType holds the dynamic type of the key that OpenSecret returns.
+// fkCheckSignerType holds what Signer returns: the handle of this package, which is not the
+// standard-library key and cannot be turned into it, with the public key of the algorithm.
 func fkCheckSignerType(t testing.TB, b *fkBase, s crypto.Signer) {
 	t.Helper()
+	if _, ok := s.(*openpgp.ForeignSigner); !ok {
+		t.Fatalf("the signer is a %T, want a *ForeignSigner", s)
+	}
+	switch s.(type) {
+	case *rsa.PrivateKey, ed25519.PrivateKey, *ecdsa.PrivateKey:
+		t.Fatalf("the signer is a standard-library private key")
+	}
 	switch b.name {
 	case "rsa4096":
-		k, ok := s.(*rsa.PrivateKey)
+		k, ok := s.Public().(*rsa.PublicKey)
 		if !ok || k.N.BitLen() != 4096 {
-			t.Fatalf("the key is %T, want an *rsa.PrivateKey of 4096 bits", s)
+			t.Fatalf("the public key is %T, want an *rsa.PublicKey of 4096 bits", s.Public())
 		}
 	case "ed25519":
-		if _, ok := s.(ed25519.PrivateKey); !ok {
-			t.Fatalf("the key is %T, want an ed25519.PrivateKey", s)
+		if _, ok := s.Public().(ed25519.PublicKey); !ok {
+			t.Fatalf("the public key is %T, want an ed25519.PublicKey", s.Public())
 		}
 	case "p384":
-		k, ok := s.(*ecdsa.PrivateKey)
+		k, ok := s.Public().(*ecdsa.PublicKey)
 		if !ok || k.Curve != elliptic.P384() {
-			t.Fatalf("the key is %T, want an *ecdsa.PrivateKey on P-384", s)
+			t.Fatalf("the public key is %T, want an *ecdsa.PublicKey on P-384", s.Public())
 		}
 	}
 }
 
-// fkAgrees is the differential test: the numbers of the key that OpenSecret returned are the numbers
-// that go-crypto gets from its own decryption of the same file.
+// fkAgrees is the differential test: the key behind the signer is the key that go-crypto gets from its
+// own decryption of the same file. The public keys are equal; a signature of the signer verifies with
+// the key of go-crypto; and where the scheme is deterministic (RSA PKCS#1 v1.5 and Ed25519) the
+// signature of the key of go-crypto is the very bytes that the signer writes.
 func fkAgrees(t testing.TB, s crypto.Signer, e *pgp.Entity) {
 	t.Helper()
-	switch got := s.(type) {
+	msg := []byte("a message for the differential test")
+	switch want := e.PrivateKey.PrivateKey.(type) {
 	case *rsa.PrivateKey:
-		want, ok := e.PrivateKey.PrivateKey.(*rsa.PrivateKey)
-		if !ok {
-			t.Fatalf("go-crypto holds a %T", e.PrivateKey.PrivateKey)
-		}
-		if got.D.Cmp(want.D) != 0 || got.N.Cmp(want.N) != 0 || got.E != want.E || len(got.Primes) != 2 || len(want.Primes) != 2 {
-			t.Errorf("the RSA numbers d, n or e differ from those of go-crypto")
-			return
-		}
-		same := got.Primes[0].Cmp(want.Primes[0]) == 0 && got.Primes[1].Cmp(want.Primes[1]) == 0
-		swapped := got.Primes[0].Cmp(want.Primes[1]) == 0 && got.Primes[1].Cmp(want.Primes[0]) == 0
-		if !same && !swapped {
-			t.Errorf("the RSA primes differ from those of go-crypto")
-		}
-	case ed25519.PrivateKey:
-		want, ok := e.PrivateKey.PrivateKey.(*eddsa.PrivateKey)
-		if !ok {
-			t.Fatalf("go-crypto holds a %T", e.PrivateKey.PrivateKey)
-		}
-		if !bytes.Equal(got.Seed(), bytes.TrimLeft(want.D, "\x00")) && !bytes.Equal(got.Seed(), want.D) {
-			t.Errorf("the Ed25519 seed differs from the secret of go-crypto")
-		}
-		if !bytes.Equal(got.Public().(ed25519.PublicKey), want.X) {
-			t.Errorf("the Ed25519 public key differs from that of go-crypto")
-		}
-	case *ecdsa.PrivateKey:
-		want, ok := e.PrivateKey.PrivateKey.(*gecdsa.PrivateKey)
-		if !ok {
-			t.Fatalf("go-crypto holds a %T", e.PrivateKey.PrivateKey)
-		}
-		raw, err := got.Bytes()
+		d := sha256.Sum256(msg)
+		got, err := s.Sign(rand.Reader, d[:], crypto.SHA256)
 		if err != nil {
 			t.Fatal(err)
 		}
-		if new(big.Int).SetBytes(raw).Cmp(want.D) != 0 {
-			t.Errorf("the P-384 scalar differs from that of go-crypto")
+		if pub, ok := s.Public().(*rsa.PublicKey); !ok || !pub.Equal(&want.PublicKey) {
+			t.Errorf("the RSA public key differs from that of go-crypto")
+		}
+		if err := rsa.VerifyPKCS1v15(&want.PublicKey, crypto.SHA256, d[:], got); err != nil {
+			t.Errorf("a signature of the signer does not verify with the key of go-crypto: %v", err)
+		}
+		theirs, err := want.Sign(rand.Reader, d[:], crypto.SHA256)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if !bytes.Equal(got, theirs) {
+			t.Errorf("the two RSA keys do not write the same PKCS#1 v1.5 signature")
+		}
+	case *eddsa.PrivateKey:
+		seed := make([]byte, ed25519.SeedSize)
+		copy(seed[ed25519.SeedSize-len(want.D):], want.D)
+		std := ed25519.NewKeyFromSeed(seed)
+		got, err := s.Sign(rand.Reader, msg, crypto.Hash(0))
+		if err != nil {
+			t.Fatal(err)
+		}
+		if pub, ok := s.Public().(ed25519.PublicKey); !ok || !bytes.Equal(pub, want.X) || !bytes.Equal(pub, std.Public().(ed25519.PublicKey)) {
+			t.Errorf("the Ed25519 public key differs from that of go-crypto")
+		}
+		if !ed25519.Verify(ed25519.PublicKey(want.X), msg, got) {
+			t.Errorf("a signature of the signer does not verify with the key of go-crypto")
+		}
+		if !bytes.Equal(got, ed25519.Sign(std, msg)) {
+			t.Errorf("the two Ed25519 keys do not write the same signature")
+		}
+	case *gecdsa.PrivateKey:
+		std, err := ecdsa.ParseRawPrivateKey(elliptic.P384(), want.D.FillBytes(make([]byte, 48)))
+		if err != nil {
+			t.Fatal(err)
+		}
+		d := sha512.Sum384(msg)
+		got, err := s.Sign(rand.Reader, d[:], crypto.SHA384)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if pub, ok := s.Public().(*ecdsa.PublicKey); !ok || !pub.Equal(&std.PublicKey) {
+			t.Errorf("the P-384 public key differs from that of go-crypto")
+		}
+		if !ecdsa.VerifyASN1(&std.PublicKey, d[:], got) {
+			t.Errorf("a signature of the signer does not verify with the key of go-crypto")
+		}
+		theirs, err := std.Sign(rand.Reader, d[:], crypto.SHA384)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if !ecdsa.VerifyASN1(s.Public().(*ecdsa.PublicKey), d[:], theirs) {
+			t.Errorf("a signature of go-crypto's key does not verify with the signer's public key")
 		}
 	default:
-		t.Fatalf("the key is a %T", s)
+		t.Fatalf("go-crypto holds a %T", e.PrivateKey.PrivateKey)
 	}
 }
 

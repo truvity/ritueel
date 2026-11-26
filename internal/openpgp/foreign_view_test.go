@@ -114,10 +114,13 @@ func fkViewUsers(t *testing.T, k *openpgp.ForeignKey, r *fkRich) {
 		t.Errorf("expiring: %+v (the reader reads no clock, so it still counts)", ex)
 	}
 
-	if w := u("weak"); w.Valid || w.Revoked || !w.Created.IsZero() {
-		t.Errorf("weak: a SHA-1 self-signature counts: %+v", w)
+	if w := u("weak"); !w.Valid || !w.WeakHash || w.Revoked || !w.Created.Equal(fkAt(1000)) {
+		t.Errorf("weak: a SHA-1 self-signature that verifies counts, and is flagged: %+v", w)
 	}
-	status("weak", 0, openpgp.SignatureWeakHash, "SHA-1")
+	status("weak", 0, openpgp.SignatureValidWeakHash, "SHA-1")
+	if u("primary").WeakHash || u("certified").WeakHash {
+		t.Error("a user ID with a SHA-256 self-signature is flagged as weak")
+	}
 	if u("notaccepted").Valid {
 		t.Error("notaccepted: a SHA-224 self-signature counts")
 	}
@@ -138,7 +141,7 @@ func fkViewUsers(t *testing.T, k *openpgp.ForeignKey, r *fkRich) {
 
 	rn := u("renewed")
 	if !rn.Valid || rn.Revoked || !rn.RevokedAt.IsZero() || !rn.Created.Equal(fkAt(1050)) {
-		t.Errorf("renewed: a revocation that is older than the newest self-signature revokes: %+v", rn)
+		t.Errorf("renewed: a soft revocation that is older than the newest self-signature does not revoke: %+v", rn)
 	}
 	ss := u("samesecond")
 	if !ss.Valid || !ss.Revoked || !ss.RevokedAt.Equal(fkAt(1010)) {
@@ -216,8 +219,8 @@ func fkViewSubkeys(t *testing.T, k *openpgp.ForeignKey, r *fkRich) {
 		}
 	}
 	wb := s("weakbind")
-	if wb.Bound || len(wb.Signatures) != 1 || wb.Signatures[0].Status != openpgp.SignatureWeakHash {
-		t.Errorf("weakbind: %+v", wb)
+	if !wb.Bound || !wb.WeakHash || len(wb.Signatures) != 1 || wb.Signatures[0].Status != openpgp.SignatureValidWeakHash || wb.Flags != 0x0C {
+		t.Errorf("weakbind: a SHA-1 binding that verifies is bound and flagged: %+v", wb)
 	}
 	if mp := s("misplaced"); mp.Bound || len(mp.Signatures) != 1 || mp.Signatures[0].Status != openpgp.SignatureMisplaced {
 		t.Errorf("misplaced: %+v", mp)
@@ -244,6 +247,11 @@ func TestForeignNoValidSelfSignature(t *testing.T) {
 		sig := func(s fkSigSpec) fkPacket { return fkSplit(t, b.certSig(t, me, me.pub, fkUser, s))[0] }
 		third := fkSplit(t, b.certSig(t, other, me.pub, fkUser, fkSigSpec{Typ: gpacket.SigTypeGenericCert}))[0]
 		good := sig(fkSigSpec{Typ: gpacket.SigTypePositiveCert})
+		withHash := func(p fkPacket, h byte) fkPacket {
+			body := bytes.Clone(p.Body)
+			body[3] = h // the hash octet of a version 4 signature: the signature was made with SHA-256
+			return fkPacket{2, body}
+		}
 		bad := bytes.Clone(good.Body)
 		bad[len(bad)-1] ^= 1
 		cases := []struct {
@@ -253,7 +261,9 @@ func TestForeignNoValidSelfSignature(t *testing.T) {
 		}{
 			{"no user ID at all", []fkPacket{primary}, []string{"0 user IDs"}},
 			{"a user ID with no signature", []fkPacket{primary, uid}, []string{"1 user IDs"}},
-			{"only a SHA-1 self-signature", []fkPacket{primary, uid, sig(fkSigSpec{Typ: gpacket.SigTypePositiveCert, Hash: crypto.SHA1})}, []string{"1 with a weak hash"}},
+			{"only an MD5 self-signature", []fkPacket{primary, uid, withHash(good, 1)}, []string{"1 with a weak hash"}},
+			{"only a RIPEMD-160 self-signature", []fkPacket{primary, uid, withHash(good, 3)}, []string{"1 with a weak hash"}},
+			{"only a SHA-1 self-signature that does not verify", []fkPacket{primary, uid, withHash(good, 2)}, []string{"1 that do not verify"}},
 			{"only a SHA-224 self-signature", []fkPacket{primary, uid, sig(fkSigSpec{Typ: gpacket.SigTypePositiveCert, Hash: crypto.SHA224})}, []string{"1 with a hash that is not accepted"}},
 			{"only a critical subpacket", []fkPacket{primary, uid, sig(fkSigSpec{Typ: gpacket.SigTypePositiveCert, Critical: true})}, []string{"1 with an unknown critical subpacket"}},
 			{"only a self-signature that does not verify", []fkPacket{primary, uid, {2, bad}}, []string{"1 that do not verify"}},
@@ -421,7 +431,7 @@ func TestForeignSignatureHashes(t *testing.T) {
 		status openpgp.SignatureStatus
 	}{
 		{1, "MD5", openpgp.SignatureWeakHash},
-		{2, "SHA-1", openpgp.SignatureWeakHash},
+		{2, "SHA-1", openpgp.SignatureNotVerified},
 		{3, "RIPEMD-160", openpgp.SignatureWeakHash},
 		{4, "hash 4", openpgp.SignatureWeakHash},
 		{7, "hash 7", openpgp.SignatureWeakHash},
@@ -446,8 +456,8 @@ func TestForeignSignatureHashes(t *testing.T) {
 				t.Fatalf("signatures %+v, want the hash %s", u.Signatures, c.name)
 			}
 			want := c.status
-			if c.id == 9 || c.id == 10 {
-				want = openpgp.SignatureNotVerified // the digest was made with SHA-256
+			if c.id == 9 || c.id == 10 || c.id == 2 {
+				want = openpgp.SignatureNotVerified // the digest was made with SHA-256, and SHA-1, 384 and 512 go on to be verified
 			}
 			if u.Signatures[0].Status != want {
 				t.Errorf("status %v, want %v", u.Signatures[0].Status, want)

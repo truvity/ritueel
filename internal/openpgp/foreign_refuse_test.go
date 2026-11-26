@@ -234,13 +234,13 @@ func TestForeignRefusesPrimariesOfOtherAlgorithms(t *testing.T) {
 		}, []error{openpgp.ErrForeignAlgorithm}, []string{"ECDH Curve25519"}},
 		{"EdDSA on another curve", func(t testing.TB, b *fkBase, p fkProt) []byte {
 			return fkHandPrimary(22, cv25519, point(t, 0x40, 32))(t, b, p)
-		}, []error{openpgp.ErrForeignAlgorithm}, []string{"EdDSA Curve25519"}},
+		}, []error{openpgp.ErrForeignAlgorithm}, []string{"Curve25519", "does not go with the algorithm"}},
 		{"ECDSA on a Brainpool curve", func(t testing.TB, b *fkBase, p fkProt) []byte {
 			return fkHandPrimary(19, bp256, point(t, 4, 64))(t, b, p)
 		}, []error{openpgp.ErrForeignAlgorithm}, []string{"brainpoolP256r1"}},
 		{"ECDSA on a curve that is not named", func(t testing.TB, b *fkBase, p fkProt) []byte {
 			return fkHandPrimary(19, []byte{3, 1, 2, 3}, point(t, 4, 64))(t, b, p)
-		}, []error{openpgp.ErrForeignAlgorithm}, []string{"unknown curve"}},
+		}, []error{openpgp.ErrForeignAlgorithm}, []string{"not one that this reader knows"}},
 		{"ECDSA P-256 as written by hand", func(t testing.TB, b *fkBase, p fkProt) []byte {
 			return fkHandPrimary(19, p256, point(t, 4, 64))(t, b, p)
 		}, []error{openpgp.ErrForeignAlgorithm}, []string{"ECDSA P-256"}},
@@ -255,10 +255,10 @@ func TestForeignRefusesPrimariesOfOtherAlgorithms(t *testing.T) {
 		}, []error{openpgp.ErrForeignForm}, []string{"not a point"}},
 		{"an Ed25519 key that is not 0x40 and 32 bytes", func(t testing.TB, b *fkBase, p fkProt) []byte {
 			return fkHandPrimary(22, ed25519, point(t, 0x40, 31))(t, b, p)
-		}, []error{openpgp.ErrForeignForm}, []string{"0x40"}},
+		}, []error{openpgp.ErrForeignForm}, []string{"length or the form of its curve"}},
 		{"an Ed25519 key with another prefix", func(t testing.TB, b *fkBase, p fkProt) []byte {
 			return fkHandPrimary(22, ed25519, point(t, 0x41, 32))(t, b, p)
-		}, []error{openpgp.ErrForeignForm}, []string{"0x40"}},
+		}, []error{openpgp.ErrForeignForm}, []string{"length or the form of its curve"}},
 		{"an RSA modulus that is not in the form of the standard", func(t testing.TB, b *fkBase, p fkProt) []byte {
 			n := fkRandom(t, 512)
 			n[0] = 0x7F // 4095 bits, written as 4096
@@ -368,10 +368,11 @@ type fkView struct {
 	Other      int
 	Attrs      int
 	AttrsBytes int
+	Unreadable int
 }
 
 func fkViewOf(k *openpgp.ForeignKey) fkView {
-	return fkView{k.Primary, k.UserIDs, k.Subkeys, k.KeySignatures, k.OtherKeySignatures, k.UserAttributes, k.UserAttributeBytes}
+	return fkView{k.Primary, k.UserIDs, k.Subkeys, k.KeySignatures, k.OtherKeySignatures, k.UserAttributes, k.UserAttributeBytes, k.UnreadableRevocations}
 }
 
 func TestForeignHeaderFormsGiveTheSameKey(t *testing.T) {
