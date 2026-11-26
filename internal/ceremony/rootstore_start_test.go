@@ -196,3 +196,192 @@ func TestStartRefusesAFolderThatChangedAfterRefuseAndChangesNothing(t *testing.T
 		})
 	}
 }
+
+// A start of the key store that is refused after the folder test-only-keys stood or was made says that the folder may
+// stand; the refusal for a folder that stood already and was not fit does not say it, because that folder is
+// someone else's and not a leftover of this run. A direct apply adds what it wrote.
+func TestARefusedStartSaysThatTheFolderMayStandOnlyWhenTheFolderWasThisRunsToLeave(t *testing.T) {
+	const may = "the folder test-only-keys may stand in the key directory"
+	cases := []struct {
+		name   string
+		plant  func(t *testing.T, keys string)
+		reason string
+		may    bool
+	}{
+		{"an empty folder that the driver refuses (the mode 0755)", func(t *testing.T, keys string) {
+			p := filepath.Join(keys, "test-only-keys")
+			if err := os.Mkdir(p, 0o755); err != nil {
+				t.Fatal(err)
+			}
+			if err := os.Chmod(p, 0o755); err != nil {
+				t.Fatal(err)
+			}
+		}, "key-dir", true},
+		{"a folder with a key", func(t *testing.T, keys string) {
+			p := filepath.Join(keys, "test-only-keys")
+			if err := os.Mkdir(p, 0o700); err != nil {
+				t.Fatal(err)
+			}
+			if err := os.WriteFile(filepath.Join(p, "x509-root-a.p8"), []byte("old"), 0o600); err != nil {
+				t.Fatal(err)
+			}
+		}, "key-exists", false},
+		{"a file", func(t *testing.T, keys string) {
+			if err := os.WriteFile(filepath.Join(keys, "test-only-keys"), []byte("old"), 0o600); err != nil {
+				t.Fatal(err)
+			}
+		}, "key-exists", false},
+	}
+	for _, c := range cases {
+		for _, saved := range []bool{false, true} {
+			name := c.name + ", direct"
+			if saved {
+				name = c.name + ", saved plan"
+			}
+			t.Run(name, func(t *testing.T) {
+				r := rtNew(t)
+				var planted map[string]string
+				r.open = func(keyDir, bundleDir string) (ceremony.RootStore, error) {
+					inner, err := ceremony.NewSoftwareStore(keyDir, bundleDir)
+					if err != nil {
+						return nil, err
+					}
+					w := &mkStore{log: &mkLog{}, inner: inner}
+					calls := 0
+					return rtRefuseHook{mkStore: w, after: func() {
+						if calls++; calls == 1 { // the judgement before the confirmation
+							c.plant(t, keyDir)
+							planted = tree(t, keyDir)
+						}
+					}}, nil
+				}
+				var in ceremony.RunIn
+				var p *ceremony.PlanOut
+				if saved {
+					p = r.savePlan()
+					in = r.savedIn(p, rtFlag(p))
+				} else {
+					var f *ceremony.Found
+					p, f = r.plan()
+					in = r.in(p, f, rtFlag(p))
+				}
+				done, err := ceremony.Run(context.Background(), in)
+				if done != nil || mkBackendReason(err) != c.reason {
+					t.Fatalf("Run = %v, %v; want a refusal with the reason %s", done, err, c.reason)
+				}
+				if _, stopped := rtStopped(err); stopped {
+					t.Errorf("a refusal of the store is no stop: %v", err)
+				}
+				msg := err.Error()
+				if got := strings.Contains(msg, may); got != c.may {
+					t.Errorf("the line says that the folder may stand = %v, want %v: %s", got, c.may, msg)
+				}
+				wrote := "this run wrote the plan folder history/" + p.Name + " before it found this, and wrote no attempt and made no key"
+				if got := strings.Contains(msg, wrote); got == saved {
+					t.Errorf("the line says what a direct apply wrote = %v, want %v: %s", got, !saved, msg)
+				}
+				if strings.Contains(msg, r.keyDir) || strings.Contains(msg, r.root) {
+					t.Errorf("the line holds a path: %s", msg)
+				}
+				if fxExists(r, "history", p.Name, "attempt.json") {
+					t.Error("an attempt was written")
+				}
+				sameTree(t, "the refused start in the key directory", planted, r.keyTree())
+				if !saved && strings.Contains(msg, "nothing was written") {
+					t.Errorf("a direct apply says that nothing was written although it wrote the plan folder: %s", msg)
+				}
+			})
+		}
+	}
+}
+
+// rsFailStart is a store whose Start fails with err, after or before the real Start made the folder.
+type rsFailStart struct {
+	ceremony.RootStore
+	err      error
+	startToo bool
+}
+
+func (s *rsFailStart) Start(ctx context.Context, labels []string) error {
+	if s.startToo {
+		if err := s.RootStore.Start(ctx, labels); err != nil {
+			return err
+		}
+	}
+	return s.err
+}
+
+// A start that fails for a reason that is not a refusal is a stop at the step key-store: the plan folder is written,
+// no attempt, no key; the line says that the empty folder may stand.
+func TestAStartOfTheKeyStoreThatFailsIsAStopAtTheStepKeyStoreWithNoAttemptAndNoKey(t *testing.T) {
+	boom := errors.New("test: the driver cannot start")
+	for _, folderMade := range []bool{false, true} {
+		name := "before the folder was made"
+		if folderMade {
+			name = "after the folder was made"
+		}
+		for _, saved := range []bool{false, true} {
+			label := name + ", direct"
+			if saved {
+				label = name + ", saved plan"
+			}
+			t.Run(label, func(t *testing.T) {
+				r := rtNew(t)
+				r.open = func(keyDir, bundleDir string) (ceremony.RootStore, error) {
+					inner, err := ceremony.NewSoftwareStore(keyDir, bundleDir)
+					if err != nil {
+						return nil, err
+					}
+					return &rsFailStart{RootStore: inner, err: boom, startToo: folderMade}, nil
+				}
+				var in ceremony.RunIn
+				var p *ceremony.PlanOut
+				if saved {
+					p = r.savePlan()
+					in = r.savedIn(p, rtFlag(p))
+				} else {
+					var f *ceremony.Found
+					p, f = r.plan()
+					in = r.in(p, f, rtFlag(p))
+				}
+				done, err := ceremony.Run(context.Background(), in)
+				s, ok := rtStopped(err)
+				if done != nil || !ok || s.Step != "key-store" || s.Attempt {
+					t.Fatalf("Run = %v, %v; want a stop at key-store with no open attempt", done, err)
+				}
+				if !errors.Is(err, boom) {
+					t.Errorf("the cause is not reachable: %v", err)
+				}
+				if rtKind(err) != "stopped" {
+					t.Errorf("a stop is exit code 1, the kind is %s", rtKind(err))
+				}
+				msg := err.Error()
+				for _, want := range []string{
+					"the ceremony history/" + p.Name + " stopped at key-store: ",
+					"the plan folder may hold some of its files, no attempt was written, and no key was made",
+					stopEmptyClause,
+					"nothing was retried, and ritueel deleted nothing",
+				} {
+					if !strings.Contains(msg, want) {
+						t.Errorf("the line does not say %q: %s", want, msg)
+					}
+				}
+				if !pfPrintable(msg) || strings.Contains(msg, r.keyDir) {
+					t.Errorf("the line is not one line of printable text without a path: %+q", msg)
+				}
+				for _, not := range []string{"close, which closes", "an attempt is open", ".tmp-", "removal authorisation"} {
+					if strings.Contains(msg, not) {
+						t.Errorf("the line says %q: %s", not, msg)
+					}
+				}
+				if fxExists(r, "history", p.Name, "attempt.json") || fxExists(r, "history", p.Name, "births.jsonl") {
+					t.Error("an attempt or a journal was written")
+				}
+				fxNoKeys(t, r)
+				if !folderMade {
+					fxNoKeyDirEntries(t, r)
+				}
+			})
+		}
+	}
+}

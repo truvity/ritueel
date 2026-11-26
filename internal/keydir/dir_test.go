@@ -197,8 +197,36 @@ func TestUsedSaysWhatTheCommentOfUsedSays(t *testing.T) {
 		"A.removal.jws", "Z.removal.jws", "M.removal.jws.age",
 		"A.x509.key.pem", "B.x509.key.age", "A.openpgp.key.asc", "C.openpgp.key.age",
 		"A.revocation.0123abcd.asc", "A.revocation.x.pgp.age", "Z.revocation..asc",
+		// The names are compared without regard to case, since a file system may fold it.
+		"a.removal.jws", "Z.REMOVAL.JWS", "b.x509.key.pem", "A.X509.KEY.PEM", "c.openpgp.key.asc", "D.Openpgp.Key.Age", "e.revocation.x.asc",
 	} {
 		add(&used, "a file named "+n, file(n))
+	}
+	for _, n := range []string{"Test-only-keys", "TEST-ONLY-KEYS", "test-only-Keys"} {
+		add(&used, "a file named "+n+" (the name of the folder of the keys in another case)", file(n))
+		add(&used, "an empty folder named "+n+" of the mode 0700 (the name of the folder of the keys in another case)", func(t *testing.T, keys string) {
+			if err := os.Mkdir(filepath.Join(keys, n), 0o700); err != nil {
+				t.Fatal(err)
+			}
+		})
+	}
+	// Any entry of a used name is a use, whatever its type: a folder, a link or a pipe is no file that can be written over.
+	for _, n := range []string{"A.removal.jws", "a.REMOVAL.jws", "A.x509.key.pem", "B.x509.key.age", "A.openpgp.key.asc", "A.revocation.x.asc"} {
+		add(&used, "a folder named "+n, func(t *testing.T, keys string) {
+			if err := os.Mkdir(filepath.Join(keys, n), 0o700); err != nil {
+				t.Fatal(err)
+			}
+		})
+		add(&used, "a link named "+n, func(t *testing.T, keys string) {
+			if err := os.Symlink(filepath.Join(keys, "nowhere"), filepath.Join(keys, n)); err != nil {
+				t.Fatal(err)
+			}
+		})
+		add(&used, "a pipe named "+n, func(t *testing.T, keys string) {
+			if err := syscall.Mkfifo(filepath.Join(keys, n), 0o600); err != nil {
+				t.Fatal(err)
+			}
+		})
 	}
 	add(&used, "the folder test-only-keys with a key in it", func(t *testing.T, keys string) {
 		folder(0o700)(t, keys)
@@ -247,30 +275,12 @@ func TestUsedSaysWhatTheCommentOfUsedSays(t *testing.T) {
 	add(&notUsed, "an empty key directory", func(*testing.T, string) {})
 	add(&notUsed, "the empty folder test-only-keys of the mode 0700, owned by this user", folder(0o700))
 	for _, n := range []string{
-		".rt-0123456789", ".tmp-x509-root-a", "README", "x509-root-a.p8", "test-only-keys.bak", "Test-only-keys",
-		"a.removal.jws", "AB.removal.jws", "1.removal.jws", "A.removal.jws.bak", "A.removal.jws.", "A.x509.key.pem.bak", "A.x509.key",
+		".rt-0123456789", ".tmp-x509-root-a", "README", "x509-root-a.p8", "test-only-keys.bak", "test-only-key", "xtest-only-keys",
+		"AB.removal.jws", "1.removal.jws", "A.removal.jws.bak", "A.removal.jws.", "A.x509.key.pem.bak", "A.x509.key",
 		"A.revocation.asc", "A.revocation.", "A.revocation.x.gpg", "A.openpgp.key", "removal.jws", ".removal.jws", "A_removal.jws",
 	} {
 		add(&notUsed, "a file named "+n, file(n))
 	}
-	for _, n := range []string{"A.removal.jws", "A.x509.key.pem"} {
-		add(&notUsed, "a folder named "+n+" (the check counts regular files only)", func(t *testing.T, keys string) {
-			if err := os.Mkdir(filepath.Join(keys, n), 0o700); err != nil {
-				t.Fatal(err)
-			}
-		})
-		add(&notUsed, "a link named "+n+" (the check counts regular files only)", func(t *testing.T, keys string) {
-			if err := os.Symlink(filepath.Join(keys, "nowhere"), filepath.Join(keys, n)); err != nil {
-				t.Fatal(err)
-			}
-		})
-		add(&notUsed, "a pipe named "+n+" (the check counts regular files only)", func(t *testing.T, keys string) {
-			if err := syscall.Mkfifo(filepath.Join(keys, n), 0o600); err != nil {
-				t.Fatal(err)
-			}
-		})
-	}
-
 	for _, group := range []struct {
 		want  bool
 		cases []struct {
