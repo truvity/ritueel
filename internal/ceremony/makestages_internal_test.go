@@ -105,6 +105,9 @@ func stagedMaker(t *testing.T) *x509Maker {
 	if err := store.Refuse(ctx); err != nil {
 		t.Fatal(err)
 	}
+	if err := store.Start(ctx, m.labels); err != nil {
+		t.Fatalf("Start: %v", err)
+	}
 	m.pubs, m.pins = map[string]*ecdsa.PublicKey{}, map[string]string{}
 	m.certs, m.removal = map[string][]byte{}, map[string]string{}
 	m.signers = map[string]trustset.Signer{}

@@ -145,10 +145,11 @@ type run struct {
 	root     *wanted.Root
 	store    RootStore
 
-	limitShown bool
-	confirmed  string // the time of the confirmation
-	started    string // the time of the attempt
-	phase      phase
+	storeStarted bool // the key store was started, so the folder test-only-keys stands in the key directory
+	limitShown   bool
+	confirmed    string // the time of the confirmation
+	started      string // the time of the attempt
+	phase        phase
 }
 
 // phase is what a stop leaves on disk, in the order of the writes.
@@ -371,6 +372,7 @@ func (r *run) startStore() error {
 	}
 	err := guard("key store", func() error { return r.store.Start(r.ctx, labels) })
 	if err == nil {
+		r.storeStarted = true
 		return nil
 	}
 	var refused *BackendError
@@ -529,6 +531,11 @@ func (r *run) stop(step string, err error) error {
 	// fixed; no file is listed and no folder is read.
 	if r.phase == phaseAttempt || r.phase == phaseRecorded {
 		keys += "; the folder " + keydir.TestOnlyFolder + " may also hold a temporary file whose name starts with .tmp-, which can hold a key; the key driver removes its own temporary files there when it opens the folder, and a person may remove one by hand; the key directory may also hold a temporary file whose name starts with .rt-, which holds a removal authorisation and no key"
+	}
+	// A stop after the key store started and before the first key: the folder of the keys may stand there, empty.
+	// It is harmless, and the next run uses it as it is (a step key-store that failed may have made it too).
+	if (r.storeStarted || step == "key-store") && r.phase != phaseAttempt && r.phase != phaseRecorded {
+		keys += "; the empty folder " + keydir.TestOnlyFolder + " may stand in the key directory: it is harmless, and the next run uses it"
 	}
 	if step == "record" && r.phase != phaseRecorded {
 		state += " (a cut at the flush of the folder may leave record.json in place: look at the folder)"

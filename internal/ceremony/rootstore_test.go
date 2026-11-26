@@ -50,6 +50,14 @@ func mkOpenStore(t *testing.T, keys, bundle string) ceremony.RootStore {
 	return s
 }
 
+// mkStart starts a store that Refuse accepted, for the labels, as a run does before its attempt.
+func mkStart(t *testing.T, s ceremony.RootStore, labels ...string) {
+	t.Helper()
+	if err := s.Start(context.Background(), labels); err != nil {
+		t.Fatalf("Start: %v", err)
+	}
+}
+
 func TestTheSoftwareStoreSaysWhatItIs(t *testing.T) {
 	_, bundle, keys := mkStoreCase(t)
 	s := mkOpenStore(t, keys, bundle)
@@ -155,6 +163,7 @@ func TestABirthWritesTheKeyFileAndTheStoreReadsItBackAsTheSameKey(t *testing.T) 
 	if err := s.Refuse(ctx); err != nil {
 		t.Fatalf("Refuse: %v", err)
 	}
+	mkStart(t, s, "A", "B")
 	k, err := s.Birth(ctx, "A")
 	if err != nil {
 		t.Fatalf("Birth: %v", err)
@@ -223,6 +232,7 @@ func TestAKeyFileIsNeverReplaced(t *testing.T) {
 	if err := s.Refuse(ctx); err != nil {
 		t.Fatal(err)
 	}
+	mkStart(t, s, "A", "B")
 	k, err := s.Birth(ctx, "A")
 	if err != nil {
 		t.Fatal(err)
@@ -322,6 +332,7 @@ func TestTheRemovalAuthorisationIsStoredNextToTheKeyAndReadBackAsItWas(t *testin
 	if err := s.Refuse(ctx); err != nil {
 		t.Fatal(err)
 	}
+	mkStart(t, s, "A", "B")
 	k, err := s.Birth(ctx, "A")
 	if err != nil {
 		t.Fatal(err)
@@ -419,6 +430,7 @@ func TestTwoGoroutinesBirthingOneLabelMakeOneKeyAndRefuseTheOther(t *testing.T) 
 	if err := s.Refuse(ctx); err != nil {
 		t.Fatal(err)
 	}
+	mkStart(t, s, "A", "B")
 	start := make(chan struct{})
 	var wg sync.WaitGroup
 	errs := make([]error, 4)
@@ -463,6 +475,7 @@ func TestTwoGoroutinesBirthingTwoLabelsMakeTwoKeys(t *testing.T) {
 	if err := s.Refuse(ctx); err != nil {
 		t.Fatal(err)
 	}
+	mkStart(t, s, "A", "B")
 	start := make(chan struct{})
 	var wg sync.WaitGroup
 	for _, l := range []string{"A", "B"} {

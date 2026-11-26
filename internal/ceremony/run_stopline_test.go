@@ -197,10 +197,10 @@ func TestTheLineOfAStopAtTheWriteOfTheAttemptNamesNoKeyFileAtAnyChangingCallOfTh
 				t.Fatalf("Run = %v, %v; want a stop at attempt with an attempt that may be open", done, err)
 			}
 			msg := err.Error()
-			if !strings.HasSuffix(msg, state+stopClosing+stopEnd) {
+			if !strings.HasSuffix(msg, state+stopEmptyClause+stopClosing+stopEnd) {
 				t.Errorf("the line does not end with the words of the attempt that may be open: %s", msg)
 			}
-			for _, not := range []string{"key directory", "key file", ".p8", "x509-root-a", "removal authorisation", "a temporary file whose name starts with", "remove one by hand"} {
+			for _, not := range []string{"key file", ".p8", "x509-root-a", "removal authorisation", "a temporary file whose name starts with", "remove one by hand"} {
 				if strings.Contains(msg, not) {
 					t.Errorf("the line of a stop at the write of the attempt says %q: %s", not, msg)
 				}

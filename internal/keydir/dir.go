@@ -4,8 +4,10 @@ import (
 	"bytes"
 	"encoding/base64"
 	"errors"
+	"io"
 	"io/fs"
 	"os"
+	"path/filepath"
 	"strings"
 	"sync"
 
@@ -119,11 +121,16 @@ func (d *Dir) begin() error {
 	return nil
 }
 
-// Used says whether the key directory was used: it holds the folder [TestOnlyFolder], a removal
-// authorisation, or a key file of the naming that earlier versions of ritueel used. A temporary name and
-// any other name are not a use. The first `apply` refuses a used key directory. ownFolder is true for a
-// caller that made the folder [TestOnlyFolder] itself and looks again: that folder is then not a use.
-func (d *Dir) Used(ownFolder bool) (bool, error) {
+// Used says whether the key directory was used. It was used when a removal authorisation or a key file of
+// the naming that earlier versions of ritueel used stands in it, or when the name [TestOnlyFolder] stands in
+// it and is anything but a folder that is empty and fit for the key driver. Fit means all of: a real folder
+// (not a link, not a file), empty, owned by the user of this process, and with exactly the mode 0700, the
+// folder that the driver of atom itself makes and accepts when it opens an empty state folder. A folder
+// that is empty and fit is not a use: an earlier run that stopped before its first key left it, it is
+// harmless, and the next run uses it as it is. The same folder with a key in it, a file, a link, another
+// mode or another owner is a use. A temporary name and any other name are not a use. The first `apply`
+// refuses a used key directory.
+func (d *Dir) Used() (bool, error) {
 	if d == nil {
 		return false, refuse(ErrParams, "the key directory was not made by Open")
 	}
@@ -139,7 +146,7 @@ func (d *Dir) Used(ownFolder bool) (bool, error) {
 	for _, e := range ents {
 		name := e.Name()
 		if name == TestOnlyFolder {
-			if !ownFolder {
+			if !fitEmptyFolder(filepath.Join(d.path, name)) {
 				return true, nil
 			}
 			continue
@@ -149,6 +156,23 @@ func (d *Dir) Used(ownFolder bool) (bool, error) {
 		}
 	}
 	return false, nil
+}
+
+// fitEmptyFolder reports whether path is a real folder, empty, owned by this user, with exactly the mode
+// 0700 (the permission bits and the setuid, setgid and sticky bits: the test of the key driver). Any
+// fault is "not fit".
+func fitEmptyFolder(path string) bool {
+	fi, err := os.Lstat(path)
+	if err != nil || !fi.IsDir() || fi.Mode()&(fs.ModePerm|fs.ModeSetuid|fs.ModeSetgid|fs.ModeSticky) != 0o700 || !ownedByMe(fi) {
+		return false
+	}
+	f, err := os.Open(path)
+	if err != nil {
+		return false
+	}
+	defer func() { _ = f.Close() }()
+	names, err := f.Readdirnames(1)
+	return len(names) == 0 && errors.Is(err, io.EOF)
 }
 
 // usedName reports whether a name is that of a removal authorisation or of a key file that an earlier

@@ -23,26 +23,23 @@ const (
 
 // keyDirUsedText is the text of the refusal of a used key directory, without the words about what was
 // written.
-const keyDirUsedText = "the key directory already holds the folder " + keydir.TestOnlyFolder + ", a removal authorisation, or a key file, and a key is never replaced; use an empty folder"
+const keyDirUsedText = "the key directory already holds a folder " + keydir.TestOnlyFolder + " that is not empty or not fit, a removal authorisation, or a key file, and a key is never replaced; use an empty folder"
 
 // CheckKeyDir is every refusal about the key directory of a software root that needs no key: the
 // directory must exist and be a folder, must not be the bundle folder or inside it, must not be inside
-// the work tree of a repository that holds the bundle, and must not already hold the folder
-// test-only-keys, a removal authorisation or a key file of the older naming (docs/reference/cli.md,
+// the work tree of a repository that holds the bundle, and must not already hold a removal authorisation, a
+// key file of the older naming, or the name test-only-keys unless that is an empty folder fit for the key
+// driver ([keydir.Dir.Used]) (docs/reference/cli.md,
 // "--key-dir"). A refusal is a [*BackendError] (exit code 4) with the reason code key-dir or key-exists. Any
 // other fault, such as a key directory that cannot be listed, is an ordinary error. It makes no key and
 // writes nothing; it opens the folder to look and closes it. The text of an ordinary fault is one line: the
 // fault is wrapped in the text of this function, and the two are never joined by a line feed.
-func CheckKeyDir(keyDir, bundleDir string) error { return checkKeyDir(keyDir, bundleDir, false) }
-
-// checkKeyDir is [CheckKeyDir]. When ownFolder is true the folder test-only-keys is the store's own, made
-// by [RootStore.Start], and is not a use of the key directory.
-func checkKeyDir(keyDir, bundleDir string, ownFolder bool) error {
+func CheckKeyDir(keyDir, bundleDir string) error {
 	d, err := keydir.Open(keyDir, bundleDir)
 	if err != nil {
 		return keyDirError(err)
 	}
-	used, err := d.Used(ownFolder)
+	used, err := d.Used()
 	if cerr := d.Close(); cerr != nil && err == nil {
 		err = cerr
 	}
