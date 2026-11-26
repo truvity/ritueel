@@ -200,8 +200,11 @@ func TestTheLineOfAStopAtTheWriteOfTheAttemptNamesNoKeyFileAtAnyChangingCallOfTh
 			if !strings.HasSuffix(msg, state+stopEmptyClause+stopClosing+stopEnd) {
 				t.Errorf("the line does not end with the words of the attempt that may be open: %s", msg)
 			}
-			for _, not := range []string{"key file", ".p8", "x509-root-a", "removal authorisation", "a temporary file whose name starts with", "remove one by hand"} {
-				if strings.Contains(msg, not) {
+			// Apart from the one clause that says the empty folder may stand, the line says nothing of the key
+			// directory, of a key, or of a file.
+			rest := strings.Replace(msg, stopEmptyClause, "", 1)
+			for _, not := range []string{"key directory", "key file", ".p8", "x509-root-a", "removal authorisation", "a temporary file whose name starts with", "remove one by hand"} {
+				if strings.Contains(rest, not) {
 					t.Errorf("the line of a stop at the write of the attempt says %q: %s", not, msg)
 				}
 			}

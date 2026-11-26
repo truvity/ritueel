@@ -67,6 +67,9 @@ func TestEachStepLeavesTheFilesOfItsRow(t *testing.T) {
 					if p != "test-only-keys" {
 						t.Errorf("a folder %s in the key directory", p)
 					}
+					if p == "test-only-keys" && len(r.keys) == 0 {
+						t.Errorf("the folder test-only-keys stands in the key directory before any key was made: the key store is not started before the first birth")
+					}
 					continue
 				}
 				gotKeys = append(gotKeys, p)

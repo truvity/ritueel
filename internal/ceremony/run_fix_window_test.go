@@ -172,6 +172,7 @@ func TestABundleThatChangesBetweenThePreflightAndTheAttemptIsRefusedAsThePreflig
 					}
 				}
 				fxNoKeys(t, r)
+				fxNoKeyDirEntries(t, r)
 				if b, s := birth.counts(); b != 0 || s != 0 {
 					t.Errorf("the store made %d keys and %d removals", b, s)
 				}
@@ -354,6 +355,7 @@ func TestACancelledContextBetweenTheConfirmationAndTheAttemptWritesNoAttempt(t *
 			t.Error("the plan folder must hold the plan and no attempt")
 		}
 		fxNoKeys(t, r)
+		fxNoKeyDirEntries(t, r)
 		if b, _ := birth.counts(); b != 0 {
 			t.Errorf("%d keys were made", b)
 		}
@@ -384,6 +386,7 @@ func TestACancelledContextBetweenTheConfirmationAndTheAttemptWritesNoAttempt(t *
 		}
 		sameTree(t, "a saved plan with a cancelled context", before, r.tree())
 		fxNoKeys(t, r)
+		fxNoKeyDirEntries(t, r)
 		if b, _ := birth.counts(); b != 0 {
 			t.Errorf("%d keys were made", b)
 		}
@@ -436,6 +439,7 @@ func TestAWholeCeremonyThatAnotherRunMakesInTheWindowStopsThisRunBeforeItsAttemp
 		t.Error("the attempts of the two runs are not as the page says")
 	}
 	fxNoKeys(t, r)
+	fxNoKeyDirEntries(t, r)
 	if b, _ := birth.counts(); b != 0 {
 		t.Errorf("%d keys were made by the run that was stopped", b)
 	}

@@ -270,8 +270,9 @@ func TestACutAtEveryWriteOfARunIsAStopThatSaysWhatIsOnDisk(t *testing.T) {
 						t.Errorf("the line of a stop before the maker ran says %q: %s", not, msg)
 					}
 				}
-				if wantStep != "attempt" && strings.Contains(msg, "key directory") {
-					t.Errorf("the line of a stop before the key store started says the key directory: %s", msg)
+				// Only the clause of the empty folder, and only at the step attempt, names the key directory.
+				if strings.Contains(strings.Replace(msg, stopEmptyClause, "", 1), "key directory") {
+					t.Errorf("the line of a stop before the maker ran says the key directory beyond the empty folder: %s", msg)
 				}
 			}
 			if later && strings.Index(msg, stopKeyClause) > strings.Index(msg, stopTempClause) {

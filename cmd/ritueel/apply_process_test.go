@@ -10,6 +10,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"slices"
 	"strings"
 	"syscall"
 	"testing"
@@ -145,9 +146,29 @@ func TestProgramApplyFollowsTheScriptOfTheCommandPage(t *testing.T) {
 	}
 	// The key directory holds the keys and nothing else: the folder test-only-keys, with the two keys, and
 	// the two removal authorisations beside it.
-	ents, _ := os.ReadDir(keys)
-	if len(ents) != 3 {
-		t.Errorf("the key directory holds %d entries, want 3", len(ents))
+	apWantKeyDir(t, keys)
+}
+
+// apWantKeyDir fails the test unless the key directory holds exactly the folder test-only-keys, which holds
+// the two key files of the labels A and B, and the two removal authorisations beside it, and nothing else.
+func apWantKeyDir(t *testing.T, keys string) {
+	t.Helper()
+	names := func(dir string) []string {
+		ents, err := os.ReadDir(dir)
+		if err != nil {
+			t.Errorf("the folder cannot be read: %v", err)
+		}
+		var out []string
+		for _, e := range ents {
+			out = append(out, e.Name())
+		}
+		return out
+	}
+	if got, want := names(keys), []string{"A.removal.jws", "B.removal.jws", "test-only-keys"}; !slices.Equal(got, want) {
+		t.Errorf("the key directory holds %q, want %q", got, want)
+	}
+	if got, want := names(filepath.Join(keys, "test-only-keys")), []string{"x509-root-a.p8", "x509-root-b.p8"}; !slices.Equal(got, want) {
+		t.Errorf("the folder test-only-keys holds %q, want %q", got, want)
 	}
 }
 
