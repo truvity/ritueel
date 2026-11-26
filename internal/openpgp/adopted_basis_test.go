@@ -418,3 +418,102 @@ func TestQASigningBasisKeyLevel(t *testing.T) {
 		}
 	})
 }
+
+// Key flags of more than one octet are marked (a re-signing writes one octet), and a carried preference whose
+// source had the critical bit is listed in Dropped as well as in Prefs (the bit is lost when it is carried).
+func TestQASigningBasisMarksLongFlagsAndALostCriticalBit(t *testing.T) {
+	b := fkNamed(t, "ed25519")
+	w := fkWriter{b}
+	sp := fkSubpacket
+	sources := map[string]func(subs ...[]byte) *openpgp.ForeignKey{
+		"a user ID": func(subs ...[]byte) *openpgp.ForeignKey {
+			return fkRead(t, qaFile(t, b, nil, qaUserBlock{fkUser, [][]byte{qaUserSig(t, w, fkUser, 0x13, 8, 1000, subs...)}}))
+		},
+		"the direct-key signature": func(subs ...[]byte) *openpgp.ForeignKey {
+			return fkRead(t, qaFile(t, b, [][]byte{qaKeySig(t, w, 0x1F, 8, 1000, subs...)}, qaUserBlock{fkUser, [][]byte{qaUserSig(t, w, fkUser, 0x13, 8, 500)}}))
+		},
+	}
+	view := func(where string, basis openpgp.ForeignBasis) (trunc bool, flags uint8, prefs []openpgp.ForeignBasisPref, dropped []uint8) {
+		if where == "a user ID" {
+			u := basis.UserIDs[0]
+			return u.FlagsTruncated, u.KeyFlags, u.Prefs, u.Dropped
+		}
+		return basis.DirectFlagsTruncated, 0, basis.DirectPrefs, basis.DirectDropped
+	}
+	for where, read := range sources {
+		for _, c := range []struct {
+			name  string
+			flags []byte
+			trunc bool
+		}{
+			{"no flags", nil, false},
+			{"flags of one octet", sp(27, false, 0x23), false},
+			{"flags of two octets, the second zero", sp(27, false, 0x23, 0), true},
+			{"flags of two octets, the second not zero", sp(27, false, 0x23, 0x04), true},
+			{"flags of a hundred octets", sp(27, false, append([]byte{0x01}, make([]byte, 99)...)...), true},
+			{"flags of one octet, critical", sp(27, true, 0x23), false},
+		} {
+			var subs [][]byte
+			if c.flags != nil {
+				subs = append(subs, c.flags)
+			}
+			trunc, flags, _, _ := view(where, read(subs...).SigningBasis())
+			if trunc != c.trunc {
+				t.Errorf("%s, %s: truncated is %v, want %v", where, c.name, trunc, c.trunc)
+			}
+			if where == "a user ID" && c.flags != nil && flags != c.flags[2] {
+				t.Errorf("%s, %s: the first octet is %#x", where, c.name, flags)
+			}
+		}
+		// each type of the list, with the critical bit and without
+		for _, typ := range []byte{11, 21, 22, 23, 30, 39} {
+			data := qaPayload(typ)
+			for _, critical := range []bool{false, true} {
+				k, err := openpgp.ReadForeignKey(qaSourceFile(t, b, where, sp(typ, critical, data...)))
+				if err != nil {
+					t.Logf("%s, type %d, critical %v: the reader does not count such a signature (%v)", where, typ, critical, err)
+					continue
+				}
+				_, _, prefs, dropped := view(where, k.SigningBasis())
+				carried := len(prefs) == 1 && prefs[0].Type == typ && bytes.Equal(prefs[0].Data, data)
+				if !carried {
+					t.Errorf("%s, type %d, critical %v: carried %+v", where, typ, critical, prefs)
+				}
+				if got := slices.Contains(dropped, typ); got != critical {
+					t.Errorf("%s, type %d, critical %v: listed in Dropped is %v (%v)", where, typ, critical, got, dropped)
+				}
+			}
+		}
+	}
+	// tie content: flags of two octets against one octet with the same first octet are not the same content
+	k := fkRead(t, qaFile(t, b, nil, qaUserBlock{fkUser, [][]byte{
+		qaUserSig(t, w, fkUser, 0x13, 8, 1000, sp(27, false, 0x03)),
+		qaUserSig(t, w, fkUser, 0x13, 8, 1000, sp(27, false, 0x03, 0x00))}}))
+	if u := k.SigningBasis().UserIDs[0]; !u.Tied {
+		t.Errorf("flags of one and of two octets in one second are not tied: %+v", u)
+	}
+	// a carried type with and without the critical bit, in one second: tied
+	k = fkRead(t, qaFile(t, b, nil, qaUserBlock{fkUser, [][]byte{
+		qaUserSig(t, w, fkUser, 0x13, 8, 1000, sp(21, false, 8)),
+		qaUserSig(t, w, fkUser, 0x13, 8, 1000, sp(21, true, 8))}}))
+	if u := k.SigningBasis().UserIDs[0]; !u.Tied {
+		t.Errorf("a preference with and without the critical bit in one second is not tied: %+v", u)
+	}
+	// both critical, the same content: not tied
+	k = fkRead(t, qaFile(t, b, nil, qaUserBlock{fkUser, [][]byte{
+		qaUserSig(t, w, fkUser, 0x13, 8, 1000, sp(21, true, 8)),
+		qaUserSig(t, w, fkUser, 0x13, 8, 1000, sp(21, true, 8))}}))
+	if u := k.SigningBasis().UserIDs[0]; u.Tied {
+		t.Errorf("the same content twice is tied: %+v", u)
+	}
+}
+
+// qaSourceFile is the file of the Ed25519 template whose user ID source or direct-key source carries the
+// subpackets given.
+func qaSourceFile(t testing.TB, b *fkBase, where string, subs ...[]byte) []byte {
+	w := fkWriter{b}
+	if where == "a user ID" {
+		return qaFile(t, b, nil, qaUserBlock{fkUser, [][]byte{qaUserSig(t, w, fkUser, 0x13, 8, 1000, subs...)}})
+	}
+	return qaFile(t, b, [][]byte{qaKeySig(t, w, 0x1F, 8, 1000, subs...)}, qaUserBlock{fkUser, [][]byte{qaUserSig(t, w, fkUser, 0x13, 8, 500)}})
+}

@@ -21,7 +21,7 @@ func BasisAgainstSnapshot(k *ForeignKey) []string {
 	if b.PrimaryFlagged != s.flaggedUserIDs() {
 		note("PrimaryFlagged")
 	}
-	if b.DirectHave != s.direct.have || b.DirectWeak != s.direct.weak || b.DirectSigExpires != s.direct.sigExpires ||
+	if b.DirectHave != s.direct.have || b.DirectWeak != s.direct.weak || b.DirectFlagsTruncated != s.direct.flagsLong || b.DirectSigExpires != s.direct.sigExpires ||
 		!b.DirectEnd.Equal(s.direct.expires) || !bytes.Equal(b.DirectDropped, s.direct.dropped) || !samePrefs(b.DirectPrefs, s.direct.prefs) {
 		note("the direct-key source")
 	}
@@ -50,7 +50,7 @@ func BasisAgainstSnapshot(k *ForeignKey) []string {
 				note("user ID %d: Revoked, Signed, KeyFlags, Primary or KeyExpires", i)
 			case g.SigExpires != u.sigExpires || g.Weak != u.weak || g.AnyStrong != u.anyStrong || g.Tied != u.tied:
 				note("user ID %d: SigExpires, Weak, AnyStrong or Tied", i)
-			case !samePrefs(g.Prefs, u.prefs) || !bytes.Equal(g.Dropped, u.dropped):
+			case !samePrefs(g.Prefs, u.prefs) || !bytes.Equal(g.Dropped, u.dropped) || g.FlagsTruncated != u.flagsLong:
 				note("user ID %d: Prefs or Dropped", i)
 			case g.IsPrimary != (have && i == primary):
 				note("user ID %d: IsPrimary", i)
