@@ -45,12 +45,13 @@ const (
 	// second of hashing on an ordinary machine. A file that would pass it is refused.
 	MaxForeignHashedBytes = 512 << 20
 	// MaxForeignVerifications is the most public-key verifications of signatures in one file: 4096,
-	// counted before each one. A genuine binding costs up to four: the check of its signature, the
-	// strict pass that is judged for the view, the library's own check of the cross-signature inside
-	// that pass, and one more for a back-signature in its unhashed area. A twenty-year key with fifteen
-	// user IDs and thirty subkeys, re-signed every year, has 15 x 20 = 300 self-signatures and
-	// 30 x 20 = 600 bindings, which cost 300 + 600 x 4 = 2700 verifications with the key
-	// revocations and direct-key signatures, below the limit. The most that a file can ask is bounded by
+	// counted before each one. A self-signature costs one. A binding costs three: the check of its
+	// signature and the strict pass (which counts two: the binding, and the cross-signature inside it
+	// for a subkey that can sign), and a back-signature costs one more for each distinct one of a subkey.
+	// A twenty-year key with fifteen user IDs and thirty subkeys, re-signed every year, has 15 x 20 = 300
+	// self-signatures and 30 x 20 = 600 bindings, which cost 300 + 600 x 3 = 2100 verifications; if
+	// every binding had a back-signature of its own that is 600 more, 2700, below the limit. A rich key
+	// that QA measured costs 75. The most that a file can ask is bounded by
 	// this and not by the number of signatures.
 	MaxForeignVerifications = 4096
 	// MaxForeignClaimedSignatures is the most signatures in the whole file that the primary has to answer
@@ -335,6 +336,17 @@ type ForeignSubkey struct {
 	// OtherSignatures counts the signatures on this subkey that the primary does not claim, left out of
 	// the certificate and not verified.
 	OtherSignatures int
+	// IncompleteBinding is true when a binding of the primary verifies over the public bytes of the subkey
+	// and no binding is complete, so the subkey is left out of the certificate (InCertificate is false). A
+	// binding is complete when it verifies and, if its key flags allow signing or certifying (0x02 or
+	// 0x01), it carries a back-signature that verifies with the subkey's key. A binding with no key flags
+	// subpacket asks for no back-signature, as go-crypto's strict pass does, which treats the signing
+	// flag as false when the subpacket is absent. The library's key-ring reader refuses a whole certificate
+	// that holds a signing subkey without a verifying back-signature, and other tools treat such a subkey
+	// as unusable, so it is not written. The view keeps the Fingerprint and KeyID of such a subkey: its
+	// public bytes were confirmed by a binding of the primary that verifies, and the caller needs to
+	// name it to the person ("this subkey has a binding without a back-signature").
+	IncompleteBinding bool
 	// InCertificate is true when the subkey is in the certificate. A caller must look at a subkey for
 	// which it is false: the subkey is not in the certificate, it has no Fingerprint or KeyID, and for
 	// a public packet that the reader cannot read it has no Algorithm either. It is true when at least one binding of the primary
@@ -369,7 +381,10 @@ type ForeignKey struct {
 	// revocations (type 0x20) among them: a key revocation by ANOTHER key was in the file and is not in
 	// the certificate. It may be the revocation of a designated revoker, so the key may be revoked
 	// although the certificate does not show it. A caller that adopts or publishes the key must refuse,
-	// or ask the person, when this count is not zero.
+	// or ask the person, when this count is not zero. A key revocation whose issuer cannot be read and
+	// that does not verify with the primary's key is counted here too (a designated revoker's revocation
+	// whose issuer was stripped looks like this), and likewise in OtherRevocations of a user ID and a
+	// subkey.
 	OtherKeySignatures  int
 	OtherKeyRevocations int
 	// UnreadableRevocations counts the key revocations (type 0x20) in KeySignatures that the primary

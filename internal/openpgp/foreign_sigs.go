@@ -344,6 +344,9 @@ type fkCtx struct {
 	// back remembers, per subkey, the back-signatures that were already judged (by their bytes), so that
 	// a binding that is repeated does not repeat the verification; nil means that it did not verify.
 	back map[string][]byte
+	// incomplete, for a binding or a subkey revocation, is set when the signature verifies and cannot go
+	// into a certificate that the library's key-ring reader reads: see [fkVerifier.evaluate].
+	incomplete *bool
 }
 
 // hashers are the hashes of the signatures that can count, by their numbers.
@@ -485,41 +488,65 @@ func (v *fkVerifier) evaluate(s fkSig, h fkHead, c fkCtx) (ForeignSignature, []b
 	if h.hash == 2 {
 		fs.Status = SignatureValidWeakHash
 	}
+	// A binding of a subkey that can sign or certify (key flags 0x02 or 0x01) is complete only with a
+	// back-signature that verifies with the subkey's key, in either area; a binding with no key flags
+	// subpacket asks for none, as go-crypto's strict pass does (its flag for signing is false when
+	// the subpacket is absent). An incomplete binding is not written: the library's key-ring reader refuses a
+	// whole certificate that holds one.
 	var embedded []byte
 	if c.sub != nil {
-		embedded = v.backSignature(h.areas, c)
+		var backOK bool
+		embedded, backOK = v.backSignature(h.areas, c)
+		if fs.KeyFlags&0x03 != 0 && !backOK {
+			fs.Status = SignatureNotVerified
+			*c.incomplete = true
+			return fs, nil
+		}
 	}
-	emitted := wrap(tagSignature, emitBody(h.areas, v.fp, embedded))
-	// The strict pass verifies the binding and, for a subkey that can sign, the cross-signature in it.
+	// The strict pass verifies the binding and, for a subkey that can sign, the cross-signature in it; it is
+	// the check that the library's key-ring reader makes of every signature of a subkey, so a signature that
+	// fails it is not written.
 	if c.strong != nil && (!v.chargeVerify(2) || safely(func() error { return c.strong(sig) }) != nil) {
-		fs.Status = SignatureNotVerified
+		if c.incomplete != nil {
+			*c.incomplete = true
+		}
+		if h.typ == sigSubkeyBinding {
+			fs.Status = SignatureNotVerified
+		}
+		return fs, nil
 	}
-	return fs, emitted
+	return fs, wrap(tagSignature, emitBody(h.areas, v.fp, embedded))
 }
 
-// backSignature returns the body, written by this package, of a back-signature (type 0x19) in the
-// unhashed area of a binding that verifies with the subkey over the primary and the subkey, or nil.
-// A back-signature in the hashed area of the binding is part of what the binding covers and is carried
-// over with it as it stands; one in the unhashed area is carried over only if it verifies, and then
-// written again with the issuer of the subkey and nothing else from its unhashed area. Only the first
-// embedded signature subpacket of the area is tried, and a result is remembered per subkey, so that a
-// binding that is repeated many times does not repeat the work.
-func (v *fkVerifier) backSignature(a sigAreas, c fkCtx) []byte {
-	for _, sp := range a.unhashed {
-		if sp.typ != spEmbeddedSignature {
-			continue
+// backSignature looks for the back-signature (type 0x19) of a binding: the first embedded signature
+// subpacket of the hashed area, which the binding covers and which is carried over with it as it stands,
+// or else the first of the unhashed area. It returns whether that signature verifies with the subkey over
+// the primary and the subkey, and, for one in the unhashed area, its body written again with the
+// issuer of the subkey and nothing else from its unhashed area (it is carried over only if it verifies).
+// Only the first embedded signature subpacket is tried (go-crypto rejects a binding with two, so such a
+// binding does not count), and a result is remembered per subkey, so that a binding that is repeated
+// many times does not repeat the work.
+func (v *fkVerifier) backSignature(a sigAreas, c fkCtx) (embedded []byte, ok bool) {
+	for n, area := range [][]subpacket{a.hashed, a.unhashed} {
+		for _, sp := range area {
+			if sp.typ != spEmbeddedSignature {
+				continue
+			}
+			if len(sp.data) > maxBindingBody {
+				return nil, false
+			}
+			got, seen := c.back[string(sp.data)]
+			if !seen {
+				got = v.verifyBack(sp.data, c)
+				c.back[string(sp.data)] = got
+			}
+			if n == 0 {
+				return nil, got != nil
+			}
+			return got, got != nil
 		}
-		if len(sp.data) > maxBindingBody {
-			return nil
-		}
-		if got, ok := c.back[string(sp.data)]; ok {
-			return got
-		}
-		got := v.verifyBack(sp.data, c)
-		c.back[string(sp.data)] = got
-		return got
 	}
-	return nil
+	return nil, false
 }
 
 // verifyBack judges one embedded signature (its body) and returns its body written again, or nil.
@@ -572,11 +599,13 @@ type fkOutput struct {
 // into the first of them: their verified signatures go to it, and a signature whose written bytes are
 // identical to one already written is written once.
 type fkGroup struct {
-	first int               // the place of the first occurrence in the file
-	emits []byte            // the verified signatures, written
-	seen  map[string]bool   // the signature packets written so far
-	ok    bool              // some occurrence has what the part needs (a certification, a binding)
-	back  map[string][]byte // the back-signatures judged for a subkey, by their bytes
+	first   int               // the place of the first occurrence in the file
+	emits   []byte            // the verified signatures, written
+	seen    map[string]bool   // the signature packets written so far
+	partial bool              // a binding verified and is not complete
+	broken  bool              // a subkey revocation that the library's key-ring reader would refuse: the subkey is left out
+	ok      bool              // some occurrence has what the part needs (a certification, a binding)
+	back    map[string][]byte // the back-signatures judged for a subkey, by their bytes
 }
 
 // add merges the written signature packet of one occurrence into the group, counting a duplicate.
@@ -642,6 +671,10 @@ func (v *fkVerifier) keyLevel(w *fkWalk, out *fkOutput) (sigs []ForeignSignature
 			fs, emit = v.evaluate(s, h, fkCtx{data: data, keyCreated: v.created, verify: func(g *packet.Signature) error { return v.pk.VerifyDirectKeySignature(g) }})
 		case h.typ == sigKeyRevocation:
 			fs, emit = v.evaluate(s, h, fkCtx{data: data, keyCreated: v.created, verify: func(g *packet.Signature) error { return v.pk.VerifyRevocationSignature(g) }})
+			if strayed(h, fs) {
+				other++
+				otherRev++
+			}
 		default:
 			fs = misplaced(h)
 		}
@@ -673,6 +706,14 @@ func unusableRevocations(sigs []ForeignSignature) int {
 		}
 	}
 	return n
+}
+
+// strayed tells whether a revocation-type signature (0x20, 0x28, 0x30) that was judged is one that may be
+// another key's: it names no issuer that can be read (version 4, so not a version 3 or 5 form, which is counted as
+// unreadable) and it does not verify with the primary's key. A designated revoker's revocation whose
+// issuer was stripped looks like this, so it is counted with the revocations of other keys.
+func strayed(h fkHead, fs ForeignSignature) bool {
+	return isRevocationType(h.typ) && h.version == 4 && h.parsed && h.issuer == issuerUnknown && fs.Status == SignatureNotVerified
 }
 
 // misplaced is the entry for a signature of the primary of a type that does not belong where it
@@ -726,6 +767,10 @@ func (v *fkVerifier) components(w *fkWalk, out *fkOutput) (ids []ForeignUserID, 
 			case isCertification(h.typ) || h.typ == sigCertRevocation:
 				fs, emit := v.evaluate(s, h, fkCtx{data: data, keyCreated: v.created, verify: verify})
 				fu.Signatures = append(fu.Signatures, fs)
+				if strayed(h, fs) {
+					fu.OtherSignatures++
+					fu.OtherRevocations++
+				}
 				if emit != nil {
 					grp.add(emit, out)
 					grp.ok = grp.ok || isCertification(h.typ)
@@ -876,6 +921,8 @@ func (v *fkVerifier) subkeys(w *fkWalk, out *fkOutput) []ForeignSubkey {
 			}
 		}
 		group[i] = grp
+		partial := false // a binding verified and is not complete (no back-signature that verifies)
+		broken := false  // a subkey revocation that the library's key-ring reader would refuse
 		for _, g := range s.t.sigs {
 			h := v.head(g)
 			unreadable := s.gopk == nil && (h.typ == sigSubkeyBinding || h.typ == sigSubkeyRevoke)
@@ -893,7 +940,7 @@ func (v *fkVerifier) subkeys(w *fkWalk, out *fkOutput) []ForeignSubkey {
 			case h.typ == sigSubkeyBinding:
 				sub := s.gopk
 				sg, emit = v.evaluate(g, h, fkCtx{
-					data: data, keyCreated: s.pub.created, sub: sub, back: grp.back,
+					data: data, keyCreated: s.pub.created, sub: sub, back: grp.back, incomplete: &partial,
 					verify: func(x *packet.Signature) error { return v.pk.VerifySubkeyRevocationSignature(x, sub) },
 					strong: func(x *packet.Signature) error { return v.pk.VerifyKeySignature(sub, x) },
 				})
@@ -901,24 +948,39 @@ func (v *fkVerifier) subkeys(w *fkWalk, out *fkOutput) []ForeignSubkey {
 			case h.typ == sigSubkeyRevoke:
 				sub := s.gopk
 				sg, emit = v.evaluate(g, h, fkCtx{
-					data: data, keyCreated: s.pub.created,
+					data: data, keyCreated: s.pub.created, incomplete: &broken,
 					verify: func(x *packet.Signature) error { return v.pk.VerifySubkeyRevocationSignature(x, sub) },
+					strong: func(x *packet.Signature) error { return v.pk.VerifyKeySignature(sub, x) },
 				})
 			default:
 				sg = misplaced(h)
 			}
 			fs.Signatures = append(fs.Signatures, sg)
+			if strayed(h, sg) {
+				fs.OtherSignatures++
+				fs.OtherRevocations++
+			}
 			if emit != nil {
 				grp.add(emit, out)
 			}
 		}
 		summariseSubkey(&fs)
 		fs.UnreadableRevocations = unusableRevocations(fs.Signatures)
+		if grp != nil {
+			grp.partial = grp.partial || partial
+			grp.broken = grp.broken || broken
+		}
 		views = append(views, fs)
 	}
 	for i, s := range w.subs {
 		g := group[i]
-		if g == nil || !g.ok {
+		if g != nil && !g.ok && g.partial {
+			// Its public bytes were confirmed by a binding of the primary that verifies, so the view keeps
+			// its fingerprint; it is left out of the certificate because no binding of it is complete.
+			views[i].IncompleteBinding = true
+			views[i].Fingerprint, views[i].KeyID = fingerprintHex(s.fp)
+		}
+		if g == nil || !g.ok || g.broken {
 			continue
 		}
 		views[i].InCertificate = true
