@@ -80,17 +80,42 @@ func Describe(ctx context.Context, client Client) (Info, error) {
 	if ctx == nil || client == nil {
 		return Info{}, errors.New("port: Describe needs a context and a client")
 	}
+	info, _, err := capabilities(ctx, client)
+	return info, err
+}
+
+// capabilities asks the store what it is, once: its entry of the table, and the purposes it serves. A
+// store that the table does not hold is an [ErrUnknownStore].
+func capabilities(ctx context.Context, client Client) (Info, []*keyv1alpha1.PurposeInfo, error) {
 	cctx, cancel := context.WithTimeout(ctx, callTimeout)
 	defer cancel()
 	caps, err := client.Capabilities(cctx, connect.NewRequest(&keyv1alpha1.CapabilitiesRequest{}))
 	if err != nil {
-		return Info{}, fmt.Errorf("port: Capabilities: %w", err)
+		return Info{}, nil, fmt.Errorf("port: Capabilities: %w", err)
 	}
 	info, ok := Lookup(caps.Msg.GetStore())
 	if !ok {
-		return Info{}, ErrUnknownStore
+		return Info{}, nil, ErrUnknownStore
 	}
-	return info, nil
+	return info, caps.Msg.GetPurposes(), nil
+}
+
+// checkPurpose refuses a purpose that the store does not serve, that does not allow sign, or that is not an
+// ES384 key: the purpose of a root key.
+func checkPurpose(purposes []*keyv1alpha1.PurposeInfo, name string) error {
+	for _, p := range purposes {
+		if p.GetName() != name {
+			continue
+		}
+		if !slices.Contains(p.GetOperations(), string(purpose.Sign)) {
+			return signer.ErrOperation
+		}
+		if p.GetAlgorithm() != purpose.ES384 {
+			return ErrAlgorithm
+		}
+		return nil
+	}
+	return signer.ErrPurpose
 }
 
 // Key is the key of one purpose in a key store, as [keystore.Key]. It is safe for concurrent use.
@@ -138,7 +163,26 @@ func (k *Key) Sign(rand io.Reader, digest []byte, opts crypto.SignerOpts) ([]byt
 	if closed {
 		return nil, ErrClosed
 	}
-	return k.signer.Sign(rand, digest, opts)
+	sig, err := k.signer.Sign(rand, digest, opts)
+	if err != nil {
+		return nil, endOfContext(err)
+	}
+	return sig, nil
+}
+
+// endOfContext makes the end of a context that the client of the port reports as a Connect code, canceled
+// or deadline_exceeded, an error that errors.Is also finds as context.Canceled or context.DeadlineExceeded.
+// Any other error, and one that is already so, is returned as it is.
+func endOfContext(err error) error {
+	switch {
+	case errors.Is(err, context.Canceled), errors.Is(err, context.DeadlineExceeded):
+		return err
+	case connect.CodeOf(err) == connect.CodeCanceled:
+		return fmt.Errorf("%w: %w", context.Canceled, err)
+	case connect.CodeOf(err) == connect.CodeDeadlineExceeded:
+		return fmt.Errorf("%w: %w", context.DeadlineExceeded, err)
+	}
+	return err
 }
 
 // Kind is where the key lives, from the table.
@@ -164,6 +208,10 @@ const selfTest = "ritueel: a key that is born is used once before anything relie
 
 // Birth makes the key of a purpose and gives it back, in four steps (record 0005, rule 10):
 //
+// Before any call that can make a key, the store is asked what it is: a store that the table does not
+// hold ([ErrUnknownStore]) and a purpose that the store does not serve as an ES384 key that allows sign
+// are refused with nothing made. Then:
+//
 //  1. the key must be absent: PublicKey answers that the purpose has no key, and any other answer is
 //     an [ErrKeyExists] or a failure;
 //  2. Ensure makes the key, and must answer that it made it: a store that answers that the key was there is
@@ -176,6 +224,13 @@ const selfTest = "ritueel: a key that is born is used once before anything relie
 func Birth(ctx context.Context, client Client, name string) (*Key, error) {
 	if ctx == nil || client == nil {
 		return nil, errors.New("port: Birth needs a context and a client")
+	}
+	_, purposes, err := capabilities(ctx, client)
+	if err != nil {
+		return nil, err
+	}
+	if err := checkPurpose(purposes, name); err != nil {
+		return nil, fmt.Errorf("port: the purpose cannot make a root key, and nothing was made: %w", err)
 	}
 	if _, err := publicKey(ctx, client, name); err == nil {
 		return nil, ErrKeyExists
@@ -213,6 +268,8 @@ func Birth(ctx context.Context, client Client, name string) (*Key, error) {
 		_ = k.Close()
 		return nil, fmt.Errorf("%w: the self-test could not sign: %w", ErrBirth, err)
 	}
+	// Deliberate: the Signer has verified this signature already; this is a second check with the public key
+	// that was read back, and it does not depend on the Signer's own.
 	if !ecdsa.VerifyASN1(k.pub, digest[:], sig) {
 		_ = k.Close()
 		return nil, fmt.Errorf("%w: the signature of the self-test does not verify", ErrBirth)

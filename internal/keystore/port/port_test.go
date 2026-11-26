@@ -304,7 +304,6 @@ func TestEachStepOfABirthFailsOnItsOwnAndGivesNoKey(t *testing.T) {
 // key was made today (Birth asks it when it opens the key, which is its third step), so this test says
 // what the package should do and does not pass yet.
 func TestBirthInAStoreThatTheTableDoesNotHoldMakesNoKey(t *testing.T) {
-	t.Skip("BUG: port.Birth (port.go, Birth: the call of Ensure comes before NewKey, which is the first call of Describe) makes a key in a store that the table does not hold, and refuses it only afterwards; the engine asks Describe first in softwareStore.start, so only a direct caller of Birth meets it")
 	s := newScripted(t)
 	s.store = "aws-kms"
 	if k, err := port.Birth(context.Background(), s, purposeName); k != nil || !errors.Is(err, port.ErrUnknownStore) {

@@ -1,6 +1,7 @@
 package trustset
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"reflect"
@@ -60,12 +61,18 @@ const causeUnshown = "the cause could not be shown"
 // nil pointer, cannot bring down the caller's Error, print, errors.Is or errors.As. The cause is
 // not part of the chain: errors.Is and errors.As see the kind and nothing the cause wraps, so a
 // signer that returns another kind of this package, or any other error value, cannot change the
-// kind. The text shows the cause with every character outside printable ASCII escaped, because a
+// kind. One fact about the cause is kept as a fact and not as text: whether it is the end of a
+// context, [context.Canceled] or [context.DeadlineExceeded], found by errors.Is on the typed cause
+// when the error is made. errors.Is on the error is true for exactly that one of the two values and for
+// no other value of the cause, so a caller can tell a signing that was cut by its context from a signer
+// that refused, and a refusal whose text merely quotes the words of a context error is never taken
+// for one. The text shows the cause with every character outside printable ASCII escaped, because a
 // cause may carry bytes that came from outside, and cuts it at maxCauseText bytes.
 type causeError struct {
-	kind error
-	what string
-	text string
+	kind  error
+	what  string
+	text  string
+	ended error // context.Canceled or context.DeadlineExceeded when the cause is one of them, else nil
 }
 
 func (e *causeError) Error() string {
@@ -74,6 +81,28 @@ func (e *causeError) Error() string {
 
 // Unwrap gives the kind only.
 func (e *causeError) Unwrap() error { return e.kind }
+
+// Is is true for the end of a context that the cause was, and for nothing else of the cause.
+func (e *causeError) Is(target error) bool { return e.ended != nil && target == e.ended }
+
+// endOfContext says which end of a context the cause is: context.Canceled, context.DeadlineExceeded
+// or nil. It looks at the typed chain of the cause, under a recover, once.
+func endOfContext(cause error) (ended error) {
+	defer func() {
+		if recover() != nil {
+			ended = nil
+		}
+	}()
+	switch {
+	case cause == nil:
+		return nil
+	case errors.Is(cause, context.Canceled):
+		return context.Canceled
+	case errors.Is(cause, context.DeadlineExceeded):
+		return context.DeadlineExceeded
+	}
+	return nil
+}
 
 // causeText takes the text of a cause once. At most maxCauseText bytes of it are read (to a
 // character boundary), escaped with [jsonset.Escape] one character at a time, and the shown text
@@ -196,7 +225,8 @@ func wholeCharacters(s string) int {
 }
 
 // failWith returns an error of the given kind that shows the error that caused it. It takes the
-// text of the cause now and keeps no reference to the cause.
+// text of the cause now and keeps no reference to the cause, except the one fact whether it is the end of
+// a context ([causeError]).
 func failWith(kind error, what string, cause error) error {
-	return &causeError{kind: kind, what: what, text: causeText(cause)}
+	return &causeError{kind: kind, what: what, text: causeText(cause), ended: endOfContext(cause)}
 }

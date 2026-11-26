@@ -166,7 +166,6 @@ func TestTheWordsOfACancelInTheTextOfASigningFaultAreNoCancelWhileTheContextLive
 // A refusal of the store whose reason quotes the words of the context package, while the context has ended for
 // another reason, is a refusal of the store and not the end of the context.
 func TestASigningRefusalThatQuotesTheWordsOfACancelIsNotTakenForTheEndOfTheContext(t *testing.T) {
-	t.Skip("BUG: signFault (x509root.go) takes any fault whose text contains \"context canceled\" or \"context deadline exceeded\" for the end of the context when the context has ended, so a refusal of the store that quotes those words loses its cause; it is needed because the signers of the trust set keep only the text of an error")
 	for _, step := range sfSteps {
 		t.Run(step.name, func(t *testing.T) {
 			m, _, err := sfRun(t, step.n, false, func(context.Context) error {

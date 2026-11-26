@@ -362,16 +362,17 @@ func (m *x509Maker) signCertificate(ctx context.Context, i int, label string, ke
 // between two steps: the cause is the error of the context and ended is true. When the fault is something
 // else (a key that changed, a signature that did not verify, a refusal of the store), the cause stays the
 // reason of the stop, and the end of the context is named beside it, so that the line of the stop names the
-// cause that matters; ended is false. When the context has not ended the cause is the fault. The trustset
-// signers keep the text of a cause only, so a cancel inside one is known by the words of the context
-// package.
+// cause that matters; ended is false. When the context has not ended the cause is the fault. The decision is
+// made on the typed errors only (errors.Is with the two errors of the context package): the key port's
+// client maps its Connect codes for a cancel and a deadline to them (port.Key.Sign), the signers of
+// trustset keep that one fact of their cause, and the text of an error is never read for it, so a refusal
+// that quotes the words of a cancel is a refusal.
 func signFault(ctx context.Context, err error) (cause error, ended bool) {
 	cerr := ctx.Err()
 	if cerr == nil {
 		return err, false
 	}
-	if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) ||
-		strings.Contains(err.Error(), context.Canceled.Error()) || strings.Contains(err.Error(), context.DeadlineExceeded.Error()) {
+	if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
 		return cerr, true
 	}
 	return fmt.Errorf("%w; the context also ended: %w", err, cerr), false
