@@ -593,42 +593,32 @@ func TestForeignDocsOfACopyAndOfCertificate(t *testing.T) {
 			}
 		}
 	})
-	// Certificate keeps every public packet byte for byte, what is valid and what is not: a user ID with
-	// no valid self-signature, a subkey that is not bound, signatures that do not verify and of other keys
+	// Certificate holds what the primary signed and no more: no user ID or subkey that nothing
+	// confirms, no signature of another key, no signature that does not verify
 	b := fkNamed(t, "ed25519")
 	r := fkRichOf(t, b, false, false)
 	k := fkRead(t, r.file)
-	cert := splitPackets(t, k.Certificate())
-	counts := map[byte]int{}
-	for _, p := range cert {
-		counts[p.Tag]++
-	}
-	in := map[byte]int{}
-	for _, p := range splitPackets(t, r.file) {
-		in[p.Tag]++
-	}
-	in[6], in[14] = in[5]+in[6], in[7]+in[14]
-	delete(in, 5)
-	delete(in, 7)
-	for _, tag := range []byte{2, 6, 13, 14, 17} {
-		if counts[tag] != in[tag] {
-			t.Errorf("the certificate holds %d packets of tag %d, the file %d", counts[tag], tag, in[tag])
-		}
-	}
-	invalid := 0
+	ps := fkCertProperty(t, "the rich file", k)
+	invalid, certified, unconfirmed := 0, 0, 0
 	for _, u := range k.UserIDs {
 		if !u.Valid {
 			invalid++
 		}
+		certified += u.Certifications + u.OtherSignatures
 	}
-	nb := 0
 	for _, s := range k.Subkeys {
-		if !s.Bound {
-			nb++
+		if !s.InCertificate {
+			unconfirmed++
 		}
 	}
-	if invalid == 0 || nb == 0 {
-		t.Fatal("the rich file holds no user ID or subkey that is not valid")
+	if invalid == 0 || unconfirmed == 0 || certified == 0 {
+		t.Fatalf("the rich file holds no user ID or subkey that is not valid, or no signature of another key (%d, %d, %d)", invalid, unconfirmed, certified)
+	}
+	if got, want := len(fkCertUsers(ps)), len(k.UserIDs)-invalid; got != want {
+		t.Errorf("the certificate holds %d user IDs, the view says %d are valid", got, want)
+	}
+	if got, want := len(fkCertSubkeys(ps)), len(k.Subkeys)-unconfirmed; got != want {
+		t.Errorf("the certificate holds %d subkeys, the view says %d are in it", got, want)
 	}
 	// "other signatures": those that the primary does not claim, and those whose type is not read and
 	// whose issuer is not the primary's; a signature of an unknown type that the primary made is listed

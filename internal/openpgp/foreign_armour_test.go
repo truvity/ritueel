@@ -255,7 +255,21 @@ func TestForeignTruncationOfBinaryFiles(t *testing.T) {
 				case atBoundary && n < 3:
 					_ = fkRefused(t, fmt.Sprintf("%d packets", n), in, b, openpgp.ErrForeignSelfSignature)
 				case atBoundary && unbound(n):
-					_ = fkRefused(t, fmt.Sprintf("%d packets, a secret subkey with no binding", n), in, b, openpgp.ErrForeignSubkey)
+					// the file is read, and the subkey with no binding is left out and reported
+					k, err := openpgp.ReadForeignKey(in)
+					if err != nil {
+						t.Fatalf("%d packets: %v", n, err)
+					}
+					left := 0
+					for _, s := range k.Subkeys {
+						if !s.InCertificate {
+							left++
+						}
+					}
+					if left == 0 {
+						t.Errorf("%d packets: a secret subkey with no binding is in the certificate", n)
+					}
+					_ = fkCertProperty(t, fmt.Sprintf("%d packets", n), k)
 				case atBoundary:
 					if _, err := openpgp.ReadForeignKey(in); err != nil {
 						t.Fatalf("%d packets: %v", n, err)

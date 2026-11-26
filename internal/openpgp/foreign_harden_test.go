@@ -408,10 +408,13 @@ func TestForeignSubkeyOfUnknownAlgorithmSecretAndStub(t *testing.T) {
 	head := fkTemplateHead(t, b.file(t, fkProt{}))
 	pub := []byte{4, 0x65, 0x53, 0xF1, 0x00, 99, 0, 8, 0xAB, 1, 2, 3}
 	public := fkJoin(append(slicesClone(head), fkPacket{14, pub})...)
+	// a public subkey of an unknown algorithm is read, and left out of the certificate: nothing can
+	// confirm a public part that the reader cannot delimit and that go-crypto cannot read
 	k := fkRead(t, public)
-	if got := fkCertSubkeyBody(t, k.Certificate()); !bytes.Equal(got, pub) {
-		t.Errorf("a public subkey of an unknown algorithm is not copied as it is")
+	if len(k.Subkeys) != 1 || k.Subkeys[0].InCertificate || k.Subkeys[0].Fingerprint != "" || k.Subkeys[0].Algorithm.ID != 99 {
+		t.Errorf("a public subkey of an unknown algorithm: %+v", k.Subkeys)
 	}
+	_ = fkCertProperty(t, "a public subkey of an unknown algorithm", k)
 	for name, area := range map[string][]byte{
 		"a stub, dummy":          fkStubRegion(255, 1, nil),
 		"a stub, card":           fkStubRegion(254, 2, fkSerial),

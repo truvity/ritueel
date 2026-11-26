@@ -157,76 +157,58 @@ func FuzzForeignReadKey(f *testing.F) {
 			t.Fatal("a key with no user ID that has a valid self-signature")
 		}
 
-		// The certificate: whole packets, the primary first, no secret packet, a copy.
+		// The certificate: the property of a certificate (whole packets, the order, every signature
+		// verified, the unhashed areas, a copy), and no run of any secret area of the input in it.
+		ps := fkCertProperty(t, "the key", k)
 		cert := k.Certificate()
-		ctags, cbodies, ok := softPackets(cert)
-		if !ok || len(ctags) == 0 || ctags[0] != 6 {
-			t.Fatalf("the certificate is not whole packets that start with a public key")
-		}
-		pk, err := gpacket.Read(bytes.NewReader(wrap(6, cbodies[0])))
-		if err != nil {
-			t.Fatalf("go-crypto does not read the primary of the certificate: %v", err)
-		}
-		if got, ok := pk.(*gpacket.PublicKey); !ok || hexOf(got.Fingerprint) != k.Primary.Fingerprint {
-			t.Fatalf("the primary of the certificate is not the primary of the key")
-		}
-		for _, tag := range ctags {
-			if tag == 5 || tag == 7 || tag == 10 || tag == 12 {
-				t.Fatalf("the certificate holds a packet of tag %d", tag)
-			}
-		}
 		cert[0] ^= 0xFF
 		if bytes.Equal(cert, k.Certificate()) {
 			t.Fatal("Certificate does not return a copy")
 		}
 		cert = k.Certificate()
-
-		// no secret region of the input is in the certificate, unless a packet that is copied holds it
+		primary, err := fkPublicOf(6, ps[0].body)
+		if err != nil {
+			t.Fatal(err)
+		}
+		var pk any = primary
 		if packets := fkDecoded(in); packets != nil {
 			tags, bodies, ok := softPackets(packets)
 			if !ok {
 				t.Fatal("the reader takes a file that is not whole packets")
 			}
-			var kept []byte
-			for i, tag := range tags {
-				if tag != 5 && tag != 7 && tag != 10 && tag != 12 {
-					kept = append(kept, bodies[i]...)
+			// the public parts that the certificate holds are not secret, and a secret run that stands in one
+			// of them is not a leak
+			var public []byte
+			var certSubs [][]byte
+			for _, p := range ps {
+				if p.tag == 6 || p.tag == 14 {
+					public = append(public, p.body...)
+				}
+				if p.tag == 14 {
+					certSubs = append(certSubs, p.body)
 				}
 			}
-			next := 0
 			for i, tag := range tags {
-				if tag != 5 && tag != 7 && tag != 6 && tag != 14 {
-					continue
-				}
-				if next >= len(cbodies) {
-					break
-				}
-				// the key packets of the certificate are those of the file, in order, but a subkey
-				// of an algorithm that is not delimited is only possible public
-				cb := cbodies[next]
-				next++
-				for next < len(ctags) && ctags[next] != 6 && ctags[next] != 14 {
-					next++
-				}
-				if tag == 5 || tag == 7 {
-					if !bytes.HasPrefix(bodies[i], cb) {
-						t.Fatalf("a key packet of the certificate is not the public part of the secret key packet")
-					}
-					region := bodies[i][len(cb):]
-					if len(region) >= 8 && bytes.Contains(cert, region) && !bytes.Contains(kept, region) {
-						t.Fatalf("the certificate holds the secret region of a key packet")
-					}
-					// and no run of it beyond its first two bytes, unless the public part or a packet
-					// that is copied holds the same run
-					if len(region) > 2 {
-						if where, bad := fkLeaksExcept(cert, append(bytes.Clone(kept), bodies[i][:len(cb)]...), region[2:]); bad {
-							t.Fatalf("the certificate holds a run of the secret region of a key packet (%s)", where)
+				var secret []byte
+				switch {
+				case tag == 5 && bytes.HasPrefix(bodies[i], ps[0].body):
+					secret = bodies[i][len(ps[0].body):]
+				case tag == 7:
+					// the cut that the certificate made, if it holds this subkey, else the whole body
+					secret = bodies[i][min(8, len(bodies[i])):]
+					for _, cs := range certSubs {
+						if bytes.HasPrefix(bodies[i], cs) {
+							secret = bodies[i][len(cs):]
 						}
+					}
+				}
+				if len(secret) > 2 {
+					if where, bad := fkLeaksExcept(cert, public, secret[2:]); bad {
+						t.Fatalf("the certificate holds a run of the secret area of a key packet (%s)", where)
 					}
 				}
 			}
 		}
-
 		// OpenSecret on whatever the file is: a key that matches, or a named error, and no panic
 		for _, pass := range [][]byte{nil, []byte(fkPass), []byte("not it")} {
 			s, err := k.OpenSecret(pass)
