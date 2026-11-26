@@ -535,3 +535,47 @@ func TestSnapshotMarksASourceWithASignatureExpiration(t *testing.T) {
 		t.Errorf("the certificate does not read back to the same snapshot: %v", err)
 	}
 }
+
+// The view of a key read from an export says how many self-signatures were claimed by the primary and not
+// counted for their hash or an unknown critical subpacket, and the newest of them; the snapshot and the
+// certificate do not know of them.
+func TestTheViewCountsTheSelfSignaturesThatWereClaimedAndNotCounted(t *testing.T) {
+	b := fkNamed(t, "ed25519")
+	w := fkWriter{b}
+	cert := func(at int, hashID byte, extra ...[]byte) []byte {
+		return w.sign(t, "user", 0x13, w.areas(at, extra...), nil, hashID, sha256.New, []byte(fkUser))
+	}
+	direct := func(at int, hashID byte) []byte {
+		return w.sign(t, "key", 0x1F, w.areas(at), nil, hashID, sha256.New, nil)
+	}
+	unknownCritical := fkSubpacket(100, true, 1)
+
+	good := fkEdFile(t, w, nil, [][]byte{cert(1000, 8)})
+	k := fkRead(t, good)
+	if k.UncountedClaims != 0 || !k.UncountedClaimsNewest.IsZero() {
+		t.Errorf("a file with nothing uncounted: %d, %v", k.UncountedClaims, k.UncountedClaimsNewest)
+	}
+
+	// MD5 at 2000, SHA-224 at 1500, an unknown critical subpacket at 3000, and a direct-key signature with
+	// RIPEMD-160 at 500; a self-signature that does not verify is not of them
+	bad := cert(1100, 8)
+	bad[len(bad)-1] ^= 1
+	file := fkEdFile(t, w,
+		[][]byte{direct(500, 3)},
+		[][]byte{cert(1000, 8), cert(2000, 1), cert(1500, 11), cert(3000, 8, unknownCritical), bad})
+	k = fkRead(t, file)
+	if k.UncountedClaims != 4 || !k.UncountedClaimsNewest.Equal(fkAt(3000)) {
+		t.Errorf("the claims that were not counted: %d, newest %v", k.UncountedClaims, k.UncountedClaimsNewest)
+	}
+	// the snapshot and the certificate do not know of them, and the snapshot is the one of the certificate
+	kc, err := fkReadCertificate(k.Certificate())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if kc.UncountedClaims != 0 || !kc.UncountedClaimsNewest.IsZero() {
+		t.Errorf("a certificate has uncounted claims: %d", kc.UncountedClaims)
+	}
+	if !reflect.DeepEqual(openpgp.SnapshotOf(k), openpgp.SnapshotOf(kc)) || !openpgp.SnapshotNewest(k).Equal(fkAt(1000)) {
+		t.Error("the claims that were not counted entered the snapshot")
+	}
+}

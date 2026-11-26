@@ -389,6 +389,17 @@ type ForeignKey struct {
 	// subkey.
 	OtherKeySignatures  int
 	OtherKeyRevocations int
+	// UncountedClaims counts the self-signatures that the primary claims and that the reader did NOT count
+	// for one of two reasons: their hash is not one that it accepts (MD5, RIPEMD-160, SHA-224, SHA-3 or a hash
+	// it does not know), or they have a critical subpacket that it does not understand. They are the
+	// certifications of the user IDs (types 0x10 to 0x13, on every user ID of the file, also one that is left
+	// out of the certificate) and the direct-key signatures (0x1F). They are unverified claims: the reader
+	// does not know that the primary made them. A program that does count them may rank one above the newest
+	// signature that the reader counted. UncountedClaimsNewest is the newest creation time among them, and
+	// zero when there are none. Both are zero for a key that [ReadForeignCertificate] read, since a
+	// certificate holds only what counted, and neither enters the snapshot that a signature is made from.
+	UncountedClaims       int
+	UncountedClaimsNewest time.Time
 	// UnreadableRevocations counts the key revocations (type 0x20) in KeySignatures that the primary
 	// claims and that the reader could not use (see [ForeignUserID.UnreadableRevocations]). A caller that
 	// adopts a key must look at it.
@@ -710,6 +721,7 @@ func keyFromWalk(w *fkWalk) (*ForeignKey, error) {
 	valid := 0
 	k.UserIDs, valid, k.UserAttributesLeftOut = v.components(w, out)
 	k.Subkeys = v.subkeys(w, out)
+	k.UncountedClaims, k.UncountedClaimsNewest = uncountedClaims(k)
 	k.UserAttributes, k.UserAttributeBytes = w.attrs, w.attrBytes
 	if v.err != nil {
 		return nil, v.err
@@ -747,6 +759,33 @@ func checkPublicOnly(cert, fp []byte) error {
 		rest = after
 	}
 	return nil
+}
+
+// uncountedClaims counts the certifications and the direct-key signatures that the primary claims and that
+// do not count because of their hash or an unknown critical subpacket, and finds the newest of them (see
+// [ForeignKey.UncountedClaims]).
+func uncountedClaims(k *ForeignKey) (n int, newest time.Time) {
+	note := func(s ForeignSignature) {
+		if !isCertification(s.Type) && s.Type != sigDirectKey {
+			return
+		}
+		switch s.Status {
+		case SignatureWeakHash, SignatureHashNotAccepted, SignatureUnknownCritical:
+			n++
+			if s.Created.After(newest) {
+				newest = s.Created
+			}
+		}
+	}
+	for _, s := range k.KeySignatures {
+		note(s)
+	}
+	for _, u := range k.UserIDs {
+		for _, s := range u.Signatures {
+			note(s)
+		}
+	}
+	return n, newest
 }
 
 // noSelfSignature is the refusal of a key none of whose user IDs has a valid self-signature. Its
