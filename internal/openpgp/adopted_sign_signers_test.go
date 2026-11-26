@@ -247,11 +247,9 @@ func TestQASignerThatFailsKeepsItsCause(t *testing.T) {
 	})
 }
 
-// A signer that panics when it is asked to sign. The builders that exist do not catch it either (the
-// panic of a signer is the fault of its owner), but a ceremony that crashes half-way is worse than one
-// that refuses: this test is the report.
+// A signer that panics when it is asked to sign: a signature error and no bytes (the first form of the
+// step let the panic through, and the test said so while that was so).
 func TestQASignerThatPanicsIsRefused(t *testing.T) {
-	qaKnownBug(t, "a panic of crypto.Signer.Sign goes through DirectKeySignatureFor and DetachedSignatureFor (adopted.go sign, sign.go signWith)")
 	fkEachBase(t, func(t *testing.T, b *fkBase) {
 		k := fkRead(t, b.plain)
 		std := fkStdSigner(t, b)

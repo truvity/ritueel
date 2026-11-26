@@ -11,7 +11,6 @@ import (
 	"encoding/binary"
 	"math/big"
 	"math/bits"
-	"os"
 	"testing"
 	"time"
 
@@ -25,15 +24,6 @@ import (
 // The signatures that an adopted key makes, read by a parser of the tests that shares nothing with the
 // code under test (it is written from RFC 9580, sections 4 and 5.2), and verified with the standard
 // library, with go-crypto and, through internal/verifier, with gpgv and sqv.
-
-// qaKnownBug skips a test that proves a fault of the code under test. The test is the report of the
-// fault; the suite stays green until the fault is fixed. RITUEEL_TEST_KNOWN_BUGS=1 runs it.
-func qaKnownBug(t *testing.T, what string) {
-	t.Helper()
-	if os.Getenv("RITUEEL_TEST_KNOWN_BUGS") != "1" {
-		t.Skipf("known fault, run with RITUEEL_TEST_KNOWN_BUGS=1: %s", what)
-	}
-}
 
 // qaSub is one subpacket of an area.
 type qaSub struct {
