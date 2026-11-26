@@ -9,7 +9,6 @@ import (
 
 	pgp "github.com/ProtonMail/go-crypto/openpgp"
 
-	"ritueel.id/ritueel/internal/openpgp"
 	"ritueel.id/ritueel/internal/verifier"
 )
 
@@ -141,5 +140,3 @@ func TestForeignCertificateIsReadByGpgvAndSqv(t *testing.T) {
 		}
 	})
 }
-
-var _ = openpgp.ErrForeignKey
