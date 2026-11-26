@@ -703,3 +703,26 @@ func TestARefusalIsAnErrorOfItsKindThatUnwrapsToIt(t *testing.T) {
 		t.Error("the two kinds are one")
 	}
 }
+
+// A Refusal that is built by hand with no kind is still an error that can be printed: it does not
+// panic, its text holds the reason, it is neither kind and it unwraps to nothing.
+func TestARefusalWithNoKindDoesNotPanicAndIsNeitherKind(t *testing.T) {
+	var err error = &Refusal{Reason: "in fixed words"}
+	text := err.Error()
+	if !strings.Contains(text, "in fixed words") {
+		t.Errorf("the text does not hold the reason: %q", text)
+	}
+	if errors.Is(err, ErrKeyDir) || errors.Is(err, ErrParams) {
+		t.Errorf("a refusal with no kind is of a kind: %v", err)
+	}
+	if got := errors.Unwrap(err); got != nil {
+		t.Errorf("Unwrap gives %v, want nil", got)
+	}
+	var r *Refusal
+	if !errors.As(err, &r) {
+		t.Error("the refusal is not found by errors.As")
+	}
+	if text := (&Refusal{}).Error(); text == "" {
+		t.Error("a refusal with no kind and no reason has no text")
+	}
+}
