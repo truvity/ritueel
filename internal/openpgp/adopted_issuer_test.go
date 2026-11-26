@@ -398,3 +398,54 @@ func TestTheIssuerReadsTheSnapshotAndNotTheView(t *testing.T) {
 		t.Errorf("an edited view makes the key an unusable one: %v", err)
 	}
 }
+
+// A signer that panics gives a signature error and no bytes, and a signer that keeps its slice and changes
+// it after it answered changes nothing that was checked.
+func TestASignerThatPanicsOrKeepsItsAnswerIsHandled(t *testing.T) {
+	fkEachBase(t, func(t *testing.T, b *fkBase) {
+		k := fkRead(t, b.plain)
+		std := fkStdSigner(t, b)
+		at := fkEpoch.Add(time.Hour)
+
+		a, err := openpgp.NewAdoptedIssuer(k, fkSigner{pub: std.Public, sign: func(io.Reader, []byte, crypto.SignerOpts) ([]byte, error) {
+			panic("the signer panics")
+		}})
+		if err != nil {
+			t.Fatal(err)
+		}
+		sig, err := openpgp.DirectKeySignatureFor(rand.Reader, a, at)
+		if sig != nil || !errors.Is(err, openpgp.ErrSignature) {
+			t.Errorf("a signer that panics: %v (%d bytes)", err, len(sig))
+		}
+		fkCheckText(t, "a signer that panics", err, b)
+
+		// the slice of the answer is cleared as soon as the signer is back: the signature is made from
+		// the copy and still verifies
+		var kept []byte
+		a, err = openpgp.NewAdoptedIssuer(k, fkSigner{pub: std.Public, sign: func(r io.Reader, d []byte, o crypto.SignerOpts) ([]byte, error) {
+			s, err := std.Sign(r, d, o)
+			kept = s
+			return s, err
+		}})
+		if err != nil {
+			t.Fatal(err)
+		}
+		sig, err = openpgp.DirectKeySignatureFor(rand.Reader, a, at)
+		if err != nil {
+			t.Fatal(err)
+		}
+		before := bytes.Clone(sig)
+		clear(kept)
+		if !bytes.Equal(sig, before) {
+			t.Error("a change of the signer's slice changed the signature")
+		}
+		ring, err := pgp.ReadKeyRing(bytes.NewReader(fkWithKeySig(t, k.Certificate(), sig)))
+		if err != nil || len(ring) != 1 {
+			t.Fatalf("go-crypto does not read the certificate with the signature: %v", err)
+		}
+		p, _ := gpacket.Read(bytes.NewReader(sig))
+		if err := ring[0].PrimaryKey.VerifyDirectKeySignature(p.(*gpacket.Signature)); err != nil {
+			t.Errorf("the signature does not verify: %v", err)
+		}
+	})
+}

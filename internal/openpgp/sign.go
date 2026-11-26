@@ -109,6 +109,23 @@ func (k signKey) values(digest, raw []byte) ([]byte, error) {
 	return nil, fail(ErrSignature, "the algorithm of the key is not one that signs here")
 }
 
+// callSigner asks the signer for its answer and returns a copy of it: the check of the answer and its use
+// are done on the copy, so that a signer that keeps its slice and changes it later changes nothing that was
+// checked. A panic of the signer is a signature error with no bytes, as a panic of its Public is a refusal
+// of the key. The cause that the signer gives is kept in the error, so that errors.Is finds it.
+func callSigner(s crypto.Signer, rnd io.Reader, digest []byte, opts crypto.SignerOpts) (raw []byte, err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			raw, err = nil, fail(ErrSignature, "the signer panicked")
+		}
+	}()
+	answer, err := s.Sign(rnd, digest, opts)
+	if err != nil {
+		return nil, fmt.Errorf("%w: the signer failed: %w", ErrSignature, err)
+	}
+	return bytes.Clone(answer), nil
+}
+
 // signWith makes the body of a version 4 signature packet: it hashes the data and the signature's
 // fields (RFC 9580, section 5.2.4), has s sign the SHA-384 digest, checks the answer with the public
 // key and writes the fields. It returns the body, which the caller wraps in a packet and reads back.
@@ -133,9 +150,9 @@ func signWith(rnd io.Reader, s crypto.Signer, k signKey, spec sigSpec) ([]byte, 
 	digest := h.Sum(nil)
 
 	// The signer is given a copy of the digest and never sees the data.
-	raw, err := s.Sign(rnd, bytes.Clone(digest), k.opts())
+	raw, err := callSigner(s, rnd, bytes.Clone(digest), k.opts())
 	if err != nil {
-		return nil, fmt.Errorf("%w: the signer failed: %w", ErrSignature, err)
+		return nil, err
 	}
 	vals, err := k.values(digest, raw)
 	if err != nil {
