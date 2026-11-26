@@ -269,12 +269,13 @@ func TestReadSignatureFileHoldsThePacketToOneKibibyte(t *testing.T) {
 // The file is checked against 8 KiB before anything is read: a file of one byte more is refused with the
 // text of the size, and a file of exactly 8 KiB is read (and refused for what it is).
 func TestReadSignatureFileChecksTheSizeOfTheFileFirst(t *testing.T) {
+	rev := aRevocation(t)
 	if openpgp.MaxSignatureFileBytes != 8192 {
 		t.Fatalf("MaxSignatureFileBytes is %d, the page says 8 KiB", openpgp.MaxSignatureFileBytes)
 	}
 	for name, in := range map[string][]byte{
 		"zeros":                 make([]byte, openpgp.MaxSignatureFileBytes+1),
-		"the start of a packet": cat(aRevocation(t), make([]byte, openpgp.MaxSignatureFileBytes+1-len(aRevocation(t)))),
+		"the start of a packet": cat(rev, make([]byte, openpgp.MaxSignatureFileBytes+1-len(rev))),
 		"the start of armour":   cat([]byte("-----BEGIN PGP SIGNATURE-----\n\n"), bytes.Repeat([]byte("A"), openpgp.MaxSignatureFileBytes)),
 		"an age file":           cat([]byte("age-encryption.org/v1\n"), make([]byte, openpgp.MaxSignatureFileBytes)),
 		"a megabyte":            make([]byte, 1<<20),
@@ -285,7 +286,7 @@ func TestReadSignatureFileChecksTheSizeOfTheFileFirst(t *testing.T) {
 		"zeros":     make([]byte, openpgp.MaxSignatureFileBytes),
 		"armour":    cat([]byte("-----BEGIN PGP SIGNATURE-----\n\n"), bytes.Repeat([]byte("A"), openpgp.MaxSignatureFileBytes-31)),
 		"an age":    cat([]byte("age-encryption.org/v1\n"), make([]byte, openpgp.MaxSignatureFileBytes-22)),
-		"a packet":  cat(aRevocation(t), make([]byte, openpgp.MaxSignatureFileBytes-len(aRevocation(t)))),
+		"a packet":  cat(rev, make([]byte, openpgp.MaxSignatureFileBytes-len(rev))),
 		"all 0xFF":  bytes.Repeat([]byte{0xFF}, openpgp.MaxSignatureFileBytes),
 		"all dash":  bytes.Repeat([]byte("-"), openpgp.MaxSignatureFileBytes),
 		"all lines": bytes.Repeat([]byte("\n"), openpgp.MaxSignatureFileBytes),
