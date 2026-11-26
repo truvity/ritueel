@@ -8,6 +8,7 @@ import (
 	"crypto/sha256"
 	"errors"
 	"math/big"
+	"strings"
 	"testing"
 
 	gpacket "github.com/ProtonMail/go-crypto/openpgp/packet"
@@ -432,4 +433,20 @@ func fkSamePrimes(t testing.TB, b *fkBase) []byte {
 	t.Helper()
 	own := b.secrets(t).Primary
 	return fkEncode(own[0], own[1], own[1], own[3])
+}
+
+func TestSecretPacketRefusesNumbersOverTheBoundBeforeItComputesAnything(t *testing.T) {
+	b := fkNamed(t, "rsa4096")
+	own := b.secrets(t).Primary
+	big513 := bytes.Repeat([]byte{0xFF}, 513)
+	// the first prime is over the bound and above the second, which is the case that the swap computes on
+	k := fkRead(t, fkSecretFile(t, b, false, fkEncode(own[0], big513, own[2], own[3])))
+	pkt, err := k.SecretPacket(nil)
+	if !errors.Is(err, openpgp.ErrForeignSecret) || pkt != nil {
+		t.Fatalf("SecretPacket: %v, want ErrForeignSecret and no packet", err)
+	}
+	if !strings.Contains(err.Error(), "four numbers") {
+		t.Errorf("the refusal is not the one of the size: %v", err)
+	}
+	fkCheckText(t, "a prime over the bound", err, b)
 }

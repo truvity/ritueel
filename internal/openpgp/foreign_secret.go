@@ -445,7 +445,8 @@ func (s *ForeignSecret) Signer() crypto.Signer {
 //   - the copies that crypto/rsa, crypto/ecdsa and crypto/ed25519 made, among them one that the
 //     validation of an RSA key builds and one that its precomputation builds;
 //   - the scratch space of the big-number checks of the primes p and q (the primality test) and of
-//     the number u;
+//     the number u, and of the inverse that makes u again when a packet is written with the primes
+//     in the order of the standard;
 //   - the hash state of the stretching of a passphrase, which holds blocks of the passphrase;
 //   - the copies that the garbage collector moved.
 //
@@ -811,10 +812,17 @@ func (k *ForeignKey) SecretPacket(passphrase []byte) (pkt []byte, err error) {
 		return nil, err
 	}
 	err = k.withNumbers(passphrase, func(numbers []byte) error {
-		// The numbers must be the secret of the public part, with the checks of OpenSecret. An RSA
-		// export that has p above q is checked as it stands, and written in the order of the standard.
-		canon := numbers
+		// The numbers must be the secret of the public part, with the checks of OpenSecret, and they
+		// are judged first, as they stand. Only then is an RSA export that has p above q put in the
+		// order of the standard (which asks for no size that was not checked), and that result is
+		// checked again. An RSA secret with p below q has passed the only check that it needs.
+		canon, checked := numbers, false
 		if k.pub.alg.ID == algoRSA {
+			key, err := foreignPrivateKey(k.pub, numbers, false)
+			if err != nil {
+				return err
+			}
+			wipeKey(key)
 			re, err := canonicalRSANumbers(numbers)
 			if err != nil {
 				return err
@@ -822,18 +830,17 @@ func (k *ForeignKey) SecretPacket(passphrase []byte) (pkt []byte, err error) {
 			if re != nil {
 				defer clear(re)
 				canon = re
-				key, err := foreignPrivateKey(k.pub, numbers, false)
-				if err != nil {
-					return err
-				}
-				wipeKey(key)
+			} else {
+				checked = true // p below q: p = q was refused above
 			}
 		}
-		key, err := foreignPrivateKey(k.pub, canon, true)
-		if err != nil {
-			return err
+		if !checked {
+			key, err := foreignPrivateKey(k.pub, canon, true)
+			if err != nil {
+				return err
+			}
+			wipeKey(key)
 		}
-		wipeKey(key)
 		pkt = secretPacketOf(pubBody, canon)
 		return nil
 	})
@@ -876,6 +883,11 @@ func canonicalRSANumbers(numbers []byte) ([]byte, error) {
 	if len(rest) != 0 {
 		return nil, fail(ErrForeignSecret, "the secret has bytes after its four numbers")
 	}
+	for _, v := range parts {
+		if len(v) > maxRSASecretNumber {
+			return nil, fail(ErrForeignSecret, "the secret is not the four numbers of an RSA key")
+		}
+	}
 	p, q := new(big.Int).SetBytes(parts[1]), new(big.Int).SetBytes(parts[2])
 	defer wipeInt(p)
 	defer wipeInt(q)
@@ -887,11 +899,18 @@ func canonicalRSANumbers(numbers []byte) ([]byte, error) {
 		return nil, fail(ErrForeignSecret, "the primes of the secret have no inverse of one modulo the other")
 	}
 	defer wipeInt(u)
-	// made at a size that no append can pass, so that no growth leaves a copy behind
-	out := make([]byte, 0, len(numbers)+2+maxRSASecretNumber)
+	// made at a size that the four numbers cannot pass (each is at most maxRSASecretNumber bytes, and
+	// u is below p), and never grown: a number that would not fit is a failure, so that no growth
+	// leaves a copy behind
+	out := make([]byte, 0, 4*(2+maxRSASecretNumber))
 	out = append(out, numbers[:2+len(parts[0])]...) // d, as it stands
 	for _, v := range []*big.Int{q, p, u} {
 		b := v.Bytes()
+		if len(out)+2+len(b) > cap(out) {
+			clear(b)
+			clear(out)
+			return nil, fail(ErrForeignSecret, "the secret is not the four numbers of an RSA key")
+		}
 		out = append(out, byte(v.BitLen()>>8), byte(v.BitLen()))
 		out = append(out, b...)
 		clear(b)

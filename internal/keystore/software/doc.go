@@ -138,7 +138,8 @@
 // slice that Bytes returned is that memory), the copies that crypto/x509, encoding/asn1,
 // encoding/pem and the OpenPGP reader of go-crypto made while they read the key, and the copies
 // that the garbage collector moved. For an adopted key there is more. The scratch space of the
-// big-number checks of p and q (the primality test) and of u is not cleared. The hash state that
+// big-number checks of p and q (the primality test), of u, and of the inverse that makes u
+// again when the primes are put in the order of the standard, is not cleared. The hash state that
 // stretches the passphrase of an exported file holds blocks of it, and is not cleared. The standard
 // library's validation of an RSA key and its precomputation each build a copy of the key of their
 // own. One [Store.SaveAdopted] opens the key several times (to write the packet, to read it back,
