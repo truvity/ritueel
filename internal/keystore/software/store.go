@@ -16,6 +16,7 @@ import (
 	"time"
 
 	"ritueel.id/ritueel/internal/fsx"
+	"ritueel.id/ritueel/internal/keydir"
 	"ritueel.id/ritueel/internal/openpgp"
 )
 
@@ -155,7 +156,7 @@ func nilSource(src PassphraseSource) bool {
 // between the check and the open of the folder is followed by the open (fsx refuses a link only at
 // the last element), so the path is resolved and checked again, and the folder that it gives must
 // be the same file as the one that was checked, by os.SameFile, at the same resolved path.
-func stillTheCheckedFolder(stat statFunc, dir, bundleDir string, checked fs.FileInfo) error {
+func stillTheCheckedFolder(stat keydir.Stat, dir, bundleDir string, checked fs.FileInfo) error {
 	again, err := checkKeyDir(stat, dir, bundleDir)
 	if err != nil {
 		return err

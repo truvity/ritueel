@@ -19,7 +19,8 @@
 // # The key directory
 //
 // [CheckKeyDir] refuses a key directory that is the bundle, inside it, or inside the work tree of
-// any repository that encloses the bundle, so a copy of a bundle cannot carry a root. [Open]
+// any repository that encloses the bundle, so a copy of a bundle cannot carry a root; the rules
+// are those of internal/keydir, which belong to no key store. [Open]
 // resolves the links of the path as the system does, in order and without cleaning the text first,
 // checks that, and opens the folder that was checked with internal/fsx, which follows no link at
 // the last element; then it resolves and checks the path again, and refuses when the folder is no
