@@ -355,9 +355,9 @@ func fkCraftedSeeds(f *testing.F) [][]byte {
 			fkRealSub(f, "ECDH", enc[0].pub, enc[0].sec, usage, 6, 33, true),
 			fkRealSub(f, "EdDSA", sig[0].pub, sig[0].sec, usage, 6, 33, false),
 		} {
-			out = append(out, fkCraftedFile(f, b, s.body))
+			out = append(out, s.bound(f, b, s.body))
 			for _, k := range []int{1, 3, 8} {
-				out = append(out, fkCraftedFile(f, b, s.stretch(s.last, k)))
+				out = append(out, s.bound(f, b, s.stretch(s.last, k)))
 			}
 		}
 	}
@@ -371,8 +371,8 @@ func fkCraftedSeeds(f *testing.F) [][]byte {
 func FuzzForeignSubkeyPublicPart(f *testing.F) {
 	b := fkNamed(f, "ed25519")
 	enc, sig, _ := fkDonors(f)
-	var areas [][]byte
-	var pubs [][]byte
+	var areas, pubs [][]byte
+	var bindings []fkPacket
 	for _, usage := range []byte{0, 254, 255} {
 		for _, s := range []fkSubSecret{
 			fkRSASub(f, 3, usage), fkRSASub(f, 17, usage), fkRSASub(f, 257, usage), fkRSASub(f, 65537, usage),
@@ -380,6 +380,7 @@ func FuzzForeignSubkeyPublicPart(f *testing.F) {
 			fkRealSub(f, "ECDH", enc[0].pub, enc[0].sec, usage, 6, 33, true),
 			fkRealSub(f, "EdDSA", sig[0].pub, sig[0].sec, usage, 6, 33, false),
 		} {
+			bindings = append(bindings, fkBinding(f, b, s.body[:s.pubLen]))
 			areas = append(areas, bytes.Clone(s.area()))
 			pubs = append(pubs, bytes.Clone(s.body[:s.pubLen]))
 		}
@@ -402,7 +403,7 @@ func FuzzForeignSubkeyPublicPart(f *testing.F) {
 	f.Fuzz(func(t *testing.T, pub []byte, sel uint8) {
 		area := areas[int(sel)%len(areas)]
 		body := append(bytes.Clone(pub), area...)
-		file := fkJoin(append(slicesClone(head), fkPacket{7, body})...)
+		file := fkJoin(append(slicesClone(head), fkPacket{7, body}, bindings[int(sel)%len(areas)])...)
 		k, err := openpgp.ReadForeignKey(file)
 		if err != nil {
 			if k != nil || !errors.Is(err, openpgp.ErrForeignKey) {
@@ -412,17 +413,19 @@ func FuzzForeignSubkeyPublicPart(f *testing.F) {
 			return
 		}
 		cert := k.Certificate()
-		_, bodies, ok := softPackets(cert)
+		ctags, bodies, ok := softPackets(cert)
 		if !ok {
 			t.Fatal("the certificate is not whole packets")
 		}
-		sub := bodies[len(bodies)-1]
-		if len(k.Subkeys) == 1 && k.Subkeys[0].Form != openpgp.SubkeyPublic {
-			if !bytes.HasPrefix(body, sub) {
-				t.Fatal("the subkey of the certificate is not the start of the secret subkey packet")
-			}
-			if len(sub) > len(pub)+2 && len(sub) > len(body) {
-				t.Fatal("the subkey of the certificate is longer than its packet")
+		for i, tag := range ctags {
+			if tag == 14 && len(k.Subkeys) == 1 && k.Subkeys[0].Form != openpgp.SubkeyPublic {
+				sub := bodies[i]
+				if !bytes.HasPrefix(body, sub) {
+					t.Fatal("the subkey of the certificate is not the start of the secret subkey packet")
+				}
+				if len(sub) > len(pub)+2 {
+					t.Fatalf("the subkey of the certificate takes %d bytes of the secret area", len(sub)-len(pub))
+				}
 			}
 		}
 		if len(area) > 2 {

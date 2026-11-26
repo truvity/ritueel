@@ -221,13 +221,15 @@ func TestForeignLimits(t *testing.T) {
 // constants have the values of the doc comment.
 func TestForeignLimitValues(t *testing.T) {
 	for name, c := range map[string][2]int{
-		"MaxForeignKeyBytes":        {openpgp.MaxForeignKeyBytes, 8 << 20},
-		"MaxForeignPackets":         {openpgp.MaxForeignPackets, 10000},
-		"MaxForeignUserIDs":         {openpgp.MaxForeignUserIDs, 32},
-		"MaxForeignSubkeys":         {openpgp.MaxForeignSubkeys, 64},
-		"MaxForeignSignatures":      {openpgp.MaxForeignSignatures, 1024},
-		"MaxForeignPacketBytes":     {openpgp.MaxForeignPacketBytes, 1 << 20},
-		"MaxForeignPassphraseBytes": {openpgp.MaxForeignPassphraseBytes, 4096},
+		"MaxForeignKeyBytes":          {openpgp.MaxForeignKeyBytes, 8 << 20},
+		"MaxForeignPackets":           {openpgp.MaxForeignPackets, 10000},
+		"MaxForeignUserIDs":           {openpgp.MaxForeignUserIDs, 32},
+		"MaxForeignSubkeys":           {openpgp.MaxForeignSubkeys, 64},
+		"MaxForeignSignatures":        {openpgp.MaxForeignSignatures, 1024},
+		"MaxForeignPacketBytes":       {openpgp.MaxForeignPacketBytes, 1 << 20},
+		"MaxForeignPassphraseBytes":   {openpgp.MaxForeignPassphraseBytes, 4096},
+		"MaxForeignUserIDBytes":       {openpgp.MaxForeignUserIDBytes, 2048},
+		"MaxForeignClaimedSignatures": {openpgp.MaxForeignClaimedSignatures, 2048},
 	} {
 		if c[0] != c[1] {
 			t.Errorf("%s is %d, the doc comment says %d", name, c[0], c[1])

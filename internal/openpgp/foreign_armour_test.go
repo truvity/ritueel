@@ -230,9 +230,21 @@ func TestForeignTruncationOfBinaryFiles(t *testing.T) {
 			file := b.file(t, prot)
 			boundary := map[int]int{0: 0} // the offset and the number of packets before it
 			off := 0
+			var tags []byte
 			for i, p := range splitPackets(t, file) {
 				off += len(p.Raw)
 				boundary[off] = i + 1
+				tags = append(tags, p.Tag)
+			}
+			// a secret subkey is read only with a binding after it: a cut that leaves one without
+			// its signature is refused for that
+			unbound := func(n int) bool {
+				for i := 0; i < n; i++ {
+					if tags[i] == 7 && (i+1 >= n || tags[i+1] != 2) {
+						return true
+					}
+				}
+				return false
 			}
 			for cut := 0; cut <= len(file); cut++ {
 				in := file[:cut]
@@ -242,6 +254,8 @@ func TestForeignTruncationOfBinaryFiles(t *testing.T) {
 					_ = fkRefused(t, "empty", in, b, openpgp.ErrForeignForm)
 				case atBoundary && n < 3:
 					_ = fkRefused(t, fmt.Sprintf("%d packets", n), in, b, openpgp.ErrForeignSelfSignature)
+				case atBoundary && unbound(n):
+					_ = fkRefused(t, fmt.Sprintf("%d packets, a secret subkey with no binding", n), in, b, openpgp.ErrForeignSubkey)
 				case atBoundary:
 					if _, err := openpgp.ReadForeignKey(in); err != nil {
 						t.Fatalf("%d packets: %v", n, err)
