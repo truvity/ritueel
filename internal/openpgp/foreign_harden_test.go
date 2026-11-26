@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"crypto"
 	"crypto/rand"
+	"crypto/sha256"
 	"errors"
 	"fmt"
 	"math/big"
@@ -162,13 +163,28 @@ func (s fkSubSecret) stretch(at, k int) []byte {
 }
 
 // fkHead is the primary, a user ID and its self-signature of a template, which every file here starts with.
-func fkCraftedFile(t testing.TB, b *fkBase, subBody []byte) []byte {
+func fkCraftedFile(t testing.TB, b *fkBase, subBody []byte, after ...fkPacket) []byte {
 	t.Helper()
 	head := fkTemplateHead(t, b.file(t, fkProt{}))
-	return fkJoin(append(head, fkPacket{7, subBody})...)
+	return fkJoin(append(append(head, fkPacket{7, subBody}), after...)...)
 }
 
-// fkCertSubkeyBody is the body of the first subkey packet of a certificate.
+// fkBinding is a binding signature of the primary of the Ed25519 template over a public subkey packet
+// body, as the primary of a real file would make it.
+func fkBinding(t testing.TB, b *fkBase, pubBody []byte) fkPacket {
+	t.Helper()
+	w := fkWriter{b}
+	return fkPacket{2, w.sign(t, "sub", 0x18, w.areas(1000, fkSubpacket(27, false, 0x0C)), nil, 8, sha256.New, pubBody)}
+}
+
+// bound is the file of a subkey packet followed by the binding of the genuine public part of s: the
+// binding that an edited file keeps, whatever is done to the packet in front of it.
+func (s fkSubSecret) bound(t testing.TB, b *fkBase, body []byte) []byte {
+	t.Helper()
+	return fkCraftedFile(t, b, body, fkBinding(t, b, s.body[:s.pubLen]))
+}
+
+// fkCertSubkeyBody is the body of the first subkey packet of a certificate, or nil when it holds none.
 func fkCertSubkeyBody(t testing.TB, cert []byte) []byte {
 	t.Helper()
 	for _, p := range splitPackets(t, cert) {
@@ -176,7 +192,6 @@ func fkCertSubkeyBody(t testing.TB, cert []byte) []byte {
 			return p.Body
 		}
 	}
-	t.Fatal("the certificate holds no subkey")
 	return nil
 }
 
@@ -234,7 +249,7 @@ func TestForeignCraftedSubkeys(t *testing.T) {
 			s := m.make(usage)
 			// the control: the packet as it is, which must be read, so that a refusal below is not a
 			// refusal of a packet that was never right
-			ctl := fkRead(t, fkCraftedFile(t, b, s.body))
+			ctl := fkRead(t, s.bound(t, b, s.body))
 			if len(ctl.Subkeys) != 1 || ctl.Subkeys[0].Form != openpgp.SubkeyWithSecret {
 				t.Fatalf("%s: the control subkey is %+v", s.name, ctl.Subkeys)
 			}
@@ -250,7 +265,7 @@ func TestForeignCraftedSubkeys(t *testing.T) {
 						continue
 					}
 					what := fmt.Sprintf("%s, usage %d, the %s length field claims %d more", m.name, usage, at.name, k)
-					file := fkCraftedFile(t, b, s.stretch(at.off, k))
+					file := s.bound(t, b, s.stretch(at.off, k))
 					key, err := openpgp.ReadForeignKey(file)
 					if err != nil {
 						if key != nil || !errors.Is(err, openpgp.ErrForeignKey) {
@@ -274,8 +289,8 @@ func TestForeignCraftedSubkeys(t *testing.T) {
 					accepted++
 					cert := key.Certificate()
 					body := fkCertSubkeyBody(t, cert)
-					leaked := len(body) - s.pubLen
-					bodyOK := len(body) >= s.pubLen && bytes.Equal(body, s.stretch(at.off, k)[:len(body)])
+					leaked := max(len(body)-s.pubLen, 0)
+					bodyOK := body == nil || (len(body) >= s.pubLen && bytes.Equal(body, s.stretch(at.off, k)[:len(body)]))
 					area := s.area()
 					if !bodyOK || leaked > 2 {
 						t.Errorf("%s: ACCEPTED, and the certificate holds %d bytes of the secret area (body ok %v)", what, leaked, bodyOK)
@@ -332,13 +347,13 @@ func TestForeignCraftedCurves(t *testing.T) {
 	for _, sc := range subs {
 		for _, usage := range []byte{0, 254, 255} {
 			s := sc.sub(usage)
-			ctl := fkRead(t, fkCraftedFile(t, b, s.body))
+			ctl := fkRead(t, s.bound(t, b, s.body))
 			if len(ctl.Subkeys) != 1 {
 				t.Fatalf("%s: the control is not read", s.name)
 			}
 			check := func(what string, body []byte) {
 				t.Helper()
-				key, err := openpgp.ReadForeignKey(fkCraftedFile(t, b, body))
+				key, err := openpgp.ReadForeignKey(s.bound(t, b, body))
 				if err != nil {
 					if key != nil || !errors.Is(err, openpgp.ErrForeignKey) {
 						t.Errorf("%s: %v", what, err)
@@ -349,9 +364,9 @@ func TestForeignCraftedCurves(t *testing.T) {
 				accepted++
 				cert := key.Certificate()
 				cb := fkCertSubkeyBody(t, cert)
-				leaked := len(cb) - s.pubLen
+				leaked := max(len(cb)-s.pubLen, 0)
 				area := s.area()
-				if leaked > 2 || !bytes.Equal(cb, body[:len(cb)]) {
+				if leaked > 2 || (cb != nil && !bytes.Equal(cb, body[:len(cb)])) {
 					t.Errorf("%s: ACCEPTED, the certificate holds %d bytes of the secret area", what, leaked)
 				}
 				if where, bad := fkLeaks(cert, area[2:]); bad {
@@ -421,8 +436,9 @@ func TestForeignSubkeySecretAreaForms(t *testing.T) {
 	d := enc[2]
 	head := fkTemplateHead(t, b.file(t, fkProt{}))
 	numbers := fkReadMPIs(t, d.sec.Body[len(d.pub.Body)+1:])
+	binding := fkBinding(t, b, d.pub.Body)
 	file := func(area []byte) []byte {
-		return fkJoin(append(slicesClone(head), fkPacket{7, append(bytes.Clone(d.pub.Body), area...)})...)
+		return fkJoin(append(slicesClone(head), fkPacket{7, append(bytes.Clone(d.pub.Body), area...)}, binding)...)
 	}
 	unprot := fkUnprotectedArea(numbers...)
 	prot := func(usage, cipher, s2k, hash byte, ivLen, dataLen int) []byte {

@@ -559,6 +559,9 @@ func fkBuildRich(t testing.TB, b *fkBase, prot fkProt, clean bool) *fkRich {
 			form = fkAsOtherPass
 		case "garbage":
 			form = fkAsGarbage
+		case "revokedonly", "other", "misplaced":
+			// no binding of the primary that verifies: only a public subkey packet is read with none
+			form = fkAsPublic
 		}
 		var d fkDonorKey
 		switch name {

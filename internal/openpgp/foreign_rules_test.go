@@ -6,6 +6,7 @@ import (
 	"crypto/sha256"
 	"encoding/binary"
 	"errors"
+	"fmt"
 	"hash"
 	"strings"
 	"testing"
@@ -456,8 +457,12 @@ func TestForeignNewLimits(t *testing.T) {
 		third := fkThird(t, b)
 		cert := fkPacket{2, third.Body}
 		build := func(claimed int, others int, extra ...fkPacket) []byte {
+			// at most 1000 signatures stand on one user ID: the claimed ones are spread over user IDs
 			ps := []fkPacket{head[0], head[1]}
 			for i := 0; i < claimed; i++ {
+				if i > 0 && i%1000 == 0 {
+					ps = append(ps, fkPacket{13, []byte(fmt.Sprintf("spare %d <spare%d@example.org>", i, i))})
+				}
 				ps = append(ps, fkPacket{2, self})
 			}
 			for i := 0; i < others; i++ {
@@ -467,8 +472,15 @@ func TestForeignNewLimits(t *testing.T) {
 		}
 		n := openpgp.MaxForeignClaimedSignatures
 		k, err := openpgp.ReadForeignKey(build(n, 0))
-		if err != nil || len(k.UserIDs[0].Signatures) != n {
+		if err != nil {
 			t.Fatalf("the limit: %v", err)
+		}
+		listed := 0
+		for _, u := range k.UserIDs {
+			listed += len(u.Signatures)
+		}
+		if listed != n {
+			t.Fatalf("%d signatures listed at the limit, want %d", listed, n)
 		}
 		err = fkRefused(t, "one past the limit", build(n+1, 0), b, openpgp.ErrForeignLimit)
 		if err != nil && !strings.Contains(err.Error(), "MaxForeignClaimedSignatures") {
@@ -476,7 +488,13 @@ func TestForeignNewLimits(t *testing.T) {
 		}
 		// certifications of other keys do not count toward it
 		k, err = openpgp.ReadForeignKey(build(n-1, 400))
-		if err != nil || k.UserIDs[0].Certifications != 400 {
+		certs := 0
+		if k != nil {
+			for _, u := range k.UserIDs {
+				certs += u.Certifications
+			}
+		}
+		if err != nil || certs != 400 {
 			t.Errorf("the limit less one with 400 certifications of another key: %v", err)
 		}
 		k, err = openpgp.ReadForeignKey(build(1, openpgp.MaxForeignSignatures-1))
@@ -488,7 +506,7 @@ func TestForeignNewLimits(t *testing.T) {
 		unknown := fkPacket{2, w.signFor(t, "user", 0x30, created, nil)}
 		provable := fkPacket{2, w.signFor(t, "user", 0x30, append(bytes.Clone(created), fkSubpacket(33, false, append([]byte{4}, bytes.Repeat([]byte{0x77}, 20)...)...)...), nil)}
 		if _, err := openpgp.ReadForeignKey(build(n-1, 0, unknown)); err != nil {
-			t.Errorf("511 signatures and a revocation with no issuer: %v", err)
+			t.Errorf("the limit less one and a revocation with no issuer: %v", err)
 		}
 		_ = fkRefused(t, "a revocation with no issuer counts", build(n, 0, unknown), b, openpgp.ErrForeignLimit)
 		if _, err := openpgp.ReadForeignKey(build(n, 0, provable, provable, provable)); err != nil {
@@ -498,6 +516,9 @@ func TestForeignNewLimits(t *testing.T) {
 		ps := []fkPacket{head[0], head[1], head[2]}
 		enc, _, _ := fkDonors(t)
 		for i := 0; i < n/2+1; i++ {
+			if i > 0 && i%1000 == 0 {
+				ps = append(ps, fkPacket{13, []byte("spare <spare@example.org>")})
+			}
 			ps = append(ps, fkPacket{2, self})
 		}
 		ps = append(ps, enc[0].pub)
