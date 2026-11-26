@@ -128,7 +128,7 @@
     - way: Primary keys born on two root cards
       state: tool-planned
       why: Stage two of a person's key.
-      milestone: M6
+      milestone: M3
     - way: Primary key in a cloud key of a personal account
       state: planned
       why: Planned, not yet designed. Record 0008, rule 8.

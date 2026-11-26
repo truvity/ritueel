@@ -5,7 +5,7 @@ sidebar:
   order: 15
 ---
 
-*Not built yet. This is the page that [record 0008](../decisions/0008-a-persons-own-key.md) leaves for the details, and that record is `Accepted`. It decides the profile, how long a person's primary lives, the two stages of the key, the day-to-day subkeys and how a subkey is retired. The [hand-off contract](/reference/hand-off-contract/#openpgp-subkey) carries the signing and the authentication capability, with their test vectors. The code is [issue #18](https://github.com/truvity/ritueel/issues/18): stage one is M3, and stage two is M6. How to use the result is in [Sign git commits and tags](/guides/openpgp-sign-git/) and [Your own OpenPGP key](/guides/personal-openpgp/).*
+*Not built yet. This is the page that [record 0008](../decisions/0008-a-persons-own-key.md) leaves for the details, and that record is `Accepted`. It decides the profile, how long a person's primary lives, the two stages of the key, the day-to-day subkeys and how a subkey is retired. The [hand-off contract](/reference/hand-off-contract/#openpgp-subkey) carries the signing and the authentication capability, with their test vectors. The code is [issue #18](https://github.com/truvity/ritueel/issues/18): stage one and stage two are M3. How to use the result is in [Sign git commits and tags](/guides/openpgp-sign-git/) and [Your own OpenPGP key](/guides/personal-openpgp/).*
 
 There is no key the company issues to staff: every person uses OpenPGP as their own key ([record 0008](../decisions/0008-a-persons-own-key.md)). A person's own OpenPGP key is the same ritual as a service's subkey: a key is made in a key store and bound under a primary. Here the primary is the person's, offline in a key file, and the subkeys are born on the person's cards. ritueel runs it with the engine of the company case, with the X.509 half switched off.
 
@@ -81,7 +81,7 @@ How a primary is adopted is fixed with the code ([issue #18](https://github.com/
 
 ## Stage two: card-born primaries
 
-Decided, not built; it depends on the root cards and their proofs (M1, M6). Card-born primaries come after adoption ([record 0008](../decisions/0008-a-persons-own-key.md)).
+Decided, not built; it depends on the root cards and their proofs (M1, M3). Card-born primaries come after adoption ([record 0008](../decisions/0008-a-persons-own-key.md)).
 
 :::note[Not yet proven]
 The layout is decided and not yet proven. Two primaries are born, one on each root card, in the personal bundle's row ([record 0003](../decisions/0003-root-cards.md)). One is published; the other is a standby that the published one certifies. Both are keys of the person's one OpenPGP root. The standby is the answer to a card that has no backup. The old key vouches for the published one, with an overlap, and then ends ([record 0007](../decisions/0007-changing-and-losing-a-root.md)). Record 0008 lists the layout under Not yet proven or only proposed.
