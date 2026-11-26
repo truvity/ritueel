@@ -44,7 +44,7 @@ func FuzzReadForeignCertificate(f *testing.F) {
 	add([]byte{0xC6, 0x00})
 	f.Fuzz(func(t *testing.T, in []byte) {
 		before := bytes.Clone(in)
-		k, err := openpgp.ReadForeignCertificate(in)
+		k, err := qaReadCert(in)
 		if !bytes.Equal(in, before) {
 			t.Fatal("ReadForeignCertificate changed its input")
 		}
@@ -69,7 +69,7 @@ func FuzzReadForeignCertificate(f *testing.F) {
 			t.Fatalf("go-crypto does not read an accepted certificate as one entity of the key: %v", err)
 		}
 		_ = fkCertProperty(t, "the accepted certificate", k)
-		k2, err := openpgp.ReadForeignCertificate(k.Certificate())
+		k2, err := qaReadCert(k.Certificate())
 		if err != nil || !qaSnapshotEqual(k, k2) {
 			t.Fatalf("an accepted certificate is not read again as itself: %v", err)
 		}

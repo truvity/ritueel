@@ -27,7 +27,7 @@ import (
 func TestQANewAdoptedIssuerRefusesAKeyThatIsNearlyTheKey(t *testing.T) {
 	fkEachBase(t, func(t *testing.T, b *fkBase) {
 		k := fkRead(t, b.plain)
-		cert, err := openpgp.ReadForeignCertificate(k.Certificate())
+		cert, err := qaReadCert(k.Certificate())
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -139,7 +139,7 @@ func TestQANewAdoptedIssuerRefusesARevokedPrimaryFromAnExportAndFromACertificate
 		for door, key := range map[string]func() *openpgp.ForeignKey{
 			"export": func() *openpgp.ForeignKey { return fkRead(t, file) },
 			"certificate": func() *openpgp.ForeignKey {
-				c, err := openpgp.ReadForeignCertificate(fkRead(t, file).Certificate())
+				c, err := qaReadCert(fkRead(t, file).Certificate())
 				if err != nil {
 					t.Fatal(err)
 				}

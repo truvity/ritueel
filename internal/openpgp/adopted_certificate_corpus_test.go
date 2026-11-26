@@ -153,6 +153,11 @@ func mustDonor(t testing.TB) []byte {
 	return enc[3].pub.Body
 }
 
+// qaReadCert reads a certificate against its own digest, which is what a caller that holds the right digest does.
+func qaReadCert(cert []byte) (*openpgp.ForeignKey, error) {
+	return openpgp.ReadForeignCertificate(cert, sha256.Sum256(cert))
+}
+
 // qaSnapshotEqual compares two snapshots with the exported views of the tests.
 func qaSnapshotEqual(a, b *openpgp.ForeignKey) bool {
 	return reflect.DeepEqual(openpgp.SnapshotOf(a), openpgp.SnapshotOf(b))
@@ -179,7 +184,7 @@ func TestQACertificateOfEveryAcceptedExportIsAccepted(t *testing.T) {
 		seen[string(cert)] = true
 		what := f.name
 		in := bytes.Clone(cert)
-		kc, err := openpgp.ReadForeignCertificate(in)
+		kc, err := qaReadCert(in)
 		if err != nil {
 			t.Errorf("%s: the certificate of the export is refused: %v", what, err)
 			continue
@@ -193,7 +198,7 @@ func TestQACertificateOfEveryAcceptedExportIsAccepted(t *testing.T) {
 			t.Errorf("%s: the snapshot of the certificate is not the snapshot of the export:\n%+v\n%+v", what, openpgp.SnapshotOf(k), openpgp.SnapshotOf(kc))
 		}
 		// and again: a fixpoint of a fixpoint
-		kc2, err := openpgp.ReadForeignCertificate(kc.Certificate())
+		kc2, err := qaReadCert(kc.Certificate())
 		if err != nil || !bytes.Equal(kc2.Certificate(), cert) || !qaSnapshotEqual(kc, kc2) {
 			t.Errorf("%s: the certificate is not read again as itself: %v", what, err)
 		}

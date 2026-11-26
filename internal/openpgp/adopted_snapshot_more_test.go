@@ -284,14 +284,14 @@ func TestQASnapshotIsNotReachedByTheView(t *testing.T) {
 					k, err = openpgp.ReadForeignKey(input)
 				} else {
 					input = fkRead(t, file).Certificate()
-					k, err = openpgp.ReadForeignCertificate(input)
+					k, err = qaReadCert(input)
 				}
 				if err != nil {
 					t.Fatal(err)
 				}
 				ref := fkRead(t, file)
 				if door == "certificate" {
-					ref, _ = openpgp.ReadForeignCertificate(ref.Certificate())
+					ref, _ = qaReadCert(ref.Certificate())
 				}
 				want := openpgp.SnapshotOf(ref)
 				if !reflect.DeepEqual(want, openpgp.SnapshotOf(k)) {
@@ -358,7 +358,7 @@ func TestQASnapshotDropsTheCriticalBitOfWhatItCarries(t *testing.T) {
 		}
 	}
 	// the same key read from its certificate
-	kc, err := openpgp.ReadForeignCertificate(k.Certificate())
+	kc, err := qaReadCert(k.Certificate())
 	if err != nil || !reflect.DeepEqual(openpgp.SnapshotCriticalBits(kc), bits) {
 		t.Errorf("the critical bits of the certificate: %v", err)
 	}

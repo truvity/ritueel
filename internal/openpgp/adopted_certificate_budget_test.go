@@ -34,7 +34,7 @@ func TestQAReadForeignCertificateHoldsItsLimitsBeforeTheWork(t *testing.T) {
 	refuse := func(what, constant string, cert []byte) {
 		t.Helper()
 		start := time.Now()
-		k, err := openpgp.ReadForeignCertificate(cert)
+		k, err := qaReadCert(cert)
 		took := time.Since(start)
 		if k != nil || err == nil {
 			t.Errorf("%s: the certificate was read (%v)", what, err)
@@ -131,7 +131,7 @@ func TestQAReadForeignCertificateWorstCaseInsideTheLimits(t *testing.T) {
 	}
 	cert := k.Certificate()
 	start = time.Now()
-	kc, err := openpgp.ReadForeignCertificate(cert)
+	kc, err := qaReadCert(cert)
 	certTook := time.Since(start)
 	if err != nil {
 		t.Fatalf("255 distinct signatures on a photograph, read as a certificate: %v", err)
@@ -153,7 +153,7 @@ func TestQAReadForeignCertificateWorstCaseInsideTheLimits(t *testing.T) {
 	ps := fkSplit(t, cert)
 	ps = append(ps, fkPacket{2, fkAttrSig(t, b, photo.Body, 1000+255)})
 	start = time.Now()
-	kc, err = openpgp.ReadForeignCertificate(fkJoin(ps...))
+	kc, err = qaReadCert(fkJoin(ps...))
 	if kc != nil || !errors.Is(err, openpgp.ErrForeignLimit) || !strings.Contains(err.Error(), "MaxForeignHashedBytes") {
 		t.Errorf("256 distinct signatures on a photograph, as a certificate: %v", err)
 	}
@@ -186,7 +186,7 @@ func TestQAReadForeignCertificateWorstCaseInsideTheLimits(t *testing.T) {
 		}
 		cert = k.Certificate()
 		start = time.Now()
-		kc, err = openpgp.ReadForeignCertificate(cert)
+		kc, err = qaReadCert(cert)
 		bindTook := time.Since(start)
 		if err != nil {
 			t.Fatalf("%s: 1365 bindings, read as a certificate: %v", name, err)
@@ -197,7 +197,7 @@ func TestQAReadForeignCertificateWorstCaseInsideTheLimits(t *testing.T) {
 		t.Logf("WORST CASE verifying with %s: a certificate of %d bytes with 1365 distinct bindings (4096 verifications): %v", name, len(cert), bindTook.Round(time.Millisecond))
 		cps := fkSplit(t, cert)
 		cps = append(cps, bindOf(n+7, enc[1]))
-		kc, err = openpgp.ReadForeignCertificate(fkJoin(cps...))
+		kc, err = qaReadCert(fkJoin(cps...))
 		if kc != nil || !errors.Is(err, openpgp.ErrForeignLimit) || !strings.Contains(err.Error(), "MaxForeignVerifications") {
 			t.Errorf("%s: 1366 bindings, as a certificate: %v", name, err)
 		}

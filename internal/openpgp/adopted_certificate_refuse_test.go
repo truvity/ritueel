@@ -231,7 +231,7 @@ func qaCases(t testing.TB, b *fkBase, ps []fkPacket, stride int) []qaCase {
 // the change leaves a certificate that the reader would write, that certificate.
 func qaRun(t *testing.T, b *fkBase, c qaCase, kinds map[string]int) {
 	t.Helper()
-	k, err := openpgp.ReadForeignCertificate(c.cert)
+	k, err := qaReadCert(c.cert)
 	if err == nil {
 		if !c.mayAccept {
 			t.Errorf("%s: the certificate was read, want a refusal", c.name)
@@ -347,7 +347,7 @@ func TestQAReadForeignCertificateTruncations(t *testing.T) {
 				if step > 1 && n%step != 0 && !boundary[n] && !boundary[n+1] && !boundary[n-1] {
 					continue
 				}
-				k, err := openpgp.ReadForeignCertificate(cert[:n])
+				k, err := qaReadCert(cert[:n])
 				if err == nil {
 					if !boundary[n] {
 						t.Errorf("%s: a certificate cut at %d, in the middle of a packet, was read", name, n)
@@ -394,7 +394,7 @@ func TestQAReadForeignCertificatePermutedBlocksAreKept(t *testing.T) {
 	d := users[2]
 	swapped := slices.Concat(rich[:a], rich[c:d], rich[a:c], rich[d:])
 	k0 := fkRead(t, fkRichOf(t, b, false, true).file)
-	k, err := openpgp.ReadForeignCertificate(fkJoin(swapped...))
+	k, err := qaReadCert(fkJoin(swapped...))
 	if err != nil {
 		t.Fatalf("the blocks of two user IDs swapped: %v", err)
 	}
@@ -421,7 +421,7 @@ func TestQAReadForeignCertificateWrongDoor(t *testing.T) {
 			"the rich export":                fkRichOf(t, b, false, true).file,
 			"a certificate and then secrets": append(bytes.Clone(cert), b.plain...),
 		} {
-			if k, err := openpgp.ReadForeignCertificate(in); k != nil || err == nil {
+			if k, err := qaReadCert(in); k != nil || err == nil {
 				t.Errorf("%s: read by ReadForeignCertificate: %v", name, err)
 			} else {
 				if !errors.Is(err, openpgp.ErrForeignKey) {
@@ -431,7 +431,7 @@ func TestQAReadForeignCertificateWrongDoor(t *testing.T) {
 			}
 		}
 		// the export is refused by name: it holds a secret key packet
-		if _, err := openpgp.ReadForeignCertificate(b.plain); !errors.Is(err, openpgp.ErrAdoptedCertificate) {
+		if _, err := qaReadCert(b.plain); !errors.Is(err, openpgp.ErrAdoptedCertificate) {
 			t.Errorf("an export: %v", err)
 		}
 		// a certificate is no export
@@ -447,7 +447,7 @@ func TestQAReadForeignCertificateWrongDoor(t *testing.T) {
 			t.Errorf("a certificate to ReadForeignKey: %v", err)
 		}
 		// the secret of a key read from a certificate: a named refusal, for every passphrase, before and after a wipe
-		k, err := openpgp.ReadForeignCertificate(cert)
+		k, err := qaReadCert(cert)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -472,7 +472,7 @@ func TestQAReadForeignCertificateWrongDoor(t *testing.T) {
 			t.Fatal(err)
 		}
 		defer sec.Wipe()
-		k2, _ := openpgp.ReadForeignCertificate(cert)
+		k2, _ := qaReadCert(cert)
 		if _, err := openpgp.NewAdoptedIssuer(k2, sec.Signer()); err != nil {
 			t.Errorf("the issuer of a key read from a certificate: %v", err)
 		}
