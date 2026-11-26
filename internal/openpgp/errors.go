@@ -155,10 +155,6 @@ var (
 	// no user ID, or every self-signature is made with a hash that does not count (MD5, RIPEMD-160), carries
 	// a critical subpacket that is not understood, or does not verify. It is also an [ErrForeignKey].
 	ErrForeignSelfSignature error = &kindError{"openpgp: no user ID has a valid self-signature", ErrForeignKey}
-	// ErrForeignSubkey marks a file with a secret subkey (a secret key packet, with a secret or as a stub)
-	// that no binding signature of the primary confirms: none verifies over the public part that the
-	// packet's own length fields cut out, with SHA-1 or a stronger hash. It is also an [ErrForeignKey].
-	ErrForeignSubkey error = &kindError{"openpgp: the file holds a secret subkey that no signature of the primary confirms", ErrForeignKey}
 	// ErrForeignSecret marks a secret that opened and is not a good secret: its checksum is wrong, its
 	// numbers do not read to their end, or it is not the secret of the public key in the same packet.
 	// It is also an [ErrForeignKey].

@@ -142,8 +142,8 @@ func versionFault(what string, version byte) error {
 // version 4, the creation time, the algorithm and the algorithm's numbers, each number in the strict
 // form of readMPI. what names the packet in an error ("the primary key", "a subkey"). With whole
 // set, the body is a public key packet and the part must be all of it; otherwise it is a secret
-// key packet, the part is what stands before the secret, and every length that the packet gives is
-// held to a tight bound for its algorithm: the cut that these lengths make is the line between the
+// key packet and the part is what stands before the secret. With strict (always, for a key that the file
+// gives), every length that the packet gives is held to a tight bound for its algorithm: the cut that these lengths make is the line between the
 // public certificate and the secret, so a length that could move it into the secret is refused. The
 // bounds are: RSA with a modulus of at most 16384 bits and an odd exponent of at most 3 bytes; DSA
 // with a prime of 1024, 2048 or 3072 bits, a subprime of at most 64 bytes, and g and y no longer
@@ -154,7 +154,7 @@ func versionFault(what string, version byte) error {
 // is not one of the list is taken only for a public packet (whole): its length is the body's, and
 // its numbers are not read. A curve or an algorithm that is refused is an [ErrForeignAlgorithm],
 // any other fault an [ErrForeignForm].
-func parseForeignPublic(what string, body []byte, whole bool) (fkPublic, error) {
+func parseForeignPublic(what string, body []byte, whole, strict bool) (fkPublic, error) {
 	var p fkPublic
 	if len(body) < 6 {
 		return p, fail(ErrForeignForm, "%s is cut short before its algorithm", what)
@@ -164,7 +164,6 @@ func parseForeignPublic(what string, body []byte, whole bool) (fkPublic, error) 
 	}
 	p.created = time.Unix(int64(binary.BigEndian.Uint32(body[1:5])), 0).UTC()
 	p.alg.ID = body[5]
-	strict := !whole
 	rest := body[6:]
 	var err error
 	switch p.alg.ID {
