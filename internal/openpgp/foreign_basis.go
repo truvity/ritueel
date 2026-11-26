@@ -41,9 +41,12 @@ type ForeignBasis struct {
 	// it was chosen by the bytes of the packets and the choice matters (DirectTied), the preference
 	// subpackets that a re-signing carries over and the types of its hashed subpackets that it does not.
 	DirectHave, DirectWeak, DirectSigExpires, DirectTied bool
-	DirectEnd                                            time.Time
-	DirectPrefs                                          []ForeignBasisPref
-	DirectDropped                                        []uint8
+	// DirectFlagsTruncated is true when the key flags of the direct-key source had more than one octet: a
+	// re-signing writes the first octet only and the others are lost.
+	DirectFlagsTruncated bool
+	DirectEnd            time.Time
+	DirectPrefs          []ForeignBasisPref
+	DirectDropped        []uint8
 	// Newest is the creation time of the newest signature that counts anywhere in the certificate: the next
 	// signature must be dated after it.
 	Newest time.Time
@@ -77,10 +80,16 @@ type ForeignBasisUserID struct {
 	IsPrimary  bool
 	KeyExpires time.Time
 	// Prefs are the preference subpackets of the source that a re-signing carries over, in the order in which
-	// they are written, and Dropped are the types of its hashed subpackets that it does not carry (a
-	// designated revoker, a notation, a policy URL, any unknown type), sorted, numbers only.
+	// they are written. They are carried WITHOUT the critical bit that they may have had in the source; a
+	// carried type whose critical bit is lost is also listed in Dropped. Dropped are the types of its hashed
+	// subpackets that a re-signing does not carry as they are (a designated revoker, a notation, a policy URL,
+	// any unknown type, a carried type that was too long or whose critical bit is lost), sorted, numbers
+	// only.
 	Prefs   []ForeignBasisPref
 	Dropped []uint8
+	// FlagsTruncated is true when the key flags of the source had more than one octet: a re-signing writes
+	// the first octet only (KeyFlags) and the others are lost.
+	FlagsTruncated bool
 	// SigExpires is true when the source signature has a signature expiration time, which is not judged here.
 	SigExpires bool
 	// Weak is true when the source signature is made with SHA-1: its flags, primary flag, end and
@@ -122,7 +131,7 @@ func (k *ForeignKey) SigningBasis() ForeignBasis {
 		ExpiryEarliest: e.earliest, ExpiryAny: e.any, ExpiryAgree: e.agree, ExpiryMarked: e.marked,
 		PrimaryFlagged: s.flaggedUserIDs(),
 		DirectHave:     s.direct.have, DirectWeak: s.direct.weak, DirectSigExpires: s.direct.sigExpires, DirectTied: s.direct.tied,
-		DirectEnd: s.direct.expires, DirectPrefs: basisPrefs(s.direct.prefs), DirectDropped: bytes.Clone(s.direct.dropped),
+		DirectFlagsTruncated: s.direct.flagsLong, DirectEnd: s.direct.expires, DirectPrefs: basisPrefs(s.direct.prefs), DirectDropped: bytes.Clone(s.direct.dropped),
 		Newest: s.newest,
 	}
 	primary, havePrimary := s.primaryUserID()
@@ -130,7 +139,7 @@ func (k *ForeignKey) SigningBasis() ForeignBasis {
 		b.UserIDs = append(b.UserIDs, ForeignBasisUserID{
 			Text: string(u.text), Revoked: u.revoked, Signed: u.signed,
 			KeyFlags: u.flags, Primary: u.primary, IsPrimary: havePrimary && i == primary, KeyExpires: u.expires,
-			Prefs: basisPrefs(u.prefs), Dropped: bytes.Clone(u.dropped),
+			Prefs: basisPrefs(u.prefs), Dropped: bytes.Clone(u.dropped), FlagsTruncated: u.flagsLong,
 			SigExpires: u.sigExpires, Weak: u.weak, AnyStrong: u.anyStrong, Tied: u.tied,
 			TextOK: checkExistingUserID(u.text) == nil,
 		})

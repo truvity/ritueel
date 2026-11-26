@@ -926,3 +926,51 @@ func TestSigningBasisDoesNotInventAPrimaryUserID(t *testing.T) {
 		t.Errorf("a key with the primary flag: %+v", one)
 	}
 }
+
+// Key flags of more than one octet are marked, on a user ID and on the direct-key source, since a re-signing
+// writes the first octet only; two candidates that differ only there are a tie that matters.
+func TestSigningBasisMarksKeyFlagsOfMoreThanOneOctet(t *testing.T) {
+	b := fkNamed(t, "ed25519")
+	w := fkWriter{b}
+	user := func(flags ...byte) []byte {
+		return w.userSig(t, 0x13, w.areas(1000, fkSubpacket(27, false, flags...)), nil)
+	}
+	direct := func(flags ...byte) []byte {
+		return w.keySig(t, 0x1F, w.areas(1100, fkSubpacket(27, false, flags...)), nil)
+	}
+
+	one := fkRead(t, fkEdFile(t, w, [][]byte{direct(1)}, [][]byte{user(3)})).SigningBasis()
+	if one.UserIDs[0].FlagsTruncated || one.DirectFlagsTruncated {
+		t.Errorf("one octet of flags is marked: %+v", one)
+	}
+	k := fkRead(t, fkEdFile(t, w, [][]byte{direct(1, 2)}, [][]byte{user(3, 4)}))
+	kc, err := fkReadCertificate(k.Certificate())
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, key := range []*openpgp.ForeignKey{k, kc} {
+		d := key.SigningBasis()
+		if !d.UserIDs[0].FlagsTruncated || d.UserIDs[0].KeyFlags != 3 || !d.DirectFlagsTruncated {
+			t.Errorf("two octets of flags are not marked: %+v", d)
+		}
+	}
+	// the same flags in the first octet, one signature with a second octet and one without: not the same
+	tie := fkRead(t, fkEdFile(t, w, nil, [][]byte{user(3), user(3, 4)}))
+	if u := openpgp.SnapshotUsers(tie)[0]; !u.Tied {
+		t.Errorf("candidates that differ only in the octets of the flags are not tied: %+v", u)
+	}
+}
+
+// The critical bit of a carried preference is lost when it is carried, and the basis says so: the type is in
+// the carried list and in the dropped list.
+func TestSigningBasisSaysThatACarriedPreferenceLosesItsCriticalBit(t *testing.T) {
+	b := fkNamed(t, "ed25519")
+	w := fkWriter{b}
+	sig := w.userSig(t, 0x13, w.areas(1000, fkSubpacket(21, true, 8, 9), fkSubpacket(30, false, 1)), nil)
+	d := fkRead(t, fkEdFile(t, w, nil, [][]byte{sig})).SigningBasis()
+	u := d.UserIDs[0]
+	if !reflect.DeepEqual(u.Prefs, []openpgp.ForeignBasisPref{{Type: 21, Data: []byte{8, 9}}, {Type: 30, Data: []byte{1}}}) ||
+		!reflect.DeepEqual(u.Dropped, []uint8{21}) {
+		t.Errorf("the carried preferences %+v and the dropped types %v", u.Prefs, u.Dropped)
+	}
+}

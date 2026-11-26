@@ -706,7 +706,7 @@ func (v *fkVerifier) keyLevel(w *fkWalk, out *fkOutput) (sigs []ForeignSignature
 				prefs := carriedSubpackets(h.areas.hashed)
 				out.direct = append(out.direct, snapSig{
 					sig: fs, raw: emit, sigExpires: count(h.areas.hashed, spSigExpiration) > 0,
-					prefs: prefs, dropped: droppedTypes(h.areas.hashed, prefs),
+					prefs: prefs, dropped: droppedTypes(h.areas.hashed, prefs), flagsLong: flagsLonger(h.areas.hashed),
 				})
 			}
 		}
@@ -808,6 +808,7 @@ func (v *fkVerifier) components(w *fkWalk, out *fkOutput) (ids []ForeignUserID, 
 					if isCertification(h.typ) {
 						rec.prefs = carriedSubpackets(h.areas.hashed)
 						rec.dropped = droppedTypes(h.areas.hashed, rec.prefs)
+						rec.flagsLong = flagsLonger(h.areas.hashed)
 					}
 					grp.add(emit, out, rec)
 					grp.ok = grp.ok || isCertification(h.typ)

@@ -93,7 +93,9 @@
 // kept certificate only against the digest that the newest record of the bundle's history lists for it, as a
 // [HeldDigest], and never against a digest made from the file. It must show the person [ForeignKey.SigningBasis],
 // and not the per-signature view, as what later signatures are made from, with everything that a re-signing
-// carries (the preferences) and drops (the types of the other subpackets). Where the source of a user ID is
+// carries (the preferences, which are carried without the critical bit that
+// they had, and then also listed among the dropped types) and drops (the types of the other subpackets), and
+// the key flags of a source that has more than one octet, of which a re-signing writes the first only. Where the source of a user ID is
 // weak, it must tell the person that the flags, the primary mark, the end and the preferences of that user ID
 // come from a SHA-1 signature, re-sign only when the person confirms it, and never fall back silently to an
 // older strong signature. It must show a choice that is tied: the bytes of the packets decided it, and it is

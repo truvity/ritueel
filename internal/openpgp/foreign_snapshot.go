@@ -30,6 +30,9 @@ type snapSig struct {
 	sigExpires bool
 	prefs      []subpacket
 	dropped    []byte
+	// flagsLong is true when the key flags subpacket (type 27) of its hashed area has more than one octet:
+	// a re-signing writes the first octet only.
+	flagsLong bool
 }
 
 // earlierEnd tells whether the key end x is earlier than the key end y. No end (the zero time) is the
@@ -66,9 +69,10 @@ func outranks(b, a snapSig) bool {
 }
 
 // sameContent tells whether two signatures say the same in everything that a builder uses: the key flags,
-// the primary flag, the carried preference subpackets, the dropped types and a signature expiration time.
+// the primary flag, the carried preference subpackets, the dropped types, a signature expiration time and
+// key flags of more than one octet.
 func sameContent(a, b snapSig) bool {
-	if a.sig.KeyFlags != b.sig.KeyFlags || a.sig.Primary != b.sig.Primary || a.sigExpires != b.sigExpires || !bytes.Equal(a.dropped, b.dropped) {
+	if a.sig.KeyFlags != b.sig.KeyFlags || a.sig.Primary != b.sig.Primary || a.sigExpires != b.sigExpires || a.flagsLong != b.flagsLong || !bytes.Equal(a.dropped, b.dropped) {
 		return false
 	}
 	if len(a.prefs) != len(b.prefs) {
@@ -119,9 +123,11 @@ var carriedTypes = []byte{11, 21, 22, 23, 30, 39}
 var rewrittenTypes = []byte{2, 9, 25, 27, 33}
 
 // droppedTypes lists, sorted and once each, the types of the subpackets of a hashed area that a later
-// signature will neither write afresh nor carry over: a designated revoker, a notation, a policy URL, a
-// signer's user ID, a signature expiration, any unknown type, and a carried type that was too long or
-// occurred twice. Only the numbers: the bytes are never kept.
+// signature will neither write afresh nor carry over as they are: a designated revoker, a notation, a policy
+// URL, a signer's user ID, a signature expiration, any unknown type, a carried type that was too long or
+// occurred twice, and a carried type whose critical bit was set in the source: it is carried without the bit,
+// so that it is in the list of the carried subpackets and in this one. Only the numbers: the bytes are never
+// kept.
 func droppedTypes(hashed, carried []subpacket) []byte {
 	var out []byte
 	for _, sp := range hashed {
@@ -132,12 +138,22 @@ func droppedTypes(hashed, carried []subpacket) []byte {
 		for _, c := range carried {
 			kept = kept || c.typ == sp.typ
 		}
-		if !kept {
+		if !kept || sp.critical {
 			out = append(out, sp.typ)
 		}
 	}
 	slices.Sort(out)
 	return out
+}
+
+// flagsLonger tells whether the key flags subpacket of a hashed area has more than one octet.
+func flagsLonger(hashed []subpacket) bool {
+	for _, sp := range hashed {
+		if sp.typ == spKeyFlags && len(sp.data) > 1 {
+			return true
+		}
+	}
+	return false
 }
 
 // maxCarried is the most octets of the contents of one carried subpacket. A longer one is dropped.
@@ -177,8 +193,11 @@ type snapUserID struct {
 	primary bool
 	expires time.Time
 	prefs   []subpacket
-	// dropped are the types of the hashed subpackets of that signature that a re-signing will not carry.
+	// dropped are the types of the hashed subpackets of that signature that a re-signing will not carry as
+	// they are, among them a carried type whose critical bit it loses.
 	dropped []byte
+	// flagsLong is true when the key flags of that signature had more than one octet: only the first is kept.
+	flagsLong bool
 	// sigExpires is true when that signature has a signature expiration time (type 3), which this layer
 	// does not judge.
 	sigExpires bool
@@ -212,6 +231,7 @@ type snapDirect struct {
 	tied       bool        // the choice of the newest was made by the bytes of the packets, and it matters
 	prefs      []subpacket // its carried subpackets
 	dropped    []byte      // the types of its hashed subpackets that a re-signing will not carry
+	flagsLong  bool        // its key flags had more than one octet
 }
 
 // fkSnapshot is the snapshot: the primary, and what the signatures of the primary say of the key, the
@@ -345,7 +365,7 @@ func (o *fkOutput) addUser(text []byte, counted []snapSig) {
 		}
 	}
 	if src, _, tied, ok := newestSig(counted, func(s ForeignSignature) bool { return isCertification(s.Type) }); ok {
-		u.flags, u.primary, u.expires, u.prefs, u.dropped = src.sig.KeyFlags, src.sig.Primary, src.sig.KeyExpires, src.prefs, src.dropped
+		u.flags, u.primary, u.expires, u.prefs, u.dropped, u.flagsLong = src.sig.KeyFlags, src.sig.Primary, src.sig.KeyExpires, src.prefs, src.dropped, src.flagsLong
 		u.sigExpires, u.weak, u.tied = src.sigExpires, src.sig.Status == SignatureValidWeakHash, tied
 	}
 	o.users = append(o.users, u)
@@ -405,7 +425,7 @@ func (o *fkOutput) snapshot(w *fkWalk, v *fkVerifier) fkSnapshot {
 	if d, _, tied, ok := newestSig(o.direct, func(ForeignSignature) bool { return true }); ok {
 		s.direct = snapDirect{
 			have: true, expires: d.sig.KeyExpires, sigExpires: d.sigExpires, weak: d.weakHash(), tied: tied,
-			prefs: d.prefs, dropped: d.dropped,
+			prefs: d.prefs, dropped: d.dropped, flagsLong: d.flagsLong,
 		}
 	}
 	return s
