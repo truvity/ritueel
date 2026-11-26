@@ -28,7 +28,7 @@
 19. The site shows a demo built from the real page in a demo mode that answers from fixtures through an in-memory ConnectRPC transport, as static files under `/demo/`, with hash routes. It has the four entries of rule 11. An action that writes is refused as "this is a demo". The demo keeps three example bundles with a switch and gets first-visit help, and its policy keeps blocking the analytics script.
 
 20. OpenPGP packets are built with ProtonMail/go-crypto, with a small bypass that plugs a card or KMS signer into its signing path. The version is pinned, with a test that builds a certificate with a software signer and runs gpgv, sqv and a tampered control. A go-crypto upgrade is a reviewed change with its signer test, not a routine bump.
-21. The `piv` and `openpgp-card` stores need cgo and PC/SC. A build without cgo leaves them out and reports them as not built (exit code 2), so software-root consumers keep a static binary.
+21. A card store is part of the one static executable, built with cgo off ([record 0012](0012-key-stores-come-from-atoom.md), rule 5), so software-root consumers keep a static binary.
 22. ritueel's key handling, signing and revocation get review, tests on real test devices, and the rules in GOVERNANCE.md. A test that needs hardware is tagged, skipped by default, and selects its card by serial.
 23. ritueel delivers one statically linked executable for Linux (copy and run, Go only, no installers), a small release signer program for CI until the requester system signs natively, and later a Go library for infrastructure code built on the same policy package.
 
@@ -77,6 +77,7 @@ One engine means the ceremony is tested once and the faces cannot drift apart. T
 ## Not yet proven or only proposed
 
 - **Not yet proven.** The guided mode, the step catalogue and the test that compares a wizard session with the printed commands; they come after the first signed release ([#16](https://github.com/truvity/ritueel/issues/16)).
+- **Not yet proven.** Until atoom has a driver for the OpenPGP application, the `openpgp-card` store needs cgo and PC/SC; a build without cgo leaves it out and reports it as not built (exit code 2) ([#18](https://github.com/truvity/ritueel/issues/18)).
 - **Not yet proven.** The program side of the local page: the ConnectRPC server, the embedded build, the profile tests, and the process behind the commands ([#17](https://github.com/truvity/ritueel/issues/17)).
 - **Proposed.** What happens when a process of another version answers, and how a test makes sure a process ends ([#17](https://github.com/truvity/ritueel/issues/17)).
 - **Proposed.** Additions to the page's security profile: a per-session header, a Sec-Fetch-Site same-origin check, no CORS and a tighter content security policy; the reason is that cookies do not isolate by port on localhost and an extension can read the page ([#17](https://github.com/truvity/ritueel/issues/17)).
