@@ -325,14 +325,15 @@ func (s *softwareStore) Close() error {
 
 // starterError turns a fault of the start of the driver into the error that a command maps. A folder of
 // the test keys that stands already is the refusal key-exists, and a state folder that the driver refuses
-// is the refusal key-dir, the key directory that is not fit; any other fault is an ordinary error. No
+// is the refusal key-dir, the key directory that is not fit, with the words that the folder may stand; any other fault is an ordinary error. No
 // text holds a path.
 func starterError(err error) error {
 	switch {
 	case errors.Is(err, atoomsoftware.ErrFolderExists):
 		return &BackendError{Reasons: []string{ReasonKeyExists}, Msg: keyDirUsedText + "; nothing was written"}
 	case errors.Is(err, atoomsoftware.ErrStateRefused):
-		return &BackendError{Reasons: []string{ReasonKeyDir}, Msg: err.Error() + "; no key was made"}
+		// The folder was made, or stood empty, before the driver refused it: it may stand.
+		return &BackendError{Reasons: []string{ReasonKeyDir}, Msg: err.Error() + "; no key was made; the folder " + keydir.TestOnlyFolder + " may stand in the key directory"}
 	}
 	return fmt.Errorf("the key store could not be started, and no key was made: %w", err)
 }

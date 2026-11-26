@@ -128,7 +128,10 @@ func (d *Dir) begin() error {
 // folder that the driver of atom itself makes and accepts when it opens an empty state folder. A folder
 // that is empty and fit is not a use: an earlier run that stopped before its first key left it, it is
 // harmless, and the next run uses it as it is. The same folder with a key in it, a file, a link, another
-// mode or another owner is a use. A temporary name and any other name are not a use. The first `apply`
+// mode or another owner is a use. A removal authorisation or a key file of the old naming is a use whatever
+// the type of the entry (a file, a link, a folder), and the names are compared without regard to case, since
+// a file system may fold it; the names that ritueel writes stay as they are. A temporary name and any other
+// name are not a use. The first `apply`
 // refuses a used key directory.
 func (d *Dir) Used() (bool, error) {
 	if d == nil {
@@ -145,13 +148,15 @@ func (d *Dir) Used() (bool, error) {
 	}
 	for _, e := range ents {
 		name := e.Name()
-		if name == TestOnlyFolder {
+		switch {
+		case name == TestOnlyFolder:
 			if !fitEmptyFolder(filepath.Join(d.path, name)) {
 				return true, nil
 			}
-			continue
-		}
-		if fsx.CheckName(name) == nil && e.Type().IsRegular() && usedName(name) {
+		case strings.EqualFold(name, TestOnlyFolder), usedName(name):
+			// Any entry of such a name is a use, whatever its type: a link or a folder is not a file that
+			// can be written over, and a name that differs only in case is the same name on a file system
+			// that folds case.
 			return true, nil
 		}
 	}
@@ -177,9 +182,10 @@ func fitEmptyFolder(path string) bool {
 
 // usedName reports whether a name is that of a removal authorisation or of a key file that an earlier
 // version of ritueel made in the key directory itself: <label> plus one of the suffixes below, the label
-// being one upper-case letter. The two names of an encrypted file end with .age.
+// being one letter, in either case. The two names of an encrypted file end with .age.
 func usedName(name string) bool {
-	if len(name) < 2 || name[0] < 'A' || name[0] > 'Z' {
+	name = strings.ToLower(name)
+	if len(name) < 2 || name[0] < 'a' || name[0] > 'z' {
 		return false
 	}
 	rest := name[1:]

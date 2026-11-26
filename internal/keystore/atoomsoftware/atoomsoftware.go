@@ -89,7 +89,7 @@ func Open(dir string, purposes []string) (*Link, error) {
 		if errors.As(err, &problems) {
 			return nil, ErrStateRefused
 		}
-		return nil, fmt.Errorf("atoomsoftware: the key driver cannot start: %w", err)
+		return nil, &startError{cause: err}
 	}
 	path, h := svc.Handler()
 	hc, stop := socket.InProcess(path, h)
@@ -115,6 +115,18 @@ func (l *Link) Close() error {
 	})
 	return nil
 }
+
+// startError is a start of the driver that failed for a reason that is not a refused state folder. The driver
+// puts paths into the text of such errors ("create ...", "chmod ..."), so this error says fixed words and
+// keeps the original only for errors.Is: it has no Unwrap, so the text cannot be reached through it.
+type startError struct{ cause error }
+
+func (*startError) Error() string {
+	return "atoomsoftware: the key driver cannot start, for a reason whose text is not shown because it can hold a path"
+}
+
+// Is reports whether the original error is, or wraps, target.
+func (e *startError) Is(target error) bool { return errors.Is(e.cause, target) }
 
 // emptyFolder reports whether path is a real folder (not a link) that holds nothing.
 func emptyFolder(path string) bool {

@@ -9,6 +9,7 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"errors"
+	"fmt"
 	"math/big"
 	"slices"
 	"strings"
@@ -345,15 +346,35 @@ func (m *x509Maker) signCertificate(ctx context.Context, i int, label string, ke
 		return err
 	})
 	if err != nil {
-		// A key store that signs in a process or on a device sees the end of the context while it signs: the
-		// run says that the context ended, as it does when it sees it between two steps.
-		if cerr := ctx.Err(); cerr != nil {
-			return cerr
+		cause, ended := signFault(ctx, err)
+		if ended {
+			return cause
 		}
-		return makeErr("signatures", err, "the root certificate of %s was not made", label)
+		return makeErr("signatures", cause, "the root certificate of %s was not made", label)
 	}
 	m.certs[label] = der
 	return m.signatureLine(s.N, m.pins[label], sha256Hex(sig))
+}
+
+// signFault is what a fault of a signing says when the context has ended. A key store that signs in a
+// process or on a device sees the end of the context while it signs. When the fault itself is the end of
+// the context (a cancel or a deadline), the run says that the context ended, as it does when it sees it
+// between two steps: the cause is the error of the context and ended is true. When the fault is something
+// else (a key that changed, a signature that did not verify, a refusal of the store), the cause stays the
+// reason of the stop, and the end of the context is named beside it, so that the line of the stop names the
+// cause that matters; ended is false. When the context has not ended the cause is the fault. The trustset
+// signers keep the text of a cause only, so a cancel inside one is known by the words of the context
+// package.
+func signFault(ctx context.Context, err error) (cause error, ended bool) {
+	cerr := ctx.Err()
+	if cerr == nil {
+		return err, false
+	}
+	if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) ||
+		strings.Contains(err.Error(), context.Canceled.Error()) || strings.Contains(err.Error(), context.DeadlineExceeded.Error()) {
+		return cerr, true
+	}
+	return fmt.Errorf("%w; the context also ended: %w", err, cerr), false
 }
 
 // signRemoval makes the removal authorisation of a label, stores it next to the key, and only then
@@ -374,10 +395,11 @@ func (m *x509Maker) signRemoval(ctx context.Context, i int, label string, key ke
 		return e
 	})
 	if err != nil {
-		if cerr := ctx.Err(); cerr != nil {
-			return cerr
+		cause, ended := signFault(ctx, err)
+		if ended {
+			return cause
 		}
-		return makeErr("signatures", err, "the removal authorisation of %s was not made", label)
+		return makeErr("signatures", cause, "the removal authorisation of %s was not made", label)
 	}
 	parts := strings.Split(text, ".")
 	if len(parts) != 3 {

@@ -377,9 +377,13 @@ func (r *run) startStore() error {
 	}
 	var refused *BackendError
 	if errors.As(err, &refused) && !r.in.Saved {
-		msg := strings.TrimSuffix(refused.Msg, "; nothing was written")
-		msg = strings.TrimSuffix(msg, "; no key was made")
-		msg += fmt.Sprintf("; this run wrote the plan folder history/%s before it found this, and wrote no attempt and made no key", jsonset.EscapeExact(r.plan.Name))
+		// The words about what this run wrote replace the store's "nothing was written" or "no key was made"; what
+		// follows them, that the folder of the keys may stand, is kept.
+		wrote := fmt.Sprintf("; this run wrote the plan folder history/%s before it found this, and wrote no attempt and made no key", jsonset.EscapeExact(r.plan.Name))
+		msg := strings.TrimSuffix(refused.Msg, "; nothing was written") + wrote
+		if strings.Contains(refused.Msg, "; no key was made") {
+			msg = strings.Replace(refused.Msg, "; no key was made", wrote, 1)
+		}
 		return &BackendError{Reasons: slices.Clone(refused.Reasons), Msg: msg}
 	}
 	if errors.As(err, &refused) {
