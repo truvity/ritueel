@@ -38,9 +38,9 @@ type fkAttack struct {
 	// the serial pattern must not be either.
 	secret [][]byte
 	serial bool
-	// bug, when it is set and the certificate holds the secret, is the reason that the test is skipped
-	// and not failed: the hole is known and its fix is not in this tree.
-	bug string
+	// check, when it is set, is held to a key that the reader returned, with the packets of its
+	// certificate: what the file is expected to keep and to lose.
+	check func(t *testing.T, k *openpgp.ForeignKey, ps []fkCP)
 }
 
 var fkAttackTable struct {
@@ -68,34 +68,20 @@ func fkRunAttacks(t *testing.T, b *fkBase, attacks []fkAttack) {
 				fkAttackTable.Unlock()
 				return
 			}
-			cert := key.Certificate()
-			leak := ""
-			if where, bad := fkLeaks(cert, a.secret...); bad {
-				leak = "a run of the secret (" + where + ")"
-			}
-			if a.serial {
+			ps := fkCertProperty(t, a.name, key, a.secret...)
+			for _, hay := range fkStrings(key) {
 				for _, form := range fkHexForms(fkSerial) {
-					if bytes.Contains(cert, form) {
-						leak = "the serial number"
+					if bytes.Contains(hay, form) {
+						t.Fatal("the serial number is in a field of the key")
 					}
 				}
-				for _, hay := range fkStrings(key) {
-					for _, form := range fkHexForms(fkSerial) {
-						if bytes.Contains(hay, form) {
-							leak = "the serial number in a field"
-						}
-					}
-				}
+			}
+			if a.check != nil {
+				a.check(t, key, ps)
 			}
 			fkAttackTable.Lock()
-			fkAttackTable.rows = append(fkAttackTable.rows, fmt.Sprintf("%s: READ, certificate of %d bytes, leak: %q", a.name, len(cert), leak))
+			fkAttackTable.rows = append(fkAttackTable.rows, fmt.Sprintf("%s: read, a clean certificate of %d packets", a.name, len(ps)))
 			fkAttackTable.Unlock()
-			if leak != "" {
-				if a.bug != "" {
-					t.Skip("BUG: " + a.bug)
-				}
-				t.Fatalf("the certificate holds %s", leak)
-			}
 		})
 	}
 }
@@ -231,11 +217,18 @@ func fkECDHSwitch(t testing.TB, s fkSubSecret, oid []byte, pointLen int) []byte 
 func TestForeignReviewersStretchedPackets(t *testing.T) {
 	b := fkNamed(t, "ed25519")
 	fkRunAttacks(t, b, fkReviewerAttacks(t))
+	fkLogTable(t)
+}
+
+// fkLogTable logs the outcome of each crafted input that was run, and clears the table.
+func fkLogTable(t *testing.T) {
+	t.Helper()
 	fkAttackTable.Lock()
 	defer fkAttackTable.Unlock()
 	for _, r := range fkAttackTable.rows {
 		t.Log(r)
 	}
+	fkAttackTable.rows = nil
 }
 
 // fkReviewerAttacks are the stretched and relabelled packets of the reviewers.
@@ -330,12 +323,14 @@ func TestForeignReusedSignaturesDoNotConfirm(t *testing.T) {
 		})
 	}
 	fkRunAttacks(t, b, attacks)
+	fkLogTable(t)
 }
 
 // A secret subkey packet that is relabelled as a public one, and bytes put in packets that the reader
 // copies without reading them.
 func TestForeignRelabelledAndHiddenSecrets(t *testing.T) {
 	fkRunAttacks(t, fkNamed(t, "ed25519"), fkRelabelledAttacks(t))
+	fkLogTable(t)
 }
 
 func fkRelabelledAttacks(t testing.TB) []fkAttack {
@@ -354,7 +349,6 @@ func fkRelabelledAttacks(t testing.TB) []fkAttack {
 				name:   fmt.Sprintf("a secret subkey with the public tag, %s, usage %d", name, usage),
 				file:   fkJoin(append(slicesClone(head), fkPacket{14, body}, fkBinding(t, b, s.body[:s.pubLen]))...),
 				secret: sec,
-				bug:    "a secret subkey packet with the tag of a public one is copied whole: fixed in round 4",
 			})
 		}
 		relabel("as it is", s.body)
@@ -379,7 +373,6 @@ func fkRelabelledAttacks(t testing.TB) []fkAttack {
 				file:   fkJoin(append(slicesClone(head), fkPacket{14, body})...),
 				secret: [][]byte{s.body[s.pubLen+2:]},
 				serial: name == "a stub",
-				bug:    "a secret subkey packet with the tag of a public one is copied whole: fixed in round 4",
 			})
 		}
 	}
@@ -416,18 +409,85 @@ func fkRelabelledAttacks(t testing.TB) []fkAttack {
 		if prot.Pass != "" {
 			name = "protected"
 		}
-		for label, ps := range map[string][]fkPacket{
-			"a certification by another key with the secret in its unhashed area":  {head[0], head[1], head[2], sealed},
-			"a user attribute with the secret":                                     {head[0], head[1], head[2], {17, append([]byte{byte(len(sec) + 1), 1}, sec...)}},
-			"a self-signature of the primary with the secret in its unhashed area": {head[0], head[1], self},
-		} {
-			attacks = append(attacks, fkAttack{
-				name:   fmt.Sprintf("%s, primary %s", label, name),
-				file:   fkJoin(append(slicesClone(ps), []fkPacket{}...)...),
-				secret: secrets,
-				bug:    "a packet that the reader copies without reading can hold anything: fixed in round 4",
-			})
+		sigsOf := func(ps []fkCP) int {
+			n := 0
+			for _, p := range ps {
+				if p.tag == 2 {
+					n++
+				}
+			}
+			return n
 		}
+		// The outcome of each, as of the reader that writes its certificate from what the primary signed.
+		attacks = append(attacks,
+			// READ: the certification of another key is counted and left out, with what it hid
+			fkAttack{name: "a certification by another key with the secret in its unhashed area, primary " + name,
+				file: fkJoin(head[0], head[1], head[2], sealed), secret: secrets,
+				check: func(t *testing.T, k *openpgp.ForeignKey, ps []fkCP) {
+					if k.UserIDs[0].Certifications != 1 || sigsOf(ps) != 1 {
+						t.Errorf("the certification of another key: %d counted, %d signatures in the certificate", k.UserIDs[0].Certifications, sigsOf(ps))
+					}
+				}},
+			// READ: a user attribute that no signature of the primary covers is left out and counted
+			fkAttack{name: "a user attribute with the secret, primary " + name,
+				file: fkJoin(head[0], head[1], head[2], fkPacket{17, append([]byte{byte(len(sec) + 1), 1}, sec...)}), secret: secrets,
+				check: func(t *testing.T, k *openpgp.ForeignKey, ps []fkCP) {
+					if k.UserAttributes != 1 || k.UserAttributesLeftOut != 1 || len(fkCertTagsOf(ps, 17)) != 0 {
+						t.Errorf("the attribute: %d, %d left out, %d in the certificate", k.UserAttributes, k.UserAttributesLeftOut, len(fkCertTagsOf(ps, 17)))
+					}
+				}},
+			// READ: the valid self-signature is kept, valid, with an unhashed area that the reader built
+			fkAttack{name: "a self-signature of the primary with the secret in its unhashed area, primary " + name,
+				file: fkJoin(head[0], head[1], self), secret: secrets,
+				check: func(t *testing.T, k *openpgp.ForeignKey, ps []fkCP) {
+					u := k.UserIDs[0]
+					if !u.Valid || len(u.Signatures) != 1 || u.Signatures[0].Status != openpgp.SignatureValid || sigsOf(ps) != 1 || len(fkCertUsers(ps)) != 1 {
+						t.Errorf("the self-signature with the secret in its unhashed area: %+v", u)
+					}
+				}},
+			// REFUSED (no valid self-signature) when the user ID with the secret as its text is the only one
+			fkAttack{name: "a user ID whose text is the secret, alone, primary " + name,
+				file: fkJoin(head[0], fkPacket{13, sec}, head[2]), secret: secrets},
+			// READ: beside a good user ID the one with the secret has no valid self-signature and is left out
+			fkAttack{name: "a user ID whose text is the secret, beside a good one, primary " + name,
+				file: fkJoin(head[0], fkPacket{13, sec}, head[2], head[1], head[2]), secret: secrets,
+				check: func(t *testing.T, k *openpgp.ForeignKey, ps []fkCP) {
+					if got := fkCertUsers(ps); len(got) != 1 || got[0] != fkUser {
+						t.Errorf("the user IDs of the certificate: %q", got)
+					}
+				}},
+		)
+		// signature values that are not in the form: trailing bytes, a leading zero octet, an extra number.
+		// Each is followed by the good self-signature, so that the file is read; the bad one is not in it.
+		good := head[2].Body
+		cut := len(good) - 68 // the two numbers of an Ed25519 signature: 2 x (2 + 32)
+		bits := int(good[cut])<<8 | int(good[cut+1])
+		bad := map[string][]byte{
+			"trailing bytes after the value":               append(bytes.Clone(good), sec...),
+			"a leading zero octet in a number":             slicesJoin(good[:cut+2], []byte{0}, good[cut+2:]),
+			"a number whose bit count counts a zero octet": slicesJoin(good[:cut], fkHdr(bits+8), []byte{0}, good[cut+2:]),
+			"an extra number after the two":                append(bytes.Clone(good), fkMPI(sec)...),
+			"nothing after the signed fields":              good[:cut],
+		}
+		for label, body := range bad {
+			attacks = append(attacks, fkAttack{name: label + ", primary " + name, file: fkJoin(head[0], head[1], fkPacket{2, body}, head[2]), secret: secrets,
+				check: func(t *testing.T, k *openpgp.ForeignKey, ps []fkCP) {
+					if sigsOf(ps) != 1 || len(k.UserIDs[0].Signatures) != 2 || k.UserIDs[0].Signatures[0].Status.Counts() {
+						t.Errorf("a signature whose value is not in the form counts or is written: %+v", k.UserIDs[0].Signatures)
+					}
+				}})
+		}
+		// the same valid self-signature, 300 times: one is written, the rest are dropped and counted
+		many := []fkPacket{head[0], head[1]}
+		for i := 0; i < 300; i++ {
+			many = append(many, head[2])
+		}
+		attacks = append(attacks, fkAttack{name: "the same valid self-signature 300 times, primary " + name, file: fkJoin(many...), secret: secrets,
+			check: func(t *testing.T, k *openpgp.ForeignKey, ps []fkCP) {
+				if sigsOf(ps) != 1 || k.DuplicatesDropped != 299 {
+					t.Errorf("%d signatures written, %d duplicates dropped, want 1 and 299", sigsOf(ps), k.DuplicatesDropped)
+				}
+			}})
 	}
 	return attacks
 }
@@ -534,6 +594,17 @@ func TestForeignSecretSubkeyBindings(t *testing.T) {
 			})
 		}
 	}
+}
+
+// fkCertTagsOf lists the bodies of the packets of a tag in a walked certificate.
+func fkCertTagsOf(ps []fkCP, tag byte) [][]byte {
+	var out [][]byte
+	for _, p := range ps {
+		if p.tag == tag {
+			out = append(out, p.body)
+		}
+	}
+	return out
 }
 
 // fkCertTags lists the bodies of the packets of a tag in the certificate of a key.
@@ -700,3 +771,5 @@ func fkVerifyOnce(pk *gpacket.PublicKey, msg, sig []byte) bool {
 	}
 	return false
 }
+
+func slicesJoin(parts ...[]byte) []byte { return bytes.Join(parts, nil) }
