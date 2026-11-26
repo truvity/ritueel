@@ -79,8 +79,8 @@ func LoadUserIDs(fsys fsx.FS) (*UserIDs, error) {
 }
 
 // ParseUserIDs reads the bytes of want/openpgp.yaml: version 1 and user_ids, at most [MaxUserIDs] entries of
-// name, address and the optional retire, of which at most [MaxActiveUserIDs] do not retire. No (name, address in
-// lower case) is there twice. What only the person's own user ID decides (that it is not written or retired
+// name, address and the optional retire, of which at most [MaxActiveUserIDs] do not retire. No user ID is there
+// twice, whatever the case of its name and address. What only the person's own user ID decides (that it is not written or retired
 // here) is judged by [CheckPersonal], which knows ritueel.yaml.
 func ParseUserIDs(data []byte) (*UserIDs, error) {
 	d, err := read(UserIDsPath, data)
@@ -153,9 +153,6 @@ func (m *mapping) userID(e *yaml.Node, at string) (UserID, error) {
 	if why := addressProblem(u.Address); why != "" {
 		return UserID{}, um.fail("address", at+".address "+why)
 	}
-	if strings.Count(u.Address, "@") != 1 {
-		return UserID{}, um.fail("address", at+".address has exactly one @")
-	}
 	if um.has("retire") {
 		if u.Retire, err = um.boolean("retire"); err != nil {
 			return UserID{}, err
@@ -164,7 +161,8 @@ func (m *mapping) userID(e *yaml.Node, at string) (UserID, error) {
 	return u, nil
 }
 
-// sameUserID reports whether two entries are one user ID: the same name and the same address in lower case.
+// sameUserID reports whether two entries are one user ID: the same name and the same address, each without
+// regard to the case of its letters (both are ASCII).
 func sameUserID(a, b UserID) bool {
-	return a.Name == b.Name && strings.EqualFold(a.Address, b.Address)
+	return strings.EqualFold(a.Name, b.Name) && strings.EqualFold(a.Address, b.Address)
 }

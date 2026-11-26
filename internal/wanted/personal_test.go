@@ -15,14 +15,14 @@ import (
 // member card of a delegation and the check across the files.
 
 const (
-	adoptedFP       = "0123456789abcdef0123456789abcdef01234567"
+	adoptedFP       = "a1b2c3d4e5f60718293a4b5c6d7e8f9012345678"
 	adoptedLine     = `  - {label: A, role: adopted, fingerprint: "` + adoptedFP + `", valid_until: "2029-11-26"}` + "\n"
 	personalOpenPGP = "version: 1\nkind: openpgp\nencryption: true\nrevocation_reasons: [retired]\nkeys:\n" + adoptedLine
 	personalCard    = "version: 1\nserial: \"1234\"\nkind: day-to-day\napplications: [openpgp]\n"
 	personalSign    = "version: 1\ntype: openpgp-subkey\nroot: openpgp\ncapability: sign\ncard: day-ana\n"
 	personalPerson  = `version: 1
 kind: personal
-person: {name: Ada Example, address: ada@example.com}
+person: {name: Ben Example, address: ben@example.com}
 policy:
   stores: [openpgp-card, software]
   min_firmware: 5.7.0
@@ -120,9 +120,9 @@ func TestTheKeysOfARootThatAreNotTheShapeAreRefused(t *testing.T) {
 		"the year 2106":                {key(strings.Replace(ok, "2029-11-26", "2106-01-01", 1)), []string{"has a year from 2000 to 2105"}},
 		"the 30th of February":         {key(strings.Replace(ok, "2029-11-26", "2029-02-30", 1)), []string{"is not a day of the calendar"}},
 		"month 13":                     {key(strings.Replace(ok, "2029-11-26", "2029-13-01", 1)), []string{"is not a day of the calendar"}},
-		"a label twice":                {head + "  - {" + ok + "}\n  - {" + strings.Replace(ok, adoptedFP, adoptedFP[:39]+"8", 1) + "}\n", []string{"keys[2].label is used twice"}},
+		"a label twice":                {head + "  - {" + ok + "}\n  - {" + strings.Replace(ok, adoptedFP, adoptedFP[:39]+"9", 1) + "}\n", []string{"keys[2].label is used twice"}},
 		"a fingerprint twice":          {head + "  - {" + ok + "}\n  - {" + strings.Replace(strings.Replace(ok, "label: A", "label: B", 1), adoptedFP, strings.ToUpper(adoptedFP), 1) + "}\n", []string{"keys[2].fingerprint is the fingerprint of an earlier key"}},
-		"a role twice":                 {head + "  - {" + ok + "}\n  - {" + strings.Replace(strings.Replace(ok, "label: A", "label: B", 1), adoptedFP, adoptedFP[:39]+"8", 1) + "}\n", []string{"keys[2].role adopted is used twice"}},
+		"a role twice":                 {head + "  - {" + ok + "}\n  - {" + strings.Replace(strings.Replace(ok, "label: A", "label: B", 1), adoptedFP, adoptedFP[:39]+"9", 1) + "}\n", []string{"keys[2].role adopted is used twice"}},
 		"encryption a string":          {"version: 1\nkind: openpgp\nencryption: \"true\"\n", []string{"encryption must be true or false"}},
 		"encryption yes":               {"version: 1\nkind: openpgp\nencryption: yes\n", []string{"encryption must be true or false"}},
 	} {
@@ -152,7 +152,7 @@ func TestTheDayAKeyExpires(t *testing.T) {
 		"today, at midnight":            {"2026-11-26", time.Date(2026, 11, 26, 0, 0, 0, 0, time.UTC), "not after now"},
 		"yesterday":                     {"2026-11-25", personalNow, "not after now"},
 		"36 months to the day":          {"2029-11-26", personalNow, ""},
-		"a day more":                    {"2029-11-27", personalNow, "more than 36 months from now: the latest day is 2029-11-26"},
+		"a day more":                    {"2029-11-27", personalNow, "a key expires at 00:00 UTC of that day, and the latest day is 2029-11-26"},
 		"the last day of a short month": {"2027-02-28", time.Date(2024, 2, 29, 12, 0, 0, 0, time.UTC), ""},
 		"the day after it":              {"2027-03-01", time.Date(2024, 2, 29, 12, 0, 0, 0, time.UTC), "the latest day is 2027-02-28"},
 		"a clock in another zone":       {"2029-11-27", time.Date(2026, 11, 26, 23, 30, 0, 0, time.FixedZone("x", -5*3600)), ""},
@@ -297,8 +297,8 @@ func TestACardOfAPersonalDelegation(t *testing.T) {
 func TestThePersonalRefusalsOfRitueelYaml(t *testing.T) {
 	_ = refuseSettings(t, personalPerson+"aws_kms:\n  account: \"111122223333\"\n  region: eu-west-1\n  replica_region: eu-central-1\n  admin_role: arn:aws:iam::111122223333:role/a\n  ceremony_role: arn:aws:iam::111122223333:role/b\n", 10, "aws_kms is not allowed in a personal bundle")
 	_ = refuseSettings(t, personalPerson+"keyring:\n  license: CC0-1.0\n", 10, "keyring is not allowed in a personal bundle")
-	_ = refuseSettings(t, strings.Replace(personalPerson, "Ada Example", `"Ada Example "`, 1), 3, "person.name has no space at the end")
-	_ = refuseSettings(t, strings.Replace(personalPerson, "Ada Example", `"Ada  Example"`, 1), 3, "person.name has no two spaces in a row")
+	_ = refuseSettings(t, strings.Replace(personalPerson, "Ben Example", `"Ada Example "`, 1), 3, "person.name has no space at the end")
+	_ = refuseSettings(t, strings.Replace(personalPerson, "Ben Example", `"Ada  Example"`, 1), 3, "person.name has no two spaces in a row")
 }
 
 // personalFiles is a bundle whose files pass their readers: the person, the root, one card and two delegations.
@@ -387,10 +387,10 @@ func TestTheFilesOfAPersonAreJudgedAgainstEachOther(t *testing.T) {
 			f.delegations["ssh"] = personalSign
 		}},
 		"the person written again": {"want/openpgp.yaml", []string{"user_ids[1]", "always the primary user ID"}, func(f *personalFiles) {
-			f.userIDs = "version: 1\nuser_ids:\n  - {name: Ada Example, address: ADA@example.com}\n"
+			f.userIDs = "version: 1\nuser_ids:\n  - {name: BEN example, address: BEN@example.com}\n"
 		}},
 		"the person retired": {"want/openpgp.yaml", []string{"user_ids[2]", "cannot be retired here"}, func(f *personalFiles) {
-			f.userIDs = "version: 1\nuser_ids:\n  - {name: Ada, address: ada@example.com}\n  - {name: Ada Example, address: ada@example.com, retire: true}\n"
+			f.userIDs = "version: 1\nuser_ids:\n  - {name: Ben, address: ben@example.com}\n  - {name: Ben Example, address: ben@example.com, retire: true}\n"
 		}},
 	} {
 		t.Run(name, func(t *testing.T) {

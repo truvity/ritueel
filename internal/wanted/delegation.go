@@ -229,6 +229,9 @@ func (out *Delegation) takeCard(top *mapping, s *Settings) error {
 	if !top.has("card") {
 		return top.d.fail(top.node, "an openpgp-subkey delegation of a personal bundle needs the member card: the name of the card file of the card that holds the key")
 	}
+	if top.has("kms_read_roles") {
+		return top.fail("kms_read_roles", "kms_read_roles is not a member of a delegation of a personal bundle: a person's key is not in a cloud key service")
+	}
 	var err error
 	if out.Card, err = top.str("card"); err != nil {
 		return err

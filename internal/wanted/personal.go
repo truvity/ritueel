@@ -6,8 +6,11 @@ import (
 	"time"
 )
 
-// MaxPersonalDelegations is the most delegation files of a personal bundle.
+// MaxPersonalDelegations is the most delegation files of a personal bundle. The listers of the delegations
+// refuse more names before they read any file, and [CheckPersonal] refuses more delegations, with one text.
 const MaxPersonalDelegations = 16
+
+const tooManyDelegations = "a personal bundle holds at most 16 delegation files"
 
 // CheckPersonal judges the wanted files of a personal bundle against each other, after each has passed its own
 // reader. It returns nil, or the first fault as an [*Error] that names the file. The caller gives every file
@@ -25,12 +28,15 @@ func CheckPersonal(s *Settings, roots []*Root, delegations []*Delegation, cards 
 	if !s.Valid() || !s.Personal || s.Person == nil {
 		return errorf(SettingsPath, 0, "the settings of a personal bundle are needed to judge its wanted files, and these were not made by the reader")
 	}
+	if now.IsZero() {
+		return errorf(SettingsPath, 0, "there is no clock: the time to judge the keys against was not given")
+	}
 	root, err := personalRoot(roots, now)
 	if err != nil {
 		return err
 	}
 	if len(delegations) > MaxPersonalDelegations {
-		return errorf(DelegationsDir, 0, fmt.Sprintf("a personal bundle holds at most %d delegation files", MaxPersonalDelegations))
+		return errorf(DelegationsDir, 0, tooManyDelegations)
 	}
 	if err := checkSubkeys(root, delegations, cards); err != nil {
 		return err

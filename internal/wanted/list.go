@@ -101,12 +101,16 @@ func listDelegationNames(fsys fsx.FS, s *Settings) ([]string, error) {
 	if !s.Valid() {
 		return nil, errorf(DelegationsDir, 0, "the settings of the bundle are needed to read the delegations, and these were not made by the reader")
 	}
-	return listNames(fsys, DelegationsDir, func(name string) error {
+	names, err := listNames(fsys, DelegationsDir, func(name string) error {
 		if why := delegationNameProblem(name); why != "" {
 			return errors.New(why)
 		}
 		return nil
 	})
+	if err == nil && s.Personal && len(names) > MaxPersonalDelegations {
+		return nil, errorf(DelegationsDir, 0, tooManyDelegations)
+	}
+	return names, err
 }
 
 // listNames lists dir once and returns the names (without ".yaml") of its entries, in the order of

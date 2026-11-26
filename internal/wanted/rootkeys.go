@@ -19,9 +19,13 @@ const (
 	firstYear, lastYear = 2000, 2105
 )
 
-// PlaceholderFingerprint is the fingerprint that the starter of a personal bundle holds until the person
-// writes the fingerprint of their own key: 40 zeros. It is refused by name.
-var PlaceholderFingerprint = strings.Repeat("0", FingerprintLen)
+// The two fingerprints that are never a person's own, each refused by name. PlaceholderFingerprint is what the
+// starter of a personal bundle holds until the person writes the fingerprint of their own key: 40 zeros.
+// ExampleFingerprint is the fingerprint of the examples in the pages.
+const (
+	PlaceholderFingerprint = "0000000000000000000000000000000000000000"
+	ExampleFingerprint     = "0123456789abcdef0123456789abcdef01234567"
+)
 
 // KeyRole is the role of a key of a root file.
 type KeyRole string
@@ -176,8 +180,11 @@ func (km *mapping) adopted(k *Key, at string) error {
 	if len(fp) != FingerprintLen || strings.Trim(fp, "0123456789abcdefABCDEF") != "" {
 		return km.fail("fingerprint", at+".fingerprint is 40 hexadecimal digits")
 	}
-	if k.Fingerprint = strings.ToLower(fp); k.Fingerprint == PlaceholderFingerprint {
+	switch k.Fingerprint = strings.ToLower(fp); k.Fingerprint {
+	case PlaceholderFingerprint:
 		return km.fail("fingerprint", at+".fingerprint is the placeholder of the starter: replace the placeholder with the fingerprint of your key")
+	case ExampleFingerprint:
+		return km.fail("fingerprint", at+".fingerprint is the fingerprint of the examples: replace it with the fingerprint of your key")
 	}
 	day, err := km.str("valid_until")
 	if err != nil {
