@@ -30,6 +30,7 @@ var delegationMembers = []member{
 	{name: "permitted_uri_hosts"},
 	{name: "permitted_dns_names"},
 	{name: "kms_read_roles"},
+	{name: "card"},
 }
 
 // Delegation is a delegation file as it was read: a declared name under a root, with its limits. Only
@@ -53,6 +54,10 @@ type Delegation struct {
 	Capability string
 	// Use is user or host (ssh-ca-key), and empty for the other types.
 	Use string
+	// Card is the name of the card file (want/cards/NAME.yaml) of the card that holds the subkey of an
+	// openpgp-subkey delegation of a personal bundle: the one card and the one capability of the one key. It is
+	// empty for every other delegation, which may not have the member.
+	Card string
 	// KMSReadRoles maps a 12-digit account id to the ARN of a role in that account. It may be empty, for any type.
 	KMSReadRoles map[string]string
 
@@ -172,7 +177,7 @@ func (out *Delegation) takeByType(top *mapping, s *Settings) error {
 	var err error
 	switch out.Type {
 	case TypeX509Intermediate:
-		if err = forbid("capability", "use"); err != nil {
+		if err = forbid("capability", "use", "card"); err != nil {
 			return err
 		}
 		if top.has("permitted_uri_hosts") {
@@ -195,10 +200,12 @@ func (out *Delegation) takeByType(top *mapping, s *Settings) error {
 		if !top.has("capability") {
 			return top.d.fail(top.node, "an openpgp-subkey delegation needs the member capability")
 		}
-		out.Capability, err = top.enumStr("capability", capabilityEnum)
-		return err
+		if out.Capability, err = top.enumStr("capability", capabilityEnum); err != nil {
+			return err
+		}
+		return out.takeCard(top, s)
 	default:
-		if err = forbid("permitted_uri_hosts", "permitted_dns_names", "capability"); err != nil {
+		if err = forbid("permitted_uri_hosts", "permitted_dns_names", "capability", "card"); err != nil {
 			return err
 		}
 		if !top.has("use") {
@@ -206,6 +213,28 @@ func (out *Delegation) takeByType(top *mapping, s *Settings) error {
 		}
 		out.Use, err = top.enumStr("use", useEnum)
 		return err
+	}
+	return nil
+}
+
+// takeCard reads the member card of an openpgp-subkey delegation: required in a personal bundle, which holds one
+// key for one card and one capability, and refused in a company bundle.
+func (out *Delegation) takeCard(top *mapping, s *Settings) error {
+	if !s.Personal {
+		if top.has("card") {
+			return top.fail("card", "card is a member of an openpgp-subkey delegation of a personal bundle only")
+		}
+		return nil
+	}
+	if !top.has("card") {
+		return top.d.fail(top.node, "an openpgp-subkey delegation of a personal bundle needs the member card: the name of the card file of the card that holds the key")
+	}
+	var err error
+	if out.Card, err = top.str("card"); err != nil {
+		return err
+	}
+	if rerr := ValidName(out.Card); rerr != nil {
+		return top.fail("card", "card: "+rerr.Error())
 	}
 	return nil
 }

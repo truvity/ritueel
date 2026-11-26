@@ -202,7 +202,7 @@ func TestListRootsRefusesWhatIsNotARootFileAndReturnsNothing(t *testing.T) {
 		}, "want/roots/a.yaml", "not a regular file"},
 		{"a file that fails its own check", file("a.yaml", "version: 1\nkind: nonsense\n"), "want/roots/a.yaml", "kind"},
 		{"an empty file", file("a.yaml", ""), "want/roots/a.yaml", ""},
-		{"a member that is read later", file("a.yaml", "version: 1\nkind: x509\nkeys: 2\n"), "want/roots/a.yaml", "not read yet"},
+		{"a member that is read later", file("a.yaml", "version: 1\nkind: x509\nretire_at: 2\n"), "want/roots/a.yaml", "not read yet"},
 		{"a file that is not UTF-8", file("a.yaml", "version: 1\nkind: x509\n\xff\xfe\n"), "want/roots/a.yaml", ""},
 		{"a name with a control character", file("a\x01b.yaml", lstRootText), "want/roots/a\\u0001b.yaml", "lower-case"},
 		{"a name that is not UTF-8", file("a\xffb.yaml", lstRootText), "want/roots/a", "lower-case"},

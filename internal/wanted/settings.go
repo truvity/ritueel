@@ -223,6 +223,11 @@ func (s *Settings) takeWho(top *mapping) error {
 				return top.fail(name, name+" is not allowed in a personal bundle: it has person instead")
 			}
 		}
+		for _, name := range []string{"aws_kms", "keyring"} {
+			if top.has(name) {
+				return top.fail(name, name+" is not allowed in a personal bundle: it is a setting of a company bundle, and a person's key is a software key that the person adopts")
+			}
+		}
 		if !top.has("person") {
 			return top.d.fail(top.node, "a personal bundle (kind: personal) needs the member person")
 		}
@@ -262,8 +267,8 @@ func (s *Settings) takePerson(top *mapping) error {
 	if p.Name, err = pm.str("name"); err != nil {
 		return err
 	}
-	if !personNamePattern.MatchString(p.Name) {
-		return pm.fail("name", "person.name has 1 to 64 characters: ASCII letters, digits, spaces, periods, apostrophes and hyphens, starting with a letter or a digit")
+	if why := personNameProblem(p.Name); why != "" {
+		return pm.fail("name", "person.name "+why)
 	}
 	if p.Address, err = pm.str("address"); err != nil {
 		return err
@@ -277,6 +282,21 @@ func (s *Settings) takePerson(top *mapping) error {
 
 // personNamePattern is the form of person.name.
 var personNamePattern = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9 .'-]{0,63}$`)
+
+// personNameProblem is what is wrong with a name of a person (person.name, and the name of a user ID), or ""
+// when nothing is: 1 to 64 characters of ASCII letters, digits, spaces, periods, apostrophes and hyphens,
+// starting with a letter or a digit, with no space at the end and no two spaces in a row.
+func personNameProblem(s string) string {
+	switch {
+	case !personNamePattern.MatchString(s):
+		return "has 1 to 64 characters: ASCII letters, digits, spaces, periods, apostrophes and hyphens, starting with a letter or a digit"
+	case strings.HasSuffix(s, " "):
+		return "has no space at the end"
+	case strings.Contains(s, "  "):
+		return "has no two spaces in a row"
+	}
+	return ""
+}
 
 // nameProblem is what is wrong with a name of a company bundle, or "" when nothing is: 1 to 45 ASCII
 // letters, digits, single spaces and hyphens, with no space at the start or the end.

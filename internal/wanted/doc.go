@@ -26,6 +26,18 @@
 // drops a bare "!" (the non-specific tag) without a mark, but it puts the start of a node that has a tag at the
 // tag, so the text at the position of every node tells it. The text is not scanned for tags by hand.
 //
+// The wanted files of a person (a personal bundle, record 0008). The root file of the kind openpgp holds
+// revocation_reasons (the extra reasons beyond the two that are always made), encryption (true or false) and
+// keys. The only key that is built is one with the role adopted: a key the person already has, with its
+// fingerprint and the day it expires, set at adoption. The roles published and standby and the members card,
+// replaces, overlap_until, retire_on and retire_reason are reserved for stage two, which is not built: they are
+// refused by name and not read. want/openpgp.yaml (see [UserIDs]) holds the user IDs that are added to the key or
+// retired, beside the person of ritueel.yaml, which is always the one primary user ID. A delegation of the type
+// openpgp-subkey has the member card. The package reads no clock: [Key.ExpiryProblem] and [CheckPersonal] take
+// the time from the caller, and [CheckPersonal] judges all the files of a person against each other. The members
+// of a root that a person writes are unexported in a [Root], with accessors that return copies, so that a later
+// step re-parses the bytes of [Root.File] and never trusts a field of a value that was passed on.
+//
 // Every fault is an [*Error] with the path of the file, the line when there is one and a text of fixed
 // words and numbers. A text that came from the file goes through [jsonset.Escape] and is cut at 40
 // characters before it is put in a message, so a message is printable ASCII whatever the file held.
