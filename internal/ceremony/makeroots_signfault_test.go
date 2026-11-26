@@ -5,6 +5,11 @@ package ceremony_test
 import (
 	"context"
 	"crypto"
+	"crypto/ecdsa"
+	"crypto/elliptic"
+	"crypto/rand"
+	"crypto/sha512"
+	"crypto/x509"
 	"errors"
 	"fmt"
 	"io"
@@ -12,7 +17,14 @@ import (
 	"testing"
 	"time"
 
+	"connectrpc.com/connect"
+
+	keyv1alpha1 "github.com/truvity/atoom/key/gen/atoom/key/v1alpha1"
+	"github.com/truvity/atoom/key/gen/atoom/key/v1alpha1/keyv1alpha1connect"
+	"github.com/truvity/atoom/key/keyid"
+
 	"ritueel.id/ritueel/internal/ceremony"
+	"ritueel.id/ritueel/internal/keystore/port"
 )
 
 // A fault of a signing while the context has ended: the stop names the real cause and adds the end of the
@@ -96,8 +108,8 @@ func TestASigningFaultThatIsNotACancelKeepsItsCauseAndNamesTheEndOfTheContextBes
 	}
 }
 
-// A fault that is itself a cancel or a deadline is the end of the context, plain: typed, wrapped, or, where a signer
-// keeps the text only, as the words of the context package.
+// A fault that is itself a cancel or a deadline (typed, or wrapped) is the end of the context, plain. The signers of
+// the trust set keep that one fact of their cause and no text.
 func TestASigningFaultThatIsACancelOrADeadlineIsReportedAsTheEndOfTheContext(t *testing.T) {
 	cases := []struct {
 		name     string
@@ -109,10 +121,6 @@ func TestASigningFaultThatIsACancelOrADeadlineIsReportedAsTheEndOfTheContext(t *
 		{"a wrapped cancel", false, func(context.Context) error { return fmt.Errorf("test: signing: %w", context.Canceled) }, sfSteps},
 		{"a typed deadline", true, func(context.Context) error { return context.DeadlineExceeded }, sfSteps},
 		{"a wrapped deadline", true, func(ctx context.Context) error { return fmt.Errorf("test: signing: %w", ctx.Err()) }, sfSteps},
-		// These arrive as text: no type, no wrapping. The certificate is signed in the process, so its error
-		// keeps no type either way; both steps are tried.
-		{"a cancel that arrives as text", false, func(context.Context) error { return errors.New("test: the store: context canceled") }, sfSteps},
-		{"a deadline that arrives as text", true, func(context.Context) error { return errors.New("test: the store: context deadline exceeded") }, sfSteps},
 	}
 	for _, c := range cases {
 		for _, step := range c.steps {
@@ -178,5 +186,112 @@ func TestASigningRefusalThatQuotesTheWordsOfACancelIsNotTakenForTheEndOfTheConte
 				t.Errorf("the refusal of the store lost its cause: %T %v", err, err)
 			}
 		})
+	}
+}
+
+// The words of a cancel or a deadline that arrive as text only are no cancel: the fault is what it is, and the end of the
+// context is named beside it.
+func TestACancelThatArrivesOnlyAsTextIsTheFaultItIsWithTheEndOfTheContextBesideIt(t *testing.T) {
+	for _, deadline := range []bool{false, true} {
+		words := "context canceled"
+		want := context.Canceled
+		if deadline {
+			words, want = "context deadline exceeded", context.DeadlineExceeded
+		}
+		for _, step := range sfSteps {
+			t.Run(fmt.Sprintf("%s, %s", words, step.name), func(t *testing.T) {
+				m, _, err := sfRun(t, step.n, deadline, func(context.Context) error { return errors.New("test: the store: " + words) })
+				me, ok := mkAs[*ceremony.MakeError](err)
+				if m != nil || !ok || me.Step != "signatures" {
+					t.Fatalf("MakeRoots: a result %v, the error %T %v; want a fault of the step signatures", m != nil, err, err)
+				}
+				if !strings.Contains(err.Error(), "the store: "+words) || !strings.Contains(err.Error(), "the context also ended") {
+					t.Errorf("the line names the fault and the end of the context beside it: %v", err)
+				}
+				if !errors.Is(err, want) {
+					t.Errorf("the end of the context is not reachable: %v", err)
+				}
+			})
+		}
+	}
+}
+
+// sfPortClient is a key-port client whose Sign fails with the error of the test, as the client of the port does when
+// the call is cancelled or its deadline passes; the key that the engine signs with is a key of the port over it.
+type sfPortClient struct {
+	keyv1alpha1connect.KeyStoreServiceClient
+	spki []byte
+	fail error
+}
+
+func (c sfPortClient) Capabilities(context.Context, *connect.Request[keyv1alpha1.CapabilitiesRequest]) (*connect.Response[keyv1alpha1.CapabilitiesResponse], error) {
+	return connect.NewResponse(&keyv1alpha1.CapabilitiesResponse{Store: "software", Purposes: []*keyv1alpha1.PurposeInfo{{Name: "x509-root-a", Algorithm: "ES384", Operations: []string{"sign"}}}}), nil
+}
+
+func (c sfPortClient) PublicKey(context.Context, *connect.Request[keyv1alpha1.PublicKeyRequest]) (*connect.Response[keyv1alpha1.PublicKeyResponse], error) {
+	return connect.NewResponse(&keyv1alpha1.PublicKeyResponse{SpkiDer: c.spki, KeyId: keyid.Software(c.spki)}), nil
+}
+
+func (c sfPortClient) Sign(context.Context, *connect.Request[keyv1alpha1.SignRequest]) (*connect.Response[keyv1alpha1.SignResponse], error) {
+	return nil, c.fail
+}
+
+// A Connect error with the code for cancel or for deadline, as the client of the key port returns it, is the end of the
+// context for the engine, as a typed one is, in the certificate and in the removal authorisation; any other code is
+// the fault it is.
+func TestAConnectCancelOrDeadlineFromTheKeyPortIsTheEndOfTheContext(t *testing.T) {
+	priv, err := ecdsa.GenerateKey(elliptic.P384(), rand.Reader)
+	if err != nil {
+		t.Fatal(err)
+	}
+	spki, err := x509.MarshalPKIXPublicKey(&priv.PublicKey)
+	if err != nil {
+		t.Fatal(err)
+	}
+	cases := []struct {
+		name     string
+		code     connect.Code
+		deadline bool
+		ended    bool // reported as the end of the context
+	}{
+		{"the code canceled", connect.CodeCanceled, false, true},
+		{"the code deadline_exceeded", connect.CodeDeadlineExceeded, true, true},
+		{"the code unavailable while the context was cancelled", connect.CodeUnavailable, false, false},
+		{"the code internal while the deadline passed", connect.CodeInternal, true, false},
+	}
+	for _, c := range cases {
+		for _, step := range sfSteps {
+			t.Run(c.name+", "+step.name, func(t *testing.T) {
+				client := sfPortClient{spki: spki, fail: connect.NewError(c.code, errors.New("test: the store"))}
+				m, r, err := sfRun(t, step.n, c.deadline, func(ctx context.Context) error {
+					k, kerr := port.NewKey(context.Background(), client, "x509-root-a")
+					if kerr != nil {
+						t.Errorf("NewKey: %v", kerr)
+						return kerr
+					}
+					digest := sha512.Sum384([]byte("x"))
+					_, serr := k.Sign(rand.Reader, digest[:], crypto.SHA384)
+					return serr
+				})
+				_ = r
+				if m != nil || err == nil {
+					t.Fatalf("MakeRoots: a result %v, the error %v", m != nil, err)
+				}
+				want := context.Canceled
+				if c.deadline {
+					want = context.DeadlineExceeded
+				}
+				_, isMake := mkAs[*ceremony.MakeError](err)
+				if c.ended {
+					if err != want || isMake { //nolint:errorlint // the error of the context itself
+						t.Errorf("the error is %T %v, want the error of the context itself", err, err)
+					}
+					return
+				}
+				if !isMake || !errors.Is(err, want) || !strings.Contains(err.Error(), "the context also ended") {
+					t.Errorf("the error is %T %v, want the fault of the step signatures with the end of the context beside it", err, err)
+				}
+			})
+		}
 	}
 }

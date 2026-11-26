@@ -57,8 +57,11 @@ type scripted struct {
 	laterPublic     []byte // the second and later PublicKey after Ensure give this key
 	readBackErr     error  // the first PublicKey after Ensure fails
 	signErr         error
-	signOtherDigest bool // the signature is a good signature of another digest
-	signOtherKeyID  bool // the answer of Sign names another key
+	signOtherDigest bool  // the signature is a good signature of another digest
+	signOtherKeyID  bool  // the answer of Sign names another key
+	capabilitiesErr error // Capabilities fails
+	notServed       bool  // Capabilities does not list the purpose
+	noSignOp        bool  // the purpose is listed without the operation sign
 
 	mu       sync.Mutex
 	priv     *ecdsa.PrivateKey
@@ -114,13 +117,26 @@ func (s *scripted) count(call string) int {
 	return n
 }
 
+func (s *scripted) ensuredNow() bool {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.ensured
+}
+
 func (s *scripted) Capabilities(context.Context, *connect.Request[keyv1alpha1.CapabilitiesRequest]) (*connect.Response[keyv1alpha1.CapabilitiesResponse], error) {
 	s.log("Capabilities")
-	return connect.NewResponse(&keyv1alpha1.CapabilitiesResponse{
-		Store:      s.store,
-		Algorithms: []string{"ES384"},
-		Purposes:   []*keyv1alpha1.PurposeInfo{{Name: purposeName, Algorithm: s.algorithm, Operations: []string{"sign"}}},
-	}), nil
+	if s.capabilitiesErr != nil {
+		return nil, s.capabilitiesErr
+	}
+	ops := []string{"sign"}
+	if s.noSignOp {
+		ops = nil
+	}
+	purposes := []*keyv1alpha1.PurposeInfo{{Name: purposeName, Algorithm: s.algorithm, Operations: ops}}
+	if s.notServed {
+		purposes = nil
+	}
+	return connect.NewResponse(&keyv1alpha1.CapabilitiesResponse{Store: s.store, Algorithms: []string{"ES384"}, Purposes: purposes}), nil
 }
 
 func (s *scripted) PublicKey(_ context.Context, req *connect.Request[keyv1alpha1.PublicKeyRequest]) (*connect.Response[keyv1alpha1.PublicKeyResponse], error) {
@@ -192,8 +208,9 @@ func (s *scripted) Sign(_ context.Context, req *connect.Request[keyv1alpha1.Sign
 	return connect.NewResponse(&keyv1alpha1.SignResponse{SignatureDer: sig, KeyId: id}), nil
 }
 
-// A scripted store that behaves gives the key, and the four steps happened in order and once each.
-func TestBirthThroughAStoreThatBehavesGivesTheKeyAfterTheFourStepsInOrder(t *testing.T) {
+// A scripted store that behaves gives the key. The store is asked what it is before anything can be made; then
+// the four steps happen in order, and the signer of atom asks again what the store serves.
+func TestBirthThroughAStoreThatBehavesAsksTheStoreFirstThenTakesTheFourStepsInOrder(t *testing.T) {
 	s := newScripted(t)
 	k, err := port.Birth(context.Background(), s, purposeName)
 	if err != nil {
@@ -204,9 +221,10 @@ func TestBirthThroughAStoreThatBehavesGivesTheKeyAfterTheFourStepsInOrder(t *tes
 	if !ok || !pub.Equal(&s.priv.PublicKey) || pub.Curve != elliptic.P384() {
 		t.Fatalf("the key is %T %v, want the key that the store made", k.Public(), k.Public())
 	}
-	// Step 1 asks whether the key is there, step 2 makes it, step 3 reads it back, and the signer of atom
-	// asks what the store serves and reads the key a last time, then the self-test signs once.
-	want := []string{"PublicKey", "Ensure", "PublicKey", "Capabilities", "Capabilities", "PublicKey", "Sign"}
+	// Capabilities first, before any call that can make a key; step 1 asks whether the key is there, step 2 makes
+	// it, step 3 reads it back, and then the key is opened (Describe, and the signer of atom asks what the store
+	// serves and reads the key a last time), and the self-test signs once.
+	want := []string{"Capabilities", "PublicKey", "Ensure", "PublicKey", "Capabilities", "Capabilities", "PublicKey", "Sign"}
 	s.mu.Lock()
 	got := slices.Clone(s.calls)
 	s.mu.Unlock()
@@ -227,6 +245,8 @@ func TestEachStepOfABirthFailsOnItsOwnAndGivesNoKey(t *testing.T) {
 		ensured int // calls of Ensure
 		signed  int // calls of Sign
 		textHas string
+		// noPublicKeyCall says that the store was refused before any call that could tell whether the key exists.
+		noPublicKeyCall bool
 	}{
 		{name: "step 1: the key exists already", edit: func(_ *testing.T, s *scripted) { s.exists = true },
 			is: []error{port.ErrKeyExists}, ensured: 0},
@@ -262,9 +282,15 @@ func TestEachStepOfABirthFailsOnItsOwnAndGivesNoKey(t *testing.T) {
 				t.Fatal(err)
 			}
 			s.algorithm, s.priv, s.spki = "ES256", priv, mustSPKI(t, &priv.PublicKey)
-		}, is: []error{port.ErrAlgorithm}, ensured: 1},
+		}, is: []error{port.ErrAlgorithm}, ensured: 0, noPublicKeyCall: true},
 		{name: "the store is not one that ritueel knows", edit: func(_ *testing.T, s *scripted) { s.store = "aws-kms" },
-			is: []error{port.ErrUnknownStore}, ensured: 1},
+			is: []error{port.ErrUnknownStore}, ensured: 0, noPublicKeyCall: true},
+		{name: "the store does not serve the purpose", edit: func(_ *testing.T, s *scripted) { s.notServed = true },
+			is: []error{signer.ErrPurpose}, ensured: 0, noPublicKeyCall: true},
+		{name: "the purpose does not allow sign", edit: func(_ *testing.T, s *scripted) { s.noSignOp = true },
+			is: []error{signer.ErrOperation}, ensured: 0, noPublicKeyCall: true},
+		{name: "the store cannot say what it is", edit: func(_ *testing.T, s *scripted) { s.capabilitiesErr = boom },
+			isNot: []error{port.ErrUnknownStore, port.ErrKeyExists}, ensured: 0, noPublicKeyCall: true, textHas: "Capabilities"},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
@@ -293,6 +319,12 @@ func TestEachStepOfABirthFailsOnItsOwnAndGivesNoKey(t *testing.T) {
 			if got := s.count("Ensure"); got != c.ensured {
 				t.Errorf("Ensure was called %d times, want %d", got, c.ensured)
 			}
+			if c.noPublicKeyCall && s.count("PublicKey") != 0 {
+				t.Errorf("PublicKey was called although the store was refused first")
+			}
+			if c.ensured == 0 && s.ensuredNow() {
+				t.Error("a key exists in the store after a Birth that made none")
+			}
 			if got := s.count("Sign"); got != c.signed {
 				t.Errorf("Sign was called %d times, want %d", got, c.signed)
 			}
@@ -300,9 +332,7 @@ func TestEachStepOfABirthFailsOnItsOwnAndGivesNoKey(t *testing.T) {
 	}
 }
 
-// A store that the table does not hold is refused before a key is made. The table is asked after the
-// key was made today (Birth asks it when it opens the key, which is its third step), so this test says
-// what the package should do and does not pass yet.
+// A store that the table does not hold is refused before a key is made: Birth asks what the store is first.
 func TestBirthInAStoreThatTheTableDoesNotHoldMakesNoKey(t *testing.T) {
 	s := newScripted(t)
 	s.store = "aws-kms"
@@ -498,5 +528,50 @@ func TestNewKeyOfAPurposeWithNoKeyIsRefused(t *testing.T) {
 	t.Cleanup(func() { _ = link.Close() })
 	if k, err := port.NewKey(context.Background(), link.Client(), purposeName); k != nil || err == nil {
 		t.Errorf("NewKey of a purpose with no key = %v, %v", k, err)
+	}
+}
+
+// The client of the key port reports the end of a context as a Connect code. Key.Sign makes the codes canceled and
+// deadline_exceeded errors that errors.Is also finds as the two errors of the context package, and nothing else.
+func TestSignMapsTheConnectCodesOfACancelAndADeadlineToTheErrorsOfTheContext(t *testing.T) {
+	cases := []struct {
+		name     string
+		fault    error
+		canceled bool
+		deadline bool
+	}{
+		{"the code canceled", connect.NewError(connect.CodeCanceled, errors.New("test: the call was cancelled")), true, false},
+		{"the code deadline_exceeded", connect.NewError(connect.CodeDeadlineExceeded, errors.New("test: too late")), false, true},
+		{"the code unavailable", connect.NewError(connect.CodeUnavailable, errors.New("test: gone")), false, false},
+		{"the code internal", connect.NewError(connect.CodeInternal, errors.New("test: broken")), false, false},
+		{"a refusal that quotes the words of a cancel", refusal.New(connect.CodeFailedPrecondition, "context canceled", "purpose"), false, false},
+		{"a plain error that quotes the words of a deadline", errors.New("test: context deadline exceeded"), false, false},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			s := newScripted(t)
+			s.exists = true
+			k, err := port.NewKey(context.Background(), s, purposeName)
+			if err != nil {
+				t.Fatalf("NewKey: %v", err)
+			}
+			defer func() { _ = k.Close() }()
+			s.signErr = c.fault
+			digest := sha512.Sum384([]byte("a message"))
+			sig, err := k.Sign(rand.Reader, digest[:], crypto.SHA384)
+			if sig != nil || err == nil {
+				t.Fatalf("Sign = %v, %v", sig, err)
+			}
+			if got := errors.Is(err, context.Canceled); got != c.canceled {
+				t.Errorf("errors.Is(err, context.Canceled) = %v, want %v: %v", got, c.canceled, err)
+			}
+			if got := errors.Is(err, context.DeadlineExceeded); got != c.deadline {
+				t.Errorf("errors.Is(err, context.DeadlineExceeded) = %v, want %v: %v", got, c.deadline, err)
+			}
+			var ce *connect.Error
+			if errors.As(c.fault, &ce) && !errors.As(err, &ce) {
+				t.Errorf("the Connect error is no longer reachable: %v", err)
+			}
+		})
 	}
 }
