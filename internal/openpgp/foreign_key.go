@@ -65,10 +65,10 @@ const (
 	// maxRSAModulusBits and maxElGamalBits bound a modulus or a prime.
 	maxRSAModulusBits = 16384
 	maxElGamalBits    = 16384
-	// maxRSAExponentBytes bounds the public exponent of RSA. Every exponent in use is 17 bits or
-	// less, and crypto/rsa takes none of 31 bits or more; the exponent is the one number that stands
-	// last in its packet, so the bound is the most bytes that a wrong length can take from the secret.
-	maxRSAExponentBytes = 4
+	// maxRSAExponentBytes bounds the public exponent of RSA: 3 bytes, as go-crypto reads at most, and
+	// every exponent in use is 17 bits or less. The exponent is the one number that stands last in its
+	// packet, so the bound is the most bytes that a wrong length can take from what follows.
+	maxRSAExponentBytes = 3
 	// maxDSAQBytes bounds the subprime of DSA (at most 512 bits).
 	maxDSAQBytes = 64
 )
@@ -145,7 +145,7 @@ func versionFault(what string, version byte) error {
 // key packet, the part is what stands before the secret, and every length that the packet gives is
 // held to a tight bound for its algorithm: the cut that these lengths make is the line between the
 // public certificate and the secret, so a length that could move it into the secret is refused. The
-// bounds are: RSA with a modulus of at most 16384 bits and an odd exponent of at most 4 bytes; DSA
+// bounds are: RSA with a modulus of at most 16384 bits and an odd exponent of at most 3 bytes; DSA
 // with a prime of 1024, 2048 or 3072 bits, a subprime of at most 64 bytes, and g and y no longer
 // than the prime; ElGamal with a prime of 512 to 16384 bits, and g and y no longer than the prime;
 // ECDSA, EdDSA and ECDH on a curve of the list [curves] that suits the algorithm, with the point at

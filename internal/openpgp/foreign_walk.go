@@ -124,7 +124,7 @@ func (w *fkWalk) start(tag byte, body []byte) error {
 	if err := checkPrimary(pub); err != nil {
 		return err
 	}
-	prot, err := classifyPrimarySecret(body[pub.length:])
+	prot, err := classifyPrimarySecret(pub.alg.ID, body[pub.length:])
 	if err != nil {
 		return err
 	}
@@ -245,7 +245,7 @@ func (w *fkWalk) subkey(tag byte, raw, body []byte) (*fkSub, error) {
 		if s.gopk, err = agreePublic(s.pubPacket, s.pubBody, fp, true); err != nil {
 			return nil, err
 		}
-		stub, err := checkSecretStart(body[pub.length:])
+		stub, err := checkSecretArea(pub.alg.ID, body[pub.length:])
 		if err != nil {
 			return nil, err
 		}

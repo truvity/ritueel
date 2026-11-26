@@ -13,6 +13,7 @@ import (
 	"crypto/sha256"
 	"crypto/sha512"
 	"crypto/subtle"
+	"encoding/binary"
 	"errors"
 	"hash"
 	"io"
@@ -127,14 +128,14 @@ func hashFault(h byte) string {
 // primary and tells how the secret is protected, or refuses (RFC 9580, section 5.5.3). It copies
 // what it keeps. The checks run in this order: no secret in the packet, usage 0, any usage that is
 // not 254, then for usage 254 the cipher, the S2K type, the S2K hash and the lengths.
-func classifyPrimarySecret(region []byte) (p fkProtection, err error) {
+func classifyPrimarySecret(alg byte, region []byte) (p fkProtection, err error) {
 	if len(region) == 0 {
 		return p, fail(ErrForeignForm, "the secret key packet of the primary has no secret part")
 	}
 	usage := region[0]
 	if usage == usageNone {
-		if len(region) < 1+3+2 {
-			return p, fail(ErrForeignForm, "the unprotected secret of the primary is cut short")
+		if len(region) < 1+3+2 || !secretNumbersExact(alg, region[1:]) {
+			return p, fail(ErrForeignForm, "the unprotected secret of the primary does not account for its packet")
 		}
 		p.data = bytes.Clone(region[1:])
 		return p, nil
@@ -174,58 +175,128 @@ func gnuFault(region []byte) error {
 	return fail(ErrForeignNoSecret, "a GNU extension of mode %d: the secret is not in this file", region[7])
 }
 
-// checkSecretStart holds what follows the public part of the secret key packet of a subkey to be the
-// start of a secret area of a known form (RFC 9580, section 5.5.3): the usage octet, then for usage 254,
-// 255 and 253 the cipher (and the AEAD mode) and an S2K specifier that reads to its end (types 0, 1, 3, 4
-// and the GNU type 101 with its three letters). It reads no more: not a byte of the secret is kept or
-// looked at. It tells whether the area is the GNU stub, which says the secret is not in the file. Any
-// other start is an [ErrForeignForm]: the cut that the public part made may be in the wrong place.
-func checkSecretStart(region []byte) (stub bool, err error) {
+// checkSecretArea holds what follows the public part of the secret key packet of a subkey of algorithm
+// alg to be a secret area of a known form that accounts for the packet (RFC 9580, section 5.5.3), and
+// tells whether it is the GNU stub, which says the secret is not in the file. It keeps nothing and
+// reads no value: it walks lengths. Only the usage octets 0, 253, 254 and 255 are a start: any other
+// is the old form that names a cipher directly (with an MD5 key) and is an [ErrForeignProtection]. Then:
+//
+//   - usage 0: the secret numbers of the algorithm, each with its length field, and the two-octet
+//     checksum must end exactly at the end of the packet ([secretNumbersExact]);
+//   - usage 254 and 255: the cipher is one that the standard names, the S2K specifier is complete for
+//     its type, and unless it is the GNU stub the IV has the block size of the cipher and at least the
+//     check value follows (20 octets for 254, 2 for 255);
+//   - usage 253: the cipher is named and the S2K specifier is complete.
+//
+// The cut that the public part made is thereby confirmed from the far end of the packet too. Any
+// other fault is an [ErrForeignForm].
+func checkSecretArea(alg byte, region []byte) (stub bool, err error) {
 	bad := func() error {
-		return fail(ErrForeignForm, "what follows the public part of a secret subkey is not the start of a secret area")
+		return fail(ErrForeignForm, "what follows the public part of a secret subkey is not a secret area that accounts for its packet")
 	}
 	if len(region) == 0 {
 		return false, fail(ErrForeignForm, "the secret key packet of a subkey has no secret part")
 	}
-	switch u := region[0]; {
-	case u == usageNone:
-		if len(region) < 1+3+2 {
+	switch u := region[0]; u {
+	case usageNone:
+		if !secretNumbersExact(alg, region[1:]) {
 			return false, bad()
 		}
 		return false, nil
-	case u >= 1 && u <= 13:
-		if len(region) < 1+8 {
-			return false, bad()
-		}
-		return false, nil
-	case u == usageSHA1 || u == usageChecksum || u == usageAEAD:
-		off := 2
-		if u == usageAEAD {
-			off = 3
-		}
-		if len(region) <= off {
-			return false, bad()
-		}
-		gnu, ok := s2kSpecReads(region[off:])
-		if !ok {
-			return false, bad()
-		}
-		return gnu && u != usageAEAD, nil
+	case usageSHA1, usageChecksum, usageAEAD:
+		return checkProtectedArea(u, region, bad)
 	}
-	return false, bad()
+	return false, fail(ErrForeignProtection, "a secret subkey is protected with the legacy S2K usage %d, which names a cipher directly and is not read", region[0])
 }
 
-// s2kSpecReads tells whether b starts with an S2K specifier that reads to its end, and whether it is the
-// GNU extension.
-func s2kSpecReads(b []byte) (gnu, ok bool) {
-	need := map[byte]int{0: 2, 1: 10, s2kIterated: 11, 4: 20, s2kGNU: 6}[b[0]]
-	if need == 0 || len(b) < need {
-		return false, false
+// checkProtectedArea is checkSecretArea for the usages 253, 254 and 255.
+func checkProtectedArea(u byte, region []byte, bad func() error) (stub bool, err error) {
+	off := 2
+	if u == usageAEAD {
+		off = 3
+	}
+	if len(region) <= off {
+		return false, bad()
+	}
+	n, gnu, ok := s2kSpecLen(region[off:])
+	if !ok {
+		return false, bad()
+	}
+	if gnu {
+		return u != usageAEAD, nil
+	}
+	block := cipherBlockSize(region[1])
+	if block == 0 {
+		return false, bad()
+	}
+	if u == usageAEAD {
+		return false, nil
+	}
+	rest := len(region) - off - n
+	check := sha1.Size
+	if u == usageChecksum {
+		check = 2
+	}
+	if rest < block+check {
+		return false, bad()
+	}
+	return false, nil
+}
+
+// cipherBlockSize is the block size of the ciphers that the standard names (RFC 9580, section 9.3):
+// 8 for IDEA, TripleDES, CAST5 and Blowfish, 16 for AES, Twofish and Camellia, and 0 for anything else.
+func cipherBlockSize(c byte) int {
+	switch {
+	case c >= 1 && c <= 4:
+		return 8
+	case c >= 7 && c <= 13:
+		return 16
+	}
+	return 0
+}
+
+// s2kSpecLen tells whether b starts with an S2K specifier that is complete for its type (types 0, 1, 3, 4
+// and the GNU type 101 with its three letters), its length, and whether it is the GNU extension. The
+// GNU specifier is counted as its six fixed octets: a serial number that may follow is not looked at.
+func s2kSpecLen(b []byte) (n int, gnu, ok bool) {
+	n = map[byte]int{0: 2, 1: 10, s2kIterated: 11, 4: 20, s2kGNU: 6}[b[0]]
+	if n == 0 || len(b) < n {
+		return 0, false, false
 	}
 	if b[0] == s2kGNU {
-		return true, string(b[2:5]) == "GNU"
+		return n, true, string(b[2:5]) == "GNU"
 	}
-	return false, true
+	return n, false, true
+}
+
+// secretNumbersExact walks the length fields of the unprotected secret of a key of algorithm alg, which
+// is what follows its usage octet: the numbers of the algorithm (four for RSA, one for ElGamal, DSA,
+// ECDSA, ECDH and EdDSA legacy, the fixed size of a native key), then the two-octet checksum, and it
+// tells whether that ends exactly at the end of the packet. It keeps and reads no value.
+func secretNumbersExact(alg byte, b []byte) bool {
+	numbers := 1
+	switch alg {
+	case algoRSA, algoRSAEncrypt, algoRSASign:
+		numbers = 4
+	case algoX25519, algoEd25519:
+		return len(b) == 32+2
+	case algoX448:
+		return len(b) == 56+2
+	case algoEd448:
+		return len(b) == 57+2
+	}
+	for i := 0; i < numbers; i++ {
+		if len(b) < 2 {
+			return false
+		}
+		bits := int(binary.BigEndian.Uint16(b))
+		n := (bits + 7) / 8
+		if bits == 0 || len(b) < 2+n {
+			return false
+		}
+		b = b[2+n:]
+	}
+	return len(b) == 2
 }
 
 // classifyProtected reads usage 254: the cipher, the iterated and salted S2K, the IV and the
