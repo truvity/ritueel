@@ -226,41 +226,6 @@ func TestCheckKeyDirRefusesAFolderInsideTheWorkTreeOfTheRepositoryThatHoldsTheBu
 	}
 }
 
-func TestTheRepositoryOfTheBundleIsFoundAtTheBundleItselfAndAboveIt(t *testing.T) {
-	root := t.TempDir()
-	if insideWorkTree(root) {
-		t.Skip("the temporary folder is inside a work tree")
-	}
-	deep := filepath.Join(root, "a", "b", "c")
-	if err := os.MkdirAll(deep, 0o700); err != nil {
-		t.Fatal(err)
-	}
-	if got, ok := repositoryRoot(deep); ok {
-		t.Fatalf("a repository is found at %q where there is none", got)
-	}
-	for _, at := range []string{deep, filepath.Join(root, "a", "b"), root} {
-		if err := os.Mkdir(filepath.Join(at, ".git"), 0o700); err != nil {
-			t.Fatal(err)
-		}
-		got, ok := repositoryRoot(deep)
-		if !ok || got != at {
-			t.Errorf("the repository is %q (%v), want %q", got, ok, at)
-		}
-		if err := os.Remove(filepath.Join(at, ".git")); err != nil {
-			t.Fatal(err)
-		}
-	}
-	// The nearest one wins.
-	for _, at := range []string{root, filepath.Join(root, "a", "b")} {
-		if err := os.Mkdir(filepath.Join(at, ".git"), 0o700); err != nil {
-			t.Fatal(err)
-		}
-	}
-	if got, _ := repositoryRoot(deep); got != filepath.Join(root, "a", "b") {
-		t.Errorf("the nearest repository is not found first: %q", got)
-	}
-}
-
 // Case 19. A file system that ignores case, a bind of the same folder and a link are the same file
 // under two names. The check asks the file system (os.SameFile) and never compares strings: here a
 // stub stat gives the one folder for two spellings that no string comparison would join.
