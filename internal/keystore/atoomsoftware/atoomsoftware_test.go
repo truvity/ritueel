@@ -348,6 +348,49 @@ func TestAnErrorOfTheMakingOfTheFolderHoldsNoPath(t *testing.T) {
 	}
 }
 
+// A fault of the start of the driver that is not a refused state folder is an error of fixed words: the driver puts
+// paths into some such texts (its "create ..." and "chmod ..." of the state folder, which only a race with the
+// making of the folder reaches, so no test makes it), and the original stays reachable through errors.Is only. The
+// fault that a test can make is a declaration of purposes that the driver refuses: its own text names the purpose
+// that was given, and a caller may have put anything in a name, so the text of the package is fixed.
+func TestAStartFaultOfTheDriverThatIsNotARefusedFolderHasFixedWordsAndNoPath(t *testing.T) {
+	for name, purposes := range map[string][]string{
+		"no purpose":              nil,
+		"a name that is a path":   {"/home/someone/keys/x509-root-a"},
+		"a name in capitals":      {"X509-ROOT-A"},
+		"a name twice":            {"x509-root-a", "x509-root-a"},
+		"a name that is too long": {strings.Repeat("a", 65)},
+	} {
+		t.Run(name, func(t *testing.T) {
+			dir := keyDir(t)
+			link, err := atoomsoftware.Open(dir, purposes)
+			if link != nil || err == nil {
+				t.Fatalf("Open = %v, %v", link, err)
+			}
+			text := err.Error()
+			if strings.Contains(text, dir) || strings.Contains(text, "/home/someone") || strings.Contains(text, "refused:") {
+				t.Errorf("the text holds a path or the text of the driver: %q", text)
+			}
+			if !strings.Contains(text, "the key driver cannot start") {
+				t.Errorf("the text does not say that the driver cannot start: %q", text)
+			}
+			if errors.Is(err, atoomsoftware.ErrStateRefused) || errors.Is(err, atoomsoftware.ErrFolderExists) {
+				t.Errorf("a start fault is taken for a refused folder: %v", err)
+			}
+			if errors.Unwrap(err) != nil {
+				t.Errorf("the text of the driver can be reached through Unwrap: %v", errors.Unwrap(err))
+			}
+			var pe *purpose.Error
+			if errors.As(err, &pe) {
+				t.Error("the error of the driver is reachable through errors.As, so its text is")
+			}
+			if got := names(t, filepath.Join(dir, keydir.TestOnlyFolder)); len(got) != 0 {
+				t.Errorf("the folder holds %q", got)
+			}
+		})
+	}
+}
+
 func TestAStartThatTheDriverCannotMakeSaysSoAndMakesNoKey(t *testing.T) {
 	dir := keyDir(t)
 	link, err := atoomsoftware.Open(dir, nil) // the driver wants at least one purpose

@@ -283,6 +283,20 @@ func TestAnApplyOnAUsedKeyDirectoryIsRefusedAsKeyExistsWithExitCode4AndWritesNot
 		"one that holds a folder test-only-keys of the mode 0755": func(t *testing.T, keys string) {
 			mustMkdir(t, filepath.Join(keys, "test-only-keys"), 0o755)
 		},
+		"one that holds a link named like a removal file": func(t *testing.T, keys string) {
+			if err := os.Symlink(filepath.Join(keys, "nowhere"), filepath.Join(keys, "A.removal.jws")); err != nil {
+				t.Fatal(err)
+			}
+		},
+		"one that holds a folder named like a key file of the earlier naming, in another case": func(t *testing.T, keys string) {
+			mustMkdir(t, filepath.Join(keys, "a.X509.KEY.pem"), 0o700)
+		},
+		"one that holds a folder named like a removal file in another case": func(t *testing.T, keys string) {
+			mustMkdir(t, filepath.Join(keys, "B.REMOVAL.JWS"), 0o700)
+		},
+		"one that holds an empty folder named test-only-keys in another case": func(t *testing.T, keys string) {
+			mustMkdir(t, filepath.Join(keys, "Test-Only-Keys"), 0o700)
+		},
 		"one that holds a file test-only-keys": func(t *testing.T, keys string) {
 			akWrite(t, filepath.Join(keys, "test-only-keys"), "x")
 		},
