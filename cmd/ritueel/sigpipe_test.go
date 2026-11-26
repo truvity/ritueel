@@ -134,9 +134,7 @@ func TestProgramWithStandardOutputAsAPipeWhoseReaderClosedRecordsTheCeremonyAndS
 	if code != 0 || !strings.HasPrefix(hist, "history: 1 ceremony records, end ") {
 		t.Errorf("check history after the run: exit %d, %q, %s", code, hist, herr)
 	}
-	if ents, _ := os.ReadDir(keys); len(ents) != 3 { // test-only-keys, and the two removal authorisations
-		t.Errorf("the key directory holds %d entries, want 3", len(ents))
-	}
+	apWantKeyDir(t, keys) // test-only-keys with the two keys, and the two removal authorisations
 }
 
 func TestProgramWithBothStreamsAsPipesWhoseReadersClosedEndsWithAnExitCode(t *testing.T) {

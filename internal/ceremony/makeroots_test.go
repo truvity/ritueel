@@ -249,6 +249,12 @@ func TestMakeRootsWritesNoFileInTheBundleAndOnlyTheKeysInTheKeyDirectory(t *test
 	if got, want := r.keyFiles(), []string{"A.removal.jws", "B.removal.jws", mkKeyFile("A"), mkKeyFile("B")}; !slices.Equal(got, want) {
 		t.Errorf("the key directory holds %v, want %v", got, want)
 	}
+	if got, want := mkNames(t, r.keyDir), []string{"A.removal.jws", "B.removal.jws", "test-only-keys"}; !slices.Equal(got, want) {
+		t.Errorf("the key directory holds the entries %q, want %q", got, want)
+	}
+	if st, err := os.Stat(filepath.Join(r.keyDir, "test-only-keys")); err != nil || !st.IsDir() || st.Mode().Perm() != 0o700 {
+		t.Errorf("the folder test-only-keys: %v, %v; want a folder of the mode 0700", st, err)
+	}
 	for _, n := range r.keyFiles() {
 		st, err := os.Stat(filepath.Join(r.keyDir, n))
 		if err != nil || st.Mode().Perm() != 0o600 {
@@ -973,11 +979,15 @@ func TestAnEntryWithTheNameOfTheKeyFolderThatIsNotAnEmptyFitFolderIsRefusedBefor
 				}
 			}
 			before := tree(t, r.keyDir)
+			modeBefore, _ := os.Lstat(path)
 			m, err := r.make()
 			if m != nil || mkBackendReason(err) != "key-exists" {
 				t.Fatalf("MakeRoots: a result %v, the error %v; want key-exists", m != nil, err)
 			}
 			sameTree(t, "the key directory", before, tree(t, r.keyDir))
+			if modeAfter, err := os.Lstat(path); err != nil || modeAfter.Mode() != modeBefore.Mode() {
+				t.Errorf("the entry with the name of the key folder changed its kind or mode: %v to %v (%v)", modeBefore.Mode(), modeAfter, err)
+			}
 			if _, err := os.Stat(filepath.Join(r.root, "elsewhere")); err == nil {
 				t.Error("a file was written through the link")
 			}

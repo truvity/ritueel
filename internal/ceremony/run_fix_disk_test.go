@@ -31,10 +31,9 @@ func fxIndex(t *testing.T, path string) int {
 	return 0
 }
 
-// fxNoKeys fails the test when the key directory holds anything.
 // fxNoKeys fails the test when the key directory holds a key or a removal authorisation. A run that
 // stopped after the key store was started, and before the first key, leaves the folder test-only-keys,
-// empty; that is no key.
+// empty; that is no key. A stop before the key store starts uses fxNoKeyDirEntries.
 func fxNoKeys(t *testing.T, r *rt) {
 	t.Helper()
 	ents, err := os.ReadDir(r.keyDir)
@@ -47,6 +46,19 @@ func fxNoKeys(t *testing.T, r *rt) {
 			continue
 		}
 		t.Errorf("the key directory holds %q, want no key and no removal authorisation", e.Name())
+	}
+}
+
+// fxNoKeyDirEntries fails the test when the key directory holds any entry at all, the empty folder
+// test-only-keys too: a run that stopped before the key store was started has made nothing in it.
+func fxNoKeyDirEntries(t *testing.T, r *rt) {
+	t.Helper()
+	ents, err := os.ReadDir(r.keyDir)
+	if err != nil {
+		t.Fatalf("the key directory cannot be read: %v", err)
+	}
+	for _, e := range ents {
+		t.Errorf("the key directory holds %q although the key store was not started", e.Name())
 	}
 }
 
@@ -90,6 +102,7 @@ func TestACopyOfAWantedFileThatReachesTheDiskChangedStopsTheRunBeforeTheAttemptA
 					t.Error("an artifact or a record exists")
 				}
 				fxNoKeys(t, r)
+				fxNoKeyDirEntries(t, r)
 				if b, sv := birth.counts(); b != 0 || sv != 0 {
 					t.Errorf("the store made %d keys and %d removals", b, sv)
 				}
@@ -284,6 +297,7 @@ func TestTheLineOfAStopWhilePlanningSaysOnlyWhatIsTrueAtEachOfTheFirstWrites(t *
 				t.Error("attempt.json exists")
 			}
 			fxNoKeys(t, r)
+			fxNoKeyDirEntries(t, r)
 			if b, _ := birth.counts(); b != 0 {
 				t.Errorf("%d keys were made", b)
 			}

@@ -50,6 +50,20 @@ func mkOpenStore(t *testing.T, keys, bundle string) ceremony.RootStore {
 	return s
 }
 
+// mkNames are the names in a folder, sorted.
+func mkNames(t *testing.T, dir string) []string {
+	t.Helper()
+	ents, err := os.ReadDir(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var out []string
+	for _, e := range ents {
+		out = append(out, e.Name())
+	}
+	return out
+}
+
 // mkStart starts a store that Refuse accepted, for the labels, as a run does before its attempt.
 func mkStart(t *testing.T, s ceremony.RootStore, labels ...string) {
 	t.Helper()
@@ -201,10 +215,13 @@ func TestABirthWritesTheKeyFileAndTheStoreReadsItBackAsTheSameKey(t *testing.T) 
 	if !ok || !pub.Equal(&priv.PublicKey) {
 		t.Error("the key file holds another key than the key that Birth returned")
 	}
-	// No file but the key file: the removal authorisation is saved by its own call.
-	ents, _ := os.ReadDir(keys)
-	if len(ents) != 1 {
-		t.Errorf("the key directory holds %d files after one birth", len(ents))
+	// No file but the key file: the removal authorisation is saved by its own call. The key directory holds
+	// the folder of the keys and nothing else, and the folder holds the one key.
+	if got := mkNames(t, keys); !slices.Equal(got, []string{"test-only-keys"}) {
+		t.Errorf("the key directory holds %q after one birth, want only the folder test-only-keys", got)
+	}
+	if got := mkNames(t, filepath.Join(keys, "test-only-keys")); !slices.Equal(got, []string{"x509-root-a.p8"}) {
+		t.Errorf("the folder test-only-keys holds %q after one birth, want only x509-root-a.p8", got)
 	}
 }
 
@@ -262,12 +279,16 @@ func TestRefuseSeesKeyFilesThatStandInTheDirectory(t *testing.T) {
 	if got := mkBackendReason(err); got != "key-exists" {
 		t.Fatalf("Refuse: %v (reason %q), want key-exists", err, got)
 	}
-	// And no key is made after a refusal.
+	// And no key is made after a refusal: the store is not started, so no folder of the keys is made, and no
+	// Birth makes a key.
+	if err := s.Start(context.Background(), []string{"A", "B"}); err == nil {
+		t.Fatal("the store was started after a Refuse that refused")
+	}
 	if k, err := s.Birth(context.Background(), "A"); k != nil || err == nil {
 		t.Fatalf("Birth after a refusal gives %v, %v", k, err)
 	}
-	if _, err := os.Stat(filepath.Join(keys, mkKeyFile("A"))); err == nil {
-		t.Fatal("a key file was made after Refuse refused")
+	if got := mkNames(t, keys); !slices.Equal(got, []string{"C.x509.key.pem"}) {
+		t.Fatalf("the key directory holds %q after a refusal, want only the file that stood there", got)
 	}
 }
 
@@ -281,6 +302,7 @@ func TestAKeyFileThatAppearsAfterAnAcceptedRefuseMakesTheNextRefuseRefuseAndNoKe
 	if err := s.Refuse(ctx); err != nil {
 		t.Fatal(err)
 	}
+	mkStart(t, s, "A", "B") // so that only the last answer of Refuse stands between the store and a key
 	if err := os.WriteFile(filepath.Join(keys, "C.x509.key.pem"), []byte("x"), 0o600); err != nil {
 		t.Fatal(err)
 	}
@@ -291,8 +313,8 @@ func TestAKeyFileThatAppearsAfterAnAcceptedRefuseMakesTheNextRefuseRefuseAndNoKe
 		_ = k.Close()
 		t.Fatal("a key is made after the last Refuse refused")
 	}
-	if _, err := os.Stat(filepath.Join(keys, mkKeyFile("A"))); err == nil {
-		t.Fatal("a key file is written after the last Refuse refused")
+	if got := mkNames(t, filepath.Join(keys, "test-only-keys")); len(got) != 0 {
+		t.Fatalf("a key file is written after the last Refuse refused: %q", got)
 	}
 }
 
@@ -545,9 +567,17 @@ func TestAPipeOrALinkInThePlaceOfAFileIsRefusedAndDoesNotStopTheStore(t *testing
 					if err := s.Refuse(ctx); err != nil {
 						return
 					}
+					// A folder that is empty and fit is the folder of the keys, and is used as it is; a pipe
+					// or a link with that name is refused at Refuse or at Start.
+					if err := s.Start(ctx, []string{"A", "B"}); err != nil {
+						if kind == "folder" {
+							t.Errorf("Start refuses an empty folder of the mode 0700 with the name of the key folder: %v", err)
+						}
+						return
+					}
 					if k, err := s.Birth(ctx, "A"); err == nil {
-						if name == "test-only-keys" {
-							t.Errorf("a key is born beside a %s with the name of the key folder", kind)
+						if name == "test-only-keys" && kind != "folder" {
+							t.Errorf("a key is born through a %s with the name of the key folder", kind)
 						}
 						_ = k.Close()
 					}
