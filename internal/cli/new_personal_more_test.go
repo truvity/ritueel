@@ -306,7 +306,7 @@ func TestApplyOnTheStarterOfAPersonWritesNothingInEveryState(t *testing.T) {
 				if strings.HasSuffix(form, "json") {
 					base = append(base, "--output", "json")
 				}
-				args := append(base, "apply")
+				args := append(append([]string{}, base...), "apply")
 				if strings.HasPrefix(form, "plan-only") {
 					args = append(args, "--plan-only")
 				} else {

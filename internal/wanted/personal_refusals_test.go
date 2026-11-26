@@ -60,7 +60,7 @@ func runRefusals(t *testing.T, path string, parse func(string) error, rows []ref
 func parseRoot(text string) error {
 	r, err := wanted.ParseRoot("openpgp", []byte(text))
 	if (r == nil) == (err == nil) {
-		return fmt.Errorf("a value and an error together or neither: %v %v", r, err)
+		return errBoth
 	}
 	return err
 }
@@ -68,7 +68,7 @@ func parseRoot(text string) error {
 func parseIDs(text string) error {
 	u, err := wanted.ParseUserIDs([]byte(text))
 	if (u == nil) == (err == nil) {
-		return fmt.Errorf("a value and an error together or neither: %v %v", u, err)
+		return errBoth
 	}
 	return err
 }

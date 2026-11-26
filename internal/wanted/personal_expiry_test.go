@@ -240,7 +240,7 @@ func TestTheExpiryAgreesWithAnIndependentCountOfTheMonths(t *testing.T) {
 func TestTheClockThatIsNoClockOrOutsideTheYears(t *testing.T) {
 	key := keyOn(t, "2029-11-26")
 	for name, now := range map[string]time.Time{
-		"the zero time":                 time.Time{},
+		"the zero time":                 {},
 		"the zero time in another zone": time.Time{}.In(time.FixedZone("east", 3600)),
 		"the zero time in a far zone":   time.Time{}.In(time.FixedZone("west", -12*3600)),
 	} {

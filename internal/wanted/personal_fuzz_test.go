@@ -33,9 +33,7 @@ func personalRootSeeds() []string {
 		"version: 1\nkind: openpgp\nkeys:\n  - {label: \"A\\U0000202e\", role: adopted, fingerprint: x, valid_until: 2029-11-26}\n",
 		"version: 1\nkind: x509\nkeys:\n",
 	}
-	for _, s := range seedTexts() {
-		seeds = append(seeds, s)
-	}
+	seeds = append(seeds, seedTexts()...)
 	return seeds
 }
 
@@ -66,7 +64,7 @@ func FuzzPersonalRootKeys(f *testing.F) {
 		f.Add([]byte(s))
 	}
 	clocks := []time.Time{
-		time.Time{}, time.Date(2026, 11, 27, 12, 0, 0, 0, time.UTC), time.Date(2104, 1, 1, 0, 0, 0, 0, time.FixedZone("x", 14*3600)),
+		{}, time.Date(2026, 11, 27, 12, 0, 0, 0, time.UTC), time.Date(2104, 1, 1, 0, 0, 0, 0, time.FixedZone("x", 14*3600)),
 		time.Date(9999, 12, 31, 23, 59, 59, 0, time.UTC),
 	}
 	f.Fuzz(func(t *testing.T, data []byte) {
@@ -161,9 +159,7 @@ func userIDSeeds() []string {
 		idsHead + "  - {name: Ada, address: \"\\\"a@b\\\"@example.org\"}\n",
 		idsHead + "  - {name: Ada, address: a@example.org}\n  - {name: ADA, address: A@EXAMPLE.ORG}\n",
 	}
-	for _, s := range seedTexts() {
-		seeds = append(seeds, s)
-	}
+	seeds = append(seeds, seedTexts()...)
 	return seeds
 }
 

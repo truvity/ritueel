@@ -171,3 +171,24 @@ func TestPersonalFindReadsEveryWantedFileItHas(t *testing.T) {
 		})
 	}
 }
+
+// A clock that gives the zero time is no clock, and Find says of it what it says of a clock that is not there: the
+// same words, from the same place, and not the words of the check of the keys.
+func TestPersonalFindSaysTheSameOfANilClockAndOfAZeroClock(t *testing.T) {
+	const words = "there is no clock to take the time of the plan from"
+	dir := pfWrite(t, pnFiles())
+	_, want := pnFind(t, dir, nil)
+	if want == nil || !strings.Contains(want.Error(), words) || errors.Is(want, ceremony.ErrNotBuilt) {
+		t.Fatalf("a nil clock: %v", want)
+	}
+	for name, now := range map[string]func() time.Time{
+		"the zero time":                 func() time.Time { return time.Time{} },
+		"the zero time in another zone": func() time.Time { return time.Time{}.In(time.FixedZone("east", 3600)) },
+		"less than a second after it":   func() time.Time { return time.Time{}.Add(999 * time.Millisecond) },
+	} {
+		_, err := pnFind(t, dir, now)
+		if err == nil || err.Error() != want.Error() {
+			t.Errorf("%s: %v, want the text of a nil clock: %v", name, err, want)
+		}
+	}
+}
