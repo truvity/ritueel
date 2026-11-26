@@ -119,7 +119,7 @@ var (
 	ErrForeignForm error = &kindError{"openpgp: the file is not the packets of one transferable key", ErrForeignKey}
 	// ErrForeignLimit marks a file that passes a named limit of the reader: [MaxForeignKeyBytes],
 	// [MaxForeignPackets], [MaxForeignUserIDs], [MaxForeignUserIDBytes], [MaxForeignSubkeys],
-	// [MaxForeignSignatures], [MaxForeignClaimedSignatures] or [MaxForeignPacketBytes]. The text names the
+	// [MaxForeignSignatures], [MaxForeignClaimedSignatures], [MaxForeignHashedBytes] or [MaxForeignPacketBytes]. The text names the
 	// constant. It is also an [ErrForeignKey].
 	ErrForeignLimit error = &kindError{"openpgp: the file passes a limit of the reader", ErrForeignKey}
 	// ErrForeignArmour marks an armoured file that is not exactly one block of type PGP PRIVATE KEY

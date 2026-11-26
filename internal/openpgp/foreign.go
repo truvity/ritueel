@@ -37,6 +37,13 @@ const (
 	// MaxForeignUserIDBytes is the most bytes of the body of one user ID packet: 2048. A photograph is a
 	// user attribute packet, and keeps the limit of [MaxForeignPacketBytes].
 	MaxForeignUserIDBytes = 2048
+	// MaxForeignHashedBytes is the most bytes that the checks of signatures may hash in one file:
+	// 512 MiB, counted before each check (the data that a signature covers, for the hash tag and for
+	// go-crypto's verification, and once more for a binding that is also judged with its back-signature).
+	// A key with a photograph of a few hundred kilobytes and thirty self-signatures on it hashes tens
+	// of megabytes, so it passes many times over; the worst case that the limit allows is about a
+	// second of hashing on an ordinary machine. A file that would pass it is refused.
+	MaxForeignHashedBytes = 512 << 20
 	// MaxForeignClaimedSignatures is the most signatures in the whole file that the primary has to answer
 	// for, which are the ones that are verified: those that name the primary, and the revocations and subkey bindings that
 	// are not provably another key's: 2048, which a key re-signed every year for twenty years, with fifteen
@@ -223,7 +230,11 @@ type ForeignUserID struct {
 	Signatures []ForeignSignature
 	// Valid is true when at least one of Signatures is a certification that counts: a self-signature
 	// that verifies (made with SHA-1 or a strong hash). Only a user ID with Valid true is in the
-	// certificate.
+	// certificate. The primary may have made a self-signature that does not count: it has a critical
+	// subpacket that the reader does not understand, a field that is repeated, more than 32 subpackets
+	// in an area, or a hash that is not accepted (MD5, RIPEMD-160, SHA-224, SHA-3 and every hash that is
+	// not SHA-1, SHA-256, SHA-384 or SHA-512). A user ID can thus be absent from the certificate although
+	// the primary signed it: the view shows it, with the status of each of its signatures.
 	Valid bool
 	// WeakHash is true when Valid is true and no self-signature that counts is strong: the fields above
 	// come from a SHA-1 self-signature (status [SignatureValidWeakHash]). The key is accepted, and the adoption re-signs with a strong hash.
@@ -257,8 +268,9 @@ type ForeignUserID struct {
 	// A certification whose issuer cannot be read is counted here too.
 	Certifications int
 	// OtherRevocations counts the certification revocations (type 0x30) of other keys on this user ID: a
-	// subset of OtherSignatures, so that a caller can tell that some were present. They are left out of
-	// the certificate.
+	// subset of OtherSignatures. A revocation by ANOTHER key was in the file and is not in the
+	// certificate; the user ID may be revoked although the certificate does not show it. A caller that
+	// adopts or publishes the key must ask the person when this count is not zero.
 	OtherRevocations int
 	// OtherSignatures counts the other signatures on this user ID that the primary does not claim: those
 	// of other keys (a revocation by another key, for example), and those whose type cannot be read or is
@@ -285,7 +297,9 @@ type ForeignSubkey struct {
 	// claims to have made on this subkey, in the order of the file.
 	Signatures []ForeignSignature
 	// Bound is true when at least one binding verifies (with SHA-1 or a strong hash). A binding of a
-	// subkey that can sign needs its embedded back-signature, which go-crypto checks with it.
+	// subkey that can sign needs its embedded back-signature, which go-crypto checks with it. A signing
+	// subkey whose binding has no back-signature that verifies is in the certificate, with its
+	// binding and without a back-signature, and is reported here as not bound.
 	Bound bool
 	// WeakHash is true when Bound is true and no binding that counts is strong: the fields come from a
 	// SHA-1 binding.
@@ -304,13 +318,17 @@ type ForeignSubkey struct {
 	// UnreadableRevocations counts the subkey revocations (type 0x28) that the primary claims and that
 	// the reader could not use (see [ForeignUserID.UnreadableRevocations]).
 	UnreadableRevocations int
-	// OtherRevocations counts the subkey revocations (type 0x28) of other keys on this subkey: a subset of
-	// OtherSignatures, left out of the certificate.
+	// OtherRevocations counts the subkey revocations (type 0x28) of other keys on this subkey: a subset
+	// of OtherSignatures. A revocation by ANOTHER key was in the file and is not in the certificate; the
+	// subkey may be revoked although the certificate does not show it. A caller that adopts or
+	// publishes the key must ask the person when this count is not zero.
 	OtherRevocations int
 	// OtherSignatures counts the signatures on this subkey that the primary does not claim, left out of
 	// the certificate and not verified.
 	OtherSignatures int
-	// InCertificate is true when the subkey is in the certificate: at least one binding of the primary
+	// InCertificate is true when the subkey is in the certificate. A caller must look at a subkey for
+	// which it is false: the subkey is not in the certificate, it has no Fingerprint or KeyID, and for
+	// a public packet that the reader cannot read it has no Algorithm either. It is true when at least one binding of the primary
 	// verifies over its public part (SHA-1 or stronger). A subkey that is not (no binding, a binding that
 	// does not verify or is made with MD5, a public part that does not read) is left out whatever
 	// packet it came in, and reported: its Fingerprint and KeyID are empty, because an unconfirmed
@@ -338,9 +356,11 @@ type ForeignKey struct {
 	// claims to have made, in the order of the file.
 	KeySignatures []ForeignSignature
 	// OtherKeySignatures counts the signatures on the primary key itself that the primary does not
-	// claim (a revocation by a designated revoker, for example): left out of the certificate and not
-	// verified. OtherKeyRevocations counts the key revocations (type 0x20) among them, so that a caller
-	// can tell that a designated revoker may have revoked the key.
+	// claim: left out of the certificate and not verified. OtherKeyRevocations counts the key
+	// revocations (type 0x20) among them: a key revocation by ANOTHER key was in the file and is not in
+	// the certificate. It may be the revocation of a designated revoker, so the key may be revoked
+	// although the certificate does not show it. A caller that adopts or publishes the key must refuse,
+	// or ask the person, when this count is not zero.
 	OtherKeySignatures  int
 	OtherKeyRevocations int
 	// UnreadableRevocations counts the key revocations (type 0x20) in KeySignatures that the primary
@@ -351,6 +371,10 @@ type ForeignKey struct {
 	// the total size of their bodies. They are not read. A user attribute is in the certificate only
 	// with a certification by the primary that verifies over it; UserAttributesLeftOut counts those
 	// that are not, which a caller tells the person.
+	// DuplicatesDropped counts what the certificate left out because the same thing was in the file
+	// twice: a user ID, an attribute or a subkey with the same bytes (merged into the first, with their
+	// verified signatures), and a signature written out twice for one part.
+	DuplicatesDropped     int
 	UserAttributes        int
 	UserAttributeBytes    int
 	UserAttributesLeftOut int
@@ -377,6 +401,12 @@ type ForeignKey struct {
 //     the part that was confirmed, then every binding and subkey revocation by the primary that
 //     verifies.
 //
+// The same holds for a direct-key signature, a user ID and a binding: one that the primary made but
+// that does not count (an unknown critical subpacket, a repeated field, more than 32 subpackets in an
+// area, or a hash that is not accepted, SHA-224 and SHA-3 included) is not in the certificate, and
+// the view shows it with its status. A user ID, a user attribute or a subkey that appears twice with
+// the same bytes is written once, with the verified signatures of both ([ForeignKey.DuplicatesDropped]).
+//
 // A signature is written again from the bytes that were verified: its version, type, algorithms and
 // hashed area as they were hashed, its signature values (refused if they are not in the canonical form),
 // and an unhashed area that the reader builds (the issuer of the primary, and a back-signature of a
@@ -385,8 +415,9 @@ type ForeignKey struct {
 // critical subpacket that the reader does not understand, and signatures that do not verify do not.
 //
 // What stays out, and is counted in the view so that a caller can tell the person: every certification
-// and revocation by another key (the reader cannot verify them; they remain in the person's own
-// keyring and on key servers), every signature that claims the primary and does not verify, a user ID or
+// and revocation by another key (the reader cannot verify them; other people's certifications remain
+// where the person already has them, in their own keyring and on the key servers that keep them, and
+// a caller that publishes the certificate publishes none of them), every signature that claims the primary and does not verify, a user ID or
 // user attribute with no valid self-signature, a subkey with no valid binding, and the trust and marker
 // packets, which are local to the tool that wrote them. The certificate thus has fewer packets than
 // the file, and no byte that the primary did not sign, except within the value of a signature: an
@@ -533,9 +564,13 @@ func readForeignKey(file []byte) (*ForeignKey, error) {
 	k.UserIDs, valid, k.UserAttributesLeftOut = v.components(w, out)
 	k.Subkeys = v.subkeys(w, out)
 	k.UserAttributes, k.UserAttributeBytes = w.attrs, w.attrBytes
+	if v.err != nil {
+		return nil, v.err
+	}
 	if valid == 0 {
 		return nil, v.noSelfSignature(k.UserIDs)
 	}
+	k.DuplicatesDropped = out.dups
 	k.cert = out.assemble(w.primaryPacket)
 	if err := checkPublicOnly(k.cert, v.fp); err != nil {
 		return nil, err

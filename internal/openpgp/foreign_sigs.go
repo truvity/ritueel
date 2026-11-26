@@ -51,6 +51,25 @@ type fkVerifier struct {
 	idHex   string
 	created time.Time
 	alg     byte
+	// hashed is the number of bytes that the checks of signatures have been charged so far, and err the
+	// refusal that the budget [MaxForeignHashedBytes] makes when it is passed.
+	hashed int64
+	err    error
+}
+
+// charge counts n bytes of hashing against [MaxForeignHashedBytes], before the hashing is done. It
+// returns false, and keeps the refusal in v.err for the caller of the judging, when the budget would
+// be passed; nothing is hashed after that.
+func (v *fkVerifier) charge(n int64) bool {
+	if v.err != nil {
+		return false
+	}
+	v.hashed += n
+	if v.hashed > MaxForeignHashedBytes {
+		v.err = fail(ErrForeignLimit, "the signature checks of the file would hash more than MaxForeignHashedBytes (%d bytes)", int64(MaxForeignHashedBytes))
+		return false
+	}
+	return true
 }
 
 // newForeignVerifier computes the fingerprint of the primary and has go-crypto read its public key
@@ -305,6 +324,9 @@ type fkCtx struct {
 	// sub, for a binding, is the subkey: a back-signature in the unhashed area that verifies with it
 	// is carried over.
 	sub *packet.PublicKey
+	// back remembers, per subkey, the back-signatures that were already judged (by their bytes), so that
+	// a binding that is repeated does not repeat the verification; nil means that it did not verify.
+	back map[string][]byte
 }
 
 // hashers are the hashes of the signatures that can count, by their numbers.
@@ -419,6 +441,14 @@ func (v *fkVerifier) evaluate(s fkSig, h fkHead, c fkCtx) (ForeignSignature, []b
 		fs.Status = SignatureUnreadable
 		return fs, nil
 	}
+	passes := int64(2) // the hash tag here, and go-crypto's verification
+	if c.strong != nil {
+		passes++
+	}
+	if !v.charge(passes * int64(len(c.data)+len(h.areas.fields)+6)) {
+		fs.Status = SignatureUnreadable
+		return fs, nil
+	}
 	if !tagOK(h.hash, h.areas, c.data) {
 		return fs, nil
 	}
@@ -449,40 +479,56 @@ func (v *fkVerifier) evaluate(s fkSig, h fkHead, c fkCtx) (ForeignSignature, []b
 // unhashed area of a binding that verifies with the subkey over the primary and the subkey, or nil.
 // A back-signature in the hashed area of the binding is part of what the binding covers and is carried
 // over with it as it stands; one in the unhashed area is carried over only if it verifies, and then
-// written again with the issuer of the subkey and nothing else from its unhashed area.
+// written again with the issuer of the subkey and nothing else from its unhashed area. Only the first
+// embedded signature subpacket of the area is tried, and a result is remembered per subkey, so that a
+// binding that is repeated many times does not repeat the work.
 func (v *fkVerifier) backSignature(a sigAreas, c fkCtx) []byte {
 	for _, sp := range a.unhashed {
-		if sp.typ != spEmbeddedSignature || len(sp.data) > maxBindingBody {
+		if sp.typ != spEmbeddedSignature {
 			continue
 		}
-		e, err := splitSig(sp.data)
-		if err != nil || scanAreasOf(errFrame, sp.data) != nil || e.sigType != sigPrimaryKeyBinding ||
-			hashStatus(e.hash) != 0 || e.algo != byte(c.sub.PubKeyAlgo) || (fkHead{areas: e}).hasUnknownCritical() ||
-			!canonicalValues(e.algo, e.rest) || !tagOK(e.hash, e, c.data) {
-			continue
+		if len(sp.data) > maxBindingBody {
+			return nil
 		}
-		sig, err := readSignature(wrap(tagSignature, sp.data))
-		if err != nil || sig.Version != 4 {
-			continue
+		if got, ok := c.back[string(sp.data)]; ok {
+			return got
 		}
-		verified := safely(func() error {
-			hh, err := sig.PrepareVerify()
-			if err != nil {
-				return err
-			}
-			if err := v.pk.SerializeForHash(hh); err != nil {
-				return err
-			}
-			if err := c.sub.SerializeForHash(hh); err != nil {
-				return err
-			}
-			return c.sub.VerifySignature(hh, sig)
-		}) == nil
-		if verified {
-			return emitBody(e, c.sub.Fingerprint, nil)
-		}
+		got := v.verifyBack(sp.data, c)
+		c.back[string(sp.data)] = got
+		return got
 	}
 	return nil
+}
+
+// verifyBack judges one embedded signature (its body) and returns its body written again, or nil.
+func (v *fkVerifier) verifyBack(body []byte, c fkCtx) []byte {
+	e, err := splitSig(body)
+	if err != nil || scanAreasOf(errFrame, body) != nil || e.sigType != sigPrimaryKeyBinding ||
+		hashStatus(e.hash) != 0 || e.algo != byte(c.sub.PubKeyAlgo) || (fkHead{areas: e}).hasUnknownCritical() ||
+		!canonicalValues(e.algo, e.rest) || !v.charge(2*int64(len(c.data)+len(e.fields)+6)) || !tagOK(e.hash, e, c.data) {
+		return nil
+	}
+	sig, err := readSignature(wrap(tagSignature, body))
+	if err != nil || sig.Version != 4 {
+		return nil
+	}
+	verified := safely(func() error {
+		hh, err := sig.PrepareVerify()
+		if err != nil {
+			return err
+		}
+		if err := v.pk.SerializeForHash(hh); err != nil {
+			return err
+		}
+		if err := c.sub.SerializeForHash(hh); err != nil {
+			return err
+		}
+		return c.sub.VerifySignature(hh, sig)
+	}) == nil
+	if !verified {
+		return nil
+	}
+	return emitBody(e, c.sub.Fingerprint, nil)
 }
 
 // maxBindingBody is the most bytes of an embedded signature that is looked at.
@@ -497,6 +543,39 @@ type fkOutput struct {
 	keySigs [][]byte // direct-key signatures and key revocations of the primary that verify
 	comps   [][]byte // per user ID or attribute of the walk, or nil when it is left out
 	subs    [][]byte // per subkey of the walk, or nil when it is left out
+	dups    int      // the duplicates that were dropped: signatures, user IDs, attributes and subkeys
+}
+
+// fkGroup is the occurrences of one user ID, user attribute or subkey that have the same bytes, merged
+// into the first of them: their verified signatures go to it, and a signature whose written bytes are
+// identical to one already written is written once.
+type fkGroup struct {
+	first int               // the place of the first occurrence in the file
+	emits []byte            // the verified signatures, written
+	seen  map[string]bool   // the signature packets written so far
+	ok    bool              // some occurrence has what the part needs (a certification, a binding)
+	back  map[string][]byte // the back-signatures judged for a subkey, by their bytes
+}
+
+// add merges the written signature packet of one occurrence into the group, counting a duplicate.
+func (g *fkGroup) add(emit []byte, out *fkOutput) {
+	if g.seen[string(emit)] {
+		out.dups++
+		return
+	}
+	g.seen[string(emit)] = true
+	g.emits = append(g.emits, emit...)
+}
+
+// groupOf returns the group of a key, making it at place i when it is the first.
+func (o *fkOutput) groupOf(groups map[string]*fkGroup, key string, i int) *fkGroup {
+	if g, ok := groups[key]; ok {
+		o.dups++
+		return g
+	}
+	g := &fkGroup{first: i, seen: map[string]bool{}}
+	groups[key] = g
+	return g
 }
 
 // assemble writes the certificate: the primary key packet, its signatures, the user IDs and attributes
@@ -525,6 +604,7 @@ func (v *fkVerifier) keyData(w *fkWalk) []byte { return hashPrefix(w.primaryBody
 // not be used, otherRev the key revocations of other keys that are left out.
 func (v *fkVerifier) keyLevel(w *fkWalk, out *fkOutput) (sigs []ForeignSignature, other, otherRev, unreadable int) {
 	data := v.keyData(w)
+	seen := map[string]bool{}
 	for _, s := range w.keyT.sigs {
 		h := v.head(s)
 		var fs ForeignSignature
@@ -544,7 +624,12 @@ func (v *fkVerifier) keyLevel(w *fkWalk, out *fkOutput) (sigs []ForeignSignature
 			fs = misplaced(h)
 		}
 		sigs = append(sigs, fs)
-		if emit != nil {
+		switch {
+		case emit == nil:
+		case seen[string(emit)]:
+			out.dups++
+		default:
+			seen[string(emit)] = true
 			out.keySigs = append(out.keySigs, emit)
 		}
 	}
@@ -592,16 +677,20 @@ func (v *fkVerifier) componentData(w *fkWalk, u *fkUser) []byte {
 // verifies. Other keys' certifications are counted and left out.
 func (v *fkVerifier) components(w *fkWalk, out *fkOutput) (ids []ForeignUserID, valid, attrsLeftOut int) {
 	out.comps = make([][]byte, len(w.users))
+	groups := map[string]*fkGroup{}
+	group := make([]*fkGroup, len(w.users))
 	for i, u := range w.users {
 		data := v.componentData(w, u)
 		text := string(u.text)
+		key := "u" + text
 		verify := func(g *packet.Signature) error { return v.pk.VerifyUserIdSignature(text, v.pk, g) }
 		if u.attr {
+			key = "a" + text
 			verify = func(g *packet.Signature) error { return v.verifyAttribute(w, u.text, g) }
 		}
+		grp := out.groupOf(groups, key, i)
+		group[i] = grp
 		fu := ForeignUserID{Text: text}
-		var emits []byte
-		self := false
 		for _, s := range u.t.sigs {
 			h := v.head(s)
 			switch {
@@ -616,28 +705,33 @@ func (v *fkVerifier) components(w *fkWalk, out *fkOutput) (ids []ForeignUserID, 
 				fs, emit := v.evaluate(s, h, fkCtx{data: data, keyCreated: v.created, verify: verify})
 				fu.Signatures = append(fu.Signatures, fs)
 				if emit != nil {
-					emits = append(emits, emit...)
-					self = self || isCertification(h.typ)
+					grp.add(emit, out)
+					grp.ok = grp.ok || isCertification(h.typ)
 				}
 			default:
 				fu.Signatures = append(fu.Signatures, misplaced(h))
 			}
 		}
 		if u.attr {
-			if self {
-				out.comps[i] = append(wrap(tagUserAttribute, u.text), emits...)
-			} else {
-				attrsLeftOut++
-			}
 			continue
 		}
 		summariseUserID(&fu)
 		fu.UnreadableRevocations = unusableRevocations(fu.Signatures)
 		if fu.Valid {
 			valid++
-			out.comps[i] = append(wrap(tagUserID, u.text), emits...)
 		}
 		ids = append(ids, fu)
+	}
+	for i, u := range w.users {
+		g := group[i]
+		switch {
+		case !g.ok && u.attr:
+			attrsLeftOut++
+		case g.ok && g.first == i && u.attr:
+			out.comps[i] = append(wrap(tagUserAttribute, u.text), g.emits...)
+		case g.ok && g.first == i:
+			out.comps[i] = append(wrap(tagUserID, u.text), g.emits...)
+		}
 	}
 	return ids, valid, attrsLeftOut
 }
@@ -739,19 +833,23 @@ func newer(a, b *ForeignSignature) *ForeignSignature {
 // other subkey, whatever packet it came in, is left out and reported, with no fingerprint: an
 // unconfirmed cut is not to be trusted.
 func (v *fkVerifier) subkeys(w *fkWalk, out *fkOutput) []ForeignSubkey {
-	var views []ForeignSubkey
+	views := make([]ForeignSubkey, 0, len(w.subs))
 	out.subs = make([][]byte, len(w.subs))
+	groups := map[string]*fkGroup{}
+	group := make([]*fkGroup, len(w.subs))
 	for i, s := range w.subs {
 		fs := ForeignSubkey{Form: s.form}
+		var data []byte
+		var grp *fkGroup
 		if !s.unread {
 			fs.Algorithm, fs.Created = s.pub.alg, s.pub.created
-		}
-		var data []byte
-		if !s.unread {
 			data = append(v.keyData(w), hashPrefix(s.pubBody)...)
+			grp = out.groupOf(groups, string(s.pubBody), i)
+			if grp.back == nil {
+				grp.back = map[string][]byte{}
+			}
 		}
-		var emits []byte
-		confirmed := false
+		group[i] = grp
 		for _, g := range s.t.sigs {
 			h := v.head(g)
 			unreadable := s.gopk == nil && (h.typ == sigSubkeyBinding || h.typ == sigSubkeyRevoke)
@@ -769,11 +867,11 @@ func (v *fkVerifier) subkeys(w *fkWalk, out *fkOutput) []ForeignSubkey {
 			case h.typ == sigSubkeyBinding:
 				sub := s.gopk
 				sg, emit = v.evaluate(g, h, fkCtx{
-					data: data, keyCreated: s.pub.created, sub: sub,
+					data: data, keyCreated: s.pub.created, sub: sub, back: grp.back,
 					verify: func(x *packet.Signature) error { return v.pk.VerifySubkeyRevocationSignature(x, sub) },
 					strong: func(x *packet.Signature) error { return v.pk.VerifyKeySignature(sub, x) },
 				})
-				confirmed = confirmed || emit != nil
+				grp.ok = grp.ok || emit != nil
 			case h.typ == sigSubkeyRevoke:
 				sub := s.gopk
 				sg, emit = v.evaluate(g, h, fkCtx{
@@ -784,16 +882,24 @@ func (v *fkVerifier) subkeys(w *fkWalk, out *fkOutput) []ForeignSubkey {
 				sg = misplaced(h)
 			}
 			fs.Signatures = append(fs.Signatures, sg)
-			emits = append(emits, emit...)
+			if emit != nil {
+				grp.add(emit, out)
+			}
 		}
 		summariseSubkey(&fs)
 		fs.UnreadableRevocations = unusableRevocations(fs.Signatures)
-		if confirmed {
-			fs.InCertificate = true
-			fs.Fingerprint, fs.KeyID = fingerprintHex(s.fp)
-			out.subs[i] = append(wrap(tagSubkey, s.pubBody), emits...)
-		}
 		views = append(views, fs)
+	}
+	for i, s := range w.subs {
+		g := group[i]
+		if g == nil || !g.ok {
+			continue
+		}
+		views[i].InCertificate = true
+		views[i].Fingerprint, views[i].KeyID = fingerprintHex(s.fp)
+		if g.first == i {
+			out.subs[i] = append(wrap(tagSubkey, s.pubBody), g.emits...)
+		}
 	}
 	return views
 }
