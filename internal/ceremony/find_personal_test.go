@@ -16,7 +16,7 @@ import (
 
 const (
 	pnRoot = "version: 1\nkind: openpgp\nencryption: true\nkeys:\n" +
-		"  - {label: A, role: adopted, fingerprint: \"0123456789abcdef0123456789abcdef01234567\", valid_until: \"2029-11-26\"}\n"
+		"  - {label: A, role: adopted, fingerprint: \"a1b2c3d4e5f60718293a4b5c6d7e8f9012345678\", valid_until: \"2029-11-26\"}\n"
 	pnCard    = "version: 1\nserial: \"1234\"\nkind: day-to-day\napplications: [openpgp]\n"
 	pnSign    = "version: 1\ntype: openpgp-subkey\nroot: openpgp\ncapability: sign\ncard: day-ana\n"
 	pnRefusal = "a personal bundle (kind: personal in ritueel.yaml) passed the check of its wanted files; adoption and subkeys are built by later parts"
@@ -71,15 +71,20 @@ func TestAPersonalBundleWhoseWantedFilesFailIsRefusedByTheFileNotAsNotBuilt(t *t
 		now   func() time.Time
 		words []string
 	}{
-		"an x509 root":        {pnWith(map[string]string{"want/roots/openpgp.yaml": pfX509Test}, "want/delegations/daily.yaml"), nil, []string{"want/roots/openpgp.yaml", "personal bundle has one OpenPGP root"}},
-		"no root":             {pnWith(nil, "want/roots/openpgp.yaml", "want/delegations/daily.yaml"), nil, []string{"want/roots", "personal bundle needs one root file"}},
-		"two roots":           {pnWith(map[string]string{"want/roots/other.yaml": pnRoot}), nil, []string{"want/roots/other.yaml", "second root file"}},
-		"too many roots":      {manyRoots(), nil, []string{"want/roots", "one root file"}},
-		"the placeholder":     {pnWith(map[string]string{"want/roots/openpgp.yaml": strings.Replace(pnRoot, "0123456789abcdef0123456789abcdef01234567", strings.Repeat("0", 40), 1)}), nil, []string{"want/roots/openpgp.yaml:5", "replace the placeholder"}},
-		"a key that ended":    {pnFiles(), func() time.Time { return time.Date(2029, 11, 26, 0, 0, 0, 0, time.UTC) }, []string{"want/roots/openpgp.yaml:5", "keys[1]", "not after now"}},
-		"a key too far":       {pnFiles(), func() time.Time { return time.Date(2026, 11, 25, 0, 0, 0, 0, time.UTC) }, []string{"keys[1]", "more than 36 months"}},
-		"no clock":            {pnFiles(), nil, []string{"no clock"}},
-		"a card that is gone": {pnWith(nil, "want/cards/day-ana.yaml"), nil, []string{"want/delegations/daily.yaml", "has no card file"}},
+		"an x509 root":                     {pnWith(map[string]string{"want/roots/openpgp.yaml": pfX509Test}, "want/delegations/daily.yaml"), nil, []string{"want/roots/openpgp.yaml", "personal bundle has one OpenPGP root"}},
+		"no root":                          {pnWith(nil, "want/roots/openpgp.yaml", "want/delegations/daily.yaml"), nil, []string{"want/roots", "personal bundle needs one root file"}},
+		"two roots":                        {pnWith(map[string]string{"want/roots/other.yaml": pnRoot}), nil, []string{"want/roots/other.yaml", "second root file"}},
+		"too many roots":                   {manyRoots(), nil, []string{"want/roots", "one root file"}},
+		"the placeholder":                  {pnWith(map[string]string{"want/roots/openpgp.yaml": strings.Replace(pnRoot, "a1b2c3d4e5f60718293a4b5c6d7e8f9012345678", strings.Repeat("0", 40), 1)}), nil, []string{"want/roots/openpgp.yaml:5", "replace the placeholder"}},
+		"a key that ended":                 {pnFiles(), func() time.Time { return time.Date(2029, 11, 26, 0, 0, 0, 0, time.UTC) }, []string{"want/roots/openpgp.yaml:5", "keys[1]", "not after now"}},
+		"a key too far":                    {pnFiles(), func() time.Time { return time.Date(2026, 11, 25, 0, 0, 0, 0, time.UTC) }, []string{"keys[1]", "more than 36 months"}},
+		"no clock":                         {pnFiles(), nil, []string{"no clock"}},
+		"a zero clock":                     {pnFiles(), func() time.Time { return time.Time{} }, []string{"no clock"}},
+		"the example fingerprint":          {pnWith(map[string]string{"want/roots/openpgp.yaml": strings.Replace(pnRoot, "a1b2c3d4e5f60718293a4b5c6d7e8f9012345678", "0123456789abcdef0123456789abcdef01234567", 1)}), nil, []string{"want/roots/openpgp.yaml:5", "the fingerprint of the examples"}},
+		"the example person":               {pnWith(map[string]string{"ritueel.yaml": strings.Replace(strings.Replace(pfPersonal, "Example Person", "Ada Example", 1), "person@example.org", "ada@example.com", 1)}), nil, []string{"ritueel.yaml", "replace the example person with your name and address"}},
+		"a store that a person cannot use": {pnWith(map[string]string{"ritueel.yaml": strings.Replace(pfPersonal, "[openpgp-card]", "[openpgp-card, aws-kms]", 1)}), nil, []string{"ritueel.yaml", "policy.stores holds aws-kms"}},
+		"17 delegations":                   {seventeenDelegations(), nil, []string{"want/delegations", "at most 16 delegation files"}},
+		"a card that is gone":              {pnWith(nil, "want/cards/day-ana.yaml"), nil, []string{"want/delegations/daily.yaml", "has no card file"}},
 		"a delegation with no card": {pnWith(map[string]string{"want/delegations/daily.yaml": strings.Replace(pnSign, "card: day-ana\n", "", 1)}), nil,
 			[]string{"want/delegations/daily.yaml", "needs the member card"}},
 		"the same pair twice":        {pnWith(map[string]string{"want/delegations/again.yaml": pnSign}), nil, []string{"want/delegations/daily.yaml", "in the delegation again already"}},
@@ -110,6 +115,15 @@ func TestAPersonalBundleWhoseWantedFilesFailIsRefusedByTheFileNotAsNotBuilt(t *t
 			sameTree(t, "Find", before, tree(t, dir))
 		})
 	}
+}
+
+// seventeenDelegations has 17 files that no reader would accept: the count is refused before any is read.
+func seventeenDelegations() map[string]string {
+	files := pnFiles()
+	for i := range 17 {
+		files[fmt.Sprintf("want/delegations/x%02d.yaml", i)] = "not a delegation\n"
+	}
+	return files
 }
 
 func manyRoots() map[string]string {

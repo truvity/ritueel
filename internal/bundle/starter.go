@@ -171,14 +171,19 @@ user_ids: []
 `
 	// personalMonths is how far from now the starter puts the day the key expires, in calendar months.
 	personalMonths = 24
-	// standInFingerprint replaces the placeholder in the read-back of the starter.
-	standInFingerprint = "0123456789abcdef0123456789abcdef01234567"
+	// The read-back of the starter puts a stand-in fingerprint and a stand-in person in the place of the
+	// placeholder and of the example person, which the readers refuse by name. The readers have no way to let
+	// them through: the starter is read back with the text changed, and the files that are written are not.
+	standInFingerprint = "a1b2c3d4e5f60718293a4b5c6d7e8f9012345678"
+	standInName        = "Eve Example"
+	standInAddress     = "eve@example.com"
 )
 
 // personalStarter returns the starter files of a person: want/roots/openpgp.yaml, want/openpgp.yaml and
-// ritueel.yaml last. The root file holds the placeholder fingerprint, which its reader refuses by name; each file
-// is read back, the root with a stand-in fingerprint in the place of the placeholder, and the three are judged
-// against each other, so that they pass once the person has written the fingerprint of their own key.
+// ritueel.yaml last. The root file holds the placeholder fingerprint and the settings hold the example person,
+// which their readers refuse by name until the person writes their own. Each file is read back, the root with a
+// stand-in fingerprint and the settings with a stand-in person in their place, and the three are judged against
+// each other, so that they pass once the person has replaced both.
 func personalStarter(opt StarterOptions) ([]wanted.File, error) {
 	if opt.TestRoot {
 		return nil, errors.New("bundle: a personal bundle has no test root")
@@ -215,11 +220,19 @@ func personalStarter(opt StarterOptions) ([]wanted.File, error) {
 	if len(ids.Entries()) != 0 || ids.File.Path != wanted.UserIDsPath {
 		return nil, fmt.Errorf("bundle: the starter file %s is not read back as it was made", wanted.UserIDsPath)
 	}
-	settings, err := wanted.ParseSettings(wanted.SettingsPath, []byte(personalSettingsText))
+	_, err = wanted.ParseSettings(wanted.SettingsPath, []byte(personalSettingsText))
+	if err == nil {
+		return nil, fmt.Errorf("bundle: the starter file %s is accepted with the example person", wanted.SettingsPath)
+	}
+	if !strings.Contains(err.Error(), "example person") {
+		return nil, fmt.Errorf("bundle: the starter file %s is not refused for its example person: %w", wanted.SettingsPath, err)
+	}
+	person := strings.Replace(strings.Replace(personalSettingsText, wanted.ExamplePersonName, standInName, 1), wanted.ExamplePersonAddress, standInAddress, 1)
+	settings, err := wanted.ParseSettings(wanted.SettingsPath, []byte(person))
 	if err != nil {
 		return nil, fmt.Errorf("bundle: the starter file %s does not pass its own reader: %w", wanted.SettingsPath, err)
 	}
-	if !settings.Personal || settings.Person == nil || settings.Person.Name != "Ada Example" || settings.Person.Address != "ada@example.com" {
+	if !settings.Personal || settings.Person == nil || settings.Person.Name != standInName || settings.Person.Address != standInAddress {
 		return nil, fmt.Errorf("bundle: the starter file %s is not read back as it was made", wanted.SettingsPath)
 	}
 	if err := wanted.CheckPersonal(settings, []*wanted.Root{root}, nil, nil, ids, opt.Now); err != nil {

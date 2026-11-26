@@ -17,7 +17,7 @@ import (
 // refused by name, and a bundle whose wanted files pass is refused as not built, with nothing written.
 
 const (
-	personalFingerprint = "0123456789abcdef0123456789abcdef01234567"
+	personalFingerprint = "a1b2c3d4e5f60718293a4b5c6d7e8f9012345678"
 	personalRefusal     = "a personal bundle (kind: personal in ritueel.yaml) passed the check of its wanted files; adoption and subkeys are built by later parts, so apply makes no plan and makes no key; nothing was written"
 )
 
@@ -90,7 +90,37 @@ func personalBundle(t *testing.T, fingerprint string) string {
 	if err := os.WriteFile(path, []byte(strings.Replace(string(data), wanted.PlaceholderFingerprint, fingerprint, 1)), 0o644); err != nil {
 		t.Fatal(err)
 	}
+	settings := filepath.Join(dir, wanted.SettingsPath)
+	text, err := os.ReadFile(settings)
+	if err != nil {
+		t.Fatal(err)
+	}
+	own := strings.Replace(strings.Replace(string(text), wanted.ExamplePersonName, "Eve Example", 1), wanted.ExamplePersonAddress, "eve@example.com", 1)
+	if err := os.WriteFile(settings, []byte(own), 0o644); err != nil {
+		t.Fatal(err)
+	}
 	return dir
+}
+
+func TestApplyRefusesTheStarterWhileTheExamplePersonStands(t *testing.T) {
+	dir := filepath.Join(t.TempDir(), "ada")
+	if r := apRun(t, apClock, "new", "--template", "personal", dir); r.code != ExitOK {
+		t.Fatalf("new: %q", r.stderr)
+	}
+	path := filepath.Join(dir, "want", "roots", "openpgp.yaml")
+	data, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(path, []byte(strings.Replace(string(data), wanted.PlaceholderFingerprint, personalFingerprint, 1)), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	before := apSnapshot(t, dir)
+	r := apPlanOnly(t, apClock, dir)
+	if r.code != ExitFailure || r.stdout != "" || !strings.Contains(r.stderr, "ritueel.yaml:") || !strings.Contains(r.stderr, "replace the example person with your name and address") {
+		t.Errorf("(%d, %q, %q)", int(r.code), r.stdout, r.stderr)
+	}
+	crqSame(t, "apply", before, apSnapshot(t, dir))
 }
 
 func TestApplyRefusesAPersonalBundleAsNotBuiltAndWritesNothing(t *testing.T) {

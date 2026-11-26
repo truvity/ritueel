@@ -523,7 +523,7 @@ func TestApplyPlanOnlyRefusesWhatThisVersionDoesNotBuildWithExitCode1(t *testing
 	}{
 		"the OpenPGP root file that new writes": {with(map[string]string{"want/roots/openpgp.yaml": newOpenPGPTestText}), "want/roots/openpgp.yaml"},
 		"a root that is not a test root":        {map[string]string{"ritueel.yaml": newSettingsTestText, "want/roots/x509.yaml": newX509Text}, "not a test root"},
-		"a personal bundle": {map[string]string{"ritueel.yaml": "version: 1\nkind: personal\nperson:\n  name: Example Person\n  address: person@example.org\npolicy:\n  stores: [piv]\n  min_firmware: 5.7.0\n  pin_policy: [once]\n  require_name_constraints: true\n  validity_months: 13\n",
+		"a personal bundle": {map[string]string{"ritueel.yaml": "version: 1\nkind: personal\nperson:\n  name: Example Person\n  address: person@example.org\npolicy:\n  stores: [openpgp-card]\n  min_firmware: 5.7.0\n  pin_policy: [once]\n  require_name_constraints: true\n  validity_months: 13\n",
 			"want/roots/x509.yaml": newX509TestText}, "personal"},
 		"a wanted file that fails its check": {map[string]string{"ritueel.yaml": newSettingsTestText, "want/roots/x509.yaml": "kind: nonsense\n"}, "want/roots/x509.yaml"},
 		"a request name that is not plain":   {with(map[string]string{"requests/a b/x": "x"}), "requests/"},

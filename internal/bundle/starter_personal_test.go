@@ -65,13 +65,18 @@ func TestThePersonalStarterIsReadAsMeantAndRefusedWhileThePlaceholderStands(t *t
 	}
 	// When the person has written a fingerprint, every file passes its reader and the files pass the check
 	// across them, today and on the day before the key expires.
-	text := strings.Replace(string(files[0].Data), wanted.PlaceholderFingerprint, "0123456789abcdef0123456789abcdef01234567", 1)
+	text := strings.Replace(string(files[0].Data), wanted.PlaceholderFingerprint, "a1b2c3d4e5f60718293a4b5c6d7e8f9012345678", 1)
 	root, err := wanted.ParseRoot("openpgp", []byte(text))
 	if err != nil {
 		t.Fatal(err)
 	}
-	settings, err := wanted.ParseSettings(wanted.SettingsPath, files[2].Data)
-	if err != nil || !settings.Personal || settings.Person.Name != "Ada Example" || settings.Person.Address != "ada@example.com" {
+	// The example person is refused by name too; with a person of their own the settings pass.
+	if _, err := wanted.ParseSettings(wanted.SettingsPath, files[2].Data); err == nil || !strings.Contains(err.Error(), "replace the example person with your name and address") {
+		t.Errorf("the settings with the example person: %v", err)
+	}
+	own := strings.Replace(strings.Replace(string(files[2].Data), "Ada Example", "Eve Example", 1), "ada@example.com", "eve@example.com", 1)
+	settings, err := wanted.ParseSettings(wanted.SettingsPath, []byte(own))
+	if err != nil || !settings.Personal || settings.Person.Name != "Eve Example" || settings.Person.Address != "eve@example.com" {
 		t.Fatalf("%+v %v", settings, err)
 	}
 	ids, err := wanted.ParseUserIDs(files[1].Data)
@@ -87,6 +92,20 @@ func TestThePersonalStarterIsReadAsMeantAndRefusedWhileThePlaceholderStands(t *t
 	later, err := bundle.Starter(bundle.StarterOptions{Template: bundle.TemplatePersonal, Now: personalNow.AddDate(1, 0, 0)})
 	if err != nil || !strings.Contains(string(later[0].Data), `valid_until: "2029-11-26"`) {
 		t.Errorf("a later clock: %v\n%s", err, later[0].Data)
+	}
+}
+
+func TestTheStarterIsRefusedWhileEitherExampleStands(t *testing.T) {
+	files, err := bundle.Starter(bundle.StarterOptions{Template: bundle.TemplatePersonal, Now: personalNow})
+	if err != nil {
+		t.Fatal(err)
+	}
+	// A real fingerprint with the example person, and the example fingerprint with a real person.
+	if _, err := wanted.ParseRoot("openpgp", []byte(strings.Replace(string(files[0].Data), wanted.PlaceholderFingerprint, "a1b2c3d4e5f60718293a4b5c6d7e8f9012345678", 1))); err != nil {
+		t.Errorf("a real fingerprint: %v", err)
+	}
+	if _, err := wanted.ParseRoot("openpgp", []byte(strings.Replace(string(files[0].Data), wanted.PlaceholderFingerprint, wanted.ExampleFingerprint, 1))); err == nil || !strings.Contains(err.Error(), "the fingerprint of the examples") {
+		t.Errorf("the example fingerprint: %v", err)
 	}
 }
 

@@ -240,6 +240,9 @@ func checkAcross(fsys fsx.FS, s *wanted.Settings, rf rootFiles, delegations []*w
 		return err
 	}
 	at, err := Env{Now: now}.now()
+	if err == nil && at.IsZero() {
+		err = errNoClock // a clock that gives the zero time is no clock
+	}
 	if err != nil {
 		return err
 	}
