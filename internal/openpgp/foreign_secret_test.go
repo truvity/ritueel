@@ -3,7 +3,6 @@ package openpgp_test
 import (
 	"bytes"
 	"crypto"
-	"crypto/ecdsa"
 	"crypto/ed25519"
 	"crypto/rand"
 	"crypto/rsa"
@@ -94,8 +93,8 @@ func TestForeignSecretsThatAreNotTheSecret(t *testing.T) {
 				fault{"three numbers", fkEncode(d, p, q), "", "four numbers"},
 				fault{"five numbers", fkEncode(d, p, q, u, u), "", "bytes after"},
 				fault{"d flipped", fkEncode(flip(d, 3), p, q, u), "", "do not make the key"},
-				fault{"p flipped", fkEncode(d, flip(p, 3), q, u), "", "do not make the key"},
-				fault{"q flipped", fkEncode(d, p, flip(q, 3), u), "", "do not make the key"},
+				fault{"p flipped", fkEncode(d, flip(p, 3), q, u), "", "not a prime"},
+				fault{"q flipped", fkEncode(d, p, flip(q, 3), u), "", "not a prime"},
 				fault{"u flipped", fkEncode(d, p, q, flip(u, 3)), "", "number u"},
 				fault{"u of one", fkEncode(d, p, q, []byte{1}), "", "number u"},
 				fault{"p and q swapped, u kept", fkEncode(d, q, p, u), "", ""},
@@ -119,6 +118,12 @@ func TestForeignSecretsThatAreNotTheSecret(t *testing.T) {
 					}
 					k, err := openpgp.ReadForeignKey(file)
 					if err != nil {
+						// an unprotected secret is walked to the end of its packet when the file is read: a
+						// number whose length field does not land there is refused at once
+						if !protected && errors.Is(err, openpgp.ErrForeignForm) && errors.Is(err, openpgp.ErrForeignKey) {
+							fkCheckText(t, f.name, err, b, f.numbers)
+							return
+						}
 						t.Fatalf("the file is refused when read, before any passphrase: %v", err)
 					}
 					pass := []byte(nil)
@@ -209,90 +214,76 @@ func TestForeignSecretWipe(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		key := s.Signer()
-		fkSignAndVerify(t, key, fkCertPublic(t, k.Certificate()))
-		s.Wipe()
-		if s.Signer() != nil {
-			t.Error("Signer returns a key after the wipe")
-		}
-		switch got := key.(type) {
-		case *rsa.PrivateKey:
-			zero := func(n *big.Int) bool { return n == nil || n.Sign() == 0 }
-			if !zero(got.D) || len(got.Primes) != 2 || !zero(got.Primes[0]) || !zero(got.Primes[1]) ||
-				!zero(got.Precomputed.Dp) || !zero(got.Precomputed.Dq) || !zero(got.Precomputed.Qinv) {
-				t.Error("a number of the RSA key is not zero after the wipe")
-			}
-			if got.N.Sign() == 0 || got.E == 0 {
-				t.Error("the wipe cleared the public part of the RSA key")
-			}
-		case ed25519.PrivateKey:
-			if !bytes.Equal(got, make([]byte, len(got))) {
-				t.Error("the Ed25519 key is not zero after the wipe")
-			}
-		case *ecdsa.PrivateKey:
-			//nolint:staticcheck // the field is the number that the wipe clears
-			if got.D != nil && got.D.Sign() != 0 {
-				t.Error("the scalar is not zero after the wipe")
-			}
-		}
-		// the wipe is safe to repeat, on nil and on a value that holds nothing
-		s.Wipe()
-		var none *openpgp.ForeignSecret
-		none.Wipe()
-		if none.Signer() != nil {
-			t.Error("a nil secret returns a key")
-		}
-		(&openpgp.ForeignSecret{}).Wipe()
-		if (&openpgp.ForeignSecret{}).Signer() != nil {
-			t.Error("an empty secret returns a key")
-		}
-	})
-}
-
-// A key that was wiped is a key that cannot sign: for Ed25519 and P-384 it cannot. For RSA, crypto/rsa
-// keeps its own copy of the primes from Precompute, so the key that a caller captured before the wipe
-// still signs with a signature that verifies. The doc comment of Wipe names the copies that a key
-// "that was used" keeps; this key was not used, and the copy is there from the moment of OpenSecret.
-func TestForeignWipedKeyCannotSign(t *testing.T) {
-	fkEachBase(t, func(t *testing.T, b *fkBase) {
-		k := fkRead(t, b.file(t, fkProt{}))
-		s, err := k.OpenSecret(nil)
+		other, err := k.OpenSecret([]byte(fkPass))
 		if err != nil {
 			t.Fatal(err)
 		}
 		key := s.Signer()
+		again := s.Signer()
 		pub := fkCertPublic(t, k.Certificate())
+		fkSignAndVerify(t, key, pub)
 		s.Wipe()
-		if b.name == "rsa4096" {
-			t.Skip("BUG (doubtful): foreign_secret.go:476 Precompute leaves crypto/rsa a private copy, so a captured key still signs after Wipe")
+		if s.Signer() != nil {
+			t.Error("Signer returns a handle after the wipe")
 		}
-		works := func() (ok bool) {
-			defer func() {
-				if recover() != nil {
-					ok = false
-				}
-			}()
-			d := sha256.Sum256([]byte("after the wipe"))
-			opts := crypto.SignerOpts(crypto.SHA256)
-			msg := d[:]
-			if b.name == "ed25519" {
-				opts, msg = crypto.Hash(0), d[:]
+		// every handle from before the wipe refuses, and keeps its public key
+		for _, h := range []crypto.Signer{key, again} {
+			if _, err := h.Sign(rand.Reader, make([]byte, 32), crypto.SHA256); !errors.Is(err, openpgp.ErrSecretWiped) {
+				t.Errorf("a handle after the wipe: %v, want ErrSecretWiped", err)
 			}
-			sig, err := key.Sign(rand.Reader, msg, opts)
+			if h.Public() == nil {
+				t.Error("a handle has no public key after the wipe")
+			}
+		}
+		if errors.Is(openpgp.ErrSecretWiped, openpgp.ErrForeignKey) {
+			t.Error("ErrSecretWiped is an ErrForeignKey")
+		}
+		// the wipe is safe to repeat, on nil and on a value that holds nothing, and it leaves another
+		// secret of the same key alone
+		s.Wipe()
+		var none *openpgp.ForeignSecret
+		none.Wipe()
+		if none.Signer() != nil {
+			t.Error("a nil secret returns a handle")
+		}
+		(&openpgp.ForeignSecret{}).Wipe()
+		if (&openpgp.ForeignSecret{}).Signer() != nil {
+			t.Error("an empty secret returns a handle")
+		}
+		fkSignAndVerify(t, other.Signer(), pub)
+		other.Wipe()
+		// a nil handle answers the same
+		var nilSigner *openpgp.ForeignSigner
+		if _, err := nilSigner.Sign(rand.Reader, make([]byte, 32), crypto.SHA256); !errors.Is(err, openpgp.ErrSecretWiped) {
+			t.Errorf("a nil handle: %v", err)
+		}
+		if nilSigner.Public() != nil {
+			t.Error("a nil handle has a public key")
+		}
+	})
+}
+
+// A handle of a wiped secret cannot sign, for each algorithm: every Sign answers ErrSecretWiped, with
+// every digest and every option, and no signature comes out.
+func TestForeignWipedKeyCannotSign(t *testing.T) {
+	fkEachBase(t, func(t *testing.T, b *fkBase) {
+		for _, prot := range []fkProt{{}, {Pass: fkPass}} {
+			k := fkRead(t, b.file(t, prot))
+			s, err := k.OpenSecret([]byte(prot.Pass))
 			if err != nil {
-				return false
+				t.Fatal(err)
 			}
-			switch p := key.Public().(type) {
-			case ed25519.PublicKey:
-				return ed25519.Verify(p, msg, sig)
-			case *ecdsa.PublicKey:
-				return ecdsa.VerifyASN1(p, msg, sig)
+			key := s.Signer()
+			s.Wipe()
+			d := sha256.Sum256([]byte("after the wipe"))
+			for _, opts := range []crypto.SignerOpts{crypto.SHA256, crypto.SHA384, crypto.Hash(0), &rsa.PSSOptions{Hash: crypto.SHA256}} {
+				for _, digest := range [][]byte{d[:], nil, {}} {
+					sig, err := key.Sign(rand.Reader, digest, opts)
+					if sig != nil || !errors.Is(err, openpgp.ErrSecretWiped) {
+						t.Fatalf("a wiped key signs: %d bytes, %v", len(sig), err)
+					}
+				}
 			}
-			_ = pub
-			return true
-		}()
-		if works {
-			t.Error("a wiped key signs, and the signature verifies")
 		}
 	})
 }
@@ -412,7 +403,7 @@ func TestForeignReadAndOpenInManyGoroutines(t *testing.T) {
 					d := sha256.Sum256([]byte("a goroutine"))
 					opts := crypto.SignerOpts(crypto.SHA256)
 					msg := d[:]
-					if _, ok := s.Signer().(ed25519.PrivateKey); ok {
+					if _, ok := s.Signer().Public().(ed25519.PublicKey); ok {
 						opts = crypto.Hash(0)
 					}
 					if _, err := s.Signer().Sign(rand.Reader, msg, opts); err != nil {

@@ -359,10 +359,11 @@ func (d fkDonorKey) packet(t testing.TB, f fkSubForm) fkPacket {
 	case fkAsOtherPass:
 		return d.protectedSecret(t, fkPassOther)
 	case fkAsGarbage:
-		// a secret region of the length of the real one, with nothing in it that means anything
-		n := len(d.sec.Body) - len(d.pub.Body)
-		g := fkRandom(t, n)
-		g[0] = 0 // not a stub: an unprotected secret with a wrong checksum
+		// a protected secret of the right form (usage 254, AES-256, an iterated and salted S2K with
+		// SHA-256, an IV) whose ciphertext is random bytes: the reader never decrypts it
+		g := append([]byte{254, 9, 3, 8}, fkRandom(t, 8)...)
+		g = append(g, 0x60)
+		g = append(g, fkRandom(t, 16+40)...)
 		return fkPacket{7, append(bytes.Clone(d.pub.Body), g...)}
 	}
 	t.Fatalf("no such form %d", f)
@@ -514,7 +515,8 @@ func fkBuildRich(t testing.TB, b *fkBase, prot fkProt, clean bool) *fkRich {
 			addRaw(b.certSig(t, other, me.pub, fkRichUserID(name), fkSigSpec{Typ: gpacket.SigTypeCasualCert, At: fkSigAt(1010)}))
 			addRaw(b.certSig(t, other, me.pub, fkRichUserID(name), fkSigSpec{Typ: gpacket.SigTypeCertificationRevocation, At: fkSigAt(1020)}))
 		case "renewed":
-			addRaw(cert(name, fkSigSpec{Typ: gpacket.SigTypeCertificationRevocation, At: fkSigAt(1000)}))
+			// a soft revocation (the user ID is no longer valid) that a later self-signature undoes
+			addRaw(cert(name, fkSigSpec{Typ: gpacket.SigTypeCertificationRevocation, At: fkSigAt(1000), Reason: &unvalid}))
 			addRaw(cert(name, fkSigSpec{Typ: gpacket.SigTypePositiveCert, At: fkSigAt(1050)}))
 		case "samesecond":
 			addRaw(cert(name, fkSigSpec{Typ: gpacket.SigTypePositiveCert, At: fkSigAt(1010)}))

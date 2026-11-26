@@ -374,7 +374,7 @@ func TestForeignSubkeyForms(t *testing.T) {
 		{"stub, card with a serial number, usage 254", fkAsCard254},
 		{"with a secret, unprotected", fkAsSecret},
 		{"with a secret, protected by another passphrase", fkAsOtherPass},
-		{"with a garbage secret of the length of a real one", fkAsGarbage},
+		{"protected, with ciphertext of random bytes", fkAsGarbage},
 	}
 	fkEachBase(t, func(t *testing.T, b *fkBase) {
 		for _, protected := range []bool{false, true} {
