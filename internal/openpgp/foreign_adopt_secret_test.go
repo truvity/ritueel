@@ -7,6 +7,7 @@ import (
 	"crypto/elliptic"
 	"crypto/rand"
 	"crypto/rsa"
+	"errors"
 	"fmt"
 	"math/big"
 	"strings"
@@ -211,15 +212,15 @@ func TestOpenSecretPacketRefusesRSANumbersThatAreNotTheSecretOfTheKey(t *testing
 		{"d of one", [][]byte{{1}, p, q, u}, "do not make the key", nil},
 		{"d the public exponent", [][]byte{{1, 0, 1}, p, q, u}, "do not make the key", nil},
 		{"d that is p", [][]byte{p, p, q, u}, "do not make the key", nil},
-		{"p and q swapped, u kept", [][]byte{d, q, p, u}, "number u", nil},
-		{"p and q swapped, d and u kept as they are", [][]byte{d, q, p, d[:len(u)]}, "number u", nil},
-		{"p twice", [][]byte{d, p, p, u}, "do not make the key", nil},
-		{"q twice", [][]byte{d, q, q, u}, "do not make the key", nil},
-		{"p of another key", [][]byte{d, op.Bytes(), q, u}, "do not make the key", nil},
-		{"q of another key", [][]byte{d, p, oq.Bytes(), u}, "do not make the key", nil},
-		{"p and q of another key, d and u kept", [][]byte{d, op.Bytes(), oq.Bytes(), u}, "do not make the key", nil},
-		{"the whole secret of another key", other, "do not make the key", nil},
-		{"the secret of a key that shares q", shared, "do not make the key", nil},
+		{"p and q swapped, u kept", [][]byte{d, q, p, u}, "number u|order of the standard", nil},
+		{"p and q swapped, d and u kept as they are", [][]byte{d, q, p, d[:len(u)]}, "number u|order of the standard", nil},
+		{"p twice", [][]byte{d, p, p, u}, "do not make the key|order of the standard", nil},
+		{"q twice", [][]byte{d, q, q, u}, "do not make the key|order of the standard", nil},
+		{"p of another key", [][]byte{d, op.Bytes(), q, u}, "do not make the key|order of the standard|not below its bound", nil},
+		{"q of another key", [][]byte{d, p, oq.Bytes(), u}, "do not make the key|order of the standard|not below its bound", nil},
+		{"p and q of another key, d and u kept", [][]byte{d, op.Bytes(), oq.Bytes(), u}, "do not make the key|order of the standard|not below its bound", nil},
+		{"the whole secret of another key", other, "do not make the key|order of the standard|not below its bound", nil},
+		{"the secret of a key that shares q", shared, "do not make the key|order of the standard|not below its bound", nil},
 		{"u changed in its last bit", [][]byte{d, p, q, flipLast(u)}, "number u", nil},
 		{"u of one", [][]byte{d, p, q, {1}}, "number u", nil},
 		{"u of two", [][]byte{d, p, q, {2}}, "number u", nil},
@@ -227,14 +228,14 @@ func TestOpenSecretPacketRefusesRSANumbersThatAreNotTheSecretOfTheKey(t *testing
 		{"u that is the inverse of q", [][]byte{d, p, q, swapped.Bytes()}, "number u", nil},
 		{"u of the other key", [][]byte{d, p, q, other[3]}, "number u|not below its bound", nil},
 		{"u of 513 bytes, which is over the bound of the packet", [][]byte{d, p, q, append([]byte{1}, bytes.Repeat([]byte{1}, 512)...)}, "MaxAdoptedPacketBytes", openpgp.ErrForeignLimit},
-		{"a composite for p", [][]byte{d, comp.Bytes(), q, compU.Bytes()}, "not a prime", nil},
-		{"a composite for q", [][]byte{d, p, comp.Bytes(), u}, "not a prime|not below its bound", nil},
-		{"p of one", [][]byte{d, one.Bytes(), q, u}, "not a prime", nil},
-		{"p of two bytes", [][]byte{d, {0xFF, 0xFD}, q, u}, "not a prime", nil},
+		{"a composite for p", [][]byte{d, comp.Bytes(), q, compU.Bytes()}, "not a prime|not below its bound", nil},
+		{"a composite for q", [][]byte{d, p, comp.Bytes(), u}, "not a prime|not below its bound|order of the standard", nil},
+		{"p of one", [][]byte{d, one.Bytes(), q, u}, "not a prime|order of the standard", nil},
+		{"p of two bytes", [][]byte{d, {0xFF, 0xFD}, q, u}, "not a prime|order of the standard", nil},
 		{"p shifted to 2032 bits", [][]byte{d, new(big.Int).Rsh(new(big.Int).SetBytes(p), 16).Bytes(), q, u}, "not a prime", nil},
 		{"p and q as one number, the modulus", [][]byte{d, p, new(big.Int).Mul(new(big.Int).SetBytes(p), new(big.Int).SetBytes(q)).Bytes(), u}, "MaxAdoptedPacketBytes", openpgp.ErrForeignLimit},
 		{"the four numbers in another order", [][]byte{p, q, d, u}, "not a prime|not below its bound", nil},
-		{"u first", [][]byte{u, d, p, q}, "not a prime|not below its bound", nil},
+		{"u first", [][]byte{u, d, p, q}, "not a prime|not below its bound|order of the standard", nil},
 		{"three numbers", [][]byte{d, p, q}, "does not account for its bytes", openpgp.ErrForeignForm},
 		{"five numbers", [][]byte{d, p, q, u, {1}}, "does not account for its bytes", openpgp.ErrForeignForm},
 	}
@@ -257,26 +258,84 @@ func TestOpenSecretPacketRefusesRSANumbersThatAreNotTheSecretOfTheKey(t *testing
 	}
 }
 
-// REPORTED DEFECT, not fixed here. RFC 9580, section 5.5.3, writes the secret of an RSA key as d, p, q
-// and u with p < q and u the inverse of p modulo q. OpenSecretPacket (and OpenSecret, which has the same
-// check) reads the primes in either order: with p > q and u made again as the inverse of the new first
-// prime it returns a key, and SecretPacket would write that order back. The key is the right key and
-// signs correctly; what is wrong is that the packet is not the one that the standard describes, and that
-// a packet "exactly as SecretPacket writes it" has two spellings. The test is skipped unless
-// RITUEEL_TEST_REPORTED=1.
-func TestReportedRSAPrimesInTheOrderOfTheStandardOnly(t *testing.T) {
-	alReported(t)
+// The order of the RSA primes. An export is read as it stands: some programs write p above q, and the
+// secret is the secret of the key when u matches the order that was given. What SecretPacket writes is
+// always canonical (RFC 9580, section 5.5.3: p below q, u the inverse of p modulo q), so one key has
+// one spelling; and the reader of our own key file is strict.
+func TestRSAPrimesAreTakenInAnyOrderFromAnExportAndWrittenAndReadInTheOrderOfTheStandard(t *testing.T) {
 	b := fkNamed(t, "rsa4096")
-	_, _, good := alLone(t, b, false)
+	_, canon, good := alLone(t, b, false)
 	v := good.values()
-	p, q := new(big.Int).SetBytes(v[1]), new(big.Int).SetBytes(v[2])
+	d, p, q, u := v[0], new(big.Int).SetBytes(v[1]), new(big.Int).SetBytes(v[2]), new(big.Int).SetBytes(v[3])
 	if p.Cmp(q) >= 0 {
 		t.Fatalf("the template has p >= q")
 	}
-	u := new(big.Int).ModInverse(q, p)
-	swapped := good.clone()
-	swapped.Sec[1], swapped.Sec[2], swapped.Sec[3] = fkMPI(v[2]), fkMPI(v[1]), fkMPI(u.Bytes())
-	alRefuses(t, "p greater than q, u made again", b, swapped.packet(), [][]byte{u.Bytes()}, openpgp.ErrForeignSecret)
+	uSwapped := new(big.Int).ModInverse(q, p)
+	numbers := fkEncode(d, q.Bytes(), p.Bytes(), uSwapped.Bytes())
+	for _, protected := range []bool{false, true} {
+		file := fkSecretFile(t, b, protected, numbers)
+		k := fkRead(t, file)
+		pass := []byte(nil)
+		if protected {
+			pass = []byte(fkPass)
+		}
+		// the export is taken as it stands, and signs
+		secret, err := k.OpenSecret(pass)
+		if err != nil {
+			t.Fatalf("an export with p above q is refused: %v", err)
+		}
+		alSignAndVerify(t, secret.Signer(), alPublicOf(t, good))
+		secret.Wipe()
+		// what is written is the canonical packet, byte for byte the one of the same key with p below q
+		pkt, err := k.SecretPacket(pass)
+		if err != nil {
+			t.Fatalf("SecretPacket of an export with p above q: %v", err)
+		}
+		if !bytes.Equal(pkt, canon) {
+			t.Errorf("the packet of an export with p above q is not the packet of the same key with p below q")
+		}
+		w, err := alParse(pkt)
+		if err != nil {
+			t.Fatalf("the packet is not canonical: %v", err)
+		}
+		wv := w.values()
+		wp, wq, wu := new(big.Int).SetBytes(wv[1]), new(big.Int).SetBytes(wv[2]), new(big.Int).SetBytes(wv[3])
+		if wp.Cmp(wq) >= 0 || new(big.Int).Mod(new(big.Int).Mul(wu, wp), wq).Cmp(big.NewInt(1)) != 0 || wu.Cmp(wq) >= 0 {
+			t.Errorf("the packet has p above q, or u is not the inverse of p modulo q")
+		}
+		if wp.Cmp(p) != 0 || wq.Cmp(q) != 0 || wu.Cmp(u) != 0 {
+			t.Errorf("the packet holds other numbers than those of the key")
+		}
+		opened, _, err := openpgp.OpenSecretPacket(pkt)
+		if err != nil {
+			t.Fatalf("the packet is not read: %v", err)
+		}
+		alSignAndVerify(t, opened.Signer(), alPublicOf(t, good))
+		opened.Wipe()
+		k.Wipe()
+	}
+	// the reader of a key file is strict: p above q is refused, with u right for that order or not, and p
+	// equal to q; no number of the key is in the text
+	for name, nums := range map[string][][]byte{
+		"p above q, u made again": {d, q.Bytes(), p.Bytes(), uSwapped.Bytes()},
+		"p above q, u kept":       {d, q.Bytes(), p.Bytes(), u.Bytes()},
+		"p equal to q":            {d, p.Bytes(), p.Bytes(), u.Bytes()},
+		"p equal to q, u of one":  {d, q.Bytes(), q.Bytes(), {1}},
+	} {
+		x := good.clone()
+		x.Sec = nil
+		for _, num := range nums {
+			x.Sec = append(x.Sec, fkMPI(num))
+		}
+		alRefuses(t, name, b, x.packet(), nums, openpgp.ErrForeignSecret)
+	}
+	if err := alRefusal(t, "p above q, u made again", b, func() []byte {
+		x := good.clone()
+		x.Sec = [][]byte{fkMPI(d), fkMPI(q.Bytes()), fkMPI(p.Bytes()), fkMPI(uSwapped.Bytes())}
+		return x.packet()
+	}(), [][]byte{uSwapped.Bytes()}, openpgp.ErrForeignSecret); err != nil && !strings.Contains(err.Error(), "order of the standard") {
+		t.Errorf("the text does not say that the order is wrong: %v", err)
+	}
 }
 
 func TestOpenSecretPacketRefusesEd25519SecretsThatAreNotTheSecret(t *testing.T) {
@@ -521,4 +580,80 @@ func alScalar(t testing.TB, k *ecdsa.PrivateKey) []byte {
 		t.Fatal(err)
 	}
 	return b
+}
+
+// alExport writes an unprotected export of the RSA template with the secret numbers given, and reads it.
+func alExport(t testing.TB, b *fkBase, nums [][]byte) *openpgp.ForeignKey {
+	t.Helper()
+	return fkRead(t, fkSecretFile(t, b, false, fkEncode(nums...)))
+}
+
+// A number of an RSA secret of more than 512 bytes is a size refusal in SecretPacket, for each of the
+// four numbers and for both orders of the primes. This holds for the two guards together (the check of
+// the export as it stands, and the guard of the helper that puts the primes in order): either one gives
+// it. The early check alone is proved by the next test, and the helper's own guard by the internal test
+// TestCanonicalRSANumbersHasItsOwnSizeGuard.
+func TestSecretPacketRefusesAnRSAExportWithANumberOfMoreThan512Bytes(t *testing.T) {
+	b := fkNamed(t, "rsa4096")
+	_, _, good := alLone(t, b, false)
+	v := good.values()
+	p, q := new(big.Int).SetBytes(v[1]), new(big.Int).SetBytes(v[2])
+	swappedU := new(big.Int).ModInverse(q, p).Bytes()
+	long := append([]byte{1}, bytes.Repeat([]byte{0xFF}, 512)...) // 513 bytes
+	orders := map[string][][]byte{
+		"p below q": {v[0], v[1], v[2], v[3]},
+		"p above q": {v[0], v[2], v[1], swappedU},
+	}
+	for order, base := range orders {
+		for i, place := range []string{"d", "p", "q", "u"} {
+			t.Run(order+", "+place+" of 513 bytes", func(t *testing.T) {
+				nums := make([][]byte, 4)
+				copy(nums, base)
+				nums[i] = long
+				k := alExport(t, b, nums)
+				defer k.Wipe()
+				pkt, err := k.SecretPacket(nil)
+				if pkt != nil || !errors.Is(err, openpgp.ErrForeignSecret) {
+					t.Fatalf("SecretPacket: %v, want ErrForeignSecret and no packet", err)
+				}
+				if !strings.Contains(err.Error(), "four numbers") {
+					t.Errorf("the text does not say that it is not the four numbers of an RSA key: %v", err)
+				}
+				fkCheckText(t, place, err, b, nums...)
+				if where, bad := alLeaks(err.Error(), nums...); bad {
+					t.Errorf("the text holds a run of a number (%s): %v", where, err)
+				}
+			})
+		}
+	}
+}
+
+// An export with p above q is judged as it stands before its primes are put in order: if the helper
+// made u again first, a u that is wrong for the order given would be repaired and the packet written.
+func TestSecretPacketJudgesAnRSAExportBeforeItPutsThePrimesInOrder(t *testing.T) {
+	b := fkNamed(t, "rsa4096")
+	_, _, good := alLone(t, b, false)
+	v := good.values()
+	q := new(big.Int).SetBytes(v[2])
+	op, _ := alOtherPrimes(t)
+	cases := map[string][][]byte{
+		"p above q, u of the order below":   {v[0], v[2], v[1], v[3]},
+		"p above q, u of one":               {v[0], v[2], v[1], {1}},
+		"p above q, d changed":              {flipLast(v[0]), v[2], v[1], new(big.Int).ModInverse(q, new(big.Int).SetBytes(v[1])).Bytes()},
+		"p above q, a prime of another key": {v[0], v[2], op.Bytes(), v[3]},
+	}
+	for name, nums := range cases {
+		t.Run(name, func(t *testing.T) {
+			k := alExport(t, b, nums)
+			defer k.Wipe()
+			pkt, err := k.SecretPacket(nil)
+			if pkt != nil || !errors.Is(err, openpgp.ErrForeignSecret) {
+				t.Fatalf("SecretPacket: %v, want ErrForeignSecret and no packet", err)
+			}
+			fkCheckText(t, name, err, b, nums...)
+			if where, bad := alLeaks(err.Error(), nums...); bad {
+				t.Errorf("the text holds a run of a number (%s): %v", where, err)
+			}
+		})
+	}
 }
