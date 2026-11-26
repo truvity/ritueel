@@ -44,6 +44,15 @@ const (
 	// of megabytes, so it passes many times over; the worst case that the limit allows is about a
 	// second of hashing on an ordinary machine. A file that would pass it is refused.
 	MaxForeignHashedBytes = 512 << 20
+	// MaxForeignVerifications is the most public-key verifications of signatures in one file: 4096,
+	// counted before each one. A genuine binding costs up to four: the check of its signature, the
+	// strict pass that is judged for the view, the library's own check of the cross-signature inside
+	// that pass, and one more for a back-signature in its unhashed area. A twenty-year key with fifteen
+	// user IDs and thirty subkeys, re-signed every year, has 15 x 20 = 300 self-signatures and
+	// 30 x 20 = 600 bindings, which cost 300 + 600 x 4 = 2700 verifications with the key
+	// revocations and direct-key signatures, below the limit. The most that a file can ask is bounded by
+	// this and not by the number of signatures.
+	MaxForeignVerifications = 4096
 	// MaxForeignClaimedSignatures is the most signatures in the whole file that the primary has to answer
 	// for, which are the ones that are verified: those that name the primary, and the revocations and subkey bindings that
 	// are not provably another key's: 2048, which a key re-signed every year for twenty years, with fifteen
