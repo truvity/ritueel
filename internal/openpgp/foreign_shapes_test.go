@@ -152,6 +152,26 @@ func (b *fkBase) subSig(t testing.TB, signer fkKeyPair, sub *gpacket.PublicKey, 
 	return fkSerializeSig(t, sg)
 }
 
+// attrSig is a certification (type 0x13) of a user attribute packet by signer, made with go-crypto's signing
+// of a hash that the caller prepares: the key, then 0xD1, the length and the body.
+func (b *fkBase) attrSig(t testing.TB, signer fkKeyPair, target *gpacket.PublicKey, body []byte, s fkSigSpec) []byte {
+	t.Helper()
+	sg := s.signature(signer)
+	h, err := sg.PrepareSign(b.cfg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := target.SerializeForHash(h); err != nil {
+		t.Fatal(err)
+	}
+	h.Write([]byte{0xD1, byte(len(body) >> 24), byte(len(body) >> 16), byte(len(body) >> 8), byte(len(body))})
+	h.Write(body)
+	if err := sg.Sign(h, signer.priv, b.cfg); err != nil {
+		t.Fatalf("sign an attribute: %v", err)
+	}
+	return fkSerializeSig(t, sg)
+}
+
 // backSig is the back-signature that a signing subkey makes over the primary.
 func (b *fkBase) backSig(t testing.TB, sub fkDonorKey, at time.Time) *gpacket.Signature {
 	t.Helper()
@@ -493,7 +513,8 @@ func fkBuildRich(t testing.TB, b *fkBase, prot fkProt, clean bool) *fkRich {
 			ps = append(ps, a)
 			r.attrs++
 			r.attrBytes += len(a.Body)
-			addRaw(cert(name, fkSigSpec{Typ: gpacket.SigTypePositiveCert, At: fkSigAt(1001)}))
+			// the photograph that the primary certified, as only the primary can
+			addRaw(b.attrSig(t, me, me.pub, a.Body, fkSigSpec{Typ: gpacket.SigTypePositiveCert, At: fkSigAt(1001)}))
 		case "revoked":
 			addRaw(cert(name, fkSigSpec{Typ: gpacket.SigTypePositiveCert}))
 			addRaw(cert(name, fkSigSpec{Typ: gpacket.SigTypeCertificationRevocation, At: fkSigAt(1100), Reason: &unvalid}))
