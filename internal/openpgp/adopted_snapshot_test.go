@@ -578,6 +578,16 @@ func TestTheViewCountsTheSelfSignaturesThatWereClaimedAndNotCounted(t *testing.T
 	if k.UncountedClaims != 4 || !k.UncountedClaimsNewest.Equal(fkAt(3000)) {
 		t.Errorf("the claims that were not counted: %d, newest %v", k.UncountedClaims, k.UncountedClaimsNewest)
 	}
+	// a signature that claims the primary and cannot be read (here: no creation time) is counted too, and has
+	// no time to give; one that reads and does not verify is not counted
+	noTime := w.sign(t, "user", 0x13, fkSubpacket(33, false, append([]byte{4}, b.ent.PrimaryKey.Fingerprint...)...), nil, 8, sha256.New, []byte(fkUser))
+	k = fkRead(t, fkEdFile(t, w, nil, [][]byte{cert(1000, 8), noTime, bad}))
+	if k.UncountedClaims != 1 || !k.UncountedClaimsNewest.IsZero() {
+		t.Errorf("an unreadable claim: %d, newest %v", k.UncountedClaims, k.UncountedClaimsNewest)
+	}
+	if st := k.UserIDs[0].Signatures[1].Status; st != openpgp.SignatureUnreadable {
+		t.Errorf("the signature with no creation time is %v", st)
+	}
 	// the snapshot and the certificate do not know of them, and the snapshot is the one of the certificate
 	kc, err := fkReadCertificate(k.Certificate())
 	if err != nil {

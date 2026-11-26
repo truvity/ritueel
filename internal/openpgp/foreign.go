@@ -391,15 +391,20 @@ type ForeignKey struct {
 	// subkey.
 	OtherKeySignatures  int
 	OtherKeyRevocations int
-	// UncountedClaims counts the self-signatures that the primary claims and that the reader did NOT count
-	// for one of two reasons: their hash is not one that it accepts (MD5, RIPEMD-160, SHA-224, SHA-3 or a hash
-	// it does not know), or they have a critical subpacket that it does not understand. They are the
+	// UncountedClaims counts the self-signatures that the primary claims (the issuer that the signature names
+	// is the primary's) and that the reader did NOT count, for one of three reasons: their hash is not one that
+	// it accepts (MD5, RIPEMD-160, SHA-224, SHA-3 or a hash it does not know), they have a critical subpacket
+	// that it does not understand, or it could not read them at all (a version that it does not take, fields
+	// that are not in the form that it takes, or the budget of hashing passed). What is counted is the
 	// certifications of the user IDs (types 0x10 to 0x13, on every user ID of the file, also one that is left
-	// out of the certificate) and the direct-key signatures (0x1F). They are unverified claims: the reader
-	// does not know that the primary made them. A program that does count them may rank one above the newest
-	// signature that the reader counted. UncountedClaimsNewest is the newest creation time among them, and
-	// zero when there are none. Both are zero for a key that [ReadForeignCertificate] read, since a
-	// certificate holds only what counted, and neither enters the snapshot that a signature is made from.
+	// out of the certificate) and the direct-key signatures (0x1F). Subkey bindings and the signatures of user
+	// attributes are not counted, and a signature that does not verify is not either: it is a signature that the
+	// reader read and the primary did not make. These are unverified claims: the reader does not know that the
+	// primary made them. A program that does count them may rank one above the newest signature that the reader
+	// counted. UncountedClaimsNewest is the newest creation time among those that have one (an unreadable
+	// signature may have none), and zero when there is none. Both are zero for a key that
+	// [ReadForeignCertificate] read, since a certificate holds only what counted, and neither enters the
+	// snapshot that a signature is made from.
 	UncountedClaims       int
 	UncountedClaimsNewest time.Time
 	// UnreadableRevocations counts the key revocations (type 0x20) in KeySignatures that the primary
@@ -771,15 +776,15 @@ func checkPublicOnly(cert, fp []byte) error {
 }
 
 // uncountedClaims counts the certifications and the direct-key signatures that the primary claims and that
-// do not count because of their hash or an unknown critical subpacket, and finds the newest of them (see
-// [ForeignKey.UncountedClaims]).
+// do not count because of their hash, an unknown critical subpacket or because they cannot be read, and finds
+// the newest of them (see [ForeignKey.UncountedClaims]).
 func uncountedClaims(k *ForeignKey) (n int, newest time.Time) {
 	note := func(s ForeignSignature) {
 		if !isCertification(s.Type) && s.Type != sigDirectKey {
 			return
 		}
 		switch s.Status {
-		case SignatureWeakHash, SignatureHashNotAccepted, SignatureUnknownCritical:
+		case SignatureWeakHash, SignatureHashNotAccepted, SignatureUnknownCritical, SignatureUnreadable:
 			n++
 			if s.Created.After(newest) {
 				newest = s.Created
