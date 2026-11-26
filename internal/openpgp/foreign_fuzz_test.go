@@ -111,6 +111,9 @@ func FuzzForeignReadKey(f *testing.F) {
 	for _, c := range fkCraftedSeeds(f) {
 		f.Add(c)
 	}
+	for _, a := range append(fkReviewerAttacks(f), fkRelabelledAttacks(f)...) {
+		f.Add(a.file)
+	}
 	f.Add([]byte{})
 	f.Add([]byte{0xC5, 0xE0})
 	f.Add([]byte{0x80 | 5<<2 | 3})
