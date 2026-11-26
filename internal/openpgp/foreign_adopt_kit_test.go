@@ -366,3 +366,12 @@ func alRefuses(t testing.TB, what string, b *fkBase, in []byte, extra [][]byte, 
 	t.Helper()
 	_ = alRefusal(t, what, b, in, extra, kinds...)
 }
+
+// alPad left-pads a number to n bytes: a number that is written without its leading zero bytes is
+// n bytes long again, so that a case that is "one byte too long" is that for every key.
+func alPad(v []byte, n int) []byte {
+	if len(v) >= n {
+		return v
+	}
+	return append(make([]byte, n-len(v)), v...)
+}

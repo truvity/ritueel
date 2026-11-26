@@ -72,7 +72,7 @@ func TestForeignSecretsThatAreNotTheSecret(t *testing.T) {
 		switch b.name {
 		case "ed25519":
 			faults = append(faults,
-				fault{"a seed of 33 bytes", fkEncode(append([]byte{1}, own[0]...)), "", "one number"},
+				fault{"a seed of 33 bytes", fkEncode(append([]byte{1}, alPad(own[0], 32)...)), "", "one number"},
 				fault{"a seed of another key", fkEncode(fkRandom(t, 32)), "", "not the secret of the public key"},
 				fault{"a seed of 1 byte", fkEncode([]byte{7}), "", "not the secret of the public key"},
 			)
@@ -84,7 +84,7 @@ func TestForeignSecretsThatAreNotTheSecret(t *testing.T) {
 				fault{"the scalar of the order of the group", fkEncode(order.Bytes()), "", "not a private key of the group"},
 				fault{"a scalar over the order of the group", fkEncode(new(big.Int).Add(order, big.NewInt(5)).Bytes()), "", "not a private key of the group"},
 				fault{"the largest scalar of 48 bytes", fkEncode(bytes.Repeat([]byte{0xFF}, 48)), "", "not a private key of the group"},
-				fault{"a scalar of 49 bytes", fkEncode(append([]byte{1}, own[0]...)), "", "one number"},
+				fault{"a scalar of 49 bytes", fkEncode(append([]byte{1}, alPad(own[0], 48)...)), "", "one number"},
 				fault{"a scalar of 1", fkEncode([]byte{1}), "", "not the secret of the public key"},
 			)
 		case "rsa4096":
