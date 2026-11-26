@@ -69,6 +69,13 @@
 // the passphrase or the secret is one that it clears. The reader opens no file, reads no clock and
 // starts no program.
 //
+// A key that is kept after its adoption is kept as a lone secret key packet. [ForeignKey.SecretPacket]
+// writes the secret of the primary as one packet (tag 5, version 4, S2K usage 0 and its checksum, no
+// user ID, no signature, no subkey) whose public part is the body of the first packet of the
+// certificate, and [OpenSecretPacket] reads exactly that packet, at most [MaxAdoptedPacketBytes], with
+// the checks of [ForeignKey.OpenSecret], and says what it holds in public ([AdoptedPublic]).
+// [PrimaryPublicBody] gives the public part of the first packet of a certificate for the comparison.
+//
 // A user ID has the one shape of the page, and each part of it follows the rule of its key in
 // ritueel.yaml, so that no text of a caller can add a character that a person cannot read or an
 // address that the user ID does not show.

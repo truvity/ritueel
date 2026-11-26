@@ -20,6 +20,7 @@ import (
 	"math/big"
 	"strconv"
 	"sync"
+	"time"
 )
 
 // This file reads and opens the secret of the primary key of a foreign key (RFC 9580, section
@@ -447,7 +448,13 @@ func (s *ForeignSecret) Wipe() {
 	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	switch k := s.key.(type) {
+	wipeKey(s.key)
+	s.key = nil
+}
+
+// wipeKey clears the numbers of a private key that this package made, word by word.
+func wipeKey(key crypto.Signer) {
+	switch k := key.(type) {
 	case *rsa.PrivateKey:
 		wipeRSA(k)
 	case ed25519.PrivateKey:
@@ -455,7 +462,6 @@ func (s *ForeignSecret) Wipe() {
 	case *ecdsa.PrivateKey:
 		wipePrivate(k)
 	}
-	s.key = nil
 }
 
 // newForeignSecret wraps a key.
@@ -517,33 +523,42 @@ func (k *ForeignKey) OpenSecret(passphrase []byte) (secret *ForeignSecret, err e
 			secret, err = nil, fail(ErrForeignSecret, "the secret could not be read")
 		}
 	}()
-	if k == nil || k.wiped || len(k.prot.data) == 0 {
-		return nil, fail(ErrParams, "the key has no secret to open: there is no key, or it was wiped, or it was not made by ReadForeignKey")
-	}
-	if len(passphrase) > MaxForeignPassphraseBytes {
-		return nil, fail(ErrParams, "the passphrase is longer than MaxForeignPassphraseBytes (%d bytes)", MaxForeignPassphraseBytes)
-	}
-	var numbers []byte
-	if k.prot.usage == usageNone {
-		d := k.prot.data
-		body, sum := d[:len(d)-2], d[len(d)-2:]
-		if uint16(sum[0])<<8|uint16(sum[1]) != secretChecksum(body) {
-			return nil, fail(ErrForeignSecret, "the checksum of the secret is wrong")
-		}
-		numbers = body
-	} else {
-		plain, err := k.decryptSecret(passphrase)
-		if err != nil {
-			return nil, err
-		}
-		defer clear(plain)
-		numbers = plain[:len(plain)-sha1.Size]
-	}
-	key, err := foreignPrivateKey(k.pub, numbers)
+	var key crypto.Signer
+	err = k.withNumbers(passphrase, func(numbers []byte) (err error) {
+		key, err = foreignPrivateKey(k.pub, numbers)
+		return err
+	})
 	if err != nil {
 		return nil, err
 	}
 	return newForeignSecret(key), nil
+}
+
+// withNumbers opens the secret region of the primary as [ForeignKey.OpenSecret] says (the checks
+// of its first paragraph, the checksum or the SHA-1 check) and hands the numbers of the secret to
+// use, which must not keep them. The buffer that held them is cleared before it returns. The
+// numbers are not yet checked against the public part: that is for use.
+func (k *ForeignKey) withNumbers(passphrase []byte, use func(numbers []byte) error) error {
+	if k == nil || k.wiped || len(k.prot.data) == 0 {
+		return fail(ErrParams, "the key has no secret to open: there is no key, or it was wiped, or it was not made by ReadForeignKey")
+	}
+	if len(passphrase) > MaxForeignPassphraseBytes {
+		return fail(ErrParams, "the passphrase is longer than MaxForeignPassphraseBytes (%d bytes)", MaxForeignPassphraseBytes)
+	}
+	if k.prot.usage == usageNone {
+		d := k.prot.data
+		body, sum := d[:len(d)-2], d[len(d)-2:]
+		if uint16(sum[0])<<8|uint16(sum[1]) != secretChecksum(body) {
+			return fail(ErrForeignSecret, "the checksum of the secret is wrong")
+		}
+		return use(body)
+	}
+	plain, err := k.decryptSecret(passphrase)
+	if err != nil {
+		return err
+	}
+	defer clear(plain)
+	return use(plain[:len(plain)-sha1.Size])
 }
 
 // decryptSecret derives the key, decrypts the ciphertext into a buffer of its own and checks its
@@ -672,4 +687,243 @@ func rsaFromNumbers(pub fkPublic, numbers []byte) (crypto.Signer, error) {
 	}
 	priv.Precompute()
 	return priv, nil
+}
+
+// MaxAdoptedPacketBytes is the most bytes that [OpenSecretPacket] reads: 2048. The lone secret key
+// packet of the largest key that the reader takes is at most 1822 bytes (an RSA key with a modulus
+// of 4096 bits, 3 bytes of exponent and the four secret numbers at their longest, with the
+// three-octet header); a key that is read from an export has fewer when a number has fewer bytes.
+// A longer input is an [ErrForeignLimit].
+const MaxAdoptedPacketBytes = 2048
+
+// AdoptedPublic is what the lone secret key packet of an adopted key says in public: the same
+// facts that [ForeignPrimary] gives for the key in an export, so that a caller can compare the two.
+type AdoptedPublic struct {
+	// Fingerprint is the version 4 fingerprint: 40 lower-case hexadecimal digits.
+	Fingerprint string
+	// Created is the creation time of the key, in UTC.
+	Created time.Time
+	// Algorithm is RSA 4096, EdDSA on Ed25519 or ECDSA on P-384.
+	Algorithm ForeignAlgorithm
+	// PublicBody is the body of the public key packet of the primary: the version, the creation
+	// time, the algorithm and its public numbers. It is a copy.
+	PublicBody []byte
+}
+
+// PrimaryPublicBody returns the body of the first packet of a certificate, which must be a public
+// key packet of version 4 (tag 6) whose body is the public part of a key and nothing else, in
+// either header form. It reads the first packet only and judges no signature, user ID or subkey:
+// the caller that compares a certificate with a key file asks for exactly this. A fault is an
+// [ErrForeignForm], a packet over [MaxForeignPacketBytes] an [ErrForeignLimit]. It is a copy.
+func PrimaryPublicBody(cert []byte) (body []byte, err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			body, err = nil, fail(ErrForeignForm, "the certificate could not be read")
+		}
+	}()
+	if len(cert) == 0 {
+		return nil, fail(ErrForeignForm, "the certificate is empty")
+	}
+	tag, _, b, _, err := splitForeignPacket(cert, 1)
+	if err != nil {
+		return nil, err
+	}
+	if tag != tagPublicKey {
+		return nil, fail(ErrForeignForm, "the first packet of the certificate is not a public key packet (%s)", tagName(tag))
+	}
+	if _, err := parseForeignPublic("the primary key of the certificate", b, true, true); err != nil {
+		return nil, err
+	}
+	return bytes.Clone(b), nil
+}
+
+// SecretPacket returns the secret of the primary key as ONE OpenPGP secret key packet (RFC 9580,
+// section 5.5.3): tag 5, version 4, the shortest header of the new format that this package writes,
+// the public part of the primary as it is in the certificate, S2K usage 0 (not protected inside)
+// and the secret numbers with their two-octet checksum. It has no user ID, no signature and no
+// subkey. Its public part is byte for byte the body of the first packet of [ForeignKey.Certificate].
+// A caller that keeps it keeps it under its own protection and clears it.
+//
+// The secret is opened with passphrase as [ForeignKey.OpenSecret] opens it, with the same checks
+// and refusals (a passphrase that is nil or empty does for a secret that is not protected), and
+// the numbers must be those of the public key, as there. The packet is read back with
+// [OpenSecretPacket] before it is returned. The key is nil, wiped or not made by [ReadForeignKey]:
+// an [ErrParams]. Nothing is returned with an error; the text of an error holds no byte of the
+// secret or of the passphrase. The buffers that hold the numbers are cleared before it returns,
+// with the limits that [ForeignSecret.Wipe] names; the packet itself is the caller's to clear.
+func (k *ForeignKey) SecretPacket(passphrase []byte) (pkt []byte, err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			clear(pkt)
+			pkt, err = nil, fail(ErrForeignSecret, "the secret packet could not be written")
+		}
+	}()
+	if k == nil {
+		return nil, fail(ErrParams, "the key has no secret to open: there is no key")
+	}
+	pubBody, err := k.publicBody()
+	if err != nil {
+		return nil, err
+	}
+	err = k.withNumbers(passphrase, func(numbers []byte) error {
+		// The numbers must be the secret of the public part, with the checks of OpenSecret.
+		key, err := foreignPrivateKey(k.pub, numbers)
+		if err != nil {
+			return err
+		}
+		wipeKey(key)
+		pkt = secretPacketOf(pubBody, numbers)
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	if len(pkt) > MaxAdoptedPacketBytes {
+		clear(pkt)
+		return nil, fail(ErrForeignLimit, "the secret packet is longer than MaxAdoptedPacketBytes (%d bytes)", MaxAdoptedPacketBytes)
+	}
+	secret, pub, err := OpenSecretPacket(pkt)
+	if err != nil {
+		clear(pkt)
+		return nil, fail(ErrForeignSecret, "the secret packet does not read back as it was written")
+	}
+	secret.Wipe()
+	if pub.Fingerprint != k.Primary.Fingerprint || !bytes.Equal(pub.PublicBody, pubBody) {
+		clear(pkt)
+		return nil, fail(ErrForeignSecret, "the secret packet does not read back as the key of the certificate")
+	}
+	return pkt, nil
+}
+
+// publicBody is the body of the first packet of the certificate, the public key packet of the
+// primary, checked to be the key that the reader named: its fingerprint is the one in Primary.
+func (k *ForeignKey) publicBody() ([]byte, error) {
+	body, err := PrimaryPublicBody(k.cert)
+	if err != nil {
+		return nil, fail(ErrParams, "the key has no certificate: it was not made by ReadForeignKey")
+	}
+	fp, err := foreignFingerprint(body)
+	if err != nil {
+		return nil, err
+	}
+	if full, _ := fingerprintHex(fp); full != k.Primary.Fingerprint {
+		return nil, fail(ErrParams, "the certificate of the key is not the certificate of its primary: it was not made by ReadForeignKey")
+	}
+	return body, nil
+}
+
+// secretPacketOf writes the secret key packet of a public body and the secret numbers, with usage 0
+// and the checksum. The buffer is made at its final size, so that no copy of the numbers is left
+// behind by a growing slice.
+func secretPacketOf(pubBody, numbers []byte) []byte {
+	n := len(pubBody) + 1 + len(numbers) + 2
+	head := header(tagSecretKey, n)
+	out := make([]byte, 0, len(head)+n)
+	out = append(out, head...)
+	out = append(out, pubBody...)
+	out = append(out, usageNone)
+	out = append(out, numbers...)
+	sum := secretChecksum(numbers)
+	return append(out, byte(sum>>8), byte(sum))
+}
+
+// OpenSecretPacket reads exactly the packet that [ForeignKey.SecretPacket] writes, and nothing
+// else, and returns the secret as a [ForeignSecret] and what the packet says in public. The input
+// is at most [MaxAdoptedPacketBytes] (an [ErrForeignLimit] above it) and is one packet and no
+// byte more; the packet has the tag 5 with the shortest header of the new format, version 4, one
+// of the three algorithms of the reader with its size and curve rules (RSA with a modulus of 4096
+// bits, EdDSA legacy on Ed25519, ECDSA on P-384), S2K usage 0 and a correct two-octet checksum; the
+// numbers must read to their end and be the secret of the public part, with the checks of
+// [ForeignKey.OpenSecret] (the primes and the number u of RSA, the public key derived from the
+// seed of Ed25519, the point of the scalar of P-384); and a second reader (go-crypto) must read
+// the public part as it is read here.
+//
+// Every other input is refused with the kinds of the reader of an export: a packet that is not
+// one secret key packet, a header that is not the shortest, or a second packet or a trailing byte
+// ([ErrForeignForm]); another tag ([ErrForeignPacket], and [ErrForeignNoSecret] for a public key
+// packet); another version ([ErrForeignVersion]); another algorithm, size or curve
+// ([ErrForeignAlgorithm]); a secret that is protected inside ([ErrForeignProtection]); a checksum
+// that is wrong or numbers that are not the secret of the public part ([ErrForeignSecret]). No text
+// holds a byte of the input. Nothing is returned with an error. The caller clears pkt: nothing of
+// it is kept except in the numbers of the key, which [ForeignSecret.Wipe] clears with its limits.
+func OpenSecretPacket(pkt []byte) (secret *ForeignSecret, pub AdoptedPublic, err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			secret, pub, err = nil, AdoptedPublic{}, fail(ErrForeignForm, "the secret key packet could not be read")
+		}
+	}()
+	body, err := adoptedBody(pkt)
+	if err != nil {
+		return nil, AdoptedPublic{}, err
+	}
+	p, err := parseForeignPublic("the secret key packet", body, false, true)
+	if err != nil {
+		return nil, AdoptedPublic{}, err
+	}
+	if err := checkPrimary(p); err != nil {
+		return nil, AdoptedPublic{}, err
+	}
+	pubBody, region := body[:p.length], body[p.length:]
+	if len(region) == 0 {
+		return nil, AdoptedPublic{}, fail(ErrForeignNoSecret, "the secret key packet has no secret part")
+	}
+	if region[0] != usageNone {
+		return nil, AdoptedPublic{}, fail(ErrForeignProtection, "the secret of the packet is protected inside (S2K usage %d): a lone secret key packet holds it unprotected", region[0])
+	}
+	if len(region) < 1+3+2 || !secretNumbersExact(p.alg.ID, region[1:]) {
+		return nil, AdoptedPublic{}, fail(ErrForeignForm, "the secret of the packet does not account for its bytes")
+	}
+	numbers, sum := region[1:len(region)-2], region[len(region)-2:]
+	if uint16(sum[0])<<8|uint16(sum[1]) != secretChecksum(numbers) {
+		return nil, AdoptedPublic{}, fail(ErrForeignSecret, "the checksum of the secret is wrong")
+	}
+	fp, err := foreignFingerprint(pubBody)
+	if err != nil {
+		return nil, AdoptedPublic{}, err
+	}
+	if _, err := agreePublic(wrap(tagPublicKey, pubBody), pubBody, fp, false); err != nil {
+		return nil, AdoptedPublic{}, err
+	}
+	key, err := foreignPrivateKey(p, numbers)
+	if err != nil {
+		return nil, AdoptedPublic{}, err
+	}
+	full, _ := fingerprintHex(fp)
+	return newForeignSecret(key), AdoptedPublic{
+		Fingerprint: full,
+		Created:     p.created,
+		Algorithm:   p.alg,
+		PublicBody:  bytes.Clone(pubBody),
+	}, nil
+}
+
+// adoptedBody checks the frame of a lone secret key packet and returns its body: not empty and not
+// over the limit, one packet with nothing after it, tag 5, and the shortest header of the new format.
+func adoptedBody(pkt []byte) ([]byte, error) {
+	if len(pkt) == 0 {
+		return nil, fail(ErrForeignForm, "the secret key packet is empty")
+	}
+	if len(pkt) > MaxAdoptedPacketBytes {
+		return nil, fail(ErrForeignLimit, "the secret key packet is longer than MaxAdoptedPacketBytes (%d bytes)", MaxAdoptedPacketBytes)
+	}
+	tag, raw, body, rest, err := splitForeignPacket(pkt, 1)
+	if err != nil {
+		return nil, err
+	}
+	if len(rest) != 0 {
+		return nil, fail(ErrForeignForm, "the input is more than one packet: it holds %d bytes after the first", len(rest))
+	}
+	switch tag {
+	case tagSecretKey:
+	case tagPublicKey:
+		return nil, fail(ErrForeignNoSecret, "the packet is a public key packet, which has no secret")
+	case tagSecretSubkey, tagSubkey:
+		return nil, fail(ErrForeignForm, "the packet is a subkey packet: a lone secret key packet is the primary")
+	default:
+		return nil, fail(ErrForeignPacket, "the packet is %s, not a secret key packet", tagName(tag))
+	}
+	if !bytes.Equal(raw, wrap(tagSecretKey, body)) {
+		return nil, fail(ErrForeignForm, "the header of the secret key packet is not the shortest one of the new format")
+	}
+	return body, nil
 }
