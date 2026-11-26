@@ -58,7 +58,7 @@ func refusedAs(t *testing.T, err, kind error) *Refusal {
 		t.Fatal("accepted, want a refusal")
 	}
 	other := ErrParams
-	if kind == ErrParams {
+	if errors.Is(kind, ErrParams) {
 		other = ErrKeyDir
 	}
 	if !errors.Is(err, kind) || errors.Is(err, other) {
@@ -68,7 +68,7 @@ func refusedAs(t *testing.T, err, kind error) *Refusal {
 	if !errors.As(err, &r) {
 		t.Fatalf("the error is not a *Refusal: %T %v", err, err)
 	}
-	if r.Kind != kind {
+	if r.Kind != kind { //nolint:errorlint // the Kind is the sentinel itself, not an error that wraps it
 		t.Errorf("the Kind is %v, want %v", r.Kind, kind)
 	}
 	if strings.TrimSpace(r.Reason) == "" {
@@ -121,13 +121,13 @@ func TestCheckRefusesTheBundleAndAnythingInsideItInEverySpelling(t *testing.T) {
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
 			_, err := checkBoth(t, c.dir, f.bundle)
-			refusedAs(t, err, ErrKeyDir)
+			_ = refusedAs(t, err, ErrKeyDir)
 		})
 	}
 	// The bundle may be given in any of those spellings too.
 	for _, spelling := range []string{f.bundle + "/", f.root + "/keys/../bundle", "bundle", toBundle} {
 		_, err := checkBoth(t, filepath.Join(f.bundle, "history"), spelling)
-		refusedAs(t, err, ErrKeyDir)
+		_ = refusedAs(t, err, ErrKeyDir)
 		if _, err := checkBoth(t, f.keys, spelling); err != nil {
 			t.Errorf("the key folder with the bundle spelled %q: %v", spelling, err)
 		}
@@ -185,7 +185,7 @@ func TestCheckStatReturnsTheResolvedFolderAndNothingWhenItRefuses(t *testing.T) 
 	}
 	// A refusal gives no folder.
 	got, err = CheckStat(os.Stat, f.bundle, f.bundle)
-	refusedAs(t, err, ErrKeyDir)
+	_ = refusedAs(t, err, ErrKeyDir)
 	if got != "" {
 		t.Errorf("a refusal returns the folder %q", got)
 	}
@@ -224,7 +224,7 @@ func TestCheckRefusesAFolderThatIsMissingNotAFolderOrEmptyAndABundleThatIsMissin
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
 			_, err := checkBoth(t, c.dir, c.bundle)
-			refusedAs(t, err, c.kind)
+			_ = refusedAs(t, err, c.kind)
 		})
 	}
 }
@@ -232,7 +232,7 @@ func TestCheckRefusesAFolderThatIsMissingNotAFolderOrEmptyAndABundleThatIsMissin
 func TestACheckGivesTheEmptyBundleAsAParameterFaultAndNoOtherRefusalIsOne(t *testing.T) {
 	f := newTree(t)
 	_, err := CheckStat(os.Stat, f.keys, "")
-	refusedAs(t, err, ErrParams)
+	_ = refusedAs(t, err, ErrParams)
 	if errors.Is(err, ErrKeyDir) {
 		t.Errorf("a parameter fault is a refused key directory: %v", err)
 	}
@@ -261,7 +261,7 @@ func TestAPathIsFollowedInOrderSoThatDotDotAfterALinkIsTakenFromTheTargetOfTheLi
 	bundle := filepath.Join(f.root, "real", "deep", "b")
 	// "L/../b" is the bundle for the system; its cleaned text "b" is the decoy, which would pass.
 	_, err := checkBoth(t, "L/../b", bundle)
-	refusedAs(t, err, ErrKeyDir)
+	_ = refusedAs(t, err, ErrKeyDir)
 	// "L/../keys-ok" is a folder beside the bundle for the system: accepted, and resolved there.
 	got, err := checkBoth(t, "L/../keys-ok", bundle)
 	if err != nil {
@@ -272,13 +272,13 @@ func TestAPathIsFollowedInOrderSoThatDotDotAfterALinkIsTakenFromTheTargetOfTheLi
 	}
 	// The same for the bundle: "L/../b" is the bundle, and so the key folder inside it is refused.
 	_, err = checkBoth(t, filepath.Join(bundle, "history"), "L/../b")
-	refusedAs(t, err, ErrKeyDir)
+	_ = refusedAs(t, err, ErrKeyDir)
 	_, err = checkBoth(t, bundle, "L/../b")
-	refusedAs(t, err, ErrKeyDir)
+	_ = refusedAs(t, err, ErrKeyDir)
 	// "L/../nowhere" does not exist beside the target, although "nowhere" would not exist here either:
 	// the decoy "b" at the working folder must not rescue a name that is missing there.
 	_, err = checkBoth(t, "L/../nowhere", bundle)
-	refusedAs(t, err, ErrKeyDir)
+	_ = refusedAs(t, err, ErrKeyDir)
 }
 
 func TestARelativePathNeedsTheWorkingFolderAndIsRefusedWhenItIsGone(t *testing.T) {
@@ -296,7 +296,7 @@ func TestARelativePathNeedsTheWorkingFolderAndIsRefusedWhenItIsGone(t *testing.T
 	}
 	for _, c := range []struct{ key, bundle string }{{"keys", f.bundle}, {f.keys, "bundle"}} {
 		_, err := checkBoth(t, c.key, c.bundle)
-		refusedAs(t, err, ErrKeyDir)
+		_ = refusedAs(t, err, ErrKeyDir)
 	}
 	// An absolute pair needs no working folder.
 	if _, err := checkBoth(t, f.keys, f.bundle); err != nil {
@@ -343,7 +343,7 @@ func TestCheckRefusesAFolderInsideTheWorkTreeOfTheRepositoryThatHoldsTheBundle(t
 					t.Errorf("%s: accepted", name)
 					continue
 				}
-				refusedAs(t, err, ErrKeyDir)
+				_ = refusedAs(t, err, ErrKeyDir)
 			}
 			accepted := map[string]string{
 				"a folder outside the work tree":  filepath.Join(root, "beside"),
@@ -396,7 +396,7 @@ func TestEveryRepositoryAboveTheBundleCountsAndNotOnlyTheNearest(t *testing.T) {
 			t.Errorf("%s: accepted", name)
 			continue
 		}
-		refusedAs(t, err, ErrKeyDir)
+		_ = refusedAs(t, err, ErrKeyDir)
 	}
 	if _, err := checkBoth(t, filepath.Join(root, "beside"), bundle); err != nil {
 		t.Errorf("a folder outside both is refused: %v", err)
@@ -435,7 +435,7 @@ func TestACheckThatCannotLookAtAnOuterWorkTreeRefusesAndDoesNotPass(t *testing.T
 		return os.Stat(path)
 	}
 	_, err = CheckStat(failOuter, key, bundle)
-	refusedAs(t, err, ErrKeyDir)
+	_ = refusedAs(t, err, ErrKeyDir)
 }
 
 // The key folder is another folder on the disk, but the stub says it is the bundle, as a bind
@@ -454,7 +454,7 @@ func TestCheckStatTellsTheSameFolderByOSSameFileAndNotByTheText(t *testing.T) {
 		return os.Stat(path)
 	}
 	_, err = CheckStat(same, f.keys, f.bundle)
-	refusedAs(t, err, ErrKeyDir)
+	_ = refusedAs(t, err, ErrKeyDir)
 	// The same folders with an honest stat are accepted: the refusal came from SameFile.
 	if _, err := CheckStat(os.Stat, f.keys, f.bundle); err != nil {
 		t.Errorf("the control is refused: %v", err)
@@ -471,7 +471,7 @@ func TestCheckStatTellsTheSameFolderByOSSameFileAndNotByTheText(t *testing.T) {
 		t.Fatal(err)
 	}
 	_, err = CheckStat(up, deep, f.bundle)
-	refusedAs(t, err, ErrKeyDir)
+	_ = refusedAs(t, err, ErrKeyDir)
 	// The stub that gives the bundle for a folder that is not above the key folder changes nothing.
 	beside := func(path string) (fs.FileInfo, error) {
 		if path == f.outside {
@@ -530,7 +530,7 @@ func TestWhicheverStatFailsTheCheckRefusesAndNeverPasses(t *testing.T) {
 					t.Errorf("%s: a stat that fails at call %d of %d (%v) is accepted", pair.name, failAt, total, injected)
 					continue
 				}
-				refusedAs(t, err, ErrKeyDir)
+				_ = refusedAs(t, err, ErrKeyDir)
 				if got != "" {
 					t.Errorf("%s: a refusal returns the folder %q", pair.name, got)
 				}
@@ -687,7 +687,7 @@ func TestARefusalIsAnErrorOfItsKindThatUnwrapsToIt(t *testing.T) {
 		if !errors.Is(err, kind) {
 			t.Errorf("a refusal of %v is not that kind", kind)
 		}
-		if got := errors.Unwrap(err); got != kind {
+		if got := errors.Unwrap(err); got != kind { //nolint:errorlint // Unwrap gives the sentinel itself, not an error that wraps it
 			t.Errorf("Unwrap gives %v, want %v", got, kind)
 		}
 		if want := kind.Error() + ": in fixed words"; err.Error() != want {
@@ -695,7 +695,7 @@ func TestARefusalIsAnErrorOfItsKindThatUnwrapsToIt(t *testing.T) {
 		}
 		wrapped := errors.Join(errors.New("context"), err)
 		var r *Refusal
-		if !errors.As(wrapped, &r) || r.Kind != kind {
+		if !errors.As(wrapped, &r) || r.Kind != kind { //nolint:errorlint // the Kind is the sentinel itself, not an error that wraps it
 			t.Errorf("a wrapped refusal of %v is not found", kind)
 		}
 	}
