@@ -1,0 +1,4 @@
+# One X.509 root. Its keys are made by the first apply.
+version: 1
+kind: x509
+test: true  # set at birth; a real root never becomes a test root
