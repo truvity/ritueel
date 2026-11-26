@@ -6,6 +6,7 @@ import (
 	"crypto/rand"
 	"crypto/sha256"
 	"errors"
+	"math/big"
 	"testing"
 
 	gpacket "github.com/ProtonMail/go-crypto/openpgp/packet"
@@ -276,4 +277,73 @@ func TestPrimaryPublicBody(t *testing.T) {
 			}
 		}
 	})
+}
+
+// fkRSACanon makes a secret of the RSA template whose numbers still satisfy every relation of the key
+// and are not the canonical ones: u + q, and d plus the smallest multiple of the exponent of the group
+// that takes it to the modulus or over.
+func fkRSACanon(t testing.TB, b *fkBase) (d, p, q, u, uBig, dBig []byte) {
+	t.Helper()
+	own := b.secrets(t).Primary
+	d, p, q, u = own[0], own[1], own[2], own[3]
+	bq, bp, bd := new(big.Int).SetBytes(q), new(big.Int).SetBytes(p), new(big.Int).SetBytes(d)
+	uBig = new(big.Int).Add(new(big.Int).SetBytes(u), bq).Bytes()
+	n := new(big.Int).Mul(bp, bq)
+	p1, q1 := new(big.Int).Sub(bp, big.NewInt(1)), new(big.Int).Sub(bq, big.NewInt(1))
+	lambda := new(big.Int).Div(new(big.Int).Mul(p1, q1), new(big.Int).GCD(nil, nil, p1, q1))
+	k := new(big.Int).Div(new(big.Int).Sub(n, bd), lambda)
+	k.Add(k, big.NewInt(1))
+	dBigInt := new(big.Int).Add(bd, new(big.Int).Mul(k, lambda))
+	if dBigInt.Cmp(n) < 0 {
+		t.Fatal("d plus a multiple of lambda is below the modulus")
+	}
+	return d, p, q, u, uBig, dBigInt.Bytes()
+}
+
+func TestRSANumbersThatAreNotCanonicalAreRefused(t *testing.T) {
+	b := fkNamed(t, "rsa4096")
+	d, p, q, u, uBig, dBig := fkRSACanon(t, b)
+	cases := map[string][][]byte{
+		"u plus q":                 {d, p, q, uBig},
+		"d plus a multiple of lam": {dBig, p, q, u},
+	}
+	for name, nums := range cases {
+		file := fkSecretFile(t, b, false, fkEncode(nums...))
+		k := fkRead(t, file)
+		if s, err := k.OpenSecret(nil); !errors.Is(err, openpgp.ErrForeignSecret) || s != nil {
+			t.Errorf("%s: OpenSecret: %v, want ErrForeignSecret", name, err)
+		}
+		certPub, _ := openpgp.PrimaryPublicBody(k.Certificate())
+		sum := uint16(0)
+		numbers := fkEncode(nums...)
+		for _, c := range numbers {
+			sum += uint16(c)
+		}
+		region := append(append([]byte{0}, numbers...), byte(sum>>8), byte(sum))
+		pkt := fkJoin(fkPacket{5, append(bytes.Clone(certPub), region...)})
+		s, _, err := openpgp.OpenSecretPacket(pkt)
+		if !errors.Is(err, openpgp.ErrForeignSecret) || s != nil {
+			t.Errorf("%s: OpenSecretPacket: %v, want ErrForeignSecret", name, err)
+		}
+		fkCheckText(t, name, err, b)
+	}
+	// the canonical numbers still open
+	if _, err := fkRead(t, b.plain).OpenSecret(nil); err != nil {
+		t.Errorf("the canonical secret: %v", err)
+	}
+}
+
+func TestAWipedKeyIsKnownToBeWiped(t *testing.T) {
+	var none *openpgp.ForeignKey
+	if !none.Wiped() {
+		t.Errorf("a nil key is not wiped")
+	}
+	k := fkRead(t, fkNamed(t, "p384").plain)
+	if k.Wiped() {
+		t.Errorf("a key that was read is wiped")
+	}
+	k.Wipe()
+	if !k.Wiped() {
+		t.Errorf("a key that was wiped is not")
+	}
 }

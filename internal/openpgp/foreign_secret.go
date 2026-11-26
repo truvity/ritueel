@@ -439,9 +439,17 @@ func (s *ForeignSecret) Signer() crypto.Signer {
 }
 
 // Wipe clears the numbers of the private key, word by word, and drops it: every handle from
-// [ForeignSecret.Signer] then refuses to sign. A key that was used still has the copies that
-// crypto/rsa, crypto/ecdsa and the garbage collector made, which are out of reach and may stay in memory
-// until the process ends. It is safe to call more than once.
+// [ForeignSecret.Signer] then refuses to sign. It does not clear what it cannot reach, and that stays
+// in memory until the garbage collector frees it, or until the process ends:
+//   - the copies that crypto/rsa, crypto/ecdsa and crypto/ed25519 made, among them one that the
+//     validation of an RSA key builds and one that its precomputation builds;
+//   - the scratch space of the big-number checks of the primes p and q (the primality test) and of
+//     the number u;
+//   - the hash state of the stretching of a passphrase, which holds blocks of the passphrase;
+//   - the copies that the garbage collector moved.
+//
+// One opening of a secret makes each of these once, and a caller that opens the same key several times
+// leaves several. It is safe to call more than once.
 func (s *ForeignSecret) Wipe() {
 	if s == nil {
 		return
@@ -515,6 +523,8 @@ func wipeRSA(k *rsa.PrivateKey) {
 // The passphrase is read and never kept or copied by this code: the caller clears its own slice. The
 // key that is derived from it, the decrypted bytes and every number that was made only to check the
 // secret are cleared before the function returns, with the limits that [ForeignSecret.Wipe] names.
+// The scratch space of those checks and the state of the hash that stretched the passphrase are
+// among what it cannot clear.
 // The text of an error holds no byte of the secret or of the passphrase. It returns no key with an
 // error.
 func (k *ForeignKey) OpenSecret(passphrase []byte) (secret *ForeignSecret, err error) {
@@ -560,6 +570,12 @@ func (k *ForeignKey) withNumbers(passphrase []byte, use func(numbers []byte) err
 	defer clear(plain)
 	return use(plain[:len(plain)-sha1.Size])
 }
+
+// Wiped says whether [ForeignKey.Wipe] was called on the key, so that a caller can refuse a key that
+// has no secret to give before it asks a person for a passphrase. A nil key is wiped. It does not say
+// that the key has a secret: a ForeignKey that [ReadForeignKey] did not make is not wiped and opens
+// nothing. Like the rest of the type, it is not safe against a call of Wipe from another goroutine.
+func (k *ForeignKey) Wiped() bool { return k == nil || k.wiped }
 
 // decryptSecret derives the key, decrypts the ciphertext into a buffer of its own and checks its
 // SHA-1 hash in constant time. The buffer is returned whole, hash included, for the caller to clear;
@@ -668,6 +684,18 @@ func rsaFromNumbers(pub fkPublic, numbers []byte) (crypto.Signer, error) {
 	}
 	u := new(big.Int).SetBytes(parts[3])
 	defer wipeInt(u)
+	// The numbers are held to their canonical size, so that a secret has one spelling: u is the
+	// inverse of p modulo q, which is below q by definition, and d is below the modulus. The
+	// relations below hold for u + q, which nothing else bounds, and for d plus a multiple of the
+	// exponent of the group. The standard library's Validate refuses d at or above the modulus too
+	// (checked with Go 1.27), but this code does not lean on that. A d below the modulus is not
+	// unique: programs take it modulo lambda or modulo phi, so no tighter bound is asked. A real
+	// export meets both bounds: this function opens the secret of an export too, and no
+	// program writes a u that is not below q or a d that is not below n.
+	if u.Cmp(priv.Primes[1]) >= 0 || priv.D.Cmp(priv.N) >= 0 {
+		wipeRSA(priv)
+		return nil, fail(ErrForeignSecret, "a number of the secret is not below its bound: d below the modulus, u below the second prime")
+	}
 	for _, q := range priv.Primes {
 		if q.BitLen() < rsaPrimeMinBits || q.BitLen() > rsaPrimeMaxBits || !q.ProbablyPrime(20) {
 			wipeRSA(priv)

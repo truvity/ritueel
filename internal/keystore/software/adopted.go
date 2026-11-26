@@ -161,8 +161,14 @@ func errAdoptedSource(err error) error {
 // is deleted. A write that fails after the temporary file was made names that file too, as for the
 // other keys.
 //
+// The fingerprint that the file is held to is the one of fk, the key that it is given. Holding that
+// fingerprint to the one that the person wants is the caller's job. A wiped fk is an [ErrParams]
+// before any passphrase is asked.
+//
 // The packet is cleared after the write; the passphrases are cleared as the package clears them
-// (see "Secrets in memory"). fk is not wiped: it is the caller's.
+// (see "Secrets in memory"). fk is not wiped: it is the caller's. One call opens the secret several
+// times (the packet, its read back, the check of the file), and each leaves copies that the garbage
+// collector frees later.
 func (s *Store) SaveAdopted(ctx context.Context, label string, fk *openpgp.ForeignKey) error {
 	if s == nil {
 		return refuse(ErrParams, "the store was not made by Open")
@@ -175,6 +181,9 @@ func (s *Store) SaveAdopted(ctx context.Context, label string, fk *openpgp.Forei
 	}
 	if fk == nil {
 		return refuse(ErrParams, "there is no key to keep")
+	}
+	if fk.Wiped() {
+		return refuse(ErrParams, "the exported key was wiped: it has no secret to keep")
 	}
 	if err := ctx.Err(); err != nil {
 		return err
@@ -320,8 +329,9 @@ func readAdoptedPayload(payload []byte, want adoptedFacts, what string) (*Adopte
 // internal/openpgp, which keeps it. It does not implement [keystore.Key], whose contract is ECDSA on
 // P-384 with SHA-384; it answers the rest of that interface (Kind, Copyable, Warnings, Close).
 //
-// Sign refuses what the key is not meant to sign before the secret is used: an RSA key signs PKCS#1
-// version 1.5 with SHA-256, SHA-384 or SHA-512 and never PSS; an Ed25519 key signs the message as it
+// Sign refuses what the key is not meant to sign before the secret is used: its options must be
+// exactly a crypto.Hash value. An RSA key signs PKCS#1 version 1.5 with SHA-256, SHA-384 or SHA-512
+// and never PSS; an Ed25519 key signs the message as it
 // is given, with the option crypto.Hash(0); a P-384 key signs a digest of the length of SHA-256,
 // SHA-384 or SHA-512 and returns the ASN.1 value. Every signature is verified with the public key
 // before it is returned. It prints as a fixed text under every verb and marshals to nothing, and
@@ -517,29 +527,28 @@ func (k *AdoptedKey) Sign(_ io.Reader, digest []byte, opts crypto.SignerOpts) ([
 }
 
 // guardSign checks the options and the input of a signature of a key of an algorithm, before the
-// secret is used, and returns the hash that the options name (zero for Ed25519).
+// secret is used, and returns the hash that the options name (zero for Ed25519). The rule is one for
+// the three algorithms: opts must be exactly a crypto.Hash value, never another type (a PSS option
+// or a type that embeds one, a nil, a typed nil), and that value is crypto.Hash(0) for Ed25519 and
+// crypto.SHA256, crypto.SHA384 or crypto.SHA512 for RSA and ECDSA, with a digest of its length.
 func guardSign(alg uint8, digest []byte, opts crypto.SignerOpts) (crypto.Hash, error) {
+	h, ok := opts.(crypto.Hash)
 	switch alg {
 	case algEdDSA:
-		if h, ok := opts.(crypto.Hash); !ok || h != 0 {
+		if !ok || h != 0 {
 			return 0, refuse(ErrParams, "an Ed25519 key signs the message as it is given, with the option crypto.Hash(0)")
 		}
 		return 0, nil
 	case algRSA, algECDSA:
-		if _, pss := opts.(*rsa.PSSOptions); pss {
-			return 0, refuse(ErrParams, "the key signs a plain digest, PKCS#1 version 1.5 for RSA, and never takes the options of PSS")
+		if !ok || (h != crypto.SHA256 && h != crypto.SHA384 && h != crypto.SHA512) {
+			return 0, refuse(ErrParams, "the key signs a digest with the option crypto.SHA256, crypto.SHA384 or crypto.SHA512 and no other option")
 		}
-	default:
-		return 0, refuse(ErrParams, "the algorithm of the key is not one that the store signs with")
+		if len(digest) != h.Size() {
+			return 0, refuse(ErrParams, "the digest does not have the length of the hash that the option names")
+		}
+		return h, nil
 	}
-	h, ok := hashOf(opts)
-	if !ok || h != crypto.SHA256 && h != crypto.SHA384 && h != crypto.SHA512 {
-		return 0, refuse(ErrParams, "the key signs a digest of SHA-256, SHA-384 or SHA-512 only")
-	}
-	if len(digest) != h.Size() {
-		return 0, refuse(ErrParams, "the digest does not have the length of the hash that the option names")
-	}
-	return h, nil
+	return 0, refuse(ErrParams, "the algorithm of the key is not one that the store signs with")
 }
 
 // signOpts is the option that the signer of internal/openpgp is given: the hash for RSA and ECDSA,

@@ -137,7 +137,13 @@
 // reach are the copies inside crypto/rsa, crypto/ed25519 and crypto/ecdsa (the key keeps its scalar in its own memory, and a
 // slice that Bytes returned is that memory), the copies that crypto/x509, encoding/asn1,
 // encoding/pem and the OpenPGP reader of go-crypto made while they read the key, and the copies
-// that the garbage collector moved. The pages that the system swapped out are out of its reach
+// that the garbage collector moved. For an adopted key there is more. The scratch space of the
+// big-number checks of p and q (the primality test) and of u is not cleared. The hash state that
+// stretches the passphrase of an exported file holds blocks of it, and is not cleared. The standard
+// library's validation of an RSA key and its precomputation each build a copy of the key of their
+// own. One [Store.SaveAdopted] opens the key several times (to write the packet, to read it back,
+// to check the file), so several copies stay until the garbage collector frees them, and none is
+// promised gone. The pages that the system swapped out are out of its reach
 // too. A scan of the memory of a process after Close can still find the scalar. A key and a passphrase are never put into an error, a
 // file name, a log line or a temporary file other than the key file itself.
 package software

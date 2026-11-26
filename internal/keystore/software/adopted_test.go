@@ -790,6 +790,8 @@ func TestAnAdoptedKeyRefusesWhatItIsNotMeantToSign(t *testing.T) {
 		"rsa4096": {
 			{"PSS", d(32), &rsa.PSSOptions{Hash: crypto.SHA256}},
 			{"a typed nil PSS option", d(32), (*rsa.PSSOptions)(nil)},
+			{"a type that embeds a PSS option", d(32), embedsPSS{&rsa.PSSOptions{Hash: crypto.SHA256}}},
+			{"a type that names SHA-256", d(32), namesHash{crypto.SHA256}},
 			{"SHA-1", d(20), crypto.SHA1},
 			{"SHA-224", d(28), crypto.SHA224},
 			{"no hash", d(32), crypto.Hash(0)},
@@ -802,8 +804,11 @@ func TestAnAdoptedKeyRefusesWhatItIsNotMeantToSign(t *testing.T) {
 			{"SHA-256", d(32), crypto.SHA256},
 			{"nil options", d(32), nil},
 			{"an Ed25519 option", d(32), &ed25519.Options{Hash: crypto.Hash(0)}},
+			{"a type that names no hash", d(32), namesHash{0}},
 		},
 		"p384": {
+			{"a type that embeds a PSS option", d(48), embedsPSS{&rsa.PSSOptions{Hash: crypto.SHA384}}},
+			{"a type that names SHA-384", d(48), namesHash{crypto.SHA384}},
 			{"SHA-1", d(20), crypto.SHA1},
 			{"no hash", d(48), crypto.Hash(0)},
 			{"nil options", d(48), nil},
@@ -870,5 +875,29 @@ func TestAnAdoptedKeyRSA4096FitsThePayloadCap(t *testing.T) {
 	t.Logf("the lone packet of RSA-4096 is %d bytes and its key file %d bytes; the cap of the payload and of the file is %d", len(pkt), len(file), MaxKeyFileSize)
 	if len(pkt) > MaxKeyFileSize/20 || len(file) > MaxKeyFileSize {
 		t.Errorf("the packet is %d bytes and the file %d", len(pkt), len(file))
+	}
+}
+
+// embedsPSS is an option that embeds the options of PSS and so answers its methods.
+type embedsPSS struct{ *rsa.PSSOptions }
+
+// namesHash is an option of another type than crypto.Hash that names a hash.
+type namesHash struct{ h crypto.Hash }
+
+func (n namesHash) HashFunc() crypto.Hash { return n.h }
+
+func TestAWipedExportAsksNoPassphrase(t *testing.T) {
+	lowWork(t)
+	fk := adoptedNamed(t, "p384").foreign(t, exportPass)
+	fk.Wipe()
+	src := adoptedSource(exportPass)
+	s, _, keys := openPassStore(t, src)
+	err := s.SaveAdopted(bg(), "A", fk)
+	wantRefusal(t, err, ErrParams, "", exportPass, testPass)
+	if src.calls() != 0 {
+		t.Errorf("the source was asked %d times for a key that was wiped", src.calls())
+	}
+	if names := dirNames(t, keys); len(names) != 0 {
+		t.Errorf("the folder holds %v", names)
 	}
 }
