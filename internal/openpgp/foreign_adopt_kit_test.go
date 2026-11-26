@@ -10,7 +10,6 @@ import (
 	"fmt"
 	"math/big"
 	"math/bits"
-	"os"
 	"strings"
 	"sync"
 	"testing"
@@ -352,21 +351,6 @@ func alRefusal(t testing.TB, what string, b *fkBase, in []byte, extra [][]byte, 
 	return err
 }
 
-// alReported skips the test of a defect that is reported and not fixed, unless the variable
-// RITUEEL_TEST_REPORTED is 1.
-func alReported(t testing.TB) {
-	t.Helper()
-	if os.Getenv("RITUEEL_TEST_REPORTED") != "1" {
-		t.Skip("a reported defect: set RITUEEL_TEST_REPORTED=1 to run this test")
-	}
-}
-
-// alRefuses is alRefusal for a caller that does not look at the error.
-func alRefuses(t testing.TB, what string, b *fkBase, in []byte, extra [][]byte, kinds ...error) {
-	t.Helper()
-	_ = alRefusal(t, what, b, in, extra, kinds...)
-}
-
 // alPad left-pads a number to n bytes: a number that is written without its leading zero bytes is
 // n bytes long again, so that a case that is "one byte too long" is that for every key.
 func alPad(v []byte, n int) []byte {
@@ -374,4 +358,10 @@ func alPad(v []byte, n int) []byte {
 		return v
 	}
 	return append(make([]byte, n-len(v)), v...)
+}
+
+// alRefuses is alRefusal for a caller that does not look at the error.
+func alRefuses(t testing.TB, what string, b *fkBase, in []byte, extra [][]byte, kinds ...error) {
+	t.Helper()
+	_ = alRefusal(t, what, b, in, extra, kinds...)
 }
