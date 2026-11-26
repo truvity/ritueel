@@ -3,8 +3,10 @@ package openpgp_test
 import (
 	"bytes"
 	"fmt"
+	"slices"
 	"testing"
 
+	pgp "github.com/ProtonMail/go-crypto/openpgp"
 	gpacket "github.com/ProtonMail/go-crypto/openpgp/packet"
 
 	"ritueel.id/ritueel/internal/openpgp"
@@ -248,6 +250,28 @@ func fkCertProperty(t testing.TB, what string, k *openpgp.ForeignKey, secrets ..
 	}
 	if len(ps) > 1 && ps[len(ps)-1].tag != 2 && ps[len(ps)-1].tag != 14 && ps[len(ps)-1].tag != 13 && ps[len(ps)-1].tag != 17 {
 		t.Fatalf("%s: the last packet", what)
+	}
+	// the library's key-ring reader reads the certificate, as the same key, with exactly the subkeys that the
+	// view says are in it (the same subkey twice in the file is one in the certificate)
+	ents, err := pgp.ReadKeyRing(bytes.NewReader(cert))
+	if err != nil || len(ents) != 1 {
+		t.Fatalf("%s: go-crypto does not read the certificate as a key ring: %v (%d keys)", what, err, len(ents))
+	}
+	if hexOf(ents[0].PrimaryKey.Fingerprint) != k.Primary.Fingerprint {
+		t.Fatalf("%s: the key ring has another primary", what)
+	}
+	var wantSubs []string
+	for _, s := range k.Subkeys {
+		if s.InCertificate && !slices.Contains(wantSubs, s.Fingerprint) {
+			wantSubs = append(wantSubs, s.Fingerprint)
+		}
+	}
+	var gotSubs []string
+	for _, s := range ents[0].Subkeys {
+		gotSubs = append(gotSubs, hexOf(s.PublicKey.Fingerprint))
+	}
+	if !slices.Equal(gotSubs, wantSubs) {
+		t.Fatalf("%s: the key ring has the subkeys %v, the view says %v are in the certificate", what, gotSubs, wantSubs)
 	}
 	// no run of a secret, no serial
 	if where, bad := fkLeaks(cert, secrets...); bad {
