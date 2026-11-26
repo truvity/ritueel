@@ -8,7 +8,7 @@
 1. ritueel reaches a key store through the key port of [atoom](https://github.com/truvity/atoom), a shared library: the generated client, with the driver linked into ritueel's one executable. No second program runs, and no socket or network port is opened; the in-process link is an in-memory pipe.
 2. The key stores are atoom's software driver, only for test roots; atoom's AWS KMS driver, for a cloud root; and, for cards, atoom's driver for the PIV application over direct USB, which an atoom decision record designs and nobody has built yet.
 3. These stay ritueel's own: the ceremonies, plans and records; the OpenPGP packets and X.509 certificates it builds; the rules for the key directory; the removal and revocation files; the hand-off checks; and the day-to-day card's OpenPGP application, until atoom has a driver for it.
-4. One exception: every key that [record 0008](0008-a-persons-own-key.md) keeps in an encrypted key file lives in ritueel's own key file, and ritueel's own code uses it. These are a person's primary before stage two, adopted or not (rules 5 and 6), and the encryption subkey made in software (rule 10). For the primary, the exception ends when stage two has moved the root to its card-born keys.
+4. One exception: every key that record 0008 keeps in an encrypted key file lives in ritueel's own key file, and ritueel's own code uses it. These are a person's primary before stage two, adopted or not ([record 0008](0008-a-persons-own-key.md), rules 5 and 6), and the encryption subkey made in software ([record 0008](0008-a-persons-own-key.md), rule 10). For the primary, the exception ends when stage two has moved the root to its card-born keys.
 5. ritueel is one static executable built with cgo off, and a card store is part of it.
 
 ## Why
