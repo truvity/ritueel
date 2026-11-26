@@ -92,6 +92,29 @@
 // package asks no terminal. A save writes the file, reads it back and opens it again with the same
 // passphrase, so a save of a passphrase file runs scrypt twice.
 //
+// A [Purpose] has a [Role]. The zero value, [KeyFile], is the passphrase of a key file that a call
+// opens, and [Choose] the new passphrase of one that it writes; both are held to [CheckPassphrase].
+// [Import] is the passphrase of a file that an OpenPGP program exported: it was chosen under that
+// program's rules, so it is held only to [CheckPassphraseFor] (not empty, at most
+// [openpgp.MaxForeignPassphraseBytes]), and [ReaderSource] reads a line of that length for it.
+//
+// # Adopted keys
+//
+// A person's existing OpenPGP primary (RSA-4096, EdDSA on Ed25519 or ECDSA on P-384; record 0008,
+// rules 5 and 6) is kept in the same file name as a key that ritueel made, `<label>.openpgp.key.age`,
+// with another payload: the lone secret key packet that [openpgp.ForeignKey.SecretPacket] writes
+// and [openpgp.OpenSecretPacket] reads, with no user ID. The two readers tell the forms apart, and
+// each refuses the other with an [ErrKeyFile] that says which form it found. [Store.SaveAdopted]
+// writes it, only in the passphrase mode (the key of a person is never written without encryption);
+// it asks the source for the passphrase of the exported file only when that is protected, and then
+// for the new passphrase. [Store.OpenAdopted] and [Store.CheckAdopted] compare the fingerprint, the
+// creation time and the public part of the key in the file with an [Expect], before any signer is
+// returned. An [AdoptedKey] is a crypto.Signer that delegates to the signer of internal/openpgp,
+// guards its options, and verifies every signature with its public key. It is not a keystore.Key,
+// whose contract is P-384 with SHA-384. The store does not judge the history of the key (revoked,
+// expired, revoked by another key): the ceremony of the adoption does. The payload of an RSA-4096 key
+// is at most 1822 bytes against the cap of [MaxKeyFileSize].
+//
 // What an open costs depends on the work factor that the file says, and a file may say any factor
 // from 18 to 22. At 18 an open needs about 256 MiB of memory and about a second. At 22, the
 // highest, it needs about 4 GiB of memory and 7 to 9 seconds (measured), and it needs them at every
@@ -103,12 +126,15 @@
 //
 // Go does not promise that a secret that was in memory is cleared. The package clears the byte
 // buffers that it made (and that internal/openpgp made for it), the numbers of the private keys
-// that it parsed itself, the passphrase slices that a source gave it, and the scalar of a [Key]
-// when it is closed, and no more. The age library takes a passphrase as a string and keeps a copy
-// of its own: those two copies cannot be cleared from here. The plain key also passes through
+// that it parsed itself, the passphrase slices that a source gave it, the lone secret key packet that
+// [Store.SaveAdopted] made, and the scalar of a [Key] and the numbers of an [AdoptedKey] when it is
+// closed (through [openpgp.ForeignSecret.Wipe]), and no more. The age library takes a passphrase as
+// a string and keeps a copy of its own: those two copies cannot be cleared from here, and the
+// passphrase of an exported file is read by internal/openpgp from the slice that this package
+// clears after the call. The plain key also passes through
 // buffers of the age library (the chunks of its stream, 64 KiB each, which hold the payload as it
 // is written or read), and this package cannot clear those either. Out of its
-// reach are the copies inside crypto/ecdsa (the key keeps its scalar in its own memory, and a
+// reach are the copies inside crypto/rsa, crypto/ed25519 and crypto/ecdsa (the key keeps its scalar in its own memory, and a
 // slice that Bytes returned is that memory), the copies that crypto/x509, encoding/asn1,
 // encoding/pem and the OpenPGP reader of go-crypto made while they read the key, and the copies
 // that the garbage collector moved. The pages that the system swapped out are out of its reach

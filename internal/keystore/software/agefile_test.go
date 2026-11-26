@@ -809,7 +809,7 @@ func TestEachKeyAsksTheSourceOnceWithItsPurposeAndTheWrittenFilesAskForTheRootTh
 	if err := s.SaveRemoval("A", f.removal); err != nil {
 		t.Fatal(err)
 	}
-	want := []Purpose{{"A", FileX509}, {"A", FileOpenPGP}, {"A", FileRevocation}, {"A", FileRemoval}}
+	want := []Purpose{{Label: "A", File: FileX509}, {Label: "A", File: FileOpenPGP}, {Label: "A", File: FileRevocation}, {Label: "A", File: FileRemoval}}
 	if got := src.purposes(); !samePurposes(got, want) {
 		t.Fatalf("saves asked %v, want %v", got, want)
 	}
@@ -844,7 +844,7 @@ func samePurposes(a, b []Purpose) bool {
 
 func TestASourceThatAnswersPerKeyGivesEachFileItsOwnPassphrase(t *testing.T) {
 	lowWork(t)
-	src := &passSource{def: testPass, by: map[Purpose]string{{"A", FileOpenPGP}: testPass2}}
+	src := &passSource{def: testPass, by: map[Purpose]string{{Label: "A", File: FileOpenPGP}: testPass2}}
 	s, _, keys := openPassStore(t, src)
 	f := makeFourFiles(t)
 	if err := s.SaveX509("A", f.k); err != nil {
@@ -866,7 +866,7 @@ func TestASourceThatAnswersPerKeyGivesEachFileItsOwnPassphrase(t *testing.T) {
 		t.Errorf("open: %v", err)
 	}
 	// swapped: the passphrase of one is not the passphrase of the other
-	src.by = map[Purpose]string{{"A", FileX509}: testPass2}
+	src.by = map[Purpose]string{{Label: "A", File: FileX509}: testPass2}
 	if _, err := s.OpenX509(bg(), "A"); !errors.Is(err, ErrWrongPassphrase) {
 		t.Errorf("the other file's passphrase: %v", err)
 	}

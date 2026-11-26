@@ -152,10 +152,15 @@ func parsePKCS8(der []byte) (*ecdsa.PrivateKey, error) {
 	return priv, nil
 }
 
-// parseOpenPGP reads the transferable secret key of the page (see openpgp.ParseSecretKey).
+// parseOpenPGP reads the transferable secret key of the page (see openpgp.ParseSecretKey). A payload
+// that is the other form of an OpenPGP key file, the lone secret key packet of an adopted key, is
+// refused with a text that says so.
 func parseOpenPGP(secret []byte) (*ecdsa.PrivateKey, time.Time, []byte, error) {
 	priv, created, cert, err := openpgp.ParseSecretKey(secret)
 	if err != nil {
+		if isAdoptedForm(secret) {
+			return nil, time.Time{}, nil, refuse(ErrKeyFile, "the file holds an adopted key (a lone secret key packet), not a key that ritueel made (a transferable secret key with a user ID)")
+		}
 		return nil, time.Time{}, nil, fmt.Errorf("%w: the secret key packets are refused: %w", ErrKeyFile, err)
 	}
 	return priv, created, cert, nil

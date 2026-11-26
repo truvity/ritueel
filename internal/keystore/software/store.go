@@ -35,9 +35,12 @@ const (
 
 // PassphraseSource gives the passphrase of one key. It is the plug of the passphrase mode: the
 // store calls it once for each key that a call saves or opens (an X.509 key, an OpenPGP primary),
-// never twice for the same key in one call, and never keeps what it returns. A Config for a test
-// root must not set it. [ReaderSource] reads the passphrases from a reader, one line each; a
-// prompt at a terminal is the caller's to build.
+// never twice for the same key in one call, and never keeps what it returns. The one call that asks
+// twice is [Store.SaveAdopted] for an export that is protected: first for the passphrase of the
+// exported file (the role [Import]), then for the new passphrase of the key file (the role
+// [Choose]); the purpose says which. A Config for a test root must not set it. [ReaderSource] reads
+// the passphrases from a reader, one line each, in the order that the store asks; a prompt at a
+// terminal is the caller's to build.
 type PassphraseSource interface {
 	// Passphrase returns the passphrase of the key that p names. The bytes are the store's to
 	// clear after use; the slice must be a copy that the source does not keep.
@@ -405,35 +408,58 @@ func (s *Store) saveText(kind FileKind, label, reason string, payload []byte) er
 // one, so a store that was put together wrongly writes nothing and never puts a plain file under
 // an .age name. A file of the other mode in the folder is still an ErrWrongMode first.
 func (s *Store) write(kind FileKind, label, reason string, payload []byte, verify func(payload []byte) error, done func()) error {
-	sf, secret := s.format.(secretFormat)
-	name := fileName(s.mode, label, kind, reason)
-	if name == "" || fsx.CheckName(name) != nil {
-		return refuse(ErrParams, "the file name is not valid")
-	}
-	before, err := s.entries()
+	name, before, err := s.target(kind, label, reason)
 	if err != nil {
 		return err
 	}
+	return s.writeTo(context.Background(), name, before, Purpose{Label: label, File: kind, Role: KeyFile}, kind, payload, verify, done)
+}
+
+// target looks at the place of a file before anything is made for it: the name, the key directory,
+// the files of the other mode, the agreement of the mode with the format, and a file of that name.
+// A file that stands there is an [ErrKeyExists], and nothing has been asked or written. It returns
+// the name and the listing that it looked at. The caller holds the lock.
+func (s *Store) target(kind FileKind, label, reason string) (string, []fs.DirEntry, error) {
+	_, secret := s.format.(secretFormat)
+	name := fileName(s.mode, label, kind, reason)
+	if name == "" || fsx.CheckName(name) != nil {
+		return "", nil, refuse(ErrParams, "the file name is not valid")
+	}
+	before, err := s.entries()
+	if err != nil {
+		return "", nil, err
+	}
 	if err := noOtherMode(s.mode, keyFilesOf(before)); err != nil {
-		return err
+		return "", nil, err
 	}
 	if !modeAndFormatAgree(s.mode, secret) {
-		return refuse(ErrParams, "the mode of the store and its file format do not agree")
+		return "", nil, refuse(ErrParams, "the mode of the store and its file format do not agree")
 	}
 	// The name is looked at before a byte of the key goes to the disk: a writer that meets a file
 	// of that name has already made, flushed and closed a whole temporary file with the new key.
 	for _, e := range before {
 		if e.Name() == name {
 			s.stop = fmt.Errorf("%w: the file %s stands there: %w", ErrKeyExists, name, fs.ErrExist)
-			return s.stop
+			return "", nil, s.stop
 		}
 	}
+	return name, before, nil
+}
+
+// writeTo is the rest of [Store.write], after [Store.target]: the payload is held to the size, the
+// source is asked for the passphrase of p, the file is wrapped, written, read back, unwrapped and
+// checked. The passphrase of a passphrase root is asked once and serves the read back too.
+func (s *Store) writeTo(ctx context.Context, name string, before []fs.DirEntry, p Purpose, kind FileKind,
+	payload []byte, verify func(payload []byte) error, done func(),
+) error {
+	sf, secret := s.format.(secretFormat)
 	if len(payload) > MaxKeyFileSize {
 		return refuse(ErrKeyFile, "the key file would be longer than %d bytes", MaxKeyFileSize)
 	}
 	var pass []byte
+	var err error
 	if secret {
-		if pass, err = s.passphrase(context.Background(), Purpose{Label: label, File: kind}); err != nil {
+		if pass, err = s.passphrase(ctx, p); err != nil {
 			return err
 		}
 		defer clear(pass)
@@ -507,7 +533,8 @@ func (s *Store) verifyBack(sf secretFormat, pass []byte, kind FileKind, back []b
 	return verify(inner)
 }
 
-// passphrase asks the source for the passphrase of one key and checks it with [CheckPassphrase].
+// passphrase asks the source for the passphrase of one key and checks it with [CheckPassphraseFor]
+// for the role of p.
 // The slice that comes back is the caller's to clear. It is cleared here on every path that
 // returns an error.
 func (s *Store) passphrase(ctx context.Context, p Purpose) ([]byte, error) {
@@ -522,7 +549,7 @@ func (s *Store) passphrase(ctx context.Context, p Purpose) ([]byte, error) {
 		clear(pass)
 		return nil, fmt.Errorf("software: the source of passphrases gave none: %w", err)
 	}
-	if err := CheckPassphrase(pass); err != nil {
+	if err := CheckPassphraseFor(p.Role, pass); err != nil {
 		clear(pass)
 		return nil, err
 	}
