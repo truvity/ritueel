@@ -199,7 +199,10 @@ func (d *document) settings() (*Settings, error) {
 	}
 	if s.Personal {
 		for _, store := range s.Policy.Stores {
-			if !slices.Contains(personalStoreEnum, store) {
+			switch {
+			case store == "piv":
+				return nil, pol.fail("stores", "policy.stores holds piv, which is reserved for stage two (the new primaries on the root cards of a person), which is not built yet: a personal bundle has the stores "+strings.Join(personalStoreEnum, " and ")+" now")
+			case !slices.Contains(personalStoreEnum, store):
 				return nil, pol.fail("stores", "policy.stores holds "+store+", which a person's key cannot use: a personal bundle has the stores "+strings.Join(personalStoreEnum, " and "))
 			}
 		}

@@ -23,9 +23,9 @@ var (
 	kindEnum  = []string{"personal"}
 	storeEnum = []string{"piv", "openpgp-card", "aws-kms", "software"}
 	// personalStoreEnum are the stores of a personal bundle: the primary is a software key that the person adopts
-	// (record 0008, rule 6) and the subkeys are on an OpenPGP card (rule 9). A piv slot holds no key of a person
-	// (the road not taken in record 0008), and a primary in a cloud key service is not covered for a person yet
-	// (rule 8).
+	// (record 0008, rule 6) and the subkeys are on an OpenPGP card (rule 9). The store piv is reserved for stage
+	// two, which is not built: the two new primaries of a person are born on root cards, in their PIV application.
+	// A primary in a cloud key service is not covered for a person yet (rule 8).
 	personalStoreEnum = []string{"openpgp-card", "software"}
 	pinPolicyEnum     = []string{"never", "once", "always"}
 	typeEnum          = []string{TypeX509Intermediate, TypeOpenPGPSubkey, TypeSSHCAKey}

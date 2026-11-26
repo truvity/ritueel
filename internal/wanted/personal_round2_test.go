@@ -121,8 +121,12 @@ func TestAPersonalBundleHoldsOnlyTheStoresOfAPersonsKey(t *testing.T) {
 	for _, stores := range []string{"[openpgp-card]", "[software]", "[openpgp-card, software]"} {
 		mustSettings(t, with(stores))
 	}
-	for stores, word := range map[string]string{"[piv]": "piv", "[aws-kms]": "aws-kms", "[openpgp-card, aws-kms]": "aws-kms", "[software, piv]": "piv"} {
+	for stores, word := range map[string]string{"[aws-kms]": "aws-kms", "[openpgp-card, aws-kms]": "aws-kms"} {
 		_ = refuseSettings(t, with(stores), 5, "policy.stores holds "+word+", which a person's key cannot use", "openpgp-card and software")
+	}
+	// The store piv is reserved for stage two, like the roles published and standby.
+	for _, stores := range []string{"[piv]", "[software, piv]"} {
+		_ = refuseSettings(t, with(stores), 5, "policy.stores holds piv, which is reserved for stage two", "which is not built yet")
 	}
 	// A company bundle keeps all four.
 	mustSettings(t, goodSettings)
