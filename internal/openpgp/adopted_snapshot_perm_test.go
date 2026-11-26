@@ -5,7 +5,6 @@ import (
 	"crypto/sha256"
 	"reflect"
 	"slices"
-	"sort"
 	"testing"
 	"time"
 
@@ -33,20 +32,13 @@ func qaPermutations[T any](s []T, f func([]T)) {
 	rec(0)
 }
 
-// qaOrderFree returns the snapshot with the user IDs and the subkeys in a fixed order, which is the one thing
-// of it that is the order of the file.
-func qaUsersByText(k *openpgp.ForeignKey) []openpgp.SnapUser {
-	u := openpgp.SnapshotUsers(k)
-	sort.Slice(u, func(i, j int) bool { return u[i].Text < u[j].Text })
-	return u
-}
-
 func TestQASnapshotDoesNotDependOnAnyOrderOfTheFile(t *testing.T) {
 	b := fkNamed(t, "ed25519")
 	w := fkWriter{b}
 	sp := fkSubpacket
 	life := func(days uint32) []byte { return sp(9, true, fkU32(days*86400)...) }
 	flags := func(f byte) []byte { return sp(27, false, f) }
+	enc, _, _ := fkDonors(t)
 	const A, B, C = "Alpha Person <alpha@example.org>", "Bravo Person <bravo@example.org>", "Charlie Person <charlie@example.org>"
 
 	// four self-signatures of one user ID: two strong in one second with other ends, a strong one in the same
@@ -68,6 +60,31 @@ func TestQASnapshotDoesNotDependOnAnyOrderOfTheFile(t *testing.T) {
 		qaKeySig(t, w, 0x1F, 8, 1200, life(20)),
 		qaKeySig(t, w, 0x1F, 8, 1200),
 	}
+	// two subkeys, one of them with two bindings in one second
+	bind := func(d fkDonorKey, at int, f byte) fkPacket {
+		return fkPacket{2, w.sign(t, "sub", 0x18, w.areas(at, flags(f)), nil, 8, sha256.New, d.pub.Body)}
+	}
+	subs := [][]fkPacket{
+		{enc[0].pub, bind(enc[0], 1000, 0x0C), bind(enc[0], 1000, 0x04)},
+		{enc[1].pub, bind(enc[1], 1000, 0x0C)},
+	}
+	build := func(ks [][]byte, blocks []qaUserBlock, ss [][]fkPacket) []byte {
+		head := fkTemplateHead(t, b.file(t, fkProt{}))
+		ps := []fkPacket{head[0]}
+		for _, s := range ks {
+			ps = append(ps, fkPacket{2, s})
+		}
+		for _, u := range blocks {
+			ps = append(ps, fkPacket{13, []byte(u.text)})
+			for _, s := range u.sigs {
+				ps = append(ps, fkPacket{2, s})
+			}
+		}
+		for _, s := range ss {
+			ps = append(ps, s...)
+		}
+		return fkJoin(ps...)
+	}
 
 	var first *openpgp.ForeignKey
 	var firstCert []byte
@@ -76,55 +93,64 @@ func TestQASnapshotDoesNotDependOnAnyOrderOfTheFile(t *testing.T) {
 		qaPermutations(userSigs, func(us [][]byte) {
 			blocks := []qaUserBlock{{A, us}, others[0], others[1]}
 			qaPermutations(blocks, func(bs []qaUserBlock) {
-				k := fkRead(t, qaFile(t, b, ks, bs...))
-				files++
-				kc, err := qaReadCert(k.Certificate())
-				if err != nil {
-					t.Fatalf("the certificate of an order is refused: %v", err)
-				}
-				if !qaSnapshotEqual(k, kc) {
-					t.Fatal("the snapshot of a certificate is not the snapshot of its export")
-				}
-				if first == nil {
-					first, firstCert = k, k.Certificate()
-					return
-				}
-				if string(k.Certificate()) != string(firstCert) {
-					differentCerts++
-				}
-				a, c := first, k
-				if !reflect.DeepEqual(openpgp.SnapshotKey(a), openpgp.SnapshotKey(c)) {
-					t.Fatalf("the key level depends on the order:\n%+v\n%+v", openpgp.SnapshotKey(a), openpgp.SnapshotKey(c))
-				}
-				if !reflect.DeepEqual(qaUsersByText(a), qaUsersByText(c)) {
-					t.Fatalf("a user ID depends on the order:\n%+v\n%+v", qaUsersByText(a), qaUsersByText(c))
-				}
+				qaPermutations(subs, func(ss [][]fkPacket) {
+					k := fkRead(t, build(ks, bs, ss))
+					files++
+					kc, err := qaReadCert(k.Certificate())
+					if err != nil {
+						t.Fatalf("the certificate of an order is refused: %v", err)
+					}
+					if !qaSnapshotEqual(k, kc) || !reflect.DeepEqual(k.SigningBasis(), kc.SigningBasis()) {
+						t.Fatal("the snapshot of a certificate is not the snapshot of its export")
+					}
+					if first == nil {
+						first, firstCert = k, k.Certificate()
+						return
+					}
+					if string(k.Certificate()) != string(firstCert) {
+						differentCerts++
+					}
+					if !qaSnapshotEqual(first, k) {
+						t.Fatalf("the snapshot depends on the order:\n%+v\n%+v", openpgp.SnapshotOf(first), openpgp.SnapshotOf(k))
+					}
+					if !reflect.DeepEqual(first.SigningBasis(), k.SigningBasis()) {
+						t.Fatal("the description of the basis depends on the order")
+					}
+					p1, ok1 := openpgp.SnapshotPrimaryUserID(first)
+					p2, ok2 := openpgp.SnapshotPrimaryUserID(k)
+					if p1 != p2 || ok1 != ok2 {
+						t.Fatalf("the primary user ID depends on the order: %q and %q", p1, p2)
+					}
+				})
 			})
 		})
 	})
-	t.Logf("%d orders of the signatures and the user IDs: one snapshot (the user IDs by text), %d certificates that differ", files, differentCerts)
-	if files != 6*24*6 || differentCerts < files/2 {
+	t.Logf("%d orders of the signatures, the user IDs and the subkeys: one snapshot, one basis, one primary; %d certificates that differ", files, differentCerts)
+	if files != 6*24*6*2 || differentCerts < files/2 {
 		t.Errorf("%d files and %d different certificates: the permutations are not what they should be", files, differentCerts)
 	}
-	// what the one answer is: the earlier end wins the tie of the user ID, the smaller bytes the tie that is left
-	u := qaUsersByText(first)[0]
+	// what the one answer is: the earlier end wins the tie of the user ID, the smaller bytes the tie that is left, and
+	// the tie is marked
+	u := openpgp.SnapshotUsers(first)[0]
 	t.Logf("the answer for the user ID with four signatures in one second: %+v", u)
-	if u.Text != A || u.Expires.Sub(fkEpoch) != 10*86400*time.Second || !u.Signed.Equal(fkAt(1000)) {
+	if u.Text != A || u.Expires.Sub(fkEpoch) != 10*86400*time.Second || !u.Signed.Equal(fkAt(1000)) || !u.Tied {
 		t.Errorf("the user ID of the answer: %+v", u)
 	}
 	if e := openpgp.SnapshotKey(first).Expiry; !e.Any || e.Agree || e.Marked || e.Earliest.Sub(fkEpoch) != 10*86400*time.Second {
 		t.Errorf("the end of the key of the answer: %+v", e)
 	}
-	// the order of the user IDs in the snapshot is the order of the file, and nothing else of it is
-	k1 := fkRead(t, qaFile(t, b, keySigs, others[0], others[1]))
-	k2 := fkRead(t, qaFile(t, b, keySigs, others[1], others[0]))
-	switch {
-	case qaSnapshotEqual(k1, k2):
-		t.Error("two orders of the user IDs give the same list: the test no longer says what the list is")
-	case !reflect.DeepEqual(qaUsersByText(k1), qaUsersByText(k2)) || !reflect.DeepEqual(openpgp.SnapshotKey(k1), openpgp.SnapshotKey(k2)):
-		t.Error("two orders of the user IDs say different things")
-	default:
-		t.Log("FINDING: the list of the user IDs of the snapshot is in the order of the file; each user ID and the key level are not")
+	if !openpgp.SnapshotKey(first).DirectTied {
+		t.Error("three direct-key signatures in one second are not marked as tied")
+	}
+	if p, ok := openpgp.SnapshotPrimaryUserID(first); !ok || p != B {
+		t.Errorf("the primary user ID is %q (%v), want the flagged one, %q", p, ok, B)
+	}
+	var tiedSubs []bool
+	for _, s := range openpgp.SnapshotSubkeys(first) {
+		tiedSubs = append(tiedSubs, s.Tied)
+	}
+	if len(tiedSubs) != 2 || tiedSubs[0] == tiedSubs[1] {
+		t.Errorf("only the subkey with two bindings in one second is tied: %v", tiedSubs)
 	}
 }
 
@@ -213,6 +239,77 @@ func TestQAExpiryAnswerAtItsEdges(t *testing.T) {
 	}
 }
 
+// UncountedClaims also counts the claims that the reader could not read at all: no creation time, two of them, one of
+// three bytes, a field twice, a version it does not take. Each is pinned with the time that it gives, when it gives one.
+func TestQAUncountedClaimsCountTheOnesThatCannotBeRead(t *testing.T) {
+	b := fkNamed(t, "ed25519")
+	w := fkWriter{b}
+	sp := fkSubpacket
+	issuer := sp(33, false, append([]byte{4}, b.ent.PrimaryKey.Fingerprint...)...)
+	good := qaUserSig(t, w, fkUser, 0x13, 8, 1000)
+	creation := func(at int) []byte { return sp(2, false, fkU32(uint32(fkAt(at).Unix()))...) }
+	user := func(hashed ...[]byte) []byte {
+		var h []byte
+		for _, p := range hashed {
+			h = append(h, p...)
+		}
+		return w.sign(t, "user", 0x13, h, nil, 8, sha256.New, []byte(fkUser))
+	}
+	direct := func(hashed ...[]byte) []byte {
+		var h []byte
+		for _, p := range hashed {
+			h = append(h, p...)
+		}
+		return w.sign(t, "key", 0x1F, h, nil, 8, sha256.New, nil)
+	}
+	for _, c := range []struct {
+		name   string
+		keys   [][]byte
+		sig    []byte
+		n      int
+		newest int // seconds, 0 for none
+	}{
+		{"no creation time", nil, user(issuer), 1, 0},
+		{"two creation times", nil, user(creation(1500), creation(1600), issuer), 1, 0},
+		{"a creation time of three bytes", nil, user(sp(2, false, 1, 2, 3), issuer), 1, 0},
+		{"a key expiration twice", nil, user(creation(1500), sp(9, true, fkU32(5)...), sp(9, true, fkU32(6)...), issuer), 1, 1500},
+		{"a key flags subpacket with no octet", nil, user(creation(1500), sp(27, false), issuer), 1, 1500},
+		{"a primary flag of two octets", nil, user(creation(1500), sp(25, false, 1, 1), issuer), 1, 1500},
+		{"a direct-key signature with no creation time", [][]byte{direct(issuer)}, nil, 1, 0},
+		{"a direct-key signature with a field twice", [][]byte{direct(creation(1700), sp(3, false, fkU32(5)...), sp(3, false, fkU32(5)...), issuer)}, nil, 1, 1700},
+		{"no issuer at all", nil, user(creation(1500)), 0, 0},
+	} {
+		t.Run(c.name, func(t *testing.T) {
+			sigs := [][]byte{good}
+			if c.sig != nil {
+				sigs = append(sigs, c.sig)
+			}
+			k := fkRead(t, qaFile(t, b, c.keys, qaUserBlock{fkUser, sigs}))
+			want := time.Time{}
+			if c.newest != 0 {
+				want = fkAt(c.newest)
+			}
+			if k.UncountedClaims != c.n || !k.UncountedClaimsNewest.Equal(want) {
+				t.Errorf("%d claims, newest %v; pinned %d, %v", k.UncountedClaims, k.UncountedClaimsNewest, c.n, want)
+			}
+		})
+	}
+	// a version that is not 4 (3 and 5): the signature is not read
+	for _, v := range []byte{3, 5, 6} {
+		bad := bytes.Clone(good)
+		bad[0] = v
+		k, err := openpgp.ReadForeignKey(qaFile(t, b, nil, qaUserBlock{fkUser, [][]byte{good, bad}}))
+		if err != nil {
+			t.Logf("version %d: the file is refused: %v", v, err)
+			continue
+		}
+		t.Logf("version %d: %d claims not counted, newest %v", v, k.UncountedClaims, k.UncountedClaimsNewest)
+		if k.UncountedClaims > 1 {
+			t.Errorf("version %d: %d claims", v, k.UncountedClaims)
+		}
+	}
+}
+
 // UncountedClaims covers the certifications of the user IDs and the direct-key signatures that the primary
 // claims and the reader does not count. It does NOT cover a subkey binding, a user attribute signature or a
 // key revocation: those are pinned here as they are, so that a change to the field shows.
@@ -269,5 +366,67 @@ func TestQAUncountedClaimsCoverOnlyCertificationsAndDirectKeySignatures(t *testi
 	k := fkRead(t, qaFile(t, b, [][]byte{md5("key", 0x1F, 1300, nil)}, ids...))
 	if k.UncountedClaims != 3 || !k.UncountedClaimsNewest.Equal(fkAt(2200)) || len(openpgp.SnapshotUsers(k)) != 1 {
 		t.Errorf("the claims on several user IDs: %d, newest %v", k.UncountedClaims, k.UncountedClaimsNewest)
+	}
+}
+
+// Which user ID is THE primary one: among the live user IDs that carry the primary flag, the newest source, a
+// tie by the smaller text; none flagged, the live one with the newest source, a tie in the same way; none live,
+// none. The rule is held for every order of the user IDs in the file.
+func TestQAPrimaryUserIDRule(t *testing.T) {
+	b := fkNamed(t, "ed25519")
+	w := fkWriter{b}
+	prim := fkSubpacket(25, false, 1)
+	const A, B, C = "Alpha Person <alpha@example.org>", "Bravo Person <bravo@example.org>", "Charlie Person <charlie@example.org>"
+	cert := func(text string, at int, flagged bool) []byte {
+		if flagged {
+			return qaUserSig(t, w, text, 0x13, 8, at, prim)
+		}
+		return qaUserSig(t, w, text, 0x13, 8, at)
+	}
+	revoke := func(text string, at int) []byte { return qaUserSig(t, w, text, 0x30, 8, at, fkReasonSub(32)) }
+	for _, c := range []struct {
+		name   string
+		blocks []qaUserBlock
+		want   string // empty: none
+	}{
+		{"two flagged: the newest source", []qaUserBlock{{A, [][]byte{cert(A, 1000, true)}}, {B, [][]byte{cert(B, 1100, true)}}}, B},
+		{"two flagged in one second: the smaller text", []qaUserBlock{{B, [][]byte{cert(B, 1000, true)}}, {A, [][]byte{cert(A, 1000, true)}}}, A},
+		{"three flagged, the newest in the middle", []qaUserBlock{{A, [][]byte{cert(A, 1000, true)}}, {C, [][]byte{cert(C, 1200, true)}}, {B, [][]byte{cert(B, 1100, true)}}}, C},
+		{"none flagged: the newest source", []qaUserBlock{{A, [][]byte{cert(A, 1000, false)}}, {B, [][]byte{cert(B, 1100, false)}}}, B},
+		{"none flagged, in one second: the smaller text", []qaUserBlock{{B, [][]byte{cert(B, 1000, false)}}, {A, [][]byte{cert(A, 1000, false)}}}, A},
+		{"one flagged and older, one unflagged and newer: the flagged one", []qaUserBlock{{A, [][]byte{cert(A, 1000, true)}}, {B, [][]byte{cert(B, 1100, false)}}}, A},
+		{"the flag is in the newest signature only", []qaUserBlock{{A, [][]byte{cert(A, 1000, true), cert(A, 1100, false)}}, {B, [][]byte{cert(B, 1050, false)}}}, A},
+		{"the flagged one is revoked: the newest live one", []qaUserBlock{{A, [][]byte{cert(A, 1000, true), revoke(A, 1200)}}, {B, [][]byte{cert(B, 1100, false)}}}, B},
+		{"the newer flagged one is revoked: the older flagged one", []qaUserBlock{{A, [][]byte{cert(A, 1000, true)}}, {B, [][]byte{cert(B, 1100, true), revoke(B, 1200)}}}, A},
+		{"all revoked: none", []qaUserBlock{{A, [][]byte{cert(A, 1000, true), revoke(A, 1200)}}, {B, [][]byte{cert(B, 1100, false), revoke(B, 1300)}}}, ""},
+		{"one user ID, unflagged", []qaUserBlock{{A, [][]byte{cert(A, 1000, false)}}}, A},
+	} {
+		t.Run(c.name, func(t *testing.T) {
+			qaPermutations(c.blocks, func(bs []qaUserBlock) {
+				k := fkRead(t, qaFile(t, b, nil, bs...))
+				for door, key := range map[string]*openpgp.ForeignKey{"export": k, "certificate": func() *openpgp.ForeignKey {
+					kc, err := qaReadCert(k.Certificate())
+					if err != nil {
+						t.Fatal(err)
+					}
+					return kc
+				}()} {
+					got, ok := openpgp.SnapshotPrimaryUserID(key)
+					if got != c.want || ok != (c.want != "") {
+						t.Errorf("%s: the primary user ID is %q (%v), want %q", door, got, ok, c.want)
+					}
+					marked := ""
+					n := 0
+					for _, u := range key.SigningBasis().UserIDs {
+						if u.IsPrimary {
+							marked, n = u.Text, n+1
+						}
+					}
+					if marked != c.want || n > 1 || (c.want != "" && n != 1) {
+						t.Errorf("%s: the basis marks %q (%d), want %q", door, marked, n, c.want)
+					}
+				}
+			})
+		})
 	}
 }

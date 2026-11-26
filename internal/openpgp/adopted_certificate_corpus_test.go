@@ -155,7 +155,7 @@ func mustDonor(t testing.TB) []byte {
 
 // qaReadCert reads a certificate against its own digest, which is what a caller that holds the right digest does.
 func qaReadCert(cert []byte) (*openpgp.ForeignKey, error) {
-	return openpgp.ReadForeignCertificate(cert, sha256.Sum256(cert))
+	return openpgp.ReadForeignCertificate(cert, fkDigestOf(cert))
 }
 
 // qaSnapshotEqual compares two snapshots with the exported views of the tests.

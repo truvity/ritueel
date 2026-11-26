@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"crypto"
 	"crypto/rand"
-	"crypto/sha256"
 	"errors"
 	"io"
 	"strings"
@@ -21,7 +20,11 @@ import (
 
 // qaDigestRefusal checks that a read with a digest that is not the certificate's is an ErrAdoptedCertificate
 // that names the digest and not the packets.
-func qaDigestRefusal(t testing.TB, what string, cert []byte, digest [32]byte) {
+// fkDigestOf is the digest of bytes as a record holds it, for a test that wants to hand the reader a digest
+// that is not the certificate's.
+func fkDigestOf(b []byte) openpgp.HeldDigest { return fkDigest(b) }
+
+func qaDigestRefusal(t testing.TB, what string, cert []byte, digest openpgp.HeldDigest) {
 	t.Helper()
 	k, err := openpgp.ReadForeignCertificate(cert, digest)
 	if k != nil || !errors.Is(err, openpgp.ErrAdoptedCertificate) || !errors.Is(err, openpgp.ErrForeignKey) {
@@ -38,8 +41,7 @@ func qaDigestRefusal(t testing.TB, what string, cert []byte, digest [32]byte) {
 func TestQAWrongDigestIsRefusedBeforeAnyParsing(t *testing.T) {
 	b := fkNamed(t, "ed25519")
 	ps := fkSplit(t, fkRead(t, b.plain).Certificate())
-	var wrong [32]byte
-	wrong[0] = 1
+	wrong := fkDigestOf([]byte("not the certificate"))
 
 	// a body that the parser refuses by name, for each name that only the parser can give
 	many := append(fkJoin(ps[:2]...), bytes.Repeat(fkJoin(ps[2]), openpgp.MaxForeignPackets)...)
@@ -53,7 +55,7 @@ func TestQAWrongDigestIsRefusedBeforeAnyParsing(t *testing.T) {
 	} {
 		qaDigestRefusal(t, name+" against a wrong digest", body, wrong)
 		// with its own digest the same body is refused by the parser: not the digest
-		_, err := openpgp.ReadForeignCertificate(body, sha256.Sum256(body))
+		_, err := openpgp.ReadForeignCertificate(body, fkDigestOf(body))
 		if err == nil || strings.Contains(err.Error(), "SHA-256 of the certificate") {
 			t.Errorf("%s against its own digest: %v", name, err)
 		}
@@ -92,9 +94,9 @@ func TestQAWrongDigestIsRefusedBeforeAnyParsing(t *testing.T) {
 	cert := fkJoin(ps...)
 	other := bytes.Clone(cert)
 	other[len(other)-1] ^= 1
-	qaDigestRefusal(t, "the digest of a certificate with a bit changed", cert, sha256.Sum256(other))
-	qaDigestRefusal(t, "the digest of a prefix", cert, sha256.Sum256(cert[:len(cert)-1]))
-	if k, err := openpgp.ReadForeignCertificate(cert, sha256.Sum256(cert)); err != nil || k == nil {
+	qaDigestRefusal(t, "the digest of a certificate with a bit changed", cert, fkDigestOf(other))
+	qaDigestRefusal(t, "the digest of a prefix", cert, fkDigestOf(cert[:len(cert)-1]))
+	if k, err := openpgp.ReadForeignCertificate(cert, fkDigestOf(cert)); err != nil || k == nil {
 		t.Errorf("the certificate against its digest: %v", err)
 	}
 }
@@ -110,7 +112,7 @@ func TestQARightDigestStillNeedsTheFixpoint(t *testing.T) {
 			"a cut one":        fkJoin(ps...)[:len(fkJoin(ps...))-1],
 			"a bit changed":    append(fkJoin(ps...)[:len(fkJoin(ps...))-1], fkJoin(ps...)[len(fkJoin(ps...))-1]^1),
 		} {
-			k, err := openpgp.ReadForeignCertificate(bad, sha256.Sum256(bad))
+			k, err := openpgp.ReadForeignCertificate(bad, fkDigestOf(bad))
 			if k != nil || !errors.Is(err, openpgp.ErrForeignKey) {
 				t.Errorf("%s with its own digest: %v", name, err)
 			}
@@ -153,8 +155,8 @@ func qaStrip(t testing.TB, b *fkBase, file []byte, cut func(i int, p fkPacket) b
 		t.Fatal("the stripped certificate is not read as it stands")
 	}
 	// against the digest of the whole one it is refused: the digest, not the fixpoint, carries it
-	qaDigestRefusal(t, "the stripped certificate against the digest of the whole one", short, sha256.Sum256(whole))
-	if _, err := openpgp.ReadForeignCertificate(whole, sha256.Sum256(whole)); err != nil {
+	qaDigestRefusal(t, "the stripped certificate against the digest of the whole one", short, fkDigestOf(whole))
+	if _, err := openpgp.ReadForeignCertificate(whole, fkDigestOf(whole)); err != nil {
 		t.Fatalf("the whole certificate: %v", err)
 	}
 	return qaStripCase{whole, short, k, ks}

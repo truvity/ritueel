@@ -401,10 +401,11 @@ func TestQAReadForeignCertificatePermutedBlocksAreKept(t *testing.T) {
 	if !bytes.Equal(k.Certificate(), fkJoin(swapped...)) {
 		t.Error("not the input")
 	}
-	if got, want := openpgp.SnapshotUsers(k)[0].Text, openpgp.SnapshotUsers(k0)[1].Text; got != want {
-		t.Errorf("the first user ID of the snapshot is %q, want the second of the original, %q", got, want)
+	// the certificate keeps the order of its input; the snapshot does not depend on it
+	if !qaSnapshotEqual(k, k0) {
+		t.Error("the snapshot of the certificate with two blocks swapped is not the snapshot of the original")
 	}
-	t.Logf("the order of the user ID blocks of an accepted certificate is the input's: a permutation of blocks is a fixpoint")
+	t.Logf("the order of the user ID blocks of an accepted certificate is the input's: a permutation of blocks is a fixpoint, and the snapshot is the same")
 }
 
 // The wrong door: an export to the reader of certificates, a certificate to the reader of exports, the secret of a
