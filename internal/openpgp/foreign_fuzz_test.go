@@ -9,6 +9,7 @@ import (
 	"crypto/rsa"
 	"crypto/sha256"
 	"errors"
+	"fmt"
 	"io"
 	"strings"
 	"testing"
@@ -106,6 +107,10 @@ func FuzzForeignReadKey(f *testing.F) {
 			}
 		}
 	}
+	// secret subkeys in every form, and the subkeys of a stretched length field
+	for _, c := range fkCraftedSeeds(f) {
+		f.Add(c)
+	}
 	f.Add([]byte{})
 	f.Add([]byte{0xC5, 0xE0})
 	f.Add([]byte{0x80 | 5<<2 | 3})
@@ -171,6 +176,7 @@ func FuzzForeignReadKey(f *testing.F) {
 		if bytes.Equal(cert, k.Certificate()) {
 			t.Fatal("Certificate does not return a copy")
 		}
+		cert = k.Certificate()
 
 		// no secret region of the input is in the certificate, unless a packet that is copied holds it
 		if packets := fkDecoded(in); packets != nil {
@@ -206,6 +212,13 @@ func FuzzForeignReadKey(f *testing.F) {
 					region := bodies[i][len(cb):]
 					if len(region) >= 8 && bytes.Contains(cert, region) && !bytes.Contains(kept, region) {
 						t.Fatalf("the certificate holds the secret region of a key packet")
+					}
+					// and no run of it beyond its first two bytes, unless the public part or a packet
+					// that is copied holds the same run
+					if len(region) > 2 {
+						if where, bad := fkLeaksExcept(cert, append(bytes.Clone(kept), bodies[i][:len(cb)]...), region[2:]); bad {
+							t.Fatalf("the certificate holds a run of the secret region of a key packet (%s)", where)
+						}
 					}
 				}
 			}
@@ -307,4 +320,115 @@ func fkSignAndVerifyQuiet(t *testing.T, s crypto.Signer, pk *gpacket.PublicKey) 
 			t.Fatal("the signature does not verify")
 		}
 	}
+}
+
+// fkLeaksExcept is fkLeaks for the fuzz targets: a run of twelve bytes of the data that is in hay and not
+// in except, where the run is not a run of one or two values (a block of zeros stands in many packets).
+func fkLeaksExcept(hay, except, data []byte) (string, bool) {
+	const w = 12
+	for j := 0; j+w <= len(data); j++ {
+		run := data[j : j+w]
+		seen := map[byte]bool{}
+		for _, c := range run {
+			seen[c] = true
+		}
+		if len(seen) < 4 {
+			continue
+		}
+		if bytes.Contains(hay, run) && !bytes.Contains(except, run) {
+			return fmt.Sprintf("offset %d", j), true
+		}
+	}
+	return "", false
+}
+
+// fkCraftedSeeds are files with a secret subkey whose public part has a length field that claims more
+// than it has, and the same subkeys as they are, for each algorithm.
+func fkCraftedSeeds(f *testing.F) [][]byte {
+	b := fkNamed(f, "ed25519")
+	enc, sig, _ := fkDonors(f)
+	var out [][]byte
+	for _, usage := range []byte{0, 254, 255} {
+		for _, s := range []fkSubSecret{
+			fkRSASub(f, 3, usage), fkRSASub(f, 257, usage), fkRSASub(f, 65537, usage),
+			fkFakeSub(f, 17, usage), fkFakeSub(f, 16, usage),
+			fkRealSub(f, "ECDH", enc[0].pub, enc[0].sec, usage, 6, 33, true),
+			fkRealSub(f, "EdDSA", sig[0].pub, sig[0].sec, usage, 6, 33, false),
+		} {
+			out = append(out, fkCraftedFile(f, b, s.body))
+			for _, k := range []int{1, 3, 8} {
+				out = append(out, fkCraftedFile(f, b, s.stretch(s.last, k)))
+			}
+		}
+	}
+	return out
+}
+
+// The third target: a valid file with a secret subkey, of which only the bytes of the public part of the
+// subkey packet are mutated (its version, time, algorithm and length fields and numbers). Whatever the
+// reader makes of it, the certificate holds no run of the secret area that follows, except a run that the
+// public part itself holds.
+func FuzzForeignSubkeyPublicPart(f *testing.F) {
+	b := fkNamed(f, "ed25519")
+	enc, sig, _ := fkDonors(f)
+	var areas [][]byte
+	var pubs [][]byte
+	for _, usage := range []byte{0, 254, 255} {
+		for _, s := range []fkSubSecret{
+			fkRSASub(f, 3, usage), fkRSASub(f, 17, usage), fkRSASub(f, 257, usage), fkRSASub(f, 65537, usage),
+			fkFakeSub(f, 17, usage), fkFakeSub(f, 16, usage),
+			fkRealSub(f, "ECDH", enc[0].pub, enc[0].sec, usage, 6, 33, true),
+			fkRealSub(f, "EdDSA", sig[0].pub, sig[0].sec, usage, 6, 33, false),
+		} {
+			areas = append(areas, bytes.Clone(s.area()))
+			pubs = append(pubs, bytes.Clone(s.body[:s.pubLen]))
+		}
+	}
+	for i := range areas {
+		f.Add(pubs[i], uint8(i))
+		// the length field at the end raised by one to eight bytes
+		for _, k := range []int{1, 2, 3, 8} {
+			p := bytes.Clone(pubs[i])
+			if len(p) > 8 {
+				// the last MPI header: found from its end by the caller of the seed, not known here, so the
+				// header of the first number is stretched too
+				bits := int(p[6])<<8 | int(p[7]) + 8*k
+				p[6], p[7] = byte(bits>>8), byte(bits)
+			}
+			f.Add(p, uint8(i))
+		}
+	}
+	head := fkTemplateHead(f, b.file(f, fkProt{}))
+	f.Fuzz(func(t *testing.T, pub []byte, sel uint8) {
+		area := areas[int(sel)%len(areas)]
+		body := append(bytes.Clone(pub), area...)
+		file := fkJoin(append(slicesClone(head), fkPacket{7, body})...)
+		k, err := openpgp.ReadForeignKey(file)
+		if err != nil {
+			if k != nil || !errors.Is(err, openpgp.ErrForeignKey) {
+				t.Fatalf("an error that is not a refusal of the file, or a key with it: %v", err)
+			}
+			fkPlainText(t, err)
+			return
+		}
+		cert := k.Certificate()
+		_, bodies, ok := softPackets(cert)
+		if !ok {
+			t.Fatal("the certificate is not whole packets")
+		}
+		sub := bodies[len(bodies)-1]
+		if len(k.Subkeys) == 1 && k.Subkeys[0].Form != openpgp.SubkeyPublic {
+			if !bytes.HasPrefix(body, sub) {
+				t.Fatal("the subkey of the certificate is not the start of the secret subkey packet")
+			}
+			if len(sub) > len(pub)+2 && len(sub) > len(body) {
+				t.Fatal("the subkey of the certificate is longer than its packet")
+			}
+		}
+		if len(area) > 2 {
+			if where, bad := fkLeaksExcept(cert, pub, area[2:]); bad {
+				t.Fatalf("the certificate holds a run of the secret area (%s)", where)
+			}
+		}
+	})
 }
