@@ -49,6 +49,23 @@
 // [ErrCertificateForm], [ErrSignatureFile], [ErrRevocation] and [ErrRevocationReason] (also an
 // ErrRevocation). The readers open no file, read no clock and start no program.
 //
+// It reads a key that ritueel did not make, for the adoption of a person's own primary (record 0008,
+// rule 5): [ReadForeignKey] reads the file of one exported secret key, binary or one armour block,
+// with its whole public history, and tells what it holds without a passphrase: the public
+// certificate as binary packets with the secret turned into public key packets ([ForeignKey.Certificate]),
+// the primary, each user ID with its self-signatures, each subkey with its form (public, stub or with
+// a secret) and its binding, the direct-key signatures and revocations, and the count of
+// certifications by other keys. [ForeignKey.OpenSecret] opens the secret of the primary only, with the
+// passphrase of the file, and returns a standard-library private key ([ForeignSecret]). The secret
+// of a subkey is never decrypted or kept. Unlike [ParseSecretKey] and [ReadKeyring], which guard the
+// keys that ritueel makes and stay narrow, this reader takes the shapes of a long-lived key (many
+// user IDs, subkeys, signatures), each held to a named limit, and refuses everything else by name:
+// the faults are an [ErrForeignKey] with narrower kinds, and a wrong passphrase is an
+// [ErrWrongPassphrase]. It uses go-crypto to read public keys and to verify signatures; it reads
+// the framing, the armour, the S2K and the secret numbers itself, so that every buffer that held
+// the passphrase or the secret is one that it clears. The reader opens no file, reads no clock and
+// starts no program.
+//
 // A user ID has the one shape of the page, and each part of it follows the rule of its key in
 // ritueel.yaml, so that no text of a caller can add a character that a person cannot read or an
 // address that the user ID does not show.
