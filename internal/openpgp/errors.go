@@ -25,7 +25,8 @@ var (
 	// or that does not verify. It is also an [ErrRequest].
 	ErrBackSignature error = &kindError{"openpgp: the back-signature is refused", ErrRequest}
 	// ErrSignature marks a signature that the signer returned and that does not verify, or a
-	// finished packet that does not read back as it was built. Nothing is returned with it.
+	// finished packet that does not read back as it was built. Nothing is returned with it. When the
+	// signer itself failed, its error is wrapped too, so that errors.Is finds it (ErrSecretWiped, for one).
 	ErrSignature = errors.New("openpgp: the signature does not verify")
 )
 
