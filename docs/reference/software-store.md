@@ -5,15 +5,15 @@ sidebar:
   order: 16
 ---
 
-*Partly built. The package `internal/keystore/software` is library code: it keeps a key in a key file that has a passphrase (an age file with one scrypt recipient) and, for a test root only, in a plain key file marked TEST ONLY. No command uses it yet; the commands come with M2 ([issue #8](https://github.com/truvity/ritueel/issues/8)). The card way, the recovery key, 1Password ([issue #59](https://github.com/truvity/ritueel/issues/59)) and the OS keyring ([issue #60](https://github.com/truvity/ritueel/issues/60)) are not built; the last two are M7. The reasons are in [record 0002](../decisions/0002-where-a-key-lives.md); the facts behind the choices are in [the research](/research/software-key-backends-2026-11-01/).*
+*Partly built. The package `internal/keystore/software` is library code: it keeps a key in a key file that has a passphrase (an age file with one scrypt recipient). No command uses it: the keys of a test root are made through the key port of [atoom](https://github.com/truvity/atoom), with atoom's software driver, in the folder `test-only-keys` ([the bundle](/reference/bundle/#the-software-roots-key-files)). The card way, the recovery key, 1Password ([issue #59](https://github.com/truvity/ritueel/issues/59)) and the OS keyring ([issue #60](https://github.com/truvity/ritueel/issues/60)) are not built; the last two are M7. The reasons are in [record 0002](../decisions/0002-where-a-key-lives.md); the facts behind the choices are in [the research](/research/software-key-backends-2026-11-01/).*
 
-A software key has no evidence of where it lives and can be copied ([what a key store can prove](/learn/what-a-store-can-prove/)). The backend decides where the bytes sit between ceremonies. In every backend the key is generated in memory and written straight into its backend, never to a file on disk. A test root is the one exception: its key files are plain and marked TEST ONLY.
+A software key has no evidence of where it lives and can be copied ([what a key store can prove](/learn/what-a-store-can-prove/)). The backend decides where the bytes sit between ceremonies. In every backend the key is generated in memory and written straight into its backend, never to a file on disk. A test root is the one exception: its keys are plain files in the folder `test-only-keys`.
 
 ## The backends
 
 | Backend | May hold | Never holds | Platforms |
 |---|---|---|---|
-| `file`: an age-encrypted key file, opened by a passkey on each card named as a way to open it (the root cards), a recovery key or a passphrase ([record 0002](../decisions/0002-where-a-key-lives.md)) | Test roots, drills, development; a person's own primary, new or adopted ([record 0008](../decisions/0008-a-persons-own-key.md)). | A root key that others rely on. | Linux, macOS |
+| `file`: an age-encrypted key file, opened by a passkey on each card named as a way to open it (the root cards), a recovery key or a passphrase ([record 0002](../decisions/0002-where-a-key-lives.md)) | Drills, development; a person's own primary, new or adopted ([record 0008](../decisions/0008-a-persons-own-key.md)). | A root key that others rely on. | Linux, macOS |
 | `onepassword`: 1Password, through `op` | The keys of test roots, intermediates and subkeys. | A production root key, or a person's primary key. | Linux, macOS |
 | `keyring`: the OS keyring | A throwaway test key. | Anything else, and any passphrase. | Linux, macOS |
 
