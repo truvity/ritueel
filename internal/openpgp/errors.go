@@ -102,3 +102,66 @@ var (
 	// [ErrRevocation].
 	ErrRevocationReason error = &kindError{"openpgp: the reason for revocation is refused", ErrRevocation}
 )
+
+// The faults of the reader of a key that ritueel did not make (docs/decisions/0008-a-persons-own-key.md,
+// rule 5): [ReadForeignKey] reads the file of one exported secret key, and [ForeignKey.OpenSecret]
+// opens the secret of its primary. Each fault of the file is an [ErrForeignKey], so that a caller that
+// wants "this file is refused" has one kind to ask for; the narrower kinds say why, and the text of an
+// error says which case of that kind it is. No text holds a byte of the file, a user ID or a secret.
+var (
+	// ErrForeignKey is the kind of every refusal of the file of a foreign key. It is not an
+	// [ErrParams]: a refusal of the arguments of [ForeignKey.OpenSecret] is an ErrParams.
+	ErrForeignKey = errors.New("openpgp: refused foreign key")
+	// ErrForeignForm marks a file that is not the packets of one transferable key: not whole packets,
+	// a length form that is not read (a partial length, an indeterminate length), a packet or a key
+	// that does not read to its end, an order that RFC 9580 section 10.1 does not allow, or an empty
+	// file. It is also an [ErrForeignKey].
+	ErrForeignForm error = &kindError{"openpgp: the file is not the packets of one transferable key", ErrForeignKey}
+	// ErrForeignLimit marks a file that passes a named limit of the reader: [MaxForeignKeyBytes],
+	// [MaxForeignPackets], [MaxForeignUserIDs], [MaxForeignSubkeys], [MaxForeignSignatures] or
+	// [MaxForeignPacketBytes]. The text names the constant. It is also an [ErrForeignKey].
+	ErrForeignLimit error = &kindError{"openpgp: the file passes a limit of the reader", ErrForeignKey}
+	// ErrForeignArmour marks an armoured file that is not exactly one block of type PGP PRIVATE KEY
+	// BLOCK: another type (a public key block, a message, a signature), a second block, a header or a
+	// line that the form does not allow, text after the end line, or a CRC-24 line that is wrong. It
+	// is also an [ErrForeignKey].
+	ErrForeignArmour error = &kindError{"openpgp: the file is not one armour block of a private key", ErrForeignKey}
+	// ErrForeignPacket marks a packet that does not belong in a transferable key: a message, an
+	// encrypted or compressed packet, a signature of the message kind, a padding or any other tag
+	// that RFC 9580 section 10.1 does not list. The text names the tag. It is also an [ErrForeignKey].
+	ErrForeignPacket error = &kindError{"openpgp: the file holds a packet that does not belong in a transferable key", ErrForeignKey}
+	// ErrForeignPrimaries marks a file that holds a second primary key. It is also an
+	// [ErrForeignKey].
+	ErrForeignPrimaries error = &kindError{"openpgp: the file holds more than one primary key", ErrForeignKey}
+	// ErrForeignVersion marks a primary key or a subkey that is not version 4: version 3, 5 and 6
+	// each have a reason of their own. It is also an [ErrForeignKey].
+	ErrForeignVersion error = &kindError{"openpgp: the key is not a version 4 key", ErrForeignKey}
+	// ErrForeignAlgorithm marks a primary key that is not RSA with a 4096-bit modulus, EdDSA on
+	// Ed25519 or ECDSA on P-384, and a subkey whose secret packet has a public part that the reader
+	// cannot delimit. The text names the algorithm and its size or curve. It is also an
+	// [ErrForeignKey].
+	ErrForeignAlgorithm error = &kindError{"openpgp: the algorithm of the key is not one that is read", ErrForeignKey}
+	// ErrForeignNoSecret marks a file that does not hold the secret of the primary key: a public key
+	// packet, or the GNU extension that gpg writes when the secret is kept elsewhere (a dummy) or on a
+	// card. The text says which, and never holds a card serial number. It is also an [ErrForeignKey].
+	ErrForeignNoSecret error = &kindError{"openpgp: the file does not hold the secret of the primary key", ErrForeignKey}
+	// ErrForeignProtection marks a primary key whose secret is protected in a form that is not read:
+	// S2K usage 255, 253 or a cipher number, a cipher other than AES, an S2K that is not iterated and
+	// salted, Argon2, or a hash that the reader has not. Each has a text of its own. It is also an
+	// [ErrForeignKey].
+	ErrForeignProtection error = &kindError{"openpgp: the secret of the primary key is protected in a form that is not read", ErrForeignKey}
+	// ErrForeignSelfSignature marks a key none of whose user IDs has a valid self-signature: there is
+	// no user ID, or every self-signature is made with a weak hash, carries a critical subpacket that
+	// is not understood, or does not verify. It is also an [ErrForeignKey].
+	ErrForeignSelfSignature error = &kindError{"openpgp: no user ID has a valid self-signature", ErrForeignKey}
+	// ErrForeignSecret marks a secret that opened and is not a good secret: its checksum is wrong, its
+	// numbers do not read to their end, or it is not the secret of the public key in the same packet.
+	// It is also an [ErrForeignKey].
+	ErrForeignSecret error = &kindError{"openpgp: the secret of the primary key is damaged or is not the secret of its public key", ErrForeignKey}
+	// ErrWrongPassphrase marks a passphrase that does not open the protected secret of the primary
+	// key: the SHA-1 check of the standard (RFC 9580 section 5.5.3) failed. It is not an
+	// [ErrForeignKey]. The standard gives no way to tell a wrong passphrase from a damaged ciphertext,
+	// since both fail the same check: a damaged framing is an ErrForeignForm when the file is read,
+	// and a damaged armour is an ErrForeignArmour.
+	ErrWrongPassphrase = errors.New("openpgp: the passphrase does not open the secret key")
+)
