@@ -596,9 +596,9 @@ type fkOutput struct {
 
 	// What the snapshot of the key is made of (see fkSnapshot), collected as the signatures are judged and
 	// as the parts that go into the certificate are chosen.
-	revoked  bool            // a key revocation counts
-	newest   time.Time       // the newest signature that counts anywhere in the certificate
-	expiry   expiryCandidate // the newest self-signature that can give the expiry of the key
+	revoked  bool      // a key revocation counts
+	newest   time.Time // the newest signature that counts anywhere in the certificate
+	direct   []snapSig // the direct-key signatures that count, of which the newest is a source of the expiry
 	users    []snapUserID
 	subSnaps []snapSubkey
 }
@@ -703,7 +703,7 @@ func (v *fkVerifier) keyLevel(w *fkWalk, out *fkOutput) (sigs []ForeignSignature
 			case sigKeyRevocation:
 				out.revoked = true
 			case sigDirectKey:
-				out.noteExpiry(fs)
+				out.direct = append(out.direct, snapSig{sig: fs, raw: emit, sigExpires: count(h.areas.hashed, spSigExpiration) > 0})
 			}
 		}
 	}
@@ -798,7 +798,7 @@ func (v *fkVerifier) components(w *fkWalk, out *fkOutput) (ids []ForeignUserID, 
 					fu.OtherRevocations++
 				}
 				if emit != nil {
-					rec := snapSig{sig: fs}
+					rec := snapSig{sig: fs, raw: emit, sigExpires: count(h.areas.hashed, spSigExpiration) > 0}
 					if isCertification(h.typ) {
 						rec.prefs = carriedSubpackets(h.areas.hashed)
 					}
@@ -1001,7 +1001,7 @@ func (v *fkVerifier) subkeys(w *fkWalk, out *fkOutput) []ForeignSubkey {
 				fs.OtherRevocations++
 			}
 			if emit != nil {
-				grp.add(emit, out, snapSig{sig: sg})
+				grp.add(emit, out, snapSig{sig: sg, raw: emit})
 			}
 		}
 		summariseSubkey(&fs)

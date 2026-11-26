@@ -2,6 +2,8 @@ package openpgp_test
 
 import (
 	"bytes"
+	"crypto/sha1" //nolint:gosec // a SHA-1 signature is what the tests make: the reader counts it
+	"crypto/sha256"
 	"encoding/hex"
 	"reflect"
 	"testing"
@@ -119,14 +121,29 @@ func fkCheckSnapshot(t *testing.T, k *openpgp.ForeignKey) {
 	for i, u := range got {
 		w := want[i]
 		var signed time.Time
+		var anyStrong bool
 		for _, s := range w.Signatures {
-			if s.Type >= 0x10 && s.Type <= 0x13 && s.Status.Counts() && s.Created.After(signed) {
-				signed = s.Created
+			if s.Type >= 0x10 && s.Type <= 0x13 && s.Status.Counts() {
+				signed = laterTime(signed, s.Created)
+				anyStrong = anyStrong || s.Status == openpgp.SignatureValid
 			}
 		}
-		if u.Text != w.Text || u.Text != string(userBodies[i]) || u.Revoked != w.Revoked || u.Flags != w.KeyFlags ||
-			u.Primary != w.Primary || !u.Expires.Equal(w.KeyExpires) || !u.Signed.Equal(signed) {
+		// the newest self-signature of any hash: when it is alone at its time, it is the source of the fields
+		var newest []openpgp.ForeignSignature
+		for _, s := range w.Signatures {
+			if s.Type >= 0x10 && s.Type <= 0x13 && s.Status.Counts() && s.Created.Equal(signed) {
+				newest = append(newest, s)
+			}
+		}
+		if u.Text != w.Text || u.Text != string(userBodies[i]) || u.Revoked != w.Revoked || !u.Signed.Equal(signed) || u.AnyStrong != anyStrong {
 			t.Errorf("user ID %d of the snapshot is not the view's: %+v, view %+v", i, u, w)
+		}
+		// the view takes the newest strong one and breaks a tie by the place in the file: the fields are
+		// compared where the view and the snapshot choose the same signature
+		if len(newest) == 1 && (newest[0].Status == openpgp.SignatureValid || !anyStrong) {
+			if u.Flags != w.KeyFlags || u.Primary != w.Primary || !u.Expires.Equal(w.KeyExpires) || u.Weak != (newest[0].Status != openpgp.SignatureValid) {
+				t.Errorf("user ID %d of the snapshot has other fields than the view's: %+v, view %+v", i, u, w)
+			}
 		}
 	}
 
@@ -143,7 +160,13 @@ func fkCheckSnapshot(t *testing.T, k *openpgp.ForeignKey) {
 	}
 	for i, s := range subs {
 		w := wantSubs[i]
-		if hex.EncodeToString(s.Fingerprint) != w.Fingerprint || !bytes.Equal(s.Body, subBodies[i]) || s.Revoked != w.Revoked || !s.Bound.Equal(w.BoundAt) {
+		var bound time.Time
+		for _, g := range w.Signatures {
+			if g.Type == 0x18 && g.Status.Counts() && g.Created.After(bound) {
+				bound = g.Created
+			}
+		}
+		if hex.EncodeToString(s.Fingerprint) != w.Fingerprint || !bytes.Equal(s.Body, subBodies[i]) || s.Revoked != w.Revoked || !s.Bound.Equal(bound) {
 			t.Errorf("subkey %d of the snapshot is not the view's: %+v, view %+v", i, s, w)
 		}
 	}
@@ -156,8 +179,9 @@ func fkEdFile(t testing.TB, w fkWriter, keySigs, userSigs [][]byte) []byte {
 	return w.file(t, fkParts{noSelf: true, noBind: true, keySigs: keySigs, userSigs: userSigs})
 }
 
-// What the snapshot says of a user ID comes from its newest self-signature, and the expiry of the key from
-// the newest self-signature of the key.
+// What the snapshot says of a user ID comes from its newest self-signature. The end of the key is kept for
+// each source (each live user ID's newest self-signature and the newest direct-key signature): the answer is
+// the earliest, whether there is a source, and whether the sources agree.
 func TestSnapshotUserIDAndExpiryFollowTheNewestSignature(t *testing.T) {
 	b := fkNamed(t, "ed25519")
 	w := fkWriter{b}
@@ -174,16 +198,17 @@ func TestSnapshotUserIDAndExpiryFollowTheNewestSignature(t *testing.T) {
 		wantFlags    uint8
 		wantPrimary  bool
 		wantUserEnd  int // days after the creation of the key, 0 for none
-		wantKeyEnd   int
+		wantKeyEnd   int // the earliest end of the sources
+		wantAgree    bool
 		wantSignedAt int
 		wantNewest   int
 	}{
-		{"older with an expiry, newer without", nil, [][]byte{cert(1000, flags(1), life(10), primary), cert(1100, flags(3))}, 3, false, 0, 0, 1100, 1100},
-		{"older without, newer with", nil, [][]byte{cert(1000, flags(1)), cert(1100, flags(2), life(20), primary)}, 2, true, 20, 20, 1100, 1100},
-		{"the newest comes first in the file", nil, [][]byte{cert(1100, flags(2), life(20)), cert(1000, flags(1), life(5))}, 2, false, 20, 20, 1100, 1100},
-		{"a direct-key signature that is newer gives the key's expiry", [][]byte{direct(1200, life(30))}, [][]byte{cert(1000, flags(1), life(10))}, 1, false, 10, 30, 1000, 1200},
-		{"a direct-key signature that is older does not", [][]byte{direct(900, life(30))}, [][]byte{cert(1000, flags(1), life(10))}, 1, false, 10, 10, 1000, 1000},
-		{"a direct-key signature with no expiry ends it", [][]byte{direct(1200)}, [][]byte{cert(1000, flags(1), life(10))}, 1, false, 10, 0, 1000, 1200},
+		{"older with an expiry, newer without", nil, [][]byte{cert(1000, flags(1), life(10), primary), cert(1100, flags(3))}, 3, false, 0, 0, true, 1100, 1100},
+		{"older without, newer with", nil, [][]byte{cert(1000, flags(1)), cert(1100, flags(2), life(20), primary)}, 2, true, 20, 20, true, 1100, 1100},
+		{"the newest comes first in the file", nil, [][]byte{cert(1100, flags(2), life(20)), cert(1000, flags(1), life(5))}, 2, false, 20, 20, true, 1100, 1100},
+		{"a direct-key signature that is newer is a source of its own", [][]byte{direct(1200, life(30))}, [][]byte{cert(1000, flags(1), life(10))}, 1, false, 10, 10, false, 1000, 1200},
+		{"a direct-key signature that is older is a source too", [][]byte{direct(900, life(30))}, [][]byte{cert(1000, flags(1), life(10))}, 1, false, 10, 10, false, 1000, 1000},
+		{"a direct-key signature with no expiry disagrees with the user ID", [][]byte{direct(1200)}, [][]byte{cert(1000, flags(1), life(10))}, 1, false, 10, 10, false, 1000, 1200},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
@@ -206,7 +231,8 @@ func TestSnapshotUserIDAndExpiryFollowTheNewestSignature(t *testing.T) {
 			if u.Flags != c.wantFlags || u.Primary != c.wantPrimary || !u.Expires.Equal(end(c.wantUserEnd)) || !u.Signed.Equal(fkAt(c.wantSignedAt)) {
 				t.Errorf("the user ID of the snapshot: %+v", u)
 			}
-			if !key.Expires.Equal(end(c.wantKeyEnd)) || !key.Newest.Equal(fkAt(c.wantNewest)) || key.Revoked {
+			if e := key.Expiry; !e.Earliest.Equal(end(c.wantKeyEnd)) || !e.Any || e.Agree != c.wantAgree || e.Marked ||
+				!key.Newest.Equal(fkAt(c.wantNewest)) || key.Revoked {
 				t.Errorf("the key of the snapshot: %+v", key)
 			}
 		})
@@ -318,5 +344,194 @@ func TestSnapshotMarksARevokedKey(t *testing.T) {
 	}
 	if k := fkRead(t, b.plain); openpgp.SnapshotKey(k).Revoked {
 		t.Error("a key with no key revocation is revoked in the snapshot")
+	}
+}
+
+func laterTime(a, b time.Time) time.Time {
+	if b.After(a) {
+		return b
+	}
+	return a
+}
+
+// fkSHA1UserSig is a self-signature of the user ID of the Ed25519 template made with SHA-1.
+func fkSHA1UserSig(t testing.TB, w fkWriter, hashed []byte) []byte {
+	t.Helper()
+	return w.sign(t, "user", 0x13, hashed, nil, 2, sha1.New, []byte(fkUser))
+}
+
+// What the snapshot says of a user ID is what the person chose LAST, whatever the hash of that signature:
+// a SHA-1 self-signature that is newer than a SHA-256 one is the source, and its weakness is a mark of its
+// own.
+func TestSnapshotSourceIsTheNewestSelfSignatureOfAnyHash(t *testing.T) {
+	b := fkNamed(t, "ed25519")
+	w := fkWriter{b}
+	flags := func(f byte) []byte { return fkSubpacket(27, false, f) }
+	pref := func(v ...byte) []byte { return fkSubpacket(21, false, v...) }
+	strong := func(at int, f byte, p ...byte) []byte {
+		return w.userSig(t, 0x13, w.areas(at, flags(f), pref(p...)), nil)
+	}
+	weak := func(at int, f byte, p ...byte) []byte {
+		return fkSHA1UserSig(t, w, w.areas(at, flags(f), pref(p...)))
+	}
+	cases := []struct {
+		name                string
+		sigs                [][]byte
+		wantFlags           uint8
+		wantPref            []byte
+		wantWeak, wantAnyOK bool
+	}{
+		{"a weak one newer than a strong one", [][]byte{strong(1000, 0x23, 8), weak(1100, 1, 9, 10)}, 1, []byte{9, 10}, true, true},
+		{"the same in the other order of the file", [][]byte{weak(1100, 1, 9, 10), strong(1000, 0x23, 8)}, 1, []byte{9, 10}, true, true},
+		{"a strong one newer than a weak one", [][]byte{weak(1000, 1, 9, 10), strong(1100, 0x23, 8)}, 0x23, []byte{8}, false, true},
+		{"a weak one alone", [][]byte{weak(1000, 1, 9, 10)}, 1, []byte{9, 10}, true, false},
+		{"a strong one alone", [][]byte{strong(1000, 0x23, 8)}, 0x23, []byte{8}, false, true},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			k := fkRead(t, fkEdFile(t, w, nil, c.sigs))
+			kc, err := fkReadCertificate(k.Certificate())
+			if err != nil || !reflect.DeepEqual(openpgp.SnapshotOf(k), openpgp.SnapshotOf(kc)) {
+				t.Fatalf("the certificate does not read back to the same snapshot: %v", err)
+			}
+			u := openpgp.SnapshotUsers(k)[0]
+			if u.Flags != c.wantFlags || u.Weak != c.wantWeak || u.AnyStrong != c.wantAnyOK ||
+				!reflect.DeepEqual(u.Prefs, []openpgp.SnapPref{{Type: 21, Data: c.wantPref}}) {
+				t.Errorf("the user ID of the snapshot: %+v", u)
+			}
+		})
+	}
+}
+
+// A tie in time is broken by what the signatures say, the earlier end of the key first, and then by their
+// bytes, and never by their place in the file: the same signatures in any order give the same snapshot.
+func TestSnapshotTiesDoNotDependOnTheOrderOfTheFile(t *testing.T) {
+	b := fkNamed(t, "ed25519")
+	w := fkWriter{b}
+	life := func(days uint32) []byte { return fkSubpacket(9, true, fkU32(days*86400)...) }
+	flags := func(f byte) []byte { return fkSubpacket(27, false, f) }
+	user := func(extra ...[]byte) []byte { return w.userSig(t, 0x13, w.areas(1000, extra...), nil) }
+	direct := func(extra ...[]byte) []byte { return w.keySig(t, 0x1F, w.areas(1200, extra...), nil) }
+	day := func(n int) time.Time { return fkEpoch.Add(time.Duration(n) * 86400 * time.Second) }
+
+	cases := []struct {
+		name       string
+		keySigs    [][]byte
+		userSigs   [][]byte
+		wantFlags  uint8
+		wantEnd    time.Time // of the user ID
+		wantEarly  time.Time // the earliest end of the sources
+		wantAgrees bool
+	}{
+		{"an end and no end in one second: the end wins", nil, [][]byte{user(flags(1), life(10)), user(flags(2))}, 1, day(10), day(10), true},
+		{"two ends in one second: the earlier wins", nil, [][]byte{user(flags(1), life(20)), user(flags(2), life(10))}, 2, day(10), day(10), true},
+		{"the same end and other flags: the smaller bytes win", nil, [][]byte{user(flags(1), life(10)), user(flags(2), life(10))}, 0, day(10), day(10), true},
+		{"two direct-key signatures in one second", [][]byte{direct(life(30)), direct(life(20))}, [][]byte{user(flags(1), life(10))}, 1, day(10), day(10), false},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			var first any
+			for _, order := range []string{"as given", "reversed"} {
+				keys, users := c.keySigs, c.userSigs
+				if order == "reversed" {
+					keys, users = reversed(keys), reversed(users)
+				}
+				k := fkRead(t, fkEdFile(t, w, keys, users))
+				kc, err := fkReadCertificate(k.Certificate())
+				if err != nil {
+					t.Fatalf("%s: the certificate is refused: %v", order, err)
+				}
+				if !reflect.DeepEqual(openpgp.SnapshotOf(k), openpgp.SnapshotOf(kc)) {
+					t.Errorf("%s: the snapshot of the certificate is not the one of the export", order)
+				}
+				if first == nil {
+					first = openpgp.SnapshotOf(k)
+				} else if !reflect.DeepEqual(first, openpgp.SnapshotOf(k)) {
+					t.Errorf("the snapshot depends on the order of the file")
+				}
+				u, e := openpgp.SnapshotUsers(k)[0], openpgp.SnapshotKey(k).Expiry
+				if !u.Expires.Equal(c.wantEnd) || (c.wantFlags != 0 && u.Flags != c.wantFlags) || !e.Earliest.Equal(c.wantEarly) || e.Agree != c.wantAgrees {
+					t.Errorf("%s: user ID %+v, expiry %+v", order, u, e)
+				}
+			}
+		})
+	}
+}
+
+func reversed[T any](s []T) []T {
+	out := make([]T, len(s))
+	for i, v := range s {
+		out[len(s)-1-i] = v
+	}
+	return out
+}
+
+// For each subkey: whether its newest binding is SHA-1, and whether some binding that counts is not.
+func TestSnapshotMarksAWeakBindingOfASubkey(t *testing.T) {
+	b := fkNamed(t, "ed25519")
+	w := fkWriter{b}
+	enc, _, _ := fkDonors(t)
+	bind := func(at int, strong bool) []byte {
+		areas := w.areas(at, fkSubpacket(27, false, 0x0C))
+		if strong {
+			return w.sign(t, "sub", 0x18, areas, nil, 8, sha256.New, enc[3].pub.Body)
+		}
+		return w.sign(t, "sub", 0x18, areas, nil, 2, sha1.New, enc[3].pub.Body)
+	}
+	cases := []struct {
+		name                     string
+		sigs                     [][]byte
+		wantWeak, wantStrongSome bool
+		wantBound                int
+	}{
+		{"SHA-1 only", [][]byte{bind(1000, false)}, true, false, 1000},
+		{"SHA-1 newer than SHA-256", [][]byte{bind(900, true), bind(1000, false)}, true, true, 1000},
+		{"SHA-256 newer than SHA-1", [][]byte{bind(900, false), bind(1000, true)}, false, true, 1000},
+		{"SHA-256 only", [][]byte{bind(1000, true)}, false, true, 1000},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			k := fkRead(t, w.file(t, fkParts{subSigs: c.sigs}))
+			kc, err := fkReadCertificate(k.Certificate())
+			if err != nil || !reflect.DeepEqual(openpgp.SnapshotOf(k), openpgp.SnapshotOf(kc)) {
+				t.Fatalf("the certificate does not read back to the same snapshot: %v", err)
+			}
+			subs := openpgp.SnapshotSubkeys(k)
+			if len(subs) != 1 || subs[0].Weak != c.wantWeak || subs[0].AnyStrong != c.wantStrongSome || !subs[0].Bound.Equal(fkAt(c.wantBound)) {
+				t.Errorf("the subkey of the snapshot: %+v", subs)
+			}
+		})
+	}
+}
+
+// A newest signature with a signature expiration time (type 3) is marked, on a user ID and on the
+// direct-key signature, and the mark is in the answer about the end of the key.
+func TestSnapshotMarksASourceWithASignatureExpiration(t *testing.T) {
+	b := fkNamed(t, "ed25519")
+	w := fkWriter{b}
+	sigLife := fkSubpacket(3, false, fkU32(86400)...)
+	user := func(at int, extra ...[]byte) []byte { return w.userSig(t, 0x13, w.areas(at, extra...), nil) }
+	direct := func(at int, extra ...[]byte) []byte { return w.keySig(t, 0x1F, w.areas(at, extra...), nil) }
+
+	k := fkRead(t, fkEdFile(t, w, nil, [][]byte{user(1000)}))
+	if u := openpgp.SnapshotUsers(k)[0]; u.SigExpires || openpgp.SnapshotKey(k).Expiry.Marked {
+		t.Errorf("a signature with no signature expiration time is marked")
+	}
+	k = fkRead(t, fkEdFile(t, w, nil, [][]byte{user(1000, sigLife)}))
+	if u := openpgp.SnapshotUsers(k)[0]; !u.SigExpires || !openpgp.SnapshotKey(k).Expiry.Marked {
+		t.Errorf("a self-signature with a signature expiration time is not marked: %+v", u)
+	}
+	// the mark follows the newest self-signature: an older marked one does not count
+	k = fkRead(t, fkEdFile(t, w, nil, [][]byte{user(900, sigLife), user(1000)}))
+	if u := openpgp.SnapshotUsers(k)[0]; u.SigExpires || openpgp.SnapshotKey(k).Expiry.Marked {
+		t.Errorf("an older marked self-signature marks the user ID: %+v", u)
+	}
+	k = fkRead(t, fkEdFile(t, w, [][]byte{direct(1100, sigLife)}, [][]byte{user(1000)}))
+	if u := openpgp.SnapshotUsers(k)[0]; u.SigExpires || !openpgp.SnapshotKey(k).Expiry.Marked {
+		t.Errorf("a direct-key signature with a signature expiration time is not marked: %+v", u)
+	}
+	kc, err := fkReadCertificate(k.Certificate())
+	if err != nil || !reflect.DeepEqual(openpgp.SnapshotOf(k), openpgp.SnapshotOf(kc)) {
+		t.Errorf("the certificate does not read back to the same snapshot: %v", err)
 	}
 }

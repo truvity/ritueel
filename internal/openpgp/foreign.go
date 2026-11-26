@@ -603,7 +603,7 @@ func readForeignKey(file []byte) (*ForeignKey, error) {
 // key, an unhashed subpacket that the reader would not write, a duplicate, a user ID or a subkey with no
 // signature that counts, and a packet of one class (key signatures, user IDs, subkeys) out of its place
 // among the others. The order of the signatures of one component, of the user IDs and of the key
-// signatures among themselves is the input's: it is not refused.
+// signatures among themselves is the input's: it is not refused, and no choice that the snapshot makes depends on it.
 // A secret key packet is refused cheaply before anything is verified, and so is every packet that a
 // public certificate has no place for.
 //

@@ -13,13 +13,57 @@ import (
 // ([ReadForeignKey]) and the same key read from [ForeignKey.Certificate] ([ReadForeignCertificate]) have
 // the same snapshot. Whatever the file said and the certificate left out (a certification of another key,
 // a signature that does not count, a user ID or a subkey that nothing confirms) is not in it.
+//
+// Every choice of "the newest" signature here is made by [outranks]: the newest by time, whatever its hash,
+// and a tie in time is broken by what the signatures say and never by where they stand in the file, so that
+// the order of the packets, which the person who writes the file may choose, decides nothing.
 
 // snapSig is a signature that counted, as the reader keeps it for the snapshot: what the view says of it,
-// and, for a certification, the preference subpackets of its hashed area that a later signature may
-// carry over.
+// the packet that the reader wrote for it, whether its hashed area has a signature expiration time (type 3),
+// which this layer does not judge, and, for a certification, the preference subpackets of its hashed area
+// that a later signature may carry over.
 type snapSig struct {
-	sig   ForeignSignature
-	prefs []subpacket
+	sig        ForeignSignature
+	raw        []byte
+	sigExpires bool
+	prefs      []subpacket
+}
+
+// earlierEnd tells whether the key end x is earlier than the key end y. No end (the zero time) is the
+// latest: a key that never ends ends after every key that does.
+func earlierEnd(x, y time.Time) bool {
+	switch {
+	case x.IsZero():
+		return false
+	case y.IsZero():
+		return true
+	}
+	return x.Before(y)
+}
+
+// outranks tells whether the signature b is chosen over the signature a as the newest. The newer creation
+// time wins, whatever the hash. In a tie of the time the conservative one wins, in this order: the earlier
+// end of the key (no end counts as the latest), then the smaller bytes of the packet that the reader wrote.
+// It does not depend on the order of the file. It is the one helper of every "newest" choice of the snapshot.
+func outranks(b, a snapSig) bool {
+	if !b.sig.Created.Equal(a.sig.Created) {
+		return b.sig.Created.After(a.sig.Created)
+	}
+	if !b.sig.KeyExpires.Equal(a.sig.KeyExpires) {
+		return earlierEnd(b.sig.KeyExpires, a.sig.KeyExpires)
+	}
+	return bytes.Compare(b.raw, a.raw) < 0
+}
+
+// newestSig is the signature of the list that [outranks] all the others that pass keep, and false when none
+// passes.
+func newestSig(sigs []snapSig, keep func(ForeignSignature) bool) (best snapSig, ok bool) {
+	for _, s := range sigs {
+		if keep(s.sig) && (!ok || outranks(s, best)) {
+			best, ok = s, true
+		}
+	}
+	return best, ok
 }
 
 // carriedTypes are the subpacket types of a self-signature that a later one may carry over as they are,
@@ -56,15 +100,21 @@ type snapUserID struct {
 	// revoked is the verdict of the view: a hard revocation, or a soft one that is not older than the
 	// newest self-signature. A user ID is live when it is not revoked.
 	revoked bool
-	// signed is the time of its newest self-signature that counts.
+	// signed is the time of its newest self-signature that counts, of any hash.
 	signed time.Time
-	// flags, primary and expires are what its newest self-signature says (the newest strong one when
-	// there is one): the first key flags octet, the primary mark, and the end of the key (zero if none).
+	// flags, primary and expires are what that newest self-signature says (see [outranks]): the first key
+	// flags octet, the primary mark, and the end of the key (zero if none). prefs are its carried
+	// subpackets. They describe what the person last chose, whatever the hash of that signature.
 	flags   uint8
 	primary bool
 	expires time.Time
-	// prefs are the carried subpackets of that self-signature.
-	prefs []subpacket
+	prefs   []subpacket
+	// sigExpires is true when that signature has a signature expiration time (type 3), which this layer
+	// does not judge.
+	sigExpires bool
+	// weak is true when that signature is made with SHA-1, and anyStrong when some self-signature of the
+	// user ID that counts is not. A user ID with weak true and anyStrong false is held by SHA-1 only.
+	weak, anyStrong bool
 }
 
 // snapSubkey is a subkey of the certificate, which a binding of the primary confirms.
@@ -72,7 +122,17 @@ type snapSubkey struct {
 	fp      []byte // 20 bytes
 	body    []byte // the body of its public subkey packet
 	revoked bool
-	bound   time.Time // the time of its newest binding that counts
+	bound   time.Time // the time of its newest binding that counts, of any hash
+	// weak is true when that newest binding is made with SHA-1, and anyStrong when some binding that
+	// counts is not.
+	weak, anyStrong bool
+}
+
+// snapDirect is the newest direct-key signature that counts, which is a source of the key's expiry.
+type snapDirect struct {
+	have       bool
+	expires    time.Time
+	sigExpires bool
 }
 
 // fkSnapshot is the snapshot: the primary, and what the signatures of the primary say of the key, the
@@ -87,34 +147,60 @@ type fkSnapshot struct {
 	// newest is the creation time of the newest signature that counts anywhere in the certificate. A new
 	// signature is dated after it, so that a signature dated in the future that the file held does not
 	// outrank it.
-	newest time.Time
-	// expires is the end of the key that its newest self-signature says (a direct-key signature or the
-	// certification of a user ID that is not revoked; the later one in the certificate when the times are
-	// equal), and zero if that signature has no key expiration time.
-	expires time.Time
+	newest  time.Time
+	direct  snapDirect
 	users   []snapUserID
 	subkeys []snapSubkey
 }
 
-// expiryCandidate is the newest self-signature that can give the expiry of the key, so far.
-type expiryCandidate struct {
-	have    bool
-	created time.Time
-	expires time.Time
+// expiryAnswer is what the snapshot says of the end of the key. Programs differ in where they look for it
+// (the primary user ID, any user ID, the direct-key signature), so the answer keeps every source apart: the
+// newest self-signature of each live user ID and the newest direct-key signature.
+type expiryAnswer struct {
+	// earliest is the earliest end among the sources that have one, the one that no program will believe
+	// later than; zero when no source has an end.
+	earliest time.Time
+	// any is true when there is at least one source. Zero in earliest with any true means that the sources
+	// all say that the key never ends.
+	any bool
+	// agree is true when every source says the same end (or all say none).
+	agree bool
+	// marked is true when the newest signature of some source has a signature expiration time (type 3).
+	marked bool
+}
+
+// expiry answers the three questions of the end of the key, and marks a source that this layer does not
+// judge. A builder that adds a user ID or certifies another key must refuse when the sources do not agree or
+// one is marked.
+func (s *fkSnapshot) expiry() expiryAnswer {
+	a := expiryAnswer{agree: true}
+	var first time.Time // the end of the first source: agreement is equality with it, whatever the order
+	add := func(expires time.Time, sigExpires bool) {
+		if !a.any {
+			a.any, a.earliest, first = true, expires, expires
+		} else {
+			a.agree = a.agree && expires.Equal(first)
+			if earlierEnd(expires, a.earliest) {
+				a.earliest = expires
+			}
+		}
+		a.marked = a.marked || sigExpires
+	}
+	if s.direct.have {
+		add(s.direct.expires, s.direct.sigExpires)
+	}
+	for _, u := range s.users {
+		if !u.revoked {
+			add(u.expires, u.sigExpires)
+		}
+	}
+	return a
 }
 
 // noteNewest raises newest to t.
 func (o *fkOutput) noteNewest(t time.Time) {
 	if t.After(o.newest) {
 		o.newest = t
-	}
-}
-
-// noteExpiry offers a self-signature that counts as the source of the key's expiry; the later one in the
-// certificate wins when the times are equal.
-func (o *fkOutput) noteExpiry(s ForeignSignature) {
-	if !o.expiry.have || !s.Created.Before(o.expiry.created) {
-		o.expiry = expiryCandidate{have: true, created: s.Created, expires: s.KeyExpires}
 	}
 }
 
@@ -126,7 +212,7 @@ func (o *fkOutput) noteCounted(counted []snapSig) {
 }
 
 // addUser adds the user ID of a group that goes into the certificate: counted are the signatures of the
-// primary on it that counted, once each, in the order of the certificate.
+// primary on it that counted, once each.
 func (o *fkOutput) addUser(text []byte, counted []snapSig) {
 	o.noteCounted(counted)
 	sigs := make([]ForeignSignature, len(counted))
@@ -135,30 +221,26 @@ func (o *fkOutput) addUser(text []byte, counted []snapSig) {
 	}
 	view := ForeignUserID{Signatures: sigs}
 	summariseUserID(&view)
-	u := snapUserID{
-		text: bytes.Clone(text), revoked: view.Revoked,
-		flags: view.KeyFlags, primary: view.Primary, expires: view.KeyExpires,
-	}
+	u := snapUserID{text: bytes.Clone(text), revoked: view.Revoked}
 	for _, c := range counted {
-		if !isCertification(c.sig.Type) {
-			continue
+		if isCertification(c.sig.Type) {
+			u.signed = laterOf(u.signed, c.sig.Created)
+			u.anyStrong = u.anyStrong || c.sig.Status == SignatureValid
 		}
-		if c.sig.Created.After(u.signed) {
-			u.signed = c.sig.Created
-		}
-		if !view.Valid {
-			continue
-		}
-		// the source of the fields is the last of the signatures with the creation time and the
-		// strength that summariseUserID chose
-		if c.sig.Created.Equal(view.Created) && (c.sig.Status == SignatureValid) == !view.WeakHash {
-			u.prefs = c.prefs
-		}
-		if !view.Revoked {
-			o.noteExpiry(c.sig)
-		}
+	}
+	if src, ok := newestSig(counted, func(s ForeignSignature) bool { return isCertification(s.Type) }); ok {
+		u.flags, u.primary, u.expires, u.prefs = src.sig.KeyFlags, src.sig.Primary, src.sig.KeyExpires, src.prefs
+		u.sigExpires, u.weak = src.sigExpires, src.sig.Status == SignatureValidWeakHash
 	}
 	o.users = append(o.users, u)
+}
+
+// laterOf is the later of two times.
+func laterOf(a, b time.Time) time.Time {
+	if b.After(a) {
+		return b
+	}
+	return a
 }
 
 // addSubkey adds the subkey of a group that goes into the certificate.
@@ -170,23 +252,33 @@ func (o *fkOutput) addSubkey(fp, body []byte, counted []snapSig) {
 	}
 	view := ForeignSubkey{Signatures: sigs}
 	summariseSubkey(&view)
-	o.subSnaps = append(o.subSnaps, snapSubkey{
-		fp: bytes.Clone(fp), body: bytes.Clone(body), revoked: view.Revoked, bound: view.BoundAt,
-	})
+	k := snapSubkey{fp: bytes.Clone(fp), body: bytes.Clone(body), revoked: view.Revoked}
+	for _, c := range counted {
+		if c.sig.Type == sigSubkeyBinding {
+			k.anyStrong = k.anyStrong || c.sig.Status == SignatureValid
+		}
+	}
+	if src, ok := newestSig(counted, func(s ForeignSignature) bool { return s.Type == sigSubkeyBinding }); ok {
+		k.bound, k.weak = src.sig.Created, src.sig.Status == SignatureValidWeakHash
+	}
+	o.subSnaps = append(o.subSnaps, k)
 }
 
 // snapshot is the snapshot of the key whose walk and verifier these are, once the judging of every
 // signature is done.
 func (o *fkOutput) snapshot(w *fkWalk, v *fkVerifier) fkSnapshot {
-	return fkSnapshot{
+	s := fkSnapshot{
 		packet:  bytes.Clone(w.primaryPacket),
 		body:    bytes.Clone(w.primaryBody),
 		fp:      bytes.Clone(v.fp),
 		created: v.created,
 		revoked: o.revoked,
 		newest:  o.newest,
-		expires: o.expiry.expires,
 		users:   o.users,
 		subkeys: o.subSnaps,
 	}
+	if d, ok := newestSig(o.direct, func(ForeignSignature) bool { return true }); ok {
+		s.direct = snapDirect{have: true, expires: d.sig.KeyExpires, sigExpires: d.sigExpires}
+	}
+	return s
 }
