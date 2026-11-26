@@ -14,16 +14,24 @@ import (
 // is. The text of the error is made from fixed words and the detail of a finding; no method of a cause is
 // called.
 func Check(ctx context.Context, fsys fsx.FS) error {
+	_, err := Load(ctx, fsys)
+	return err
+}
+
+// Load is [Check] that also returns the cards: when it returns nil as the error, the cards are the valid cards
+// of the bundle in the order of their names, every one of them read in this call and none of them skipped. A
+// refusing finding is an error and no card comes with it.
+func Load(ctx context.Context, fsys fsx.FS) ([]*wanted.Card, error) {
 	rep, err := Inspect(ctx, fsys)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	if !rep.Valid() {
-		return errNoReport
+		return nil, errNoReport
 	}
 	refusals := rep.Refusals()
 	if len(refusals) == 0 {
-		return nil
+		return rep.Cards, nil
 	}
 	msg := refusals[0].Detail
 	switch more := len(refusals) - 1; {
@@ -32,5 +40,5 @@ func Check(ctx context.Context, fsys fsx.FS) error {
 	case more > 1:
 		msg += " (and " + strconv.Itoa(more) + " more findings)"
 	}
-	return &wanted.Error{Path: refusals[0].Path, Msg: msg}
+	return nil, &wanted.Error{Path: refusals[0].Path, Msg: msg}
 }

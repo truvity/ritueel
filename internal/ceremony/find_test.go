@@ -181,10 +181,6 @@ func TestFindRefusesWhatThisVersionDoesNotBuildAndWritesNothing(t *testing.T) {
 			[]string{"want/roots/x509.yaml", "not a test root"}},
 		"two X.509 root files": {with(map[string]string{"want/roots/other.yaml": pfX509Test}),
 			[]string{"2 root files", "want/roots/other.yaml", "want/roots/x509.yaml"}},
-		"a personal bundle with a root": {map[string]string{"ritueel.yaml": pfPersonal, "want/roots/x509.yaml": pfX509Test},
-			[]string{"personal bundle"}},
-		"a personal bundle with no root": {map[string]string{"ritueel.yaml": pfPersonal},
-			[]string{"personal bundle"}},
 	}
 	for name, c := range cases {
 		t.Run(name, func(t *testing.T) {
@@ -217,8 +213,8 @@ func TestFindRefusesWhatThisVersionDoesNotBuildAndWritesNothing(t *testing.T) {
 }
 
 func TestTheRefusalsOfARootFileComeInTheOrderOfTheRow(t *testing.T) {
-	// openpgp or ssh first, then a root that is not a test root, then two roots of one kind, then a
-	// personal bundle.
+	// openpgp or ssh first, then a root that is not a test root, then two roots of one kind. A personal bundle
+	// has its own refusals: see find_personal_test.go.
 	cases := []struct {
 		name  string
 		files map[string]string
@@ -227,7 +223,7 @@ func TestTheRefusalsOfARootFileComeInTheOrderOfTheRow(t *testing.T) {
 		{"openpgp before not a test root", map[string]string{"ritueel.yaml": pfSettings, "want/roots/a.yaml": pfX509Real, "want/roots/z-openpgp.yaml": pfOpenPGPTest}, "want/roots/z-openpgp.yaml"},
 		{"ssh before not a test root", map[string]string{"ritueel.yaml": pfSettings, "want/roots/a.yaml": pfX509Real, "want/roots/z-ssh.yaml": pfSSHTest}, "want/roots/z-ssh.yaml"},
 		{"not a test root before two roots", map[string]string{"ritueel.yaml": pfSettings, "want/roots/a.yaml": pfX509Test, "want/roots/b.yaml": pfX509Real}, "want/roots/b.yaml"},
-		{"two roots before a personal bundle", map[string]string{"ritueel.yaml": pfPersonal, "want/roots/a.yaml": pfX509Test, "want/roots/b.yaml": pfX509Test}, "2 root files"},
+		{"two roots of a company bundle", map[string]string{"ritueel.yaml": pfSettings, "want/roots/a.yaml": pfX509Test, "want/roots/b.yaml": pfX509Test}, "2 root files"},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {

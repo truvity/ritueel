@@ -127,7 +127,7 @@ func runIn(ctx context.Context, c *Call, dir string, saved bool) (*Result, error
 			return nil, applyError(err)
 		}
 	} else {
-		found, err := ceremony.Find(ctx, ceremony.FindInput{FS: w.FS})
+		found, err := ceremony.Find(ctx, ceremony.FindInput{FS: w.FS, Now: c.Env.Now})
 		if err != nil {
 			return nil, applyError(err)
 		}
@@ -193,7 +193,7 @@ func planOnlyIn(ctx context.Context, c *Call, dir string) (*Result, error) {
 			_ = w.Close()
 		}
 	}()
-	found, err := ceremony.Find(ctx, ceremony.FindInput{FS: w.FS})
+	found, err := ceremony.Find(ctx, ceremony.FindInput{FS: w.FS, Now: c.Env.Now})
 	if err != nil {
 		return nil, applyError(err)
 	}
