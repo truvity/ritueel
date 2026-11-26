@@ -2,6 +2,7 @@ package openpgp
 
 import (
 	"bytes"
+	"slices"
 	"time"
 )
 
@@ -213,6 +214,32 @@ func (s *fkSnapshot) expiry() expiryAnswer {
 	return a
 }
 
+// primaryUserID answers which user ID is THE primary one, by one rule that depends on nothing of the order
+// of the file: among the live user IDs (not revoked) that carry the primary flag, the one whose source
+// signature is the newest, a tie broken by the smaller text bytes; when none carries the flag, the live user
+// ID whose source signature is the newest, a tie broken in the same way; and none when no user ID is live.
+// It returns the place of that user ID in the lists of the snapshot. No later code may take the first user
+// ID of the list as the primary one.
+func (s *fkSnapshot) primaryUserID() (int, bool) {
+	pick := func(wantFlag bool) (int, bool) {
+		best, found := -1, false
+		for i, u := range s.users {
+			if u.revoked || (wantFlag && !u.primary) {
+				continue
+			}
+			if !found || u.signed.After(s.users[best].signed) ||
+				(u.signed.Equal(s.users[best].signed) && bytes.Compare(u.text, s.users[best].text) < 0) {
+				best, found = i, true
+			}
+		}
+		return best, found
+	}
+	if i, ok := pick(true); ok {
+		return i, true
+	}
+	return pick(false)
+}
+
 // noteNewest raises newest to t.
 func (o *fkOutput) noteNewest(t time.Time) {
 	if t.After(o.newest) {
@@ -301,6 +328,11 @@ func (o *fkOutput) snapshot(w *fkWalk, v *fkVerifier) fkSnapshot {
 		users:   o.users,
 		subkeys: o.subSnaps,
 	}
+	// The lists are in the order of the content and not of the file, which the person who writes the file
+	// may choose: user IDs by their text, subkeys by their fingerprint. The certificate keeps the order of
+	// the file; nothing but the snapshot is sorted.
+	slices.SortFunc(s.users, func(a, b snapUserID) int { return bytes.Compare(a.text, b.text) })
+	slices.SortFunc(s.subkeys, func(a, b snapSubkey) int { return bytes.Compare(a.fp, b.fp) })
 	if d, _, tied, ok := newestSig(o.direct, func(ForeignSignature) bool { return true }); ok {
 		s.direct = snapDirect{have: true, expires: d.sig.KeyExpires, sigExpires: d.sigExpires, tied: tied}
 	}

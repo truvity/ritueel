@@ -2,10 +2,12 @@ package openpgp_test
 
 import (
 	"bytes"
-	"crypto/sha1" //nolint:gosec // a SHA-1 signature is what the tests make: the reader counts it
+	"crypto/sha1" //nolint:gosec // a SHA-1 signature is what the tests make, and the fingerprint of a version 4 key is a SHA-1 by the standard
 	"crypto/sha256"
 	"encoding/hex"
 	"reflect"
+	"slices"
+	"strings"
 	"testing"
 	"time"
 
@@ -114,6 +116,10 @@ func fkCheckSnapshot(t *testing.T, k *openpgp.ForeignKey) {
 			want = append(want, u)
 		}
 	}
+	// the snapshot lists the user IDs by their text and the subkeys by their fingerprint, whatever the order of
+	// the file
+	slices.SortFunc(want, func(a, b openpgp.ForeignUserID) int { return strings.Compare(a.Text, b.Text) })
+	slices.SortFunc(userBodies, bytes.Compare)
 	got := openpgp.SnapshotUsers(k)
 	if len(got) != len(want) || len(got) != len(userBodies) {
 		t.Fatalf("the snapshot has %d user IDs, the view %d, the certificate %d", len(got), len(want), len(userBodies))
@@ -153,8 +159,14 @@ func fkCheckSnapshot(t *testing.T, k *openpgp.ForeignKey) {
 			wantSubs = append(wantSubs, s)
 		}
 	}
+	slices.SortFunc(wantSubs, func(a, b openpgp.ForeignSubkey) int { return strings.Compare(a.Fingerprint, b.Fingerprint) })
+	bodyOf := map[string][]byte{} // the body of each subkey packet of the certificate, by its fingerprint
+	for _, b := range subBodies {
+		sum := sha1.Sum(append([]byte{0x99, byte(len(b) >> 8), byte(len(b))}, b...)) //nolint:gosec // the fingerprint of a version 4 key is a SHA-1 by the standard
+		bodyOf[hex.EncodeToString(sum[:])] = b
+	}
 	subs := openpgp.SnapshotSubkeys(k)
-	if len(subs) != len(wantSubs) || len(subs) != len(subBodies) {
+	if len(subs) != len(wantSubs) {
 		t.Fatalf("the snapshot has %d subkeys, the view %d, the certificate %d", len(subs), len(wantSubs), len(subBodies))
 	}
 	for i, s := range subs {
@@ -165,7 +177,7 @@ func fkCheckSnapshot(t *testing.T, k *openpgp.ForeignKey) {
 				bound = g.Created
 			}
 		}
-		if hex.EncodeToString(s.Fingerprint) != w.Fingerprint || !bytes.Equal(s.Body, subBodies[i]) || s.Revoked != w.Revoked || !s.Bound.Equal(bound) || s.Weak != w.WeakHash {
+		if hex.EncodeToString(s.Fingerprint) != w.Fingerprint || !bytes.Equal(s.Body, bodyOf[hex.EncodeToString(s.Fingerprint)]) || s.Revoked != w.Revoked || !s.Bound.Equal(bound) || s.Weak != w.WeakHash {
 			t.Errorf("subkey %d of the snapshot is not the view's: %+v, view %+v", i, s, w)
 		}
 	}
@@ -628,4 +640,76 @@ func TestSnapshotMarksAChoiceThatTheBytesDecided(t *testing.T) {
 			}
 		})
 	}
+}
+
+// The order of the file decides nothing of the snapshot: the user IDs and the subkeys of the rich key in
+// the reverse order give the same snapshot, the certificate keeps the order of the file and is read as it
+// stands, and the primary user ID is the same.
+func TestSnapshotDoesNotDependOnTheOrderOfUserIDsAndSubkeys(t *testing.T) {
+	fkEachBase(t, func(t *testing.T, b *fkBase) {
+		file := fkRichOf(t, b, false, true).file
+		reordered := fkReverseBlocks(t, file)
+		if bytes.Equal(file, reordered) {
+			t.Fatal("the file was not reordered")
+		}
+		k, r := fkRead(t, file), fkRead(t, reordered)
+		if bytes.Equal(k.Certificate(), r.Certificate()) {
+			t.Error("the certificate of the reordered file is not in the order of the file")
+		}
+		if !reflect.DeepEqual(openpgp.SnapshotOf(k), openpgp.SnapshotOf(r)) {
+			t.Error("the snapshot depends on the order of the user IDs and the subkeys")
+		}
+		if _, err := fkReadCertificate(r.Certificate()); err != nil {
+			t.Errorf("the certificate of the reordered file is refused: %v", err)
+		}
+		users := openpgp.SnapshotUsers(k)
+		for i := 1; i < len(users); i++ {
+			if users[i-1].Text >= users[i].Text {
+				t.Errorf("the user IDs of the snapshot are not in the order of their text: %q, %q", users[i-1].Text, users[i].Text)
+			}
+		}
+		subs := openpgp.SnapshotSubkeys(k)
+		for i := 1; i < len(subs); i++ {
+			if bytes.Compare(subs[i-1].Fingerprint, subs[i].Fingerprint) >= 0 {
+				t.Errorf("the subkeys of the snapshot are not in the order of their fingerprint")
+			}
+		}
+		pk, ok := openpgp.SnapshotPrimaryUserID(k)
+		pr, ok2 := openpgp.SnapshotPrimaryUserID(r)
+		if !ok || !ok2 || pk != pr || pk != fkRichUserID("primary") {
+			t.Errorf("the primary user ID is %q and %q (%v %v), want %q", pk, pr, ok, ok2, fkRichUserID("primary"))
+		}
+	})
+}
+
+// fkReverseBlocks writes a file with its user ID blocks (a user ID or attribute with its signatures) and
+// its subkey blocks (a subkey with its signatures) in the reverse order.
+func fkReverseBlocks(t testing.TB, file []byte) []byte {
+	t.Helper()
+	var head []fkPacket
+	var users, subs [][]fkPacket
+	section := 0 // 0 the key and its signatures, 1 the user IDs, 2 the subkeys
+	for _, p := range fkSplit(t, file) {
+		switch {
+		case p.Tag == 13 || p.Tag == 17:
+			section = 1
+			users = append(users, []fkPacket{p})
+		case p.Tag == 7 || p.Tag == 14:
+			section = 2
+			subs = append(subs, []fkPacket{p})
+		case section == 0:
+			head = append(head, p)
+		case section == 1:
+			users[len(users)-1] = append(users[len(users)-1], p)
+		default:
+			subs[len(subs)-1] = append(subs[len(subs)-1], p)
+		}
+	}
+	out := head
+	for _, blocks := range [][][]fkPacket{reversed(users), reversed(subs)} {
+		for _, blk := range blocks {
+			out = append(out, blk...)
+		}
+	}
+	return fkJoin(out...)
 }

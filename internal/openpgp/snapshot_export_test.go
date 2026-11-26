@@ -92,3 +92,12 @@ func SnapshotSubkeys(k *ForeignKey) []SnapSubkey {
 
 // SnapshotNewest is the creation time of the newest signature that counts anywhere in the certificate.
 func SnapshotNewest(k *ForeignKey) time.Time { return k.snap.newest }
+
+// SnapshotPrimaryUserID is the text of the user ID that the snapshot answers to "which is the primary".
+func SnapshotPrimaryUserID(k *ForeignKey) (string, bool) {
+	i, ok := k.snap.primaryUserID()
+	if !ok {
+		return "", false
+	}
+	return string(k.snap.users[i].text), true
+}
