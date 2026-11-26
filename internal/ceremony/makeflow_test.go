@@ -10,7 +10,6 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
-	"encoding/pem"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -220,9 +219,8 @@ func TestNoSecretIsInAnyFileOfTheBundleOrTheTranscriptAndTheKeyFilesHoldIt(t *te
 	// The opposite for the key directory: the key file holds the scalar.
 	for _, l := range []string{"A", "B"} {
 		d := mkScalar(t, keyDir, l)
-		b, _ := os.ReadFile(filepath.Join(keyDir, l+".x509.key.pem"))
-		blk, _ := pem.Decode(b)
-		if blk == nil || !bytes.Contains(blk.Bytes, d) {
+		b, _ := os.ReadFile(filepath.Join(keyDir, mkKeyFile(l)))
+		if len(b) == 0 || !bytes.Contains(b, d) {
 			t.Errorf("the key file of %s does not hold the scalar", l)
 		}
 	}
@@ -241,7 +239,7 @@ func TestTheJournalsOfTheFolderHoldTheLinesOfTheRunInTheOrderOfThePlan(t *testin
 	}
 	for i, l := range lines {
 		b, err := files.ReadBirthLine(l)
-		if err != nil || b.Label != string(rune('A'+i)) || b.Place != b.Label+".x509.key.pem" || b.Store != "software" || b.Purpose != "x509-root" || b.PublicKeySHA256 != c.made.Roots[i].Pin {
+		if err != nil || b.Label != string(rune('A'+i)) || b.Place != "x509-root-"+strings.ToLower(b.Label) || b.Store != "software" || b.Purpose != "x509-root" || b.PublicKeySHA256 != c.made.Roots[i].Pin {
 			t.Errorf("birth line %d: %+v, %v", i+1, b, err)
 		}
 	}

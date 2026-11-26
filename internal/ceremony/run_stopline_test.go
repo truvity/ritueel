@@ -20,7 +20,7 @@ import (
 // of every line of a stop.
 const (
 	stopClosing = "; close, which closes an open attempt, is not built yet"
-	stopEnd     = "; nothing was retried and nothing was deleted"
+	stopEnd     = "; nothing was retried, and ritueel deleted nothing"
 )
 
 // rtWantMakeLine fails the test when the line of a stop in the phase of an open attempt does not hold the
@@ -144,7 +144,7 @@ func TestTheLineOfAStopAfterTheRecordIsWrittenHoldsTheClauseOfTheTemporaryFileAn
 		if !strings.HasSuffix(msg, "; the ceremony record is written"+stopTempClause+stopEnd) {
 			t.Errorf("the line does not end with the record, the clause of the temporary file and the end words: %s", msg)
 		}
-		for _, not := range []string{stopKeyClause, "key directory may hold", "A.x509.key.pem", "an attempt is open", "close, which closes"} {
+		for _, not := range []string{stopKeyClause, "key directory may hold", "x509-root-a", "an attempt is open", "close, which closes"} {
 			if strings.Contains(msg, not) {
 				t.Errorf("the line says %q after the record is written: %s", not, msg)
 			}
@@ -200,7 +200,7 @@ func TestTheLineOfAStopAtTheWriteOfTheAttemptNamesNoKeyFileAtAnyChangingCallOfTh
 			if !strings.HasSuffix(msg, state+stopClosing+stopEnd) {
 				t.Errorf("the line does not end with the words of the attempt that may be open: %s", msg)
 			}
-			for _, not := range []string{"key directory", "key file", ".x509.key.pem", "removal authorisation", "a temporary file whose name starts with", "removes it by hand"} {
+			for _, not := range []string{"key directory", "key file", ".p8", "x509-root-a", "removal authorisation", "a temporary file whose name starts with", "remove one by hand"} {
 				if strings.Contains(msg, not) {
 					t.Errorf("the line of a stop at the write of the attempt says %q: %s", not, msg)
 				}
@@ -219,7 +219,7 @@ func TestTheLineOfAStopBeforeTheMakerRanHoldsNoClauseOfTheKeyDirectory(t *testin
 		if !ok || s.Step != step || s.Attempt != attempt {
 			t.Fatalf("the error is %v, want a stop at %s (attempt %v)", err, step, attempt)
 		}
-		for _, not := range []string{"key directory", "A.x509.key.pem", "a temporary file whose name starts with", "removal authorisation"} {
+		for _, not := range []string{"key directory", "x509-root-a", "a temporary file whose name starts with", "removal authorisation"} {
 			if strings.Contains(err.Error(), not) {
 				t.Errorf("the line says %q: %s", not, err.Error())
 			}
@@ -278,7 +278,7 @@ func TestTheLineOfAStopNamesNoFileOfTheKeyDirectoryAndIsTheSameWhateverItHolds(t
 				if calls++; calls != 2 {
 					return
 				}
-				if err := os.WriteFile(filepath.Join(keyDir, "B.x509.key.pem"), []byte("planted"), 0o600); err != nil {
+				if err := os.WriteFile(filepath.Join(keyDir, mkKeyFile("B")), []byte("planted"), 0o600); err != nil {
 					t.Error(err)
 				}
 				if leftover != "" {

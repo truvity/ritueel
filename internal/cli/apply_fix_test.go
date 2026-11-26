@@ -148,11 +148,16 @@ func TestTheLoserOfTwoRunsOfOneSavedPlanIsExitCode3WithPlanUsedAndMakesNoKey(t *
 	if !strings.Contains(a.stderr, "wrote no attempt and made no key") {
 		t.Errorf("standard error does not say that this run made no key: %q", a.stderr)
 	}
-	if ents, _ := os.ReadDir(keys); len(ents) != 0 {
-		t.Errorf("the key directory of the loser holds %d entries", len(ents))
+	// The key store is started before the attempt, so the loser may have made the empty folder test-only-keys
+	// and nothing else.
+	for _, e := range func() []os.DirEntry { ents, _ := os.ReadDir(keys); return ents }() {
+		inner, err := os.ReadDir(filepath.Join(keys, e.Name()))
+		if e.Name() != "test-only-keys" || err != nil || len(inner) != 0 {
+			t.Errorf("the key directory of the loser holds %q", e.Name())
+		}
 	}
-	if ents, _ := os.ReadDir(keysB); len(ents) != 4 {
-		t.Errorf("the key directory of the winner holds %d entries, want 4", len(ents))
+	if ents, _ := os.ReadDir(keysB); len(ents) != 3 { // test-only-keys, and the two removal authorisations
+		t.Errorf("the key directory of the winner holds %d entries, want 3", len(ents))
 	}
 	h := apRun(t, apClock, "--dir", dir, "check", "history")
 	if h.code != ExitOK {

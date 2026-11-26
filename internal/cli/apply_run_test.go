@@ -617,8 +617,12 @@ func TestAStopAfterTheFirstWriteIsExitCode1WithTheLineThatNamesTheOpenCeremony(t
 	if !apPrintable(msg) {
 		t.Errorf("the line %+q is not printable ASCII", msg)
 	}
-	if ents, _ := os.ReadDir(keys); len(ents) != 0 {
-		t.Errorf("a stop before the first key left %d files in the key directory", len(ents))
+	// The key store is started before the attempt: the empty folder test-only-keys may stand, and no key.
+	for _, e := range func() []os.DirEntry { ents, _ := os.ReadDir(keys); return ents }() {
+		inner, err := os.ReadDir(filepath.Join(keys, e.Name()))
+		if e.Name() != "test-only-keys" || err != nil || len(inner) != 0 {
+			t.Errorf("a stop before the first key left %q in the key directory", e.Name())
+		}
 	}
 }
 

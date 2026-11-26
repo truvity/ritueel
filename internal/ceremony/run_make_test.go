@@ -119,6 +119,9 @@ func TestAKeyStoreThatFailsAfterTheAttemptStopsTheRunWithTheCauseAndExitCode1(t 
 }
 
 func TestAKeyFileThatAppearsAfterTheRefusalIsNotReplacedAndStopsTheRun(t *testing.T) {
+	// The driver loaded its keys when it started, so a key file that appears in its folder after that is not
+	// known to it: it makes a key, its link to the name of the file fails, and the run stops. What it cannot
+	// tell is a lost race from another fault of the store, so the stop is not a refusal with key-exists.
 	r := rtNew(t)
 	planted := []byte("not a key, planted after the refusal")
 	log := &mkLog{}
@@ -136,7 +139,7 @@ func TestAKeyFileThatAppearsAfterTheRefusalIsNotReplacedAndStopsTheRun(t *testin
 			if calls++; calls != 2 {
 				return
 			}
-			if err := os.WriteFile(filepath.Join(keyDir, "B.x509.key.pem"), planted, 0o600); err != nil {
+			if err := os.WriteFile(filepath.Join(keyDir, mkKeyFile("B")), planted, 0o600); err != nil {
 				t.Error(err)
 			}
 		}}, nil
@@ -145,7 +148,7 @@ func TestAKeyFileThatAppearsAfterTheRefusalIsNotReplacedAndStopsTheRun(t *testin
 	if s.Step != "make" || st.keyFiles != 2 || st.birthLines != 1 {
 		t.Errorf("stop %q, on disk %+v: want A born and journaled, B refused", s.Step, st)
 	}
-	got, err := os.ReadFile(filepath.Join(r.keyDir, "B.x509.key.pem"))
+	got, err := os.ReadFile(filepath.Join(r.keyDir, mkKeyFile("B")))
 	if err != nil || !bytes.Equal(got, planted) {
 		t.Errorf("the file that stood in the place of B was replaced: %q, %v", got, err)
 	}
@@ -439,9 +442,9 @@ func rtReadStateLoose(t *testing.T, r *rt, name string) rtDiskState {
 			s.trustSets = append(s.trustSets, e.Name())
 		}
 	}
-	ents, _ := os.ReadDir(r.keyDir)
-	for _, e := range ents {
-		if strings.HasSuffix(e.Name(), ".x509.key.pem") {
+	inner, _ := os.ReadDir(filepath.Join(r.keyDir, "test-only-keys"))
+	for _, e := range inner {
+		if strings.HasSuffix(e.Name(), ".p8") {
 			s.keyFiles++
 		}
 	}
@@ -607,7 +610,7 @@ func TestNoPrivateKeyIsInTheBundleTheOutputOrTheTranscript(t *testing.T) {
 			"base64 rawur": []byte(base64.RawURLEncoding.EncodeToString(scalar)),
 		}
 		// The key file is the one place that holds it.
-		keyFile, err := os.ReadFile(filepath.Join(r.keyDir, label+".x509.key.pem"))
+		keyFile, err := os.ReadFile(filepath.Join(r.keyDir, mkKeyFile(label)))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -634,7 +637,7 @@ func TestNoPrivateKeyIsInTheBundleTheOutputOrTheTranscript(t *testing.T) {
 		}
 	}
 	// The key directory holds the key files and the removal authorisations and nothing else.
-	if got := rtNames(r.keyTree()); !slices.Equal(got, []string{"A.removal.jws", "A.x509.key.pem", "B.removal.jws", "B.x509.key.pem"}) {
+	if got := rtNames(r.keyTree()); !slices.Equal(got, []string{"A.removal.jws", "B.removal.jws", "test-only-keys", mkKeyFile("A"), mkKeyFile("B")}) {
 		t.Errorf("the key directory holds %q", got)
 	}
 }

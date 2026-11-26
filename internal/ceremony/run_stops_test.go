@@ -25,8 +25,8 @@ import (
 // the first call of the maker on; the second from the step make on. Both are fixed words: no file is
 // listed and no folder is read.
 const (
-	stopKeyClause  = "; the key directory may hold A.x509.key.pem, B.x509.key.pem and the removal authorisations beside them, which stay"
-	stopTempClause = "; the key directory may also hold a temporary file whose name starts with .rt-, which can hold a key, and a person removes it by hand"
+	stopKeyClause  = "; the folder test-only-keys of the key directory may hold the keys x509-root-a, x509-root-b, and the removal authorisations may stand beside that folder, which stay"
+	stopTempClause = "; the folder test-only-keys may also hold a temporary file whose name starts with .tmp-, which can hold a key; the key driver removes its own temporary files there when it opens the folder, and a person may remove one by hand; the key directory may also hold a temporary file whose name starts with .rt-, which holds a removal authorisation and no key"
 )
 
 // rtEvents are the changing calls of one whole run, in order.
@@ -114,11 +114,14 @@ func rtReadState(t *testing.T, r *rt, name string) rtDiskState {
 	}
 	ents, _ := os.ReadDir(r.keyDir)
 	for _, e := range ents {
-		switch {
-		case strings.HasSuffix(e.Name(), ".x509.key.pem"):
-			s.keyFiles++
-		case strings.HasSuffix(e.Name(), ".removal.jws"):
+		if strings.HasSuffix(e.Name(), ".removal.jws") {
 			s.removals++
+		}
+	}
+	inner, _ := os.ReadDir(filepath.Join(r.keyDir, "test-only-keys"))
+	for _, e := range inner {
+		if strings.HasSuffix(e.Name(), ".p8") {
+			s.keyFiles++
 		}
 	}
 	lines := func(file string) (whole [][]byte, partial bool) {
@@ -232,7 +235,7 @@ func TestACutAtEveryWriteOfARunIsAStopThatSaysWhatIsOnDisk(t *testing.T) {
 				t.Errorf("stop = step %q, attempt %v, ceremony %q; want %q, %v, %q", s.Step, s.Attempt, s.Ceremony, wantStep, wantAttempt, p.Name)
 			}
 			msg := err.Error()
-			for _, w := range []string{"history/" + p.Name, "stopped at " + wantStep, "nothing was retried and nothing was deleted"} {
+			for _, w := range []string{"history/" + p.Name, "stopped at " + wantStep, "nothing was retried, and ritueel deleted nothing"} {
 				if !strings.Contains(msg, w) {
 					t.Errorf("the line does not say %q: %s", w, msg)
 				}
@@ -254,7 +257,7 @@ func TestACutAtEveryWriteOfARunIsAStopThatSaysWhatIsOnDisk(t *testing.T) {
 				t.Errorf("the line names the temporary file = %v, want %v: %s", got, later, msg)
 			}
 			if !later {
-				for _, not := range []string{"key directory", "A.x509.key.pem", "B.x509.key.pem", "removal authorisations", "a temporary file whose name starts with", "a person removes it by hand"} {
+				for _, not := range []string{"key directory", "x509-root-a", "x509-root-b", "removal authorisations", "a temporary file whose name starts with", "a person may remove one by hand"} {
 					if strings.Contains(msg, not) {
 						t.Errorf("the line of a stop before the maker ran says %q: %s", not, msg)
 					}
@@ -268,7 +271,7 @@ func TestACutAtEveryWriteOfARunIsAStopThatSaysWhatIsOnDisk(t *testing.T) {
 			}
 			switch {
 			case wantAttempt && n > l.attemptEnd:
-				if !strings.Contains(msg, "an attempt is open") || !strings.Contains(msg, "A.x509.key.pem, B.x509.key.pem") || !strings.Contains(msg, "close, which closes an open attempt, is not built") {
+				if !strings.Contains(msg, "an attempt is open") || !strings.Contains(msg, "x509-root-a, x509-root-b") || !strings.Contains(msg, "close, which closes an open attempt, is not built") {
 					t.Errorf("the line of a stop with an open attempt: %s", msg)
 				}
 			case wantAttempt:

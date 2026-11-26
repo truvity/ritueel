@@ -26,7 +26,7 @@ const (
 	AtPlan Step = iota + 1
 	// AtAttempt is AtPlan and attempt.json and the two empty journals.
 	AtAttempt
-	// AtFirstBirth is AtAttempt and the first key born (its key file is in the key directory) and
+	// AtFirstBirth is AtAttempt and the first key born (its key file is in the folder test-only-keys of the key directory) and
 	// its line written.
 	AtFirstBirth
 	// AtBirths is AtFirstBirth and both keys and both lines.
@@ -79,7 +79,7 @@ type Options struct {
 	// bundle.Create, which never writes into a folder that exists. "" means the folder "ca" in a
 	// folder made by t.TempDir().
 	Dir string
-	// KeyDir is the key directory of the software store. It is made (with mode 0700) when it does
+	// KeyDir is the key directory of the software store; the keys go into its folder test-only-keys. It is made (with mode 0700) when it does
 	// not exist. "" means the folder "keys" in a folder made by t.TempDir(), outside the bundle.
 	KeyDir string
 }

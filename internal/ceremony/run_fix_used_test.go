@@ -71,8 +71,8 @@ func TestTheLoserOfTwoRunsOfOneSavedPlanIsRefusedWithPlanUsedAndMadeNoKey(t *tes
 	if b, s := birth.counts(); b != 0 || s != 0 {
 		t.Errorf("the loser made %d keys and %d removals", b, s)
 	}
-	if len(keysB) != 4 {
-		t.Errorf("the winner has %d files in its key directory, want 4", len(keysB))
+	if len(keysB) != 5 { // two removal authorisations, the folder test-only-keys and the two key files in it
+		t.Errorf("the winner has %d entries in its key directory, want 5", len(keysB))
 	}
 	// The attempt of the winner is the one on disk, and the files of the winner are what they were.
 	after := r.tree()

@@ -13,6 +13,7 @@ import (
 	"ritueel.id/ritueel/internal/fsx"
 	"ritueel.id/ritueel/internal/history"
 	"ritueel.id/ritueel/internal/jsonset"
+	"ritueel.id/ritueel/internal/keydir"
 	"ritueel.id/ritueel/internal/wanted"
 )
 
@@ -36,15 +37,17 @@ type RunIn struct {
 	// them as the copies of the plan folder and reads the settings and the root file from these same
 	// bytes. It is not used when Saved is true: the copies are those that the plan folder holds.
 	Wanted []wanted.File
-	// KeyDir is the key directory, outside the bundle. It must exist and hold no key file.
+	// KeyDir is the key directory, outside the bundle. It must exist and not have been used: it holds no
+	// folder test-only-keys, no removal authorisation and no key file of the older naming.
 	KeyDir string
 	// BundleDir is the path text of the bundle folder, which the key directory is judged against (it is
 	// not held to the opened folder by identity: a later change).
 	BundleDir string
 	// Confirm is how the plan is confirmed. The zero value is the typed confirmation.
 	Confirm Confirm
-	// OpenStore opens the key store of the run; nil means [NewSoftwareStore]. It is the place where a
-	// test puts a store of its own.
+	// OpenStore opens the key store of the run; nil means [NewSoftwareStore]. It only opens the key
+	// directory: the store is started later, after the confirmation ([RootStore.Start]). It is the place
+	// where a test puts a store of its own.
 	OpenStore func(keyDir, bundleDir string) (RootStore, error)
 }
 
@@ -89,10 +92,12 @@ type Done struct {
 
 // StoppedError is a fault after the first write of a run: a ceremony folder exists and the ceremony did
 // not end. It says which step stopped, which ceremony folder stands, whether an attempt is open, and
-// which key files may stand in the key directory (none for a stop at the write of the attempt, before
-// any key is made) and that the key directory may also hold a temporary file that starts with .rt- and
-// can hold a key (from the step make on), in one line, and that close, which closes an open
-// attempt, is not built. Nothing was retried and nothing was deleted (record 0006, rules 33 and 45). It
+// which keys may stand in the folder test-only-keys of the key directory (none for a stop at the write
+// of the attempt, before any key is made) and that the folder may also hold a temporary file of the key
+// driver, and the key directory a temporary file of ritueel's own that starts with .rt- and holds a
+// removal authorisation (from the step make on), in one line, and that close, which closes an open
+// attempt, is not built. Nothing was retried, and ritueel deleted nothing (record 0006, rules 33 and 45;
+// the key driver removes only its own temporary files in its own folder, when it opens that folder). It
 // is a failure (exit code 1) whatever its cause is, and a command maps this type before it maps the
 // cause. The cause stays reachable with errors.Is and errors.As where the package that failed keeps
 // its cause. The trust set writer is the one that does not: a fault of it keeps its text only, so
@@ -100,7 +105,7 @@ type Done struct {
 type StoppedError struct {
 	// Ceremony is the name of the ceremony folder.
 	Ceremony string
-	// Step is the step that stopped: "write-plan", "attempt", "make", "journals", "transcript",
+	// Step is the step that stopped: "write-plan", "key-store", "attempt", "make", "journals", "transcript",
 	// "artifacts", "record" or "check".
 	Step string
 	// Attempt is true when attempt.json was or may have been written and no record was written: the
@@ -180,7 +185,9 @@ const (
 //     the person did confirm.
 //  4. The ceremony folder with plan.json and the copies (a direct apply); then the state of the bundle is
 //     judged a second time, immediately before the attempt (this narrows the window of two runs at once
-//     and does not close it: no lock exists yet); then the attempt and the two journals, before the first
+//     and does not close it: no lock exists yet); then the key store is started ([RootStore.Start]: the
+//     folder test-only-keys is made and the driver is linked in the process, so that nothing of the
+//     store exists before the person confirmed); then the attempt and the two journals, before the first
 //     key is born.
 //  5. [MakeRoots]: the births, the fingerprints, the signatures, and the seven checks of the artifacts.
 //  6. The journals are closed, read back from their files and checked again by [CheckJournals] and
@@ -191,7 +198,7 @@ const (
 //
 // Every fault after the first write is a [*StoppedError] (exit code 1). A fault before it is the error
 // of the step: [*RefusedError], [*BackendError], [ErrNotConfirmed], [*UsageError], or an ordinary error.
-// Nothing is retried and nothing is deleted. The key store is closed before Run returns.
+// Nothing is retried and ritueel deletes nothing. The key store is closed before Run returns.
 func Run(ctx context.Context, in RunIn) (*Done, error) {
 	r := &run{ctx: ctx, in: in}
 	defer func() {
@@ -352,6 +359,33 @@ func (r *run) recheck() error {
 	return r.stop("attempt", err)
 }
 
+// startStore starts the key store for the labels of the plan, after the confirmation and the second
+// judgement of the state and before the attempt is written: the folder of the keys is made and the
+// driver is linked here, and nowhere before. A refusal of the store keeps its reasons and its exit code
+// (4); for a direct apply its text says that the plan folder was written and no attempt and no key. Any
+// other fault is a stop at the step key-store.
+func (r *run) startStore() error {
+	labels := make([]string, len(r.plan.Births))
+	for i, b := range r.plan.Births {
+		labels[i] = b.Label
+	}
+	err := guard("key store", func() error { return r.store.Start(r.ctx, labels) })
+	if err == nil {
+		return nil
+	}
+	var refused *BackendError
+	if errors.As(err, &refused) && !r.in.Saved {
+		msg := strings.TrimSuffix(refused.Msg, "; nothing was written")
+		msg = strings.TrimSuffix(msg, "; no key was made")
+		msg += fmt.Sprintf("; this run wrote the plan folder history/%s before it found this, and wrote no attempt and made no key", jsonset.EscapeExact(r.plan.Name))
+		return &BackendError{Reasons: slices.Clone(refused.Reasons), Msg: msg}
+	}
+	if errors.As(err, &refused) {
+		return err
+	}
+	return r.stop("key-store", err)
+}
+
 // readWanted reads the settings and the root file from the copies, with the readers of the wanted files,
 // and holds them to the plan: each of the two files of the plan has a copy of the same path and the same
 // digest, and the root is the X.509 test root that the plan names in a company bundle. A direct apply and
@@ -485,14 +519,16 @@ func (r *run) stop(step string, err error) error {
 	// stop at the write of the attempt itself (phaseAttemptMaybe) names no key file: none was made.
 	keys := ""
 	if r.phase == phaseAttempt && len(places) > 0 {
-		keys = "; the key directory may hold " + strings.Join(places, ", ") + " and the removal authorisations beside them, which stay"
+		keys = "; the folder " + keydir.TestOnlyFolder + " of the key directory may hold the keys " + strings.Join(places, ", ") + ", and the removal authorisations may stand beside that folder, which stay"
 	}
-	// From the step "make" on (the phases of an open attempt and of a written record) one more thing may be in
-	// the key directory: the software key store writes a key under a temporary name and renames it, and a run
-	// whose rename was refused leaves that file, which holds a whole key. The words are fixed; no file is
-	// listed and no folder is read, and nothing is deleted by the program.
+	// From the step "make" on (the phases of an open attempt and of a written record) two temporary files may
+	// be left. The key driver writes a key under a temporary name in its folder and links it to its name: a run
+	// that was cut leaves that file, which holds a whole key, and the driver removes its own temporary files, and
+	// no other, when it opens its folder the next time. ritueel writes a removal authorisation under a name that
+	// starts with .rt- in the key directory and renames it: a file left there holds no key. The words are
+	// fixed; no file is listed and no folder is read.
 	if r.phase == phaseAttempt || r.phase == phaseRecorded {
-		keys += "; the key directory may also hold a temporary file whose name starts with .rt-, which can hold a key, and a person removes it by hand"
+		keys += "; the folder " + keydir.TestOnlyFolder + " may also hold a temporary file whose name starts with .tmp-, which can hold a key; the key driver removes its own temporary files there when it opens the folder, and a person may remove one by hand; the key directory may also hold a temporary file whose name starts with .rt-, which holds a removal authorisation and no key"
 	}
 	if step == "record" && r.phase != phaseRecorded {
 		state += " (a cut at the flush of the folder may leave record.json in place: look at the folder)"
@@ -501,7 +537,7 @@ func (r *run) stop(step string, err error) error {
 	if r.phase == phaseRecorded || r.phase == phasePlanned || r.phase == phaseNone {
 		closing = ""
 	}
-	msg := fmt.Sprintf("the ceremony history/%s stopped at %s: %s; %s%s%s; nothing was retried and nothing was deleted",
+	msg := fmt.Sprintf("the ceremony history/%s stopped at %s: %s; %s%s%s; nothing was retried, and ritueel deleted nothing",
 		jsonset.EscapeExact(r.plan.Name), step, causeText(err), state, keys, closing)
 	return &StoppedError{Ceremony: r.plan.Name, Step: step, Attempt: r.phase == phaseAttempt || r.phase == phaseAttemptMaybe, Msg: jsonset.Escape(msg), err: err}
 }
@@ -510,6 +546,9 @@ func (r *run) stop(step string, err error) error {
 // the self-check. Every fault in it is a stop.
 func (r *run) ceremony() (*Done, error) {
 	if err := r.recheck(); err != nil {
+		return nil, err
+	}
+	if err := r.startStore(); err != nil {
 		return nil, err
 	}
 	now, err := r.in.Env.now()
@@ -756,6 +795,6 @@ func (r *run) summary(done *Done, made *Made) {
 	for _, root := range made.Roots {
 		places = append(places, root.Place)
 	}
-	r.console.Err("the key files %s and the removal authorisations beside them are in the key directory: copy them to a safe place; this is a TEST ONLY root", strings.Join(places, ", "))
+	r.console.Err("the keys %s are in the folder %s of the key directory, and the removal authorisations are beside that folder: copy them to a safe place; this is a TEST ONLY root", strings.Join(places, ", "), keydir.TestOnlyFolder)
 	r.console.Out("%s", done.EndLine)
 }

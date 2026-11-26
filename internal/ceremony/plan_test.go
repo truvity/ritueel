@@ -35,8 +35,8 @@ const (
 	pfSumRoot = "6361aad1be3135735e62b61b62f5427c1e27c85823d20de10bb5cfa6dfb9c3a7"
 
 	pfGolden = `{"applies":[{"change":"create","object":"x509/A"},{"change":"create","object":"x509/B"}],` +
-		`"births":[{"label":"A","place":"A.x509.key.pem","purpose":"x509-root","store":"software"},` +
-		`{"label":"B","place":"B.x509.key.pem","purpose":"x509-root","store":"software"}],` +
+		`"births":[{"label":"A","place":"x509-root-a","purpose":"x509-root","store":"software"},` +
+		`{"label":"B","place":"x509-root-b","purpose":"x509-root","store":"software"}],` +
 		`"ceremony":"20261120T100000Z-apply","ceremony_time":"2026-11-20T10:00:00Z","command":"apply",` +
 		`"made_at":"2026-11-20T10:00:00Z",` +
 		`"ritueel":{"os_arch":"linux/amd64","sha256":"abababababababababababababababababababababababababababababababab","version":"v0.0.0-test"},` +
@@ -50,7 +50,7 @@ const (
 		`"trust_sequence":1,"version":1,` +
 		`"wanted":[{"path":"ritueel.yaml","sha256":"` + pfSumSet + `"},{"path":"want/roots/x509.yaml","sha256":"` + pfSumRoot + `"}]}`
 
-	pfGoldenDigest = "eb53b997d2604a7fc8b9970bafdc148fa0def200e580bad59935962651e7b822"
+	pfGoldenDigest = "384d9da09dbf26cc732c289d19c5ae429d2d91a9e4529cad1344dac91ab2ca9a"
 )
 
 func TestTheGoldenPlanIsMadeByteForByte(t *testing.T) {
@@ -112,8 +112,8 @@ func TestTheTypedValuesOfAPlanAreWhatThePlanSays(t *testing.T) {
 		t.Errorf("Applies = %+v", p.Applies)
 	}
 	wantBirths := []ceremony.PlanBirth{
-		{Label: "A", Purpose: "x509-root", Store: "software", Place: "A.x509.key.pem"},
-		{Label: "B", Purpose: "x509-root", Store: "software", Place: "B.x509.key.pem"},
+		{Label: "A", Purpose: "x509-root", Store: "software", Place: "x509-root-a"},
+		{Label: "B", Purpose: "x509-root", Store: "software", Place: "x509-root-b"},
 	}
 	if !reflect.DeepEqual(p.Births, wantBirths) {
 		t.Errorf("Births = %+v", p.Births)
@@ -821,8 +821,8 @@ func TestReadPlanOutRefusesAPlanWithAMemberWrong(t *testing.T) {
 		b := pfList(m, "births")
 		b[0], b[1] = b[1], b[0]
 	}
-	cases["a birth with another place"] = func(m map[string]any) { pfObj(pfList(m, "births"), 0)["place"] = "keys/A.x509.key.pem" }
-	cases["a birth with a place of another label"] = func(m map[string]any) { pfObj(pfList(m, "births"), 1)["place"] = "A.x509.key.pem" }
+	cases["a birth with another place"] = func(m map[string]any) { pfObj(pfList(m, "births"), 0)["place"] = "keys/x509-root-a" }
+	cases["a birth with a place of another label"] = func(m map[string]any) { pfObj(pfList(m, "births"), 1)["place"] = "x509-root-a" }
 	cases["a birth with another purpose"] = func(m map[string]any) { pfObj(pfList(m, "births"), 0)["purpose"] = "openpgp-primary" }
 	cases["a birth in another store"] = func(m map[string]any) { pfObj(pfList(m, "births"), 0)["store"] = "piv" }
 	// root.

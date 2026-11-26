@@ -45,7 +45,7 @@ var applySpec = spec{
 func applyFlags() []ucli.Flag {
 	return []ucli.Flag{
 		&ucli.BoolFlag{Name: flagPlanOnly, Usage: "write the plan (history/CEREMONY/plan.json) and stop"},
-		&ucli.StringFlag{Name: flagKeyDir, Usage: "the folder `DIR` for the key files, outside the bundle and its work tree; it must exist and hold no key file; a run needs it"},
+		&ucli.StringFlag{Name: flagKeyDir, Usage: "the folder `DIR` for the key files, outside the bundle and its work tree; it must exist and not have been used: no folder test-only-keys, no removal authorisation and no key file; a run needs it"},
 		&ucli.StringFlag{Name: flagConfirm, Usage: "confirm the plan from a script: the whole plan `DIGEST`, 64 lower-case hexadecimal digits; without it the person types the first eight characters at a terminal"},
 	}
 }

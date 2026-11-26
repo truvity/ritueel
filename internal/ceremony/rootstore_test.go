@@ -7,6 +7,7 @@ import (
 	"context"
 	"crypto/ecdsa"
 	"crypto/elliptic"
+	"crypto/x509"
 	"errors"
 	"os"
 	"path/filepath"
@@ -19,7 +20,6 @@ import (
 
 	"ritueel.id/ritueel/internal/ceremony"
 	"ritueel.id/ritueel/internal/keystore"
-	"ritueel.id/ritueel/internal/keystore/software"
 )
 
 // The software store of a test root, as a RootStore (internal/ceremony/rootstore.go): the place where
@@ -61,11 +61,11 @@ func TestTheSoftwareStoreSaysWhatItIs(t *testing.T) {
 	}
 }
 
-func TestThePlaceOfAKeyIsTheNameOfItsFileAndNeverAPath(t *testing.T) {
+func TestThePlaceOfAKeyIsItsPurposeAndNeverAPath(t *testing.T) {
 	_, bundle, keys := mkStoreCase(t)
 	s := mkOpenStore(t, keys, bundle)
 	for _, l := range []string{"A", "B", "M", "Z"} {
-		if got, want := s.Place(l), l+".x509.key.pem"; got != want {
+		if got, want := s.Place(l), "x509-root-"+strings.ToLower(l); got != want {
 			t.Errorf("Place(%q) = %q, want %q", l, got, want)
 		}
 	}
@@ -167,7 +167,7 @@ func TestABirthWritesTheKeyFileAndTheStoreReadsItBackAsTheSameKey(t *testing.T) 
 	if !ok || pub.Curve != elliptic.P384() {
 		t.Fatalf("the key is %T", k.Public())
 	}
-	file := filepath.Join(keys, "A.x509.key.pem")
+	file := filepath.Join(keys, mkKeyFile("A"))
 	st, err := os.Stat(file)
 	if err != nil {
 		t.Fatalf("no key file: %v", err)
@@ -175,29 +175,21 @@ func TestABirthWritesTheKeyFileAndTheStoreReadsItBackAsTheSameKey(t *testing.T) 
 	if st.Mode().Perm() != 0o600 {
 		t.Errorf("the key file has the mode %o, want 600", st.Mode().Perm())
 	}
-	text, err := os.ReadFile(file)
+	folder, err := os.Stat(filepath.Join(keys, "test-only-keys"))
+	if err != nil || !folder.IsDir() || folder.Mode().Perm() != 0o700 {
+		t.Errorf("the folder test-only-keys: %v, %v; want a folder of the mode 700", folder, err)
+	}
+	der, err := os.ReadFile(file)
 	if err != nil {
 		t.Fatal(err)
 	}
-	const mark = "TEST ONLY: a test root with no passphrase; anyone with this file can sign as this root.\n"
-	if !strings.HasPrefix(string(text), mark) {
-		t.Errorf("the key file does not start with the page's mark: %.100q", text)
-	}
-	if !strings.Contains(string(text), "-----BEGIN "+"PRIVATE KEY-----") {
-		t.Errorf("the key file holds no PRIVATE KEY armour")
-	}
-	// An independent read of the same directory by the library of the store gives the same public key.
-	ro, err := software.Open(software.Config{KeyDir: keys, BundleDir: bundle, Mode: software.ModeTest})
+	// An independent read of the key file gives the same public key.
+	parsed, err := x509.ParsePKCS8PrivateKey(der)
 	if err != nil {
-		t.Fatal(err)
+		t.Fatalf("the key file is not a PKCS#8 private key: %v", err)
 	}
-	defer func() { _ = ro.Close() }()
-	back, err := ro.OpenX509(ctx, "A")
-	if err != nil {
-		t.Fatalf("OpenX509: %v", err)
-	}
-	defer func() { _ = back.Close() }()
-	if !pub.Equal(back.Public()) {
+	priv, ok := parsed.(*ecdsa.PrivateKey)
+	if !ok || !pub.Equal(&priv.PublicKey) {
 		t.Error("the key file holds another key than the key that Birth returned")
 	}
 	// No file but the key file: the removal authorisation is saved by its own call.
@@ -236,7 +228,7 @@ func TestAKeyFileIsNeverReplaced(t *testing.T) {
 		t.Fatal(err)
 	}
 	_ = k.Close()
-	before, err := os.ReadFile(filepath.Join(keys, "A.x509.key.pem"))
+	before, err := os.ReadFile(filepath.Join(keys, mkKeyFile("A")))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -244,7 +236,7 @@ func TestAKeyFileIsNeverReplaced(t *testing.T) {
 	if k2 != nil || mkBackendReason(err) != "key-exists" {
 		t.Fatalf("a second Birth of A: %v, %v; want key-exists", k2, err)
 	}
-	after, _ := os.ReadFile(filepath.Join(keys, "A.x509.key.pem"))
+	after, _ := os.ReadFile(filepath.Join(keys, mkKeyFile("A")))
 	if !bytes.Equal(before, after) {
 		t.Fatal("the key file was changed")
 	}
@@ -264,7 +256,7 @@ func TestRefuseSeesKeyFilesThatStandInTheDirectory(t *testing.T) {
 	if k, err := s.Birth(context.Background(), "A"); k != nil || err == nil {
 		t.Fatalf("Birth after a refusal gives %v, %v", k, err)
 	}
-	if _, err := os.Stat(filepath.Join(keys, "A.x509.key.pem")); err == nil {
+	if _, err := os.Stat(filepath.Join(keys, mkKeyFile("A"))); err == nil {
 		t.Fatal("a key file was made after Refuse refused")
 	}
 }
@@ -289,7 +281,7 @@ func TestAKeyFileThatAppearsAfterAnAcceptedRefuseMakesTheNextRefuseRefuseAndNoKe
 		_ = k.Close()
 		t.Fatal("a key is made after the last Refuse refused")
 	}
-	if _, err := os.Stat(filepath.Join(keys, "A.x509.key.pem")); err == nil {
+	if _, err := os.Stat(filepath.Join(keys, mkKeyFile("A"))); err == nil {
 		t.Fatal("a key file is written after the last Refuse refused")
 	}
 }
@@ -488,14 +480,14 @@ func TestTwoGoroutinesBirthingTwoLabelsMakeTwoKeys(t *testing.T) {
 	}
 	close(start)
 	wg.Wait()
-	ents, _ := os.ReadDir(keys)
+	inner, _ := os.ReadDir(filepath.Join(keys, "test-only-keys"))
 	var names []string
-	for _, e := range ents {
+	for _, e := range inner {
 		names = append(names, e.Name())
 	}
 	slices.Sort(names)
-	if !slices.Equal(names, []string{"A.x509.key.pem", "B.x509.key.pem"}) {
-		t.Errorf("the key directory holds %v", names)
+	if !slices.Equal(names, []string{"x509-root-a.p8", "x509-root-b.p8"}) {
+		t.Errorf("the folder test-only-keys holds %v", names)
 	}
 }
 
@@ -514,7 +506,7 @@ func mkWithin(t *testing.T, what string, fn func()) {
 
 func TestAPipeOrALinkInThePlaceOfAFileIsRefusedAndDoesNotStopTheStore(t *testing.T) {
 	for _, kind := range []string{"fifo", "link", "folder"} {
-		for _, name := range []string{"A.x509.key.pem", "A.removal.jws"} {
+		for _, name := range []string{"test-only-keys", "A.removal.jws"} {
 			t.Run(kind+" "+name, func(t *testing.T) {
 				root, bundle, keys := mkStoreCase(t)
 				path := filepath.Join(keys, name)
@@ -541,8 +533,8 @@ func TestAPipeOrALinkInThePlaceOfAFileIsRefusedAndDoesNotStopTheStore(t *testing
 						return
 					}
 					if k, err := s.Birth(ctx, "A"); err == nil {
-						if name == "A.x509.key.pem" {
-							t.Errorf("a key is born over a %s", kind)
+						if name == "test-only-keys" {
+							t.Errorf("a key is born beside a %s with the name of the key folder", kind)
 						}
 						_ = k.Close()
 					}

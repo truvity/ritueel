@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"ritueel.id/ritueel/internal/jsonset"
+	"ritueel.id/ritueel/internal/keydir"
 )
 
 // AcceptedLimit is the accepted limit of a software test root, printed in the plan in words before
@@ -30,7 +31,7 @@ func (p *PlanOut) Words() []string {
 		fmt.Sprintf("writes the first trust set, number %d", firstTrustSequence),
 	}
 	for _, b := range p.Births {
-		lines = append(lines, fmt.Sprintf("make the X.509 root key %s: a software key in a file (%s), TEST ONLY", esc(b.Label), esc(b.Place)))
+		lines = append(lines, fmt.Sprintf("make the X.509 root key %s: a software key in a file of the folder %s (%s), TEST ONLY", esc(b.Label), keydir.TestOnlyFolder, esc(b.Place)))
 	}
 	if len(p.LeavesOut) == 0 {
 		lines = append(lines, "leaves out: nothing")

@@ -114,7 +114,7 @@ func TestTheSummaryLinesAreThoseOfTheRecordedCeremony(t *testing.T) {
 		"trust set " + done.TrustSet + ", sequence 1\n",
 		"root key A: x509 pin " + done.Roots[0].X509SPKISHA256 + ", certificate ends 2029-11-20T10:00:00Z\n",
 		"root key B: x509 pin " + done.Roots[1].X509SPKISHA256 + ", certificate ends 2029-11-20T10:00:00Z\n",
-		"the key files A.x509.key.pem, B.x509.key.pem and the removal authorisations beside them are in the key directory: copy them to a safe place; this is a TEST ONLY root\n",
+		"the keys x509-root-a, x509-root-b are in the folder test-only-keys of the key directory, and the removal authorisations are beside that folder: copy them to a safe place; this is a TEST ONLY root\n",
 	} {
 		if !strings.Contains(errText, want) {
 			t.Errorf("standard error does not hold the line %q", want)

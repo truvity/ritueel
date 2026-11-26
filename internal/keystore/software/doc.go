@@ -1,4 +1,16 @@
-// Package software is the software key store, the `file` backend (docs/reference/software-store.md;
+// Package software is ritueel's own software key store, the `file` backend: key files with plain
+// or passphrase-encrypted content. No ceremony calls it any more. A test root's keys are made and
+// used through the key port of atom (record 0012, rules 1 and 2; internal/keystore/port and
+// internal/keystore/atoomsoftware), and the key directory is judged by internal/keydir. What still
+// uses this package is the in-memory key ([Generate], [Key]) that tests of internal/trustset,
+// internal/openpgp and internal/ceremony sign with, and what the exception of record 0012, rule 4,
+// keeps for a person's own key: the encrypted key file, whose home this package is until that work
+// moves it. It is not to be wired into a new caller; the rest of it is removed when the records
+// that describe it are rewritten.
+//
+// What follows describes the package as built.
+//
+// The software key store, the `file` backend (docs/reference/software-store.md;
 // record 0002, rules 9 to 11): a key is made in memory (record 0002, rule 4), written straight to
 // a key file in a key directory outside the bundle (record 0005, rule 30), and opened again at a
 // later ceremony.

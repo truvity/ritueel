@@ -70,6 +70,11 @@ func (m *x509Maker) run(ctx context.Context) (*Made, error) {
 	if err := guard("key store", func() error { return m.in.Store.Refuse(ctx) }); err != nil {
 		return nil, err
 	}
+	// The key store is started here when the run did not start it before the attempt: a second start with the
+	// same labels does nothing, and a store that is started makes no key.
+	if err := guard("key store", func() error { return m.in.Store.Start(ctx, m.labels) }); err != nil {
+		return nil, err
+	}
 	m.pubs, m.pins = map[string]*ecdsa.PublicKey{}, map[string]string{}
 	m.certs, m.removal = map[string][]byte{}, map[string]string{}
 	m.signers = map[string]trustset.Signer{}
@@ -308,7 +313,7 @@ func (m *x509Maker) sign(ctx context.Context) error {
 			return err
 		}
 		key := m.keys[i]
-		if err := m.signCertificate(i, label, key); err != nil {
+		if err := m.signCertificate(ctx, i, label, key); err != nil {
 			return err
 		}
 		if err := m.signRemoval(ctx, i, label, key); err != nil {
@@ -320,7 +325,7 @@ func (m *x509Maker) sign(ctx context.Context) error {
 
 // signCertificate makes the root certificate of a label: the body from the parameters, the signature
 // of the key itself, and the certificate put together and verified by internal/pki.
-func (m *x509Maker) signCertificate(i int, label string, key keystore.Key) error {
+func (m *x509Maker) signCertificate(ctx context.Context, i int, label string, key keystore.Key) error {
 	s := m.plan.Signatures[2*i]
 	serial, ok := new(big.Int).SetString(s.Serial, 16)
 	if !ok {
@@ -340,6 +345,11 @@ func (m *x509Maker) signCertificate(i int, label string, key keystore.Key) error
 		return err
 	})
 	if err != nil {
+		// A key store that signs in a process or on a device sees the end of the context while it signs: the
+		// run says that the context ended, as it does when it sees it between two steps.
+		if cerr := ctx.Err(); cerr != nil {
+			return cerr
+		}
 		return makeErr("signatures", err, "the root certificate of %s was not made", label)
 	}
 	m.certs[label] = der
@@ -364,6 +374,9 @@ func (m *x509Maker) signRemoval(ctx context.Context, i int, label string, key ke
 		return e
 	})
 	if err != nil {
+		if cerr := ctx.Err(); cerr != nil {
+			return cerr
+		}
 		return makeErr("signatures", err, "the removal authorisation of %s was not made", label)
 	}
 	parts := strings.Split(text, ".")

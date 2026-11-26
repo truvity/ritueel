@@ -5,7 +5,6 @@ import (
 	"crypto/x509"
 	"encoding/base64"
 	"encoding/hex"
-	"encoding/pem"
 	"os"
 	"path/filepath"
 	"slices"
@@ -46,12 +45,12 @@ func TestEachStepLeavesTheFilesOfItsRow(t *testing.T) {
 	}{
 		{ceremonytest.AtPlan, plan, nil, -1, -1, 0},
 		{ceremonytest.AtAttempt, attempt, nil, 0, 0, 0},
-		{ceremonytest.AtFirstBirth, attempt, []string{"A.x509.key.pem"}, 1, 0, 1},
-		{ceremonytest.AtBirths, attempt, []string{"A.x509.key.pem", "B.x509.key.pem"}, 2, 0, 2},
-		{ceremonytest.AtSignatures, attempt, []string{"A.removal.jws", "A.x509.key.pem", "B.removal.jws", "B.x509.key.pem"}, 2, 5, 2},
-		{ceremonytest.AtTranscript, transcript, []string{"A.removal.jws", "A.x509.key.pem", "B.removal.jws", "B.x509.key.pem"}, 2, 5, 2},
-		{ceremonytest.AtSet, set, []string{"A.removal.jws", "A.x509.key.pem", "B.removal.jws", "B.x509.key.pem"}, 2, 5, 2},
-		{ceremonytest.Recorded, recorded, []string{"A.removal.jws", "A.x509.key.pem", "B.removal.jws", "B.x509.key.pem"}, 2, 5, 2},
+		{ceremonytest.AtFirstBirth, attempt, []string{"test-only-keys/x509-root-a.p8"}, 1, 0, 1},
+		{ceremonytest.AtBirths, attempt, []string{"test-only-keys/x509-root-a.p8", "test-only-keys/x509-root-b.p8"}, 2, 0, 2},
+		{ceremonytest.AtSignatures, attempt, []string{"A.removal.jws", "B.removal.jws", "test-only-keys/x509-root-a.p8", "test-only-keys/x509-root-b.p8"}, 2, 5, 2},
+		{ceremonytest.AtTranscript, transcript, []string{"A.removal.jws", "B.removal.jws", "test-only-keys/x509-root-a.p8", "test-only-keys/x509-root-b.p8"}, 2, 5, 2},
+		{ceremonytest.AtSet, set, []string{"A.removal.jws", "B.removal.jws", "test-only-keys/x509-root-a.p8", "test-only-keys/x509-root-b.p8"}, 2, 5, 2},
+		{ceremonytest.Recorded, recorded, []string{"A.removal.jws", "B.removal.jws", "test-only-keys/x509-root-a.p8", "test-only-keys/x509-root-b.p8"}, 2, 5, 2},
 	}
 	for _, r := range rows {
 		t.Run(r.step.String(), func(t *testing.T) {
@@ -65,7 +64,10 @@ func TestEachStepLeavesTheFilesOfItsRow(t *testing.T) {
 			var gotKeys []string
 			for p, e := range keys {
 				if e.dir {
-					t.Errorf("a folder %s in the key directory", p)
+					if p != "test-only-keys" {
+						t.Errorf("a folder %s in the key directory", p)
+					}
+					continue
 				}
 				gotKeys = append(gotKeys, p)
 			}
@@ -91,8 +93,12 @@ func TestEachStepLeavesTheFilesOfItsRow(t *testing.T) {
 				}
 			}
 			for p, e := range keys {
-				if isLeftover(p) || e.mode != 0o600 {
-					t.Errorf("key directory file %s has mode %v", p, e.mode)
+				want := os.FileMode(0o600)
+				if p == "test-only-keys" {
+					want = 0o700
+				}
+				if isLeftover(p) || e.mode != want {
+					t.Errorf("key directory file %s has mode %v, want %v", p, e.mode, want)
 				}
 			}
 		})
@@ -234,7 +240,7 @@ func TestNoSecretIsInTheBundle(t *testing.T) {
 	for _, step := range []ceremonytest.Step{ceremonytest.AtFirstBirth, ceremonytest.AtSignatures, ceremonytest.AtSet, ceremonytest.Recorded} {
 		t.Run(step.String(), func(t *testing.T) {
 			m := ceremonytest.Bundle(t, ceremonytest.Options{Step: step})
-			keyFiles, err := filepath.Glob(filepath.Join(m.KeyDir, "*.x509.key.pem"))
+			keyFiles, err := filepath.Glob(filepath.Join(m.KeyDir, "test-only-keys", "*.p8"))
 			if err != nil || len(keyFiles) == 0 {
 				t.Fatalf("no key file: %v", err)
 			}
@@ -244,11 +250,7 @@ func TestNoSecretIsInTheBundle(t *testing.T) {
 				if err != nil {
 					t.Fatal(err)
 				}
-				block, _ := pem.Decode(data)
-				if block == nil {
-					t.Fatalf("%s is no PEM", kf)
-				}
-				key, err := x509.ParsePKCS8PrivateKey(block.Bytes)
+				key, err := x509.ParsePKCS8PrivateKey(data)
 				if err != nil {
 					t.Fatalf("%s: %v", kf, err)
 				}
@@ -260,7 +262,7 @@ func TestNoSecretIsInTheBundle(t *testing.T) {
 				if err != nil {
 					t.Fatal(err)
 				}
-				for _, raw := range [][]byte{d, block.Bytes} {
+				for _, raw := range [][]byte{d, data} {
 					secrets = append(secrets, raw, []byte(hex.EncodeToString(raw)),
 						[]byte(base64.StdEncoding.EncodeToString(raw)), []byte(base64.URLEncoding.EncodeToString(raw)),
 						[]byte(base64.RawStdEncoding.EncodeToString(raw)), []byte(base64.RawURLEncoding.EncodeToString(raw)))

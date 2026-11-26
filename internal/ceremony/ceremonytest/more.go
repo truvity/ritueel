@@ -14,6 +14,7 @@ import (
 	"path/filepath"
 	"slices"
 	"strconv"
+	"strings"
 	"testing"
 	"time"
 
@@ -237,7 +238,7 @@ func (s *synth) planBytes(t testing.TB) []byte {
 			map[string]any{"n": 2, "kind": "root-removal", "subject": s.label, "derived": true},
 			map[string]any{"n": 3, "kind": "root-list", "subject": s.label, "key": s.pin, "tbs_sha256": files.Digest([]byte("tbs " + s.name))},
 		},
-		"births":             []any{map[string]any{"label": s.label, "purpose": "x509-root", "store": "software", "place": s.label + ".x509.key.pem"}},
+		"births":             []any{map[string]any{"label": s.label, "purpose": "x509-root", "store": "software", "place": "x509-root-" + strings.ToLower(s.label)}},
 		"last_record_sha256": s.end,
 	}
 	b, err := canonjson.Marshal(m)
@@ -268,7 +269,7 @@ func (s *synth) write(t testing.TB, w *fsx.Writer) (planSHA, attemptSHA string) 
 	must("the attempt", err)
 	tr, err := f.Start(attempt)
 	must("the attempt", err)
-	birth, err := (&files.BirthLine{At: at, Label: s.label, Purpose: "x509-root", Store: "software", Place: s.label + ".x509.key.pem", PublicKeySHA256: s.pin}).Canonical()
+	birth, err := (&files.BirthLine{At: at, Label: s.label, Purpose: "x509-root", Store: "software", Place: "x509-root-" + strings.ToLower(s.label), PublicKeySHA256: s.pin}).Canonical()
 	must("the birth line", err)
 	must("the birth journal", tr.Births().Append(birth))
 	for i, kind := range []string{"root-certificate", "root-removal", "root-list"} {
