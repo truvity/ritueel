@@ -19,6 +19,7 @@ import (
 	"io"
 	"math/big"
 	"strconv"
+	"sync"
 )
 
 // This file reads and opens the secret of the primary key of a foreign key (RFC 9580, section
@@ -331,7 +332,9 @@ func classifyProtected(region []byte) (p fkProtection, err error) {
 	p.iv = bytes.Clone(region[head : head+aesBlock])
 	p.data = bytes.Clone(region[head+aesBlock:])
 	if len(p.data) < sha1.Size+3 {
-		return p, fail(ErrForeignForm, "the encrypted secret of the primary is shorter than its SHA-1 check and one number")
+		clear(p.iv)
+		clear(p.data)
+		return fkProtection{}, fail(ErrForeignForm, "the encrypted secret of the primary is shorter than its SHA-1 check and one number")
 	}
 	return p, nil
 }
@@ -381,14 +384,15 @@ var ErrSecretWiped = errors.New("openpgp: the secret key was wiped")
 // made inside the standard library are out of reach, and may stay in memory until the process ends;
 // Wipe clears what this package can reach: the numbers of the key, word by word, and drops the key.
 type ForeignSecret struct {
+	mu     sync.RWMutex // a signature holds the read lock; the wipe holds the write lock
 	key    crypto.Signer
 	signer *ForeignSigner
 }
 
 // ForeignSigner is a [crypto.Signer] that signs with the primary key of a foreign key until the
 // [ForeignSecret] it came from is wiped, and then refuses every signature with [ErrSecretWiped]. It does
-// not hand out the standard-library key. It is not safe for use by several goroutines at once with a
-// wipe. A later part that needs what only the concrete key offers, such as decrypting with an RSA key,
+// not hand out the standard-library key. It may be used from several goroutines, and a wipe waits for a
+// signature that is running and then ends them all. A later part that needs what only the concrete key offers, such as decrypting with an RSA key,
 // would need a method added here; the primary of a person is certify-only and signs.
 type ForeignSigner struct {
 	secret *ForeignSecret
@@ -406,17 +410,28 @@ func (f *ForeignSigner) Public() crypto.PublicKey {
 // Sign signs digest as the key does, passing rand and opts through, or returns [ErrSecretWiped] after the
 // wipe (and on a nil signer).
 func (f *ForeignSigner) Sign(rand io.Reader, digest []byte, opts crypto.SignerOpts) ([]byte, error) {
-	if f == nil || f.secret == nil || f.secret.key == nil {
+	if f == nil || f.secret == nil {
 		return nil, ErrSecretWiped
 	}
-	return f.secret.key.Sign(rand, digest, opts)
+	f.secret.mu.RLock()
+	defer f.secret.mu.RUnlock()
+	key := f.secret.key
+	if key == nil {
+		return nil, ErrSecretWiped
+	}
+	return key.Sign(rand, digest, opts)
 }
 
 // Signer returns the handle that signs with the private key, a [*ForeignSigner]. It is not the
 // standard-library key and cannot be converted to it. It returns nil after the wipe. A handle
 // that was returned before the wipe answers [ErrSecretWiped] afterwards.
 func (s *ForeignSecret) Signer() crypto.Signer {
-	if s == nil || s.key == nil {
+	if s == nil {
+		return nil
+	}
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	if s.key == nil {
 		return nil
 	}
 	return s.signer
@@ -430,6 +445,8 @@ func (s *ForeignSecret) Wipe() {
 	if s == nil {
 		return
 	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
 	switch k := s.key.(type) {
 	case *rsa.PrivateKey:
 		wipeRSA(k)

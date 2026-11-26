@@ -39,9 +39,10 @@ const (
 	MaxForeignUserIDBytes = 2048
 	// MaxForeignClaimedSignatures is the most signatures in the whole file that the primary has to answer
 	// for, which are the ones that are verified: those that name the primary, and the revocations that
-	// are not provably another key's: 512. The certifications of other keys are only counted, and keep
+	// are not provably another key's: 2048, which a key re-signed every year for twenty years, with fifteen
+	// user IDs and thirty subkeys, comes near. The certifications of other keys are only counted, and keep
 	// the limit of [MaxForeignSignatures] for each component.
-	MaxForeignClaimedSignatures = 512
+	MaxForeignClaimedSignatures = 2048
 )
 
 // SecretState tells whether the secret of the primary key in the file is protected by a passphrase.
@@ -223,11 +224,12 @@ type ForeignUserID struct {
 	// Valid is true when at least one of Signatures is a certification that counts: a self-signature
 	// that verifies (made with SHA-1 or a strong hash).
 	Valid bool
-	// WeakHash is true when Valid is true and every self-signature that counts was made with SHA-1
-	// (status [SignatureValidWeakHash]). The key is accepted, and the adoption re-signs with a strong hash.
+	// WeakHash is true when Valid is true and no self-signature that counts is strong: the fields above
+	// come from a SHA-1 self-signature (status [SignatureValidWeakHash]). The key is accepted, and the adoption re-signs with a strong hash.
 	WeakHash bool
-	// Created is the creation time of the newest valid self-signature (the later one in the file
-	// among equal times), and the fields below are read from that signature.
+	// Created is the creation time of the self-signature that gives the fields: the newest strong one
+	// when there is one, else the newest weak one (the later one in the file among equal times). The
+	// fields below are read from that signature.
 	Created time.Time
 	// KeyExpires is the key expiry that the newest valid self-signature gives, and zero if none.
 	KeyExpires time.Time
@@ -280,10 +282,12 @@ type ForeignSubkey struct {
 	// Bound is true when at least one binding verifies (with SHA-1 or a strong hash). A binding of a
 	// subkey that can sign needs its embedded back-signature, which go-crypto checks with it.
 	Bound bool
-	// WeakHash is true when Bound is true and every binding that counts was made with SHA-1.
+	// WeakHash is true when Bound is true and no binding that counts is strong: the fields come from a
+	// SHA-1 binding.
 	WeakHash bool
-	// BoundAt is the creation time of the newest valid binding (the later one in the file among
-	// equal times), and Flags and Expires are read from that binding: the first key flags octet, and
+	// BoundAt is the creation time of the binding that gives the fields (the newest strong one when
+	// there is one, else the newest weak one; the later one in the file among equal times), and Flags
+	// and Expires are read from that binding: the first key flags octet, and
 	// the end of the key counted from the creation of the subkey (zero if none).
 	BoundAt time.Time
 	Flags   uint8
@@ -341,6 +345,11 @@ type ForeignKey struct {
 // turned into its public key packet (a new-format header with the shortest length, and the public
 // part of the body). It starts with the primary and holds no secret. Trust packets and marker packets
 // are not in it: a trust packet is local to the tool that wrote it. It is a copy.
+//
+// A subkey that came as a secret key packet (with a secret or as a stub) is in the certificate only
+// because a binding signature of the primary verified over its public bytes: the cut of such a packet is
+// made by its own length fields, and the signature is what confirms it. A subkey that came as a public
+// key packet is copied as it is.
 //
 // Warning: the bytes are the public packets of the file as they came, all of them: a user ID with no
 // valid self-signature, a subkey that is not bound, a signature that does not verify or that the
@@ -463,6 +472,12 @@ func readForeignKey(file []byte) (*ForeignKey, error) {
 	}
 	if n := v.countClaimed(w); n > MaxForeignClaimedSignatures {
 		return nil, fail(ErrForeignLimit, "the file has more than MaxForeignClaimedSignatures (%d) signatures that the primary has to answer for", MaxForeignClaimedSignatures)
+	}
+	if err := v.confirmSubkeys(w); err != nil {
+		return nil, err
+	}
+	for _, s := range w.subs {
+		w.cert = append(w.cert, s.held...)
 	}
 	k := &ForeignKey{cert: w.cert, pub: w.pub, prot: w.prot}
 	k.Primary = ForeignPrimary{

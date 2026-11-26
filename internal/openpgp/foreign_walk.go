@@ -21,6 +21,9 @@ type fkTarget struct {
 	sigs []fkSig
 	n    int
 	drop bool // the signatures are counted and not kept (a user attribute)
+	// sink, when it is set, receives the whole packets of the signatures instead of the certificate: a
+	// subkey's packets are held back until the subkey is confirmed (see [fkVerifier.confirmSubkeys]).
+	sink *[]byte
 }
 
 type fkUser struct {
@@ -36,6 +39,10 @@ type fkSub struct {
 	gopk      *packet.PublicKey // go-crypto's reading of it, set for a secret subkey
 	form      SubkeyForm
 	t         fkTarget
+	// held is what the certificate gets for this subkey once it passes: its public subkey packet, then
+	// its signature packets as they stood. It is a copy, and nothing of it is in the certificate
+	// before the check of a subkey that came as a secret key packet has passed.
+	held []byte
 }
 
 // fkWalk is a transferable key taken apart. Its slices point into the bytes that were walked, which
@@ -177,7 +184,11 @@ func (w *fkWalk) add(cur *fkTarget, tag byte, raw, body []byte) (*fkTarget, erro
 		if cur.n > MaxForeignSignatures {
 			return nil, fail(ErrForeignLimit, "a component of the key has more than MaxForeignSignatures (%d) signatures", MaxForeignSignatures)
 		}
-		w.cert = append(w.cert, raw...)
+		if cur.sink != nil {
+			*cur.sink = append(*cur.sink, raw...)
+		} else {
+			w.cert = append(w.cert, raw...)
+		}
 		if !cur.drop {
 			cur.sigs = append(cur.sigs, fkSig{raw: raw, body: body})
 		}
@@ -233,14 +244,18 @@ func (w *fkWalk) subkey(tag byte, raw, body []byte) (*fkSub, error) {
 		return nil, err
 	}
 	s := &fkSub{pub: pub, fp: fp, pubBody: body[:pub.length]}
+	s.t.sink = &s.held
 	if tag == tagSubkey {
 		s.form, s.pubPacket = SubkeyPublic, raw
-		w.cert = append(w.cert, raw...)
+		s.held = append(s.held, raw...)
 	} else {
-		// A secret subkey: the public part ends where its own length fields say, so it is held to
-		// two more checks before one byte of it goes into the certificate. A second parser must read
-		// the public packet that the cut makes, and the bytes after the cut must start a secret
-		// area (usage octet, S2K specifier) of a known form.
+		// A secret subkey: the public part ends where its own length fields say, which nothing has
+		// confirmed. Three layers guard the cut: the bounds of its fields, a second parser that must
+		// read the public packet that the cut makes and write it again to the same bytes, and a secret
+		// area that must account for the packet. The layer that cannot be fooled comes after the walk:
+		// a binding signature of the primary must verify over exactly these bytes
+		// ([fkVerifier.confirmSubkeys]). Until then nothing of the subkey is in the certificate: its
+		// packets are held in s.held.
 		s.pubPacket = wrap(tagSubkey, s.pubBody)
 		if s.gopk, err = agreePublic(s.pubPacket, s.pubBody, fp, true); err != nil {
 			return nil, err
@@ -253,7 +268,7 @@ func (w *fkWalk) subkey(tag byte, raw, body []byte) (*fkSub, error) {
 		if stub {
 			s.form = SubkeyStub
 		}
-		w.cert = append(w.cert, s.pubPacket...)
+		s.held = append(s.held, s.pubPacket...)
 	}
 	w.subs = append(w.subs, s)
 	return s, nil

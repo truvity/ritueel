@@ -433,11 +433,14 @@ func revocationOf(revs []*ForeignSignature, newest *ForeignSignature) *ForeignSi
 	return nil
 }
 
-// summariseUserID fills what the newest valid self-signature and the revocations say.
+// summariseUserID fills the view from the signatures that count. The fields (creation time, key
+// expiry, key flags, primary mark) come from the newest strong self-signature when there is one, and
+// from the newest weak (SHA-1) one only when there is no strong one: WeakHash means exactly that the
+// fields come from a weak signature. A soft revocation is compared with the newest self-signature of
+// either kind.
 func summariseUserID(fu *ForeignUserID) {
-	var self *ForeignSignature
+	var strong, weak, newest *ForeignSignature
 	var revs []*ForeignSignature
-	strong := false
 	for i := range fu.Signatures {
 		s := &fu.Signatures[i]
 		if !s.Status.Counts() {
@@ -445,21 +448,36 @@ func summariseUserID(fu *ForeignUserID) {
 		}
 		switch {
 		case isCertification(s.Type):
-			strong = strong || s.Status == SignatureValid
-			if self == nil || !s.Created.Before(self.Created) {
-				self = s
+			newest = newer(newest, s)
+			if s.Status == SignatureValid {
+				strong = newer(strong, s)
+			} else {
+				weak = newer(weak, s)
 			}
 		case s.Type == sigCertRevocation:
 			revs = append(revs, s)
 		}
 	}
-	if self != nil {
-		fu.Valid, fu.WeakHash = true, !strong
-		fu.Created, fu.KeyExpires, fu.KeyFlags, fu.Primary = self.Created, self.KeyExpires, self.KeyFlags, self.Primary
+	src := strong
+	if src == nil {
+		src = weak
 	}
-	if r := revocationOf(revs, self); r != nil {
+	if src != nil {
+		fu.Valid, fu.WeakHash = true, strong == nil
+		fu.Created, fu.KeyExpires, fu.KeyFlags, fu.Primary = src.Created, src.KeyExpires, src.KeyFlags, src.Primary
+	}
+	if r := revocationOf(revs, newest); r != nil {
 		fu.Revoked, fu.RevokedAt = true, r.Created
 	}
+}
+
+// newer returns the later of two signatures by creation time, the later one in the file when equal. a may
+// be nil.
+func newer(a, b *ForeignSignature) *ForeignSignature {
+	if a == nil || !b.Created.Before(a.Created) {
+		return b
+	}
+	return a
 }
 
 // subkeys judges the signatures on each subkey. A subkey that go-crypto cannot read has its claimed
@@ -499,11 +517,12 @@ func (v *fkVerifier) subkeys(w *fkWalk) []ForeignSubkey {
 	return out
 }
 
-// summariseSubkey fills what the newest valid binding and the revocations say.
+// summariseSubkey fills the view from the bindings that count, by the rule of [summariseUserID]: the
+// fields come from the newest strong binding when there is one, and WeakHash means that they come from a
+// weak (SHA-1) one.
 func summariseSubkey(fs *ForeignSubkey) {
-	var bind *ForeignSignature
+	var strong, weak, newest *ForeignSignature
 	var revs []*ForeignSignature
-	strong := false
 	for i := range fs.Signatures {
 		s := &fs.Signatures[i]
 		if !s.Status.Counts() {
@@ -511,19 +530,25 @@ func summariseSubkey(fs *ForeignSubkey) {
 		}
 		switch s.Type {
 		case sigSubkeyBinding:
-			strong = strong || s.Status == SignatureValid
-			if bind == nil || !s.Created.Before(bind.Created) {
-				bind = s
+			newest = newer(newest, s)
+			if s.Status == SignatureValid {
+				strong = newer(strong, s)
+			} else {
+				weak = newer(weak, s)
 			}
 		case sigSubkeyRevoke:
 			revs = append(revs, s)
 		}
 	}
-	if bind != nil {
-		fs.Bound, fs.WeakHash = true, !strong
-		fs.BoundAt, fs.Flags, fs.Expires = bind.Created, bind.KeyFlags, bind.KeyExpires
+	src := strong
+	if src == nil {
+		src = weak
 	}
-	fs.Revoked = revocationOf(revs, bind) != nil
+	if src != nil {
+		fs.Bound, fs.WeakHash = true, strong == nil
+		fs.BoundAt, fs.Flags, fs.Expires = src.Created, src.KeyFlags, src.KeyExpires
+	}
+	fs.Revoked = revocationOf(revs, newest) != nil
 }
 
 // countClaimed counts the signatures in the file that the primary has to answer for, which are the ones
@@ -545,4 +570,66 @@ func (v *fkVerifier) countClaimed(w *fkWalk) int {
 		count(&s.t)
 	}
 	return n
+}
+
+// confirmsHash tells whether a hash may authenticate a subkey: SHA-1 or a stronger one (SHA-224, SHA-256,
+// SHA-384, SHA-512, SHA3-256, SHA3-512). MD5, RIPEMD-160 and the other obsolete hashes may not.
+func confirmsHash(id byte) bool {
+	switch id {
+	case 2, 8, 9, 10, 11, 12, 14:
+		return true
+	}
+	return false
+}
+
+// confirmSubkeys is the check that authenticates the cut of every subkey that came as a secret key
+// packet, secret or stub. The cut of such a packet is made by its own length fields and nothing else
+// vouches for it; a binding signature of the primary does, because it signs the exact bytes of the
+// public subkey. So a secret subkey goes into the certificate only if at least one binding (type 0x18)
+// that the primary has not provably not made verifies, with the public key of the primary, over the
+// public subkey packet that the cut made, with SHA-1 or a stronger hash. The signature is verified with
+// [packet.PublicKey.VerifySubkeyRevocationSignature], which hashes the primary and the subkey and does
+// not ask for a back-signature (the binding of a subkey that can sign is judged for the view by
+// VerifyKeySignature, which does). The expiry of the binding, a revocation of the subkey and a missing
+// back-signature do not matter here. go-crypto hashes its own serialisation of the subkey, and
+// [agreePublic] has already made it write exactly the bytes of the cut (s.pubBody) with the fingerprint
+// that this package computed, so the bytes that the signature covers are the bytes that the
+// certificate gets. When no binding verifies, the whole file is an [ErrForeignSubkey].
+func (v *fkVerifier) confirmSubkeys(w *fkWalk) error {
+	for _, s := range w.subs {
+		if s.form == SubkeyPublic {
+			continue
+		}
+		ok := false
+		for _, g := range s.t.sigs {
+			if v.bindsSubkey(g, s) {
+				ok = true
+				break
+			}
+		}
+		if !ok {
+			return fail(ErrForeignSubkey, "a subkey that came as a secret key packet (%s) has no binding signature of the primary that verifies over its public part", s.form)
+		}
+	}
+	return nil
+}
+
+// bindsSubkey tells whether one signature is a binding of the primary that verifies over the public
+// subkey packet of s.
+func (v *fkVerifier) bindsSubkey(g fkSig, s *fkSub) bool {
+	h := v.head(g)
+	if h.version != 4 || !h.parsed || h.typ != sigSubkeyBinding || h.issuer == issuerOther || h.algo != v.alg || !confirmsHash(h.hash) || s.gopk == nil {
+		return false
+	}
+	return safely(func() error {
+		p, err := packet.Read(bytes.NewReader(g.raw))
+		if err != nil {
+			return err
+		}
+		sig, ok := p.(*packet.Signature)
+		if !ok || sig.Version != 4 || byte(sig.SigType) != sigSubkeyBinding {
+			return errFrame
+		}
+		return v.pk.VerifySubkeyRevocationSignature(sig, s.gopk)
+	}) == nil
 }
