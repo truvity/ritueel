@@ -5,8 +5,9 @@
 //
 // A key directory is accepted only when it exists and is a folder, is not the bundle folder or any
 // folder inside it, and is not inside the work tree of any repository that encloses the bundle. A
-// key directory that is a parent of the bundle, or beside it, is accepted: the stick keeps
-// `keys/<bundle>/` beside `bundles/<name>/`.
+// key directory that is a parent of the bundle, or beside it, is accepted unless one of these
+// rules refuses it (a parent that is, or lies inside, a repository that encloses the bundle is
+// refused): the stick keeps `keys/<bundle>/` beside `bundles/<name>/`.
 //
 // [Check] judges a pair of paths and reads no file. A store that opens the folder afterwards looks
 // again, with [CheckStat], and compares what it opened with the folder that was checked.
