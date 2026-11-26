@@ -77,7 +77,7 @@ A person who already has a primary, with years of certifications, may adopt it a
 - It may be RSA-4096 or Ed25519 and without expiry on arrival, so it is outside the P-384 profile above until it is replaced.
 - It gets an expiry at adoption, and is replaced within three years of adoption, or moved to stage two.
 
-How a primary is adopted is fixed with the code ([issue #18](https://github.com/truvity/ritueel/issues/18)).
+The software store can keep the secret of an adopted primary in `A.openpgp.key.age` as one secret-key packet; the history of the key stays in the bundle's certificate ([the bundle](/reference/bundle/#the-software-roots-key-files)). No command does this yet. How a primary is adopted is fixed with the code ([issue #18](https://github.com/truvity/ritueel/issues/18)).
 
 ## Stage two: card-born primaries
 

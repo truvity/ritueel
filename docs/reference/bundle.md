@@ -510,7 +510,7 @@ A software root key ([the `software` store](../decisions/0002-where-a-key-lives.
 | File | Content |
 |---|---|
 | `<label>.x509.key.age` | The X.509 root key: a PKCS#8 `PrivateKeyInfo` (RFC 5958), PEM-armoured as `PRIVATE KEY`, encrypted with age to the recipients below. |
-| `<label>.openpgp.key.age` | The primary: a transferable secret key, binary (RFC 9580, section 10.2), version 4, whose secret key material is not protected inside (S2K usage 0) because age encrypts the whole file. |
+| `<label>.openpgp.key.age` | The primary, in one of two forms, and a reader refuses the other. For a key that ritueel made: a transferable secret key, binary (RFC 9580, section 10.2), version 4, whose secret key material is not protected inside (S2K usage 0) because age encrypts the whole file. For an adopted key: one version 4 secret-key packet, not protected inside, with no user ID and no signature; its public part is byte for byte the first packet of the certificate that the bundle keeps, which holds the key's history. |
 | `<label>.revocation.<reason>.pgp.age` | The primary's revocation signature for one reason, `compromised` or `superseded` (or one the holder added), encrypted the same way. One file for each reason; the SHA-256 of the signature packet before encryption is the reason's entry in `revocations`. |
 | `<label>.removal.jws.age` | The key's removal authorisation, encrypted the same way; the SHA-256 of the JWS text before encryption is `removal_sha256`. |
 
