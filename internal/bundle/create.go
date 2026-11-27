@@ -89,8 +89,8 @@ func (e *CreateError) Unwrap() error {
 //
 // The folder is made by a make that fails when anything holds the name (record 0006, rule 42): a file, a
 // folder (an empty one too), a link, a leftover. Create never writes into an existing folder. Then it makes
-// want/ and want/roots/, writes each root file, and writes ritueel.yaml last; each file has mode 0644 and each
-// folder 0755, less the umask. The folders seen/, sealed/, roots/, requests/, history/, trust/ and drills/ are
+// want/ and want/roots/, writes each root file (and, for the personal template, want/openpgp.yaml), and writes
+// ritueel.yaml last; each file has mode 0644 and each folder 0755, less the umask. The folders seen/, sealed/, roots/, requests/, history/, trust/ and drills/ are
 // not made: the code that writes into each makes it. The first error of the writer stops it for good, and
 // the error is a [*CreateError] that lists what was made.
 //

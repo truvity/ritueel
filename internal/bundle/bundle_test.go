@@ -553,7 +553,7 @@ func TestTheCheckerRefusesWhatItCannotMake(t *testing.T) {
 		"an upper-case name":             {ok, "Example", nil, ""},
 		"a root with no file":            {without(ok, "want/roots/"+rootName+".yaml"), delegationName, fs.ErrNotExist, "the root of the delegation " + delegationName},
 		"a root of another kind":         {merge(ok, tree{"want/roots/" + rootName + ".yaml": []byte("version: 1\nkind: ssh\n")}), delegationName, nil, "needs the kind x509"},
-		"a root that fails its check":    {merge(ok, tree{"want/roots/" + rootName + ".yaml": []byte("version: 1\nkind: x509\nkeys: []\n")}), delegationName, nil, "not read yet"},
+		"a root that fails its check":    {merge(ok, tree{"want/roots/" + rootName + ".yaml": []byte("version: 1\nkind: x509\nretire_at: 2\n")}), delegationName, nil, "not read yet"},
 		"a delegation that fails":        {merge(ok, tree{"want/delegations/" + delegationName + ".yaml": []byte("version: 1\ntype: x509-intermediate\nroot: example-root\n")}), delegationName, nil, "name constraints"},
 		"no trust set":                   {withoutPrefix(ok, "trust/"), delegationName, bundle.ErrNoTrustSet, ""},
 		"no trust set and no delegation": {withoutPrefix(ok, "trust/"), "", bundle.ErrNoTrustSet, ""},

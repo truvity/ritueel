@@ -43,7 +43,7 @@ person:
   name: Example Person
   address: person@example.org
 policy:
-  stores: [piv]
+  stores: [openpgp-card]
   min_firmware: 5.7.0
   pin_policy: [once]
   require_name_constraints: true

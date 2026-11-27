@@ -8,6 +8,7 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+	"time"
 
 	"ritueel.id/ritueel/internal/cards"
 	"ritueel.id/ritueel/internal/fsx"
@@ -62,6 +63,10 @@ func (r rootFiles) unread() bool { return len(r.names) > len(r.roots) }
 type FindInput struct {
 	// FS is the root folder of the bundle. Find only reads it.
 	FS fsx.FS
+	// Now is the clock of the command's environment. Find reads it once, and only for a personal bundle,
+	// whose keys are judged against the day they expire. A nil clock is an error for a personal bundle and
+	// is not read for another.
+	Now func() time.Time
 }
 
 // Change is one change that a plan applies: the word and the object it applies to, for example
@@ -104,14 +109,16 @@ func (f *Found) Nothing() bool { return f == nil || len(f.Applies) == 0 }
 // Find is the function of record 0005, rules 4 and 5: it reads the wanted files and the state of
 // the bundle and says what is not applied yet. Nothing is stored (rule 4) and nothing is written. In
 // this version it knows one case: the first apply of a bundle that has one wanted test root of the
-// kind x509 and no history. It returns an error, and no Found, for a bundle that is in another state
-// and for a wanted file that it cannot use. The order of the refusals is: a wanted file that fails its
+// kind x509 and no history; a personal bundle whose wanted files pass is refused as not built. It returns
+// an error, and no Found, for a bundle that is in another state and for a wanted file that it cannot use. The order of the refusals is: a wanted file that fails its
 // check (exit code 1); a history that fails its own check (exit code 3); a history whose order cannot
 // be settled (exit code 1); an open attempt (exit code 3, [ReasonUnfinishedCeremony]); a bundle that
 // is not in the first state (exit code 1, [ErrNotFirst]); a root that is not built (exit code 1,
 // [ErrNotBuilt]); a request name that is not a plain name (exit code 1). The names of the root files
 // are listed and counted before any is read, and when there are more than maxRootsRead of them none
-// is read: that bundle is refused as not built, at the place of that refusal, whatever the files hold.
+// is read: that bundle is refused as not built, at the place of that refusal, whatever the files hold. A
+// personal bundle is judged with the clock of [FindInput.Now]: when its wanted files fail their check it is
+// the first refusal, and when they pass it is refused as not built, with the personal case first.
 func Find(ctx context.Context, in FindInput) (*Found, error) {
 	if ctx == nil {
 		return nil, errors.New("ceremony: there is no context")
@@ -122,7 +129,7 @@ func Find(ctx context.Context, in FindInput) (*Found, error) {
 	if err := ctx.Err(); err != nil {
 		return nil, err
 	}
-	settings, rf, err := readWanted(ctx, in.FS)
+	settings, rf, err := readWanted(ctx, in.FS, in.Now)
 	if err != nil {
 		return nil, err
 	}
@@ -171,7 +178,11 @@ func labelOf(i int) string { return string(rune('A' + i)) }
 // read only when there are no more than maxRootsRead of them. The delegation files are read and
 // checked one at a time, and not used or kept. The card files are checked last, as a whole, and not kept
 // either. A canceled context is returned as it is: it is not a refused file.
-func readWanted(ctx context.Context, fsys fsx.FS) (*wanted.Settings, rootFiles, error) {
+//
+// For a personal bundle the delegations and the cards are kept until the last step, which reads
+// want/openpgp.yaml when it exists and judges every file against the others ([wanted.CheckPersonal]) with the
+// time of now; a bundle that is not personal is judged by [wanted.CheckCompanyRoots] instead.
+func readWanted(ctx context.Context, fsys fsx.FS, now func() time.Time) (*wanted.Settings, rootFiles, error) {
 	refused := func(err error) error {
 		return fmt.Errorf("a wanted file is refused, and nothing was written: %w", err)
 	}
@@ -189,16 +200,53 @@ func readWanted(ctx context.Context, fsys fsx.FS) (*wanted.Settings, rootFiles, 
 			return nil, rootFiles{}, refused(err)
 		}
 	}
-	if err := wanted.CheckDelegations(fsys, settings); err != nil {
+	var delegations []*wanted.Delegation
+	if settings.Personal {
+		delegations, err = wanted.ListDelegations(fsys, settings)
+	} else {
+		err = wanted.CheckDelegations(fsys, settings)
+	}
+	if err != nil {
 		return nil, rootFiles{}, refused(err)
 	}
-	if err := cards.Check(ctx, fsys); err != nil {
+	cardFiles, err := cards.Load(ctx, fsys)
+	if err != nil {
 		if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
 			return nil, rootFiles{}, err
 		}
 		return nil, rootFiles{}, refused(err)
 	}
+	if err := checkAcross(fsys, settings, rf, delegations, cardFiles, now); err != nil {
+		return nil, rootFiles{}, refused(err)
+	}
 	return settings, rf, nil
+}
+
+// checkAcross judges the wanted files against each other once each has passed its own reader: for a personal
+// bundle the check of [wanted.CheckPersonal], with want/openpgp.yaml when it exists and the time of now, and for
+// a bundle that is not personal the refusal of the members that only a person's OpenPGP root has.
+func checkAcross(fsys fsx.FS, s *wanted.Settings, rf rootFiles, delegations []*wanted.Delegation, cardFiles []*wanted.Card, now func() time.Time) error {
+	if !s.Personal {
+		return wanted.CheckCompanyRoots(rf.roots)
+	}
+	if rf.unread() {
+		return &wanted.Error{Path: wanted.RootsDir, Msg: "a personal bundle has one root file, and this folder holds more than one"}
+	}
+	userIDs, err := wanted.LoadUserIDs(fsys)
+	if errors.Is(err, fs.ErrNotExist) {
+		userIDs, err = nil, nil
+	}
+	if err != nil {
+		return err
+	}
+	at, err := Env{Now: now}.now()
+	if err == nil && at.IsZero() {
+		err = errNoClock // a clock that gives the zero time is no clock
+	}
+	if err != nil {
+		return err
+	}
+	return wanted.CheckPersonal(s, rf.roots, delegations, cardFiles, userIDs, at)
 }
 
 // inspect reads the history of the bundle once and returns its state, or the reason there is none: a
@@ -292,12 +340,17 @@ func refuseNotFirst(fsys fsx.FS, st *history.State) error {
 }
 
 // notBuilt refuses what the first apply of this version does not make, with a text that names the
-// file and what to do (exit code 1, [ErrNotBuilt]). The order is: a root of the kind openpgp or ssh;
-// a root that is not a test root; two roots of one kind; a personal bundle. A root of a kind that is
-// not built is never left out silently: a label that was made without an OpenPGP primary could never
-// get one, because a label names a key and is not reused. A bundle of more root files than Find reads
-// (maxRootsRead) is refused first, from the names alone, because none of those files was read.
+// file and what to do (exit code 1, [ErrNotBuilt]). The order is: a personal bundle, whose wanted files
+// passed their check (it is refused with a text of its own: adoption and the subkeys are built by later
+// parts); a root of the kind openpgp or ssh; a root that is not a test root; two roots of one kind. A
+// root of a kind that is not built is never left out silently: a label that was made without an OpenPGP
+// primary could never get one, because a label names a key and is not reused. A bundle of more root
+// files than Find reads (maxRootsRead) is refused first, from the names alone, because none of those
+// files was read.
 func notBuilt(s *wanted.Settings, rf rootFiles) error {
+	if s.Personal {
+		return fmt.Errorf("%w: a personal bundle (kind: personal in ritueel.yaml) passed the check of its wanted files; adoption and subkeys are built by later parts, so apply makes no plan and makes no key; nothing was written", ErrNotBuilt)
+	}
 	if rf.unread() {
 		path := func(name string) string { return jsonset.EscapeExact(wanted.RootsDir + "/" + name + ".yaml") }
 		return fmt.Errorf("%w: the bundle has %d root files, more than this version reads, and a bundle has one root of each kind; keep one of %s and %s; nothing was written", ErrNotBuilt, len(rf.names), path(rf.names[0]), path(rf.names[1]))
@@ -319,9 +372,6 @@ func notBuilt(s *wanted.Settings, rf rootFiles) error {
 	}
 	if len(roots) > 1 {
 		return fmt.Errorf("%w: the bundle has %d root files of the kind x509, and a bundle has one root of each kind; keep one of %s and %s; nothing was written", ErrNotBuilt, len(roots), jsonset.EscapeExact(roots[0].File.Path), jsonset.EscapeExact(roots[1].File.Path))
-	}
-	if s.Personal {
-		return fmt.Errorf("%w: a personal bundle (kind: personal in ritueel.yaml) is not built; nothing was written", ErrNotBuilt)
 	}
 	return nil
 }

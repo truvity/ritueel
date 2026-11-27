@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/mail"
 	"regexp"
+	"slices"
 	"strings"
 
 	"go.yaml.in/yaml/v3"
@@ -86,10 +87,17 @@ type Policy struct {
 	ValidityMonths int
 }
 
+// The example person that the starter of a personal bundle holds. A personal bundle that still has it is
+// refused by name: a person who writes only a real fingerprint would ask for this name and address on a real key.
+const (
+	ExamplePersonName    = "Ada Example"
+	ExamplePersonAddress = "ada@example.com"
+)
+
 // Person is the person of a personal bundle.
 type Person struct {
 	// Name is 1 to 64 characters of ASCII letters, digits, spaces, periods, apostrophes and hyphens, starting
-	// with a letter or a digit.
+	// with a letter or a digit, with no space at the end and no two spaces in a row.
 	Name string
 	// Address is one bare e-mail address in printable ASCII.
 	Address string
@@ -189,6 +197,16 @@ func (d *document) settings() (*Settings, error) {
 	if s.Policy, err = pol.policy(); err != nil {
 		return nil, err
 	}
+	if s.Personal {
+		for _, store := range s.Policy.Stores {
+			switch {
+			case store == "piv":
+				return nil, pol.fail("stores", "policy.stores holds piv, which is reserved for stage two (the new primaries on the root cards of a person), which is not built yet: a personal bundle has the stores "+strings.Join(personalStoreEnum, " and ")+" now")
+			case !slices.Contains(personalStoreEnum, store):
+				return nil, pol.fail("stores", "policy.stores holds "+store+", which a person's key cannot use: a personal bundle has the stores "+strings.Join(personalStoreEnum, " and "))
+			}
+		}
+	}
 	if top.has("keyring") {
 		if s.KeyringLicense, err = top.keyring(); err != nil {
 			return nil, err
@@ -221,6 +239,11 @@ func (s *Settings) takeWho(top *mapping) error {
 		for _, name := range []string{"name", "release_address"} {
 			if top.has(name) {
 				return top.fail(name, name+" is not allowed in a personal bundle: it has person instead")
+			}
+		}
+		for _, name := range []string{"aws_kms", "keyring"} {
+			if top.has(name) {
+				return top.fail(name, name+" is not allowed in a personal bundle: it is a setting of a company bundle, and a person's key is a software key that the person adopts")
 			}
 		}
 		if !top.has("person") {
@@ -262,8 +285,8 @@ func (s *Settings) takePerson(top *mapping) error {
 	if p.Name, err = pm.str("name"); err != nil {
 		return err
 	}
-	if !personNamePattern.MatchString(p.Name) {
-		return pm.fail("name", "person.name has 1 to 64 characters: ASCII letters, digits, spaces, periods, apostrophes and hyphens, starting with a letter or a digit")
+	if why := personNameProblem(p.Name); why != "" {
+		return pm.fail("name", "person.name "+why)
 	}
 	if p.Address, err = pm.str("address"); err != nil {
 		return err
@@ -271,12 +294,30 @@ func (s *Settings) takePerson(top *mapping) error {
 	if why := addressProblem(p.Address); why != "" {
 		return pm.fail("address", "person.address "+why)
 	}
+	if strings.EqualFold(p.Name, ExamplePersonName) && strings.EqualFold(p.Address, ExamplePersonAddress) {
+		return pm.fail("name", "person is the example person of the starter: replace the example person with your name and address")
+	}
 	s.Person = p
 	return nil
 }
 
 // personNamePattern is the form of person.name.
 var personNamePattern = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9 .'-]{0,63}$`)
+
+// personNameProblem is what is wrong with a name of a person (person.name, and the name of a user ID), or ""
+// when nothing is: 1 to 64 characters of ASCII letters, digits, spaces, periods, apostrophes and hyphens,
+// starting with a letter or a digit, with no space at the end and no two spaces in a row.
+func personNameProblem(s string) string {
+	switch {
+	case !personNamePattern.MatchString(s):
+		return "has 1 to 64 characters: ASCII letters, digits, spaces, periods, apostrophes and hyphens, starting with a letter or a digit"
+	case strings.HasSuffix(s, " "):
+		return "has no space at the end"
+	case strings.Contains(s, "  "):
+		return "has no two spaces in a row"
+	}
+	return ""
+}
 
 // nameProblem is what is wrong with a name of a company bundle, or "" when nothing is: 1 to 45 ASCII
 // letters, digits, single spaces and hyphens, with no space at the start or the end.
@@ -299,7 +340,9 @@ func nameProblem(s string) string {
 }
 
 // addressProblem is what is wrong with an address, or "" when nothing is: one bare address of printable ASCII
-// with no space, at most 254 bytes, with no "<" or ">", which net/mail reads as the whole of the text.
+// with no space, at most 254 bytes, exactly one "@" and no "<", ">", "[" or "]" (a domain literal), which net/mail
+// reads as the whole of the text. It is the one rule of every address: the release address, the address of a
+// person and the address of a further user ID.
 func addressProblem(s string) string {
 	if s == "" || len(s) > 254 {
 		return "has 1 to 254 characters"
@@ -310,7 +353,7 @@ func addressProblem(s string) string {
 		}
 	}
 	const bare = "is one bare address, such as release@example.org"
-	if strings.ContainsAny(s, "<>") {
+	if strings.ContainsAny(s, "<>[]") || strings.Count(s, "@") != 1 {
 		return bare
 	}
 	a, err := mail.ParseAddress(s)

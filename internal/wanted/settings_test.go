@@ -242,7 +242,7 @@ func TestThePersonOfAPersonalBundle(t *testing.T) {
 	good := func(name string) string {
 		return replaceOnce(t, goodPersonal, "name: Example Person", "name: "+quoteYAML(name))
 	}
-	for _, ok := range []string{"A", "Example Person", "O'Neil-Smith Jr.", "Example Test 2", "9 lives", strings.Repeat("a", 64), "A. B.", "Example  Person "} {
+	for _, ok := range []string{"A", "Example Person", "O'Neil-Smith Jr.", "Example Test 2", "9 lives", strings.Repeat("a", 64), "A. B.", "Example Person Jr."} {
 		if s := mustSettings(t, good(ok)); s.Person.Name != ok {
 			t.Errorf("name %q read as %q", ok, s.Person.Name)
 		}
@@ -250,6 +250,7 @@ func TestThePersonOfAPersonalBundle(t *testing.T) {
 	for name, bad := range map[string]string{
 		"65 characters": strings.Repeat("a", 65), "empty": "", "a leading space": " Example", "a leading hyphen": "-Example", "a leading period": ".Example",
 		"a leading apostrophe": "'Example", "a Cyrillic letter": "\u0410xample", "an accent": "Ren\u00e9", "a comma": "Example, Person", "an underscore": "Example_Person",
+		"a trailing space": "Example ", "two spaces in a row": "Example  Person",
 		"an at sign": "a@b", "a slash": "a/b", "a bracket": "a <b>",
 	} {
 		t.Run(name, func(t *testing.T) { _ = refuseSettings(t, good(bad), 4, "person.name") })

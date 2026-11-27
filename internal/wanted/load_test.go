@@ -129,7 +129,7 @@ func TestADelegationWhoseRootIsOfAnotherKindIsRefused(t *testing.T) {
 func TestADelegationWhoseRootFailsItsOwnCheckIsRefusedWithTheRootsPath(t *testing.T) {
 	_, fsys := bundleDir(t, map[string]string{
 		"want/delegations/example.yaml": goodX509Delegation,
-		"want/roots/acme-tls.yaml":      "version: 1\nkind: x509\nkeys: []\n",
+		"want/roots/acme-tls.yaml":      "version: 1\nkind: x509\nretire_at: 2\n",
 	})
 	d, err := wanted.LoadDelegation(fsys, "example", mustSettings(t, goodSettings))
 	if d != nil {

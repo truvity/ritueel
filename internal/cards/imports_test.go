@@ -21,6 +21,7 @@ var allowedImports = []string{
 	"bytes", "cmp", "context", "crypto/sha256", "encoding/hex", "errors", "fmt", "io", "io/fs",
 	"net/mail", // used by settings.go for the release address; it is not the network
 	"regexp", "slices", "sort", "strconv", "strings", "unicode", "unicode/utf8",
+	"time", // the date of a key of a root file and the time that the caller gives; a value type, no clock is read
 	// The strict YAML reader.
 	"go.yaml.in/yaml/v3",
 	// The packages of this module that read a bundle.

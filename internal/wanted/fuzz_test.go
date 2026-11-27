@@ -18,6 +18,7 @@ import (
 func seedTexts() []string {
 	seeds := []string{
 		goodSettings, goodPersonal, goodX509Delegation, goodOpenPGPDelegation, goodSSHDelegation, goodRoot, "", "---\n", "{}", "[]",
+		personalOpenPGP, personalSign, personalPerson, "version: 1\nuser_ids:\n  - {name: Ada Example, address: ada@example.org, retire: true}\n",
 		goodSettings + "keyring:\n  license: CC0-1.0\naws_kms:\n  account: \"111122223333\"\n  region: eu-west-1\n  replica_region: eu-central-1\n  admin_role: arn:aws:iam::111122223333:role/a\n  ceremony_role: arn:aws:iam::111122223333:role/b\n",
 		"x: &a [1]\ny: *a\n", "<<: {a: 1}\n", "? a\n: b\n", "a: !!str b\n", "%YAML 1.2\n---\na: 1\n", "a: 1\n...\n---\nb: 2\n",
 		"\ufeffversion: 1\n", "version: 1\r\n", "version:\t1\n", "version: 1\n# \u202e\n", "a: \xff\n", strings.Repeat("[", 300), "x: " + strings.Repeat("[", 300) + "\n",
@@ -147,7 +148,43 @@ func FuzzParseRoot(f *testing.F) {
 			if !r.Valid() || (r.Kind != wanted.RootX509 && r.Kind != wanted.RootOpenPGP && r.Kind != wanted.RootSSH) {
 				t.Fatalf("a value that breaks what the reader promises: %+v", r)
 			}
+			keys := r.Keys()
+			if len(keys) > wanted.MaxKeys || (len(keys) > 0 && r.Kind != wanted.RootOpenPGP) {
+				t.Fatalf("keys that break what the reader promises: %+v", keys)
+			}
+			for _, k := range keys {
+				if k.Role != wanted.RoleAdopted || len(k.Fingerprint) != wanted.FingerprintLen || k.Fingerprint == wanted.PlaceholderFingerprint || k.ValidUntil.IsZero() || k.Fingerprint != strings.ToLower(k.Fingerprint) {
+					t.Fatalf("a key that breaks what the reader promises: %+v", k)
+				}
+			}
 		}
 		checkResult(t, "root", data, r != nil, file, err)
+	})
+}
+
+func FuzzParseUserIDs(f *testing.F) {
+	for _, s := range seedTexts() {
+		f.Add([]byte(s))
+	}
+	f.Fuzz(func(t *testing.T, data []byte) {
+		u, err := wanted.ParseUserIDs(data)
+		var file wanted.File
+		if u != nil {
+			file = u.File
+			entries := u.Entries()
+			active := 0
+			for _, e := range entries {
+				if !e.Retire {
+					active++
+				}
+				if strings.Count(e.Address, "@") != 1 || strings.ContainsAny(e.Name+e.Address, "<>\n") || !printable(e.Name+e.Address) {
+					t.Fatalf("a user ID that breaks what the reader promises: %+v", e)
+				}
+			}
+			if len(entries) > wanted.MaxUserIDs || active > wanted.MaxActiveUserIDs {
+				t.Fatalf("too many user IDs: %d, %d active", len(entries), active)
+			}
+		}
+		checkResult(t, "user ids", data, u != nil, file, err)
 	})
 }

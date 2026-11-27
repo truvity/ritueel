@@ -190,7 +190,7 @@ func TestTheTablesAreComplete(t *testing.T) {
 		}
 	}
 	// The members of a root file: the three of the smallest shape, with version and kind required.
-	if !slices.Equal(names(rootMembers), []string{"kind", "test", "version"}) || !slices.Equal(requiredOf(rootMembers), []string{"kind", "version"}) {
+	if !slices.Equal(names(rootMembers), []string{"encryption", "keys", "kind", "revocation_reasons", "test", "version"}) || !slices.Equal(requiredOf(rootMembers), []string{"kind", "version"}) {
 		t.Errorf("root members %v, required %v", names(rootMembers), requiredOf(rootMembers))
 	}
 }
