@@ -61,7 +61,8 @@ func ListRoots(fsys fsx.FS) ([]*Root, error) {
 // ListDelegations reads every want/delegations/NAME.yaml with [LoadDelegation] and the settings of
 // the bundle, which it needs, and returns the delegations in the order of their names. It lists,
 // bounds and refuses as [ListRoots] does, and a delegation whose root file is missing or fails its
-// check is an error. A Settings that is not [Settings.Valid] is an error.
+// check is an error. A personal bundle holds at most [MaxPersonalDelegations] names, which is judged from the
+// listing, before any file is read. A Settings that is not [Settings.Valid] is an error.
 func ListDelegations(fsys fsx.FS, s *Settings) ([]*Delegation, error) {
 	names, err := listDelegationNames(fsys, s)
 	if err != nil {
@@ -80,8 +81,8 @@ func ListDelegations(fsys fsx.FS, s *Settings) ([]*Delegation, error) {
 
 // CheckDelegations reads and checks every delegation file as [ListDelegations] does, and keeps none
 // of them: each file is dropped when it has been checked, so the memory it holds is that of one file
-// and not of up to [MaxFiles] files. The names are listed and judged before the first file is read.
-// It returns the first fault, which names the path, escaped, and nil when every file passes.
+// and not of up to [MaxFiles] files. The names are listed and judged before the first file is read, and
+// more than [MaxPersonalDelegations] names in a personal bundle is refused there. It returns the first fault, which names the path, escaped, and nil when every file passes.
 func CheckDelegations(fsys fsx.FS, s *Settings) error {
 	names, err := listDelegationNames(fsys, s)
 	if err != nil {

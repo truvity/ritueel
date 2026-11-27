@@ -1,6 +1,7 @@
 package wanted_test
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 	"testing"
@@ -130,4 +131,47 @@ func TestAPersonalBundleHoldsOnlyTheStoresOfAPersonsKey(t *testing.T) {
 	}
 	// A company bundle keeps all four.
 	mustSettings(t, goodSettings)
+}
+
+// CheckPersonal refuses a nil entry and a value that no reader made, and never panics.
+func TestCheckPersonalRefusesANilEntryAndAValueNoReaderMade(t *testing.T) {
+	s := mustPersonal(t)
+	root := mustRoot(t, "openpgp", personalOpenPGP)
+	card := mustCard(t, "day-ana", personalCard)
+	deleg, err := wanted.ParseDelegation("daily", []byte(personalSign), s)
+	if err != nil {
+		t.Fatal(err)
+	}
+	roots := []*wanted.Root{root}
+	if err := wanted.CheckPersonal(s, roots, []*wanted.Delegation{deleg}, []*wanted.Card{card}, nil, personalNow); err != nil {
+		t.Fatalf("the control: %v", err)
+	}
+	for name, call := range map[string]func() error{
+		"nil settings":  func() error { return wanted.CheckPersonal(nil, roots, nil, nil, nil, personalNow) },
+		"zero settings": func() error { return wanted.CheckPersonal(&wanted.Settings{}, roots, nil, nil, nil, personalNow) },
+		"a nil root":    func() error { return wanted.CheckPersonal(s, []*wanted.Root{nil}, nil, nil, nil, personalNow) },
+		"a zero root":   func() error { return wanted.CheckPersonal(s, []*wanted.Root{{}}, nil, nil, nil, personalNow) },
+		"a nil delegation": func() error {
+			return wanted.CheckPersonal(s, roots, []*wanted.Delegation{nil}, []*wanted.Card{card}, nil, personalNow)
+		},
+		"a zero delegation": func() error {
+			return wanted.CheckPersonal(s, roots, []*wanted.Delegation{{}}, []*wanted.Card{card}, nil, personalNow)
+		},
+		"a nil card": func() error {
+			return wanted.CheckPersonal(s, roots, []*wanted.Delegation{deleg}, []*wanted.Card{nil}, nil, personalNow)
+		},
+		"a zero card": func() error {
+			return wanted.CheckPersonal(s, roots, []*wanted.Delegation{deleg}, []*wanted.Card{{}}, nil, personalNow)
+		},
+		"zero user IDs":       func() error { return wanted.CheckPersonal(s, roots, nil, nil, &wanted.UserIDs{}, personalNow) },
+		"a nil list of roots": func() error { return wanted.CheckPersonal(s, nil, nil, nil, nil, personalNow) },
+	} {
+		t.Run(name, func(t *testing.T) {
+			err := call()
+			var e *wanted.Error
+			if !errors.As(err, &e) {
+				t.Fatalf("the error is %T (%v), want a *wanted.Error", err, err)
+			}
+		})
+	}
 }

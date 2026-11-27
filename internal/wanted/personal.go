@@ -13,9 +13,12 @@ const MaxPersonalDelegations = 16
 const tooManyDelegations = "a personal bundle holds at most 16 delegation files"
 
 // CheckPersonal judges the wanted files of a personal bundle against each other, after each has passed its own
-// reader. It returns nil, or the first fault as an [*Error] that names the file. The caller gives every file
-// that the bundle has: the roots of want/roots (roots), the delegations, the cards and, when the file exists,
-// the user IDs (nil when it does not). now is the clock of the caller's environment: the package reads none.
+// reader. It returns nil, or the first fault as an [*Error] that names the file, and it never panics: a nil
+// entry in a list, and a Settings, Root, Delegation, Card or UserIDs that no reader of this package made (each
+// has Valid, which is false for a nil pointer, for the zero value and for one built by hand), is a fault of its
+// own. The caller gives every file that the bundle has: the roots of want/roots (roots), the delegations, the
+// cards and, when the file exists, the user IDs (nil when it does not). now is the clock of the caller's
+// environment: the package reads none.
 //
 // A personal bundle has exactly one root, of the kind openpgp, and no X.509 or SSH CA root. The root has
 // encryption and 1 to [MaxKeys] keys, and every key expires on a day after now and within [MaxValidMonths]
@@ -95,7 +98,15 @@ func personalRoot(roots []*Root, now time.Time) (*Root, error) {
 func checkSubkeys(root *Root, delegations []*Delegation, cards []*Card) error {
 	byName := make(map[string]*Card, len(cards))
 	for _, c := range cards {
+		if !c.Valid() {
+			return errorf(CardsDir, 0, "a card file was not made by the reader")
+		}
 		byName[c.Name] = c
+	}
+	for _, d := range delegations {
+		if !d.Valid() {
+			return errorf(DelegationsDir, 0, "a delegation file was not made by the reader")
+		}
 	}
 	type pair struct{ card, capability string }
 	seen := map[pair]string{}

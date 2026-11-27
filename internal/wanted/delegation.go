@@ -20,7 +20,8 @@ const (
 )
 
 // delegationMembers is the table of the members of a delegation file, in the order of docs/reference/bundle.md.
-// Which of capability, use and the two lists is allowed depends on the type and is checked by the code.
+// Which of capability, use, card and the lists (permitted_uri_hosts, permitted_dns_names and kms_read_roles) is
+// allowed depends on the type and on the bundle, and is checked by the code.
 var delegationMembers = []member{
 	{name: "version", required: true},
 	{name: "type", required: true, enum: typeEnum},

@@ -109,8 +109,8 @@ func (f *Found) Nothing() bool { return f == nil || len(f.Applies) == 0 }
 // Find is the function of record 0005, rules 4 and 5: it reads the wanted files and the state of
 // the bundle and says what is not applied yet. Nothing is stored (rule 4) and nothing is written. In
 // this version it knows one case: the first apply of a bundle that has one wanted test root of the
-// kind x509 and no history. It returns an error, and no Found, for a bundle that is in another state
-// and for a wanted file that it cannot use. The order of the refusals is: a wanted file that fails its
+// kind x509 and no history; a personal bundle whose wanted files pass is refused as not built. It returns
+// an error, and no Found, for a bundle that is in another state and for a wanted file that it cannot use. The order of the refusals is: a wanted file that fails its
 // check (exit code 1); a history that fails its own check (exit code 3); a history whose order cannot
 // be settled (exit code 1); an open attempt (exit code 3, [ReasonUnfinishedCeremony]); a bundle that
 // is not in the first state (exit code 1, [ErrNotFirst]); a root that is not built (exit code 1,

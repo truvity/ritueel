@@ -97,7 +97,7 @@ const (
 // Person is the person of a personal bundle.
 type Person struct {
 	// Name is 1 to 64 characters of ASCII letters, digits, spaces, periods, apostrophes and hyphens, starting
-	// with a letter or a digit.
+	// with a letter or a digit, with no space at the end and no two spaces in a row.
 	Name string
 	// Address is one bare e-mail address in printable ASCII.
 	Address string

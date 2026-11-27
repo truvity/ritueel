@@ -48,6 +48,13 @@ func newFlags() []ucli.Flag {
 // made inside a bundle (exit code 1, nothing written). After the first error nothing more is written, nothing is deleted, and the
 // person is told which folder to remove.
 func runNew(_ context.Context, c *Call) (*Result, error) {
+	// A flag that is given twice is a usage error and nothing is read: the library keeps the last value, so the
+	// first would be dropped without a word (apply does the same).
+	for _, name := range []string{flagTemplate, flagTestRoot} {
+		if c.FlagCount(name) > 1 {
+			return nil, UsageError{Msg: "--" + name + " is given once"}
+		}
+	}
 	if len(c.Args) != 1 {
 		return nil, UsageError{Msg: "new takes exactly one argument, the folder DIR of the new bundle"}
 	}
