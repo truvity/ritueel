@@ -290,7 +290,7 @@ func TestOneSecretInTwoCommands(t *testing.T) {
 func TestWipeDuringEncode(t *testing.T) {
 	a, b := pinA(), pinB()
 	full := join(hx(t, "00240081 12"), a, b)
-	for round := range 600 {
+	for round := range 300000 {
 		s1, s2 := apdu.NewSecret(a), apdu.NewSecret(b)
 		c := apdu.Command{INS: 0x24, P2: 0x81}.WithSecretPair(s1, s2)
 		var wg sync.WaitGroup
