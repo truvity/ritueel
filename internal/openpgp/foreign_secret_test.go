@@ -10,6 +10,8 @@ import (
 	"errors"
 	"fmt"
 	"math/big"
+	"slices"
+	"strings"
 	"sync"
 	"testing"
 
@@ -98,7 +100,8 @@ func TestForeignSecretsThatAreNotTheSecret(t *testing.T) {
 				fault{"u flipped", fkEncode(d, p, q, flip(u, 3)), "", "number u"},
 				fault{"u of one", fkEncode(d, p, q, []byte{1}), "", "number u"},
 				fault{"p and q swapped, u kept", fkEncode(d, q, p, u), "", ""},
-				fault{"p twice", fkEncode(d, p, p, u), "", "do not make the key"},
+				// u is below q, and for some keys not below p: the bound of u then refuses first
+				fault{"p twice", fkEncode(d, p, p, u), "", "do not make the key|not below its bound"},
 				fault{"a number of 513 bytes", fkEncode(bytes.Repeat([]byte{1}, 513), p, q, u), "", "four numbers"},
 				fault{"d of zero bytes", fkEncode([]byte{}, p, q, u), "", "four numbers"},
 			)
@@ -147,7 +150,7 @@ func TestForeignSecretsThatAreNotTheSecret(t *testing.T) {
 					if errors.Is(err, openpgp.ErrWrongPassphrase) || errors.Is(err, openpgp.ErrParams) {
 						t.Errorf("%v is a wrong passphrase or a bad parameter", err)
 					}
-					if f.word != "" && !bytes.Contains([]byte(err.Error()), []byte(f.word)) {
+					if f.word != "" && !slices.ContainsFunc(strings.Split(f.word, "|"), func(w string) bool { return strings.Contains(err.Error(), w) }) {
 						t.Errorf("the text %q does not say %q", err, f.word)
 					}
 					// no run of the numbers of the file, of the right secret or of the passphrase
