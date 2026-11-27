@@ -1,6 +1,8 @@
 package openpgp_test
 
 import (
+	"crypto/sha1" //nolint:gosec // a SHA-1 binding that verifies counts: the files here hold some
+	"crypto/sha256"
 	"fmt"
 	"slices"
 	"sort"
@@ -137,5 +139,58 @@ func TestQATheViewListsTheTwoOccurrencesOfAUserIDAndTheSnapshotMergesThem(t *tes
 	texts := []string{v0.Text, v1.Text}
 	if !slices.Equal(texts, []string{fkUser, fkUser}) {
 		t.Errorf("%v", texts)
+	}
+}
+
+// The view of a subkey makes the choice of the snapshot: the newest binding of any hash, a tie by the end, the
+// strength of the hash and the bytes. A SHA-1 binding that is newer than a strong one is the source in both.
+func TestQATheViewOfASubkeyMakesTheChoiceOfTheSnapshot(t *testing.T) {
+	b := fkNamed(t, "ed25519")
+	w := fkWriter{b}
+	enc, _, _ := fkDonors(t)
+	bind := func(hash byte, at int, flags byte, extra ...[]byte) []byte {
+		areas := w.areas(at, append([][]byte{fkSubpacket(27, false, flags)}, extra...)...)
+		if hash == 2 {
+			return w.sign(t, "sub", 0x18, areas, nil, 2, sha1.New, enc[3].pub.Body)
+		}
+		return w.sign(t, "sub", 0x18, areas, nil, 8, sha256.New, enc[3].pub.Body)
+	}
+	life := func(d uint32) []byte { return fkSubpacket(9, true, fkU32(d*86400)...) }
+	for _, c := range []struct {
+		name      string
+		sigs      [][]byte
+		flags     uint8
+		boundAt   int
+		weak      bool
+		wantTied  bool
+		wantLife  uint32
+		wantOrder string
+	}{
+		{"a SHA-1 binding newer than a strong one", [][]byte{bind(8, 1000, 0x0C), bind(2, 1100, 0x04)}, 0x04, 1100, true, false, 0, ""},
+		{"the same, the other way round in the file", [][]byte{bind(2, 1100, 0x04), bind(8, 1000, 0x0C)}, 0x04, 1100, true, false, 0, ""},
+		{"a strong binding newer than a SHA-1 one", [][]byte{bind(2, 1000, 0x04), bind(8, 1100, 0x0C)}, 0x0C, 1100, false, false, 0, ""},
+		{"one second, a weak and a strong one: the strong one", [][]byte{bind(2, 1000, 0x04), bind(8, 1000, 0x0C)}, 0x0C, 1000, false, false, 0, ""},
+		{"one second, two ends: the earlier end", [][]byte{bind(8, 1000, 0x04, life(20)), bind(8, 1000, 0x0C, life(10))}, 0x0C, 1000, false, false, 10, ""},
+		{"one second, the same end, other flags: tied", [][]byte{bind(8, 1000, 0x04), bind(8, 1000, 0x0C)}, 0, 1000, false, true, 0, ""},
+	} {
+		t.Run(c.name, func(t *testing.T) {
+			order := [][]byte{c.sigs[0], c.sigs[1]}
+			for _, sigs := range [][][]byte{order, {order[1], order[0]}} {
+				k := fkRead(t, w.file(t, fkParts{subSigs: sigs}))
+				if len(k.Subkeys) != 1 || !k.Subkeys[0].Bound {
+					t.Fatalf("the subkey: %+v", k.Subkeys)
+				}
+				v, s := k.Subkeys[0], openpgp.SnapshotSubkeys(k)[0]
+				if !v.BoundAt.Equal(s.Bound) || v.WeakHash != s.Weak || s.Tied != c.wantTied || !v.BoundAt.Equal(fkAt(c.boundAt)) || v.WeakHash != c.weak {
+					t.Errorf("view %+v, snapshot %+v", v, s)
+				}
+				if c.flags != 0 && v.Flags != c.flags {
+					t.Errorf("the flags of the view are %#x, want %#x", v.Flags, c.flags)
+				}
+				if c.wantLife != 0 && !v.Expires.Equal(v.Created.AddDate(0, 0, int(c.wantLife))) {
+					t.Errorf("the end of the view is %v", v.Expires)
+				}
+			}
+		})
 	}
 }
