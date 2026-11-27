@@ -77,7 +77,9 @@ func (c Command) WithSecretPair(first, second Secret) Command {
 	return c
 }
 
-// HasSecret reports whether the body is held in secrets. It is true for a secret that was wiped since.
+// HasSecret reports whether the body is carried in secrets. It says how the body is carried, not that it
+// can still be encoded: it is true also for a secret that was wiped since, which [Command.Encode]
+// refuses. To know whether a part still holds bytes, and how many, ask [Command.PartLen].
 func (c Command) HasSecret() bool { return c.secret.h != nil || c.second.h != nil }
 
 // SecretParts is the number of secrets in the body: 0, 1 or 2.
@@ -155,6 +157,13 @@ func (c Command) Format(f fmt.State, _ rune) { _, _ = f.Write([]byte(c.String())
 // from the body and Le: no body and no Le is case 1; Le only, case 2; body only, case 3; both, case 4.
 // A secret body is copied into the returned slice at the last moment, inside [Secret.Use], and
 // nowhere else. The returned slice is new and belongs to the caller, who overwrites it when it holds a PIN.
+//
+// Each secret part's length is read once. A part that holds no byte (it was wiped) is [ErrSecretEmpty],
+// before anything is written. A part whose bytes, when they are taken, are not the length that sized the
+// output (it was wiped meanwhile) is [ErrSecretChanged]; [ErrSecretEmpty] is also an [ErrSecretChanged].
+// With either error nothing is returned, and what was already written to the output is cleared. Plain
+// Data together with a secret is [ErrBodyConflict], and a body or an Le beyond the form is
+// [ErrDataTooLong] or [ErrLeOutOfRange].
 func (c Command) Encode(extended bool) ([]byte, error) {
 	if len(c.Data) > 0 && c.HasSecret() {
 		return nil, ErrBodyConflict

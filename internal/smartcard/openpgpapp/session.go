@@ -66,7 +66,7 @@ type Session struct {
 	// selected is set when select-application has succeeded and cleared when the session dies or a
 	// selection fails. While it is not set, send sends nothing else.
 	selected bool
-	// afterJudge is called by send between the judgement of a command and its encoding; only tests set it.
+	// afterJudge is a hook that send calls between judging a command and encoding it; only tests set it.
 	afterJudge func()
 }
 
