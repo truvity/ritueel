@@ -10,6 +10,8 @@ import (
 	"errors"
 	"fmt"
 	"math/big"
+	"slices"
+	"strings"
 	"sync"
 	"testing"
 
@@ -72,7 +74,7 @@ func TestForeignSecretsThatAreNotTheSecret(t *testing.T) {
 		switch b.name {
 		case "ed25519":
 			faults = append(faults,
-				fault{"a seed of 33 bytes", fkEncode(append([]byte{1}, own[0]...)), "", "one number"},
+				fault{"a seed of 33 bytes", fkEncode(append([]byte{1}, alPad(own[0], 32)...)), "", "one number"},
 				fault{"a seed of another key", fkEncode(fkRandom(t, 32)), "", "not the secret of the public key"},
 				fault{"a seed of 1 byte", fkEncode([]byte{7}), "", "not the secret of the public key"},
 			)
@@ -84,7 +86,7 @@ func TestForeignSecretsThatAreNotTheSecret(t *testing.T) {
 				fault{"the scalar of the order of the group", fkEncode(order.Bytes()), "", "not a private key of the group"},
 				fault{"a scalar over the order of the group", fkEncode(new(big.Int).Add(order, big.NewInt(5)).Bytes()), "", "not a private key of the group"},
 				fault{"the largest scalar of 48 bytes", fkEncode(bytes.Repeat([]byte{0xFF}, 48)), "", "not a private key of the group"},
-				fault{"a scalar of 49 bytes", fkEncode(append([]byte{1}, own[0]...)), "", "one number"},
+				fault{"a scalar of 49 bytes", fkEncode(append([]byte{1}, alPad(own[0], 48)...)), "", "one number"},
 				fault{"a scalar of 1", fkEncode([]byte{1}), "", "not the secret of the public key"},
 			)
 		case "rsa4096":
@@ -98,7 +100,8 @@ func TestForeignSecretsThatAreNotTheSecret(t *testing.T) {
 				fault{"u flipped", fkEncode(d, p, q, flip(u, 3)), "", "number u"},
 				fault{"u of one", fkEncode(d, p, q, []byte{1}), "", "number u"},
 				fault{"p and q swapped, u kept", fkEncode(d, q, p, u), "", ""},
-				fault{"p twice", fkEncode(d, p, p, u), "", "do not make the key"},
+				// u is below q, and for some keys not below p: the bound of u then refuses first
+				fault{"p twice", fkEncode(d, p, p, u), "", "do not make the key|not below its bound"},
 				fault{"a number of 513 bytes", fkEncode(bytes.Repeat([]byte{1}, 513), p, q, u), "", "four numbers"},
 				fault{"d of zero bytes", fkEncode([]byte{}, p, q, u), "", "four numbers"},
 			)
@@ -147,7 +150,7 @@ func TestForeignSecretsThatAreNotTheSecret(t *testing.T) {
 					if errors.Is(err, openpgp.ErrWrongPassphrase) || errors.Is(err, openpgp.ErrParams) {
 						t.Errorf("%v is a wrong passphrase or a bad parameter", err)
 					}
-					if f.word != "" && !bytes.Contains([]byte(err.Error()), []byte(f.word)) {
+					if f.word != "" && !slices.ContainsFunc(strings.Split(f.word, "|"), func(w string) bool { return strings.Contains(err.Error(), w) }) {
 						t.Errorf("the text %q does not say %q", err, f.word)
 					}
 					// no run of the numbers of the file, of the right secret or of the passphrase

@@ -36,10 +36,29 @@ const (
 	FileRemoval FileKind = "removal"
 )
 
-// Purpose says which key a passphrase is for: the root's label and the kind of file.
+// Role says what a passphrase is for within one call, and with it the rules that it is held to.
+// The zero value is the passphrase of a key file, as it always was.
+type Role uint8
+
+const (
+	// KeyFile is the passphrase of a key file that the call opens (the zero value).
+	KeyFile Role = iota
+	// Import is the passphrase of a file that an OpenPGP program exported, which the call reads
+	// to keep its key. It was chosen under the rules of that program, not of this package, so the
+	// rule of at least 15 characters does not apply to it, and it may be as long as
+	// [openpgp.MaxForeignPassphraseBytes]. It must not be empty.
+	Import
+	// Choose is a new passphrase for a key file that the call writes. It is held to the rules of
+	// [CheckPassphrase].
+	Choose
+)
+
+// Purpose says which key a passphrase is for: the root's label, the kind of file and the role of
+// the passphrase in the call.
 type Purpose struct {
 	Label string
 	File  FileKind
+	Role  Role
 }
 
 // reasons are the reasons of a revocation signature (docs/reference/revocation-material.md, "What

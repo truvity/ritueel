@@ -361,7 +361,8 @@ type ForeignSubkey struct {
 // ForeignKey is what the file of an exported secret key holds, read by [ReadForeignKey]. The exported
 // fields are for reading: a caller that changes them changes nothing that the reader keeps. The
 // secret of the primary is kept inside, in the form it had in the file, and [ForeignKey.Wipe]
-// clears it. A ForeignKey is not safe for use by several goroutines at once, and it is used by its
+// clears it. A ForeignKey is not safe for use by several goroutines at once (a Wipe against a call of
+// OpenSecret or SecretPacket included: the caller serialises them), and it is used by its
 // pointer: a copy of the struct shares the memory of the secret with the original, so the wipe of the
 // original clears it for the copy too, and the copy then answers [ForeignKey.OpenSecret] with an
 // error ([ErrForeignSecret] or [ErrWrongPassphrase]) and never with a key. A wipe of the copy does
@@ -460,7 +461,9 @@ func (k *ForeignKey) Certificate() []byte {
 
 // Wipe clears the secret that the key holds, and the key then opens nothing: [ForeignKey.OpenSecret]
 // is an [ErrParams]. It does not clear the file that the caller gave to [ReadForeignKey], which holds
-// the secret as it came: the caller clears its own buffer. It is safe to call more than once.
+// the secret as it came: the caller clears its own buffer. The copies that an earlier [ForeignKey.OpenSecret]
+// or [ForeignKey.SecretPacket] left in the standard library and in scratch space are not reachable from
+// here ([ForeignSecret.Wipe] lists them). It is safe to call more than once, and [ForeignKey.Wiped] tells.
 func (k *ForeignKey) Wipe() {
 	if k == nil {
 		return
