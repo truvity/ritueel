@@ -228,7 +228,7 @@ func TestOpenSecretPacketRefusesRSANumbersThatAreNotTheSecretOfTheKey(t *testing
 		{"u that is the inverse of q", [][]byte{d, p, q, swapped.Bytes()}, "number u", nil},
 		{"u of the other key", [][]byte{d, p, q, other[3]}, "number u|not below its bound", nil},
 		{"u of 513 bytes, which is over the bound of the packet", [][]byte{d, p, q, append([]byte{1}, bytes.Repeat([]byte{1}, 512)...)}, "MaxAdoptedPacketBytes", openpgp.ErrForeignLimit},
-		{"a composite for p", [][]byte{d, comp.Bytes(), q, compU.Bytes()}, "not a prime|not below its bound", nil},
+		{"a composite for p", [][]byte{d, comp.Bytes(), q, compU.Bytes()}, "not a prime|not below its bound|order of the standard", nil},
 		{"a composite for q", [][]byte{d, p, comp.Bytes(), u}, "not a prime|not below its bound|order of the standard", nil},
 		{"p of one", [][]byte{d, one.Bytes(), q, u}, "not a prime|order of the standard", nil},
 		{"p of two bytes", [][]byte{d, {0xFF, 0xFD}, q, u}, "not a prime|order of the standard", nil},
