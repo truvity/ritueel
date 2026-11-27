@@ -30,9 +30,10 @@ func NewSecret(b []byte) Secret {
 }
 
 // Use calls f with the bytes of the secret and returns when f does. It does not call f when the secret
-// is empty or wiped, so a caller that must have a PIN checks [Secret.Len] first. The slice is valid
-// only inside f; f must not keep it, and must not call Wipe on the same Secret (it would wait on
-// itself). A concurrent Wipe waits for f to return.
+// is empty or wiped, so a caller that must have a PIN checks [Secret.Len] first. The slice is the
+// holder's own, not a copy: it is valid only inside f, and f must not keep it. f must not call Len
+// or Wipe on the same Secret, or Use on it again: each would wait for the lock that Use holds, and
+// the program would stop. A concurrent Wipe waits for f to return.
 func (s Secret) Use(f func(b []byte)) {
 	if s.h == nil {
 		return

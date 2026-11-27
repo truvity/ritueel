@@ -9,7 +9,10 @@
 // data).
 package apdu
 
-import "errors"
+import (
+	"errors"
+	"fmt"
+)
 
 // Limits of the two forms. A short command carries at most 255 data bytes and asks for at most 256; an
 // extended one carries at most 65535 and asks for at most 65536.
@@ -39,6 +42,18 @@ type Command struct {
 	Data             []byte
 	Le               int
 }
+
+// String shows the command without its data: class, instruction, parameters, the length of the data
+// and Le. A command may hold a PIN, so no way of printing it shows a byte of Data.
+func (c Command) String() string {
+	return fmt.Sprintf("apdu.Command{CLA:%02X INS:%02X P1:%02X P2:%02X Lc:%d Le:%d}", c.CLA, c.INS, c.P1, c.P2, len(c.Data), c.Le)
+}
+
+// GoString is [Command.String], for the %#v verb.
+func (c Command) GoString() string { return c.String() }
+
+// Format writes [Command.String] for every verb and flag.
+func (c Command) Format(f fmt.State, _ rune) { _, _ = f.Write([]byte(c.String())) }
 
 // Encode returns the bytes of the command. With extended false it writes the short form and refuses
 // data over 255 bytes and an Le over 256; with extended true it writes the extended form, in which the

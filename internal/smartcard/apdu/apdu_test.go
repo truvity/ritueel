@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"encoding/hex"
 	"errors"
+	"fmt"
+	"strings"
 	"testing"
 
 	"ritueel.id/ritueel/internal/smartcard/apdu"
@@ -126,5 +128,23 @@ func TestStatus(t *testing.T) {
 		if n != tc.more || ok != tc.isMor || tc.sw.String() != tc.text {
 			t.Errorf("%04X: %d %v %q", uint16(tc.sw), n, ok, tc.sw.String())
 		}
+	}
+}
+
+func TestCommandPrintsNoData(t *testing.T) {
+	c := apdu.Command{CLA: 0x00, INS: 0x20, P2: 0x81, Data: []byte("987654"), Le: 0}
+	type holder struct{ Cmd apdu.Command }
+	var outs []string
+	for _, v := range []string{"%v", "%+v", "%#v", "%s", "%x", "%q", "%d"} {
+		outs = append(outs, fmt.Sprintf(v, c), fmt.Sprintf(v, &c), fmt.Sprintf(v, holder{c}), fmt.Sprintf(v, []apdu.Command{c}))
+	}
+	outs = append(outs, c.String(), c.GoString())
+	for _, o := range outs {
+		if strings.Contains(o, "987654") || strings.Contains(o, "393837") || strings.Contains(strings.ToLower(o), "3938") {
+			t.Errorf("the data is shown: %q", o)
+		}
+	}
+	if c.String() != "apdu.Command{CLA:00 INS:20 P1:00 P2:81 Lc:6 Le:0}" {
+		t.Errorf("%q", c.String())
 	}
 }
