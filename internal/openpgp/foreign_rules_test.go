@@ -177,17 +177,17 @@ func TestForeignSHA1ThatVerifiesCounts(t *testing.T) {
 			t.Errorf("the text does not say weak hash: %v", err)
 		}
 	}
-	// a SHA-1 binding: bound, flagged; beside a SHA-256 one, not flagged
+	// a SHA-1 binding: bound, flagged; beside a newer SHA-256 one, not flagged
 	sha1Bind := w.sign(t, "sub", 0x18, w.areas(1000, fkSubpacket(27, false, 0x0C)), nil, 2, sha1.New, enc[3].pub.Body)
 	file := w.file(t, fkParts{subSigs: [][]byte{sha1Bind}})
 	s := fkRead(t, file).Subkeys[0]
 	if !s.Bound || !s.WeakHash || s.Flags != 0x0C || s.Signatures[0].Status != openpgp.SignatureValidWeakHash {
 		t.Errorf("a SHA-1 binding: %+v", s)
 	}
-	strong := w.sign(t, "sub", 0x18, w.areas(1000, fkSubpacket(27, false, 0x0C)), nil, 8, sha256.New, enc[3].pub.Body)
+	strong := w.sign(t, "sub", 0x18, w.areas(1001, fkSubpacket(27, false, 0x0C)), nil, 8, sha256.New, enc[3].pub.Body)
 	file = w.file(t, fkParts{subSigs: [][]byte{sha1Bind, strong}})
 	if s := fkRead(t, file).Subkeys[0]; !s.Bound || s.WeakHash {
-		t.Errorf("a SHA-1 and a SHA-256 binding: %+v", s)
+		t.Errorf("a SHA-1 and a newer SHA-256 binding: %+v", s)
 	}
 	// a SHA-1 binding that does not verify does not bind
 	badBind := bytes.Clone(sha1Bind)

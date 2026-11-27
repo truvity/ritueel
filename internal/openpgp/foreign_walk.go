@@ -54,13 +54,17 @@ type fkWalk struct {
 	ids           int // the number of user IDs in users
 	attrs         int // the number of user attributes in users
 	attrBytes     int
+	// public is the mode of a certificate: the key packet of the primary is a public key packet (tag 6),
+	// there is no secret to classify (prot stays empty) and a secret key packet (tag 5 or 7) is refused.
+	public bool
 }
 
 // walkForeign reads the packets of data and groups them by the order of the standard: the primary,
 // its signatures, each user ID and attribute with its signatures, each subkey with its signatures.
-// It skips trust and marker packets and counts the limits.
-func walkForeign(data []byte) (*fkWalk, error) {
-	w := &fkWalk{}
+// It skips trust and marker packets and counts the limits. With public set it reads a public
+// certificate: the primary is a public key packet whole, and a secret key packet is refused.
+func walkForeign(data []byte, public bool) (*fkWalk, error) {
+	w := &fkWalk{public: public}
 	done := false
 	defer func() {
 		if !done {
@@ -108,6 +112,9 @@ func (w *fkWalk) clearSecret() {
 
 // start reads the first packet that counts: the secret key packet of the primary.
 func (w *fkWalk) start(tag byte, body []byte) error {
+	if w.public {
+		return w.startPublic(tag, body)
+	}
 	switch tag {
 	case tagSecretKey:
 	case tagPublicKey:
@@ -133,6 +140,33 @@ func (w *fkWalk) start(tag byte, body []byte) error {
 	w.pub, w.prot = pub, prot
 	w.primaryBody = body[:pub.length]
 	w.primaryPacket = wrap(tagPublicKey, w.primaryBody)
+	return nil
+}
+
+// startPublic is start for a certificate: the first packet that counts is the public key packet of the
+// primary, read whole, and nothing of it is a secret. A secret key packet is refused.
+func (w *fkWalk) startPublic(tag byte, body []byte) error {
+	switch tag {
+	case tagPublicKey:
+	case tagSecretKey, tagSecretSubkey:
+		return fail(ErrAdoptedCertificate, "the certificate holds a secret key packet")
+	case tagSubkey:
+		return fail(ErrForeignForm, "the certificate starts with a subkey packet: a transferable key starts with its primary key")
+	case tagSignature, tagUserID, tagUserAttribute:
+		return fail(ErrForeignForm, "the certificate starts with %s: a transferable key starts with its primary key", tagName(tag))
+	default:
+		return fail(ErrForeignPacket, "the certificate holds %s, which does not belong in a transferable key", tagName(tag))
+	}
+	pub, err := parseForeignPublic("the primary key", body, true, true)
+	if err != nil {
+		return err
+	}
+	if err := checkPrimary(pub); err != nil {
+		return err
+	}
+	w.pub = pub
+	w.primaryBody = body
+	w.primaryPacket = wrap(tagPublicKey, body)
 	return nil
 }
 
@@ -172,6 +206,9 @@ func checkPrimary(pub fkPublic) error {
 func (w *fkWalk) add(cur *fkTarget, tag byte, body []byte) (*fkTarget, error) {
 	switch tag {
 	case tagSecretKey, tagPublicKey:
+		if w.public && tag == tagSecretKey {
+			return nil, fail(ErrAdoptedCertificate, "the certificate holds a secret key packet")
+		}
 		return nil, fail(ErrForeignPrimaries, "the file holds a second primary key (%s)", tagName(tag))
 	case tagSignature:
 		cur.n++
@@ -207,6 +244,9 @@ func (w *fkWalk) add(cur *fkTarget, tag byte, body []byte) (*fkTarget, error) {
 		w.users = append(w.users, u)
 		return &u.t, nil
 	case tagSecretSubkey, tagSubkey:
+		if w.public && tag == tagSecretSubkey {
+			return nil, fail(ErrAdoptedCertificate, "the certificate holds a secret key packet")
+		}
 		s, err := w.subkey(tag, body)
 		if err != nil {
 			return nil, err

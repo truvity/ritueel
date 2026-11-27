@@ -6,7 +6,8 @@ import (
 )
 
 var (
-	// ErrParams marks a parameter that the builders refuse: a key that is not ECDSA on P-384, a
+	// ErrParams marks a parameter that the builders refuse: a key that is not ECDSA on P-384 (where a
+	// builder takes only that), a nil or a wiped signer, a signer that is not the key of an adopted key, a
 	// time that is not in whole seconds or is out of order, a user ID, or a part of it, that breaks
 	// the rules of the pages, a capability or a reason that is not one of the profile's.
 	ErrParams = errors.New("openpgp: refused parameter")
@@ -25,7 +26,8 @@ var (
 	// or that does not verify. It is also an [ErrRequest].
 	ErrBackSignature error = &kindError{"openpgp: the back-signature is refused", ErrRequest}
 	// ErrSignature marks a signature that the signer returned and that does not verify, or a
-	// finished packet that does not read back as it was built. Nothing is returned with it.
+	// finished packet that does not read back as it was built. Nothing is returned with it. When the
+	// signer itself failed, its error is wrapped too, so that errors.Is finds it (ErrSecretWiped, for one).
 	ErrSignature = errors.New("openpgp: the signature does not verify")
 )
 
@@ -165,4 +167,14 @@ var (
 	// since both fail the same check: a damaged framing is an ErrForeignForm when the file is read,
 	// and a damaged armour is an ErrForeignArmour.
 	ErrWrongPassphrase = errors.New("openpgp: the passphrase does not open the secret key")
+	// ErrAdoptedCertificate marks a certificate that [ReadForeignCertificate] refuses: its SHA-256 is not the
+	// digest that the caller holds (checked before anything is parsed), or the reader would not write it as it
+	// stands, since the certificate that the reader assembles from the input must be the input, byte for byte.
+	// A trust or marker packet, a header that is not the shortest, a secret key packet, a signature that does
+	// not verify, another key's certification, an unhashed subpacket that the reader would not write, a
+	// duplicate, a user ID or a subkey with no signature that counts, and a packet of one class out of its
+	// place among the others are each refused by the second rule. That rule proves that nothing but what the
+	// primary signed is there; it does not prove that nothing is missing, which only the digest does. It is also
+	// an [ErrForeignKey].
+	ErrAdoptedCertificate error = &kindError{"openpgp: the certificate is not one that the reader writes", ErrForeignKey}
 )

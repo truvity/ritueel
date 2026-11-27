@@ -593,6 +593,14 @@ type fkOutput struct {
 	comps   [][]byte // per user ID or attribute of the walk, or nil when it is left out
 	subs    [][]byte // per subkey of the walk, or nil when it is left out
 	dups    int      // the duplicates that were dropped: signatures, user IDs, attributes and subkeys
+
+	// What the snapshot of the key is made of (see fkSnapshot), collected as the signatures are judged and
+	// as the parts that go into the certificate are chosen.
+	revoked  bool      // a key revocation counts
+	newest   time.Time // the newest signature that counts anywhere in the certificate
+	direct   []snapSig // the direct-key signatures that count, of which the newest is a source of the expiry
+	users    []snapUserID
+	subSnaps []snapSubkey
 }
 
 // fkGroup is the occurrences of one user ID, user attribute or subkey that have the same bytes, merged
@@ -607,16 +615,19 @@ type fkGroup struct {
 	broken  bool              // a subkey revocation that the library's key-ring reader would refuse: the subkey is left out
 	ok      bool              // some occurrence has what the part needs (a certification, a binding)
 	back    map[string][]byte // the back-signatures judged for a subkey, by their bytes
+	counted []snapSig         // the signatures written, once each, in the order they are written
 }
 
-// add merges the written signature packet of one occurrence into the group, counting a duplicate.
-func (g *fkGroup) add(emit []byte, out *fkOutput) {
+// add merges the written signature packet of one occurrence into the group, counting a duplicate. rec is
+// what the snapshot keeps of the signature.
+func (g *fkGroup) add(emit []byte, out *fkOutput, rec snapSig) {
 	if g.seen[string(emit)] {
 		out.dups++
 		return
 	}
 	g.seen[string(emit)] = true
 	g.emits = append(g.emits, emit...)
+	g.counted = append(g.counted, rec)
 }
 
 // groupOf returns the group of a key, making it at place i when it is the first.
@@ -687,6 +698,17 @@ func (v *fkVerifier) keyLevel(w *fkWalk, out *fkOutput) (sigs []ForeignSignature
 		default:
 			seen[string(emit)] = true
 			out.keySigs = append(out.keySigs, emit)
+			out.noteNewest(fs.Created)
+			switch fs.Type {
+			case sigKeyRevocation:
+				out.revoked = true
+			case sigDirectKey:
+				prefs := carriedSubpackets(h.areas.hashed)
+				out.direct = append(out.direct, snapSig{
+					sig: fs, raw: emit, sigExpires: count(h.areas.hashed, spSigExpiration) > 0,
+					prefs: prefs, dropped: droppedTypes(h.areas.hashed, prefs), flagsLong: flagsLonger(h.areas.hashed),
+				})
+			}
 		}
 	}
 	return sigs, other, otherRev, unusableRevocations(sigs)
@@ -762,6 +784,7 @@ func (v *fkVerifier) components(w *fkWalk, out *fkOutput) (ids []ForeignUserID, 
 			continue
 		}
 		fu := ForeignUserID{Text: text}
+		var raws [][]byte // the packet that the reader wrote for each of fu.Signatures, nil when none
 		for _, s := range u.t.sigs {
 			h := v.head(s)
 			switch {
@@ -775,22 +798,30 @@ func (v *fkVerifier) components(w *fkWalk, out *fkOutput) (ids []ForeignUserID, 
 			case isCertification(h.typ) || h.typ == sigCertRevocation:
 				fs, emit := v.evaluate(s, h, fkCtx{data: data, keyCreated: v.created, verify: verify})
 				fu.Signatures = append(fu.Signatures, fs)
+				raws = append(raws, emit)
 				if strayed(h, fs) {
 					fu.OtherSignatures++
 					fu.OtherRevocations++
 				}
 				if emit != nil {
-					grp.add(emit, out)
+					rec := snapSig{sig: fs, raw: emit, sigExpires: count(h.areas.hashed, spSigExpiration) > 0}
+					if isCertification(h.typ) {
+						rec.prefs = carriedSubpackets(h.areas.hashed)
+						rec.dropped = droppedTypes(h.areas.hashed, rec.prefs)
+						rec.flagsLong = flagsLonger(h.areas.hashed)
+					}
+					grp.add(emit, out, rec)
 					grp.ok = grp.ok || isCertification(h.typ)
 				}
 			default:
 				fu.Signatures = append(fu.Signatures, misplaced(h))
+				raws = append(raws, nil)
 			}
 		}
 		if u.attr {
 			continue
 		}
-		summariseUserID(&fu)
+		summariseUserID(&fu, raws)
 		fu.UnreadableRevocations = unusableRevocations(fu.Signatures)
 		if fu.Valid {
 			valid++
@@ -808,8 +839,10 @@ func (v *fkVerifier) components(w *fkWalk, out *fkOutput) (ids []ForeignUserID, 
 			}
 		case g.ok && !g.bad && g.first == i && u.attr:
 			out.comps[i] = append(wrap(tagUserAttribute, u.text), g.emits...)
+			out.noteCounted(g.counted)
 		case g.ok && g.first == i:
 			out.comps[i] = append(wrap(tagUserID, u.text), g.emits...)
+			out.addUser(u.text, g.counted)
 		}
 	}
 	return ids, valid, attrsLeftOut
@@ -866,51 +899,45 @@ func revocationOf(revs []*ForeignSignature, newest *ForeignSignature) *ForeignSi
 	return nil
 }
 
-// summariseUserID fills the view from the signatures that count. The fields (creation time, key
-// expiry, key flags, primary mark) come from the newest strong self-signature when there is one, and
-// from the newest weak (SHA-1) one only when there is no strong one: WeakHash means exactly that the
-// fields come from a weak signature. A soft revocation is compared with the newest self-signature of
-// either kind.
-func summariseUserID(fu *ForeignUserID) {
-	var strong, weak, newest *ForeignSignature
+// withRaws pairs the signatures of a view with the packets that the reader wrote for them (nil for one that
+// is not written), so that the view and the snapshot choose "the newest" by the same helper.
+func withRaws(sigs []ForeignSignature, raws [][]byte) []snapSig {
+	out := make([]snapSig, len(sigs))
+	for i, s := range sigs {
+		out[i] = snapSig{sig: s}
+		if i < len(raws) {
+			out[i].raw = raws[i]
+		}
+	}
+	return out
+}
+
+// summariseUserID fills the view from the signatures that count. The fields (creation time, key expiry,
+// key flags, primary mark) come from the newest self-signature that counts, whatever its hash, chosen by
+// [outranks] as the snapshot chooses it, so that the view and the snapshot never describe two different
+// signatures: WeakHash means exactly that the fields come from a signature with a weak hash (SHA-1). A
+// soft revocation is compared with the newest self-signature of either kind. raws are the packets that the
+// reader wrote for fu.Signatures, in the same order, nil where there is none.
+func summariseUserID(fu *ForeignUserID, raws [][]byte) {
+	recs := withRaws(fu.Signatures, raws)
 	var revs []*ForeignSignature
 	for i := range fu.Signatures {
-		s := &fu.Signatures[i]
-		if !s.Status.Counts() {
-			continue
-		}
-		switch {
-		case isCertification(s.Type):
-			newest = newer(newest, s)
-			if s.Status == SignatureValid {
-				strong = newer(strong, s)
-			} else {
-				weak = newer(weak, s)
-			}
-		case s.Type == sigCertRevocation:
+		if s := &fu.Signatures[i]; s.Status.Counts() && s.Type == sigCertRevocation {
 			revs = append(revs, s)
 		}
 	}
-	src := strong
-	if src == nil {
-		src = weak
+	src, _, _, ok := newestSig(recs, func(s ForeignSignature) bool { return s.Status.Counts() && isCertification(s.Type) })
+	if ok {
+		fu.Valid, fu.WeakHash = true, src.sig.Status == SignatureValidWeakHash
+		fu.Created, fu.KeyExpires, fu.KeyFlags, fu.Primary = src.sig.Created, src.sig.KeyExpires, src.sig.KeyFlags, src.sig.Primary
 	}
-	if src != nil {
-		fu.Valid, fu.WeakHash = true, strong == nil
-		fu.Created, fu.KeyExpires, fu.KeyFlags, fu.Primary = src.Created, src.KeyExpires, src.KeyFlags, src.Primary
+	var newest *ForeignSignature
+	if ok {
+		newest = &src.sig
 	}
 	if r := revocationOf(revs, newest); r != nil {
 		fu.Revoked, fu.RevokedAt = true, r.Created
 	}
-}
-
-// newer returns the later of two signatures by creation time, the later one in the file when equal. a may
-// be nil.
-func newer(a, b *ForeignSignature) *ForeignSignature {
-	if a == nil || !b.Created.Before(a.Created) {
-		return b
-	}
-	return a
 }
 
 // subkeys judges the signatures on each subkey. A subkey goes into the certificate only if at least
@@ -937,8 +964,9 @@ func (v *fkVerifier) subkeys(w *fkWalk, out *fkOutput) []ForeignSubkey {
 			}
 		}
 		group[i] = grp
-		partial := false // a binding verified and is not complete (no back-signature that verifies)
-		broken := false  // a subkey revocation that the library's key-ring reader would refuse
+		var raws [][]byte // the packet that the reader wrote for each of fs.Signatures, nil when none
+		partial := false  // a binding verified and is not complete (no back-signature that verifies)
+		broken := false   // a subkey revocation that the library's key-ring reader would refuse
 		for _, g := range s.t.sigs {
 			h := v.head(g)
 			unreadable := s.gopk == nil && (h.typ == sigSubkeyBinding || h.typ == sigSubkeyRevoke)
@@ -972,15 +1000,16 @@ func (v *fkVerifier) subkeys(w *fkWalk, out *fkOutput) []ForeignSubkey {
 				sg = misplaced(h)
 			}
 			fs.Signatures = append(fs.Signatures, sg)
+			raws = append(raws, emit)
 			if strayed(h, sg) {
 				fs.OtherSignatures++
 				fs.OtherRevocations++
 			}
 			if emit != nil {
-				grp.add(emit, out)
+				grp.add(emit, out, snapSig{sig: sg, raw: emit, sigExpires: count(h.areas.hashed, spSigExpiration) > 0})
 			}
 		}
-		summariseSubkey(&fs)
+		summariseSubkey(&fs, raws)
 		fs.UnreadableRevocations = unusableRevocations(fs.Signatures)
 		if grp != nil {
 			grp.partial = grp.partial || partial
@@ -1003,41 +1032,29 @@ func (v *fkVerifier) subkeys(w *fkWalk, out *fkOutput) []ForeignSubkey {
 		views[i].Fingerprint, views[i].KeyID = fingerprintHex(s.fp)
 		if g.first == i {
 			out.subs[i] = append(wrap(tagSubkey, s.pubBody), g.emits...)
+			out.addSubkey(s.fp, s.pubBody, s.pub.alg, g.counted)
 		}
 	}
 	return views
 }
 
 // summariseSubkey fills the view from the bindings that count, by the rule of [summariseUserID]: the
-// fields come from the newest strong binding when there is one, and WeakHash means that they come from a
-// weak (SHA-1) one.
-func summariseSubkey(fs *ForeignSubkey) {
-	var strong, weak, newest *ForeignSignature
+// fields come from the newest binding that counts, whatever its hash, and WeakHash means that they come from
+// a weak (SHA-1) one.
+func summariseSubkey(fs *ForeignSubkey, raws [][]byte) {
+	recs := withRaws(fs.Signatures, raws)
 	var revs []*ForeignSignature
 	for i := range fs.Signatures {
-		s := &fs.Signatures[i]
-		if !s.Status.Counts() {
-			continue
-		}
-		switch s.Type {
-		case sigSubkeyBinding:
-			newest = newer(newest, s)
-			if s.Status == SignatureValid {
-				strong = newer(strong, s)
-			} else {
-				weak = newer(weak, s)
-			}
-		case sigSubkeyRevoke:
+		if s := &fs.Signatures[i]; s.Status.Counts() && s.Type == sigSubkeyRevoke {
 			revs = append(revs, s)
 		}
 	}
-	src := strong
-	if src == nil {
-		src = weak
-	}
-	if src != nil {
-		fs.Bound, fs.WeakHash = true, strong == nil
-		fs.BoundAt, fs.Flags, fs.Expires = src.Created, src.KeyFlags, src.KeyExpires
+	src, _, _, ok := newestSig(recs, func(s ForeignSignature) bool { return s.Status.Counts() && s.Type == sigSubkeyBinding })
+	var newest *ForeignSignature
+	if ok {
+		fs.Bound, fs.WeakHash = true, src.sig.Status == SignatureValidWeakHash
+		fs.BoundAt, fs.Flags, fs.Expires = src.sig.Created, src.sig.KeyFlags, src.sig.KeyExpires
+		newest = &src.sig
 	}
 	fs.Revoked = revocationOf(revs, newest) != nil
 }

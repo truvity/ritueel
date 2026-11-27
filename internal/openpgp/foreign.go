@@ -2,6 +2,7 @@ package openpgp
 
 import (
 	"bytes"
+	"crypto/sha256"
 	"fmt"
 	"time"
 
@@ -126,8 +127,8 @@ const (
 	SignatureValid SignatureStatus = iota + 1
 	// SignatureValidWeakHash is such a signature made with SHA-1 that verifies. It counts: a SHA-1
 	// signature still proves that the key made it, and keys of 2008 to 2016 (RSA-4096 among them) carry
-	// no other. The user ID or the subkey that only has such signatures is flagged (the field WeakHash),
-	// and the adoption of the key re-signs with a strong hash. go-crypto verifies a SHA-1 signature
+	// no other. The user ID or the subkey whose newest signature is such a one is flagged (the field
+	// WeakHash), and the adoption of the key re-signs with a strong hash. go-crypto verifies a SHA-1 signature
 	// without a setting for it, so no change of its use was needed.
 	SignatureValidWeakHash
 	// SignatureWeakHash is a signature made with MD5, RIPEMD-160 or another hash that is broken or
@@ -219,10 +220,11 @@ type ForeignPrimary struct {
 	Algorithm ForeignAlgorithm
 	// Created is the creation time of the key.
 	Created time.Time
-	// Secret is whether the secret in the file is protected.
+	// Secret is whether the secret in the file is protected. It is the zero value, which is not a
+	// state, for a key that [ReadForeignCertificate] read: a certificate holds no secret.
 	Secret SecretState
 	// Cipher names the cipher of a protected secret: "AES-128", "AES-192" or "AES-256". It is empty
-	// for an unprotected secret.
+	// for an unprotected secret and for a key that [ReadForeignCertificate] read.
 	Cipher string
 	// Revoked is true when a valid key revocation signature by the primary is in the file. The reader
 	// does not refuse such a key: the caller decides. A key revocation is hard whatever its date.
@@ -246,12 +248,15 @@ type ForeignUserID struct {
 	// not SHA-1, SHA-256, SHA-384 or SHA-512). A user ID can thus be absent from the certificate although
 	// the primary signed it: the view shows it, with the status of each of its signatures.
 	Valid bool
-	// WeakHash is true when Valid is true and no self-signature that counts is strong: the fields above
-	// come from a SHA-1 self-signature (status [SignatureValidWeakHash]). The key is accepted, and the adoption re-signs with a strong hash.
+	// WeakHash is true when Valid is true and the self-signature that gives the fields below is made with
+	// SHA-1 (status [SignatureValidWeakHash]): the person last chose these fields with a weak signature. The
+	// key is accepted, and the adoption re-signs with a strong hash.
 	WeakHash bool
-	// Created is the creation time of the self-signature that gives the fields: the newest strong one
-	// when there is one, else the newest weak one (the later one in the file among equal times). The
-	// fields below are read from that signature.
+	// Created is the creation time of the self-signature that gives the fields: the newest one that counts,
+	// whatever its hash. A tie in time is broken in this order: the earlier end of the key (no end counting
+	// as the latest), a strong hash before a weak one, then the smaller bytes of the packets that the reader
+	// wrote, never by the place in the file; the snapshot that later signatures are made from chooses the same one. The fields
+	// below are read from that signature.
 	Created time.Time
 	// KeyExpires is the key expiry that the newest valid self-signature gives, and zero if none.
 	KeyExpires time.Time
@@ -311,11 +316,10 @@ type ForeignSubkey struct {
 	// subkey whose binding has no back-signature that verifies is in the certificate, with its
 	// binding and without a back-signature, and is reported here as not bound.
 	Bound bool
-	// WeakHash is true when Bound is true and no binding that counts is strong: the fields come from a
-	// SHA-1 binding.
+	// WeakHash is true when Bound is true and the binding that gives the fields is made with SHA-1.
 	WeakHash bool
-	// BoundAt is the creation time of the binding that gives the fields (the newest strong one when
-	// there is one, else the newest weak one; the later one in the file among equal times), and Flags
+	// BoundAt is the creation time of the binding that gives the fields (the newest one that counts,
+	// whatever its hash, chosen as for [ForeignUserID.Created]), and Flags
 	// and Expires are read from that binding: the first key flags octet, and
 	// the end of the key counted from the creation of the subkey (zero if none).
 	BoundAt time.Time
@@ -369,7 +373,10 @@ type ForeignSubkey struct {
 type ForeignKey struct {
 	// Primary is the primary key.
 	Primary ForeignPrimary
-	// UserIDs are the user IDs in the order of the file.
+	// UserIDs are the user IDs in the order of the file, one for each occurrence: a user ID that appears twice
+	// in an export is listed twice here, each with the signatures that stand under it. The certificate, the
+	// snapshot and [ForeignKey.SigningBasis] merge the two into one user ID with the signatures of both, so
+	// that the view of such a key and the basis can differ; the basis is what later signatures are made from.
 	UserIDs []ForeignUserID
 	// Subkeys are the subkeys in the order of the file.
 	Subkeys []ForeignSubkey
@@ -387,6 +394,25 @@ type ForeignKey struct {
 	// subkey.
 	OtherKeySignatures  int
 	OtherKeyRevocations int
+	// UncountedClaims counts the self-signatures that the primary claims (the issuer that the signature names
+	// is the primary's) and that the reader did NOT count, for one of three reasons: their hash is not one that
+	// it accepts (MD5, RIPEMD-160, SHA-224, SHA-3 or a hash it does not know), they have a critical subpacket
+	// that it does not understand, or it could not read them at all (a version that it does not take, fields
+	// that are not in the form that it takes, or the budget of hashing passed). What is counted is the
+	// certifications of the user IDs (types 0x10 to 0x13, on every user ID of the file, also one that is left
+	// out of the certificate) and the direct-key signatures (0x1F). Subkey bindings and the signatures of user
+	// attributes are not counted, and a signature that does not verify is not either: it is a signature that the
+	// reader read and the primary did not make. These are unverified claims: the reader does not know that the
+	// primary made them. A program that does count them may rank one above the newest signature that the reader
+	// counted. UncountedClaimsNewest is the newest creation time among those that have one (an unreadable
+	// or an old signature may have none), and zero when there is none. A zero time with a count above zero
+	// is not "nothing newer": the claims have no time that can be compared, and a ceremony must ask the person
+	// when the count is above zero and the time is zero, and not only when the time is newer than the newest
+	// signature that counted. Both are zero for a key that
+	// [ReadForeignCertificate] read, since a certificate holds only what counted, and neither enters the
+	// snapshot that a signature is made from.
+	UncountedClaims       int
+	UncountedClaimsNewest time.Time
 	// UnreadableRevocations counts the key revocations (type 0x20) in KeySignatures that the primary
 	// claims and that the reader could not use (see [ForeignUserID.UnreadableRevocations]). A caller that
 	// adopts a key must look at it.
@@ -409,6 +435,9 @@ type ForeignKey struct {
 	pub   fkPublic
 	prot  fkProtection // holds the secret of the primary as it stood in the file, until the wipe
 	wiped bool
+	// snap is what the builders of signatures may know of the key (see fkSnapshot). It is filled once by
+	// the reader and never changed, and nothing of the exported view reaches it.
+	snap fkSnapshot
 }
 
 // Certificate returns the public certificate, binary: the part of the file that the primary's own
@@ -553,7 +582,7 @@ func readForeignKey(file []byte) (*ForeignKey, error) {
 		defer clear(dec[:cap(dec)])
 		data = dec
 	}
-	w, err := walkForeign(data)
+	w, err := walkForeign(data, false)
 	if err != nil {
 		return nil, err
 	}
@@ -563,6 +592,130 @@ func readForeignKey(file []byte) (*ForeignKey, error) {
 			w.clearSecret()
 		}
 	}()
+	k, err := keyFromWalk(w)
+	if err != nil {
+		return nil, err
+	}
+	done = true
+	return k, nil
+}
+
+// ReadForeignCertificate reads the public certificate of a key that was adopted, in the form that
+// [ForeignKey.Certificate] writes, and returns it as a [ForeignKey] with no secret: the view, the
+// certificate and the snapshot that a later signature is made from are those that [ReadForeignKey] gives
+// for the export of the same key. The certificate is binary packets: an armoured one is refused.
+//
+// The certificate is read ONLY against digest, the SHA-256 of the certificate that the caller holds from a
+// record of the bundle's history, a place that whoever writes the certificate file cannot change (later, the
+// digest that the newest ceremony record lists for the file). It is a [HeldDigest], which only
+// [ParseHeldDigest] makes, from the text of a record; the zero value is an [ErrParams]. An empty input and an input over [MaxForeignKeyBytes] are refused with
+// their own errors ([ErrForeignForm], [ErrForeignLimit]) before the digest is compared, so those two are not
+// the digest refusal. The digest is compared before anything is parsed, and a mismatch is an
+// [ErrAdoptedCertificate]. The digest is what carries completeness and freshness. Nothing in the
+// certificate can: it is a list of signatures, and someone who can write the file and cannot sign can
+// delete the newest self-signature, a key revocation or the retirement of a user ID, and what is left is
+// still a certificate that the reader would write. Without the digest, a revoked key would be signable
+// again, a retired user ID live, and an older expiry, older flags or another primary user ID would come
+// back.
+//
+// The second rule is that the input is the certificate that the reader would write from it: the reader
+// reads the packets as [ReadForeignKey] does (public key packets in place of the secret ones, the same
+// limits and the same checks of every signature), assembles the certificate from what the signatures of
+// the primary confirm, and accepts the input only when [ForeignKey.Certificate] of the result equals the
+// input, byte for byte. What this proves is that every packet in it is one that a signature of the
+// primary confirms and that the reader writes in this form. It does not prove that nothing is missing or
+// that the newest signature is there. Everything that the reader would not have written is refused with
+// [ErrAdoptedCertificate]: a trust or marker packet, a header that is not the shortest, a secret key
+// packet, a signature that does not verify or that the reader does not count, a certification of another
+// key, an unhashed subpacket that the reader would not write, a duplicate, a user ID or a subkey with no
+// signature that counts, and a packet of one class (key signatures, user IDs, subkeys) out of its place
+// among the others. The order of the signatures of one component, of the user IDs and of the key
+// signatures among themselves is the input's: it is not refused, and no choice that the snapshot makes depends on it.
+// A secret key packet is refused cheaply before anything is verified, and so is every packet that a
+// public certificate has no place for.
+//
+// The limits are those of [ReadForeignKey], held before any signature is verified: the size, the
+// packets, the user IDs and subkeys, the signatures that the primary has to answer for, and the budgets of
+// hashing and of verification. A fault of the packets is an [ErrForeignKey] of the kind that the export
+// has for it. The key has no secret: [ForeignKey.OpenSecret] is an [ErrParams], its primary has no
+// [SecretState], and [ForeignKey.Wipe] clears nothing. It returns no key with an error.
+func ReadForeignCertificate(cert []byte, digest HeldDigest) (key *ForeignKey, err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			key, err = nil, fail(ErrForeignForm, "the certificate could not be read")
+		}
+	}()
+	return readForeignCertificate(cert, digest)
+}
+
+func readForeignCertificate(cert []byte, digest HeldDigest) (*ForeignKey, error) {
+	if digest == (HeldDigest{}) {
+		return nil, fail(ErrParams, "there is no digest of the certificate: it is read only against a digest from a record")
+	}
+	if len(cert) == 0 {
+		return nil, fail(ErrForeignForm, "the certificate is empty")
+	}
+	if len(cert) > MaxForeignKeyBytes {
+		return nil, fail(ErrForeignLimit, "the certificate is longer than MaxForeignKeyBytes (%d bytes)", MaxForeignKeyBytes)
+	}
+	// The certificate is copied before it is hashed, and the copy is what is parsed: a caller's slice that
+	// another goroutine changes cannot differ between the hash and the parse.
+	cert = bytes.Clone(cert)
+	if sha256.Sum256(cert) != digest.sum {
+		return nil, fail(ErrAdoptedCertificate, "the SHA-256 of the certificate is not the digest that the caller holds for it")
+	}
+	if err := checkCertificateFraming(cert); err != nil {
+		return nil, err
+	}
+	w, err := walkForeign(cert, true)
+	if err != nil {
+		return nil, err
+	}
+	k, err := keyFromWalk(w)
+	if err != nil {
+		return nil, err
+	}
+	if !bytes.Equal(k.cert, cert) {
+		return nil, fail(ErrAdoptedCertificate, "the reader would write another certificate from it (%d bytes in, %d bytes out)", len(cert), len(k.cert))
+	}
+	return k, nil
+}
+
+// checkCertificateFraming is the cheap read of a certificate before any signature is verified: whole
+// packets, each with the shortest header of the new format, the Public-Key packet first, and then only
+// public subkeys, user IDs, user attributes and signatures. It checks what the certificate that the reader
+// writes always is, so that nothing else costs a verification.
+func checkCertificateFraming(cert []byte) error {
+	rest := cert
+	for n := 1; len(rest) > 0; n++ {
+		if n > MaxForeignPackets {
+			return fail(ErrForeignLimit, "the certificate has more than MaxForeignPackets (%d) packets", MaxForeignPackets)
+		}
+		tag, raw, body, after, err := splitForeignPacket(rest, n)
+		if err != nil {
+			return err
+		}
+		switch {
+		case tag == tagSecretKey || tag == tagSecretSubkey:
+			return fail(ErrAdoptedCertificate, "the certificate holds a secret key packet")
+		case !bytes.Equal(raw, wrap(tag, body)):
+			return fail(ErrAdoptedCertificate, "packet %d has a header that is not the shortest of the new format", n)
+		case n == 1 && tag != tagPublicKey:
+			return fail(ErrAdoptedCertificate, "the certificate does not start with a Public-Key packet")
+		case n > 1 && tag == tagPublicKey:
+			return fail(ErrForeignPrimaries, "the certificate holds a second primary key (%s)", tagName(tag))
+		case n > 1 && tag != tagSubkey && tag != tagUserID && tag != tagUserAttribute && tag != tagSignature:
+			return fail(ErrAdoptedCertificate, "packet %d is %s, which the certificate that the reader writes does not hold", n, tagName(tag))
+		}
+		rest = after
+	}
+	return nil
+}
+
+// keyFromWalk is the part of the reader that the export and the certificate share: from the packets of
+// a walk to the key, with its view, its certificate and its snapshot. The walk's secret is kept in the
+// key, and the caller clears it when this returns an error.
+func keyFromWalk(w *fkWalk) (*ForeignKey, error) {
 	v, err := newForeignVerifier(w)
 	if err != nil {
 		return nil, err
@@ -577,8 +730,9 @@ func readForeignKey(file []byte) (*ForeignKey, error) {
 		KeyID:       v.idHex,
 		Algorithm:   w.pub.alg,
 		Created:     w.pub.created,
-		Secret:      w.prot.state(),
-		Cipher:      w.prot.cipherName(),
+	}
+	if !w.public {
+		k.Primary.Secret, k.Primary.Cipher = w.prot.state(), w.prot.cipherName()
 	}
 	k.KeySignatures, k.OtherKeySignatures, k.OtherKeyRevocations, k.UnreadableRevocations = v.keyLevel(w, out)
 	for _, s := range k.KeySignatures {
@@ -589,6 +743,7 @@ func readForeignKey(file []byte) (*ForeignKey, error) {
 	valid := 0
 	k.UserIDs, valid, k.UserAttributesLeftOut = v.components(w, out)
 	k.Subkeys = v.subkeys(w, out)
+	k.UncountedClaims, k.UncountedClaimsNewest = uncountedClaims(k)
 	k.UserAttributes, k.UserAttributeBytes = w.attrs, w.attrBytes
 	if v.err != nil {
 		return nil, v.err
@@ -601,7 +756,7 @@ func readForeignKey(file []byte) (*ForeignKey, error) {
 	if err := checkPublicOnly(k.cert, v.fp); err != nil {
 		return nil, err
 	}
-	done = true
+	k.snap = out.snapshot(w, v)
 	return k, nil
 }
 
@@ -626,6 +781,33 @@ func checkPublicOnly(cert, fp []byte) error {
 		rest = after
 	}
 	return nil
+}
+
+// uncountedClaims counts the certifications and the direct-key signatures that the primary claims and that
+// do not count because of their hash, an unknown critical subpacket or because they cannot be read, and finds
+// the newest of them (see [ForeignKey.UncountedClaims]).
+func uncountedClaims(k *ForeignKey) (n int, newest time.Time) {
+	note := func(s ForeignSignature) {
+		if !isCertification(s.Type) && s.Type != sigDirectKey {
+			return
+		}
+		switch s.Status {
+		case SignatureWeakHash, SignatureHashNotAccepted, SignatureUnknownCritical, SignatureUnreadable:
+			n++
+			if s.Created.After(newest) {
+				newest = s.Created
+			}
+		}
+	}
+	for _, s := range k.KeySignatures {
+		note(s)
+	}
+	for _, u := range k.UserIDs {
+		for _, s := range u.Signatures {
+			note(s)
+		}
+	}
+	return n, newest
 }
 
 // noSelfSignature is the refusal of a key none of whose user IDs has a valid self-signature. Its

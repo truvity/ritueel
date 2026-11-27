@@ -69,6 +69,52 @@
 // the passphrase or the secret is one that it clears. The reader opens no file, reads no clock and
 // starts no program.
 //
+// The certificate that [ForeignKey.Certificate] writes can be read again, with no secret, by
+// [ReadForeignCertificate], which takes the SHA-256 of the certificate from the caller and reads the
+// certificate only against it. In plain words: the digest carries completeness and freshness, and the
+// reader cannot. The reader accepts the packets only when the certificate that it assembles from them is
+// the input, byte for byte, so that every packet in it is one that the primary signed and that the reader
+// would have written (an [ErrAdoptedCertificate] says that it would not). That proves "only what the
+// primary signed"; it does not prove "all of it" or "the newest": someone who can write the file and
+// cannot sign can delete the newest self-signature, a key revocation or the retirement of a user ID, and
+// the rest is still such a certificate. The digest must come from a place that the writer of the file
+// cannot change. Both readers fill an unexported snapshot of the key out of the signatures that counted,
+// and the two give the same snapshot for the same key. The snapshot is what a signature of an adopted key
+// is made from; the exported view is for a person to read and cannot steer it.
+//
+// An adopted key signs through an [AdoptedIssuer], which joins that snapshot to a [crypto.Signer]: RSA
+// with 4096 bits (PKCS#1 v1.5), Ed25519 (EdDSA legacy, algorithm 22) or ECDSA on P-384, each with
+// SHA-384. The signer is given the SHA-384 digest (and, for Ed25519, which takes no hash, the digest as
+// its message), and its answer is checked with the public key of the primary packet, with the standard
+// library, before it is used. A signer of the adopted key may be the [ForeignSigner] or any other signer
+// of the same key.
+//
+// What the caller of a signing for an adopted key must do; the code cannot enforce it. The caller must read a
+// kept certificate only against the digest that the newest record of the bundle's history lists for it, as a
+// [HeldDigest], and never against a digest made from the file. It must show the person [ForeignKey.SigningBasis],
+// and not the per-signature view, as what later signatures are made from. The basis describes the user IDs
+// and the direct-key source fully; for the subkeys it gives the fingerprint, the algorithm, the revocation and
+// the weak and tied marks only, with no key flags, end or binding time, and a builder that needs more of the
+// binding of a subkey must add it to the basis first. The caller must show everything that a re-signing
+// carries (the preferences, which are carried without the critical bit that
+// they had, and then also listed among the dropped types) and drops (the types of the other subpackets), and
+// the key flags of a source that has more than one octet, of which a re-signing writes the first only. Where the source of a user ID is
+// weak, it must tell the person that the flags, the primary mark, the end and the preferences of that user ID
+// come from a SHA-1 signature, re-sign only when the person confirms it, and never fall back silently to an
+// older strong signature. It must show a choice that is tied: the bytes of the packets decided it, and it is
+// arbitrary. The two fields [ForeignKey.UncountedClaims] and [ForeignKey.UncountedClaimsNewest] are on the key
+// as read from an EXPORT (zero for a key read from a certificate) and are not part of the basis, so the caller
+// must read them right after reading the export and before it hands the key on. It must refuse, or ask the
+// person, when the export has uncounted claims whose newest time is newer than the newest signature that counted, and also when the count is above zero and
+// the newest time is zero, since claims that have no time cannot be compared. It must refuse to build when
+// the end of the key has no source, and it must extend the key first when the sources do not agree or one has
+// a signature expiration time. An end that is the zero time means that the key never ends; it is not a
+// missing value. A user ID whose text is not accepted (the basis says TextOK is false) holds a character that
+// a person cannot read as written: the caller must not sign over it as if it were an ordinary user ID, and
+// must ask. The basis names a primary user ID only when a live user ID carries the primary flag in its newest
+// source, and none otherwise: the caller must take the user ID that gets the primary flag as an explicit
+// choice of the person and never derive it from the basis or take the first of a list.
+//
 // A user ID has the one shape of the page, and each part of it follows the rule of its key in
 // ritueel.yaml, so that no text of a caller can add a character that a person cannot read or an
 // address that the user ID does not show.

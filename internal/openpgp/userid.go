@@ -117,6 +117,14 @@ func checkAddress(address string) error {
 // point, a noncharacter, or a space other than the plain space U+0020. It then requires the shape
 // that [UserID] writes, and applies the rules of that function to each part.
 func checkUserID(id string) error {
+	if err := checkUserIDText(id); err != nil {
+		return err
+	}
+	return checkUserIDShape(id)
+}
+
+// checkUserIDText is the character rules of [checkUserID], with no shape.
+func checkUserIDText(id string) error {
 	if id == "" {
 		return fail(ErrParams, "the user ID is empty")
 	}
@@ -141,7 +149,58 @@ func checkUserID(id string) error {
 			return fail(ErrParams, "the user ID holds a code point with no assigned meaning (U+%04X)", r)
 		}
 	}
-	return checkUserIDShape(id)
+	return nil
+}
+
+// checkPersonUserID is the rule for a NEW user ID of a person's own key (record 0008, rule 16), which has
+// the name and the address that the person gives, in any form and with no shape of a release root's. It is
+// printable ASCII only: the bytes 0x20 to 0x7E, with no space at the start or the end, not empty and at
+// most 1024 bytes. The wanted files that feed it are ASCII, and a text of ASCII has no letter that is
+// invisible, no letter that is read from right to left, and no two letters that look the same. A user ID
+// that the key already has keeps its exact bytes and is held to [checkExistingUserID].
+func checkPersonUserID(id string) error {
+	if id == "" {
+		return fail(ErrParams, "the user ID is empty")
+	}
+	if len(id) > maxUserID {
+		return fail(ErrParams, "the user ID is longer than %d bytes", maxUserID)
+	}
+	for i := 0; i < len(id); i++ {
+		if id[i] < ' ' || id[i] > '~' {
+			return fail(ErrParams, "the user ID holds a character that is not printable ASCII (byte %d)", i)
+		}
+	}
+	if id[0] == ' ' || id[len(id)-1] == ' ' {
+		return fail(ErrParams, "the user ID has a space at its start or its end")
+	}
+	return nil
+}
+
+// checkExistingUserID is the rule for a user ID that a person's key already has and that a later
+// signature covers again, by its exact bytes from the snapshot of the reader: whatever its shape (a
+// comment, letters outside ASCII, no address), it is accepted when it is not empty, is UTF-8, is at
+// most [MaxForeignUserIDBytes] bytes (the limit of the reader), and holds no control character, no format
+// character and no line or paragraph separator. A combining mark, which a decomposed accent is, passes
+// here and not in [checkPersonUserID]: the user ID is the person's own, and the bytes are not changed.
+func checkExistingUserID(text []byte) error {
+	if len(text) == 0 {
+		return fail(ErrParams, "the user ID is empty")
+	}
+	if len(text) > MaxForeignUserIDBytes {
+		return fail(ErrParams, "the user ID is longer than MaxForeignUserIDBytes (%d bytes)", MaxForeignUserIDBytes)
+	}
+	if !utf8.Valid(text) {
+		return fail(ErrParams, "the user ID is not UTF-8")
+	}
+	for _, r := range string(text) {
+		switch {
+		case unicode.IsControl(r):
+			return fail(ErrParams, "the user ID holds a control character (U+%04X)", r)
+		case unicode.In(r, unicode.Cf, unicode.Zl, unicode.Zp):
+			return fail(ErrParams, "the user ID holds a format character or a line or paragraph separator (U+%04X)", r)
+		}
+	}
+	return nil
 }
 
 // checkUserIDShape requires "NAME Release Root LABEL[ (TEST ONLY)] <ADDRESS>" with each part as
@@ -171,10 +230,12 @@ func checkUserIDShape(id string) error {
 	return checkAddress(address)
 }
 
-// isAssigned tells whether r has a meaning in the Unicode version of the standard library: it is
-// in one of the categories that a code point can have except unassigned (Cn).
+// isAssigned tells whether r has a meaning in the Unicode version of the standard library: it is in one
+// of the categories that a code point can have except unassigned (Cn). The table unicode.C is no help
+// here, since it holds the unassigned code points too: its parts are named.
 func isAssigned(r rune) bool {
-	return unicode.In(r, unicode.L, unicode.M, unicode.N, unicode.P, unicode.S, unicode.Z, unicode.C)
+	return unicode.In(r, unicode.L, unicode.M, unicode.N, unicode.P, unicode.S, unicode.Z,
+		unicode.Cc, unicode.Cf, unicode.Co, unicode.Cs)
 }
 
 // isNoncharacter tells whether r is one of the 66 code points that Unicode keeps out of text.
