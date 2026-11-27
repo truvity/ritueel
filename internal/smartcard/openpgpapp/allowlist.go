@@ -81,9 +81,11 @@ func (r dataRule) allows(d []byte) bool {
 //	get-firmware-version    no       no      no        yes
 //	select-data             no       no      no        yes
 //	get-response            no       no      no        yes (internal)
-//	verify                  yes      yes     no        no
+//	verify-user             yes      yes     no        no
+//	verify-admin            yes      yes     no        no
 //	deauthenticate          yes      no      no        no
-//	change-reference-data   yes      yes     no        no
+//	change-user-pin         yes      yes     no        no
+//	change-admin-pin        yes      yes     no        no
 //	put-key-attributes      yes      no      no        no
 //	put-pw-status           yes      no      no        no
 //	put-fingerprint         yes      no      no        no
@@ -128,7 +130,10 @@ var allowlist = []commandSpec{
 	},
 	{
 		// GENERATE ASYMMETRIC KEY PAIR with P1 81: read the public key that is there (section
-		// 7.2.14). The data is the short control reference template of one of the three keys.
+		// 7.2.14). The data is the short control reference template of one of the three keys. It is
+		// marked as a read on the strength of the vendor's library only (the card specification says
+		// that reading a public key is always possible and describes no state change); that it
+		// changes nothing is on the list of things to measure on a real card.
 		name: "get-public-key", cla: 0x00, ins: 0x47, params: []uint16{0x8100},
 		data: exactly(crtSignature, crtAuthentication, crtDecryption), readOnly: true,
 	},
@@ -149,11 +154,17 @@ var allowlist = []commandSpec{
 		data: noData(), readOnly: true, internal: true,
 	},
 	{
-		// VERIFY with P2 81 (PW1 for signing), 82 (PW1 for the other uses) or 83 (PW3, the Admin
-		// PIN) (section 7.2.2). The PIN is 6 to 127 bytes: 127 is what seven bits of the length in
-		// the PW status bytes can state. The PW3 minimum of 8 is checked where the PIN is made.
-		name: "verify", cla: 0x00, ins: 0x20, params: []uint16{0x0081, 0x0082, 0x0083},
+		// VERIFY with P2 81 (PW1 for signing) or 82 (PW1 for the other uses) (section 7.2.2): the
+		// user PIN, at least 6 bytes. The upper bound is 127, what seven bits of the length in the PW
+		// status bytes can state; the card's own maximum, read from the card, is enforced by a later
+		// piece, not here.
+		name: "verify-user", cla: 0x00, ins: 0x20, params: []uint16{0x0081, 0x0082},
 		data: lengths(6, 127), changes: true, secret: true,
+	},
+	{
+		// VERIFY with P2 83 (PW3): the Admin PIN, at least 8 bytes, and at most 127 (see above).
+		name: "verify-admin", cla: 0x00, ins: 0x20, params: []uint16{0x0083},
+		data: lengths(8, 127), changes: true, secret: true,
 	},
 	{
 		// VERIFY with P1 FF: end the verification of one reference (section 7.2.2).
@@ -161,15 +172,25 @@ var allowlist = []commandSpec{
 		data: noData(), changes: true,
 	},
 	{
-		// CHANGE REFERENCE DATA (section 7.2.3): the old PIN and the new one, joined, with P2 81
-		// or 83. 12 to 254 bytes.
-		name: "change-reference-data", cla: 0x00, ins: 0x24, params: []uint16{0x0081, 0x0083},
+		// CHANGE REFERENCE DATA (section 7.2.3) of the user PIN, P2 81: the old PIN followed by the new
+		// one, at least 6 + 6 bytes, at most 2 x 127 (the card's own maximum is enforced by a later piece).
+		name: "change-user-pin", cla: 0x00, ins: 0x24, params: []uint16{0x0081},
 		data: lengths(12, 254), changes: true, secret: true,
 	},
 	{
-		// PUT DATA (section 7.2.8) of the algorithm attributes of the three keys, C1 to C3.
-		name: "put-key-attributes", cla: 0x00, ins: 0xDA, params: []uint16{0x00C1, 0x00C2, 0x00C3},
-		data: lengths(2, 16), changes: true,
+		// CHANGE REFERENCE DATA of the Admin PIN, P2 83: at least 8 + 8 bytes, at most 2 x 127.
+		name: "change-admin-pin", cla: 0x00, ins: 0x24, params: []uint16{0x0083},
+		data: lengths(16, 254), changes: true, secret: true,
+	},
+	{
+		// PUT DATA (section 7.2.8) of the algorithm attributes of the signature key (C1) and the
+		// authentication key (C3): exactly ECDSA on P-384, 13 2B 81 04 00 22, without the optional
+		// import-format byte (section 4.4.3.9; a key that the card generates takes none). A write of
+		// other attributes over a slot that holds a key deletes the key, so no other bytes are on the
+		// list. The decryption slot (C2) is not either: its row comes with the piece that loads an
+		// encryption key.
+		name: "put-key-attributes", cla: 0x00, ins: 0xDA, params: []uint16{0x00C1, 0x00C3},
+		data: exactly([]byte{0x13, 0x2B, 0x81, 0x04, 0x00, 0x22}), changes: true,
 	},
 	{
 		// PUT DATA of the PW status byte, C4: one byte, 00 or 01 (section 4.4.3). The three
