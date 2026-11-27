@@ -12,7 +12,6 @@ import (
 	"fmt"
 	"log"
 	"log/slog"
-	"os"
 	"reflect"
 	"strconv"
 	"strings"
@@ -134,7 +133,7 @@ func sweepPrint(t *testing.T, values map[string]any, verbs string) {
 		log.New(&buf, "", 0).Println(v)
 		assertNoPIN(t, name+" log", buf.String())
 	}
-	if count < 1000 {
+	if count != len(values)*len(verbs)*len(flags) || count < 70 {
 		t.Fatalf("only %d formats were tried", count)
 	}
 }
@@ -383,17 +382,17 @@ func TestSecretIsSafeAcrossGoroutines(t *testing.T) {
 	}
 }
 
-// The test below and the two that follow hold what the code does not do yet. Each one is skipped unless
-// the variable RITUEEL_QA_BUGS is 1, so that the suite stays green; the comment of each says what is wrong.
-func bugSwitch(t *testing.T) {
-	t.Helper()
-	if os.Getenv("RITUEEL_QA_BUGS") != "1" {
-		t.Skip("a reported fault: run with RITUEEL_QA_BUGS=1 to see it")
-	}
+// qaCommandOf is a verification whose PIN is carried as a Secret, the only way that a PIN travels in a Command
+// (a PIN in plain Data is refused by the allowlist of the application layer: see its tests).
+func qaCommandOf(pin []byte) apdu.Command {
+	return apdu.Command{CLA: 0x00, INS: 0x20, P1: 0x00, P2: 0x81, Le: 256}.WithSecretData(apdu.NewSecret(pin))
 }
 
-func qaCommand() apdu.Command {
-	return apdu.Command{CLA: 0x00, INS: 0x20, P1: 0x00, P2: 0x81, Data: bytes.Clone(qaPIN), Le: 256}
+func qaCommand() apdu.Command { return qaCommandOf(qaPIN) }
+
+// qaChangeCommand is a change of a PIN: the old one and the new one, both secrets.
+func qaChangeCommand() apdu.Command {
+	return apdu.Command{INS: 0x24, P2: 0x81}.WithSecretPair(apdu.NewSecret(qaPIN), apdu.NewSecret([]byte("Zr4&vT8!")))
 }
 
 const qaCommandText = "apdu.Command{CLA:00 INS:20 P1:00 P2:81 Lc:8 Le:256}"
@@ -422,7 +421,7 @@ func TestCommandEveryWayToPrint(t *testing.T) {
 		"embedded": qaCommandEmbedded{c, 1}, "pointer to embedded": &qaCommandEmbedded{c, 1},
 		"reflect.Value": reflect.ValueOf(c), "struct in a slice in a map": map[string][]qaCommandExported{"k": {exp}},
 		"anonymous struct": struct{ C apdu.Command }{c},
-	}, "vVsqxXdbcoOtTUeEfFgG") // not %p: see TestBugUnexportedFieldPrinting
+	}, "vVsqxXdbcoOtTUeEfFgG") // not %p: see TestUnexportedFieldsPrintNothing
 	for _, v := range []any{c, p, iface} {
 		for _, verb := range []string{"%v", "%+v", "%#v", "%s", "%q", "%x", "%X", "%d", "%08.3v", "%-30s", "%t", "%e", "%c", "%U"} {
 			if got := fmt.Sprintf(verb, v); got != qaCommandText {
@@ -445,8 +444,7 @@ func TestCommandEveryWayToPrint(t *testing.T) {
 	}
 	// The data of a command that is changed afterwards is not in the text either, and the text is
 	// not the data's length in disguise: the same text for another PIN of the same length.
-	other := qaCommand()
-	other.Data[0] ^= 0xFF
+	other := qaCommandOf([]byte("Zr4&vT8!"))
 	if other.String() != c.String() {
 		t.Error("the text depends on a byte of the data")
 	}
@@ -472,17 +470,15 @@ func TestCommandEveryWayToPrint(t *testing.T) {
 	}
 }
 
-// A Command printed with %p shows its Data. A struct that holds a Secret or a Command in a field that is not exported cannot have its Format
-// called by fmt, which prints the field by reflection. For a Secret that shows the bytes with a verb that
-// a pointer does not take (%s, %q, %c, %t, %e, %f, %U, %V and the like): fmt reports the bad verb and
-// prints what the pointer points to, the holder with the PIN in it. For a Command it shows the Data
-// with every verb, %v and %+v included. Callers that keep a PIN or a command in a private field and
-// print the struct leak it. The fix is in package apdu: keep the bytes where reflection prints no byte
-// (for the Secret), and give the printed form of a Command a place that an unexported field cannot skip.
-func TestBugUnexportedFieldPrinting(t *testing.T) {
-	bugSwitch(t)
+// A Secret or a Command whose body is a Secret, in a field that is not exported, in a pointer, in a slice,
+// printed with a verb that fits and with one that does not (%s on a pointer, %c, %e, %p and the like).
+// fmt cannot call Format on an unexported field and prints it by reflection, and prints the pointee of
+// a pointer to report a bad verb: a Secret is one pointer to function values, so what it finds is
+// addresses and no byte of the PIN. Earlier, the PIN sat in a field that reflection printed.
+func TestUnexportedFieldsPrintNothing(t *testing.T) {
 	s := apdu.NewSecret(qaPIN)
 	c := qaCommand()
+	pair := qaChangeCommand()
 	sweepPrint(t, map[string]any{
 		"secret in an unexported field":     qaUnexported{"n", s, &s},
 		"secret, pointer to such a struct":  &qaUnexported{"n", s, &s},
@@ -490,10 +486,15 @@ func TestBugUnexportedFieldPrinting(t *testing.T) {
 		"command in an unexported field":    struct{ c apdu.Command }{c},
 		"command, pointer to such a struct": &struct{ c apdu.Command }{c},
 		"command, a slice of such structs":  []struct{ c apdu.Command }{{c}},
+		"pair command, unexported":          struct{ c apdu.Command }{pair},
+		"pair command, in a map":            map[string]struct{ c apdu.Command }{"k": {pair}},
 	}, allVerbs)
 	// %p is a verb for pointers: given a Command by value, fmt reports the bad verb and, with its
-	// methods switched off while it reports, prints the whole value, Data included.
-	sweepPrint(t, map[string]any{"command by value": c, "command in a struct": qaCommandExported{"n", c, &c}, "slice of commands": []apdu.Command{c}}, "p")
+	// methods switched off while it reports, prints the whole value, unexported fields included.
+	sweepPrint(t, map[string]any{
+		"command by value": c, "command in a struct": qaCommandExported{"n", c, &c}, "slice of commands": []apdu.Command{c},
+		"pair command": pair, "secret by value": s, "secret in a struct": qaExported{"n", s, &s}, "unexported": qaUnexported{"n", s, &s},
+	}, "p")
 }
 
 func TestCommandEncodesWithoutItsData(t *testing.T) {
@@ -530,14 +531,21 @@ func TestCommandEncodesWithoutItsData(t *testing.T) {
 	}
 }
 
-// gob has no use for the printed form: it encodes the exported fields of a Command, Data included. A Secret
-// has no exported field, and gob refuses it. The fix, if gob matters, is a GobEncode that refuses.
-func TestBugCommandGobEncodesItsData(t *testing.T) {
-	bugSwitch(t)
+// gob sees no exported field of a Secret and refuses it, and a Command with a secret body encodes nothing
+// of the PIN: its Data is empty and the secrets are not exported.
+func TestGobShowsNoPIN(t *testing.T) {
+	s := apdu.NewSecret(qaPIN)
 	c := qaCommand()
-	for name, v := range map[string]any{"value": c, "pointer": &c, "struct": qaCommandExported{"n", c, &c}, "slice": []apdu.Command{c}} {
+	for name, v := range map[string]any{
+		"secret": s, "pointer": &s, "command": c, "command pointer": &c, "pair": qaChangeCommand(),
+		"struct": qaCommandExported{"n", c, &c}, "slice": []apdu.Command{c, qaChangeCommand()}, "secret struct": qaExported{"n", s, &s},
+	} {
 		var buf bytes.Buffer
 		_ = gob.NewEncoder(&buf).Encode(v)
 		assertNoPIN(t, "gob "+name, buf.String())
+	}
+	var buf bytes.Buffer
+	if err := gob.NewEncoder(&buf).Encode(s); err == nil {
+		t.Error("gob accepted a Secret")
 	}
 }

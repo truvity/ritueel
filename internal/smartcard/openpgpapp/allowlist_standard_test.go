@@ -27,11 +27,22 @@ var (
 	}
 )
 
+// qaPartOK: each PIN, by itself, is at least the minimum of its kind and at most 127 bytes (what seven bits
+// of the length in the PW status bytes can state).
+func qaPartOK(n, min int) bool { return n >= min && n <= 127 }
+
 // qaOracle says whether the list allows the command, and whether it is a read that a read-only session
 // may send.
 func qaOracle(c apdu.Command) (allowed, readOnly bool) {
 	tag := uint16(c.P1)<<8 | uint16(c.P2)
-	n := len(c.Data)
+	n := c.BodyLen()
+	secret := c.HasSecret()
+	// A PIN travels only as a Secret (one for a verification, two for a change), never in plain Data;
+	// no other command has a secret body.
+	pinRow := (c.INS == 0x20 && c.P1 == 0x00) || c.INS == 0x24
+	if secret && (!pinRow || len(c.Data) > 0) {
+		return false, false
+	}
 	hasCRT := slices.ContainsFunc(qaCRTs, func(b []byte) bool { return bytes.Equal(b, c.Data) })
 	if c.CLA == 0x80 && c.INS == 0xFB { // the vendor's attestation: SIG (01) or AUT (03), no data
 		return (tag == 0x0100 || tag == 0x0300) && n == 0, false
@@ -62,18 +73,18 @@ func qaOracle(c apdu.Command) (allowed, readOnly bool) {
 	case 0x20: // VERIFY
 		switch {
 		case c.P1 == 0x00 && (c.P2 == 0x81 || c.P2 == 0x82):
-			return n >= 6 && n <= 127, false
+			return secret && c.SecretParts() == 1 && qaPartOK(c.PartLen(0), 6), false
 		case c.P1 == 0x00 && c.P2 == 0x83:
-			return n >= 8 && n <= 127, false
+			return secret && c.SecretParts() == 1 && qaPartOK(c.PartLen(0), 8), false
 		case c.P1 == 0xFF && (c.P2 == 0x81 || c.P2 == 0x82 || c.P2 == 0x83):
-			return n == 0, false
+			return n == 0 && !secret, false
 		}
 	case 0x24: // CHANGE REFERENCE DATA
 		switch {
 		case c.P1 == 0x00 && c.P2 == 0x81:
-			return n >= 12 && n <= 254, false
+			return secret && c.SecretParts() == 2 && qaPartOK(c.PartLen(0), 6) && qaPartOK(c.PartLen(1), 6), false
 		case c.P1 == 0x00 && c.P2 == 0x83:
-			return n >= 16 && n <= 254, false
+			return secret && c.SecretParts() == 2 && qaPartOK(c.PartLen(0), 8) && qaPartOK(c.PartLen(1), 8), false
 		}
 	case 0xDA: // PUT DATA
 		switch tag {
@@ -94,6 +105,20 @@ func qaOracle(c apdu.Command) (allowed, readOnly bool) {
 		return tag == 0x0000 && n == 48, false
 	}
 	return false, false
+}
+
+// qaSecretCmd is a PIN command: one Secret for a verification, two (the old PIN, then the new one) for a change.
+func qaSecretCmd(ins, p1, p2 byte, pins ...[]byte) apdu.Command {
+	c := apdu.Command{INS: ins, P1: p1, P2: p2}
+	if len(pins) == 2 {
+		return c.WithSecretPair(apdu.NewSecret(pins[0]), apdu.NewSecret(pins[1]))
+	}
+	return c.WithSecretData(apdu.NewSecret(pins[0]))
+}
+
+// qaPlain is the same command with its PIN in plain Data: no way to send a PIN.
+func qaPlain(ins, p1, p2 byte, pin []byte) apdu.Command {
+	return apdu.Command{INS: ins, P1: p1, P2: p2, Data: pin}
 }
 
 // qaRows is every command of the list, with the bytes that must reach the card, written by hand
@@ -129,14 +154,15 @@ func qaRows(t testing.TB) []qaRow {
 			fmt.Sprintf("00A5%02X04 06 60045C027F21 00", p1), "select-data", true})
 	}
 	rows = append(rows,
-		qaRow{"verify user, signing", apdu.Command{INS: 0x20, P2: 0x81, Data: pin6}, h("00200081 06") + x(pin6), "verify-user", false},
-		qaRow{"verify user, other uses", apdu.Command{INS: 0x20, P2: 0x82, Data: pin8}, h("00200082 08") + x(pin8), "verify-user", false},
-		qaRow{"verify Admin", apdu.Command{INS: 0x20, P2: 0x83, Data: pin8}, h("00200083 08") + x(pin8), "verify-admin", false},
+		qaRow{"verify user, signing", qaSecretCmd(0x20, 0, 0x81, pin6), h("00200081 06") + x(pin6), "verify-user", false},
+		qaRow{"verify user, other uses", qaSecretCmd(0x20, 0, 0x82, pin8), h("00200082 08") + x(pin8), "verify-user", false},
+		qaRow{"verify Admin", qaSecretCmd(0x20, 0, 0x83, pin8), h("00200083 08") + x(pin8), "verify-admin", false},
 		qaRow{"end verification 81", apdu.Command{INS: 0x20, P1: 0xFF, P2: 0x81}, "0020FF81", "deauthenticate", false},
 		qaRow{"end verification 82", apdu.Command{INS: 0x20, P1: 0xFF, P2: 0x82}, "0020FF82", "deauthenticate", false},
 		qaRow{"end verification 83", apdu.Command{INS: 0x20, P1: 0xFF, P2: 0x83}, "0020FF83", "deauthenticate", false},
-		qaRow{"change user PIN", apdu.Command{INS: 0x24, P2: 0x81, Data: append(bytes.Clone(pin6), pin6...)}, h("00240081 0C") + x(pin6) + x(pin6), "change-user-pin", false},
-		qaRow{"change Admin PIN", apdu.Command{INS: 0x24, P2: 0x83, Data: append(bytes.Clone(pin8), pin8...)}, h("00240083 10") + x(pin8) + x(pin8), "change-admin-pin", false},
+		qaRow{"change user PIN", qaSecretCmd(0x24, 0, 0x81, pin6, pin6), h("00240081 0C") + x(pin6) + x(pin6), "change-user-pin", false},
+		qaRow{"change Admin PIN", qaSecretCmd(0x24, 0, 0x83, pin8, pin8), h("00240083 10") + x(pin8) + x(pin8), "change-admin-pin", false},
+		qaRow{"change user PIN, the two PINs differ", qaSecretCmd(0x24, 0, 0x81, pin6, []byte("Zr4&vT")), h("00240081 0C") + x(pin6) + x([]byte("Zr4&vT")), "change-user-pin", false},
 		qaRow{"attributes SIG", apdu.Command{INS: 0xDA, P2: 0xC1, Data: qaP384}, h("00DA00C1 06 132B81040022"), "put-key-attributes", false},
 		qaRow{"attributes AUT", apdu.Command{INS: 0xDA, P2: 0xC3, Data: qaP384}, h("00DA00C3 06 132B81040022"), "put-key-attributes", false},
 		qaRow{"PW status 00", apdu.Command{INS: 0xDA, P2: 0xC4, Data: []byte{0}}, h("00DA00C4 01 00"), "put-pw-status", false},
@@ -402,55 +428,224 @@ func TestEveryTagOfReadsAndWrites(t *testing.T) {
 	}
 }
 
-// TestPINLengthEdges holds each PIN row at its edges: the lengths one under, at and one over each bound.
+// qaPINOf builds the PIN command of n bytes in secret form: one Secret of n bytes for a verification, two of
+// n bytes each for a change (the rule of the row is on each secret by itself).
+func qaPINOf(ins, p1, p2 byte, n int) apdu.Command {
+	pin := bytes.Repeat([]byte{0x41}, n)
+	if ins == 0x24 {
+		return qaSecretCmd(ins, p1, p2, pin, pin)
+	}
+	return qaSecretCmd(ins, p1, p2, pin)
+}
+
+// TestPINLengthEdges holds each PIN row, in the secret form, at its edges: each PIN by itself one under, at and
+// one over each bound. The same body in plain Data is refused at every length: a PIN in Data is no way to
+// send one.
 func TestPINLengthEdges(t *testing.T) {
 	for _, tc := range []struct {
-		name     string
-		ins      byte
-		p1, p2   byte
-		min, max int
+		name   string
+		ins    byte
+		p1, p2 byte
+		min    int
 	}{
-		{"verify user 81", 0x20, 0, 0x81, 6, 127},
-		{"verify user 82", 0x20, 0, 0x82, 6, 127},
-		{"verify Admin 83", 0x20, 0, 0x83, 8, 127},
-		{"change user PIN", 0x24, 0, 0x81, 12, 254},
-		{"change Admin PIN", 0x24, 0, 0x83, 16, 254},
+		{"verify user 81", 0x20, 0, 0x81, 6},
+		{"verify user 82", 0x20, 0, 0x82, 6},
+		{"verify Admin 83", 0x20, 0, 0x83, 8},
+		{"change user PIN", 0x24, 0, 0x81, 6},
+		{"change Admin PIN", 0x24, 0, 0x83, 8},
 	} {
 		r := newRig(t)
 		for n := 0; n <= 300; n++ {
-			c := apdu.Command{INS: tc.ins, P1: tc.p1, P2: tc.p2, Data: bytes.Repeat([]byte{0x41}, n)}
-			want := n >= tc.min && n <= tc.max
+			c := qaPINOf(tc.ins, tc.p1, tc.p2, n)
+			want := n >= tc.min && n <= 127
 			if got, _ := qaOracle(c); got != want {
 				t.Fatalf("%s: the oracle is wrong at %d", tc.name, n)
 			}
 			r.check(c)
+			plain := qaPlain(tc.ins, tc.p1, tc.p2, bytes.Repeat([]byte{0x41}, n))
+			if got, _ := qaOracle(plain); got {
+				t.Fatalf("%s: the oracle allows a PIN in plain Data at %d", tc.name, n)
+			}
+			r.check(plain)
 		}
-		r.done(tc.name, tc.max-tc.min+1)
-		// The edges by name.
-		for _, n := range []int{tc.min - 1, tc.min, tc.min + 1, tc.max - 1, tc.max, tc.max + 1} {
+		r.done(tc.name, 127-tc.min+1)
+		// The edges by name, through send, and the text of the refusal.
+		for _, n := range []int{tc.min - 1, tc.min, tc.min + 1, 126, 127, 128} {
 			q := &qaTransport{script: []qaStep{qaOK()}}
-			_, err := qaSession(t, q, Options{}, nil).send(apdu.Command{INS: tc.ins, P2: tc.p2, Data: make([]byte, n)})
-			if (err == nil) != (n >= tc.min && n <= tc.max) {
+			_, err := qaSession(t, q, Options{}, nil).send(qaPINOf(tc.ins, tc.p1, tc.p2, n))
+			if (err == nil) != (n >= tc.min && n <= 127) || (err != nil && (!errors.Is(err, ErrNotAllowed) || q.calls() != 0)) {
 				t.Errorf("%s: %d bytes: %v", tc.name, n, err)
 			}
 		}
 	}
-	// P1 and P2 of VERIFY: every pair, with each length around the bounds.
+	// P1 and P2 of VERIFY and CHANGE: every pair, with each length around the bounds, in the secret form and
+	// in plain Data.
 	r := newRig(t)
 	for p := range 0x10000 {
 		for _, n := range []int{0, 5, 6, 7, 8, 9, 127, 128} {
-			r.check(apdu.Command{INS: 0x20, P1: byte(p >> 8), P2: byte(p), Data: make([]byte, n)})
-		}
-		for _, n := range []int{0, 11, 12, 15, 16, 254, 255} {
-			r.check(apdu.Command{INS: 0x24, P1: byte(p >> 8), P2: byte(p), Data: make([]byte, n)})
+			r.check(qaPINOf(0x20, byte(p>>8), byte(p), n))
+			r.check(qaPlain(0x20, byte(p>>8), byte(p), make([]byte, n)))
+			r.check(qaPINOf(0x24, byte(p>>8), byte(p), n))
+			r.check(qaPlain(0x24, byte(p>>8), byte(p), make([]byte, 2*n)))
 		}
 	}
-	// By hand: VERIFY at 81 and 82 with 6, 7, 8, 9 and 127 bytes (10), at 83 with 8, 9 and 127 (3), the end
-	// of a verification at FF81 to FF83 with no data (3); CHANGE at 81 with 12, 15, 16 and 254 (4), at 83
-	// with 16 and 254 (2).
-	r.done("verify and change, every P1 and P2", 22)
-	if r.allowed != 22 {
-		t.Errorf("%d commands allowed, want 22", r.allowed)
+	// By hand: VERIFY at 81 and 82 with 6, 7, 8, 9 and 127 bytes (10), at 83 with 8, 9 and 127 (3); the end of a
+	// verification at FF81 to FF83 with no body (3, the plain commands of length 0); CHANGE at 81 with two PINs
+	// of 6, 7, 8, 9 and 127 (5), at 83 with 8, 9 and 127 (3).
+	r.done("verify and change, every P1 and P2", 24)
+	if r.allowed != 24 {
+		t.Errorf("%d commands allowed, want 24", r.allowed)
+	}
+}
+
+// TestEverySplitOfAChange: the two PINs of a change are judged each by itself, so a pair that is long enough
+// together is refused when one of them is short, wiped or empty. Every pair (old, new) of lengths 0 to 130
+// goes through send for the user PIN and the Admin PIN: it passes exactly when each is within its bounds.
+func TestEverySplitOfAChange(t *testing.T) {
+	for _, tc := range []struct {
+		p2  byte
+		min int
+	}{{0x81, 6}, {0x83, 8}} {
+		allowed := 0
+		for a := 0; a <= 130; a++ {
+			for b := 0; b <= 130; b++ {
+				c := qaSecretCmd(0x24, 0, tc.p2, bytes.Repeat([]byte{0x41}, a), bytes.Repeat([]byte{0x42}, b))
+				want := a >= tc.min && a <= 127 && b >= tc.min && b <= 127
+				q := &qaTransport{script: []qaStep{qaOK()}}
+				_, err := qaSession(t, q, Options{}, nil).send(c)
+				if (err == nil) != want || (err == nil && q.calls() != 1) || (err != nil && (!errors.Is(err, ErrNotAllowed) || q.calls() != 0)) {
+					t.Fatalf("P2 %02X, old %d, new %d: %v, %d calls", tc.p2, a, b, err, q.calls())
+				}
+				if err == nil {
+					allowed++
+					// Old, then new, with no separator.
+					if len(q.sent[0]) != 5+a+b || !bytes.Equal(q.sent[0][5:5+a], bytes.Repeat([]byte{0x41}, a)) || !bytes.Equal(q.sent[0][5+a:], bytes.Repeat([]byte{0x42}, b)) {
+						t.Fatalf("the wire: %x", q.sent[0])
+					}
+				}
+			}
+		}
+		if want := (127 - tc.min + 1) * (127 - tc.min + 1); allowed != want {
+			t.Errorf("P2 %02X: %d pairs allowed, want %d", tc.p2, allowed, want)
+		}
+	}
+	// Named: the sum is long enough and one part is not.
+	for name, c := range map[string]apdu.Command{
+		"5 and 7 (user)":     qaSecretCmd(0x24, 0, 0x81, bytes.Repeat([]byte{1}, 5), bytes.Repeat([]byte{1}, 7)),
+		"7 and 5 (user)":     qaSecretCmd(0x24, 0, 0x81, bytes.Repeat([]byte{1}, 7), bytes.Repeat([]byte{1}, 5)),
+		"7 and 9 (Admin)":    qaSecretCmd(0x24, 0, 0x83, bytes.Repeat([]byte{1}, 7), bytes.Repeat([]byte{1}, 9)),
+		"9 and 7 (Admin)":    qaSecretCmd(0x24, 0, 0x83, bytes.Repeat([]byte{1}, 9), bytes.Repeat([]byte{1}, 7)),
+		"6 and 128 (user)":   qaSecretCmd(0x24, 0, 0x81, bytes.Repeat([]byte{1}, 6), bytes.Repeat([]byte{1}, 128)),
+		"128 and 6 (user)":   qaSecretCmd(0x24, 0, 0x81, bytes.Repeat([]byte{1}, 128), bytes.Repeat([]byte{1}, 6)),
+		"0 and 20 (user)":    qaSecretCmd(0x24, 0, 0x81, nil, bytes.Repeat([]byte{1}, 20)),
+		"20 and 0 (Admin)":   qaSecretCmd(0x24, 0, 0x83, bytes.Repeat([]byte{1}, 20), nil),
+		"254 and 0 (user)":   qaSecretCmd(0x24, 0, 0x81, bytes.Repeat([]byte{1}, 254), nil),
+		"127 and 127 (user)": qaSecretCmd(0x24, 0, 0x81, bytes.Repeat([]byte{1}, 127), bytes.Repeat([]byte{1}, 128)),
+	} {
+		q := &qaTransport{script: []qaStep{qaOK()}}
+		if _, err := qaSession(t, q, Options{}, nil).send(c); !errors.Is(err, ErrNotAllowed) || q.calls() != 0 {
+			t.Errorf("%s: %v, %d calls", name, err, q.calls())
+		}
+	}
+}
+
+// TestSecretFormOfTheOtherRows: a body in secrets is the form of the PIN rows only. Every other row refuses
+// it, and so do the PIN rows when the number of secrets is not the number the row holds.
+func TestSecretFormOfTheOtherRows(t *testing.T) {
+	r := newRig(t)
+	for _, row := range qaRows(t) {
+		if strings.HasPrefix(row.op, "verify") || strings.HasPrefix(row.op, "change") {
+			continue
+		}
+		c := row.cmd
+		c.Data = nil
+		for _, n := range []int{0, 1, 2, 4, 6, 20, 48} {
+			r.check(c.WithSecretData(apdu.NewSecret(make([]byte, n))))
+			r.check(c.WithSecretPair(apdu.NewSecret(make([]byte, n)), apdu.NewSecret(make([]byte, n))))
+		}
+	}
+	// A verification with two secrets, a change with one, and with a secret and plain Data together.
+	for _, n := range []int{6, 8, 12, 16, 20} {
+		r.check(qaSecretCmd(0x20, 0, 0x81, bytes.Repeat([]byte{1}, n), bytes.Repeat([]byte{1}, n)))
+		r.check(qaSecretCmd(0x24, 0, 0x81, bytes.Repeat([]byte{1}, n)))
+		both := qaSecretCmd(0x20, 0, 0x81, bytes.Repeat([]byte{1}, n))
+		both.Data = []byte{1, 2, 3}
+		r.check(both)
+		bothPair := qaSecretCmd(0x24, 0, 0x81, bytes.Repeat([]byte{1}, n), bytes.Repeat([]byte{1}, n))
+		bothPair.Data = []byte{1}
+		r.check(bothPair)
+	}
+	r.done("the other rows in the secret form", 0)
+	if r.allowed != 0 {
+		t.Errorf("%d commands allowed", r.allowed)
+	}
+}
+
+// TestPINCommandNeedingAChainIsRefusedBeforeAnythingIsSent: no row takes a PIN of more than 254 bytes, and a PIN
+// is never cut into blocks. A row that would (a table of the tests) refuses a body over 255 bytes with
+// ErrDataTooLong before anything is sent, with the session alive, unless the card takes the extended form,
+// in which case the PIN goes in one extended command, and the encoded buffer is overwritten.
+func TestPINCommandNeedingAChainIsRefusedBeforeAnythingIsSent(t *testing.T) {
+	for _, n := range []int{256, 300, 510, 1000, 65535} {
+		for _, ext := range []bool{false, true} {
+			big := apdu.Command{INS: 0xDA, P1: 0x01, Le: 0}.WithSecretData(apdu.NewSecret(bytes.Repeat([]byte{0x41}, n)))
+			q := &qaTransport{ext: ext, script: []qaStep{qaOK()}}
+			s := qaSession(t, q, Options{}, qaTable(true, true))
+			_, err := s.send(big)
+			if !errors.Is(err, apdu.ErrDataTooLong) || q.calls() != 0 || s.Dead() {
+				t.Fatalf("%d bytes, ext %v (the card is not told it takes it): %v, %d calls", n, ext, err, q.calls())
+			}
+		}
+		// Told that the card takes it, and the transport takes it: one extended command, no chain.
+		q := &qaTransport{ext: true, script: []qaStep{qaOK()}}
+		s := qaSession(t, q, Options{}, qaTable(true, true))
+		s.allowExtended(70000)
+		big := apdu.Command{INS: 0xDA, P1: 0x01}.WithSecretData(apdu.NewSecret(bytes.Repeat([]byte{0x41}, n)))
+		if _, err := s.send(big); err != nil || q.calls() != 1 || len(q.sent[0]) != 7+n || q.sent[0][0] != 0x00 {
+			t.Fatalf("%d bytes, extended: %v %d calls", n, err, q.calls())
+		}
+		qaAllZero(t, "the extended command", q.refs)
+		// Told, but the body is more than the card takes: a chain would be needed, and is refused.
+		q = &qaTransport{ext: true, script: []qaStep{qaOK()}}
+		s = qaSession(t, q, Options{}, qaTable(true, true))
+		s.allowExtended(300)
+		if n > 291 {
+			if _, err := s.send(big); !errors.Is(err, apdu.ErrDataTooLong) || q.calls() != 0 || s.Dead() {
+				t.Fatalf("%d bytes over what the card takes: %v, %d calls", n, err, q.calls())
+			}
+		}
+	}
+	// The same body without the secret form is a chain, as before, for a row that is not a PIN row.
+	q := &qaTransport{script: []qaStep{qaOK(), qaOK()}}
+	if _, err := qaSession(t, q, Options{}, qaTable(false, true)).send(qaPut(300, 0)); err != nil || q.calls() != 2 {
+		t.Fatalf("%v %d", err, q.calls())
+	}
+}
+
+// A change of the PIN whose old PIN was wiped, or is empty, is refused with nothing sent, whatever the other PIN
+// is: the allowlist counts a wiped secret as a secret of length 0, and judges each part by itself. Earlier
+// the sum of the two was judged, and a long new PIN alone passed and went on the wire as if it were both.
+func TestChangeWithAPartMissingIsRefused(t *testing.T) {
+	wiped := func(n int) apdu.Secret {
+		s := apdu.NewSecret(bytes.Repeat([]byte{0x41}, n))
+		s.Wipe()
+		return s
+	}
+	live := func(n int) apdu.Secret { return apdu.NewSecret(bytes.Repeat([]byte{0x42}, n)) }
+	for name, c := range map[string]apdu.Command{
+		"user, old wiped":         apdu.Command{INS: 0x24, P2: 0x81}.WithSecretPair(wiped(6), live(14)),
+		"user, new wiped":         apdu.Command{INS: 0x24, P2: 0x81}.WithSecretPair(live(14), wiped(6)),
+		"user, new empty":         apdu.Command{INS: 0x24, P2: 0x81}.WithSecretPair(live(12), apdu.NewSecret(nil)),
+		"Admin, old empty":        apdu.Command{INS: 0x24, P2: 0x83}.WithSecretPair(apdu.NewSecret(nil), live(20)),
+		"Admin, both wiped, long": apdu.Command{INS: 0x24, P2: 0x83}.WithSecretPair(wiped(100), wiped(100)),
+	} {
+		for _, ro := range []bool{false, true} {
+			q := &qaTransport{script: []qaStep{qaOK()}}
+			s := qaSession(t, q, Options{ReadOnly: ro}, nil)
+			if _, err := s.send(c); err == nil || q.calls() != 0 || s.Dead() {
+				t.Errorf("%s (read-only %v): sent, %d calls, wire %x", name, ro, q.calls(), q.sent)
+			}
+		}
 	}
 }
 

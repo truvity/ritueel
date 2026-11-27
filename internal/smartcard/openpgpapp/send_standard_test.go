@@ -17,7 +17,14 @@ func qaGetData(tag uint16) apdu.Command {
 	return apdu.Command{INS: 0xCA, P1: byte(tag >> 8), P2: byte(tag), Le: 256}
 }
 
-func qaVerify(pin []byte) apdu.Command { return apdu.Command{INS: 0x20, P2: 0x81, Data: pin} }
+// qaVerify is a verification of the user PIN, with the PIN as a Secret; qaChange is a change, with the two.
+func qaVerify(pin []byte) apdu.Command {
+	return apdu.Command{INS: 0x20, P2: 0x81}.WithSecretData(apdu.NewSecret(pin))
+}
+
+func qaChange(old, next []byte) apdu.Command {
+	return apdu.Command{INS: 0x24, P2: 0x81}.WithSecretPair(apdu.NewSecret(old), apdu.NewSecret(next))
+}
 
 var (
 	qaGenerate = apdu.Command{INS: 0x47, P1: 0x80, Data: []byte{0xB6, 0x00}, Le: 256}
@@ -57,7 +64,7 @@ func TestChainBlocksOnTheWire(t *testing.T) {
 		{1000, []int{255, 255, 255, 235}},
 	} {
 		for _, le := range []int{0, 256} {
-			for _, secret := range []bool{false, true} {
+			for _, secret := range []bool{false} { // a PIN is never chained: see the tests of the PIN rows
 				cmd := qaPut(tc.n, le)
 				orig := bytes.Clone(cmd.Data)
 				script := make([]qaStep, len(tc.sizes))
@@ -132,7 +139,7 @@ func TestChainMoreDataAfterTheLastBlock(t *testing.T) {
 func TestChainRefusedAtEveryBlock(t *testing.T) {
 	words := []int{0x6883, 0x6884, 0x6A88, 0x6283, 0x6100, 0x61FF, 0x9001, 0x6C00, 0x6700, 0x6982, 0x0000, 0xFFFF, 0x6D00, 0x6E00}
 	for _, changes := range []bool{true, false} {
-		for _, secret := range []bool{false, true} {
+		for _, secret := range []bool{false} { // a PIN is never chained: see the tests of the PIN rows
 			for block := range 3 { // the blocks before the last of four
 				for _, w := range words {
 					script := []qaStep{qaOK(), qaOK(), qaOK(), qaOK(0xAB)}
@@ -548,21 +555,22 @@ type qaScenario struct {
 	changes bool
 	secret  bool
 	script  []qaStep
+	ext     bool
 }
 
 func qaScenarios() []qaScenario {
 	pin := []byte("Xk9#mQ2$")
 	return []qaScenario{
-		{"a read", nil, qaGetData(0x7F21), "get-data", false, false, []qaStep{qaOK(1)}},
-		{"a write", nil, qaPWStatus, "put-pw-status", true, false, []qaStep{qaOK()}},
-		{"a verification", nil, qaVerify(pin), "verify-user", true, true, []qaStep{qaOK()}},
-		{"a change of PIN", nil, apdu.Command{INS: 0x24, P2: 0x81, Data: append(bytes.Clone(pin), pin...)}, "change-user-pin", true, true, []qaStep{qaOK()}},
-		{"a chain of a write", qaTable(false, true), qaPut(1000, 256), "put-qa", true, false, []qaStep{qaOK(), qaOK(), qaOK(), qaOK()}},
-		{"a chain that changes nothing", qaTable(false, false), qaPut(1000, 256), "put-qa", false, false, []qaStep{qaOK(), qaOK(), qaOK(), qaOK()}},
-		{"a chain with a secret", qaTable(true, true), qaPut(600, 0), "put-qa", true, true, []qaStep{qaOK(), qaOK(), qaOK()}},
-		{"a continuation of a read", nil, qaGetData(0x7F21), "get-data", false, false, qaContinuation([]byte{1}, []byte{2}, []byte{3})},
-		{"a continuation of a generation", nil, qaGenerate, "generate-key", true, false, qaContinuation([]byte{1}, []byte{2}, []byte{3})},
-		{"a continuation of a secret command", nil, qaVerify(pin), "verify-user", true, true, qaContinuation([]byte{1}, []byte{2}, []byte{3})},
+		{"a read", nil, qaGetData(0x7F21), "get-data", false, false, []qaStep{qaOK(1)}, false},
+		{"a write", nil, qaPWStatus, "put-pw-status", true, false, []qaStep{qaOK()}, false},
+		{"a verification", nil, qaVerify(pin), "verify-user", true, true, []qaStep{qaOK()}, false},
+		{"a change of PIN", nil, qaChange(pin, pin), "change-user-pin", true, true, []qaStep{qaOK()}, false},
+		{"a chain of a write", qaTable(false, true), qaPut(1000, 256), "put-qa", true, false, []qaStep{qaOK(), qaOK(), qaOK(), qaOK()}, false},
+		{"a chain that changes nothing", qaTable(false, false), qaPut(1000, 256), "put-qa", false, false, []qaStep{qaOK(), qaOK(), qaOK(), qaOK()}, false},
+		{"an extended command with a secret body", qaTable(true, true), apdu.Command{INS: 0xDA, P1: 0x01}.WithSecretData(apdu.NewSecret(bytes.Repeat([]byte{0x41}, 600))), "put-qa", true, true, []qaStep{qaOK()}, true},
+		{"a continuation of a read", nil, qaGetData(0x7F21), "get-data", false, false, qaContinuation([]byte{1}, []byte{2}, []byte{3}), false},
+		{"a continuation of a generation", nil, qaGenerate, "generate-key", true, false, qaContinuation([]byte{1}, []byte{2}, []byte{3}), false},
+		{"a continuation of a secret command", nil, qaVerify(pin), "verify-user", true, true, qaContinuation([]byte{1}, []byte{2}, []byte{3}), false},
 	}
 }
 
@@ -590,8 +598,14 @@ func TestLostExchangeAtEveryCall(t *testing.T) {
 				name := fmt.Sprintf("%s, %s at call %d", sc.name, kind.name, k)
 				script := append([]qaStep(nil), sc.script...)
 				script[k] = kind.step
-				q := &qaTransport{script: script}
+				if errors.Is(kind.cause, ErrResponseTooLong) && sc.ext {
+					script[k] = qaStep{resp: make([]byte, MaxResponse+904)} // over MaxResponse, within what the extended form carries
+				}
+				q := &qaTransport{script: script, ext: sc.ext}
 				s := qaSession(t, q, Options{}, sc.table)
+				if sc.ext {
+					s.allowExtended(2000)
+				}
 				var err error
 				var panicked any
 				func() {
@@ -602,12 +616,8 @@ func TestLostExchangeAtEveryCall(t *testing.T) {
 					t.Fatalf("%s: %d calls, dead %v, selected %v", name, q.calls(), s.Dead(), s.selected)
 				}
 				if sc.secret {
-					// The blocks of the command hold the PIN; the GET RESPONSE after it does not.
-					secretCalls := 1
-					if strings.Contains(sc.name, "chain") {
-						secretCalls = len(sc.script)
-					}
-					qaAllZero(t, name, q.refs[:min(secretCalls, len(q.refs))])
+					// The one command holds the PIN; the GET RESPONSE after it does not.
+					qaAllZero(t, name, q.refs[:1])
 				}
 				if kind.name == "a panic" {
 					if panicked != "boom" || err != nil {

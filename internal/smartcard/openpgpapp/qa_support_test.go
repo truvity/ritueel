@@ -107,7 +107,7 @@ func qaUnselected(t testing.TB, q *qaTransport, o Options, table []commandSpec) 
 // not) and get-response.
 func qaTable(secret, changes bool) []commandSpec {
 	return []commandSpec{
-		{name: "put-qa", cla: 0x00, ins: 0xDA, params: []uint16{0x0100}, data: lengths(0, 70000), changes: changes, secret: secret, mayWait: true},
+		{name: "put-qa", cla: 0x00, ins: 0xDA, params: []uint16{0x0100}, data: lengths(0, 70000), changes: changes, secret: secret, secretParts: map[bool]int{true: 1}[secret], mayWait: true},
 		{name: "get-response", cla: 0x00, ins: 0xC0, params: []uint16{0x0000}, data: noData(), readOnly: true, internal: true},
 	}
 }

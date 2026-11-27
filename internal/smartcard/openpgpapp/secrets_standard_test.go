@@ -14,33 +14,65 @@ import (
 
 var qaPIN = []byte("Xk9#mQ2$")
 
-// qaSecretCases: a command that holds a PIN, in the ways that it can go.
+// qaSecretCase: a command that holds a PIN as Secret values, in the ways that it can go. make returns a new
+// command, with the secrets that it holds and what they hold.
 type qaSecretCase struct {
-	name   string
-	table  []commandSpec
-	cmd    func() apdu.Command
-	blocks int // the commands of the exchange that hold the PIN
-	steps  func(boom error) []qaStep
+	name  string
+	table []commandSpec
+	ext   bool
+	make  func() (apdu.Command, []apdu.Secret, [][]byte)
+	steps func() []qaStep
+}
+
+func (c qaSecretCase) session(t testing.TB, q *qaTransport) *Session {
+	q.ext = c.ext
+	s := qaSession(t, q, Options{}, c.table)
+	if c.ext {
+		s.allowExtended(2000)
+	}
+	return s
 }
 
 func qaSecretCases() []qaSecretCase {
-	pinCmd := func() apdu.Command { return qaVerify(bytes.Clone(qaPIN)) }
-	chainCmd := func() apdu.Command {
-		c := qaPut(600, 0)
-		copy(c.Data, qaPIN)
-		return c
+	one := func() (apdu.Command, []apdu.Secret, [][]byte) {
+		s := apdu.NewSecret(qaPIN)
+		return apdu.Command{INS: 0x20, P2: 0x81}.WithSecretData(s), []apdu.Secret{s}, [][]byte{qaPIN}
 	}
+	two := func() (apdu.Command, []apdu.Secret, [][]byte) {
+		old, next := apdu.NewSecret(qaPIN), apdu.NewSecret([]byte("Zr4&vT8!jW"))
+		return apdu.Command{INS: 0x24, P2: 0x81}.WithSecretPair(old, next), []apdu.Secret{old, next}, [][]byte{qaPIN, []byte("Zr4&vT8!jW")}
+	}
+	long := func() (apdu.Command, []apdu.Secret, [][]byte) {
+		pin := append(bytes.Clone(qaPIN), bytes.Repeat([]byte{0x41}, 592)...)
+		s := apdu.NewSecret(pin)
+		return apdu.Command{INS: 0xDA, P1: 0x01}.WithSecretData(s), []apdu.Secret{s}, [][]byte{pin}
+	}
+	okOne := func() []qaStep { return []qaStep{qaOK()} }
 	return []qaSecretCase{
-		{"a verification", nil, pinCmd, 1, func(error) []qaStep { return []qaStep{qaOK()} }},
-		{"a chain of blocks", qaTable(true, true), chainCmd, 3, func(error) []qaStep { return []qaStep{qaOK(), qaOK(), qaOK()} }},
+		{"a verification", nil, false, one, okOne},
+		{"a change of PIN", nil, false, two, okOne},
+		{"a body of 600 bytes in the extended form", qaTable(true, true), true, long, okOne},
+	}
+}
+
+// qaStillHolds says that the secrets hold what they held: send never wipes the secret of the caller.
+func qaStillHolds(t testing.TB, what string, secrets []apdu.Secret, pins [][]byte) {
+	t.Helper()
+	for i, s := range secrets {
+		var got []byte
+		s.Use(func(b []byte) { got = bytes.Clone(b) })
+		if !bytes.Equal(got, pins[i]) || s.Len() != len(pins[i]) {
+			t.Errorf("%s: secret %d was changed or wiped by send", what, i)
+		}
 	}
 }
 
 // TestSecretBuffersAreOverwritten: after the call returns, whatever way it ended (success, a status word,
-// an error of the transport, an answer that cannot be read, a panic), every encoded command that held the
+// an error of the transport, an answer that cannot be read, a panic), the encoded command that held the
 // PIN is overwritten, in the very slice that the transport was handed (the recorded slices alias what
-// send owned), for a single command and for each block of a chain. The caller's own slice still holds the
-// PIN: it is the caller's to clear, and send does not touch it.
+// send owned). The Secret values themselves still hold the PIN afterwards: they are the caller's, and
+// the caller wipes them (with Wipe) when it is done; send does not wipe them behind the caller, and this
+// test pins that.
 func TestSecretBuffersAreOverwritten(t *testing.T) {
 	boom := errors.New("reader: " + string(qaPIN) + " 586b3923 WGsjbVEyJA== 88 107 57")
 	endings := []struct {
@@ -60,46 +92,38 @@ func TestSecretBuffersAreOverwritten(t *testing.T) {
 	for _, sc := range qaSecretCases() {
 		// Success.
 		{
-			cmd := sc.cmd()
-			orig := bytes.Clone(cmd.Data)
-			q := &qaTransport{script: sc.steps(boom)}
-			s := qaSession(t, q, Options{}, sc.table)
+			cmd, secrets, pins := sc.make()
+			q := &qaTransport{script: sc.steps()}
+			s := sc.session(t, q)
 			if _, err := s.send(cmd); err != nil {
 				t.Fatalf("%s: %v", sc.name, err)
 			}
-			if len(q.refs) != sc.blocks {
+			if len(q.refs) != 1 {
 				t.Fatalf("%s: %d commands", sc.name, len(q.refs))
 			}
 			qaAllZero(t, sc.name+", success", q.refs)
-			if !bytes.Equal(cmd.Data, orig) {
-				t.Fatalf("%s: the caller's data changed", sc.name)
-			}
+			qaStillHolds(t, sc.name+", success", secrets, pins)
 		}
-		for k := range sc.blocks {
-			for _, end := range endings {
-				name := fmt.Sprintf("%s, %s at block %d", sc.name, end.name, k)
-				cmd := sc.cmd()
-				orig := bytes.Clone(cmd.Data)
-				script := sc.steps(boom)
-				script[k] = end.step
-				q := &qaTransport{script: script}
-				s := qaSession(t, q, Options{}, sc.table)
-				var err error
-				func() {
-					defer func() { _ = recover() }()
-					_, err = s.send(cmd)
-				}()
-				qaAllZero(t, name, q.refs[:min(sc.blocks, len(q.refs))])
-				qaAllZero(t, name+": answers", q.given)
-				// The PIN is still in the caller's slice, and in nothing that send returned. (It is the
-				// caller's to clear: pinned here so that nobody makes send clear it behind the caller.)
-				if !bytes.Equal(cmd.Data, orig) {
-					t.Fatalf("%s: the caller's data changed", name)
-				}
-				if err != nil {
-					qaNoPIN(t, name, qaPIN, err.Error())
-					qaNoPIN(t, name+" (%+v)", qaPIN, fmt.Sprintf("%+v", err))
-					qaNoPIN(t, name+" (%#v)", qaPIN, fmt.Sprintf("%#v", err))
+		for _, end := range endings {
+			name := fmt.Sprintf("%s, %s", sc.name, end.name)
+			cmd, secrets, pins := sc.make()
+			script := sc.steps()
+			script[0] = end.step
+			q := &qaTransport{script: script}
+			s := sc.session(t, q)
+			var err error
+			func() {
+				defer func() { _ = recover() }()
+				_, err = s.send(cmd)
+			}()
+			qaAllZero(t, name, q.refs[:1])
+			qaAllZero(t, name+": answers", q.given)
+			qaStillHolds(t, name, secrets, pins)
+			if err != nil {
+				for _, pin := range pins {
+					qaNoPIN(t, name, pin, err.Error())
+					qaNoPIN(t, name+" (%+v)", pin, fmt.Sprintf("%+v", err))
+					qaNoPIN(t, name+" (%#v)", pin, fmt.Sprintf("%#v", err))
 				}
 			}
 		}
@@ -129,14 +153,14 @@ func qaWalk(err error) []string {
 func TestLostErrorOfASecretShowsNoCause(t *testing.T) {
 	boom := errors.New("reader: Xk9#mQ2$ 586b39236d51322 4 WGs5I21RMiQ= 88 107 57 35 109 81 50 36")
 	for _, sc := range qaSecretCases() {
-		for k := range sc.blocks {
-			script := sc.steps(boom)
-			script[k] = qaStep{err: boom}
+		{
+			script := sc.steps()
+			script[0] = qaStep{err: boom}
 			q := &qaTransport{script: script}
-			s := qaSession(t, q, Options{}, sc.table)
-			cmd := sc.cmd()
+			s := sc.session(t, q)
+			cmd, _, _ := sc.make()
 			_, err := s.send(cmd)
-			name := fmt.Sprintf("%s, block %d", sc.name, k)
+			name := sc.name
 			var lost *LostError
 			if !errors.As(err, &lost) {
 				t.Fatalf("%s: %v", name, err)
@@ -185,7 +209,7 @@ func TestLostErrorOfASecretShowsNoCause(t *testing.T) {
 	// The same for a continuation whose GET RESPONSE is refused: the StatusError cause is reachable and
 	// is not in the text.
 	q := &qaTransport{script: []qaStep{qaSW(0x61, 0x01, 1), qaSW(0x6A, 0x88)}}
-	_, err := qaSession(t, q, Options{}, nil).send(qaVerify(bytes.Clone(qaPIN)))
+	_, err := qaSession(t, q, Options{}, nil).send(qaVerify(qaPIN))
 	var se *StatusError
 	if !errors.As(err, &se) || se.SW != 0x6A88 || strings.Contains(err.Error(), "6A88") {
 		t.Fatalf("a continuation: %v", err)
@@ -214,43 +238,52 @@ func TestNoErrorHoldsThePIN(t *testing.T) {
 			_, err := qaSession(t, &qaTransport{}, Options{}, nil).send(qaVerify(pin[:3]))
 			return err
 		},
+		"not allowed (a PIN in plain Data)": func() error {
+			_, err := qaSession(t, &qaTransport{}, Options{}, nil).send(qaPlain(0x20, 0, 0x81, bytes.Clone(pin)))
+			return err
+		},
+		"not allowed (a PIN in plain Data and a secret)": func() error {
+			c := qaVerify(pin)
+			c.Data = bytes.Clone(pin)
+			_, err := qaSession(t, &qaTransport{}, Options{}, nil).send(c)
+			return err
+		},
 		"not allowed (the wrong reference)": func() error {
-			_, err := qaSession(t, &qaTransport{}, Options{}, nil).send(apdu.Command{INS: 0x20, P2: 0x84, Data: bytes.Clone(pin)})
+			_, err := qaSession(t, &qaTransport{}, Options{}, nil).send(apdu.Command{INS: 0x20, P2: 0x84}.WithSecretData(apdu.NewSecret(pin)))
 			return err
 		},
 		"read-only": func() error {
-			_, err := qaSession(t, &qaTransport{}, Options{ReadOnly: true}, nil).send(qaVerify(bytes.Clone(pin)))
+			_, err := qaSession(t, &qaTransport{}, Options{ReadOnly: true}, nil).send(qaVerify(pin))
 			return err
 		},
 		"not selected": func() error {
-			_, err := qaUnselected(t, &qaTransport{}, Options{}, nil).send(qaVerify(bytes.Clone(pin)))
+			_, err := qaUnselected(t, &qaTransport{}, Options{}, nil).send(qaVerify(pin))
 			return err
 		},
 		"a status word": func() error {
-			_, err := qaSession(t, &qaTransport{script: []qaStep{qaSW(0x69, 0x83)}}, Options{}, nil).send(qaVerify(bytes.Clone(pin)))
+			_, err := qaSession(t, &qaTransport{script: []qaStep{qaSW(0x69, 0x83)}}, Options{}, nil).send(qaVerify(pin))
 			return err
 		},
 		"too long for any form": func() error {
-			c := qaPut(70000, 0)
-			copy(c.Data, pin)
+			c := apdu.Command{INS: 0xDA, P1: 0x01}.WithSecretData(apdu.NewSecret(append(bytes.Clone(pin), make([]byte, 70000)...)))
 			_, err := qaSession(t, &qaTransport{}, Options{}, qaTable(true, true)).send(c)
 			return err
 		},
 		"a dead session": func() error {
 			s := qaSession(t, &qaTransport{script: []qaStep{{err: errors.New("gone")}}}, Options{}, nil)
 			_, _ = s.send(qaGetData(0x004F))
-			_, err := s.send(qaVerify(bytes.Clone(pin)))
+			_, err := s.send(qaVerify(pin))
 			return err
 		},
 		"a closed session": func() error {
 			s := qaSession(t, &qaTransport{}, Options{}, nil)
 			_ = s.Close()
-			_, err := s.send(qaVerify(bytes.Clone(pin)))
+			_, err := s.send(qaVerify(pin))
 			return err
 		},
 		"a lost secret command": func() error {
 			s := qaSession(t, &qaTransport{script: []qaStep{{err: errors.New("gone: " + string(pin))}}}, Options{}, nil)
-			_, err := s.send(qaVerify(bytes.Clone(pin)))
+			_, err := s.send(qaVerify(pin))
 			return err
 		},
 	} {
@@ -264,5 +297,21 @@ func TestNoErrorHoldsThePIN(t *testing.T) {
 		}
 	}
 	// And the command, printed by the layer's error paths or by the test log, holds none either.
-	qaNoPIN(t, "the command", pin, fmt.Sprintf("%v %+v %#v %s", qaVerify(bytes.Clone(pin)), qaVerify(bytes.Clone(pin)), qaVerify(bytes.Clone(pin)), qaVerify(bytes.Clone(pin))))
+	qaNoPIN(t, "the command", pin, fmt.Sprintf("%v %+v %#v %s", qaVerify(pin), qaVerify(pin), qaVerify(pin), qaVerify(pin)))
+	// A PIN command printed or encoded by any means shows nothing of the PIN, in plain or in the pair form.
+	for _, c := range []apdu.Command{qaVerify(pin), qaChange(pin, []byte("Zr4&vT8!jW"))} {
+		out, _ := json.Marshal(struct {
+			Cmd  apdu.Command
+			List []apdu.Command
+		}{c, []apdu.Command{c}})
+		qaNoPIN(t, "json of a command", pin, string(out))
+		var buf bytes.Buffer
+		slog.New(slog.NewJSONHandler(&buf, nil)).Info("m", "cmd", c)
+		slog.New(slog.NewTextHandler(&buf, nil)).Info("m", "cmd", c, "all", []apdu.Command{c})
+		qaNoPIN(t, "slog of a command", pin, buf.String())
+		wrapped := struct{ c apdu.Command }{c}
+		for _, verb := range []string{"%v", "%+v", "%#v", "%s", "%p", "%q", "%x"} {
+			qaNoPIN(t, "a command in an unexported field, "+verb, pin, fmt.Sprintf(verb, wrapped)) //nolint:staticcheck // the verbs that do not fit are the point
+		}
+	}
 }
