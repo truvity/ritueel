@@ -41,14 +41,6 @@ func qaComponents(ps []fkPacket) []int {
 	return out
 }
 
-func qaJoin(parts ...[]fkPacket) []byte {
-	var all []fkPacket
-	for _, p := range parts {
-		all = append(all, p...)
-	}
-	return fkJoin(all...)
-}
-
 func qaIns(ps []fkPacket, at int, extra ...fkPacket) []fkPacket {
 	out := slices.Clone(ps[:at])
 	out = append(out, extra...)

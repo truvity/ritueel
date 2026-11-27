@@ -101,7 +101,7 @@ func qaExports(t testing.TB) []qaExport {
 	for name, text := range map[string]string{
 		"a user ID with a comment":             "Quokka Tester (the second one) <quokka@example.org>",
 		"a user ID with no address":            "Quokka Tester",
-		"a user ID with letters outside ASCII": "Zoë Müller-Łukasiewicz <zoe@example.org>",
+		"a user ID with letters outside ASCII": "Zo\u00eb M\u00fcller-\u0141ukasiewicz <zoe@example.org>",
 		"a user ID with a line break":          "Quokka\nTester",
 		"a user ID with a NUL":                 "Quokka\x00Tester",
 		"a user ID that is not UTF-8":          "Quokka \xff\xfe Tester",

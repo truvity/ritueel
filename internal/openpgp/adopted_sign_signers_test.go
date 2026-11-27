@@ -170,7 +170,7 @@ func qaReverse(b []byte) []byte {
 }
 
 // qaCall calls f and tells whether it panicked.
-func qaCall(f func() ([]byte, error)) (out []byte, err error, panicked any) {
+func qaCall(f func() ([]byte, error)) (out []byte, panicked any, err error) {
 	defer func() { panicked = recover() }()
 	out, err = f()
 	return
@@ -191,7 +191,7 @@ func TestQASignerThatMisbehavesGetsNoSignature(t *testing.T) {
 				"a direct-key signature": func() ([]byte, error) { return openpgp.DirectKeySignatureFor(rand.Reader, a, at) },
 				"a detached signature":   func() ([]byte, error) { return openpgp.DetachedSignatureFor(rand.Reader, a, at, msg) },
 			} {
-				sig, err, panicked := qaCall(make)
+				sig, panicked, err := qaCall(make)
 				if panicked != nil {
 					t.Errorf("%s, %s: the builder panicked: %v", c.name, what, panicked)
 					continue
@@ -259,7 +259,7 @@ func TestQASignerThatPanicsIsRefused(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		sig, err, panicked := qaCall(func() ([]byte, error) { return openpgp.DirectKeySignatureFor(rand.Reader, a, fkEpoch.Add(time.Hour)) })
+		sig, panicked, err := qaCall(func() ([]byte, error) { return openpgp.DirectKeySignatureFor(rand.Reader, a, fkEpoch.Add(time.Hour)) })
 		if panicked != nil {
 			t.Fatalf("the builder panicked: %v", panicked)
 		}

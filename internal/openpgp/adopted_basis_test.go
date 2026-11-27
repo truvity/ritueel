@@ -172,12 +172,12 @@ func TestQAParseHeldDigest(t *testing.T) {
 		"a line break behind":     good + "\n",
 		"a space inside":          good[:32] + " " + good[33:],
 		"a g":                     "g" + good[1:],
-		"a non-ASCII digit":       "١" + good[2:],
+		"a non-ASCII digit":       "\u0661" + good[2:],
 		"the zero digest":         strings.Repeat("0", 64),
 		"a NUL":                   "\x00" + good[1:],
 		"two digests":             good + good,
 		"a colon between pairs":   strings.Repeat("ab:", 21) + "ab",
-		"64 bytes of a wide rune": strings.Repeat("é", 32),
+		"64 bytes of a wide rune": strings.Repeat("\u00e9", 32),
 	} {
 		d, err := openpgp.ParseHeldDigest(text)
 		if err == nil || !errors.Is(err, openpgp.ErrParams) || d.String() != "" {

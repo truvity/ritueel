@@ -336,7 +336,7 @@ func TestQAUncountedClaimsCoverOnlyCertificationsAndDirectKeySignatures(t *testi
 	count := func(name string, file []byte, wantN int, wantAt int) {
 		t.Helper()
 		k := fkRead(t, file)
-		if k.UncountedClaims != wantN || !k.UncountedClaimsNewest.Equal(fkAt(wantAt)) && !(wantAt == 0 && k.UncountedClaimsNewest.IsZero()) {
+		if k.UncountedClaims != wantN || (!k.UncountedClaimsNewest.Equal(fkAt(wantAt)) && (wantAt != 0 || !k.UncountedClaimsNewest.IsZero())) {
 			t.Errorf("%s: %d claims, newest %v; pinned %d at %d", name, k.UncountedClaims, k.UncountedClaimsNewest, wantN, wantAt)
 		}
 		if kc, err := qaReadCert(k.Certificate()); err != nil || kc.UncountedClaims != 0 || !kc.UncountedClaimsNewest.IsZero() {

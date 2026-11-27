@@ -70,13 +70,13 @@ func TestQANewAdoptedIssuerRefusesAKeyThatIsNearlyTheKey(t *testing.T) {
 				t.Fatal(err)
 			}
 			refused("another point of the curve", withPublic(&other.PublicKey))
-			refused("the point with Y changed", withPublic(&ecdsa.PublicKey{Curve: pub.Curve, X: pub.X, Y: new(big.Int).Add(pub.Y, big.NewInt(1))}))
-			refused("the point with Y swapped for X", withPublic(&ecdsa.PublicKey{Curve: pub.Curve, X: pub.X, Y: pub.X}))
+			refused("the point with Y changed", withPublic(&ecdsa.PublicKey{Curve: pub.Curve, X: pub.X, Y: new(big.Int).Add(pub.Y, big.NewInt(1))})) //nolint:staticcheck // the test makes a point that is not on the curve: the raw coordinates are the only way
+			refused("the point with Y swapped for X", withPublic(&ecdsa.PublicKey{Curve: pub.Curve, X: pub.X, Y: pub.X}))                            //nolint:staticcheck // the test makes a point that is not on the curve: the raw coordinates are the only way
 			refused("the point of the other curve", withPublic(func() crypto.PublicKey {
 				k, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 				return &k.PublicKey
 			}()))
-			refused("the point with no Y", withPublic(&ecdsa.PublicKey{Curve: pub.Curve, X: pub.X}))
+			refused("the point with no Y", withPublic(&ecdsa.PublicKey{Curve: pub.Curve, X: pub.X})) //nolint:staticcheck // the test makes a point that is not on the curve: the raw coordinates are the only way
 			refused("the zero key of the standard library", &ecdsa.PrivateKey{})
 			refused("a key of ECDH", withPublic(func() crypto.PublicKey {
 				k, _ := ecdh.P384().GenerateKey(rand.Reader)
