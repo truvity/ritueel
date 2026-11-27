@@ -32,28 +32,67 @@ var (
 	ErrLeOutOfRange = errors.New("apdu: expected length out of range")
 	// ErrResponseTooShort marks a response of fewer than the two bytes of a status word.
 	ErrResponseTooShort = errors.New("apdu: response shorter than a status word")
+	// ErrBodyConflict marks a command that holds plain Data and a secret body at once.
+	ErrBodyConflict = errors.New("apdu: a command has plain data and a secret body")
+	// ErrSecretChanged marks a secret that changed (it was wiped) between the moment its length was
+	// read and the moment its bytes were copied. Nothing is returned with it.
+	ErrSecretChanged = errors.New("apdu: a secret changed while the command was encoded")
 )
 
-// Command is the header, the data and the expected response length of one command APDU. An empty Data
-// means no data field (no Lc). Le is the largest answer that the sender will take: 0 means no Le field,
-// 1 to 255 is that many bytes, 256 is written as the byte 00 in the short form, and in the extended
-// form 65536 is written as 0000.
+// Command is the header, the body and the expected response length of one command APDU. The body is
+// either plain Data, or, for a PIN, one or two [Secret] values set with [Command.WithSecretData] or
+// [Command.WithSecretPair]; the two are exclusive, and [Command.Encode] refuses both at once. An empty
+// body means no data field (no Lc). Le is the largest answer that the sender will take: 0 means no Le
+// field, 1 to 255 is that many bytes, 256 is written as the byte 00 in the short form, and in the
+// extended form 65536 is written as 0000.
 //
-// A Command may hold a PIN, so it prints without its data: String, GoString, Format, MarshalText and
-// MarshalJSON show the header, the length of the data and Le. Two ways of printing still reach the
-// data, because they do not call a method of a field they cannot reach: a Command in an unexported
-// field of a struct that is printed with %+v or %#v, and any reflective dump. A Command must not be
-// embedded in a struct that is printed.
+// A PIN is never in Data: a Command that carries one holds it in a Secret, whose bytes cannot be reached
+// by printing, by reflection or by an encoder (see [Secret]). So no way of printing or encoding a Command
+// shows a PIN, in any field of any struct. What a Command does show: String, GoString, Format,
+// MarshalText and MarshalJSON show the header, the length of the body and Le, never the data. A Command
+// in an unexported field of a printed struct, a %p, a reflective dump and encoding/gob do show Data, which
+// is plain: a digest to sign, a fingerprint, key attributes. Keep nothing secret in Data.
 type Command struct {
 	CLA, INS, P1, P2 byte
 	Data             []byte
 	Le               int
+	secret, second   Secret
 }
 
-// String shows the command without its data: class, instruction, parameters, the length of the data
-// and Le. A command may hold a PIN, so no way of printing it shows a byte of Data.
+// WithSecretData returns the command with the secret as its body, in place of Data (which it clears).
+func (c Command) WithSecretData(s Secret) Command {
+	c.Data, c.secret, c.second = nil, s, Secret{}
+	return c
+}
+
+// WithSecretPair returns the command with the two secrets, one after the other, as its body, in place
+// of Data (which it clears). It is for the change of a PIN: the old one, then the new one.
+func (c Command) WithSecretPair(first, second Secret) Command {
+	c.Data, c.secret, c.second = nil, first, second
+	return c
+}
+
+// HasSecret reports whether the body is held in secrets. It is true for a secret that was wiped since.
+func (c Command) HasSecret() bool { return c.secret.h != nil || c.second.h != nil }
+
+// SecretParts is the number of secrets in the body: 0, 1 or 2.
+func (c Command) SecretParts() int {
+	n := 0
+	for _, s := range []Secret{c.secret, c.second} {
+		if s.h != nil {
+			n++
+		}
+	}
+	return n
+}
+
+// BodyLen is the length of the body: of Data, or of the secrets together.
+func (c Command) BodyLen() int { return len(c.Data) + c.secret.Len() + c.second.Len() }
+
+// String shows the command without its body: class, instruction, parameters, the length of the body
+// and Le.
 func (c Command) String() string {
-	return fmt.Sprintf("apdu.Command{CLA:%02X INS:%02X P1:%02X P2:%02X Lc:%d Le:%d}", c.CLA, c.INS, c.P1, c.P2, len(c.Data), c.Le)
+	return fmt.Sprintf("apdu.Command{CLA:%02X INS:%02X P1:%02X P2:%02X Lc:%d Le:%d}", c.CLA, c.INS, c.P1, c.P2, c.BodyLen(), c.Le)
 }
 
 // GoString is [Command.String], for the %#v verb.
@@ -69,40 +108,58 @@ func (c Command) MarshalJSON() ([]byte, error) { return json.Marshal(c.String())
 func (c Command) Format(f fmt.State, _ rune) { _, _ = f.Write([]byte(c.String())) }
 
 // Encode returns the bytes of the command. With extended false it writes the short form and refuses
-// data over 255 bytes and an Le over 256; with extended true it writes the extended form, in which the
+// a body over 255 bytes and an Le over 256; with extended true it writes the extended form, in which the
 // length fields of the command are all in the extended form (a zero byte, then two bytes for Lc, and
 // two bytes for Le, with no zero byte again when Lc was written). The case of the command follows
-// from Data and Le: no data and no Le is case 1; Le only, case 2; data only, case 3; both, case 4.
-// The returned slice is new and belongs to the caller.
+// from the body and Le: no body and no Le is case 1; Le only, case 2; body only, case 3; both, case 4.
+// A secret body is copied into the returned slice at the last moment, inside [Secret.Use], and
+// nowhere else. The returned slice is new and belongs to the caller, who overwrites it when it holds a PIN.
 func (c Command) Encode(extended bool) ([]byte, error) {
+	if len(c.Data) > 0 && c.HasSecret() {
+		return nil, ErrBodyConflict
+	}
 	maxData, maxLe := MaxShortData, MaxShortLe
 	if extended {
 		maxData, maxLe = MaxExtendedData, MaxExtendedLe
 	}
-	if len(c.Data) > maxData {
+	n := c.BodyLen()
+	if n > maxData {
 		return nil, ErrDataTooLong
 	}
 	if c.Le < 0 || c.Le > maxLe {
 		return nil, ErrLeOutOfRange
 	}
-	out := make([]byte, 4, 4+3+len(c.Data)+2)
+	out := make([]byte, 4, 4+3+n+2)
 	out[0], out[1], out[2], out[3] = c.CLA, c.INS, c.P1, c.P2
-	hasData, hasLe := len(c.Data) > 0, c.Le > 0
-	switch {
-	case !extended:
-		if hasData {
-			out = append(out, byte(len(c.Data)))
+	hasData, hasLe := n > 0, c.Le > 0
+	if hasData {
+		if extended {
+			out = append(out, 0x00, byte(n>>8), byte(n))
+		} else {
+			out = append(out, byte(n))
+		}
+		start := len(out)
+		if c.HasSecret() {
+			for _, s := range []Secret{c.secret, c.second} {
+				s.Use(func(b []byte) {
+					if len(out)+len(b) <= start+n { // never past the room that was made, so no copy is left behind
+						out = append(out, b...)
+					}
+				})
+			}
+			if len(out) != start+n {
+				clear(out)
+				return nil, ErrSecretChanged
+			}
+		} else {
 			out = append(out, c.Data...)
 		}
-		if hasLe {
+	}
+	if hasLe {
+		switch {
+		case !extended:
 			out = append(out, byte(c.Le%256)) // 256 is the byte 00
-		}
-	default:
-		if hasData {
-			out = append(out, 0x00, byte(len(c.Data)>>8), byte(len(c.Data)))
-			out = append(out, c.Data...)
-		}
-		if hasLe {
+		default:
 			if !hasData {
 				out = append(out, 0x00) // case 2: the marker byte comes before Le
 			}
