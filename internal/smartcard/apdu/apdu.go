@@ -35,8 +35,13 @@ var (
 	// ErrBodyConflict marks a command that holds plain Data and a secret body at once.
 	ErrBodyConflict = errors.New("apdu: a command has plain data and a secret body")
 	// ErrSecretChanged marks a secret that changed (it was wiped) between the moment its length was
-	// read and the moment its bytes were copied. Nothing is returned with it.
+	// read and the moment its bytes were copied, or whose bytes are not the length that was judged.
+	// Nothing is returned with it, and nothing was sent.
 	ErrSecretChanged = errors.New("apdu: a secret changed while the command was encoded")
+	// ErrSecretEmpty marks a command with a secret part that holds no byte (it was wiped): a body
+	// with a part missing is not the body that was meant, and is never encoded.
+	// It is also an [ErrSecretChanged].
+	ErrSecretEmpty = fmt.Errorf("apdu: a secret part is empty (%w)", ErrSecretChanged)
 )
 
 // Command is the header, the body and the expected response length of one command APDU. The body is
@@ -86,6 +91,42 @@ func (c Command) SecretParts() int {
 	return n
 }
 
+// PartLen is the length of the secret part i (0 or 1), or 0 for a part that is absent or wiped. It
+// gives the length and never the bytes: it is what an allowlist judges a PIN by.
+func (c Command) PartLen(i int) int {
+	switch i {
+	case 0:
+		return c.secret.Len()
+	case 1:
+		return c.second.Len()
+	}
+	return 0
+}
+
+// EncodedLen is the length of an encoded command with a body of bodyLen bytes and an expected length of
+// le, in the short or the extended form: what [Command.Encode] returns, for a caller that holds the
+// length it judged and compares.
+func EncodedLen(bodyLen, le int, extended bool) int {
+	n := 4
+	if bodyLen > 0 {
+		n += bodyLen + 1
+		if extended {
+			n += 2
+		}
+	}
+	if le > 0 {
+		switch {
+		case !extended:
+			n++
+		case bodyLen > 0:
+			n += 2
+		default:
+			n += 3
+		}
+	}
+	return n
+}
+
 // BodyLen is the length of the body: of Data, or of the secrets together.
 func (c Command) BodyLen() int { return len(c.Data) + c.secret.Len() + c.second.Len() }
 
@@ -122,7 +163,21 @@ func (c Command) Encode(extended bool) ([]byte, error) {
 	if extended {
 		maxData, maxLe = MaxExtendedData, MaxExtendedLe
 	}
-	n := c.BodyLen()
+	// The length of each secret part is read once. A part with no byte is refused, and so is a part
+	// whose bytes, when they are taken, are not the length that sized the output.
+	var lens [2]int
+	n := len(c.Data)
+	if c.HasSecret() {
+		for i, p := range []Secret{c.secret, c.second} {
+			if p.h == nil {
+				continue
+			}
+			if lens[i] = p.Len(); lens[i] == 0 {
+				return nil, ErrSecretEmpty
+			}
+			n += lens[i]
+		}
+	}
 	if n > maxData {
 		return nil, ErrDataTooLong
 	}
@@ -138,18 +193,23 @@ func (c Command) Encode(extended bool) ([]byte, error) {
 		} else {
 			out = append(out, byte(n))
 		}
-		start := len(out)
 		if c.HasSecret() {
-			for _, s := range []Secret{c.secret, c.second} {
-				s.Use(func(b []byte) {
-					if len(out)+len(b) <= start+n { // never past the room that was made, so no copy is left behind
+			for i, p := range []Secret{c.secret, c.second} {
+				if p.h == nil {
+					continue
+				}
+				ok := false
+				p.Use(func(b []byte) {
+					// Never past the room that was made, so no copy is left behind.
+					if len(b) == lens[i] {
 						out = append(out, b...)
+						ok = true
 					}
 				})
-			}
-			if len(out) != start+n {
-				clear(out)
-				return nil, ErrSecretChanged
+				if !ok {
+					clear(out)
+					return nil, ErrSecretChanged
+				}
 			}
 		} else {
 			out = append(out, c.Data...)

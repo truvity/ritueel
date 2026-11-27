@@ -49,9 +49,12 @@ func (s *Session) send(cmd apdu.Command) ([]byte, error) {
 	case s.dead:
 		return nil, ErrSessionDead
 	}
-	spec, ok := lookup(s.table, cmd, false)
+	spec, judged, ok := judge(s.table, cmd, false)
 	if !ok {
 		return nil, ErrNotAllowed
+	}
+	if s.afterJudge != nil {
+		s.afterJudge() // a test hook: the place where another goroutine could wipe a secret
 	}
 	if s.readOnly && !spec.readOnly {
 		return nil, fmt.Errorf("%w: %s", ErrReadOnly, spec.name)
@@ -63,7 +66,7 @@ func (s *Session) send(cmd apdu.Command) ([]byte, error) {
 	if spec.mayWait {
 		budget = s.waitBudget
 	}
-	st, out, err := s.run(spec, cmd, budget)
+	st, out, err := s.run(spec, cmd, budget, judged)
 	if err != nil {
 		return nil, err
 	}
@@ -103,7 +106,7 @@ func (s *Session) send(cmd apdu.Command) ([]byte, error) {
 			return nil, ErrNotAllowed
 		}
 		var more2 []byte
-		st, more2, err = s.one(gr, getResponse, false, s.budget)
+		st, more2, err = s.one(gr, getResponse, false, s.budget, -1)
 		if err != nil {
 			clear(out)
 			return nil, s.lostFrom(spec, err)
@@ -119,7 +122,7 @@ func (s *Session) send(cmd apdu.Command) ([]byte, error) {
 
 // run sends the command, as a chain when its data needs one, and returns the status word and the data
 // of the answer to its last block.
-func (s *Session) run(spec *commandSpec, cmd apdu.Command, budget time.Duration) (apdu.Status, []byte, error) {
+func (s *Session) run(spec *commandSpec, cmd apdu.Command, budget time.Duration, judged int) (apdu.Status, []byte, error) {
 	extended := s.extended(cmd)
 	n := cmd.BodyLen()
 	switch {
@@ -133,7 +136,7 @@ func (s *Session) run(spec *commandSpec, cmd apdu.Command, budget time.Duration)
 	case !extended:
 		cmd.Le = min(cmd.Le, apdu.MaxShortLe)
 	}
-	st, data, err := s.one(spec, cmd, extended, budget)
+	st, data, err := s.one(spec, cmd, extended, budget, judged)
 	return st, data, s.lostFrom(spec, err)
 }
 
@@ -164,7 +167,7 @@ func (s *Session) chain(spec *commandSpec, cmd apdu.Command, budget time.Duratio
 		} else {
 			block.CLA |= chainingBit
 		}
-		st, d, err := s.one(spec, block, false, b)
+		st, d, err := s.one(spec, block, false, b, -1)
 		if err != nil {
 			return 0, nil, s.lostFrom(spec, err)
 		}
@@ -185,10 +188,17 @@ func (s *Session) chain(spec *commandSpec, cmd apdu.Command, budget time.Duratio
 // answer is overwritten, and so is the encoded command when it held a secret. An error here is either
 // a fault before anything was sent (the command could not be encoded) or a [lostCause]: the exchange
 // failed after the command was handed to the transport.
-func (s *Session) one(spec *commandSpec, cmd apdu.Command, extended bool, budget time.Duration) (apdu.Status, []byte, error) {
+func (s *Session) one(spec *commandSpec, cmd apdu.Command, extended bool, budget time.Duration, judged int) (apdu.Status, []byte, error) {
 	enc, err := cmd.Encode(extended)
 	if err != nil {
 		return 0, nil, err
+	}
+	// A command with a PIN is sent only if its body is the length that the allowlist judged: a secret that
+	// was wiped between the two cannot put a shorter body on the wire. Nothing has been sent yet, and the
+	// session is as it was.
+	if spec.secret && len(enc) != apdu.EncodedLen(judged, cmd.Le, extended) {
+		clear(enc)
+		return 0, nil, apdu.ErrSecretChanged
 	}
 	// The command is overwritten when this function ends, by a return or by a panic of the transport.
 	// A panic also ends the exchange in an unknown state, so the session is dead before it goes on.

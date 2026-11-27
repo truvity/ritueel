@@ -793,3 +793,66 @@ func TestPINInPlainDataIsRefused(t *testing.T) {
 		t.Fatalf("%v", err)
 	}
 }
+
+// A secret that is wiped after the allowlist judged it never puts a shorter body on the wire: the
+// command is refused as changed before anything is sent, and the session is as it was.
+func TestSecretWipedAfterJudgementIsNotSent(t *testing.T) {
+	for _, pair := range []bool{false, true} {
+		f := &fakeTransport{script: []step{ok()}}
+		s := newSession(t, f, Options{})
+		old, nw := apdu.NewSecret([]byte("123456")), apdu.NewSecret([]byte("654321"))
+		cmd := apdu.Command{INS: 0x20, P2: 0x81}.WithSecretData(old)
+		if pair {
+			cmd = apdu.Command{INS: 0x24, P2: 0x81}.WithSecretPair(old, nw)
+		}
+		s.afterJudge = old.Wipe
+		_, err := s.send(cmd)
+		if !errors.Is(err, apdu.ErrSecretChanged) || f.calls() != 0 || s.Dead() || !s.selected {
+			t.Fatalf("pair %v: %v, %d calls", pair, err, f.calls())
+		}
+		// The session goes on with a secret that is whole.
+		s.afterJudge = nil
+		if _, err := s.send(verifyCmd([]byte("123456"))); err != nil || f.calls() != 1 {
+			t.Fatalf("pair %v: next: %v", pair, err)
+		}
+	}
+}
+
+// A body that is not the length that was judged is refused by one before the transport is called.
+func TestEncodedBodyMustBeTheJudgedLength(t *testing.T) {
+	f := &fakeTransport{}
+	s := newSession(t, f, Options{})
+	cmd := verifyCmd([]byte("123456"))
+	spec, judged, ok := judge(s.table, cmd, false)
+	if !ok || judged != 6 {
+		t.Fatalf("judged %d", judged)
+	}
+	for _, wrong := range []int{0, 5, 7, 12} {
+		if _, _, err := s.one(spec, cmd, false, s.budget, wrong); !errors.Is(err, apdu.ErrSecretChanged) {
+			t.Fatalf("judged %d: %v", wrong, err)
+		}
+	}
+	if f.calls() != 0 || s.Dead() {
+		t.Fatal("something was sent")
+	}
+}
+
+// A change of a PIN whose old PIN was wiped is refused whatever the new one is.
+func TestChangeWithAWipedOldPINIsRefused(t *testing.T) {
+	f := &fakeTransport{}
+	s := newSession(t, f, Options{})
+	old := apdu.NewSecret([]byte("123456"))
+	old.Wipe()
+	for _, p := range []struct {
+		p2 byte
+		n  int
+	}{{0x81, 12}, {0x83, 16}, {0x83, 20}} {
+		_, err := s.send(apdu.Command{INS: 0x24, P2: p.p2}.WithSecretPair(old, apdu.NewSecret(make([]byte, p.n))))
+		if !errors.Is(err, ErrNotAllowed) {
+			t.Fatalf("%v", err)
+		}
+	}
+	if f.calls() != 0 {
+		t.Fatal("sent")
+	}
+}

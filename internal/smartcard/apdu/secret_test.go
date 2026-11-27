@@ -251,13 +251,29 @@ func TestCommandBodyRules(t *testing.T) {
 	if len(c.Data) != 0 || c.BodyLen() != 2 {
 		t.Fatal("Data survived WithSecretData")
 	}
-	// A wiped secret encodes as an empty body, and a secret that changes between the length and the copy
-	// is refused with nothing returned.
+	// A wiped secret is refused, not encoded as an empty body: that would be an empty VERIFY.
 	w := apdu.NewSecret(pin)
 	cw := apdu.Command{INS: 0x20}.WithSecretData(w)
 	w.Wipe()
-	if out, err := cw.Encode(false); err != nil || len(out) != 4 {
+	if out, err := cw.Encode(false); !errors.Is(err, apdu.ErrSecretEmpty) || !errors.Is(err, apdu.ErrSecretChanged) || out != nil {
 		t.Fatalf("wiped: %v %x", err, out)
+	}
+	// A pair with a wiped old PIN is refused, in either position: the card would split the new PIN by its
+	// own length for the old one.
+	for _, wipeFirst := range []bool{true, false} {
+		old, nw := apdu.NewSecret(pin), apdu.NewSecret(pin)
+		if wipeFirst {
+			old.Wipe()
+		} else {
+			nw.Wipe()
+		}
+		if out, err := (apdu.Command{INS: 0x24}).WithSecretPair(old, nw).Encode(true); !errors.Is(err, apdu.ErrSecretEmpty) || out != nil {
+			t.Fatalf("wiped pair: %v %x", err, out)
+		}
+	}
+	if apdu.EncodedLen(0, 0, false) != 4 || apdu.EncodedLen(6, 0, false) != 11 || apdu.EncodedLen(6, 256, false) != 12 ||
+		apdu.EncodedLen(0, 256, true) != 7 || apdu.EncodedLen(6, 0, true) != 13 || apdu.EncodedLen(6, 256, true) != 15 {
+		t.Fatal("EncodedLen")
 	}
 	// Too long a secret for the form.
 	big := apdu.Command{INS: 0xDA}.WithSecretData(apdu.NewSecret(make([]byte, 256)))

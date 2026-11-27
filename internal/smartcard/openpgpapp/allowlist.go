@@ -27,7 +27,7 @@ type commandSpec struct {
 	changes bool
 	// secret: the command body is a PIN. A command for this row must carry it as an [apdu.Secret]
 	// (never in plain Data), in exactly secretParts of them, and the length rule of the row is applied
-	// to the length of the secrets together. The encoded command is overwritten after the call.
+	// to each of them. The encoded command is overwritten after the call.
 	secret      bool
 	secretParts int
 	// mayWait: the command may wait for a person to touch the key, or may take the card long (key
@@ -179,14 +179,15 @@ var allowlist = []commandSpec{
 	},
 	{
 		// CHANGE REFERENCE DATA (section 7.2.3) of the user PIN, P2 81: the old PIN followed by the new
-		// one, at least 6 + 6 bytes, at most 2 x 127 (the card's own maximum is enforced by a later piece).
+		// one, as two secrets. Each is judged by itself: at least 6 bytes, at most 127 (the card's own
+		// maximum is enforced by a later piece).
 		name: "change-user-pin", cla: 0x00, ins: 0x24, params: []uint16{0x0081},
-		data: lengths(12, 254), changes: true, secret: true, secretParts: 2,
+		data: lengths(6, 127), changes: true, secret: true, secretParts: 2,
 	},
 	{
-		// CHANGE REFERENCE DATA of the Admin PIN, P2 83: at least 8 + 8 bytes, at most 2 x 127.
+		// CHANGE REFERENCE DATA of the Admin PIN, P2 83: each of the two secrets at least 8 bytes, at most 127.
 		name: "change-admin-pin", cla: 0x00, ins: 0x24, params: []uint16{0x0083},
-		data: lengths(16, 254), changes: true, secret: true, secretParts: 2,
+		data: lengths(8, 127), changes: true, secret: true, secretParts: 2,
 	},
 	{
 		// PUT DATA (section 7.2.8) of the algorithm attributes of the signature key (C1) and the
@@ -262,6 +263,14 @@ var (
 // a row that holds a secret, and such a row matches only a command whose body is in secrets. It reports false for a command that no row
 // matches, and for a row that only send itself may use when internal is false.
 func lookup(table []commandSpec, cmd apdu.Command, internal bool) (*commandSpec, bool) {
+	r, _, ok := judge(table, cmd, internal)
+	return r, ok
+}
+
+// judge is lookup that also returns the length of the body as it judged it: for a PIN row the sum of the
+// lengths of the secret parts that it read, once each, and for any other row the length of Data. send
+// compares what it encodes with that length.
+func judge(table []commandSpec, cmd apdu.Command, internal bool) (*commandSpec, int, bool) {
 	for i := range table {
 		r := &table[i]
 		if r.cla != cmd.CLA || r.ins != cmd.INS {
@@ -270,18 +279,31 @@ func lookup(table []commandSpec, cmd apdu.Command, internal bool) (*commandSpec,
 		if !slices.Contains(r.params, uint16(cmd.P1)<<8|uint16(cmd.P2)) {
 			continue
 		}
+		judged := len(cmd.Data)
 		if r.secret {
-			// A PIN row takes its body as secrets, never as plain data, and judges their length.
-			if len(cmd.Data) != 0 || cmd.SecretParts() != r.secretParts || !r.data.allowsLen(cmd.BodyLen()) {
+			// A PIN row takes its body as secrets, never as plain data, and judges each part by
+			// itself: every part, the old PIN of a change as much as the new one, is within the
+			// bounds of the row, so a part that is missing or short cannot hide behind the other.
+			if len(cmd.Data) != 0 || cmd.SecretParts() != r.secretParts {
+				continue
+			}
+			fits := true
+			judged = 0
+			for part := 0; part < r.secretParts; part++ {
+				n := cmd.PartLen(part)
+				judged += n
+				fits = fits && r.data.allowsLen(n)
+			}
+			if !fits {
 				continue
 			}
 		} else if cmd.HasSecret() || !r.data.allows(cmd.Data) {
 			continue
 		}
 		if r.internal && !internal {
-			return nil, false
+			return nil, 0, false
 		}
-		return r, true
+		return r, judged, true
 	}
-	return nil, false
+	return nil, 0, false
 }

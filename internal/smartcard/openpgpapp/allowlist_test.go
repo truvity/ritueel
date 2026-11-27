@@ -240,6 +240,41 @@ func TestAllowedCommandsAreMatched(t *testing.T) {
 	}
 }
 
+// A change of a PIN is judged part by part: neither the old nor the new PIN may be short or missing,
+// whatever the other one makes up.
+func TestChangeOfAPINJudgesEachPart(t *testing.T) {
+	sec := func(n int) apdu.Secret { return apdu.NewSecret(make([]byte, n)) }
+	wiped := sec(6)
+	wiped.Wipe()
+	for _, tc := range []struct {
+		name string
+		p2   byte
+		a, b apdu.Secret
+		ok   bool
+	}{
+		{"user 6+6", 0x81, sec(6), sec(6), true},
+		{"user 5+7", 0x81, sec(5), sec(7), false},
+		{"user 7+5", 0x81, sec(7), sec(5), false},
+		{"user 0+12 (a wiped old PIN)", 0x81, wiped, sec(12), false},
+		{"user 12+0 (a wiped new PIN)", 0x81, sec(12), wiped, false},
+		{"user 127+127", 0x81, sec(127), sec(127), true},
+		{"user 6+128", 0x81, sec(6), sec(128), false},
+		{"Admin 8+8", 0x83, sec(8), sec(8), true},
+		{"Admin 7+9", 0x83, sec(7), sec(9), false},
+		{"Admin 0+16 (a wiped old PIN)", 0x83, wiped, sec(16), false},
+		{"Admin 9+7", 0x83, sec(9), sec(7), false},
+	} {
+		_, ok := lookup(allowlist, apdu.Command{INS: 0x24, P2: tc.p2}.WithSecretPair(tc.a, tc.b), false)
+		if ok != tc.ok {
+			t.Errorf("%s: allowed %v", tc.name, ok)
+		}
+	}
+	// A verification with a wiped secret.
+	if _, ok := lookup(allowlist, apdu.Command{INS: 0x20, P2: 0x81}.WithSecretData(wiped), false); ok {
+		t.Error("a wiped secret passed verify-user")
+	}
+}
+
 func TestPINLengthsFollowThePIN(t *testing.T) {
 	for _, tc := range []struct {
 		name string
