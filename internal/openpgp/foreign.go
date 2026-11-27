@@ -253,9 +253,9 @@ type ForeignUserID struct {
 	// key is accepted, and the adoption re-signs with a strong hash.
 	WeakHash bool
 	// Created is the creation time of the self-signature that gives the fields: the newest one that counts,
-	// whatever its hash. A tie in time is broken by what the signatures say (the earlier end of the key, no
-	// end counting as the latest) and then by the bytes of the packets that the reader wrote, never by the
-	// place in the file; the snapshot that later signatures are made from chooses the same one. The fields
+	// whatever its hash. A tie in time is broken in this order: the earlier end of the key (no end counting
+	// as the latest), a strong hash before a weak one, then the smaller bytes of the packets that the reader
+	// wrote, never by the place in the file; the snapshot that later signatures are made from chooses the same one. The fields
 	// below are read from that signature.
 	Created time.Time
 	// KeyExpires is the key expiry that the newest valid self-signature gives, and zero if none.
@@ -608,7 +608,9 @@ func readForeignKey(file []byte) (*ForeignKey, error) {
 // The certificate is read ONLY against digest, the SHA-256 of the certificate that the caller holds from a
 // record of the bundle's history, a place that whoever writes the certificate file cannot change (later, the
 // digest that the newest ceremony record lists for the file). It is a [HeldDigest], which only
-// [ParseHeldDigest] makes, from the text of a record; the zero value is an [ErrParams]. The digest is compared before anything is parsed, and a mismatch is an
+// [ParseHeldDigest] makes, from the text of a record; the zero value is an [ErrParams]. An empty input and an input over [MaxForeignKeyBytes] are refused with
+// their own errors ([ErrForeignForm], [ErrForeignLimit]) before the digest is compared, so those two are not
+// the digest refusal. The digest is compared before anything is parsed, and a mismatch is an
 // [ErrAdoptedCertificate]. The digest is what carries completeness and freshness. Nothing in the
 // certificate can: it is a list of signatures, and someone who can write the file and cannot sign can
 // delete the newest self-signature, a key revocation or the retirement of a user ID, and what is left is

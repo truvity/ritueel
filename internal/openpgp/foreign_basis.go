@@ -95,7 +95,10 @@ type ForeignBasisUserID struct {
 	// Weak is true when the source signature is made with SHA-1: its flags, primary flag, end and
 	// preferences come from a weak signature, and a re-signing takes them over. AnyStrong is true when some
 	// self-signature of the user ID that counts is not made with SHA-1. Tied is true when the source was chosen
-	// by the bytes of the packets, the same second and the same end in two packets.
+	// by the bytes of the packets and the choice matters: the candidates that are equal in time, end of the key
+	// and strength of the hash DIFFER in something that a builder uses (the key flags and
+	// their length, the primary flag, the carried preferences, the dropped types or a signature expiration). The
+	// same content signed twice is not tied.
 	Weak, AnyStrong, Tied bool
 	// TextOK is true when the text passes the rule for a user ID that the key already has (UTF-8, no control
 	// or format character, within the limit of the reader), so that a re-signing may cover it.
@@ -109,7 +112,10 @@ type ForeignBasisSubkey struct {
 	Algorithm   ForeignAlgorithm
 	Revoked     bool
 	// Weak is true when the newest binding that counts is made with SHA-1, AnyStrong when some binding that
-	// counts is not, and Tied when the newest was chosen by the bytes of the packets.
+	// counts is not, and Tied when the newest was chosen by the bytes of the packets and the candidates that
+	// were equal in time and hash strength differ in their key flags (the value or the length) or a signature
+	// expiration. A subkey is described by its fingerprint, algorithm, revocation and these marks only: the
+	// basis does not give the key flags, the end or the time of its binding.
 	Weak, AnyStrong, Tied bool
 }
 

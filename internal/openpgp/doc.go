@@ -92,15 +92,20 @@
 // What the caller of a signing for an adopted key must do; the code cannot enforce it. The caller must read a
 // kept certificate only against the digest that the newest record of the bundle's history lists for it, as a
 // [HeldDigest], and never against a digest made from the file. It must show the person [ForeignKey.SigningBasis],
-// and not the per-signature view, as what later signatures are made from, with everything that a re-signing
+// and not the per-signature view, as what later signatures are made from. The basis describes the user IDs
+// and the direct-key source fully; for the subkeys it gives the fingerprint, the algorithm, the revocation and
+// the weak and tied marks only, with no key flags, end or binding time, and a builder that needs more of the
+// binding of a subkey must add it to the basis first. The caller must show everything that a re-signing
 // carries (the preferences, which are carried without the critical bit that
 // they had, and then also listed among the dropped types) and drops (the types of the other subpackets), and
 // the key flags of a source that has more than one octet, of which a re-signing writes the first only. Where the source of a user ID is
 // weak, it must tell the person that the flags, the primary mark, the end and the preferences of that user ID
 // come from a SHA-1 signature, re-sign only when the person confirms it, and never fall back silently to an
 // older strong signature. It must show a choice that is tied: the bytes of the packets decided it, and it is
-// arbitrary. It must refuse, or ask the person, when the export has uncounted claims ([ForeignKey.UncountedClaims])
-// whose newest time is newer than the newest signature that counted, and also when the count is above zero and
+// arbitrary. The two fields [ForeignKey.UncountedClaims] and [ForeignKey.UncountedClaimsNewest] are on the key
+// as read from an EXPORT (zero for a key read from a certificate) and are not part of the basis, so the caller
+// must read them right after reading the export and before it hands the key on. It must refuse, or ask the
+// person, when the export has uncounted claims whose newest time is newer than the newest signature that counted, and also when the count is above zero and
 // the newest time is zero, since claims that have no time cannot be compared. It must refuse to build when
 // the end of the key has no source, and it must extend the key first when the sources do not agree or one has
 // a signature expiration time. An end that is the zero time means that the key never ends; it is not a
