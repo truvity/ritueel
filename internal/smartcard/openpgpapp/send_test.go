@@ -377,7 +377,7 @@ func bigPut(n, le int) apdu.Command {
 func TestChaining(t *testing.T) {
 	f := &fakeTransport{script: []step{ok(), ok(), ok(0xAB)}}
 	s := newSession(t, f, Options{})
-	s.table = putTable(true)
+	s.table = putTable(false)
 	cmd := bigPut(600, 256)
 	got, err := s.send(cmd)
 	if err != nil || !bytes.Equal(got, []byte{0xAB}) {
@@ -407,11 +407,6 @@ func TestChaining(t *testing.T) {
 	}
 	if !bytes.Equal(joined, cmd.Data) {
 		t.Fatal("the blocks do not join to the data")
-	}
-	for i, r := range f.sentRefs {
-		if !zeros(r) {
-			t.Errorf("block %d not overwritten", i)
-		}
 	}
 	if f.budgets[0] != DefaultBudget || f.budgets[2] != DefaultWaitBudget {
 		t.Errorf("budgets %v", f.budgets)
@@ -546,7 +541,7 @@ func TestPanicOfTheTransport(t *testing.T) {
 		s.t = f
 		if chain {
 			f.after = 1
-			s.table = putTable(true)
+			s.table = putTable(false)
 			cmd = bigPut(600, 0)
 		}
 		func() {
@@ -561,7 +556,8 @@ func TestPanicOfTheTransport(t *testing.T) {
 			t.Fatalf("chain %v: not dead", chain)
 		}
 		for i, r := range f.sentRefs {
-			if !zeros(r) {
+			// A PIN command is overwritten; the blocks of a chain carry no PIN, which is never chained.
+			if !chain && !zeros(r) {
 				t.Fatalf("chain %v: command %d not overwritten", chain, i)
 			}
 		}
@@ -762,5 +758,38 @@ func TestWrongApplicationAnswerClearsTheSelection(t *testing.T) {
 		if tc.clear != errors.Is(err, ErrNotSelected) || (!tc.clear && err != nil) {
 			t.Fatalf("%04X: next command: %v", tc.w, err)
 		}
+	}
+}
+
+// A PIN row takes the PIN as secrets and refuses it in plain Data, whatever its length; nothing is sent.
+func TestPINInPlainDataIsRefused(t *testing.T) {
+	f := &fakeTransport{script: []step{ok(), ok()}}
+	s := newSession(t, f, Options{})
+	for _, c := range []apdu.Command{
+		{INS: 0x20, P2: 0x81, Data: []byte("123456")},
+		{INS: 0x20, P2: 0x83, Data: []byte("12345678")},
+		{INS: 0x24, P2: 0x81, Data: make([]byte, 12)},
+		{INS: 0x24, P2: 0x83, Data: make([]byte, 16)},
+	} {
+		if _, err := s.send(c); !errors.Is(err, ErrNotAllowed) {
+			t.Fatalf("%v: %v", c, err)
+		}
+	}
+	if f.calls() != 0 || s.Dead() {
+		t.Fatalf("calls %d", f.calls())
+	}
+	// The secret form goes, as one secret and, for a change, as two joined in order.
+	old, nw := []byte("123456"), []byte("654321")
+	if _, err := s.send(apdu.Command{INS: 0x24, P2: 0x81}.WithSecretPair(apdu.NewSecret(old), apdu.NewSecret(nw))); err != nil {
+		t.Fatal(err)
+	}
+	if hex.EncodeToString(f.sent[0]) != "00240081"+"0c"+hex.EncodeToString(old)+hex.EncodeToString(nw) || !zeros(f.sentRefs[0]) {
+		t.Fatalf("sent %x", f.sent[0])
+	}
+	// A wiped secret is no PIN.
+	w := apdu.NewSecret(old)
+	w.Wipe()
+	if _, err := s.send(apdu.Command{INS: 0x20, P2: 0x81}.WithSecretData(w)); !errors.Is(err, ErrNotAllowed) {
+		t.Fatalf("%v", err)
 	}
 }

@@ -88,6 +88,17 @@ func getData(tag uint16, le int) apdu.Command {
 	return apdu.Command{CLA: 0x00, INS: 0xCA, P1: byte(tag >> 8), P2: byte(tag), Le: le}
 }
 
+// verifyCmd is a VERIFY of the user PIN, which carries the PIN as a Secret, as the allowlist requires.
 func verifyCmd(pin []byte) apdu.Command {
-	return apdu.Command{CLA: 0x00, INS: 0x20, P2: 0x81, Data: pin}
+	return apdu.Command{CLA: 0x00, INS: 0x20, P2: 0x81}.WithSecretData(apdu.NewSecret(pin))
+}
+
+// pinCmd is a command of a PIN row with a secret body of n zero bytes: one secret, or, for a change of
+// a PIN (INS 24), two that together are n bytes.
+func pinCmd(ins, p1, p2 byte, n int) apdu.Command {
+	c := apdu.Command{INS: ins, P1: p1, P2: p2}
+	if ins == 0x24 {
+		return c.WithSecretPair(apdu.NewSecret(make([]byte, n/2)), apdu.NewSecret(make([]byte, n-n/2)))
+	}
+	return c.WithSecretData(apdu.NewSecret(make([]byte, n)))
 }

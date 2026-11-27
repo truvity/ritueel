@@ -22,20 +22,24 @@ import (
 // word is a status word like the others.
 //
 // Until select-application has succeeded, every other command is [ErrNotSelected]. Once an answer
-// began with 61xx the card has run the command, so any ending but success (an error status to GET
-// RESPONSE, the size cap, too many rounds) is a lost exchange whose cause names get-response, never a
-// refusal of the command. A block of a chain that the card refuses is a lost exchange too, because the
-// card then holds a partial chain.
+// began with 61xx the card has run the command, so no ending but success is a refusal of it; each is
+// a lost exchange, and the three differ only in what they name. A final error status to a GET RESPONSE
+// is a [*LostError] in the operation "get-response", whose cause is that [*StatusError]. Too many
+// GET RESPONSE rounds, and more than [MaxResponse] bytes of data joined, are a [*LostError] in the
+// command's own name, whose cause is [ErrResponseTooLong]. A block of a chain that the card refuses is
+// a [*LostError] in the command's name too, because the card then holds a partial chain; its cause is
+// the [*StatusError] of the block.
 //
 // An error from the transport, a panic of the transport, an answer with no status word, or an answer
-// longer than the form can carry ends the exchange in an unknown state: the session is dead, the call returns a [*LostError] that
-// says whether the command changes the card, and every later call returns [ErrSessionDead] without
-// touching the transport.
+// longer than its form can carry ends the exchange in an unknown state: the session is dead, the call
+// returns a [*LostError] that says whether the command changes the card, and every later call returns
+// [ErrSessionDead] without touching the transport.
 //
-// The bytes of a command that holds a secret are overwritten as soon as the transport returns, and the
-// buffers of every response that is not returned are overwritten, on every path. The data that send
-// returns is a new slice that the caller owns. The command's own Data is the caller's, and is not
-// changed.
+// A command that holds a PIN carries it as [apdu.Secret] values, which the allowlist requires for its
+// rows (never in plain Data). The encoded bytes of such a command are overwritten as soon as the
+// transport returns, and the buffers of every response that is not returned are overwritten, on every
+// path. The data that send returns is a new slice that the caller owns. The command's own Data is the
+// caller's, and is not changed.
 func (s *Session) send(cmd apdu.Command) ([]byte, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -117,10 +121,14 @@ func (s *Session) send(cmd apdu.Command) ([]byte, error) {
 // of the answer to its last block.
 func (s *Session) run(spec *commandSpec, cmd apdu.Command, budget time.Duration) (apdu.Status, []byte, error) {
 	extended := s.extended(cmd)
+	n := cmd.BodyLen()
 	switch {
-	case len(cmd.Data) > apdu.MaxExtendedData:
+	case n > apdu.MaxExtendedData:
 		return 0, nil, apdu.ErrDataTooLong
-	case len(cmd.Data) > apdu.MaxShortData && !extended:
+	case n > apdu.MaxShortData && !extended:
+		if cmd.HasSecret() {
+			return 0, nil, apdu.ErrDataTooLong // a PIN is never cut into blocks; no row of the table needs it
+		}
 		return s.chain(spec, cmd, budget)
 	case !extended:
 		cmd.Le = min(cmd.Le, apdu.MaxShortLe)
@@ -132,10 +140,11 @@ func (s *Session) run(spec *commandSpec, cmd apdu.Command, budget time.Duration)
 // extended reports whether a command goes in the extended form: it needs it (more than 255 data bytes,
 // or more than 256 expected), and the transport and the card both take it, and it fits.
 func (s *Session) extended(cmd apdu.Command) bool {
-	if len(cmd.Data) <= apdu.MaxShortData && cmd.Le <= apdu.MaxShortLe {
+	n := cmd.BodyLen()
+	if n <= apdu.MaxShortData && cmd.Le <= apdu.MaxShortLe {
 		return false
 	}
-	return s.extData > 0 && s.t.ExtendedAPDU() && len(cmd.Data) <= s.extData && cmd.Le <= apdu.MaxExtendedLe
+	return s.extData > 0 && s.t.ExtendedAPDU() && n <= s.extData && cmd.Le <= apdu.MaxExtendedLe
 }
 
 // chain sends the data in blocks of at most 255 bytes: the chaining bit of the class on every block but
@@ -198,7 +207,10 @@ func (s *Session) one(spec *commandSpec, cmd apdu.Command, extended bool, budget
 		clear(raw)
 		return 0, nil, &lostCause{err: err}
 	}
-	// The largest answer that the form can carry: the data of the largest Le, and the status word.
+	// The largest answer that one APDU of this form can carry: the data of the largest Le, and the
+	// status word. This bounds one answer, and runs first; MaxResponse bounds the data of all the
+	// answers of one command joined by GET RESPONSE, and is checked in send. In the extended form
+	// one answer may be longer than MaxResponse and shorter than this bound: then MaxResponse applies.
 	limit := apdu.MaxShortLe + 2
 	if extended {
 		limit = apdu.MaxExtendedLe + 2

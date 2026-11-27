@@ -79,11 +79,18 @@ func TestNeverSent(t *testing.T) {
 		{"get challenge", apdu.Command{INS: 0x84, Le: 8}},
 		{"verify with no PIN", apdu.Command{INS: 0x20, P2: 0x81}},
 		{"verify with a short PIN", verifyCmd(pin[:5])},
+		{"verify with the PIN in plain data", apdu.Command{INS: 0x20, P2: 0x81, Data: pin}},
+		{"verify with a PIN in data and in a secret", func() apdu.Command { c := verifyCmd(pin); c.Data = pin; return c }()},
+		{"verify with a wiped secret", func() apdu.Command { c := verifyCmd(pin); c.Data = nil; c = c.WithSecretData(apdu.Secret{}); return c }()},
+		{"verify with two secrets", apdu.Command{INS: 0x20, P2: 0x81}.WithSecretPair(apdu.NewSecret(pin), apdu.NewSecret(pin))},
+		{"change of a PIN in one secret", apdu.Command{INS: 0x24, P2: 0x81}.WithSecretData(apdu.NewSecret(make([]byte, 12)))},
+		{"a write with a secret body", apdu.Command{INS: 0xDA, P2: 0xC4}.WithSecretData(apdu.NewSecret([]byte{1}))},
+		{"a read with a secret body", getData(0x004F, 256).WithSecretData(apdu.NewSecret([]byte{1}))},
 		{"verify with a long PIN", verifyCmd(make([]byte, 128))},
-		{"verify with another P1", apdu.Command{INS: 0x20, P1: 0x01, P2: 0x81, Data: pin}},
-		{"verify with another P2", apdu.Command{INS: 0x20, P2: 0x84, Data: pin}},
-		{"deauthenticate with a PIN", apdu.Command{INS: 0x20, P1: 0xFF, P2: 0x81, Data: pin}},
-		{"change reference data of the reset code", apdu.Command{INS: 0x24, P2: 0x82, Data: make([]byte, 16)}},
+		{"verify with another P1", pinCmd(0x20, 0x01, 0x81, 6)},
+		{"verify with another P2", pinCmd(0x20, 0, 0x84, 6)},
+		{"deauthenticate with a PIN", pinCmd(0x20, 0xFF, 0x81, 6)},
+		{"change reference data of the reset code", pinCmd(0x24, 0, 0x82, 16)},
 		{"generate the attestation key", apdu.Command{INS: 0x47, P1: 0x80, Data: crt(0xB6, 0x03, 0x84, 0x01, 0x81)}},
 		{"generate with the extended template", apdu.Command{INS: 0x47, P1: 0x80, Data: crt(0xB6, 0x03, 0x84, 0x01, 0x01)}},
 		{"generate with no template", apdu.Command{INS: 0x47, P1: 0x80}},
@@ -125,11 +132,11 @@ func TestNeverSent(t *testing.T) {
 		{"attributes of RSA", apdu.Command{INS: 0xDA, P2: 0xC3, Data: []byte{0x01, 0x08, 0x00, 0x00, 0x20, 0x00}}},
 		{"attributes of P-384 with the import-format byte", apdu.Command{INS: 0xDA, P2: 0xC1, Data: append(append([]byte{}, p384...), 0xFF)}},
 		{"attributes of P-384 with another algorithm byte", apdu.Command{INS: 0xDA, P2: 0xC3, Data: []byte{0x12, 0x2B, 0x81, 0x04, 0x00, 0x22}}},
-		{"user PIN to the Admin reference, too short", apdu.Command{INS: 0x20, P2: 0x83, Data: make([]byte, 7)}},
-		{"user PIN too short", apdu.Command{INS: 0x20, P2: 0x82, Data: make([]byte, 5)}},
-		{"change of the user PIN, too short", apdu.Command{INS: 0x24, P2: 0x81, Data: make([]byte, 11)}},
-		{"change of the Admin PIN, too short", apdu.Command{INS: 0x24, P2: 0x83, Data: make([]byte, 15)}},
-		{"change of the user PIN, too long", apdu.Command{INS: 0x24, P2: 0x81, Data: make([]byte, 255)}},
+		{"user PIN to the Admin reference, too short", pinCmd(0x20, 0, 0x83, 7)},
+		{"user PIN too short", pinCmd(0x20, 0, 0x82, 5)},
+		{"change of the user PIN, too short", pinCmd(0x24, 0, 0x81, 11)},
+		{"change of the Admin PIN, too short", pinCmd(0x24, 0, 0x83, 15)},
+		{"change of the user PIN, too long", pinCmd(0x24, 0, 0x81, 255)},
 		{"firmware version with data", apdu.Command{INS: 0xF1, Data: []byte{1}}},
 		{"firmware version with a parameter", apdu.Command{INS: 0xF1, P1: 0x01}},
 	} {
@@ -207,11 +214,11 @@ func TestAllowedCommandsAreMatched(t *testing.T) {
 		{"firmware", apdu.Command{INS: 0xF1, Le: 256}, "get-firmware-version"},
 		{"select data", apdu.Command{INS: 0xA5, P1: 0x02, P2: 0x04, Data: []byte{0x60, 0x04, 0x5C, 0x02, 0x7F, 0x21}, Le: 256}, "select-data"},
 		{"verify PW1", verifyCmd([]byte("123456")), "verify-user"},
-		{"verify PW1 for the other uses", apdu.Command{INS: 0x20, P2: 0x82, Data: []byte("123456")}, "verify-user"},
-		{"verify PW3", apdu.Command{INS: 0x20, P2: 0x83, Data: []byte("12345678")}, "verify-admin"},
+		{"verify PW1 for the other uses", pinCmd(0x20, 0, 0x82, 6), "verify-user"},
+		{"verify PW3", pinCmd(0x20, 0, 0x83, 8), "verify-admin"},
 		{"deauthenticate", apdu.Command{INS: 0x20, P1: 0xFF, P2: 0x82}, "deauthenticate"},
-		{"change user PIN", apdu.Command{INS: 0x24, P2: 0x81, Data: make([]byte, 12)}, "change-user-pin"},
-		{"change Admin PIN", apdu.Command{INS: 0x24, P2: 0x83, Data: make([]byte, 16)}, "change-admin-pin"},
+		{"change user PIN", pinCmd(0x24, 0, 0x81, 12), "change-user-pin"},
+		{"change Admin PIN", pinCmd(0x24, 0, 0x83, 16), "change-admin-pin"},
 		{"attributes of the signature key", apdu.Command{INS: 0xDA, P2: 0xC1, Data: p384}, "put-key-attributes"},
 		{"attributes of the authentication key", apdu.Command{INS: 0xDA, P2: 0xC3, Data: p384}, "put-key-attributes"},
 		{"pw status", apdu.Command{INS: 0xDA, P2: 0xC4, Data: []byte{0x00}}, "put-pw-status"},
@@ -251,7 +258,7 @@ func TestPINLengthsFollowThePIN(t *testing.T) {
 			max = 254
 		}
 		for n := 0; n <= 300; n++ {
-			_, ok := lookup(allowlist, apdu.Command{INS: tc.ins, P2: tc.p2, Data: make([]byte, n)}, false)
+			_, ok := lookup(allowlist, pinCmd(tc.ins, 0, tc.p2, n), false)
 			if ok != (n >= tc.min && n <= max) {
 				t.Fatalf("%s: %d bytes: allowed %v", tc.name, n, ok)
 			}

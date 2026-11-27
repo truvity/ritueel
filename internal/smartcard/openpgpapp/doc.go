@@ -23,14 +23,17 @@
 //     like the rest, because no source gives a resend for this application.
 //   - Nothing but the selection of the application is sent before it succeeded ([ErrNotSelected]); a
 //     failed selection takes the state back, so a write never goes to whatever else the card has selected.
-//   - One rule for a failed exchange: an error from the transport (and a response that cannot be
-//     read, or that is too long, a panic of the transport, a block of a chain that the card refuses, and
-//     any ending but success once the card has begun to answer with 61xx) leaves the state of the card unknown, so the session is dead. Every
-//     later call returns [ErrSessionDead] without touching the transport, and the error of the failing
-//     call is a [*LostError] that says whether the command was one that changes the card.
-//   - A PIN is held in an [apdu.Secret]. The encoded bytes of a command that holds a secret are
-//     overwritten as soon as the transport has returned, and every response buffer that is not
-//     handed to the caller is overwritten.
+//   - One rule for a failed exchange: an error from the transport, a panic of the transport, a
+//     response that cannot be read or that is longer than its form carries, a block of a chain that
+//     the card refuses, and any ending but success once the card has begun to answer with 61xx, all
+//     leave the state of the card unknown, so the session is dead. Every later call returns
+//     [ErrSessionDead] without touching the transport, and the error of the failing call is a
+//     [*LostError] that says whether the command was one that changes the card.
+//   - A PIN is held in an [apdu.Secret], and a command carries it as one (as two for a change of a
+//     PIN), never in plain Data: the rows of the PIN commands refuse a PIN in Data, so no way of
+//     printing a command can show it. The encoded bytes of such a command are overwritten as soon as
+//     the transport has returned, and every response buffer that is not handed to the caller is
+//     overwritten.
 //
 // For the piece that reads the algorithm information object (FA): the vendor's library shows that some
 // firmware sends it with an outer length that is two bytes longer than its data, and the strict reader

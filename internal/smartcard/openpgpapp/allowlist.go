@@ -25,8 +25,11 @@ type commandSpec struct {
 	// a verification or in a counter of use. When the exchange of such a command is lost, its
 	// outcome is unknown.
 	changes bool
-	// secret: the command data holds a PIN. The encoded command is overwritten after the call.
-	secret bool
+	// secret: the command body is a PIN. A command for this row must carry it as an [apdu.Secret]
+	// (never in plain Data), in exactly secretParts of them, and the length rule of the row is applied
+	// to the length of the secrets together. The encoded command is overwritten after the call.
+	secret      bool
+	secretParts int
 	// mayWait: the command may wait for a person to touch the key, or may take the card long (key
 	// generation). It gets the longer budget.
 	mayWait bool
@@ -51,8 +54,11 @@ func (r dataRule) allows(d []byte) bool {
 	if r.exact != nil {
 		return slices.ContainsFunc(r.exact, func(v []byte) bool { return bytes.Equal(v, d) })
 	}
-	return len(d) >= r.min && len(d) <= r.max
+	return r.allowsLen(len(d))
 }
+
+// allowsLen applies the length part of the rule: for a secret body, which has no plain bytes to compare.
+func (r dataRule) allowsLen(n int) bool { return r.exact == nil && n >= r.min && n <= r.max }
 
 // The allowlist.
 //
@@ -159,12 +165,12 @@ var allowlist = []commandSpec{
 		// status bytes can state; the card's own maximum, read from the card, is enforced by a later
 		// piece, not here.
 		name: "verify-user", cla: 0x00, ins: 0x20, params: []uint16{0x0081, 0x0082},
-		data: lengths(6, 127), changes: true, secret: true,
+		data: lengths(6, 127), changes: true, secret: true, secretParts: 1,
 	},
 	{
 		// VERIFY with P2 83 (PW3): the Admin PIN, at least 8 bytes, and at most 127 (see above).
 		name: "verify-admin", cla: 0x00, ins: 0x20, params: []uint16{0x0083},
-		data: lengths(8, 127), changes: true, secret: true,
+		data: lengths(8, 127), changes: true, secret: true, secretParts: 1,
 	},
 	{
 		// VERIFY with P1 FF: end the verification of one reference (section 7.2.2).
@@ -175,12 +181,12 @@ var allowlist = []commandSpec{
 		// CHANGE REFERENCE DATA (section 7.2.3) of the user PIN, P2 81: the old PIN followed by the new
 		// one, at least 6 + 6 bytes, at most 2 x 127 (the card's own maximum is enforced by a later piece).
 		name: "change-user-pin", cla: 0x00, ins: 0x24, params: []uint16{0x0081},
-		data: lengths(12, 254), changes: true, secret: true,
+		data: lengths(12, 254), changes: true, secret: true, secretParts: 2,
 	},
 	{
 		// CHANGE REFERENCE DATA of the Admin PIN, P2 83: at least 8 + 8 bytes, at most 2 x 127.
 		name: "change-admin-pin", cla: 0x00, ins: 0x24, params: []uint16{0x0083},
-		data: lengths(16, 254), changes: true, secret: true,
+		data: lengths(16, 254), changes: true, secret: true, secretParts: 2,
 	},
 	{
 		// PUT DATA (section 7.2.8) of the algorithm attributes of the signature key (C1) and the
@@ -252,7 +258,8 @@ var (
 	crtDecryption     = []byte{0xB8, 0x00}
 )
 
-// lookup finds the row that a command matches in table. It reports false for a command that no row
+// lookup finds the row that a command matches in table. A command whose body is in secrets matches only
+// a row that holds a secret, and such a row matches only a command whose body is in secrets. It reports false for a command that no row
 // matches, and for a row that only send itself may use when internal is false.
 func lookup(table []commandSpec, cmd apdu.Command, internal bool) (*commandSpec, bool) {
 	for i := range table {
@@ -260,7 +267,15 @@ func lookup(table []commandSpec, cmd apdu.Command, internal bool) (*commandSpec,
 		if r.cla != cmd.CLA || r.ins != cmd.INS {
 			continue
 		}
-		if !slices.Contains(r.params, uint16(cmd.P1)<<8|uint16(cmd.P2)) || !r.data.allows(cmd.Data) {
+		if !slices.Contains(r.params, uint16(cmd.P1)<<8|uint16(cmd.P2)) {
+			continue
+		}
+		if r.secret {
+			// A PIN row takes its body as secrets, never as plain data, and judges their length.
+			if len(cmd.Data) != 0 || cmd.SecretParts() != r.secretParts || !r.data.allowsLen(cmd.BodyLen()) {
+				continue
+			}
+		} else if cmd.HasSecret() || !r.data.allows(cmd.Data) {
 			continue
 		}
 		if r.internal && !internal {

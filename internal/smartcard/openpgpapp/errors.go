@@ -58,7 +58,8 @@ func (e *StatusError) Status() apdu.Status { return apdu.Status(e.SW) }
 // happened, and never sends the command a second time on a guess. The cause is, from the
 // transport, [ErrResponseTooLong], [ErrMalformedResponse], or the [*StatusError] of an exchange that
 // failed after the card had begun to answer (a refused block in a chain, or an error status to GET
-// RESPONSE; Op is then the operation that failed). errors.Is finds [ErrSessionDead] and the cause.
+// RESPONSE: Op is then "get-response" for that status, and the command's own name for the round and size
+// caps, whose cause is [ErrResponseTooLong]). errors.Is finds [ErrSessionDead] and the cause.
 //
 // A cause that came from the transport is text from outside, and nothing enforces that it holds no
 // byte of a command. So when the command held a PIN, the error keeps the cause in an unexported field,
