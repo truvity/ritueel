@@ -46,7 +46,7 @@ acme/
 │   ├── cards/                         one for each card: root-a.yaml, root-b.yaml, day-ana.yaml, …
 │   ├── roots/                         one for each root: acme-tls.yaml, acme-release.yaml, acme-ssh.yaml
 │   ├── delegations/                   one for each delegation: acme-ca.yaml, acme-release.yaml, …
-│   └── openpgp.yaml                   the user IDs of the OpenPGP root (one file, Proposed)
+│   └── openpgp.yaml                   the further user IDs of a person's key (personal bundle)
 ├── seen/                              SEEN     one card map for each card
 ├── sealed/                            HISTORY  the sealed card secrets
 ├── roots/A/                           HISTORY  root.json and attestation/, written once
@@ -66,7 +66,7 @@ acme/
 The names `ritueel.yaml`, the eight folders `want/`, `seen/`, `sealed/`, `roots/`, `requests/`, `history/`, `trust/` and `drills/`, and the six files of a ceremony folder are decided, in lower case with no spaces ([record 0006](../decisions/0006-bundle-history-and-trust-files.md), rules 5 and 37).
 
 :::note[Proposed]
-The folders inside `want/`, the file `want/openpgp.yaml`, the folder `wanted/` of a ceremony folder, the files under `roots/<label>/`, the names of the files in `seen/` and `sealed/`, and the spelling of the names that carry an identity are fixed with the code ([issue #8](https://github.com/truvity/ritueel/issues/8)).
+The folders inside `want/`, the folder `wanted/` of a ceremony folder, the files under `roots/<label>/`, the names of the files in `seen/` and `sealed/`, and the spelling of the names that carry an identity are fixed with the code ([issue #8](https://github.com/truvity/ritueel/issues/8)).
 :::
 
 | Path | Mark | Written by | Holds |
@@ -251,7 +251,7 @@ Not yet proven on hardware ([record 0005](../decisions/0005-a-ceremony-and-where
 
 ## The wanted files
 
-A person writes `ritueel.yaml` and one strict YAML file for each card, root and delegation. The user IDs of the OpenPGP root are a wanted file too; its shape is Proposed (below). A person writes them only on the workstation ([record 0006](../decisions/0006-bundle-history-and-trust-files.md), rule 5). `new` writes the starter files ([record 0005](../decisions/0005-a-ceremony-and-where-it-runs.md), rule 20). `want` opens one in `$EDITOR` and writes only what the person saves ([Commands](/reference/cli/)).
+A person writes `ritueel.yaml` and one strict YAML file for each card, root and delegation. The further user IDs of a person's key are a wanted file too, `want/openpgp.yaml` (below). A person writes them only on the workstation ([record 0006](../decisions/0006-bundle-history-and-trust-files.md), rule 5). `new` writes the starter files ([record 0005](../decisions/0005-a-ceremony-and-where-it-runs.md), rule 20). `want` opens one in `$EDITOR` and writes only what the person saves ([Commands](/reference/cli/)).
 
 - **Strict YAML** (record 0006, rule 5). What strict means is Proposed (below).
 - **The digest** of a wanted file is the SHA-256 of the bytes as stored, so `sha256sum` gives the same value. The plan lists the wanted files it used by digest ([record 0005](../decisions/0005-a-ceremony-and-where-it-runs.md), rule 7). Two files with one meaning have two digests. This is accepted (record 0005, rule 6).
@@ -263,9 +263,9 @@ A person writes `ritueel.yaml` and one strict YAML file for each card, root and 
 |---|---|---|---|
 | `ritueel.yaml` | bundle | The settings ([below](/reference/bundle/#ritueelyaml)). | [0006](../decisions/0006-bundle-history-and-trust-files.md) rule 5 |
 | `want/cards/NAME.yaml` | card | The card's serial and kind, which is `root`, `day-to-day`, `server` or `rehearsal` and never changes; the applications the bundle uses; and the rows of other bundles that the card declares ([the card file](/reference/cards/#the-card-file-wantcardsnameyaml)). | [0003](../decisions/0003-root-cards.md) rules 5, 10 and 11 |
-| `want/roots/NAME.yaml` | root | The kind of the root (X.509, OpenPGP or SSH CA); its keys, each with a label and a place (a card named by its card file, or a cloud key); for a key, what it replaces and until when, and an optional retire date with a reason; the revocation reasons to keep ready; and whether it is a test root. The number of keys in the file is the number of root keys wanted. A key listed with no history is born by `apply`. | [0007](../decisions/0007-changing-and-losing-a-root.md) rules 3, 5, 6, 10, 21 and 23; [0005](../decisions/0005-a-ceremony-and-where-it-runs.md) rules 4, 20 and 26 |
-| `want/delegations/NAME.yaml` | delegation | The type (`x509-intermediate`, `openpgp-subkey` or `ssh-ca-key`), the root it is under, and its limits ([below](/reference/bundle/#a-delegation-file)). A delegation is a declared name under a root for a key that does daily work. | [0006](../decisions/0006-bundle-history-and-trust-files.md) rule 27; [0008](../decisions/0008-a-persons-own-key.md) rule 9 |
-| `want/openpgp.yaml` | bundle | The user IDs of the OpenPGP root. | [0008](../decisions/0008-a-persons-own-key.md) rule 16 (that a person edits the user IDs; the file and its members are Proposed, [#18](https://github.com/truvity/ritueel/issues/18)) |
+| `want/roots/NAME.yaml` | root | The kind of the root (X.509, OpenPGP or SSH CA), the revocation reasons to keep ready, and whether it is a test root. The OpenPGP root of a personal bundle also holds `encryption` (`true` or `false`) and `keys`: 1 to 8 entries, each with a `label` (one letter, `A` to `Z`), the `role` `adopted`, the `fingerprint` (40 hexadecimal digits) and `valid_until` (a quoted day such as `"2029-11-26"`: the key expires at 00:00 UTC of that day, which is after now and at most 36 months ahead). At most one key is adopted. Proposed: the keys of any other root, each with a place (a card named by its card file, or a cloud key), what it replaces and until when, and an optional retire date with a reason; the number of keys in the file is the number of root keys wanted, and a key listed with no history is born by `apply`. Stage two, which is not built, adds the roles `published` and `standby` and the key members `card`, `replaces`, `overlap_until`, `retire_on` and `retire_reason`; the file refuses them by name now. | [0007](../decisions/0007-changing-and-losing-a-root.md) rules 3, 5, 6, 10, 21 and 23; [0005](../decisions/0005-a-ceremony-and-where-it-runs.md) rules 4, 20 and 26 |
+| `want/delegations/NAME.yaml` | delegation | The type (`x509-intermediate`, `openpgp-subkey` or `ssh-ca-key`), the root it is under, and its limits ([below](/reference/bundle/#a-delegation-file)); in a personal bundle also the card that holds the key. A delegation is a declared name under a root for a key that does daily work. | [0006](../decisions/0006-bundle-history-and-trust-files.md) rule 27; [0008](../decisions/0008-a-persons-own-key.md) rule 9 |
+| `want/openpgp.yaml` | personal bundle | The further user IDs of the person's key (the file is optional): `user_ids`, at most 16 entries (at most 8 that do not retire), each with a `name` (as `person.name`), an `address` (one bare address) and an optional `retire: true`, which retires that user ID. The person of `ritueel.yaml` is the one primary user ID and is not written here; no user ID is written twice. | [0008](../decisions/0008-a-persons-own-key.md) rule 16 (that a person edits the user IDs) |
 
 :::note[Proposed]
 These parts are fixed with the code ([issue #8](https://github.com/truvity/ritueel/issues/8)): the members of the files in the table; what strict means (one document in a file, no anchors, no merge keys, no repeated keys, UTF-8 with LF, no byte order mark, no tags, no aliases, and an unknown key is an error); the form of an object name (lower-case letters, digits and hyphens, 1 to 63 characters).
@@ -274,7 +274,7 @@ The rules a request is checked against are split between `policy` in `ritueel.ya
 
 A card file never holds another bundle's name. A row of another bundle is declared in `other_rows`; the words `use: other-bundle` are the card map's ([issue #11](https://github.com/truvity/ritueel/issues/11)).
 
-Who owns a user ID of the OpenPGP root, whether the user IDs are one file for the root or one file for each object (the decision asks one file for each object), and how an old user ID is marked to retire, are open ([issue #18](https://github.com/truvity/ritueel/issues/18)). Where a test root is marked, for example in its wanted root file, and how a test bundle starts, is open ([issue #136](https://github.com/truvity/ritueel/issues/136)).
+Where a test root is marked, for example in its wanted root file, and how a test bundle starts, is open ([issue #136](https://github.com/truvity/ritueel/issues/136)).
 :::
 
 ## `ritueel.yaml`
@@ -301,8 +301,8 @@ keyring:
 | `name` | 1 to 45 characters: the ASCII letters `A` to `Z` and `a` to `z`, the digits, single spaces and hyphens, with no space at the start or the end. It names the root keys and their primaries ([below](/reference/bundle/#the-root-certificate)). The limit of 45 keeps the common name of a root key within the 64 characters that RFC 5280 allows: the name, ` Root ` and the label add 7 characters, and a test root key adds ` (TEST ONLY)`, 12 more, so one number holds for both and a name that is too long fails early, when `ritueel.yaml` is read, and not at the ceremony. The characters are limited so that no letter of another script and no invisible character can make two names look alike. |
 | `release_address` | Required in a company bundle, with or without an OpenPGP root. The address in every primary's user ID: the project's release identity, never a person's ([record 0009](../decisions/0009-release-keys-and-the-keyring.md)). |
 | `policy` | The rules every request is checked against: `stores`, `min_firmware`, `pin_policy`, `require_name_constraints` and `validity_months`, with the meanings of the [reference policy](/reference/hand-off-contract/#what-the-certifier-checks). All five are required. `require_name_constraints` must be `true`: a policy cannot switch the name-constraints rule off. |
-| `kind` | Optional. `personal` for a person's own OpenPGP key; absent for a company bundle. A personal bundle has `person` instead of `name` and `release_address` ([personal OpenPGP](/reference/personal-openpgp/)). |
-| `person` | Only with `kind: personal`: `name` (1 to 64 characters) and `address`. |
+| `kind` | Optional. `personal` for a person's own OpenPGP key; absent for a company bundle. A personal bundle has `person` instead of `name` and `release_address`, refuses `aws_kms` and `keyring`, and has the stores `openpgp-card` and `software` only (`piv` is reserved for stage two). Its starter holds an example person, which is refused until the person replaces it ([personal OpenPGP](/reference/personal-openpgp/)). |
+| `person` | Only with `kind: personal`: `name` (1 to 64 characters, with no space at the end and no two spaces in a row) and `address` (one bare address). |
 | `aws_kms` | Optional, from M2; required when a root key's key store is `aws-kms`. The root account, the two Regions and the two roles ([the block](/reference/kms-root/#ritueelyaml)). |
 | `keyring` | Proposed; no record has this member. `license` would be the SPDX identifier written into the `.rpm`, which the release pipeline builds ([record 0009](../decisions/0009-release-keys-and-the-keyring.md), rule 22): the holder's choice, which ritueel does not default ([the keyring package](/reference/keyring-package/)). |
 | `keyservers` | Proposed in record 0011 (rule 4 decides a managed list; the block and its member names are proposed). The keyservers `ritueel publish` may send the public OpenPGP key to, one entry for each server (an address and the kind, the keys.openpgp.org interface or HKP). The holder lists them; `new` ships no default that sends, and keys.openpgp.org and keyserver.ubuntu.com are commented examples ([record 0011](../decisions/0011-publishing-and-what-to-do-after-a-ceremony.md)). It is not in the schema below until it is decided. |
@@ -408,7 +408,8 @@ use: user
 | `permitted_dns_names` | For `x509-intermediate`: the DNS names a request's name constraints may hold, each in the form of the contract. A permitted DNS name is inside the policy only when it equals an entry. **Not decided:** excluded DNS subtrees and excluded IP ranges, except every IP address, which the [hand-off contract](/reference/hand-off-contract/#what-the-certifier-checks) accepts in a request ([issue #9](https://github.com/truvity/ritueel/issues/9)). |
 | `capability` | For `openpgp-subkey`: `sign` or `authenticate`, required. A request for another capability is refused with `policy`; the subkey is bound with this one's key flag ([the contract](/reference/hand-off-contract/#openpgp-subkey)). |
 | `use` | For `ssh-ca-key`: `user` or `host`, required. A request for another `use` is refused with `policy`; the key is listed with this use ([the contract](/reference/hand-off-contract/#ssh-ca-key)). |
-| `kms_read_roles` | For a requester's KMS key in another account: the read-only role to assume, by account ([the contract](/reference/hand-off-contract/#aws-kms)). The role is never taken from a request. |
+| `kms_read_roles` | For a requester's KMS key in another account: the read-only role to assume, by account ([the contract](/reference/hand-off-contract/#aws-kms)). The role is never taken from a request. Refused in a personal bundle. |
+| `card` | For `openpgp-subkey` in a personal bundle, required: the name of the card file (`want/cards/NAME.yaml`) of the card that holds the key; a day-to-day card, or a rehearsal card for a test root, that lists the application `openpgp`. One delegation is one key: one card and one capability, and a card has a capability once. A personal bundle holds at most 16 delegations, all `openpgp-subkey`. Refused in any other delegation. |
 
 A test vector's configuration in `testdata/hand-off/v1/manifest.json` is the `policy` block together with the one delegation's members its requests are for: the `permitted_uri_hosts`, `permitted_dns_names` and `kms_read_roles` there are that delegation's.
 
@@ -429,12 +430,13 @@ The members are proposed ([issue #8](https://github.com/truvity/ritueel/issues/8
     "permitted_uri_hosts": { "type": "array", "uniqueItems": true, "items": { "type": "string" } },
     "permitted_dns_names": { "type": "array", "uniqueItems": true, "items": { "type": "string" } },
     "kms_read_roles": { "type": "object", "propertyNames": { "pattern": "^[0-9]{12}$" },
-                        "additionalProperties": { "type": "string", "pattern": "^arn:aws[a-z-]*:iam::[0-9]{12}:role/" } }
+                        "additionalProperties": { "type": "string", "pattern": "^arn:aws[a-z-]*:iam::[0-9]{12}:role/" } },
+    "card": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]{0,62}$" }
   }
 }
 ```
 
-Five rules the schema cannot state: a delegation name is unique, which its file name guarantees; a name that begins with `break-glass-` is refused, because the SSH CA key list uses those for the break-glass keys; an `x509-intermediate` has an entry in `permitted_uri_hosts` or in `permitted_dns_names` (at least one of the two) when `require_name_constraints` is true; an `openpgp-subkey` has `capability`; an `ssh-ca-key` has `use` and no other key of the type. A delegation under no root is an error. ritueel checks all of them when it reads the file.
+Five rules the schema cannot state: a delegation name is unique, which its file name guarantees; a name that begins with `break-glass-` is refused, because the SSH CA key list uses those for the break-glass keys; an `x509-intermediate` has an entry in `permitted_uri_hosts` or in `permitted_dns_names` (at least one of the two) when `require_name_constraints` is true; an `openpgp-subkey` has `capability`, and `card` in a personal bundle; an `ssh-ca-key` has `use` and no other key of the type. A delegation under no root is an error. ritueel checks all of them when it reads the file.
 
 ## `root.json`
 

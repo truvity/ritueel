@@ -5,7 +5,7 @@ sidebar:
   order: 15
 ---
 
-*Not built yet. This is the page that [record 0008](../decisions/0008-a-persons-own-key.md) leaves for the details, and that record is `Accepted`. It decides the profile, how long a person's primary lives, the two stages of the key, the day-to-day subkeys and how a subkey is retired. The [hand-off contract](/reference/hand-off-contract/#openpgp-subkey) carries the signing and the authentication capability, with their test vectors. The code is [issue #18](https://github.com/truvity/ritueel/issues/18): stage one and stage two are M3. How to use the result is in [Sign git commits and tags](/guides/openpgp-sign-git/) and [Your own OpenPGP key](/guides/personal-openpgp/).*
+*Partly built: `ritueel new --template personal` and the readers of a person's wanted files work, and `ritueel apply` on such a bundle checks them and refuses as not built; adoption, the subkeys and stage two are not built. This is the page that [record 0008](../decisions/0008-a-persons-own-key.md) leaves for the details, and that record is `Accepted`. It decides the profile, how long a person's primary lives, the two stages of the key, the day-to-day subkeys and how a subkey is retired. The [hand-off contract](/reference/hand-off-contract/#openpgp-subkey) carries the signing and the authentication capability, with their test vectors. The code is [issue #18](https://github.com/truvity/ritueel/issues/18): stage one and stage two are M3. How to use the result is in [Sign git commits and tags](/guides/openpgp-sign-git/) and [Your own OpenPGP key](/guides/personal-openpgp/).*
 
 There is no key the company issues to staff: every person uses OpenPGP as their own key ([record 0008](../decisions/0008-a-persons-own-key.md)). A person's own OpenPGP key is the same ritual as a service's subkey: a key is made in a key store and bound under a primary. Here the primary is the person's, offline in a key file, and the subkeys are born on the person's cards. ritueel runs it with the engine of the company case, with the X.509 half switched off.
 
@@ -17,17 +17,44 @@ A person's own key has a bundle of its own. A person who also runs a company kee
 version: 1
 kind: personal
 person:
-  name: Ada Example
-  address: ada@example.com
+  name: Ben Example
+  address: ben@example.com
 policy:
-  stores: [openpgp-card]
+  stores: [openpgp-card, software]
   min_firmware: 5.7.0
   pin_policy: [once, always]
   require_name_constraints: true
   validity_months: 13
 ```
 
-`kind: personal` replaces `name` and `release_address` with `person` (a name of 1 to 64 characters and an address) and is otherwise [the same file](/reference/bundle/#ritueelyaml). `require_name_constraints` is `true` here too. A personal bundle has no X.509 key, so the rule has nothing to check. It is additive: a file without `kind` is a company bundle. Its two delegations, `daily` (`capability: sign`) and `ssh` (`capability: authenticate`), are wanted delegation files under the OpenPGP root ([a delegation file](/reference/bundle/#a-delegation-file)).
+The other wanted files of the bundle are the root file, one delegation file for each key, and, when the person wants further user IDs, `want/openpgp.yaml`:
+
+```yaml
+# want/roots/openpgp.yaml
+version: 1
+kind: openpgp
+encryption: true
+keys:
+  - {label: A, role: adopted, fingerprint: "89abcdef0123456789abcdef0123456789abcdef", valid_until: "2029-11-26"}
+```
+
+```yaml
+# want/delegations/daily.yaml
+version: 1
+type: openpgp-subkey
+root: openpgp
+capability: sign
+card: day-ben
+```
+
+```yaml
+# want/openpgp.yaml
+version: 1
+user_ids:
+  - {name: Ben Example, address: ben@work.example.com}
+```
+
+`kind: personal` replaces `name` and `release_address` with `person` (a name of 1 to 64 characters and an address) and is otherwise [the same file](/reference/bundle/#ritueelyaml). `require_name_constraints` is `true` here too. A personal bundle has no X.509 key, so the rule has nothing to check. It is additive: a file without `kind` is a company bundle. The stores are `openpgp-card` and `software`; `piv` is reserved for stage two. The person is the one primary user ID of the key, and `want/openpgp.yaml` holds only further ones. A delegation is one key: `daily` (`capability: sign`) and `ssh` (`capability: authenticate`) are wanted delegation files under the OpenPGP root, each naming one card in `card` ([a delegation file](/reference/bundle/#a-delegation-file)). A card has a capability once, and a bundle holds at most 16 delegations.
 
 | Part | In a company bundle | In a personal bundle |
 |---|---|---|
@@ -41,7 +68,7 @@ policy:
 
 ## The profiles
 
-The primary is the profile of [the OpenPGP primary](/reference/bundle/#the-openpgp-primary) with two changes: its one user ID is `<name> <address>` of the person, and it is made in the `software` store with the encrypted file backend, whose key file is `A.openpgp.key.age` in the key directory, opened as [record 0002](../decisions/0002-where-a-key-lives.md) says. It is valid 36 months and extended at each use. In stage one an existing primary may be adopted instead ([below](/reference/personal-openpgp/#stage-one-an-adopted-primary)).
+The primary is the profile of [the OpenPGP primary](/reference/bundle/#the-openpgp-primary) with two changes: its one user ID is `<name> <address>` of the person, and it is made in the `software` store with the encrypted file backend, whose key file is `A.openpgp.key.age` in the key directory, opened as [record 0002](../decisions/0002-where-a-key-lives.md) says. It is valid 36 months and extended at each use. The wanted root file names an adopted primary only for now ([below](/reference/personal-openpgp/#stage-one-an-adopted-primary)).
 
 The two subkeys are the subkeys of [the contract](/reference/hand-off-contract/#openpgp-subkey): ECDSA P-384, version 4, a back-signature made by the subkey, a binding of about 13 months. The signing subkey (`daily` above) has key flags `0x02`; the authentication subkey (`ssh` above) has `0x20` and serves SSH through `gpg-agent` ([the guide](/guides/openpgp-ssh-authentication/)). One set of signing and authentication subkeys is born on each day-to-day card.
 
@@ -51,7 +78,7 @@ The encryption subkey is the exception: it is X25519, made in software, loaded o
 
 | Command | Does | Needs a person |
 |---|---|---|
-| `ritueel new --template personal DIR` (the template name is proposed), then `ritueel apply --key-dir DIR` | `new` makes the bundle folder and the starter wanted files, with `kind: personal` in `ritueel.yaml`. The first `apply` makes the primary and its revocation signatures ([revocation material](/reference/revocation-material/)), and the first certificate. | Yes |
+| `ritueel new --template personal DIR`, then `ritueel apply --key-dir DIR` | `new` is built: it makes the bundle folder and the starter files `ritueel.yaml` (with `kind: personal`), `want/roots/openpgp.yaml` and `want/openpgp.yaml`, and no key. `apply` checks the wanted files and refuses the bundle as not built, with exit code 1 and nothing written. It will make the revocation signatures ([revocation material](/reference/revocation-material/)) and the first certificate. | Yes |
 | A wanted delegation file for a key on a day-to-day card, then `ritueel apply` | One ceremony: the card makes the subkey of the delegation, with its capability, and its back-signature, the primary binds it, and the certificate is rebuilt. The card is the only one connected, or the one named with `--with`. It writes the request and the proof into `requests/` like any requester, then answers them. | Yes |
 | An edit of the wanted user IDs, then `ritueel apply` | One ceremony: the primary certifies the new user ID, and the old user ID gets a revocation that says it is no longer valid (record 0008, rule 16). The fingerprint and all trust stay. The certificate is rebuilt. Proposed: it also makes the new user ID primary, and the file of the user IDs is open ([issue #18](https://github.com/truvity/ritueel/issues/18)). | Yes |
 
@@ -77,7 +104,7 @@ A person who already has a primary, with years of certifications, may adopt it a
 - It may be RSA-4096 or Ed25519 and without expiry on arrival, so it is outside the P-384 profile above until it is replaced.
 - It gets an expiry at adoption, and is replaced within three years of adoption, or moved to stage two.
 
-How a primary is adopted is fixed with the code ([issue #18](https://github.com/truvity/ritueel/issues/18)).
+The wanted root file names it with its fingerprint and the day it expires, `valid_until`, which is at most 36 months ahead. The adoption itself is not built ([issue #18](https://github.com/truvity/ritueel/issues/18)).
 
 ## Stage two: card-born primaries
 
