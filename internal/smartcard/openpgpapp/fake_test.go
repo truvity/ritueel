@@ -23,6 +23,7 @@ type fakeTransport struct {
 	given    [][]byte
 	closed   int
 	powered  int
+	powerErr error
 }
 
 type step struct {
@@ -35,8 +36,8 @@ func sw(hi, lo byte, data ...byte) step {
 	return step{resp: append(append([]byte(nil), data...), hi, lo)}
 }
 
-func (f *fakeTransport) PowerOn(time.Duration) ([]byte, error) { f.powered++; return nil, nil }
-func (f *fakeTransport) PowerOff(time.Duration) error          { f.powered++; return nil }
+func (f *fakeTransport) PowerOn(time.Duration) ([]byte, error) { f.powered++; return nil, f.powerErr }
+func (f *fakeTransport) PowerOff(time.Duration) error          { f.powered++; return f.powerErr }
 func (f *fakeTransport) ExtendedAPDU() bool                    { return f.ext }
 func (f *fakeTransport) Close() error                          { f.closed++; return nil }
 

@@ -212,6 +212,11 @@ func (s *Session) one(spec *commandSpec, cmd apdu.Command, extended bool, budget
 		clear(raw)
 		return 0, nil, &lostCause{err: ErrMalformedResponse}
 	}
+	if resp.Status == apdu.StatusInstructionNotSupported || resp.Status == apdu.StatusClassNotSupported {
+		// The answer of an application that does not know the command: the card may have another
+		// application selected, so nothing else is sent until a new selection succeeds.
+		s.selected = false
+	}
 	data := append([]byte(nil), resp.Data...)
 	clear(raw)
 	return resp.Status, data, nil
@@ -241,5 +246,9 @@ func (s *Session) lose(spec *commandSpec, cause error) error { return s.loseOp(s
 // exchange failed in its continuation.
 func (s *Session) loseOp(op string, spec *commandSpec, cause error) error {
 	s.dead, s.selected = true, false
-	return &LostError{Op: op, OutcomeUnknown: spec.changes, Err: cause, secret: spec.secret}
+	e := &LostError{Op: op, OutcomeUnknown: spec.changes, cause: cause, secret: spec.secret}
+	if !spec.secret {
+		e.Err = cause
+	}
+	return e
 }

@@ -125,3 +125,46 @@ func (s *Session) allowExtended(maxCommand int) {
 	defer s.mu.Unlock()
 	s.extData = max(0, maxCommand-extendedOverhead)
 }
+
+// powerOn powers the card through the transport. The power cycle ends the selection, so the session
+// forgets it. A transport error ends the session.
+func (s *Session) powerOn() ([]byte, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if err := s.usable(); err != nil {
+		return nil, err
+	}
+	s.selected = false
+	atr, err := s.t.PowerOn(s.budget)
+	if err != nil {
+		s.dead = true
+		return nil, &LostError{Op: "power-on", Err: err, cause: err}
+	}
+	return atr, nil
+}
+
+// powerOff powers the card off through the transport, and the session forgets the selection.
+func (s *Session) powerOff() error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if err := s.usable(); err != nil {
+		return err
+	}
+	s.selected = false
+	if err := s.t.PowerOff(s.budget); err != nil {
+		s.dead = true
+		return &LostError{Op: "power-off", Err: err, cause: err}
+	}
+	return nil
+}
+
+// usable is the error that stops a call on a session that is closed or dead, or nil.
+func (s *Session) usable() error {
+	switch {
+	case s.closed:
+		return ErrSessionClosed
+	case s.dead:
+		return ErrSessionDead
+	}
+	return nil
+}

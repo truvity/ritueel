@@ -17,6 +17,12 @@ import "time"
 // secret as soon as Transmit returns. An error that a transport returns must not contain a byte of a
 // command. A budget is the longest the call may take, from the caller's side; a transport that cannot
 // keep to it returns an error.
+//
+// Once a [Session] exists on a transport, only the session calls PowerOn and PowerOff, through its own
+// helpers, because a power cycle ends the selection of the application and the verification of a PIN,
+// and the session must forget what it knew of them. This layer assumes that no other program talks to
+// the card while a session is open: opening the reader exclusively is the transport's part of the
+// contract, and a layer on top of a reader that is shared cannot know what the card has selected.
 type Transport interface {
 	// PowerOn powers the card and returns its answer to reset.
 	PowerOn(budget time.Duration) ([]byte, error)

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/hex"
 	"errors"
+	"fmt"
 	"strings"
 	"testing"
 	"time"
@@ -136,7 +137,7 @@ func TestContinuationCaps(t *testing.T) {
 }
 
 func TestStatusErrorsAreFinalAndNeverRetried(t *testing.T) {
-	for _, w := range []uint16{0x6A88, 0x6982, 0x6983, 0x6700, 0x6C20, 0x6285, 0x6600, 0x63C2, 0x6D00} {
+	for _, w := range []uint16{0x6A88, 0x6982, 0x6983, 0x6700, 0x6C20, 0x6285, 0x6600, 0x63C2, 0x6F00} {
 		f := &fakeTransport{script: []step{sw(byte(w>>8), byte(w), 0xDE, 0xAD), ok(0x01)}}
 		s := newSession(t, f, Options{})
 		got, err := s.send(getData(0x00D6, 256))
@@ -671,5 +672,95 @@ func TestResponseLargerThanTheFormIsLost(t *testing.T) {
 	f = &fakeTransport{script: []step{ok(make([]byte, 256)...)}}
 	if got, err := newSession(t, f, Options{}).send(getData(0x7F21, 256)); err != nil || len(got) != 256 {
 		t.Fatalf("%v", err)
+	}
+}
+
+// customError is a transport error type that errors.As must still find behind a secret command.
+type customError struct{ text string }
+
+func (e *customError) Error() string { return e.text }
+
+func TestSecretLostErrorHidesTheCauseInEveryVerb(t *testing.T) {
+	cause := &customError{"reader said: 987654 3938373635"}
+	f := &fakeTransport{script: []step{{err: cause}}}
+	s := newSession(t, f, Options{})
+	err := func() error { _, err := s.send(verifyCmd([]byte("987654"))); return err }()
+	var lost *LostError
+	if !errors.As(err, &lost) || lost.Err != nil || errors.Unwrap(err) != nil || !lost.OutcomeUnknown {
+		t.Fatalf("%+v", lost)
+	}
+	for _, verb := range []string{"%v", "%+v", "%#v", "%s", "%q", "%x", "%d"} {
+		for _, v := range []any{err, lost, *lost2(lost)} {
+			out := fmt.Sprintf(verb, v)
+			if strings.Contains(out, "reader") || strings.Contains(out, "987654") || strings.Contains(out, "3938373635") {
+				t.Errorf("%s shows the cause: %q", verb, out)
+			}
+		}
+	}
+	var ce *customError
+	if !errors.Is(err, cause) || !errors.Is(err, ErrSessionDead) || !errors.As(err, &ce) || ce != cause {
+		t.Fatal("the cause is not reachable through Is and As")
+	}
+	if errors.Is(err, ErrNotAllowed) {
+		t.Fatal("Is answers for what it is not")
+	}
+	// A command with no secret keeps the cause in the field, the unwrap and the text.
+	f = &fakeTransport{script: []step{{err: cause}}}
+	_, err = newSession(t, f, Options{}).send(getData(0x004F, 256))
+	lost = nil
+	if !errors.As(err, &lost) || !errors.Is(lost.Err, cause) || !strings.Contains(fmt.Sprintf("%v", err), "reader said") ||
+		!errors.Is(err, cause) || !errors.Is(err, ErrSessionDead) || !strings.Contains(fmt.Sprintf("%#v", lost), "get-data") {
+		t.Fatalf("%v", err)
+	}
+}
+
+// lost2 copies a LostError, so that a value of it is printed too.
+func lost2(l *LostError) *LostError { c := *l; return &c }
+
+func TestPowerCyclesGoThroughTheSession(t *testing.T) {
+	f := &fakeTransport{}
+	s := newSession(t, f, Options{})
+	if _, err := s.powerOn(); err != nil || s.selected || f.powered != 1 {
+		t.Fatalf("power on: %v selected %v", err, s.selected)
+	}
+	s.selected = true
+	if err := s.powerOff(); err != nil || s.selected || f.powered != 2 {
+		t.Fatalf("power off: %v selected %v", err, s.selected)
+	}
+	if _, err := s.send(getData(0x004F, 256)); !errors.Is(err, ErrNotSelected) {
+		t.Fatalf("after a power cycle: %v", err)
+	}
+	// A transport error ends the session; a dead or closed one is not touched.
+	f.powerErr = errors.New("gone")
+	if err := s.powerOff(); !errors.Is(err, ErrSessionDead) || !s.Dead() {
+		t.Fatalf("%v", err)
+	}
+	n := f.powered
+	if _, err := s.powerOn(); !errors.Is(err, ErrSessionDead) || s.powerOff() == nil || f.powered != n {
+		t.Fatal("a dead session reached the transport")
+	}
+	g := &fakeTransport{}
+	c := newSession(t, g, Options{})
+	_ = c.Close()
+	if _, err := c.powerOn(); !errors.Is(err, ErrSessionClosed) || g.powered != 0 {
+		t.Fatal("a closed session reached the transport")
+	}
+}
+
+func TestWrongApplicationAnswerClearsTheSelection(t *testing.T) {
+	for _, tc := range []struct {
+		w     uint16
+		clear bool
+	}{{0x6D00, true}, {0x6E00, true}, {0x6A88, false}, {0x6982, false}} {
+		f := &fakeTransport{script: []step{sw(byte(tc.w>>8), byte(tc.w)), ok(0x01)}}
+		s := newSession(t, f, Options{})
+		var se *StatusError
+		if _, err := s.send(getData(0x004F, 256)); !errors.As(err, &se) || se.SW != tc.w || s.Dead() {
+			t.Fatalf("%04X: %v", tc.w, err)
+		}
+		_, err := s.send(getData(0x004F, 256))
+		if tc.clear != errors.Is(err, ErrNotSelected) || (!tc.clear && err != nil) {
+			t.Fatalf("%04X: next command: %v", tc.w, err)
+		}
 	}
 }

@@ -54,18 +54,25 @@ func (e *StatusError) Status() apdu.Status { return apdu.Status(e.SW) }
 
 // LostError is the error of the call during which the session was lost. Op is the name of the
 // operation. OutcomeUnknown is true when that operation is one that changes the card: the card may
-// have carried it out, so the caller opens a new session and reads the card before it decides what
-// happened, and never sends the command a second time on a guess. Err is the cause, from the
+// have carried out the command, so the caller opens a new session and reads the card before it decides what
+// happened, and never sends the command a second time on a guess. The cause is, from the
 // transport, [ErrResponseTooLong], [ErrMalformedResponse], or the [*StatusError] of an exchange that
 // failed after the card had begun to answer (a refused block in a chain, or an error status to GET
-// RESPONSE; Op is then the operation that failed). errors.Is finds [ErrSessionDead] in it. For a command
-// that holds a secret the text does not show the cause: it stays reachable through errors.Is and As.
+// RESPONSE; Op is then the operation that failed). errors.Is finds [ErrSessionDead] and the cause.
+//
+// A cause that came from the transport is text from outside, and nothing enforces that it holds no
+// byte of a command. So when the command held a PIN, the error keeps the cause in an unexported field,
+// Err is nil, there is no Unwrap, and no way of printing it (Error, %v, %+v, %#v, %x) shows the cause:
+// errors.Is and errors.As reach it through the methods Is and As below, and the caller who wants its
+// text asks for it deliberately. This is the smaller of the two ways to do it: no wrapper type. For a
+// command that holds no secret Err is the cause, Unwrap gives it, and the text shows it.
 type LostError struct {
 	Op             string
 	OutcomeUnknown bool
-	Err            error
-	// secret: the command held a PIN. Its error text then does not show the cause, whose text came
-	// from outside and cannot be trusted to hold no byte of the command.
+	// Err is the cause, for a command that holds no secret; nil for one that does.
+	Err error
+	// cause is the cause, always; secret: the command held a PIN.
+	cause  error
 	secret bool
 }
 
@@ -80,5 +87,39 @@ func (e *LostError) Error() string {
 	return fmt.Sprintf("openpgpapp: %s: the session is lost: %v", e.Op, e.Err)
 }
 
-// Unwrap gives the cause and [ErrSessionDead].
-func (e *LostError) Unwrap() []error { return []error{e.Err, ErrSessionDead} }
+// Unwrap gives the cause and [ErrSessionDead], for a command that holds no secret; for one that does it
+// gives nothing, and Is and As answer instead.
+func (e *LostError) Unwrap() []error {
+	if e.secret {
+		return nil
+	}
+	return []error{e.Err, ErrSessionDead}
+}
+
+// Is answers errors.Is for a command that holds a secret: [ErrSessionDead] and the hidden cause.
+func (e *LostError) Is(target error) bool {
+	return e.secret && (target == ErrSessionDead || errors.Is(e.cause, target))
+}
+
+// As answers errors.As for a command that holds a secret, through the hidden cause.
+func (e *LostError) As(target any) bool { return e.secret && errors.As(e.cause, target) }
+
+// GoString is the text of the error, for %#v: for a secret command no field is shown. It has a value
+// receiver, so that a LostError that was copied into a value is held to the same rule.
+func (e LostError) GoString() string {
+	if e.secret {
+		return e.Error()
+	}
+	type plain LostError
+	return fmt.Sprintf("%#v", plain(e))
+}
+
+// Format writes the text of the error for every verb of a secret command, so that no verb shows its
+// cause; for another command it is the text, and the fields for %#v. It has a value receiver, as GoString.
+func (e LostError) Format(f fmt.State, verb rune) {
+	if verb == 'v' && f.Flag('#') {
+		_, _ = f.Write([]byte(e.GoString()))
+		return
+	}
+	_, _ = f.Write([]byte(e.Error()))
+}
