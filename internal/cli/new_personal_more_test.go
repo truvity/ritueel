@@ -18,9 +18,8 @@ import (
 // and without --plan-only, that writes nothing in every state of the starter. The names of this file start with pq.
 
 const (
-	pqKnownFaultsEnv = "RITUEEL_KNOWN_FAULTS"
-	pqOwnName        = "Eve Example"
-	pqOwnAddress     = "eve@example.com"
+	pqOwnName    = "Eve Example"
+	pqOwnAddress = "eve@example.com"
 )
 
 var pqCommentLine = regexp.MustCompile(`(?m)^ *#`)
@@ -55,7 +54,6 @@ func TestEveryTemplateThatIsNotBuiltIsAUsageErrorAndWritesNothing(t *testing.T) 
 		"a path":                     {[]string{"--template", "../personal"}, "no other template is built"},
 		"a hostile name":             {[]string{"--template", "a\U0000202eb\x1b"}, "no other template is built"},
 		"a long name":                {[]string{"--template", strings.Repeat("x", 500)}, "no other template is built"},
-		"the second is not built":    {[]string{"--template", "personal", "--template", "cloud"}, "the template cloud is proposed and not built"},
 		"with a test root":           {[]string{"--template", "personal", "--test-root"}, "--test-root is for the roots of a company bundle"},
 		"with a test root, first":    {[]string{"--test-root", "--template", "personal"}, "--test-root is for the roots of a company bundle"},
 		"with a test root, one word": {[]string{"--test-root=true", "--template=personal"}, "--test-root is for the roots of a company bundle"},
@@ -100,23 +98,31 @@ func printableASCII(s string) bool {
 	return true
 }
 
-// Every other command of this repository that has a flag the library would keep the last value of refuses it
-// given twice and reads nothing (apply.go, runApply: "the first would be dropped without a word"). new does not:
-// the template that comes first is dropped, and `--template cloud --template personal` makes a personal bundle.
-func TestAFlagTemplateThatIsGivenTwiceIsAUsageError(t *testing.T) {
-	if os.Getenv(pqKnownFaultsEnv) == "" {
-		t.Skip("a known fault, not fixed yet (" + pqKnownFaultsEnv + "=1 runs it): new.go runNew does not count --template, so the first of two is dropped without a word")
-	}
-	for name, args := range map[string][]string{
-		"the same twice":           {"--template", "personal", "--template", "personal"},
-		"a word that is not built": {"--template", "cloud", "--template", "personal"},
-		"one word and two":         {"--template=personal", "--template", "personal"},
+// A flag of new that is given twice is a usage error and nothing is written, as it is for apply: whatever the two
+// values are, in either order.
+func TestAFlagOfNewThatIsGivenTwiceIsAUsageError(t *testing.T) {
+	for name, tc := range map[string]struct {
+		args []string
+		flag string
+	}{
+		"template, the same": {[]string{"--template", "personal", "--template", "personal"}, "template"},
+		"template, a word that is not built, then personal": {[]string{"--template", "cloud", "--template", "personal"}, "template"},
+		"template, personal, then a word that is not built": {[]string{"--template", "personal", "--template", "cloud"}, "template"},
+		"template, two words that are not built":            {[]string{"--template", "cloud", "--template", "file"}, "template"},
+		"template, one word and two":                        {[]string{"--template=personal", "--template", "personal"}, "template"},
+		"template, a word that is unknown, then personal":   {[]string{"--template", "x", "--template=personal"}, "template"},
+		"template, three times":                             {[]string{"--template", "personal", "--template", "personal", "--template", "personal"}, "template"},
+		"test-root, the same":                               {[]string{"--test-root", "--test-root"}, "test-root"},
+		"test-root, true then false":                        {[]string{"--test-root=true", "--test-root=false"}, "test-root"},
+		"test-root, false then true":                        {[]string{"--test-root=false", "--test-root=true"}, "test-root"},
+		"test-root, plain then false":                       {[]string{"--test-root", "--test-root=false"}, "test-root"},
+		"test-root twice with a template":                   {[]string{"--template", "personal", "--test-root", "--test-root"}, "test-root"},
 	} {
 		t.Run(name, func(t *testing.T) {
 			parent := t.TempDir()
 			before := crqSnapshot(t, parent)
-			r := apRun(t, apClock, append(append([]string{"new"}, args...), filepath.Join(parent, "ada"))...)
-			if r.code != ExitUsage || r.stdout != "" || !strings.Contains(r.stderr, "--template is given once") {
+			r := apRun(t, apClock, append(append([]string{"new"}, tc.args...), filepath.Join(parent, "ada"))...)
+			if r.code != ExitUsage || r.stdout != "" || !strings.Contains(r.stderr, "--"+tc.flag+" is given once") {
 				t.Errorf("(%d, %q, %q)", int(r.code), r.stdout, r.stderr)
 			}
 			crqSame(t, "new", before, crqSnapshot(t, parent))

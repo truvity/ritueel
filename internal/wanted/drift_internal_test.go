@@ -136,11 +136,6 @@ func compareEnum(t *testing.T, where string, s *schema, code []string) {
 	}
 }
 
-// notOnThePageYet are the members of a delegation file that the code reads and the schema of the page does not
-// list yet: card, the card of an openpgp-subkey delegation in a personal bundle. The page is corrected apart
-// from the code; the entry goes when it lists the member.
-var notOnThePageYet = []string{"card"}
-
 func TestTheSchemasOnThePageAreTheTablesOfTheCode(t *testing.T) {
 	blocks := pageSchemas(t)
 	if len(blocks) != 2 {
@@ -158,7 +153,7 @@ func TestTheSchemasOnThePageAreTheTablesOfTheCode(t *testing.T) {
 	compareObject(t, "keyring", settings.Properties["keyring"], keyringMembers)
 	compareObject(t, "aws_kms", settings.Properties["aws_kms"], awsKMSMembers)
 
-	compareObject(t, "a delegation file", delegation, slices.DeleteFunc(slices.Clone(delegationMembers), func(m member) bool { return slices.Contains(notOnThePageYet, m.name) }))
+	compareObject(t, "a delegation file", delegation, delegationMembers)
 	compareEnum(t, "type", delegation.Properties["type"], typeEnum)
 	compareEnum(t, "capability", delegation.Properties["capability"], capabilityEnum)
 	compareEnum(t, "use", delegation.Properties["use"], useEnum)
