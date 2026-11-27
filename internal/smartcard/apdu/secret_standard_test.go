@@ -56,7 +56,7 @@ func forms(pin []byte) map[string]string {
 	f["go bytes"] = strings.Join(goBytes, ", ")
 	f["0x spaced"] = strings.Join(x0, " ")
 	f["go string escapes"] = strings.Join(gostr, "")
-	f["fmt of the bytes"] = fmt.Sprint(pin)
+	f["fmt of the bytes"] = fmt.Sprintf("%v", pin)
 	f["fmt %v of a string"] = fmt.Sprintf("%v", string(pin))
 	for name, enc := range map[string]*base64.Encoding{
 		"base64": base64.StdEncoding, "base64 raw": base64.RawStdEncoding, "base64 url": base64.URLEncoding, "base64 raw url": base64.RawURLEncoding,
@@ -267,10 +267,11 @@ func TestSecretEveryWayToEncode(t *testing.T) {
 	}
 	// There is no way to fill a Secret by decoding.
 	var d apdu.Secret
-	if err := json.Unmarshal([]byte(`"abcdefgh"`), &d); err == nil {
+	var target any = &d                                                  //nolint:staticcheck // that no decoder can fill a Secret is the point of the next lines
+	if err := json.Unmarshal([]byte(`"abcdefgh"`), target); err == nil { //nolint:staticcheck // see above
 		t.Error("json.Unmarshal filled a Secret from a string")
 	}
-	if err := json.Unmarshal([]byte(`{"h":{"b":"YWJj"}}`), &d); err != nil || d.Len() != 0 {
+	if err := json.Unmarshal([]byte(`{"h":{"b":"YWJj"}}`), target); err != nil || d.Len() != 0 { //nolint:staticcheck // see above
 		t.Errorf("json.Unmarshal of an object: %v, len %d", err, d.Len())
 	}
 	for _, v := range []any{&d, d} {
@@ -416,7 +417,7 @@ func TestCommandEveryWayToPrint(t *testing.T) {
 	sweepPrint(t, map[string]any{
 		"value": c, "pointer": p, "interface": iface, "pointer to pointer": &p,
 		"slice": []apdu.Command{c, c}, "slice of pointers": []*apdu.Command{p}, "array": [2]apdu.Command{c, c},
-		"map value": map[string]apdu.Command{"k": c},
+		"map value":       map[string]apdu.Command{"k": c},
 		"exported fields": exp, "pointer to exported fields": &exp,
 		"embedded": qaCommandEmbedded{c, 1}, "pointer to embedded": &qaCommandEmbedded{c, 1},
 		"reflect.Value": reflect.ValueOf(c), "struct in a slice in a map": map[string][]qaCommandExported{"k": {exp}},
@@ -495,27 +496,48 @@ func TestBugUnexportedFieldPrinting(t *testing.T) {
 	sweepPrint(t, map[string]any{"command by value": c, "command in a struct": qaCommandExported{"n", c, &c}, "slice of commands": []apdu.Command{c}}, "p")
 }
 
-// A Command has an exported Data field and no marshaler, so the encoders write the data: json and the
-// JSON handler of slog write it as base64, xml as text, gob as bytes. A Secret has the fixed word in all
-// of these. The fix is a MarshalText (and so MarshalJSON through it) on Command that writes its String.
-func TestBugCommandSerializesItsData(t *testing.T) {
-	bugSwitch(t)
+func TestCommandEncodesWithoutItsData(t *testing.T) {
 	c := qaCommand()
 	exp := qaCommandExported{"n", c, &c}
-	for name, v := range map[string]any{"value": c, "pointer": &c, "struct": exp, "slice": []apdu.Command{c}} {
+	for name, v := range map[string]any{"value": c, "pointer": &c, "struct": exp, "slice": []apdu.Command{c}, "map value": map[string]apdu.Command{"k": c}} {
 		out, err := json.Marshal(v)
-		if err == nil {
-			assertNoPIN(t, "json "+name, string(out))
+		if err != nil {
+			t.Fatalf("json %s: %v", name, err)
 		}
-		out, err = xml.Marshal(v)
-		if err == nil {
+		assertNoPIN(t, "json "+name, string(out))
+		out, err = json.MarshalIndent(v, "", " ")
+		if err != nil {
+			t.Fatalf("json indent %s: %v", name, err)
+		}
+		assertNoPIN(t, "json indent "+name, string(out))
+		if out, err = xml.Marshal(v); err == nil {
 			assertNoPIN(t, "xml "+name, string(out))
 		}
+	}
+	if out, err := json.Marshal(c); err != nil || string(out) != `"`+qaCommandText+`"` {
+		t.Errorf("json: %s %v", out, err)
+	}
+	if out, err := c.MarshalText(); err != nil || string(out) != qaCommandText {
+		t.Errorf("MarshalText: %s %v", out, err)
+	}
+	var tm encoding.TextMarshaler = c
+	_ = tm
+	var buf bytes.Buffer
+	slog.New(slog.NewJSONHandler(&buf, nil)).Info("m", "cmd", c, "ptr", &c, "w", exp)
+	assertNoPIN(t, "slog json", buf.String())
+	if !strings.Contains(buf.String(), qaCommandText) {
+		t.Errorf("slog json: %s", buf.String())
+	}
+}
+
+// gob has no use for the printed form: it encodes the exported fields of a Command, Data included. A Secret
+// has no exported field, and gob refuses it. The fix, if gob matters, is a GobEncode that refuses.
+func TestBugCommandGobEncodesItsData(t *testing.T) {
+	bugSwitch(t)
+	c := qaCommand()
+	for name, v := range map[string]any{"value": c, "pointer": &c, "struct": qaCommandExported{"n", c, &c}, "slice": []apdu.Command{c}} {
 		var buf bytes.Buffer
 		_ = gob.NewEncoder(&buf).Encode(v)
 		assertNoPIN(t, "gob "+name, buf.String())
 	}
-	var buf bytes.Buffer
-	slog.New(slog.NewJSONHandler(&buf, nil)).Info("m", "cmd", c)
-	assertNoPIN(t, "slog json", buf.String())
 }

@@ -589,3 +589,19 @@ func TestEncodeLeavesItsInputAlone(t *testing.T) {
 		t.Fatal("the output of Encode shares the value of a node")
 	}
 }
+
+// FuzzParseProperties holds the properties of checkProperties for any input: no panic, no read past the
+// end of the input, a named error, and Encode(Parse(x)) equal to x for what is accepted.
+func FuzzParseProperties(f *testing.F) {
+	for _, tc := range wellFormed(f) {
+		if len(tc.in) <= 600 {
+			f.Add(tc.in)
+		}
+	}
+	f.Fuzz(func(t *testing.T, data []byte) {
+		if len(data) > 70000 {
+			return
+		}
+		checkProperties(t, data)
+	})
+}

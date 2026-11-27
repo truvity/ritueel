@@ -199,6 +199,8 @@ func TestStatusNamedValues(t *testing.T) {
 		{apdu.StatusSecurityNotSatisfied, 0x6982, "6982 (security status not satisfied)"},
 		{apdu.StatusAuthBlocked, 0x6983, "6983 (authentication method blocked)"},
 		{apdu.StatusNotFound, 0x6A88, "6A88 (referenced data not found)"},
+		{apdu.StatusInstructionNotSupported, 0x6D00, "6D00 (instruction not supported)"},
+		{apdu.StatusClassNotSupported, 0x6E00, "6E00 (class not supported)"},
 	} {
 		if uint16(tc.sw) != tc.num || tc.sw.String() != tc.text {
 			t.Errorf("%04X: %q", tc.num, tc.sw.String())
@@ -216,6 +218,7 @@ func TestStatusEveryWord(t *testing.T) {
 	named := map[uint16]string{
 		0x9000: "9000 (success)", 0x6700: "6700 (wrong length)", 0x6982: "6982 (security status not satisfied)",
 		0x6983: "6983 (authentication method blocked)", 0x6A88: "6A88 (referenced data not found)",
+		0x6D00: "6D00 (instruction not supported)", 0x6E00: "6E00 (class not supported)",
 	}
 	for w := range 0x10000 {
 		s := apdu.Status(w)
