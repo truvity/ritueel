@@ -10,6 +10,7 @@
 package apdu
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 )
@@ -37,6 +38,12 @@ var (
 // means no data field (no Lc). Le is the largest answer that the sender will take: 0 means no Le field,
 // 1 to 255 is that many bytes, 256 is written as the byte 00 in the short form, and in the extended
 // form 65536 is written as 0000.
+//
+// A Command may hold a PIN, so it prints without its data: String, GoString, Format, MarshalText and
+// MarshalJSON show the header, the length of the data and Le. Two ways of printing still reach the
+// data, because they do not call a method of a field they cannot reach: a Command in an unexported
+// field of a struct that is printed with %+v or %#v, and any reflective dump. A Command must not be
+// embedded in a struct that is printed.
 type Command struct {
 	CLA, INS, P1, P2 byte
 	Data             []byte
@@ -51,6 +58,12 @@ func (c Command) String() string {
 
 // GoString is [Command.String], for the %#v verb.
 func (c Command) GoString() string { return c.String() }
+
+// MarshalText returns [Command.String].
+func (c Command) MarshalText() ([]byte, error) { return []byte(c.String()), nil }
+
+// MarshalJSON returns [Command.String] as a JSON string.
+func (c Command) MarshalJSON() ([]byte, error) { return json.Marshal(c.String()) }
 
 // Format writes [Command.String] for every verb and flag.
 func (c Command) Format(f fmt.State, _ rune) { _, _ = f.Write([]byte(c.String())) }

@@ -3,6 +3,7 @@ package apdu_test
 import (
 	"bytes"
 	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"strings"
@@ -146,5 +147,22 @@ func TestCommandPrintsNoData(t *testing.T) {
 	}
 	if c.String() != "apdu.Command{CLA:00 INS:20 P1:00 P2:81 Lc:6 Le:0}" {
 		t.Errorf("%q", c.String())
+	}
+}
+
+func TestCommandMarshalsNoData(t *testing.T) {
+	c := apdu.Command{INS: 0x20, P2: 0x81, Data: []byte("987654")}
+	j, err := json.Marshal(struct{ Cmd apdu.Command }{c})
+	if err != nil || strings.Contains(string(j), "987654") || strings.Contains(string(j), "OTg3") || !strings.Contains(string(j), "Lc:6") {
+		t.Fatalf("%v %s", err, j)
+	}
+	txt, err := c.MarshalText()
+	if err != nil || strings.Contains(string(txt), "987654") || string(txt) != c.String() {
+		t.Fatalf("%v %s", err, txt)
+	}
+	for _, sw := range []apdu.Status{apdu.StatusInstructionNotSupported, apdu.StatusClassNotSupported} {
+		if sw.String() == fmt.Sprintf("%04X", uint16(sw)) {
+			t.Errorf("%v has no name", sw)
+		}
 	}
 }

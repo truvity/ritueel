@@ -20,6 +20,11 @@ const (
 	// StatusAuthBlocked is the authentication method blocked: the error counter of the PIN is
 	// zero (6983).
 	StatusAuthBlocked Status = 0x6983
+	// StatusInstructionNotSupported is the instruction code not supported or invalid (6D00): what a
+	// card answers when the application that is selected does not know the command.
+	StatusInstructionNotSupported Status = 0x6D00
+	// StatusClassNotSupported is the class not supported (6E00), likewise.
+	StatusClassNotSupported Status = 0x6E00
 	// StatusNotFound is the referenced data, or the data object, not found (6A88).
 	StatusNotFound Status = 0x6A88
 
@@ -55,6 +60,10 @@ func (s Status) String() string {
 		name = "security status not satisfied"
 	case s == StatusAuthBlocked:
 		name = "authentication method blocked"
+	case s == StatusInstructionNotSupported:
+		name = "instruction not supported"
+	case s == StatusClassNotSupported:
+		name = "class not supported"
 	case s == StatusNotFound:
 		name = "referenced data not found"
 	case s&0xFF00 == statusMoreData:
