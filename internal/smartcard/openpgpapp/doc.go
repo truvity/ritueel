@@ -21,13 +21,20 @@
 //   - One rule for every other status word: it is final, and is returned as a [*StatusError] that
 //     names the operation, never a command byte. The layer never retries, and a 6Cxx word is an error
 //     like the rest, because no source gives a resend for this application.
+//   - Nothing but the selection of the application is sent before it succeeded ([ErrNotSelected]); a
+//     failed selection takes the state back, so a write never goes to whatever else the card has selected.
 //   - One rule for a failed exchange: an error from the transport (and a response that cannot be
-//     read, or that is too long) leaves the state of the card unknown, so the session is dead. Every
+//     read, or that is too long, a panic of the transport, a block of a chain that the card refuses, and
+//     any ending but success once the card has begun to answer with 61xx) leaves the state of the card unknown, so the session is dead. Every
 //     later call returns [ErrSessionDead] without touching the transport, and the error of the failing
 //     call is a [*LostError] that says whether the command was one that changes the card.
 //   - A PIN is held in an [apdu.Secret]. The encoded bytes of a command that holds a secret are
 //     overwritten as soon as the transport has returned, and every response buffer that is not
 //     handed to the caller is overwritten.
+//
+// For the piece that reads the algorithm information object (FA): the vendor's library shows that some
+// firmware sends it with an outer length that is two bytes longer than its data, and the strict reader
+// of package tlv refuses that. That piece needs a tolerant reading of that one object, and of no other.
 //
 // The package imports no transport and opens no device; the reader is given as a [Transport], and
 // the tests use a scripted one.

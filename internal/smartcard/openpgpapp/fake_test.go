@@ -62,7 +62,16 @@ func (f *fakeTransport) Transmit(command []byte, budget time.Duration) ([]byte, 
 // calls is the number of commands that reached the transport.
 func (f *fakeTransport) calls() int { return len(f.sent) }
 
+// newSession returns a session that already has the application selected, as a session is after the
+// piece that opens a card; newUnselected is one that has not.
 func newSession(t testing.TB, f *fakeTransport, o Options) *Session {
+	t.Helper()
+	s := newUnselected(t, f, o)
+	s.selected = true
+	return s
+}
+
+func newUnselected(t testing.TB, f *fakeTransport, o Options) *Session {
 	t.Helper()
 	s, err := NewSession(f, o)
 	if err != nil {

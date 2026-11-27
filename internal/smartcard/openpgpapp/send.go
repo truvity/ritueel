@@ -21,8 +21,14 @@ import (
 // status word is final: it comes back as a [*StatusError]. There is no retry of any kind, and a 6Cxx
 // word is a status word like the others.
 //
-// An error from the transport, an answer with no status word, or an answer that passes the size limit
-// ends the exchange in an unknown state: the session is dead, the call returns a [*LostError] that
+// Until select-application has succeeded, every other command is [ErrNotSelected]. Once an answer
+// began with 61xx the card has run the command, so any ending but success (an error status to GET
+// RESPONSE, the size cap, too many rounds) is a lost exchange whose cause names get-response, never a
+// refusal of the command. A block of a chain that the card refuses is a lost exchange too, because the
+// card then holds a partial chain.
+//
+// An error from the transport, a panic of the transport, an answer with no status word, or an answer
+// longer than the form can carry ends the exchange in an unknown state: the session is dead, the call returns a [*LostError] that
 // says whether the command changes the card, and every later call returns [ErrSessionDead] without
 // touching the transport.
 //
@@ -46,6 +52,9 @@ func (s *Session) send(cmd apdu.Command) ([]byte, error) {
 	if s.readOnly && !spec.readOnly {
 		return nil, fmt.Errorf("%w: %s", ErrReadOnly, spec.name)
 	}
+	if !s.selected && spec.name != nameSelectApplication {
+		return nil, fmt.Errorf("%w: %s", ErrNotSelected, spec.name)
+	}
 	budget := s.budget
 	if spec.mayWait {
 		budget = s.waitBudget
@@ -58,15 +67,27 @@ func (s *Session) send(cmd apdu.Command) ([]byte, error) {
 		clear(out)
 		return nil, s.lose(spec, ErrResponseTooLong)
 	}
+	continued := false
 	for rounds := 0; ; {
 		if st.IsSuccess() {
+			if spec.name == nameSelectApplication {
+				s.selected = true
+			}
 			return out, nil
 		}
 		count, more := st.MoreData()
 		if !more {
 			clear(out)
+			if continued {
+				// The card ran the command and announced its answer: this is not a refusal of it.
+				return nil, s.loseOp(nameGetResponse, spec, &StatusError{Op: nameGetResponse, SW: uint16(st)})
+			}
+			if spec.name == nameSelectApplication {
+				s.selected = false // what is selected on the card is no longer known
+			}
 			return nil, &StatusError{Op: spec.name, SW: uint16(st)}
 		}
+		continued = true
 		if rounds++; rounds > maxContinuations {
 			clear(out)
 			return nil, s.lose(spec, ErrResponseTooLong)
@@ -119,7 +140,8 @@ func (s *Session) extended(cmd apdu.Command) bool {
 
 // chain sends the data in blocks of at most 255 bytes: the chaining bit of the class on every block but
 // the last, each intermediate block answered by plain success, and the expected length on the last.
-// An intermediate block that is answered in any other way, 61xx included, ends the chain with a [*StatusError].
+// An intermediate block that is answered in any other way, 61xx included, loses the session: the card
+// holds a partial chain, and the [*LostError] has a [*StatusError] for its cause.
 func (s *Session) chain(spec *commandSpec, cmd apdu.Command, budget time.Duration) (apdu.Status, []byte, error) {
 	data := cmd.Data
 	for off := 0; ; {
@@ -142,8 +164,9 @@ func (s *Session) chain(spec *commandSpec, cmd apdu.Command, budget time.Duratio
 		}
 		clear(d)
 		if !st.IsSuccess() {
-			// Not plain success: the chain is over, and a 61xx here is no invitation to fetch data.
-			return 0, nil, &StatusError{Op: spec.name, SW: uint16(st)}
+			// Not plain success: a 61xx here is no invitation to fetch data. The card holds a partial
+			// chain, so the exchange is lost, and its outcome is unknown for a command that changes the card.
+			return 0, nil, s.lose(spec, &StatusError{Op: spec.name, SW: uint16(st)})
 		}
 		off += n
 	}
@@ -158,13 +181,31 @@ func (s *Session) one(spec *commandSpec, cmd apdu.Command, extended bool, budget
 	if err != nil {
 		return 0, nil, err
 	}
+	// The command is overwritten when this function ends, by a return or by a panic of the transport.
+	// A panic also ends the exchange in an unknown state, so the session is dead before it goes on.
+	returned := false
+	defer func() {
+		if spec.secret {
+			clear(enc)
+		}
+		if !returned {
+			s.dead, s.selected = true, false
+		}
+	}()
 	raw, err := s.t.Transmit(enc, budget)
-	if spec.secret {
-		clear(enc)
-	}
+	returned = true
 	if err != nil {
 		clear(raw)
 		return 0, nil, &lostCause{err: err}
+	}
+	// The largest answer that the form can carry: the data of the largest Le, and the status word.
+	limit := apdu.MaxShortLe + 2
+	if extended {
+		limit = apdu.MaxExtendedLe + 2
+	}
+	if len(raw) > limit {
+		clear(raw)
+		return 0, nil, &lostCause{err: ErrResponseTooLong}
 	}
 	resp, err := apdu.ParseResponse(raw)
 	if err != nil {
@@ -194,7 +235,11 @@ func (s *Session) lostFrom(spec *commandSpec, err error) error {
 
 // lose ends the session: the exchange of the command failed for the cause, and the state of the card
 // is unknown.
-func (s *Session) lose(spec *commandSpec, cause error) error {
-	s.dead = true
-	return &LostError{Op: spec.name, OutcomeUnknown: spec.changes, Err: cause}
+func (s *Session) lose(spec *commandSpec, cause error) error { return s.loseOp(spec.name, spec, cause) }
+
+// loseOp is lose with the name of the operation that failed, which is not the command's own when the
+// exchange failed in its continuation.
+func (s *Session) loseOp(op string, spec *commandSpec, cause error) error {
+	s.dead, s.selected = true, false
+	return &LostError{Op: op, OutcomeUnknown: spec.changes, Err: cause, secret: spec.secret}
 }

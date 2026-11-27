@@ -63,7 +63,16 @@ type Session struct {
 	extData int
 	dead    bool
 	closed  bool
+	// selected is set when select-application has succeeded and cleared when the session dies or a
+	// selection fails. While it is not set, send sends nothing else.
+	selected bool
 }
+
+// The names of the two rows that send itself needs to know.
+const (
+	nameSelectApplication = "select-application"
+	nameGetResponse       = "get-response"
+)
 
 // NewSession returns a session on the transport. It does not touch the transport: powering the card
 // and selecting the application are for the piece that opens the card. The options are checked, and

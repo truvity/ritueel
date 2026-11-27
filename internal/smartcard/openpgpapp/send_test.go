@@ -127,8 +127,10 @@ func TestContinuationCaps(t *testing.T) {
 		t.Fatalf("%d calls", f.calls())
 	}
 	// At the cap exactly, an answer is whole.
-	f = &fakeTransport{script: []step{ok(make([]byte, MaxResponse)...)}}
-	if got, err := newSession(t, f, Options{}).send(getData(0x7F21, 256)); err != nil || len(got) != MaxResponse {
+	f = &fakeTransport{ext: true, script: []step{ok(make([]byte, MaxResponse)...)}}
+	se := newSession(t, f, Options{})
+	se.allowExtended(2000)
+	if got, err := se.send(getData(0x7F21, 65536)); err != nil || len(got) != MaxResponse {
 		t.Fatalf("at the cap: %v", err)
 	}
 }
@@ -162,16 +164,34 @@ func TestStatusErrorsAreFinalAndNeverRetried(t *testing.T) {
 	}
 }
 
-func TestStatusErrorDuringContinuation(t *testing.T) {
-	f := &fakeTransport{script: []step{sw(0x61, 0x02, 0x01), sw(0x6A, 0x88)}}
-	s := newSession(t, f, Options{})
-	_, err := s.send(getData(0x7F21, 256))
-	var se *StatusError
-	if !errors.As(err, &se) || se.Op != "get-data" || se.SW != 0x6A88 || s.Dead() {
-		t.Fatalf("%v", err)
-	}
-	if !zeros(f.given[0]) || !zeros(f.given[1]) {
-		t.Fatal("not overwritten")
+// A command whose answer began (61xx) has run; an error status to the GET RESPONSE is not its refusal.
+func TestLateErrorAfterContinuationIsALostExchange(t *testing.T) {
+	for _, tc := range []struct {
+		name    string
+		cmd     apdu.Command
+		unknown bool
+	}{
+		{"a read", getData(0x7F21, 256), false},
+		{"key generation", apdu.Command{INS: 0x47, P1: 0x80, Data: []byte{0xB6, 0x00}, Le: 256}, true},
+		{"attestation", apdu.Command{CLA: 0x80, INS: 0xFB, P1: 0x01, Le: 256}, true},
+	} {
+		f := &fakeTransport{script: []step{sw(0x61, 0x02, 0x01), sw(0x6A, 0x88), ok()}}
+		s := newSession(t, f, Options{})
+		got, err := s.send(tc.cmd)
+		var lost *LostError
+		var se *StatusError
+		if !errors.As(err, &lost) || !errors.As(err, &se) || got != nil {
+			t.Fatalf("%s: %v", tc.name, err)
+		}
+		if lost.Op != "get-response" || se.Op != "get-response" || se.SW != 0x6A88 || lost.OutcomeUnknown != tc.unknown || !s.Dead() || !errors.Is(err, ErrSessionDead) {
+			t.Fatalf("%s: %+v %+v dead %v", tc.name, lost, se, s.Dead())
+		}
+		if !zeros(f.given[0]) || !zeros(f.given[1]) {
+			t.Fatalf("%s: not overwritten", tc.name)
+		}
+		if _, err := s.send(getData(0x004F, 256)); !errors.Is(err, ErrSessionDead) || f.calls() != 2 {
+			t.Fatalf("%s: later call: %v", tc.name, err)
+		}
 	}
 }
 
@@ -410,14 +430,15 @@ func TestChaining(t *testing.T) {
 	}
 }
 
-func TestChainStopsAtAnIntermediateRefusal(t *testing.T) {
+func TestChainRefusedInTheMiddleLosesTheSession(t *testing.T) {
 	for _, st := range []step{sw(0x68, 0x83), sw(0x61, 0x02, 0x01), sw(0x90, 0x01)} {
 		f := &fakeTransport{script: []step{ok(), st, ok()}}
 		s := newSession(t, f, Options{})
 		s.table = putTable(false)
 		_, err := s.send(bigPut(700, 0))
 		var se *StatusError
-		if !errors.As(err, &se) || se.Op != "put-big" || f.calls() != 2 || s.Dead() {
+		var lost *LostError
+		if !errors.As(err, &se) || !errors.As(err, &lost) || se.Op != "put-big" || !lost.OutcomeUnknown || f.calls() != 2 || !s.Dead() {
 			t.Fatalf("%v, %d calls", err, f.calls())
 		}
 	}
@@ -512,5 +533,143 @@ func TestSessionClosed(t *testing.T) {
 	}
 	if _, err := s.send(getData(0x004F, 256)); !errors.Is(err, ErrSessionClosed) || f.calls() != 0 {
 		t.Fatal(err)
+	}
+}
+
+// A panic of the transport: the command is still overwritten, the session is dead, the panic goes on.
+func TestPanicOfTheTransport(t *testing.T) {
+	for _, chain := range []bool{false, true} {
+		f := &panicTransport{fakeTransport: fakeTransport{script: []step{ok()}}, after: 0}
+		cmd := verifyCmd([]byte("987654"))
+		s := newSession(t, &f.fakeTransport, Options{})
+		s.t = f
+		if chain {
+			f.after = 1
+			s.table = putTable(true)
+			cmd = bigPut(600, 0)
+		}
+		func() {
+			defer func() {
+				if r := recover(); r != "boom" {
+					t.Fatalf("chain %v: the panic did not go on: %v", chain, r)
+				}
+			}()
+			_, _ = s.send(cmd)
+		}()
+		if !s.Dead() || s.selected {
+			t.Fatalf("chain %v: not dead", chain)
+		}
+		for i, r := range f.sentRefs {
+			if !zeros(r) {
+				t.Fatalf("chain %v: command %d not overwritten", chain, i)
+			}
+		}
+		if _, err := s.send(getData(0x004F, 256)); !errors.Is(err, ErrSessionDead) {
+			t.Fatalf("chain %v: %v", chain, err)
+		}
+	}
+}
+
+// panicTransport panics on the call after `after` calls have returned.
+type panicTransport struct {
+	fakeTransport
+	after int
+}
+
+func (p *panicTransport) Transmit(c []byte, b time.Duration) ([]byte, error) {
+	if p.calls() >= p.after {
+		p.sent = append(p.sent, append([]byte(nil), c...))
+		p.sentRefs = append(p.sentRefs, c)
+		panic("boom")
+	}
+	return p.fakeTransport.Transmit(c, b)
+}
+
+func TestLostErrorShowsNoCauseForASecret(t *testing.T) {
+	cause := errors.New("reader said: 987654 3938373635")
+	f := &fakeTransport{script: []step{{err: cause}}}
+	s := newSession(t, f, Options{})
+	_, err := s.send(verifyCmd([]byte("987654")))
+	if err == nil || strings.Contains(err.Error(), "987654") || strings.Contains(err.Error(), "reader") {
+		t.Fatalf("%v", err)
+	}
+	if !errors.Is(err, cause) || !errors.Is(err, ErrSessionDead) {
+		t.Fatalf("the cause is not reachable: %v", err)
+	}
+	// A command with no secret keeps the cause in its text.
+	f = &fakeTransport{script: []step{{err: cause}}}
+	_, err = newSession(t, f, Options{}).send(getData(0x004F, 256))
+	if err == nil || !strings.Contains(err.Error(), "reader said") {
+		t.Fatalf("%v", err)
+	}
+	// And so for the status of a continuation of a secret command.
+	f = &fakeTransport{script: []step{sw(0x61, 0x02, 0x01), sw(0x6A, 0x88)}}
+	_, err = newSession(t, f, Options{}).send(verifyCmd([]byte("987654")))
+	if err == nil || strings.Contains(err.Error(), "6A88") {
+		t.Fatalf("%v", err)
+	}
+}
+
+func TestNotSelected(t *testing.T) {
+	aid := []byte{0xD2, 0x76, 0x00, 0x01, 0x24, 0x01}
+	selectCmd := apdu.Command{INS: 0xA4, P1: 0x04, Data: aid, Le: 256}
+	f := &fakeTransport{script: []step{sw(0x6A, 0x82), ok(), ok(0x01), sw(0x6A, 0x82), sw(0x61, 0x01, 0x07), ok(0x08), ok(0x01)}}
+	s := newUnselected(t, f, Options{})
+	// Nothing but the selection is sent before it.
+	for _, c := range []apdu.Command{getData(0x004F, 256), verifyCmd([]byte("123456")), {INS: 0xF1, Le: 256}} {
+		if _, err := s.send(c); !errors.Is(err, ErrNotSelected) || s.Dead() {
+			t.Fatalf("%v", err)
+		}
+	}
+	if f.calls() != 0 {
+		t.Fatal("a command was sent before the selection")
+	}
+	// A failed selection leaves it unselected.
+	var se *StatusError
+	if _, err := s.send(selectCmd); !errors.As(err, &se) || se.Op != "select-application" {
+		t.Fatalf("%v", err)
+	}
+	if _, err := s.send(getData(0x004F, 256)); !errors.Is(err, ErrNotSelected) {
+		t.Fatalf("after a failed selection: %v", err)
+	}
+	// A good one opens the session; a later failed selection closes it again.
+	if _, err := s.send(selectCmd); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := s.send(getData(0x004F, 256)); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := s.send(selectCmd); err == nil {
+		t.Fatal("the failed selection passed")
+	}
+	if _, err := s.send(getData(0x004F, 256)); !errors.Is(err, ErrNotSelected) {
+		t.Fatalf("after a second, failed selection: %v", err)
+	}
+	// A selection that answers in two parts is a selection when it ends in success.
+	if _, err := s.send(selectCmd); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := s.send(getData(0x004F, 256)); err != nil {
+		t.Fatal(err)
+	}
+	// A dead session is not selected.
+	f.script = []step{{err: errors.New("gone")}}
+	_, _ = s.send(getData(0x004F, 256))
+	if s.selected || !s.Dead() {
+		t.Fatal("a dead session is selected")
+	}
+}
+
+func TestResponseLargerThanTheFormIsLost(t *testing.T) {
+	f := &fakeTransport{script: []step{ok(make([]byte, 300)...)}}
+	s := newSession(t, f, Options{})
+	_, err := s.send(getData(0x7F21, 256))
+	if !errors.Is(err, ErrResponseTooLong) || !s.Dead() || !zeros(f.given[0]) {
+		t.Fatalf("%v", err)
+	}
+	// 256 bytes of data and the status word is the most that a short answer holds.
+	f = &fakeTransport{script: []step{ok(make([]byte, 256)...)}}
+	if got, err := newSession(t, f, Options{}).send(getData(0x7F21, 256)); err != nil || len(got) != 256 {
+		t.Fatalf("%v", err)
 	}
 }

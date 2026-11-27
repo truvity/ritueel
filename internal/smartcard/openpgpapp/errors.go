@@ -20,6 +20,9 @@ var (
 	ErrSessionDead = errors.New("openpgpapp: the session is dead: an earlier exchange failed")
 	// ErrSessionClosed marks a call on a session that was closed.
 	ErrSessionClosed = errors.New("openpgpapp: the session is closed")
+	// ErrNotSelected marks a command that is sent before the application was selected, or after a
+	// failed selection. Nothing was sent: it would go to whatever the card has selected.
+	ErrNotSelected = errors.New("openpgpapp: the application is not selected")
 	// ErrNoTransport marks a session that was asked for without a transport.
 	ErrNoTransport = errors.New("openpgpapp: no transport")
 	// ErrBadOptions marks options that are out of range: a negative budget, or one above [MaxBudget].
@@ -53,15 +56,24 @@ func (e *StatusError) Status() apdu.Status { return apdu.Status(e.SW) }
 // operation. OutcomeUnknown is true when that operation is one that changes the card: the card may
 // have carried it out, so the caller opens a new session and reads the card before it decides what
 // happened, and never sends the command a second time on a guess. Err is the cause, from the
-// transport or [ErrResponseTooLong] or [ErrMalformedResponse]. errors.Is finds [ErrSessionDead] in it.
+// transport, [ErrResponseTooLong], [ErrMalformedResponse], or the [*StatusError] of an exchange that
+// failed after the card had begun to answer (a refused block in a chain, or an error status to GET
+// RESPONSE; Op is then the operation that failed). errors.Is finds [ErrSessionDead] in it. For a command
+// that holds a secret the text does not show the cause: it stays reachable through errors.Is and As.
 type LostError struct {
 	Op             string
 	OutcomeUnknown bool
 	Err            error
+	// secret: the command held a PIN. Its error text then does not show the cause, whose text came
+	// from outside and cannot be trusted to hold no byte of the command.
+	secret bool
 }
 
 // Error says that the session was lost and whether the card may have changed.
 func (e *LostError) Error() string {
+	if e.secret {
+		return fmt.Sprintf("openpgpapp: %s: the session is lost and the card may have carried out the command", e.Op)
+	}
 	if e.OutcomeUnknown {
 		return fmt.Sprintf("openpgpapp: %s: the session is lost and the card may have carried out the command: %v", e.Op, e.Err)
 	}
