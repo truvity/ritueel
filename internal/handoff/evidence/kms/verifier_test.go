@@ -389,6 +389,13 @@ func TestAProofThatNamesARoleIsMalformedAndMakesNoCall(t *testing.T) {
 
 func TestVerifyOfEvidenceThatIsMalformed(t *testing.T) {
 	api := newFake(t)
+	// The row of the URL spelling replaces + and / of the Base64 of the key: a key whose text holds neither is spelt as it is, and that is the good spelling.
+	for i := 0; i < 1000 && !strings.ContainsAny(base64.StdEncoding.EncodeToString(api.pub.PublicKey), "+/"); i++ {
+		api = newFake(t)
+	}
+	if !strings.ContainsAny(base64.StdEncoding.EncodeToString(api.pub.PublicKey), "+/") {
+		t.Fatal("no key whose Base64 holds a + or a /")
+	}
 	conn := &fakeConnector{api: api}
 	v := newVerifier(t, conn, nil)
 	der := api.pub.PublicKey
